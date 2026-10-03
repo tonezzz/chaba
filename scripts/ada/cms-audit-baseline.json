@@ -1,15 +1,73 @@
 {
   "_comment": "Known cms-audit.py failures — the ratchet baseline for CI (workflow cms-audit.yml). Each entry is slug -> sorted list of failing rules. Rules: (1) a NEW failure not listed here fails CI; (2) an entry whose page now fails differently (including passing) is stale and fails CI — remove it. The baseline only shrinks. Document WHY each entry is tolerated in the _why map.",
   "_why": {
-    "bench-ping": "thin ping/bench test page — kept intentionally",
-    "devin-job-report-fail": "thin fail-log artifact — point-in-time",
-    "document-audit-policy": "policy doc quoting placeholder-rule names verbatim",
-    "mddb-follower-migration-plan": "plan doc quoting placeholder-rule names + describing placeholder records",
-    "transcript-audit-2026-09-28": "audit transcript quoting a placeholder marker"
+    "bench-ping": "thin ping/bench test page — kept intentionally; 2026-10-03 regressed to also fail A3/A4 when the ping body was emptied",
+    "cctv-random-cycle": "generated cycle-redirect page — needs its writer updated to emit meta/structure",
+    "cctv-request-flow": "A6 false positive — documents the token URL format with a placeholder, not a real secret",
+    "cms-page-standard": "policy doc that quotes placeholder-rule names verbatim — exempt class like document-audit-policy",
+    "devin-status-report-20261002": "point-in-time status artifact — thin by design",
+    "document-search-report-20261002": "point-in-time search artifact — thin by design",
+    "flood-report": "real defect — flood-news-update.py emits dangling children link (card filed)",
+    "flood-report-nongdon-saraburi": "real defect — flood-news-update.py dangling parent link (card filed)",
+    "flood-report-pattaya-rayong": "real defect — flood-news-update.py thin page + h1 mismatch (card filed)",
+    "mddb-ops-split-plan": "hand-written plan doc missing updated meta — needs a touch-up",
+    "memory-ladder-standard": "hand-written standard doc missing provenance footer — needs a touch-up",
+    "muizenberg-surf-song": "song/media page kind!=page with missing meta — needs meta fix",
+    "tv-action-cast-browser-20261002": "point-in-time action log artifact — meta gap",
+    "vms-wall-outage-20261001": "point-in-time outage artifact — meta gap"
   },
-  "bench-ping": ["A1:empty-or-thin"],
-  "devin-job-report-fail": ["A1:empty-or-thin"],
-  "document-audit-policy": ["A5:placeholder"],
-  "mddb-follower-migration-plan": ["A5:placeholder"],
-  "transcript-audit-2026-09-28": ["A5:placeholder"]
+  "bench-ping": [
+    "A1:empty-or-thin",
+    "A3:no-h1",
+    "A4:no-structure"
+  ],
+  "cctv-random-cycle": [
+    "A2:missing-updated",
+    "A3:no-h1",
+    "A4:no-structure"
+  ],
+  "cctv-request-flow": [
+    "A6:secret-ish"
+  ],
+  "cms-page-standard": [
+    "A5:placeholder"
+  ],
+  "devin-status-report-20261002": [
+    "A1:empty-or-thin"
+  ],
+  "document-search-report-20261002": [
+    "A1:empty-or-thin",
+    "A3:h1-title-mismatch"
+  ],
+  "flood-report": [
+    "R3:dangling-children(flood-report-nongdon)"
+  ],
+  "flood-report-nongdon-saraburi": [
+    "R3:dangling-parent(flood-report-nongdon)"
+  ],
+  "flood-report-pattaya-rayong": [
+    "A1:empty-or-thin",
+    "A3:h1-title-mismatch"
+  ],
+  "mddb-ops-split-plan": [
+    "A2:missing-updated"
+  ],
+  "memory-ladder-standard": [
+    "R2:no-provenance-footer"
+  ],
+  "muizenberg-surf-song": [
+    "A2:kind!=page",
+    "A2:missing-format",
+    "A2:missing-updated"
+  ],
+  "tv-action-cast-browser-20261002": [
+    "A2:missing-format",
+    "A2:missing-slug",
+    "A2:missing-updated"
+  ],
+  "vms-wall-outage-20261001": [
+    "A2:missing-format",
+    "A2:missing-slug",
+    "A2:missing-updated"
+  ]
 }
