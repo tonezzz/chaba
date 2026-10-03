@@ -1,0 +1,62 @@
+title: OpenClaw Travel Agent — wiring traps and fixes
+subtitle: What it took to make a $0 OR-free agent reachable from the phone
+icon: 🤖
+ideas:
+  - "Record the OpenClaw channel/plugin/MCP wiring traps so the next
+    session doesn't re-derive them"
+  - "Note which failures looked like config bugs but were key rotation
+    and format drift"
+
+sections:
+  - title: Channel wiring traps
+    icon: 🔌
+    layout: list
+    items:
+      - label: channels add --secret-file stores the PATH, not the value
+        text: |
+          Passing /tmp/line-secret then deleting it left the channel dead.
+          Use a persistent secrets file (~/.config/secrets/line-channel-secret)
+          or channels.<id>.channelSecret directly.
+      - label: External plugins need explicit trust
+        text: |
+          Auto-installed channel plugins don't run until
+          plugins.entries.<id>.enabled=true — gateway log says
+          "installed without explicit trust". Requires a gateway restart
+          after setting it; hot-reload alone didn't start the runtime.
+      - label: pairing list CLI misreports
+        text: |
+          `openclaw pairing list` says "no pairing channels configured"
+          while real requests sit in channel_pairing_requests in
+          ~/.openclaw/state/openclaw.sqlite. Approve with
+          `openclaw pairing approve <channel> <code>` — channel arg is
+          required even though usage shows it optional.
+      - label: Telegram needs no public endpoint; LINE does
+        text: |
+          Telegram polls (works from loopback NAT-free). LINE is
+          webhook-only AND allows exactly ONE webhook per channel —
+          ada-line-relay on idc01 already owns the ชบา bot's slot, so
+          OpenClaw LINE was configured then deliberately disabled.
+
+  - title: Model/auth traps
+    icon: 🔑
+    layout: list
+    items:
+      - label: OR key rotation presents as "401 API key expired"
+        text: |
+          The idc01 mddb-gemini.env key rotated (…04fe → …9c6a) overnight.
+          openclaw's saved openrouter:manual profile kept the old one —
+          auth profile needs re-pasting whenever the source rotates.
+          Verify the real key with /api/v1/auth/key before suspecting config.
+      - label: GhostRoute writes unprefixed fallback ids
+        text: |
+          ghostroute calls format_for_openclaw(with_routing_prefix=False)
+          for fallbacks, producing thinkingmachines/inkling:free etc.
+          OpenClaw 2026.9.6 requires openrouter/ prefix on ALL refs —
+          model_not_found otherwise. Patched editable pipx install at
+          ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py;
+          upstream PR to kittimasak/GhostRoute still owed.
+      - label: Free-tier needs the fallback chain, not a single model
+        text: |
+          Ranked primary (ling-3.0-flash-sante) can 429/401 while
+          openrouter/free still works — ghostroute-watcher rotation is
+          load-bearing, not optional.
