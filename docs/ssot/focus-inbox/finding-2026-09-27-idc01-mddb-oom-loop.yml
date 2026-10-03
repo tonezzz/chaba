@@ -1,0 +1,41 @@
+title: idc01 MDDB OOM crash loop + full-resync amplification
+subtitle: 'Systemwide assessment finding: mddb warmup 404s were OOM restart churn'
+icon: alert
+focus:
+  label: idc01 MDDB OOM crash loop
+  text: >-
+    On 2026-09-27 (~19:50-20:27) idc01's mddb.service was OOM-killed 4x in ~40
+    min (status=137). Each restart re-entered a ~1min warmup where /health is
+    up but /v1 routes are unregistered — Ada's cms_publish_page got 404. Every
+    restart also triggers a full binlog resync from LSN=0 to the tony-dell
+    read-only follower, spiking mddbd RSS toward ~12 GiB (settles ~3 GiB
+    after). idc01 has 31 GiB but no MemoryMax on the mddb quadlet, so a
+    resync + co-tenant burst can re-enter the loop. Post-reboot stable:
+    1 OOM in 6 days, but the pattern can recur on any restart.
+  branch: chaba
+  priority: high
+  status: open
+  tags:
+  - infra
+  - idc01
+  - mddb
+  safe_to_parallel:
+    value: true
+    reason: SSOT/quadlet edits only; any service restart is a separate approval.
+  subtasks:
+  - label: Add MemoryMax (~16G) + restart policy to idc01 mddb quadlet so OOM kills stay bounded
+    status: not_started
+  - label: Check mddb follower sync — avoid full resync-from-LSN0 on every leader restart (persist follower LSN / snapshot bootstrap)
+    status: not_started
+  - label: Add mddb OOM count to audit-hosts known-failure/alert signals for idc01
+    status: not_started
+  - label: 'Consider upgrade mddb 2.15.0 -> 2.15.3 (release notes: check resync/memory fixes)'
+    status: not_started
+ownership:
+  owner: tony
+  session: devin-systemwide-assessment-2026-09-27
+  locked: false
+  lock_reason: ''
+source:
+  report: chaba-systemwide-assessment
+  scenario: tests/scenarios-live/chaba_systemwide_assessment.yaml
