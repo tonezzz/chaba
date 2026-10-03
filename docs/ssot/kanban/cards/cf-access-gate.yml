@@ -16,3 +16,10 @@ help: |-
   6. Save -> test https://tony-ha.surf-thailand.com in incognito ->
      should get CF login BEFORE the HA login page
   Note: HA companion app cannot do CF login -> keep it on tailnet.
+
+progress: >-
+  2026-10-03: tony-ha.surf-thailand.com/cms* + /api/cms* now proxied idc02 ->
+  idc01:8003 (ada-pi-pwa) with interim Caddy basicauth (user tony). When CF
+  Access lands for *.surf-thailand.com, drop the basicauth blocks on idc02.
+  Also: api.surf-thailand.com/cms* closed (was incidentally public via the
+  ada-dev catch-all) — api.* now 404s /cms*.
