@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Nightly MDDB backup on idc01 — TWO tiers after the 2026-09-28 drill showed
-# /v1/backup output fails bbolt.Open on restore (freelist/page-order panic):
+# Nightly MDDB backup on idc01.
 #
-#   1. native /v1/backup snapshot — WEEKLY (Sundays) only; the output is
-#      known-corrupt on mddb <=2.15.3 and fixed in v2.15.4 (backupTo via
-#      tx.WriteTo, upstream PR #281). Kept to detect when the running image
-#      produces a restorable snapshot again.
-#   2. direct file copy of mddb.db + open-verify in a throwaway container —
-#      only a verified-openable copy counts as the binary backup. The copy
-#      races live bbolt writes (freelist torn when a commit lands mid-copy),
-#      so it retries up to 3 times with a fresh copy each attempt.
+#   1. PRIMARY: native /v1/backup — consistent since mddb v2.15.4
+#      (backupTo copies via a bbolt read-tx + self-verifies before rename,
+#      upstream PR #281; verified restorable 2026-10-03 on
+#      localhost/mddb:2.15.4-allowlist). The server already open-verifies
+#      the copy, so the pulled file counts as verified.
+#   2. FALLBACK: file copy of mddb.db + open-verify in a throwaway
+#      container — used only when the native backup produces no file.
+#      The copy races live bbolt writes, so it retries up to 3 times
+#      with a fresh copy per attempt.
 #
 # Semantic tier lives elsewhere: ada-memory-backup.timer on tony-omen dumps
 # all collections to JSON (chaba/backups/ada-memory/, mn01 mirror).
@@ -21,13 +21,19 @@ NAME="mddb-$(date +%Y%m%d-%H%M)"
 DATA="$HOME/.config/containers/mddb/data"
 BK="$HOME/mddb-backups"
 
-# tier 1: native snapshot — Sundays only (see header)
-if [ "$(date +%u)" = "7" ]; then
-  curl -s --max-time 300 "http://100.74.146.0:11023/v1/backup?to=$NAME" || true
-  podman cp "mddb:/app/backups/$NAME" "$BK/$NAME.db" 2>/dev/null || true
+# tier 1: native snapshot (consistent + server-verified on >=2.15.4)
+curl -s --max-time 300 "http://100.74.146.0:11023/v1/backup?to=$NAME" || true
+podman cp "mddb:/app/backups/$NAME" "$BK/$NAME.db" 2>/dev/null || true
+if [ -s "$BK/$NAME.db" ]; then
+  podman exec mddb rm -f "/app/backups/$NAME" 2>/dev/null || true
+  echo "backup ok (native, server-verified): $BK/$NAME.db ($(du -h $BK/$NAME.db | cut -f1))"
+  ls -t $BK/mddb-2*.db 2>/dev/null | tail -n +5 | xargs -r rm -f || true
+  ls -t $BK/*.UNVERIFIED 2>/dev/null | tail -n +3 | xargs -r rm -f || true
+  exit 0
 fi
 
-# tier 2: file copy + verify-open, up to 3 attempts
+# tier 2: file copy + verify-open fallback, up to 3 attempts
+echo "WARNING: native backup produced no file — falling back to filecopy" >&2
 FC="$BK/mddb-filecopy-$NAME.db"
 verify_ok=0
 for attempt in 1 2 3; do
@@ -40,7 +46,7 @@ for attempt in 1 2 3; do
       --env MDDB_HTTP_ENABLED=true --env MDDB_GRPC_ENABLED=false \
       --env MDDB_MCP_ENABLED=false --env MDDB_PATH=/backup/$(basename $FC) \
       --env MDDB_AUTH_ENABLED=false \
-      docker.io/tradik/mddb:2.15.3 >/dev/null 2>&1; then
+      docker.io/tradik/mddb:2.15.4 >/dev/null 2>&1; then
     # NoFreelistSync => open walks the whole B-tree (freelist rescan);
     # allow 20 min, not 60s
     for i in $(seq 1 200); do
