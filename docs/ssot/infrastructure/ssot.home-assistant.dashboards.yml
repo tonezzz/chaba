@@ -441,12 +441,13 @@ conventions:
   full_page_iframe:
     # Standard for embedding a full app page as a dashboard tab
     # (Ada Pages, Obsidian, kanban Board).
+    view: {type: panel}                 # REQUIRED — panel renders the single card full-bleed
     card: {type: iframe, url: "<app url>"}
     rules:
-      - no aspect_ratio — bare iframe expands to fill the view
-      - single card per view; panel: null (masonry with one card)
+      - view MUST have type: panel — without it the iframe card renders at default tile height
+      - no aspect_ratio on the card — bare iframe expands to fill the panel
       - append ?v=N to the url to bust the iframe cache after redeploys
-    examples: [chaba-admin/ada-pages, chaba-admin/obsidian, chaba-admin/board]
+    examples: [chaba-admin/ada-pages, chaba-admin/board]
 
 status:
   last_updated: "2026-10-02"
