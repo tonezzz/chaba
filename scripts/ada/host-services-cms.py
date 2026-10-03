@@ -52,7 +52,19 @@ HOST_META = {
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",
                    "ip": "100.106.196.22"},
     "michael-ha": {"role": "HAOS appliance", "ts": "michael-ha.taila0626a.ts.net",
-                   "ip": "100.80.105.88"},
+                   "ip": "100.80.105.88",
+                   "unreachable_body": (
+                       "## Last known layout\n\n"
+                       "- Home Assistant OS — services are HA core + supervisor-\n"
+                       "  managed add-ons, not user systemd units\n"
+                       "- Production instance for Michael's house (tony-test views,\n"
+                       "  solar/inverter/weather integrations)\n"
+                       "- Nabu Casa UI: `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs."
+                       "ui.nabu.casa/`\n"
+                       "- Consumed by: `ada-ha-michael` on idc01 (:8003),\n"
+                       "  `mha-state-push` / `michael-ha-mcp-tunnel` on tony-dell\n"
+                       "- Reachable via ssh from tony-omen only (collector on\n"
+                       "  tony-dell cannot reach it — expected)")},
 }
 LEAF_SLUGS = [f"services-{h}" for h in HOST_META]
 INDEX_SLUG = "services-by-host"
@@ -213,7 +225,7 @@ def page_for(host, d, now_07):
     if d.get("unreachable"):
         status = (f"unreachable from the collector at {now_07:%Y-%m-%d %H:%M} +07 — "
                   "page shows last known layout; verify manually.")
-        body = ""
+        body = meta.get("unreachable_body", "")
     else:
         up = uptime_str(d)
         load = load_str(d.get("load") or d.get("uptime_raw", ""))
