@@ -62,6 +62,20 @@ rules:
   - At the start of every session, read the active mode from the configuration.
   - If the mode is plan, build, or review, follow the behavior above.
   - If the mode is missing or unknown, default to normal and note it.
+  - >-
+    Verify-before-handoff: every change is verified with tools before
+    reporting — HTTP status/markers, config read-back, screenshots or DOM
+    measurement for UI (chrome-devtools/playlive MCP). Never end a turn
+    with "reload and tell me"; an unverified change means the turn isn't
+    done. See ssot.windsurf.common.md "Verify-Before-Handoff".
+  - >-
+    Diff before mutate: when a working sibling exists (same dashboard,
+    host, stack), dump both full configs and diff before guessing at
+    fields — the fix is usually one line the working one has.
+  - >-
+    When options run out, search GitHub (github MCP search_code /
+    search_issues, or web search) for precedent implementations before
+    declaring something unsolvable or asking the user to pick blindly.
 
 context:
   agent:

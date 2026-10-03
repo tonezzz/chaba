@@ -155,6 +155,30 @@ For all SSOT, documentation, and conceptual/background queries, MDDB must be the
 
 See `docs/kb/documentation-search.md` for the comprehensive search guide.
 
+## Verify-Before-Handoff (standard, enforced)
+
+Every change is verified with tools before it is reported — the user is
+never the test harness. A turn that ends with "reload and tell me" is
+unfinished.
+
+1. **HTTP** — curl status + grep for expected markers after a deploy.
+2. **Config** — websocket/API read-back after a mutation (did the save
+   actually apply?).
+3. **Visual** — chrome-devtools / playlive screenshot for UI pages.
+4. **Layout** — `evaluate_script` + `getBoundingClientRect` for "does it
+   fill / is it aligned" claims — measure, don't guess.
+5. **Diff before mutate** — dump a working sibling's FULL config and diff
+   before guessing at fields (e.g. `type: panel` was found in one diff of
+   `ada-pages` vs `board`, not by trial-and-error).
+
+## Search ladder when options run out
+
+1. MDDB `semantic_search` → `ssot-search` → targeted grep/read.
+2. **GitHub precedent** — github MCP (`search_code`, `search_issues`) or
+   web search for how others solved the same problem — BEFORE declaring
+   something unsolvable or asking the user to choose blindly.
+3. Ask the user only after steps 1–2 are exhausted.
+
 ## Service Failure and Fallback Procedures (MANDATORY)
 
 **CRITICAL: User Notification Before Fallback Actions**
