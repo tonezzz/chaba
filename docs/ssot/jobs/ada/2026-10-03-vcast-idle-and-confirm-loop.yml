@@ -80,8 +80,7 @@ fixes:
         After: all PASS.
       run: "cd stacks/web/input-bridge && npm i && node vcast-flap-check.mjs"
 
-  ada-pi (APPLIED + DEPLOYED 2026-10-03 ~22:10 ICT — commit 7882580 on
-  origin/main, live on all 4 ada services via deploy-ada.sh):
+  ada-pi (APPLIED + DEPLOYED 2026-10-03 ~22:10 ICT — commit 7882580 on origin/main, live on all 4 ada services via deploy-ada.sh):
     - path: docs/kb/patches/ada-pi-speaker-id-first-id-hysteresis.patch
       base: ada-pi HEAD 79721bcc (+ f394a90/d630572 owner-reclaim, compatible)
       what: >
@@ -104,36 +103,47 @@ fixes:
         # then commit + push main, deploy: ssh idc01 ~/.local/bin/deploy-ada.sh
 
 related_work:
-  - f394a90 + d630572 (ada-pi, 2026-10-03 ~11:40): owner-reclaim — a stale
-    non-owner label is displaced after OWNER_RECLAIM_AFTER=3 consecutive
-    owner-best sub-threshold chunks. Complementary: reclaim RECOVERS a bad
-    label; this patch PREVENTS it. Another session's work, already committed.
-  - cast-screens.json on idc01: screen 1 flipped person.tony -> "shared"
+  - >-
+    f394a90 + d630572 (ada-pi, 2026-10-03 ~11:40 ICT): owner-reclaim — a
+    stale non-owner label is displaced after OWNER_RECLAIM_AFTER=3
+    consecutive owner-best sub-threshold chunks. Complementary: reclaim
+    RECOVERS a bad label; this patch PREVENTS it. Another session's work,
+    already committed.
+  - >-
+    cast-screens.json on idc01: screen 1 flipped person.tony -> "shared"
     on 2026-09-30, resolving the owner-lock complaint in the handoff note.
-  - e4bd25e2 (chaba master): stale-close fix for /release path only.
-  - ENOSPC on idc01 observed during investigation — registry saves were
+  - >-
+    e4bd25e2 (chaba master): stale-close fix for /release path only.
+  - >-
+    ENOSPC on idc01 observed during investigation — registry saves were
     failing; unrelated to the bug but worth re-checking disk headroom.
 
 verification:
-  - flap-check (patched):   7/7 PASS  — wsA zombie state ignored, close
-                            keeps wsB connected, wsB writes still accepted
-  - flap-check (pre-patch): 2 FAIL    — state overwritten idle,
-                            connected=false after stale close
-  - speaker tests (scratch, patched module): 25/25 unittest OK
-  - live relay 2026-10-03: screen 1 connected, state=nav,
-    detail "0:/apps/camwall/?zone=vms-noble-a | p0:frame-ok"; /capture
-    shows camwall lease by ada — post-cast verification path already works
-    in the deployed build (screen_state/screen_detail/frame_warn surfaced
-    to Ada's tool results).
+  - >-
+    flap-check (patched): 7/7 PASS — wsA zombie state ignored, close
+    keeps wsB connected, wsB writes still accepted.
+  - >-
+    flap-check (pre-patch): 2 FAIL — state overwritten idle,
+    connected=false after stale close.
+  - >-
+    speaker tests (scratch tree, patched module): 25/25 unittest OK;
+    live ada-pi checkout: 25/25 OK under .venv.
+  - >-
+    live relay post-deploy 2026-10-03: /health ok, 7 screens; screen 1
+    re-nav'd to /apps/camwall/?zone=vms-noble-club -> state=nav
+    "0:... | p0:frame-ok"; capture lease re-registered by ada.
 
 followups:
-  - merge dispatch branch to chaba master (fix is live on idc01 and in
+  - >-
+    merge dispatch branch to chaba master (fix is live on idc01 and in
     chaba-tony-dell via merge d306afdb; master merge keeps future
-    deploys from regressing)
-  - clean KK's voiceprint on idc01 (auto-learned misidentified audio;
+    deploys from regressing).
+  - >-
+    clean KK's voiceprint on idc01 (auto-learned misidentified audio;
     speaker_profiles.json.bak-20260927 predates the pollution) and
-    consider re-enrolling Tony on the ha-4d0e0dee mic (scores 0.25-0.35)
-  - the designed confirmation flow is unchanged and verified correct:
+    consider re-enrolling Tony on the ha-4d0e0dee mic (scores 0.25-0.35).
+  - >-
+    the designed confirmation flow is unchanged and verified correct:
     owner/unrecognized turns need no confirm (explicit ask = consent),
     identified guests need verified affirmation, model self-asserted
     confirmed=true is stripped. The loop was 100% the speaker label.
