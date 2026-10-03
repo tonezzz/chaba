@@ -1364,6 +1364,10 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly known-answer recall probe
+    # Any OOM kill in the last 24h is a delta — the 2026-09-27 mddb crash
+    # loop (4 OOM kills in ~40min, resync-from-LSN0 amplification) must not
+    # pass silently. Raise only if a recurring OOM is accepted as known.
+    oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — exit code is the review signal, not a crash"

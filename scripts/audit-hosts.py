@@ -86,12 +86,19 @@ def linux_services(host: str, ssh: bool) -> dict:
     df, _err_df, _ = run("df -h / | tail -1")
     uptime, _err_uptime, _ = run("uptime")
     ps, _err_ps, _ = run("ps -eo pid,%mem,%cpu,comm --sort=-%mem | head -10")
+    oom_user, _err_oom_user, _ = run(
+        "journalctl --user --since '-24 hours ago' --no-pager -o cat 2>/dev/null | grep -ciF 'OOM killer'"
+    )
+    oom_sys, _err_oom_sys, _ = run(
+        "journalctl --since '-24 hours ago' --no-pager -o cat 2>/dev/null | grep -ciE 'oom-kill|OOM killer|Out of memory'"
+    )
 
     return {
         "active_user_services": _parse_kv(active),
         "active_system_services": _parse_kv(active_sys),
         "failed_user_services": _parse_list(failed_user),
         "failed_system_services": _parse_list(failed_sys),
+        "oom_kills_24h": {"user": _to_int(oom_user), "system": _to_int(oom_sys)},
         "memory": _parse_free(free),
         "disk": _parse_df(df),
         "load": _parse_uptime(uptime),
@@ -131,6 +138,13 @@ def _parse_kv(text: str) -> list[dict]:
 
 def _parse_list(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _to_int(text: str) -> int:
+    try:
+        return int(text.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        return 0
 
 
 def _parse_free(text: str) -> dict:
@@ -303,6 +317,16 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
     for fail in observed.get("failed_system_services", []):
         if fail not in known_failed:
             deltas.append(f"Unexpected failed system service: {fail}")
+
+    oom = observed.get("oom_kills_24h") or {}
+    oom_user_n, oom_sys_n = oom.get("user") or 0, oom.get("system") or 0
+    oom_total = oom_user_n + oom_sys_n
+    oom_tolerance = int(host_ssot.get("oom_kills_tolerance") or 0)
+    if oom_total > oom_tolerance:
+        deltas.append(
+            f"OOM kills in last 24h: {oom_total} "
+            f"(user={oom_user_n}, system={oom_sys_n}, tolerance={oom_tolerance})"
+        )
 
     return deltas
 
@@ -520,6 +544,7 @@ def save_to_ssot(host: str, observed: dict, ssot_path: Path):
         ],
         "failed_user_services": observed.get("failed_user_services", []),
         "failed_system_services": observed.get("failed_system_services", []),
+        "oom_kills_24h": observed.get("oom_kills_24h", {}),
         "memory": observed.get("memory", {}),
         "swap": observed.get("swap", {}),
         "disk": disk,
