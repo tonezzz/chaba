@@ -61,7 +61,7 @@ sections:
       \ image files instead of paste.\n\nDevin cleanup options:\n1. Free ~155G on /home so the backup+vacuum can complete.\n\
       2. Modify scripts/prune-devin-sessions.sh to skip the backup when disk is low.\n3. Move the DB to a larger disk, prune/vacuum,\
       \ then move back.\n"
-    status: monitoring
+    status: completed
     priority: low
     started: '2026-09-10'
     estimated_duration: 1 session
@@ -77,7 +77,8 @@ sections:
       completed_note: '2026-09-26: script now auto-skips backup when DB doesn''t fit with 20% headroom + keeps max 3 backups;
         /home back to 195G free; timer re-enabled on omen.'
     - label: Barrier image copy — pick workaround and implement
-      status: not_started
+      status: deferred
+      note: extracted to backlog card barrier-image-copy-workaround 2026-10-03
     - label: Investigate mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502
       status: completed
       completed_note: '2026-09-26: ha-live.service active on tony-dell.'
@@ -91,6 +92,8 @@ sections:
       lock_reason: Activated as active focus
     branch: master
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
+    completed_note: '2026-10-03: handoff capture complete — 3/4 subtasks done; remaining ''Barrier image copy workaround''
+      extracted to backlog card (barrier-image-copy-workaround) so the stale item stops gating the dispatcher.'
   - label: 'Fix CI: tonezzz/chaba / CMS audit'
     text: 'GitHub Actions run failed. workflow=CMS audit branch=master sha-title=''chore(ci): gh-runs-watch failure alerts''
       url=https://github.com/tonezzz/chaba/actions/runs/36797537465 Detected 2026-10-01T00:56:36Z by gh-runs-watch.'

@@ -2,139 +2,183 @@ title: Current Focus — Backlog & Quick Wins
 subtitle: Ready (safe), hand-off queue, and quick wins
 icon: target
 sections:
-  - title: Ready (Safe)
-    icon: safe
-    layout: list
-    items:
-      - label: Finish sunsynk battery 3/4 feature on tony-dell
-        text: In /home/tony/CascadeProjects/sunsynk-power-flow-card (or clone tonezzz/sunsynk-power-flow-card on tony-dell), finish adding battery 3 and 4 support. The /tmp/patch_batteries.py and /tmp/patch2.py scripts on the local macbook can be copied to tony-dell and adapted. Build with npm run build, resolve eslint errors, and commit/push only the source changes (do not commit raw dist unless it is the project convention). Report back the final commit hash.
-        branch: sunsynk
-        priority: medium
-        status: ready
-        triage_score: 0.55
-        tags:
-          - sunsynk
-          - tony-dell
-          - battery
-          - remote
-        safe_to_parallel: true
-        subtasks:
-          - label: Clone or locate sunsynk-power-flow-card on tony-dell
-          - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
-          - label: Build with npm run build
-          - label: Fix eslint errors and commit
-        queued_at: "2026-09-02"
-        source: user
-        owner: focus-dispatcher
-        session: dispatch-tony_dell
-        locked: true
-        subagent:
-          runnable: true
-          profile: subagent_general
-          parallel: true
-          requires_approval: false
-          can_change_host: true
-          host: tony_dell
-          notes: Dispatched to tony_dell via focus-dispatcher --process-ready
-        lock_reason: Dispatched to subagent on tony_dell
-      - label: Finish chaba ha/michael branch worktree sync on tony-dell
-        text: On tony-dell, merge the latest ha, michael-ha, and michael-live commits into chaba master, resolve any remaining SSOT/home-assistant conflicts, and clean up the /tmp and chaba-michael worktrees if safe. Do not push without approval.
-        branch: chaba
-        priority: medium
-        status: ready
-        triage_score: 0.55
-        tags:
-          - chaba
-          - tony-dell
-          - worktree
-          - branches
-        safe_to_parallel: true
-        subtasks:
-          - label: Merge ha live bridge updates into chaba master
-          - label: Merge michael-ha/michael-live updates
-          - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
-        queued_at: "2026-09-02"
-        source: user
-        owner: focus-dispatcher
-        session: dispatch-tony_dell
-        locked: true
-        subagent:
-          runnable: true
-          profile: subagent_general
-          parallel: true
-          requires_approval: false
-          can_change_host: true
-          host: tony_dell
-          notes: Dispatched to tony_dell via focus-dispatcher --process-ready
-        lock_reason: Dispatched to subagent on tony_dell
-      - label: Fix overnight focus pipeline (tony-dell + tony-omen dispatchers)
-        text: "overnight-assessment exits 1 (~3min, 1.8G peak) and focus-dispatcher-overnight 'completed with errors' on tony-dell; focus-dispatcher x2 + chaba-audit-watchdog exit 1 on tony-omen. This pipeline triages the focus inbox — its failure explains the 149 unprocessed files. Root cause in the source finding."
-        branch: chaba
-        priority: high
-        status: ready
-        triage_score: 0.7
-        tags: [focus, overnight, dispatcher, tony-dell, tony-omen]
-        safe_to_parallel: true
-        subtasks:
-          - label: Read journals, fix the failing step, verify next timer run
-        queued_at: "2026-10-03"
-        source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
-      - label: Failed-units sweep — per-host fixes
-        text: "Nine triaged subtasks in the source finding: mn01-canary nightly exit 1; idc01 scenario-bench timer collisions + ada-bench-casting 203/EXEC; tony-dell cast SSOT drift (cast-browser, cast-desktop@1 gone); cam-wall-pull SIGTERM on both lanes; ada-flood-news exit 2; mddb-memory-standard breach-vs-known_failed; desktop-noise suppression in audits."
-        branch: chaba
-        priority: medium
-        status: ready
-        triage_score: 0.55
-        tags: [audit, failed-units, sweep]
-        safe_to_parallel: true
-        subtasks:
-          - label: Work through the 9 triaged subtasks in the source finding
-        queued_at: "2026-10-03"
-        source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
-  - title: Hand-off Queue
-    icon: handoff
-    layout: list
-    items:
-      - label: tony-omen NVIDIA reboot approval
-        text: Userspace/kernel mismatch persists — needs a reboot at an approved time.
-        status: waiting_user
-        queued_at: "2026-10-03"
-        source: user
-      - label: tony-dell Xiaomi Chrome re-login
-        text: xiaomi-token-refresh needs a manual Chrome re-login on tony-dell.
-        status: waiting_user
-        queued_at: "2026-10-03"
-        source: user
-      - label: Commit scripts/jev/ training work
-        text: "dispatch-wt-20261002-132426 holds uncommitted scripts/jev/ output (gemma-head train/serve, minilm clf, corpus merge/eval, colab notebook, train-all.jsonl). Worktree is currently live — an active session has cwd there (files touched 2026-10-03 18:57). Commit/merge once that session finishes."
-        status: waiting_session
-        queued_at: "2026-10-03"
-        source: user
-  - title: Quick Wins
-    icon: quick
-    layout: list
-    items:
-      - label: Remove 5 merged dispatch worktrees
-        text: "dispatch-wt-20260928-084138 (VCast), -171200 (vcast fix), -204718 (google-cal), -20260929-013848 (transcript analysis), -20261002-070923 (traffic-cam check) — all merged into origin; safe to delete."
-        branch: chaba
-        priority: low
-        status: ready
-        triage_score: 0.4
-        tags: [worktree, cleanup]
-        safe_to_parallel: true
-        subtasks:
-          - label: git worktree remove + branch -d for each
-        queued_at: "2026-10-03"
-        source: user
-      - label: Focus inbox triage round 2
-        text: "194 files re-accumulated in docs/ada-memory/inbox/general/ after renderer runs; classify + archive stale entries again."
-        branch: chaba
-        priority: medium
-        status: ready
-        triage_score: 0.55
-        tags: [focus, inbox, triage]
-        safe_to_parallel: true
-        subtasks:
-          - label: Classify the 194 inbox files, supersede stale bank docs, archive processed
-        queued_at: "2026-10-03"
-        source: user
+- title: Ready (Safe)
+  icon: safe
+  layout: list
+  items:
+  - label: Finish sunsynk battery 3/4 feature on tony-dell
+    text: In /home/tony/CascadeProjects/sunsynk-power-flow-card (or clone tonezzz/sunsynk-power-flow-card on tony-dell), finish
+      adding battery 3 and 4 support. The /tmp/patch_batteries.py and /tmp/patch2.py scripts on the local macbook can be copied
+      to tony-dell and adapted. Build with npm run build, resolve eslint errors, and commit/push only the source changes (do
+      not commit raw dist unless it is the project convention). Report back the final commit hash.
+    branch: sunsynk
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - sunsynk
+    - tony-dell
+    - battery
+    - remote
+    safe_to_parallel: true
+    subtasks:
+    - label: Clone or locate sunsynk-power-flow-card on tony-dell
+    - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
+    - label: Build with npm run build
+    - label: Fix eslint errors and commit
+    queued_at: '2026-09-02'
+    source: user
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+    lock_reason: Dispatched to subagent on tony_dell
+  - label: Finish chaba ha/michael branch worktree sync on tony-dell
+    text: On tony-dell, merge the latest ha, michael-ha, and michael-live commits into chaba master, resolve any remaining
+      SSOT/home-assistant conflicts, and clean up the /tmp and chaba-michael worktrees if safe. Do not push without approval.
+    branch: chaba
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - chaba
+    - tony-dell
+    - worktree
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Merge ha live bridge updates into chaba master
+    - label: Merge michael-ha/michael-live updates
+    - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
+    queued_at: '2026-09-02'
+    source: user
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+    lock_reason: Dispatched to subagent on tony_dell
+  - label: Fix overnight focus pipeline (tony-dell + tony-omen dispatchers)
+    text: overnight-assessment exits 1 (~3min, 1.8G peak) and focus-dispatcher-overnight 'completed with errors' on tony-dell;
+      focus-dispatcher x2 + chaba-audit-watchdog exit 1 on tony-omen. This pipeline triages the focus inbox — its failure
+      explains the 149 unprocessed files. Root cause in the source finding.
+    branch: chaba
+    priority: high
+    status: ready
+    triage_score: 0.7
+    tags:
+    - focus
+    - overnight
+    - dispatcher
+    - tony-dell
+    - tony-omen
+    safe_to_parallel: true
+    subtasks:
+    - label: Read journals, fix the failing step, verify next timer run
+    queued_at: '2026-10-03'
+    source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
+  - label: Failed-units sweep — per-host fixes
+    text: 'Nine triaged subtasks in the source finding: mn01-canary nightly exit 1; idc01 scenario-bench timer collisions
+      + ada-bench-casting 203/EXEC; tony-dell cast SSOT drift (cast-browser, cast-desktop@1 gone); cam-wall-pull SIGTERM on
+      both lanes; ada-flood-news exit 2; mddb-memory-standard breach-vs-known_failed; desktop-noise suppression in audits.'
+    branch: chaba
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - audit
+    - failed-units
+    - sweep
+    safe_to_parallel: true
+    subtasks:
+    - label: Work through the 9 triaged subtasks in the source finding
+    queued_at: '2026-10-03'
+    source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
+  - label: Barrier image copy workaround (Barrier 2.4.0 clipboard limitation)
+    text: 'Extracted from the 2026-09-10 handoff focus. Barrier 2.4.0 on Linux cannot paste images tony-omen -> tony-dell.
+      Options: (1) replace Barrier with input-leap/patched build, (2) shared-clipboard folder + hotkey script syncing images
+      via ssh/tailscale, (3) enable Barrier drag-and-drop and drop image files.'
+    branch: master
+    priority: low
+    status: ready
+    triage_score: 0.35
+    tags:
+    - barrier
+    - clipboard
+    - tony-dell
+    - tony-omen
+    safe_to_parallel: true
+    subtasks:
+    - label: Pick a workaround approach
+    - label: Implement + verify image paste between hosts
+    queued_at: '2026-10-03'
+    source: docs/ssot/ssot.focus.current.active.yml (extracted from 2026-09-10 handoff focus)
+- title: Hand-off Queue
+  icon: handoff
+  layout: list
+  items:
+  - label: tony-omen NVIDIA reboot approval
+    text: Userspace/kernel mismatch persists — needs a reboot at an approved time.
+    status: waiting_user
+    queued_at: '2026-10-03'
+    source: user
+  - label: tony-dell Xiaomi Chrome re-login
+    text: xiaomi-token-refresh needs a manual Chrome re-login on tony-dell.
+    status: waiting_user
+    queued_at: '2026-10-03'
+    source: user
+  - label: Commit scripts/jev/ training work
+    text: dispatch-wt-20261002-132426 holds uncommitted scripts/jev/ output (gemma-head train/serve, minilm clf, corpus merge/eval,
+      colab notebook, train-all.jsonl). Worktree is currently live — an active session has cwd there (files touched 2026-10-03
+      18:57). Commit/merge once that session finishes.
+    status: waiting_session
+    queued_at: '2026-10-03'
+    source: user
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items:
+  - label: Remove 5 merged dispatch worktrees
+    text: dispatch-wt-20260928-084138 (VCast), -171200 (vcast fix), -204718 (google-cal), -20260929-013848 (transcript analysis),
+      -20261002-070923 (traffic-cam check) — all merged into origin; safe to delete.
+    branch: chaba
+    priority: low
+    status: ready
+    triage_score: 0.4
+    tags:
+    - worktree
+    - cleanup
+    safe_to_parallel: true
+    subtasks:
+    - label: git worktree remove + branch -d for each
+    queued_at: '2026-10-03'
+    source: user
+  - label: Focus inbox triage round 2
+    text: 194 files re-accumulated in docs/ada-memory/inbox/general/ after renderer runs; classify + archive stale entries
+      again.
+    branch: chaba
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - focus
+    - inbox
+    - triage
+    safe_to_parallel: true
+    subtasks:
+    - label: Classify the 194 inbox files, supersede stale bank docs, archive processed
+    queued_at: '2026-10-03'
+    source: user
