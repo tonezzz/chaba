@@ -1,0 +1,141 @@
+# SSOT Job: vcast idle-state race + camera-capture confirm loop
+# Dispatch task dispatch-wt-20260928-171200 ("Investigate and fix the VCAST
+# issue on tony-dell where the user's stream is shown as idle despite a
+# successful cast command. Also fix the underlying logic issue causing
+# repeated confirmation requests for starting camera/cctv capture.").
+# Origin: Ada voice report 2026-09-28 ~17:10 ICT (transcript e21baa33dd —
+# "หน้าจอ idle ทั้งที่สั่ง cast แล้ว" + "ถามยืนยันซ้ำซากตอนจะดึงภาพกล้อง"),
+# plus devin-handoff/devin-handoff-vcast-bugs (screen-1 owner-lock, speaker
+# misidentification).
+
+title: VCAST idle-state race + camera-capture confirmation loop
+subtitle: stale-ws registry poisoning fixed in input-bridge; speaker first-hit bypass patched for ada-pi
+icon: monitor
+
+status: done-pending-apply   # chaba side committed on this branch; ada-pi patch + deploys NOT applied
+project: chaba + ada-pi
+owner: devin-dispatch
+started: "2026-09-28"
+completed: "2026-10-03"
+
+context: |
+  Two reported symptoms, three root causes, two repos.
+
+  1) "Screen shown as idle despite a successful cast" (screen 1 = iPad).
+     registerDisplay() replaced live[screen] with the new socket but left
+     the previous socket fully bound: ws.screen still set, still in room
+     vcast-N, and its queued `state` messages kept writing the registry.
+     Two observable failure modes on every Safari/iPad ws flap:
+       a) the zombie socket's late `state:idle` (its showIdle() queued
+          before dying) overwrote the NEW display's real state report —
+          /displays and vcast_list show `idle` while the screen renders
+          the cast. The reverse direction (stale `nav` overwriting a real
+          `idle`) was also seen in transcript 689daaa11c.
+       b) when the zombie finally closed, releaseScreenByWs() did an
+          unconditional live.delete(ws.screen), evicting the LIVE socket —
+          /displays reported connected:false for a screen that was up.
+     Commit e4bd25e2 fixed this class only for the /release (unpair) path;
+     the re-register path stayed open.
+
+  2) "Repeated confirmation requests for camera/cctv capture."
+     _check_capture_confirmed() only demands confirmed=true when
+     _is_secondary_turn() — a positively-identified NON-owner voice.
+     Unrecognized speakers keep owner rights by design, so the loop
+     requires a live wrong label. Transcript e564b39502 (2026-10-03
+     11:04 ICT) shows it exactly: the very first 2 s audio chunk of the
+     session identified as "KK" at 84%, which passed FIRST_ID_MIN_CONF
+     (0.70) and bypassed the SWITCH_AFTER hysteresis — stamping Tony's
+     own session as guest person.kk and auto-learning the junk audio
+     into KK's voiceprint (own=0.85, self-reinforcing pollution). Every
+     camera call then hit "camera capture by secondary speaker without
+     confirmed=true"; retries with self-asserted confirmed=true were
+     correctly stripped; each new camera request re-asked. User:
+     "ออก KK อีกแล้ว" ("it said KK AGAIN" — recurring).
+
+  3) KK's enrolled voiceprint on idc01 now contains auto-learned prints
+     of misidentified audio — future false hits are more likely until the
+     profile is cleaned. Tony's own prints also score only 0.25-0.35 on
+     the ha-4d0e0dee mic, so he is unrecognized most of the time (which
+     fails open to owner rights — safe, but identity-blind).
+
+fixes:
+
+  chaba (this branch, dispatch/20260928-171200):
+    - path: stacks/web/input-bridge/server.mjs
+      what: >
+        registerDisplay() now detaches the superseded live socket for the
+        same screen (ws.screen=null + leaveRoom + terminate) BEFORE
+        live.set() — its queued state reports can no longer write the
+        registry and its later close cannot evict the new registration.
+        releaseScreenByWs() only live.delete()s when the closing socket
+        is still the live one. `state` messages are only accepted from
+        the socket that currently owns live[screen].
+    - path: stacks/web/input-bridge/vcast-flap-check.mjs
+      what: >
+        Standalone verification: spawns server.mjs on loopback with a
+        stubbed ADA_AUTH_URL (any key -> screen-9), drives wsA/wsB through
+        a flap, asserts 7 invariants. Before the fix it FAILS on
+        "stale wsA state write ignored" (registry=idle over real image)
+        and "stale wsA close keeps wsB connected" (connected=false).
+        After: all PASS.
+      run: "cd stacks/web/input-bridge && npm i && node vcast-flap-check.mjs"
+
+  ada-pi (NOT APPLIED — patch artifact; edit point is ~/CascadeProjects/ada-pi,
+  deploy via ~/.local/bin/deploy-ada.sh on idc01):
+    - path: docs/kb/patches/ada-pi-speaker-id-first-id-hysteresis.patch
+      base: ada-pi HEAD 79721bcc (+ f394a90/d630572 owner-reclaim, compatible)
+      what: >
+        speaker_id.py: removes the FIRST_ID_MIN_CONF confidence bypass —
+        a NEW speaker label (first identification or switch) now always
+        needs consecutive wins (FIRST_AFTER=2 first label, SWITCH_AFTER=2
+        switch; env-tunable). Confidence is not evidence of multiplicity:
+        one 2 s chunk can score high on a polluted profile, exactly what
+        stamped session e564b39502 as KK. Also drops the now-dead
+        ADA_SPEAKER_FIRST_ID_CONF env var.
+        tests/test_speaker_id.py: existing hysteresis tests get a second
+        establishing chunk; test_first_identification_immediate becomes
+        test_first_identification_needs_streak; adds two regression tests
+        (confident single first hit must not label; hit-then-miss must
+        not label). Verified in a scratch tree: 25/25 unittest pass.
+      apply: |
+        cd ~/CascadeProjects/ada-pi
+        git apply <this-repo>/docs/kb/patches/ada-pi-speaker-id-first-id-hysteresis.patch
+        python3 -m unittest tests.test_speaker_id
+        # then commit + push main, deploy: ssh idc01 ~/.local/bin/deploy-ada.sh
+
+related_work:
+  - f394a90 + d630572 (ada-pi, 2026-10-03 ~11:40): owner-reclaim — a stale
+    non-owner label is displaced after OWNER_RECLAIM_AFTER=3 consecutive
+    owner-best sub-threshold chunks. Complementary: reclaim RECOVERS a bad
+    label; this patch PREVENTS it. Another session's work, already committed.
+  - cast-screens.json on idc01: screen 1 flipped person.tony -> "shared"
+    on 2026-09-30, resolving the owner-lock complaint in the handoff note.
+  - e4bd25e2 (chaba master): stale-close fix for /release path only.
+  - ENOSPC on idc01 observed during investigation — registry saves were
+    failing; unrelated to the bug but worth re-checking disk headroom.
+
+verification:
+  - flap-check (patched):   7/7 PASS  — wsA zombie state ignored, close
+                            keeps wsB connected, wsB writes still accepted
+  - flap-check (pre-patch): 2 FAIL    — state overwritten idle,
+                            connected=false after stale close
+  - speaker tests (scratch, patched module): 25/25 unittest OK
+  - live relay 2026-10-03: screen 1 connected, state=nav,
+    detail "0:/apps/camwall/?zone=vms-noble-a | p0:frame-ok"; /capture
+    shows camwall lease by ada — post-cast verification path already works
+    in the deployed build (screen_state/screen_detail/frame_warn surfaced
+    to Ada's tool results).
+
+followups:
+  - apply the ada-pi patch + deploy (needs explicit approval — dispatch
+    policy does not allow push/deploy from this session)
+  - deploy this branch's server.mjs to idc01 relay (and carry the same
+    detach/guard change into chaba-tony-dell's uncommitted copy if it
+    still diverges — the delta there is only thumb_frac + wav sniff)
+  - clean KK's voiceprint on idc01 (auto-learned misidentified audio;
+    speaker_profiles.json.bak-20260927 predates the pollution) and
+    consider re-enrolling Tony on the ha-4d0e0dee mic (scores 0.25-0.35)
+  - the designed confirmation flow is unchanged and verified correct:
+    owner/unrecognized turns need no confirm (explicit ask = consent),
+    identified guests need verified affirmation, model self-asserted
+    confirmed=true is stripped. The loop was 100% the speaker label.
