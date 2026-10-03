@@ -86,6 +86,35 @@ print(f"OK - {len(services)} services checked, {len(missing)} missing, {skipped}
 PY
 ' -- "$ROOT" "$ROOT/docs/ssot/infrastructure/ssot.services.yml" || true
 
+# 3b. Jobs manifest must validate and render identically to committed units
+run_check "jobs manifest render" bash -c "
+  python3 '$ROOT/scripts/render-jobs.py' --check || exit 1
+  if [ -d '$ROOT/systemd/generated' ]; then
+    TMPGEN=\$(mktemp -d)
+    python3 - \"\$TMPGEN\" '$ROOT' <<PY2 || exit 1
+from pathlib import Path
+import importlib.util, sys
+out = Path(sys.argv[1]); root = Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location('rj', root / 'scripts/render-jobs.py')
+rj = importlib.util.module_from_spec(spec); spec.loader.exec_module(rj)
+man = rj.load_manifest()
+for host in man['config']['repo']:
+    for name, body in rj.render_host(man, host).items():
+        d = out / host; d.mkdir(parents=True, exist_ok=True)
+        (d / name).write_text(body)
+gen = root / 'systemd/generated'
+have = sorted(str(p.relative_to(gen)) for p in gen.rglob('*') if p.is_file())
+want = sorted(str(p.relative_to(out)) for p in out.rglob('*') if p.is_file())
+if have != want:
+    print('generated/ file-set drift:'); print(' only committed:', sorted(set(have)-set(want))); print(' only rendered:', sorted(set(want)-set(have))); sys.exit(1)
+for rel in have:
+    if (gen/rel).read_text() != (out/rel).read_text():
+        print(f'generated/{rel} content drift — re-run render-jobs.py'); sys.exit(1)
+print(f'OK - {len(have)} generated units in sync')
+PY2
+  fi
+" || true
+
 # 4. No tracked .env / secret-looking files (allow .env.example/.sample)
 run_check "no tracked dotenv files" bash -c "
   DOTENV=$(git -C "$ROOT" ls-files | grep -E '\\.env$|\\.env\\.[^.]+$' | grep -vE '\\.env\\.(example|sample)$' || true)

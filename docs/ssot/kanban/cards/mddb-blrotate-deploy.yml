@@ -1,0 +1,14 @@
+id: mddb-blrotate-deploy
+title: Deploy mddb 2.15.4-blrotate on idc01 (binlog retention)
+column: review
+note: "Janitor built + staged: image localhost/mddb:2.15.4-blrotate loaded on
+  idc01. Needs leader restart (~2.5min open-rescan downtime, Ada memory errors
+  meanwhile). Runbook: docs/kb/mddb-backup-binlog-2026-10-03.md."
+help: "The binlog had MaxSize/MaxAge config that nothing enforced — grew 9.2G,
+  ~1G/day. The janitor rotates past maxSize keeping from min follower
+  ConfirmedLSN (age-cutoff when no followers). Smoke-tested; mddb-fork
+  598c57d on feat/vector-algorithms.
+  Deploy: pin Image= in ~/.config/containers/systemd/mddb.container,
+  daemon-reload, systemctl --user restart mddb. Rollback = point back at
+  localhost/mddb:2.15.4-allowlist."
+updated: '2026-10-03'

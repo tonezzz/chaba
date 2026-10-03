@@ -1,0 +1,17 @@
+id: idc-vps-game
+title: "Provision IDC VPS Game LG2SS+ (150GB) \u2014 edge+backups+monitor"
+column: doing
+note: 'idc02 edge LIVE: caddy-edge quadlet on public 80/443 (ufw opened, sysctl unpriv
+  ports=80). tony-ha + michael-ha proxied via CF -> 200. CF Access policy = remaining
+  dashboard step (public now relies on HA auth alone).'
+help: "Goal: LG2SS+ 150GB VPS \u2192 second public edge + offsite backup + external\
+  \ monitor.\n1. Confirm CPU/RAM/disk in the provider panel (150GB is disk \u2014\
+  \ get vCPU/RAM too).\n2. Base hardening: apt update/upgrade, ufw allow 22/80/443,\
+  \ ssh keys only.\n3. Join tailnet: `curl -fsSL https://tailscale.com/install.sh\
+  \ | sh && sudo tailscale up`\n   \u2192 host appears as a tailnet node (name it\
+  \ idc03 or similar).\n4. Roles (in this order):\n   edge    \u2014 Caddy on 80/443\
+  \ proxying public domains \u2192 tailnet services\n   backups \u2014 rsync/restic\
+  \ target receiving idc01 + tony-dell backups\n   monitor \u2014 external uptime\
+  \ checks hitting idc01 + tony-dell health endpoints\n5. Optional: third camwall\
+  \ pull edge.\nPrereq: cloudflare-setup (DNS records must point at this host first)."
+updated: '2026-10-03'

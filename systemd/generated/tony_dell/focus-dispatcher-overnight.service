@@ -1,0 +1,9 @@
+[Unit]
+Description=Chaba Overnight Focus Review (job:focus-dispatcher-overnight, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1200
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/overnight-focus-review.py
+Environment="FOCUS_DISPATCHER_COMMIT=1"
+Environment="FOCUS_DISPATCHER_PUSH=1"

@@ -1,0 +1,69 @@
+title: GEV clean-view UI layer visibility fix
+subtitle: Hide leftover chrome in clean view and keep the Clean UI toggle reachable
+icon: target
+
+planning:
+  goal: Fix the GEV app's "clean view" (V / Clean UI button) so it actually hides
+    all interface elements that block the map, and so users can reach the toggle
+    without first expanding the collapsed DISPLAY panel.
+  scope: "In scope: gods-eye-view source (style.css, cockpitMarkup.test.mjs) and
+    the staged bundle in stacks/web/public/apps/gev/. Out of scope: live deploy —
+    staging the dist into this worktree is not a deploy; Caddy serves from the
+    main checkout's /srv/public path, not this worktree."
+  success_criteria:
+    - body.ui-clean-view hides #intel-hud, #orbit-indicator, #view-switcher.
+    - #clean-view-toggle stays visible while #pp-toggles is collapsed (default state).
+    - Unit tests pass; staged bundle carries the fix.
+  resources:
+    - /home/tony/gods-eye-view/style.css
+    - /home/tony/gods-eye-view/src/cockpitMarkup.test.mjs
+    - stacks/web/public/apps/gev/
+  owner: devin-dispatch
+
+processing:
+  status: completed
+  started_at: "2026-09-30T00:00:00+07:00"
+  completed_at: "2026-09-30T00:00:00+07:00"
+  findings:
+    - "Clean view hide list (style.css body.ui-clean-view) was written before
+      #intel-hud, #orbit-indicator and #view-switcher existed — all three stayed
+      painted over the map in clean view. DATA_SOURCES.md confirms intent:
+      'only the GEV panels/HUD fade'."
+    - "#pp-toggles ships collapsed (index.html), and
+      '#pp-toggles.collapsed #clean-view-toggle { display:none }' hid the only
+      on-screen entry point; only the undocumented V hotkey could engage it."
+    - "All other overlays resolve into hidden containers: voice pill lives in
+      #command-dock; military-awareness/space-mission/radio panels live inside
+      #global-context-panel; world-overlay-accessibility is sr-only; #toast is
+      transient by design; #cesium-credits intentionally stays visible (ToS)."
+  changes:
+    - "gods-eye-view/style.css: added #intel-hud, #orbit-indicator, #view-switcher
+      to the body.ui-clean-view hide rule."
+    - "gods-eye-view/style.css: removed #clean-view-toggle from the collapsed
+      display:none group; added a collapsed-width rule (132px, centered)."
+    - "gods-eye-view/src/cockpitMarkup.test.mjs: regression asserts — toggle must
+      not collapse away; the three overlays must be in the hide list."
+    - "Rebuilt (vite) + post-build patches (/api -> /apps/gev/api, /models ->
+      /apps/gev/models, msaaSamples iPad ternary); staged into this worktree.
+      Stale bundles index-BWYV9sYm.js, index-CeIlPFGN.js, index-BeKkcf38.css
+      removed by rsync --delete."
+  notes:
+    - "gods-eye-view working tree was already dirty before this session
+      (index.html remote-control gevRemoteEarly captureFrame + src/locations.js).
+      Left uncommitted; the staged index.html now ships that newer variant."
+    - "NOT deployed. Live site still serves the previous bundle until the worktree
+      is merged/deployed."
+
+verification:
+  - "node --test src/cockpitMarkup.test.mjs (+firstRunExperience, creditAttribution,
+    sharelink.celestial): 115/115 pass in /home/tony/gods-eye-view."
+  - "staged assets/index-BrGlDacs.css contains body.ui-clean-view #intel-hud,
+    #orbit-indicator, #view-switcher and the collapsed #clean-view-toggle width rule."
+  - "Manual: /apps/gev/ → DISPLAY panel collapsed shows 'Clean UI' button; click or
+    press V → HUD + all panels gone, only cesium credits + EXIT CLEAN VIEW remain."
+
+config:
+  version: 1
+  created: "2026-09-30"
+  maintainer: devin
+  status: completed

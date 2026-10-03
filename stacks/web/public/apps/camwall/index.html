@@ -107,11 +107,11 @@
 
   // optimal-cols layout: pick the column count that maximizes image area
   // for n cells on this viewport — cells letterbox (object-fit:contain)
-  // so we just need cell aspect ≈ thumb aspect (480x248) while filling
-  // the screen. ?cols=N pins it for a specific screen. ?aspect=W/H
-  // overrides the thumb aspect.
+  // so we just need cell aspect ≈ thumb aspect (~424x222, quarter of the
+  // 1698x886 VMS snap) while filling the screen. ?cols=N pins it for a
+  // specific screen. ?aspect=W/H overrides the thumb aspect.
   const PIN_COLS = +(qs.get("cols") || 0);
-  const THUMB_A = +(qs.get("aspect") || 0) || 480 / 248;
+  const THUMB_A = +(qs.get("aspect") || 0) || 424 / 222;
   function layout() {
     const n = cells.size || 1;
     const W = grid.clientWidth - 4, H = grid.clientHeight - 4;
@@ -140,6 +140,15 @@
   zoom.querySelector(".x").addEventListener("click", closeZoom);
   zoom.addEventListener("click", (e) => { if (e.target !== zoomImg) closeZoom(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeZoom(); });
+
+  // a cell click opens the cam's CMS dossier page (one page per physical
+  // camera — cam-<dev>-<key> for DVR channels, cam-<zone>-<key> for the
+  // rest); the wall itself keeps running in its own tab.
+  const CMS = "https://idc01.taila0626a.ts.net/cms";
+  function openCamPage(cam) {
+    const slug = cam.dev ? `cam-${cam.dev}-${cam.key}` : `cam-${zone}-${cam.key}`;
+    window.open(`${CMS}/#/${slug}`, "_blank");
+  }
 
   function openZoom(c, cam) {
     if (!c.url) return;
@@ -174,7 +183,7 @@
         c = { div, img: div.querySelector("img"), age: div.querySelector(".age"),
               err: div.querySelector(".err"), ts: 0, url: "", det: null,
               key: cam.key, label: cam.label };
-        div.addEventListener("click", () => openZoom(c, cam));
+        div.addEventListener("click", () => openCamPage(cam));
         cells.set(cam.key, c);
       }
       try {

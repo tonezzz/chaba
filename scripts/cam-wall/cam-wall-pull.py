@@ -48,17 +48,10 @@ DATA = Path(os.environ.get(
 # burn ~35s — when every vms cam in a zone failed last cycle, the warm
 # wait is quadrupled.
 ZONES: dict[str, dict] = {
-    "zone-a": {
-        "interval": 75,  # ~5 serial vms pulls ~= 60s + margin
-        "warm": 900,
-        "cams": [
-            ("Front Rd Left", "vms", "Front Rd. Left"),
-            ("Front Rd Right", "vms", "Front Rd. Right"),
-            ("Road In", "vms", "1. Road In"),
-            ("Walkway", "vms", "3. Walkway In"),
-            ("Road Corner", "vms", "5. Road Corner"),
-        ],
-    },
+    # zone-a retired 2026-10-02 — it was 2 noble-club channels (Front Rd
+    # Left/Right) + 3 noble-a channels (Road In, Walkway, Road Corner);
+    # every cam lives on the per-DVR walls below and each duplicate pull
+    # burned ~80s of the shared serial VMS budget.
     # noble-park retired 2026-10-02 — it was 4 noble-club channels +
     # noble-a Guard View, i.e. a subset of the two per-DVR walls below;
     # every pull spent ~80s of the shared VMS budget re-snapping the same
@@ -291,10 +284,15 @@ def _ffmpeg_frame(src: str, timeout: float = 40, hls: bool = False) -> bytes:
 
 def pull_cam(kind: str, key: str, alts: tuple = ()) -> bytes:
     if kind == "vms":
-        url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}&zoom=0"
         # zoom=0 takes the grid-res pane — wall thumbs don't need the
         # zoomed single-pane re-attach (12-36s/cam) that starved 8-cam
         # zones under VMS_BUDGET; ~15s/cam fits the whole zone in one pass.
+        # native=1 takes the VMS's own OSD snapshot of the active pane —
+        # the channel at native decode res (Mini Mart: 2560x1440 vs the old
+        # 847x452 screen crop) for the same attach cost, ~+2s for the
+        # icon->bmp->Save round trip.
+        url = (f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
+               "&zoom=0&native=1")
         _, data = http_get(url, 60)
         return data
     if kind == "hls":
@@ -428,6 +426,8 @@ def apply_effects(data: bytes, effects: list[str]) -> tuple[bytes, list[dict]]:
     for eff in effects:
         if eff.startswith("thumb_w:"):
             tw = int(eff.split(":")[1])
+        elif eff.startswith("thumb_frac:"):
+            tw = max(1, img.width // int(eff.split(":")[1]))
         elif eff.startswith("jpeg_q:"):
             q = int(eff.split(":")[1])
         elif eff.startswith("yolo"):
@@ -645,6 +645,8 @@ def merge_settings(cfg: dict, settings: dict | None) -> dict:
     eff["effects"] = list(settings.get("effects") or [])
     if isinstance(settings.get("thumb_w"), (int, float)):
         eff["effects"].append(f"thumb_w:{int(settings['thumb_w'])}")
+    if isinstance(settings.get("thumb_frac"), (int, float)):
+        eff["effects"].append(f"thumb_frac:{int(settings['thumb_frac'])}")
     if isinstance(settings.get("jpeg_q"), (int, float)):
         eff["effects"].append(f"jpeg_q:{int(settings['jpeg_q'])}")
     return eff
@@ -657,7 +659,7 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     fast = [c for c in cfg["cams"] if c[1] != "vms"]
 
     effects = cfg.get("effects") or []
-    if not any(e.startswith("thumb_w:") for e in effects):
+    if not any(e.startswith("thumb_") for e in effects):
         effects = [*effects, f"thumb_w:{THUMB_W}"]
 
     def one(cam: tuple) -> dict:

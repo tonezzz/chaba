@@ -337,6 +337,7 @@ const server = http.createServer(async (req, res) => {
     // {interval, jpeg_q, thumb_w, cams_skip[], cams_extra[], effects[]}
     if (body.settings && typeof body.settings === "object") {
       const KNOWN = new Set(["interval", "jpeg_q", "thumb_w",
+                             "thumb_frac",
                              "cams_skip", "cams_extra", "effects"]);
       const clean = {};
       for (const [k, v] of Object.entries(body.settings)) {
@@ -440,9 +441,14 @@ const server = http.createServer(async (req, res) => {
         diag: f.diag || null,
       });
     }
-    // sniff real type — iOS Safari can refuse a PNG body under image/jpeg
-    const ct = f.buf.length > 4 && f.buf[0] === 0x89 && f.buf[1] === 0x50
-        ? "image/png" : "image/jpeg";
+    // sniff real type — iOS Safari can refuse a PNG body under image/jpeg;
+    // RIFF/WAVE = backend-TTS narration audio for the speak fallback
+    const b = f.buf;
+    const ct =
+        b.length > 4 && b[0] === 0x89 && b[1] === 0x50 ? "image/png"
+      : b.length > 11 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46
+        && b[8] === 0x57 && b[9] === 0x41 && b[10] === 0x56 ? "audio/wav"
+      : "image/jpeg";
     res.writeHead(200, { "content-type": ct, "cache-control": "no-store" });
     return res.end(f.buf);
   }

@@ -14,7 +14,9 @@
  */
 import pool from './db.mjs';
 
-const MDDB = (process.env.MDDB_URL || 'http://100.74.146.0:11023').replace(/\/+$/, '');
+// yomi-digest is an ops collection — goes to mddb-ops when configured
+const MDDB = (process.env.MDDB_OPS_URL || process.env.MDDB_URL
+              || 'http://100.74.146.0:11023').replace(/\/+$/, '');
 const COLLECTION = process.env.DIGEST_COLLECTION || 'yomi-digest';
 const DAYS = parseInt(process.env.DIGEST_DAYS || '2', 10);
 

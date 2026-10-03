@@ -1,0 +1,210 @@
+title: Jobs Registry
+subtitle: Single manifest for scheduled work — renderer emits systemd units per host; dispatcher absorbs cheap interval jobs
+icon: clock
+version: 1
+
+config:
+  renderer: scripts/render-jobs.py
+  dispatcher: scripts/job-dispatcher.py
+  dispatcher_tick: 1min
+  dispatcher_min_interval: 60s
+  state_dir: "%h/var/chaba/jobs"
+  results: "%h/var/chaba/reports/timeline.jsonl"
+  generated_dir: systemd/generated
+  # Per-host repo checkout — the base a job's relative exec/cwd resolves
+  # against. Reflects today's split: tony-dell timers run from the `chaba`
+  # clone, not the chaba-tony-dell web checkout.
+  repo:
+    tony_dell: "%h/CascadeProjects/chaba"
+    tony_omen: "%h/CascadeProjects/chaba"
+    idc01: "%h/CascadeProjects/chaba-vault"
+    idc02: "%h/CascadeProjects/chaba"
+    mn01: "%h/CascadeProjects/chaba"
+    macbook: "%h/CascadeProjects/chaba"
+
+conventions:
+  dispatch: >
+    systemd — render a real <id>.timer + <id>.service (isolation,
+    TimeoutStartSec, Persistent catchup, journald tags). Required for
+    heavyweight jobs and anything faster than dispatcher_min_interval.
+    dispatcher — run by the single chaba-jobs.timer tick; interval jobs
+    only (every:). For the cheap high-frequency tail.
+  host: >
+    The job's only address — move = change this field, re-render,
+    re-install on the new host. Host keys match ssot naming
+    (tony_dell, idc01, idc02, tony_omen, mn01, macbook).
+  schedule: >
+    on_calendar: systemd OnCalendar string, or every: interval like
+    15m/1h/6h/1d. Dispatcher jobs MUST use every:.
+  persistent: catch up runs missed while the unit was down.
+  timeout: per-job hard cap (e.g. 30s, 20m, 1h).
+  env: inline KEY=value map -> Environment= lines (units) / process env
+    (dispatcher).
+  result_record: >
+    Dispatcher jobs append {name, command, ok, exit_code, duration_ms,
+    ts} to config.results per ssot.reports.yml conventions.
+
+# Seed set — real units captured from tony-dell 2026-10-02. The remaining
+# ~60 deployed timers are migration candidates; the per-host audit that
+# fills this registry is the scheduled-audit drift check (see
+# ssot.quality.yml on-host/scheduled lanes).
+jobs:
+  # --- dispatch: systemd (heavyweight / isolated / sub-minute) ---
+  - id: overnight-assessment
+    name: Overnight Assessment
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* 02:00:00"
+    persistent: true
+    timeout: 30m
+    exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/orchestrate.py --workflow overnight --force
+
+  - id: focus-dispatcher-overnight
+    name: Chaba Overnight Focus Review
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* 03:00:00"
+    persistent: true
+    timeout: 20m
+    exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/overnight-focus-review.py
+    env:
+      FOCUS_DISPATCHER_COMMIT: "1"
+      FOCUS_DISPATCHER_PUSH: "1"
+    note: runs from the chaba-tony-dell checkout (writes focus-inbox + commits)
+
+  - id: ssot-optimization-snapshot
+    name: SSOT Optimization Snapshot
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* 03:30:00"
+    persistent: true
+    timeout: 10m
+    exec: /usr/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs
+
+  - id: ha-config-backup
+    name: HA Config Backup
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* 03:30:00"
+    persistent: true
+    timeout: 10m
+    exec: "%h/.config/home-assistant/ha-live/snapshot-config.sh"
+    note: reads tony-ha config — host-bound until moved to an idc02 remote pull
+
+  - id: chaba-audit
+    name: Chaba Audit Suite (weekly)
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "Sun *-*-* 02:00:00"
+    persistent: true
+    timeout: 1h
+    exec: "%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs"
+
+  - id: chaba-system-report
+    name: Chaba System Report
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* 06:45:00"
+    persistent: true
+    timeout: 15m
+    exec: "%h/.local/bin/chaba-system-report.sh"
+    note: exec lives outside the repo — inlining it is a migration TODO
+
+  - id: devin-summaries-sync
+    name: Devin Summaries Sync
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: "*-*-* *:45:00"
+    persistent: true
+    timeout: 10m
+    exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py
+
+  - id: yomi-backup
+    name: Yomi + PostgreSQL Backup
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: daily
+    persistent: true
+    timeout: 30m
+    exec: "%h/.local/bin/yomi-backup.sh"
+    env:
+      BACKUP_HOST: tony-omen
+      BACKUP_USER: tony
+    note: move to idc02 once backup storage lands there
+
+  - id: yomi-update-all
+    name: Yomi Update All
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: hourly
+    persistent: true
+    timeout: 10m
+    exec: "/usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi --add-host postgre:100.68.142.13 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs"
+    note: podman one-shot; pause while yomi-api is failed over to tony-omen
+
+  - id: xiaomi-token-refresh
+    name: Xiaomi Token Refresh
+    host: tony_dell
+    dispatch: systemd
+    on_calendar: daily
+    persistent: true
+    timeout: 5m
+    exec: /usr/bin/python3 %h/.config/go2rtc/xiaomi-token-refresh.py
+
+  - id: cam-frame-refresh
+    name: Cam Frame Refresh
+    host: tony_dell
+    dispatch: systemd
+    every: 5s
+    timeout: 10s
+    exec: "%h/.config/home-assistant/update-cam-frame.sh"
+    note: 5s cadence — below the dispatcher floor, proves the dispatch boundary
+
+  # --- dispatch: dispatcher (cheap interval tail -> chaba-jobs.timer) ---
+  - id: yomi-update-active
+    name: Yomi Update Active
+    host: tony_dell
+    dispatch: dispatcher
+    every: 15m
+    timeout: 120s
+    exec: "/usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs"
+
+  - id: mcp-debug-h3-sync
+    name: MCP Debug H3 Sync
+    host: tony_dell
+    dispatch: dispatcher
+    every: 10m
+    timeout: 60s
+    exec: "%h/.local/bin/mcp-debug-h3-sync.sh"
+
+  - id: tony-dell-health-snapshot
+    name: Tony-Dell Health Snapshot
+    host: tony_dell
+    dispatch: dispatcher
+    every: 5m
+    timeout: 60s
+    exec: "%h/.local/bin/health-snapshot.sh"
+    note: monitors this host — must stay on tony_dell
+
+  - id: network-scan-tony
+    name: Tony LAN Network Scan
+    host: tony_dell
+    dispatch: dispatcher
+    every: 15m
+    timeout: 120s
+    exec: "%h/CascadeProjects/chaba-tony-dell/venv/bin/python3 scripts/network-scan.py --push"
+    cwd: "%h/CascadeProjects/chaba-tony-dell"
+    note: scans the LAN — stays on tony_dell
+
+related_files:
+  - scripts/render-jobs.py
+  - scripts/job-dispatcher.py
+  - systemd/generated/
+  - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
+
+note: >
+  ssot.night-jobs.* remains the descriptive/status view (last_run,
+  next_run, prose notes). This file is the authoritative manifest —
+  new jobs land HERE and render out; do not hand-create timer units.

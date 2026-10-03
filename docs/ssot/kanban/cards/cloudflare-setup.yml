@@ -1,0 +1,19 @@
+id: cloudflare-setup
+title: Cloudflare account + DNS for public edge
+column: done
+note: 'DONE: api.surf-thailand.com proxied -> idc01 caddy -> ada-pi-pwa (200 via CF
+  edge). idc01+edge records DNS-only. edge -> idc02. Optional: bump
+  token scope to Zone Settings Edit to set SSL=strict (origin cert is valid LE).'
+help: "1. dash.cloudflare.com \u2192 \"Add site\" \u2192 enter your domain \u2192\
+  \ Free plan.\n2. Cloudflare gives you 2 nameservers (e.g. ada.ns.cloudflare.com).\n\
+  3. At your domain REGISTRAR \u2192 replace NS records with those two.\n4. Wait for\
+  \ \"Active\" status on the CF dashboard (minutes to a few hours).\n5. DNS \u2192\
+  \ Records \u2192 add:\n   A   idc01        <idc01 public IP \u2014 hardware-idc01-specs.md>\
+  \   \u2014 see step 6\n   A   <new-vps>    <its public IP>\n6. Per record choose\
+  \ the cloud color:\n   \U0001F7E0 Proxied (orange) \u2014 only for real PUBLIC web\
+  \ endpoints (hides origin IP, adds WAF).\n   \u26AA DNS only (grey)  \u2014 anything\
+  \ only tailnet/ssh should reach.\n7. SSL/TLS \u2192 set \"Full\" (upgrade to \"\
+  Full (strict)\" once the origin serves valid TLS).\nOptional later: `cloudflared`\
+  \ tunnel = public HTTPS with ZERO open ports on the VPS.\nDone when: DNS resolves\
+  \ + you can say which records are proxied vs grey. Then idc-vps-game unblocks."
+updated: '2026-10-03'
