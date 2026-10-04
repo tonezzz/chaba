@@ -1,0 +1,87 @@
+# SSOT Job: CMS page API-key issue on idc01 — dispatch discovery + hand-off
+# Dispatch worktree dispatch-wt-20261003-232047-fix-api-key-issue-on-cms-page-.
+# Task: "Fix API key issue on CMS page on idc01.taila0626a.ts.net repo:chaba".
+# Original session ended before its first command (rejected exec ends a
+# dispatch session); follow-up session gathered the facts below and parked
+# the fix. IMPORTANT: the code is in tonezzz/ada-pi, not chaba.
+
+title: CMS page API-key issue — unlock overlay on idc01
+subtitle: CMS page 401s without a stored key; shared cms-viewer key works — decide intended UX
+icon: key
+status: parked   # discovery complete; fix decision + implementation outstanding
+project: chaba   # task-filed repo; actual fix repo is ada-pi
+owner: devin-dispatch
+started: "2026-10-03"
+
+context: |
+  "The CMS page" = ada-pi `pwa/cms/index.html` (MDDB collection
+  ada-cms-pages backend). On idc01 it is served by two uvicorn instances —
+  both use ADA_INSTANCE_ID=tony → same keys file
+  ~/.config/secrets/ada-ha-tony-keys.json:
+    - ada-pi-pwa.service   127.0.0.1:8001 → https://idc01.taila0626a.ts.net/cms/
+    - ada-ha-tony.service  127.0.0.1:8002 → …/apps/ha/ada-tony/cms/
+      (mn01 Caddy also proxies this path, so the mn01 apps-index link works)
+  Auth (ada-pi backend/auth.py + pwa_server.py _require_api_key):
+    caller_name: x-api-key header → ?api_key= query → ada_session cookie
+    enforce_device: file-issued keys bind to first-seen x-device-id (TOFU);
+      bound key + wrong/missing device id → rejected; device="*" disables.
+    Session cookie (ada_session, 12h TTL, path=base) is minted ONLY by
+      POST /api/auth/session or GET /redeem/{token} — the CMS page itself
+      never calls either.
+
+evidence: |
+  journalctl ada-pi-pwa.service on idc01, 2026-10-03 23:19:50:
+    GET /api/cms/pages?limit=500 → 401, client 100.75.102.88 = tony-omen.
+  That is the frontend page-list call; on 401 the page shows the
+  "Unlock Pages — API key required (or invalid for this device)" overlay.
+  Task was filed 23:20:58 — Tony hit the overlay on tony-omen and
+  dispatched this task.
+
+verified_state:
+  cms_viewer_key: "exists in ada-ha-tony-keys.json, device='*' (shared viewer key — built for embeds/shared URLs)"
+  api_with_key:   "GET /api/cms/pages → 200 on both /api and /apps/ha/ada-tony/api mounts (verified 2026-10-04)"
+  api_no_key:     "→ 401 {\"detail\":\"invalid or missing api key\"} — by design"
+  frontend_flow:  "pwa/cms/index.html: getApiKey() (URL ?api_key → localStorage ada_api_key), apiFetch sends x-api-key + x-device-id, 401 → #unlock-overlay"
+  apps_index:     "stacks/web/public/apps/apps.yml ada-cms href=/apps/ha/ada-tony/cms/ carries no key → fresh browser always unlocks"
+
+root_cause_hypotheses:
+  a_no_key_on_device: >
+    tony-omen browser had no ada_api_key in localStorage and no valid
+    ada_session cookie → 401 → overlay. Working as designed; the "issue"
+    is key distribution UX.
+  b_device_bound_mismatch: >
+    A stored key whose device binding was taken by another browser →
+    "invalid for this device". Check keys file: bound names include
+    tony-ip, user-tonezzzz, user-kk, ha-*. Fix = unbind or re-pair.
+  c_intent_public_read: >
+    If the intent is tailnet-wide read access with no key at all, that is
+    a policy change (anon read of ada-cms-pages) — needs Tony's call, not
+    a silent loosening.
+
+fix_options:
+  quick_key_share: |
+    Distribute https://idc01.taila0626a.ts.net/cms/?api_key=<cms-viewer>
+    (fetch key on idc01: python3 -c "import json;print(json.load(open(
+    '/home/tony/.config/secrets/ada-ha-tony-keys.json'))['cms-viewer']['key'])")
+    — persists per-browser in localStorage. Optionally add the keyed URL
+    to the apps index — only if the apps listing itself is considered
+    tailnet-private; never commit the key to git.
+  unbind_or_repair: |
+    For a device-bound key: set "device": null for the name in
+    ada-ha-tony-keys.json on idc01 (no service restart needed — file is
+    re-read per request), or re-pair at /apps/ha/pair/ (view → /cms).
+  frontend_bootstrap: |
+    ada-pi pwa/cms/index.html: on 401, attempt POST {API_BASE}/api/auth/session
+    {api_key, device_id, path: cmsBasePath()} to mint the cookie; split the
+    overlay error into missing-key vs invalid-key vs device-bound.
+
+verify:
+  - "curl -s -o /dev/null -w '%{http_code}' -H 'x-api-key: <cms-viewer>' https://idc01.taila0626a.ts.net/api/cms/pages  # → 200"
+  - "fresh profile on tony-omen: /cms/ lists pages after one keyed open (or without overlay if policy changed)"
+  - "journalctl --user -u ada-pi-pwa.service --since -1h | grep 'cms/pages.*401' → none from Tony's devices"
+
+related:
+  - docs/ssot/apps/ssot.apps.cms-reports.yml        # page/meta standard
+  - docs/ssot/apps/ssot.apps.ada-cms-reports.yml    # page manifest
+  - ada-pi: backend/auth.py, pwa_server.py (_require_api_key, /api/cms/*), pwa/cms/index.html
+  - stacks/web/public/apps/apps.yml (ada-cms entry), stacks/web/public/apps/ha/pair/index.html (APP_PATH view→/cms)
