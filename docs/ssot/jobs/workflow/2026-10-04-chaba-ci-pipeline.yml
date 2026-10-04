@@ -1,0 +1,64 @@
+title: Chaba card CI pipeline — plan -> structure -> develop -> audit -> benchmark
+subtitle: >-
+  Standard five-stage pipeline any kanban card opts into via `pipeline:
+  ci`; runner executes automatable gates, turns unautomatable ones into
+  card requests
+icon: 🔁
+id: 2026-10-04-chaba-ci-pipeline
+status: done
+owner: devin-dispatch
+project: chaba
+card: chaba-ci-standard
+branch: dispatch/20261004-202031-design-and-implement-the-stand
+started: "2026-10-04"
+completed: "2026-10-04"
+
+context:
+  user_request: >
+    Card chaba-ci-standard: "Define the standard pipeline every
+    card-sized piece of work flows through — PLAN, STRUCTURE, DEVELOP,
+    AUDIT, BENCHMARK — and wire it into the repo so it runs hands-off."
+
+design:
+  stages:
+    plan: card carries title + spec|note + an acceptance signal (metric/verify/benchmark.metric)
+    structure: git worktree resolved, base computed, diff scoped (card file + generated outputs excluded)
+    develop: evidence = in-scope worktree changes; cross-repo cards -> delegated + request
+    audit: pre-commit check set, diff-scoped — py_compile, node --check, yaml parse, ssot-validate-all
+    benchmark: card benchmark.command -> pipeline.benchmark.before (first run) / .after (after develop); never faked
+  opt_in: "`pipeline: ci` scalar on the card; runner normalizes to the status map"
+  unautomatable_gates: become requests[] entries on the card (dedup by request id, answered ones re-open)
+  write_paths:
+    file: --cards-dir — direct YAML under /tmp/board-api.lock (kanban-dispatch protocol), renders board
+    api: --api — GET /cards + POST /comment,/request,/pipeline; /pipeline 404 -> structured comms fallback
+
+deliverables:
+  - docs/ssot/ssot.ci.yml — stage/gate/artifact/status-enum/write-path standard
+  - scripts/ci/card-pipeline.py — runner (FileSink + ApiSink), --selftest, exit codes per ssot.quality
+  - scripts/board/board-api.py — POST /pipeline endpoint (opt_in, block merge, single-stage writes)
+  - scripts/board/kanban-dispatch.py — TASK_RAILS: opted-in cards run the runner via --api near session end
+  - "docs/ssot/kanban/ssot.kanban.yml — card_schema pipeline + benchmark fields; write_path /pipeline"
+  - docs/ssot/infrastructure/ssot.reports.yml — ci-pipeline L1 node (reports/ci/)
+  - docs/ssot/infrastructure/ssot.quality.yml — card-pipeline lane + 3 registry entries
+  - demo: tts-artifact-clean opted in (repo ada-pi), fixture tests/fixtures/tts-artifact-clean-transcript.txt
+
+demo_run:
+  card: tts-artifact-clean
+  artifact: reports/ci/tts-artifact-clean-20261004-203950.json
+  result: "plan=pass structure=pass develop=delegated audit=pass(8 checks/9 files) benchmark=blocked(before=2)"
+  requests_raised:
+    - implement in ada-pi (cross-repo develop gate)
+    - re-run --stages benchmark after fix lands (after measurement)
+  notes: >
+    before=2 counted real artifact lines in the fixture built from the
+    card's observed transcript (519088cb6d). after is honestly pending —
+    the TTS sanitize fix lives in ada-pi, outside this worktree.
+
+verification:
+  selftest: "python3 scripts/board/board-api.py --selftest && python3 scripts/ci/card-pipeline.py --selftest -> both 'selftest ok'"
+  validator: "node scripts/ssot-validate-all.mjs on the 5 changed yml files -> 0 errors (2 pre-existing bloat-review warnings)"
+  live: card tts-artifact-clean shows pipeline.stages + benchmark.before + 2 open requests + per-stage comms
+
+followups:
+  - deploy board-api /pipeline to the live service (served checkout chaba-tony-dell) — until then ApiSink falls back to a pipeline-status comms line
+  - dispatch tts-artifact-clean against ada-pi to satisfy the develop request, then re-run --stages benchmark

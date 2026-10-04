@@ -61,6 +61,19 @@ lanes:
       focus-inbox; never block commits.
     runner: per-probe timers
     outputs: ~/var/chaba/health/, HA /local/chaba-report.json, focus-inbox
+  card-pipeline:
+    description: >
+      Per-card CI — the five-stage standard in docs/ssot/ssot.ci.yml
+      (plan -> structure -> develop -> audit -> benchmark). A kanban card
+      opts in via `pipeline: ci`; scripts/ci/card-pipeline.py executes
+      the automatable gates against the session worktree diff and writes
+      results to the card's pipeline: block + comms. Audit reuses the
+      pre-commit check set (py_compile, node --check, yaml parse,
+      ssot-validate) diff-scoped — NOT the repo-wide ci-*.sh suites.
+      Unautomatable gates become card requests, never silent passes.
+    runner: "scripts/ci/card-pipeline.py — invoked by the dispatch
+             session (kanban-dispatch TASK_RAILS) or by hand"
+    outputs: "card pipeline: block + comms + requests, reports/ci/*.json"
   benchmark:
     description: >
       Non-gating performance/cost measurement — embed-bench.py,
@@ -199,6 +212,28 @@ registry:
     runner: .github/workflows/repo-lint.yml
     script: "python3 -m compileall -q -x node_modules scripts/ + node --check per *.mjs (excluding vendored node_modules)"
 
+  # --- lane: card-pipeline (per-card, docs/ssot/ssot.ci.yml) ---
+  - id: gate.card-audit
+    lane: card-pipeline
+    gate: blocking
+    cost: cheap
+    runner: scripts/ci/card-pipeline.py <card-id> (inside dispatch session or --cards-dir on the dispatcher host)
+    script: "py_compile + node --check + yaml parse + ssot-validate-all on the worktree diff (pre-commit check set, diff-scoped)"
+    outputs: card pipeline.stages.audit + reports/ci/<card>-*.json
+  - id: gate.card-benchmark
+    lane: card-pipeline
+    gate: blocking (before/after must both be recorded to pass)
+    cost: cheap
+    runner: scripts/ci/card-pipeline.py --stages benchmark
+    script: "runs the card's benchmark.command; records pipeline.benchmark.before on first run, .after after develop"
+    outputs: card pipeline.benchmark
+  - id: gate.card-plan-structure
+    lane: card-pipeline
+    gate: blocking
+    cost: cheap
+    runner: scripts/ci/card-pipeline.py
+    script: "spec/acceptance presence (plan) + worktree/scope resolution (structure)"
+
   # --- lane: on-host-gate (manual pre-push composite gates) ---
   - {id: gate.smoke,    lane: on-host-gate, gate: blocking, cost: network, runner: manual, script: bash scripts/ci-smoke.sh}
   - {id: gate.standard, lane: on-host-gate, gate: blocking, cost: cheap,   runner: manual, script: bash scripts/ci-standard.sh}
@@ -320,6 +355,8 @@ coverage_gaps:
   - "CLOSED 2026-09-29: registry self-check — standardization-audit section 6 now validates this registry (paths exist, CI steps registered, audit coverage)"
 
 related_ssot:
+  - docs/ssot/ssot.ci.yml
+  - docs/ssot/kanban/ssot.kanban.yml
   - docs/ssot/infrastructure/ssot.audit.yml
   - docs/ssot/infrastructure/ssot.reports.yml
   - docs/ssot/apps/ssot.apps.cms-reports.yml
