@@ -1,8 +1,8 @@
 id: ada-memory-inbox-triage
 title: Ada memory inbox triage — round 2 (~194 unprocessed files)
-column: backlog
+column: review
 note: Inbox regrew to ~194 files after the Oct-03 sweep; classify/archive/supersede per memory-bank conventions.
-updated: 2026-10-04 13:04
+updated: 2026-10-04 13:06
 spec: 'Triage the ada-memory inbox on idc01 (~194 unprocessed files as of
 
   2026-10-04). Conventions: docs/ssot/apps/ssot.apps.ada-memory*.yml and
@@ -16,10 +16,11 @@ spec: 'Triage the ada-memory inbox on idc01 (~194 unprocessed files as of
   '
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   task_id: 20261004-121552-triage-the-ada-memory-inbox-on
   runner: tony-dell
+  result: 20261004-121552-triage-the-ada-memory-inbox-on finished (inactive) — see `devin-dispatch logs 20261004-121552-triage-the-ada-memory-inbox-on`
 comms:
 - at: 2026-10-04 12:15
   from: tony
@@ -39,6 +40,14 @@ comms:
   text: 'Inventoried idc01 chaba-vault inbox: 654 files = 368 drafts needing decision + 64 voice-active promotes
     + 178 stale exports + 44 orphans. Content reviewed per bank; building decision map now. devin-handoff/ideas
     queues left alone per round-1.'
+- at: 2026-10-04 13:04
+  from: devin
+  text: 'DONE — round-2 inbox triage on idc01. Actual population was 654 files (card ~194 was stale). Buckets: keep/promote
+    195, supersede 76, archive/retract 168, stale-export file removals 148, devin-handoff left 81. Zero drafts remain
+    in writable banks; inbox 654->81 (devin-handoff only). All archived content preserved in MDDB with superseded_by/retracted_reason
+    provenance; 87 superseded docs, 0 dangling links. 13:00 sync: 0 conflicts, 0 deletions. Trail: docs/ssot/jobs/ada/2026-10-04-memory-inbox-tri'
+- at: 2026-10-04 13:06
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261004-121552-triage-the-ada-memory-inbox-on
   since: 2026-10-04 12:16
