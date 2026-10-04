@@ -1,0 +1,16 @@
+id: worktree-orphan-cleanup
+title: Remove dispatch-wt-20261002-132426 orphan dir (post-worktree-removal leftover)
+column: backlog
+note: worktree registration removed but scripts/jev/cascade-sim.py remains on disk; content matches committed version modulo formatting — file is open in an editor, confirm before deleting
+updated: 2026-10-04
+spec: 'Delete ~/CascadeProjects/dispatch-wt-20261002-132426-use-existing-training-data-and/
+  — only contains scripts/jev/cascade-sim.py which differs from the
+  committed chaba version only by a line-wrap. Verify diff is still
+  cosmetic before removing; the file is currently open in an editor
+  session so confirm no unsaved work is at risk. Also check
+  ada-pi-wt-cms-automation (feat/cms-automation-tool) merge status and
+  remove if merged.'
+action:
+  type: manual
+comms:
+  - {at: "2026-10-04 21:10", from: devin, text: "jev work already salvaged to master (c0a77595/b0094187); orphan is residual"}

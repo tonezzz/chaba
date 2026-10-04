@@ -1,0 +1,16 @@
+id: redispatch-permission-rejected-jobs
+title: Re-dispatch 3 permission-rejected jobs under hardened dispatcher
+column: backlog
+note: 081016 enroll-speaker investigation, 115509 traffic camera, 120132 automation tool — all exited 0 with zero output because tool calls were rejected pre-hardening
+updated: 2026-10-04
+requests:
+  - id: confirm-redispatch
+    ask: "Re-dispatch all 3 failed jobs (enroll-speaker investigation, traffic-camera integration, news automation tool)? They predate the dispatch-hardening merge — a retry now gets transcript-verdict tracking + needs-input routing."
+    options:
+      - "Yes — redispatch all 3 on tony-dell"
+      - "Yes — but only the enroll-speaker investigation"
+      - "No — drop them, specs are stale"
+    status: open
+    answer: null
+comms:
+  - {at: "2026-10-04 21:10", from: devin, text: "bank docs already stamped failed with permission-rejected reason"}
