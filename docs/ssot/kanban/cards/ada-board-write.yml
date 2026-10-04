@@ -1,9 +1,9 @@
 id: ada-board-write
 title: Give Ada a board_write tool — she joins the card comms loop
-column: review
-note: Ada can already read the board via GET /apps/board-api/cards; a tool lets her
-  post comms + raise requests herself.
-updated: '2026-10-04'
+column: done
+note: Ada can already read the board via GET /apps/board-api/cards; a tool lets her post comms + raise requests
+  herself.
+updated: 2026-10-04 17:57
 spec: 'Add a board_write tool to ada-pi so Ada participates in the kanban
 
   comms loop. The API exists: POST https://tony-dell.taila0626a.ts.net/
@@ -25,8 +25,7 @@ action:
   repo: ada-pi
   task_id: 20261004-141817-add-a-board-write-tool-to-ada-
   runner: tony-dell
-  result: 20261004-141817-add-a-board-write-tool-to-ada- finished (inactive) — see
-    `devin-dispatch logs 20261004-141817-add-a-board-write-tool-to-ada-`
+  result: 20261004-141817-add-a-board-write-tool-to-ada- finished (inactive) — see `devin-dispatch logs 20261004-141817-add-a-board-write-tool-to-ada-`
 comms:
 - at: 2026-10-04 14:18
   from: tony
@@ -39,32 +38,40 @@ comms:
   text: 'starting: exploring ada-pi tool plumbing for board_write'
 - at: 2026-10-04 14:38
   from: devin
-  text: 'Done: ada_board_write tools.d tool on branch dispatch/20261004-141817 (pushed
-    to origin, needs merge). actions comment|respond|read; comment posts as from=ada
-    (verified live on kanban-selftest), respond is owner-gated + notes the /respond
-    tony-attribution API limitation, read returns compact board state. 12 unit tests
-    pass; suite clean modulo pre-existing failures. Deploy to idc01 still needs approval.
-    NOTE: probing /respond earlier accidentally answered tuya-dup-entry on mha-log-noise
-    — reverte'
+  text: 'Done: ada_board_write tools.d tool on branch dispatch/20261004-141817 (pushed to origin, needs merge).
+    actions comment|respond|read; comment posts as from=ada (verified live on kanban-selftest), respond is owner-gated
+    + notes the /respond tony-attribution API limitation, read returns compact board state. 12 unit tests pass;
+    suite clean modulo pre-existing failures. Deploy to idc01 still needs approval. NOTE: probing /respond earlier
+    accidentally answered tuya-dup-entry on mha-log-noise — reverte'
 - at: 2026-10-04 14:39
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-04 17:56
+  from: tony
+  text: 'answered idc01-deploy: deploy — approved by tony in chat'
+- at: 2026-10-04 17:57
+  from: devin
+  text: 'Deployed to idc01 (ebb8c96, all 4 services active). Verified: ada_board_write in tools.d + manifest. Ada
+    can now post card comms — from=ada whitelisted server-side.'
+- at: 2026-10-04 17:57
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-04 14:18
 requests:
 - id: idc01-deploy
-  ask: ada_board_write merged to ada-pi main (12 tests pass). Deploy to idc01 via
-    deploy-ada.sh? Restarts the 4 ada services.
-  status: open
+  ask: ada_board_write merged to ada-pi main (12 tests pass). Deploy to idc01 via deploy-ada.sh? Restarts the 4
+    ada services.
+  status: answered
   options:
   - id: deploy
     label: deploy now
   - id: wait
     label: hold in review
+  answer: deploy — approved by tony in chat
 - id: respond-attribution
-  ask: board-api /respond hardcodes the comms actor to 'tony' — ada_board_write
-    responds work but log under Tony's name. Patch scripts/board/board-api.py to
-    pass body.from through the ACTORS whitelist + restart board-api.service?
+  ask: board-api /respond hardcodes the comms actor to 'tony' — ada_board_write responds work but log under Tony's
+    name. Patch scripts/board/board-api.py to pass body.from through the ACTORS whitelist + restart board-api.service?
   status: open
   options:
   - id: fix
@@ -72,8 +79,8 @@ requests:
   - id: leave
     label: accept tony attribution (tool already returns a caveat note)
 - id: raise-request-endpoint
-  ask: ada_board_write can comment + answer but cannot RAISE requests — there is
-    no /request endpoint. Add one so Ada can file open questions on cards herself?
+  ask: ada_board_write can comment + answer but cannot RAISE requests — there is no /request endpoint. Add one so
+    Ada can file open questions on cards herself?
   status: open
   options:
   - id: add-endpoint

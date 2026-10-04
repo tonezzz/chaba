@@ -1,21 +1,33 @@
 id: flood-cms-tab
 title: Flood tab in CMS + flood-report restructure standard
-column: review
-note: 'DONE 2026-10-03 (code): Flood tab added to CMS sidebar (ada-pi d3914a7, pushed
-  — idc01 deploy pending approval). Flood family rewired: flood-report children->saraburi
-  leaf + parent->flood-overview; saraburi leaf parent->flood-report; phantom flood-report-nongdon
-  registry doc disabled (the stale-registry gotcha struck again — it had re-stamped
-  the collapsed layer). flood-overview promoted to family index; pattaya- rayong +
-  coordinates-rayong parented under flood-report; nongdon- combined archived. Standard
-  documented in flood-hub-assessment.'
-updated: '2026-10-04'
+column: done
+note: 'DONE 2026-10-03 (code): Flood tab added to CMS sidebar (ada-pi d3914a7, pushed — idc01 deploy pending approval).
+  Flood family rewired: flood-report children->saraburi leaf + parent->flood-overview; saraburi leaf parent->flood-report;
+  phantom flood-report-nongdon registry doc disabled (the stale-registry gotcha struck again — it had re-stamped
+  the collapsed layer). flood-overview promoted to family index; pattaya- rayong + coordinates-rayong parented under
+  flood-report; nongdon- combined archived. Standard documented in flood-hub-assessment.'
+updated: 2026-10-04 17:57
 requests:
 - id: idc01-deploy
-  ask: Flood-tab code is on origin/main but idc01 runs f1584f8 (3 behind). Deploy
-    ada-pi now? Restarts the 4 idc01 services via deploy-ada.sh.
-  status: open
+  ask: Flood-tab code is on origin/main but idc01 runs f1584f8 (3 behind). Deploy ada-pi now? Restarts the 4 idc01
+    services via deploy-ada.sh.
+  status: answered
   options:
   - id: deploy
     label: deploy now — run deploy-ada.sh on idc01
   - id: wait
     label: wait — hold the card in review
+  answer: deploy — approved by tony in chat
+comms:
+- at: 2026-10-04 17:56
+  from: tony
+  text: 'answered idc01-deploy: deploy — approved by tony in chat'
+- at: 2026-10-04 17:57
+  from: devin
+  text: Deployed to idc01 (ebb8c96). Flood tab live in pwa/cms/index.html — flood pages out of Pages into own world,
+    verified in the deployed file.
+- at: 2026-10-04 17:57
+  from: tony
+  text: closed by Tony
+action:
+  status: done

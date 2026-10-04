@@ -1,0 +1,39 @@
+id: board-api-hardening
+title: board-api hardening — respond attribution/validation + /request endpoint
+column: backlog
+note: 'Spawned from ada-board-write: probes showed /respond accepts empty answers, re-answers silently, and logs
+  every actor as tony. Ada needs honest attribution and a way to raise requests without hand-editing card YAML.'
+spec: "Harden scripts/board/board-api.py (repo chaba, edit in a worktree). Keep\nthe single-file BaseHTTPRequestHandler\
+  \ style — no new deps, no framework.\n\nCurrent behavior to fix (all verified 2026-10-04):\n- /respond {id, request_id,\
+  \ answer}: the comms actor is hardcoded 'tony';\n  empty answer succeeds; re-answering an already-'answered' request\n\
+  \  silently overwrites it; request_id lookup 400s fine. A probe session\n  accidentally closed mha-log-noise/tuya-dup-entry\
+  \ with empty answers —\n  had to be repaired by hand-editing the card YAML + render-board.py.\n- /comment {id,\
+  \ from, text}: empty/whitespace text appends an empty comms\n  entry.\n- There is no way to RAISE a request via\
+  \ the API — rails currently tell\n  dispatched sessions to edit card YAML directly, which races the\n  server's\
+  \ flock (/tmp/board-api.lock is only honored by the API).\n\nChanges:\n1. /respond: accept optional `from` validated\
+  \ against ACTORS (default\n   'tony' for backward compat — the board UI sends none). Require\n   non-empty answer\
+  \ (400 'answer required'). If the request is already\n   'answered', 400 'already answered' unless body.reopen\
+  \ is truthy —\n   reopen re-answers and logs 're-answered <rid>: ...'.\n2. /comment: reject empty/whitespace text\
+  \ with 400 'text required'.\n3. New POST /request {id, ask, request_id?, options?, from?}: appends to\n   the\
+  \ card's requests list — {id: request_id or slugged ask, ask,\n   status: open, options?}. 400 on missing ask\
+  \ or duplicate request id.\n   `from` validated against ACTORS (default 'tony'); comms entry\n   'raised request\
+  \ <rid>: <ask[:120]>' under that actor. This is what\n   lets Ada (actor whitelisted) file open questions herself.\n\
+  4. Docstring note: all card writes go through this API; direct YAML\n   edits must hold LOCK (/tmp/board-api.lock)\
+  \ first.\n5. If trivially testable, add a unittest or a smoke section in the\n   docstring; at minimum verify\
+  \ by curl against kanban-selftest:\n   empty answer 400, dup request_id 400, respond from=ada lands under\n  \
+  \ ada, /request creates an open request.\n\nDeploy is OUT OF SCOPE for the dispatch: board-api.service restart\
+  \ +\nchaba-tony-dell live checkout pull happen on approval. Leave a comms\nentry on this card with the branch\
+  \ name.\n"
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+updated: 2026-10-04 17:58
+comms:
+- at: 2026-10-04 17:55
+  from: devin
+  text: filed from ada-board-write session — covers requests respond-attribution + raise-request-endpoint filed
+    on that card
+- at: 2026-10-04 17:58
+  from: tony
+  text: queued for processing

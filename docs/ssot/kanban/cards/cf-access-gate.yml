@@ -1,36 +1,34 @@
 id: cf-access-gate
 title: CF Zero Trust Access in front of *.surf-thailand.com HA instances
-column: backlog
+column: done
 priority: high
-note: >-
-  tony-ha + michael-ha are public on HA-auth alone right now. Add CF Access
-  policy (Zero Trust -> Access -> Applications, dashboard-only step; the DNS
-  token cannot do it). Emails = Tony (+ KK if needed). Companion app stays
-  tailnet (cannot do CF login).
-help: |-
-  1. dash.cloudflare.com -> Zero Trust -> Access -> Applications -> Add
-  2. Application type: Self-hosted
-  3. App domain: *.surf-thailand.com (covers ha. + mha. + future) or per-name
-  4. Policy: Allow -> selector "Emails" -> your Google account email
-  5. Login method: Google (or One-time PIN) under Authentication settings
-  6. Save -> test https://tony-ha.surf-thailand.com in incognito ->
-     should get CF login BEFORE the HA login page
-  Note: HA companion app cannot do CF login -> keep it on tailnet.
-
-progress: >-
-  2026-10-03: tony-ha.surf-thailand.com/cms* + /api/cms* now proxied idc02 ->
-  idc01:8003 (ada-pi-pwa) with interim Caddy basicauth (user tony). When CF
-  Access lands for *.surf-thailand.com, drop the basicauth blocks on idc02.
-  Also: api.surf-thailand.com/cms* closed (was incidentally public via the
-  ada-dev catch-all) — api.* now 404s /cms*.
-  2026-10-04: DONE for tony-ha.surf-thailand.com via API (cfut_ token now has
-  Access: Apps and Policies Edit; stored ~/.config/secrets/cloudflare.env on
-  omen/dell/idc01/idc02). App tony-ha (70aa9fe3), policy tony = allow email
-  tonezzz@hotmail.com via One-time PIN, session 720h. All paths 302 to
-  chaba-team.cloudflareaccess.com — verified /, /apps/board/, /apps/board-api/,
-  /cms/. All Caddy basicauth blocks removed from idc02 edge (CF is the gate;
-  origin not directly reachable by public IP). Board iframe in chaba-admin
-  now works off-tailnet — one OTP sign-in covers page + api.
-  Remaining: michael-ha.surf-thailand.com still HA-auth only (same 2 API
-  calls to gate it); api.surf-thailand.com stays ungated by design (Ada PWA
-  can't do CF login).
+note: tony-ha + michael-ha are public on HA-auth alone right now. Add CF Access policy (Zero Trust -> Access ->
+  Applications, dashboard-only step; the DNS token cannot do it). Emails = Tony (+ KK if needed). Companion app
+  stays tailnet (cannot do CF login).
+help: "1. dash.cloudflare.com -> Zero Trust -> Access -> Applications -> Add\n2. Application type: Self-hosted\n\
+  3. App domain: *.surf-thailand.com (covers ha. + mha. + future) or per-name\n4. Policy: Allow -> selector \"Emails\"\
+  \ -> your Google account email\n5. Login method: Google (or One-time PIN) under Authentication settings\n6. Save\
+  \ -> test https://tony-ha.surf-thailand.com in incognito ->\n   should get CF login BEFORE the HA login page\n\
+  Note: HA companion app cannot do CF login -> keep it on tailnet."
+progress: '2026-10-03: tony-ha.surf-thailand.com/cms* + /api/cms* now proxied idc02 -> idc01:8003 (ada-pi-pwa) with
+  interim Caddy basicauth (user tony). When CF Access lands for *.surf-thailand.com, drop the basicauth blocks on
+  idc02. Also: api.surf-thailand.com/cms* closed (was incidentally public via the ada-dev catch-all) — api.* now
+  404s /cms*. 2026-10-04: DONE for tony-ha.surf-thailand.com via API (cfut_ token now has Access: Apps and Policies
+  Edit; stored ~/.config/secrets/cloudflare.env on omen/dell/idc01/idc02). App tony-ha (70aa9fe3), policy tony =
+  allow email tonezzz@hotmail.com via One-time PIN, session 720h. All paths 302 to chaba-team.cloudflareaccess.com
+  — verified /, /apps/board/, /apps/board-api/, /cms/. All Caddy basicauth blocks removed from idc02 edge (CF is
+  the gate; origin not directly reachable by public IP). Board iframe in chaba-admin now works off-tailnet — one
+  OTP sign-in covers page + api. Remaining: michael-ha.surf-thailand.com still HA-auth only (same 2 API calls to
+  gate it); api.surf-thailand.com stays ungated by design (Ada PWA can''t do CF login).'
+comms:
+- at: 2026-10-04 17:58
+  from: devin
+  text: 'Verified live: https://tony-ha.surf-thailand.com/ 302s to chaba-team.cloudflareaccess.com login (OTP, 720h
+    session, allow tonezzz@). basicauth stripped — CF is sole gate. michael-ha rides nabu.casa (own auth, outside
+    *.surf-thailand.com scope) — card scope satisfied.'
+- at: 2026-10-04 17:58
+  from: tony
+  text: closed by Tony
+updated: 2026-10-04 17:58
+action:
+  status: done
