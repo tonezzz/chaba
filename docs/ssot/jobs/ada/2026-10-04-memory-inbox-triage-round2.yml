@@ -1,0 +1,60 @@
+# SSOT Job Trail: ada-memory inbox triage round 2 (idc01)
+# Kanban card: ada-memory-inbox-triage. Method = round-1 conventions
+# (commit a109d1a): classify keep/supersede/archive, update bank docs,
+# move processed files, never delete content.
+
+title: Ada memory inbox triage — round 2
+subtitle: 654 inbox files on idc01 classified; 195 promoted, 244 archived with provenance
+icon: inbox
+
+result:
+  status: done
+  date: 2026-10-04
+  host: idc01 (vault ~/CascadeProjects/chaba-vault, MDDB http://100.74.146.0:11023/v1)
+
+scope:
+  inbox_population:
+    total_files_at_start: 654
+    breakdown:
+      drafts_needing_decision: 368      # status=draft docs in MDDB
+      voice_active_candidates: 64       # source=voice + status=active promotes
+      stale_exports: 148                # doc already active(superseded|retracted)
+      orphans_no_mddb_doc: 44
+      devin_handoff_queue: ~81          # left untouched per round-1
+  note: task estimate "~194" was stale; actual queue was much larger.
+
+outcome:
+  keep_promote: 195    # draft->active + voice-active promoted to vault dirs
+  supersede: 76        # status=superseded + superseded_by link (content kept)
+  archive_retract: 168 # status=retracted + retracted_reason (content kept)
+  stale_file_removals: 148  # file only; MDDB doc already terminal
+  devin_handoff_left: 81    # queue-managed bank, untouched
+  rehomed: 2           # misrouted content recreated in correct bank:
+                       #   mano-address -> ada-ha-bank-personal-tony
+                       #   kk-flood-saraburi-interest -> ada-ha-bank-personal-kk
+  mddb_writes: ~440    # /add calls; no deletions
+  inbox_files_at_end: 81    # all devin-handoff
+  draft_docs_remaining: 0   # across all writable banks
+
+verification:
+  - "inbox file count: 654 -> 81 (devin-handoff only)"
+  - "MDDB status counts: 0 draft in general/people/personal*/tony-projects/note/developer/purchase"
+  - "87 superseded docs, 0 dangling superseded_by targets"
+  - "sync --dry-run on idc01: 0 CONFLICTs; remaining ~ updates are designed meta churn"
+  - "tombstone fix: orphan retracted/superseded docs keep original written_by so sync never deletes them"
+
+decisions_log:
+  # Reproducible artifacts live in the dispatch worktree .triage/ dir:
+  #   decisions.py  — full per-key decision map (K/S:R/P/L) + ORPHANS + NEW_DOCS
+  #   execute.py    — applies MDDB writes + emits file-ops.json
+  #   file-ops.json — rendered promote/rm plan applied over SSH
+  artifacts:
+    - .triage/decisions.py
+    - .triage/execute.py
+    - .triage/file-ops.json
+    - .triage/<bank>.txt review listings
+
+known_issues:
+  - "chaba-vault on idc01 has no git user identity — 351 changed vault paths left uncommitted"
+  - "developer bank has no vault dir; its 3 promotions are MDDB-only"
+  - "sync drops last_used/use_count/session_id on vault push (same as round-1)"
