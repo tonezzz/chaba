@@ -53,6 +53,8 @@ decisions:
   - 4b gemma remains teacher/reference; no fine-tune attempted (VRAM)
 
 status_note: |
-  NOT deployed — production jev-student.service on idc01 unchanged.
-  Deploy = point serve-jev-student.py at ckpt-v2-20261002 + THR=0.70,
-  restart on idc01; requires Tony's explicit approval.
+  DEPLOYED 2026-10-04 — ckpt-v2-20261002 is live as jev-student.service
+  on idc01:8778 (thr 0.70 embedded in config.custom_params). Rollback
+  copy at idc01:~/jev-student/ckpt-v0-deployed-20261004. Post-deploy
+  production benchmark: failure set 100% (32/32 @0.75 gate), corpus
+  sample 98.3% (residual misses are label-noise FPs).

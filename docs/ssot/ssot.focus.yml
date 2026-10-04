@@ -59,7 +59,7 @@ sections:
       gemma-1b attention-head candidates trained but inferior. NOT deployed —
       production jev-student.service on idc01:8778 unchanged.
     branch: chaba
-    status: pending
+    status: active
     started: "2026-10-03"
     priority: medium
     tags:
@@ -69,7 +69,8 @@ sections:
       - deploy-pending
     subtasks:
       - label: Deploy ckpt-v2-20261002 to idc01 (serve-jev-student.py THR=0.70, restart jev-student.service) — needs Tony approval
-        status: pending
+        status: completed
+        completed: "2026-10-04"
       - label: Optional — gemma-3-4b QLoRA via Colab PAYG/Enterprise A100 (~$3-5/run) if a calibrated 4b Jev is wanted
         status: pending
       - label: Wire scripts/jev/{merge,augment}-corpus.py into the weekly jev-retrain.sh so live corpus keeps flowing
