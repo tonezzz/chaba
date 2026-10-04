@@ -94,6 +94,7 @@ def main():
     .bg-card {{ background-color: #16213e; }}
     .bg-accent {{ background-color: #0a84ff; }}
     .board-cols {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }}
+    .board-card.flash {{ border-color: #0a84ff !important; box-shadow: 0 0 0 2px rgba(10,132,255,.5); transition: border-color .2s, box-shadow .2s; }}
     @media (min-width: 768px) {{
       .board-shell {{ height: calc(100vh - 110px); overflow: hidden; }}
       .board-aside {{ display: flex; flex-direction: column; min-height: 0; }}
@@ -152,7 +153,8 @@ def main():
 
 <script>
 const API = '/apps/board-api';
-const POLL_MS = {POLL_SECONDS} * 1000;
+const POLL_SECONDS = {POLL_SECONDS};
+const POLL_MS = POLL_SECONDS * 1000;
 const BUILT = '@@VER@@';
 let DATA = null;
 let lang = 'en';
@@ -377,15 +379,23 @@ async function doAct(id, verb, extra) {{
   busy = false;
 }}
 
+function scrollToCard(id) {{
+  const el = document.querySelector(`.board-card[data-id="${{CSS.escape(id)}}"]`);
+  if (!el) return;
+  el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1600);
+}}
+
 function wire() {{
-  document.querySelectorAll('.board-card,.side-card').forEach(el =>
+  document.querySelectorAll('.board-card').forEach(el =>
     el.onclick = e => {{ if (!e.target.closest('button,input')) showCard(el.dataset.id); }});
+  document.querySelectorAll('.side-card,.ny-btn').forEach(el =>
+    el.onclick = e => {{ scrollToCard(el.dataset.id); showCard(el.dataset.id); }});
   document.querySelectorAll('.abtn').forEach(b =>
     b.onclick = e => {{ e.stopPropagation(); doAct(b.dataset.id, b.dataset.do); }});
   document.querySelectorAll('.mv-btn').forEach(b =>
     b.onclick = e => {{ e.stopPropagation(); doAct(openCard, 'move', {{column: b.dataset.col}}); }});
-  document.querySelectorAll('.ny-btn').forEach(b =>
-    b.onclick = () => showCard(b.dataset.id));
   document.querySelectorAll('.rq-btn').forEach(b =>
     b.onclick = async e => {{
       e.stopPropagation();
