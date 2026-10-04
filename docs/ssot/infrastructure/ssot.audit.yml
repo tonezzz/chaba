@@ -65,7 +65,7 @@ schedule:
       - dev-system
       - ssot-kb-memory
       - memory-suite
-    note: installed and enabled on tony-dell; security-audit may need privileges
+    note: installed and enabled on idc02 (migrated 2026-10-04); security-audit may need privileges
 
 audits:
   - name: kb
@@ -362,7 +362,7 @@ audits:
     last_run:
     last_result:
 
-  - name: cms-pages
+  - name: cms-pages-live
     script: scripts/ada/cms-audit.py
     command: python3
     args:
@@ -432,7 +432,7 @@ groups:
   - name: cms-suite
     description: CMS page content/provenance QC — live lane of cms-audit.py
     children:
-      - cms-pages
+      - cms-pages-live
 
 semantics:
   description: >

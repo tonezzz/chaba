@@ -150,8 +150,8 @@ def url_verify(name, url, extra_headers=None):
 
 def main():
     if not CONFIG.exists():
-        print(f"MCP config not found: {CONFIG}", file=sys.stderr)
-        return 1
+        print(f"SKIP: no MCP config on this host ({CONFIG})")
+        return 0
     config = json.loads(CONFIG.read_text())
     results = {}
     for name, spec in config["mcpServers"].items():

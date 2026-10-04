@@ -259,16 +259,19 @@ check_backup_security() {
 check_database_security() {
     log "INFO" "Checking database security..."
     
-    # Check PostgreSQL connection security
-    if docker ps | grep -q postgres; then
+    # Check PostgreSQL connection security (docker or podman, whichever exists)
+    local rt=""
+    if command -v docker >/dev/null 2>&1; then rt="docker"
+    elif command -v podman >/dev/null 2>&1; then rt="podman"; fi
+    if [ -n "$rt" ] && $rt ps 2>/dev/null | grep -q postgres; then
         # Check if PostgreSQL is listening on all interfaces
-        local postgres_binding=$(docker exec postgres psql -U chaba -d chaba -c "SHOW listen_addresses;" -t 2>/dev/null | xargs || echo "unknown")
+        local postgres_binding=$($rt exec postgres psql -U chaba -d chaba -c "SHOW listen_addresses;" -t 2>/dev/null | xargs || echo "unknown")
         if [ "$postgres_binding" = "*" ]; then
             report_issue "medium" "database-security" "PostgreSQL listening on all interfaces" "Configure listen_addresses to specific IP in postgresql.conf"
         fi
         
         # Check for default passwords
-        local pg_hba=$(docker exec postgres cat /var/lib/postgresql/data/pg_hba.conf 2>/dev/null || echo "")
+        local pg_hba=$($rt exec postgres cat /var/lib/postgresql/data/pg_hba.conf 2>/dev/null || echo "")
         if echo "$pg_hba" | grep -q "trust"; then
             report_issue "high" "database-security" "PostgreSQL using 'trust' authentication" "Use md5 or scram-sha-256 authentication"
         fi

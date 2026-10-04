@@ -21,8 +21,22 @@ function run(cmd, args) {
   };
 }
 
-const fmt = run("caddy", ["fmt", "--overwrite", caddyfile]);
-const adapt = run("caddy", ["adapt", "--config", caddyfile, "--adapter", "caddyfile"]);
+// Use the host caddy binary when present; on hosts where Caddy runs
+// containerized (idc02 caddy-edge quadlet), fall back to the same
+// caddy:2 image via podman with the Caddyfile bind-mounted.
+function caddy(args) {
+  const direct = run("caddy", args);
+  if (direct.code !== null) return direct;
+  const containerPath = "/tmp/Caddyfile";
+  const mapped = args.map((a) => (a === caddyfile ? containerPath : a));
+  return run("podman", [
+    "run", "--rm", "-v", `${caddyfile}:${containerPath}:Z`,
+    "docker.io/library/caddy:2", "caddy", ...mapped,
+  ]);
+}
+
+const fmt = caddy(["fmt", "--overwrite", caddyfile]);
+const adapt = caddy(["adapt", "--config", caddyfile, "--adapter", "caddyfile"]);
 
 if (!fmt.ok) {
   console.error(`Caddy format failed:\n${fmt.stderr || fmt.stdout}`);

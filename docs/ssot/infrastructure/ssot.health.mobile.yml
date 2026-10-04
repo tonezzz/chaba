@@ -128,6 +128,7 @@ services:
   - id: gpu-queue
     name: GPU Queue
     type: http
+    host: tony_dell
     url: http://127.0.0.1:3001/health
     expected_status: 200
     timeout: 5
@@ -147,6 +148,7 @@ services:
   - id: playlived-dell
     name: Playlived (tony-dell)
     type: http
+    host: tony_dell
     url: http://127.0.0.1:9230/sessions
     expected_status: 200
     timeout: 5
