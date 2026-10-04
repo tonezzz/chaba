@@ -8,7 +8,7 @@ note: 'Not a puller bug. go2rtc :1984 check 2026-10-04: xiaomi_c100* all variant
   -> 200 but empty body; 0 consumers on all three. Only xiaomi_c201_hd streams (28KB frames). Cameras are offline/unpowered/wifi-dead
   at source. Fix = physical check, or trim the zone to live cams if permanently retired.'
 help: curl http://100.68.142.13:1984/api/streams — check consumers per stream
-updated: 2026-10-04 19:43
+updated: 2026-10-04 19:59
 requests:
 - id: cam-disposition
   ask: 3/4 tony-house cams dead at source (timeout/empty-body; only xiaomi_c201_hd live). Physical check or trim
@@ -35,5 +35,8 @@ comms:
 - at: 2026-10-04 19:43
   from: tony
   text: put on hold
+- at: 2026-10-04 19:59
+  from: devin
+  text: 'remaining: physical power/wifi check at the 3 dead cams — Tony action, no software path.'
 action:
   status: idle

@@ -1,39 +1,33 @@
 id: yt-voice-dub-test
-title: 'YT voice dub — minimal TTS audio track test (en/th)'
+title: YT voice dub — minimal TTS audio track test (en/th)
 column: doing
-metric: 'one short video plays with intelligible TH voice track over ducked original'
-verify: 'ffprobe shows dub audio stream + Tony watches it on the TV'
-note: >-
-  Extends the yt-live subtitle pipeline. Steps: reuse cached media + VTT
-  cues from ~/.cache/yt-live-media|subs, edge-tts per cue -> mp3, stretch
-  to cue window, mix dub over ducked original (~20%) via ffmpeg, output to
-  stacks/web/public/apps/yt-live/, cast via yt-live-api :8791. Also:
-  yt-live.sh + yt-vtt-translate.py live in ~/.local/bin with no repo home —
-  move to scripts/ while in there.
-help: >-
-  pipeline: ~/.local/bin/yt-live-api.py :8791 + yt-live.sh +
-  yt-vtt-translate.py; docs/kb/home-assistant/tv-casting-runbook.md;
-  scripts/ops/yt-transcript.sh; voices th-TH-PremwadeeNeural / en-US-*
-updated: '2026-10-04'
+metric: one short video plays with intelligible TH voice track over ducked original
+verify: ffprobe shows dub audio stream + Tony watches it on the TV
+note: 'Extends the yt-live subtitle pipeline. Steps: reuse cached media + VTT cues from ~/.cache/yt-live-media|subs,
+  edge-tts per cue -> mp3, stretch to cue window, mix dub over ducked original (~20%) via ffmpeg, output to stacks/web/public/apps/yt-live/,
+  cast via yt-live-api :8791. Also: yt-live.sh + yt-vtt-translate.py live in ~/.local/bin with no repo home — move
+  to scripts/ while in there.'
+help: 'pipeline: ~/.local/bin/yt-live-api.py :8791 + yt-live.sh + yt-vtt-translate.py; docs/kb/home-assistant/tv-casting-runbook.md;
+  scripts/ops/yt-transcript.sh; voices th-TH-PremwadeeNeural / en-US-*'
+updated: 2026-10-04 19:50
 comms:
-- at: '2026-10-04 19:05'
+- at: 2026-10-04 19:05
   from: devin
-  text: >-
-    First dub rendered + cast. h6fcK_fRYaI.en.th (Secrets of the
-    Elephants, en->th merged VTT): 59 TH cues -> edge-tts
-    th-TH-PremwadeeNeural -> per-cue rate-fit -> 22% ducked mix ->
-    180s dub.mp4 (14.5MB h264/aac) -> play_media on tony_tv_cast,
-    state=playing. Tool: ~/.local/bin/yt-vtt-dub.py on tony-dell
-    (edge-tts 7.2.8 in ~/.venvs/edge-tts). URL:
-    http://192.168.2.67/apps/yt-live/dub.mp4. Awaiting Tony's
-    listen test — judge intelligibility, cue timing, duck level.
-- at: '2026-10-04 19:25'
+  text: 'First dub rendered + cast. h6fcK_fRYaI.en.th (Secrets of the Elephants, en->th merged VTT): 59 TH cues
+    -> edge-tts th-TH-PremwadeeNeural -> per-cue rate-fit -> 22% ducked mix -> 180s dub.mp4 (14.5MB h264/aac) ->
+    play_media on tony_tv_cast, state=playing. Tool: ~/.local/bin/yt-vtt-dub.py on tony-dell (edge-tts 7.2.8 in
+    ~/.venvs/edge-tts). URL: http://192.168.2.67/apps/yt-live/dub.mp4. Awaiting Tony''s listen test — judge intelligibility,
+    cue timing, duck level.'
+- at: 2026-10-04 19:25
   from: devin
-  text: >-
-    Parameter sweep rendered (59/59 cues each): v2 = NiwatNeural male
-    duck .22, v3 = Premwadee duck .10, v4 = Premwadee duck .35, all
-    180s in apps/yt-live/. Compare page
-    /apps/yt-live/dub-compare.html for side-by-side preview without
-    casting. CMS page tts-voice-catalog published (edge-tts voice
-    list + note: Thai only has 2 voices — casting constraint).
-    edge-tts needed a 3-try retry loop — flaky under parallel load.
+  text: 'Parameter sweep rendered (59/59 cues each): v2 = NiwatNeural male duck .22, v3 = Premwadee duck .10, v4
+    = Premwadee duck .35, all 180s in apps/yt-live/. Compare page /apps/yt-live/dub-compare.html for side-by-side
+    preview without casting. CMS page tts-voice-catalog published (edge-tts voice list + note: Thai only has 2 voices
+    — casting constraint). edge-tts needed a 3-try retry loop — flaky under parallel load.'
+- at: 2026-10-04 19:50
+  from: devin
+  text: 'Tony report: voice speed fast->very fast + text overlapping. Root causes in yt-vtt-dub.py: (1) resynth
+    capped +80% then UNBOUNDED atempo chain -> up to ~3.3x speed; (2) fit window was cue end-start only, ignoring
+    free gap air before next cue; (3) overlapping VTT timestamps passed through unclamped. Fix (dub-v5-fit.mp4 now
+    on screen 5): fit window runs to NEXT cue start, resynth capped +35%, total atempo capped 1.4x, last-resort
+    atrim (clipped tail beats doubled voice), VTT overlap clamped. Deplo'
