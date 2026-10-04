@@ -1,11 +1,23 @@
 id: logs-weekly-verify
 title: Dry-run weekly-digest.timer before first real fire (Mon 07:00)
-column: todo
+column: done
 program: logs-digest
 priority: high
 metric: weekly-digest --dry-run exits 0 and renders the rollup section
-note: >-
-  weekly-digest.timer has never run — first fire is Mon 2026-10-05 07:00,
-  one day out. Run scripts/ada/weekly-digest.py manually/dry-run on
-  tony-omen now to catch arg/env bugs before it fires blind.
-updated: '2026-10-04'
+note: weekly-digest.timer has never run — first fire is Mon 2026-10-05 07:00, one day out. Run scripts/ada/weekly-digest.py
+  manually/dry-run on tony-omen now to catch arg/env bugs before it fires blind.
+updated: 2026-10-04 14:21
+comms:
+- at: 2026-10-04 14:21
+  from: devin
+  text: 'Verified on tony-omen: --dry-run exits 0, rollup renders; a full run also completed the real publish path
+    (digest-weekly written to CMS). Timer armed Mon 07:00. Digest signal: yomi-process.service failed x1227 on omen
+    — top offender, may deserve its own card if it persists.'
+- at: 2026-10-04 14:21
+  from: tony
+  text: closed by Tony
+- at: 2026-10-04 14:21
+  from: tony
+  text: closed by Tony
+action:
+  status: done

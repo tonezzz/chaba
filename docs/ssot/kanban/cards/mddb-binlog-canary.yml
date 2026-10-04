@@ -1,6 +1,6 @@
 id: mddb-binlog-canary
 title: mddb binlog size canary
-column: backlog
+column: review
 note: Retention janitor is live, but a silent stall grows the file again — alert on /v1/replication/status binlog_size_bytes
   > 1G or oldest_lsn gap > 5M so we see it before the disk does.
 spec: 'Add a check to the mcp-health / chaba health loop on tony-dell: GET http://100.74.146.0:11023/v1/replication/status,
@@ -8,10 +8,33 @@ spec: 'Add a check to the mcp-health / chaba health loop on tony-dell: GET http:
   != healthy for >10min. Route to focus-inbox on breach.'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
-updated: 2026-10-04 14:18
+  task_id: 20261004-142059-add-a-check-to-the-mcp-health-
+  runner: tony-dell
+  result: 20261004-142059-add-a-check-to-the-mcp-health- finished (inactive) — see `devin-dispatch logs 20261004-142059-add-a-check-to-the-mcp-health-`
+updated: 2026-10-04 14:31
 comms:
 - at: 2026-10-04 14:18
   from: tony
   text: queued for processing
+- at: 2026-10-04 14:21
+  from: chaba
+  text: dispatched 20261004-142059-add-a-check-to-the-mcp-health- on chaba
+- at: 2026-10-04 14:27
+  from: devin
+  text: 'Picked up. Plan: new scripts/mddb-binlog-canary.py (thresholds + >10min persistence via state file + focus-inbox
+    write), wired into tony-dell-monitor.sh loop. Note: live endpoint already breaching (binlog 2.66GB, lsn_gap
+    ~19.3M) and has no followers[] field.'
+- at: 2026-10-04 14:30
+  from: devin
+  text: 'Done on dispatch branch (7db45c23). New scripts/mddb-binlog-canary.py wired into tony-dell-monitor.sh:
+    checks /v1/replication/status every 2min, flags binlog>1GiB / lsn_gap>5M / unhealthy followers sustained >10min,
+    writes one focus-inbox item per episode. Tested live + canned payloads + full loop. Deploy: merge, then cp monitor.sh
+    to ~/.local/bin/. NOTE: endpoint already breaching (2.66GB, 19.3M gap) — first inbox item expected ~10min after
+    deploy; followers[] field absent in current mddbd buil'
+- at: 2026-10-04 14:31
+  from: chaba
+  text: run finished (inactive) → review
+claim:
+  since: 2026-10-04 14:21

@@ -1,15 +1,13 @@
 id: mha-log-noise
 title: michael-ha log noise - tuya dup IDs + solis_modbus group skips
 column: backlog
-note: 'ROOT CAUSE FOUND 2026-10-04: duplicate tuya config entries (nakvac@gmail.com
-  x2), one stuck in setup 6.5d. solis_modbus group-skip is correct-but-noisy (missing
-  PARALLEL feature). See comms + requests.'
+note: 'ROOT CAUSE FOUND 2026-10-04: duplicate tuya config entries (nakvac@gmail.com x2), one stuck in setup 6.5d.
+  solis_modbus group-skip is correct-but-noisy (missing PARALLEL feature). See comms + requests.'
 requests:
 - id: tuya-dup-entry
-  ask: Two tuya config entries for nakvac@gmail.com on michael-ha — remove the stuck
-    one (01KQ9026MRNHWFSZ, blocking startup 6.5d) or the newer one (01M19NJ76J0020RJ)?
-    Removing the wrong entry can orphan entities; if unsure I can inspect per-entry
-    device counts first.
+  ask: Two tuya config entries for nakvac@gmail.com on michael-ha — remove the stuck one (01KQ9026MRNHWFSZ, blocking
+    startup 6.5d) or the newer one (01M19NJ76J0020RJ)? Removing the wrong entry can orphan entities; if unsure I
+    can inspect per-entry device counts first.
   status: open
   options:
   - id: remove-stuck
@@ -21,12 +19,13 @@ requests:
 comms:
 - ts: '2026-10-04T12:13:34'
   from: devin
-  text: 'Diagnosed via system_log: ~73 ''Platform tuya does not generate unique IDs''
-    — root cause is TWO loaded tuya config entries for nakvac@gmail.com (01KQ9026MRNHWFSZ
-    + 01M19NJ76J0020RJ); every device double-registers. Entry 01KQ9026MRNHWFSZ is
-    also stuck in ''Waiting for integrations'' 560923s (~6.5 days). Fix = remove one
-    entry. solis_modbus ''Skipping sensor group 34243'' x3/boot = inverter lacks PARALLEL
-    feature — correct behavior, noise-only; fix is a log-level patch in the custom
-    component (needs michael-ha config access — no SSH key currently). ALSO FOUND:
-    media_player (140 hits) + linkplay (42) are louder than tuya — worth a follow-up
-    card.'
+  text: 'Diagnosed via system_log: ~73 ''Platform tuya does not generate unique IDs'' — root cause is TWO loaded
+    tuya config entries for nakvac@gmail.com (01KQ9026MRNHWFSZ + 01M19NJ76J0020RJ); every device double-registers.
+    Entry 01KQ9026MRNHWFSZ is also stuck in ''Waiting for integrations'' 560923s (~6.5 days). Fix = remove one entry.
+    solis_modbus ''Skipping sensor group 34243'' x3/boot = inverter lacks PARALLEL feature — correct behavior, noise-only;
+    fix is a log-level patch in the custom component (needs michael-ha config access — no SSH key currently). ALSO
+    FOUND: media_player (140 hits) + linkplay (42) are louder than tuya — worth a follow-up card.'
+- at: 2026-10-04 14:25
+  from: devin
+  text: 'NOTE: board-api probe accidentally marked tuya-dup-entry answered with empty text — reverted to open. Still needs Tony''s decision.'
+updated: 2026-10-04 14:22

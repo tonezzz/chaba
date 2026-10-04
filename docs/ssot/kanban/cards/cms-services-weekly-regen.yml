@@ -1,6 +1,6 @@
 id: cms-services-weekly-regen
 title: Weekly auto-regen of host services reports
-column: backlog
+column: review
 note: scripts/ada/host-services-cms.py is replayable and the viewer button works — now schedule it so the 7 pages
   (index + 6 hosts) stay fresh without a manual click. Weekly timer on tony-dell + a comms line on failure.
 spec: Create chaba-services-regen.service/.timer (weekly, on tony-dell) running scripts/ada/host-services-cms.py.
@@ -8,10 +8,35 @@ spec: Create chaba-services-regen.service/.timer (weekly, on tony-dell) running 
   the pages' disk% drift reflects real state after two runs.
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
-updated: 2026-10-04 14:18
+  task_id: 20261004-141859-create-chaba-services-regen-se
+  runner: tony-dell
+  result: 20261004-141859-create-chaba-services-regen-se finished (inactive) — see `devin-dispatch logs 20261004-141859-create-chaba-services-regen-se`
+updated: 2026-10-04 14:33
 comms:
 - at: 2026-10-04 14:18
   from: tony
   text: queued for processing
+- at: 2026-10-04 14:20
+  from: chaba
+  text: dispatched 20261004-141859-create-chaba-services-regen-se on chaba
+- at: 2026-10-04 14:27
+  from: devin
+  text: devin picked this up — creating chaba-services-regen.{service,timer} + fail-notify unit in systemd/, scheduling
+    weekly on tony-dell, then verifying two runs against real disk state.
+- at: 2026-10-04 14:28
+  from: chaba
+  text: 'chaba-services-regen-fail self-test (drill — no real failure): comms path to board-api verified'
+- at: 2026-10-04 14:32
+  from: devin
+  text: 'Done. chaba-services-regen.timer installed+enabled on tony-dell (Sun 05:30, next 2026-10-11); service runs
+    host-services-cms.py via a wrapper that fails on rc!=0 or PUBLISH FAIL; OnFailure -> chaba-services-regen-fail.service
+    posts comms here, focus-inbox fallback if board-api is down. Two runs verified: 7 pages HTTP 200 each, index
+    updated ts advanced, disk% == live df (dell 87% watch-flagged, omen 38%, idc01 62%, idc02 20%, mn01 20%, michael-ha
+    unreachable-by-design). Files: systemd/chaba-serv'
+- at: 2026-10-04 14:33
+  from: chaba
+  text: run finished (inactive) → review
+claim:
+  since: 2026-10-04 14:20
