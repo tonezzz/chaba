@@ -1,0 +1,8 @@
+[Unit]
+Description=Chaba Audit Suite (weekly) (job:chaba-audit, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=3600
+ExecStart=%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs
+Environment="PATH=%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin"

@@ -1,0 +1,8 @@
+[Unit]
+Description=SSOT Optimization Snapshot (job:ssot-optimization-snapshot, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=%h/.n/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs
+Environment="MDDB_BASE=http://100.74.146.0:11023"

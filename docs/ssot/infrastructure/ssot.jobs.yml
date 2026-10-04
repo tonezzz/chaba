@@ -65,12 +65,16 @@ jobs:
   note: runs from the chaba-tony-dell checkout (writes focus-inbox + commits)
 - id: ssot-optimization-snapshot
   name: SSOT Optimization Snapshot
-  host: tony_dell
+  host: idc02
   dispatch: systemd
   on_calendar: '*-*-* 03:30:00'
   persistent: true
   timeout: 10m
-  exec: /usr/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs
+  exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs'
+  env:
+    MDDB_BASE: http://100.74.146.0:11023
+  note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout; MDDB_BASE
+    points at idc01 (was dell-local env)
 - id: ha-config-backup
   name: HA Config Backup
   host: tony_dell
@@ -82,12 +86,16 @@ jobs:
   note: reads tony-ha config — host-bound until moved to an idc02 remote pull
 - id: chaba-audit
   name: Chaba Audit Suite (weekly)
-  host: tony_dell
+  host: idc02
   dispatch: systemd
   on_calendar: Sun *-*-* 02:00:00
   persistent: true
   timeout: 1h
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
+  note: migrated tony_dell -> idc02 2026-10-04 (node via ~/.n/bin/node symlink; PATH
+    env needed — runner spawns bare `node` children)
+  env:
+    PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-system-report
   name: Chaba System Report
   host: idc02
@@ -197,6 +205,17 @@ jobs:
     --all
   note: migrated tony_dell -> idc02 2026-10-03 (phase-1 pilot); exits 2 on all-skipped
     tick — pre-existing wart, see mha-log-noise-style fixup
+- id: chaba-kb-audit
+  name: KB audit chain (weekly)
+  host: idc02
+  dispatch: systemd
+  on_calendar: Sun *-*-* 04:00:00
+  persistent: true
+  timeout: 30m
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && %h/.n/bin/node scripts/auto-kb-quality-audit.mjs
+    --json && %h/.n/bin/node scripts/kb-categorize-audit.mjs && %h/.n/bin/node scripts/audits/kb-modularity-audit.mjs'
+  note: registered 2026-10-04 at idc02 migration; was deployed on dell but missing
+    from manifest
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

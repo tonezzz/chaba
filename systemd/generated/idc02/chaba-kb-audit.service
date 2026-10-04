@@ -1,0 +1,7 @@
+[Unit]
+Description=KB audit chain (weekly) (job:chaba-kb-audit, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1800
+ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && %h/.n/bin/node scripts/auto-kb-quality-audit.mjs --json && %h/.n/bin/node scripts/kb-categorize-audit.mjs && %h/.n/bin/node scripts/audits/kb-modularity-audit.mjs'
