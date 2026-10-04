@@ -1,0 +1,22 @@
+id: nano-banana-image
+title: ada image render — nano-banana gen -> LINE/Telegram photo
+column: backlog
+metric: 'ask Ada for an image -> generated PNG lands as a photo in Tony LINE + Telegram chat'
+verify: 'prompt in tg chat -> sendPhoto arrives <30s; same in LINE chat -> imageMessage arrives'
+note: >-
+  Minimal path — the plumbing already exists, this is just the generator +
+  URL hop. Steps: (1) new tool ada_render_image(prompt) — calls Gemini
+  image model (gemini-2.5-flash-image, "nano banana") via the same REST
+  generateContent path vcast_tts uses (no google-genai client, thread-safe);
+  (2) save PNG to the vcast /frame store -> display-reachable URL (same as
+  TTS wavs); (3) the relays already do the rest — tg_relay.send_photo
+  fetches a tailnet URL -> sendPhoto; line_relay turns tool cast_url/image_url
+  results into LINE imageMessages (needs public https — /frame is already
+  proxied public on idc02/tony-ha). Keep it one-shot: single prompt, no
+  multi-turn image editing in v0 (nano-banana supports edit-by-conversation
+  but defer).
+help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model;
+  tg send: tg_relay.send_photo (fetch url -> sendPhoto); LINE: line_relay._images_from
+  (cast_url/image_url -> imageMessage, public https only); model:
+  gemini-2.5-flash-image'
+updated: '2026-10-04'
