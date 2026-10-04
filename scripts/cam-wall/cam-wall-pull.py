@@ -41,6 +41,11 @@ DATA = Path(os.environ.get(
     "CAMWALL_DATA",
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))
 
+# Display-name overrides keyed by slug(label) — keep the tuple label
+# ASCII so jpg/CMS keys stay stable; LABELS is what walls and dossiers
+# actually render.
+LABELS = {"cam01": "ทางคนเดินออก/รถเข้า"}
+
 # label -> ("vms", channel) | ("go2rtc", stream) | ("jpeg"|"youtube"|"hls", url)
 # interval = refresh cadence while the zone is enabled; warm = keep thumbs
 # fresh while DISABLED so casting a cold wall still shows recent frames.
@@ -665,7 +670,8 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     def one(cam: tuple) -> dict:
         label, kind, key = cam[0], cam[1], cam[2]
         alts = tuple(cam[3:])
-        out = {"key": slug(label), "label": label, "ts": 0, "ok": False}
+        out = {"key": slug(label), "label": LABELS.get(slug(label), label),
+               "ts": 0, "ok": False}
         # canonical camera identity — vms channels carry DVR device+channel
         # so the same physical cam shares one CMS page no matter how many
         # walls list it (zone-a / vms-noble-a both pull "1. Road In").
@@ -699,7 +705,7 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
             prev = zdir / f"{out['key']}.jpg"
             if prev.exists():
                 out["ts"] = int(prev.stat().st_mtime)  # keep stale ts
-            write_status_card(zdir, out["key"], label, "error",
+            write_status_card(zdir, out["key"], out["label"], "error",
                               out["ts"])
         return out
 
@@ -709,8 +715,8 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     t_vms = time.time()
     for cam in vms:
         if time.time() - t_vms > VMS_BUDGET:
-            out = {"key": slug(cam[0]), "label": cam[0], "ts": 0,
-                   "ok": False, "err": "skipped: vms budget"}
+            out = {"key": slug(cam[0]), "label": LABELS.get(slug(cam[0]), cam[0]),
+                   "ts": 0, "ok": False, "err": "skipped: vms budget"}
             prev = zdir / f"{out['key']}.jpg"
             if prev.exists():
                 out["ts"] = int(prev.stat().st_mtime)
