@@ -1,13 +1,19 @@
 id: mddb-binlog-upstream
 title: Upstream binlog-retention + replication fixes to tradik/mddb
 column: backlog
-note: "Patch lives only on mddb-fork — a stock image bump would lose it. Now
-  4 commits on binlog-retention: 598c57d janitor, bfb3b7c stream Rotate,
-  dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side
-  FailedPrecondition -> snapshot. All proven on idc01+tony-dell."
-help: "The last two are upstream-worthy bugs independent of retention:
-  (a) ScanFrom's too-old guard skipped fromLSN==0 so fresh followers replayed
-  the entire retained log instead of snapshotting; (b) the client's snapshot
-  fallback only checked the dial error while gRPC delivers rejections via
-  Recv — followers looped on 'stream recv error' forever."
-updated: '2026-10-04'
+note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4 commits on binlog-retention: 598c57d
+  janitor, bfb3b7c stream Rotate, dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side FailedPrecondition
+  -> snapshot. All proven on idc01+tony-dell.'
+help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanFrom''s too-old guard skipped fromLSN==0
+  so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
+  only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
+  forever.'
+updated: 2026-10-04 19:11
+comms:
+- at: 2026-10-04 19:11
+  from: devin
+  text: 'NEW upstream-worthy bug found while triaging the canary breach — snapshot-replace verify creates a doom
+    loop: (1) follower LSN too old → requests ~4GB snapshot; (2) replace runs bbolt tx.Check() on the tmp file —
+    on tony-dell this does not finish inside MDDB_VERIFY_TIMEOUT=6h; (3) timeout aborts the replace, follower still
+    too old → requests ANOTHER snapshot; (4) meanwhile leader keepLSN stays pinned at binlog_oldest_lsn (janitor
+    logs: nothing trimmable), so binlog grows ~500MB/cycle — breach wa'

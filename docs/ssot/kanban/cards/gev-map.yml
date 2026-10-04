@@ -1,13 +1,18 @@
 id: gev-map
-title: 'gev map — cesium panes render or fail honestly'
+title: gev map — cesium panes render or fail honestly
 column: backlog
 program: gev
 area: map
-metric: 'every pane either renders tiles or surfaces a visible failure state'
-verify: 'gev_pane_honest_fail scenario pass + iPad msaaSamples:1 no crash'
-note: >-
-  Cesium panes in /apps/gev/. iPad requires msaaSamples:1 (post-build
-  patch in AGENTS.md). Honest-fail: a pane that cannot render must say so
-  instead of showing a black pane — gev_pane_honest_fail covers it.
+metric: every pane either renders tiles or surfaces a visible failure state
+verify: gev_pane_honest_fail scenario pass + iPad msaaSamples:1 no crash
+note: 'Cesium panes in /apps/gev/. iPad requires msaaSamples:1 (post-build patch in AGENTS.md). Honest-fail: a pane
+  that cannot render must say so instead of showing a black pane — gev_pane_honest_fail covers it.'
 help: 'build: ~/gods-eye-view npm run build + 3 post-build patches'
-updated: '2026-10-04'
+updated: 2026-10-04 19:09
+comms:
+- at: 2026-10-04 19:09
+  from: devin
+  text: 'UPDATE 2026-10-04: client-side honest-fail improved — delivered command with all ok:false responses now
+    surfaces as top-level ok:false + error (was buried in responses[]). Arg-wrap bug (model nests {name,args} inside
+    args) unwrapped + schema desc warns. ada-pi 0bb8e9b + feafff7. Cast-browser Cesium render fixed via --enable-unsafe-swiftshader
+    (was --disable-gpu -> Error constructing CesiumWidget).'
