@@ -88,6 +88,8 @@ def render_service(j, man):
     cwd = j.get("cwd")
     if cwd:
         lines.append(f"WorkingDirectory={cwd}")
+    if j.get("env_file"):
+        lines.append(f"EnvironmentFile={esc(j['env_file'])}")
     for k, v in (j.get("env") or {}).items():
         lines.append(f'Environment="{k}={v}"')
     return "\n".join(lines) + "\n"

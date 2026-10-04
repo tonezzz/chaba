@@ -216,6 +216,16 @@ jobs:
     --json && %h/.n/bin/node scripts/kb-categorize-audit.mjs && %h/.n/bin/node scripts/audits/kb-modularity-audit.mjs'
   note: registered 2026-10-04 at idc02 migration; was deployed on dell but missing
     from manifest
+- id: devin-bank-distill
+  name: Devin bank distill (weekly)
+  host: idc02
+  dispatch: systemd
+  on_calendar: Sun *-*-* 10:15:00
+  persistent: true
+  timeout: 30m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/distill-devin-bank.py
+  env_file: '%h/.config/secrets/gemini-api-key.env'
+  note: migrated tony_dell -> idc02 2026-10-04; gemini key provisioned to idc02 secrets
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
