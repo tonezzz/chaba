@@ -3,7 +3,7 @@ title: Establish plan → structure → develop → audit → benchmark CI stand
 column: backlog
 note: Define the standard pipeline every card-sized piece of work flows through, and wire it into the repo so it
   runs hands-off.
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:19
 help: "Goal: one declared pipeline — PLAN (spec the card), STRUCTURE (worktree +\nfiles), DEVELOP (implement), AUDIT\
   \ (ssot-validate, lint, tests),\nBENCHMARK (measurable before/after) — that any card can opt into via\n`pipeline:\
   \ ci` and that kanban-dispatch runs hands-off.\n\nDeliverables:\n1. docs/ssot/ssot.ci.yml — stages, gates, required\
@@ -22,7 +22,7 @@ spec: "Design and implement the standard Chaba CI pipeline for card-sized work:\
   \ small card.\n"
 action:
   type: dispatch
-  status: idle
+  status: queued
   button: ▶ Build the pipeline
   repo: chaba
 requests:
@@ -49,3 +49,9 @@ comms:
 - at: 2026-10-04 19:59
   from: devin
   text: 'remaining: demo run on tts-artifact-clean (small, verifiable).'
+- at: 2026-10-04 20:19
+  from: devin
+  text: 'demo-card answered by Tony: tts-artifact-clean is the demonstration target. Queueing for dispatch.'
+- at: 2026-10-04 20:19
+  from: tony
+  text: queued for processing
