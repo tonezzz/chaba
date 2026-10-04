@@ -10,4 +10,16 @@ note: >-
   pinned to Security only (pure VMS index, was in both tabs); cctv-walls
   stays in both as the cross-zone index. No wall-*/noble-park leftovers.
   Follow-ups: vms-cam01-rename (placeholder label).
+capture-fix: >-
+  2026-10-04: security thumbs were stale/mixed-size because three things
+  were broken at once — tony-dell puller was TERM'd Oct 2 + timer dead
+  (empty CAMWALL_OWN = pulls ALL zones, pushes nowhere); idc01 VPS lane
+  owned security but ran the pre-native script and its venv lacked numpy
+  AND onnxruntime (yolo effect) so apply_effects failed silently and raw
+  8MB PNGs hit the served dir; dohweb owned nobody. Fixed: idc01 script
+  synced to native=1, OWN=tony-house,vms-noble-club,vms-noble-a (zone-a,
+  noble-park retired dirs deleted), idc02 owns all traffic + dohweb,
+  tony-dell puller disabled, numpy/onnxruntime/yolov8n.onnx installed on
+  both VPS lanes. Verified: noble-a 5/5 native 2880x1616 -> uniform
+  720x404 thumbs + person detections.
 updated: '2026-10-03'
