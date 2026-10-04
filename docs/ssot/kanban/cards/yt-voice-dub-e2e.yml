@@ -14,8 +14,12 @@ note: >-
   rate per cue instead of post-stretch; (2) caption QC gate — flag cues
   with too few chars or implausible duration before TTS; (3) sidechain
   ducking keyed to dub segments instead of flat 20%; (4) voice-mode
-  selector (off/TH/EN) on the cast URL; (5) only if demand proves out:
-  cloud neural TTS or speaker-aware dub. Boundary: no voice cloning,
-  lip-sync, or diarization until the minimal test lands.
+  selector (off/TH/EN) on the cast URL; (5) voice casting — match a TTS
+  voice to each detected speaker (gender/age/tone), consistent for the
+  whole video, tracked in yt-voice-dub-cast + verified via
+  yt-voice-dub-scenarios benchmark; (6) only if demand proves out:
+  cloud neural TTS or full speaker-aware dub. Boundary: no voice
+  cloning, lip-sync, or cloning-grade diarization until the minimal
+  test lands.
 help: 'parent test: yt-voice-dub-test; same pipeline refs'
 updated: '2026-10-04'

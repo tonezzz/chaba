@@ -1,0 +1,17 @@
+id: yt-voice-dub-cast
+title: 'YT voice dub — cast TTS voices to match actors/speakers'
+column: backlog
+metric: 'each distinct speaker keeps one consistent voice, plausibly matched on gender/age/tone'
+verify: 'dub output has N distinct voices aligned to detected/labelled speakers'
+note: >-
+  Next step after yt-voice-dub-test (Tony ask 2026-10-04). Two
+  sub-problems: (a) speaker detection — YouTube auto-captions carry no
+  speaker labels, so use audio diarization (pyannote / whisperx-style
+  align+diarize) or heuristic cue-gap clustering; (b) voice casting —
+  map each speaker to an edge-tts voice matched on gender/age/tone,
+  fixed for the whole video. Start heuristic: 2-speaker assumption on
+  interview/talk videos before paying for full diarization.
+help: >-
+  voices: edge-tts --list-voices (filter th-*/en-*); diarize:
+  pyannote/speaker-diarization; verify loop in yt-voice-dub-scenarios
+updated: '2026-10-04'

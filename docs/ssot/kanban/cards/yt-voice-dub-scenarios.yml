@@ -1,0 +1,16 @@
+id: yt-voice-dub-scenarios
+title: 'YT voice dub — scenario + benchmark coverage'
+column: backlog
+metric: 'dub scenarios pass in ada-pi suite; benchmark tracks cue overflow % + voices-per-speaker'
+verify: 'dub_cue_timing + dub_voice_consistency scenarios green; benchmark.yml entries run'
+note: >-
+  Add dub checks to ada-pi scenario-live + tests/benchmark.yml (Tony ask
+  2026-10-04 — reuse for scenario & benchmark). Scenarios:
+  dub_cue_timing (each TTS segment fits its cue window within
+  tolerance), dub_voice_consistency (same speaker keeps same voice
+  across cues — doubles as the yt-voice-dub-cast regression gate),
+  dub_duck_mix (original ducks during dub segments, recovers after).
+  Benchmark metrics: cue overflow %, WER of dub vs source captions,
+  voices-per-speaker = 1, dub-vs-original loudness delta.
+help: 'ada-pi tests/scenarios-live/ + tests/benchmark.yml; template gev_pane_honest_fail'
+updated: '2026-10-04'
