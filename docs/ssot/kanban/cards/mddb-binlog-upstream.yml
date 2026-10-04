@@ -7,7 +7,7 @@ note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4
 help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanFrom''s too-old guard skipped fromLSN==0 so
   fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback only checked
   the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error'' forever.'
-updated: 2026-10-04 19:48
+updated: 2026-10-04 21:00
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -30,6 +30,24 @@ comms:
     with NoFreelistSync so no freelist is persisted. That is the same cost as tx.Check() — explains both the 6h verify timeouts
     AND why follower restarts each take ~1h+ under disk contention. Follower-side fix applied: MDDB_FREELIST_SYNC=true on
     tony-dell mddb.se'
+- at: 2026-10-04 20:51
+  from: devin
+  text: 'Refined diagnosis (2nd goroutine dump): the open-time walk IS bbolt loadFreelist→freepages→forEachPageInternal/FastCheck
+    — O(pages) mmap-fault-bound, not the tx.Check() verify. On dell (sda ~77-97% util, 97ms read latency, 3.7GB cache for
+    a 3.9GB db) each random page fault costs ~97ms → hours. Fixes in flight: MDDB_FREELIST_SYNC=true set on follower quadlet
+    (first open walks once, then freelist persists in-db). Prefetching db sequentially into page cache to accelerate the current
+    walk. Confirms '
+- at: 2026-10-04 20:58
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 20:58
+  from: chaba
+  text: dispatched 20261004-205839-upstream-binlog-retention-repl on chaba
+- at: 2026-10-04 21:05
+  from: devin
+  text: 'Misdispatch corrected: the 20:58 queue raced the spec commit — session 20261004-205839 launched with generic task
+    on the chaba repo (mddb-fork unreachable from that worktree), killed before it could flail. Card now carries repo:mddb-fork
+    + full task spec; re-queueing.'
 action:
   type: devin-dispatch
   repo: mddb-fork
@@ -37,18 +55,17 @@ action:
   task: 'Implement the replication snapshot-loop fixes documented in this card''s comms, on top of the 4 existing binlog-retention
     commits (598c57d..0b46e57, branch feat/vector-algorithms):
 
-    1. Persist the freelist in leader snapshots (ship the freelist pages in the snapshot stream) so followers don''t rebuild
-    it via the O(pages) freepages->checkInvariantProperties walk on every open.
+    1. Persist the freelist in leader snapshots so followers don''t rebuild it via the O(pages) freepages->checkInvariantProperties
+    walk on every open.
 
     2. Default MDDB_FREELIST_SYNC=true for read-only replicas (MDDB_MODE=ro followers).
 
-    3. Snapshot-replace verify: reuse the fast-open path or skip tx.Check() for trusted stream snapshots (MDDB_VERIFY_TIMEOUT=6h
-    insufficient for ~4GB dbs under disk contention).
+    3. Snapshot-replace verify: reuse the fast-open path or skip tx.Check() for trusted stream snapshots.
 
-    4. Progress logging during the freelist/integrity walk (it is currently silent for ~1h).
+    4. Progress logging during the freelist/integrity walk (currently silent ~1h).
 
-    5. /v1/replication/status ''healthy'' must reflect replication state: report unhealthy/lagging when follower current_lsn==0
-    or when lagging beyond a threshold — it currently reports healthy:true at LSN 0.
+    5. /v1/replication/status ''healthy'' must reflect replication state: unhealthy when follower current_lsn==0 or lagging
+    beyond threshold — currently reports healthy:true at LSN 0.
 
     Write Go tests for each change. Keep commits separate and conventional. Do NOT push to origin (tradik/mddb upstream) —
-    local commits only; the card will handle PR prep.'
+    local commits only.'

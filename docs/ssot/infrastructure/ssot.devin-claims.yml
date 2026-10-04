@@ -58,6 +58,24 @@ claims:
     Host-level cap: KANBAN_HOST_CAP on each dispatcher (dell default 3
     devin-task-* units).
 
+resource_courtesy:
+  rule: |
+    tony-dell's disk saturates easily (observed 97% util, load ~11 under
+    normal agent + desktop + HA load). Every session shares that budget:
+    - NEVER run unconstrained scans (find ~, grep -r over repo roots or
+      home). Bound every scan (maxdepth, explicit dirs, timeout) and use
+      the provided search tools (ripgrep-backed), which are faster and
+      permission-aware.
+    - O(db-size) walks on multi-GB files (bbolt freelist rebuild, mddb
+      verify, rsync of big trees) degrade to hours under contention —
+      schedule them, don't stack them.
+    - A process stuck in D state on IO is normal under saturation; give
+      it time rather than spawning competing retries.
+  incident_2026_10_04: |
+    mddb snapshot-verify loop: follower snapshots timed out at 6h partly
+    because agent find/grep scans were saturating the same disk that had
+    to walk a 3.9GB database page-by-page.
+
 generated_artifacts:
   rule: |
     Generated files are regenerated, never hand-merged and ideally never
