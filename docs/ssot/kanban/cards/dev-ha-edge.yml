@@ -4,5 +4,9 @@ column: backlog
 note: >-
   Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com ->
   edge + one Caddy block on idc02 + trusted_proxies (remember: .storage/http
-  on HA 2026.x, yaml http: is dead config). Blocked on: where michael-dev
-  lives (host:port) and whether tony-dev exists.
+  on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell
+  port 8124 (http://127.0.0.1:8124 on dell; tailnet HTTPS via
+  tony-dell.taila0626a.ts.net:8124). tony-dev does not exist.
+  Caution: dev instance — exposing publicly widens attack surface for a
+  non-production service; recommend CF Access gate BEFORE publishing
+  (see cf-access-gate card).
