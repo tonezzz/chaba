@@ -36,7 +36,18 @@ DISPATCH = os.environ.get("DEVIN_DISPATCH",
 # dispatch-queue.sh's dangerous default).
 os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 API = os.environ.get("BOARD_API", "http://127.0.0.1:8787")
-SESSION = f"kanban-dispatch@{os.uname().nodename}"
+HOST = os.uname().nodename
+SESSION = f"kanban-dispatch@{HOST}"
+# Per-host concurrency: count of active devin-task-* units we won't exceed.
+# tony-dell is RAM-tight (dispatch-queue.sh used CAP=3); other hosts raise it
+# via env until a per-host table lands in ssot.kanban.yml rules.
+HOST_CAP = int(os.environ.get("KANBAN_HOST_CAP", "3"))
+
+
+def active_tasks() -> int:
+    r = sh(["systemctl", "--user", "list-units", "devin-task-*",
+            "--state=active", "--no-legend"])
+    return sum(1 for ln in r.stdout.splitlines() if ln.strip())
 
 TASK_RAILS = """
 ---
@@ -91,6 +102,7 @@ def queue_one(path: Path, card: dict) -> str:
     task_id = r.stdout.strip().splitlines()[-1].strip()
     a["status"] = "running"
     a["task_id"] = task_id
+    a["runner"] = HOST
     card.setdefault("claim", {})["session"] = task_id
     card["claim"]["since"] = now()
     comms_add(card, "chaba", f"dispatched {task_id} on {repo}")
@@ -122,6 +134,14 @@ def main() -> int:
             st = a.get("status")
             if st == "queued":
                 card.setdefault("id", p.stem)
+                pinned = a.get("host")
+                if pinned and pinned != HOST:
+                    continue  # pinned to another host's dispatcher
+                if a.get("runner") and a["runner"] != HOST:
+                    continue  # already claimed by another host
+                if active_tasks() >= HOST_CAP:
+                    print(f"{card['id']}: skipped — host cap {HOST_CAP}")
+                    continue
                 msg = queue_one(p, card)
             elif st == "running":
                 card.setdefault("id", p.stem)

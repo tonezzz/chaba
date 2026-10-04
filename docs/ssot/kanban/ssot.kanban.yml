@@ -37,6 +37,9 @@ card_schema:
     status: "idle | queued | running | done | failed"
     button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
     repo: "chaba | ada-pi | sunsynk-card — devin-dispatch whitelist"
+    host: "optional — pin the card to one host's dispatcher (e.g. idc01
+           for mddb work). Unpinned = first eligible host under cap."
+    runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
   # optional — needs-me items for Tony (button to answer on the card)
@@ -55,13 +58,29 @@ write_path:
       backlog from done/review). close: column->done. hold: ->backlog."
     "POST /respond {id, request_id, answer}": "answers a requests[] entry"
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony"
+    "POST /action {id, do: claim, host}": "atomic first-wins claim under the
+      write flock — for multi-host dispatchers. Sets action.runner."
     "GET /cards": "live cards.json payload — agents read board state here"
 
 execution:
   dispatcher: "kanban-dispatch.timer (2min) -> scripts/board/kanban-dispatch.py —
                scans action.status==queued, devin-dispatch start <repo> <spec+rails>,
-               writes task_id/claim; polls running tasks, on finish -> status done,
-               column review. Tony reviews and presses Close."
+               writes task_id/claim/runner; polls running tasks, on finish -> status
+               done, column review. Tony reviews and presses Close."
+  concurrency:
+    # today's model — one dispatcher per host, caps local:
+    host_cap: "KANBAN_HOST_CAP env on the dispatcher (default 3; tony-dell is
+               RAM-tight — dispatch-queue.sh used the same cap)"
+    multi_host: "devin-dispatch exists only on tony-dell today. To dispatch
+               elsewhere: install devin-dispatch + a remote runner on the host;
+               remote runners poll GET /apps/board-api/cards for queued cards
+               whose action.host matches (or unpinned), claim atomically via
+               POST /action do=claim {host} (flock-serialized — no double
+               dispatch), run locally, and agents post comms back over tailnet.
+               Card must git pull --ff-only first — worktrees cut from local HEAD."
+    merge_safety: "parallel sessions converge on origin/master; generated files
+               (index.html, cards.json, *-assessment.yml) are the recurring
+               conflict source — prefer regenerating over hand-merging them"
   task_rails: "dispatched agents are told to post progress via POST {api}/comment
                and to add requests: entries instead of blocking on Tony"
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made

@@ -34,7 +34,7 @@ RENDER = REPO / "scripts/render-board.py"
 LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
-TRANSITIONS = {"queue", "close", "hold", "retry"}
+TRANSITIONS = {"queue", "close", "hold", "retry", "claim"}
 
 
 def now() -> str:
@@ -96,6 +96,23 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     raise ValueError(f"unknown verb {verb}")
 
 
+def do_claim(card: dict, body: dict) -> str:
+    """Atomic first-wins claim for multi-host dispatch — runs under the
+    request flock so two hosts can't both grab a queued card."""
+    a = card.setdefault("action", {})
+    if a.get("status") != "queued":
+        raise ValueError(f"not claimable (status={a.get('status', 'idle')})")
+    host = (body.get("host") or "").strip()
+    if not host:
+        raise ValueError("claim needs host")
+    pinned = a.get("host")
+    if pinned and pinned != host:
+        raise ValueError(f"card is pinned to {pinned}")
+    a["runner"] = host
+    comms_add(card, host, "claimed")
+    return "claimed"
+
+
 def do_respond(card: dict, rid: str, answer: str, frm: str) -> str:
     for r in card.get("requests") or []:
         if r.get("id") == rid:
@@ -152,7 +169,10 @@ class H(BaseHTTPRequestHandler):
                         raise ValueError(f"do must be one of {sorted(TRANSITIONS)}")
                     p = card_path(body.get("id", ""))
                     card = load(p)
-                    msg = do_action(card, verb, "tony")
+                    if verb == "claim":
+                        msg = do_claim(card, body)
+                    else:
+                        msg = do_action(card, verb, "tony")
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/respond":
