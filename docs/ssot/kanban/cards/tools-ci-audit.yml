@@ -1,0 +1,27 @@
+id: tools-ci-audit
+title: Tool-surface CI audit — lint, usage report, regression gate
+column: backlog
+blocked_by: chaba-ci-standard
+note: >-
+  Tool standard rides the CI pipeline (chaba-ci-standard): tools-lint
+  in ssot-validate (alias table complete, count under budget, scenario
+  coverage), weekly usage report -> report/tool-usage CMS page,
+  regression scenarios gate merge cards at review.
+updated: '2026-10-04'
+help: |
+  Deliverables:
+  1. scripts/tool-lint.py — fails on: tool declared without alias entry
+     when spec says absorbed; declared count > cap; tool with no
+     scenario file reference
+  2. Wire into ssot-validate-all.mjs or ci runner as the audit stage
+  3. scripts/tool-usage-report.py — journal scan -> CMS page
+     report/tool-usage (daily or weekly timer)
+  4. Gate: tools-merge-* cards can't move to done until their family's
+     regression scenario exists and passes
+spec: |
+  Make the tool-consolidation work self-auditing:
+  - tool-lint.py enforces the alias table and count cap
+  - a timer refreshes the usage report so census stays live
+  - merge cards can't close without a passing scenario for their family
+  Read: docs/assessments/tool-consolidation-spec-2026-10-04.md,
+  scripts/ssot-validate-all.mjs, tool_runner._ALIASES once it exists.
