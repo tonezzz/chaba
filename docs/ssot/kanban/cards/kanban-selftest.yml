@@ -2,7 +2,7 @@ id: kanban-selftest
 title: Kanban self-test — verify the dispatch loop end to end
 column: done
 note: Exercises queue→dispatch→comms→done→review once; close it when the loop proves out.
-updated: 2026-10-04 14:32
+updated: 2026-10-04 20:05
 spec: "Trivial verification task. Do exactly this and nothing else:\n1. POST one comment to the kanban board API:\n\
   \     curl -s -X POST http://127.0.0.1:8787/comment \\\n       -H 'Content-Type: application/json' \\\n      \
   \ -d '{\"id\":\"kanban-selftest\",\"from\":\"devin\",\"text\":\"self-test: dispatched session reached the API\
@@ -51,5 +51,16 @@ comms:
 - at: 2026-10-04 14:32
   from: ada
   text: ada_board_write tool live check — posted by the tool itself during devin verification
+- at: 2026-10-04 20:04
+  from: devin
+  text: 'raised request deploy-check: deploy smoke — is /request live?'
+- at: 2026-10-04 20:05
+  from: ada
+  text: 'answered deploy-check: yes — hardened build live'
 claim:
   since: 2026-10-04 09:55
+requests:
+- id: deploy-check
+  ask: deploy smoke — is /request live?
+  status: answered
+  answer: yes — hardened build live
