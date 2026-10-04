@@ -127,8 +127,11 @@ def gated(cfg: dict, force: bool) -> str | None:
             last_dt = datetime.fromisoformat(last)
             if last_dt.tzinfo is None:
                 last_dt = last_dt.replace(tzinfo=timezone.utc)
+            # 30s early tolerance — the hourly timer can fire a second
+            # before last_run+interval, which would otherwise skip the run
+            # and idle a whole extra cycle.
             if datetime.now(timezone.utc) < \
-                    last_dt + timedelta(minutes=interval):
+                    last_dt + timedelta(minutes=interval, seconds=-30):
                 return f"interval (last run {last})"
         except ValueError:
             pass
