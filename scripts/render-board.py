@@ -81,16 +81,6 @@ def main():
 
     ts = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 
-    payload = {
-        "generated": ts,
-        "columns": cols,
-        "doing_limit": limit,
-        "over_limit": over,
-        "cards": cards,
-    }
-    json_path = out_path.with_name("cards.json")
-    json_path.write_text(json.dumps(payload, ensure_ascii=False))
-
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -163,6 +153,7 @@ def main():
 <script>
 const API = '/apps/board-api';
 const POLL_MS = {POLL_SECONDS} * 1000;
+const BUILT = '@@VER@@';
 let DATA = null;
 let lang = 'en';
 let filter_q = '';
@@ -412,8 +403,13 @@ function applyFilter() {{
 
 async function load() {{
   try {{
-    const r = await fetch('cards.json?t=' + Date.now());
+    const r = await fetch('cards.json?t=' + Date.now(), {{cache: 'no-store'}});
     DATA = await r.json();
+    if (DATA.page_version && DATA.page_version !== BUILT) {{
+      toast('board updated — reloading');
+      setTimeout(() => location.reload(), 900);
+      return;
+    }}
     document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
     render();
   }} catch (e) {{
@@ -456,13 +452,30 @@ document.addEventListener('keydown', e => {{
 
 load();
 setInterval(load, POLL_MS);
-</script></script>
+</script>
 </body>
 </html>
 """
+    # Self-updating page: version = hash of the rendered html with the
+    # placeholder stripped, so it only changes when the template/JS changes
+    # (re-rendering identical code yields the same version — no reload loop).
+    ver = hashlib.sha256(page.replace("@@VER@@", "").encode()).hexdigest()[:12]
+    page = page.replace("@@VER@@", ver)
+
+    payload = {
+        "generated": ts,
+        "page_version": ver,
+        "columns": cols,
+        "doing_limit": limit,
+        "over_limit": over,
+        "cards": cards,
+    }
+    json_path = out_path.with_name("cards.json")
+    json_path.write_text(json.dumps(payload, ensure_ascii=False))
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page)
-    print(f"wrote {out_path} + cards.json ({len(cards)} cards)")
+    print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
     return 0
 
 

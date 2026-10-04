@@ -15,9 +15,15 @@ rules:
   terminal: [done]
 
 card_dir: docs/ssot/kanban/cards
-board_output: stacks/web/public/apps/board/index.html
-json_output: stacks/web/public/apps/board/cards.json
+board_output: stacks/web/public/apps/board/index.html   # GENERATED — gitignored
+json_output: stacks/web/public/apps/board/cards.json    # GENERATED — gitignored
 renderer: scripts/render-board.py
+# index.html/cards.json are intentionally UNTRACKED (2026-10-04): tracked
+# generated files were the recurring merge-conflict source across parallel
+# card sessions. The serving host regenerates them (chaba-board-render.timer
+# 60s, or synchronously on every board-api write). Page self-updates: the
+# page compares its baked page_version hash against cards.json's and
+# reloads itself when they differ.
 
 card_schema:
   # required
