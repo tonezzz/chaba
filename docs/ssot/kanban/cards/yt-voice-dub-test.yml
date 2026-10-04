@@ -1,6 +1,6 @@
 id: yt-voice-dub-test
 title: 'YT voice dub — minimal TTS audio track test (en/th)'
-column: backlog
+column: doing
 metric: 'one short video plays with intelligible TH voice track over ducked original'
 verify: 'ffprobe shows dub audio stream + Tony watches it on the TV'
 note: >-
@@ -15,3 +15,15 @@ help: >-
   yt-vtt-translate.py; docs/kb/home-assistant/tv-casting-runbook.md;
   scripts/ops/yt-transcript.sh; voices th-TH-PremwadeeNeural / en-US-*
 updated: '2026-10-04'
+comms:
+- at: '2026-10-04 19:05'
+  from: devin
+  text: >-
+    First dub rendered + cast. h6fcK_fRYaI.en.th (Secrets of the
+    Elephants, en->th merged VTT): 59 TH cues -> edge-tts
+    th-TH-PremwadeeNeural -> per-cue rate-fit -> 22% ducked mix ->
+    180s dub.mp4 (14.5MB h264/aac) -> play_media on tony_tv_cast,
+    state=playing. Tool: ~/.local/bin/yt-vtt-dub.py on tony-dell
+    (edge-tts 7.2.8 in ~/.venvs/edge-tts). URL:
+    http://192.168.2.67/apps/yt-live/dub.mp4. Awaiting Tony's
+    listen test — judge intelligibility, cue timing, duck level.
