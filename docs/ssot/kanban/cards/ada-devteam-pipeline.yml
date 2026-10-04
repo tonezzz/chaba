@@ -1,0 +1,65 @@
+id: ada-devteam-pipeline
+title: Ada self-developing tools — devteam review pipeline + playbook dispatch
+column: doing
+note: Stages 1–3 live on ada-dev (spec → expert panel → handoff doc); playbook
+  registry is the missing stage-4 link to dispatch.
+updated: 2026-10-04
+help: "Goal: Ada designs a tool → devteam expert panel reviews the spec →\n\
+  a playbook dispatches the build → CI verifies → report lands in\n\
+  devin-handoff. Self-improvement with a gate, not free-form dispatch.\n\n\
+  Done (2026-09-30/10-01):\n\
+  - backend/tools.d drop-in loader + manifest policy (read|confirmed|\n\
+    owner_only) + ada_mddb_health reference tool + handbook\n\
+    (docs/ada-tool-dev.md) — 17 tests\n\
+  - backend/devteam.py: draft spec → 4-expert panel (security_privacy,\n\
+    standards, qa, scope) → revised spec → verdict → kind=spec-review\n\
+    doc in devin-handoff — verified live on ada-dev; QA expert correctly\n\
+    BLOCKED a spec missing its test plan (spec/20260930-125800-*)\n\
+  - DEVTEAM_MODEL=gemini-3.5-flash-lite on ada-dev (shared free-tier\n\
+    gemini-2.5-flash bucket is 20 req/day — exhausted fast)\n\n\
+  Remaining:\n\
+  1. Playbook registry (backend/playbooks/*.yml) — build-tool playbook\n\
+     requires spec_review=pass; renders task from template; declares\n\
+     memory_domains, verify commands, report target\n\
+  2. devin_dispatch playbook arg — spec_key param → template render →\n\
+     dispatch with verify/report contract\n\
+  3. Promote tools.d + devteam to ada-ha-tony (ada-dev only today)\n\
+  4. Jev: add pending-question context to confirm probe, retrain student\n\
+     on jev-corpus-reviewed.jsonl (33 labeled rows on idc01), promote to\n\
+     enforcement on one tool once bench ≥95% vs hand labels\n\
+  5. tools-health scorecard — aggregate ada-ops events (phantom_write_claim,\n\
+     confirm_strip, jev_advisory) per tool per week → CMS report page\n"
+spec: "Build the playbook registry that closes Ada's self-development loop in\n\
+  ada-pi.\n\nRead first: backend/devin_dispatch.py (dispatch + dedup),\n\
+  backend/devteam.py (spec-review pipeline), backend/tools_loader.py,\n\
+  backend/tools.d/manifest.yml, docs/ada-tool-dev.md, and a spec-review doc\n\
+  in the ada-ha-bank-devin-handoff MDDB collection (kind=spec-review,\n\
+  e.g. spec/20260930-125800-*).\n\nDeliverables:\n\
+  1. backend/playbooks/*.yml — registry with three playbooks:\n\
+     build-tool (requires: devin-handoff spec doc with status=pass),\n\
+     fix-scenario, investigate. Each declares params, task_template,\n\
+     memory_domains, gate {confirm, identity}, verify commands,\n\
+     report_to, max_runtime_min.\n\
+  2. devin_dispatch gains playbook + params args: renders the task from\n\
+     the template, enforces the gate (build-tool refuses when the spec\n\
+     is missing or status!=pass), stamps the job with playbook + verify\n\
+     list for the watch timer.\n\
+  3. Unit tests mocking dispatch + MDDB (no ssh, no network).\n\
+  4. A live-scenario yaml (full tier) exercising build-tool gating:\n\
+     Ada asked to build a tool without a passing spec must refuse and\n\
+     offer ada_devteam_review instead.\n\
+  5. SSOT line in chaba docs/ssot/apps/ssot.apps.ada_pi.yml.\n\n\
+  Do NOT touch tool_runner.py confirm-gate internals, do NOT deploy to\n\
+  ada-ha-tony. Work in a branch, PR-style commit, report back via the\n\
+  job ledger.\n"
+action:
+  type: dispatch
+  status: idle
+  button: ▶ Build playbook registry
+  repo: ada-pi
+comms:
+- at: 2026-10-04 10:20
+  from: devin
+  text: "Seeded. Stages 1–3 verified live on ada-dev (devteam_review.yaml PASS,
+    QA expert blocked a spec missing its test plan). Next dispatchable chunk:
+    playbook registry — see spec."
