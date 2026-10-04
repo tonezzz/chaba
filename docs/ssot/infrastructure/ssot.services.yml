@@ -355,12 +355,11 @@ tony-dell:
       repo: stacks/idc01/ollama/ollama.container
     models: [nomic-embed-text, phi3-gguf, llama3.2:3b]
     consumers:
-      - open-notebook embeddings (OLLAMA_API_BASE, same host, same podman net via tailnet IP)
       - mcp-llama (LLAMA_URL → idc01.taila0626a.ts.net:11434, repointed 2026-09-28)
       - gemini-ollama-proxy OLLAMA_FALLBACK_BASE (when uncommented)
-    note: "Bound to tailscale IP only — reachable from open-notebook podman network and tailnet hosts; never exposed on the public interface."
-    status: running on idc01 (2026-09-22) — embedding fallback for mddb;
-      also serves open-notebook (ollama provider)
+    note: "Bound to tailscale IP only — reachable from tailnet hosts; never exposed on the public interface."
+    status: running on idc01 (2026-09-22) — embedding fallback for mddb
+      (open-notebook consumer retired 2026-10-04)
   open-notebook-backup:
     service: Open Notebook SurrealDB nightly export
     host: idc01
@@ -373,7 +372,7 @@ tony-dell:
       file, podman cp into a scratch surrealdb:v2 (memory/rocksdb), surreal
       import --ns open_notebook --db open_notebook. Verified 2026-09-23:
       518 sources + 2 notebooks restored.
-    status: running on idc01 (2026-09-22) and tony-dell
+    status: retired 2026-10-04 (timer disabled+stopped on idc01; last exports remain under ~/open-notebook-backups/)
     note: "MDDB on idc01 connects to http://127.0.0.1:11435. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
   obsidian-vault:
     service: Ada Memory Vault web app (notes browser + knowledge graph)
@@ -402,7 +401,13 @@ tony-dell:
       - EnvironmentFile=~/.config/secrets/open-notebook.env (password/encryption/google key)
     access: tailnet-only via tailscale serve (UI :8444, API :8445)
     volumes: [open-notebook-data, open-notebook-surreal-data]
-    status: running on idc01 (2026-09-22); migrated from tony-dell (unit files preserved in ~/.config/containers/systemd-disabled there)
+    status: >-
+      retired 2026-10-04 — eval complete (per-file 7/8 ≈ NotebookLM parity,
+      docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md).
+      Units disabled on idc01, tailscale-serve :8444/:8445 removed.
+      Podman volumes KEPT (open-notebook-data + open-notebook-surreal-data)
+      + quadlets remain in stacks/idc01/open-notebook/ → revive = enable
+      units + re-add serve routes. opennb MCP tool removed from OpenClaw.
   open-notebook-surreal:
     service: SurrealDB backing store for open-notebook
     runtime: rootless podman
@@ -411,7 +416,7 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/open-notebook-surreal.container
       service_unit: ~/.config/systemd/user/open-notebook-surreal.service
-    status: running on idc01 (2026-09-22)
+    status: retired 2026-10-04 (disabled with open-notebook; data volume preserved)
   tony-ha:
     container: tony-ha
     image: docker.io/homeassistant/home-assistant:stable
@@ -740,13 +745,13 @@ tony-omen:
     mcp_servers:
       mddb: "streamable-http http://100.74.146.0:9000/mcp + X-API-Key (same key as devin mcp_config)"
       home-assistant: "streamable-http tony-dell:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
-      opennb: "stdio mcp-servers/mcp-opennb/server.py → ONB /api/search/ask on idc01:8445; ONB_PASSWORD via ~/.config/secrets/opennb-mcp.env"
+      opennb: "REMOVED 2026-10-04 — ONB retired; server kept in repo at mcp-servers/mcp-opennb/server.py for revive"
     cron:
       nightly-digest: "0 8 * * * Asia/Bangkok, announce→telegram to 8960073266; id d920fb81-c083-4705-89ee-12b7ea2a85e3"
     known_issues:
       - "ghostroute writes OR model ids unprefixed to fallbacks — openclaw 2026.9.6 needs openrouter/ prefix; patched locally in ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py (editable pipx install); upstream fix to kittimasak/GhostRoute worthwhile"
       - "OR key in auth profile openrouter:manual must be re-pasted whenever idc01 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
-      - "opennb_ask inherits ONB's upstream quota — gemini flash key saturates under ada/yomi load; consider an OpenAI-compatible OR provider inside Open Notebook"
+      - "opennb MCP removed 2026-10-04 (ONB retired); if revived, first fix upstream quota — gemini flash key saturates under ada/yomi load, OR-provider inside ONB was the planned dodge"
     status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29, paired 2026-10-02
     risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
       mddb's OR embedding route — 2026-09-28 OR key hit total-limit 403s while mddb

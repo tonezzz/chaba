@@ -18,19 +18,17 @@ expected_exposure:
   - { listener: "100.74.146.0:11023",  class: tailnet-only, service: mddb,   note: "http API, authEnabled=false — tailnet is the boundary" }
   - { listener: "100.74.146.0:11024",  class: tailnet-only, service: mddb,   note: "gRPC" }
   - { listener: "100.74.146.0:9000",   class: tailnet-only, service: mddb,   note: "MCP listener, API-key gated (mddb-mcp-api-key)" }
-  - { listener: "100.74.146.0:11434",  class: tailnet-only, service: ollama, note: "rebound to tailnet IP 2026-09-28 — nomic-embed-text/phi3 serve open-notebook + mcp-llama tailnet-wide; never on public iface" }
+  - { listener: "100.74.146.0:11434",  class: tailnet-only, service: ollama, note: "rebound to tailnet IP 2026-09-28 — nomic-embed-text/phi3 serve mcp-llama + gemini-ollama-proxy fallback tailnet-wide; never on public iface (open-notebook consumer retired 2026-10-04)" }
   - { listener: "127.0.0.1:11435",     class: loopback,     service: gemini-ollama-proxy, note: "MDDB connects here; maps embedding aliases to gemini-embedding-*" }
   - { listener: "127.0.0.1:8001",      class: loopback,     service: ada-pi-pwa, note: "Ada PWA backend; published via tailscale serve" }
   - { listener: "127.0.0.1:8002",      class: loopback,     service: ada-ha-tony, note: "evacuated from mn01 2026-09-24; mn01 caddy reverse-proxies here" }
   - { listener: "127.0.0.1:8003",      class: loopback,     service: ada-ha-michael, note: "evacuated from mn01 2026-09-24" }
   - { listener: "127.0.0.1:8004",      class: loopback,     service: obsidian-vault, note: "Ada Memory Vault web app" }
-  - { listener: "127.0.0.1:5055",      class: loopback,     service: open-notebook-api }
-  - { listener: "127.0.0.1:8502",      class: loopback,     service: open-notebook-ui }
+  # open-notebook loopback listeners :5055/:8502 retired 2026-10-04 (service stopped+disabled)
   # tailscale serve terminations (all tailnet-only, https unless noted):
   - { listener: "ts-serve:root",  class: tailnet-only, service: serve, target: "127.0.0.1:8001", note: "ada-pi-pwa at https://idc01.taila0626a.ts.net/" }
   - { listener: "ts-serve:8443",  class: tailnet-only, service: serve, target: "127.0.0.1:8004", note: "obsidian-vault" }
-  - { listener: "ts-serve:8444",  class: tailnet-only, service: serve, target: "127.0.0.1:8502", note: "open-notebook UI" }
-  - { listener: "ts-serve:8445",  class: tailnet-only, service: serve, target: "127.0.0.1:5055", note: "open-notebook API" }
+  # ts-serve :8444/:8445 removed 2026-10-04 with open-notebook retirement
 
 remote_access:
   sshd: { port: 22, bind: tailnet-only, password_auth: deviation }
@@ -52,8 +50,7 @@ tailscale:
   serve:
     - { port: root,  proto: https, target: "127.0.0.1:8001" }
     - { port: 8443,  proto: https, target: "127.0.0.1:8004" }
-    - { port: 8444,  proto: https, target: "127.0.0.1:8502" }
-    - { port: 8445,  proto: https, target: "127.0.0.1:5055" }
+    # 8444/8445 (open-notebook) removed 2026-10-04
   funnel: []                  # none — explicitly declared
   role: [mddb-replica, public-edge]
 
