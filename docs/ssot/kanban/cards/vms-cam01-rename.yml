@@ -5,7 +5,7 @@ priority: low
 note: 'cam-noble-a-cam01 dossier title is "CCTV: Noble-A — CAM01" — placeholder DVR channel name. Rename the channel
   in the VMS (device tree, noble-a DVR channel config) to the real view name, then rerun cam-wall-cms.py to regenerate
   the page + wall label.'
-updated: 2026-10-04 20:24
+updated: 2026-10-04 21:49
 requests:
 - id: real-name
   ask: What does Noble-A CAM01 actually show? (the real name for the channel/label)
@@ -26,12 +26,13 @@ requests:
     no VNC click-path like the VMS UI route'
 - id: rename-path2
   ask: dvr-web unreachable (cloud-P2P only). Fallback?
-  status: open
+  status: answered
   options:
   - id: vms-ui
     label: VMS UI xdotool on mn01 — write-back likely reaches DVR config
   - id: manual
     label: rename in VMS yourself
+  answer: vms-ui — xdotool on mn01 VMS device config. Proceeding now (Tony approved rename).
 comms:
 - ts: '2026-10-04T12:11:10'
   from: devin
@@ -63,3 +64,6 @@ comms:
 - at: 2026-10-04 20:24
   from: devin
   text: 'raised request rename-path2: dvr-web unreachable (cloud-P2P only). Fallback?'
+- at: 2026-10-04 21:49
+  from: devin
+  text: 'answered rename-path2: vms-ui — xdotool on mn01 VMS device config. Proceeding now (Tony approved rename).'

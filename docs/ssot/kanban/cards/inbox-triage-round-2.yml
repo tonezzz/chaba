@@ -1,19 +1,30 @@
 id: inbox-triage-round-2
 title: Focus inbox triage round 2 — ~190 stale extract-* files
 column: backlog
-note: inbox/general re-accumulated Sep 20–Oct 2 extracts; classify and archive, but root cause is the failing overnight focus pipeline (already queued on focus board)
-updated: 2026-10-04
-spec: 'Triage docs/ada-memory/inbox/general/: ~190 extract-*.md files dated
-  2026-09-20 through 2026-10-02. Classify each by its MDDB bank doc status
-  (ada-ha-bank-devin-handoff and the extract source bank); files whose bank
-  doc is done/answered/superseded move to docs/ada-memory/inbox/processed/.
-  Keep live items (open bugs, awaiting-user requests). Do NOT supersede
-  bank docs that are still open. Root cause for the re-accumulation is the
-  overnight focus pipeline exiting 1 — that fix is tracked separately; this
-  card is the symptom sweep only. Commit under chore(focus).'
+note: inbox/general re-accumulated Sep 20–Oct 2 extracts; classify and archive, but root cause is the failing overnight
+  focus pipeline (already queued on focus board)
+updated: 2026-10-04 21:48
+spec: 'Triage docs/ada-memory/inbox/general/: ~190 extract-*.md files dated 2026-09-20 through 2026-10-02. Classify
+  each by its MDDB bank doc status (ada-ha-bank-devin-handoff and the extract source bank); files whose bank doc
+  is done/answered/superseded move to docs/ada-memory/inbox/processed/. Keep live items (open bugs, awaiting-user
+  requests). Do NOT supersede bank docs that are still open. Root cause for the re-accumulation is the overnight
+  focus pipeline exiting 1 — that fix is tracked separately; this card is the symptom sweep only. Commit under chore(focus).'
 action:
   type: dispatch
-  status: idle
+  status: running
   repo: chaba
+  task_id: 20261004-214650-triage-docs-ada-memory-inbox-g
+  runner: tony-dell
 comms:
-  - {at: "2026-10-04 21:10", from: devin, text: "queued — symptom sweep; pipeline fix tracked on focus board"}
+- at: 2026-10-04 21:10
+  from: devin
+  text: queued — symptom sweep; pipeline fix tracked on focus board
+- at: 2026-10-04 21:44
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 21:47
+  from: chaba
+  text: dispatched 20261004-214650-triage-docs-ada-memory-inbox-g on chaba
+claim:
+  session: 20261004-214650-triage-docs-ada-memory-inbox-g
+  since: 2026-10-04 21:47

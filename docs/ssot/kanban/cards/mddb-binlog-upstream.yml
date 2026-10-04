@@ -1,6 +1,6 @@
 id: mddb-binlog-upstream
 title: Upstream binlog-retention + replication fixes to tradik/mddb
-column: backlog
+column: review
 note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4 commits on binlog-retention: 598c57d
   janitor, bfb3b7c stream Rotate, dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side FailedPrecondition
   -> snapshot. All proven on idc01+tony-dell.'
@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-04 21:34
+updated: 2026-10-04 21:47
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -64,10 +64,20 @@ comms:
   text: 'progress: all 5 fixes implemented + tested, 6 new commits on dispatch branch (2bf9b3e freelist-in-snapshot,
     60ac37c follower freelist-sync default, 497b982 open-only snapshot verify, ed1ff11 walk progress logging, c0850f0
     follower health in status, 44eeab9 docs). Running full package suite for regressions.'
+- at: 2026-10-04 21:45
+  from: devin
+  text: 'Done: 8 commits on dispatch/20261004-210641-upstream-binlog-retention-repl (local only, not pushed) implementing
+    all 5 fixes: leader snapshots now carry a synced freelist (tx.CopyFile→flush→stream), MDDB_FREELIST_SYNC defaults
+    true on followers, snapshot verify is an open proof instead of tx.Check(), freelist/integrity walks log progress
+    (/proc cpu+read_bytes, 30s), and /v1/replication/status healthy reflects real follower state (false at LSN 0/disconnected/lag>maxLag).
+    Also fixed pre-existing h'
+- at: 2026-10-04 21:47
+  from: chaba
+  text: run finished (inactive) → review
 action:
   type: devin-dispatch
   repo: mddb-fork
-  status: running
+  status: done
   task: 'Implement the replication snapshot-loop fixes documented in this card''s comms, on top of the 4 existing
     binlog-retention commits (598c57d..0b46e57, branch feat/vector-algorithms):
 
@@ -87,6 +97,6 @@ action:
     — local commits only.'
   task_id: 20261004-210641-upstream-binlog-retention-repl
   runner: tony-dell
+  result: 20261004-210641-upstream-binlog-retention-repl finished (inactive) — see `devin-dispatch logs 20261004-210641-upstream-binlog-retention-repl`
 claim:
-  session: 20261004-210641-upstream-binlog-retention-repl
   since: 2026-10-04 21:07
