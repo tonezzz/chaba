@@ -137,6 +137,43 @@ page_standard:
   # bg #1a1a2e, card #16213e, accent #0a84ff. Any kanban CMS surface
   # must keep this shell — it is the declared standard for board pages.
 
+ops:
+  # The kanban ops lanes — every timer that reads or writes cards.
+  # Add a lane: new health/generator script + job entry in ssot.jobs.yml.
+  lanes:
+    - {id: kanban-dispatch, interval: "2min",  role: "action.queued cards -> devin-dispatch sessions -> review"}
+    - {id: chaba-board-render, interval: "60s", role: "cards.yml -> cards.json + board page (--if-changed)"}
+    - {id: kanban-sync, interval: "15min", role: "health lanes (cms-auto-*, logs-auto-*) -> cards -> push + dev-kanban CMS render"}
+    - {id: kanban-commit, interval: "15min", role: "scoped commit+push of cards/ from the served checkout"}
+    - {id: devin-dispatch-watch, interval: "15min", role: "watch local devin-task-* units, notify"}
+    - {id: lab-review-sweep, interval: "weekly", role: "lab cards past review_by must promote or retire"}
+
+  column_sla:
+    # Efficiency is measured as time-in-column, not velocity:
+    backlog: "unbounded; >90d untouched = retire-or-replan candidate (sweep)"
+    doing:   "soft cap 2/session; >3d claimed with no comms = stale claim, reclaimable"
+    review:  "Tony's queue — target <10 open; >48h waiting = the bottleneck is
+              review bandwidth, not automation"
+    lab:     "bounded by review_by; past date with no outcome = sweep violation"
+    done:    "terminal; verified-by evidence expected in note/comms"
+
+  cadence_rule:
+    # When to adjust a lane's timer — decide by detection SLA + churn,
+    # not by feel. A tick is ~15s wall / 1s CPU, so cost is not the driver;
+    # detection latency is.
+    floor: "5min — a tick includes pull+health+commit+push+MDDB write (~30s);
+            below this, writes can interleave"
+    tighten_when:
+      - "a new lane's detection SLA is shorter than the current interval
+         (e.g. severe-log spikes must surface in <15min)"
+      - "queued->claim or incident->card latency measurably exceeds the
+         interval in 2+ incidents"
+    loosen_when:
+      - "zero generated-card churn for 7+ consecutive days AND no lane
+         reports stale-during-window"
+    judge: "adjust the interval only when a named SLA is violated; record
+            the change + reason in comms on kanban-system"
+
 note: >
   Focus-inbox stays the alert queue; this board tracks CHOSEN work.
   Cards are the shared comms channel: Devin, Ada, Chaba automation and
