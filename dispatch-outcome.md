@@ -54,6 +54,17 @@ Commit: `56f7a27d fix(board): harden board-api — respond attribution, validati
   (no `from` → tony); `/comment` still requires `from`; old 400 paths
   unchanged.
 
+## Board triage addendum (same session, "do all")
+
+All 15 open board requests answered via the live API; needs-you count is
+now 0. Verified answers: tuya dup entry (websocket evidence — remove
+newer `01M19NJ76J0020RJ`, its 28 entities are dead stubs while the old
+entry's 67 are live), CAM01 = Noble-A entrance gate (vms-snap still
+frame), sunsynk bat34 (`battery_{1,2,3}_*` exist, no `battery_4_*` —
+4th bank not in HA). Remainder answered as recommendations with a devin
+provenance comment per card (answers log under `tony` — live board-api
+is still pre-patch). Next-step comms posted on all 13 affected cards.
+
 ## Deploy (out of scope — needs approval)
 
 Merge branch → pull `chaba-tony-dell` live checkout →
