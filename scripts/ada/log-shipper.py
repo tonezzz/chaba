@@ -108,13 +108,19 @@ def _journal(host: str, user: bool) -> list[dict]:
     here — written back by ship() after posts succeed."""
     scope = "--user" if user else "--system"
     cur = _cursor_path(user)
+    # --grep filters at journal level — on noisy hosts (idc01's user
+    # journal = days of uvicorn INFO spam) piping the full journal into
+    # grep blew past the ssh timeout and silently yielded 0 rows, hiding
+    # every user-unit log on the VPSes. Requires systemd >=243.
     out = _ssh(
         host,
         f"mkdir -p ~/.cache; "
         f"if [ -s {cur} ]; then "
-        f"journalctl {scope} -o json --no-pager --cursor=\"$(cat {cur})\"; "
-        f"else journalctl {scope} -o json --no-pager --since '7 days ago'; "
-        f"fi 2>/dev/null | grep -aiE '{GREP}' | tail -3000",
+        f"journalctl {scope} -o json --no-pager --cursor=\"$(cat {cur})\" "
+        f"--grep='{GREP}' --case-sensitive=false; "
+        f"else journalctl {scope} -o json --no-pager --since '7 days ago' "
+        f"--grep='{GREP}' --case-sensitive=false; "
+        f"fi 2>/dev/null | tail -3000",
         timeout=150)
     rows = []
     for ln in out.splitlines():
