@@ -1,15 +1,16 @@
 id: tools-merge-memory
 title: Consolidate memory tools (search/remember/forget/recall/persona)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 21:48
+updated: 2026-10-04 21:54
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261004-210440-merge-the-memory-tool-group-8-
   runner: tony-dell
+  result: 20261004-210440-merge-the-memory-tool-group-8- finished (inactive) — see `devin-dispatch logs 20261004-210440-merge-the-memory-tool-group-8-`
 spec: "Merge the memory tool group (8 -> 4) per the consolidation spec:\n- ada_memory_search absorbs guest_recall\
   \ -> search(q, scope=all|banks|sessions|guest)\n- ada_remember absorbs vocab_note, report_habit_observation, guest_remember,\n\
   \  guest_remember_private -> remember(text, kind=fact|vocab|habit|guest, private=false)\n- ada_forget: unchanged\n\
@@ -20,7 +21,6 @@ spec: "Merge the memory tool group (8 -> 4) per the consolidation spec:\n- ada_m
   \ from an ada-pi worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias\
   \ routes to its parent, post outcome + merged count in the card comms."
 claim:
-  session: 20261004-210440-merge-the-memory-tool-group-8-
   since: 2026-10-04 21:05
 comms:
 - at: 2026-10-04 21:05
@@ -35,3 +35,13 @@ comms:
   text: 'implemented: 6 absorbed names now _ALIASES->canonical (guest_recall->search scope=guest, vocab_note+report_habit_observation+guest_remember(+_private)->ada_remember
     kind=, ada_ha_recall->ada_session_recall scope=history). Declarations removed, provider dispatch + chaba surface
     updated, SSOT split into 3 sub-families, tool-lint clean at 100 declared, alias-routing tests added + passing.'
+- at: 2026-10-04 21:53
+  from: devin
+  text: 'DONE: memory group merged 8->4. 6 names absorbed via _ALIASES (hidden, still callable): guest_recall->ada_memory_search
+    scope=guest; vocab_note+report_habit_observation+guest_remember+guest_remember_private->ada_remember kind=vocab|habit|guest(+private);
+    ada_ha_recall->ada_session_recall scope=history. ada_forget unchanged, ada_resolve_action untouched. Declarations
+    removed (surface 106->100), provider dispatch + chaba guest surface + instructions updated, SSOT split into
+    3 sub-families, spec ta'
+- at: 2026-10-04 21:54
+  from: chaba
+  text: run finished (inactive) → review

@@ -1,9 +1,9 @@
 id: inbox-triage-round-2
 title: Focus inbox triage round 2 — ~190 stale extract-* files
-column: backlog
+column: review
 note: inbox/general re-accumulated Sep 20–Oct 2 extracts; classify and archive, but root cause is the failing overnight
   focus pipeline (already queued on focus board)
-updated: 2026-10-04 21:48
+updated: 2026-10-04 22:02
 spec: 'Triage docs/ada-memory/inbox/general/: ~190 extract-*.md files dated 2026-09-20 through 2026-10-02. Classify
   each by its MDDB bank doc status (ada-ha-bank-devin-handoff and the extract source bank); files whose bank doc
   is done/answered/superseded move to docs/ada-memory/inbox/processed/. Keep live items (open bugs, awaiting-user
@@ -11,10 +11,11 @@ spec: 'Triage docs/ada-memory/inbox/general/: ~190 extract-*.md files dated 2026
   focus pipeline exiting 1 — that fix is tracked separately; this card is the symptom sweep only. Commit under chore(focus).'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   task_id: 20261004-214650-triage-docs-ada-memory-inbox-g
   runner: tony-dell
+  result: 20261004-214650-triage-docs-ada-memory-inbox-g finished (deactivating) — see `devin-dispatch logs 20261004-214650-triage-docs-ada-memory-inbox-g`
 comms:
 - at: 2026-10-04 21:10
   from: devin
@@ -25,6 +26,20 @@ comms:
 - at: 2026-10-04 21:47
   from: chaba
   text: dispatched 20261004-214650-triage-docs-ada-memory-inbox-g on chaba
+- at: 2026-10-04 21:59
+  from: devin
+  text: 'classified all 222 inbox/general files against MDDB: 53 superseded + 63 retracted + 106 active (100 already
+    mirrored in general/). 0 drafts, 0 live items. Moving 217 to inbox/processed/, promoting 5 Oct-04 extracts to
+    general/ (active docs missing vault mirror).'
+- at: 2026-10-04 22:02
+  from: devin
+  text: 'done — symptom sweep committed as 6936b3f8 (chore(focus)). inbox/general 222 -> 0: 53 superseded + 63 retracted
+    + 100 active-mirrored + 1 stale = 217 files -> inbox/processed/; 5 Oct-04 extracts promoted to general/ (active
+    docs missing vault mirror). 0 live items, 0 MDDB writes — every re-accumulated file already had a resolved bank
+    doc. Trail: docs/ssot/jobs/ada/2026-10-04-inbox-general-symptom-sweep.yml + .triage2/ artifacts; outcome in
+    dispatch-outcome.md. Root cause still open: focus pipeli'
+- at: 2026-10-04 22:02
+  from: chaba
+  text: run finished (deactivating) → review
 claim:
-  session: 20261004-214650-triage-docs-ada-memory-inbox-g
   since: 2026-10-04 21:47

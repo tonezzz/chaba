@@ -1,8 +1,8 @@
 id: sunsynk-bat34
 title: SunSynk card — batteries 3/4 support
-column: backlog
+column: review
 note: Extend the power-flow card to render a 3rd and 4th battery (bat3/bat4 elements + entity mapping).
-updated: 2026-10-04 21:48
+updated: 2026-10-04 21:56
 blocked_by: tony
 spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card).
 
@@ -17,10 +17,11 @@ spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card)
   '
 action:
   type: dispatch
-  status: running
+  status: done
   repo: sunsynk-card
   task_id: 20261004-204448-add-batteries-3-and-4-to-the-s
   runner: tony-dell
+  result: 20261004-204448-add-batteries-3-and-4-to-the-s finished (inactive) — see `devin-dispatch logs 20261004-204448-add-batteries-3-and-4-to-the-s`
 requests:
 - id: entities
   ask: What are the real bat3/bat4 entity prefixes on your inverters?
@@ -56,6 +57,15 @@ comms:
   from: devin
   text: 'Assessing prior WIP: full-card bat3/4 + entity mapping mostly done; compact bat-elements, batteryCount>2
     clamp, editor count max, and power totals still missing. Installing deps then implementing.'
+- at: 2026-10-04 21:52
+  from: devin
+  text: 'Done. Committed e52346e on dispatch/20261004-204448 branch (no push, no live promotion). Compact card now
+    renders bat1-4 (new battery3/4_icon groups, 4-icon row at count>=3); editor count max 4 with count>=N section
+    gating; index.ts sums power/energy/floating across all packs; DataDto types completed; customCards push guarded.
+    tsc + npm run build clean. Verified headlessly: count=4 renders all icons, SOC 100/15/100/75%, energies 11.40/1.71/11.40/8.55
+    kWh, total -9.84 kW; count=3 hides bat4 (-9.0'
+- at: 2026-10-04 21:56
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261004-204448-add-batteries-3-and-4-to-the-s
   since: 2026-10-04 20:45
