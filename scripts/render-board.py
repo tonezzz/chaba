@@ -319,7 +319,7 @@ function render() {{
     ? `<div class="bg-amber-900/50 border border-amber-600 rounded p-3 mb-4 text-amber-200 text-sm">WIP limit exceeded (doing > ${{DATA.doing_limit}}/session): ${{esc(DATA.over_limit.join(', '))}}</div>`
     : '';
   document.getElementById('gen-note').textContent =
-    `Rendered ${{DATA.generated}} — cards in docs/ssot/kanban/cards/ · live (polls ${{POLL_SECONDS}}s)`;
+    `Rendered ${{DATA.generated}} — cards in docs/ssot/kanban/cards/ · live (polls ${{POLL_SECONDS}}s) · v${{BUILT}}`;
 
   wire();
   setLang(lang);
@@ -457,6 +457,19 @@ document.addEventListener('keydown', e => {{
     document.getElementById('help-modal').classList.add('hidden');
   }}
 }});
+
+// Register the shared /apps/ service worker. Every load runs register(),
+// which makes the browser check sw.js for updates — if an old caching
+// worker is still installed this replaces it; controllerchange then
+// reloads once so the fresh SW (pass-through + apps-* cache purge)
+// takes over and the next document fetch comes from the network.
+if ('serviceWorker' in navigator) {{
+  navigator.serviceWorker.register('/apps/sw.js?v=7', {{scope: '/apps/'}}).catch(() => {{}});
+  let swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {{
+    if (!swReloaded) {{ swReloaded = true; location.reload(); }}
+  }});
+}}
 
 load();
 setInterval(load, POLL_MS);

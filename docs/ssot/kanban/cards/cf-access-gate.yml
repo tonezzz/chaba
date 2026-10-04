@@ -23,3 +23,14 @@ progress: >-
   Access lands for *.surf-thailand.com, drop the basicauth blocks on idc02.
   Also: api.surf-thailand.com/cms* closed (was incidentally public via the
   ada-dev catch-all) — api.* now 404s /cms*.
+  2026-10-04: DONE for tony-ha.surf-thailand.com via API (cfut_ token now has
+  Access: Apps and Policies Edit; stored ~/.config/secrets/cloudflare.env on
+  omen/dell/idc01/idc02). App tony-ha (70aa9fe3), policy tony = allow email
+  tonezzz@hotmail.com via One-time PIN, session 720h. All paths 302 to
+  chaba-team.cloudflareaccess.com — verified /, /apps/board/, /apps/board-api/,
+  /cms/. All Caddy basicauth blocks removed from idc02 edge (CF is the gate;
+  origin not directly reachable by public IP). Board iframe in chaba-admin
+  now works off-tailnet — one OTP sign-in covers page + api.
+  Remaining: michael-ha.surf-thailand.com still HA-auth only (same 2 API
+  calls to gate it); api.surf-thailand.com stays ungated by design (Ada PWA
+  can't do CF login).

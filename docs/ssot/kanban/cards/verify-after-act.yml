@@ -1,0 +1,20 @@
+id: verify-after-act
+title: verify-after-act — cast/cctv_wall claims must read screen state first
+column: review
+program: vcast
+area: ada-policy
+priority: high
+metric: 0 phantom_write_claim events on cast/cctv_wall turns in ops digest
+verify: cast_claim_verify + wall_zone_switch_verify scenarios pass
+note: >-
+  Root cause of 2026-10-04 transcript failures (5+ false claims in 2
+  sessions, phantom_write_claim x12 in ops digest): tool ok != screen
+  showing it. Fix = policy/instruction in ada-pi realtime_provider:
+  after cast_to_screen/cctv_wall success, require a vcast_list or
+  vcast_snapshot read before the model may claim delivery; claim must
+  name the verified state or honestly report the mismatch.
+help: >-
+  scenarios b81dd5b (ada-pi): cast_claim_verify, wall_zone_switch_verify.
+  Also fold in the cast-input workaround Ada found (push page to TV
+  browser) as the remediation path in tool docs.
+updated: '2026-10-04'

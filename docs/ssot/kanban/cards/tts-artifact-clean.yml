@@ -1,0 +1,12 @@
+id: tts-artifact-clean
+title: TTS output leaks artifacts — &nbsp;, ][, markdown remnants spoken
+column: backlog
+priority: low
+metric: 0 transcript lines containing &nbsp; or ][ in Ada speech
+verify: grep latest transcripts for artifact tokens after a cast session
+note: >-
+  2026-10-04 transcript 519088cb6d: Ada spoke "&nbsp;ชัดเจน" and
+  "][พาสเจอร์ไรซ์]" — HTML entities + bracket junk reaching TTS.
+  Sanitize stage exists (transcript_tool_leak event) but misses these
+  patterns.
+updated: '2026-10-04'
