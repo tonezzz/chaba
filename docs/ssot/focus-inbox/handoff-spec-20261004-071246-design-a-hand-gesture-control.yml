@@ -1,0 +1,73 @@
+title: design-a-hand-gesture-control-system-using-yolo
+subtitle: 'Devin handoff spec: spec/20261004-071246-design-a-hand-gesture-control'
+icon: robot
+focus:
+  label: design-a-hand-gesture-control-system-using-yolo
+  text: '# Dev-team review: yolo-gesture-control
+
+
+    - verdict: **block**
+
+    - model: gemini-2.5-flash
+
+    - reviewed: 2026-10-04T07:12:46+00:00
+
+
+    ## Panel
+
+    - **security_privacy** — pass: The tool appears to be a purely informational assessment tool, posing
+    no apparent privacy or security risks. (The parameters (`yolo_model_series`, `target_environment_desc`,
+    `max_acceptable_latency_ms`) are generic technical specifications and do not suggest access to private
+    user data or memory banks.; The expected result shape consists of feasibility assessments and technical
+    breakdowns, again, generic in nature and not related to personal identifiable information or secrets.;
+    The `read + secondary_allowed` policy class is appropriate for a tool that performs technical assessments
+    based on general data, and does not require `owner_only` or `confirmed` status.; There is no indication
+    that this tool could leak secrets, bypass speaker gates (as it performs no actions), or act on unverified
+    input in a way that causes real-world harm beyond providing an assessment.; The specification explicitly
+    states ''Honest Failure Behavior: Fails if required feasibility data sources are inaccessible or if
+    provided parameters are invalid, reporting a structured error,'' which aligns with the honest results
+    contract.; There is no mention of accessing ''Tony-only banks'' or any other identity-specific private
+    data without an owner gate.)
+
+    - **standards** — block: The tool specification violates the authoring contract regarding policy class
+    and is missing the mandatory ''timeout_s'' value. (**Policy Class Violation:** The specified `Policy
+    Class: read + secondary_allowed` is not a valid option according to the `manifest.yml` contract. Allowed
+    policies are `read`, `confirmed`, or `owner_only`. Please select one of these standard policies.;
+    **Missing Timeout:** The specification does not include `timeout_s`, which is a mandatory field for
+    the `manifest.yml` entry. This value must be provided to ensure bounded timeouts as per repository
+    conventions.)
+
+    - **qa** — pass: The tool specification clearly defines purpose, parameters, and a comprehensive structured
+    result, allowing for robust testing and verifiable success. (**Verifiable Success Signal:** The detailed
+    `Expected Result Shape` provides an explicit and clear success signal for the tool''s operation, addressing
+    the requirement for a verifiable outcome.; **Unit Test Plan (Mocked Runner/GenAI):**;   *   **Scenario
+    1: Successful Feasibility Assessment**;       *   **Input:** `yolo_model_series="YOLOv8-m-pose"`,
+    `target_environment_desc="indoor_office_fixed_camera"`, `max_acceptable_latency_ms=50`;       *   **Mock
+    Setup:** Mock internal logic (e.g., database lookups, computational models) to return predefined feasibility
+    metrics (e.g., ''feasible'' for pointer, ''challenging'' for pinch) within estimated latency/accuracy
+    ranges.;       *   **Expected Outcome:** Returns a `dict` fully conforming to the `Expected Result
+    Shape`, with all fields populated with plausible
+
+
+    [truncated — full spec in bank doc spec/20261004-071246-design-a-hand-gesture-control]'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc spec/20261004-071246-design-a-hand-gesture-control)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: spec/20261004-071246-design-a-hand-gesture-control
+  renderer: render-handoff-inbox
+  date: '2026-10-04'
