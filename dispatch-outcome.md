@@ -1,72 +1,46 @@
-# Dispatch outcome — board-api-hardening
+# Dispatch outcome — barrier-image-copy
 
-## What was done
+**Result: implemented and verified.** Option B (extend clip-sync to image payloads), as Tony picked on the card.
 
-Hardened `scripts/board/board-api.py` per the card spec, still single-file
-`BaseHTTPRequestHandler`, no new deps (re/hashlib are stdlib).
+## What changed
 
-Branch: `dispatch/20261004-180001-harden-scripts-board-board-api`
-Commit: `56f7a27d fix(board): harden board-api — respond attribution, validation, /request`
+The existing `clip-sync-dell.service` on tony-omen was functionally dead — it
+ssh'd to dell's stale IP `192.168.1.42` (dell is `192.168.2.67` now) and ran
+remote `xclip` with no `DISPLAY`/`XAUTHORITY`. Replaced with a shared,
+bidirectional design:
 
-**Changes in `scripts/board/board-api.py`:**
+- `scripts/barrier/clip-sync.sh` — generic one-way clipboard poller
+  (remote ssh+xclip → local xclip). Polls TARGETS every 1s; when an `image/*`
+  target is offered it uses remote TIMESTAMP (sha256 of raw bytes) as a cheap
+  change trigger, then remote-hashes the payload and only pulls/writes bytes
+  when the content hash differs. Content-keyed, so the pair converges after at
+  most one redundant pull per copy (a pure timestamp key would ping-pong —
+  every `xclip -in` gets a fresh timestamp).
+- `systemd/clip-sync-dell.service` — omen unit, dell→omen (updated: new
+  ExecStart + remote env, waits for X0 socket).
+- `systemd/clip-sync-omen.service` — new dell unit, omen→dell on seat :1.
 
-- `/respond {id, request_id, answer, from?, reopen?}` — `from` validated
-  against ACTORS, defaults to `tony` (board UI sends none, backward
-  compatible). 400 `answer required` on empty/whitespace answer. 400
-  `already answered` when the request is already answered, unless
-  `reopen` is truthy — reopen re-answers and logs `re-answered <rid>: ...`.
-- `/comment` — 400 `text required` on empty/whitespace text.
-- New `POST /request {id, ask, request_id?, options?, from?}` — appends
-  `{id, ask, status: open, options?}` to the card's `requests[]`; id is
-  `request_id` or `slugify(ask)` (slug + 6-char sha1 so Thai/non-ascii asks
-  and near-identical slugs can't collide). 400 `ask required` /
-  `duplicate request id <rid>`. Comms entry `raised request <rid>:
-  <ask[:120]>` under the validated actor (default tony).
-- New `actor()` helper; docstring now states all card writes go through
-  the API and direct YAML edits must hold `/tmp/board-api.lock` first.
-- `--selftest` flag: pure-function smoke test of respond/request
-  validation, attribution, reopen, slugging.
+Deployed: `~/.local/bin/clip-sync` + units on both hosts; both `active`.
+Omen's stale `~/bin/clip-sync-dell` is now a shim exec'ing the new script.
+Barrier seats were not touched.
 
-**Also updated (kept in sync):**
+## Verified
 
-- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tell dispatched
-  sessions to raise questions via `POST {api}/request` instead of editing
-  card YAML (the flock race the spec called out).
-- `docs/ssot/kanban/ssot.kanban.yml` — `write_path.endpoints` +
-  `task_rails` updated to the new contract.
-- `docs/ssot/jobs/infrastructure/2026-10-04-board-api-hardening.yml` —
-  job trail entry.
+- dell→omen image: 16×16 PNG byte-identical (sha256 `5503ff8f…`).
+- omen→dell image: byte-identical (sha256 `02face63…`) — the originally
+  reported direction.
+- Text both ways; journals quiet in steady state (no ping-pong, no errors).
+- SSOT validator: 1016 files, 0 errors.
 
-## Verification
+## Caveat worth knowing
 
-- `python3 scripts/board/board-api.py --selftest` → `selftest ok`
-- Live curl run: patched server on `BOARD_API_PORT=8878` against the
-  worktree's `kanban-selftest` card — every spec case verified:
-  empty answer 400, missing ask 400, duplicate request_id 400,
-  unknown/missing actor 400, empty comment 400; `/request from=ada`
-  created an open request and logged `raised request st1` under `ada`;
-  respond `from=ada` logged `answered st1` under `ada`; re-answer 400;
-  `reopen:true` logged `re-answered st1` under `tony`; auto-slug id
-  `auto-generated-id-please-1c0a43` created with `status: open`.
-  Card YAML inspected, then restored via `git checkout`.
-- `node scripts/ssot-validate-all.mjs` — 971/971 valid.
-- Backward compat: `render-board.py` JS posts `{id, request_id, answer}`
-  (no `from` → tony); `/comment` still requires `from`; old 400 paths
-  unchanged.
+Barrier grabs each clipboard on content change and on screen crossing and
+caches text only — an image can be transiently clobbered; the opposite poller
+restores it within ~1s while either side holds the bytes. Copy→cross in under
+~1s can beat the poller — just copy again after the pointer settles.
 
-## Board triage addendum (same session, "do all")
+## Trail
 
-All 15 open board requests answered via the live API; needs-you count is
-now 0. Verified answers: tuya dup entry (websocket evidence — remove
-newer `01M19NJ76J0020RJ`, its 28 entities are dead stubs while the old
-entry's 67 are live), CAM01 = Noble-A entrance gate (vms-snap still
-frame), sunsynk bat34 (`battery_{1,2,3}_*` exist, no `battery_4_*` —
-4th bank not in HA). Remainder answered as recommendations with a devin
-provenance comment per card (answers log under `tony` — live board-api
-is still pre-patch). Next-step comms posted on all 13 affected cards.
-
-## Deploy (out of scope — needs approval)
-
-Merge branch → pull `chaba-tony-dell` live checkout →
-`systemctl --user restart board-api.service`. New dispatch rails take
-effect on the next kanban-dispatch cycle after the live pull.
+- Runbook/decision: `docs/ssot/jobs/infrastructure/2026-10-04-barrier-image-clipboard.yml`
+- SSOT updated: `ssot.mysystem.home.yml` (Input Sharing), `ssot.registry.infrastructure.yml` (clip-sync assets), `ssot.audit.hosts.yml` (expected services on both hosts)
+- Commit `c2b07340` on `dispatch/20261004-202634-implement-a-workaround-for-bar` (not pushed)
