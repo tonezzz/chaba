@@ -1,0 +1,15 @@
+id: xmatch-cms-kanban
+title: xmatch — kanban <-> CMS automation pairing
+column: done
+note: >-
+  DONE 2026-10-04: both directions built. A->B: scripts/ada/kanban-cms.py
+  renders cards/*.yml into the live dev-kanban CMS page. B->A:
+  scripts/ada/cms-auto-health.py reads ada-cms-automation, opens
+  cms-auto-<slug> cards for stale/dead/error pages and auto-closes on
+  recovery. Runs on tony-dell kanban-sync.timer (15min) from a dedicated
+  worktree; commits its own cards to master. First run flagged 3 real
+  stale automations. Track = dev-kanban's Automation health section;
+  improve = the detect->card->fix->auto-close loop + help: runbooks.
+  xmatch protocol (profile -> cross-map 4 flows -> score -> pilot ->
+  codify) is the reusable process for pairing any two subsystems.
+updated: '2026-10-04'
