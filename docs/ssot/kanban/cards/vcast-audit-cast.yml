@@ -6,16 +6,19 @@ area: input-bridge
 priority: high
 metric: audit-cast.service exits 0 every 5min tick
 verify: systemctl --user status audit-cast shows 'success' result on tony-dell
-note: 'Found 2026-10-04 11:30: ~/.local/bin/audit-cast.sh line 120 dies on `CB_RSS: unbound variable` — runaway
-  guard has been failing every tick. Whatever it guards (cast process leak) is currently unmonitored.'
+note: 'DONE 2026-10-04: fix applied to ~/.local/bin/audit-cast.sh at 12:02 (parallel
+  session — file is host-local, not repo-tracked). Verified: 4 consecutive exit-0
+  ticks 14:00-14:15, Result=success. Follow-up: script should live in the repo (scripts/
+  or a job) so fixes are versioned — folded into vcast-input-bridge card.'
 help: journalctl --user -u audit-cast; fix the unbound var in the script
-updated: 2026-10-04 12:02
+updated: '2026-10-04'
 comms:
 - at: 2026-10-04 12:02
   from: devin
-  text: 'Fixed 12:02 — CB_RSS was a leftover from the removed cast-browser RSS check (moved to omen); dropped the
-    dead field, set -u no longer dies. Verified: exits 0, writes ok line. The xiaomi_c201 0-consumer WARN is still
-    firing correctly (real go2rtc outage, separate issue).'
+  text: 'Fixed 12:02 — CB_RSS was a leftover from the removed cast-browser RSS check
+    (moved to omen); dropped the dead field, set -u no longer dies. Verified: exits
+    0, writes ok line. The xiaomi_c201 0-consumer WARN is still firing correctly (real
+    go2rtc outage, separate issue).'
 - at: 2026-10-04 12:02
   from: tony
   text: closed by Tony
