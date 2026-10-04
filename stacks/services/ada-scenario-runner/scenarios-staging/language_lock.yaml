@@ -1,0 +1,23 @@
+# STAGED scenario — install to ada-pi tests/scenarios-live/language_lock.yaml
+# Created 2026-10-04. Motivation: education-correction run 2026-10-03 18:09 —
+# Ada answered in Filipino ("Tama, Tony. Ayon sa memory...") mid English/Thai
+# conversation. Replies must stay in the user's current language.
+# NOTE: verify the runner supports response_not_contains_any; if not, split
+# into single-substring response_not_contains entries.
+name: language_lock
+tier: smoke
+url: ws://127.0.0.1:8002/ws
+key_name: user-tony
+turns:
+  - user: "How many data layers does the GEV map have — just roughly?"
+    response_nonempty: true
+    # English question → English answer; no Filipino/Tagalog drift
+    response_not_contains_any: ["ayon", "mabuti", "salamat", "kayong", "guston", "po ba"]
+  - user: "ตอบเป็นภาษาไทยนะ — พูดถึงอากาศวันนี้หน่อย"
+    response_nonempty: true
+    response_contains_any: ["ค่ะ", "ครับ", "ไทย", "อากาศ", "วันนี้"]
+    response_not_contains_any: ["ayon", "mabuti", "salamat", "kayong", "guston"]
+  # Switch back to English — must follow immediately and stay English.
+  - user: "Back to English please — what's on my screens right now?"
+    response_nonempty: true
+    response_not_contains_any: ["ayon", "mabuti", "salamat", "kayong", "guston", "ค่ะ", "ครับ"]

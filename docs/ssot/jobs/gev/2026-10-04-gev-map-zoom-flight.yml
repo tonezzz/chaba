@@ -1,0 +1,73 @@
+title: GEV map — continuous zoom + flight mode
+date: '2026-10-04'
+domain: gev
+status: implemented-bundle-only
+trigger: devin-handoff/gev-map (ada-ha-bank-devin-handoff)
+
+problem:
+  report: >
+    GEV map only processed discrete zoom steps and could not do continuous
+    height adjustments; consecutive zoom commands were not queued properly.
+    Requested: flight mode that maintains the current camera height.
+  root_cause: |
+    `adjust_camera_zoom` (fn OY in the bundle) executed a single instantaneous
+    `camera.zoomIn/zoomOut(d)` per call — a discrete jump with no continuity
+    path and no participation in the per-tick camera-motion system
+    (zt state + x5 tick on viewer.clock.onTick). The motion system already
+    supported once/continuous modes for orbit/pan/tilt/rotate/route — zoom and
+    forward flight simply had no kind registered, and a second zoom command
+    could not accumulate onto an in-flight zoom.
+
+fix:
+  file: stacks/web/public/apps/gev/assets/index-D8kXv0di.js (deployed bundle; source repo is /home/tony/gods-eye-view)
+  changes:
+    - >
+      adjust_camera_zoom (OY) now creates a zt motion {kind:"zoom", mode:"once",
+      remainingM, curDist} instead of an instant jump — the dolly animates
+      smoothly over successive ticks at a distance-proportional rate
+      ({slow:.15,normal:.4,fast:.85} of current target distance per second).
+    - >
+      Consecutive adjust_camera_zoom calls queue: same direction adds the new
+      distance to zt.remainingM (extends the in-flight zoom); opposite
+      direction subtracts and, when it fully counteracts, cancels the residual
+      and starts the new direction — commands are no longer dropped or
+      independent jumps.
+    - >
+      x5 gained kind:"zoom" (rate-scaled zoomIn/zoomOut, min-distance clamp 25m
+      to target, out-cap 6e7m, stops via di("once-complete"/"zoom-limit")) and
+      kind:"fly" (flight mode — moves along heading ±90/180 offsets, pins
+      positionCartographic.height to the height captured at start, so the
+      camera maintains altitude while flying; speed = max(KC[speed],
+      height*kB[speed]) m/s).
+    - >
+      move_camera (L5) accepts motion zoom (direction in/out, optional amount
+      little/medium/lot for once mode) and fly (direction
+      forward/back/left/right, default forward). fly is blocked while tracking
+      an entity (follow camera owns the view); non-orbit motions now cancel
+      in-flight camera tweens on start.
+    - >
+      tools.json: move_camera motion enum += zoom, fly; direction enum +=
+      in/out/forward/back; new optional `amount` for zoom; descriptions updated
+      so the model picks fly/zoom for sustained movement.
+  generic_once_timer: >
+    The shared once-mode elapsed/durationS completion in x5 now skips
+    zoom/fly — they complete on their own budgets (remainingM / flownM), so a
+    "lot" zoom isn't truncated at 0.9s.
+
+verification:
+  - "node --input-type=module --check < bundle — parses clean"
+  - live check pending: say 'zoom in' twice quickly (dolly should extend, not restart), 'keep zooming out' (continuous), 'fly forward' (altitude must hold), 'stop'.
+  - deploy path: this edits the checked-in bundle only; live site unaffected until the repo deploys stacks/web. Source-level port to /home/tony/gods-eye-view is required — see source_port below.
+
+source_port:
+  note: >
+    The gods-eye-view source repo is outside this dispatch worktree and could
+    not be edited. Apply the equivalent changes in source, then rebuild +
+    repatch the bundle (AGENTS.md build steps) so the minified edits here are
+    not lost on the next build.
+  likely_locations:
+    - camera motion registry/tick (zt/x5 equivalents — voice camera-verbs module)
+    - move_camera handler (L5 equivalent) — motion validation lists
+    - adjust_camera_zoom handler (OY equivalent)
+    - vite.config.js GEV_REALTIME_TOOLS — move_camera/adjust_camera_zoom decls
+      (tools.json is generated from it)
