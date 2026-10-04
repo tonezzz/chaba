@@ -1,42 +1,43 @@
 id: mddb-binlog-upstream
 title: Upstream binlog-retention + replication fixes to tradik/mddb
 column: backlog
-note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4 commits on binlog-retention: 598c57d janitor,
-  bfb3b7c stream Rotate, dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side FailedPrecondition -> snapshot. All
-  proven on idc01+tony-dell.'
-help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanFrom''s too-old guard skipped fromLSN==0 so
-  fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback only checked
-  the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error'' forever.'
-updated: 2026-10-04 21:00
+note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4 commits on binlog-retention: 598c57d
+  janitor, bfb3b7c stream Rotate, dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side FailedPrecondition
+  -> snapshot. All proven on idc01+tony-dell.'
+help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanFrom''s too-old guard skipped fromLSN==0
+  so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
+  only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
+  forever.'
+updated: 2026-10-04 21:18
 comms:
 - at: 2026-10-04 19:11
   from: devin
-  text: 'NEW upstream-worthy bug found while triaging the canary breach — snapshot-replace verify creates a doom loop: (1)
-    follower LSN too old → requests ~4GB snapshot; (2) replace runs bbolt tx.Check() on the tmp file — on tony-dell this does
-    not finish inside MDDB_VERIFY_TIMEOUT=6h; (3) timeout aborts the replace, follower still too old → requests ANOTHER snapshot;
-    (4) meanwhile leader keepLSN stays pinned at binlog_oldest_lsn (janitor logs: nothing trimmable), so binlog grows ~500MB/cycle
-    — breach wa'
+  text: 'NEW upstream-worthy bug found while triaging the canary breach — snapshot-replace verify creates a doom
+    loop: (1) follower LSN too old → requests ~4GB snapshot; (2) replace runs bbolt tx.Check() on the tmp file —
+    on tony-dell this does not finish inside MDDB_VERIFY_TIMEOUT=6h; (3) timeout aborts the replace, follower still
+    too old → requests ANOTHER snapshot; (4) meanwhile leader keepLSN stays pinned at binlog_oldest_lsn (janitor
+    logs: nothing trimmable), so binlog grows ~500MB/cycle — breach wa'
 - at: 2026-10-04 19:34
   from: devin
-  text: 'Refinement: the 6h verify is not purely an algorithm problem — tony-dell disk is at ~97% util with load ~11 (parallel
-    agent sessions running find/grep over ~ + Devin desktop + HA all competing). O(db) page walks that should take tens of
-    minutes degrade to hours under this contention. So upstream fix needs BOTH: (a) bounded/skippable verify for stream snapshots,
-    (b) the open path itself is O(db) NoFreelistSync — consider persisting freelist in snapshots so followers open fast. Local
-    lesson: agent'
+  text: 'Refinement: the 6h verify is not purely an algorithm problem — tony-dell disk is at ~97% util with load
+    ~11 (parallel agent sessions running find/grep over ~ + Devin desktop + HA all competing). O(db) page walks
+    that should take tens of minutes degrade to hours under this contention. So upstream fix needs BOTH: (a) bounded/skippable
+    verify for stream snapshots, (b) the open path itself is O(db) NoFreelistSync — consider persisting freelist
+    in snapshots so followers open fast. Local lesson: agent'
 - at: 2026-10-04 19:48
   from: devin
-  text: 'Deeper diagnosis via SIGQUIT goroutine dump: the doom loop is worse than verify — EVERY open of a snapshot db runs
-    DB.freepages→recursivelyCheckBucket→checkInvariantProperties (full O(pages) invariant check), because leader writes snapshots
-    with NoFreelistSync so no freelist is persisted. That is the same cost as tx.Check() — explains both the 6h verify timeouts
-    AND why follower restarts each take ~1h+ under disk contention. Follower-side fix applied: MDDB_FREELIST_SYNC=true on
-    tony-dell mddb.se'
+  text: 'Deeper diagnosis via SIGQUIT goroutine dump: the doom loop is worse than verify — EVERY open of a snapshot
+    db runs DB.freepages→recursivelyCheckBucket→checkInvariantProperties (full O(pages) invariant check), because
+    leader writes snapshots with NoFreelistSync so no freelist is persisted. That is the same cost as tx.Check()
+    — explains both the 6h verify timeouts AND why follower restarts each take ~1h+ under disk contention. Follower-side
+    fix applied: MDDB_FREELIST_SYNC=true on tony-dell mddb.se'
 - at: 2026-10-04 20:51
   from: devin
   text: 'Refined diagnosis (2nd goroutine dump): the open-time walk IS bbolt loadFreelist→freepages→forEachPageInternal/FastCheck
-    — O(pages) mmap-fault-bound, not the tx.Check() verify. On dell (sda ~77-97% util, 97ms read latency, 3.7GB cache for
-    a 3.9GB db) each random page fault costs ~97ms → hours. Fixes in flight: MDDB_FREELIST_SYNC=true set on follower quadlet
-    (first open walks once, then freelist persists in-db). Prefetching db sequentially into page cache to accelerate the current
-    walk. Confirms '
+    — O(pages) mmap-fault-bound, not the tx.Check() verify. On dell (sda ~77-97% util, 97ms read latency, 3.7GB
+    cache for a 3.9GB db) each random page fault costs ~97ms → hours. Fixes in flight: MDDB_FREELIST_SYNC=true set
+    on follower quadlet (first open walks once, then freelist persists in-db). Prefetching db sequentially into
+    page cache to accelerate the current walk. Confirms '
 - at: 2026-10-04 20:58
   from: tony
   text: queued for processing
@@ -45,15 +46,25 @@ comms:
   text: dispatched 20261004-205839-upstream-binlog-retention-repl on chaba
 - at: 2026-10-04 21:05
   from: devin
-  text: 'Misdispatch corrected: the 20:58 queue raced the spec commit — session 20261004-205839 launched with generic task
-    on the chaba repo (mddb-fork unreachable from that worktree), killed before it could flail. Card now carries repo:mddb-fork
-    + full task spec; re-queueing.'
+  text: 'Misdispatch corrected: the 20:58 queue raced the spec commit — session 20261004-205839 launched with generic
+    task on the chaba repo (mddb-fork unreachable from that worktree), killed before it could flail. Card now carries
+    repo:mddb-fork + full task spec; re-queueing.'
+- at: 2026-10-04 21:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 21:07
+  from: chaba
+  text: dispatched 20261004-210641-upstream-binlog-retention-repl on mddb-fork
+- at: 2026-10-04 21:07
+  from: devin
+  text: 'starting: exploring mddb replication/binlog code to implement the 5 snapshot-loop fixes (freelist persist,
+    FREELIST_SYNC default for ro, fast verify, progress logging, healthy flag)'
 action:
   type: devin-dispatch
   repo: mddb-fork
-  status: idle
-  task: 'Implement the replication snapshot-loop fixes documented in this card''s comms, on top of the 4 existing binlog-retention
-    commits (598c57d..0b46e57, branch feat/vector-algorithms):
+  status: running
+  task: 'Implement the replication snapshot-loop fixes documented in this card''s comms, on top of the 4 existing
+    binlog-retention commits (598c57d..0b46e57, branch feat/vector-algorithms):
 
     1. Persist the freelist in leader snapshots so followers don''t rebuild it via the O(pages) freepages->checkInvariantProperties
     walk on every open.
@@ -64,8 +75,13 @@ action:
 
     4. Progress logging during the freelist/integrity walk (currently silent ~1h).
 
-    5. /v1/replication/status ''healthy'' must reflect replication state: unhealthy when follower current_lsn==0 or lagging
-    beyond threshold — currently reports healthy:true at LSN 0.
+    5. /v1/replication/status ''healthy'' must reflect replication state: unhealthy when follower current_lsn==0
+    or lagging beyond threshold — currently reports healthy:true at LSN 0.
 
-    Write Go tests for each change. Keep commits separate and conventional. Do NOT push to origin (tradik/mddb upstream) —
-    local commits only.'
+    Write Go tests for each change. Keep commits separate and conventional. Do NOT push to origin (tradik/mddb upstream)
+    — local commits only.'
+  task_id: 20261004-210641-upstream-binlog-retention-repl
+  runner: tony-dell
+claim:
+  session: 20261004-210641-upstream-binlog-retention-repl
+  since: 2026-10-04 21:07

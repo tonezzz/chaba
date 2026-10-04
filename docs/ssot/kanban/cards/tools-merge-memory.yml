@@ -3,11 +3,13 @@ title: Consolidate memory tools (search/remember/forget/recall/persona)
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-04 21:18
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
+  task_id: 20261004-210440-merge-the-memory-tool-group-8-
+  runner: tony-dell
 spec: "Merge the memory tool group (8 -> 4) per the consolidation spec:\n- ada_memory_search absorbs guest_recall\
   \ -> search(q, scope=all|banks|sessions|guest)\n- ada_remember absorbs vocab_note, report_habit_observation, guest_remember,\n\
   \  guest_remember_private -> remember(text, kind=fact|vocab|habit|guest, private=false)\n- ada_forget: unchanged\n\
@@ -17,3 +19,10 @@ spec: "Merge the memory tool group (8 -> 4) per the consolidation spec:\n- ada_m
   \ Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE\
   \ from an ada-pi worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias\
   \ routes to its parent, post outcome + merged count in the card comms."
+claim:
+  session: 20261004-210440-merge-the-memory-tool-group-8-
+  since: 2026-10-04 21:05
+comms:
+- at: 2026-10-04 21:05
+  from: chaba
+  text: dispatched 20261004-210440-merge-the-memory-tool-group-8- on ada-pi

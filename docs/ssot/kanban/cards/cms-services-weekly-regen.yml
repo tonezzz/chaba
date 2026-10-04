@@ -13,7 +13,7 @@ action:
   task_id: 20261004-141859-create-chaba-services-regen-se
   runner: tony-dell
   result: 20261004-141859-create-chaba-services-regen-se finished (inactive) — see `devin-dispatch logs 20261004-141859-create-chaba-services-regen-se`
-updated: 2026-10-04 20:03
+updated: 2026-10-04 21:05
 comms:
 - at: 2026-10-04 14:18
   from: tony
@@ -53,5 +53,12 @@ comms:
     (michael-ha via tony-omen); probe goes over stdin to `sh` on the target, no nested quoting. Full regen verified:
     michael-ha leaf is live (up 7d, load 0.79, disk 74%) and the index now reports 0 unreachable. Caveat: Sunday
     timer still runs the master copy — michael-ha will show unreachable again until this branch merges.'
+- at: 2026-10-04 21:05
+  from: devin
+  text: 'Recovery: the dispatch worktree was removed with a clean tree but 3 unmerged commits — the michael-ha jump
+    code + 2 cards were lost before merge. Re-applied on branch services-regen-followup (commits c5b4503e, 218b0e29):
+    jump-host probing verified again (michael-ha leaf renders live, dry-run OK), cards cms-services-michael-ha-live
+    + cms-generator-schedule-audit restored, plus new card dispatch-cleanup-unmerged-guard covering the cleanup
+    hole (clean tree + unmerged branch = silent loss; precleanu'
 claim:
   since: 2026-10-04 14:20
