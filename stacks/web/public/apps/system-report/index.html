@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaba System Report</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --ok: #22c55e; --warn: #facc15; --fail: #ef4444; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+    h1 { margin-top: 0; }
+    .meta { color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem; }
+    .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+    .card { background: var(--card); border-radius: 0.5rem; padding: 1rem; min-width: 100px; }
+    .card .value { font-size: 1.5rem; font-weight: bold; }
+    .card .label { color: var(--muted); font-size: 0.875rem; }
+    .ok { color: var(--ok); } .warn { color: var(--warn); } .fail { color: var(--fail); }
+    #report { background: var(--card); border-radius: 0.5rem; padding: 1.5rem; margin-top: 1rem; }
+    #report table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    #report th, #report td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #334155; }
+    #report th { color: var(--muted); font-weight: 600; }
+    #report code { background: #020617; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }
+    #report h2 { border-bottom: 1px solid #334155; padding-bottom: 0.3rem; margin-top: 1.5rem; }
+    #report pre { white-space: pre-wrap; background: #020617; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+    .err-text { color: var(--fail); }
+    a { color: #60a5fa; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+  <h1>Chaba System Report</h1>
+  <div class="meta" id="meta">Loading…</div>
+  <div class="summary" id="summary"></div>
+  <div id="report"></div>
+  <script src="app.js"></script>
+</body>
+</html>

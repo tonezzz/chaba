@@ -236,6 +236,18 @@ def main() -> int:
         "nodes": states,
     }, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
+    # Publish to the web app (same pattern as audits/run.mjs -> apps/audit/data).
+    # The caddy `web` container serves chaba-tony-dell/stacks/web/public until
+    # checkout convergence lands — write to both roots when it exists.
+    import shutil
+    for root in (REPO, Path("/home/tony/CascadeProjects/chaba-tony-dell")):
+        web_data = root / "stacks" / "web" / "public" / "apps" / "system-report" / "data"
+        if not web_data.parent.parent.exists():
+            continue
+        web_data.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(args.output, web_data / "SYSTEM-REPORT.md")
+        shutil.copyfile(args.yml_output, web_data / "system-report.yml")
+
     bad = [s["id"] for s in states
            if s["status"] in ("missing", "stale", "error", "delta")]
     status = "delta" if bad else "ok"
