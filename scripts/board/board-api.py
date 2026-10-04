@@ -34,7 +34,8 @@ RENDER = REPO / "scripts/render-board.py"
 LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
-TRANSITIONS = {"queue", "close", "hold", "retry", "claim"}
+TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move"}
+COLUMNS = {"backlog", "doing", "review", "done"}
 
 
 def now() -> str:
@@ -94,6 +95,21 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         comms_add(card, frm, "put on hold")
         return "back to backlog"
     raise ValueError(f"unknown verb {verb}")
+
+
+def do_move(card: dict, body: dict) -> str:
+    col = (body.get("column") or "").strip()
+    if col not in COLUMNS:
+        raise ValueError(f"column must be one of {sorted(COLUMNS)}")
+    old = card.get("column", "backlog")
+    if col == old:
+        return f"already in {col}"
+    card["column"] = col
+    if col == "done":
+        card.setdefault("action", {})["status"] = "done"
+        card.setdefault("claim", {}).pop("session", None)
+    comms_add(card, "tony", f"moved {old} -> {col}")
+    return f"moved to {col}"
 
 
 def do_claim(card: dict, body: dict) -> str:
@@ -171,6 +187,8 @@ class H(BaseHTTPRequestHandler):
                     card = load(p)
                     if verb == "claim":
                         msg = do_claim(card, body)
+                    elif verb == "move":
+                        msg = do_move(card, body)
                     else:
                         msg = do_action(card, verb, "tony")
                     card["updated"] = now()

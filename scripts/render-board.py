@@ -126,7 +126,11 @@ def main():
     <button id="btn-refresh" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">Refresh</button>
   </nav>
 
-  <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm hidden z-50"></div>
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm hidden z-50 max-w-sm"></div>
+
+  <div id="card-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-40 flex">
+    <div class="bg-card border border-slate-700 rounded-xl p-5 w-11/12 max-w-xl max-h-[85vh] overflow-y-auto" id="card-modal-body"></div>
+  </div>
 
   <div id="help-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 flex">
     <div class="bg-card border border-slate-700 rounded-xl p-5 w-11/12 max-w-lg">
@@ -149,6 +153,7 @@ def main():
       <div id="card-list" class="space-y-1 text-sm hidden md:block"></div>
     </aside>
     <main class="flex-1 min-w-0 board-main">
+      <div id="needs-you"></div>
       <div id="wip-warn"></div>
       <div id="board-cols" class="board-cols pb-4"></div>
       <p id="gen-note" class="text-xs text-slate-500 italic"></p>
@@ -161,17 +166,27 @@ const POLL_MS = {POLL_SECONDS} * 1000;
 let DATA = null;
 let lang = 'en';
 let filter_q = '';
-const openDetails = new Set();
+let openCard = null;
+let busy = false;
 
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/"/g,'&quot;');
 
-function toast(msg) {{
+let toastTimer = null;
+function toast(msg, isErr) {{
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.remove('hidden');
-  setTimeout(() => t.classList.add('hidden'), 2500);
+  t.textContent = msg;
+  t.className = 'fixed bottom-4 right-4 rounded px-3 py-2 text-sm z-50 max-w-sm border ' +
+    (isErr ? 'bg-red-900/90 border-red-500 text-red-100' : 'bg-slate-800 border-slate-600 text-slate-200');
+  t.classList.remove('hidden');
+  if (toastTimer) clearTimeout(toastTimer);
+  if (!isErr) toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
 }}
+document.addEventListener('click', e => {{
+  const t = document.getElementById('toast');
+  if (e.target === t) t.classList.add('hidden');
+}});
 
 async function api(path, body) {{
   const r = await fetch(API + path, {{
@@ -179,45 +194,53 @@ async function api(path, body) {{
     headers: {{'Content-Type': 'application/json'}},
     body: JSON.stringify(body),
   }});
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  const j = await r.json().catch(() => ({{}}));
+  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
 }}
 
-function actionBtn(c) {{
+function actBtns(c) {{
   const a = c.action || {{}};
   const st = a.status || 'idle';
+  let h = '';
   if (st === 'queued')
-    return '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span>';
-  if (st === 'running')
-    return `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ running ${{esc(a.task_id || '')}}</span>`;
-  const label = a.button || (st === 'failed' ? '↺ Retry' : (st === 'done' ? '✔ Close' : '▶ Start'));
-  const cmd = st === 'done' ? 'close' : 'queue';
-  const cls = st === 'done' ? 'bg-emerald-800 hover:bg-emerald-700' : 'bg-accent hover:opacity-90';
-  return `<button class="act-btn text-xs ${{cls}} text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="${{cmd}}">${{esc(label)}}</button>`;
+    h += `<button class="abtn text-xs bg-amber-700 hover:bg-amber-600 rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="hold">⏳ queued — cancel</button>`;
+  else if (st === 'running')
+    h += `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ running${{a.task_id ? ' ' + esc(a.task_id.slice(0,20)) : ''}}</span>`;
+  else if (st === 'done')
+    h += `<button class="abtn text-xs bg-emerald-800 hover:bg-emerald-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="close">✔ Close</button>` +
+         `<button class="abtn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ retry</button>`;
+  else if (st === 'failed')
+    h += `<button class="abtn text-xs bg-red-800 hover:bg-red-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ Retry</button>`;
+  else
+    h += `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue">${{esc(a.button || '▶ Start')}}</button>`;
+  return h;
 }}
 
-function requestsHtml(c) {{
+function reqList(c, inModal) {{
   const reqs = c.requests || [];
   if (!reqs.length) return '';
-  let h = '<div class="mt-2 space-y-1">';
+  let h = '';
   for (const r of reqs) {{
     if (r.status === 'answered')
-      h += `<div class="text-xs text-slate-400">❓ ${{esc(r.ask)}} <span class="text-emerald-300">→ ${{esc(r.answer)}}</span></div>`;
-    else
-      h += `<div class="text-xs text-amber-300">❓ ${{esc(r.ask)}}</div>` +
-           `<div class="flex gap-1"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="answer…">` +
-           `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-1.5" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}">↩</button></div>`;
+      h += `<div class="text-xs text-slate-400 mt-1">❓ ${{esc(r.ask)}} <span class="text-emerald-300">→ ${{esc(r.answer)}}</span></div>`;
+    else {{
+      h += `<div class="text-xs text-amber-300 mt-1">❓ ${{esc(r.ask)}}</div>`;
+      if (inModal)
+        h += `<div class="flex gap-1 mt-0.5"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
+             `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">Answer</button></div>`;
+    }}
   }}
-  return h + '</div>';
+  return h;
 }}
 
-function commsHtml(c) {{
+function commsList(c) {{
   const log = c.comms || [];
   if (!log.length) return '';
-  const last = log.slice(-4);
-  let h = '<div class="mt-2 border-t border-slate-700/60 pt-1 space-y-0.5">';
-  for (const m of last)
-    h += `<div class="text-[10px] text-slate-400"><span class="text-slate-500">${{esc(m.at || '')}}</span> <b>${{esc(m.from)}}:</b> ${{esc(m.text)}}</div>`;
+  let h = '<div class="space-y-1">';
+  for (const m of log.slice(-20))
+    h += `<div class="text-xs"><span class="text-slate-500">${{esc(m.at || '')}}</span> ` +
+         `<span class="${{m.from === 'tony' ? 'text-emerald-300' : m.from === 'devin' ? 'text-sky-300' : m.from === 'ada' ? 'text-fuchsia-300' : 'text-slate-300'}} font-medium">${{esc(m.from)}}:</span> ${{esc(m.text)}}</div>`;
   return h + '</div>';
 }}
 
@@ -228,27 +251,19 @@ function cardHtml(c) {{
     badges += `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ ${{esc(claim.session)}}</span> `;
   if (c.blocked_by)
     badges += `<span class="text-xs bg-red-900/60 text-red-200 rounded px-1.5 py-0.5">blocked: ${{esc(c.blocked_by)}}</span> `;
-  if ((c.requests || []).some(r => r.status !== 'answered'))
-    badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">needs you</span> ';
-  if (c.help)
-    badges += `<button class="help-btn text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded px-1.5 py-0.5" data-help="${{esc(c.help)}}" data-title="${{esc(c.title || c.id)}}">? help</button> `;
-  badges += actionBtn(c);
+  const openReqs = (c.requests || []).filter(r => r.status !== 'answered').length;
+  if (openReqs)
+    badges += `<span class="text-xs bg-amber-800/80 text-amber-100 rounded px-1.5 py-0.5">needs you ×${{openReqs}}</span> `;
+  const a = c.action || {{}};
+  const st = a.status || 'idle';
+  if (st === 'queued') badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span> ';
+  else if (st === 'running') badges += '<span class="text-xs bg-sky-700/80 text-sky-100 rounded px-1.5 py-0.5">⚙ running</span> ';
+  else if (st === 'failed') badges += '<span class="text-xs bg-red-800/70 text-red-100 rounded px-1.5 py-0.5">✖ failed</span> ';
 
-  let detail = '';
-  const hasDetail = c.spec || (c.requests || []).length || (c.comms || []).length;
-  if (hasDetail) {{
-    const open = openDetails.has(c.id) ? ' open' : '';
-    detail = `<details class="mt-1" data-id="${{esc(c.id)}}"${{open}}>` +
-      '<summary class="text-[10px] text-slate-500 cursor-pointer">details</summary>' +
-      (c.spec ? `<pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans mt-1 border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre>` : '') +
-      requestsHtml(c) + commsHtml(c) + '</details>';
-  }}
-
-  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
+  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
-    `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` +
+    (badges ? `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` : '') +
     `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
-    detail +
     `<div class="text-[10px] text-slate-500 mt-1">${{esc(c.id)}} · ${{esc(c.updated || '')}}</div>` +
     '</div>';
 }}
@@ -269,13 +284,22 @@ function render() {{
   }}
   document.getElementById('board-cols').innerHTML = cols;
 
+  // needs-you strip
+  const needy = DATA.cards.filter(c => (c.requests || []).some(r => r.status !== 'answered'));
+  document.getElementById('needs-you').innerHTML = needy.length
+    ? `<div class="bg-amber-900/40 border border-amber-600/60 rounded p-2.5 mb-3 text-amber-100 text-sm flex flex-wrap items-center gap-2">` +
+      `<b>Needs you (${{needy.length}}):</b>` +
+      needy.map(c => `<button class="ny-btn text-xs bg-amber-800/70 hover:bg-amber-700 rounded px-2 py-0.5" data-id="${{esc(c.id)}}">${{esc(c.title || c.id)}}</button>`).join('') +
+      '</div>'
+    : '';
+
   let list = '';
   for (const col of DATA.columns) {{
     list += `<div class="text-[10px] uppercase tracking-wide text-slate-500 mt-3 mb-1">${{esc(col.title)}}</div>`;
     let any = false;
     for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) {{
       any = true;
-      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-default text-slate-300 truncate" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
+      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300 truncate" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
     }}
     if (!any) list += '<div class="text-slate-600 text-xs px-2">—</div>';
   }}
@@ -290,33 +314,74 @@ function render() {{
   wire();
   setLang(lang);
   applyFilter();
+  if (openCard) showCard(openCard);   // keep the open modal fresh
+}}
+
+function showCard(id) {{
+  const c = DATA.cards.find(x => x.id === id);
+  const modal = document.getElementById('card-modal');
+  const body = document.getElementById('card-modal-body');
+  if (!c) {{ modal.classList.add('hidden'); openCard = null; return; }}
+  openCard = id;
+  const claim = c.claim || {{}};
+  const a = c.action || {{}};
+  const colBtns = DATA.columns.filter(col => col.id !== (c.column || 'backlog'))
+    .map(col => `<button class="mv-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1" data-col="${{col.id}}">→ ${{esc(col.title)}}</button>`).join('');
+  body.innerHTML =
+    `<div class="flex items-start justify-between gap-3 mb-2">` +
+      `<h3 class="font-semibold">${{esc(c.title || c.id)}}</h3>` +
+      `<button id="cm-close" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 shrink-0">✕</button></div>` +
+    `<div class="text-[10px] text-slate-500 mb-3">${{esc(c.id)}} · ${{esc(c.column || 'backlog')}} · ${{esc(c.updated || '')}}${{claim.session ? ' · ⚙ ' + esc(claim.session) : ''}}${{a.runner ? ' · ran on ' + esc(a.runner) : ''}}</div>` +
+    (c.note ? `<div class="text-sm text-slate-300 mb-3">${{esc(c.note)}}</div>` : '') +
+    `<div class="flex flex-wrap gap-1.5 mb-3">${{actBtns(c)}}${{c.help ? `<button id="cm-help" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1">? help</button>` : ''}}</div>` +
+    `<div class="flex flex-wrap gap-1.5 mb-4">${{colBtns}}</div>` +
+    (c.spec ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Spec</div><pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre></div>` : '') +
+    ((c.requests || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Requests</div>${{reqList(c, true)}}</div>` : '') +
+    ((c.comms || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Comms</div>${{commsList(c)}}</div>` : '') +
+    `<div class="flex gap-1.5 mt-4 border-t border-slate-700/60 pt-3">` +
+      `<input id="cm-comment" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs" placeholder="comment on this card…">` +
+      `<button id="cm-send" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-3">Send</button></div>`;
+
+  document.getElementById('cm-close').onclick = () => {{ modal.classList.add('hidden'); openCard = null; }};
+  modal.onclick = e => {{ if (e.target === modal) {{ modal.classList.add('hidden'); openCard = null; }} }};
+  if (c.help) document.getElementById('cm-help').onclick = () => openHelp(c.title || c.id, c.help);
+  document.getElementById('cm-send').onclick = async () => {{
+    const inp = document.getElementById('cm-comment');
+    if (!inp.value.trim()) return;
+    try {{ await api('/comment', {{id, from: 'tony', text: inp.value.trim()}}); toast('comment added'); await load(); }}
+    catch (e) {{ toast('error: ' + e.message, true); }}
+  }};
+  document.getElementById('cm-comment').onkeydown = e => {{ if (e.key === 'Enter') document.getElementById('cm-send').click(); }};
+  modal.classList.remove('hidden');
+}}
+
+async function doAct(id, verb, extra) {{
+  if (busy) return;
+  busy = true;
+  try {{
+    const r = await api('/action', Object.assign({{id, do: verb}}, extra || {{}}));
+    toast(r.message || 'ok');
+    await load();
+  }} catch (e) {{ toast('error: ' + e.message, true); }}
+  busy = false;
 }}
 
 function wire() {{
-  document.querySelectorAll('.help-btn').forEach(b =>
-    b.onclick = () => openHelp(b.dataset.title, b.dataset.help));
-  document.querySelectorAll('details[data-id]').forEach(d =>
-    d.addEventListener('toggle', () => {{
-      if (d.open) openDetails.add(d.dataset.id); else openDetails.delete(d.dataset.id);
-    }}));
-  document.querySelectorAll('.act-btn').forEach(b =>
-    b.onclick = async () => {{
-      b.disabled = true;
-      try {{
-        const r = await api('/action', {{id: b.dataset.id, do: b.dataset.do}});
-        toast(r.message || 'ok');
-        setTimeout(load, 500);
-      }} catch (e) {{ toast('error: ' + e.message); b.disabled = false; }}
-    }});
+  document.querySelectorAll('.board-card,.side-card').forEach(el =>
+    el.onclick = e => {{ if (!e.target.closest('button,input')) showCard(el.dataset.id); }});
+  document.querySelectorAll('.abtn').forEach(b =>
+    b.onclick = e => {{ e.stopPropagation(); doAct(b.dataset.id, b.dataset.do); }});
+  document.querySelectorAll('.mv-btn').forEach(b =>
+    b.onclick = e => {{ e.stopPropagation(); doAct(openCard, 'move', {{column: b.dataset.col}}); }});
+  document.querySelectorAll('.ny-btn').forEach(b =>
+    b.onclick = () => showCard(b.dataset.id));
   document.querySelectorAll('.rq-btn').forEach(b =>
-    b.onclick = async () => {{
-      const inp = document.querySelector(`.rq-in[data-id="${{b.dataset.id}}"][data-rq="${{b.dataset.rq}}"]`);
-      if (!inp.value.trim()) return;
-      try {{
-        await api('/respond', {{id: b.dataset.id, request_id: b.dataset.rq, answer: inp.value.trim()}});
-        toast('answer saved');
-        setTimeout(load, 500);
-      }} catch (e) {{ toast('error: ' + e.message); }}
+    b.onclick = async e => {{
+      e.stopPropagation();
+      const inp = document.querySelector(`.rq-in[data-rq="${{b.dataset.rq}}"]`);
+      if (!inp || !inp.value.trim()) return;
+      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
     }});
 }}
 
@@ -363,10 +428,17 @@ const openHelp = (title, body) => {{
 }};
 document.getElementById('help-close').onclick = () => modal.classList.add('hidden');
 modal.onclick = e => {{ if (e.target === modal) modal.classList.add('hidden'); }};
+document.addEventListener('visibilitychange', () => {{ if (!document.hidden) load(); }});
+document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape') {{
+    document.getElementById('card-modal').classList.add('hidden'); openCard = null;
+    document.getElementById('help-modal').classList.add('hidden');
+  }}
+}});
 
 load();
 setInterval(load, POLL_MS);
-</script>
+</script></script>
 </body>
 </html>
 """
