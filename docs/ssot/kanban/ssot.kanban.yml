@@ -44,7 +44,13 @@ card_schema:
     result: "outcome text — written when the run finishes"
   # optional — needs-me items for Tony (button to answer on the card)
   requests:
-    - {id: "short-slug", ask: "question", status: "open | answered", answer: null}
+    - id: "short-slug"
+      ask: "question"
+      options: "optional list — renders one-click answer buttons instead of
+        a free-text box. Items are strings ('A — syncthing clipboard dir')
+        or {id, label} objects. Answering posts the option text."
+      status: "open | answered"
+      answer: null
   # optional — append-only log; every actor writes here (board shows last 4)
   comms:
     - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}

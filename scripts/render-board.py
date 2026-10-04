@@ -226,9 +226,21 @@ function reqList(c, inModal) {{
       h += `<div class="text-xs text-slate-400 mt-1">❓ ${{esc(r.ask)}} <span class="text-emerald-300">→ ${{esc(r.answer)}}</span></div>`;
     else {{
       h += `<div class="text-xs text-amber-300 mt-1">❓ ${{esc(r.ask)}}</div>`;
-      if (inModal)
-        h += `<div class="flex gap-1 mt-0.5"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
-             `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">Answer</button></div>`;
+      if (inModal) {{
+        const opts = r.options || [];
+        if (opts.length) {{
+          h += '<div class="flex flex-wrap gap-1.5 mt-1">';
+          for (const o of opts) {{
+            const lbl = typeof o === 'string' ? o : (o.label || o.id);
+            const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
+            h += `<button class="rq-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{esc(lbl)}}</button>`;
+          }}
+          h += '</div>';
+        }} else {{
+          h += `<div class="flex gap-1 mt-0.5"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
+               `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">Answer</button></div>`;
+        }}
+      }}
     }}
   }}
   return h;
@@ -381,6 +393,12 @@ function wire() {{
       const inp = document.querySelector(`.rq-in[data-rq="${{b.dataset.rq}}"]`);
       if (!inp || !inp.value.trim()) return;
       try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.rq-opt').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
       catch (err) {{ toast('error: ' + err.message, true); }}
     }});
 }}
