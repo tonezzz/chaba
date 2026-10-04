@@ -207,7 +207,7 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         f"{MDDB}/add", data=body,
         headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=120) as r:
             if r.status < 300:
                 _pub_hash[hkey] = h
                 try:

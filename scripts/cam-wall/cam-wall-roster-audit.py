@@ -110,7 +110,7 @@ def save_registry(cfg: dict) -> None:
                                   "lang": "en",
                                   "contentMd": json.dumps(
                                       cfg, ensure_ascii=False, indent=2),
-                                  "meta": meta})
+                                  "meta": meta}, timeout=120)
     except Exception as exc:
         print(f"registry write-back failed: {exc}", file=sys.stderr)
 
@@ -352,7 +352,8 @@ def main() -> int:
                         "summary": [
                             "Automated cams_skip hygiene — dead cams "
                             "skipped after dead_hours, revived when "
-                            "upstream recovers. Change log."]}})
+                            "upstream recovers. Change log."]}},
+                    timeout=120)
             except Exception as exc:
                 errors += 1
                 print(f"audit page write failed: {exc}", file=sys.stderr)
