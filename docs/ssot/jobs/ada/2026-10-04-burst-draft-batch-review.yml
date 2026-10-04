@@ -1,0 +1,79 @@
+title: Batch review — Sep29-Oct1 draft burst in ada-ha-bank-general
+subtitle: Verification pass over the ~110 burst drafts + audit of the earlier triage decisions
+icon: clipboard-check
+id: 2026-10-04-burst-draft-batch-review
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-04"
+completed: "2026-10-04"
+card: ada-draft-backlog
+
+context: >
+  Card asked for a per-draft promote/retract pass over the ~110 distill
+  burst drafts (status=draft, created 2026-09-29..10-01) in MDDB
+  ada-ha-bank-general (idc01, reached via tailnet 100.74.146.0:11023).
+
+key_finding: >
+  The burst drafts were ALREADY decided before this session ran. The
+  12:15 dispatch "triage the ada memory inbox" (task
+  20261004-121552-triage-the-ada-memory-inbox-on, finished ~13:04) did a
+  per-doc review pass over the same population: 368 draft-ish docs
+  reviewed -> 195 promote / 76 supersede / 168 archive-retract, "zero
+  drafts remain in writable banks". Its decisions are stamped in MDDB
+  meta: retracted docs carry retracted_reason="inbox triage 2026-10-04:
+  <reason>" and superseded docs carry superseded_by links. Verified
+  live: 0 docs with status=draft and addedAt<=2026-10-01 remain; the
+  only 6 drafts in the bank are post-triage inflow written today by
+  conversation_memory.
+
+audit_of_prior_pass: >
+  Re-read all 89 active extract-*/distill/* docs the prior pass promoted
+  (or that were already active). Decisions are overwhelmingly sound —
+  promoted items are durable preferences, device facts, and procedures.
+  3 docs flagged for correction-retract (clear noise slipped through).
+  Retracted sample all carry sensible reasons; 41/54 superseded docs
+  lack a superseded_by link (pre-existing gap, not this pass's doing —
+  noted, not fixed here).
+
+decisions_applied:
+  promote_draft_to_active:
+    - key: extract-2026-10-04-519088cb6d-0
+      why: TONY-TV + CCTV-feed role — accurate, extends the TONY-TV fact
+    - key: extract-2026-10-04-e7afe759ba-0
+      why: TONY-TV + TONY-TV Cast devices — new durable device fact
+    - key: extract-2026-10-04-e7afe759ba-1
+      why: Noble Club feed on TV — usage preference, consistent w/ CCTV interest
+    - key: extract-2026-10-04-e7afe759ba-3
+      why: Minted Metal gold-price source — durable data-source reference
+    - key: extract-2026-10-04-e7afe759ba-4
+      why: floodboard.org live flood maps — durable reference, matches flood tracking
+  retract_draft:
+    - key: extract-2026-10-04-e7afe759ba-2
+      why: knowledge-gap note ("no lat/lon for Amicon HA") — not a durable memory
+  retract_corrections_active:
+    - key: extract-2026-09-20-6d998cea19-1
+      why: duplicate + meta-noise ("location unknown in system memory"); Nobito
+           ownership already covered by extract-2026-09-24-c53d93f9e0-0
+    - key: extract-2026-09-23-9e52c57a61-0
+      why: transcription error ("David memory" bank) + system-inventory noise
+    - key: extract-2026-09-23-fb5912b6a8-0
+      why: transient availability snapshot ("Rika sensors currently
+           unavailable") — same class the prior pass retracted as
+           'transient device state'
+
+method: >
+  PATCH /v1/update meta-only (no re-embed), same convention as
+  memory-staleness-sweep.py: status flip + retracted_reason stamped
+  "batch-review 2026-10-04: <reason>"; last_verified bumped. Nothing
+  deleted — retracted docs stay auditable. Only ada-ha-bank-general
+  touched; no other banks written.
+
+counts:
+  bank_docs_total: 230
+  drafts_at_1216_card_check: 131
+  burst_era_drafts_remaining: 0   # decided by earlier triage dispatch
+  live_drafts_reviewed: 6
+  promoted: 5
+  retracted: 4                    # 1 draft + 3 correction-retracts of active docs
+  drafts_after: 0
