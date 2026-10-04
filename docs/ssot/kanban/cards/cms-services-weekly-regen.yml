@@ -13,7 +13,7 @@ action:
   task_id: 20261004-141859-create-chaba-services-regen-se
   runner: tony-dell
   result: 20261004-141859-create-chaba-services-regen-se finished (inactive) — see `devin-dispatch logs 20261004-141859-create-chaba-services-regen-se`
-updated: 2026-10-04 17:53
+updated: 2026-10-04 20:03
 comms:
 - at: 2026-10-04 14:18
   from: tony
@@ -47,5 +47,11 @@ comms:
     via tony-omen so its page stops being static) and cms-generator-schedule-audit (15 scripts/ada generators have
     no timer and arent in overnight-jobs — audit + schedule the live ones). Skipped a disk-prune card — lab-disk-trend-watch
     already covers the trend angle and the watch-list flags dell 87% weekly anyway. Work complete — ready for review.'
+- at: 2026-10-04 20:03
+  from: devin
+  text: 'Continued: implemented cms-services-michael-ha-live on this branch — host-services-cms.py gained HOST_META.jump
+    (michael-ha via tony-omen); probe goes over stdin to `sh` on the target, no nested quoting. Full regen verified:
+    michael-ha leaf is live (up 7d, load 0.79, disk 74%) and the index now reports 0 unreachable. Caveat: Sunday
+    timer still runs the master copy — michael-ha will show unreachable again until this branch merges.'
 claim:
   since: 2026-10-04 14:20
