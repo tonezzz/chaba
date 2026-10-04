@@ -27,8 +27,9 @@ LIMIT_LSN_GAP = 5_000_000
 DEFAULT_URL = "http://100.74.146.0:11023/v1/replication/status"
 DEFAULT_STATE = Path.home() / "var/chaba/health/mddb-binlog-state.json"
 INBOX_CANDIDATES = [
-    Path.home() / "CascadeProjects/chaba/docs/ssot/focus-inbox",
+    # served checkout first — kanban-commit.timer only watches this repo
     Path.home() / "CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox",
+    Path.home() / "CascadeProjects/chaba/docs/ssot/focus-inbox",
 ]
 INBOX_STEM = "mddb-binlog"
 
