@@ -58,3 +58,12 @@ status_note: |
   copy at idc01:~/jev-student/ckpt-v0-deployed-20261004. Post-deploy
   production benchmark: failure set 100% (32/32 @0.75 gate), corpus
   sample 98.3% (residual misses are label-noise FPs).
+
+voice_bench_2026-10-04: |
+  TTS-only run (edge-tts EN/TH → faster-whisper int8 → prod v5 gate):
+  tiny 65.6% / base 84.4% / small 93.8% gate accuracy on ASR text
+  (clean text = 100%). CER med 0.26/0.11/0.11; Thai CER ~2x overall
+  (tiny 0.48). ASR noise is the dominant loss — cascade must trigger
+  on ASR confidence (avg_logprob) not only gate gray-band, since
+  mangled text gives confidently-wrong scores. small = 8.2s/clip on
+  12-core x86 → not Pi5-viable as default tier.
