@@ -2,7 +2,7 @@ title: Security Posture — tony-dell
 subtitle: Declared security state for the secondary workstation / web edge; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-09-24"
+last_updated: "2026-10-04"
 maintainer: tony
 
 host: tony-dell
@@ -22,6 +22,8 @@ expected_exposure:
   # LAN (0.0.0.0 binds — dell has no public interface, so these are reachable
   # via LAN + tailnet only; full accepted set also in ssot.audit.baseline.yml)
   - { listener: "0.0.0.0:22",    class: lan, service: sshd }
+  - { listener: "0.0.0.0:2222",  class: lan, service: sshd, note: "m2m ssh — sshd_config.d/tailnet-m2m.conf + ssh.socket generator (verified 2026-10-04)" }
+  - { listener: "0.0.0.0:8222",  class: lan, service: sshd, note: "second m2m ssh — ssh.socket drop-in /etc/systemd/system/ssh.socket.d/listen-2222.conf (verified 2026-10-04)" }
   - { listener: "0.0.0.0:80",    class: lan, service: caddy, note: "web stack standard port" }
   - { listener: "0.0.0.0:1880",  class: lan, service: node-red }
   - { listener: "0.0.0.0:3000",  class: lan, service: yomi-api }
@@ -54,6 +56,8 @@ expected_exposure:
   - { listener: "0.0.0.0:8554",  class: lan, service: go2rtc, note: "rtsp" }
   - { listener: "0.0.0.0:8789",  class: lan, service: gev-gemini, note: "Gemini Live bridge (+8790)" }
   - { listener: "0.0.0.0:8790",  class: lan, service: gev-gemini }
+  - { listener: "0.0.0.0:8791",  class: lan, service: yt-live-api, note: "yt-live REST shim for voice/agent casting (verified 2026-10-04)" }
+  - { listener: "0.0.0.0:9005",  class: lan, service: ha-live, note: "HA Live Gemini bridge — also exposed via ts-serve :8444 -> 127.0.0.1:9005 (verified 2026-10-04)" }
   - { listener: "0.0.0.0:18080", class: lan, service: imagen2-webui, optional: true }
   - { listener: "0.0.0.0:18081", class: lan, service: imagen2-api, optional: true }
   - { listener: "0.0.0.0:19584", class: lan, service: ssh-forward, optional: true, note: "transient ssh -L tunnel" }

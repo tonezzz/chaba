@@ -2,7 +2,7 @@ title: Security Posture — idc02
 subtitle: Declared security state for the idc02 VPS; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-09-30"
+last_updated: "2026-10-04"
 maintainer: tony
 
 host: idc02
@@ -11,9 +11,13 @@ standard: docs/ssot/infrastructure/ssot.security.yml
 expected_exposure:
   - { listener: "0.0.0.0:22", class: tailnet-only, service: sshd,
       note: "public :22 removed 2026-09-30 post-join — ufw allows tailscale0 only; PermitRootLogin prohibit-password (key-only)" }
+  - { listener: "0.0.0.0:80", class: public-ip, service: caddy-edge,
+      note: "caddy-edge quadlet (container, host-net) — public edge for *-ha.surf-thailand.com; added 2026-10-03" }
+  - { listener: "0.0.0.0:443", class: public-ip, service: caddy-edge,
+      note: "caddy-edge quadlet TLS — Let's Encrypt per-name certs; added 2026-10-03" }
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: "deviation — panel-recovery fallback; sshd listens tailnet-only via ufw" }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
   tailscale_ssh: false
   recovery:
     provider_panel: "VPS provider web console — recovery path if tailnet+ssh both break"
@@ -23,7 +27,9 @@ firewall:
   inbound_default: deny
   rules:
     - "allow in on tailscale0 (all traffic — tailnet only)"
-  note: "Enabled 2026-09-30 during baseline setup; outbound default allow"
+    - "allow 80/tcp anywhere (caddy-edge)"
+    - "allow 443/tcp anywhere (caddy-edge)"
+  note: "Enabled 2026-09-30 during baseline setup; 80/443 opened 2026-10-03 for public edge; outbound default allow"
 
 tailscale:
   ip: "100.123.163.11"
@@ -46,7 +52,7 @@ baseline_applied:
 deviations:
   - item: "sshd PasswordAuthentication yes"
     reason: "VPS image default; key auth installed 2026-09-30 — disable password auth once root+tony key logins confirmed stable, or keep as panel-recovery fallback like idc01"
-    last_verified: "2026-09-30"
+    last_verified: "2026-10-04"
 
 last_observed: {}
 deltas: []

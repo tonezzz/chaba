@@ -2,7 +2,7 @@ title: Security Posture — tony-omen
 subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-09-27"
+last_updated: "2026-10-04"
 maintainer: tony
 
 host: tony-omen
@@ -23,6 +23,7 @@ expected_exposure:
   - { listener: "0.0.0.0:8001",  class: lan, service: sensor-reader, note: "docker container" }
   - { listener: "0.0.0.0:8123",  class: lan, service: homeassistant, note: "HA instance on omen (python3 -m homeassistant /config)" }
   # 0.0.0.0:8780 ultralytics-yolo-ha removed 2026-09-27 — service moved to mn01
+  - { listener: "0.0.0.0:8799",  class: lan, service: cast-browser-server, note: "~/.local/bin/cast-browser-server.mjs (verified 2026-10-04)" }
   - { listener: "0.0.0.0:9010",  class: lan, service: tailscale-connections-server, note: "chaba stacks/web" }
   - { listener: "0.0.0.0:9100",  class: lan, service: mcp-debug-cors }
   - { listener: "0.0.0.0:9230",  class: lan, service: playlived, note: "PLAYLIVED_PORT=9230 in playlived.service; values.yml updated 2026-09-24" }

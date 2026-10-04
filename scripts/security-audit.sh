@@ -6,10 +6,10 @@
 
 set -eo pipefail
 
-# Configuration
-SECURITY_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/security-audit.log"
-REPORT_FILE="/home/tony/CascadeProjects/chaba-tony-dell/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
-PROJECT_ROOT="/home/tony/CascadeProjects/chaba-tony-dell"
+# Configuration — paths derive from the running checkout, not a fixed clone
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SECURITY_LOG="$PROJECT_ROOT/logs/security-audit.log"
+REPORT_FILE="$PROJECT_ROOT/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
 
 # Load accepted baseline from ssot.audit.yml
 ACCEPTED_ROOT_CONTAINERS=""
@@ -239,12 +239,14 @@ check_backup_security() {
                 report_issue "medium" "backup-security" "Backup directory has world-writable permissions: $backup_perms" "chmod 755 $backup_dir"
             fi
         fi
-    else
+    elif command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "gdrive"; then
         report_issue "high" "backup-security" "Google Drive not mounted - backups may be inaccessible" "Check rclone mount and remount if needed"
+    else
+        log "INFO" "No gdrive rclone remote on this host — not a backup host, skipping mount check"
     fi
-    
+
     # Check backup log permissions
-    local backup_logs=("/home/tony/CascadeProjects/chaba-tony-dell/logs/chaba-backup.log" "/home/tony/CascadeProjects/chaba-tony-dell/logs/chaba-backup-monitor.log" "/var/log/chaba-backup.log" "/var/log/chaba-backup-monitor.log")
+    local backup_logs=("$PROJECT_ROOT/logs/chaba-backup.log" "$PROJECT_ROOT/logs/chaba-backup-monitor.log" "/var/log/chaba-backup.log" "/var/log/chaba-backup-monitor.log")
     for log_file in "${backup_logs[@]}"; do
         if [ -f "$log_file" ]; then
             local log_perms=$(stat -c "%a" "$log_file")

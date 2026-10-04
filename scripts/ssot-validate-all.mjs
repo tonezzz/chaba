@@ -95,7 +95,7 @@ def _count_lines(content):
 
 def _data_isolation_scan(rel, content, warnings):
     # Skip per-host SSOTs and health/perf baseline files that legitimately contain runtime values
-    if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'performance-baselines')):
+    if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'ssot.security.', 'performance-baselines')):
         return
     for match in IP4_RE.finditer(content):
         # Skip loopback, Tailscale, wildcard bind, and documented home subnets
@@ -276,8 +276,10 @@ function main() {
   const cache = loadCache();
   // Exemption/threshold config changes must invalidate cached results —
   // otherwise stale warnings (or suppressed errors) replay forever.
+  // The validator's own hash is folded in too, or rule edits replay
+  // results computed by the old code under unchanged file hashes.
   const optDoc = join(SSOT_DIR, 'ssot.file-optimization.yml');
-  const configHash = existsSync(optDoc) ? sha256(optDoc) : 'none';
+  const configHash = `${existsSync(optDoc) ? sha256(optDoc) : 'none'}|${sha256(fileURLToPath(import.meta.url))}`;
   if (cache.__configHash !== configHash) {
     for (const k of Object.keys(cache)) delete cache[k];
     cache.__configHash = configHash;
