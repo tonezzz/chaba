@@ -1,11 +1,11 @@
 id: tools-ci-audit
 title: Tool-surface CI audit — lint, usage report, regression gate
-column: review
+column: done
 blocked_by: chaba-ci-standard
 note: 'Tool standard rides the CI pipeline (chaba-ci-standard): tools-lint in ssot-validate (alias table complete,
   count under budget, scenario coverage), weekly usage report -> report/tool-usage CMS page, regression scenarios
   gate merge cards at review.'
-updated: 2026-10-04 18:24
+updated: 2026-10-04 18:51
 help: "Deliverables:\n1. scripts/tool-lint.py — fails on: tool declared without alias entry\n   when spec says absorbed;\
   \ declared count > cap; tool with no\n   scenario file reference\n2. Wire into ssot-validate-all.mjs or ci runner\
   \ as the audit stage\n3. scripts/tool-usage-report.py — journal scan -> CMS page\n   report/tool-usage (daily\
@@ -51,5 +51,12 @@ comms:
 - at: 2026-10-04 18:24
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-04 18:51
+  from: devin
+  text: 'Merged to ada-pi main (3d8656e) + verified: 19/19 tool-audit tests green, tool-lint clean (106 declared,
+    43 coverage-debt warnings by design). ada-tool-usage timer install rides the next idc01 deploy.'
+- at: 2026-10-04 18:51
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-04 18:08
