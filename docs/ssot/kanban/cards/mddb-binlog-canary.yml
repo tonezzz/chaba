@@ -1,6 +1,6 @@
 id: mddb-binlog-canary
 title: mddb binlog size canary
-column: review
+column: done
 note: Retention janitor is live, but a silent stall grows the file again — alert on /v1/replication/status binlog_size_bytes
   > 1G or oldest_lsn gap > 5M so we see it before the disk does.
 spec: 'Add a check to the mcp-health / chaba health loop on tony-dell: GET http://100.74.146.0:11023/v1/replication/status,
@@ -13,7 +13,7 @@ action:
   task_id: 20261004-142059-add-a-check-to-the-mcp-health-
   runner: tony-dell
   result: 20261004-142059-add-a-check-to-the-mcp-health- finished (inactive) — see `devin-dispatch logs 20261004-142059-add-a-check-to-the-mcp-health-`
-updated: 2026-10-04 14:31
+updated: 2026-10-04 17:19
 comms:
 - at: 2026-10-04 14:18
   from: tony
@@ -36,5 +36,12 @@ comms:
 - at: 2026-10-04 14:31
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-04 17:19
+  from: devin
+  text: 'Merged dispatch/20261004-142059 -> master (5f1b3907). Canary verified live — already reporting a real breach:
+    binlog 3.08GB (>1GB), lsn_gap 22.4M (>5M). Will route to focus-inbox via the monitor.'
+- at: 2026-10-04 17:19
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-04 14:21

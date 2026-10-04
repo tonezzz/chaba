@@ -1,6 +1,6 @@
 id: cms-services-weekly-regen
 title: Weekly auto-regen of host services reports
-column: review
+column: done
 note: scripts/ada/host-services-cms.py is replayable and the viewer button works — now schedule it so the 7 pages
   (index + 6 hosts) stay fresh without a manual click. Weekly timer on tony-dell + a comms line on failure.
 spec: Create chaba-services-regen.service/.timer (weekly, on tony-dell) running scripts/ada/host-services-cms.py.
@@ -13,7 +13,7 @@ action:
   task_id: 20261004-141859-create-chaba-services-regen-se
   runner: tony-dell
   result: 20261004-141859-create-chaba-services-regen-se finished (inactive) — see `devin-dispatch logs 20261004-141859-create-chaba-services-regen-se`
-updated: 2026-10-04 14:33
+updated: 2026-10-04 17:19
 comms:
 - at: 2026-10-04 14:18
   from: tony
@@ -38,5 +38,8 @@ comms:
 - at: 2026-10-04 14:33
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-04 17:19
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-04 14:20
