@@ -1,0 +1,42 @@
+title: Re-arm the camwall house/VMS pull lane on idc01 (or move it)
+subtitle: cam-wall-pull-vps.timer disabled on idc01 since Oct 2 — no scheduled house/VMS puller
+icon: alert
+
+focus:
+  label: camwall idc01 pull lane disarmed
+  text: >-
+    idc01's cam-wall-pull-vps.timer was disabled Oct 2 21:30 and never re-armed;
+    cam-wall-cms-vps.timer is disabled too. VMS/house thumbs still look fresh because
+    an ad-hoc pull ran Oct 4 08:53 and peer rsync propagates to both edges — but
+    nothing is scheduled. Decide: re-enable on idc01 (needs `git pull` — checkout is
+    at 3a6ab18f, ~40 commits behind; also drop retired zone-a/noble-park from
+    CAMWALL_OWN in ~/.config/camwall.env) or move the house/VMS lane to idc02 by
+    extending its CAMWALL_OWN. Dell's cam-wall-cms.timer is the only active CMS
+    writer (works, but sits on the host we're offloading).
+  priority: high
+  status: draft
+  tags: [camwall, idc01, idc02, production]
+  missing_info:
+    - Who disabled the idc01 timers Oct 2 — intentional (lane moved?) or leftover?
+  safe_to_parallel:
+    value: true
+    reason: Self-contained systemd/env change on VPS hosts; no live-checkout mutation.
+  subtasks:
+    - label: git pull on idc01 (stash pop left embed-probe.py modified — review stash first)
+      status: not_started
+    - label: Update CAMWALL_OWN env (drop zone-a, noble-park; maybe add idc02 dohweb lane already set)
+      status: not_started
+    - label: Re-enable cam-wall-pull-vps.timer OR move lane to idc02 CAMWALL_OWN
+      status: not_started
+    - label: Decide single CMS writer location (dell currently; move to idc01 once timers back)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: 0283246f-continuation
+  date: 2026-10-04

@@ -1,0 +1,47 @@
+title: Log-digest robustness + Ada camera-image send tool (designs approved-in-principle)
+subtitle: tony-dell logs still not shipping; send_camera_image tool proposed but unbuilt
+icon: wrench
+
+focus:
+  label: logs pipeline hardening + ada camshot
+  text: >-
+    Two approved-direction items from this session. (a) Log digesting: tony-dell
+    hasn't shipped since ~Sep 26 — tony-omen->dell Tailscale SSH auth check expired.
+    Recommended fix accepted in principle: per-host local shipper timers straight to
+    idc01:11023 (kills the SSH dependency), add idc02 to DEFAULT_HOSTS, >26h silence
+    self-check, severe-line hourly lane, digest-side dedup xN + 'new today' flag,
+    weekly-digest dry-run before Mon 07:00. (b) Ada camera image: send_camera_image
+    tool design — resolve channel -> latest still from idc01 camwall data -> PWA
+    inline link / Telegram sendPhoto multipart / LINE needs a signed one-shot public
+    URL on idc01's public Caddy. Confirmation-gated (camera capture).
+  priority: medium
+  status: draft
+  tags: [logs, digest, ada, camera, line, telegram]
+  missing_info:
+    - LINE public-URL approach needs sign-off (idC01 public exposure, signed+expiring)
+  safe_to_parallel:
+    value: true
+    reason: Independent of camwall lane work; touches different services.
+  subtasks:
+    - label: per-host log-shipper timers (dell, omen, idc01, idc02, mn01) + idc02 in DEFAULT_HOSTS
+      status: not_started
+    - label: "host-silence (>26h) check in logs-report + severe-line hourly lane"
+      status: not_started
+    - label: send_camera_image tool — PWA + Telegram path first
+      status: not_started
+    - label: LINE signed-URL service on idc01 public edge (needs approval)
+      status: not_started
+    - label: dohweb zone 0/10 — check Wowza endpoints (new zone, all sources down)
+      status: not_started
+    - label: tony-house 3/4 cams still dead (source-side, verify on go2rtc)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: 0283246f-continuation
+  date: 2026-10-04
