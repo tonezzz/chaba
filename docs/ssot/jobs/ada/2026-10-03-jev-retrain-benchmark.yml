@@ -67,3 +67,31 @@ voice_bench_2026-10-04: |
   on ASR confidence (avg_logprob) not only gate gray-band, since
   mangled text gives confidently-wrong scores. small = 8.2s/clip on
   12-core x86 → not Pi5-viable as default tier.
+
+onnx_quant_2026-10-04: |
+  v5 exported to ONNX. fp32: 541MB, ~14.4ms p50 CPU (vs 24.2ms torch),
+  fail-set 100% — viable fast path. int8 (dynamic + per-channel):
+  136MB, ~12.1ms p50 but acc drops to 87.5% — positive probs collapse
+  to ~0.56; classifier head too sensitive. DO NOT deploy int8 without
+  quant-aware calibration.
+
+hard_set_2026-10-04: |
+  NEW eval file scripts/jev/hard-set.jsonl — 35 UNSEEN cases (new EN/TH
+  affirm phrasings, Thai interrogatives, embedded-token negatives) not
+  covered by augmentation classes. True OOD test. Results:
+    v5-only        74.3%  (pos .80 neg .67; confidently-wrong p~0.01 misses)
+    g270m-only     74.3%  (pos .90 neg .53)  val 98.0% @0.30, golden 12/13, 544MB bf16, 29ms CPU
+    minilm-only    68.6%
+    g1b-only       85.7%  (pos 1.0) at 1.4s — best single on OOD
+  ORACLE (any model right): 100% — errors barely overlap; routing is the win.
+
+cascade_sim_2026-10-04: |
+  probe-probs.py records per-model p on any case file; cascade-sim.py
+  replays structures offline (serial/vote/veto/disagree) with expected
+  latency. Best OOD structure: v5/minilm->g1b-disagree (v5 decides;
+  when v5 vs minilm disagree, g1b resolves) = 88.6% on hard-set,
+  ~800ms expected — BEATS every single model incl. g1b alone.
+  On eval-all the same structure is 93.8% vs v5's 100% — cascade trades
+  known-set perfection for OOD robustness. Pure gray-band escalation
+  cannot fix confidently-wrong misses (v5 p=0.01 on unseen affirms);
+  disagreement is the correct trigger.

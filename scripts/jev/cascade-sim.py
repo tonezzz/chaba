@@ -78,6 +78,21 @@ def run_vote(cases, P, lat, members):
     return pred, exp_lat
 
 
+def run_disagree(cases, P, lat, members):
+    # base + checker; when they disagree, decider resolves.
+    base, check, dec = members
+    pb = np.array(P[base["model"]]); pc = np.array(P[check["model"]])
+    pd = np.array(P[dec["model"]])
+    bb = pb >= base["thr"]; cb = pc >= check["thr"]
+    disagree = bb != cb
+    pred = bb.copy()
+    pred[disagree] = pd[disagree] >= dec["thr"]
+    exp_lat = (lat.get(base["model"], {}).get("p50", 0) +
+               lat.get(check["model"], {}).get("p50", 0) +
+               lat.get(dec["model"], {}).get("p50", 0) * float(disagree.mean()))
+    return pred, exp_lat
+
+
 def run_veto(cases, P, lat, members):
     base = members[0]
     pred = np.array(P[base["model"]]) >= base["thr"]
@@ -101,8 +116,8 @@ def main():
     structs = json.load(open(args.config))
     out = []
     for s in structs:
-        fn = {"serial": run_serial, "vote": run_vote,
-              "veto": run_veto}[s["type"]]
+        fn = {"serial": run_serial, "vote": run_vote, "veto": run_veto,
+              "disagree": run_disagree}[s["type"]]
         pred, exp_lat = fn(cases, P, lat, s["members"])
         r = {"name": s["name"], "type": s["type"],
              "exp_lat_ms": round(exp_lat * 1e3, 1), **metrics(cases, pred)}
