@@ -1,0 +1,25 @@
+# STAGED scenario — install to ada-pi tests/scenarios-live/cms_first_answer.yaml
+# Created 2026-10-04 from recent Ada sessions + Tony's CMS-first directive:
+# "always use cms data for reply before searching elsewhere (and save info to
+#  cms so we don't have to search again)".
+# Expects a fresh flood-report CMS page to exist (it does — auto-updated).
+name: cms_first_answer
+tier: smoke
+url: ws://127.0.0.1:8002/ws
+key_name: user-tony
+turns:
+  # Ada must answer a CMS-covered question from reports-index / cms_get_page
+  # WITHOUT web_search first.
+  - user: "What is the latest flood situation in Bangkok?"
+    calls_any: [cms_get_page, ada_memory_search]
+    response_contains_any: ["october", "ตุลาคม", "flood", "น้ำท่วม", "receding", "update"]
+    no_calls: [web_search]
+  # New info found outside CMS should be saved back so repeat questions are
+  # answered from CMS.
+  - user: "Save that flood update to the CMS so you don't have to search again"
+    calls_any: [cms_note_update, cms_publish_page, ada_remember]
+    response_nonempty: true
+cleanup:
+  - mddb_delete:
+      collection: ada-cms-pages
+      contains: "SCENARIO-PROBE"

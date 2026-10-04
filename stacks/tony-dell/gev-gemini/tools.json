@@ -110,7 +110,7 @@
   {
     "type": "function",
     "name": "adjust_camera_zoom",
-    "description": "Move the current Cesium camera closer to or farther from what it is presently looking at. Use for relative zoom requests without changing location.",
+    "description": "Smoothly dolly the current Cesium camera closer to or farther from what it is looking at. Use for relative zoom requests without changing location. Consecutive calls queue: same direction extends the in-flight zoom, opposite direction subtracts from it. For sustained zooming or forward flight use move_camera with motion=zoom or motion=fly instead.",
     "parameters": {
       "type": "object",
       "additionalProperties": false,
@@ -932,7 +932,7 @@
   {
     "type": "function",
     "name": "move_camera",
-    "description": "Direct the camera like a drone operator: orbit the current view target, pan, tilt, or rotate — one bounded nudge (mode=once) or continuous motion until stopped (mode=continuous). Continuous motion also stops on any manual camera input or when a navigation tool runs. Say the RESULTING state when confirming (\"Orbiting slowly\").",
+    "description": "Direct the camera like a drone operator: orbit the current view target, pan, tilt, rotate, zoom (continuous dolly in/out), or fly (flight mode — travels forward/back/left/right at the CURRENT camera height, altitude locked) — one bounded nudge (mode=once) or continuous motion until stopped (mode=continuous). Continuous motion also stops on any manual camera input or when a navigation tool runs. Say the RESULTING state when confirming (\"Flying forward\", \"Zooming in\").",
     "parameters": {
       "type": "object",
       "additionalProperties": false,
@@ -944,6 +944,8 @@
             "pan",
             "tilt",
             "rotate",
+            "zoom",
+            "fly",
             "stop"
           ]
         },
@@ -953,9 +955,13 @@
             "left",
             "right",
             "up",
-            "down"
+            "down",
+            "in",
+            "out",
+            "forward",
+            "back"
           ],
-          "description": "Required except for orbit (defaults right/clockwise) and stop."
+          "description": "zoom needs in/out; fly needs forward/back/left/right (default forward); pan/tilt need left/right/up/down; rotate needs left/right; orbit and stop take none."
         },
         "speed": {
           "type": "string",
@@ -972,6 +978,15 @@
             "continuous"
           ],
           "description": "once = bounded eased nudge (default); continuous = until stop/manual input."
+        },
+        "amount": {
+          "type": "string",
+          "enum": [
+            "little",
+            "medium",
+            "lot"
+          ],
+          "description": "zoom motion only — step size for mode=once (default medium). Ignored in continuous mode."
         }
       },
       "required": [
