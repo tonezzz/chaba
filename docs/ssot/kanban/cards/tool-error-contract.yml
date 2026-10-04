@@ -1,0 +1,16 @@
+id: tool-error-contract
+title: ada tools — uniform {ok, error} result contract
+column: backlog
+program: ada-tools
+metric: 'every tool result normalizes to {ok: bool, error?: str}; no buried nested failures'
+verify: 'lint test: dispatch every tool with a failing fixture, assert top-level shape'
+note: >-
+  Today: raise, {error}, ok:false, {err}, and errors buried in
+  responses[].response.ok all coexist — the "does it claim success
+  honestly" checks can't be uniform. gev_command all-failed->top-level fix
+  (0bb8e9b) is the pattern; wrap the ToolRunner dispatch so every tool
+  normalizes, then delete per-tool ad-hoc handling. Prereq for reliable
+  phantom-write detection.
+help: 'ToolRunner.dispatch wrapper — one place to normalize; tools.d
+  manifest can declare the contract for drop-ins too'
+updated: '2026-10-04'

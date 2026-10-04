@@ -1,0 +1,16 @@
+id: gev-command-whitelist
+title: gev_command — client-side arg whitelist per command name
+column: backlog
+program: ada-tools
+metric: 'bad args rejected locally with the real schema in the error; zero round-trip arg failures in gev scenarios'
+verify: 'gev_* scenarios pass; synthetic bad-args probe gets schema error not relay timeout'
+note: >-
+  Passthrough design stays (flexibility) but the model keeps sending
+  malformed shapes — the {name,args}-in-args wrap bug needed a runtime
+  unwrap (0bb8e9b). Add a per-command known-args map in the tool
+  (fly_to_location: {locationId, query, latitude, longitude};
+  annotate_map: {annotations}; ...) — reject unknown/missing keys before
+  the relay round-trip and return the expected schema in the error.
+help: 'GEV tool schemas: stacks/tony-dell/gev-gemini/tools.json (extracted
+  from GEV_REALTIME_TOOLS in vite.config.js)'
+updated: '2026-10-04'
