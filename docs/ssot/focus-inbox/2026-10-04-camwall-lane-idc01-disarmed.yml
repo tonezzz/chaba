@@ -14,7 +14,7 @@ focus:
     extending its CAMWALL_OWN. Dell's cam-wall-cms.timer is the only active CMS
     writer (works, but sits on the host we're offloading).
   priority: high
-  status: draft
+  status: done
   tags: [camwall, idc01, idc02, production]
   missing_info:
     - Who disabled the idc01 timers Oct 2 — intentional (lane moved?) or leftover?
@@ -23,11 +23,11 @@ focus:
     reason: Self-contained systemd/env change on VPS hosts; no live-checkout mutation.
   subtasks:
     - label: git pull on idc01 (stash pop left embed-probe.py modified — review stash first)
-      status: not_started
+      status: done
     - label: Update CAMWALL_OWN env (drop zone-a, noble-park; maybe add idc02 dohweb lane already set)
-      status: not_started
+      status: done
     - label: Re-enable cam-wall-pull-vps.timer OR move lane to idc02 CAMWALL_OWN
-      status: not_started
+      status: done
     - label: Decide single CMS writer location (dell currently; move to idc01 once timers back)
       status: not_started
 
