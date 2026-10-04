@@ -126,6 +126,10 @@ sections:
         text: systemctl --user restart barriers.service
       - label: Logs
         text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
+      - label: Image clipboard workaround
+        text: Barrier 2.4.0 relays only text. clip-sync pollers mirror image/* payloads over ssh+xclip in both directions — clip-sync-dell.service on omen (dell→omen, remote :1) and clip-sync-omen.service on dell (omen→dell, remote :0), both running ~/.local/bin/clip-sync. Repo copies scripts/barrier/clip-sync.sh + systemd/clip-sync-*.service. Runbook docs/ssot/jobs/infrastructure/2026-10-04-barrier-image-clipboard.yml
+      - label: clip-sync caveat
+        text: Barrier grabs each clipboard on change and on screen crossing and caches text only, so a copied image can be clobbered locally; the opposite poller restores it within ~1s while either side still holds the bytes. Copy→cross in under ~1s may lose the image — copy again after the crossing settles.
 
   - title: Physical Display (tony-dell)
     icon: 🖥️

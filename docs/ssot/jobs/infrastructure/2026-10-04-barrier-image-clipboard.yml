@@ -1,0 +1,79 @@
+title: Barrier image-clipboard workaround (clip-sync image payloads)
+subtitle: Extend the clip-sync poller pair so images cross between tony-dell and tony-omen despite Barrier 2.4.0's text-only clipboard relay
+icon: clipboard
+
+planning:
+  goal: >-
+    Copy an image on one workstation, cross screens via Barrier, paste it on the
+    other — without restarting the Barrier seats.
+  decision: >-
+    Kanban card barrier-image-copy; Tony picked option B — extend the existing
+    clip-sync pipeline — over a syncthing shared dir + hotkey (A) or accepting
+    text-only (C).
+  context: >-
+    Barrier server: barriers.service on tony-omen (0.0.0.0:24800, seat :0 +
+    ~/.Xauthority). Client: barrier-client.service on tony-dell (seat :1 on vt7
+    via xorg-seat + xfce-seat; :1 accepts connections regardless of
+    XAUTHORITY). The pre-existing clip-sync-dell.service on omen was
+    functionally dead: it ssh'd to 192.168.1.42 (dell moved to 192.168.2.67)
+    and ran remote xclip with no DISPLAY/XAUTHORITY.
+  owner: devin-dispatch
+  related_focus:
+    - docs/ssot/focus-inbox/processed/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
+
+implementation:
+  summary: >-
+    One shared poller script, two user units, one per direction.
+  files:
+    - scripts/barrier/clip-sync.sh — repo copy of ~/.local/bin/clip-sync
+    - systemd/clip-sync-dell.service — omen, dell→omen (updated; repo copy)
+    - systemd/clip-sync-omen.service — dell, omen→dell (new; repo copy)
+  deployed:
+    - "omen: /home/tony/.local/bin/clip-sync + clip-sync-dell.service (restarted 2026-10-04 20:35)"
+    - "dell: /home/tony/.local/bin/clip-sync + clip-sync-omen.service (enabled 2026-10-04 20:32)"
+    - "omen: /home/tony/bin/clip-sync-dell kept as a shim -> exec ~/.local/bin/clip-sync tony-dell"
+  design:
+    - Poll remote `xclip -o -t TARGETS` every 1s over ssh (aliases tony-dell /
+      tony-omen; tailscale path, LAN-direct when tailscale picks it).
+    - If an image/* target is offered (preference png>jpeg>bmp>webp>tiff>gif,
+      else first image/*), use remote TIMESTAMP (sha256 of raw bytes) as the
+      cheap change trigger; only on change, sha256 the payload remotely and
+      pull bytes to a tmpfile + `xclip -in -t <type>` when the content hash
+      differs. No TIMESTAMP target → hash every poll.
+    - Text path unchanged: remote sha256 of `xclip -o`, write on change.
+    - Writes are content-hash keyed, NOT timestamp keyed — the two directions
+      converge after at most one redundant pull per copy event; a pure
+      timestamp key would ping-pong forever because every `xclip -in` acquires
+      a fresh timestamp.
+
+behavior_notes:
+  - "Barrier grabs the local clipboard on every content change and on screen
+    crossing, and caches text only — observed as the clipboard briefly serving
+    TARGETS/MULTIPLE/TIMESTAMP with no payload. barrierc on dell re-serves
+    image/png locally after its grab; barriers on omen showed a ~2s degraded
+    gap before the opposite poller restored the image. Net effect: the pair
+    self-heals through Barrier grabs while either side retains the bytes."
+  - "Residual race: copy image then cross screens in under ~1s can beat the
+    poller — if Barrier clobbers both ends first, re-copy after the pointer
+    settles."
+  - "Journal shows one line per pull: `clip-sync(<host>) pulled <target> (<n>
+    bytes)` — check journalctl --user -u clip-sync-{omen,dell}."
+
+verification:
+  - "dell→omen: `xclip -in -t image/png` 16x16 PNG on dell :1 -> omen :0 served
+    image/png sha256 5503ff8f… (byte-identical)"
+  - "omen→dell: same round-trip reversed, sha256 02face63… (byte-identical)"
+  - "text both directions; no ping-pong (journals idle in steady state)"
+
+operate:
+  restart_omen: systemctl --user restart clip-sync-dell.service   # on tony-omen
+  restart_dell: systemctl --user restart clip-sync-omen.service   # on tony-dell
+  note: >-
+    Never restart barriers.service / barrier-client.service / xfce-seat to
+    touch this — clip-sync units are independent of the Barrier seats.
+
+metadata:
+  created: "2026-10-04"
+  maintainer: devin
+  status: active
+  card: barrier-image-copy

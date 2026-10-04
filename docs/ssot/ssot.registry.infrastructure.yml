@@ -44,8 +44,29 @@ assets:
     type: service
     path: ~/.config/systemd/user/clip-sync-dell.service
     project: chaba
-    purpose: service asset at ~/.config/systemd/user/clip-sync-dell.service; purpose to be documented.
-    status: draft
+    purpose: tony-omen unit; polls tony-dell clipboard (text + image/*) via
+      ssh+xclip every 1s and writes it to omen's :0 clipboard. Barrier 2.4.0
+      relays text only, so this carries images dell->omen. Repo copy
+      systemd/clip-sync-dell.service; runs ~/.local/bin/clip-sync tony-dell.
+    status: active
+  - id: clip-sync-omen
+    name: clip-sync-omen.service
+    type: service
+    path: ~/.config/systemd/user/clip-sync-omen.service
+    project: chaba
+    purpose: tony-dell unit; reverse direction (omen->dell) on seat :1. Repo
+      copy systemd/clip-sync-omen.service; runs ~/.local/bin/clip-sync
+      tony-omen.
+    status: active
+  - id: clip-sync-script
+    name: clip-sync
+    type: script
+    path: ~/.local/bin/clip-sync
+    project: chaba
+    purpose: shared one-way clipboard poller used by both clip-sync-* units;
+      content-hash keyed so the pair converges instead of ping-ponging. Repo
+      copy scripts/barrier/clip-sync.sh.
+    status: active
   - id: evolution-alarm-notify
     name: evolution-alarm-notify.service
     type: service
