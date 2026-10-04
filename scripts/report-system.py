@@ -22,7 +22,9 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import sys
+import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -37,6 +39,9 @@ from lib.report import (  # noqa: E402
 
 OUT_MD = REPO / "reports" / "SYSTEM-REPORT.md"
 OUT_YML = REPO / "reports" / "system-report.yml"
+CMS_SLUG = "system-report"
+MDDB = os.environ.get(
+    "MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 META = REPO / "reports" / "meta.system-report.yml"
 FOCUS_META = REPO / "reports" / "meta.focus-inbox.yml"
 FOCUS_DIR = REPO / "docs" / "ssot" / "focus-inbox"
@@ -201,6 +206,55 @@ def write_focus_inbox_meta() -> None:
     )
 
 
+def _mddb_post(path: str, payload: dict, timeout: int = 30) -> object:
+    req = urllib.request.Request(
+        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
+
+
+def publish_cms_page(md: str, summary: str) -> bool:
+    """Upsert the rendered report into Ada's CMS (ada-cms-pages) so the
+    tony-ha/cms surface and cast displays can show it. Best-effort — an
+    MDDB outage must not fail the report."""
+    now = now_iso()
+    # Merge meta/timeline like cms_publish_page so the page keeps its
+    # append-only audit trail across daily refreshes.
+    existing = {}
+    try:
+        docs = _mddb_post("search", {"collection": "ada-cms-pages",
+                                     "query": CMS_SLUG, "limit": 50})
+        existing = next((d for d in docs
+                         if d.get("key") == CMS_SLUG
+                         and (d.get("lang") or "en") == "en"), {}) or {}
+    except Exception:
+        pass
+    meta = {
+        k: (v if isinstance(v, list) else [v])
+        for k, v in ((existing.get("meta") or {})).items()}
+    meta.setdefault("bank", ["cms"])
+    meta.setdefault("scope", ["tony"])
+    meta.setdefault("status", ["active"])
+    meta.setdefault("source", ["api"])
+    meta.setdefault("subject", [CMS_SLUG])
+    meta.setdefault("attribute", ["page"])
+    meta.update({
+        "kind": ["report"], "slug": [CMS_SLUG],
+        "title": [f"System Report — {now[:10]}"],
+        "format": ["markdown"], "lang": ["en"],
+        "updated": [now], "last_verified": [now[:10]],
+        "domain": ["monitoring"], "summary": [summary[:240]],
+        "fresh_for": ["30h"], "written_by": ["report-system.py"],
+    })
+    tl = [x for x in meta.get("timeline", []) if isinstance(x, str)]
+    tl.append(f"{now[:16]} published: {meta['title'][0][:80]}")
+    meta["timeline"] = tl[-40:]
+    _mddb_post("add", {"collection": "ada-cms-pages", "key": CMS_SLUG,
+                       "lang": "en", "contentMd": md, "meta": meta},
+               timeout=60)
+    return True
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--registry", type=Path, default=REGISTRY_PATH)
@@ -264,6 +318,12 @@ def main() -> int:
                           if s["layer"] == "L2-domain"])
     append_timeline("system-report", "L3", status, summary,
                     ref=args.output, timeline=args.timeline)
+
+    try:
+        if publish_cms_page(md, summary):
+            print(f"Published CMS page: {CMS_SLUG}")
+    except Exception as e:
+        print(f"warn: CMS publish failed ({e})", file=sys.stderr)
 
     print(f"Wrote {args.output}")
     print(f"Wrote {args.yml_output}")
