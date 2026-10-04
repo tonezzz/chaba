@@ -2,31 +2,25 @@ id: ada-tools-program
 title: ada tools — surface restructure program (plumbing, not consolidation)
 column: backlog
 program: ada-tools
-metric: 'declarations live in per-domain manifests; tool_runner.py split by domain; uniform {ok,error} contract'
-note: >-
-  Structural complement to the tools-merge-* consolidation program
-  (docs/assessments/tool-consolidation-spec-2026-10-04.md — that program
-  decides WHICH tools exist: 103->~38 via action= merges). This program
-  fixes WHERE/HOW they're wired: 103 declarations sit inline in a 5k-line
-  realtime_provider.py, tool_runner.py is ~4.8k lines / 126 methods — the
-  biggest merge-collision surface for parallel sessions, and every session
-  pays the token cost of all fat descriptions every turn. Error shapes are
-  inconsistent (raise / {error} / ok:false / {err} / buried
-  responses[].response.ok) which blocks uniform phantom-write detection.
-  tools.d already proves the right pattern (module + manifest + policy +
-  timeout). Lanes: ada-tools-manifest, ada-tools-desc-slim,
-  tool-runner-split, tool-error-contract, gev-command-whitelist,
-  tool-decl-impl-lint. Sequencing: do AFTER or alongside tools-merge-*
-  — consolidation shrinks the surface these lanes reorganize.
-help: backend/realtime_provider.py (decls), backend/tool_runner.py (impl),
-  backend/tools.d/ + tools_loader.py (the drop-in pattern to mirror),
-  tools-merge-* cards (the consolidation program this complements)
-updated: '2026-10-04'
+metric: declarations live in per-domain manifests; tool_runner.py split by domain; uniform {ok,error} contract
+note: 'Structural complement to the tools-merge-* consolidation program (docs/assessments/tool-consolidation-spec-2026-10-04.md
+  — that program decides WHICH tools exist: 103->~38 via action= merges). This program fixes WHERE/HOW they''re
+  wired: 103 declarations sit inline in a 5k-line realtime_provider.py, tool_runner.py is ~4.8k lines / 126 methods
+  — the biggest merge-collision surface for parallel sessions, and every session pays the token cost of all fat
+  descriptions every turn. Error shapes are inconsistent (raise / {error} / ok:false / {err} / buried responses[].response.ok)
+  which blocks uniform phantom-write detection. tools.d already proves the right pattern (module + manifest + policy
+  + timeout). Lanes: ada-tools-manifest, ada-tools-desc-slim, tool-runner-split, tool-error-contract, gev-command-whitelist,
+  tool-decl-impl-lint. Sequencing: do AFTER or alongside tools-merge-* — consolidation shrinks the surface these
+  lanes reorganize.'
+help: backend/realtime_provider.py (decls), backend/tool_runner.py (impl), backend/tools.d/ + tools_loader.py (the
+  drop-in pattern to mirror), tools-merge-* cards (the consolidation program this complements)
+updated: 2026-10-05 06:26
 comms:
-- at: '2026-10-04 19:35'
+- at: 2026-10-04 19:35
   from: devin
-  text: 'Filed from the 2026-10-04 tool-structure review (105 tools mapped:
-    103 inline decls + 2 tools.d). Deliberately NOT duplicating:
-    ada-ha-layer-unify dropped — tools-merge-ha covers it; tool-lint
-    scope overlaps tools-ci-audit (done) — kept only the decl<->impl
-    method-existence gap it does not check.'
+  text: 'Filed from the 2026-10-04 tool-structure review (105 tools mapped: 103 inline decls + 2 tools.d). Deliberately
+    NOT duplicating: ada-ha-layer-unify dropped — tools-merge-ha covers it; tool-lint scope overlaps tools-ci-audit
+    (done) — kept only the decl<->impl method-existence gap it does not check.'
+- at: 2026-10-05 06:26
+  from: tony
+  text: Continue
