@@ -1,0 +1,22 @@
+id: barrier-image-copy
+title: Barrier image-copy workaround
+column: backlog
+note: "Barrier 2.4.0 clipboard can't carry images between dell and omen — pick a workaround and implement."
+updated: '2026-10-04'
+blocked_by: tony
+help: |
+  Barrier 2.4.0 does not relay clipboard images (text only). Options:
+  A) shared ~/clipboard-share dir synced via syncthing + hotkey paste helper
+  B) clip-sync-* unit (already exists on omen) extended to image payloads
+  C) accept text-only; use HA file browser for images
+  Decide A/B/C then it's a card-sized implementation.
+spec: |
+  Implement a workaround for Barrier 2.4.0's missing image-clipboard
+  support between tony-dell and tony-omen. Read docs/kb/ for the barrier
+  seat layout (vt7/pin-vt), check the existing clip-sync-dell unit on
+  tony-omen, then pick the lightest approach (syncthing-shared clipboard
+  dir vs extending clip-sync to image payloads) and implement it. Do not
+  restart the Barrier seats — that drops the desktop session.
+action: {type: dispatch, status: idle, repo: chaba}
+requests:
+  - {id: approach, ask: "Preferred approach — A syncthing clipboard dir, B extend clip-sync unit, or C text-only is fine?", status: open}

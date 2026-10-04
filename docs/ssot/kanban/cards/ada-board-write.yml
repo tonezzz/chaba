@@ -1,0 +1,14 @@
+id: ada-board-write
+title: Give Ada a board_write tool — she joins the card comms loop
+column: backlog
+note: "Ada can already read the board via GET /apps/board-api/cards; a tool lets her post comms + raise requests herself."
+updated: '2026-10-04'
+spec: |
+  Add a board_write tool to ada-pi so Ada participates in the kanban
+  comms loop. The API exists: POST https://tony-dell.taila0626a.ts.net/
+  apps/board-api/comment {id, from:'ada', text} and /respond — plus
+  GET /apps/board-api/cards for board state. Repo: ada-pi (commit+push on
+  tony-dell, deploy via ~/.local/bin/deploy-ada.sh on idc01 — that deploy
+  needs a rerun approval or do it in-session per ada-pi AGENTS.md).
+  Whitelist 'ada' as a comms actor (already done server-side).
+action: {type: dispatch, status: idle, repo: ada-pi}
