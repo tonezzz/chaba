@@ -1,0 +1,57 @@
+id: cms-regen-autofix
+title: cms-regen auto-fix playbook — close the detect→fix loop on CMS automations
+column: backlog
+note: cms-auto-health detects and cards stale automations, but a human still
+  presses the fix. This playbook makes the cards self-healing.
+updated: 2026-10-04
+help: "Today: cms-auto-health.py writes cms-auto-<slug> cards when a CMS\n\
+  automation is stale, and auto-closes them on recovery — but recovery\n\
+  still needs a human (or luck). cms-regen is the act step.\n\n\
+  Trigger: cms-auto-<slug> card enters review (or cms-auto-health flags\n\
+  an unhealthy doc). Actions, in order:\n\
+  1. POST /api/cms/pages/<slug>/regenerate (or cms_automation run_now)\n\
+  2. Recheck the registry doc's last_run/last_status after interval\n\
+  3. If still stale: read the generator command from the registry doc,\n\
+     check its logs/timer on the owning host, fix or escalate\n\
+  4. Phantom case: registry doc exists but the page is really refreshed\n\
+     by a bulk generator (e.g. cam-wall-cms.timer) — mark the doc\n\
+     interval_min=0 + managed_by instead of flagging (the camwall-noble-a\n\
+     pattern, fixed manually 2026-10-04)\n\
+  5. Post outcome to the card's comms; card auto-closes on next sweep\n\n\
+  Gates: owner-only, confirm NOT required for the regen step (read-mostly\n\
+  — a regen is idempotent and recoverable), confirm required for any\n\
+  config/schema change to the registry doc beyond managed_by/interval.\n"
+spec: "Build the cms-regen auto-fix playbook for Ada/kanban.\n\n\
+  Read first: scripts/ada/cms-auto-health.py (card lifecycle),\n\
+  docs/ssot/kanban/ssot.kanban.yml (dispatch semantics),\n\
+  ada-pi backend/devteam.py + backend/devin_dispatch.py (pipeline + gate\n\
+  conventions), backend/tools.d/manifest.yml (tool policies), and the\n\
+  ada-cms-automation MDDB collection shape (enabled, interval_min,\n\
+  run_now, last_run, last_status, generator params).\n\n\
+  Deliverables:\n\
+  1. A cms-regen playbook in ada-pi backend/playbooks/ (if the playbook\n\
+     registry exists by then — else a tools.d ada_cms_regen tool with the\n\
+     same contract): given a slug, POST regenerate, poll the registry doc\n\
+     until last_run advances or a bounded timeout, then re-check health.\n\
+  2. Phantom-registry handling: when the registry doc has no working\n\
+     generator but the page updates via a bulk timer, write\n\
+     interval_min=0 + managed_by=<owner> instead of leaving the health\n\
+     check to re-flag it.\n\
+  3. kanban-dispatch (or cms-auto-health) gains an optional\n\
+     auto_fix: [cms-auto-*] rule — cards matching the prefix dispatch the\n\
+     playbook on entering review, with results posted to comms.\n\
+  4. Unit tests for the regen/phantom logic (mocked MDDB + HTTP).\n\
+  5. Report to the card comms + job ledger.\n\n\
+  Do NOT modify the confirm-gate internals, do NOT auto-dispatch on\n\
+  non-cms-auto cards, do NOT deploy to ada-ha-tony.\n"
+action:
+  type: dispatch
+  status: idle
+  button: ▶ Build cms-regen playbook
+  repo: ada-pi
+comms:
+- at: 2026-10-04 19:40
+  from: devin
+  text: "Seeded after the 2026-10-04 sweep: all three cms-auto-* cards
+    auto-recovered, but camwall-noble-a needed a manual phantom-registry
+    fix — that's the case this playbook automates."
