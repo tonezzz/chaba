@@ -203,6 +203,12 @@ hosts:
         expected_state: active
         critical: false
         note: "15min — persists live card edits to git (scoped add + push) from chaba-tony-dell"
+      - name: chaba-lab-sweep.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "weekly Mon 09:00 — flags lab cards past lab.review_by with no outcome (comms nudge + lab-review request), executes answered promote/retire/extend decisions"
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent

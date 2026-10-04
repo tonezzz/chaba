@@ -1,16 +1,25 @@
 id: lab-review-sweep
-title: "Lab review sweep — weekly CI loop"
-column: backlog
-note: "The continuous-improvement keeper: weekly, flag every lab card past
-  lab.review_by with no lab.outcome — post a comms nudge + open a requests
-  item (promote / retire / extend) so nothing stales silently."
-spec: >-
-  Write scripts/board/lab-review-sweep.py: scan docs/ssot/kanban/cards/*.yml
-  for column==lab, flag lab.review_by < today and no lab.outcome. For each
-  flagged card POST /apps/board-api/comment (from=chaba, 'lab review due —
-  promote, retire, or extend?') and append a requests: entry with options
-  [promote → backlog, retire → done, extend 2w]. Wire to a weekly systemd
-  timer (chaba-lab-sweep.timer) on tony-dell. Do NOT auto-move cards — the
-  decision stays human/by-actor.
-action: {type: dispatch, status: idle, repo: chaba}
-updated: '2026-10-04'
+title: Lab review sweep — weekly CI loop
+column: review
+note: 'The continuous-improvement keeper: weekly, flag every lab card past lab.review_by with no lab.outcome — post
+  a comms nudge + open a requests item (promote / retire / extend) so nothing stales silently.'
+spec: 'Write scripts/board/lab-review-sweep.py: scan docs/ssot/kanban/cards/*.yml for column==lab, flag lab.review_by
+  < today and no lab.outcome. For each flagged card POST /apps/board-api/comment (from=chaba, ''lab review due —
+  promote, retire, or extend?'') and append a requests: entry with options [promote → backlog, retire → done, extend
+  2w]. Wire to a weekly systemd timer (chaba-lab-sweep.timer) on tony-dell. Do NOT auto-move cards — the decision
+  stays human/by-actor.'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+updated: 2026-10-04 14:12
+comms:
+- ts: '2026-10-04T14:12:00+07:00'
+  from: devin
+  text: 'Built + verified: scripts/board/lab-review-sweep.py — flags overdue lab cards (comms nudge + lab-review
+    request with promote/retire/extend options), executes answered decisions (promote→backlog / retire→done / extend→review_by+14d).
+    Tested: flag, promote, extend, idempotent re-run. chaba-lab-sweep.timer live — weekly Mon 09:00, registered
+    in audit SSOT.'
+- at: 2026-10-04 14:12
+  from: tony
+  text: moved backlog -> review
