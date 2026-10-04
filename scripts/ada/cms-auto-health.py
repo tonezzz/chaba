@@ -127,13 +127,17 @@ def main() -> int:
             n_bad += 1
             opened = card.get("updated") if exists and \
                 card.get("column") == "review" else today
+            try:
+                age_h = (now - time.mktime(
+                    time.strptime(str(opened), "%Y-%m-%d"))) / 3600
+            except (ValueError, TypeError):
+                age_h = 0
             card.update({
                 "id": f"cms-auto-{slug}",
                 "title": f"CMS automation `{slug}` {state}",
                 "column": "review",
                 "generated": "cms-auto-health",
-                "priority": "high" if card.get("column") == "review"
-                else "medium",
+                "priority": "high" if age_h >= ESCALATE_H else "medium",
                 "note": (f"{reason}. last_run={cfg.get('last_run')} "
                          f"interval={cfg.get('interval_min')}m "
                          f"status={cfg.get('last_status')}. "
