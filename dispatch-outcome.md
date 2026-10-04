@@ -1,60 +1,61 @@
-# Dispatch outcome — cms-services-weekly-regen
+# Dispatch outcome — board-api-hardening
 
 ## What was done
 
-Created and installed a weekly systemd user timer on tony-dell that
-regenerates the host-services CMS pages, with visible failure logging.
+Hardened `scripts/board/board-api.py` per the card spec, still single-file
+`BaseHTTPRequestHandler`, no new deps (re/hashlib are stdlib).
 
-**New files (worktree branch `dispatch/20261004-141859-create-chaba-services-regen-se`):**
+Branch: `dispatch/20261004-180001-harden-scripts-board-board-api`
+Commit: `56f7a27d fix(board): harden board-api — respond attribution, validation, /request`
 
-- `systemd/chaba-services-regen.service` — oneshot; runs
-  `%h/CascadeProjects/chaba/scripts/ada/host-services-cms.py` through a bash
-  wrapper that fails the unit on non-zero exit OR any `PUBLISH FAIL` line in
-  output; `OnFailure=chaba-services-regen-fail.service`.
-- `systemd/chaba-services-regen.timer` — `OnCalendar=Sun *-*-* 05:30:00`,
-  `Persistent=true` (fits the existing Sunday block: worktree-sync 01:00,
-  chaba-audit 02:00, chaba-kb-audit 04:00).
-- `systemd/chaba-services-regen-fail.service` — self-contained failure
-  reporter: POSTs a comms entry (`from: chaba`) to board-api
-  `127.0.0.1:8787` on card `cms-services-weekly-regen`; if the board API is
-  unreachable, writes a focus-inbox YAML into
-  `~/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/` (the same inbox
-  dir `mcp-health-snapshot` alerts use). No repo dependency — works before
-  the branch merges.
-- `docs/ssot/jobs/infrastructure/2026-10-04-chaba-services-regen.yml` — trail.
+**Changes in `scripts/board/board-api.py`:**
 
-**Modified:**
+- `/respond {id, request_id, answer, from?, reopen?}` — `from` validated
+  against ACTORS, defaults to `tony` (board UI sends none, backward
+  compatible). 400 `answer required` on empty/whitespace answer. 400
+  `already answered` when the request is already answered, unless
+  `reopen` is truthy — reopen re-answers and logs `re-answered <rid>: ...`.
+- `/comment` — 400 `text required` on empty/whitespace text.
+- New `POST /request {id, ask, request_id?, options?, from?}` — appends
+  `{id, ask, status: open, options?}` to the card's `requests[]`; id is
+  `request_id` or `slugify(ask)` (slug + 6-char sha1 so Thai/non-ascii asks
+  and near-identical slugs can't collide). 400 `ask required` /
+  `duplicate request id <rid>`. Comms entry `raised request <rid>:
+  <ask[:120]>` under the validated actor (default tony).
+- New `actor()` helper; docstring now states all card writes go through
+  the API and direct YAML edits must hold `/tmp/board-api.lock` first.
+- `--selftest` flag: pure-function smoke test of respond/request
+  validation, attribution, reopen, slugging.
 
-- `scripts/ada/host-services-cms.py` — now returns exit 1 when any page
-  publish fails (previously `PUBLISH FAIL` printed but exit stayed 0, so
-  non-zero-exit alerting could never fire on publish errors).
-- `docs/ssot/infrastructure/ssot.automation.yml` — `services_regen` entry.
-- `docs/ssot/infrastructure/ssot.audit.hosts.yml` — timer added to tony-dell
-  `expected_services`.
+**Also updated (kept in sync):**
 
-**Installed on tony-dell:** all three units copied to
-`~/.config/systemd/user/`, daemon-reload, timer enabled — next elapse
-Sun 2026-10-11 05:30 +07.
+- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tell dispatched
+  sessions to raise questions via `POST {api}/request` instead of editing
+  card YAML (the flock race the spec called out).
+- `docs/ssot/kanban/ssot.kanban.yml` — `write_path.endpoints` +
+  `task_rails` updated to the new contract.
+- `docs/ssot/jobs/infrastructure/2026-10-04-board-api-hardening.yml` —
+  job trail entry.
 
 ## Verification
 
-- `systemd-analyze verify` clean on all three units; `systemd-analyze
-  calendar` confirms Sun 05:30.
-- Two manual `systemctl --user start chaba-services-regen.service` runs —
-  both `Result=success` (~14s each), all 7 pages published HTTP 200.
-- Disk% drift reflects real state: index page `updated` timestamp advanced
-  between runs and load values drifted (dell 4.69→5.33); disk column equals
-  live `df` on each host — tony-dell 87% (97G/118G, watch-list flagged, leaf
-  shows ⚠), tony-omen 38%, idc01 62%, idc02 20%, mn01 20%; michael-ha
-  unreachable-by-design (static page).
-- Failure paths tested: comms POST to board-api OK (drill comment on card);
-  inbox fallback with dead API port produced valid YAML; wrapper exits 1 on
-  `PUBLISH FAIL` and on script crash.
+- `python3 scripts/board/board-api.py --selftest` → `selftest ok`
+- Live curl run: patched server on `BOARD_API_PORT=8878` against the
+  worktree's `kanban-selftest` card — every spec case verified:
+  empty answer 400, missing ask 400, duplicate request_id 400,
+  unknown/missing actor 400, empty comment 400; `/request from=ada`
+  created an open request and logged `raised request st1` under `ada`;
+  respond `from=ada` logged `answered st1` under `ada`; re-answer 400;
+  `reopen:true` logged `re-answered st1` under `tony`; auto-slug id
+  `auto-generated-id-please-1c0a43` created with `status: open`.
+  Card YAML inspected, then restored via `git checkout`.
+- `node scripts/ssot-validate-all.mjs` — 971/971 valid.
+- Backward compat: `render-board.py` JS posts `{id, request_id, answer}`
+  (no `from` → tony); `/comment` still requires `from`; old 400 paths
+  unchanged.
 
-## Caveats
+## Deploy (out of scope — needs approval)
 
-- The unit runs the master checkout (`%h/CascadeProjects/chaba`), so the
-  exit-code patch lands there only on merge — the wrapper's `PUBLISH FAIL`
-  grep covers the gap meanwhile.
-- Weekly failures post to `cms-services-weekly-regen` (the only
-  cms-services-* card); it remains the comms anchor after the card closes.
+Merge branch → pull `chaba-tony-dell` live checkout →
+`systemctl --user restart board-api.service`. New dispatch rails take
+effect on the next kanban-dispatch cycle after the live pull.
