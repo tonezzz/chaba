@@ -105,7 +105,10 @@ jobs:
   timeout: 2h
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs --full'
   note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement
-    as chaba-audit
+    as chaba-audit. Verified run 2026-10-04 (~3min) — same core failures as dell
+    (security-audit, standardization dup cms-pages, code-quality); idc02-only env
+    gaps — no host caddy/docker binaries, no devin mcp_config, http-health
+    checks dell-localhost gpu-queue/playlived-dell.
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-system-report
