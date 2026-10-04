@@ -1,11 +1,11 @@
 id: tools-ci-audit
 title: Tool-surface CI audit — lint, usage report, regression gate
-column: backlog
+column: review
 blocked_by: chaba-ci-standard
 note: 'Tool standard rides the CI pipeline (chaba-ci-standard): tools-lint in ssot-validate (alias table complete,
   count under budget, scenario coverage), weekly usage report -> report/tool-usage CMS page, regression scenarios
   gate merge cards at review.'
-updated: 2026-10-04 18:18
+updated: 2026-10-04 18:24
 help: "Deliverables:\n1. scripts/tool-lint.py — fails on: tool declared without alias entry\n   when spec says absorbed;\
   \ declared count > cap; tool with no\n   scenario file reference\n2. Wire into ssot-validate-all.mjs or ci runner\
   \ as the audit stage\n3. scripts/tool-usage-report.py — journal scan -> CMS page\n   report/tool-usage (daily\
@@ -26,10 +26,11 @@ spec: 'Make the tool-consolidation work self-auditing:
   '
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   task_id: 20261004-180803-make-the-tool-consolidation-wo
   runner: tony-dell
+  result: 20261004-180803-make-the-tool-consolidation-wo finished (inactive) — see `devin-dispatch logs 20261004-180803-make-the-tool-consolidation-wo`
 comms:
 - at: 2026-10-04 18:06
   from: tony
@@ -40,6 +41,15 @@ comms:
 - at: 2026-10-04 18:09
   from: devin
   text: session started — exploring worktree; spec/card files absent, will create them
+- at: 2026-10-04 18:22
+  from: devin
+  text: 'Done on dispatch/20261004-180803 (3d8656e, not pushed). Deliverables: scripts/tool-lint.py (count cap,
+    alias-table integrity, gate-set/benchmark resolution, scenario coverage w/ debt ratchet — runs in suite via
+    tests/test_tool_audit.py, 19 tests green), scripts/tool-usage-report.py + ada-tool-usage.{service,timer} (journal
+    scan -> CMS report/tool-usage daily), scripts/tools-merge-gate.py (tools-merge-* in done needs existing family
+    scenario + latest pass|flaky report; --card-id is the close-time'
+- at: 2026-10-04 18:24
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261004-180803-make-the-tool-consolidation-wo
   since: 2026-10-04 18:08
