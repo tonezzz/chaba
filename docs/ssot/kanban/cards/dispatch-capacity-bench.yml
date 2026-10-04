@@ -1,0 +1,55 @@
+id: dispatch-capacity-bench
+title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
+column: backlog
+note: "Measure before deciding multi-host dispatch architecture. Key gap found
+  2026-10-04: devin CLI exists ONLY on tony-dell — remote hosts can't dispatch
+  today regardless of the card system."
+updated: '2026-10-04'
+help: |
+  Current capacity snapshot (measured 2026-10-04):
+    tony-omen  12c / 3G avail / load 7.0   — loaded, not free capacity
+    idc01       2c / 26G avail / load 0.6  — RAM-rich CPU-poor, runs ada+mddb
+    mn01        4c / 2G avail  / load 2.0  — standby-sized
+    idc02       4c / 11G avail / load 0.08 — idle VPS, best free capacity
+    tony-dell  RAM-tight — dispatch-queue already caps at 3
+
+  Podman angle: a dispatch image (devin CLI + git + toolchain) makes ANY
+  podman host dispatchable without per-host installs, and MemoryMax-style
+  cgroup bounds answer dell's RAM-tightness directly.
+spec: |
+  Benchmark minimal dispatch per host BEFORE building multi-host dispatch —
+  decide bare-systemd vs podman-wrapped devin-task on evidence.
+
+  Known facts (verify, don't re-measure): devin CLI absent on
+  omen/idc01/mn01/idc02; host load table in `help`.
+
+  Steps:
+  1. Baseline on tony-dell: run one trivial devin-task, record RSS peak
+     (systemd unit cgroup) + startup latency. Repeat at 2 concurrent —
+     watch available memory.
+  2. Per remote host: document the prerequisite list to dispatch —
+     devin CLI install + auth, dispatch script, repo checkout freshness.
+     Do NOT install anything without the request answers below.
+  3. Podman evaluation: spec a devin-dispatch image (devin CLI + git +
+     python + ssh client); measure image size and container-start latency
+     vs systemd-run; check cgroup delegation under rootless podman for
+     per-task memory caps. Compare isolation/portability vs overhead.
+  4. Deliverables: docs/assessments/dispatch-capacity-2026-10.md with the
+     capacity table (host → safe concurrent tasks, with evidence) and a
+     recommendation covering: podman vs bare, per-host cap values, and
+     which hosts (if any) should get runners first.
+  Post interim findings to this card's comms as you go.
+action:
+  type: dispatch
+  status: idle
+  button: ▶ Run benchmark
+  repo: chaba
+requests:
+  - id: cli-install-ok
+    ask: "OK to install the devin CLI on remote hosts for the benchmark? Each host needs an auth token — how should that be provisioned?"
+    status: open
+  - id: podman-test-host
+    ask: "Preferred host for the podman-wrapped dispatch test: idc02 (idle) or omen (if you free it)?"
+    status: open
+comms:
+  - {at: '2026-10-04 10:20', from: devin, text: "Seeded with measured host table — devin CLI missing on all remotes is the real blocker, not the card protocol"}
