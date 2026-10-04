@@ -1,0 +1,19 @@
+id: tools-merge-tasks-status
+title: Consolidate tasks + status tools (10 -> 3)
+column: backlog
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the tasks+status group (10 -> 3) per the consolidation spec:\n- NEW tasks absorbs tasks_add, tasks_list,\
+  \ tasks_complete, tasks_move ->\n  tasks(action=add|list|done|move)\n- NEW home_status absorbs get_battery_status,\
+  \ get_battery_detail,\n  get_power_summary, get_inverter_status, get_pool_status,\n  get_dashboard_tab, get_habit_status\
+  \ ->\n  status(what=battery|power|inverter|pool|dashboard|habit)\n- chat_send absorbs photos_pick, photos_picked,\
+  \ sys_show_uploaded_document,\n  process_document_upload, doc_upload_card_action ->\n  chat_send(channel, text|photo|doc)\n\
+  Rules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip\
+  \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
+  \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
+  \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."

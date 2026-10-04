@@ -1,0 +1,18 @@
+id: tools-merge-gev
+title: Consolidate gev tools (2 -> 1)
+column: backlog
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: 'Merge the gev group (2 -> 1) per the consolidation spec:
+
+  - gev_command absorbs gev_tour -> gev(command|tour=...)
+
+  Rules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip
+  unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md
+  on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl lint
+  passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms.'

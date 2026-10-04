@@ -1,0 +1,18 @@
+id: tools-merge-calendar-plan
+title: Consolidate calendar + plan tools (9 -> 3)
+column: backlog
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the calendar+plan group (9 -> 3) per the consolidation spec:\n- NEW calendar_read absorbs calendar_list_events,\
+  \ calendar_list_calendars,\n  calendar_freebusy -> cal(action=events|calendars|freebusy)\n- NEW calendar_write\
+  \ absorbs calendar_create_event, calendar_delete_event,\n  calendar_shift_overdue -> cal(action=create|delete|shift,\
+  \ ...) — gate writes\n- plan_day absorbs ada_daily_summary, ada_weekly_comparison ->\n  plan_day(period=today|tomorrow|week)\n\
+  Rules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip\
+  \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
+  \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
+  \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."

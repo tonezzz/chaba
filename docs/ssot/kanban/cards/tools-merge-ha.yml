@@ -3,4 +3,20 @@ title: Consolidate ha control + sensor + logbook tools
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: '2026-10-04'
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the ha tool group (14 -> 6) per the consolidation spec:\n- NEW home_search absorbs search_home_devices,\
+  \ list_home_devices,\n  search_sensors, list_sensors, ada_ha_search_devices, ada_ha_search_sensors,\n  ada_ha_search_events,\
+  \ search_devices -> home_search(q, kind=device|sensor|event)\n- get_home_state absorbs ada_ha_get_state -> state(entity?\
+  \ domain?)\n- NEW home_history absorbs get_logbook, get_sensor_history, get_entity_events,\n  ada_ha_history,\
+  \ get_recent_events -> home_history(entity|domain, window)\n- control_entity absorbs control_cover, control_media_player,\
+  \ press_button,\n  media_player_* -> control(entity, action=..., ...) with domain dispatch inside\n- tv_action:\
+  \ kept separate (complex param surface)\n- NEW ha_confidence absorbs ada_ha_get_device_confidence,\n  ada_ha_set_device_confidence\
+  \ -> ha_confidence(entity, set?)\nRules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES;\
+  \ DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged (gate keys off resolved tool name, not alias). Full design doc:\
+  \ chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE from an ada-pi\
+  \ worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias routes to its parent,\
+  \ post outcome + merged count in the card comms."

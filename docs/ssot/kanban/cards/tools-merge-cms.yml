@@ -3,4 +3,15 @@ title: Consolidate cms_* publish/verify/note/delete tools
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: '2026-10-04'
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the cms tool group (7 -> 3) per the consolidation spec:\n- cms_publish_page: unchanged (the big writer)\n\
+  - NEW cms_read absorbs cms_get_page, cms_list_pages, cms_verify_page ->\n  cms_read(action=get|list|verify, key=...)\n\
+  - NEW cms_edit absorbs cms_note_update, cms_delete_page, cms_automation ->\n  cms_edit(action=note|delete|automate,\
+  \ ...)\nRules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip\
+  \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
+  \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
+  \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."

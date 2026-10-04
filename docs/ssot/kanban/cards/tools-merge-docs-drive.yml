@@ -1,0 +1,17 @@
+id: tools-merge-docs-drive
+title: Consolidate docs + drive tools (8 -> 2)
+column: backlog
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the docs+drive group (8 -> 2) per the consolidation spec:\n- NEW docs absorbs ada_doc_search, ada_doc_get,\
+  \ ada_doc_print,\n  ada_doc_archive -> docs(action=search|get|print|archive)\n- NEW drive absorbs drive_search,\
+  \ drive_show, drive_get, drive_update ->\n  drive(action=search|show|get|update)\nRules: absorbed names stay registered\
+  \ but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged (gate keys\
+  \ off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
+  \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
+  \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."

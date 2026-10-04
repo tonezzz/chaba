@@ -3,4 +3,16 @@ title: Consolidate cctv + traffic + snapshot camera tools
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: '2026-10-04'
+updated: 2026-10-04 20:15
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+spec: "Merge the camera tool group (5 -> 2) per the consolidation spec:\n- ada_camera_snapshot absorbs cctv_snapshot,\
+  \ traffic_camera ->\n  camera_snapshot(source=auto|vms|traffic, view=..., screen=N)\n- cctv_wall: unchanged (wall\
+  \ != single frame)\n- vcast_snapshot keeps display capture; capture_frame retires into it.\n- Gate: ada_camera_snapshot\
+  \ live-freshness behaviour unchanged.\nRules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES;\
+  \ DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged (gate keys off resolved tool name, not alias). Full design doc:\
+  \ chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE from an ada-pi\
+  \ worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias routes to its parent,\
+  \ post outcome + merged count in the card comms."
