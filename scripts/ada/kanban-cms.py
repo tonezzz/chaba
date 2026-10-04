@@ -65,7 +65,10 @@ def row(c: dict) -> str:
 
 def render(cards: list[dict]) -> str:
     auto = [c for c in cards if str(c.get("id", "")).startswith("cms-auto-")]
-    rest = [c for c in cards if not str(c.get("id", "")).startswith("cms-auto-")]
+    prog_cards = [c for c in cards if c.get("program")]
+    rest = [c for c in cards
+            if not str(c.get("id", "")).startswith("cms-auto-")
+            and not c.get("program")]
     out = ["# Dev Kanban",
            "",
            ("Live board rendered from `docs/ssot/kanban/cards/*.yml` "
@@ -78,6 +81,27 @@ def render(cards: list[dict]) -> str:
                 "| page | state | |",
                 "|---|---|---|"]
         out += [row(c) for c in open_auto] or ["| — | all healthy | |"]
+        out.append("")
+    # Programs: cards with `program:` group under their <name>-program epic
+    progs: dict[str, list[dict]] = {}
+    for c in prog_cards:
+        progs.setdefault(c["program"], []).append(c)
+    for prog, members in sorted(progs.items()):
+        epic = next((c for c in members
+                     if c.get("id") == f"{prog}-program"), None)
+        kids = [c for c in members if c is not epic]
+        out += [f"## Program: {(epic or {}).get('title') or prog}", ""]
+        if epic:
+            m = _truncate(epic.get("metric") or "", 160)
+            if m:
+                out += [f"**Target:** {m}", ""]
+        out += ["| card | state | metric / note |", "|---|---|---|"]
+        kids.sort(key=lambda c: COLUMN_ORDER.index(c["column"])
+                  if c.get("column") in COLUMN_ORDER else len(COLUMN_ORDER))
+        for c in kids:
+            out.append(f"| {c.get('title') or c['id']} | "
+                       f"{c.get('column') or '?'} | "
+                       f"{_truncate(c.get('metric') or c.get('note') or '')} |")
         out.append("")
     by_col: dict[str, list[dict]] = {}
     for c in rest:

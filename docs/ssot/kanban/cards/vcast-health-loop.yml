@@ -1,0 +1,14 @@
+id: vcast-health-loop
+title: 'build vcast-auto-* health loop (xmatch: systemd/journal -> kanban)'
+column: backlog
+program: vcast
+area: monitoring
+metric: vcast-auto-* cards auto-open within 15min of a lane failure
+verify: 'kill a cast service, see vcast-auto-<svc> card appear in review'
+note: >-
+  Mirror of cms-auto-health.py but sources = systemctl/journald on
+  tony-dell (audit-cast, cast-browser-proxy, yt-live-api, flap-check
+  output, cast lease age). Emit vcast-auto-<check> cards, auto-close on
+  recovery. Fold into kanban-sync tick or its own job entry.
+help: 'pattern: scripts/ada/cms-auto-health.py — same card lifecycle'
+updated: '2026-10-04'

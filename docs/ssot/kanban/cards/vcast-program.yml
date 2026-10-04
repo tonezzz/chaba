@@ -1,0 +1,18 @@
+id: vcast-program
+title: vcast — continuous-improvement program
+column: review
+program: vcast
+metric: 'cast attach <5s · 0 flap events/24h · audit-cast green · cast scenarios all pass'
+note: >-
+  Epic card. Subsystems: input-bridge (vcast-headless/real + flap-check),
+  PWA app (pair/QR, HLS, SW), cast lane (cast-browser/proxy/cast-cam/
+  cast-ha-panel/yt-live-api), HA screens card, Ada tool surface,
+  scenario coverage. Rules: every area card carries `metric` + `verify`
+  (scenario-live name); `vcast-auto-*` health cards auto-open on failure
+  and auto-close on recovery; done = verify passes. Rendered on the
+  dev-kanban board under Programs.
+help: >-
+  Scenarios: ada-pi tests/scenarios-live (cam_to_screen, cast_interrupt_gate,
+  cast_recast_stale_lease, cast_switch_flow, camera_cycle_screen,
+  cctv_snapshot_to_screen). Audit: journalctl -u audit-cast on tony-dell.
+updated: '2026-10-04'

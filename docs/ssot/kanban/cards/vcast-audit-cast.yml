@@ -1,0 +1,14 @@
+id: vcast-audit-cast
+title: audit-cast runaway guard fails — CB_RSS unbound variable
+column: review
+program: vcast
+area: input-bridge
+priority: high
+metric: audit-cast.service exits 0 every 5min tick
+verify: systemctl --user status audit-cast shows 'success' result on tony-dell
+note: >-
+  Found 2026-10-04 11:30: ~/.local/bin/audit-cast.sh line 120 dies on
+  `CB_RSS: unbound variable` — runaway guard has been failing every tick.
+  Whatever it guards (cast process leak) is currently unmonitored.
+help: 'journalctl --user -u audit-cast; fix the unbound var in the script'
+updated: '2026-10-04'
