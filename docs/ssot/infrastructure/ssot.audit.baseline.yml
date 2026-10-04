@@ -43,6 +43,20 @@ accepted_root_containers:
     host: tony-dell
     last_verified: "2026-08-19"
     reason: Image generation inference container
+  - value: netdata
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: System monitoring requires host-level access (cgroup/proc readers); official netdata container runs rootful by design
+
+accepted_root_services:
+  - value: tailscale-serve-8080.service
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: System unit managing tailscale serve mounts; root-owned by design (tailscale serve requires system privileges)
+  - value: xorg-seat.service
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: Root Xorg display seat for barrier control (see AGENTS.md display-stack notes); intentionally root
 
 accepted_public_endpoints:
   - value: "0.0.0.0:11434"
@@ -178,6 +192,18 @@ accepted_public_endpoints:
     reason: >
       tailscale serve --https=8444 TLS termination -> http://127.0.0.1:9005
       (ha-live Gemini bridge). Restored 2026-09-18. Tailnet-only.
+  - value: "0.0.0.0:19999"
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: netdata web UI — LAN-only host, monitoring dashboard
+  - value: "0.0.0.0:3002"
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: weaviate-api (scripts/weaviate/api.mjs) — LAN-only host; declared in ssot.security.tony-omen.yml
+  - value: "0.0.0.0:33754"
+    host: tony-omen
+    last_verified: "2026-10-04"
+    reason: wsdd — gvfs WS-Discovery daemon for desktop file-manager network browsing (UDP, GNOME/gvfsd component)
 
 related_files:
   - docs/ssot/infrastructure/ssot.audit.yml

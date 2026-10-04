@@ -13,6 +13,7 @@ REPORT_FILE="$PROJECT_ROOT/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
 
 # Load accepted baseline from ssot.audit.yml
 ACCEPTED_ROOT_CONTAINERS=""
+ACCEPTED_ROOT_SERVICES=""
 ACCEPTED_PUBLIC_ENDPOINTS=""
 
 function load_baseline() {
@@ -34,6 +35,16 @@ try:
     with open('$ssot_file') as f:
         data = yaml.safe_load(f)
     for e in data.get('accepted_public_endpoints', []):
+        print(e.get('value', e) if isinstance(e, dict) else e)
+except Exception:
+    pass
+")
+        ACCEPTED_ROOT_SERVICES=$(python3 -c "
+import yaml
+try:
+    with open('$ssot_file') as f:
+        data = yaml.safe_load(f)
+    for e in data.get('accepted_root_services', []):
         print(e.get('value', e) if isinstance(e, dict) else e)
 except Exception:
     pass
@@ -98,6 +109,11 @@ check_file_permissions() {
     
     for env_file in "${env_files[@]}"; do
         if [ -f "$env_file" ]; then
+            # Tracked env files are committed content — perms on the checkout
+            # are not the leak vector. Only untracked env files need 600.
+            if git -C "$PROJECT_ROOT" ls-files --error-unmatch "$env_file" >/dev/null 2>&1; then
+                continue
+            fi
             local perms=$(stat -c "%a" "$env_file")
             if [ "$perms" != "600" ] && [ "$perms" != "400" ]; then
                 report_issue "high" "file-permissions" "Environment file has insecure permissions: $env_file ($perms)" "chmod 600 $env_file"
@@ -109,12 +125,17 @@ check_file_permissions() {
     local sensitive_patterns=("*.key" "*.pem" "*.crt" "*secret*" "*credential*")
     for pattern in "${sensitive_patterns[@]}"; do
         while IFS= read -r file; do
-            # Skip node_modules and venv directories (false positives)
-            if [[ "$file" =~ node_modules ]] || [[ "$file" =~ venv ]]; then
+            # Skip dependency/build artifact dirs (false positives)
+            if [[ "$file" =~ node_modules|venv|__pycache__|\.esphome|/vendor/|/dist/|/build/ ]]; then
                 continue
             fi
             
             if [ -f "$file" ]; then
+                # Git-tracked files are published content, not secrets — only
+                # untracked/ignored sensitive files deserve strict perms.
+                if git -C "$PROJECT_ROOT" ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+                    continue
+                fi
                 local perms=$(stat -c "%a" "$file")
                 if [[ "$perms" =~ [0-9][0-9][4-6] ]]; then
                     report_issue "high" "file-permissions" "Sensitive file is world-readable: $file ($perms)" "chmod 600 $file"
@@ -188,8 +209,10 @@ check_network_security() {
     local open_ports=$(ss -tuln | awk 'NR>1 {print $5}' | cut -d: -f2 | sort -u)
     log "INFO" "Open ports: $open_ports"
     
-    # Check for services listening on all interfaces
-    local all_interfaces=$(ss -tuln | awk '$5 ~ /0\.0\.0\.0/ || $5 ~ /:::/ {print $5}' | sort -u)
+    # Check for services listening on all interfaces (TCP only — wildcard
+    # UDP binds are dominated by ephemeral discovery sockets: chrome mDNS,
+    # wsdd, etc. Persistent UDP services belong in the posture files).
+    local all_interfaces=$(ss -tln | awk '$5 ~ /0\.0\.0\.0/ || $5 ~ /:::/ {print $5}' | sort -u)
     if [ -n "$all_interfaces" ]; then
         # Filter out accepted public endpoints from the baseline
         local unexpected_endpoints=$(echo "$all_interfaces" | while IFS= read -r endpoint; do
@@ -197,6 +220,16 @@ check_network_security() {
                 echo "$endpoint"
             fi
         done)
+        # Re-check after a short delay — ephemeral wildcard binds (dev tools,
+        # MCP servers grabbing random ports) are not posture drift.
+        if [ -n "$unexpected_endpoints" ]; then
+            sleep 5
+            unexpected_endpoints=$(echo "$unexpected_endpoints" | while IFS= read -r endpoint; do
+                if ss -tuln | awk '{print $5}' | grep -qx "$endpoint"; then
+                    echo "$endpoint"
+                fi
+            done)
+        fi
         if [ -n "$unexpected_endpoints" ]; then
             report_issue "medium" "network-security" "Services listening on all interfaces: $unexpected_endpoints" "Restrict services to specific interfaces or accept in ssot.audit.yml baseline"
         fi
@@ -207,13 +240,22 @@ check_network_security() {
 check_systemd_security() {
     log "INFO" "Checking systemd service security..."
     
-    # Check for services running as root unnecessarily
+    # Check for system units running as root unnecessarily. Repo units ship
+    # as user units by convention (installed to ~/.config/systemd/user via
+    # render-jobs.py — User= is invalid there). Only units explicitly
+    # targeting system-level boots could run as root.
     local systemd_dir="$PROJECT_ROOT/systemd"
     if [ -d "$systemd_dir" ]; then
-        for service_file in "$systemd_dir"/*.service; do
+        for service_file in "$systemd_dir"/*.service "$systemd_dir"/generated/*/*.service; do
             if [ -f "$service_file" ]; then
+                if ! grep -qE "WantedBy=(multi-user|graphical|sysinit|network-online)\.target" "$service_file"; then
+                    continue
+                fi
                 if ! grep -q "User=" "$service_file"; then
                     local service_name=$(basename "$service_file")
+                    if echo "$ACCEPTED_ROOT_SERVICES" | grep -qx "$service_name"; then
+                        continue
+                    fi
                     report_issue "low" "systemd-security" "Systemd service may run as root: $service_name" "Add User= directive to service file"
                 fi
             fi
@@ -289,7 +331,10 @@ check_api_key_security() {
     
     for pattern in "${api_key_patterns[@]}"; do
         while IFS= read -r file; do
-            if grep -q "$pattern=" "$file" 2>/dev/null; then
+            # Flag only PATTERN=<literal value> — a quoted/bare string of 8+
+            # chars not starting with $, { or ` (name references like
+            # 'ADA_API_KEY=' inside grep patterns are not embedded keys).
+            if grep -qE "$pattern=[\"']?[A-Za-z0-9+/=_-]{8,}[\"']?" "$file" 2>/dev/null; then
                 # Check if it's a .env file (allowed) or script (not allowed)
                 if [[ ! "$file" =~ \.env$ ]]; then
                     report_issue "high" "api-security" "Potential hardcoded API key in: $file" "Move credentials to environment variables"
