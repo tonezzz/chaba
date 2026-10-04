@@ -34,7 +34,27 @@ if [[ -z "$TONY_DELL_IP" ]]; then
     TONY_DELL_IP="127.0.0.1"
 fi
 
-MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" "$MN01_IP" <<'PY'
+# ── mddb binlog canary ───────────────────────────────────────────────────────
+# Flags binlog_size_bytes > 1GiB, current_lsn - binlog_oldest_lsn > 5M, or
+# unhealthy followers[] sustained >10min; routes a breach to the focus inbox.
+# Emits one JSON result line which is folded into the monitor log below.
+CANARY_LINE=""
+CANARY_SCRIPT="${MDDB_BINLOG_CANARY:-}"
+if [[ -z "$CANARY_SCRIPT" ]]; then
+    for d in "$HOME/CascadeProjects/chaba" "$HOME/CascadeProjects/chaba-tony-dell"; do
+        if [[ -f "$d/scripts/mddb-binlog-canary.py" ]]; then
+            CANARY_SCRIPT="$d/scripts/mddb-binlog-canary.py"
+            break
+        fi
+    done
+fi
+if [[ -n "$CANARY_SCRIPT" && -f "$CANARY_SCRIPT" ]]; then
+    CANARY_LINE=$(python3 "$CANARY_SCRIPT" \
+        --url "http://${IDC01_IP}:11023/v1/replication/status" \
+        2>>"$LOG_DIR/mddb-binlog-canary.err" || true)
+fi
+
+MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" "$MN01_IP" "$CANARY_LINE" <<'PY'
 import json
 import os
 import re
@@ -42,7 +62,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP, MN01_IP = sys.argv[1:7]
+LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP, MN01_IP, CANARY_LINE = sys.argv[1:8]
 
 
 def curl_check(url, method="GET", expect=200, timeout=5):
@@ -140,6 +160,13 @@ res["service"] = "barrier-client"
 res["action"] = "log"
 res["url"] = ""
 results.append(res)
+
+# mddb binlog canary — result line from scripts/mddb-binlog-canary.py (run above)
+if CANARY_LINE:
+    try:
+        results.append(json.loads(CANARY_LINE))
+    except Exception:
+        pass
 
 # Write results and rotate to last 10000 lines
 lines = []

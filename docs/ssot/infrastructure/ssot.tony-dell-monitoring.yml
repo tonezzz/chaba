@@ -31,6 +31,8 @@ sections:
         text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
       - label: Cross-host checks
         text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc01 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125, barrier-client). Retired checks: caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082.'
+      - label: mddb binlog canary
+        text: 'scripts/mddb-binlog-canary.py runs inside the monitor loop (2-min timer): GET idc01 :11023/v1/replication/status, flags binlog_size_bytes > 1GiB or (current_lsn - binlog_oldest_lsn) > 5M or followers[].status != healthy. A breach must persist >10min (state: ~/var/chaba/health/mddb-binlog-state.json) before one focus-inbox item is written per episode. Lives here rather than in mcp-health because the mcp-health server only supports http-status/container/systemd/mount checks, not JSON-threshold checks.'
       - label: Recovery policy
         text: observe-only for 1 week, then allow safe restarts (barrierc, playlived, yomi timers, caddy only after confirmation)
       - label: Notifications
@@ -148,6 +150,8 @@ sections:
         text: /home/tony/.config/systemd/user/tony-dell-mcp-health.service and tony-dell-mcp-health.timer
       - label: Monitor log
         text: /home/tony/var/chaba/health/tony-dell-monitor.log
+      - label: mddb binlog canary
+        text: scripts/mddb-binlog-canary.py (source in repo; monitor.sh finds it under ~/CascadeProjects/chaba or chaba-tony-dell — no separate deploy). State file /home/tony/var/chaba/health/mddb-binlog-state.json; stderr to mddb-binlog-canary.err in the same dir.
       - label: mcp-health score cache
         text: /home/tony/var/chaba/health/tony-dell-mcp-health.json
       - label: mcp-health client

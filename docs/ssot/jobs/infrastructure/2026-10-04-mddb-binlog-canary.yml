@@ -1,0 +1,74 @@
+title: mddb binlog canary in the tony-dell health loop
+subtitle: Sustained replication/binlog breach detection routed to focus-inbox
+icon: heart-pulse
+id: 2026-10-04-mddb-binlog-canary
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-04"
+completed: "2026-10-04"
+card: mddb-binlog-canary
+
+what:
+  summary: >
+    Added an mddb binlog canary to the chaba health loop on tony-dell
+    (tony-dell-monitor.sh, 2-min systemd user timer). The check lives in a
+    new script, scripts/mddb-binlog-canary.py, which the monitor calls each
+    cycle and folds the JSON result line into tony-dell-monitor.log.
+  endpoint: http://100.74.146.0:11023/v1/replication/status  (idc01, tailnet-only)
+  breach_conditions:
+    - binlog_size_bytes > 1073741824  (1 GiB)
+    - current_lsn - binlog_oldest_lsn > 5000000
+    - followers[].status != "healthy"
+  persistence: >
+    Breach must be sustained >10min (state file
+    ~/var/chaba/health/mddb-binlog-state.json tracks breach_since_epoch).
+    Fetch errors pause the timer instead of resetting it, so an endpoint
+    flap cannot hide a real breach.
+  alerting: >
+    One focus-inbox item per breach episode, written to
+    docs/ssot/focus-inbox/<stamp>-mddb-binlog-health.yml (same schema and
+    *-health.yml naming as mcp-health-to-inbox.py, so the overnight triage
+    dedup also applies). Dedup via state.alerted flag plus an inbox-dir
+    filename check so a state-file loss cannot spam the inbox.
+
+why_here_not_mcp_health: >
+  The card said "mcp-health / chaba health loop". The mcp-health server
+  (mcp-servers/mcp-health/server.js) only supports http-status, container,
+  systemd, and mount check types — it cannot express JSON-field thresholds
+  or a >10min persistence window. tony-dell-monitor.sh is the chaba health
+  loop that already polls idc01 mddb, runs at the right cadence (2min →
+  ~5 samples before alerting), and is where the result line naturally
+  joins the monitor log and L1 report unhealthy count.
+
+files:
+  - scripts/mddb-binlog-canary.py          # new: fetch, evaluate, state, inbox
+  - scripts/tony-dell-monitor.sh           # runs canary, folds result into log
+  - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml  # documented
+
+tested:
+  - live endpoint → degraded, breach timer started (see note below)
+  - canned breach + backdated state → inbox item written, alerted=true
+  - re-run while alerted → no duplicate inbox item
+  - healthy payload → breach_since cleared, alerted reset
+  - followers[].status=lagging → breach with follower reason
+  - invalid JSON / connection refused → status=error, breach timer preserved
+  - full monitor loop under sandboxed HOME → 9 checks, canary line in log,
+    counted in unhealthy
+
+deploy: >
+  Repo-only change per dispatch rules — NOT deployed from this worktree.
+  To activate: merge to chaba master, then copy
+  scripts/tony-dell-monitor.sh to ~/.local/bin/tony-dell-monitor.sh (the
+  deployed copy the systemd timer runs). monitor.sh locates the canary at
+  ~/CascadeProjects/chaba/scripts/mddb-binlog-canary.py automatically —
+  no other install step needed.
+
+operator_note: >
+  The endpoint is ALREADY in breach as of 2026-10-04 ~14:30 +07:
+  binlog_size_bytes ~2.66 GB (>1 GiB) and lsn_gap ~19.3M (>5M). Once
+  deployed, expect a focus-inbox item ~10min after the first run — that is
+  the canary working, not a false positive. Also: the current mddbd build
+  does not return a followers[] field on the leader endpoint, so the
+  follower condition is implemented but currently vacuous
+  (followers_seen=0 in the logged metrics).
