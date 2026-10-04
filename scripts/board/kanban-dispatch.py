@@ -30,6 +30,11 @@ RENDER = REPO / "scripts/render-board.py"
 LOCK = Path("/tmp/board-api.lock")
 DISPATCH = os.environ.get("DEVIN_DISPATCH",
                           str(Path.home() / ".local/bin/devin-dispatch"))
+# Unattended sessions die on permission rejection — 'smart' auto-rejects
+# curl/systemctl and the rails ask agents to curl /comment. Worktree
+# isolation + the no-push rails are the guardrail (same reasoning as
+# dispatch-queue.sh's dangerous default).
+os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 API = os.environ.get("BOARD_API", "http://127.0.0.1:8787")
 SESSION = f"kanban-dispatch@{os.uname().nodename}"
 
