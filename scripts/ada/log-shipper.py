@@ -37,7 +37,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-DEFAULT_HOSTS = ["idc01", "mn01", "tony-dell", "tony-omen"]
+DEFAULT_HOSTS = ["idc01", "idc02", "mn01", "tony-dell", "tony-omen"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
 # Ops telemetry goes to mddb-ops when configured — keeps host-logs
 # (the largest collection) off the leader's vector index.
@@ -45,6 +45,11 @@ MDDB_URL = (os.environ.get("MDDB_OPS_URL")
             or os.environ.get("MDDB_BASE_URL",
                               "http://100.74.146.0:11023/v1")).rstrip("/")
 COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
+# one doc per host in a sidecar collection — the ship heartbeat that
+# logs-kanban judges silence/unreachable/backlog against. Same-key upsert
+# keeps it at ~1 revision per host per run; not per-line bloat.
+STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
+                                  "host-logs-state")
 
 # server-side pre-filter (cheap, keeps ssh payload small)
 GREP = ("error|fail|oom|kill|panic|warn|refus|restart|Started |Stopped |"
@@ -163,11 +168,23 @@ def _save_cursor(host: str, user: bool, cursor: str) -> None:
                f"> {_cursor_path(user)}", timeout=30)
 
 
+def _reachable(host: str) -> bool:
+    """Cheap probe so a dead ssh hop (tailscale auth check, host down)
+    is distinguishable from a healthy-but-quiet host in the state doc."""
+    return "ok" in _ssh(host, "echo ok", timeout=15)
+
+
 def ship(host: str, dry: bool, max_docs: int) -> dict:
     sent = fail = scanned = 0
+    journals = {"user": 0, "sys": 0}
+    if not _reachable(host):
+        return {"host": host, "shipped": 0, "failed": 0, "scanned": 0,
+                "reachable": False, "journals": journals,
+                "error": "ssh probe failed"}
     for user in (True, False):
         rows = _journal(host, user)
         scanned += len(rows)
+        journals["user" if user else "sys"] = len(rows)
         last_ok = ""
         for r in rows:
             if sent >= max_docs:
@@ -197,7 +214,21 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
-            "scanned": scanned}
+            "scanned": scanned, "reachable": True,
+            "journals": journals,
+            "error": "mddb add failed" if fail else ""}
+
+
+def post_state(r: dict) -> None:
+    """Upsert the per-host ship heartbeat. Runs even when shipped=0 — a
+    quiet host and a broken shipper must not look identical."""
+    _post("/add", {
+        "collection": STATE_COLLECTION, "key": f"ship/{r['host']}",
+        "lang": "en",
+        "contentMd": json.dumps(r),
+        "meta": {"host": [r["host"]], "kind": ["ship-state"],
+                 "ts": [datetime.datetime.now(datetime.timezone.utc)
+                        .isoformat(timespec="seconds")]}}, timeout=10)
 
 
 def prune(days: int) -> int:
@@ -253,9 +284,16 @@ def main() -> int:
         try:
             r = ship(h, args.dry_run, args.max_docs)
             print(f"{r['host']}: {r['shipped']} shipped "
-                  f"({r['scanned']} lines matched, {r['failed']} failed)")
+                  f"({r['scanned']} lines matched, {r['failed']} failed)"
+                  + ("" if r.get("reachable") else " — unreachable"))
+            if not args.dry_run:
+                post_state(r)
         except Exception as e:
             print(f"warn: {h}: {e}", file=sys.stderr)
+            if not args.dry_run:
+                post_state({"host": h, "shipped": 0, "failed": 0,
+                            "scanned": 0, "reachable": False,
+                            "journals": {}, "error": str(e)[:200]})
     return 0
 
 

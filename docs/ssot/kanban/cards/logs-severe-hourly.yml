@@ -1,0 +1,11 @@
+id: logs-severe-hourly
+title: Hourly severe-line shipping lane
+column: backlog
+program: logs-digest
+metric: oom/panic/failed lines reach host-logs within ~1h, not next morning
+note: >-
+  Daily 08:45 batch means a host dying at 09:00 waits ~24h to show in the
+  digest. Cheap middle ground: hourly ship of severe kinds only (small
+  volume — the 500/run cap almost never binds) alongside the daily full
+  sweep. Pair with the local-shipper card once per-host timers exist.
+updated: '2026-10-04'

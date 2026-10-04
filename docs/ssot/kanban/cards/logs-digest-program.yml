@@ -1,0 +1,15 @@
+id: logs-digest-program
+title: "Program: log digesting — coverage, health, freshness"
+column: doing
+program: logs-digest
+metric: >-
+  Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships both
+  journals daily; pipeline failures surface as logs-auto-* cards within
+  15min via kanban-sync; severe spikes and shipper backlog become tracked
+  work; zero silent coverage gaps.
+note: >-
+  Epic for the kanban-in-logs work (2026-10-04). Detection layer live:
+  log-shipper posts per-host ship-state docs (reachable/scanned/shipped/
+  journals), logs-report posts report/24h, logs-kanban turns gaps into
+  auto cards inside kanban-sync on dell. Remaining work = the child cards.
+updated: '2026-10-04'

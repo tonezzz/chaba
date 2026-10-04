@@ -33,6 +33,11 @@ from pathlib import Path
 MDDB_URL = os.environ.get("MDDB_BASE_URL",
                           "http://100.74.146.0:11023/v1").rstrip("/")
 LOG_COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
+STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
+                                  "host-logs-state")
+# state docs must land in the same DB the shipper writes to (mddb-ops
+# when configured) — logs-kanban reads a single collection.
+STATE_URL = (os.environ.get("MDDB_OPS_URL") or MDDB_URL).rstrip("/")
 DIGEST_COLLECTION = os.environ.get("DIGEST_COLLECTION", "ops-digests")
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
 PAGE = 200
@@ -145,6 +150,34 @@ def logs_block(rows: list[dict], since: str) -> str:
     return "\n".join(lines)
 
 
+def post_report_state(summary: list[dict], hours: int) -> None:
+    """Sidecar state doc so logs-kanban can judge severe counts without
+    re-reading the collection — one doc, same-key upsert, ~1 rev/day.
+    Posted even with --no-publish (that flag is about the ops-digests
+    trend doc; this is the pipeline's health heartbeat)."""
+    try:
+        req = urllib.request.Request(
+            f"{STATE_URL}/add",
+            data=json.dumps({
+        "collection": STATE_COLLECTION, "key": "report/24h",
+        "lang": "en",
+        "contentMd": json.dumps(
+            {"kind": "log-report", "hours": hours,
+             "ts": datetime.datetime.now(datetime.timezone.utc)
+             .isoformat(timespec="seconds"),
+             "hosts": {r["host"]: {"total": r["total"],
+                                   "severe": r["severe"]}
+                       for r in summary}}),
+        "meta": {"kind": ["log-report"],
+                 "ts": [datetime.datetime.now(datetime.timezone.utc)
+                        .isoformat(timespec="seconds")]}}).encode(),
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            r.read()
+    except Exception:
+        pass  # heartbeat is best-effort — never break the digest
+
+
 def publish_digest(block: str, hours: int) -> bool:
     """Store the rendered block in ops-digests for trend queries.
     Key is unique per run — same-key re-adds feed the unfixed HNSW
@@ -183,6 +216,7 @@ def main() -> int:
     block = logs_block(summary, f"{args.hours}h")
     print(f"{len(rows)} lines from {len(summary)} hosts -> {ops}")
     print(block)
+    post_report_state(summary, args.hours)
 
     if not args.no_publish and summary:
         ok = publish_digest(block, args.hours)

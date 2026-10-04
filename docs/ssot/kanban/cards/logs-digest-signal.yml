@@ -1,0 +1,14 @@
+id: logs-digest-signal
+title: Digest signal density — new-today flag + noise reduction
+column: backlog
+program: logs-digest
+metric: >-
+  digest calls out first-seen-in-7d lines; matched/shipped ratio stops
+  carrying ~90% filter noise (4650 matched / 500 cap on omen 2026-10-04)
+note: >-
+  Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a
+  'new today' flag for normalized lines absent from the prior 7d —
+  where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run
+  cap carries signal not churn (feeds directly into the backlog check's
+  accuracy).
+updated: '2026-10-04'

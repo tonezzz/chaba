@@ -1,0 +1,13 @@
+id: logs-local-shippers
+title: Per-host local log-shipper timers (kill the ssh dependency)
+column: backlog
+program: logs-digest
+metric: each host ships its own journal to idc01:11023 on its own timer
+note: >-
+  Current model SSHes from tony-omen nightly — dies silently whenever a
+  tailscale auth check expires (dell was absent ~1 week unnoticed).
+  log-shipper.py already runs local when host in {tony-omen,localhost}
+  — a per-host user timer + small env (MDDB_BASE_URL -> idc01 tailnet)
+  removes the hop entirely and makes adding a host = installing one
+  timer. Keep the central ssh run as a fallback lane.
+updated: '2026-10-04'

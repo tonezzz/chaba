@@ -22,6 +22,7 @@ git fetch origin -q || { echo "fetch failed"; exit 1; }
 git merge --ff-only origin/master || { echo "ff-pull failed"; exit 1; }
 
 python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
+python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"
 
 git add docs/ssot/kanban/cards/ 2>/dev/null
 if ! git diff --cached --quiet 2>/dev/null; then

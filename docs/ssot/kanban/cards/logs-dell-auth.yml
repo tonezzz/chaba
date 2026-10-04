@@ -1,0 +1,14 @@
+id: logs-dell-auth
+title: tony-dell log shipping blocked — tailscale ssh re-auth or local shipper
+column: todo
+program: logs-digest
+priority: high
+metric: tony-dell appears in host-logs again with both journals
+note: >-
+  tony-omen->dell ssh hits an expired tailscale auth check — the shipper's
+  probe now reports reachable=false, so this shows as a
+  logs-auto-tony-dell-unreachable card once state docs land. Fix path A:
+  open the login.tailscale.com/a/... link a manual ssh prints. Path B
+  (robust): local shipper timer on dell posting straight to
+  idc01:11023 — same thing logs-local-shippers wants fleet-wide.
+updated: '2026-10-04'
