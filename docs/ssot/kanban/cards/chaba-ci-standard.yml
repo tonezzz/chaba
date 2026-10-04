@@ -3,7 +3,7 @@ title: Establish plan → structure → develop → audit → benchmark CI stand
 column: backlog
 note: Define the standard pipeline every card-sized piece of work flows through, and wire it into the repo so it
   runs hands-off.
-updated: 2026-10-04 08:51
+updated: 2026-10-04 18:16
 help: "Goal: one declared pipeline — PLAN (spec the card), STRUCTURE (worktree +\nfiles), DEVELOP (implement), AUDIT\
   \ (ssot-validate, lint, tests),\nBENCHMARK (measurable before/after) — that any card can opt into via\n`pipeline:\
   \ ci` and that kanban-dispatch runs hands-off.\n\nDeliverables:\n1. docs/ssot/ssot.ci.yml — stages, gates, required\
@@ -28,7 +28,9 @@ action:
 requests:
 - id: demo-card
   ask: Which existing card should be the demo run — or let the agent pick a small one?
-  status: open
+  status: answered
+  answer: 'tts-artifact-clean — small, self-contained, objectively verifiable (artifacts present vs absent in TTS
+    output): ideal plan→structure→develop→audit→benchmark demo'
 comms:
 - at: 2026-10-04 08:40
   from: tony
@@ -36,3 +38,11 @@ comms:
 - at: 2026-10-04 08:51
   from: devin
   text: board-api write path verified end-to-end — button clicks reach the card files
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered demo-card: tts-artifact-clean — small, self-contained, objectively verifiable (artifacts present
+    vs absent in TTS output): ideal plan→structure→develop→audit→benchmark demo'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong

@@ -1,19 +1,17 @@
 id: open-notebook-retention
 title: 'Open Notebook: keep, extend, or retire on idc01?'
 column: backlog
-note: 'Running 5d on idc01 (UI :8444, API :8445, 465MB+surreal), only consumer = openclaw
-  mcp-opennb (rate-limited upstream). Benchmark: per-file 7/8 ≈ NotebookLM parity.
-  Options: keep as-is / add OR provider to dodge Gemini quota / retire + reclaim RAM.
-  Benchmark doc: docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md
+note: 'Running 5d on idc01 (UI :8444, API :8445, 465MB+surreal), only consumer = openclaw mcp-opennb (rate-limited
+  upstream). Benchmark: per-file 7/8 ≈ NotebookLM parity. Options: keep as-is / add OR provider to dodge Gemini
+  quota / retire + reclaim RAM. Benchmark doc: docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md
 
   '
-updated: '2026-10-03'
+updated: 2026-10-04 18:16
 requests:
 - id: disposition
-  ask: 'Open Notebook on idc01: 565MB RAM, ~0 API requests/24h, 87MB data, nightly
-    backup + monthly restore-check running. Keep as-is, wire an OpenRouter provider
-    to dodge Gemini quota, or retire and reclaim?'
-  status: open
+  ask: 'Open Notebook on idc01: 565MB RAM, ~0 API requests/24h, 87MB data, nightly backup + monthly restore-check
+    running. Keep as-is, wire an OpenRouter provider to dodge Gemini quota, or retire and reclaim?'
+  status: answered
   options:
   - id: keep
     label: keep as-is — useful shelf, Gemini quota is tolerable
@@ -21,10 +19,19 @@ requests:
     label: wire OpenRouter free-tier provider — keep it usable when Gemini quota trips
   - id: retire
     label: retire — stop containers+timers, archive the 87MB volume, reclaim 565MB
+  answer: retire — 0 API requests/24h means it earns nothing; 565MB reclaim is small but the backup/restore-check/timer
+    maintenance surface is ongoing. Volume is archived so it stays recoverable
 comms:
 - ts: '2026-10-04T12:14:10'
   from: devin
-  text: 'Usage evidence (idc01, 2026-10-04 12:1x): app 447MB + surreal 117MB resident,
-    ~0 API requests in 24h (log shows nothing but startup), surreal volume 87MB. Benchmark
-    already showed 7/8 NotebookLM parity, so the tech works — the question is purely
-    whether a ~zero-traffic service earns its 565MB + 2 timers.'
+  text: 'Usage evidence (idc01, 2026-10-04 12:1x): app 447MB + surreal 117MB resident, ~0 API requests in 24h (log
+    shows nothing but startup), surreal volume 87MB. Benchmark already showed 7/8 NotebookLM parity, so the tech
+    works — the question is purely whether a ~zero-traffic service earns its 565MB + 2 timers.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered disposition: retire — 0 API requests/24h means it earns nothing; 565MB reclaim is small but the
+    backup/restore-check/timer maintenance surface is ongoing. Volume is archived so it stays recoverable'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong

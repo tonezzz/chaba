@@ -1,9 +1,8 @@
 id: worktree-sprawl
 title: Branch/worktree sprawl — 20 branches ahead, 51 worktrees
 column: backlog
-note: 'Standing con from DEV_SYSTEM_ASSESSMENT (was hard-failing SSOT CI until 2026-10-03
-  — now advisory). Work: list worktrees, classify merged/stale/ active, archive or
-  delete merged branches, consolidate long-tail work.'
+note: 'Standing con from DEV_SYSTEM_ASSESSMENT (was hard-failing SSOT CI until 2026-10-03 — now advisory). Work:
+  list worktrees, classify merged/stale/ active, archive or delete merged branches, consolidate long-tail work.'
 help: '1. git worktree list — classify each: merged / stale / active-session
 
   2. git branch --merged master → delete merged branches (local + remote)
@@ -16,28 +15,34 @@ help: '1. git worktree list — classify each: merged / stale / active-session
 comms:
 - at: 2026-10-04 12:08
   from: devin
-  text: 'Audit 2026-10-04 12:0x — the 51-worktree figure is stale: actual = 8 dirs
-    (7 dispatch-wt-* on chaba + 1 ada-pi-wt), all clean, all on unmerged dispatch/*
-    branches. Remote: 21 unmerged branches (0 merged), all diverged pre-rewrite —
-    cherry/diff cant auto-classify; each carries real topical deltas (esp32, yolo-ha,
-    rview-gemini, tpl-design, tailscale...). STRUCTURAL GAP: dispatch sessions cut
-    worktrees but nothing merges or removes them — sprawl self-regenerates with every
-    dispatch. Needs: (a) deci'
+  text: 'Audit 2026-10-04 12:0x — the 51-worktree figure is stale: actual = 8 dirs (7 dispatch-wt-* on chaba + 1
+    ada-pi-wt), all clean, all on unmerged dispatch/* branches. Remote: 21 unmerged branches (0 merged), all diverged
+    pre-rewrite — cherry/diff cant auto-classify; each carries real topical deltas (esp32, yolo-ha, rview-gemini,
+    tpl-design, tailscale...). STRUCTURAL GAP: dispatch sessions cut worktrees but nothing merges or removes them
+    — sprawl self-regenerates with every dispatch. Needs: (a) deci'
 - ts: '2026-10-04T12:08:49'
   from: devin
-  text: 'Added needs-you: branch-disposition (archive / review-top-5 / leave). The
-    dispatch merge-back policy piece goes to session-claim-rules.'
-updated: 2026-10-04 12:08
+  text: 'Added needs-you: branch-disposition (archive / review-top-5 / leave). The dispatch merge-back policy piece
+    goes to session-claim-rules.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered branch-disposition: review-top — review the top-5 by recency (snapshot, yolo-ha, ai-hub, rk900,
+    tpl) for salvageable deltas, then tag+archive the rest with a manifest'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
+updated: 2026-10-04 18:16
 requests:
 - id: branch-disposition
-  ask: 21 unmerged remote branches all carry real topical deltas from pre-rewrite
-    master — how to handle?
-  status: open
+  ask: 21 unmerged remote branches all carry real topical deltas from pre-rewrite master — how to handle?
+  status: answered
   options:
   - id: archive
     label: archive — tag each, delete branch refs, keep a manifest
   - id: review-top
-    label: review top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) — rest
-      archive
+    label: review top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) — rest archive
   - id: leave
     label: leave them — branch refs are cheap, revisit never
+  answer: review-top — review the top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) for salvageable deltas,
+    then tag+archive the rest with a manifest

@@ -8,7 +8,7 @@ requests:
   ask: Two tuya config entries for nakvac@gmail.com on michael-ha — remove the stuck one (01KQ9026MRNHWFSZ, blocking
     startup 6.5d) or the newer one (01M19NJ76J0020RJ)? Removing the wrong entry can orphan entities; if unsure I
     can inspect per-entry device counts first.
-  status: open
+  status: answered
   options:
   - id: remove-stuck
     label: remove 01KQ9026MRNHWFSZ (the 560923s-stuck entry)
@@ -16,6 +16,9 @@ requests:
     label: remove 01M19NJ76J0020RJ (the newer duplicate)
   - id: inspect-first
     label: inspect device/entity ownership per entry first, then decide
+  answer: 'remove-newer — verified live: both entries now state=loaded sharing the same 45 devices, but newer 01M19NJ76J0020RJ''s
+    28 registry entities ALL have no state (dead stubs); older 01KQ9026MRNHWFSZ''s 67 entities are live. Removing
+    the newer dup orphans nothing live'
 comms:
 - ts: '2026-10-04T12:13:34'
   from: devin
@@ -27,5 +30,15 @@ comms:
     FOUND: media_player (140 hits) + linkplay (42) are louder than tuya — worth a follow-up card.'
 - at: 2026-10-04 14:25
   from: devin
-  text: 'NOTE: board-api probe accidentally marked tuya-dup-entry answered with empty text — reverted to open. Still needs Tony''s decision.'
-updated: 2026-10-04 14:22
+  text: 'NOTE: board-api probe accidentally marked tuya-dup-entry answered with empty text — reverted to open. Still
+    needs Tony''s decision.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered tuya-dup-entry: remove-newer — verified live: both entries now state=loaded sharing the same 45
+    devices, but newer 01M19NJ76J0020RJ''s 28 registry entities ALL have no state (dead stubs); older 01KQ9026MRNHWFSZ''s
+    67 e'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
+updated: 2026-10-04 18:16

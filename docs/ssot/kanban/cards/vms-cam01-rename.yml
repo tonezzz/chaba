@@ -2,18 +2,19 @@ id: vms-cam01-rename
 title: Noble-A ch CAM01 — give it a real name
 column: backlog
 priority: low
-note: 'cam-noble-a-cam01 dossier title is "CCTV: Noble-A — CAM01" — placeholder DVR
-  channel name. Rename the channel in the VMS (device tree, noble-a DVR channel config)
-  to the real view name, then rerun cam-wall-cms.py to regenerate the page + wall
-  label.'
-updated: '2026-10-03'
+note: 'cam-noble-a-cam01 dossier title is "CCTV: Noble-A — CAM01" — placeholder DVR channel name. Rename the channel
+  in the VMS (device tree, noble-a DVR channel config) to the real view name, then rerun cam-wall-cms.py to regenerate
+  the page + wall label.'
+updated: 2026-10-04 18:16
 requests:
 - id: real-name
   ask: What does Noble-A CAM01 actually show? (the real name for the channel/label)
-  status: open
+  status: answered
+  answer: 'Entrance Gate — vms-snap still frame shows the Noble-A estate main entrance: brick-paved drive, boom-barrier
+    arm, open sliding gate, convex traffic mirror. Suggest ''4. Entrance Gate'' to fill the numbered-name gap'
 - id: rename-path
   ask: Rename path?
-  status: open
+  status: answered
   options:
   - id: vms-ui
     label: VMS UI via xdotool on mn01 (clicks the channel rename dialog)
@@ -21,9 +22,23 @@ requests:
     label: noble-a DVR web config (xmeye CGI) — rename channel directly
   - id: manual
     label: I'll rename it myself in the VMS
+  answer: 'dvr-web — noble-a DVR web config (xmeye CGI): rename the channel directly in DVR config; deterministic,
+    no VNC click-path like the VMS UI route'
 comms:
 - ts: '2026-10-04T12:11:10'
   from: devin
-  text: 'Blocked on the actual name (needs-you). Two implementation paths scoped:
-    xdotool VMS-UI automation on mn01 vs direct xmeye CGI on the DVR. DVR-side rename
-    is cleaner — VMS tree may only relabel the alias.'
+  text: 'Blocked on the actual name (needs-you). Two implementation paths scoped: xdotool VMS-UI automation on mn01
+    vs direct xmeye CGI on the DVR. DVR-side rename is cleaner — VMS tree may only relabel the alias.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered real-name: Entrance Gate — vms-snap still frame shows the Noble-A estate main entrance: brick-paved
+    drive, boom-barrier arm, open sliding gate, convex traffic mirror. Suggest ''4. Entrance Gate'' to fill the
+    numbe'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered rename-path: dvr-web — noble-a DVR web config (xmeye CGI): rename the channel directly in DVR
+    config; deterministic, no VNC click-path like the VMS UI route'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong

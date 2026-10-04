@@ -1,6 +1,6 @@
 id: board-api-hardening
 title: board-api hardening — respond attribution/validation + /request endpoint
-column: backlog
+column: review
 note: 'Spawned from ada-board-write: probes showed /respond accepts empty answers, re-answers silently, and logs
   every actor as tony. Ada needs honest attribution and a way to raise requests without hand-editing card YAML.'
 spec: "Harden scripts/board/board-api.py (repo chaba, edit in a worktree). Keep\nthe single-file BaseHTTPRequestHandler\
@@ -27,10 +27,11 @@ spec: "Harden scripts/board/board-api.py (repo chaba, edit in a worktree). Keep\
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task_id: 20261004-180001-harden-scripts-board-board-api
   runner: tony-dell
-updated: 2026-10-04 18:04
+  result: 20261004-180001-harden-scripts-board-board-api finished (inactive) — see `devin-dispatch logs 20261004-180001-harden-scripts-board-board-api`
+updated: 2026-10-04 18:08
 comms:
 - at: 2026-10-04 17:55
   from: devin
@@ -45,6 +46,14 @@ comms:
 - at: 2026-10-04 18:02
   from: devin
   text: 'claimed: worktree dispatch/20261004-180001-harden-scripts-board-board-api — starting board-api.py hardening'
+- at: 2026-10-04 18:07
+  from: devin
+  text: 'done on branch dispatch/20261004-180001-harden-scripts-board-board-api (commit 56f7a27d): /respond from-validation
+    + answer-required + already-answered/reopen, /comment text-required, new POST /request raises open requests;
+    kanban-dispatch rails + ssot.kanban updated; verified by --selftest + live curl on :8878 vs kanban-selftest.
+    Deploy out of scope — needs merge + chaba-tony-dell pull + board-api.service restart.'
+- at: 2026-10-04 18:08
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261004-180001-harden-scripts-board-board-api
   since: 2026-10-04 18:00

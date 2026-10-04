@@ -1,15 +1,14 @@
 id: ada-draft-backlog
 title: Ada memory draft pileup (~120 drafts)
 column: backlog
-note: Search unblocked; sync draining hourly — verify draft counts trend down before
-  closing.
-updated: '2026-10-03'
+note: Search unblocked; sync draining hourly — verify draft counts trend down before closing.
+updated: 2026-10-04 18:16
 requests:
 - id: draft-drain-path
-  ask: 'Drafts in ada-ha-bank-general: 131 total, 110 are a Sep29-Oct1 distill burst,
-    ~9/day new inflow — nothing promotes them to active (distill only CREATES drafts;
-    ada-memory-sync does vault sync, not promotion). How to drain?'
-  status: open
+  ask: 'Drafts in ada-ha-bank-general: 131 total, 110 are a Sep29-Oct1 distill burst, ~9/day new inflow — nothing
+    promotes them to active (distill only CREATES drafts; ada-memory-sync does vault sync, not promotion). How to
+    drain?'
+  status: answered
   options:
   - id: batch-review
     label: batch-review the 110 burst drafts — promote/retract each (agent pass)
@@ -17,11 +16,20 @@ requests:
     label: add an auto-promote rule (e.g. non-dup drafts >7d -> active) to distill
   - id: leave
     label: leave them — drafts are already searchable, treat as low-trust tier
+  answer: batch-review — batch-review the 110 burst drafts and promote/retract each via an agent pass; auto-promote
+    of unreviewed drafts risks junk promotion into active memory
 comms:
 - ts: '2026-10-04T12:16:37'
   from: devin
-  text: 'Trend check (card asked verify-down): 131 drafts now vs ~120 on 10-03 — UP,
-    not draining. Structure: ada-memory-distill.timer (weekly Sun 09:45) produces
-    ~6 drafts/run via backstop; the Sep29-Oct1 burst (110) was the catch-up. No promotion
-    path exists — drafts stay draft forever. Drafts remain searchable (score ~0.6-0.67,
-    status=draft, marked unverified) so recall still sees them.'
+  text: 'Trend check (card asked verify-down): 131 drafts now vs ~120 on 10-03 — UP, not draining. Structure: ada-memory-distill.timer
+    (weekly Sun 09:45) produces ~6 drafts/run via backstop; the Sep29-Oct1 burst (110) was the catch-up. No promotion
+    path exists — drafts stay draft forever. Drafts remain searchable (score ~0.6-0.67, status=draft, marked unverified)
+    so recall still sees them.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered draft-drain-path: batch-review — batch-review the 110 burst drafts and promote/retract each via
+    an agent pass; auto-promote of unreviewed drafts risks junk promotion into active memory'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong

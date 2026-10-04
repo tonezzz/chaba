@@ -2,20 +2,18 @@ id: tony-house-cams-offline
 title: tony-house 3/4 cams dead at source — xiaomi_c100 + ip_cam_65 pair offline
 column: review
 priority: medium
-metric: go2rtc produces frames for all tony-house streams (or zone trimmed to live
-  cams)
+metric: go2rtc produces frames for all tony-house streams (or zone trimmed to live cams)
 verify: curl frame.jpeg?src=<stream> on :1984 returns >500B for each zone cam
-note: 'Not a puller bug. go2rtc :1984 check 2026-10-04: xiaomi_c100* all variants
-  -> connection timeout; ip_cam_65_hd/_low -> 200 but empty body; 0 consumers on all
-  three. Only xiaomi_c201_hd streams (28KB frames). Cameras are offline/unpowered/wifi-dead
+note: 'Not a puller bug. go2rtc :1984 check 2026-10-04: xiaomi_c100* all variants -> connection timeout; ip_cam_65_hd/_low
+  -> 200 but empty body; 0 consumers on all three. Only xiaomi_c201_hd streams (28KB frames). Cameras are offline/unpowered/wifi-dead
   at source. Fix = physical check, or trim the zone to live cams if permanently retired.'
 help: curl http://100.68.142.13:1984/api/streams — check consumers per stream
-updated: '2026-10-04'
+updated: 2026-10-04 18:16
 requests:
 - id: cam-disposition
-  ask: 3/4 tony-house cams dead at source (timeout/empty-body; only xiaomi_c201_hd
-    live). Physical check or trim the zone?
-  status: open
+  ask: 3/4 tony-house cams dead at source (timeout/empty-body; only xiaomi_c201_hd live). Physical check or trim
+    the zone?
+  status: answered
   options:
   - id: physical
     label: keep — I will check power/wifi at the cams
@@ -23,3 +21,14 @@ requests:
     label: trim zone — retired cams, drop from wall
   - id: leave
     label: leave — they will come back on their own
+  answer: physical — keep; cams dead at source (timeout/empty-body) need a power/wifi check at the cameras — no
+    software path can revive them
+comms:
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered cam-disposition: physical — keep; cams dead at source (timeout/empty-body) need a power/wifi check
+    at the cameras — no software path can revive them'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong

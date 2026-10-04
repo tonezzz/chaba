@@ -3,7 +3,7 @@ title: Give Ada a board_write tool — she joins the card comms loop
 column: done
 note: Ada can already read the board via GET /apps/board-api/cards; a tool lets her post comms + raise requests
   herself.
-updated: 2026-10-04 17:57
+updated: 2026-10-04 18:16
 spec: 'Add a board_write tool to ada-pi so Ada participates in the kanban
 
   comms loop. The API exists: POST https://tony-dell.taila0626a.ts.net/
@@ -56,6 +56,18 @@ comms:
 - at: 2026-10-04 17:57
   from: tony
   text: closed by Tony
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered respond-attribution: fix — done on branch dispatch/20261004-180001-harden-scripts-board-board-api
+    (56f7a27d): /respond takes optional `from` validated against ACTORS, defaults tony; restart pending deploy approval'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered raise-request-endpoint: add-endpoint — done on same branch: POST /request {id, ask, request_id?,
+    options?, from?} appends open requests[] entries with actor attribution; deploy pending approval'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
 claim:
   since: 2026-10-04 14:18
 requests:
@@ -72,18 +84,22 @@ requests:
 - id: respond-attribution
   ask: board-api /respond hardcodes the comms actor to 'tony' — ada_board_write responds work but log under Tony's
     name. Patch scripts/board/board-api.py to pass body.from through the ACTORS whitelist + restart board-api.service?
-  status: open
+  status: answered
   options:
   - id: fix
     label: patch board-api + restart (~3 lines)
   - id: leave
     label: accept tony attribution (tool already returns a caveat note)
+  answer: 'fix — done on branch dispatch/20261004-180001-harden-scripts-board-board-api (56f7a27d): /respond takes
+    optional `from` validated against ACTORS, defaults tony; restart pending deploy approval'
 - id: raise-request-endpoint
   ask: ada_board_write can comment + answer but cannot RAISE requests — there is no /request endpoint. Add one so
     Ada can file open questions on cards herself?
-  status: open
+  status: answered
   options:
   - id: add-endpoint
     label: add POST /request {id, ask, options?} to board-api
   - id: comment-only
     label: comment-based asks are enough
+  answer: 'add-endpoint — done on same branch: POST /request {id, ask, request_id?, options?, from?} appends open
+    requests[] entries with actor attribution; deploy pending approval'
