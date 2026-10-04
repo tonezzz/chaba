@@ -1,0 +1,7 @@
+[Unit]
+Description=Kanban <-> CMS sync (xmatch) (job:kanban-sync, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=%h/CascadeProjects/chaba-kanban-sync/scripts/ada/kanban-sync.sh

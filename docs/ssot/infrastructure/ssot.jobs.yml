@@ -96,6 +96,18 @@ jobs:
     env needed — runner spawns bare `node` children)
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
+- id: chaba-audit-full
+  name: Chaba Audit Suite (monthly full)
+  host: idc02
+  dispatch: systemd
+  on_calendar: Sun *-*-1..7 03:00:00
+  persistent: true
+  timeout: 2h
+  exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs --full'
+  note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement
+    as chaba-audit
+  env:
+    PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-system-report
   name: Chaba System Report
   host: idc02
@@ -226,6 +238,16 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/distill-devin-bank.py
   env_file: '%h/.config/secrets/gemini-api-key.env'
   note: migrated tony_dell -> idc02 2026-10-04; gemini key provisioned to idc02 secrets
+- id: kanban-sync
+  name: Kanban <-> CMS sync (xmatch)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* *:0/15:00'
+  exec: '%h/CascadeProjects/chaba-kanban-sync/scripts/ada/kanban-sync.sh'
+  timeout: 10m
+  persistent: true
+  note: 'xmatch pair: cms-auto-health -> cms-auto-* kanban cards (commit+push), kanban-cms
+    -> live dev-kanban page. Own worktree, self-bootstraps. Added 2026-10-04.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
