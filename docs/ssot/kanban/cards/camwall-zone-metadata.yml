@@ -1,0 +1,16 @@
+id: camwall-zone-metadata
+title: camwall — zone metadata drives classification (kill prefix gymnastics)
+column: backlog
+priority: medium
+note: >-
+  Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES in
+  pwa/cms/index.html, DEV_AREA in cam-wall-cms.py, ZONES in the puller)
+  and cms/index.html guesses via slug prefixes + title regexes, with
+  unknown CCTV defaulting to Security — wrong-way default at a privacy
+  boundary. Add `group: private|public` (+ optional `site:` for
+  compound grouping e.g. noble estate vs tony-house) to the zone config,
+  propagate into manifests + CMS page metadata, and have the sidebar
+  read the tag. Unknown zones should land in a visible 'Unsorted'
+  bucket, not silently guess. Security/Traffic become display labels
+  over the privacy semantic — survives future zones without retitling.
+updated: '2026-10-03'
