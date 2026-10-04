@@ -95,3 +95,26 @@ cascade_sim_2026-10-04: |
   known-set perfection for OOD robustness. Pure gray-band escalation
   cannot fix confidently-wrong misses (v5 p=0.01 on unseen affirms);
   disagreement is the correct trigger.
+
+round2_2026-10-04: |
+  Second wave — resolver tuning + ModernBERT fine-tune + stacker.
+  Threshold sweep (ml@0.7 g1b@0.6) lifts disagree cascade to 91.4% OOD
+  / 93.8% eval. Then ModernBERT-base seq-cls (149M, 575MB) trained on
+  same corpus: val 95.0% — and it is the best single model overall:
+  eval-all 100% @0.55, hard-set 80% @0.80, ~73ms CPU, no GPU needed.
+  4-model stacker (logistic over v5/ml/g270m/mbert probs, corpus-trained)
+  matches mbert exactly (100%/80%) — more parts, no gain. v5/mbert->g1b
+  disagree = 100% eval / 82.9% hard (keeps perfection + OOD boost, but
+  needs the 1.4s GPU member). g270m served via new generic shim
+  serve-seqcls.py (:8781). mbert probs on corpus collected for stacker.
+
+  FINAL LANDSCAPE (eval-all / hard-set):
+    mbert seq-cls      100% / 80.0%   ~73ms CPU   <- best single
+    stacker4           100% / 80.0%   ~250ms CPU
+    v5/mbert->g1b      100% / 82.9%   ~800ms, GPU dep
+    v5/ml->g1b         93.8% / 91.4%  ~800ms, GPU dep  <- max OOD
+    v5 deployed        100% / 74.3%   ~69ms CPU
+    g1b head alone     81.3% / 85.7%  1.4s GPU
+  Recommendation: mbert is the strongest swap candidate for the gate
+  (same size class, +6 OOD pts, no orchestration). Cascade only pays
+  if OOD assurance matters more than known-set perfection.
