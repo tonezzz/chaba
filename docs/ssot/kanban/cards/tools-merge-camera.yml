@@ -1,15 +1,16 @@
 id: tools-merge-camera
 title: Consolidate cctv + traffic + snapshot camera tools
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 01:03
+updated: 2026-10-05 01:15
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-004926-merge-the-camera-tool-group-5-
   runner: tony-dell
+  result: 20261005-004926-merge-the-camera-tool-group-5- finished (inactive) — see `devin-dispatch logs 20261005-004926-merge-the-camera-tool-group-5-`
 spec: "Merge the camera tool group (5 -> 2) per the consolidation spec:\n- ada_camera_snapshot absorbs cctv_snapshot,\
   \ traffic_camera ->\n  camera_snapshot(source=auto|vms|traffic, view=..., screen=N)\n- cctv_wall: unchanged (wall\
   \ != single frame)\n- vcast_snapshot keeps display capture; capture_frame retires into it.\n- Gate: ada_camera_snapshot\
@@ -28,6 +29,15 @@ comms:
 - at: 2026-10-05 00:51
   from: devin
   text: 'starting: exploring camera tool group'
+- at: 2026-10-05 01:13
+  from: devin
+  text: 'DONE — camera group merged 5->2. Canonical: ada_camera_snapshot (source=auto|vms|traffic, view=, screen=/target=)
+    + vcast_snapshot (display self-capture); cctv_wall unchanged. 3 aliases: cctv_snapshot->ada_camera_snapshot{source:vms,target:tv},
+    traffic_camera->ada_camera_snapshot{source:traffic}, capture_frame->vcast_snapshot. tool-lint clean (104 declared,
+    3 aliases). pytest: 469 pass, 8 pre-existing env fails (ai_edge_litert/mddb/CMS-index stale asserts, none touched
+    by this diff); alias routi'
+- at: 2026-10-05 01:15
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261005-004926-merge-the-camera-tool-group-5-
   since: 2026-10-05 00:50
