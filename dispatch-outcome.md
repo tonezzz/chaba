@@ -1,72 +1,68 @@
-# Dispatch outcome — board-api-hardening
+# Dispatch outcome — chaba-ci-standard
 
-## What was done
+## What was built
 
-Hardened `scripts/board/board-api.py` per the card spec, still single-file
-`BaseHTTPRequestHandler`, no new deps (re/hashlib are stdlib).
+The standard Chaba CI pipeline for card-sized work — five stages
+(plan → structure → develop → audit → benchmark) that any kanban card
+opts into via `pipeline: ci`.
 
-Branch: `dispatch/20261004-180001-harden-scripts-board-board-api`
-Commit: `56f7a27d fix(board): harden board-api — respond attribution, validation, /request`
+**New files**
+- `docs/ssot/ssot.ci.yml` — the declared standard: stage gates, required
+  artifacts, status enum, opt-in/normalization, both write paths, and
+  the dispatch wiring contract.
+- `scripts/ci/card-pipeline.py` — the runner. Two sinks: `--cards-dir`
+  file mode (direct YAML under `/tmp/board-api.lock`, the
+  kanban-dispatch protocol) and `--api` mode (`/comment`, `/request`,
+  new `/pipeline` endpoint; falls back to a structured comms line if the
+  endpoint isn't deployed yet). `--selftest`, per-stage comms, request
+  dedup/reopen, `reports/ci/<card>-<ts>.json` + meta/timeline.
+- `tests/fixtures/tts-artifact-clean-transcript.txt` — the two observed
+  artifact lines from transcript 519088cb6d; makes the card's metric
+  greppable.
+- `docs/ssot/jobs/workflow/2026-10-04-chaba-ci-pipeline.yml` — job trail.
 
-**Changes in `scripts/board/board-api.py`:**
+**Modified**
+- `scripts/board/board-api.py` — new `POST /pipeline` (opt_in, deep-merge
+  status block, single-stage writes; selftest coverage added).
+- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tells sessions to
+  run the runner via `--api` near the end when a card opts in.
+- `docs/ssot/kanban/ssot.kanban.yml` — card_schema `pipeline` +
+  `benchmark` fields; write_path documents `/pipeline`.
+- `docs/ssot/infrastructure/ssot.reports.yml` — `ci-pipeline` L1 node
+  (`reports/ci/`).
+- `docs/ssot/infrastructure/ssot.quality.yml` — new `card-pipeline`
+  lane + three registry entries (`gate.card-plan-structure`,
+  `gate.card-audit`, `gate.card-benchmark`); related_ssot updated.
+- `docs/ssot/kanban/cards/tts-artifact-clean.yml` — demo card: opted in,
+  `action.repo: ada-pi`, `benchmark.command`, plus the run's
+  `pipeline:` status block, comms, and two open requests.
 
-- `/respond {id, request_id, answer, from?, reopen?}` — `from` validated
-  against ACTORS, defaults to `tony` (board UI sends none, backward
-  compatible). 400 `answer required` on empty/whitespace answer. 400
-  `already answered` when the request is already answered, unless
-  `reopen` is truthy — reopen re-answers and logs `re-answered <rid>: ...`.
-- `/comment` — 400 `text required` on empty/whitespace text.
-- New `POST /request {id, ask, request_id?, options?, from?}` — appends
-  `{id, ask, status: open, options?}` to the card's `requests[]`; id is
-  `request_id` or `slugify(ask)` (slug + 6-char sha1 so Thai/non-ascii asks
-  and near-identical slugs can't collide). 400 `ask required` /
-  `duplicate request id <rid>`. Comms entry `raised request <rid>:
-  <ask[:120]>` under the validated actor (default tony).
-- New `actor()` helper; docstring now states all card writes go through
-  the API and direct YAML edits must hold `/tmp/board-api.lock` first.
-- `--selftest` flag: pure-function smoke test of respond/request
-  validation, attribution, reopen, slugging.
+## Demo result (tts-artifact-clean, file mode)
 
-**Also updated (kept in sync):**
+`plan=pass structure=pass develop=delegated audit=pass benchmark=blocked`
+— audit ran 8 real checks on the worktree diff; benchmark recorded
+`before: 2` from the fixture grep and raised a request for the `after`
+measurement; develop was honestly delegated (card targets ada-pi, this
+worktree is chaba) with a request raised. Run artifact:
+`reports/ci/tts-artifact-clean-20261004-203950.json`. Re-run is
+idempotent — requests dedup, `before` is never overwritten.
 
-- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tell dispatched
-  sessions to raise questions via `POST {api}/request` instead of editing
-  card YAML (the flock race the spec called out).
-- `docs/ssot/kanban/ssot.kanban.yml` — `write_path.endpoints` +
-  `task_rails` updated to the new contract.
-- `docs/ssot/jobs/infrastructure/2026-10-04-board-api-hardening.yml` —
-  job trail entry.
-
-## Verification
+## How to verify
 
 - `python3 scripts/board/board-api.py --selftest` → `selftest ok`
-- Live curl run: patched server on `BOARD_API_PORT=8878` against the
-  worktree's `kanban-selftest` card — every spec case verified:
-  empty answer 400, missing ask 400, duplicate request_id 400,
-  unknown/missing actor 400, empty comment 400; `/request from=ada`
-  created an open request and logged `raised request st1` under `ada`;
-  respond `from=ada` logged `answered st1` under `ada`; re-answer 400;
-  `reopen:true` logged `re-answered st1` under `tony`; auto-slug id
-  `auto-generated-id-please-1c0a43` created with `status: open`.
-  Card YAML inspected, then restored via `git checkout`.
-- `node scripts/ssot-validate-all.mjs` — 971/971 valid.
-- Backward compat: `render-board.py` JS posts `{id, request_id, answer}`
-  (no `from` → tony); `/comment` still requires `from`; old 400 paths
-  unchanged.
+- `python3 scripts/ci/card-pipeline.py --selftest` → `selftest ok`
+- `node scripts/ssot-validate-all.mjs` → 0 errors (2 pre-existing
+  bloat-review warnings on quality/reports)
+- Card `tts-artifact-clean.yml` shows the `pipeline:` block, two open
+  requests, per-stage comms.
 
-## Board triage addendum (same session, "do all")
+## Follow-ups (noted in the trail)
 
-All 15 open board requests answered via the live API; needs-you count is
-now 0. Verified answers: tuya dup entry (websocket evidence — remove
-newer `01M19NJ76J0020RJ`, its 28 entities are dead stubs while the old
-entry's 67 are live), CAM01 = Noble-A entrance gate (vms-snap still
-frame), sunsynk bat34 (`battery_{1,2,3}_*` exist, no `battery_4_*` —
-4th bank not in HA). Remainder answered as recommendations with a devin
-provenance comment per card (answers log under `tony` — live board-api
-is still pre-patch). Next-step comms posted on all 13 affected cards.
-
-## Deploy (out of scope — needs approval)
-
-Merge branch → pull `chaba-tony-dell` live checkout →
-`systemctl --user restart board-api.service`. New dispatch rails take
-effect on the next kanban-dispatch cycle after the live pull.
+- Deploy the `/pipeline` endpoint to the live board-api (served
+  checkout chaba-tony-dell) — until then api-mode falls back to a
+  `pipeline-status:` comms line, nothing is lost.
+- Dispatch `tts-artifact-clean` against ada-pi to satisfy the develop
+  request, then re-run `--stages benchmark` for the after value.
+- Live card `tts-artifact-clean` was deliberately NOT touched via the
+  API — all demo writes are in the worktree file to avoid a cross-
+  checkout merge conflict on the comms list.

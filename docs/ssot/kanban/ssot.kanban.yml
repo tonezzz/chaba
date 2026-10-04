@@ -67,6 +67,21 @@ card_schema:
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
+  # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
+  # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
+  # normalizes it to the status block on first run:
+  pipeline: "ci   # opt-in scalar — becomes a map after a run:
+    {opt_in: ci, started, updated,
+     stages: {plan|structure|develop|audit|benchmark:
+               {status: pass|fail|skip|delegated|blocked, at, detail}},
+     benchmark: {metric, before, after, command, measured_at}}"
+  # optional — benchmark declaration the benchmark stage consumes.
+  # command is run in the worktree; last stdout line = the measured value.
+  benchmark:
+    metric: "what good looks like (also accepts legacy metric:/verify:)"
+    command: "optional shell — prints the measured value"
+    before: "optional seeded baseline"
+    after: "written by the runner"
   # optional — needs-me items for Tony (button to answer on the card)
   requests:
     - id: "short-slug"
@@ -100,6 +115,10 @@ write_path:
       edits race the write flock (must hold /tmp/board-api.lock)."
     "POST /action {id, do: claim, host}": "atomic first-wins claim under the
       write flock — for multi-host dispatchers. Sets action.runner."
+    "POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}":
+      "CI pipeline write path (docs/ssot/ssot.ci.yml) — opt_in:true writes
+      the `pipeline: ci` shorthand, pipeline:{...} deep-merges the status
+      block (stages preserved), stage+status records one result."
     "GET /cards": "live cards.json payload — agents read board state here"
 
 execution:

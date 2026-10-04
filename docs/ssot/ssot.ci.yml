@@ -1,0 +1,165 @@
+title: Chaba Card CI Pipeline
+subtitle: Standard plan -> structure -> develop -> audit -> benchmark pipeline for card-sized work
+icon: 🔁
+version: 1
+
+overview:
+  purpose: >
+    One declared pipeline every card-sized piece of work can opt into via
+    `pipeline: ci` on the card. kanban-dispatch sessions and the runner
+    (scripts/ci/card-pipeline.py) execute the stages they can automate;
+    gates that need a human become requests entries on the card instead of
+    silently passing. Every stage produces an artifact and writes its
+    result back to the card's `pipeline:` status block + comms.
+
+config:
+  version: 1
+  last_updated: "2026-10-04"
+  maintainer: tony
+  status: active
+  origin: >
+    kanban card chaba-ci-standard (2026-10-04): "Define the standard
+    pipeline every card-sized piece of work flows through, and wire it
+    into the repo so it runs hands-off."
+
+opt_in:
+  field: pipeline
+  shorthand: "pipeline: ci  # scalar a human writes on the card"
+  normalized: >
+    The runner upgrades the scalar to the status-block map the first time
+    it records a result: {opt_in: ci, started, updated, stages: {...},
+    benchmark: {...}}. Cards authored directly in map form are accepted.
+  companion_fields:
+    benchmark: >
+      Optional card-level declaration the benchmark stage consumes:
+      {metric: "what good looks like", command: "shell that prints the
+      measured value", before: <seeded or recorded>, after: <recorded>}.
+      Cards may also carry the older bare `metric:`/`verify:` fields —
+      the runner maps metric->benchmark.metric and verify->benchmark.note.
+
+stages:
+  - id: plan
+    automatable: true
+    gate: "card is dispatchable: title + (spec | note) + an acceptance
+           signal (benchmark.metric | metric | verify | 'accept' in spec)"
+    artifact: "plan map in the run artifact — extracted spec, acceptance
+               criteria, declared target repo"
+    on_gate_fail: "status fail + comms — a card that can't say what done
+                   looks like isn't dispatchable"
+  - id: structure
+    automatable: true
+    gate: "scope resolved — runner knows the worktree it's auditing
+           (git rev-parse) and the card's declared repo (action.repo);
+           in-scope worktrees enumerate the diff vs base"
+    artifact: "structure map: {worktree, branch, base, in_scope,
+               files_changed[]}"
+    on_gate_fail: "status fail — no git context means audit has nothing
+                   to check"
+  - id: develop
+    automatable: false
+    gate: "implementation exists — in-scope worktree changes (excluding
+           the card file itself and generated board outputs), OR the
+           card's work is delegated to another repo/session"
+    artifact: "diff summary (files_changed count + list) or delegation
+               note"
+    on_gate_fail: "status delegated + board request naming the repo/
+                  session that must implement — never auto-passed"
+  - id: audit
+    automatable: true
+    gate: "validators pass on the worktree diff — py_compile for changed
+           *.py, node --check for changed *.{js,mjs}, yaml.safe_load for
+           changed *.yml, ssot-validate-all on changed docs/ssot files.
+           Same checks the pre-commit hook runs, plus SSOT structural
+           validation. Cards whose work delegated elsewhere get skip."
+    artifact: "audit map {checks: [{name, ok, detail}]}"
+    on_gate_fail: "status fail — blocks pipeline completion; comms lists
+                  the failing checks"
+    registry: "ssot.quality.yml lane card-pipeline (gate.card-audit) —
+               reuses the pre-commit check set, NOT the on-host-gate
+               ci-*.sh suites (those are repo-wide pre-push gates; card
+               audit is diff-scoped)"
+  - id: benchmark
+    automatable: partial
+    gate: "a before/after metric is recorded on the card
+           (pipeline.benchmark.before + .after). The runner measures by
+           executing benchmark.command and captures stdout as the value.
+           First run records before; a re-run after develop records
+           after. No command + no values -> manual."
+    artifact: "pipeline.benchmark {metric, before, after, command,
+               measured_at} on the card + run artifact"
+    on_gate_fail: "status blocked + board request asking for the missing
+                  measurement — benchmark never fakes a number"
+    semantics: >
+      Two-invocation contract: run once before/around develop to pin
+      `before`, run again (--stages benchmark) after the fix lands to
+      pin `after`. before is never overwritten once recorded.
+
+stage_status_enum:
+  pass: "gate satisfied — artifact produced"
+  fail: "gate checked and failed — blocking, detail says why"
+  skip: "not applicable this run (e.g. audit on a cross-repo card)"
+  delegated: "can't be automated here — handed to a named repo/session,
+              request raised"
+  blocked: "partially automatable, waiting on input (benchmark after,
+           approval)"
+  running: "stage in progress (written if the runner is interrupted)"
+
+write_paths:
+  file_mode: >
+    --cards-dir <path> — reads/writes card YAML directly under the
+    /tmp/board-api.lock flock (env BOARD_LOCK overrides), same protocol
+    as kanban-dispatch.py. For the dispatcher host where the served
+    checkout is local. Re-renders the board unless --no-render.
+  api_mode: >
+    --api <url> (default http://127.0.0.1:8787) — for agents inside a
+    worktree/session: GET /cards to read, POST /comment for stage comms,
+    POST /request for unautomatable gates, POST /pipeline for the status
+    block. A 404 on /pipeline (pre-deploy board-api) falls back to a
+    structured `pipeline-status:` comms line — nothing is lost.
+  rule: "never edit a card's YAML without the flock or the API"
+
+runner:
+  script: scripts/ci/card-pipeline.py
+  usage: >
+    card-pipeline.py <card-id> [--repo PATH] [--cards-dir PATH | --api URL]
+    [--stages plan,structure,develop,audit,benchmark] [--force] [--dry-run]
+  exit_codes:
+    "0": all executed stages pass/skip/delegated-with-request
+    "1": a stage failed (audit/plan/structure gate)
+    "2": runner error — bad card, no sink, crash
+  artifact: "reports/ci/<card>-<YYYYmmdd-HHMMSS>.json — full stage detail"
+  report_node: ci-pipeline (L1-producer, ssot.reports.yml) — meta +
+    timeline event per run
+
+dispatch_wiring:
+  in_session: >
+    kanban-dispatch TASK_RAILS tells the session: if the card opts in,
+    run `python3 scripts/ci/card-pipeline.py <id> --api <api>` near the
+    end — it audits the worktree diff and records benchmark before/after
+    on the card.
+  develop_is_the_session: >
+    The dispatch session itself IS the develop stage — the runner only
+    checks for evidence (in-scope diff) or marks delegated. Sessions may
+    also run a single stage, e.g. --stages benchmark after a fix lands.
+  non_dispatch: >
+    Manual cards (action.type manual or none) can still opt in — run the
+    runner by hand from any checkout; --cards-dir on the dispatcher host,
+    --api anywhere else.
+
+demo:
+  card: tts-artifact-clean
+  run: "2026-10-04 — file-mode against the worktree; see card pipeline:
+        block and docs/ssot/jobs/workflow/2026-10-04-chaba-ci-pipeline.yml"
+
+related_ssot:
+  - docs/ssot/kanban/ssot.kanban.yml        # card_schema pipeline/benchmark, write_path
+  - docs/ssot/infrastructure/ssot.quality.yml  # card-pipeline lane + registry
+  - docs/ssot/infrastructure/ssot.reports.yml  # ci-pipeline report node
+  - docs/ssot/infrastructure/ssot.jobs.yml
+
+related_files:
+  - scripts/ci/card-pipeline.py
+  - scripts/board/board-api.py       # POST /pipeline
+  - scripts/board/kanban-dispatch.py # TASK_RAILS pipeline hook
+  - .githooks/pre-commit             # audit stage reuses this check set
+  - scripts/ssot-validate-all.mjs    # audit stage validator

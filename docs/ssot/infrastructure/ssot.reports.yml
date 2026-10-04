@@ -280,6 +280,19 @@ nodes:
       - audit-hosts/idc01
       - audit-hosts/macbook
       - memory-suite
+  # --- Card CI domain ---
+  - id: ci-pipeline
+    layer: L1-producer
+    purpose: Per-card CI pipeline runs — stage results + benchmark before/after (docs/ssot/ssot.ci.yml)
+    generator: scripts/ci/card-pipeline.py <card-id>
+    cadence: per card run
+    output: reports/ci
+    artifact_pattern: "*.json"
+    meta: reports/ci/meta.yml
+    references:
+      - docs/ssot/ssot.ci.yml
+      - docs/ssot/kanban/ssot.kanban.yml
+    children: []
   # --- Attention domain ---
   - id: focus-inbox
     layer: L1-producer

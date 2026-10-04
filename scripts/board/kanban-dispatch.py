@@ -66,6 +66,10 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
     curl -s -X POST {api}/request \\
       -H 'Content-Type: application/json' \\
       -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
+- If the card opts into the CI pipeline (a `pipeline: ci` field), run
+  `python3 scripts/ci/card-pipeline.py {id} --api {api}` near the end —
+  it audits your worktree diff and records benchmark before/after on the
+  card (docs/ssot/ssot.ci.yml).
 """.strip()
 
 

@@ -14,6 +14,10 @@ Endpoints (after prefix strip):
   POST /respond  {id, request_id, answer, from?, reopen?}
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
   POST /request  {id, ask, request_id?, options?, from?}
+  POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}
+      CI pipeline write path (docs/ssot/ssot.ci.yml). opt_in:true sets the
+      `pipeline: ci` opt-in; pipeline:{...} merges a full status block
+      (stages deep-merged); stage+status records one stage result.
 
 Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
@@ -188,6 +192,71 @@ def do_request(card: dict, body: dict) -> str:
     return f"request {rid} raised"
 
 
+PIPELINE_STAGES = {"plan", "structure", "develop", "audit", "benchmark"}
+PIPELINE_STATUSES = {"pass", "fail", "skip", "delegated", "blocked",
+                     "running"}
+
+
+def do_pipeline(card: dict, body: dict, frm: str) -> str:
+    """CI pipeline write path — see docs/ssot/ssot.ci.yml.
+
+    Accepts either a full status block ({pipeline: {...}} — stages are
+    deep-merged so partial updates don't clobber earlier stages) or a
+    single stage result ({stage, status, detail?}). opt_in:true writes
+    the `pipeline: ci` shorthand; opt_in:false removes the block."""
+    if "opt_in" in body:
+        if body["opt_in"]:
+            if not isinstance(card.get("pipeline"), dict):
+                card["pipeline"] = "ci"
+            else:
+                card["pipeline"]["opt_in"] = "ci"
+        else:
+            card.pop("pipeline", None)
+            comms_add(card, frm, "pipeline opt-in removed")
+            return "pipeline opt-in removed"
+
+    pipe = body.get("pipeline")
+    if isinstance(pipe, dict):
+        cur = card.get("pipeline")
+        if not isinstance(cur, dict):
+            cur = {"opt_in": "ci", "stages": {}}
+        merged = dict(cur)
+        stages = dict(merged.get("stages") or {})
+        for name, res in (pipe.get("stages") or {}).items():
+            if name not in PIPELINE_STAGES:
+                raise ValueError(f"stage must be one of {sorted(PIPELINE_STAGES)}")
+            stages[name] = res
+        merged["stages"] = stages
+        for k, v in pipe.items():
+            if k != "stages":
+                merged[k] = v
+        merged["opt_in"] = "ci"
+        card["pipeline"] = merged
+    elif body.get("stage"):
+        stage = body["stage"]
+        if stage not in PIPELINE_STAGES:
+            raise ValueError(f"stage must be one of {sorted(PIPELINE_STAGES)}")
+        status = body.get("status")
+        if status not in PIPELINE_STATUSES:
+            raise ValueError(f"status must be one of {sorted(PIPELINE_STATUSES)}")
+        cur = card.get("pipeline")
+        if not isinstance(cur, dict):
+            cur = {"opt_in": "ci", "stages": {}}
+        cur.setdefault("stages", {})[stage] = {
+            "status": status, "at": now(),
+            "detail": str(body.get("detail") or "")[:300]}
+        card["pipeline"] = cur
+    elif "opt_in" not in body:
+        raise ValueError("pipeline, stage, or opt_in required")
+
+    stages = (card.get("pipeline") or {}).get("stages") \
+        if isinstance(card.get("pipeline"), dict) else None
+    summary = " ".join(f"{n}={s.get('status')}" for n, s in
+                       (stages or {}).items()) or "opt-in"
+    comms_add(card, frm, f"pipeline updated: {summary}"[:500])
+    return "pipeline updated"
+
+
 def render() -> None:
     subprocess.run(
         [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
@@ -266,6 +335,13 @@ class H(BaseHTTPRequestHandler):
                     msg = do_request(card, body)
                     card["updated"] = now()
                     save(p, card)
+                elif path == "/pipeline":
+                    frm = actor(body)
+                    p = card_path(body.get("id", ""))
+                    card = load(p)
+                    msg = do_pipeline(card, body, frm)
+                    card["updated"] = now()
+                    save(p, card)
                 else:
                     return self._send(404, {"error": "not found"})
             except ValueError as e:
@@ -317,6 +393,30 @@ def _selftest() -> None:
     assert card["requests"][-1]["id"].startswith("auto-id-please-")
     do_request(card, {"ask": "ตอบหน่อย"})  # non-ascii ask still gets an id
     assert card["requests"][-1]["id"].startswith("req-")
+
+    # /pipeline
+    card = {}
+    rejects(lambda: do_pipeline(card, {}, "devin"),
+            "pipeline, stage, or opt_in required")
+    do_pipeline(card, {"opt_in": True}, "devin")
+    assert card["pipeline"] == "ci"
+    rejects(lambda: do_pipeline(card, {"stage": "bogus", "status": "pass"},
+                                "devin"), "stage must be one of")
+    rejects(lambda: do_pipeline(card, {"stage": "plan", "status": "meh"},
+                                "devin"), "status must be one of")
+    do_pipeline(card, {"stage": "plan", "status": "pass",
+                       "detail": "spec ok"}, "devin")
+    assert isinstance(card["pipeline"], dict)
+    assert card["pipeline"]["stages"]["plan"]["status"] == "pass"
+    # full block merge — earlier stages preserved
+    do_pipeline(card, {"pipeline": {"stages": {
+        "audit": {"status": "pass", "at": "t", "detail": "2 checks"}},
+        "benchmark": {"metric": "m", "before": "2"}}}, "devin")
+    assert card["pipeline"]["stages"]["plan"]["status"] == "pass"
+    assert card["pipeline"]["stages"]["audit"]["status"] == "pass"
+    assert card["pipeline"]["benchmark"]["before"] == "2"
+    do_pipeline(card, {"opt_in": False}, "devin")
+    assert "pipeline" not in card
     print("selftest ok")
 
 
