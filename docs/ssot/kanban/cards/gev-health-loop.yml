@@ -1,0 +1,14 @@
+id: gev-health-loop
+title: 'build gev-auto-* health loop (page + ws + api probes -> kanban)'
+column: backlog
+program: gev
+area: monitoring
+metric: 'gev-auto-* cards auto-open within 15min of a lane failure'
+verify: 'stop gev-gemini, see gev-auto-bridge card appear in review'
+note: >-
+  Mirror of cms-auto-health.py, sources = HTTP probe /apps/gev/ (200),
+  ws connect probe /apps/gev-live/ws, api 127.0.0.1:4173, systemctl
+  status gev-gemini + gods-eye-view-api. Emit gev-auto-<check> cards,
+  auto-close on recovery. Fold into kanban-sync tick.
+help: 'pattern: scripts/ada/cms-auto-health.py — same card lifecycle'
+updated: '2026-10-04'

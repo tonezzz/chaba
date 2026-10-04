@@ -1,0 +1,17 @@
+id: yt-voice-dub-test
+title: 'YT voice dub — minimal TTS audio track test (en/th)'
+column: backlog
+metric: 'one short video plays with intelligible TH voice track over ducked original'
+verify: 'ffprobe shows dub audio stream + Tony watches it on the TV'
+note: >-
+  Extends the yt-live subtitle pipeline. Steps: reuse cached media + VTT
+  cues from ~/.cache/yt-live-media|subs, edge-tts per cue -> mp3, stretch
+  to cue window, mix dub over ducked original (~20%) via ffmpeg, output to
+  stacks/web/public/apps/yt-live/, cast via yt-live-api :8791. Also:
+  yt-live.sh + yt-vtt-translate.py live in ~/.local/bin with no repo home —
+  move to scripts/ while in there.
+help: >-
+  pipeline: ~/.local/bin/yt-live-api.py :8791 + yt-live.sh +
+  yt-vtt-translate.py; docs/kb/home-assistant/tv-casting-runbook.md;
+  scripts/ops/yt-transcript.sh; voices th-TH-PremwadeeNeural / en-US-*
+updated: '2026-10-04'

@@ -1,0 +1,21 @@
+id: yt-voice-dub-e2e
+title: 'YT voice dub — E2E assessment: pros/cons + improvement roadmap'
+column: backlog
+metric: 'assessment note records ranked improvements; minimal-test vs production boundary explicit'
+verify: 'card note reviewed by Tony; follow-on cards filed for chosen lanes'
+note: >-
+  E2E pass over the dub pipeline before scaling past the minimal test.
+  Pros of cue-level edge-tts: free, offline-capable cache, reuses existing
+  VTT + HLS plumbing, decent TH/EN voices, no new infra. Cons: cue timing
+  is rough (stretch/pad sounds mechanical on long/short lines), no
+  speaker separation, auto-caption errors flow straight into TTS, flat
+  ducking drowns music/fx uniformly, no lip-sync (fine for info videos,
+  bad for dialogue). Improvements ranked: (1) cue-fit TTS — pick voice
+  rate per cue instead of post-stretch; (2) caption QC gate — flag cues
+  with too few chars or implausible duration before TTS; (3) sidechain
+  ducking keyed to dub segments instead of flat 20%; (4) voice-mode
+  selector (off/TH/EN) on the cast URL; (5) only if demand proves out:
+  cloud neural TTS or speaker-aware dub. Boundary: no voice cloning,
+  lip-sync, or diarization until the minimal test lands.
+help: 'parent test: yt-voice-dub-test; same pipeline refs'
+updated: '2026-10-04'

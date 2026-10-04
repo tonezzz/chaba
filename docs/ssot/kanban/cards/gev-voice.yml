@@ -1,0 +1,15 @@
+id: gev-voice
+title: 'gev voice — mic pcm path, mute gating, playback gap'
+column: backlog
+program: gev
+area: voice
+metric: 'muted mic leaks 0 audio frames; unmute resumes capture'
+verify: 'scenario asserts no outbound audio frames while muted (GainNode=0)'
+note: >-
+  gevGeminiRealtime.js captures 16kHz mono PCM. Invariants: mic passes
+  through GainNode (1 recording / 0 muted — recording flag alone is not
+  enough); iOS mic works in Safari but NOT standalone PWA
+  (apple-mobile-web-app-capable=no is the workaround); Gemini output is
+  transcription text only — no audio playback implemented yet.
+help: '~/gods-eye-view src/voice/gevGeminiRealtime.js; AGENTS.md GEV section'
+updated: '2026-10-04'

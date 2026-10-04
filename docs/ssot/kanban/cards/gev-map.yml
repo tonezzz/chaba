@@ -1,0 +1,13 @@
+id: gev-map
+title: 'gev map — cesium panes render or fail honestly'
+column: backlog
+program: gev
+area: map
+metric: 'every pane either renders tiles or surfaces a visible failure state'
+verify: 'gev_pane_honest_fail scenario pass + iPad msaaSamples:1 no crash'
+note: >-
+  Cesium panes in /apps/gev/. iPad requires msaaSamples:1 (post-build
+  patch in AGENTS.md). Honest-fail: a pane that cannot render must say so
+  instead of showing a black pane — gev_pane_honest_fail covers it.
+help: 'build: ~/gods-eye-view npm run build + 3 post-build patches'
+updated: '2026-10-04'

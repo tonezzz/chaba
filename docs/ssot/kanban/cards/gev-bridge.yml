@@ -1,0 +1,14 @@
+id: gev-bridge
+title: 'gev bridge — gemini-live ws proxy + tool declarations'
+column: backlog
+program: gev
+area: bridge
+metric: 'text tool-call cycle completes end-to-end through /apps/gev-live/ws'
+verify: 'send {"type":"text",...} -> function_call -> tool_response over wss /apps/gev-live/ws'
+note: >-
+  gev-gemini container (ws 127.0.0.1:8789) proxies Gemini Live. Known
+  constraint: Live rejects additionalProperties in function-declaration
+  params — bridge strips them recursively; regression risk when
+  GEV_REALTIME_TOOLS in vite.config.js changes -> tools.json regen.
+help: 'stacks/tony-dell/gev-gemini/{bridge.py,tools.json,Containerfile}'
+updated: '2026-10-04'
