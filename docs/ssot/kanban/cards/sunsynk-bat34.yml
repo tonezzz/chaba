@@ -2,7 +2,7 @@ id: sunsynk-bat34
 title: SunSynk card — batteries 3/4 support
 column: backlog
 note: Extend the power-flow card to render a 3rd and 4th battery (bat3/bat4 elements + entity mapping).
-updated: 2026-10-04 20:25
+updated: 2026-10-04 20:48
 blocked_by: tony
 spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card).
 
@@ -17,8 +17,10 @@ spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card)
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: sunsynk-card
+  task_id: 20261004-204448-add-batteries-3-and-4-to-the-s
+  runner: tony-dell
 requests:
 - id: entities
   ask: What are the real bat3/bat4 entity prefixes on your inverters?
@@ -47,3 +49,13 @@ comms:
 - at: 2026-10-04 20:25
   from: tony
   text: queued for processing
+- at: 2026-10-04 20:45
+  from: chaba
+  text: dispatched 20261004-204448-add-batteries-3-and-4-to-the-s on sunsynk-card
+- at: 2026-10-04 20:48
+  from: devin
+  text: 'Assessing prior WIP: full-card bat3/4 + entity mapping mostly done; compact bat-elements, batteryCount>2
+    clamp, editor count max, and power totals still missing. Installing deps then implementing.'
+claim:
+  session: 20261004-204448-add-batteries-3-and-4-to-the-s
+  since: 2026-10-04 20:45

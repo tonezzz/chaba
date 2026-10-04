@@ -1,8 +1,8 @@
 id: ada-draft-backlog
 title: Ada memory draft pileup (~120 drafts)
-column: backlog
+column: review
 note: Search unblocked; sync draining hourly — verify draft counts trend down before closing.
-updated: 2026-10-04 20:32
+updated: 2026-10-04 20:42
 requests:
 - id: draft-drain-path
   ask: 'Drafts in ada-ha-bank-general: 131 total, 110 are a Sep29-Oct1 distill burst, ~9/day new inflow — nothing
@@ -40,6 +40,23 @@ comms:
 - at: 2026-10-04 20:26
   from: chaba
   text: dispatched 20261004-202633-batch-review-the-110-sep29-oct on chaba
+- at: 2026-10-04 20:39
+  from: devin
+  text: 'DRY RUN — burst drafts were already decided by the 12:15 inbox-triage dispatch (0 burst-era drafts remain;
+    its retracted_reason stamps verified in MDDB). Audited the 89 promoted extract/distill docs: sound, 3 correction-retracts
+    flagged. Live drafts = 6 (all post-triage inflow today). Plan: promote 5, retract 4 (1 draft gap-note + 3 active
+    corrections: dup meta-noise, David-memory mis-transcription, Rika transient snapshot). Ledger: docs/ssot/jobs/ada/2026-10-04-burst-draft-batch-review.yml.
+    App'
+- at: 2026-10-04 20:40
+  from: devin
+  text: 'DONE — ada-ha-bank-general now has 0 drafts (was 6 live, 131 at the 12:16 check). Key finding: the Sep29-Oct1
+    burst drafts were already decided by the 12:15 inbox-triage dispatch; I verified coverage (no burst-era draft
+    survives) and audited its 89 promoted extract/distill docs. Applied: 5 draft->active promotes (TONY-TV/Cast,
+    Noble Club feed, Minted Metal gold, floodboard.org) + 4 retracts w/ retracted_reason (1 gap-note draft + 3 corrections:
+    Nobito dup/meta-noise, David-memory mis-transcripti'
+- at: 2026-10-04 20:42
+  from: chaba
+  text: run finished (inactive) → review
 spec: 'Batch-review the ~110 Sep29-Oct1 burst drafts in MDDB bank ada-ha-bank-general (on idc01, http://127.0.0.1:11023
   local or 100.74.146.0 tailnet).
 
@@ -63,11 +80,11 @@ spec: 'Batch-review the ~110 Sep29-Oct1 burst drafts in MDDB bank ada-ha-bank-ge
   Do NOT write other banks. Report via POST 127.0.0.1:8787/comment.'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   button: ▶ Batch-review drafts
   task_id: 20261004-202633-batch-review-the-110-sep29-oct
   runner: tony-dell
+  result: 20261004-202633-batch-review-the-110-sep29-oct finished (inactive) — see `devin-dispatch logs 20261004-202633-batch-review-the-110-sep29-oct`
 claim:
-  session: 20261004-202633-batch-review-the-110-sep29-oct
   since: 2026-10-04 20:26

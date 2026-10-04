@@ -1,8 +1,8 @@
 id: barrier-image-copy
 title: Barrier image-copy workaround
-column: backlog
+column: review
 note: Barrier 2.4.0 clipboard can't carry images between dell and omen — pick a workaround and implement.
-updated: 2026-10-04 20:32
+updated: 2026-10-04 20:44
 blocked_by: tony
 help: 'Barrier 2.4.0 does not relay clipboard images (text only). Options:
 
@@ -30,10 +30,11 @@ spec: 'Implement a workaround for Barrier 2.4.0''s missing image-clipboard
   '
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   task_id: 20261004-202634-implement-a-workaround-for-bar
   runner: tony-dell
+  result: 20261004-202634-implement-a-workaround-for-bar finished (inactive) — see `devin-dispatch logs 20261004-202634-implement-a-workaround-for-bar`
 requests:
 - id: approach
   ask: Which workaround for Barrier image clipboard?
@@ -73,6 +74,15 @@ comms:
   from: devin
   text: 'session started — reading barrier seat docs, then inspecting clip-sync-dell on tony-omen (approach B already
     chosen: extend clip-sync to images)'
+- at: 2026-10-04 20:42
+  from: devin
+  text: 'done — option B implemented: shared clip-sync poller (scripts/barrier/clip-sync.sh) now carries image/*
+    both directions. clip-sync-dell on omen was dead (stale 192.168.1.42 + no remote X env); fixed + new clip-sync-omen.service
+    on dell. Verified byte-identical PNG both ways; barrier seats untouched. Caveat: Barrier text-grabs can clobber
+    an image ~1s after copy — poller pair self-heals, or re-copy. Runbook docs/ssot/jobs/infrastructure/2026-10-04-barrier-image-clipboard.yml;
+    commit c2b07340 on d'
+- at: 2026-10-04 20:44
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261004-202634-implement-a-workaround-for-bar
   since: 2026-10-04 20:26

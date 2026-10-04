@@ -1,6 +1,6 @@
 id: worktree-sprawl
 title: Branch/worktree sprawl — 20 branches ahead, 51 worktrees
-column: backlog
+column: done
 note: 'Standing con from DEV_SYSTEM_ASSESSMENT (was hard-failing SSOT CI until 2026-10-03 — now advisory). Work:
   list worktrees, classify merged/stale/ active, archive or delete merged branches, consolidate long-tail work.'
 help: '1. git worktree list — classify each: merged / stale / active-session
@@ -42,7 +42,20 @@ comms:
   from: devin
   text: 'remaining: review top-5 branches by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) then tag+archive the
     rest with manifest.'
-updated: 2026-10-04 19:59
+- at: 2026-10-04 20:37
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 20:45
+  from: devin
+  text: 'Done. Top-5 audited: snapshot branch already salvaged via e27c9075; ai-hub + yolo + rk900 verified superseded
+    on master; tpl-design held the only real salvage — promote-michael.sh + promote-tony.sh restored (6c963fc0,
+    AGENTS.md referenced them but they were missing). All 21 stale remote branches tagged archive/* and deleted;
+    manifest at docs/ssot/audit/branch-archive-20261004.md. Additionally merged 7 orphaned dispatch branches (JEV
+    training pipeline, GEV zoom/flight, ada inbox triage r2, job re'
+- at: 2026-10-04 20:45
+  from: tony
+  text: closed by Tony
+updated: 2026-10-04 20:45
 requests:
 - id: branch-disposition
   ask: 21 unmerged remote branches all carry real topical deltas from pre-rewrite master — how to handle?
@@ -56,3 +69,6 @@ requests:
     label: leave them — branch refs are cheap, revisit never
   answer: review-top — review the top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) for salvageable deltas,
     then tag+archive the rest with a manifest
+action:
+  type: dispatch
+  status: done
