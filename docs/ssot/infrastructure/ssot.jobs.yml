@@ -90,13 +90,17 @@ jobs:
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
 - id: chaba-system-report
   name: Chaba System Report
-  host: tony_dell
+  host: idc02
   dispatch: systemd
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: '%h/.local/bin/chaba-system-report.sh'
-  note: exec lives outside the repo — inlining it is a migration TODO
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen
+    mn01 idc01 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" ||
+    true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3
+    scripts/report-system.py'
+  note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran
+    bash chain, not the nonexistent .sh)
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_dell
