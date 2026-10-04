@@ -14,15 +14,23 @@ Flood Hub itself is **worth integrating**: free, CC BY 4.0, daily-updated 7-day 
 - Center: 14.0893°N, 101.0840°E, zoom ~7.8 → Bang Sombun area, **Ongkharak district, Nakhon Nayok province** (TH-26), on the Nakhon Nayok River basin.
 - Shared via Facebook (`fbclid`), almost certainly because of the **current flood event**: Khun Dan Prakan Chon Dam discharge + runoff from Namtok Nang Rong / Khlong Maduea. As of Sep 29 the situation was still critical downstream. The site is JS-rendered so gauge IDs at that exact point can't be resolved without the API (see below).
 
-## Current state in our stack (checked 2026-09-30)
+## Current state in our stack (checked 2026-10-03, restructured)
 
-Flood coverage already exists in **ada-cms**, but it's *news digests*, not Flood Hub data:
+Flood coverage lives in **ada-cms** as a page family with its own **Flood tab** in the CMS sidebar (ada-pi `pwa/cms/index.html`, commit `d3914a7`). Family tree:
 
-- **`flood-report`** (CMS rollup, "สถานการณ์น้ำท่วมล่าสุด") — auto-regenerated hourly by `flood-news-update.py`; feeds: `bangphli`, `samutprakan`, `bangkok-th`, `bangkok-en` (Google News RSS). Has `children: [flood-report-nongdon]`.
-- **`flood-report-nongdon`** — leaf page covering Saraburi/Lopburi/Chao Phraya dam feeds. **Collapsed 2026-09-30**: was a single-child rollup of `flood-report-nongdon-saraburi` (identical feeds) — redundant layer removed; now `flood-report` → `flood-report-nongdon` (leaf) directly.
-- Generator: `scripts/ada/flood-news-update.py` + `scripts/ada/flood-news-feeds.json` (chaba repo). Pages use `<!-- flood-news:auto -->` managed blocks — a clean insertion point for a second managed section with gauge data.
-- Registry: `ada-cms-automation` MDDB collection — each generated page has a config doc (`run_now` flag → worker regenerates; `POST /api/cms/pages/{slug}/regenerate` triggers it). **Gotcha**: the registry doc caches its own effective config and *wins over* feeds.json — collapsing/splitting a page requires updating BOTH feeds.json and the registry doc, plus the page doc's meta (generator merges stale keys; `parent`/`children` now have removal paths in `publish()`).
-- Nothing in ada-cms currently uses Flood Hub / gauge data — the Flood Hub assessment lives only in this repo doc.
+- **`flood-overview`** — index (hand, Thai): curated links + ops timeline; `children: [flood-report]`. The family's front door.
+- **`flood-report`** — rollup (generated): `flood-news-update.py`, feeds `bangphli`/`samutprakan`/`bangkok-th`/`bangkok-en`; `children: [flood-report-nongdon-saraburi]`, `parent: flood-overview`.
+- **`flood-report-nongdon-saraburi`** — leaf (generated): feeds `saraburi`/`lopburi`/`chaophraya-dam`; `parent: flood-report`.
+- **`flood-report-pattaya-rayong`** + **`flood-coordinates-rayong`** — hand leafs, `parent: flood-report` (regional notes from live reporting).
+- **`flood-digest`** — machine index (report-distill generated).
+- **`flood-hub-assessment`** — reference (hand, en+th), `parent: flood-report`; mirrors this doc.
+- **`news-flood`** — news-* family digest; surfaces in the Flood tab via title match.
+- **`flood-report-nongdon-combined`** — **archived 2026-10-03**: manual merge page superseded by the generated saraburi leaf.
+- **`flood-report-nongdon`** — registry doc **disabled** (phantom middle layer; its page was deleted 2026-09-30 but the stale registry re-stamped the saraburi leaf's parent on regen — the gotcha below, live).
+
+Generator: `scripts/ada/flood-news-update.py` + `scripts/ada/flood-news-feeds.json` — **the deployed copy on tony-dell `~/CascadeProjects/chaba` is what the live worker runs**; repo + deployed + registry must all agree. Pages use `<!-- flood-news:auto -->` managed blocks — the insertion point for a `<!-- flood-hub:auto -->` gauge block once we have a key.
+
+**Gotcha (confirmed twice now)**: the `ada-cms-automation` registry doc caches its own effective config and *wins over* feeds.json — changing hierarchy requires updating registry doc + feeds.json + the tony-dell deployed copy, then letting the next regen re-stamp page meta.
 
 ## Document management — the "two versions" question
 
@@ -36,6 +44,28 @@ We don't need two versions of *this* report. Proposed structure, consistent with
 | Snapshot | `flood-hub-assessment-YYYY-MM-DD.md` | Frozen copy for external contact/submission | Created only when we actually send something |
 
 Rule of thumb: **one canonical location per document; anything elsewhere is a generated, timestamped copy.** The CMS flood pages aren't duplicates of this report — different audience (household vs. engineering), different content (news/gauges vs. service evaluation).
+
+## CMS page-family standard (proposed, applied to Flood)
+
+How a topical CMS family should be structured — generalizes beyond flood:
+
+| Role | Slug pattern | Maintained by | Meta contract |
+|---|---|---|---|
+| Index | `<domain>-overview` | hand | `children: [<domain>-report]`; curated links + ops timeline; family front door |
+| Rollup | `<domain>-report` | generated | `generated_by`, `sources`, `children` — **set in registry config, never hand-edited** |
+| Leaf | `<domain>-report-<area>` | generated | `parent` in registry config; one page per coverage area |
+| Hand leaf | `<domain>-report-<place>` / `<domain>-coordinates-*` | hand | `parent` set once on the page (survives — generator only owns pages it generates) |
+| Reference | `<domain>-*-assessment` etc. | hand | `parent` to anchor in tree; `attribute` for audit exemption |
+| Machine index | `<domain>-digest` | generated (report-distill) | links over the family, hands-free |
+
+Rules:
+
+1. **Hierarchy lives in `ada-cms-automation` registry docs**, not page meta — the generator re-stamps `parent`/`children` from registry config on every regen. A hierarchy change = registry doc + `feeds.json` + tony-dell deployed copy, all three.
+2. **One level of nesting** — index → rollup → leaf. No phantom middle pages (the `flood-report-nongdon` lesson: a page-less registry doc kept re-stamping a wrong parent for days).
+3. **Never hand-edit inside `<!-- X:auto -->` managed blocks** — only the generator touches them.
+4. **One page per coverage area** — superseded manual merges get `status: archived`, not deletion.
+5. **Bilingual** for situation pages (en+th under one slug); reference docs may start en-only.
+6. Sidebar tabs stay convention-driven (slug prefix / title tokens) — a new `<domain>` just needs its prefix added to the classifier in `pwa/cms/index.html`.
 
 ## Service assessment
 
@@ -100,6 +130,7 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 ## Update log
 
 - **2026-10-03** — published CMS mirror: `flood-hub-assessment` (en+th) under `parent: flood-report`, `attribute=assessment`, hand-maintained (no `generated_by`). Only `parent` is set on the child — `children` on `flood-report` is owned by the generator and would be re-stamped on the next run.
+- **2026-10-03 (later)** — **Flood family restructured + dedicated CMS tab**. Found the 09-30 collapse had been *reverted by the stale registry*: `flood-report-nongdon-saraburi` was regenerating with `parent: flood-report-nongdon` (phantom) and `flood-report.children` pointed at the same phantom. Rewired all three registry docs (flood-report children → saraburi leaf + parent → flood-overview; saraburi parent → flood-report; nongdon registry `enabled: false`), fixed page meta to match, promoted `flood-overview` to family index, parented the two regional hand pages under `flood-report`, archived `flood-report-nongdon-combined`. Added **Flood tab** to the CMS sidebar (`flood-*` slugs + น้ำท่วม-titled pages; ada-pi `d3914a7`, pushed — deploy to idc01 pending approval). Proposed the page-family standard above; kanban card `flood-cms-tab`.
 - **2026-09-30** — initial assessment; link geocoded to Ongkharak, Nakhon Nayok (active dam-discharge flood); confirmed flood-report CMS pages exist and auto-regenerate (`flood-news-update.py`, last run 17:16); no Flood Hub data in ada-cms yet; found duplicate nongdon slugs.
 - **2026-09-30 (later)** — waitlist form submitted by Tony. Added `scripts/ada/flood-hub-check.py` (verify/enumerate tool, stdlib-only) + focus-inbox item to track the pending approval.
 - **2026-09-30 (evening)** — GCP project created: `flood-watch-510211` (ready to reply to approval email). Collapsed `flood-report-nongdon-saraburi` → `flood-report-nongdon` (leaf); learned the ada-cms-automation registry caches effective config and overrides feeds.json — collapses must clear both + page meta; patched `publish()` to drop stale parent/children keys.
