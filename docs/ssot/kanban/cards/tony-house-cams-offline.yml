@@ -1,6 +1,6 @@
 id: tony-house-cams-offline
 title: tony-house 3/4 cams dead at source — xiaomi_c100 + ip_cam_65 pair offline
-column: backlog
+column: done
 priority: medium
 metric: go2rtc produces frames for all tony-house streams (or zone trimmed to live cams)
 verify: curl frame.jpeg?src=<stream> on :1984 returns >500B for each zone cam
@@ -8,7 +8,7 @@ note: 'Not a puller bug. go2rtc :1984 check 2026-10-04: xiaomi_c100* all variant
   -> 200 but empty body; 0 consumers on all three. Only xiaomi_c201_hd streams (28KB frames). Cameras are offline/unpowered/wifi-dead
   at source. Fix = physical check, or trim the zone to live cams if permanently retired.'
 help: curl http://100.68.142.13:1984/api/streams — check consumers per stream
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:25
 requests:
 - id: cam-disposition
   ask: 3/4 tony-house cams dead at source (timeout/empty-body; only xiaomi_c201_hd live). Physical check or trim
@@ -38,5 +38,12 @@ comms:
 - at: 2026-10-04 19:59
   from: devin
   text: 'remaining: physical power/wifi check at the 3 dead cams — Tony action, no software path.'
+- at: 2026-10-04 20:25
+  from: devin
+  text: 'Answered: keep — cams dead at source need physical power/wifi check; no software path. Board-side resolution
+    recorded; physical check is an errand outside the board.'
+- at: 2026-10-04 20:25
+  from: tony
+  text: closed by Tony
 action:
-  status: idle
+  status: done

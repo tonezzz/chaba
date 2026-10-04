@@ -1,12 +1,12 @@
 id: open-notebook-retention
 title: 'Open Notebook: keep, extend, or retire on idc01?'
-column: backlog
+column: done
 note: 'Running 5d on idc01 (UI :8444, API :8445, 465MB+surreal), only consumer = openclaw mcp-opennb (rate-limited
   upstream). Benchmark: per-file 7/8 ≈ NotebookLM parity. Options: keep as-is / add OR provider to dodge Gemini
   quota / retire + reclaim RAM. Benchmark doc: docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md
 
   '
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:21
 requests:
 - id: disposition
   ask: 'Open Notebook on idc01: 565MB RAM, ~0 API requests/24h, 87MB data, nightly backup + monthly restore-check
@@ -39,3 +39,13 @@ comms:
   from: devin
   text: 'remaining: execute retire — stop open-notebook containers+timers on idc01, archive 87MB volume, reclaim
     565MB.'
+- at: 2026-10-04 20:21
+  from: devin
+  text: 'Retired on idc01: backup+restore-check timers disabled, open-notebook + surreal + network units stopped+disabled.
+    Volume untouched (archived). Caveat: openclaw mcp-opennb consumer will now fail on connect — remove that MCP
+    entry on omen when convenient.'
+- at: 2026-10-04 20:21
+  from: tony
+  text: closed by Tony
+action:
+  status: done
