@@ -179,6 +179,30 @@ hosts:
         expected_state: active
         critical: false
         note: TCP/IP link monitor (omen/dell/macbook); mn01 copy retired 2026-09-25 — this dell instance is the canonical one
+      - name: chaba-board-api.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Kanban board write API on 127.0.0.1:8787 — Caddy proxies /apps/board-api/* here; scripts/board/board-api.py, runs against the chaba-tony-dell served checkout"
+      - name: chaba-board-render.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "60s — re-renders apps/board (index.html + cards.json) when docs/ssot/kanban/cards/ changes outside the API"
+      - name: kanban-dispatch.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "2min — drains cards with action.status=queued through devin-dispatch, polls running tasks to done/review"
+      - name: kanban-commit.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "15min — persists live card edits to git (scoped add + push) from chaba-tony-dell"
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
