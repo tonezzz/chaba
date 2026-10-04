@@ -2,7 +2,7 @@ id: ada-draft-backlog
 title: Ada memory draft pileup (~120 drafts)
 column: backlog
 note: Search unblocked; sync draining hourly — verify draft counts trend down before closing.
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:32
 requests:
 - id: draft-drain-path
   ask: 'Drafts in ada-ha-bank-general: 131 total, 110 are a Sep29-Oct1 distill burst, ~9/day new inflow — nothing
@@ -37,3 +37,37 @@ comms:
   from: devin
   text: 'remaining: batch-review pass over the 110 Sep29-Oct1 burst drafts (promote/retract each) — ready to queue
     whenever.'
+- at: 2026-10-04 20:26
+  from: chaba
+  text: dispatched 20261004-202633-batch-review-the-110-sep29-oct on chaba
+spec: 'Batch-review the ~110 Sep29-Oct1 burst drafts in MDDB bank ada-ha-bank-general (on idc01, http://127.0.0.1:11023
+  local or 100.74.146.0 tailnet).
+
+
+  Read first: docs/ada-memory conventions in chaba repo + how ada-memory-distill writes drafts (scripts on idc01).
+  Draft docs have status=draft, status/review fields.
+
+
+  For EACH draft in the Sep29-Oct1 burst (~110 docs, status=draft, created 2026-09-29..10-01): evaluate content
+  — is it accurate, non-duplicate, useful for recall? Then:
+
+  - good -> set status=active (promote)
+
+  - junk/duplicate/stale -> set status=retracted (do NOT delete — keep for audit)
+
+
+  DRY RUN FIRST: produce the promote/retract decision list as a job-ledger doc (docs/ssot/jobs/... or MDDB kind=batch-review)
+  and post counts to this card''s comms BEFORE writing. Then apply in one pass. Recheck draft count after.
+
+
+  Do NOT write other banks. Report via POST 127.0.0.1:8787/comment.'
+action:
+  type: dispatch
+  status: running
+  repo: chaba
+  button: ▶ Batch-review drafts
+  task_id: 20261004-202633-batch-review-the-110-sep29-oct
+  runner: tony-dell
+claim:
+  session: 20261004-202633-batch-review-the-110-sep29-oct
+  since: 2026-10-04 20:26

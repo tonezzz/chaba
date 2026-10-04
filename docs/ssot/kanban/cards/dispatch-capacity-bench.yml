@@ -3,7 +3,7 @@ title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
 column: backlog
 note: 'Measure before deciding multi-host dispatch architecture. Key gap found 2026-10-04: devin CLI exists ONLY
   on tony-dell — remote hosts can''t dispatch today regardless of the card system.'
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:25
 help: "Current capacity snapshot (measured 2026-10-04):\n  tony-omen  12c / 3G avail / load 7.0   — loaded, not\
   \ free capacity\n  idc01       2c / 26G avail / load 0.6  — RAM-rich CPU-poor, runs ada+mddb\n  mn01        4c\
   \ / 2G avail  / load 2.0  — standby-sized\n  idc02       4c / 11G avail / load 0.08 — idle VPS, best free capacity\n\
@@ -23,7 +23,7 @@ spec: "Benchmark minimal dispatch per host BEFORE building multi-host dispatch �
   \ and\n   which hosts (if any) should get runners first.\nPost interim findings to this card's comms as you go.\n"
 action:
   type: dispatch
-  status: idle
+  status: queued
   button: ▶ Run benchmark
   repo: chaba
 requests:
@@ -72,3 +72,10 @@ comms:
 - at: 2026-10-04 19:59
   from: devin
   text: 'remaining: podman-only benchmark on idc02; skip devin CLI/token provisioning on remote hosts.'
+- at: 2026-10-04 20:25
+  from: devin
+  text: 'Constraints per Tony: podman-only (no CLI install — per-host token provisioning spreads secrets), test
+    host = idc02 (idle VPS, zero contention). Queueing.'
+- at: 2026-10-04 20:25
+  from: tony
+  text: queued for processing

@@ -2,7 +2,7 @@ id: sunsynk-bat34
 title: SunSynk card — batteries 3/4 support
 column: backlog
 note: Extend the power-flow card to render a 3rd and 4th battery (bat3/bat4 elements + entity mapping).
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:25
 blocked_by: tony
 spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card).
 
@@ -17,7 +17,7 @@ spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card)
   '
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: sunsynk-card
 requests:
 - id: entities
@@ -39,3 +39,11 @@ comms:
   from: devin
   text: 'remaining: no battery_4_* entities exist on michael-ha — only battery_1/2/3. Verify a 4th bank is physically
     installed/commissioned before building bat4 UI; bat3 can proceed with existing entities.'
+- at: 2026-10-04 20:25
+  from: devin
+  text: 'SCOPE per Tony: build bat3 ONLY — battery_{1,2,3}_* exist (battery_3 live on michael-ha), there are NO
+    battery_4_* entities — defer bat4 until a 4th bank is commissioned. Entity prefix sensor.battery_3_*. Build
+    in worktree, verify on michael-dev only.'
+- at: 2026-10-04 20:25
+  from: tony
+  text: queued for processing

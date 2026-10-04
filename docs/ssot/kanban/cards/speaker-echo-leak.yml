@@ -11,7 +11,7 @@ help: "1. Reproduce: start a voice session with no KK present, speak as Tony. 2.
   \ identified — check first-chunk hits. 3. If false KK hits recur: check capture pipeline for TTS output bleeding\n\
   \   back (see docs/ssot/ssot.learning.speaker-id-tts-echo.2026-10-03.yml).\n4. Fix path would be AEC/echo suppression\
   \ or ignoring speaker-id during\n   Ada's own speech window."
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:25
 requests:
 - id: kk-present
   ask: Session e564b39502 has a genuine KK=0.84 match at t=0s — was KK actually near the iPad speaking then, or
@@ -44,5 +44,10 @@ comms:
 - at: 2026-10-04 19:59
   from: devin
   text: 'remaining: controlled replay test to determine if the KK=0.84 match at t=0s was real voice or TTS echo.'
+- at: 2026-10-04 20:25
+  from: devin
+  text: 'kk-present answered: unknown — needs a controlled replay test to distinguish false alarm from mic bug.
+    Next step when you have 5min near the iPad: play the suspect session audio near it with logging on, check whether
+    ada-ha-tony re-triggers. Leaving in review.'
 action:
   status: done

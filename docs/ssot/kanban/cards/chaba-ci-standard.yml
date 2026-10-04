@@ -3,7 +3,7 @@ title: Establish plan → structure → develop → audit → benchmark CI stand
 column: backlog
 note: Define the standard pipeline every card-sized piece of work flows through, and wire it into the repo so it
   runs hands-off.
-updated: 2026-10-04 20:19
+updated: 2026-10-04 20:32
 help: "Goal: one declared pipeline — PLAN (spec the card), STRUCTURE (worktree +\nfiles), DEVELOP (implement), AUDIT\
   \ (ssot-validate, lint, tests),\nBENCHMARK (measurable before/after) — that any card can opt into via\n`pipeline:\
   \ ci` and that kanban-dispatch runs hands-off.\n\nDeliverables:\n1. docs/ssot/ssot.ci.yml — stages, gates, required\
@@ -22,9 +22,11 @@ spec: "Design and implement the standard Chaba CI pipeline for card-sized work:\
   \ small card.\n"
 action:
   type: dispatch
-  status: queued
+  status: running
   button: ▶ Build the pipeline
   repo: chaba
+  task_id: 20261004-202031-design-and-implement-the-stand
+  runner: tony-dell
 requests:
 - id: demo-card
   ask: Which existing card should be the demo run — or let the agent pick a small one?
@@ -55,3 +57,14 @@ comms:
 - at: 2026-10-04 20:19
   from: tony
   text: queued for processing
+- at: 2026-10-04 20:20
+  from: chaba
+  text: dispatched 20261004-202031-design-and-implement-the-stand on chaba
+- at: 2026-10-04 20:31
+  from: devin
+  text: 'Read ssot.kanban/quality/reports + validators + board-api. Design: ssot.ci.yml standard, scripts/ci/card-pipeline.py
+    (file-mode under flock + api-mode via /comment,/request,new /pipeline), /pipeline endpoint on board-api, kanban-dispatch
+    rails hook, demo on tts-artifact-clean. Building now.'
+claim:
+  session: 20261004-202031-design-and-implement-the-stand
+  since: 2026-10-04 20:20

@@ -5,7 +5,7 @@ priority: low
 note: 'cam-noble-a-cam01 dossier title is "CCTV: Noble-A — CAM01" — placeholder DVR channel name. Rename the channel
   in the VMS (device tree, noble-a DVR channel config) to the real view name, then rerun cam-wall-cms.py to regenerate
   the page + wall label.'
-updated: 2026-10-04 19:59
+updated: 2026-10-04 20:24
 requests:
 - id: real-name
   ask: What does Noble-A CAM01 actually show? (the real name for the channel/label)
@@ -24,6 +24,14 @@ requests:
     label: I'll rename it myself in the VMS
   answer: 'dvr-web — noble-a DVR web config (xmeye CGI): rename the channel directly in DVR config; deterministic,
     no VNC click-path like the VMS UI route'
+- id: rename-path2
+  ask: dvr-web unreachable (cloud-P2P only). Fallback?
+  status: open
+  options:
+  - id: vms-ui
+    label: VMS UI xdotool on mn01 — write-back likely reaches DVR config
+  - id: manual
+    label: rename in VMS yourself
 comms:
 - ts: '2026-10-04T12:11:10'
   from: devin
@@ -46,3 +54,12 @@ comms:
   from: devin
   text: 'remaining: rename noble-a CAM01 -> ''4. Entrance Gate'' via DVR web config (xmeye CGI). Identity verified
     by vms-snap still frame.'
+- at: 2026-10-04 20:24
+  from: devin
+  text: 'dvr-web is not actually reachable: noble-a DVR only joins via XMEye cloud P2P (per xmeye-vms README + xmeye-dvr.env
+    holding cloud IDs, no LAN/route entry). No xmeye client lib installed; writing P2P NAT-traversal from scratch
+    is disproportionate for one rename. Viable paths: vms-ui xdotool on mn01 (vms-snap already proves the click
+    infra; xmeye CMS channel-rename typically writes back to DVR config via the P2P link), or manual in VMS.'
+- at: 2026-10-04 20:24
+  from: devin
+  text: 'raised request rename-path2: dvr-web unreachable (cloud-P2P only). Fallback?'
