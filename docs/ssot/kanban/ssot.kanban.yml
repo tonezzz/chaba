@@ -4,6 +4,7 @@ icon: layout
 version: 1  # v1: live JSON page + board-api write path + kanban-dispatch executor
 
 columns:
+  - {id: lab,     title: "🧪 Lab"}
   - {id: backlog, title: Backlog}
   - {id: doing,   title: Doing}
   - {id: review,  title: Review}
@@ -13,6 +14,18 @@ rules:
   doing_limit: 2            # per session — soft warning only in pilot
   checkout_exclusive: true  # one claim per checkout — the merge-collision rule
   terminal: [done]
+
+lab_rules:
+  # Chaba Lab — the continuous-improvement lane. A lab card is a hypothesis,
+  # not a task: it runs until its review_by date, then MUST either promote
+  # (becomes a real backlog card) or retire (done + learnings in note/comms).
+  # Nothing sits in lab forever — extend only with a new review_by + reason.
+  flow: "lab -> backlog (promote) | lab -> done (retire)"
+  review_by: "required; promotion decision is due on this date"
+  review_sweep: "lab-review-sweep card — weekly check that no lab card is
+                 past review_by without an outcome"
+  outcome_record: "retired labs keep the card in done — the learning is the
+                 artifact, record it in note/comms before closing"
 
 card_dir: docs/ssot/kanban/cards
 board_output: stacks/web/public/apps/board/index.html   # GENERATED — gitignored
@@ -36,6 +49,12 @@ card_schema:
   updated: "YYYY-MM-DD or YYYY-MM-DD HH:MM"
   blocked_by: "card id or free text"
   help: "runbook markdown — shown via the ? help button"
+  # optional — lab cards only (column: lab). Continuous-improvement contract:
+  lab:
+    hypothesis: "what we expect to learn or prove"
+    metric: "how we measure it — a number or observable state"
+    review_by: "YYYY-MM-DD — promote/retire decision due"
+    outcome: "promote | retire | extend — written when decided"
   # optional — hands-off execution (the Start button)
   spec: "full task text — what gets dispatched; be self-contained"
   action:

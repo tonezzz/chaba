@@ -1,0 +1,16 @@
+id: lab-review-sweep
+title: "Lab review sweep — weekly CI loop"
+column: backlog
+note: "The continuous-improvement keeper: weekly, flag every lab card past
+  lab.review_by with no lab.outcome — post a comms nudge + open a requests
+  item (promote / retire / extend) so nothing stales silently."
+spec: >-
+  Write scripts/board/lab-review-sweep.py: scan docs/ssot/kanban/cards/*.yml
+  for column==lab, flag lab.review_by < today and no lab.outcome. For each
+  flagged card POST /apps/board-api/comment (from=chaba, 'lab review due —
+  promote, retire, or extend?') and append a requests: entry with options
+  [promote → backlog, retire → done, extend 2w]. Wire to a weekly systemd
+  timer (chaba-lab-sweep.timer) on tony-dell. Do NOT auto-move cards — the
+  decision stays human/by-actor.
+action: {type: dispatch, status: idle, repo: chaba}
+updated: '2026-10-04'

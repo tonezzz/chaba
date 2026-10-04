@@ -1,6 +1,13 @@
 id: mddb-binlog-upstream
-title: Upstream binlog-retention janitor to tradik/mddb
+title: Upstream binlog-retention + replication fixes to tradik/mddb
 column: backlog
-note: "Patch lives only on mddb-fork (598c57d) — a stock image bump would lose
-  it. Open a PR against tradik/mddb after the idc01 deploy proves it."
-updated: '2026-10-03'
+note: "Patch lives only on mddb-fork — a stock image bump would lose it. Now
+  4 commits on binlog-retention: 598c57d janitor, bfb3b7c stream Rotate,
+  dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side
+  FailedPrecondition -> snapshot. All proven on idc01+tony-dell."
+help: "The last two are upstream-worthy bugs independent of retention:
+  (a) ScanFrom's too-old guard skipped fromLSN==0 so fresh followers replayed
+  the entire retained log instead of snapshotting; (b) the client's snapshot
+  fallback only checked the dial error while gRPC delivers rejections via
+  Recv — followers looped on 'stream recv error' forever."
+updated: '2026-10-04'

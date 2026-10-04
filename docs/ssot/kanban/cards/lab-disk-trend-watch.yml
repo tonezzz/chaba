@@ -1,0 +1,13 @@
+id: lab-disk-trend-watch
+title: "Lab: disk-usage trend watch"
+column: lab
+lab:
+  hypothesis: "Disk% sampled daily per host predicts fullness early enough to
+    prevent incidents — a trend beats a threshold"
+  metric: "predicts a crossing >7 days out on 2 of 3 incidents replayed from
+    history (binlog 11.4G, dell 99%, idc01 94% all had visible run-ups)"
+  review_by: '2026-11-01'
+note: "Born 2026-10-03/04: idc01 binlog grew ~1G/day for 11 days before the
+  OOM. Cheap version = append disk% to ssot.health samples, linear fit,
+  flag <30d-to-full. Promote = chaba health-loop card."
+updated: '2026-10-04'

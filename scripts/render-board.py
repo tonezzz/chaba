@@ -257,6 +257,13 @@ function cardHtml(c) {{
   const openReqs = (c.requests || []).filter(r => r.status !== 'answered').length;
   if (openReqs)
     badges += `<span class="text-xs bg-amber-800/80 text-amber-100 rounded px-1.5 py-0.5">needs you ×${{openReqs}}</span> `;
+  const lab = c.lab || {{}};
+  if (lab.review_by) {{
+    const overdue = !lab.outcome && lab.review_by < new Date().toISOString().slice(0,10);
+    badges += `<span class="text-xs ${{overdue ? 'bg-red-800/80 text-red-100' : 'bg-violet-800/70 text-violet-100'}} rounded px-1.5 py-0.5">🧪 review ${{esc(lab.review_by)}}${{overdue ? ' ⚠' : ''}}</span> `;
+  }}
+  if (lab.outcome)
+    badges += `<span class="text-xs bg-violet-900/60 text-violet-200 rounded px-1.5 py-0.5">🧪 ${{esc(lab.outcome)}}</span> `;
   const a = c.action || {{}};
   const st = a.status || 'idle';
   if (st === 'queued') badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span> ';
@@ -338,6 +345,7 @@ function showCard(id) {{
     (c.note ? `<div class="text-sm text-slate-300 mb-3">${{esc(c.note)}}</div>` : '') +
     `<div class="flex flex-wrap gap-1.5 mb-3">${{actBtns(c)}}${{c.help ? `<button id="cm-help" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1">? help</button>` : ''}}</div>` +
     `<div class="flex flex-wrap gap-1.5 mb-4">${{colBtns}}</div>` +
+    ((c.lab && (c.lab.hypothesis || c.lab.metric)) ? `<div class="mb-3 border-l-2 border-violet-600 pl-2"><div class="text-[10px] uppercase tracking-wide text-violet-400 mb-1">Lab</div>${{c.lab.hypothesis ? `<div class="text-xs text-slate-300">hypothesis: ${{esc(c.lab.hypothesis)}}</div>` : ''}}${{c.lab.metric ? `<div class="text-xs text-slate-400">metric: ${{esc(c.lab.metric)}}</div>` : ''}}</div>` : '') +
     (c.spec ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Spec</div><pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre></div>` : '') +
     ((c.requests || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Requests</div>${{reqList(c, true)}}</div>` : '') +
     ((c.comms || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Comms</div>${{commsList(c)}}</div>` : '') +
