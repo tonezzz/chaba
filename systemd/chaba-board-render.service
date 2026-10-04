@@ -1,0 +1,6 @@
+[Unit]
+Description=Re-render kanban board (index.html + cards.json) when cards change
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/render-board.py --if-changed

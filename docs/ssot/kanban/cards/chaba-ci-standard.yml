@@ -1,0 +1,51 @@
+id: chaba-ci-standard
+title: Establish plan → structure → develop → audit → benchmark CI standard
+column: backlog
+note: "Define the standard pipeline every card-sized piece of work flows
+  through, and wire it into the repo so it runs hands-off."
+updated: '2026-10-04'
+help: |
+  Goal: one declared pipeline — PLAN (spec the card), STRUCTURE (worktree +
+  files), DEVELOP (implement), AUDIT (ssot-validate, lint, tests),
+  BENCHMARK (measurable before/after) — that any card can opt into via
+  `pipeline: ci` and that kanban-dispatch runs hands-off.
+
+  Deliverables:
+  1. docs/ssot/ssot.ci.yml — stages, gates, required artifacts per stage
+  2. scripts/ci/ runner — executes a card through the stages, records
+     stage results back into the card's comms
+  3. card_schema addition: `pipeline: ci` opt-in field
+  4. audit + benchmark wiring: pre-commit / timer / report node in
+     ssot.reports.yml
+  5. a demonstration run on a real card
+spec: |
+  Design and implement the standard Chaba CI pipeline for card-sized work:
+  plan → structure → develop → audit → benchmark.
+
+  Read first: docs/ssot/kanban/ssot.kanban.yml (card standard),
+  scripts/ssot-validate-all.mjs, scripts/ssot-optimize.mjs, the pre-commit
+  hook, and docs/ssot/infrastructure/ssot.reports.yml (report nodes).
+
+  Deliverables:
+  1. docs/ssot/ssot.ci.yml declaring the five stages, the gate that ends
+     each stage, and the artifact each stage must produce.
+  2. scripts/ci/ — a runner that takes a card id, executes the stages it
+     can automate, and writes stage results into the card's comms +
+     a `pipeline:` status block. Gates it can't automate (e.g. Tony
+     approval) become requests: entries on the card.
+  3. Card schema addition: `pipeline: ci` opt-in field (documented in
+     ssot.kanban.yml card_schema).
+  4. Wire the audit stage to the existing validators; wire the benchmark
+     stage to produce a before/after metric recorded on the card.
+  5. Demonstrate on one real small card.
+action:
+  type: dispatch
+  status: idle
+  button: ▶ Build the pipeline
+  repo: chaba
+requests:
+  - id: demo-card
+    ask: "Which existing card should be the demo run — or let the agent pick a small one?"
+    status: open
+comms:
+  - {at: '2026-10-04 08:40', from: tony, text: "Seeded — start structuring/development/audit/benchmark per our standard CI."}

@@ -37,6 +37,12 @@ http://127.0.0.1:8080 {
 		header Cache-Control "no-cache, no-store, must-revalidate"
 	}
 
+	# Kanban board write API — card actions/respond/comment on tony-dell
+	handle /apps/board-api/* {
+		uri strip_prefix /apps/board-api
+		reverse_proxy 127.0.0.1:8787
+	}
+
 	handle /apps/gev {
 		redir /apps/gev/ 308
 	}

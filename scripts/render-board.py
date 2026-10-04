@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
-"""Render the kanban board: ssot.kanban.yml + cards/*.yml -> static HTML.
+"""Render the kanban board: ssot.kanban.yml + cards/*.yml -> cards.json + index.html.
 
 Layout follows the CMS page standard (ada-pi/pwa/cms/index.html):
 nav bar with EN/ไทย toggle + refresh, filterable card sidebar, main
 board pane, italic provenance footer. Document-first: edit a card file,
 re-run this script, commit.
+
+The page is dynamic: it fetches cards.json (served next to index.html)
+on load and every POLL_SECONDS so card edits appear without a reload.
+Buttons post to /apps/board-api/ (Caddy -> board-api.service on tony-dell),
+which writes back into the card YAML and re-runs this renderer.
+
+Usage: render-board.py [--if-changed]   (--if-changed skips when the
+card-dir manifest hash is unchanged — cheap for the 60s timer run.)
 """
+import hashlib
 import html
 import json
 import sys
@@ -16,15 +25,14 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "docs/ssot/kanban/ssot.kanban.yml"
+STATE = REPO / "docs/ssot/kanban/.render-state"
+POLL_SECONDS = 30
 
 I18N = {
     "board": ("Board", "บอร์ด"),
     "cards": ("Cards", "การ์ด"),
     "filter": ("Filter cards…", "ค้นหาการ์ด…"),
-    "empty": ("—", "—"),
     "wip": ("WIP limit exceeded", "งานค้างเกินลิมิต"),
-    "session": ("session", "เซสชัน"),
-    "blocked": ("blocked", "ติดขัด"),
 }
 
 
@@ -32,22 +40,38 @@ def esc(v) -> str:
     return html.escape(str(v))
 
 
-def main():
-    man = yaml.safe_load(MANIFEST.read_text())
-    card_dir = REPO / man["card_dir"]
-    out_path = REPO / man["board_output"]
+def dir_hash(card_dir: Path) -> str:
+    h = hashlib.sha256()
+    for p in sorted(card_dir.glob("*.yml")):
+        h.update(p.name.encode())
+        h.update(p.read_bytes())
+    return h.hexdigest()
 
+
+def load_cards(man: dict) -> list:
+    card_dir = REPO / man["card_dir"]
     cards = []
     for p in sorted(card_dir.glob("*.yml")):
         c = yaml.safe_load(p.read_text())
         c.setdefault("id", p.stem)
         cards.append(c)
+    return cards
 
+
+def main():
+    man = yaml.safe_load(MANIFEST.read_text())
+    card_dir = REPO / man["card_dir"]
+    out_path = REPO / man["board_output"]
+
+    if "--if-changed" in sys.argv:
+        h = dir_hash(card_dir)
+        if STATE.exists() and STATE.read_text().strip() == h and out_path.exists():
+            return 0
+        STATE.write_text(h + "\n")
+
+    cards = load_cards(man)
     cols = man["columns"]
     limit = man.get("rules", {}).get("doing_limit", 2)
-    counts = {c["id"]: 0 for c in cols}
-    for c in cards:
-        counts[c.get("column", "backlog")] = counts.get(c.get("column", "backlog"), 0) + 1
     doing_sessions = {}
     for c in cards:
         s = (c.get("claim") or {}).get("session")
@@ -55,77 +79,18 @@ def main():
             doing_sessions[s] = doing_sessions.get(s, 0) + 1
     over = [s for s, n in doing_sessions.items() if n > limit]
 
-    # ---- board columns (main pane) ----
-    col_html = ""
-    for col in cols:
-        body = ""
-        for c in cards:
-            if c.get("column") != col["id"]:
-                continue
-            claim = c.get("claim") or {}
-            badges = ""
-            if claim.get("session"):
-                badges += (
-                    '<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">'
-                    f'⚙ {esc(claim["session"])}</span> '
-                )
-            if c.get("blocked_by"):
-                badges += (
-                    '<span class="text-xs bg-red-900/60 text-red-200 rounded px-1.5 py-0.5">'
-                    f'blocked: {esc(c["blocked_by"])}</span>'
-                )
-            if c.get("help"):
-                badges += (
-                    f'<button class="help-btn text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded px-1.5 py-0.5" '
-                    f'data-help="{esc(c["help"])}" data-title="{esc(c.get("title", c["id"]))}">? help</button>'
-                )
-            note = esc(c.get("note", ""))
-            body += (
-                f'<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2" '
-                f'data-text="{esc((c.get("title","")+" "+c["id"]).lower())}">'
-                f'<div class="font-medium text-sm">{esc(c.get("title", c["id"]))}</div>'
-                f'<div class="mt-1.5 flex flex-wrap gap-1">{badges}</div>'
-                f'<div class="text-xs text-slate-400 mt-1.5">{note}</div>'
-                f'<div class="text-[10px] text-slate-500 mt-1">{esc(c["id"])} · {esc(c.get("updated", ""))}</div>'
-                "</div>"
-            )
-        if not body:
-            body = '<div class="text-slate-500 text-sm italic">—</div>'
-        col_html += (
-            '<div>'
-            f'<div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">'
-            f'<span class="col-title" data-en="{esc(col["title"])}" data-th="{esc(I18N.get(col["id"], (col["title"], col["title"]))[1] if col["id"] in I18N else col["title"])}">{esc(col["title"])}</span>'
-            f' · {counts.get(col["id"], 0)}</div>'
-            f'<div class="bg-slate-800/40 border border-slate-700/60 rounded-lg p-2 min-h-[80px]">{body}</div>'
-            "</div>"
-        )
-
-    # ---- sidebar card list ----
-    list_html = ""
-    for col in cols:
-        list_html += (
-            f'<div class="text-[10px] uppercase tracking-wide text-slate-500 mt-3 mb-1">{esc(col["title"])}</div>'
-        )
-        for c in cards:
-            if c.get("column") != col["id"]:
-                continue
-            list_html += (
-                f'<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-default text-slate-300 truncate" '
-                f'data-text="{esc((c.get("title","")+" "+c["id"]).lower())}">'
-                f'{esc(c.get("title", c["id"]))}</div>'
-            )
-        if not any(c.get("column") == col["id"] for c in cards):
-            list_html += '<div class="text-slate-600 text-xs px-2">—</div>'
-
-    warn = ""
-    if over:
-        warn = (
-            '<div class="bg-amber-900/50 border border-amber-600 rounded p-3 mb-4 text-amber-200 text-sm">'
-            f'<span class="i18n" data-en="WIP limit exceeded" data-th="{esc(I18N["wip"][1])}">WIP limit exceeded</span>'
-            f' (doing &gt; {limit}/session): {esc(", ".join(over))}</div>'
-        )
-
     ts = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
+
+    payload = {
+        "generated": ts,
+        "columns": cols,
+        "doing_limit": limit,
+        "over_limit": over,
+        "cards": cards,
+    }
+    json_path = out_path.with_name("cards.json")
+    json_path.write_text(json.dumps(payload, ensure_ascii=False))
+
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -153,12 +118,15 @@ def main():
     <a href="/apps/" class="text-sky-400 hover:text-sky-300">&larr; Apps</a>
     <span class="text-slate-500">|</span>
     <span class="font-semibold i18n" data-en="Board" data-th="บอร์ด">Board</span>
+    <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400" title="live"></span>
     <div class="ml-auto flex items-center gap-1">
       <button id="lang-en" class="text-xs px-2 py-1 rounded">EN</button>
       <button id="lang-th" class="text-xs px-2 py-1 rounded">ไทย</button>
     </div>
     <button id="btn-refresh" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">Refresh</button>
   </nav>
+
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm hidden z-50"></div>
 
   <div id="help-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 flex">
     <div class="bg-card border border-slate-700 rounded-xl p-5 w-11/12 max-w-lg">
@@ -178,55 +146,234 @@ def main():
       </div>
       <input id="card-filter" type="search" placeholder="Filter cards…"
              class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm mb-2">
-      <div id="card-list" class="space-y-1 text-sm hidden md:block">{list_html}</div>
+      <div id="card-list" class="space-y-1 text-sm hidden md:block"></div>
     </aside>
     <main class="flex-1 min-w-0 board-main">
-      {warn}
-      <div class="board-cols pb-4">{col_html}</div>
-      <p class="text-xs text-slate-500 italic">Generated by render-board.py at {esc(ts)} — cards in docs/ssot/kanban/cards/</p>
+      <div id="wip-warn"></div>
+      <div id="board-cols" class="board-cols pb-4"></div>
+      <p id="gen-note" class="text-xs text-slate-500 italic"></p>
     </main>
   </div>
 
 <script>
-  const filter = document.getElementById('card-filter');
-  filter.addEventListener('input', () => {{
-    const q = filter.value.toLowerCase();
-    document.querySelectorAll('.board-card,.side-card').forEach(el => {{
-      el.style.display = el.dataset.text.includes(q) ? '' : 'none';
-    }});
+const API = '/apps/board-api';
+const POLL_MS = {POLL_SECONDS} * 1000;
+let DATA = null;
+let lang = 'en';
+let filter_q = '';
+const openDetails = new Set();
+
+const esc = s => String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;');
+
+function toast(msg) {{
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2500);
+}}
+
+async function api(path, body) {{
+  const r = await fetch(API + path, {{
+    method: 'POST',
+    headers: {{'Content-Type': 'application/json'}},
+    body: JSON.stringify(body),
   }});
-  document.getElementById('btn-toggle-list').onclick = () =>
-    document.getElementById('card-list').classList.toggle('hidden');
-  document.getElementById('btn-refresh').onclick = () => location.reload();
-  function setLang(l) {{
-    document.querySelectorAll('.i18n,.col-title').forEach(el => {{
-      const v = el.dataset[l === 'th' ? 'th' : 'en'];
-      if (v) el.textContent = v;
-    }});
-    document.getElementById('lang-en').className = 'text-xs px-2 py-1 rounded' + (l === 'en' ? ' bg-accent text-white' : ' bg-slate-700');
-    document.getElementById('lang-th').className = 'text-xs px-2 py-1 rounded' + (l === 'th' ? ' bg-accent text-white' : ' bg-slate-700');
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}}
+
+function actionBtn(c) {{
+  const a = c.action || {{}};
+  const st = a.status || 'idle';
+  if (st === 'queued')
+    return '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span>';
+  if (st === 'running')
+    return `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ running ${{esc(a.task_id || '')}}</span>`;
+  const label = a.button || (st === 'failed' ? '↺ Retry' : (st === 'done' ? '✔ Close' : '▶ Start'));
+  const cmd = st === 'done' ? 'close' : 'queue';
+  const cls = st === 'done' ? 'bg-emerald-800 hover:bg-emerald-700' : 'bg-accent hover:opacity-90';
+  return `<button class="act-btn text-xs ${{cls}} text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="${{cmd}}">${{esc(label)}}</button>`;
+}}
+
+function requestsHtml(c) {{
+  const reqs = c.requests || [];
+  if (!reqs.length) return '';
+  let h = '<div class="mt-2 space-y-1">';
+  for (const r of reqs) {{
+    if (r.status === 'answered')
+      h += `<div class="text-xs text-slate-400">❓ ${{esc(r.ask)}} <span class="text-emerald-300">→ ${{esc(r.answer)}}</span></div>`;
+    else
+      h += `<div class="text-xs text-amber-300">❓ ${{esc(r.ask)}}</div>` +
+           `<div class="flex gap-1"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="answer…">` +
+           `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-1.5" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}">↩</button></div>`;
   }}
-  document.getElementById('lang-en').onclick = () => setLang('en');
-  document.getElementById('lang-th').onclick = () => setLang('th');
-  setLang('en');
-  // help modal
-  const modal = document.getElementById('help-modal');
-  const openHelp = (title, body) => {{
-    document.getElementById('help-title').textContent = title;
-    document.getElementById('help-body').textContent = body;
-    modal.classList.remove('hidden');
-  }};
+  return h + '</div>';
+}}
+
+function commsHtml(c) {{
+  const log = c.comms || [];
+  if (!log.length) return '';
+  const last = log.slice(-4);
+  let h = '<div class="mt-2 border-t border-slate-700/60 pt-1 space-y-0.5">';
+  for (const m of last)
+    h += `<div class="text-[10px] text-slate-400"><span class="text-slate-500">${{esc(m.at || '')}}</span> <b>${{esc(m.from)}}:</b> ${{esc(m.text)}}</div>`;
+  return h + '</div>';
+}}
+
+function cardHtml(c) {{
+  const claim = c.claim || {{}};
+  let badges = '';
+  if (claim.session)
+    badges += `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ ${{esc(claim.session)}}</span> `;
+  if (c.blocked_by)
+    badges += `<span class="text-xs bg-red-900/60 text-red-200 rounded px-1.5 py-0.5">blocked: ${{esc(c.blocked_by)}}</span> `;
+  if ((c.requests || []).some(r => r.status !== 'answered'))
+    badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">needs you</span> ';
+  if (c.help)
+    badges += `<button class="help-btn text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded px-1.5 py-0.5" data-help="${{esc(c.help)}}" data-title="${{esc(c.title || c.id)}}">? help</button> `;
+  badges += actionBtn(c);
+
+  let detail = '';
+  const hasDetail = c.spec || (c.requests || []).length || (c.comms || []).length;
+  if (hasDetail) {{
+    const open = openDetails.has(c.id) ? ' open' : '';
+    detail = `<details class="mt-1" data-id="${{esc(c.id)}}"${{open}}>` +
+      '<summary class="text-[10px] text-slate-500 cursor-pointer">details</summary>' +
+      (c.spec ? `<pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans mt-1 border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre>` : '') +
+      requestsHtml(c) + commsHtml(c) + '</details>';
+  }}
+
+  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
+    `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
+    `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` +
+    `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
+    detail +
+    `<div class="text-[10px] text-slate-500 mt-1">${{esc(c.id)}} · ${{esc(c.updated || '')}}</div>` +
+    '</div>';
+}}
+
+function render() {{
+  if (!DATA) return;
+  const counts = {{}};
+  for (const c of DATA.cards) counts[c.column || 'backlog'] = (counts[c.column || 'backlog'] || 0) + 1;
+
+  let cols = '';
+  for (const col of DATA.columns) {{
+    let body = '';
+    for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) body += cardHtml(c);
+    if (!body) body = '<div class="text-slate-500 text-sm italic">—</div>';
+    cols += `<div><div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">` +
+      `<span class="col-title" data-en="${{esc(col.title)}}" data-th="${{esc(col.title)}}">${{esc(col.title)}}</span> · ${{counts[col.id] || 0}}</div>` +
+      `<div class="bg-slate-800/40 border border-slate-700/60 rounded-lg p-2 min-h-[80px]">${{body}}</div></div>`;
+  }}
+  document.getElementById('board-cols').innerHTML = cols;
+
+  let list = '';
+  for (const col of DATA.columns) {{
+    list += `<div class="text-[10px] uppercase tracking-wide text-slate-500 mt-3 mb-1">${{esc(col.title)}}</div>`;
+    let any = false;
+    for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) {{
+      any = true;
+      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-default text-slate-300 truncate" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
+    }}
+    if (!any) list += '<div class="text-slate-600 text-xs px-2">—</div>';
+  }}
+  document.getElementById('card-list').innerHTML = list;
+
+  document.getElementById('wip-warn').innerHTML = (DATA.over_limit || []).length
+    ? `<div class="bg-amber-900/50 border border-amber-600 rounded p-3 mb-4 text-amber-200 text-sm">WIP limit exceeded (doing > ${{DATA.doing_limit}}/session): ${{esc(DATA.over_limit.join(', '))}}</div>`
+    : '';
+  document.getElementById('gen-note').textContent =
+    `Rendered ${{DATA.generated}} — cards in docs/ssot/kanban/cards/ · live (polls ${{POLL_SECONDS}}s)`;
+
+  wire();
+  setLang(lang);
+  applyFilter();
+}}
+
+function wire() {{
   document.querySelectorAll('.help-btn').forEach(b =>
     b.onclick = () => openHelp(b.dataset.title, b.dataset.help));
-  document.getElementById('help-close').onclick = () => modal.classList.add('hidden');
-  modal.onclick = e => {{ if (e.target === modal) modal.classList.add('hidden'); }};
+  document.querySelectorAll('details[data-id]').forEach(d =>
+    d.addEventListener('toggle', () => {{
+      if (d.open) openDetails.add(d.dataset.id); else openDetails.delete(d.dataset.id);
+    }}));
+  document.querySelectorAll('.act-btn').forEach(b =>
+    b.onclick = async () => {{
+      b.disabled = true;
+      try {{
+        const r = await api('/action', {{id: b.dataset.id, do: b.dataset.do}});
+        toast(r.message || 'ok');
+        setTimeout(load, 500);
+      }} catch (e) {{ toast('error: ' + e.message); b.disabled = false; }}
+    }});
+  document.querySelectorAll('.rq-btn').forEach(b =>
+    b.onclick = async () => {{
+      const inp = document.querySelector(`.rq-in[data-id="${{b.dataset.id}}"][data-rq="${{b.dataset.rq}}"]`);
+      if (!inp.value.trim()) return;
+      try {{
+        await api('/respond', {{id: b.dataset.id, request_id: b.dataset.rq, answer: inp.value.trim()}});
+        toast('answer saved');
+        setTimeout(load, 500);
+      }} catch (e) {{ toast('error: ' + e.message); }}
+    }});
+}}
+
+function applyFilter() {{
+  const q = filter_q.toLowerCase();
+  document.querySelectorAll('.board-card,.side-card').forEach(el => {{
+    el.style.display = el.dataset.text.includes(q) ? '' : 'none';
+  }});
+}}
+
+async function load() {{
+  try {{
+    const r = await fetch('cards.json?t=' + Date.now());
+    DATA = await r.json();
+    document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+    render();
+  }} catch (e) {{
+    document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+  }}
+}}
+
+// static wiring
+const filter = document.getElementById('card-filter');
+filter.addEventListener('input', () => {{ filter_q = filter.value; applyFilter(); }});
+document.getElementById('btn-toggle-list').onclick = () =>
+  document.getElementById('card-list').classList.toggle('hidden');
+document.getElementById('btn-refresh').onclick = () => load();
+function setLang(l) {{
+  lang = l;
+  document.querySelectorAll('.i18n,.col-title').forEach(el => {{
+    const v = el.dataset[l === 'th' ? 'th' : 'en'];
+    if (v) el.textContent = v;
+  }});
+  document.getElementById('lang-en').className = 'text-xs px-2 py-1 rounded' + (l === 'en' ? ' bg-accent text-white' : ' bg-slate-700');
+  document.getElementById('lang-th').className = 'text-xs px-2 py-1 rounded' + (l === 'th' ? ' bg-accent text-white' : ' bg-slate-700');
+}}
+document.getElementById('lang-en').onclick = () => setLang('en');
+document.getElementById('lang-th').onclick = () => setLang('th');
+const modal = document.getElementById('help-modal');
+const openHelp = (title, body) => {{
+  document.getElementById('help-title').textContent = title;
+  document.getElementById('help-body').textContent = body;
+  modal.classList.remove('hidden');
+}};
+document.getElementById('help-close').onclick = () => modal.classList.add('hidden');
+modal.onclick = e => {{ if (e.target === modal) modal.classList.add('hidden'); }};
+
+load();
+setInterval(load, POLL_MS);
 </script>
 </body>
 </html>
 """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page)
-    print(f"wrote {out_path} ({len(cards)} cards)")
+    print(f"wrote {out_path} + cards.json ({len(cards)} cards)")
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,11 @@
+[Unit]
+Description=Kanban board write API (card actions/respond/comment -> YAML + render)
+After=default.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-api.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

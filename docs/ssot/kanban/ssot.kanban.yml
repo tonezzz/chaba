@@ -1,7 +1,7 @@
 title: Kanban Board
-subtitle: Minimal pilot — cards in docs/ssot/kanban/cards/, rendered to /apps/board/
+subtitle: Live card system — cards in docs/ssot/kanban/cards/, board at /apps/board/
 icon: layout
-version: 0  # pilot — promote to standard after it proves useful
+version: 1  # v1: live JSON page + board-api write path + kanban-dispatch executor
 
 columns:
   - {id: backlog, title: Backlog}
@@ -16,7 +16,67 @@ rules:
 
 card_dir: docs/ssot/kanban/cards
 board_output: stacks/web/public/apps/board/index.html
+json_output: stacks/web/public/apps/board/cards.json
 renderer: scripts/render-board.py
+
+card_schema:
+  # required
+  id: "slug — matches the filename"
+  title: "short human title"
+  column: "backlog | doing | review | done"
+  # optional — status
+  claim: {session: "worker session/task id", since: "datetime"}
+  note: "current status line shown on the card"
+  updated: "YYYY-MM-DD or YYYY-MM-DD HH:MM"
+  blocked_by: "card id or free text"
+  help: "runbook markdown — shown via the ? help button"
+  # optional — hands-off execution (the Start button)
+  spec: "full task text — what gets dispatched; be self-contained"
+  action:
+    type: "dispatch | manual"        # dispatch => devin-dispatch start
+    status: "idle | queued | running | done | failed"
+    button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
+    repo: "chaba | ada-pi | sunsynk-card — devin-dispatch whitelist"
+    task_id: "devin-task-* id — written by kanban-dispatch"
+    result: "outcome text — written when the run finishes"
+  # optional — needs-me items for Tony (button to answer on the card)
+  requests:
+    - {id: "short-slug", ask: "question", status: "open | answered", answer: null}
+  # optional — append-only log; every actor writes here (board shows last 4)
+  comms:
+    - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}
+
+write_path:
+  api: "board-api.service on tony-dell 127.0.0.1:8787 (scripts/board/board-api.py);
+        Caddy proxies /apps/board-api/* (prefix stripped). Tailnet-gated."
+  endpoints:
+    "POST /action {id, do: queue|close|hold|retry}":
+      "queue: action.status->queued (idle/failed/done cards; column resets to
+      backlog from done/review). close: column->done. hold: ->backlog."
+    "POST /respond {id, request_id, answer}": "answers a requests[] entry"
+    "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony"
+    "GET /cards": "live cards.json payload — agents read board state here"
+
+execution:
+  dispatcher: "kanban-dispatch.timer (2min) -> scripts/board/kanban-dispatch.py —
+               scans action.status==queued, devin-dispatch start <repo> <spec+rails>,
+               writes task_id/claim; polls running tasks, on finish -> status done,
+               column review. Tony reviews and presses Close."
+  task_rails: "dispatched agents are told to post progress via POST {api}/comment
+               and to add requests: entries instead of blocking on Tony"
+  render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
+           via the API; the API renders synchronously on every write"
+  persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/
+               + apps/board/ in chaba-tony-dell, commit, rebase, push"
+
+update_path:
+  # why the board was stale before v1:
+  #   cards were edited in the `chaba` checkout but the web container bind-mounts
+  #   chaba-tony-dell/stacks/web — nothing re-rendered or synced. Now:
+  #   1. every API write re-renders synchronously in the SERVED checkout
+  #   2. the 60s render timer catches out-of-band edits
+  #   3. the page polls cards.json every 30s — no manual refresh needed
+  #   4. kanban-commit pushes the state back to git for the other checkouts
 
 page_standard:
   layout: cms-full
@@ -28,5 +88,7 @@ page_standard:
   # must keep this shell — it is the declared standard for board pages.
 
 note: >
-  Pilot. Focus-inbox stays the alert queue; this board tracks CHOSEN
-  work. First card is the kanban system itself.
+  Focus-inbox stays the alert queue; this board tracks CHOSEN work.
+  Cards are the shared comms channel: Devin, Ada, Chaba automation and
+  Tony all read/write the same fields — status in `action`, questions in
+  `requests`, progress in `comms`.

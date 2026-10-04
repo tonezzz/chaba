@@ -1,0 +1,6 @@
+[Unit]
+Description=Drain queued kanban card actions through devin-dispatch
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/kanban-dispatch.py
