@@ -1,12 +1,39 @@
 id: ada-memory-inbox-triage
 title: Ada memory inbox triage — round 2 (~194 unprocessed files)
 column: backlog
-note: "Inbox regrew to ~194 files after the Oct-03 sweep; classify/archive/supersede per memory-bank conventions."
-updated: '2026-10-04'
-spec: |
-  Triage the ada-memory inbox on idc01 (~194 unprocessed files as of
+note: Inbox regrew to ~194 files after the Oct-03 sweep; classify/archive/supersede per memory-bank conventions.
+updated: 2026-10-04 12:16
+spec: 'Triage the ada-memory inbox on idc01 (~194 unprocessed files as of
+
   2026-10-04). Conventions: docs/ssot/apps/ssot.apps.ada-memory*.yml and
+
   the round-1 method (classify into keep/supersede/archive, update the
+
   relevant bank docs, then move processed files). Do not delete content —
+
   supersede links keep provenance. Report the bucket counts in comms.
-action: {type: dispatch, status: idle, repo: chaba}
+
+  '
+action:
+  type: dispatch
+  status: running
+  repo: chaba
+  task_id: 20261004-121552-triage-the-ada-memory-inbox-on
+  runner: tony-dell
+comms:
+- at: 2026-10-04 12:15
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 12:15
+  from: devin
+  text: Queued for dispatch 12:2x — actual inbox count is 655 files (regrew past the ~194 in the note). Watch comms
+    for the dispatched session id.
+- at: 2026-10-04 12:16
+  from: chaba
+  text: dispatched 20261004-121552-triage-the-ada-memory-inbox-on on chaba
+- at: 2026-10-04 12:16
+  from: devin
+  text: 'Starting: reading ada-memory SSOT conventions and round-1 method docs.'
+claim:
+  session: 20261004-121552-triage-the-ada-memory-inbox-on
+  since: 2026-10-04 12:16

@@ -479,7 +479,8 @@ setInterval(load, POLL_MS);
         "cards": cards,
     }
     json_path = out_path.with_name("cards.json")
-    json_path.write_text(json.dumps(payload, ensure_ascii=False))
+    json_path.write_text(json.dumps(payload, ensure_ascii=False,
+                                    default=str))  # yaml scalars -> date/datetime
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page)

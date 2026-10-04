@@ -1,8 +1,32 @@
 id: mha-log-noise
 title: michael-ha log noise - tuya dup IDs + solis_modbus group skips
 column: backlog
-note: >-
-  Seen during edge work 2026-10-03: repeated "Platform tuya does not generate
-  unique IDs" (switch.wifi, binary_sensor.*, light.*) and solis_modbus
-  "Skipping sensor group" warnings every boot. Cosmetic but hides real
-  errors. Likely tuya unique_id cleanup + solis_modbus feature-map fix.
+note: 'ROOT CAUSE FOUND 2026-10-04: duplicate tuya config entries (nakvac@gmail.com
+  x2), one stuck in setup 6.5d. solis_modbus group-skip is correct-but-noisy (missing
+  PARALLEL feature). See comms + requests.'
+requests:
+- id: tuya-dup-entry
+  ask: Two tuya config entries for nakvac@gmail.com on michael-ha — remove the stuck
+    one (01KQ9026MRNHWFSZ, blocking startup 6.5d) or the newer one (01M19NJ76J0020RJ)?
+    Removing the wrong entry can orphan entities; if unsure I can inspect per-entry
+    device counts first.
+  status: open
+  options:
+  - id: remove-stuck
+    label: remove 01KQ9026MRNHWFSZ (the 560923s-stuck entry)
+  - id: remove-newer
+    label: remove 01M19NJ76J0020RJ (the newer duplicate)
+  - id: inspect-first
+    label: inspect device/entity ownership per entry first, then decide
+comms:
+- ts: '2026-10-04T12:13:34'
+  from: devin
+  text: 'Diagnosed via system_log: ~73 ''Platform tuya does not generate unique IDs''
+    — root cause is TWO loaded tuya config entries for nakvac@gmail.com (01KQ9026MRNHWFSZ
+    + 01M19NJ76J0020RJ); every device double-registers. Entry 01KQ9026MRNHWFSZ is
+    also stuck in ''Waiting for integrations'' 560923s (~6.5 days). Fix = remove one
+    entry. solis_modbus ''Skipping sensor group 34243'' x3/boot = inverter lacks PARALLEL
+    feature — correct behavior, noise-only; fix is a log-level patch in the custom
+    component (needs michael-ha config access — no SSH key currently). ALSO FOUND:
+    media_player (140 hits) + linkplay (42) are louder than tuya — worth a follow-up
+    card.'
