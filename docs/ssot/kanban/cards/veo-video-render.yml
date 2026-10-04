@@ -1,0 +1,18 @@
+id: veo-video-render
+title: ada render — veo video gen -> LINE/TG/screens
+column: backlog
+program: media-gen
+metric: 'prompt (+ optional ref frame) -> short clip plays on a cast screen AND arrives as video in TG/LINE'
+verify: 'scenario vid_render_basic passes; tg chat prompt -> video arrives <3min'
+note: >-
+  Veo (predictLongRunning on generativelanguage) for short clips. Same
+  render-tool group: ada_render_video(prompt, ref_url?, secs, aspect).
+  Differences from image: async op (poll until done — the long-poll shape
+  is why it stays a separate tool), output is mp4 -> /frame or CMS media
+  store -> cast_to_screen(action=play) for screens + relays for chats.
+  Model name to confirm at impl time (veo-3.x-generate-preview lineage);
+  cost/quotas higher — add a per-call spend log + owner_only policy.
+help: 'gen: longRunningPredict on generativelanguage.googleapis.com;
+  send: same /frame URL + tg sendVideo/line videoMessage (both relays
+  handle images today — video message types may need a small extension)'
+updated: '2026-10-04'

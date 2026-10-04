@@ -1,22 +1,33 @@
 id: nano-banana-image
-title: ada image render — nano-banana gen -> LINE/Telegram photo
+title: ada render — nano-banana image gen/edit -> LINE/Telegram photo
 column: backlog
-metric: 'ask Ada for an image -> generated PNG lands as a photo in Tony LINE + Telegram chat'
-verify: 'prompt in tg chat -> sendPhoto arrives <30s; same in LINE chat -> imageMessage arrives'
+program: media-gen
+metric: 'prompt (+ optional ref image) -> generated PNG arrives as photo in Tony LINE + TG chats'
+verify: 'scenario img_render_* passes; ask Ada in tg chat -> sendPhoto <30s; LINE chat -> imageMessage'
 note: >-
-  Minimal path — the plumbing already exists, this is just the generator +
-  URL hop. Steps: (1) new tool ada_render_image(prompt) — calls Gemini
-  image model (gemini-2.5-flash-image, "nano banana") via the same REST
-  generateContent path vcast_tts uses (no google-genai client, thread-safe);
-  (2) save PNG to the vcast /frame store -> display-reachable URL (same as
-  TTS wavs); (3) the relays already do the rest — tg_relay.send_photo
-  fetches a tailnet URL -> sendPhoto; line_relay turns tool cast_url/image_url
-  results into LINE imageMessages (needs public https — /frame is already
-  proxied public on idc02/tony-ha). Keep it one-shot: single prompt, no
-  multi-turn image editing in v0 (nano-banana supports edit-by-conversation
-  but defer).
+  Thin layer — plumbing already exists, this is generator + URL hop.
+  Scope: (1) new tool group `render` — ada_render_image(prompt, ref_url?,
+  aspect?) calls gemini-2.5-flash-image via REST generateContent (same
+  thread-safe path as _vcast_tts — no google-genai client); ref_url
+  enables nano-banana edit/compose (image + instruction -> new image);
+  (2) PNG -> vcast /frame store -> display-reachable URL; (3) relays
+  already finish: tg_relay.send_photo(url) -> sendPhoto, line_relay
+  turns cast_url/image_url into LINE imageMessage (public https only).
+  (4) PROMPT-BUILDER FLOW: Ada interviews — subject/style/mood/ratio in
+  one or two questions max, then confirms the assembled prompt before
+  rendering. Params hidden from user — Ada picks aspect (1:1/16:9/9:16),
+  style tags, and ref handling; user only sees the plain-words preview.
+  Persona guidance belongs in DEFAULT_ADA_INSTRUCTIONS/tools desc, not a
+  separate tool. Deferred: multi-turn conversational editing, veo video.
 help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model;
   tg send: tg_relay.send_photo (fetch url -> sendPhoto); LINE: line_relay._images_from
-  (cast_url/image_url -> imageMessage, public https only); model:
-  gemini-2.5-flash-image'
+  (cast_url/image_url -> imageMessage, public https only); tool group:
+  ada_render_* — new `render` domain for tools.d/manifests'
 updated: '2026-10-04'
+comms:
+- at: '2026-10-04 19:34'
+  from: devin
+  text: 'Filed minimal (prompt -> PNG -> LINE/TG). Expanded same-day per
+    Tony: ref-image input (nano-banana edit/compose), Ada as prompt
+    interviewer (params hidden — aspect/style chosen by Ada), test
+    scenarios img_render_*, video lane split to veo-video-render.'
