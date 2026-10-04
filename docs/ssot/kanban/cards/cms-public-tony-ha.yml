@@ -13,4 +13,9 @@ note: >-
   (chaba L3 system report web app). Public URL
   https://tony-ha.surf-thailand.com/apps/system-report/ — gated by the
   existing CF Access app on this hostname, no extra auth inside.
+  Dedicated host landed same day: monitor.surf-thailand.com (CNAME -> edge,
+  proxied) — site block serves only /apps/system-report*, else 404, root
+  redirs to the report. CF Access app `monitor` + `tony` OTP policy gate
+  it (interim basicauth was removed once CF intercept verified — CF is
+  sole gate, origin not directly reachable).
 updated: '2026-10-04'
