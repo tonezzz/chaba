@@ -1,0 +1,10 @@
+[Unit]
+Description=Regenerate ada-cms-pages services-* pages (index + 6 host leafs) from live inventory
+OnFailure=chaba-services-regen-fail.service
+
+[Service]
+Type=oneshot
+# Wrapper fails the unit on non-zero exit AND on any "PUBLISH FAIL" line, so
+# partial publishes still trigger OnFailure even before the script's own
+# exit-code fix lands on master.
+ExecStart=/bin/bash -c 'out=$(/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/host-services-cms.py 2>&1); rc=$?; echo "$out"; [ $rc -ne 0 ] && exit $rc; ! grep -q "PUBLISH FAIL" <<<"$out"'

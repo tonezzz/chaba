@@ -1,0 +1,75 @@
+title: chaba-services-regen — weekly timer for host services CMS pages
+subtitle: >-
+  systemd user timer on tony-dell regenerates services-by-host + 6 leaf pages;
+  failures post a comms entry on the cms-services-weekly-regen kanban card
+icon: timer
+id: 2026-10-04-chaba-services-regen
+status: done
+owner: devin-dispatch
+project: chaba
+card: cms-services-weekly-regen
+started: "2026-10-04"
+completed: "2026-10-04"
+
+context:
+  user_request: >
+    Schedule scripts/ada/host-services-cms.py weekly on tony-dell so the 7
+    ada-cms-pages (services-by-host index + services-{tony-dell,tony-omen,
+    idc01,idc02,mn01,michael-ha}) stay fresh without a manual click. Failures
+    must be visible: comms entry on the cms-services-* kanban card or a
+    focus-inbox alert on non-zero exit. Verify disk% drift reflects real
+    state after two runs.
+
+deliverables:
+  - systemd/chaba-services-regen.service — oneshot; bash wrapper fails the
+    unit on non-zero exit OR any "PUBLISH FAIL" line (covers the pre-merge
+    master script which always exits 0); OnFailure= hooks the fail unit
+  - systemd/chaba-services-regen.timer — OnCalendar=Sun *-*-* 05:30:00,
+    Persistent=true (slot picked after worktree-sync 01:00 / chaba-audit
+    02:00 / chaba-kb-audit 04:00)
+  - systemd/chaba-services-regen-fail.service — self-contained (no repo
+    dependency, works pre-merge); POSTs /comment to board-api
+    127.0.0.1:8787 card cms-services-weekly-regen; on curl failure writes a
+    focus-inbox yml into ~/CascadeProjects/chaba-tony-dell/docs/ssot/
+    focus-inbox/ (same dir mcp-health-snapshot alerts use)
+  - scripts/ada/host-services-cms.py — now exits 1 when any page publish
+    fails (previously PUBLISH FAIL printed but exit code stayed 0)
+  - docs/ssot/infrastructure/ssot.automation.yml — services_regen entry
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml — chaba-services-regen.timer
+    in tony-dell expected_services
+
+install_state:
+  units_installed: ~/.config/systemd/user/chaba-services-regen{,-fail}.service + .timer
+  timer: enabled — next elapse Sun 2026-10-11 05:30 +07
+  runs_from: /home/tony/CascadeProjects/chaba (master checkout — repo paths in
+    the units are %h/CascadeProjects/chaba; reports/audit-hosts dumps live there)
+
+verification:
+  run1: >
+    systemctl --user start chaba-services-regen.service — Result=success,
+    13.9s, all 7 pages HTTP 200.
+  run2: >
+    second start — Result=success, 13.4s; index meta.updated advanced
+    07:29:47Z -> 07:30:34Z; load figures drifted (dell 4.69 -> 5.33)
+    proving live collection, not stale reuse.
+  disk_drift_check: >
+    Page disk% equals real df at run time: tony-dell 87% (97G/118G) — also
+    flagged on the watch list (>=85%) and with ⚠ on the leaf status line —
+    tony-omen 38%, idc01 62%, idc02 20%, mn01 20%. michael-ha unreachable
+    from the collector by design (static last-known-layout page).
+  fail_paths:
+    - comment path — real POST to board-api succeeded (drill comment on card)
+    - inbox fallback — BOARD_API pointed at a dead port wrote valid focus-inbox
+      YAML to a temp dir
+    - wrapper rc — PUBLISH FAIL in output exits 1, crash exits non-zero,
+      clean run exits 0
+
+notes:
+  - The service intentionally runs the master checkout, so the exit-code
+    patch to host-services-cms.py only reaches the timer path after merge;
+    the unit's grep wrapper already covers PUBLISH FAIL until then.
+  - kanban comms go to card cms-services-weekly-regen — the only
+    cms-services-* card; it stays the comms anchor for this timer even
+    after the card is closed.
+  - Committed on the dispatch worktree branch; merge to master makes the
+    repo copy canonical (installed units are already identical).

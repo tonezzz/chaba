@@ -1,0 +1,9 @@
+[Unit]
+Description=Report a failed chaba-services-regen run (kanban comms; focus-inbox fallback)
+
+[Service]
+Type=oneshot
+Environment=BOARD_API=http://127.0.0.1:8787
+Environment=CARD=cms-services-weekly-regen
+Environment=INBOX=/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox
+ExecStart=/bin/bash -c 'msg="chaba-services-regen.service FAILED on $(hostname) — journalctl --user -u chaba-services-regen.service"; if curl -sf -m 10 -X POST "$BOARD_API/comment" -H "Content-Type: application/json" -d "{\"id\":\"$CARD\",\"from\":\"chaba\",\"text\":\"$msg\"}" >/dev/null; then echo "comms posted to $CARD"; exit 0; fi; f="$INBOX/$(date -Is | tr ":+" "--")-chaba-services-regen-failed.yml"; mkdir -p "$INBOX"; { echo "title: Focus Inbox Item"; echo "subtitle: chaba-services-regen run failed"; echo "focus:"; echo "  label: chaba-services-regen failed"; echo "  text: \"$msg — investigate before the next Sunday run\""; echo "  status: draft"; echo "  priority: high"; echo "  tags: [services, cms, automation]"; } > "$f"; echo "board-api unreachable — wrote $f"'

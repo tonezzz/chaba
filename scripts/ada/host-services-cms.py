@@ -386,6 +386,7 @@ def main():
         slug, title, content = index_page(datas, now_07)
         pages[INDEX_SLUG] = (title, content)
 
+    failed = 0
     for slug, (title, content) in pages.items():
         extra = {"report_role": ["index" if slug == INDEX_SLUG else "leaf"]}
         extra["children"] = LEAF_SLUGS if slug == INDEX_SLUG else []
@@ -399,8 +400,13 @@ def main():
                 print(f"{slug}: HTTP {code} ({len(content)} chars)")
             except Exception as e:
                 print(f"{slug}: PUBLISH FAIL {e}", file=sys.stderr)
+                failed += 1
     print(f"done in {time.monotonic()-started:.1f}s", file=sys.stderr)
+    if failed:
+        print(f"{failed} page(s) failed to publish", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

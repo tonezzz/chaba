@@ -207,6 +207,27 @@ automation:
     status: active — installed on tony-omen (verified 2026-09-29, next
       run 04:30; pushes the dump to origin master nightly)
 
+  services_regen:
+    ssot: docs/ssot/apps/ssot.apps.cms-reports.yml
+    script: scripts/ada/host-services-cms.py
+    schedule: "30 5 * * 0"
+    frequency: weekly Sunday 05:30 (after the audit/kb-audit block)
+    host: tony-dell (reaches every host except michael-ha; unreachable
+      hosts render a stale-data note by design)
+    timer: systemd/chaba-services-regen.timer
+    service: systemd/chaba-services-regen.service
+    on_failure: >-
+      chaba-services-regen-fail.service (OnFailure=) — POSTs a comms entry on
+      the cms-services-weekly-regen kanban card via board-api 127.0.0.1:8787;
+      writes a docs/ssot/focus-inbox alert into the chaba-tony-dell served
+      checkout when the board API is unreachable
+    reports:
+      - ada-cms-pages services-by-host (index)
+      - ada-cms-pages services-{tony-dell,tony-omen,idc01,idc02,mn01,michael-ha}
+    status: active — installed on tony-dell 2026-10-04 (kanban card
+      cms-services-weekly-regen); service ExecStart also fails the unit on
+      any PUBLISH FAIL line so partial publishes alert too
+
 monitoring:
   gpu:
     metrics:
