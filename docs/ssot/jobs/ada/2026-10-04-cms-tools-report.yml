@@ -1,0 +1,71 @@
+# SSOT Job: CMS tools report — dispatch discovery + hand-off
+# Dispatch worktree dispatch-wt-20261004-073325-create-a-report-in-the-cms-sum.
+# Task: "Create a report in the CMS summarizing all tools, including
+# descriptions for each tool." Session ended during discovery (tool call
+# rejected); resumed and operator asked to finish & close. Parked here
+# with full context so a follow-up session can execute quickly.
+
+title: CMS tools report — summarize all tools with descriptions
+subtitle: Discovery done; page not yet generated — scope ambiguity + live MDDB write needed
+icon: news
+status: parked   # discovery complete; generation + publish outstanding
+project: chaba
+owner: devin-dispatch
+started: "2026-10-04"
+
+context: |
+  The "CMS" is the MDDB collection `ada-cms-pages` (MDDB_BASE_URL default
+  http://100.74.146.0:11023/v1 on idc01). Generated report pages must
+  follow docs/ssot/apps/ssot.apps.cms-reports.yml: H1, อัปเดตล่าสุด line,
+  paired <!-- X:auto --> managed blocks, italic provenance footer, and
+  doc meta fields generated_by / sources / report_role / parent /
+  children. cms-audit.py enforces R1-R6 (baseline ratchet in CI via
+  backups/ada-memory/ada-cms-pages.json).
+
+scope_ambiguity: |
+  "all tools" is ambiguous — pick one (or do one page per surface with an
+  index). Candidates, cheapest first:
+    a) Ada's tool suite — ada-pi backend tool declarations (the set Ada
+       can call; most operationally useful to Tony/Ada). Source: ada-pi
+       repo backend/tools + ada-ha-* instances.
+    b) Devin MCP tools — the 18 configured MCP servers' tool lists
+       (mcp_list_tools per server). Large and volatile.
+    c) Repo automation scripts — scripts/ada/*.py et al. are generators,
+       not "tools" in the usual sense.
+  Recommendation: (a) Ada tools, leaf role, single page `ada-tools` —
+  matches how Tony says "tools" in voice context.
+
+generator_template: |
+  Closest existing generator to copy: scripts/ada/host-services-cms.py —
+  it collects data, renders the standard page layout, and PUT/POSTs docs
+  to MDDB /v1 ada-cms-pages (see MDDB/COLLECTION constants at top of
+  file). A tools-report generator (e.g. scripts/ada/tools-report.py)
+  should:
+    1. Enumerate tools with name + one-line description from the chosen
+       source (for Ada tools: ada-pi's tool registry/declarations).
+    2. Render: H1 "# Ada Tools", อัปเดตล่าสุด line, one managed block
+       <!-- tools:auto --> ... <!-- /tools:auto --> with a ## section per
+       group (or a flat list of * **name** — description), provenance
+       footer "*Generated {ts} by `tools-report.py` in {d}s · sources:
+       ada-pi tool declarations*".
+    3. Stamp meta: generated_by, sources, report_role=leaf, updated,
+       last_verified. Optionally add an ada-cms-automation registry doc
+       (kind=command generator) so the page gets a Regenerate button.
+
+publish_path:
+  mechanism: HTTP write to MDDB /v1, collection ada-cms-pages (same as host-services-cms.py, flood-news-update.py)
+  caution: >
+    Live MDDB write — in devin-dispatch mode calls outside the worktree
+    may be rejected and a rejection ends the session, so the follow-up
+    should run in normal mode or with explicit approval.
+
+verify:
+  - "python3 scripts/ada/cms-audit.py --match tools   # live: page passes R1-R6"
+  - "MDDB ada-cms-pages/<slug> meta shows generated_by, sources, report_role=leaf"
+  - "python3 scripts/ada/cms-audit.py --file backups/ada-memory/ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json   # ratchet still rc=0"
+
+followups:
+  - "Decide scope: Ada tools (recommended) vs Devin MCP tools vs both (index + per-surface leaves)"
+  - "Write scripts/ada/tools-report.py following host-services-cms.py pattern; dry-run first"
+  - "Publish to ada-cms-pages, add ada-cms-automation registry doc for Regenerate"
+  - "Refresh backups/ada-memory/ada-cms-pages.json after publish so CI snapshot lane sees the new page"
