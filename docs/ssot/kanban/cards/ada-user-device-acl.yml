@@ -1,0 +1,28 @@
+id: ada-user-device-acl
+title: 'Ada user ACL — per-user device set, guest default, admin-grant flow'
+column: backlog
+priority: medium
+metric: >-
+  guest/unknown user can control only the pre-defined device set; a denied
+  device requires an admin grant to become controllable
+verify: >-
+  scenario acl_guest_denied (guest asks to control an unlisted device ->
+  refused + admin notified) + acl_admin_grant (admin grants device ->
+  same user can then control it)
+note: >-
+  Extend the `access` posture (already: per-identity memory banks +
+  domain allowlist e.g. person.kk = light/switch/input_boolean/script/
+  media_player) from domain-level to device-level ACL. Requirements:
+  (1) every identity has an ACL; (2) guests/unknown get a limited
+  pre-defined set only; (3) a user can ask admin to add a device —
+  admin grant adds it to that user's ACL, then control is allowed.
+  Enforcement point: ada-pi tool gating (control_entity + other actuating
+  tools check caller ACL before executing); SSOT file = the access
+  posture in chaba memory. Open questions: ACL granularity (entity_id vs
+  device vs area), grant channel (voice confirm vs card/admin tool),
+  audit log of grants/denials.
+help: >-
+  related: person.kk domain list in `## access` memory section; speaker-id
+  ties ACL to voice identity — a denied-device request under Guest means
+  speaker-id correctness gates this whole feature
+updated: '2026-10-04'
