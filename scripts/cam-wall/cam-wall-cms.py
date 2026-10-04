@@ -38,7 +38,7 @@ ZONE_INFO = {
                       "washing machines, stairway room, mini mart, front "
                       "roads, pool, tennis, playground.",
     "vms-noble-a": "Every channel on the Noble-A DVR — road in, guard "
-                   "view, walkway, road corner, CAM01.",
+                   "view, walkway, road corner, entrance gate.",
     "tony-house": "Tony's house cams — C100, C201, the coffee-corner "
                   "ip-cam (go2rtc, local).",
     "rama9": "Rama 9 demo traffic wall — Petchaburi Rd and Sukhumvit "
@@ -57,7 +57,7 @@ ZONE_INFO_TH = {
                       "ห้องบันได มินิมาร์ท ถนนหน้าสองฝั่ง สระว่ายน้ำ "
                       "สนามเทนนิส และสนามเด็กเล่น",
     "vms-noble-a": "ทุกช่องกล้องบน DVR โนเบิล-เอ — ถนนขาเข้า มุมมองยาม "
-                   "ทางเดินเข้า หัวมุมถนน และ CAM01",
+                   "ทางเดินเข้า หัวมุมถนน และประตูทางเข้า",
     "tony-house": "กล้องบ้านโทนี่ — C100, C201 และกล้องมุมกาแฟ "
                   "(go2rtc เครือข่ายภายใน)",
     "rama9": "กำแพงจราจรตัวอย่างพระราม 9 — กล้องยูทูบถนนเพชรบุรีและ"

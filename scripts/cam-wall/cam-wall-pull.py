@@ -44,7 +44,7 @@ DATA = Path(os.environ.get(
 # Display-name overrides keyed by slug(label) — keep the tuple label
 # ASCII so jpg/CMS keys stay stable; LABELS is what walls and dossiers
 # actually render.
-LABELS = {"cam01": "ทางคนเดินออก/รถเข้า"}
+LABELS = {"entrance-gate": "ทางคนเดินออก/รถเข้า"}
 
 # label -> ("vms", channel) | ("go2rtc", stream) | ("jpeg"|"youtube"|"hls", url)
 # interval = refresh cadence while the zone is enabled; warm = keep thumbs
@@ -86,7 +86,7 @@ ZONES: dict[str, dict] = {
             ("Guard View", "vms", "2. Guard View"),
             ("Walkway In", "vms", "3. Walkway In"),
             ("Road Corner", "vms", "5. Road Corner"),
-            ("CAM01", "vms", "CAM01"),
+            ("Entrance Gate", "vms", "4. Entrance Gate"),
         ],
     },
     "tony-house": {
