@@ -1,0 +1,77 @@
+title: board-api hardening — respond attribution/validation + /request endpoint
+subtitle: >-
+  /respond gets actor attribution + answer validation, /comment rejects empty
+  text, new /request endpoint lets agents (incl. Ada) raise card requests
+  without racing the write flock
+icon: shield
+id: 2026-10-04-board-api-hardening
+status: done
+owner: devin-dispatch
+project: chaba
+card: board-api-hardening
+branch: dispatch/20261004-180001-harden-scripts-board-board-api
+started: "2026-10-04"
+completed: "2026-10-04"
+
+context:
+  user_request: >
+    Harden scripts/board/board-api.py (single-file BaseHTTPRequestHandler,
+    no new deps). Probes on ada-board-write showed /respond logged every
+    actor as tony, accepted empty answers, and silently overwrote answered
+    requests; a probe closed mha-log-noise/tuya-dup-entry with empty answers
+    and had to be repaired by hand. /comment accepted empty text, and there
+    was no API path to RAISE a request — dispatch rails told sessions to
+    edit card YAML directly, racing the server's /tmp/board-api.lock flock.
+
+deliverables:
+  - >-
+    scripts/board/board-api.py — /respond {id, request_id, answer, from?,
+    reopen?}: 'from' validated against ACTORS (default tony — board UI sends
+    none); 400 'answer required' on empty/whitespace answer; 400 'already
+    answered' on re-answer unless reopen:true, which logs 're-answered
+    <rid>: ...'
+  - >-
+    scripts/board/board-api.py — /comment: 400 'text required' on
+    empty/whitespace text
+  - >-
+    scripts/board/board-api.py — POST /request {id, ask, request_id?,
+    options?, from?}: appends {id: request_id or slugged ask, ask, status:
+    open, options?} to requests[]; 400 'ask required' / 'duplicate request
+    id <rid>'; comms entry 'raised request <rid>: <ask[:120]>' under the
+    actor
+  - >-
+    scripts/board/board-api.py — slugify() adds a 6-char sha1 suffix so
+    non-ascii asks and near-identical slugs can't collide into false
+    duplicates; docstring notes all card writes go through the API (direct
+    YAML edits must hold /tmp/board-api.lock); --selftest flag runs a
+    pure-function smoke test
+  - >-
+    scripts/board/kanban-dispatch.py — TASK_RAILS now tell dispatched
+    sessions to raise questions via POST {api}/request instead of editing
+    the card YAML (the flock race the spec called out)
+  - >-
+    docs/ssot/kanban/ssot.kanban.yml — write_path.endpoints + task_rails
+    updated to the new contract
+
+verification:
+  selftest: "python3 scripts/board/board-api.py --selftest -> 'selftest ok'"
+  live_curl: >-
+    ran patched server on BOARD_API_PORT=8878 against worktree
+    kanban-selftest card: empty answer 400, missing ask 400, dup
+    request_id 400, bad/missing actor 400, empty comment 400;
+    /request from=ada created open request + 'raised request st1' under
+    ada; respond from=ada logged 'answered st1' under ada; re-answer 400;
+    reopen:true logged 're-answered st1' under tony; auto-slug id
+    'auto-generated-id-please-1c0a43' created. Card file restored after.
+  backward_compat: >-
+    board UI (render-board.py) posts {id, request_id, answer} with no
+    'from' — defaults to tony; /comment still requires 'from'; all prior
+    400 paths unchanged.
+
+deploy:
+  status: pending-approval
+  note: >-
+    Out of scope for this dispatch. On approval: merge branch to master,
+    pull chaba-tony-dell live checkout, systemctl --user restart
+    board-api.service. kanban-dispatch.py rails take effect on the next
+    dispatch cycle (runs from chaba-tony-dell checkout).
