@@ -67,6 +67,56 @@ def _fmt_ts(iso: str | None) -> str:
         return str(iso)[:16]
 
 
+def _fmt_age(iso: str | None) -> str:
+    if not iso:
+        return "-"
+    try:
+        dt = datetime.datetime.fromisoformat(str(iso))
+        secs = max(0, int((datetime.datetime.now(
+            datetime.timezone.utc) - dt).total_seconds()))
+    except ValueError:
+        return "-"
+    if secs < 3600:
+        return f"{secs // 60}m"
+    if secs < 86400:
+        return f"{secs // 3600}h{(secs % 3600) // 60}m"
+    return f"{secs // 86400}d{(secs % 86400) // 3600}h"
+
+
+AUDIT_HOSTS_DIR = REPO / "reports" / "audit-hosts"
+
+
+def _host_loads() -> list[dict]:
+    """Latest per-host snapshot from audit-hosts artifacts — the load/lag view."""
+    latest: dict[str, Path] = {}
+    for p in sorted(AUDIT_HOSTS_DIR.glob("*-????????-??????.yml")):
+        host = p.stem.rsplit("-", 2)[0]
+        latest[host] = p
+    rows = []
+    for host, path in sorted(latest.items()):
+        try:
+            d = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            continue
+        load = d.get("load") or {}
+        mem = d.get("memory") or {}
+        disk = d.get("disk") or {}
+        oom = d.get("oom_kills_24h") or {}
+        rows.append({
+            "host": host,
+            "unreachable": bool(d.get("unreachable")),
+            "load_1m": load.get("1m"), "load_5m": load.get("5m"),
+            "load_15m": load.get("15m"),
+            "mem_used": mem.get("used"), "mem_avail": mem.get("available"),
+            "disk_pct": disk.get("percent"),
+            "oom_24h": (oom.get("user", 0) or 0) + (oom.get("system", 0) or 0),
+            "uptime": d.get("uptime"),
+            "snapshot_ts": d.get("timestamp"),
+            "snapshot_age": _fmt_age(d.get("timestamp")),
+        })
+    return rows
+
+
 def _load_timeline_tail(path: Path, n: int) -> list[dict]:
     if not path.is_file():
         return []
@@ -109,13 +159,14 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
     def node_row(s: dict) -> str:
         rendered.add(s["id"])
         bits = [f"| `{s['id']}` | {s['layer']} | {_BADGE.get(s['status'], s['status'])}",
-                f"| {_fmt_ts(s['last_run'])} | {s['summary'] or s['purpose'] or ''} |"]
+                f"| {_fmt_ts(s['last_run'])} | {_fmt_age(s['last_run'])}",
+                f"| {s['summary'] or s['purpose'] or ''} |"]
         return " ".join(bits)
 
     def table(rows: list[str]) -> list[str]:
         return [
-            "| Node | Layer | Status | Last run | Summary |",
-            "|------|-------|--------|----------|---------|",
+            "| Node | Layer | Status | Last run | Age | Summary |",
+            "|------|-------|--------|----------|-----|---------|",
             *rows,
             "",
         ]
@@ -124,6 +175,32 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
     l3 = [s for s in states if s["layer"] == "L3-overview"]
     if l3:
         lines += ["## Overview", ""] + table([node_row(s) for s in l3])
+
+    # Host loads — from the latest audit-hosts snapshots
+    loads = _host_loads()
+    if loads:
+        lines += [
+            "## Host loads",
+            "",
+            "From the latest `reports/audit-hosts/<host>-*.yml` snapshots. "
+            "*Age* = how stale that snapshot is.",
+            "",
+            "| Host | Load 1/5/15m | Mem used/avail | Disk % | OOM 24h | "
+            "Snapshot age |",
+            "|------|---------------|----------------|--------|---------|"
+            "---------------|",
+        ]
+        for r in loads:
+            if r["unreachable"]:
+                lines.append(f"| `{r['host']}` | - | - | - | - | "
+                             f"unreachable ({r['snapshot_age']}) |")
+            else:
+                lines.append(
+                    f"| `{r['host']}` | {r['load_1m']} / {r['load_5m']} / "
+                    f"{r['load_15m']} | {r['mem_used']} / {r['mem_avail']} | "
+                    f"{r['disk_pct']}% | {r['oom_24h']} | "
+                    f"{r['snapshot_age']} |")
+        lines.append("")
 
     # L2 domains with their children
     lines += ["## Domains", ""]
@@ -288,6 +365,7 @@ def main() -> int:
         "node_count": len(states),
         "status_counts": counts,
         "nodes": states,
+        "host_loads": _host_loads(),
     }, sort_keys=False, allow_unicode=True), encoding="utf-8")
 
     # Publish to the web app (same pattern as audits/run.mjs -> apps/audit/data).
