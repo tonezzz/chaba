@@ -1,6 +1,6 @@
 id: speaker-echo-leak
 title: Speaker-ID — verify KK voice hits are real voice, not TTS echo
-column: review
+column: done
 priority: high
 note: 'Session e564b39502 audio replay shows a genuine KK=0.84 match at t=0s — either KK spoke near the iPad, or
   Ada''s own TTS / another device playing KK''s voice leaked into the mic path. If no human KK was present, this
@@ -11,7 +11,7 @@ help: "1. Reproduce: start a voice session with no KK present, speak as Tony. 2.
   \ identified — check first-chunk hits. 3. If false KK hits recur: check capture pipeline for TTS output bleeding\n\
   \   back (see docs/ssot/ssot.learning.speaker-id-tts-echo.2026-10-03.yml).\n4. Fix path would be AEC/echo suppression\
   \ or ignoring speaker-id during\n   Ada's own speech window."
-updated: 2026-10-04 18:16
+updated: 2026-10-04 19:43
 requests:
 - id: kk-present
   ask: Session e564b39502 has a genuine KK=0.84 match at t=0s — was KK actually near the iPad speaking then, or
@@ -38,3 +38,8 @@ comms:
   from: devin
   text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
     flip any that are wrong
+- at: 2026-10-04 19:43
+  from: tony
+  text: closed by Tony
+action:
+  status: done

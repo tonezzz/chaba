@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-04 19:11
+updated: 2026-10-04 19:48
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -17,3 +17,17 @@ comms:
     on tony-dell this does not finish inside MDDB_VERIFY_TIMEOUT=6h; (3) timeout aborts the replace, follower still
     too old → requests ANOTHER snapshot; (4) meanwhile leader keepLSN stays pinned at binlog_oldest_lsn (janitor
     logs: nothing trimmable), so binlog grows ~500MB/cycle — breach wa'
+- at: 2026-10-04 19:34
+  from: devin
+  text: 'Refinement: the 6h verify is not purely an algorithm problem — tony-dell disk is at ~97% util with load
+    ~11 (parallel agent sessions running find/grep over ~ + Devin desktop + HA all competing). O(db) page walks
+    that should take tens of minutes degrade to hours under this contention. So upstream fix needs BOTH: (a) bounded/skippable
+    verify for stream snapshots, (b) the open path itself is O(db) NoFreelistSync — consider persisting freelist
+    in snapshots so followers open fast. Local lesson: agent'
+- at: 2026-10-04 19:48
+  from: devin
+  text: 'Deeper diagnosis via SIGQUIT goroutine dump: the doom loop is worse than verify — EVERY open of a snapshot
+    db runs DB.freepages→recursivelyCheckBucket→checkInvariantProperties (full O(pages) invariant check), because
+    leader writes snapshots with NoFreelistSync so no freelist is persisted. That is the same cost as tx.Check()
+    — explains both the 6h verify timeouts AND why follower restarts each take ~1h+ under disk contention. Follower-side
+    fix applied: MDDB_FREELIST_SYNC=true on tony-dell mddb.se'

@@ -1,34 +1,34 @@
 id: logs-auto-coverage
 title: Log coverage gaps
-column: review
+column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 'Expected log sources vs what actually ships:
 
 
-  - `idc01` — ok; shipped 132/132 matched; only `sys` journal scanned (other side
-  unreadable?)
+  - `idc01` — ok; shipped 132/132 matched; only `sys` journal scanned (other side unreadable?)
 
-  - `idc02` — ok; shipped 500/2781 matched; only `sys` journal scanned (other side
-  unreadable?)
+  - `idc02` — ok; shipped 500/2781 matched; only `sys` journal scanned (other side unreadable?)
 
   - `mn01` — ok; shipped 500/2196 matched
 
   - `tony-dell` — ok; shipped 500/2438 matched
 
   - `tony-omen` — ok; shipped 500/4164 matched'
-help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
-  usually mean `journalctl --user` isn't permitted for the ssh login.
-updated: '2026-10-04'
+help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps usually mean `journalctl --user`
+  isn't permitted for the ssh login.
+updated: 2026-10-04 19:43
 comms:
 - at: 2026-10-04 14:16
   from: devin
-  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen
-    is intentional digest sizing; only-sys-journal on idc01/idc02 = other journal
-    namespaces unreadable by the shipper user. Recommend: leave as accepted limitation,
-    or bump cap if digests feel thin.'
+  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen is intentional digest
+    sizing; only-sys-journal on idc01/idc02 = other journal namespaces unreadable by the shipper user. Recommend:
+    leave as accepted limitation, or bump cap if digests feel thin.'
 - at: 2026-10-04 17:58
+  from: tony
+  text: closed by Tony
+- at: 2026-10-04 19:43
   from: tony
   text: closed by Tony
 action:
