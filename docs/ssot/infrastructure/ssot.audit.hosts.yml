@@ -159,6 +159,14 @@ hosts:
         critical: false
         note: Every 15s; chvt 7 when lxqt-seat is up but another VT is in front
           (greeter/getty). Never steals a real user graphical session
+      - name: clip-sync-omen.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Polls tony-omen clipboard (text + image/*) every 1s into :1 —
+          Barrier 2.4.0 relays text only; reverse of omen's clip-sync-dell.
+          Runs ~/.local/bin/clip-sync tony-omen
       - name: secrets-console.service
         type: service
         scope: user
@@ -717,6 +725,13 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
+      - name: clip-sync-dell.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Polls tony-dell clipboard (text + image/*) every 1s into :0 —
+          Barrier 2.4.0 relays text only. Runs ~/.local/bin/clip-sync tony-dell
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design

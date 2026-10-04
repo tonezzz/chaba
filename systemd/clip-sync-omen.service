@@ -1,0 +1,15 @@
+[Unit]
+Description=Sync clipboard from tony-omen to tony-dell (text + images)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment="DISPLAY=:1" "XAUTHORITY=/home/tony/.Xauthority"
+Environment="REMOTE_DISPLAY=:0" "REMOTE_XAUTHORITY=/home/tony/.Xauthority"
+ExecStartPre=/bin/sh -c "for i in $(seq 60); do [ -S /tmp/.X11-unix/X1 ] && exit 0; sleep 2; done; exit 1"
+ExecStart=/home/tony/.local/bin/clip-sync tony-omen
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
