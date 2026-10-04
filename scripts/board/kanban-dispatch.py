@@ -61,8 +61,11 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
 - When done, post a final comms entry summarizing outcome + where the
   deliverables are. The dispatcher will mark the action done and move
   the card to review.
-- If you need Tony to answer something, edit the card file and add a
-  requests: entry (id, ask, status: open) instead of blocking.
+- If you need Tony to answer something, raise a board request — do NOT
+  edit the card YAML directly (that races the API's flock):
+    curl -s -X POST {api}/request \\
+      -H 'Content-Type: application/json' \\
+      -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
 """.strip()
 
 

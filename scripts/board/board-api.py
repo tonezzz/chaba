@@ -10,15 +10,23 @@ immediately. Git persistence is handled by kanban-commit.timer.
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
   GET  /cards                        -> cards.json payload
-  POST /action   {id, do}            do: queue|close|hold|retry
-  POST /respond  {id, request_id, answer}
+  POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move
+  POST /respond  {id, request_id, answer, from?, reopen?}
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
+  POST /request  {id, ask, request_id?, options?, from?}
 
 Writes are serialized with an flock so concurrent clicks don't race.
+ALL card writes must go through this API — any direct card-YAML edit
+outside it (scripts, dispatch rails, hand fixes) must hold LOCK
+(/tmp/board-api.lock) first or it races the server.
+
+Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import fcntl
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
@@ -65,6 +73,21 @@ def comms_add(card: dict, frm: str, text: str) -> None:
     card.setdefault("comms", []).append(
         {"at": now(), "from": frm, "text": text[:500]}
     )
+
+
+def actor(body: dict, default: str = "tony") -> str:
+    frm = str(body.get("from") or default).strip()
+    if frm not in ACTORS:
+        raise ValueError(f"from must be one of {sorted(ACTORS)}")
+    return frm
+
+
+def slugify(text: str) -> str:
+    """Request id from free-text ask; the hash keeps non-ascii asks and
+    near-identical slugs from colliding into false duplicates."""
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40].strip("-")
+    h = hashlib.sha1(text.encode()).hexdigest()[:6]
+    return f"{slug}-{h}" if slug else f"req-{h}"
 
 
 def do_action(card: dict, verb: str, frm: str) -> str:
@@ -129,14 +152,40 @@ def do_claim(card: dict, body: dict) -> str:
     return "claimed"
 
 
-def do_respond(card: dict, rid: str, answer: str, frm: str) -> str:
+def do_respond(card: dict, body: dict, frm: str) -> str:
+    rid = str(body.get("request_id") or "").strip()
+    answer = str(body.get("answer") or "").strip()
+    if not answer:
+        raise ValueError("answer required")
     for r in card.get("requests") or []:
         if r.get("id") == rid:
+            verb = "answered"
+            if r.get("status") == "answered":
+                if not body.get("reopen"):
+                    raise ValueError("already answered")
+                verb = "re-answered"
             r["status"] = "answered"
             r["answer"] = answer[:500]
-            comms_add(card, frm, f"answered {rid}: {answer[:200]}")
+            comms_add(card, frm, f"{verb} {rid}: {answer[:200]}")
             return "answer saved"
     raise ValueError(f"no request {rid}")
+
+
+def do_request(card: dict, body: dict) -> str:
+    ask = str(body.get("ask") or "").strip()
+    if not ask:
+        raise ValueError("ask required")
+    frm = actor(body)
+    rid = str(body.get("request_id") or "").strip() or slugify(ask)
+    reqs = card.setdefault("requests", [])
+    if any(r.get("id") == rid for r in reqs):
+        raise ValueError(f"duplicate request id {rid}")
+    req = {"id": rid, "ask": ask, "status": "open"}
+    if body.get("options"):
+        req["options"] = body["options"]
+    reqs.append(req)
+    comms_add(card, frm, f"raised request {rid}: {ask[:120]}")
+    return f"request {rid} raised"
 
 
 def render() -> None:
@@ -194,23 +243,29 @@ class H(BaseHTTPRequestHandler):
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/respond":
+                    frm = actor(body)
                     p = card_path(body.get("id", ""))
                     card = load(p)
-                    msg = do_respond(
-                        card, body.get("request_id", ""),
-                        body.get("answer", "").strip(), "tony")
+                    msg = do_respond(card, body, frm)
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/comment":
-                    frm = body.get("from", "")
-                    if frm not in ACTORS:
-                        raise ValueError(f"from must be one of {sorted(ACTORS)}")
+                    frm = actor(body, default="")
+                    text = str(body.get("text") or "").strip()
+                    if not text:
+                        raise ValueError("text required")
                     p = card_path(body.get("id", ""))
                     card = load(p)
-                    comms_add(card, frm, body.get("text", "").strip())
+                    comms_add(card, frm, text)
                     card["updated"] = now()
                     save(p, card)
                     msg = "comment added"
+                elif path == "/request":
+                    p = card_path(body.get("id", ""))
+                    card = load(p)
+                    msg = do_request(card, body)
+                    card["updated"] = now()
+                    save(p, card)
                 else:
                     return self._send(404, {"error": "not found"})
             except ValueError as e:
@@ -221,6 +276,53 @@ class H(BaseHTTPRequestHandler):
         self._send(200, {"ok": True, "message": msg})
 
 
+def _selftest() -> None:
+    """Pure-function smoke test — no HTTP, no card files.
+    Run: python3 scripts/board/board-api.py --selftest"""
+    def rejects(fn, frag):
+        try:
+            fn()
+        except ValueError as e:
+            assert frag in str(e), f"expected {frag!r} in {e!r}"
+            return
+        raise AssertionError(f"expected ValueError {frag!r}")
+
+    card = {"requests": [{"id": "r1", "ask": "pick one", "status": "open"}]}
+    rejects(lambda: do_respond(card, {"request_id": "r1", "answer": " "}, "tony"),
+            "answer required")
+    rejects(lambda: do_respond(card, {"request_id": "nope", "answer": "x"}, "tony"),
+            "no request")
+    do_respond(card, {"request_id": "r1", "answer": "yes"}, "ada")
+    assert card["requests"][0]["status"] == "answered"
+    assert card["comms"][-1]["from"] == "ada"
+    rejects(lambda: do_respond(card, {"request_id": "r1", "answer": "b"}, "tony"),
+            "already answered")
+    do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
+    assert card["requests"][0]["answer"] == "b"
+    assert "re-answered r1" in card["comms"][-1]["text"]
+
+    rejects(lambda: do_request(card, {"ask": "  "}), "ask required")
+    rejects(lambda: do_request(card, {"ask": "q", "from": "nobody"}),
+            "from must be one of")
+    do_request(card, {"ask": "ship it?", "request_id": "rq2",
+                      "options": ["y", "n"], "from": "ada"})
+    req = card["requests"][-1]
+    assert req == {"id": "rq2", "ask": "ship it?", "status": "open",
+                   "options": ["y", "n"]}
+    assert card["comms"][-1]["from"] == "ada"
+    assert "raised request rq2" in card["comms"][-1]["text"]
+    rejects(lambda: do_request(card, {"ask": "again", "request_id": "rq2"}),
+            "duplicate request id")
+    do_request(card, {"ask": "auto id please"})
+    assert card["requests"][-1]["id"].startswith("auto-id-please-")
+    do_request(card, {"ask": "ตอบหน่อย"})  # non-ascii ask still gets an id
+    assert card["requests"][-1]["id"].startswith("req-")
+    print("selftest ok")
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        _selftest()
+        sys.exit(0)
     CARD_DIR.mkdir(parents=True, exist_ok=True)
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

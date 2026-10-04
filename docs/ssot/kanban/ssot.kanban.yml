@@ -87,8 +87,17 @@ write_path:
     "POST /action {id, do: queue|close|hold|retry}":
       "queue: action.status->queued (idle/failed/done cards; column resets to
       backlog from done/review). close: column->done. hold: ->backlog."
-    "POST /respond {id, request_id, answer}": "answers a requests[] entry"
-    "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony"
+    "POST /respond {id, request_id, answer, from?, reopen?}":
+      "answers a requests[] entry; from ∈ devin|ada|chaba|tony (default tony —
+      the board UI sends none). 400 'answer required' on empty answer; 400
+      'already answered' on re-answer unless reopen:true (logs 're-answered')."
+    "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
+      400 'text required' on empty/whitespace text"
+    "POST /request {id, ask, request_id?, options?, from?}":
+      "raises a requests[] entry {id, ask, status: open, options?}; id is
+      request_id or a slugged ask. 400 on missing ask or duplicate id. The
+      ONLY safe way for agents/Ada to add a request — direct card-YAML
+      edits race the write flock (must hold /tmp/board-api.lock)."
     "POST /action {id, do: claim, host}": "atomic first-wins claim under the
       write flock — for multi-host dispatchers. Sets action.runner."
     "GET /cards": "live cards.json payload — agents read board state here"
@@ -113,7 +122,8 @@ execution:
                (index.html, cards.json, *-assessment.yml) are the recurring
                conflict source — prefer regenerating over hand-merging them"
   task_rails: "dispatched agents are told to post progress via POST {api}/comment
-               and to add requests: entries instead of blocking on Tony"
+               and to raise questions via POST {api}/request instead of
+               blocking on Tony (never direct card-YAML edits — flock race)"
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
            via the API; the API renders synchronously on every write"
   persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/
