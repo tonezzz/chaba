@@ -1,0 +1,38 @@
+title: Focus Inbox Item
+subtitle: One new focus, task, or idea to triage
+icon: inbox
+
+focus:
+  label: CMS tools report
+  text: >
+    Create a report page in the CMS (MDDB ada-cms-pages) summarizing all
+    tools with a description for each. Discovery done in
+    docs/ssot/jobs/ada/2026-10-04-cms-tools-report.yml: follow the
+    cms-reports page standard, copy the host-services-cms.py generator
+    pattern, recommended scope = Ada's tool suite as a leaf page.
+    Needs a live MDDB write — do not run in restricted dispatch mode.
+  priority: medium
+  status: draft
+  tags: [cms, ada, reports, mddb]
+  missing_info:
+    - Which "tools" — Ada's tool suite, Devin's MCP tools, or both?
+  safe_to_parallel:
+    value: true
+    reason: Read-mostly collection + one new CMS doc; conflicts only if another session edits ada-cms-pages simultaneously.
+  subtasks:
+    - label: Confirm tool scope (Ada tools recommended)
+      status: not_started
+    - label: Write scripts/ada/tools-report.py (host-services-cms.py pattern)
+      status: not_started
+    - label: Publish page + ada-cms-automation registry doc, run cms-audit
+      status: not_started
+
+ownership:
+  owner: tony
+  session: dispatch-wt-20261004-073325-create-a-report-in-the-cms-sum
+  locked: false
+  lock_reason: ""
+
+source:
+  session: dispatch-wt-20261004-073325-create-a-report-in-the-cms-sum
+  date: 2026-10-04

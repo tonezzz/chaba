@@ -84,10 +84,46 @@ def _fmt_age(iso: str | None) -> str:
 
 
 AUDIT_HOSTS_DIR = REPO / "reports" / "audit-hosts"
+HOST_LOADS_YML = REPO / "reports" / "host-loads" / "host-loads.yml"
+HOST_LOADS_MAX_AGE_H = 4
+
+
+def _mb_human(mb) -> str | None:
+    if mb is None:
+        return None
+    return f"{mb / 1024:.1f}Gi" if mb >= 1024 else f"{int(mb)}Mi"
 
 
 def _host_loads() -> list[dict]:
-    """Latest per-host snapshot from audit-hosts artifacts — the load/lag view."""
+    """Per-host load view. Prefers the 5-min host-loads sampler output;
+    falls back to the 24h audit-hosts snapshots when the sampler is dark."""
+    try:
+        live = yaml.safe_load(HOST_LOADS_YML.read_text(encoding="utf-8")) or {}
+        gen = live.get("generated_at")
+        age_ok = _fmt_age(gen) != "-" and (
+            datetime.datetime.now(datetime.timezone.utc)
+            - datetime.datetime.fromisoformat(str(gen))
+        ).total_seconds() < HOST_LOADS_MAX_AGE_H * 3600
+    except Exception:
+        live, gen, age_ok = {}, None, False
+    if age_ok:
+        rows = []
+        for h in live.get("hosts") or []:
+            load = h.get("load") or {}
+            rows.append({
+                "host": h.get("host"),
+                "unreachable": bool(h.get("unreachable")),
+                "load_1m": load.get("1m"), "load_5m": load.get("5m"),
+                "load_15m": load.get("15m"),
+                "mem_used": _mb_human(h.get("mem_used_mb")),
+                "mem_avail": _mb_human(h.get("mem_avail_mb")),
+                "disk_pct": h.get("disk_pct"),
+                "oom_24h": None,
+                "snapshot_ts": h.get("ts"),
+                "snapshot_age": _fmt_age(h.get("ts")),
+            })
+        return sorted(rows, key=lambda r: r["host"] or "")
+
     latest: dict[str, Path] = {}
     for p in sorted(AUDIT_HOSTS_DIR.glob("*-????????-??????.yml")):
         host = p.stem.rsplit("-", 2)[0]
@@ -182,8 +218,10 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
         lines += [
             "## Host loads",
             "",
-            "From the latest `reports/audit-hosts/<host>-*.yml` snapshots. "
-            "*Age* = how stale that snapshot is.",
+            "From `reports/host-loads/host-loads.yml` (5-min sampler via "
+            "tony-dell-monitor) when fresh, else the 24h "
+            "`reports/audit-hosts/<host>-*.yml` snapshots. "
+            "*Age* = how stale each host's data is.",
             "",
             "| Host | Load 1/5/15m | Mem used/avail | Disk % | OOM 24h | "
             "Snapshot age |",
@@ -197,8 +235,9 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
             else:
                 lines.append(
                     f"| `{r['host']}` | {r['load_1m']} / {r['load_5m']} / "
-                    f"{r['load_15m']} | {r['mem_used']} / {r['mem_avail']} | "
-                    f"{r['disk_pct']}% | {r['oom_24h']} | "
+                    f"{r['load_15m']} | {r['mem_used'] or '-'} / "
+                    f"{r['mem_avail'] or '-'} | {r['disk_pct']}% | "
+                    f"{r['oom_24h'] if r['oom_24h'] is not None else '-'} | "
                     f"{r['snapshot_age']} |")
         lines.append("")
 

@@ -228,3 +228,11 @@ if [[ -n "$CHABA_REPO" ]]; then
         --ref "$LOG_FILE" || \
         printf '%s\n' "{\"timestamp\":\"$TS\",\"meta-emit\":\"failed\"}" >&2
 fi
+
+# ── host load sampler ──────────────────────────────────────────────────────
+# 5-min fleet load/mem/disk probe -> reports/host-loads/ (system report's
+# Host loads section). Best-effort — never fails the monitor.
+if [[ -n "$CHABA_REPO" && -f "$CHABA_REPO/scripts/host-loads.py" ]]; then
+    python3 "$CHABA_REPO/scripts/host-loads.py" \
+        >>"$LOG_DIR/host-loads.log" 2>&1 || true
+fi

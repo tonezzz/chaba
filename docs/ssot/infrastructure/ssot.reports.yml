@@ -182,6 +182,19 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
     children: []
+  - id: host-loads
+    layer: L1-producer
+    purpose: Lightweight fleet load/mem/disk sampler (one SSH probe per host,
+      piggybacked on tony-dell-monitor's ~5-min cycle); feeds the Host loads
+      section of the system report — fresher than audit-hosts snapshots
+    generator: scripts/host-loads.py via tony-dell-monitor.service
+    cadence: 30m
+    output: reports/host-loads
+    artifact_pattern: "host-loads.yml"
+    meta: reports/host-loads/meta.host-loads.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
   - id: fleet
     layer: L2-domain
     purpose: Cross-host rollup — delta trend + resource min/max over window
@@ -196,6 +209,7 @@ nodes:
       - audit-hosts/idc01
       - audit-hosts/macbook
       - health-monitor
+      - host-loads
   # --- Audit domain ---
   - id: audit-suite
     layer: L2-domain
