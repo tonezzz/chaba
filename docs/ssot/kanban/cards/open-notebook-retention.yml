@@ -6,7 +6,7 @@ note: 'Running 5d on idc01 (UI :8444, API :8445, 465MB+surreal), only consumer =
   quota / retire + reclaim RAM. Benchmark doc: docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md
 
   '
-updated: 2026-10-04 20:21
+updated: 2026-10-04 21:26
 requests:
 - id: disposition
   ask: 'Open Notebook on idc01: 565MB RAM, ~0 API requests/24h, 87MB data, nightly backup + monthly restore-check
@@ -47,5 +47,11 @@ comms:
 - at: 2026-10-04 20:21
   from: tony
   text: closed by Tony
+- at: 2026-10-04 21:26
+  from: devin
+  text: 'RETIRED on idc01 (approved by Tony): units were already dead — stack fully torn down. Archived to ~/open-notebook-retire-archive/
+    (24M: volumes tarball 62M->24M, quadlets+unit files+scripts, secrets env) + 9 nightly surql dumps kept in ~/open-notebook-backups/
+    (69M). Removed: 3 quadlets, backup+restore-check units, podman volumes+network, scripts. RAM already free (units
+    were inactive); disk reclaimed ~62M live volumes. Restore path: volumes tarball + latest surql dump.'
 action:
   status: done

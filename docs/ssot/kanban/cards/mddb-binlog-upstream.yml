@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-04 21:18
+updated: 2026-10-04 21:34
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -59,6 +59,11 @@ comms:
   from: devin
   text: 'starting: exploring mddb replication/binlog code to implement the 5 snapshot-loop fixes (freelist persist,
     FREELIST_SYNC default for ro, fast verify, progress logging, healthy flag)'
+- at: 2026-10-04 21:34
+  from: devin
+  text: 'progress: all 5 fixes implemented + tested, 6 new commits on dispatch branch (2bf9b3e freelist-in-snapshot,
+    60ac37c follower freelist-sync default, 497b982 open-only snapshot verify, ed1ff11 walk progress logging, c0850f0
+    follower health in status, 44eeab9 docs). Running full package suite for regressions.'
 action:
   type: devin-dispatch
   repo: mddb-fork
