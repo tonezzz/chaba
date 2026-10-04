@@ -1,13 +1,17 @@
 id: gev-screens
-title: 'gev screens — cast/HA screen integration + verify-after-act'
+title: gev screens — cast/HA screen integration + verify-after-act
 column: backlog
 program: gev
 area: screens
-metric: 'cast of /apps/gev/ to a screen is followed by verified screen state'
-verify: 'vcast_list/snapshot after cast confirms gev page is displayed'
-note: >-
-  GEV page on TV via cast lane. Shares the verify-after-act rule: a cast
-  tool returning ok != screen showing it — require a state read before
-  claiming. Watch SW cache: /apps/sw.js apps-v6 can serve stale bundles.
+metric: cast of /apps/gev/ to a screen is followed by verified screen state
+verify: vcast_list/snapshot after cast confirms gev page is displayed
+note: 'GEV page on TV via cast lane. Shares the verify-after-act rule: a cast tool returning ok != screen showing
+  it — require a state read before claiming. Watch SW cache: /apps/sw.js apps-v6 can serve stale bundles.'
 help: 'xmatch: vcast-cast-lane, verify-after-act; sw cache apps-v6'
-updated: '2026-10-04'
+updated: 2026-10-04 19:09
+comms:
+- at: 2026-10-04 19:09
+  from: devin
+  text: 'UPDATE 2026-10-04: cast_to_screen now flags displaced content (GEV session over-written by camwall nav
+    returns displaced note + split/PiP suggestion); gev_tour desc says never cctv_wall over GEV — layout panes +
+    pane cast instead. Confirm-gate needs_confirm now names action=stop shortcut. ada-pi feafff7 deployed.'
