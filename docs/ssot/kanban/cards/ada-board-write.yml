@@ -61,3 +61,22 @@ requests:
     label: deploy now
   - id: wait
     label: hold in review
+- id: respond-attribution
+  ask: board-api /respond hardcodes the comms actor to 'tony' — ada_board_write
+    responds work but log under Tony's name. Patch scripts/board/board-api.py to
+    pass body.from through the ACTORS whitelist + restart board-api.service?
+  status: open
+  options:
+  - id: fix
+    label: patch board-api + restart (~3 lines)
+  - id: leave
+    label: accept tony attribution (tool already returns a caveat note)
+- id: raise-request-endpoint
+  ask: ada_board_write can comment + answer but cannot RAISE requests — there is
+    no /request endpoint. Add one so Ada can file open questions on cards herself?
+  status: open
+  options:
+  - id: add-endpoint
+    label: add POST /request {id, ask, options?} to board-api
+  - id: comment-only
+    label: comment-based asks are enough
