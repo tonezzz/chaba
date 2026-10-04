@@ -1,72 +1,71 @@
-# Dispatch outcome — board-api-hardening
+# Dispatch outcome — batch-review Sep29-Oct1 draft burst (ada-draft-backlog)
 
-## What was done
+## What was found
 
-Hardened `scripts/board/board-api.py` per the card spec, still single-file
-`BaseHTTPRequestHandler`, no new deps (re/hashlib are stdlib).
+The ~110 Sep29–Oct1 burst drafts in MDDB `ada-ha-bank-general` had **already
+been reviewed** earlier the same day by the 12:15 dispatch
+`triage the ada memory inbox` (task `20261004-121552-triage-the-ada-memory-inbox-on`,
+finished ~13:04). Verified live against idc01 (tailnet `100.74.146.0:11023`):
 
-Branch: `dispatch/20261004-180001-harden-scripts-board-board-api`
-Commit: `56f7a27d fix(board): harden board-api — respond attribution, validation, /request`
+- 0 docs with `status=draft` and `addedAt <= 2026-10-01` remain.
+- The triage pass's decisions are stamped in doc meta — retracted docs carry
+  `retracted_reason="inbox triage 2026-10-04: <reason>"`, superseded docs
+  carry `superseded_by` links.
+- The only live drafts were 6 post-triage inflow docs written today by
+  `conversation_memory` (`extract-2026-10-04-*`).
 
-**Changes in `scripts/board/board-api.py`:**
+## What this session did
 
-- `/respond {id, request_id, answer, from?, reopen?}` — `from` validated
-  against ACTORS, defaults to `tony` (board UI sends none, backward
-  compatible). 400 `answer required` on empty/whitespace answer. 400
-  `already answered` when the request is already answered, unless
-  `reopen` is truthy — reopen re-answers and logs `re-answered <rid>: ...`.
-- `/comment` — 400 `text required` on empty/whitespace text.
-- New `POST /request {id, ask, request_id?, options?, from?}` — appends
-  `{id, ask, status: open, options?}` to the card's `requests[]`; id is
-  `request_id` or `slugify(ask)` (slug + 6-char sha1 so Thai/non-ascii asks
-  and near-identical slugs can't collide). 400 `ask required` /
-  `duplicate request id <rid>`. Comms entry `raised request <rid>:
-  <ask[:120]>` under the validated actor (default tony).
-- New `actor()` helper; docstring now states all card writes go through
-  the API and direct YAML edits must hold `/tmp/board-api.lock` first.
-- `--selftest` flag: pure-function smoke test of respond/request
-  validation, attribution, reopen, slugging.
+1. **Audited the prior pass**: re-read all 89 `extract-*`/`distill/*` docs
+   now marked active — decisions overwhelmingly sound (durable preferences,
+   device facts, procedures). Retracted sample carries sensible reasons.
+   Noted (not fixed): 41/54 superseded docs lack a `superseded_by` link —
+   pre-existing gap.
+2. **Reviewed the 6 live drafts** and applied decisions, plus 3
+   correction-retracts of junk that slipped into active.
+3. **Applied via `PATCH /v1/update`** (meta-only, no re-embed — same
+   convention as `memory-staleness-sweep.py`), stamping
+   `retracted_reason="batch-review 2026-10-04: <reason>"`. Nothing deleted;
+   only `ada-ha-bank-general` touched.
 
-**Also updated (kept in sync):**
+## Applied decisions
 
-- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tell dispatched
-  sessions to raise questions via `POST {api}/request` instead of editing
-  card YAML (the flock race the spec called out).
-- `docs/ssot/kanban/ssot.kanban.yml` — `write_path.endpoints` +
-  `task_rails` updated to the new contract.
-- `docs/ssot/jobs/infrastructure/2026-10-04-board-api-hardening.yml` —
-  job trail entry.
+**Promoted draft → active (5):**
+- `extract-2026-10-04-519088cb6d-0` — TONY-TV displays CCTV feeds
+- `extract-2026-10-04-e7afe759ba-0` — TVs: TONY-TV + TONY-TV Cast
+- `extract-2026-10-04-e7afe759ba-1` — Noble Club feed viewed on TV
+- `extract-2026-10-04-e7afe759ba-3` — Minted Metal gold-price source
+- `extract-2026-10-04-e7afe759ba-4` — floodboard.org live flood maps
 
-## Verification
+**Retracted (4):**
+- `extract-2026-10-04-e7afe759ba-2` — knowledge-gap note (Amicon HA coords)
+- `extract-2026-09-20-6d998cea19-1` — duplicate + meta-noise (Nobito PM2.5
+  "location unknown in system memory"); covered by `extract-2026-09-24-c53d93f9e0-0`
+- `extract-2026-09-23-9e52c57a61-0` — mis-transcription ("David memory" bank)
+  + system-inventory noise
+- `extract-2026-09-23-fb5912b6a8-0` — transient snapshot ("Rika sensors
+  currently unavailable")
 
-- `python3 scripts/board/board-api.py --selftest` → `selftest ok`
-- Live curl run: patched server on `BOARD_API_PORT=8878` against the
-  worktree's `kanban-selftest` card — every spec case verified:
-  empty answer 400, missing ask 400, duplicate request_id 400,
-  unknown/missing actor 400, empty comment 400; `/request from=ada`
-  created an open request and logged `raised request st1` under `ada`;
-  respond `from=ada` logged `answered st1` under `ada`; re-answer 400;
-  `reopen:true` logged `re-answered st1` under `tony`; auto-slug id
-  `auto-generated-id-please-1c0a43` created with `status: open`.
-  Card YAML inspected, then restored via `git checkout`.
-- `node scripts/ssot-validate-all.mjs` — 971/971 valid.
-- Backward compat: `render-board.py` JS posts `{id, request_id, answer}`
-  (no `from` → tony); `/comment` still requires `from`; old 400 paths
-  unchanged.
+## Result
 
-## Board triage addendum (same session, "do all")
+Bank `ada-ha-bank-general`: 230 docs — **109 active / 56 superseded /
+64 retracted / 0 drafts** (plus 1 `probe-update-test` doc with no status,
+pre-existing). Draft count after: **0**.
 
-All 15 open board requests answered via the live API; needs-you count is
-now 0. Verified answers: tuya dup entry (websocket evidence — remove
-newer `01M19NJ76J0020RJ`, its 28 entities are dead stubs while the old
-entry's 67 are live), CAM01 = Noble-A entrance gate (vms-snap still
-frame), sunsynk bat34 (`battery_{1,2,3}_*` exist, no `battery_4_*` —
-4th bank not in HA). Remainder answered as recommendations with a devin
-provenance comment per card (answers log under `tony` — live board-api
-is still pre-patch). Next-step comms posted on all 13 affected cards.
+## Verify
 
-## Deploy (out of scope — needs approval)
+```bash
+curl -s -X POST http://100.74.146.0:11023/v1/search \
+  -H 'Content-Type: application/json' \
+  -d '{"collection":"ada-ha-bank-general","filterMeta":{"status":["draft"]},"limit":500}'
+# -> []
+```
 
-Merge branch → pull `chaba-tony-dell` live checkout →
-`systemctl --user restart board-api.service`. New dispatch rails take
-effect on the next kanban-dispatch cycle after the live pull.
+## Trail
+
+- Ledger: `docs/ssot/jobs/ada/2026-10-04-burst-draft-batch-review.yml`
+- Card comms: dry-run counts posted before writes, final counts after.
+- Card note says "verify draft counts trend down" — inflow is ~9/day via
+  `conversation_memory` extracts; the remaining structural gap (nothing
+  promotes drafts automatically) is a known follow-up the card already
+  discussed (auto-promote was rejected; periodic batch-review stands).
