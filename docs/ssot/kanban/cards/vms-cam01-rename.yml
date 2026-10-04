@@ -1,11 +1,11 @@
 id: vms-cam01-rename
 title: Noble-A ch CAM01 — give it a real name
-column: backlog
+column: done
 priority: low
 note: 'cam-noble-a-cam01 dossier title is "CCTV: Noble-A — CAM01" — placeholder DVR channel name. Rename the channel
   in the VMS (device tree, noble-a DVR channel config) to the real view name, then rerun cam-wall-cms.py to regenerate
   the page + wall label.'
-updated: 2026-10-04 21:49
+updated: 2026-10-05 00:47
 requests:
 - id: real-name
   ask: What does Noble-A CAM01 actually show? (the real name for the channel/label)
@@ -67,3 +67,15 @@ comms:
 - at: 2026-10-04 21:49
   from: devin
   text: 'answered rename-path2: vms-ui — xdotool on mn01 VMS device config. Proceeding now (Tony approved rename).'
+- at: 2026-10-05 00:47
+  from: devin
+  text: 'DONE — renamed on the DVR via VMS IPC-param page (Channel field): CAM01 -> ''4. Entrance Gate''. Verified
+    in VMS tree + live OSD via vms-snap. channels.json key/y=505 + aliases updated; cam-wall-pull roster + Thai
+    LABELS override (entrance-gate = ทางคนเดินออก/รถเข้า); cam-wall-cms zone blurbs. Commit 105ff441 pushed; live
+    checkout synced. Wall pull: entrance-gate ok:true. CMS: camwall-noble-a, dvr-wall, cam-noble-a-entrance-gate
+    written en+th; stale cam-noble-a-cam01 deleted. MDDB was saturated du'
+- at: 2026-10-05 00:47
+  from: tony
+  text: closed by Tony
+action:
+  status: done
