@@ -1,14 +1,17 @@
 id: mddb-binlog-canary
-title: "mddb binlog size canary"
+title: mddb binlog size canary
 column: backlog
-note: "Retention janitor is live, but a silent stall grows the file again —
-  alert on /v1/replication/status binlog_size_bytes > 1G or oldest_lsn gap
-  > 5M so we see it before the disk does."
-spec: >-
-  Add a check to the mcp-health / chaba health loop on tony-dell: GET
-  http://100.74.146.0:11023/v1/replication/status, flag
-  binlog_size_bytes > 1_073_741_824 or (current_lsn - binlog_oldest_lsn) >
-  5_000_000 or followers[].status != healthy for >10min. Route to
-  focus-inbox on breach.
-action: {type: dispatch, status: idle, repo: chaba}
-updated: '2026-10-04'
+note: Retention janitor is live, but a silent stall grows the file again — alert on /v1/replication/status binlog_size_bytes
+  > 1G or oldest_lsn gap > 5M so we see it before the disk does.
+spec: 'Add a check to the mcp-health / chaba health loop on tony-dell: GET http://100.74.146.0:11023/v1/replication/status,
+  flag binlog_size_bytes > 1_073_741_824 or (current_lsn - binlog_oldest_lsn) > 5_000_000 or followers[].status
+  != healthy for >10min. Route to focus-inbox on breach.'
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+updated: 2026-10-04 14:18
+comms:
+- at: 2026-10-04 14:18
+  from: tony
+  text: queued for processing

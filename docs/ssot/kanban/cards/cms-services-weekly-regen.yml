@@ -1,13 +1,17 @@
 id: cms-services-weekly-regen
-title: "Weekly auto-regen of host services reports"
+title: Weekly auto-regen of host services reports
 column: backlog
-note: "scripts/ada/host-services-cms.py is replayable and the viewer button
-  works — now schedule it so the 7 pages (index + 6 hosts) stay fresh without
-  a manual click. Weekly timer on tony-dell + a comms line on failure."
-spec: >-
-  Create chaba-services-regen.service/.timer (weekly, on tony-dell) running
-  scripts/ada/host-services-cms.py. Log failures visibly — post a comms entry
-  on cms-services-* kanban card or focus-inbox on non-zero exit. Verify the
-  pages' disk% drift reflects real state after two runs.
-action: {type: dispatch, status: idle, repo: chaba}
-updated: '2026-10-04'
+note: scripts/ada/host-services-cms.py is replayable and the viewer button works — now schedule it so the 7 pages
+  (index + 6 hosts) stay fresh without a manual click. Weekly timer on tony-dell + a comms line on failure.
+spec: Create chaba-services-regen.service/.timer (weekly, on tony-dell) running scripts/ada/host-services-cms.py.
+  Log failures visibly — post a comms entry on cms-services-* kanban card or focus-inbox on non-zero exit. Verify
+  the pages' disk% drift reflects real state after two runs.
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+updated: 2026-10-04 14:18
+comms:
+- at: 2026-10-04 14:18
+  from: tony
+  text: queued for processing
