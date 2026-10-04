@@ -1,19 +1,22 @@
 id: logs-auto-idc02-severe-spike
 title: logs `idc02` 489 severe/24h
-column: done
+column: review
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 489 severe lines (oom/panic/failed) in the last 24h (limit 40)
-help: Read the digest's repeat-offender lines for idc02; this is a real incident signal, not pipeline breakage.
-updated: 2026-10-04 19:43
+help: Read the digest's repeat-offender lines for idc02; this is a real incident signal,
+  not pipeline breakage.
+updated: '2026-10-04'
 comms:
 - at: 2026-10-04 17:20
   from: devin
-  text: 'Triaged: 8445/8678 lines = gpg-agent scdaemon IPC noise (benign, filterable). Real signals all resolved:
-    ada-flood-news status=2 failures = same interval-boundary bug fixed on dell (2bb1e5e, idc02 has it — last run
-    exit 0); camwall-render-check x16 transient, latest run all-green; vcast input-bridge wss 502s x8 (tony-dell
-    blip). Suggest: add scdaemon pattern to shipper GREP exclude — it is 97% of the spike.'
+  text: 'Triaged: 8445/8678 lines = gpg-agent scdaemon IPC noise (benign, filterable).
+    Real signals all resolved: ada-flood-news status=2 failures = same interval-boundary
+    bug fixed on dell (2bb1e5e, idc02 has it — last run exit 0); camwall-render-check
+    x16 transient, latest run all-green; vcast input-bridge wss 502s x8 (tony-dell
+    blip). Suggest: add scdaemon pattern to shipper GREP exclude — it is 97% of the
+    spike.'
 - at: 2026-10-04 17:58
   from: tony
   text: closed by Tony
