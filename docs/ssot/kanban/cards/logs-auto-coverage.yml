@@ -1,9 +1,9 @@
 id: logs-auto-coverage
 title: Log coverage gaps
-column: done
+column: review
 generated: logs-kanban
 program: logs-digest
-priority: medium
+priority: high
 note: 'Expected log sources vs what actually ships:
 
 
@@ -17,10 +17,11 @@ note: 'Expected log sources vs what actually ships:
   - `tony-dell` — ok; shipped 0/1391 matched; only `sys` journal scanned (other side
   unreadable?)
 
-  - `tony-omen` — ok; shipped 0/2837 matched; only `sys` journal scanned (other side unreadable?)'
-help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps usually mean `journalctl --user`
-  isn't permitted for the ssh login.
-updated: 2026-10-05 13:13
+  - `tony-omen` — ok; shipped 0/2837 matched; only `sys` journal scanned (other side
+  unreadable?)'
+help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
+  usually mean `journalctl --user` isn't permitted for the ssh login.
+updated: '2026-10-05'
 comms:
 - at: 2026-10-04 14:16
   from: devin
