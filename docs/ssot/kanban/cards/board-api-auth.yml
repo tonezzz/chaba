@@ -1,7 +1,7 @@
 id: board-api-auth
 title: board-api has no auth — anyone on the tailnet can mutate cards
-column: backlog
-updated: 2026-10-05 22:38
+column: review
+updated: 2026-10-05 22:57
 note: 'Caddy proxies /apps/board-api tailnet-wide with no auth gate. Options: Tailscale-User-Login header check
   (pattern used by /apps/vms/), or tailnet ACL on the route. Low risk today (tailnet-only) but unguarded writes
   = attribution + accidental-mutation risk.'
@@ -17,10 +17,11 @@ spec: 'Gate /apps/board-api/* behind Tailscale identity: replicate the /apps/vms
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261005-223837-gate-apps-board-api-behind-tai
+  result: 20261005-223837-gate-apps-board-api-behind-tai finished (inactive) — see `devin-dispatch logs 20261005-223837-gate-apps-board-api-behind-tai`
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -31,6 +32,23 @@ comms:
 - at: 2026-10-05 22:38
   from: chaba
   text: dispatched 20261005-223837-gate-apps-board-api-behind-tai on chaba
+- at: 2026-10-05 22:49
+  from: devin
+  text: 'working: implementing dual-layer gate — board-api.py caller-identity check (tailnet login via Tailscale-User-Login
+    + XFF chain validation, or direct loopback) + Caddy edge deny on non-GET without the header. GET /cards + /health
+    stay open.'
+- at: 2026-10-05 22:55
+  from: devin
+  text: 'done: dual-layer gate — Caddy 403s non-GET/HEAD on /apps/board-api/* without Tailscale-User-Login; board-api
+    caller_identity() re-verifies header + all-trusted XFF chain (defeats LAN header forgery) or trusts direct loopback
+    callers (rails/units keep working). GET /cards + /health open. Verified on worktree instance :18787 — anon proxied
+    POST 403, tailnet POST 200, forged header 403, local 200; caddy validate + selftest pass. Commits on dispatch/20261005-223837-*;
+    post-merge needs systemctl --us'
+- at: 2026-10-05 22:56
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 22:56
+  from: chaba
+  text: auto-merged dispatch/20261005-223837-gate-apps-board-api-behind-tai → origin/master
 claim:
-  session: 20261005-223837-gate-apps-board-api-behind-tai
   since: 2026-10-05 22:38

@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
 column: backlog
-updated: 2026-10-05 21:15
+updated: 2026-10-05 22:52
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -18,9 +18,12 @@ spec: 'Weekly prune of merged dispatch/* branches + their worktrees: for each di
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   button: ▶ Start
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, low)
+- at: 2026-10-05 22:52
+  from: tony
+  text: queued for processing

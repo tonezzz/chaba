@@ -4,7 +4,7 @@ column: backlog
 note: 'Original card file was written as 0 bytes during the disk-full event (~14:23). Recovered skeleton. Context:
   / hit 100%; freed ~7GB (mddb backups, pip/go caches). Watchers: yt-live-media cache (8.6G) grows with dub pipeline;
   system journal 3G needs sudo vacuum.'
-updated: 2026-10-05 21:15
+updated: 2026-10-05 22:53
 comms:
 - at: 2026-10-05 14:45
   from: devin
@@ -12,6 +12,9 @@ comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, medium)
+- at: 2026-10-05 22:53
+  from: tony
+  text: queued for processing
 spec: 'Disk trend watcher — tony-dell hit 100% 2026-10-05 (the original card file was 0-bytes from the disk-full
   event). Add a periodic check (fold into cms-auto-health or ops-health): df trend per host, alert on board + LINE
   when a disk will fill within ~7d at current growth, and flag top growers (yt-live-media cache grew 8.6G during
@@ -20,5 +23,5 @@ priority: medium
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   button: ▶ Start

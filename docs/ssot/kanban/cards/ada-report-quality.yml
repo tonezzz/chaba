@@ -1,6 +1,6 @@
 id: ada-report-quality
 title: Improve standard of Ada-generated reports
-column: backlog
+column: review
 note: 'Ada-made reports need a higher, enforced standard: every report page must carry the meta contract (summary
   ~240 chars, domain, fresh_for, confidence, timeline, updated — see meta_contract in ssot.apps.ada-cms-reports.yml),
   state time-of-event before quoting, mark staleness honestly, and follow the benchmark report structure (H1, score
@@ -9,7 +9,7 @@ note: 'Ada-made reports need a higher, enforced standard: every report page must
   units_failed: ada-scenario-casting.service).
 
   '
-updated: 2026-10-05 22:26
+updated: 2026-10-05 22:56
 comms:
 - at: 2026-10-05 13:08
   from: tony
@@ -32,6 +32,19 @@ comms:
 - at: 2026-10-05 22:26
   from: devin
   text: 'starting: exploring worktree, locating meta_contract spec and report generator'
+- at: 2026-10-05 22:53
+  from: devin
+  text: 'Done on branch dispatch/20261005-222628 (2 commits, rebased onto origin/main @3f452c9, not pushed). Meta
+    contract enforced: cms_publish_page rejects missing summary/domain/fresh_for/confidence BEFORE the confirm handshake
+    (ValueError names the fields); post-merge gaps warn via meta_contract in publish/note results; cms_verify_page
+    reports a meta_contract block; shared validator in backend/report_meta.py. Prompts fixed: the 4 fields are required
+    in the tool schema + CMS_INSTRUCTIONS/tool_guide up'
+- at: 2026-10-05 22:56
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 22:56
+  from: chaba
+  text: auto-merged dispatch/20261005-222628-enforce-the-report-meta-contra → origin/main
 spec: 'Enforce the report meta contract on Ada-generated reports: every report page carries summary ~240 chars,
   domain, fresh_for, confidence, timeline, updated (meta_contract in ssot.apps.ada-cms-reports.yml). Add a validation
   pass at report-write time (reject/warn on missing fields) + fix the generator prompts to emit them. Verify: a
@@ -40,10 +53,10 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261005-222628-enforce-the-report-meta-contra
+  result: 20261005-222628-enforce-the-report-meta-contra finished (inactive) — see `devin-dispatch logs 20261005-222628-enforce-the-report-meta-contra`
 claim:
-  session: 20261005-222628-enforce-the-report-meta-contra
   since: 2026-10-05 22:26

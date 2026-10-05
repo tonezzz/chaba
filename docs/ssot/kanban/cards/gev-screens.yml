@@ -10,18 +10,24 @@ verify: vcast_list/snapshot after cast confirms gev page is displayed
 note: 'GEV page on TV via cast lane. Shares the verify-after-act rule: a cast tool returning ok != screen showing
   it — require a state read before claiming. Watch SW cache: /apps/sw.js apps-v6 can serve stale bundles.'
 help: 'xmatch: vcast-cast-lane, verify-after-act; sw cache apps-v6'
-spec: >-
-  Verify-after-act for GEV casts: casting /apps/gev/ to a screen must be followed by a state read (vcast_list / snapshot) proving the page is actually displayed — a cast tool returning ok is not evidence. Exercise the displaced-content path (a GEV session over-written by camwall nav returns a displaced note + split/PiP suggestion — ada-pi feafff7) and the shared /apps/sw.js apps-v6 stale-cache case. Files: stacks/web/public/apps/{gev,vcast}/ plus docs on the displaced-content tool contract.
+spec: 'Verify-after-act for GEV casts: casting /apps/gev/ to a screen must be followed by a state read (vcast_list
+  / snapshot) proving the page is actually displayed — a cast tool returning ok is not evidence. Exercise the displaced-content
+  path (a GEV session over-written by camwall nav returns a displaced note + split/PiP suggestion — ada-pi feafff7)
+  and the shared /apps/sw.js apps-v6 stale-cache case. Files: stacks/web/public/apps/{gev,vcast}/ plus docs on the
+  displaced-content tool contract.'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Implement verify-after-act for GEV screen casts per card spec: post-cast state read via vcast_list/snapshot, displaced-content path, apps-v6 stale-cache case.
-updated: 2026-10-04 19:09
+  status: queued
+  task: 'Implement verify-after-act for GEV screen casts per card spec: post-cast state read via vcast_list/snapshot,
+    displaced-content path, apps-v6 stale-cache case.'
+updated: 2026-10-05 22:53
 comms:
 - at: 2026-10-04 19:09
   from: devin
   text: 'UPDATE 2026-10-04: cast_to_screen now flags displaced content (GEV session over-written by camwall nav
     returns displaced note + split/PiP suggestion); gev_tour desc says never cctv_wall over GEV — layout panes +
     pane cast instead. Confirm-gate needs_confirm now names action=stop shortcut. ada-pi feafff7 deployed.'
+- at: 2026-10-05 22:53
+  from: tony
+  text: queued for processing

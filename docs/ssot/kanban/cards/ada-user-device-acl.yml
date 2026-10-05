@@ -14,7 +14,7 @@ note: 'Extend the `access` posture (already: per-identity memory banks + domain 
   (entity_id vs device vs area), grant channel (voice confirm vs card/admin tool), audit log of grants/denials.'
 help: 'related: person.kk domain list in `## access` memory section; speaker-id ties ACL to voice identity — a denied-device
   request under Guest means speaker-id correctness gates this whole feature'
-updated: 2026-10-05 22:30
+updated: 2026-10-05 22:44
 spec: 'Extend Ada access posture from domain-level to device-level ACL: (1) every identity gets a device set (default
   guest = read-only safe set), (2) admin-grant flow to add devices per identity, (3) enforced in tool_runner ha_*
   paths. person.kk currently domain-allowlisted (light/switch/input_boolean/script/media_player) — keep that, add
@@ -39,3 +39,8 @@ comms:
 - at: 2026-10-05 22:30
   from: chaba
   text: started devin-task-20261005-223025-extend-ada-access-posture-from on tony-omen (dispatch)
+- at: 2026-10-05 22:44
+  from: devin
+  text: 'picked up. Design: control_policies gains allow_entities (declared device set) + granted_entities (runtime
+    grants via owner-only ada_device_acl tools.d tool, persisted to ~/.config/ada/device-grants.json overlay). Enforcement
+    reuses the existing control_allowed gate in tool_runner. Empty set = read-only guest posture.'

@@ -11,7 +11,7 @@ note: 'Highest-leverage structural fix. Today every tool declaration lives inlin
   alongside tools-merge-* — consolidation shrinks the surface, this decides where whatever remains is declared.'
 help: 1. extract decl dicts -> per-domain yml (name/desc/schema) 2. tools_loader loads core manifests like tools.d
   modules 3. realtime_provider composes suite by session type 4. delete inline decls; keep behavior identical
-updated: 2026-10-05 22:40
+updated: 2026-10-05 22:48
 spec: 'Move Ada''s 103 inline tool declarations out of backend/realtime_provider.py (~5k lines, the top merge-collision
   surface) into per-domain manifests under tools/ (e.g. tools/screens.py, tools/ha.py, tools/memory.py — one module
   per domain, each exporting its declaration list). realtime_provider loads + concatenates manifests at startup;
@@ -21,9 +21,10 @@ priority: high
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
   button: ▶ Start
-  task_id: 20261005-211619-move-ada-s-103-inline-tool-dec
+  task_id: 20261005-224838-move-ada-s-103-inline-tool-dec
+  runner: tony-dell
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -62,5 +63,9 @@ comms:
 - at: 2026-10-05 22:40
   from: tony
   text: retry requested
+- at: 2026-10-05 22:48
+  from: chaba
+  text: dispatched 20261005-224838-move-ada-s-103-inline-tool-dec on ada-pi
 claim:
-  since: 2026-10-05 21:16
+  since: 2026-10-05 22:48
+  session: 20261005-224838-move-ada-s-103-inline-tool-dec

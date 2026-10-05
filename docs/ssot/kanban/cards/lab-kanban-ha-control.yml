@@ -1,40 +1,34 @@
 id: lab-kanban-ha-control
-title: "Lab: kanban as an HA control surface"
+title: 'Lab: kanban as an HA control surface'
 column: lab
 priority: high
-note: >-
-  Experiment: a `type: control` card + `chaba-ha-exec` executor gives the
-  board a real HA control lane — auditable, atomic-claimed, confirm-gated,
-  retryable — that voice and dashboards don't cover. Not a dashboard
-  replacement; the lane is for confirmed/scheduled/agentic control.
+note: 'Experiment: a `type: control` card + `chaba-ha-exec` executor gives the board a real HA control lane — auditable,
+  atomic-claimed, confirm-gated, retryable — that voice and dashboards don''t cover. Not a dashboard replacement;
+  the lane is for confirmed/scheduled/agentic control.'
 lab:
-  hypothesis: >-
-    A kanban control executor delivers verified, auditable, confirm-gated
-    HA actuation at p95 <5s end-to-end — trading click-to-actuate latency
-    for determinism (zero NLU misfires), audit trail, atomic claims and
-    retry, none of which voice or dashboards provide today.
-  metric: >-
-    3-arm benchmark (Ada voice / kanban card / direct REST) over ~20 control
-    tasks: success rate, p50+p95 end-to-end latency, misfire rate (wrong
-    entity/service), audit completeness, confirm-path correctness.
-    Win = kanban ≥95% success, 0 misfires, p95 <5s, 100% audited.
+  hypothesis: A kanban control executor delivers verified, auditable, confirm-gated HA actuation at p95 <5s end-to-end
+    — trading click-to-actuate latency for determinism (zero NLU misfires), audit trail, atomic claims and retry,
+    none of which voice or dashboards provide today.
+  metric: '3-arm benchmark (Ada voice / kanban card / direct REST) over ~20 control tasks: success rate, p50+p95
+    end-to-end latency, misfire rate (wrong entity/service), audit completeness, confirm-path correctness. Win =
+    kanban ≥95% success, 0 misfires, p95 <5s, 100% audited.'
   review_by: '2026-10-18'
-spec: >-
-  Phase 1 — executor: scripts/board/ha-exec.py run by chaba-ha-exec.timer
-  (5s or event-driven) on tony-dell. Claim queued `type: control` cards via
-  POST /action {do: claim}, call POST /api/services/{domain}/{service}
-  (same path as ada-pi backend/home_assistant.py), poll entity state to
-  ha.verify.state or timeout, post comms evidence, done/fail+retry.
-  Entity whitelist + forced `ha.confirm: true` on dangerous domains ->
-  card becomes needs-you before executing (parity with Ada's spoken
-  confirm for covers/gates).
-  Phase 2 — benchmark: ~20 tasks across actuate / gated / verify-required /
-  query-then-act / scheduled, run through all three arms; reuse
-  ada-pi tests/scenarios-live style + ws-load.py latency capture.
-  Report results in comms on this card.
-help: >-
-  Schema sketch: ha: {instance, domain, entity_id, service, data: {},
-  verify: {state, timeout_s}, confirm: bool}. Ada's CONTROLLABLE_DOMAINS
-  in ada-pi backend/home_assistant.py is the whitelist reference.
-action: {type: dispatch, status: idle, repo: chaba, button: '▶ Build ha-exec + benchmark'}
-updated: '2026-10-04'
+spec: 'Phase 1 — executor: scripts/board/ha-exec.py run by chaba-ha-exec.timer (5s or event-driven) on tony-dell.
+  Claim queued `type: control` cards via POST /action {do: claim}, call POST /api/services/{domain}/{service} (same
+  path as ada-pi backend/home_assistant.py), poll entity state to ha.verify.state or timeout, post comms evidence,
+  done/fail+retry. Entity whitelist + forced `ha.confirm: true` on dangerous domains -> card becomes needs-you before
+  executing (parity with Ada''s spoken confirm for covers/gates). Phase 2 — benchmark: ~20 tasks across actuate
+  / gated / verify-required / query-then-act / scheduled, run through all three arms; reuse ada-pi tests/scenarios-live
+  style + ws-load.py latency capture. Report results in comms on this card.'
+help: 'Schema sketch: ha: {instance, domain, entity_id, service, data: {}, verify: {state, timeout_s}, confirm:
+  bool}. Ada''s CONTROLLABLE_DOMAINS in ada-pi backend/home_assistant.py is the whitelist reference.'
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+  button: ▶ Build ha-exec + benchmark
+updated: 2026-10-05 22:54
+comms:
+- at: 2026-10-05 22:54
+  from: tony
+  text: queued for processing
