@@ -129,34 +129,98 @@ SESSIONS_DB = Path.home() / ".local/share/devin/cli/sessions.db"
 DISPATCH_TASKS = Path(
     os.environ.get("DISPATCH_DIR", str(Path.home() / ".local/share/devin-dispatch"))
 ) / "tasks"
+HOST = os.uname().nodename
+# Remote hosts that may have run dispatch tasks (session db + task dir live
+# on the runner). action.runner is consulted first; this list is the
+# fallback for tasks launched outside kanban-dispatch (e.g. Ada over ssh).
+REMOTE_DISPATCH_HOSTS = [
+    h.strip() for h in
+    os.environ.get("BOARD_REMOTE_DISPATCH_HOSTS", "tony-omen").split(",")
+    if h.strip() and h.strip() != HOST
+]
+
+# Runs on the runner host via `ssh <host> python3 - <task_id>` — resolves
+# transcript.json -> session_id, then sets sessions.hidden=1 there.
+REMOTE_HIDE = """
+import json, sqlite3, sys
+from pathlib import Path
+tid = sys.argv[1]
+tj = Path.home() / ".local/share/devin-dispatch/tasks" / tid / "transcript.json"
+if tj.exists():
+    sid = (json.loads(tj.read_text()) or {}).get("session_id") or ""
+    db = Path.home() / ".local/share/devin/cli/sessions.db"
+    if sid and db.exists():
+        con = sqlite3.connect(str(db), timeout=15)
+        try:
+            cur = con.execute("UPDATE sessions SET hidden=1 WHERE id=?", (sid,))
+            con.commit()
+            if cur.rowcount:
+                print(f"hidden {sid[:12]}")
+        finally:
+            con.close()
+"""
+
+
+def _hide_local_session(tid: str) -> str:
+    """Hide the session locally; returns the session_id on success."""
+    tj = DISPATCH_TASKS / tid / "transcript.json"
+    if not tj.exists() or not SESSIONS_DB.exists():
+        return ""
+    sid = (json.loads(tj.read_text()) or {}).get("session_id") or ""
+    if not sid:
+        return ""
+    import sqlite3
+    con = sqlite3.connect(f"file:{SESSIONS_DB}?mode=rw", uri=True,
+                          timeout=15)
+    try:
+        cur = con.execute("UPDATE sessions SET hidden=1 WHERE id=?",
+                          (sid,))
+        con.commit()
+        return sid if cur.rowcount else ""
+    finally:
+        con.close()
+
+
+def _hide_remote_session(tid: str, host: str) -> str:
+    """Hide the session on a remote runner host; returns sid on success."""
+    r = subprocess.run(
+        ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+         host, "python3", "-", tid],
+        input=REMOTE_HIDE, capture_output=True, text=True, timeout=30)
+    if r.returncode == 0 and (r.stdout or "").startswith("hidden "):
+        return r.stdout.split()[-1]
+    return ""
 
 
 def hide_dispatch_session(card: dict) -> None:
     """On close/done: mark the dispatch task's Devin session hidden=1 in
     sessions.db so finished jobs stop cluttering the session list. The
     card's action.task_id names the task dir; transcript.json carries the
-    session_id. Best-effort — never blocks the close."""
+    session_id. Tries the local db first, then remote runner hosts.
+    Best-effort — never blocks the close."""
     try:
-        tid = (card.get("action") or {}).get("task_id") or ""
+        a = card.get("action") or {}
+        tid = a.get("task_id") or ""
         if not tid:
             return
-        tj = DISPATCH_TASKS / tid / "transcript.json"
-        if not tj.exists():
+        sid = _hide_local_session(tid)
+        if sid:
+            comms_add(card, "chaba", f"session {sid}… hidden")
             return
-        sid = (json.loads(tj.read_text()) or {}).get("session_id") or ""
-        if not sid or not SESSIONS_DB.exists():
-            return
-        import sqlite3
-        con = sqlite3.connect(f"file:{SESSIONS_DB}?mode=rw", uri=True,
-                              timeout=15)
-        try:
-            cur = con.execute("UPDATE sessions SET hidden=1 WHERE id=?",
-                              (sid,))
-            con.commit()
-            if cur.rowcount:
-                comms_add(card, "chaba", f"session {sid[:12]}… hidden")
-        finally:
-            con.close()
+        hosts = []
+        runner = (a.get("runner") or "").strip()
+        if runner and runner != HOST:
+            hosts.append(runner)
+        hosts += [h for h in REMOTE_DISPATCH_HOSTS if h not in hosts]
+        for host in hosts:
+            try:
+                sid = _hide_remote_session(tid, host)
+            except Exception:
+                continue
+            if sid:
+                comms_add(card, "chaba",
+                          f"session {sid}… hidden on {host}")
+                return
     except Exception:
         pass
 
