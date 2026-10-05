@@ -195,3 +195,14 @@ comms:
     more separable), (b) new --names map: TH sub line prefixed with
     speaker name on every voice change (นอร์ตัน/โนเอล/เจเร็ด), so a
     3-shot always shows who is talking. Solo sections unaffected.
+- at: '2026-10-05 16:55'
+  from: devin
+  text: >-
+    v16h: start-lag root cause found — each edge-tts mp3 carries
+    ~200ms leading + ~150ms trailing silence; queue placed it as
+    content so every utterance started late. fit_wav now strips
+    onset/tail silence (areverse trick) before timing math; lag
+    17->9.2s. Negative cue starts (offset slices) clamped to 0.
+    Speaker name tags OFF this render — hand-labeled banter borders
+    land wrong without listening; wrong labels worse than none.
+    Correct naming needs real diarization (yt-voice-dub-cast card).
