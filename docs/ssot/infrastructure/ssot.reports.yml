@@ -334,6 +334,25 @@ nodes:
     output: tony-dell HA www /local/chaba-report.json
     meta: reports/meta.report-feed.yml
     children: []
+  # --- Briefing domain ---
+  - id: daily-brief
+    layer: L2-domain
+    purpose: Twice-daily rollup for Tony — morning edition = overnight
+      results (dispatches since 19:00, new cards, red flags, top open
+      requests); evening edition = day's completions + "what still needs
+      you before tomorrow" (unanswered requests, stale review, failed
+      dispatches). The meta/CMS summary line must answer "what needs me?"
+    generator: python3 scripts/report-daily-brief.py --edition auto
+    cadence: 12h
+    output: reports/daily-brief
+    artifact_pattern: "DAILY-BRIEF-*.md"
+    meta: reports/meta.daily-brief.yml
+    references:
+      - docs/ssot/kanban/ssot.kanban.yml
+      - docs/ssot/apps/ssot.apps.ada-cms-reports.yml
+    children:
+      - health-monitor
+      - focus-inbox
   # --- Overview ---
   - id: system-report
     layer: L3-overview
@@ -349,6 +368,7 @@ nodes:
       - overnight-assessment
       - kanban
       - focus-inbox
+      - daily-brief
 
 schedule:
   system_report:
@@ -358,6 +378,12 @@ schedule:
     status: installed on tony-dell (2026-09-27); the service runs the full
       chain — per-host audit-hosts snapshots -> --consolidate fleet L2 ->
       report-system.py L3
+  daily_brief:
+    timer: job:daily-brief in ssot.jobs.yml (one timer, twice daily)
+    frequency: 07:05 + 19:05 (morning run lands after the 06:45 system
+      report and overnight producers; edition auto-picked by hour)
+    status: units rendered via render-jobs.py; install with
+      `python3 scripts/render-jobs.py --host tony_dell --install`
 
 plan:
   current_state:
@@ -367,6 +393,7 @@ plan:
     - audit-hosts.py emits meta.<host>.yml + a timeline event on each run; --consolidate renders reports/fleet/FLEET-REPORT.md + meta (L2)
     - run.mjs emits reports/audits/meta.yml + a timeline event on each suite run; memory-banks-audit.mjs emits meta.memory-suite.yml
     - tony-dell-monitor.sh emits ~/var/chaba/health/meta.yml + timeline event per cycle (installed to ~/.local/bin)
+    - report-daily-brief.py renders the daily-brief L2 node — morning (overnight dispatches/new cards/red flags/open requests) and evening (day completions + needs-Tony) editions; writes DAILY-BRIEF-*.md artifact + web copy at apps/system-report/data/DAILY-BRIEF.md + CMS page ada-cms-pages/daily-brief (kind:report, fresh_for=12h)
     - staleness-audit.mjs reads per-host cadences from this registry (meta.generated_at preferred over SSOT last_observed; fallback 14d)
     - chaba-system-report.service/.timer installed on tony-dell — daily chain: audit-hosts x5 -> --consolidate -> report-system.py
     - kanban L2 node (2026-10-05): scripts/board/kanban-stats.py rides kanban-sync.timer, writes reports/kanban/{meta.yml,kanban-stats.yml} + apps/system-report/data/kanban.md, mirrored to the served checkout
@@ -377,6 +404,7 @@ plan:
     - ssot.audit.hosts.yml last_observed only refreshes via manual --save-to-ssot (rewrites YAML) — decide whether a lighter-weight scheduled refresh is wanted
 related_files:
   - scripts/report-system.py
+  - scripts/report-daily-brief.py
   - scripts/lib/report.py
   - scripts/audit-hosts.py
   - scripts/audits/run.mjs

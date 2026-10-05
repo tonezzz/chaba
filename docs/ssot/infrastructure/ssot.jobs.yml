@@ -124,6 +124,22 @@ jobs:
     scripts/report-system.py'
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran
     bash chain, not the nonexistent .sh)
+- id: daily-brief
+  name: Daily Brief (morning+evening)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 07,19:05:00'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/report-daily-brief.py
+    --edition auto --cards-dir %h/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards
+  note: 'L2 daily-brief node (ssot.reports.yml) — one timer, two editions:
+    morning (07:05, after the 06:45 system report + overnight producers) =
+    overnight results; evening (19:05) = day completions + needs-Tony.
+    Edition auto-picked by run hour. Stays on tony_dell: reads the local
+    devin-dispatch ledger, ~/var/chaba/health, and the served-checkout card
+    dir (git log = truthful "filed" signal; board-api fallback). Added
+    2026-10-05 (card daily-brief-node).'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_dell
