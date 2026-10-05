@@ -1,0 +1,18 @@
+id: kanban-push-notify
+title: Push notification when a board request is created (or rots 12h)
+column: backlog
+note: 'Tony only sees requests when he opens the board. The system already has an escalation concept (ESCALATE_H
+  in cms-auto-health) — apply it to human requests too. Channel decision needed in plan: LINE (yomi path exists)
+  vs ntfy.sh vs both. LINE preferred — it''s where Tony already lives.'
+spec: 'Notifier hook in board-api.py /request POST: after creating a request targeting tony, emit a notification
+  — evaluate channels in plan stage (LINE via existing yomi LINE path vs ntfy.sh; pick one, document). Also a periodic
+  sweep (fold into kanban-sync.timer or cms-auto-health loop): open requests unanswered >12h get one escalation
+  ping, once per request. Must be quiet-by-design: batched summary if multiple requests, no ping spam. Verify: create
+  test request -> notification arrives; 12h synthetic -> single escalation.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: 'Build request-notification per card spec: evaluate LINE-vs-ntfy in plan stage (prefer existing LINE path),
+    hook /request POST + 12h escalation sweep, batched/quiet. Verify per spec.'
+updated: '2026-10-05'

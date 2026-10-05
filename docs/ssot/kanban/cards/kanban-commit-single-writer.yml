@@ -1,0 +1,19 @@
+id: kanban-commit-single-writer
+title: 'kanban-commit: single-writer rule across checkouts'
+column: backlog
+note: kanban-commit.timer + parallel sessions + autostash = recurring 'untracked files would be overwritten' pull
+  stalls (3x this session) and inbox findings landing uncommitted in the unwatched 'chaba' checkout. Convention
+  fix worked; structural fix didn't happen.
+spec: 'Two options — pick one in spec phase: (a) only the served checkout (chaba-tony-dell) auto-commits; other
+  checkouts get a pre-flight warning hook when they diverge >N commits; (b) stagger commits with jitter + always-rebase-with-autostash
+  + conflict resolver that takes upstream for generated files. Also: add a pre-commit hook or lint that warns when
+  writing docs/ssot/focus-inbox/ outside the served checkout. Verify: two parallel sessions + one untracked-collision
+  case completes pull --rebase without manual intervention.'
+updated: '2026-10-05'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: Implement single-writer commit rule per card spec — evaluate option (a) served-checkout-only auto-commit
+    with divergence warning vs (b) jittered autostash rebase; pick in plan stage, implement, verify the untracked-collision
+    case completes unattended.

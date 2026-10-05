@@ -1,0 +1,35 @@
+id: kanban-stats-node
+title: Kanban stats as a reports-layer node (L2)
+column: backlog
+note: No standing statistics view exists for the board — counts are computed ad-hoc. The reports standard (ssot.reports.yml)
+  wants every producer to emit meta.yml so L3 SYSTEM-REPORT can roll it up; kanban is the busiest producer and emits
+  nothing.
+spec: 'New node ''kanban'' in ssot.reports.yml nodes: layer L2-domain, cadence 15min (aligns kanban-sync). Generator
+  scripts/board/kanban-stats.py: counts by column, action.status breakdown, open requests, cards-touched-24h, dispatch
+  throughput (queued->done last 7d), and stale-in-review (>48h). Emits meta.yml via scripts/lib/report.py::write_meta()
+  + append_timeline; renders a small markdown rollup into stacks/web/public/apps/system-report/data/ or board page
+  section. Run under kanban-sync.timer or its own timer.'
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  task: 'Create the kanban reports node per card spec: register node in ssot.reports.yml, write scripts/board/kanban-stats.py
+    emitting meta.yml + timeline + markdown rollup, wire a timer. Verify: meta.yml exists after a run and SYSTEM-REPORT
+    picks the node up.'
+  task_id: 20261005-105130-new-node-kanban-in-ssot-report
+  runner: tony-dell
+updated: 2026-10-05 10:54
+comms:
+- at: 2026-10-05 10:48
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 10:51
+  from: chaba
+  text: dispatched 20261005-105130-new-node-kanban-in-ssot-report on chaba
+- at: 2026-10-05 10:54
+  from: devin
+  text: starting — spec confirmed; writing scripts/board/kanban-stats.py + registering kanban L2 node in ssot.reports.yml,
+    wiring under kanban-sync.timer
+claim:
+  session: 20261005-105130-new-node-kanban-in-ssot-report
+  since: 2026-10-05 10:51

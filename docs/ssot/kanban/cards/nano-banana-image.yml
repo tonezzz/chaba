@@ -2,32 +2,31 @@ id: nano-banana-image
 title: ada render — nano-banana image gen/edit -> LINE/Telegram photo
 column: backlog
 program: media-gen
-metric: 'prompt (+ optional ref image) -> generated PNG arrives as photo in Tony LINE + TG chats'
-verify: 'scenario img_render_* passes; ask Ada in tg chat -> sendPhoto <30s; LINE chat -> imageMessage'
-note: >-
-  Thin layer — plumbing already exists, this is generator + URL hop.
-  Scope: (1) new tool group `render` — ada_render_image(prompt, ref_url?,
-  aspect?) calls gemini-2.5-flash-image via REST generateContent (same
-  thread-safe path as _vcast_tts — no google-genai client); ref_url
-  enables nano-banana edit/compose (image + instruction -> new image);
-  (2) PNG -> vcast /frame store -> display-reachable URL; (3) relays
-  already finish: tg_relay.send_photo(url) -> sendPhoto, line_relay
-  turns cast_url/image_url into LINE imageMessage (public https only).
-  (4) PROMPT-BUILDER FLOW: Ada interviews — subject/style/mood/ratio in
-  one or two questions max, then confirms the assembled prompt before
-  rendering. Params hidden from user — Ada picks aspect (1:1/16:9/9:16),
-  style tags, and ref handling; user only sees the plain-words preview.
-  Persona guidance belongs in DEFAULT_ADA_INSTRUCTIONS/tools desc, not a
-  separate tool. Deferred: multi-turn conversational editing, veo video.
-help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model;
-  tg send: tg_relay.send_photo (fetch url -> sendPhoto); LINE: line_relay._images_from
-  (cast_url/image_url -> imageMessage, public https only); tool group:
-  ada_render_* — new `render` domain for tools.d/manifests'
-updated: '2026-10-04'
+metric: prompt (+ optional ref image) -> generated PNG arrives as photo in Tony LINE + TG chats
+verify: scenario img_render_* passes; ask Ada in tg chat -> sendPhoto <30s; LINE chat -> imageMessage
+note: 'Thin layer — plumbing already exists, this is generator + URL hop. Scope: (1) new tool group `render` — ada_render_image(prompt,
+  ref_url?, aspect?) calls gemini-2.5-flash-image via REST generateContent (same thread-safe path as _vcast_tts
+  — no google-genai client); ref_url enables nano-banana edit/compose (image + instruction -> new image); (2) PNG
+  -> vcast /frame store -> display-reachable URL; (3) relays already finish: tg_relay.send_photo(url) -> sendPhoto,
+  line_relay turns cast_url/image_url into LINE imageMessage (public https only). (4) PROMPT-BUILDER FLOW: Ada interviews
+  — subject/style/mood/ratio in one or two questions max, then confirms the assembled prompt before rendering. Params
+  hidden from user — Ada picks aspect (1:1/16:9/9:16), style tags, and ref handling; user only sees the plain-words
+  preview. Persona guidance belongs in DEFAULT_ADA_INSTRUCTIONS/tools desc, not a separate tool. Deferred: multi-turn
+  conversational editing, veo video.'
+help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model; tg send: tg_relay.send_photo (fetch
+  url -> sendPhoto); LINE: line_relay._images_from (cast_url/image_url -> imageMessage, public https only); tool
+  group: ada_render_* — new `render` domain for tools.d/manifests'
+updated: 2026-10-05 10:48
 comms:
-- at: '2026-10-04 19:34'
+- at: 2026-10-04 19:34
   from: devin
-  text: 'Filed minimal (prompt -> PNG -> LINE/TG). Expanded same-day per
-    Tony: ref-image input (nano-banana edit/compose), Ada as prompt
-    interviewer (params hidden — aspect/style chosen by Ada), test
-    scenarios img_render_*, video lane split to veo-video-render.'
+  text: 'Filed minimal (prompt -> PNG -> LINE/TG). Expanded same-day per Tony: ref-image input (nano-banana edit/compose),
+    Ada as prompt interviewer (params hidden — aspect/style chosen by Ada), test scenarios img_render_*, video lane
+    split to veo-video-render.'
+- at: 2026-10-05 10:48
+  from: devin
+  text: 'BLOCKER found by demo attempt 2026-10-05: gemini-2.5-flash-image is quota-zero on BOTH Gemini keys on idc01
+    (mddb-gemini.env + ada-ha-tony.env — free_tier limit:0, needs billing enabled on the project). OpenRouter key
+    also exhausted (total limit). Demo delivered via pollinations.ai/flux fallback instead — TG sendPhoto multipart
+    + LINE pushMessage via a nonce file on the pwa public mount (cleaned up after). To land ada_render_image: enable
+    billing on the Google AI project, or budget the OpenRoute'

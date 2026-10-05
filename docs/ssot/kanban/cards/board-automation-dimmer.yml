@@ -1,0 +1,15 @@
+id: board-automation-dimmer
+title: 'Board: collapse automation-generated cards under a toggle'
+column: backlog
+note: cms-auto-* and logs-auto-* cards are bookkeeping — the automation health loop working as designed — but they
+  now dominate review/doing columns and bury human-decision cards.
+spec: 'render-board.py: cards whose id matches automation patterns (cms-auto-*, logs-auto-*, *-auto-health) render
+  dimmed/collapsed into a per-column ''automation (N)'' group, expandable on click; persist the toggle in localStorage.
+  Human cards always render normally. Verify: automation cards grouped but still reachable; count badge correct.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: 'Add automation-card dimmer to the board per card spec: pattern-grouped, collapsed, expandable, localStorage
+    toggle. Verify per spec.'
+updated: '2026-10-05'

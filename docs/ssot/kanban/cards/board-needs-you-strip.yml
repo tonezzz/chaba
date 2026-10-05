@@ -1,0 +1,23 @@
+id: board-needs-you-strip
+title: 'Board: ''Needs You'' strip — every pending decision in one band'
+column: backlog
+note: Tony's decision queue is scattered across board requests, review verification, CMS index, focus inbox, and
+  chat. The board already has the data — it just buries it inside per-card modals. One glance should answer 'what
+  needs me right now'.
+spec: 'scripts/render-board.py: add a ''Needs You'' band above the columns. Contents: (1) every card with an unanswered
+  request — render the ask text + its option buttons INLINE so answering takes one click, no modal; (2) review-column
+  cards older than 24h with no verification comm entry; (3) dispatches in failed/error state. Band header shows
+  count ''N things need you''; collapsible, expanded by default when N>0. Reuse the existing respond/comment POST
+  handlers — no new API surface. Verify: create a test request, see it in the band, answer it inline, confirm it
+  disappears.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Build the Needs You strip in render-board.py per card spec: inline request-answer buttons + stale-review
+    + failed dispatches in a collapsible top band using existing POST endpoints. Verify per spec.'
+updated: 2026-10-05 10:54
+comms:
+- at: 2026-10-05 10:54
+  from: tony
+  text: queued for processing

@@ -1,0 +1,25 @@
+id: daily-brief-node
+title: Daily brief — L2 report node, morning + evening, CMS + Ada-readable
+column: backlog
+note: Development is outpacing Tony's perception — overnight dispatches land while he sleeps and he has no 30-second
+  rollup. Tony chose morning (~07:00) AND evening (~19:00) generation. Must render into the reports layer AND a
+  CMS page so Ada can answer 'what needs me?'
+spec: 'New reports node ''daily-brief'' (L2-domain) in ssot.reports.yml. Generator scripts/report-daily-brief.py:
+  morning edition = overnight results (dispatches completed/failed since 19:00, new cards filed, red health flags,
+  top open requests); evening edition = day''s completions + ''what still needs you before tomorrow'' (unanswered
+  requests, stale review, failed dispatches). Output: meta.yml via lib/report.py + append_timeline + markdown to
+  stacks/web/public/apps/system-report/data/DAILY-BRIEF.md + publish/update CMS page ''daily-brief'' in ada-cms-pages
+  (kind:report, meta_contract fields, fresh_for=12h, links). Two timers: ~07:00 and ~19:00 after other producers
+  (or one twice-daily timer). Verify: both editions produce meta+md+CMS page; Ada''s reports-index surfaces it;
+  ''what needs me'' is answerable from the summary line.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Build the daily-brief node per card spec: morning+evening editions, meta.yml+timeline+markdown+CMS page,
+    timers ~07:00/19:00. Verify per spec including reports-index visibility.'
+updated: 2026-10-05 10:54
+comms:
+- at: 2026-10-05 10:54
+  from: tony
+  text: queued for processing

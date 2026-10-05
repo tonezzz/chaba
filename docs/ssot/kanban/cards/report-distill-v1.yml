@@ -1,0 +1,20 @@
+id: report-distill-v1
+title: Write report-distill.py — nightly bank->report promotion
+column: backlog
+note: ssot.apps.ada-cms-reports.yml distill_jobs declares a nightly L1 bank -> L2 CMS report job 'to write' — it
+  never got built, so the L1->L2 promotion layer is missing. Without it CMS pages stay one-off and Ada's L3-first
+  read finds thin coverage.
+spec: 'Write scripts/ada/report-distill.py: deterministic (not LLM in v1) rollup per domain — start with health
+  domain only as the template: read ada-cms-pages + ada-* bank deltas since last run, emit/refresh one kind:report
+  page per domain carrying the meta_contract fields (summary, domain, fresh_for, confidence, timeline, links, supersedes),
+  supersede yesterday''s page. Register as ada-cms-automation entry with interval 24h; timer on idc01 after ada-scenario
+  timers (or idc02 per the offload note). Verify: page exists, meta complete, index regenerated, health monitor
+  sees the automation.'
+updated: '2026-10-05'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: 'Build report-distill.py per card spec — health domain first as the deterministic template: rollup ada-cms-pages
+    + ada-* bank deltas -> one kind:report page per domain with full meta_contract, supersede previous, register
+    in ada-cms-automation (24h), timer post ada-scenario runs. Verify: page+meta+index+health-monitor visibility.'
