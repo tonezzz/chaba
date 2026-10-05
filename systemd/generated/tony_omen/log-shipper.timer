@@ -1,0 +1,9 @@
+[Unit]
+Description=Log shipper (local journald -> MDDB host-logs) (job:log-shipper, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=60min
+
+[Install]
+WantedBy=timers.target

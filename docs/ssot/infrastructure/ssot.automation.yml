@@ -369,7 +369,9 @@ automation:
         outputs: MDDB growth block in the digest
       log-shipper.py:
         status: scheduled
-        scheduler: ada-review-refresh chain
+        scheduler: per-host log-shipper.timer on each fleet host (hourly,
+          --self; ssot.jobs.yml) — the ada-review-refresh chain call is
+          now the ssh fallback lane
         outputs: MDDB host-logs collection
       prune-old-docs.py:
         status: scheduled

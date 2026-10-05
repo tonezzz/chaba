@@ -1,0 +1,115 @@
+title: Per-host local log-shipper timers — killed the ssh dependency
+subtitle: >-
+  Every fleet host now ships its own journald to MDDB host-logs on its own
+  systemd user timer (hourly). The tony-omen ada-review-refresh nightly
+  that used to ssh to each host stays on as a fallback lane — both lanes
+  share the remote cursor files, so no double-posting.
+icon: rocket
+id: 2026-10-05-log-shipper-local-timers
+status: done
+owner: devin-dispatch
+project: chaba
+card: logs-local-shippers
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Kanban card logs-local-shippers: the omen-nightly ssh lane dies
+    silently whenever a tailscale auth check expires (tony-dell was absent
+    ~1 week unnoticed). Install a user timer on EACH host
+    (tony-dell, tony-omen, idc01, idc02, idc03, mn01, michael-ha) shipping
+    to the central store. Verify: each host's newest log entry < 26h.
+
+topology:
+  primary_lane: >-
+    systemd user timer `log-shipper.timer` on each host, hourly
+    (OnUnitActiveSec=60min + OnBootSec=1min), runs
+    `python3 ~/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000` — local journalctl, posts straight to MDDB leader.
+  fallback_lane: >-
+    tony-omen ada-review-refresh chain still runs bare `log-shipper.py`
+    (full DEFAULT_HOSTS) over ssh. Shared remote cursor files mean
+    whichever lane runs first ships; the other reports 0 — by design.
+  michael-ha_lane: >-
+    `log-shipper-mha.timer` on tony-dell runs `--hosts michael-ha`, which
+    pulls `ha host logs -n 1500` over key-auth ssh
+    (root@michael-ha -i ~/.ssh/michael-ha). HAOS reality: ssh lands in the
+    Alpine core-ssh addon — no python3, no systemd, no journalctl, and the
+    supervisor's /host/logs only serves text/plain (no journald cursor
+    protocol). A local timer is IMPOSSIBLE there — key-auth ssh is used
+    so tailscale-ssh auth expiry still can't break it. Dedup is a
+    collector-side ts+hash state file
+    (~/.cache/log-shipper-ha-michael-ha.json).
+
+code_changes:
+  - scripts/ada/log-shipper.py — --self mode (fleet name from LOG_SHIP_HOST
+    or hostname); _is_local() so a host named in --hosts that equals the
+    local machine runs journalctl locally; HA_CLI_HOSTS + SSH_TARGETS
+    transport for michael-ha (ha host logs text parse, collector-side
+    dedup); lane field (local|ssh|ha-cli-ssh) in ship-state docs;
+    DEFAULT_HOSTS += idc03, michael-ha; MDDB default fixed to the live
+    leader http://100.102.134.91:11023/v1 (100.74.146.0 is dead — the
+    docs' "idc01" label for the leader is stale, the leader runs on the
+    tailnet node named idc03).
+  - scripts/ada/logs-kanban.py — same default fix; fallback expected list
+    += idc03, michael-ha; ha-cli-ssh lane exempt from the one-sided
+    journal check; coverage lines now show the lane.
+  - scripts/ada/logs-report.py — same default fix.
+  - scripts/ada/export-transcripts.py — fallback lane now calls
+    log-shipper with no --hosts (full DEFAULT_HOSTS fleet).
+  - scripts/ada/install-log-shipper.sh — NEW installer; bundles
+    log-shipper.py + rendered units, pushes over ssh (or --via a jump
+    host — idc03 needs it, the id_idc03 key lives only on tony-omen),
+    enables timers, optional first run.
+  - docs/ssot/infrastructure/ssot.jobs.yml — 6x log-shipper jobs +
+    log-shipper-mha on tony_dell; idc03 added to config.repo.
+  - systemd/generated/<host>/log-shipper.{service,timer} + dell's
+    log-shipper-mha.* — rendered by render-jobs.py.
+
+install_state:
+  installed_2026-10-05:
+    tony-dell: log-shipper.timer + log-shipper-mha.timer armed; first
+      fires shipped 500 (self) + 140 (michael-ha pull)
+    tony-omen: timer armed; first run shipped 500
+    idc01: timer armed; first run shipped 500
+    idc02: timer armed; first run shipped 500
+    idc03: timer armed (installed via tony-omen hop); shipped 485
+    mn01: timer armed; first run shipped 500
+    michael-ha: no local timer possible — covered by log-shipper-mha on
+      tony-dell (ha-cli pull, key-auth ssh)
+  script_location: ~/.local/share/log-shipper/log-shipper.py — installed
+    copy, deliberately NOT the repo checkout so a stale/divergent
+    checkout (e.g. mn01's chaba has no scripts/ada/) can never break
+    shipping. Re-run the installer to propagate script updates.
+  add_a_host: >-
+    add a `log-shipper` job with the host key to ssot.jobs.yml (add the
+    host to config.repo if new), run render-jobs.py, then
+    `install-log-shipper.sh <host>`.
+
+verification:
+  done:
+    - "--self --dry-run on tony-dell: 5024 matched, 500 (cap) would ship"
+    - "--hosts michael-ha --dry-run: 140 matched via ha host logs"
+    - "all 7 hosts' ship/<host> state docs fresh (<0.2h) with lane=local
+      x6 + lane=ha-cli-ssh"
+    - "michael-ha doc exists in host-logs by key (hostlog/michael-ha/…)"
+    - "both dell timers armed, next elapse +60min"
+  pending:
+    - "each host's newest host-logs entry < 26h — holds while the hourly
+      timers tick; the ~2-5k line backlog drains at 2000/run (~2-3 runs)"
+    - "logs-kanban coverage card next refresh — michael-ha shows
+      ha-cli-ssh lane, no one-sided flag"
+
+known_limits:
+  - "idc01/idc02/idc03 system journals unreadable (user tony not in
+    systemd-journal/adm group) — same as the old ssh lane; user journals
+    ship fine. Fix = usermod -aG systemd-journal tony on the VPSes."
+  - "shared cursor means a fast local timer can starve the fallback lane
+    into reporting shipped=0 — expected, not a bug; lane field shows who
+    shipped last"
+  - "ha host logs timestamps assumed UTC (journal-gatewayd host-local
+    render on HAOS, which runs UTC); a TZ change on michael-ha would skew
+    dedup watermarks, not lose data"
+  - "re-running the installer re-arms timers — enable --now is
+    idempotent"

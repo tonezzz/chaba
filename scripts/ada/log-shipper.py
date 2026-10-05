@@ -18,8 +18,23 @@ MDDB-down tolerant: posts with a short timeout and stops at the first
 failure (lines are ordered — a shipped-cursor gap would silently drop
 lines); the remote cursor only advances past lines confirmed shipped.
 
+Per-host model (2026-10-05): each fleet host runs this on its own
+systemd user timer (`--self`, installed by install-log-shipper.sh) and
+posts straight to MDDB — no ssh hop that can die silently on tailscale
+auth expiry. The central tony-omen ada-review-refresh run stays as a
+fallback lane over ssh. Both lanes share the same remote cursor files,
+so whichever runs first ships, the other reports 0 (no double-posting —
+keys are deterministic per line).
+
+michael-ha can't host a local shipper (ssh lands in the Alpine core-ssh
+addon — no python3/systemd/journalctl; supervisor only serves text
+logs). It's pulled via `ha host logs` over key-auth ssh by a dedicated
+timer on tony-dell; dedup is a collector-side ts+hash state file since
+there's no journald cursor.
+
 Usage:
   log-shipper.py                          # all hosts, user+system journals
+  log-shipper.py --self                   # this host only (per-host timer)
   log-shipper.py --hosts idc01 --dry-run
   log-shipper.py --prune-days 14          # retention sweep (delete old docs)
 """
@@ -32,15 +47,32 @@ import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
 
-DEFAULT_HOSTS = ["idc01", "idc02", "mn01", "tony-dell", "tony-omen"]
+DEFAULT_HOSTS = ["idc01", "idc02", "idc03", "mn01", "tony-dell",
+                 "tony-omen", "michael-ha"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
+# Hosts with no local runtime for the shipper — michael-ha ssh lands in
+# the core-ssh addon container (Alpine, no python3/systemd/journalctl).
+# Pulled via `ha host logs` text stream instead.
+HA_CLI_HOSTS = {"michael-ha"}
+# Non-default ssh targets — (target, extra ssh args). michael-ha needs
+# the dedicated key + root (addon container); not tailscale-ssh auth, so
+# a tailscale auth expiry can't break it.
+SSH_TARGETS = {
+    "michael-ha": ("root@michael-ha",
+                   ["-i", os.path.expanduser(
+                       os.environ.get("HA_SSH_KEY",
+                                      "~/.ssh/michael-ha"))]),
+}
 # Ops telemetry goes to mddb-ops when configured — keeps host-logs
 # (the largest collection) off the leader's vector index.
+# Default = live MDDB leader (idc03 tailnet IP; docs' "idc01" label is
+# stale — the leader moved and 100.74.146.0 no longer serves MDDB).
 MDDB_URL = (os.environ.get("MDDB_OPS_URL")
             or os.environ.get("MDDB_BASE_URL",
                               "http://100.102.134.91:11023/v1")).rstrip("/")
@@ -92,15 +124,103 @@ def _run(cmd: list[str], timeout: int) -> str:
         return ""
 
 
+def _local_name() -> str:
+    """Fleet name of the machine we're running on — fleet hostnames
+    already match (tony-dell, idc01, ...); LOG_SHIP_HOST overrides."""
+    return os.environ.get("LOG_SHIP_HOST") or \
+        socket.gethostname().split(".")[0]
+
+
+def _is_local(host: str) -> bool:
+    return host in LOCAL_NAMES or host == _local_name()
+
+
 def _ssh(host: str, remote: str, timeout: int = 120) -> str:
-    if host in LOCAL_NAMES:
+    if _is_local(host):
         return _run(["bash", "-c", remote], timeout)
+    target, extra = SSH_TARGETS.get(host, (host, []))
     return _run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                 host, remote], timeout)
+                 *extra, target, remote], timeout)
 
 
 def _cursor_path(user: bool) -> str:
     return f"~/.cache/log-shipper-{'user' if user else 'sys'}.cursor"
+
+
+# `ha host logs` line: "2026-10-05 15:06:34.360 homeassistant systemd[1]: msg"
+HA_LINE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \S+ "
+    r"([^:\[\s]+)(?:\[\d+\])?: (.*)$")
+
+
+def _ha_state_file(host: str) -> Path:
+    return Path.home() / ".cache" / f"log-shipper-ha-{host}.json"
+
+
+def _journal_ha(host: str) -> list[dict]:
+    """ha-cli hosts: `ha host logs` text tail — the supervisor exposes no
+    journald cursor protocol, so dedup is (ts watermark, boundary hashes)
+    kept in a collector-side state file. Rows carry a JSON cursor
+    snapshot so the write-back-after-post rule still holds."""
+    out = _ssh(host, "ha host logs -n 1500 --no-progress 2>/dev/null",
+               timeout=60)
+    st = {}
+    try:
+        st = json.loads(_ha_state_file(host).read_text())
+    except Exception:
+        pass
+    last_ts = st.get("ts", "")
+    max_ts = last_ts
+    boundary = list(st.get("seen", []))
+    rows = []
+    for ln in out.splitlines():
+        m = HA_LINE.match(ln.strip())
+        if not m:
+            continue
+        raw_ts, ident, msg = m.groups()
+        if not msg.strip():
+            continue
+        kind = classify(msg)
+        if not kind:
+            continue
+        # journal-gatewayd renders in the HAOS host's TZ (UTC)
+        try:
+            ts = datetime.datetime.fromisoformat(
+                raw_ts.replace(" ", "T")).replace(
+                    tzinfo=datetime.timezone.utc
+                ).isoformat(timespec="seconds")
+        except Exception:
+            continue
+        h = hashlib.sha1((ident + ts + msg).encode()).hexdigest()[:8]
+        if ts < last_ts or (ts == last_ts and h in boundary):
+            continue
+        if ts > max_ts:
+            max_ts, boundary = ts, []
+        if ts == max_ts:
+            boundary.append(h)
+        try:
+            rt = str(int(datetime.datetime.fromisoformat(ts)
+                       .timestamp() * 1e6))
+        except Exception:
+            rt = ""
+        rows.append({"key": f"hostlog/{host}/{rt[-12:]}-{h}",
+                     "host": host, "journal": "sys",
+                     "unit": ident, "ts": ts, "kind": kind,
+                     "cursor": json.dumps({"ts": max_ts,
+                                           "seen": boundary}),
+                     "line": msg.strip()[:400]})
+    return rows
+
+
+def _save_ha_state(host: str, cursor_json: str) -> None:
+    """Collector-side dedup file for ha-cli hosts (the remote addon has
+    no persistent $HOME)."""
+    try:
+        _ha_state_file(host).parent.mkdir(parents=True, exist_ok=True)
+        _ha_state_file(host).write_text(cursor_json)
+    except Exception as e:
+        print(f"warn: {host}: ha state save failed: {e}",
+              file=sys.stderr)
 
 
 def _journal(host: str, user: bool) -> list[dict]:
@@ -177,18 +297,26 @@ def _save_cursor(host: str, user: bool, cursor: str) -> None:
 def _reachable(host: str) -> bool:
     """Cheap probe so a dead ssh hop (tailscale auth check, host down)
     is distinguishable from a healthy-but-quiet host in the state doc."""
-    return "ok" in _ssh(host, "echo ok", timeout=15)
+    probe = ("ha host logs -n 1 --no-progress >/dev/null 2>&1 && echo ok"
+             if host in HA_CLI_HOSTS else "echo ok")
+    return "ok" in _ssh(host, probe, timeout=15)
 
 
 def ship(host: str, dry: bool, max_docs: int) -> dict:
     sent = fail = scanned = 0
     journals = {"user": 0, "sys": 0}
+    ha = host in HA_CLI_HOSTS
+    lane = ("ha-cli-ssh" if ha else
+            "local" if _is_local(host) else "ssh")
     if not _reachable(host):
         return {"host": host, "shipped": 0, "failed": 0, "scanned": 0,
-                "reachable": False, "journals": journals,
-                "error": "ssh probe failed"}
-    for user in (True, False):
-        rows = _journal(host, user)
+                "reachable": False, "journals": journals, "lane": lane,
+                "error": "ha-cli probe failed" if ha else
+                         "ssh probe failed"}
+    # ha-cli hosts have a single host journal; others run user+system.
+    sides = [(False, _journal_ha(host))] if ha else \
+            [(user, _journal(host, user)) for user in (True, False)]
+    for user, rows in sides:
         scanned += len(rows)
         journals["user" if user else "sys"] = len(rows)
         last_ok = ""
@@ -216,11 +344,14 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
             sent += 1
             last_ok = r["cursor"]
         if not dry and last_ok:
-            _save_cursor(host, user, last_ok)
+            if ha:
+                _save_ha_state(host, last_ok)
+            else:
+                _save_cursor(host, user, last_ok)
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
-            "scanned": scanned, "reachable": True,
+            "scanned": scanned, "reachable": True, "lane": lane,
             "journals": journals,
             "error": "mddb add failed" if fail else ""}
 
@@ -274,6 +405,10 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--hosts", default=",".join(DEFAULT_HOSTS))
+    ap.add_argument("--self", dest="self_host", action="store_true",
+                    help="ship only this machine's journals — fleet name "
+                         "from LOG_SHIP_HOST or hostname (per-host timer "
+                         "mode)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-docs", type=int, default=500,
                     help="cap docs shipped per host per run")
@@ -286,7 +421,9 @@ def main() -> int:
               f"{args.prune_days}d")
         return 0
 
-    for h in [x.strip() for x in args.hosts.split(",") if x.strip()]:
+    hosts = [_local_name()] if args.self_host else \
+        [x.strip() for x in args.hosts.split(",") if x.strip()]
+    for h in hosts:
         try:
             r = ship(h, args.dry_run, args.max_docs)
             print(f"{r['host']}: {r['shipped']} shipped "
