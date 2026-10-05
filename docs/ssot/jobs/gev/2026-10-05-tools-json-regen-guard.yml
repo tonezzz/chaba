@@ -1,0 +1,84 @@
+title: gev-gemini tools.json regen guard + live ws verification
+date: '2026-10-05'
+domain: gev
+status: implemented
+trigger: kanban card gev-bridge
+
+deliverables:
+  guard:
+    file: stacks/tony-dell/gev-gemini/tools-check.mjs
+    what: >
+      Extracts the GEV_REALTIME_TOOLS array literal from
+      ~/gods-eye-view/vite.config.js (balanced-bracket scan, comment/string/
+      template-aware; evaluated via new Function — the literal is pure data),
+      strips additionalProperties/additional_properties recursively (same
+      semantics as bridge.py _clean_schema), and deep-diffs the result against
+      committed tools.json. Exit 1 on drift with per-path output and the
+      regen command; --write regenerates; --config/--tools override paths;
+      $GEV_VITE_CONFIG env also honoured. Round-trip verified:
+      --write to a temp file (28 decls, 0 additionalProperties) -> check PASS.
+  smoke:
+    file: stacks/tony-dell/gev-gemini/live-check.py
+    what: >
+      ws smoke of the voice path: connect -> expect status -> send
+      {"type":"text"} -> expect function_call -> send tool_response ->
+      expect done. Exit 0 on full pass. --url selects ws://127.0.0.1:8789
+      (default) or wss://.../apps/gev-live/ws through Caddy. Opens a real
+      Gemini Live session per run.
+  docs: stacks/tony-dell/gev-gemini/README.md
+
+drift_found:  # the guard immediately caught real drift — DO NOT --write blindly
+  summary: >
+    Committed tools.json is AHEAD of ~/gods-eye-view vite.config.js, not
+    behind it. The 2026-10-04 move_camera zoom/fly work edited the deployed
+    bundle + tools.json directly and its source_port is still pending, so a
+    naive --write would REGRESS the live declarations. Source also evolved
+    separately (move_camera gained motion 'stop', two descriptions reworded),
+    so the two files have genuinely diverged.
+  details:
+    - "tools[2] adjust_camera_zoom.description: committed 'Smoothly dolly...' vs source 'Move...'"
+    - "tools[24] move_camera: committed adds motion enum zoom,fly (+ stop shared), direction enum in,out,forward,back, amount param, richer descriptions — all absent in source"
+  resolution: >
+    Port the bundle-side move_camera/adjust_camera_zoom changes into
+    ~/gods-eye-view vite.config.js (the source_port task already flagged in
+    jobs/gev/2026-10-04-gev-map-zoom-flight.yml — outside this dispatch
+    worktree), THEN run tools-check.mjs --write. tools.json left untouched.
+
+live_path:
+  result: PASS both paths after bridge restart
+  verified:
+    - "ws://127.0.0.1:8789: status -> function_call zoom_to_globe -> tool_response -> spoken text + done"
+    - "wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws (Caddy): same full cycle"
+  incident:
+    symptom: >
+      Every voice session since the 2026-09-30 04:56Z image rebuild failed with
+      'timed out during opening handshake' (Oct 3 22:07 and Oct 5 pre-restart).
+      Remote (?remote=1) clients and /command kept working throughout.
+    evidence: >
+      Oct 3 traceback shows the ws open_timeout expiring while
+      loop.getaddrinfo was still queued in run_in_executor, and a 3m23s gap
+      between two ADJACENT SYNCHRONOUS log lines ('Client connected' ->
+      'Loaded 28 tool declarations'). Fresh podman-exec connects with the same
+      SDK/config succeeded in 0.6s. Bridge process: idle in epoll, 0% CPU,
+      28MB swapped; host under sustained memory pressure (psi memory some
+      avg300=1.68, swap 11.3G/16G used). Container stop also needed SIGKILL
+      (10s) and the first post-restart python took ~90s to bind the port —
+      system-wide stalls, not a Google-side or schema problem.
+    diagnosis: >
+      The bridge's event loop was frozen for tens of seconds at a time (swap/
+      page-in stalls under host memory pressure are the best fit for the
+      observed signature); when it thawed, expired timeouts fired mid-
+      handshake — the 'opening handshake' timeout is a symptom, not a network
+      failure. Restart cleared it; recurrence is possible while the host
+      stays memory-pressured.
+    followups:
+      - requirements.txt is UNPINNED (google-genai, websockets) — pin to the
+        known-good set (genai 2.25.0 + websockets 16.1.1 verified live today)
+        before the next rebuild makes triage harder.
+      - consider a loop-health watchdog (event-loop lag metric in
+        /command/health) so freeze-vs-api failures are distinguishable.
+
+verify:
+  - "node stacks/tony-dell/gev-gemini/tools-check.mjs  # currently FAILs = real drift, per-path output"
+  - "python3 stacks/tony-dell/gev-gemini/live-check.py  # PASS 2026-10-05 after service restart"
+  - "python3 stacks/tony-dell/gev-gemini/live-check.py --url wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws  # PASS"
