@@ -1,0 +1,10 @@
+[Unit]
+Description=Report a failed ada report/CMS generator run (%i.service) — board comms, focus-inbox fallback
+
+[Service]
+Type=oneshot
+# %i = the failed unit's name minus .service (OnFailure=ada-report-fail@%N.service
+# would double the suffix; callers use OnFailure=ada-report-fail@%p.service).
+Environment=BOARD_API=http://127.0.0.1:8787
+Environment=CARD=cms-generator-schedule-audit
+ExecStart=/bin/bash -c 'msg="%i.service FAILED on $(hostname) — journalctl --user -u %i.service"; if curl -sf -m 10 -X POST "$BOARD_API/comment" -H "Content-Type: application/json" -d "{\"id\":\"$CARD\",\"from\":\"chaba\",\"text\":\"$msg\"}" >/dev/null; then echo "comms posted to $CARD"; exit 0; fi; INBOX=${INBOX:-$HOME/CascadeProjects/chaba/docs/ssot/focus-inbox}; f="$INBOX/$(date -Is | tr ":+" "--")-%i-failed.yml"; mkdir -p "$INBOX"; { echo "title: Focus Inbox Item"; echo "subtitle: %i run failed"; echo "focus:"; echo "  label: %i failed"; echo "  text: \"$msg — investigate before the next scheduled run\""; echo "  status: draft"; echo "  priority: high"; echo "  tags: [ada, cms, automation]"; } > "$f"; echo "board-api unreachable — wrote $f"'

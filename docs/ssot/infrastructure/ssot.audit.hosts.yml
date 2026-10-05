@@ -226,6 +226,26 @@ hosts:
           leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
+      - name: kanban-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "15min — kanban <-> CMS loop from a detached worktree:
+          cms-auto-health -> cms-auto-* cards, logs-kanban -> logs-auto-*
+          cards, kanban-stats, kanban-cms -> live dev-kanban page. Rendered
+          job (ssot.jobs.yml); OnFailure -> ada-report-fail@ posts board
+          comms. Verified live 2026-10-05."
+      - name: ada-flood-news.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "15min flood-report* CMS refresh (flood-news-update.py --all).
+          STALE DUPLICATE 2026-10-05: ssot.jobs.yml migrated this to idc02
+          on 2026-10-03 but the dell unit still fires — retire the dell copy
+          once the idc02 run is confirmed stable. No OnFailure: exits 2 on
+          all-skipped ticks by design."
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
@@ -724,7 +744,30 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
+        note: "Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py). STALE DUPLICATE 2026-10-05: ssot.jobs.yml migrated this to idc02 on 2026-10-04 but the omen unit still fires on the same schedule — retire the omen copy"
+      - name: ada-review-refresh.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Daily 08:45 (Persistent) — THE ada-review chain:
+          export-transcripts.py pulls idc01 transcripts/reports/memory, then
+          runs journal/host/ha/logs-report, log-shipper, vocab-pages-sync
+          (my-words CMS pages), prune-old-docs, bloat-report, the 7
+          personal-tier collectors (devin/net/ops/tasks/spend/caddy/
+          ha-events), personal-rollup and focus-rollup. Units
+          chaba/systemd/ada-review-refresh.{service,timer}; OnFailure ->
+          ada-report-fail@ posts board comms (added 2026-10-05). Verified
+          live 2026-10-05."
+      - name: weekly-digest.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Weekly Mon 07:00 — weekly-digest.py publishes the digest-weekly
+          CMS page (digest-of-digests). Units
+          chaba/systemd/weekly-digest.{service,timer}; OnFailure ->
+          ada-report-fail@. Verified live 2026-10-05."
       - name: clip-sync-dell.service
         type: service
         scope: user
@@ -1442,6 +1485,22 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly known-answer recall probe
+      - name: news-flood.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Hourly — news-flood-fetch.py publishes the news-flood CMS page
+          (md5-gated). Units chaba/systemd/news-flood.{service,timer};
+          OnFailure -> ada-report-fail@. Verified live 2026-10-05."
+      - name: ada-embed-bench.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Weekly Sat 06:00 — embed-bench.py --publish: Gemini-direct vs
+          OpenRouter embedding route benchmark -> CMS page. Verified live
+          2026-10-05."
     # Any OOM kill in the last 24h is a delta — the 2026-09-27 mddb crash
     # loop (4 OOM kills in ~40min, resync-from-LSN0 amplification) must not
     # pass silently. Raise only if a recurring OOM is accepted as known.
@@ -1506,6 +1565,36 @@ hosts:
         expected_state: active
         critical: false
         note: Headless Chromium+Playwright virtual display 7
+      - name: ada-flood-news.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "15min flood-report* CMS refresh (flood-news-update.py --all) —
+          canonical host per ssot.jobs.yml since the 2026-10-03 migration.
+          A stale duplicate still fires on tony-dell; retire that copy.
+          No OnFailure: exits 2 on all-skipped ticks by design."
+      - name: devin-bank-distill.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Weekly Sun 10:15 — scripts/ada/distill-devin-bank.py devin/weekly-*
+          rollups; canonical host per ssot.jobs.yml since 2026-10-04. A stale
+          duplicate still fires on tony-omen on the same schedule — retire it."
+      - name: chaba-system-report.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Daily 06:45 — audit-hosts sweep over 5 hosts + consolidate +
+          report-system.py -> reports/SYSTEM-REPORT.{md,yml} (rendered job,
+          ssot.jobs.yml; migrated from tony-dell 2026-10-04 — the dell copy
+          also still fires, same drift class as ada-flood-news)"
+    # Other rendered ssot.jobs.yml timers live on idc02 but not yet registered
+    # here (out of this audit's scope): chaba-audit, chaba-audit-full,
+    # chaba-kb-audit, ssot-optimization-snapshot, camwall-render-check,
+    # mddb-lab-pull, report-distill, jev-bench/jev-retrain.
     known_failed: []
 related_files:
   - scripts/audit-hosts.py
