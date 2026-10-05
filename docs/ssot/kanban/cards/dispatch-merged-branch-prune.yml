@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
-column: backlog
-updated: 2026-10-05 22:52
+column: review
+updated: 2026-10-05 23:02
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -18,8 +18,12 @@ spec: 'Weekly prune of merged dispatch/* branches + their worktrees: for each di
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
   button: ▶ Start
+  runner: tony-omen
+  result: 'exit=0  Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. |
+    devin-task-20261005-230029-weekly-prune-of-merged-dispatc.service: Consumed 50.504s CPU time over 1min 10.056s
+    wall clock time, 1.1G memory peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -27,3 +31,14 @@ comms:
 - at: 2026-10-05 22:52
   from: tony
   text: queued for processing
+- at: 2026-10-05 23:00
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 23:00
+  from: chaba
+  text: started devin-task-20261005-230029-weekly-prune-of-merged-dispatc on tony-omen (dispatch)
+- at: 2026-10-05 23:02
+  from: tony-omen
+  text: 'finished (ok): exit=0  Running in non-interactive mode. Use --permission-mode dangerous to auto-approve
+    all tools. | devin-task-2026100'
+claim: {}

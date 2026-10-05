@@ -1,6 +1,6 @@
 id: ada-user-device-acl
 title: Ada user ACL — per-user device set, guest default, admin-grant flow
-column: doing
+column: review
 priority: medium
 metric: guest/unknown user can control only the pre-defined device set; a denied device requires an admin grant
   to become controllable
@@ -14,7 +14,7 @@ note: 'Extend the `access` posture (already: per-identity memory banks + domain 
   (entity_id vs device vs area), grant channel (voice confirm vs card/admin tool), audit log of grants/denials.'
 help: 'related: person.kk domain list in `## access` memory section; speaker-id ties ACL to voice identity — a denied-device
   request under Guest means speaker-id correctness gates this whole feature'
-updated: 2026-10-05 22:44
+updated: 2026-10-05 23:00
 spec: 'Extend Ada access posture from domain-level to device-level ACL: (1) every identity gets a device set (default
   guest = read-only safe set), (2) admin-grant flow to add devices per identity, (3) enforced in tool_runner ha_*
   paths. person.kk currently domain-allowlisted (light/switch/input_boolean/script/media_player) — keep that, add
@@ -23,9 +23,11 @@ spec: 'Extend Ada access posture from domain-level to device-level ACL: (1) ever
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-omen
+  result: 'exit=0 e mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223025-extend-ada-access-posture-from.service:
+    Consumed 3min 3.161s CPU time over 29min 27.912s wall clock time, 1G memory peak, 188M memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -44,3 +46,7 @@ comms:
   text: 'picked up. Design: control_policies gains allow_entities (declared device set) + granted_entities (runtime
     grants via owner-only ada_device_acl tools.d tool, persisted to ~/.config/ada/device-grants.json overlay). Enforcement
     reuses the existing control_allowed gate in tool_runner. Empty set = read-only guest posture.'
+- at: 2026-10-05 23:00
+  from: tony-omen
+  text: 'finished (ok): exit=0 e mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223025-extend-ada-access'
+claim: {}
