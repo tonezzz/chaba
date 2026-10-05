@@ -17,7 +17,7 @@ action:
     hook /request POST + 12h escalation sweep, batched/quiet. Verify per spec.'
   runner: tony-dell
   task_id: 20261005-212426-notifier-hook-in-board-api-py-
-updated: 2026-10-05 21:24
+updated: 2026-10-05 21:38
 comms:
 - at: 2026-10-05 21:16
   from: tony
@@ -25,6 +25,12 @@ comms:
 - at: 2026-10-05 21:24
   from: chaba
   text: dispatched 20261005-212426-notifier-hook-in-board-api-py- on chaba
+- at: 2026-10-05 21:38
+  from: devin
+  text: 'plan: channel eval done — yomi LINE session currently invalid (session-status valid:false) + no chatId
+    configured; ntfy.sh = new external dep; picking HA iPhone push (notify.mobile_app_tony_ip on tony-ha loopback,
+    same proven path devin-dispatch-watch uses, clickAction /chaba-admin/board), channel env-selectable so LINE
+    can be enabled later. Implementing board_notify.py + /request hook + 12h sweep in kanban-sync tick.'
 claim:
   session: 20261005-212426-notifier-hook-in-board-api-py-
   since: 2026-10-05 21:24

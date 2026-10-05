@@ -8,7 +8,7 @@ spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set 
   (NOT delete — camera pages are operational history; archive keeps them queryable while removing them from index
   weight). reports-index must not surface superseded/archived cam pages. Verify: ada-cms-pages cam-* count stabilizes,
   index one-liners stay fresh, a 7-day-old superseded page flips to kind:archive.'
-updated: 2026-10-05 21:17
+updated: 2026-10-05 21:35
 action:
   type: dispatch
   repo: chaba
@@ -25,6 +25,12 @@ comms:
 - at: 2026-10-05 21:17
   from: chaba
   text: dispatched 20261005-211715-cam-wall-cms-py-when-regenerat on chaba
+- at: 2026-10-05 21:35
+  from: devin
+  text: 'Exploring: live ada-cms-pages has ~78 cam-ish keys vs 48 the current manifests generate — ~30 orphans (Thai-slug
+    leftovers, retired dohweb/traffic cams, noble-a cam01). Plan: supersede-instead-of-delete (status:superseded+superseded_by,
+    new page meta.supersedes=prev slug), orphan sweep scoped by zone: sources, 7d->kind:archive retention, fresh_for
+    600s->1h (unparseable today, never flags stale), reports-index filter in shared lib used by cam-wall-cms + report-daily-brief.'
 claim:
   session: 20261005-211715-cam-wall-cms-py-when-regenerat
   since: 2026-10-05 21:17
