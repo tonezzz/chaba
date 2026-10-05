@@ -1,0 +1,102 @@
+title: YT voice dub — repo-home pipeline + heuristic speaker casting
+subtitle: kanban card yt-voice-dub-cast — dispatch session 2026-10-05
+icon: microphone
+
+planning:
+  goal: |
+    (1) Move the yt-live/yt-dub pipeline out of ~/.local/bin into the chaba
+    repo (scripts/ops/) without breaking installed copies.
+    (2) Heuristic speaker casting: detect turns from VTT timings (cue-gap
+    clustering + question cues), 2-speaker assumption, map each speaker to
+    a fixed edge-tts voice for the whole video.
+  out_of_scope: |
+    Real diarization (resemblyzer/pyannote in ~/.venvs/diarize) — this is
+    the cheap first pass. >2-speaker casting — edge-tts has exactly 2 TH
+    voices (Premwadee F, Niwat M).
+
+processing:
+  status: completed
+  last_updated: "2026-10-05"
+
+report:
+  summary: |
+    Part 1 — all four scripts now canonical in scripts/ops/
+    (yt-live.sh, yt-live-api.py, yt-vtt-dub.py, yt-vtt-translate.py) plus
+    three new tools: yt-cast-detect.py (turn preview CLI),
+    yt-whisper-vtt.py (faster-whisper -> karaoke VTT lane for
+    caption-less videos), yt-pipeline-install.sh (installs/refreshes
+    ~/.local/bin copies; --link mode for post-merge symlinks). Sibling
+    resolution: each script finds its neighbours from its own directory
+    first, ~/.local/bin fallback — repo and installed copies both work
+    standalone. Installed copies refreshed; yt-live-api :8791 verified
+    healthy.
+
+    Part 2 — yt-vtt-dub.py --cast-detect. Karaoke word stream -> phrases
+    at --detect-gap 0.6s -> boundary score: q_end (phrase ends '?',
+    whole-phrase tag-questions suppressed) flips unconditionally; Otsu
+    cue-gap split finds real caption-off air; q_start after a >=12s turn
+    = host interjection; response openers (Yeah/No/Well/...) weak bonus.
+    2-speaker round-robin alternation -> --cast-times map. Verified on
+    staged corpus: 4njFdBF_42I 14 turns/240s (Q->A flips land),
+    U_io-pqPFfQ 21 turns/240s (3-speaker probe: guests share voices in
+    alternation — documented limit). Full render: 180s 2-voice TH dub,
+    Niwat/Premwadee per detected turn, 21 groups, global rate 1.05,
+    lag 7.5s. sNh4pVMFhvQ whisper lane proven end-to-end (3491-word
+    Swedish karaoke VTT; detection there is air-gap only — non-English
+    q_start lexicon not implemented).
+  metrics:
+    - variant: 4njFdBF_42I detect (240s)
+      turns: 14
+      boundaries: "8 q_end, 2 air, 6 score-stack (mostly host-interject)"
+    - variant: U_io-pqPFfQ detect (240s)
+      turns: 21
+      boundaries: "16 q_end, 6 air, 1 score"
+    - variant: dub render 4nj 180s
+      voices: "th-TH-NiwatNeural x15 groups, th-TH-PremwadeeNeural x8 groups"
+      global_rate: 1.05
+      lag: 7.5s
+  lessons_learned:
+    - YouTube karaoke word times carry NO air-gap signal inside captions
+      (word end == next word start); real air shows only at caption-off
+      beats. Turn detection must lean on question cues + response
+      openers, with gap clustering for the rare real pauses.
+    - Whole-phrase tag questions ("You know what I mean?", "Right?") are
+      discourse markers — suppress or they false-flip.
+    - Alternation parity drifts under >2 speakers (probe U_io) and on
+      missed turns; honest 2-voice demo, not ground truth.
+    - faster-whisper 1.2.x needs av<19 (metadata_errors kwarg dropped in
+      av 19) — ~/.venvs/whisper pinned av==15.1.0.
+    - TH gender is unknowable from captions — --cast-voices order is the
+      operator's casting choice; detection only guarantees distinct,
+      turn-aligned voices.
+
+changes:
+  - file: scripts/ops/yt-vtt-dub.py
+    summary: canonical copy + --cast-detect/--cast-voices/--speakers/
+      --detect-gap/--dump-turns/--dub-wav; detection funcs detect_turns,
+      turns_to_cast_times, turn_summary.
+  - file: scripts/ops/yt-live.sh
+    summary: canonical copy; sibling resolution for yt-vtt-translate.py.
+  - file: scripts/ops/yt-live-api.py
+    summary: canonical copy; sibling resolution for yt-live.sh.
+  - file: scripts/ops/yt-vtt-translate.py
+    summary: canonical copy (unchanged).
+  - file: scripts/ops/yt-cast-detect.py
+    summary: new — turn-preview CLI over the detection code.
+  - file: scripts/ops/yt-whisper-vtt.py
+    summary: new — faster-whisper -> karaoke VTT lane (sNh4pVMFhvQ class).
+  - file: scripts/ops/yt-pipeline-install.sh
+    summary: new — installs/refreshes ~/.local/bin copies (--link mode).
+  - file: docs/kb/home-assistant/tv-casting-runbook.md
+    summary: repo-home + voice-dub lane documented.
+
+verification:
+  artifacts:
+    - /tmp/4nj-dub-cast.mp4        # 180s 2-voice TH dub on staged corpus
+    - /tmp/4nj-dub-only.wav        # bare dub track (pre-mix) for pitch verify
+    - /tmp/4nj.turns.json /tmp/4nj.groups.json
+    - ~/yt-dub-prep/sNh4pVMFhvQ.sv.vtt   # whisper-lane karaoke output
+  checks:
+    - "dump-groups: 2 distinct voices aligned to detected turns"
+    - "bare dub wav: per-turn F0 vs edge-tts refs (Niwat~163Hz, Premwadee~203Hz)"
+    - "yt-live-api :8791 /health ok after install refresh"
