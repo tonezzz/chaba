@@ -1,73 +1,58 @@
-# dispatch outcome — dispatch-merge-guard
+# gev-health-loop — gev-auto-* health loop
 
-## What was done
+## What changed
 
-Closed the two dispatch-loop failure modes from the card:
+- `scripts/ada/gev-auto-health.py` (new) — probes the GEV stack on tony-dell
+  and opens a `gev-auto-<check>` kanban card in `review` on failure,
+  auto-closing to `done` on recovery (lifecycle mirrored from
+  `cms-auto-health.py`/`logs-kanban.py`, incl. 12h escalation and
+  glob-close of retired-check cards). Five lanes:
+  - `page` — `GET http://127.0.0.1/apps/gev/` via Caddy must return 200
+  - `ws` — websocket upgrade `ws://127.0.0.1/apps/gev-live/ws?remote=1`
+    must return 101 + valid `Sec-WebSocket-Accept` (raw stdlib socket; the
+    `remote=1` flag registers a passive client so no Gemini Live session
+    is opened — the probe is free)
+  - `api` — `GET http://127.0.0.1:4173/<bogus>` on gods-eye-view-api; any
+    HTTP < 500 = alive (server has no health route; unknown paths 404
+    fast, real routes proxy slow external calls)
+  - `bridge` — `systemctl --user is-active gev-gemini`
+  - `api-service` — `systemctl --user is-active gods-eye-view-api`
+- `scripts/ada/kanban-sync.sh` — runs the new probe each tick after
+  `logs-kanban`; the existing `git add docs/ssot/kanban/cards/` step
+  commits and pushes its output.
+- `docs/ssot/kanban/ssot.kanban.yml` — kanban-sync lane role now lists
+  `gev-auto-*`.
+- `docs/ssot/infrastructure/ssot.jobs.yml` — kanban-sync note updated.
+- `docs/ssot/jobs/gev/2026-10-05-gev-health-loop.yml` — job trail with
+  decisions and the D-state startup-stall finding.
+- `docs/ssot/kanban/cards/gev-auto-{bridge,ws}.yml` — done-state cards
+  left by the live verification cycle (real incident records, same as
+  existing `cms-auto-*` done cards).
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+## Verification (ran live on tony-dell)
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+1. Healthy run: `0 failing, 0 cards written` — no cards.
+2. `systemctl --user stop gev-gemini` + run → `gev-auto-bridge` card in
+   review (`is-active -> failed`) AND `gev-auto-ws` in review (caddy
+   502 — the downstream lane).
+3. `systemctl --user start gev-gemini` + run → `gev-auto-bridge` closed
+   to done; `gev-auto-ws` stayed open ~90s because the fresh bridge
+   process sat in D state before binding :8789 (unit read `active` the
+   whole time — the ws lane catching this is why the multi-lane design
+   matters), then closed on the next run.
+4. `python3 -m py_compile`, `bash -n kanban-sync.sh`, and
+   `ssot-validate-all.mjs` (1180 files, 0 errors) all clean.
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
+## Notes / follow-ups
 
-## Where
-
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
-
-## Verify
-
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
-
-## Not done / notes
-
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+- The loop activates in production once this branch merges and the
+  `chaba-kanban-sync` worktree ff-pulls it (≤15min); no separate deploy —
+  the timer already runs `kanban-sync.sh`.
+- Escalation quirk inherited verbatim from the sibling lanes: card age is
+  measured from midnight of `updated`, so afternoon incidents open at
+  `priority: high` immediately. Documented in the job file; fix uniformly
+  across cms-auto-*/logs-auto-*/gev-auto-* if desired.
+- Finding worth a look later: fresh gev-gemini container starts twice
+  took ~90-100s in D state (`folio_wait_bit_common`) before the bridge
+  bound its ports. Root cause not chased — possibly fuse-overlayfs page-in
+  latency.
