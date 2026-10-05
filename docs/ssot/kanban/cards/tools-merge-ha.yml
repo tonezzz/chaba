@@ -3,11 +3,13 @@ title: Consolidate ha control + sensor + logbook tools
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 17:41
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: running
+  task_id: 20261005-173343-merge-the-ha-tool-group-14-6-p
+  runner: tony-dell
 spec: "Merge the ha tool group (14 -> 6) per the consolidation spec:\n- NEW home_search absorbs search_home_devices,\
   \ list_home_devices,\n  search_sensors, list_sensors, ada_ha_search_devices, ada_ha_search_sensors,\n  ada_ha_search_events,\
   \ search_devices -> home_search(q, kind=device|sensor|event)\n- get_home_state absorbs ada_ha_get_state -> state(entity?\
@@ -20,3 +22,16 @@ spec: "Merge the ha tool group (14 -> 6) per the consolidation spec:\n- NEW home
   \ chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE from an ada-pi\
   \ worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias routes to its parent,\
   \ post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 17:34
+  from: chaba
+  text: dispatched 20261005-173343-merge-the-ha-tool-group-14-6-p on ada-pi
+- at: 2026-10-05 17:34
+  from: devin
+  text: 'Started: exploring worktree, locating HA tool declarations and tool_runner.'
+claim:
+  session: 20261005-173343-merge-the-ha-tool-group-14-6-p
+  since: 2026-10-05 17:34
