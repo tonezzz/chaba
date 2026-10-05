@@ -128,3 +128,15 @@ comms:
     clamping; iterated borders against dumped word times until turns
     are ~95% clean (single-word slips only). TH file realigned to the
     26 groups. Bug fix: voice_at() now bisects pre-clamp cue times.
+- at: '2026-10-05 12:45'
+  from: devin
+  text: >-
+    Tony: "โล่งอก" reads as "โล่-งอก" — systematic Thai TTS problem
+    (no word separators in script → segmenter mis-splits syllables).
+    v15 (dub-v15-fix.mp4): new --fix-map JSON dictionary applied to
+    SPOKEN text only (display stays correct spelling). Fix types:
+    ZWSP \u200b at the true syllable break (โล่ง​อก), hard respell
+    (โล่ง-อก) if ZWSP insufficient, full phonetic respell as last
+    resort. Dictionary lives per-video and grows as mis-reads are
+    spotted. Candidate watch-list for Thai: ambiguous consonant
+    clusters (ตากลม/ตา-กลม), loanwords, ทร-clusters, numbers.
