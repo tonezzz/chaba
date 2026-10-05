@@ -1,12 +1,14 @@
 id: logs-auto-idc02-silent
-title: logs `idc02` silent 28h
-column: done
+title: logs `idc02` never shipped state
+column: review
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-05: `idc02-silent` condition cleared — shipper healthy again.'
-help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
-updated: 2026-10-05 21:15
+note: idc02 is in the shipper's host list but has no host-logs-state doc — the shipper
+  never reported (added to fleet but not wired? ssh?)
+help: Run `log-shipper.py --hosts idc02 --dry-run` from tony-omen; if the ssh probe
+  fails, check tailscale auth (browser link).
+updated: '2026-10-05'
 action:
   status: idle
 comms:
@@ -15,9 +17,11 @@ comms:
   text: put on hold
 - at: 2026-10-05 21:12
   from: devin
-  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed — SIGTERM then SIGKILL,
-    no crash), which made idc02 jobs error (ada-flood-news exit 2 = MDDB refused). mddb restarted 21:06 + vector
-    reindex OK. Watch whether logs resume.'
+  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed
+    — SIGTERM then SIGKILL, no crash), which made idc02 jobs error (ada-flood-news
+    exit 2 = MDDB refused). mddb restarted 21:06 + vector reindex OK. Watch whether
+    logs resume.'
 - at: 2026-10-05 21:15
   from: devin
-  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage window explains the gap
+  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage
+    window explains the gap

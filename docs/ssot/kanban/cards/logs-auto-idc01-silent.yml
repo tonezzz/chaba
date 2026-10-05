@@ -1,0 +1,11 @@
+id: logs-auto-idc01-silent
+title: logs `idc01` never shipped state
+column: review
+generated: logs-kanban
+program: logs-digest
+priority: high
+note: idc01 is in the shipper's host list but has no host-logs-state doc — the shipper
+  never reported (added to fleet but not wired? ssh?)
+help: Run `log-shipper.py --hosts idc01 --dry-run` from tony-omen; if the ssh probe
+  fails, check tailscale auth (browser link).
+updated: '2026-10-05'
