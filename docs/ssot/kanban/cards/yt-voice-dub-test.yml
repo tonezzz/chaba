@@ -80,3 +80,16 @@ comms:
     (304->152 cues, tolerant suffix match for re-translated TH tails),
     merges near-simultaneous starts, orders EN-top/TH-bottom. Text now
     shows only new words per cue. Same v9 2-voice audio, natural speed.
+- at: '2026-10-05 09:30'
+  from: devin
+  text: >-
+    v11 sentence-merge (dub-v11-sent.mp4 on screen 5): karaoke <c> word
+    timestamps in src.en.vtt -> deduped word stream -> grouped at ~1s+
+    inter-word-start gaps OR speaker-turn changes -> 28 sentence groups
+    -> ONE edge-tts utterance per group (natural prosody instead of
+    per-fragment synthesis) -> 132s speech vs 174s, rate 0.95, zero
+    overlap, ends 173s. Display burn: same groups, blocks >9s re-sliced
+    at cue starts so subs stay readable (EN full-sentence, TH piece
+    per slice). TH group text re-deduped with tolerant tail match.
+    This is the architecture answer to every speed/overlap/gibberish
+    complaint so far — sentence-level units are the right primitive.
