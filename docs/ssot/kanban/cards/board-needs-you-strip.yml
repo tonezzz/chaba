@@ -1,6 +1,6 @@
 id: board-needs-you-strip
 title: 'Board: ''Needs You'' strip — every pending decision in one band'
-column: review
+column: done
 note: Tony's decision queue is scattered across board requests, review verification, CMS index, focus inbox, and
   chat. The board already has the data — it just buries it inside per-card modals. One glance should answer 'what
   needs me right now'.
@@ -13,13 +13,12 @@ spec: 'scripts/render-board.py: add a ''Needs You'' band above the columns. Cont
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: queued
   task: 'Build the Needs You strip in render-board.py per card spec: inline request-answer buttons + stale-review
     + failed dispatches in a collapsible top band using existing POST endpoints. Verify per spec.'
   task_id: 20261005-105816-scripts-render-board-py-add-a-
   runner: tony-dell
-  result: 20261005-105816-scripts-render-board-py-add-a- finished (inactive) — see `devin-dispatch logs 20261005-105816-scripts-render-board-py-add-a-`
-updated: 2026-10-05 11:14
+updated: 2026-10-05 12:30
 comms:
 - at: 2026-10-05 10:54
   from: tony
@@ -46,5 +45,14 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-105816-scripts-render-board-py-add-a- not in origin/master
     — close will block until merged'
+- at: 2026-10-05 12:29
+  from: tony
+  text: next?
+- at: 2026-10-05 12:30
+  from: tony
+  text: closed by Tony
+- at: 2026-10-05 12:30
+  from: tony
+  text: retry requested
 claim:
   since: 2026-10-05 10:58

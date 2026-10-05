@@ -3,7 +3,7 @@ title: Re-dispatch 3 permission-rejected jobs under hardened dispatcher
 column: backlog
 note: 081016 enroll-speaker investigation, 115509 traffic camera, 120132 automation tool — all exited 0 with zero
   output because tool calls were rejected pre-hardening
-updated: 2026-10-05 12:21
+updated: 2026-10-05 12:27
 requests:
 - id: confirm-redispatch
   ask: Re-dispatch all 3 failed jobs (enroll-speaker investigation, traffic-camera integration, news automation
@@ -22,3 +22,13 @@ comms:
 - at: 2026-10-05 12:21
   from: tony
   text: 'answered confirm-redispatch: Yes — redispatch all 3 on tony-dell'
+- at: 2026-10-05 12:27
+  from: devin
+  text: 'Redispatched all 3 under hardened dispatcher per tony approval: 20261005-122613 (enroll-speaker), 20261005-122644
+    (traffic-camera), 20261005-122651 (automation-tool) — all on chaba, tony-dell host'
+- at: 2026-10-05 12:27
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued

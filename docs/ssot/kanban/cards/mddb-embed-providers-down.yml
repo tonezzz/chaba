@@ -7,7 +7,7 @@ note: 'gemini-ollama-proxy on idc01 reports all same-space providers down: OpenR
   on failed embed retries and vectors are dropped — embed queue full (4000), droppedTotal >2900. cam-wall-cms and
   roster-audit services fail each cycle on the resulting slow adds. embed-probe canary firing every 15min. Needs
   an account-side fix — client timeouts alone won''t cover it.'
-updated: 2026-10-05 12:20
+updated: 2026-10-05 12:35
 requests:
 - id: provider-fix
   ask: 'Embedding upstream is down: raise/reset the OpenRouter key total limit (403), or wait for the Gemini daily
@@ -42,3 +42,10 @@ comms:
 - at: 2026-10-05 12:20
   from: tony
   text: 'answered provider-fix: or-limit — Raise/reset OpenRouter key limit (account-side)'
+- at: 2026-10-05 12:35
+  from: devin
+  text: 'Diligence done — no self-service path exists: (1) backup OR key in mddb-gemini.env.bak is EXPIRED (401),
+    only key left is the limit-hit one; (2) all secrets share the same Gemini key, no alternate; (3) gemini-embedding-001
+    HAS fresh quota (per-model 429) BUT is a different vector space — verified empirically: 001-vector of on-topic
+    text scored 0.05 vs unrelated text 0.08 on /v1/vector-search, i.e. noise — enabling GEMINI_EMBEDDING_FALLBACK_MODEL
+    would poison retrieval, correctly refused by desig'

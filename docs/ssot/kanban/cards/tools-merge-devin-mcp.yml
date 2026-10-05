@@ -3,11 +3,11 @@ title: Consolidate devin_* tools + MCP server consolidation
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 12:28
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: queued
 spec: "Merge the devin tool group (8 -> 2) per the consolidation spec:\n- devin_dispatch absorbs devin_followup,\
   \ devin_answer ->\n  devin(action=dispatch|followup|answer, task_id?)\n- NEW devin_read absorbs devin_status,\
   \ devin_jobs, devin_pending,\n  devin_job_report, ada_devteam_review -> devin(action=status|jobs|pending|report)\n\
@@ -18,3 +18,7 @@ spec: "Merge the devin tool group (8 -> 2) per the consolidation spec:\n- devin_
   \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
   \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
   \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 12:28
+  from: tony
+  text: queued for processing
