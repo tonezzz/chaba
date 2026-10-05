@@ -1,6 +1,6 @@
 id: kanban-commit-conflict-marker-guard
 title: 'kanban-commit: reject files containing git conflict markers before committing'
-column: backlog
+column: review
 note: 'Incident 2026-10-05 ~14:20: a kanban-commit auto-commit captured files mid-rebase with <<<<<<< markers intact
   (logs-auto-*.yml x6 + coverage). YAML parse then failed on the NEXT run, killing kanban-commit AND kanban-dispatch
   ~15min until manually resolved. The validator caught it a cycle too late — the poison was already committed+pushed.'
@@ -12,10 +12,11 @@ spec: 'scripts/board/kanban-commit.sh (or its validate step) must refuse to comm
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task_id: 20261005-151544-scripts-board-kanban-commit-sh
   runner: tony-dell
-updated: 2026-10-05 15:27
+  result: 20261005-151544-scripts-board-kanban-commit-sh finished (inactive) — see `devin-dispatch logs 20261005-151544-scripts-board-kanban-commit-sh`
+updated: 2026-10-05 15:29
 comms:
 - at: 2026-10-05 15:00
   from: devin
@@ -29,6 +30,19 @@ comms:
     them, then render/dispatch die on YAML parse. Plan: refuse commit on (a) rebase/merge/cherry-pick in progress,
     (b) `git diff --cached --check` leftover conflict markers; alert via dedicated ops card upserted under the board
     flock.'
+- at: 2026-10-05 15:27
+  from: devin
+  text: 'DONE — kanban-commit.sh now refuses commits (a) while rebase/merge/cherry-pick is in progress (checked
+    BEFORE git add so staging cannot mark conflicts resolved) and (b) when `git diff --cached --check` reports leftover
+    conflict markers. On refuse: file:line to journal + upserts ops-kanban-commit-guard card (review column, deduped,
+    under board flock). Verified in a scratch bare-remote clone: planted markers -> exit 1, zero commits, alert
+    card names the file; repeat hits dedupe; trailing whitespac'
+- at: 2026-10-05 15:29
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:29
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-151544-scripts-board-kanban-commit-sh not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-151544-scripts-board-kanban-commit-sh
   since: 2026-10-05 15:16

@@ -23,11 +23,13 @@ spec: 'Two parts. (1) Repo-home the pipeline: move ~/.local/bin/{yt-vtt-dub.py, 
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: 'YT voice dub speaker casting per card spec: repo-home yt-vtt-dub/yt-live scripts into scripts/ops/, then
     heuristic speaker detection (cue-gap clustering + question cues) + fixed per-speaker edge-tts voice mapping;
     verify distinct voices per speaker on ~/yt-dub-prep corpus.'
-updated: 2026-10-05 13:03
+  task_id: 20261005-152912-two-parts-1-repo-home-the-pipe
+  runner: tony-dell
+updated: 2026-10-05 15:41
 comms:
 - at: 2026-10-04 19:55
   from: devin
@@ -45,3 +47,19 @@ comms:
 - at: 2026-10-05 13:03
   from: tony
   text: queued for processing
+- at: 2026-10-05 15:29
+  from: chaba
+  text: dispatched 20261005-152912-two-parts-1-repo-home-the-pipe on chaba
+- at: 2026-10-05 15:30
+  from: devin
+  text: 'starting: repo-home 4 yt-* scripts into scripts/ops/, then heuristic cue-gap/question speaker detection
+    -> --cast-times, verify 2-voice dub on staged corpus'
+- at: 2026-10-05 15:37
+  from: devin
+  text: 'part1 done: 4 scripts repo-homed in scripts/ops/ + yt-pipeline-install.sh (copies->~/.local/bin, --link
+    mode for post-merge); installed copies refreshed. part2: --cast-detect in yt-vtt-dub.py + yt-cast-detect.py
+    CLI — cue-gap Otsu + question/answer-opener cues, 2-spk alternation -> cast-times; 4nj=14 turns/240s, U_io=21
+    turns/240s. Whisper lane script written; faster-whisper venv installing. TH translate running for verify render.'
+claim:
+  session: 20261005-152912-two-parts-1-repo-home-the-pipe
+  since: 2026-10-05 15:29

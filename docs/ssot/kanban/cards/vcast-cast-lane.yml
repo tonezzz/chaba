@@ -20,7 +20,7 @@ action:
     health + lease wiring, cam_to_screen + cctv_snapshot_to_screen scenarios green.'
   task_id: 20261005-145917-audit-the-cast-lane-services-c
   runner: tony-dell
-updated: 2026-10-05 15:27
+updated: 2026-10-05 15:41
 comms:
 - at: 2026-10-05 13:03
   from: tony
@@ -37,6 +37,11 @@ comms:
     relay ok (7 screens, 0 stale leases). FOUND: cast-ha-panel.timer dead since boot (OnUnitActiveSec never fires
     w/o first svc run) — fixed with OnActiveSec=2min, loop ticking again; omen cast-desktop@1 flap-looping x17368
     on nonexistent :1 display'
+- at: 2026-10-05 15:37
+  from: devin
+  text: 'more findings: cast-shots-http :8090 healthy (LAN-bound by design); xiaomi_c201 camera flaps idle<->unavailable
+    (known go2rtc issue — timer skips correctly); vcast cam cast measured 0.6s to first frame on screen 7 (metric
+    <5s PASS). Scenario run waiting on hourly smoke suite lock (TCP :8198/:8199, ~done)'
 claim:
   session: 20261005-145917-audit-the-cast-lane-services-c
   since: 2026-10-05 15:00
