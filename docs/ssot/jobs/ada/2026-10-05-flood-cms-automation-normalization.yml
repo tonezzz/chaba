@@ -1,0 +1,98 @@
+title: flood-news CMS automation coverage + ada-cms-pages memory-schema normalization
+subtitle: >-
+  Verified the flood-news automation end-to-end (fetch with timestamps ->
+  CMS pages), brought flood-report-pattaya-rayong under automation,
+  completed the flood page tree (parent/children bidirectionally
+  consistent), fixed silent MDDB search truncation in the audit/normalize
+  tooling, applied memory-schema meta to 137 pages, and taught every CMS
+  writer the merge-meta contract so normalization stops being undone.
+icon: newspaper
+id: 2026-10-05-flood-cms-automation-normalization
+status: done
+owner: devin-dispatch
+project: chaba
+branch: dispatch/20261005-123308-build-an-automation-tool-to-fe
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Build an automation tool to fetch current flood news with timestamps
+    and update relevant CMS pages. Review CMS page state/structure and
+    align with memory structure conventions for easier searching and
+    standardization.
+  prior_state: >
+    The tooling already existed from earlier dispatches
+    (flood-news-update.py, news-flood-fetch.py, cms-normalize-meta.py,
+    cms-audit.py + CI ratchet), but the audit silently covered only 200
+    of 324 docs (fixed limit, no pagination) so the flood/news pages were
+    never actually audited, several writers bare-replaced meta (wiping
+    normalized schema fields every run), and the baseline carried stale
+    entries plus un-baselined real defects.
+
+deliverables:
+  - >-
+    scripts/ada/flood-news-feeds.json — new flood-report-pattaya-rayong
+    entry (pattaya/rayong/chonburi TH + pattaya-rayong EN feeds,
+    interval_min 120, parent flood-report); flood-report children now
+    lists all three report leaves.
+  - >-
+    scripts/ada/cms-audit.py — paginated mddb_search() (was limit:200,
+    silently auditing only ~62% of the collection); filter_meta dropped
+    so docs missing kind are audited (same rule as load_snapshot); R6 no
+    longer warns on index pages with children; publish() emits the R2
+    provenance footer; dev-kanban added to A5_EXEMPT (renders arbitrary
+    card text verbatim).
+  - >-
+    scripts/ada/cms-normalize-meta.py — paginated list_docs; page_type
+    gains -report\b (flood-report-* leaves now class 'report') and
+    digest -> summary.
+  - >-
+    scripts/ada/flood-news-update.py — list_registry()/get_page()
+    paginate via _search_all (registry get was silently capped too).
+  - >-
+    Writer meta-merge contract (SSOT writer_contract section): writers
+    now GET + merge existing meta and emit the full schema set —
+    news-flood-fetch.py, weekly-digest.py, kanban-cms.py,
+    cam-wall-cms.py, cam-wall-roster-audit.py (the last also gained
+    sources meta + provenance footer). host-services-cms.py no longer
+    emits children=[] on leaves (serialized as dangling "None" slug —
+    R3).
+  - >-
+    Live MDDB: flood-report-pattaya-rayong populated with timestamped
+    news block + bilingual H1 fix (A1/A3 cleared, registry doc
+    auto-created); flood-report children=[3 leaves]; flood-hub-assessment
+    reparented to flood-overview (index children updated);
+    flood-report-nongdon-combined archived (superseded merge artifact);
+    orphan ada-cms-automation/flood-report-nongdon registry doc deleted;
+    translate-probe-de marked stub; cctv-roster-audit + tts-voice-catalog
+    + memory-ladder-standard provenance footers; services-* leaves
+    children=['None'] dropped; 137 docs normalized
+    (cms-normalize-meta --apply).
+  - >-
+    scripts/ada/cms-audit-baseline.json — shrank 14 -> 5 entries
+    (ratchet green against regenerated snapshot, 324 docs).
+  - >-
+    backups/ada-memory/ada-cms-pages.json — regenerated from live (311 ->
+    324 docs) so CI audits current state.
+
+verify:
+  - "cms-audit.py live: 317 pass / 6 fail — all 6 are baseline entries"
+  - "cms-audit.py --file snapshot --baseline: 'baseline ratchet OK — no new failures'"
+  - "flood-news-update.py --page flood-report-pattaya-rayong wrote 6 timestamped items"
+  - "flood-news-update.py --page flood-report-nongdon-saraburi --force succeeded (prior last_status=error recovered)"
+  - "cms-normalize-meta.py --apply: 137 docs updated, 187 already conformant"
+
+notes:
+  - >-
+    systemd timers run from ~/CascadeProjects/chaba (not this worktree) —
+    the writer fixes take effect once this branch merges; live page/meta
+    state is already correct.
+  - >-
+    Registry docs cache effective config and override feeds.json — to
+    change a page's feeds/parent/children, update BOTH feeds.json and the
+    ada-cms-automation doc (done for flood-report children this run).
+  - >-
+    kanban card cms-auto-flood-report-nongdon-saraburi ('Remote end
+    closed connection') was transient — force run succeeded; the
+    cms-auto-health checker can auto-close the card.

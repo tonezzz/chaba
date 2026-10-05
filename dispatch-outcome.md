@@ -1,73 +1,78 @@
-# dispatch outcome — dispatch-merge-guard
+# dispatch outcome — flood-news CMS automation + CMS page normalization
 
 ## What was done
 
-Closed the two dispatch-loop failure modes from the card:
+The flood-news automation already existed from earlier dispatches
+(`flood-news-update.py` managed-block writer + `news-flood-fetch.py`
+digest + systemd timers). This run verified it end-to-end, extended its
+page coverage, and finished the CMS structure/memory-schema alignment it
+exposed.
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+**Flood-news automation (timestamps + CMS updates — verified live):**
+- `flood-report-pattaya-rayong` added to `flood-news-feeds.json`
+  (pattaya/rayong/chonburi TH + EN feeds, interval_min 120,
+  parent=flood-report) and populated — 6 timestamped items written,
+  registry doc auto-created. Its thin-body (A1) and H1↔title mismatch
+  (A3) audit failures are gone.
+- `flood-report` children now list all three report leaves
+  (nongdon-saraburi, pattaya-rayong, coordinates-rayong) in BOTH
+  feeds.json and the live `ada-cms-automation` registry doc (the
+  registry caches effective config and wins over the seed).
+- `flood-report-nongdon-saraburi` force-run succeeded — the
+  `last_status=error` health card was transient; cms-auto-health can
+  auto-close it.
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+**CMS structure normalized to the memory-schema conventions:**
+- `cms-normalize-meta.py --apply` — 137 docs updated (bank/scope/status/
+  source/written_by/subject/attribute/valid_from/last_verified), 187
+  already conformant.
+- Tree fixes: `flood-hub-assessment` reparented to `flood-overview`
+  (index children updated); `flood-report-nongdon-combined` archived
+  (superseded merge artifact); orphan `ada-cms-automation/
+  flood-report-nongdon` registry doc deleted; `translate-probe-de`
+  marked stub.
+- Writer contract (new `writer_contract` section in
+  ssot.apps.cms-reports.yml): generators must merge existing meta and
+  emit the full schema set. Applied to `news-flood-fetch.py`,
+  `weekly-digest.py`, `kanban-cms.py`, `cam-wall-cms.py`,
+  `cam-wall-roster-audit.py` (+sources/provenance footer), and
+  `host-services-cms.py` (leaves no longer emit `children=[]` which
+  serialized as a dangling `"None"` slug — R3).
+- `cms-audit.py` — `mddb_search()` pagination (was `limit:200`, silently
+  auditing only ~62% of the collection — flood/news pages weren't even
+  being audited); dropped the server-side `kind=page` filter so docs
+  missing kind are audited like the snapshot lane does; R6 no longer
+  warns on index pages with children; `publish()` emits the R2 footer;
+  `dev-kanban` added to A5_EXEMPT (renders arbitrary card text
+  verbatim).
+- `cms-normalize-meta.py` — paginated `list_docs`; `page_type` gains
+  `-report\b` (flood-report-* leaves → `report`) and `digest` →
+  `summary`.
+- Live pages patched: `cctv-roster-audit` sources+footer,
+  `tts-voice-catalog` footer reworded to match the R2 regex,
+  `memory-ladder-standard` provenance footer, `services-*` leaves'
+  `children=["None"]` dropped.
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
-
-## Where
-
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
+**Result:** live audit 317 pass / 6 fail — all 6 are baseline entries.
+Snapshot regenerated (324 docs), baseline shrank 14 → 5 entries,
+`baseline ratchet OK` (CI green). SSOT job doc:
+`docs/ssot/jobs/ada/2026-10-05-flood-cms-automation-normalization.yml`.
 
 ## Verify
 
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
+- `python3 scripts/ada/cms-audit.py` (live) → `317 pass · 6 fail` (all
+  baseline)
+- `python3 scripts/ada/cms-audit.py --file backups/ada-memory/
+  ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json` →
+  `baseline ratchet OK — no new failures`
+- `python3 scripts/ada/flood-news-update.py --all --dry-run` → fetches
+  timestamped items for all 3 flood-report pages
+- CMS page `flood-report-pattaya-rayong` now shows a
+  `<!-- flood-news:auto -->` block with per-item publish timestamps
 
 ## Not done / notes
 
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+- systemd timers run from `~/CascadeProjects/chaba`, not this worktree —
+  the writer fixes take effect on the next timer tick after merge.
+- Remaining baseline fails are intentional (thin artifacts, A5/A6
+  documentation false-positives) — documented in baseline `_why`.

@@ -53,12 +53,12 @@ SOURCE_ENUM = {"voice", "manual", "import", "extract", "api"}
 # Suffix rules first — e.g. news-source-assessment is an assessment ABOUT
 # news, not a news digest; the ^news- prefix rule runs last.
 _TYPE_RULES = [
-    (r"-report$|reports$|results$", "report"),
+    (r"-report\b|reports$|results$", "report"),
     (r"-assessment$", "assessment"),
     (r"-proposal$", "proposal"),
     (r"-plan$", "plan"),
     (r"benchmark|^bench-", "benchmark"),
-    (r"-summary$", "summary"),
+    (r"-summary$|digest", "summary"),
     (r"-demo$|demo$", "demo"),
     (r"incident", "incident"),
     (r"analysis|audit", "analysis"),
@@ -81,11 +81,20 @@ def first(meta, name):
 
 
 def list_docs():
-    req = urllib.request.Request(
-        f"{MDDB}/search",
-        data=json.dumps({"collection": COLLECTION, "query": "", "limit": 500}).encode(),
-        headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req, timeout=60))
+    """Paginated collection scan — a fixed limit silently drops docs once
+    the collection outgrows it."""
+    docs, offset = [], 0
+    while True:
+        req = urllib.request.Request(
+            f"{MDDB}/search",
+            data=json.dumps({"collection": COLLECTION, "query": "",
+                             "limit": 500, "offset": offset}).encode(),
+            headers={"Content-Type": "application/json"})
+        page = json.load(urllib.request.urlopen(req, timeout=60))
+        docs += page
+        if len(page) < 500:
+            return docs
+        offset += 500
 
 
 def normalized_meta(doc, today):

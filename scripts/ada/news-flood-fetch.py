@@ -108,13 +108,29 @@ def publish(lang: str, content: str, items: list[dict], dry: bool) -> str:
     md5 = hashlib.md5(
         "\n".join(sorted(i["link"] for i in items[:MAX_ITEMS])).encode()
     ).hexdigest()
-    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    meta = {"format": ["markdown"], "instance": ["tony"], "kind": ["page"],
-            "slug": [SLUG], "lang": [lang], "title": [TITLE[lang]],
-            "updated": [now], "content_md5": [md5]}
+    now = datetime.now(timezone.utc)
     doc = get_doc(SLUG, lang)
     if doc and md5 == ((doc.get("meta") or {}).get("content_md5") or [""])[0]:
         return f"{lang}: unchanged"
+    # Merge existing meta — a bare replace would wipe the memory-schema
+    # fields cms-normalize-meta.py stamps (S1 churn every hourly run).
+    meta = {k: (v if isinstance(v, list) else [str(v)])
+            for k, v in ((doc or {}).get("meta") or {}).items()}
+    meta.update({"format": ["markdown"], "instance": ["tony"],
+                 "kind": ["page"], "slug": [SLUG], "lang": [lang],
+                 "title": [TITLE[lang]],
+                 "updated": [now.isoformat(timespec="seconds")],
+                 "last_verified": [now.date().isoformat()],
+                 "content_md5": [md5]})
+    created = ""
+    if doc and doc.get("addedAt"):
+        created = datetime.fromtimestamp(
+            doc["addedAt"], timezone.utc).date().isoformat()
+    for k, v in {"bank": "cms", "scope": "tony", "status": "active",
+                 "source": "api", "written_by": "news-flood-fetch",
+                 "subject": SLUG, "attribute": "news",
+                 "valid_from": created or now.date().isoformat()}.items():
+        meta.setdefault(k, [v])
     if not dry:
         post("/add", {"collection": COLLECTION, "key": SLUG, "lang": lang,
                       "contentMd": content, "meta": meta})

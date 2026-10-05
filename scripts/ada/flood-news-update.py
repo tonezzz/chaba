@@ -65,10 +65,23 @@ def _post(path, payload, timeout=60):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
+def _search_all(collection, page_size=500):
+    """Paginated collection scan — a fixed limit silently drops docs once
+    the collection outgrows it."""
+    docs, offset = [], 0
+    while True:
+        page = _post("search", {"collection": collection, "query": "",
+                                "limit": page_size, "offset": offset})
+        docs += page
+        if len(page) < page_size:
+            return docs
+        offset += page_size
+
+
 def list_registry():
     """Registry docs keyed by page slug. MDDB down -> {} (seed-only mode)."""
     try:
-        docs = _post("search", {"collection": REGISTRY, "query": "", "limit": 500})
+        docs = _search_all(REGISTRY)
     except Exception as e:
         print(f"warn: automation registry unreachable ({e}) — seed config only",
               file=sys.stderr)
@@ -235,11 +248,7 @@ def apply_block(body, block, now_ict):
 
 
 def get_page(key, lang):
-    req = urllib.request.Request(
-        f"{MDDB}/search",
-        data=json.dumps({"collection": COLLECTION, "query": "", "limit": 500}).encode(),
-        headers={"Content-Type": "application/json"})
-    docs = json.load(urllib.request.urlopen(req, timeout=60))
+    docs = _search_all(COLLECTION)
     return [d for d in docs if d.get("key") == key and (lang is None or d.get("lang") == lang)]
 
 
