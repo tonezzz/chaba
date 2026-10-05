@@ -1,6 +1,6 @@
 id: dispatch-cleanup-unmerged-guard
 title: Dispatch cleanup must check branch ancestry, not just dirty state
-column: review
+column: done
 note: 'dispatch-wt-20261004-141859 was removed while its tree was CLEAN but its branch held 3 commits that never
   reached master (michael-ha jump code + 2 kanban cards) — silently lost, re-applied on branch services-regen-followup.
   devin-precleanup-check.py already enumerates dispatch worktrees and flags dirty/unknown ones, but a clean tree
@@ -19,7 +19,7 @@ action:
   task_id: 20261005-130445-in-scripts-devin-devin-preclea
   runner: tony-dell
   result: 20261005-130445-in-scripts-devin-devin-preclea finished (inactive) — see `devin-dispatch logs 20261005-130445-in-scripts-devin-devin-preclea`
-updated: 2026-10-05 13:23
+updated: 2026-10-05 20:34
 comms:
 - at: 2026-10-05 12:52
   from: tony
@@ -54,5 +54,8 @@ comms:
   text: 'merged to master (a0dfa35c): devin-precleanup-check.py now flags worktrees whose branch carries commits
     not reachable from master — the exact dispatch-wt-141859 loss mode. Stray job doc committed alongside. Card
     stays in review for the live prune-test gate.'
+- at: 2026-10-05 20:34
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-05 13:04

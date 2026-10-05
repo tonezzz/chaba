@@ -1,6 +1,6 @@
 id: kanban-commit-conflict-marker-guard
 title: 'kanban-commit: reject files containing git conflict markers before committing'
-column: review
+column: done
 note: 'Incident 2026-10-05 ~14:20: a kanban-commit auto-commit captured files mid-rebase with <<<<<<< markers intact
   (logs-auto-*.yml x6 + coverage). YAML parse then failed on the NEXT run, killing kanban-commit AND kanban-dispatch
   ~15min until manually resolved. The validator caught it a cycle too late — the poison was already committed+pushed.'
@@ -16,7 +16,7 @@ action:
   task_id: 20261005-151544-scripts-board-kanban-commit-sh
   runner: tony-dell
   result: 20261005-151544-scripts-board-kanban-commit-sh finished (inactive) — see `devin-dispatch logs 20261005-151544-scripts-board-kanban-commit-sh`
-updated: 2026-10-05 15:29
+updated: 2026-10-05 20:34
 comms:
 - at: 2026-10-05 15:00
   from: devin
@@ -44,5 +44,8 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-151544-scripts-board-kanban-commit-sh not in origin/master
     — close will block until merged'
+- at: 2026-10-05 20:34
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-05 15:16

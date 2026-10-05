@@ -1,6 +1,6 @@
 id: kanban-commit-single-writer
 title: 'kanban-commit: single-writer rule across checkouts'
-column: review
+column: done
 note: kanban-commit.timer + parallel sessions + autostash = recurring 'untracked files would be overwritten' pull
   stalls (3x this session) and inbox findings landing uncommitted in the unwatched 'chaba' checkout. Convention
   fix worked; structural fix didn't happen.
@@ -9,7 +9,7 @@ spec: 'Two options — pick one in spec phase: (a) only the served checkout (cha
   + conflict resolver that takes upstream for generated files. Also: add a pre-commit hook or lint that warns when
   writing docs/ssot/focus-inbox/ outside the served checkout. Verify: two parallel sessions + one untracked-collision
   case completes pull --rebase without manual intervention.'
-updated: 2026-10-05 13:54
+updated: 2026-10-05 20:34
 action:
   type: dispatch
   repo: chaba
@@ -48,5 +48,8 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-133043-two-options-pick-one-in-spec-p not in origin/master
     — close will block until merged'
+- at: 2026-10-05 20:34
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-05 13:30
