@@ -1,15 +1,16 @@
 id: tools-merge-meta-voice
 title: Consolidate meta/voice tools (8 -> 3)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 19:16
+updated: 2026-10-05 19:19
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-182958-merge-the-meta-voice-group-8-3
   runner: tony-dell
+  result: 20261005-182958-merge-the-meta-voice-group-8-3 finished (inactive) — see `devin-dispatch logs 20261005-182958-merge-the-meta-voice-group-8-3`
 spec: "Merge the meta/voice group (8 -> 3) per the consolidation spec:\n- ada_persona absorbs ada_set_voice -> persona(set_voice?...)\n\
   - NEW ada_ops absorbs ada_outcome, ada_usage_summary, ada_mddb_health,\n  ada_decision_check, ada_deep_research\
   \ ->\n  ops(action=outcome|usage|health|check|research)\n- ada_enroll_speaker absorbs guest_register -> enroll(who=speaker|guest)\n\
@@ -35,6 +36,12 @@ comms:
     ada_enroll_speaker absorbed guest_register (who=guest). All 7 absorbed names are hidden _ALIASES rows routed
     through execute() — verified end-to-end. tools.d ada_mddb_health module retired (ported into runner). Gates
     key off resolved names; DEVIN_CONFIRMED_TOOLS/con'
+- at: 2026-10-05 19:19
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 19:19
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-182958-merge-the-meta-voice-group-8-3 dirty — 16 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261005-182958-merge-the-meta-voice-group-8-3
   since: 2026-10-05 18:30

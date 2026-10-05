@@ -3,7 +3,7 @@ title: Consolidate tasks + status tools (10 -> 3)
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 19:15
+updated: 2026-10-05 19:27
 action:
   type: dispatch
   repo: ada-pi
@@ -31,6 +31,17 @@ comms:
   text: 'starting: read spec + prior merges (calendar/cms). Plan: new canonical tasks(action=add|list|done|move)
     + home_status(what=...) + chat_send(photo|doc); 16 _ALIASES rows; provider decls + inline dispatch consolidated;
     SSOT families + scenario + tests.'
+- at: 2026-10-05 19:23
+  from: devin
+  text: 'merge landed in worktree: 13 absorbed decls removed, tasks/home_status canonical added, chat_send gained
+    photo=/doc= flows; 39 aliases total, tool-lint clean, unit tests green (incl. new TasksStatusMergeAliasTests).
+    Writing SSOT job record + outcome next.'
+- at: 2026-10-05 19:27
+  from: devin
+  text: 'done: 16 absorbed names merged into 3 canonical (tasks->tasks(action=add|list|done|move); 7 status getters->home_status(what=battery|power|inverter|pool|dashboard|habit);
+    photos_pick/picked + 3 chaba-side doc-upload names->chat_send(photo=|doc=)). Declared surface 88->77, _ALIASES
+    23->39, all hidden/not declared. Gates key off resolved names: task writes keep confirm gate (action=list free);
+    chat_send photo=/doc= keep documents-bank+secondary gates, plain sends ungated; DEVIN_CONFIRMED_TOOLS/con'
 claim:
   session: 20261005-183350-merge-the-tasks-status-group-1
   since: 2026-10-05 18:33
