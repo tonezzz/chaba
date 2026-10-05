@@ -1,0 +1,85 @@
+title: kanban-commit single-writer rule across checkouts
+subtitle: Served-checkout-only sweep + collision-proof pull + drift lint
+icon: git
+version: 1
+
+card: kanban-commit-single-writer
+date: 2026-10-05
+dispatch: 20261005-133043-two-options-pick-one-in-spec-p
+
+summary: |
+  kanban-commit.timer + parallel sessions kept producing "untracked files
+  would be overwritten" pull stalls, and focus-inbox findings written in the
+  unwatched `chaba` checkout never reached origin. Spec offered two options;
+  chose (a) the single-writer rule: chaba-tony-dell remains the ONLY checkout
+  with a periodic auto-committer (kanban-commit.timer). Option (b)'s
+  mechanics are folded inside that single writer, because the verify clause
+  requires pull --rebase to survive an untracked collision: a shared
+  safe-pull helper resolves untracked blockers before the rebase and resolves
+  generated-path conflicts upstream-wins. Job-scoped commits in other
+  checkouts (kanban-sync worktree, gh-runs-watch) are unchanged in policy but
+  gh-runs-watch now rebases before push so its alerts stop stranding.
+
+deliverables:
+  - scripts/git-safe-pull.sh — shared `git pull --rebase --autostash`
+    hardening. Pre-pull resolution of untracked paths colliding with incoming
+    upstream files (identical -> dropped, different -> renamed aside as
+    <path>.local-<ts>; untracked file/dir blockers at path prefixes moved
+    aside too), mid-rebase conflicts under SAFE_PULL_GENERATED_RE resolve
+    upstream-wins with the local side preserved as <path>.local-conflict-<ts>,
+    autostash-pop conflicts resolved to HEAD with the stash retained. Exits 0
+    only when upstream is an ancestor of HEAD.
+  - scripts/board/kanban-commit.sh — scoped add now covers
+    docs/ssot/kanban/, docs/ssot/focus-inbox/, stacks/web/public/apps/board/;
+    pull via git-safe-pull.sh (GENERATED_RE = those dirs); push retry loop
+    (3 attempts, jittered sleep).
+  - .husky/pre-commit — new warn-only single-writer block — committing
+    docs/ssot/focus-inbox/ outside CHABA_SERVED_CHECKOUT warns it won't be
+    swept; divergence >N commits (CHABA_DIVERGENCE_N, default 10) from
+    upstream warns to pull --rebase. Full SSOT validation/optimization now
+    guarded by script existence so lightweight checkouts still get the
+    warnings instead of a hard node failure.
+  - scripts/install-hooks.sh — arms .husky/pre-commit via core.hooksPath
+    (uses .husky/_ shims when husky is installed, .husky directly otherwise)
+    + sets pull.rebase=true and rebase.autoStash=true per checkout.
+    `install-hooks.sh --all` covers every ~/CascadeProjects/chaba* checkout.
+  - scripts/check-single-writer.sh — drift lint over all chaba checkouts —
+    uncommitted focus-inbox files, divergence >N, missing hooksPath.
+    --strict exits 1 on warnings.
+  - scripts/audits/gh-runs-watch.py — git_commit_push now safe-pulls before
+    each of 3 push attempts instead of a bare push that strands commits when
+    the `chaba` checkout is behind.
+  - systemd/kanban-commit.timer — RandomizedDelaySec=120 (stagger vs the
+    other 15-min writers).
+  - tests/test-kanban-commit.sh — 22-check self-contained suite (bare origin
+    + two clones) covering parallel writers, untracked collisions
+    (different/identical), hook warnings, and the lint.
+
+decisions:
+  - option (a) over (b) — single sweep-writer removes the multi-writer commit
+    race class entirely; (b)'s jitter/autostash/upstream-wins pieces kept as
+    hardening inside the writer rather than spread across every checkout —
+    fewer moving parts, and spread-out auto-committers were the bug source.
+  - focus-inbox added to the kanban-commit sweep so stray findings in the
+    served checkout get persisted even when their writer forgot to commit —
+    directly addresses "inbox findings landing uncommitted".
+  - warnings are warn-only (never block) — hooks fire in worktrees and on
+    other hosts where blocking would break unrelated flows.
+  - collided local files are preserved aside (<name>.local-<ts>) inside the
+    tree rather than deleted or moved to /tmp — visible, swept upstream on
+    the next tick, recoverable anywhere.
+  - non-generated-path rebase conflicts still abort and defer to the next
+    tick — the resolver only auto-decides files it owns.
+
+rollout: |
+  1. Merge this branch; served checkout picks it up on its next pull.
+  2. Reinstall the timer unit (systemd/kanban-commit.timer) for the jitter.
+  3. Run `scripts/install-hooks.sh --all` once on tony-dell to arm the
+     pre-commit warnings + pull.rebase/autoStash in every chaba checkout.
+  4. `scripts/check-single-writer.sh` anytime to audit drift.
+
+verify: |
+  bash tests/test-kanban-commit.sh   # 22 checks, self-contained tmpdir
+  # covers: two parallel writers -> both land; untracked collision -> pull
+  # --rebase completes unattended with local copy preserved; identical
+  # collision absorbed; hook warnings; lint output.

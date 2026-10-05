@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
 # kanban-commit — persist live board edits (board-api/kanban-dispatch writes)
-<<<<<<< HEAD
-# into git from the served checkout. Runs from kanban-commit.timer every 15 min.
-# Scoped `git add` — never touches other sessions' dirty files.
-#
-# Guards (card kanban-commit-conflict-marker-guard, incident 2026-10-05):
-# a failed `pull --rebase` below leaves the repo mid-rebase with <<<<<<< /
-# ======= / >>>>>>> in card files; the next tick used to stage+commit them,
-# and the poisoned YAML then killed render-board + kanban-dispatch on parse.
-# Now: refuse to commit while a rebase/merge/cherry-pick is in progress, and
-# refuse when `git diff --cached --check` reports leftover conflict markers.
-# On refuse: log the files to the journal (stderr) and upsert a review-column
-# ops card so the skip is visible on the board — this class is silent
-# otherwise.
-=======
 # and generated focus-inbox state into git from the SERVED checkout. Runs
 # from kanban-commit.timer every 15 min (RandomizedDelaySec staggers it).
 #
@@ -29,7 +15,16 @@
 # different -> renamed aside as <name>.local-<ts>), and rebase conflicts
 # under generated dirs resolve upstream-wins. Result: pull --rebase
 # completes unattended even in the untracked-collision case.
->>>>>>> dispatch/20261005-133043-two-options-pick-one-in-spec-p
+#
+# Guards (card kanban-commit-conflict-marker-guard, incident 2026-10-05):
+# a failed `pull --rebase` below leaves the repo mid-rebase with <<<<<<< /
+# ======= / >>>>>>> in card files; the next tick used to stage+commit them,
+# and the poisoned YAML then killed render-board + kanban-dispatch on parse.
+# Now: refuse to commit while a rebase/merge/cherry-pick is in progress, and
+# refuse when `git diff --cached --check` reports leftover conflict markers.
+# On refuse: log the files to the journal (stderr) and upsert a review-column
+# ops card so the skip is visible on the board — this class is silent
+# otherwise.
 set -uo pipefail
 REPO="${KANBAN_REPO:-$HOME/CascadeProjects/chaba-tony-dell}"
 GENERATED_RE='^(docs/ssot/kanban/|docs/ssot/focus-inbox/|stacks/web/public/apps/board/)'
@@ -37,7 +32,6 @@ PUSH_RETRIES="${KANBAN_PUSH_RETRIES:-3}"
 SAFE_PULL="$(cd "$(dirname "$0")" && pwd)/../git-safe-pull.sh"
 cd "$REPO" || exit 1
 
-<<<<<<< HEAD
 ALERT_CARD_ID="ops-kanban-commit-guard"
 
 alert_card() {
@@ -99,12 +93,9 @@ if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
     exit 1
 fi
 
-git add docs/ssot/kanban/ stacks/web/public/apps/board/ 2>/dev/null
-=======
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/; do
     [ -d "$d" ] && git add "$d" 2>/dev/null
 done
->>>>>>> dispatch/20261005-133043-two-options-pick-one-in-spec-p
 git diff --cached --quiet && exit 0   # nothing staged
 
 check=$(git diff --cached --check)
