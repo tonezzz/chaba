@@ -1,0 +1,138 @@
+title: devin-session-prune — weekly dispatch-era session housekeeping + guarded vacuum
+subtitle: >-
+  Deletes devin-dispatch sessions from sessions.db once they are older than N
+  days (default 14), keeping anything still needed (needs-input, active lock,
+  dirty/unmerged worktree or branch), then runs the existing guarded vacuum
+  only when no devin process holds the DB. Interactive sessions are never
+  touched. Every pruned session id+title is logged to the reports timeline.
+icon: broom
+id: 2026-10-05-devin-session-prune
+status: done
+owner: devin-dispatch
+project: chaba
+card: devin-session-prune
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Kanban card devin-session-prune: build a session-prune housekeeping job
+    for tony-dell — dispatch-era sessions only (title prefix 'You are running
+    unattended via devin-dispatch' or tasks/<id> meta), N-day retention
+    (default 14), keep sessions with unmerged worktrees or needs-input.txt,
+    reuse the two-clear-checks vacuum guard from devin-vacuum-when-closed.sh,
+    weekly systemd user timer (Sun 03:00) rendered into
+    systemd/generated/tony_dell/, per-session audit lines in
+    ~/var/chaba/reports/timeline.jsonl via scripts/lib/report.py.
+
+dispatch_identification:
+  title_prefix: "session.title starts with the devin-dispatch preamble
+    (start or resume variant) — survives only until the title regenerates"
+  dispatch_worktree: "session.working_directory basename is
+    dispatch-wt-<task_id> AND ~/.local/share/devin-dispatch/tasks/<task_id>/
+    exists — the reliable match for auto-titled sessions"
+  resume_task: "session.id equals the sid embedded in a resume task's
+    meta.json branch field ('resume/<sid>')"
+  never_pruned: anything that fails all three tests is interactive / unknown
+    and out of scope entirely
+
+keep_guards:
+  - "session_locks/<sid>.lock with a live pid → active-lock"
+  - "tasks/<id>/needs-input.txt present → needs-input"
+  - "worktree exists + git status fails → worktree-git-unknown"
+  - "worktree exists + dirty → worktree-dirty"
+  - "worktree exists + commits on branch not in base (master/main or
+    origin/*) → worktree-unmerged"
+  - "worktree gone + recorded dispatch branch still holds unmerged commits
+    in the source repo (repos.conf name→path) → branch-unmerged"
+  - "no task meta AND no resolvable worktree → unverifiable-no-task-meta"
+  - "task meta unreadable → task-meta-unreadable"
+  - "resume-task sessions only get lock/needs-input guards — their cwd is
+    borrowed and must not drive git checks"
+
+deletion:
+  tables_child_first:
+    [prompt_history, message_nodes, tool_call_state, rendered_commits,
+     subagent_heads]
+  note: prompt_history is included even though the older
+    prune-devin-sessions.sh skips it — its 28 orphaned rows on the live DB
+    predate this job; new prunes no longer create orphans.
+
+integrity_guard:
+  - "pre-delete PRAGMA quick_check — but on a tmpfs snapshot made via the
+    sqlite backup API, not the live file. The live DB is 2.1G + ~1G WAL on a
+    busy HDD (sda ~83% util, ~300ms await); a live check was still running
+    at 200MB/12min during development. Snapshot check: ~3min, same
+    corruption coverage. Falls back to live check if the snapshot can't be
+    made; --skip-check bypasses."
+
+vacuum_guard:
+  - "two consecutive clear checks (pgrep 'devin-desktop|devin acp' empty AND
+    fuser sessions.db empty), 15s apart, up to --vacuum-wait seconds
+    (default 90) — mirrors devin-vacuum-when-closed.sh, including the
+    watchdog-autorestart flag rename so the watchdog can't relaunch
+    devin-desktop mid-vacuum"
+  - "then runs scripts/devin/session/vacuum-devin-db.sh (repo copy, falls
+    back to ~/.config/devin/scripts/vacuum-devin-db.sh)"
+  - "if Devin stays open the vacuum is skipped — DELETEs still landed; the
+    next run picks it up"
+
+deliverables:
+  - scripts/devin/session-prune.py — the job (--days, --dry-run, --db,
+    --tasks-dir, --no-vacuum, --vacuum-wait, --vacuum-script, --skip-check,
+    --json)
+  - docs/ssot/infrastructure/ssot.jobs.yml — job devin-session-prune
+    (host tony_dell, OnCalendar Sun *-*-* 03:00:00, Persistent, 30m timeout)
+  - systemd/generated/tony_dell/devin-session-prune.{service,timer} —
+    rendered by render-jobs.py
+
+outputs:
+  - "~/var/chaba/reports/timeline.jsonl — one event per pruned session
+    (node devin-session-prune, L1) + a run-complete summary event"
+
+install_state:
+  units: >
+    installed on tony-dell 2026-10-05 — copied the two generated units to
+    ~/.config/systemd/user/, daemon-reload, `enable --now
+    devin-session-prune.timer`. Next elapse verified: Sun 2026-10-11 03:00
+    +07.
+  caveat: >
+    ExecStart points at %h/CascadeProjects/chaba/scripts/devin/session-prune.py,
+    which only exists after this dispatch branch merges. Timer first fires
+    2026-10-11 — merge must land before then or that run fails (service
+    ExecStart not found; timer stays armed and the next week works).
+
+verification:
+  done:
+    - "--dry-run --days 14 on live DB: 0 candidates (the Oct-4 blunt
+      devin-cleanup run already removed everything >7d)"
+    - "snapshot real-run (--days 0 on a sqlite-backup copy): 83 dispatch-era
+      identified of 164; 56 pruned, 27 kept — reasons seen: active-lock,
+      worktree-dirty, worktree-git-unknown, branch-unmerged (fringe-moth,
+      mountain-protocol), resume-task"
+    - "post-delete snapshot: sessions 164→107, message_nodes 204242→168877,
+      zero orphans in all FK'd tables; prompt_history orphans (28) identical
+      to live DB — pre-existing, not created by this job"
+    - "live real-run --days 14: 0 pruned; vacuum correctly skipped while
+      this session held the DB (two-clear-checks never passed); run-complete
+      timeline event confirmed in timeline.jsonl"
+    - "devin CLI opens: 'devin 3000.10.35' via bundled binary"
+    - "timeline suppression verified: --db override runs do not write audit
+      events (no false 'pruned' claims from test copies)"
+    - "PRAGMA integrity_check on a fresh sqlite-backup snapshot of the
+      live DB: ok (209s incl. copy)"
+
+known_limits:
+  - "devin-cleanup.timer (Sun 04:00, prune-devin-sessions.sh 7) still deletes
+    ALL sessions >7d including dispatch ones — so the 14-day window and the
+    keep-guards only ever see 0–7 day overlap; if the guards should actually
+    protect dispatch sessions up to 14d, the blunt timer's scope/schedule
+    needs revisiting (decision for Tony)"
+  - "a dispatch branch that was deleted without merging leaves a dangling
+    commit; branch-gone sessions prune (work is in reflog, not on a branch)
+    — matches the kanban merge-guard model where dropped branches are
+    abandoned work"
+  - "pid reuse can mark a dead session's lock 'active' briefly — only ever
+    keeps, never deletes"
+  - "the tmpfs snapshot needs ~3G free in /tmp; falls back to the slow live
+    check when tmpfs is short"

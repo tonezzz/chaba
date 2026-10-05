@@ -1,74 +1,56 @@
-# dispatch-outcome — 20261005-132452-reconcile-ha-michael-related-w
+# dispatch outcome — devin-session-prune
 
-Card: `ha-michael-worktree-sync` — reconcile HA/michael worktrees/branches with origin/master.
+Built the dispatch-era session prune job for tony-dell, verified it end to
+end, and installed the weekly timer.
 
-## Result
+## Deliverables (commit c4163d6a on dispatch/20261005-143056-…)
 
-**Task was completed by the duplicate dispatch session `20261005-132701` while this session
-was still auditing.** This card was dispatched twice, 3 minutes apart. The 132701 session
-finished at ~13:37 (exit 0) and pushed the full deliverable set to origin/master
-(`8182733f → e947de0e`):
+- `scripts/devin/session-prune.py` — the job. Prunes sessions.db rows older
+  than `--days` (14) ONLY when they're provably dispatch-era: dispatch prompt
+  title prefix, `dispatch-wt-<task_id>` worktree + `~/.local/share/
+  devin-dispatch/tasks/<task_id>/` meta, or a `resume/<sid>` task branch.
+  Interactive sessions are never candidates. Keep-guards: live session lock,
+  `needs-input.txt`, dirty/unmerged/unreadable worktree, recorded branch with
+  commits not in master/main. Deletes child tables first (incl.
+  `prompt_history`, which the older blunt prune orphaned). Each pruned
+  session id+title → `~/var/chaba/reports/timeline.jsonl` via
+  `scripts/lib/report.py`; a run-complete summary event follows.
+- Integrity guard: pre-delete `quick_check` runs against a tmpfs
+  sqlite-backup snapshot — a live check measured 200MB/12min on the busy HDD
+  (2.1G db + ~1G WAL); snapshot does the same coverage in ~3min. `--skip-check`
+  escape hatch included.
+- Vacuum: reuses devin-vacuum-when-closed.sh's two-clear-checks (no
+  `devin-desktop|devin acp` + no fuser, twice consecutively) plus the
+  watchdog-flag rename; then runs repo `scripts/devin/session/vacuum-devin-db.sh`
+  (fallback `~/.config/devin/scripts/`). Skips cleanly when Devin is open.
+- `docs/ssot/infrastructure/ssot.jobs.yml` — new job `devin-session-prune`
+  (Sun 03:00, Persistent, 30m); rendered units in
+  `systemd/generated/tony_dell/`.
+- `docs/ssot/jobs/infrastructure/2026-10-05-devin-session-prune.yml` — trail
+  doc with the full decision record.
 
-- 6 diverged dispatch branches merged to origin/master (traffic-snap, flood-news CMS,
-  ada-enroll/tony-ha voice card, cms-generator audit, gev-gemini tools check,
-  gev-auto-health — the last including recovery of uncommitted worktree files).
-- 4 patch-equivalent dead branches tagged `archive/20261005-*`, worktrees+branches removed.
-- 5 fully-merged dead branches' worktrees+branches removed.
-- sunsynk dirty battery-3/4 WIP snapshotted to `wip/bat34-uncommitted-snapshot-20261005`
-  (5befc79) via stash-create, worktree untouched.
-- Manifest: `docs/ssot/audit/ha-michael-worktree-sync-20261005.md`;
-  job record: `docs/ssot/jobs/infrastructure/2026-10-05-ha-michael-worktree-sync.yml`.
+## Install state
 
-## This session's contribution — verification + extended audit
+Timer installed + enabled on tony-dell: next elapse **Sun 2026-10-11 03:00
++07**. NOTE: the unit's ExecStart is `%h/CascadeProjects/chaba/scripts/devin/
+session-prune.py` — resolves once this branch merges; merge must land before
+the first fire.
 
-I independently reproduced the classification before the sibling finished and verified
-its result afterwards:
+## Verification
 
-- `git worktree list` (chaba): now 4 entries — main checkout + 3 live session worktrees
-  (132452 = me, 132701 sibling, 133043 new dispatch). Branches: `master` + the same 3.
-  No stale registrations; `git worktree prune` unnecessary.
-- All former dispatch branch tips are ancestors of origin/master (or archived under
-  `archive/*` tags). Nothing left diverged in the chaba dispatch lanes.
-- sunsynk repo: verified `wip/bat34-...` snapshot exists; live checkout still dirty
-  (21 files) — intentionally untouched; `dispatch/20261004-204448` orphan branch intact.
-- ada-pi + mddb-fork: sibling's inventory confirmed (4 merged ada-pi worktrees removable,
-  prunable mddb registration at `/home/tony/mddb-bench/stock-src`).
+- `--dry-run` + real run on a sqlite-backup snapshot: 83/164 sessions
+  dispatch-era → 56 pruned / 27 kept (active-lock, worktree-dirty,
+  worktree-git-unknown, branch-unmerged all exercised); sessions 164→107,
+  message_nodes 204242→168877, zero orphans in FK'd tables.
+- Real run on the live DB: 0 candidates (the Sun-04:00 `devin-cleanup.timer`
+  already deletes everything >7d — see caveat). Vacuum correctly skipped
+  while a devin session held the DB; timeline event confirmed.
+- `devin 3000.10.35` opens; `PRAGMA integrity_check` on a consistent
+  snapshot of the live DB: **ok** (209s).
 
-### New finding — `~/CascadeProjects/chaba-tony-dell` clone (outside dispatch whitelist)
+## Caveat for Tony
 
-A second full clone of chaba that the sibling's whitelist-scoped pass did not cover:
-
-- **Main checkout is stuck mid-rebase**: `git status` reports "interactive rebase in
-  progress; onto 8182733f — no commands remaining" (needs `git rebase --continue` or
-  `--abort`). 22 files modified, mostly `docs/ssot/kanban/cards/*.yml` — a live writer
-  (board sync) is active there, so I did not touch it.
-- `tony-ha` branch (worktree `chaba-tony-dell-worktrees/tony-ha`, 3 dirty files):
-  **45 commits ahead**, none patch-equivalent to origin/master — the cast /
-  desktop-caster dashboard lane (last commit 2026-09-11). Real diverged work;
-  merge/archive needs an operator decision.
-- `test/ultralytics-yolo-ha`: 24 ahead, 23 unique patches (1 patch-equivalent).
-- `experiment/tony-dell-task-runner`: 11 ahead, 7 unique / 4 equivalent.
-- `chaba.h3` (worktree `chaba-h3-tony-dell`): 1158 ahead / 3519 behind — ancient
-  host lane, effectively permanent divergence; candidate for archive tag only.
-- Merged/dead there: `iphone-dev`, `tmp_master_for_deploy`, `drift/tony-dell-live-2026-09-30`
-  (0 ahead), and all 4 detached-HEAD worktrees (`chaba-kanban-sync`,
-  `chaba-tony-dell-experiment`, `worktrees/master`) — tips are ancestors of
-  origin/master, but these checkouts are likely live workspaces; left alone.
-- Local `master` in `~/CascadeProjects/chaba` is behind origin (was 14 at audit time,
-  fast-forwardable; 1 dirty file `ssot.dev-system.assessment.yml`) — sibling deliberately
-  did not move it; a plain `git pull` in the main checkout reconciles when convenient.
-
-## Open items for the operator
-
-1. chaba-tony-dell main checkout rebase is suspended — run `git -C ~/CascadeProjects/chaba-tony-dell rebase --continue` (or `--abort`) after checking intent.
-2. Disposition for `tony-ha` (45 commits), `test/ultralytics-yolo-ha` (23 unique), `experiment/tony-dell-task-runner` (7 unique), `chaba.h3` — same decision class as yesterday's branch-disposition request.
-3. sunsynk battery-3/4: choose between orphan-branch `e52346e` and the newer dirty-tree WIP (snapshotted at `wip/bat34-uncommitted-snapshot-20261005`), then `npm run build` + `tsc --noEmit` before merge/deploy.
-4. This duplicate branch `dispatch/20261005-132452-...` carries no unique work — safe to discard; my worktree can be removed at session end.
-5. Dispatch spawned this card twice 3 min apart — worth a dedupe check in devin-dispatch.
-
-## Verify
-
-- `git -C ~/CascadeProjects/chaba worktree list` → main + ≤3 live session worktrees.
-- `git -C ~/CascadeProjects/chaba branch` → `master` + live dispatch branches only.
-- Manifest/job record on origin/master (commits `64ed464b`, `e947de0e`).
-- `git -C ~/CascadeProjects/sunsynk-power-flow-card branch --list 'wip/*'` → snapshot branch.
+`devin-cleanup.timer` (Sun 04:00) deletes **all** sessions >7d, dispatch or
+not — so this job's 14-day window and keep-guards currently overlap
+nothing. If the guards should actually protect dispatch sessions up to 14d,
+retune or retire the blunt timer (one hour after this job).
