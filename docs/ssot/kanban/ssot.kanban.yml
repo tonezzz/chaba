@@ -177,8 +177,11 @@ execution:
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
                works identically on every host incl. dell)"
-    dead_runner: "a claimed card whose runner dies stays 'running' —
-               requeue is manual today (sweeper = future work)"
+    dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
+               a runner unreachable via ssh for KANBAN_REQUEUE_MISSES
+               consecutive passes (default 3 ≈ 6min) gets its card
+               requeued (runner+task_id cleared). Cards pinned via
+               action.host to a down host simply wait for it."
     merge_safety: "parallel sessions converge on origin/master; generated files
                (index.html, cards.json, *-assessment.yml) are the recurring
                conflict source — prefer regenerating over hand-merging them"

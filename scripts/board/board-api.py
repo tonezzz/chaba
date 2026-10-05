@@ -245,6 +245,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     if verb == "retry":
         a["status"] = "queued"
         a.pop("result", None)
+        a.pop("runner", None)  # free for any host to re-claim
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":

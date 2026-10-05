@@ -56,6 +56,74 @@ HOST_CAP = int(os.environ.get("KANBAN_HOST_CAP", "3"))
 MY_LABELS = {x.strip() for x in
              os.environ.get("KANBAN_HOST_LABELS", "").split(",")
              if x.strip()}
+# Dead-runner sweep: a card 'running' on a remote runner-agent host that
+# stops answering ssh gets requeued after this many consecutive misses
+# (~2min cadence — 3 misses ≈ 6min down before requeue).
+REQUEUE_AFTER = int(os.environ.get("KANBAN_REQUEUE_MISSES", "3"))
+MISS_FILE = Path("/tmp/kanban-runner-misses.json")
+
+
+def runner_reachable(host: str) -> bool:
+    r = sh(["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+            host, "true"], timeout=15)
+    return r.returncode == 0
+
+
+def requeue_dead(path: Path, host: str) -> str:
+    """Locked re-check + requeue: only flip if the card is still running
+    on the same (dead) runner — a fresh claim or manual move wins."""
+    with LOCK.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        card = load_card(path)
+        a = card.get("action") or {}
+        if a.get("status") != "running" or a.get("runner") != host:
+            return "resolved itself"
+        a["status"] = "queued"
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        card.setdefault("claim", {}).pop("session", None)
+        comms_add(card, "chaba",
+                  f"runner {host} unreachable {REQUEUE_AFTER} passes "
+                  f"— requeued")
+        card["updated"] = now()
+        save_card(path, card)
+        return "requeued"
+
+
+def sweep_dead_runners(remote: list) -> bool:
+    """remote = [(path, card_id, runner)] seen running on other hosts.
+    Probes each runner (lock-free); requeues cards whose runner has been
+    unreachable REQUEUE_AFTER consecutive passes. True if cards changed."""
+    try:
+        misses = json.loads(MISS_FILE.read_text())
+    except Exception:
+        misses = {}
+    up: dict = {}
+    changed = False
+    seen = set()
+    for p, cid, host in remote:
+        seen.add(cid)
+        if host not in up:
+            up[host] = runner_reachable(host)
+        if up[host]:
+            misses.pop(cid, None)
+            continue
+        misses[cid] = misses.get(cid, 0) + 1
+        if misses[cid] >= REQUEUE_AFTER:
+            misses.pop(cid, None)
+            print(f"{cid}: runner {host} down — {requeue_dead(p, host)}")
+            changed = True
+        else:
+            print(f"{cid}: runner {host} unreachable "
+                  f"({misses[cid]}/{REQUEUE_AFTER})")
+    # forget counters for cards no longer remotely running
+    for cid in [c for c in misses if c not in seen]:
+        misses.pop(cid, None)
+    try:
+        MISS_FILE.write_text(json.dumps(misses))
+    except Exception:
+        pass
+    return changed
 
 
 def active_tasks() -> int:
@@ -248,7 +316,7 @@ def merge_pending_one(path: Path) -> str:
 
 
 def main() -> int:
-    starts, merges = [], []
+    starts, merges, remote = [], [], []
     changed = False
     # Phase A — under the lock: cheap card mutations only (no network/git).
     with LOCK.open("w") as lf:
@@ -280,6 +348,8 @@ def main() -> int:
                 print(f"{card['id']}: claimed")
             elif st == "running":
                 if a.get("runner") and a["runner"] != HOST:
+                    remote.append((p, card.get("id") or p.stem,
+                                   a["runner"]))
                     continue  # runs on another host — don't touch its unit
                 msg = finish_one(p, card)
                 if msg == "still running":
@@ -289,7 +359,10 @@ def main() -> int:
                 if (card.get("action") or {}).get("merge_pending"):
                     merges.append(p)
                 print(f"{card['id']}: {msg}")
-    # Phase B — lock released: slow ops (devin-dispatch start, git merge).
+    # Phase B — lock released: slow ops (devin-dispatch start, git merge,
+    # runner liveness probes).
+    if remote:
+        changed |= sweep_dead_runners(remote)
     for p in starts:
         print(f"{p.stem}: {start_pending(p)}")
     for p in merges:
