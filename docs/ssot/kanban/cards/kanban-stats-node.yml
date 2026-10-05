@@ -1,6 +1,6 @@
 id: kanban-stats-node
 title: Kanban stats as a reports-layer node (L2)
-column: review
+column: done
 note: No standing statistics view exists for the board — counts are computed ad-hoc. The reports standard (ssot.reports.yml)
   wants every producer to emit meta.yml so L3 SYSTEM-REPORT can roll it up; kanban is the busiest producer and emits
   nothing.
@@ -19,7 +19,7 @@ action:
   task_id: 20261005-105130-new-node-kanban-in-ssot-report
   runner: tony-dell
   result: 20261005-105130-new-node-kanban-in-ssot-report finished (inactive) — see `devin-dispatch logs 20261005-105130-new-node-kanban-in-ssot-report`
-updated: 2026-10-05 10:58
+updated: 2026-10-05 11:12
 comms:
 - at: 2026-10-05 10:48
   from: tony
@@ -41,5 +41,12 @@ comms:
 - at: 2026-10-05 10:58
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-05 11:12
+  from: devin
+  text: 'verified+merged: a52334d1 -> chaba master (20dc26e0). scripts/board/kanban-stats.py (328 LOC) + reports
+    node registration + job yml + kanban-sync wiring — stats now feed the reports layer.'
+- at: 2026-10-05 11:12
+  from: tony
+  text: moved review -> done
 claim:
   since: 2026-10-05 10:51

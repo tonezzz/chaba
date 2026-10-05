@@ -1,6 +1,6 @@
 id: board-needs-you-strip
 title: 'Board: ''Needs You'' strip — every pending decision in one band'
-column: backlog
+column: review
 note: Tony's decision queue is scattered across board requests, review verification, CMS index, focus inbox, and
   chat. The board already has the data — it just buries it inside per-card modals. One glance should answer 'what
   needs me right now'.
@@ -13,12 +13,13 @@ spec: 'scripts/render-board.py: add a ''Needs You'' band above the columns. Cont
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Build the Needs You strip in render-board.py per card spec: inline request-answer buttons + stale-review
     + failed dispatches in a collapsible top band using existing POST endpoints. Verify per spec.'
   task_id: 20261005-105816-scripts-render-board-py-add-a-
   runner: tony-dell
-updated: 2026-10-05 11:08
+  result: 20261005-105816-scripts-render-board-py-add-a- finished (inactive) — see `devin-dispatch logs 20261005-105816-scripts-render-board-py-add-a-`
+updated: 2026-10-05 11:14
 comms:
 - at: 2026-10-05 10:54
   from: tony
@@ -31,6 +32,19 @@ comms:
   text: 'Working: read render-board.py + board-api. Plan: needs-you band renders open requests w/ inline answer
     buttons, stale (>24h, unverified) review cards w/ verify button, failed dispatches w/ retry. All reuse existing
     endpoints.'
+- at: 2026-10-05 11:12
+  from: devin
+  text: 'Done. render-board.py now renders a collapsible Needs You band above the columns: open requests show ask
+    + inline option buttons/free-text (one click posts /respond), review cards >24h since last →review comm with
+    no verification entry get a ✔ verify button (posts /comment), failed/error dispatches get ↺ Retry (posts /action).
+    Header "N things need you"; collapse state in localStorage. Verified end-to-end: ran real board-api from the
+    worktree on :8899 + headless Chrome CDP — created a test reque'
+- at: 2026-10-05 11:14
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 11:14
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-105816-scripts-render-board-py-add-a- not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-105816-scripts-render-board-py-add-a-
   since: 2026-10-05 10:58
