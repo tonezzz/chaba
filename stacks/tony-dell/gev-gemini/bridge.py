@@ -1,8 +1,12 @@
 import asyncio
 import json
 import os
+import re
 import sys
+import time
 import traceback
+import urllib.request
+import uuid
 
 import websockets
 from google import genai
@@ -92,24 +96,132 @@ def log(msg):
     print(msg, flush=True)
 
 
-async def pump_responses(session, websocket):
-    """Forward model output to the client."""
+# ---------------------------------------------------------------- guards
+# Same model Ada's provider applies: the model proposes, the program
+# enforces. Three guards, all deterministic:
+#  1. per-turn tool-call budget (storm break)
+#  2. confirm gate — state-changing tools need the user's own last
+#     utterance to affirm (input transcription); otherwise the call is
+#     dropped and the model gets an error it can act on ("ask the user")
+#  3. guard interventions emit ops events to MDDB for the digest
+TURN_TOOL_BUDGET = int(os.environ.get('GEV_TURN_TOOL_BUDGET', '12'))
+CONFIRM_TOOLS = set(filter(None, os.environ.get(
+    'GEV_CONFIRM_TOOLS', 'clear_annotations,control_cctv').split(',')))
+MDDB_URL = os.environ.get('GEV_MDDB_URL', 'http://100.74.146.0:11023/v1')
+OPS_COLLECTION = os.environ.get('GEV_OPS_COLLECTION', 'gev-ops-events')
+
+# Compact copy of Ada's _CONFIRM_RE + negation veto (keep in sync —
+# ada-pi backend/realtime_provider.py).
+_CONFIRM_RE = re.compile(
+    r"\b(yes|yeah|yep|yup|confirm(ed)?|go ahead|do it|sure|okay?|"
+    r"approved?|proceed|absolutely|mhm|uh huh|sounds good)\b|"
+    r"ใช่|ยืน\s*ยัน|ตก\s*ลง|เอา\s*เลย|ทำ\s*เลย|ได้\s*เลย|ทำ\s*ได้|โอเค|ออเค|เออ|อือ|"
+    r"เริ่ม\s*เลย|จัดการ\s*เลย|ลอง\s*เลย|ต่อไป|จัด\s*ไป|เอา\s*สิ|ไป\s*เลย|"
+    r"ทำ\s*ไป|เผยแพร่\s*เลย|ส่ง\s*เลย",
+    re.IGNORECASE,
+)
+_CONFIRM_NEG_RE = re.compile(
+    r"\b(no|nope|nah|not|don't|dont|do not|cancel|wait|hold on|stop)\b|"
+    r"อย่า|หยุด|ยกเลิก|ไม่(?!ต้อง)",
+    re.IGNORECASE,
+)
+_CONFIRM_QUESTION_RE = re.compile(r"[?？]\s*$|ไหม\s*$|มั้ย\s*$")
+_CONFIRM_LEAD_WINDOW = 20
+_CONFIRM_MAX_TURN = 60
+
+
+def _user_affirmed(text: str) -> bool:
+    """True when the user's last utterance affirms (same rules as Ada's
+    gate: affirmation must lead or the turn must be short; an opening
+    negation or a question-ending vetoes)."""
+    text = (text or '').strip()
+    if not text or _CONFIRM_QUESTION_RE.search(text):
+        return False
+    span = text if len(text) <= _CONFIRM_MAX_TURN else text[:_CONFIRM_LEAD_WINDOW]
+    aff = _CONFIRM_RE.search(span)
+    if not aff:
+        return False
+    neg = _CONFIRM_NEG_RE.search(span)
+    return not (neg and neg.start() < aff.start())
+
+
+def _needs_confirm(name: str, args: dict) -> bool:
+    if name in CONFIRM_TOOLS:
+        return True
+    # annotate_map persists user-visible state only when asked to keep it
+    return name == 'annotate_map' and bool(args.get('persist'))
+
+
+def _ops_event(kind: str, detail: str, tool: str = '') -> None:
+    """Fire-and-forget ops event; failure is log-only, never blocks."""
+    try:
+        body = json.dumps({
+            'collection': OPS_COLLECTION,
+            'key': f'gev-{kind}-{int(time.time() * 1000)}-{uuid.uuid4().hex[:6]}',
+            'lang': 'en',
+            'contentMd': detail,
+            'meta': {'type': [kind], 'tool': [tool]},
+        }).encode()
+        req = urllib.request.Request(
+            f'{MDDB_URL}/add', data=body,
+            headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=5).read()
+    except Exception as e:
+        log(f'ops event failed ({kind}): {e}')
+
+
+async def pump_responses(session, websocket, state):
+    """Forward model output to the client, enforcing guards on tool calls."""
     try:
         async for msg in session.receive():
+            sc = msg.server_content
+            if sc is not None:
+                it = getattr(sc, 'input_transcription', None)
+                if it and getattr(it, 'text', None):
+                    state['user_text'] = it.text
+
             if msg.tool_call:
+                blocked = []
                 for call in (msg.tool_call.function_calls or []):
-                    log(f'Tool call: {call.name}({call.args})')
+                    args = dict(call.args or {})
+                    state['calls'] += 1
+                    if state['calls'] > TURN_TOOL_BUDGET:
+                        log(f'Guard: tool budget exceeded, dropped {call.name}')
+                        blocked.append(types.FunctionResponse(
+                            id=call.id, name=call.name,
+                            response={'error': 'tool budget exceeded for this turn'}))
+                        asyncio.ensure_future(asyncio.to_thread(
+                            _ops_event, 'gev_budget_block',
+                            f'tool budget ({TURN_TOOL_BUDGET}) exceeded; dropped {call.name}',
+                            call.name))
+                        continue
+                    if _needs_confirm(call.name, args) and not _user_affirmed(state.get('user_text')):
+                        log(f'Guard: {call.name} blocked — no user affirmation')
+                        blocked.append(types.FunctionResponse(
+                            id=call.id, name=call.name,
+                            response={'error': 'confirmation required: ask the user, '
+                                               'call again only if they affirm'}))
+                        asyncio.ensure_future(asyncio.to_thread(
+                            _ops_event, 'gev_confirm_block',
+                            f'{call.name} blocked — last user turn did not affirm',
+                            call.name))
+                        continue
+                    log(f'Tool call: {call.name}({args})')
                     try:
                         await websocket.send(json.dumps({
                             'type': 'function_call',
                             'id': call.id,
                             'name': call.name,
-                            'args': dict(call.args or {}),
+                            'args': args,
                         }))
                     except Exception:
                         pass
+                if blocked:
+                    try:
+                        await session.send_tool_response(function_responses=blocked)
+                    except Exception as e:
+                        log(f'guard tool_response failed: {e}')
 
-            sc = msg.server_content
             if not sc:
                 continue
 
@@ -128,6 +240,7 @@ async def pump_responses(session, websocket):
                     pass
 
             if sc.turn_complete:
+                state['calls'] = 0
                 try:
                     await websocket.send(json.dumps({'type': 'done'}))
                 except Exception:
@@ -325,6 +438,8 @@ async def client_handler(websocket):
         config_kwargs = {
             'response_modalities': ['AUDIO'],
             'output_audio_transcription': types.AudioTranscriptionConfig(),
+            # user-side transcription feeds the confirm gate
+            'input_audio_transcription': types.AudioTranscriptionConfig(),
             'system_instruction': types.Content(
                 role='system',
                 parts=[types.Part(text=SYSTEM_INSTRUCTION)],
@@ -338,7 +453,10 @@ async def client_handler(websocket):
         try:
             log('Gemini Live session connected')
             await websocket.send(json.dumps({'type': 'status', 'message': 'connected'}))
-            pump = asyncio.create_task(pump_responses(session, websocket))
+            # Per-session guard state: last user utterance (confirm source)
+            # + tool-call count this turn (storm budget).
+            guard = {'user_text': '', 'calls': 0}
+            pump = asyncio.create_task(pump_responses(session, websocket, guard))
 
             try:
                 async for message in websocket:
@@ -349,6 +467,9 @@ async def client_handler(websocket):
                             if t == 'end':
                                 await session.send_client_content(turn_complete=True)
                             elif t == 'text':
+                                # typed turns bypass input transcription —
+                                # feed the confirm gate directly
+                                guard['user_text'] = obj.get('text', '')
                                 await session.send_client_content(
                                     turns=types.Content(
                                         role='user',
