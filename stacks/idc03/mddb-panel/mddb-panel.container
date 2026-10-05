@@ -1,0 +1,18 @@
+[Unit]
+Description=mddb-panel web UI (tailnet-only via ufw)
+
+[Container]
+Image=docker.io/tradik/mddb:panel-latest
+ContainerName=mddb-panel
+Network=host
+Environment=MDDB_SERVER=http://100.102.134.91:11023
+Environment=PORT=3002
+Environment=HOST=100.102.134.91
+Environment=NODE_ENV=production
+Volume=%h/mddb-panel/server.js:/app/server.js:ro,z
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

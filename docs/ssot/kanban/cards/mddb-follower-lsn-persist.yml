@@ -1,0 +1,26 @@
+id: mddb-follower-lsn-persist
+title: "Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G"
+column: backlog
+note: >-
+  During the idc03 cutover: every mddb follower restart pulls a FULL
+  4.3G snapshot (~100s stream + verify) because lastAppliedLSN lives
+  only in memory — restart reports fromLSN=0, trips the new
+  below-oldest check, re-snapshots. Persist lastAppliedLSN in the
+  follower DB (or a sidecar file in data dir) so restarts TAIL the
+  binlog instead of re-snapshotting.
+help: >-
+  Fork repo: ~/CascadeProjects/mddb-fork branch binlog-retention.
+  Fix lives in replication_client.go — on startup read persisted LSN
+  (db meta bucket or mddb.lsn sidecar), use it as fromLSN; write it
+  after each applied entry batch (or at least every N seconds; an
+  fsync per entry is too hot — periodic flush is fine, worst case
+  replays a few seconds of entries idempotently).
+action: {type: dispatch, status: idle, repo: chaba, button: '▶ Persist follower LSN'}
+spec: >-
+  In the mddb fork (~/CascadeProjects/mddb-fork): persist follower's
+  applied LSN across restarts — small meta key in the replicated db or
+  a sidecar file next to mddb.db. Load on startup; flush periodically
+  (interval or batch-count, not per-entry). Idempotent replay means a
+  few-second skew is safe. Update idc02+idc03 images after (build on
+  idc02 via the Dockerfile; image tag bump 2.15.4-blrotate -> next).
+updated: '2026-10-05'

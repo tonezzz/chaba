@@ -1,0 +1,25 @@
+id: service-name-indirection
+title: "Service-name indirection — stop pinning tailnet IPs in configs"
+column: backlog
+note: >-
+  The idc01->idc03 move required sed'ing 100.74.146.0 in ~30 live files
+  (units, secrets, dropins) + ~106 repo files. Every service should
+  resolve a NAME not an IP — next move becomes a one-line update.
+help: >-
+  Options ranked: (a) MagicDNS names — idc03.taila0626a.ts.net works
+  today but pins the HOST not the service (mddb moving again breaks
+  the same way). (b) Caddy alias on the edge — svc domains like
+  http://mddb.internal -> current leader:11023; consumers hit the
+  domain, moves = one Caddyfile line. Works for HTTP; gRPC followers
+  (LEADER_ADDR) can take the MagicDNS name of the current leader —
+  only 2 places. (c) ssot() value refs — ssot.values.yml already
+  centralizes host IPs; make configs render from it instead of
+  literals. Realistic: (a)+(c) for units/secrets, (b) for HTTP clients.
+action: {type: dispatch, status: idle, repo: chaba, button: '▶ Indirection plan'}
+spec: >-
+  Inventory remaining hardcoded tailnet IPs across ~/.config on the
+  fleet + repo configs. Decide per class: unit envs -> MagicDNS host
+  names (already valid); HTTP service clients -> edge alias
+  (caddy svc.internal blocks); secrets env files -> rendered from
+  ssot.values.yml. Produce the migration list; don't mass-edit yet.
+updated: '2026-10-05'

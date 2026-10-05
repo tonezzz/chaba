@@ -22,7 +22,7 @@ DATA="$HOME/.config/containers/mddb/data"
 BK="$HOME/mddb-backups"
 
 # tier 1: native snapshot (consistent + server-verified on >=2.15.4)
-curl -s --max-time 300 "http://100.74.146.0:11023/v1/backup?to=$NAME" || true
+curl -s --max-time 300 "http://${MDDB_BACKUP_HOST:-100.102.134.91}:11023/v1/backup?to=$NAME" || true
 podman cp "mddb:/app/backups/$NAME" "$BK/$NAME.db" 2>/dev/null || true
 if [ -s "$BK/$NAME.db" ]; then
   podman exec mddb rm -f "/app/backups/$NAME" 2>/dev/null || true

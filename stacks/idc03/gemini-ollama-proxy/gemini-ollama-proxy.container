@@ -1,0 +1,23 @@
+[Unit]
+Description=Gemini-Ollama embedding proxy (mddb)
+Wants=network-online.target
+After=network-online.target ollama.service
+
+[Container]
+Image=docker.io/library/node:22-alpine
+ContainerName=gemini-ollama-proxy
+Exec=node /app/gemini-ollama-proxy.mjs
+Network=host
+Volume=/home/tony/.config/containers/mddb/proxy:/app:ro
+EnvironmentFile=/home/tony/.config/secrets/mddb-gemini.env
+Environment=GEMINI_PROXY_HOST=127.0.0.1
+HealthCmd=node /app/health-check.mjs
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
