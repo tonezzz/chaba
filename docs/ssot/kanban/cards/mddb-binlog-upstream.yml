@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-05 08:41
+updated: 2026-10-05 09:47
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -82,6 +82,19 @@ comms:
 - at: 2026-10-05 08:41
   from: tony
   text: closed by Tony
+- at: 2026-10-05 09:40
+  from: devin
+  text: 'DONE: upstreamed as two focused PRs from new fork tonezzz/mddb — tradik/mddb#285 (replication: snapshot
+    below-oldest incl LSN 0 + Recv-side FailedPrecondition) and #286 (retention: janitor + streaming Rotate + docs
+    rows). Cherry-picked clean onto origin/main 47dda9b; build/vet/gofmt/tests pass. No CI yet (first-time fork
+    needs maintainer approval). NOTE: dispatch worktree was reaped mid-session before trail commit; job record content
+    is in the session outcome. Follow-up: when PRs merge, pin stoc'
+- at: 2026-10-05 09:47
+  from: devin
+  text: 'REVERSAL per Tony: PRs #285/#286 CLOSED — keep it local for now (upstream AI-PR optics not worth it yet).
+    Nothing lost: both branches stay on fork tonezzz/mddb (upstream/binlog-retention, upstream/repl-snapshot-fallback)
+    and in local mddb-fork; commits verified build/vet/test-clean and production-proven. Ready to reopen/resubmit
+    whenever Tony decides. Fork left public per Tony.'
 action:
   type: devin-dispatch
   repo: mddb-fork
