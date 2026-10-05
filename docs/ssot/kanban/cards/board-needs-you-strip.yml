@@ -1,6 +1,6 @@
 id: board-needs-you-strip
 title: 'Board: ''Needs You'' strip — every pending decision in one band'
-column: done
+column: review
 note: Tony's decision queue is scattered across board requests, review verification, CMS index, focus inbox, and
   chat. The board already has the data — it just buries it inside per-card modals. One glance should answer 'what
   needs me right now'.
@@ -13,12 +13,13 @@ spec: 'scripts/render-board.py: add a ''Needs You'' band above the columns. Cont
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
   task: 'Build the Needs You strip in render-board.py per card spec: inline request-answer buttons + stale-review
     + failed dispatches in a collapsible top band using existing POST endpoints. Verify per spec.'
-  task_id: 20261005-105816-scripts-render-board-py-add-a-
+  task_id: 20261005-125644-scripts-render-board-py-add-a-
   runner: tony-dell
-updated: 2026-10-05 12:30
+  result: 20261005-125644-scripts-render-board-py-add-a- finished (inactive) — see `devin-dispatch logs 20261005-125644-scripts-render-board-py-add-a-`
+updated: 2026-10-05 13:08
 comms:
 - at: 2026-10-05 10:54
   from: tony
@@ -54,5 +55,30 @@ comms:
 - at: 2026-10-05 12:30
   from: tony
   text: retry requested
+- at: 2026-10-05 12:56
+  from: chaba
+  text: dispatched 20261005-125644-scripts-render-board-py-add-a- on chaba
+- at: 2026-10-05 12:58
+  from: devin
+  text: 'Retry dispatch: implementation from previous run is already in this branch base. Auditing it against the
+    spec, then re-verifying end-to-end (test request -> inline answer -> disappears).'
+- at: 2026-10-05 13:06
+  from: devin
+  text: 'Retry run = verification pass. Feature was already merged to master from the first dispatch (page_version
+    identical to live: b1df757525cc) — no code delta needed. Re-verified E2E in worktree: worktree board-api on
+    :8899 + headless Chrome CDP drove all three band kinds — option-button answer and free-text answer both saved
+    via /respond, stale-review cleared via /comment ''verified'', failed dispatch re-queued via /action retry; band
+    went 11→7 items as each resolved inline. Test cards removed. Trail'
+- at: 2026-10-05 13:08
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:08
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-125644-scripts-render-board-py-add-a- dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 13:08
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-125644-scripts-render-board-py-add-a- not in origin/master
+    — close will block until merged'
 claim:
-  since: 2026-10-05 10:58
+  since: 2026-10-05 12:56

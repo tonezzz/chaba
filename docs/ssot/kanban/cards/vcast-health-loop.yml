@@ -1,14 +1,27 @@
 id: vcast-health-loop
 title: 'build vcast-auto-* health loop (xmatch: systemd/journal -> kanban)'
 column: backlog
+priority: high
 program: vcast
 area: monitoring
 metric: vcast-auto-* cards auto-open within 15min of a lane failure
-verify: 'kill a cast service, see vcast-auto-<svc> card appear in review'
-note: >-
-  Mirror of cms-auto-health.py but sources = systemctl/journald on
-  tony-dell (audit-cast, cast-browser-proxy, yt-live-api, flap-check
-  output, cast lease age). Emit vcast-auto-<check> cards, auto-close on
-  recovery. Fold into kanban-sync tick or its own job entry.
+verify: kill a cast service, see vcast-auto-<svc> card appear in review
+note: Mirror of cms-auto-health.py but sources = systemctl/journald on tony-dell (audit-cast, cast-browser-proxy,
+  yt-live-api, flap-check output, cast lease age). Emit vcast-auto-<check> cards, auto-close on recovery. Fold into
+  kanban-sync tick or its own job entry.
 help: 'pattern: scripts/ada/cms-auto-health.py — same card lifecycle'
-updated: '2026-10-04'
+spec: 'New chaba probe mirroring scripts/ada/cms-auto-health.py. Sources: systemctl/journald on tony-dell — audit-cast,
+  cast-browser-proxy :8799, yt-live-api :8791, vcast-flap-check output, cast lease age. Emit vcast-auto-<svc> cards
+  into review on failure, auto-close on recovery. Fold into the kanban-sync tick or its own job entry. Verify: kill
+  a cast service, watch vcast-auto-<svc> appear, recover, watch it close.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Build vcast-auto-* health loop per card spec: mirror cms-auto-health.py, systemctl/journald sources (audit-cast,
+    cast-browser-proxy, yt-live-api, flap-check, lease age), auto-close on recovery.'
+updated: 2026-10-05 13:03
+comms:
+- at: 2026-10-05 13:03
+  from: tony
+  text: queued for processing

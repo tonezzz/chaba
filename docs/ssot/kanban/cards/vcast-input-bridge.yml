@@ -1,6 +1,7 @@
 id: vcast-input-bridge
 title: vcast input-bridge lane — headless/real/flip-check health
 column: backlog
+priority: medium
 program: vcast
 area: input-bridge
 metric: '0 flap events/24h in vcast-flap-check output; headless attach <5s'
@@ -10,4 +11,12 @@ note: >-
   vcast-flap-check.mjs (+ @.service). Work: audit flap-check cadence,
   ensure lease handoff headless<->real is clean (cast_recast_stale_lease
   exists because it once wasn't).
+spec: >-
+  stacks/web/input-bridge/: audit vcast-flap-check cadence and the headless<->real lease handoff (vcast-headless.mjs / vcast-real.mjs — cast_recast_stale_lease exists because the handoff once wasn't clean). Metric: 0 flap events/24h; headless attach <5s. Verify: cast_recast_stale_lease + cast_switch_flow scenarios pass.
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Audit input-bridge flap-check cadence + headless/real lease handoff per card spec; cast_recast_stale_lease + cast_switch_flow scenarios green.
 updated: '2026-10-04'

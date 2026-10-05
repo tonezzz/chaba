@@ -1,6 +1,7 @@
 id: gev-command-whitelist
 title: gev_command — client-side arg whitelist per command name
 column: backlog
+priority: medium
 program: ada-tools
 metric: 'bad args rejected locally with the real schema in the error; zero round-trip arg failures in gev scenarios'
 verify: 'gev_* scenarios pass; synthetic bad-args probe gets schema error not relay timeout'
@@ -13,4 +14,12 @@ note: >-
   the relay round-trip and return the expected schema in the error.
 help: 'GEV tool schemas: stacks/tony-dell/gev-gemini/tools.json (extracted
   from GEV_REALTIME_TOOLS in vite.config.js)'
+spec: >-
+  In the ada-pi gev_command tool, add a per-command known-args map (fly_to_location: {locationId, query, latitude, longitude}; annotate_map: {annotations}; enumerate the rest from the GEV tool schema in stacks/tony-dell/gev-gemini/tools.json) — reject unknown or missing keys locally with the expected schema in the error, before the ws relay round-trip. Keep the existing {name,args}-inside-args unwrap (commit 0bb8e9b). Passthrough stays the default for commands without a map entry. Verify: gev_* scenarios pass; a synthetic bad-args probe returns a schema error, not a relay timeout.
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  task: >-
+    Add per-command arg whitelist to the gev_command tool per card spec: known-args map, local reject with schema error, keep the {name,args} unwrap, passthrough default. Verify gev_* scenarios + bad-args probe.
 updated: '2026-10-04'

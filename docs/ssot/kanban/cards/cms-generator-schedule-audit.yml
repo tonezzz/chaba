@@ -14,12 +14,24 @@ spec: Enumerate scripts/ada/*.py that publish ada-cms-pages or write reports/; r
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: 'Audit ada-cms generator scheduling per card spec: classify each scripts/ada generator scheduled|manual-on-purpose|dead
     in ssot.automation.yml; install timers for live ones following the chaba-services-regen pattern; register in
     ssot.audit.hosts.yml expected_services.'
-updated: 2026-10-05 12:52
+  task_id: 20261005-130242-enumerate-scripts-ada-py-that-
+  runner: tony-dell
+updated: 2026-10-05 13:08
 comms:
 - at: 2026-10-05 12:52
   from: tony
   text: queued for processing
+- at: 2026-10-05 13:02
+  from: chaba
+  text: dispatched 20261005-130242-enumerate-scripts-ada-py-that- on chaba
+- at: 2026-10-05 13:03
+  from: devin
+  text: 'Starting audit: enumerating scripts/ada generators, classifying in ssot.automation.yml, installing timers
+    for live ones.'
+claim:
+  session: 20261005-130242-enumerate-scripts-ada-py-that-
+  since: 2026-10-05 13:02

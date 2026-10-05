@@ -1,6 +1,7 @@
 id: vcast-app
 title: vcast PWA — pair/QR, HLS playback, service worker
 column: backlog
+priority: medium
 program: vcast
 area: app
 metric: pair->play <10s on a fresh device; no stale-cache playback failures
@@ -9,4 +10,12 @@ note: >-
   stacks/web/public/apps/vcast/ (index, pair.html, hls.min.js, sw.js,
   manifest, qrcode). Work: review SW cache strategy vs shared apps-v6
   name, pair-page flow, HLS retry behavior on stream drop.
+spec: >-
+  stacks/web/public/apps/vcast/: audit the SW cache strategy — vcast's sw.js vs the shared apps-v6 cache name; stale-bundle playback failures must be impossible (explicit version/bump strategy). Review pair.html QR flow for pair->play <10s on a fresh device, and HLS retry behavior when a stream drops mid-play. Verify: manual cast flow + cast_interrupt_gate scenario.
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Audit vcast PWA per card spec: SW cache strategy vs apps-v6, pair/QR flow timing, HLS drop retry. Verify manual cast flow + cast_interrupt_gate.
 updated: '2026-10-04'

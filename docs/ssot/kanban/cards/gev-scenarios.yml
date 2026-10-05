@@ -1,6 +1,7 @@
 id: gev-scenarios
 title: 'gev scenarios — deepen scenario-live coverage'
 column: backlog
+priority: medium
 program: gev
 area: testing
 metric: 'bridge tool-call cycle, mute no-leak, pane honest-fail all covered by named scenarios'
@@ -11,4 +12,12 @@ note: >-
   strip), stale SW cache. Write scenarios so area-card verify fields are
   runnable, not manual.
 help: 'ada-pi tests/scenarios-live/gev_pane_honest_fail.yaml is the template'
+spec: >-
+  ada-pi tests/scenarios-live/: add gev_* scenarios covering — ws tool-call round trip (text -> function_call -> tool_response), mic mute no-leak (zero outbound audio frames while muted), tools.json regen check (additionalProperties stripped), stale SW cache guard (apps-v6 serving an old bundle). Template: tests/scenarios-live/gev_pane_honest_fail.yaml. Each gev-* area card's verify field should map to a runnable scenario. QUEUE LAST — this card is the regression gate for the whole gev program.
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  task: >-
+    Add gev_* scenario coverage per card spec: ws tool-call round trip, mute no-leak, tools.json regen check, stale SW cache — reusing gev_pane_honest_fail.yaml as template.
 updated: '2026-10-04'

@@ -1,15 +1,16 @@
 id: tools-merge-calendar-plan
 title: Consolidate calendar + plan tools (9 -> 3)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 12:52
+updated: 2026-10-05 13:02
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-122438-merge-the-calendar-plan-group-
   runner: tony-dell
+  result: 20261005-122438-merge-the-calendar-plan-group- finished (inactive) — see `devin-dispatch logs 20261005-122438-merge-the-calendar-plan-group-`
 spec: "Merge the calendar+plan group (9 -> 3) per the consolidation spec:\n- NEW calendar_read absorbs calendar_list_events,\
   \ calendar_list_calendars,\n  calendar_freebusy -> cal(action=events|calendars|freebusy)\n- NEW calendar_write\
   \ absorbs calendar_create_event, calendar_delete_event,\n  calendar_shift_overdue -> cal(action=create|delete|shift,\
@@ -29,6 +30,19 @@ comms:
   from: devin
   text: 'starting: mapping the calendar+plan merge onto the _ALIASES machinery (same pattern as tools-merge-cms).
     Canonical: calendar_read/calendar_write/plan_day; 8 absorbed names -> soft aliases.'
+- at: 2026-10-05 12:56
+  from: devin
+  text: 'DONE tools-merge-calendar-plan — calendar+plan group merged 9 -> 3 canonical (8 absorbed declarations;
+    plan_day was already canonical and is extended). Canonical: calendar_read(action=events|calendars|freebusy),
+    calendar_write(action=create|delete|shift — CALENDAR_WRITE_TOOLS seat, all actions confirm-gated via resolved
+    name; DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged), plan_day(period=today|tomorrow|week, digest folded in;
+    alias-only period=digest preserves ada_daily_summary contract). 8 sof'
+- at: 2026-10-05 13:02
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:02
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-122438-merge-the-calendar-plan-group- dirty — 11 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261005-122438-merge-the-calendar-plan-group-
   since: 2026-10-05 12:25

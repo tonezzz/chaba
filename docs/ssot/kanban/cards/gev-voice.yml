@@ -1,6 +1,7 @@
 id: gev-voice
 title: gev voice — mic pcm path, mute gating, playback gap
 column: backlog
+priority: medium
 program: gev
 area: voice
 metric: muted mic leaks 0 audio frames; unmute resumes capture
@@ -9,7 +10,12 @@ note: 'gevGeminiRealtime.js captures 16kHz mono PCM. Invariants: mic passes thro
   — recording flag alone is not enough); iOS mic works in Safari but NOT standalone PWA (apple-mobile-web-app-capable=no
   is the workaround); Gemini output is transcription text only — no audio playback implemented yet.'
 help: ~/gods-eye-view src/voice/gevGeminiRealtime.js; AGENTS.md GEV section
-updated: 2026-10-04 19:09
+spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-design). src/voice/gevGeminiRealtime.js:
+  regression-test the GainNode mute invariant (muted => zero outbound PCM frames — the recording flag alone is insufficient),
+  document the iOS constraint (mic works in Safari, not standalone PWA — apple-mobile-web-app-capable=no), and close
+  the playback gap: Gemini output is currently transcription-text only, no audio playback path exists in the GEV
+  page (vcast_say covers non-Latin TTS separately).'
+updated: 2026-10-05 13:03
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -17,3 +23,8 @@ comms:
     -> WAV in /frame store -> msg.audio; vcast page plays via <audio> with speechSynthesis fallback + missing-voice
     state report. ada-pi 928cc18 + chaba b7d7b23e deployed. Remaining gap: GEV-side voice playback (separate from
     vcast_say path).'
+- at: 2026-10-05 13:03
+  from: devin
+  text: 'spec written 2026-10-05 but left unarmed: gods-eye-view has no pushable remote (origin=upstream bilawalsidhu,
+    local main 6 ahead) and is not in dispatch-repos.conf. To dispatch: fork/push-remote + whitelist entry, or pull
+    the work into chaba staging. See gev-program-design.'

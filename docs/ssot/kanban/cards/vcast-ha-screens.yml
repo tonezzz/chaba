@@ -1,6 +1,7 @@
 id: vcast-ha-screens
 title: vcast HA screens card — tony-ha/www/vcast-screens-card.js
 column: backlog
+priority: medium
 program: vcast
 area: ha-screens
 metric: screen list reflects real cast targets; click->cast works on tony-ha
@@ -9,4 +10,12 @@ note: >-
   HA dashboard card listing cast screens. Work: sync targets with the
   actual cast-browser/device registry; verify on tony-ha after any
   dashboard promote.
+spec: >-
+  Sync tony-ha/www/vcast-screens-card.js screen list with the real cast-target registry (cast-browser devices). Stage and verify on michael-dev only — promotion to tony-ha requires explicit Tony approval, do NOT deploy live. Verify: the card lists only real, currently-registered cast targets.
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Sync vcast-screens-card.js target list with the real cast registry per card spec; stage+verify on michael-dev, no live deploy.
 updated: '2026-10-04'
