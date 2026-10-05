@@ -52,7 +52,7 @@ import yaml
 MDDB = os.environ.get(
     "MDDB_OPS_URL",
     os.environ.get("MDDB_BASE_URL",
-                   "http://100.74.146.0:11023/v1")).rstrip("/")
+                   "http://100.102.134.91:11023/v1")).rstrip("/")
 REPO = Path(os.environ.get("CHABA_REPO",
                            str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
@@ -74,7 +74,8 @@ def _expected_hosts() -> list[str]:
         spec.loader.exec_module(mod)
         return list(mod.DEFAULT_HOSTS)
     except Exception:
-        return ["idc01", "idc02", "mn01", "tony-dell", "tony-omen"]
+        return ["idc01", "idc02", "idc03", "mn01", "tony-dell",
+                "tony-omen", "michael-ha"]
 
 
 def _post(path: str, payload: dict, timeout: int = 15):
@@ -204,9 +205,14 @@ def coverage_note(states: dict[str, dict], expected: list[str],
             continue
         age_h = (now - float(st.get("_ts") or 0)) / 3600
         jr = st.get("journals") or {}
-        one_sided = "sys" if jr.get("sys") == 0 and jr.get("user", 0) > 0 \
-            else "user" if jr.get("user") == 0 and jr.get("sys", 0) > 0 \
-            else ""
+        # ha-cli pull hosts (michael-ha) only ever have the host journal
+        if st.get("lane") == "ha-cli-ssh":
+            one_sided = ""
+        else:
+            one_sided = \
+                "sys" if jr.get("sys") == 0 and jr.get("user", 0) > 0 \
+                else "user" if jr.get("user") == 0 and jr.get("sys", 0) > 0 \
+                else ""
         status = "ok"
         if not st.get("reachable", True):
             status, gap = f"UNREACHABLE ({st.get('error')})", True
@@ -215,7 +221,8 @@ def coverage_note(states: dict[str, dict], expected: list[str],
         if one_sided:
             gap = True
         lines.append(
-            f"- `{host}` — {status}; shipped {st.get('shipped', 0)}"
+            f"- `{host}` — {status} [{st.get('lane') or '?'}]; "
+            f"shipped {st.get('shipped', 0)}"
             f"/{st.get('scanned', 0)} matched"
             + (f"; only `{one_sided}` journal scanned (other side "
                "unreadable?)" if one_sided else ""))

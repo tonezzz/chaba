@@ -16,6 +16,7 @@ config:
     tony_omen: '%h/CascadeProjects/chaba'
     idc01: '%h/CascadeProjects/chaba-vault'
     idc02: '%h/CascadeProjects/chaba'
+    idc03: '%h/CascadeProjects/chaba'
     mn01: '%h/CascadeProjects/chaba'
     macbook: '%h/CascadeProjects/chaba'
 conventions:
@@ -293,6 +294,94 @@ jobs:
     ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04.
     on_failure added 2026-10-05 (cms-generator-schedule-audit) — a dead sync
     would silently stall every cms-auto-* card and the dev-kanban page.'
+# --- per-host local log shippers (card logs-local-shippers, 2026-10-05) ---
+# Each host ships its own journald to MDDB host-logs — kills the ssh
+# dependency of the tony-omen ada-review-refresh nightly (which stays on
+# as fallback lane, sharing the remote cursor files). The shipper script
+# is installed self-contained at ~/.local/share/log-shipper/ by
+# scripts/ada/install-log-shipper.sh — NOT exec'd from the repo checkout,
+# so a stale/divergent checkout can never break shipping and adding a
+# host = one installer run.
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+  note: MDDB_BASE_URL = live leader (idc03 tailnet IP — the docs' idc01
+    label is stale; 100.74.146.0 no longer serves MDDB). Repoint to
+    mddb-ops idc02:11025 via MDDB_OPS_URL when host-logs migrates.
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: tony_omen
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: idc01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: idc02
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: idc03
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+  note: idc03 ssh needs the id_idc03 key that lives on tony-omen —
+    install via `install-log-shipper.sh idc03 --via tony-omen`.
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: mn01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-mha
+  name: Log shipper pull — michael-ha via ha-cli
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts
+    michael-ha
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+  note: 'michael-ha cannot host a local shipper: ssh lands in the Alpine
+    core-ssh addon (no python3/systemd/journalctl) and the supervisor only
+    serves text logs. Pull lane instead: `ha host logs` over key-auth ssh
+    (root@michael-ha -i ~/.ssh/michael-ha — key-based, not tailscale-ssh
+    auth). Dedup is a collector-side ts+hash file (no journald cursor).'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

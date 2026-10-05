@@ -253,9 +253,10 @@ def main() -> int:
 
     # ---- journal -> MDDB shipper (host-logs collection) ----
     if not args.no_personal:
+        # fallback lane — no --hosts so the shipper's full DEFAULT_HOSTS
+        # fleet is covered; per-host local timers are the primary lane.
         r = subprocess.run(
-            [sys.executable, str(ADA_SCRIPTS / "log-shipper.py"),
-             "--hosts", args.hosts],
+            [sys.executable, str(ADA_SCRIPTS / "log-shipper.py")],
             capture_output=True, text=True, timeout=600)
         print((r.stdout.strip().splitlines() or ["log-ship: no output"])[-1])
         # vocab/log per-speaker notes -> my-words* CMS pages
