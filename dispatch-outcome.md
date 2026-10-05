@@ -1,68 +1,46 @@
-# Dispatch outcome — chaba-ci-standard
+# dispatch outcome — inbox-triage-round-2 (symptom sweep)
 
-## What was built
+## What was done
 
-The standard Chaba CI pipeline for card-sized work — five stages
-(plan → structure → develop → audit → benchmark) that any kanban card
-opts into via `pipeline: ci`.
+Triaged `docs/ada-memory/inbox/general/` — 222 files (201 `extract-*` dated
+2026-09-20→2026-10-02 plus 21 stray notes, including 6 newer 10-04 items).
+Each file's frontmatter `key` was matched against its MDDB bank doc
+(`ada-ha-bank-general`, 230 docs, cross-checked `ada-ha-bank-devin-handoff`,
+223 docs — no inbox key lived there).
 
-**New files**
-- `docs/ssot/ssot.ci.yml` — the declared standard: stage gates, required
-  artifacts, status enum, opt-in/normalization, both write paths, and
-  the dispatch wiring contract.
-- `scripts/ci/card-pipeline.py` — the runner. Two sinks: `--cards-dir`
-  file mode (direct YAML under `/tmp/board-api.lock`, the
-  kanban-dispatch protocol) and `--api` mode (`/comment`, `/request`,
-  new `/pipeline` endpoint; falls back to a structured comms line if the
-  endpoint isn't deployed yet). `--selftest`, per-stage comms, request
-  dedup/reopen, `reports/ci/<card>-<ts>.json` + meta/timeline.
-- `tests/fixtures/tts-artifact-clean-transcript.txt` — the two observed
-  artifact lines from transcript 519088cb6d; makes the card's metric
-  greppable.
-- `docs/ssot/jobs/workflow/2026-10-04-chaba-ci-pipeline.yml` — job trail.
+Classification result — **every file's bank doc was already resolved**:
 
-**Modified**
-- `scripts/board/board-api.py` — new `POST /pipeline` (opt_in, deep-merge
-  status block, single-stage writes; selftest coverage added).
-- `scripts/board/kanban-dispatch.py` — TASK_RAILS now tells sessions to
-  run the runner via `--api` near the end when a card opts in.
-- `docs/ssot/kanban/ssot.kanban.yml` — card_schema `pipeline` +
-  `benchmark` fields; write_path documents `/pipeline`.
-- `docs/ssot/infrastructure/ssot.reports.yml` — `ci-pipeline` L1 node
-  (`reports/ci/`).
-- `docs/ssot/infrastructure/ssot.quality.yml` — new `card-pipeline`
-  lane + three registry entries (`gate.card-plan-structure`,
-  `gate.card-audit`, `gate.card-benchmark`); related_ssot updated.
-- `docs/ssot/kanban/cards/tts-artifact-clean.yml` — demo card: opted in,
-  `action.repo: ada-pi`, `benchmark.command`, plus the run's
-  `pipeline:` status block, comms, and two open requests.
+| bank doc status | files | action |
+|---|---|---|
+| superseded | 53 | → `inbox/processed/` |
+| retracted | 63 | → `inbox/processed/` |
+| active + vault file exists | 100 | → `inbox/processed/` (stale dup) |
+| active + no vault file | 5 | promoted to `general/` (round-2 "P" convention: status→active, session_id dropped, body verified identical to MDDB doc) |
+| active, stale vs live doc | 1 | `yomi-vs-line-bot.md` → `inbox/processed/` (doc rewritten devin-side 10-04: Yomi offline; promoting the stale copy would conflict) |
+| draft / missing / live | 0 | — |
 
-## Demo result (tts-artifact-clean, file mode)
+**0 live items** found (no open bugs, no awaiting-user requests, no drafts).
+`inbox/general/` is now empty; `inbox/processed/` holds 217 archived files.
+No MDDB writes — no bank doc statuses were changed.
 
-`plan=pass structure=pass develop=delegated audit=pass benchmark=blocked`
-— audit ran 8 real checks on the worktree diff; benchmark recorded
-`before: 2` from the fixture grep and raised a request for the `after`
-measurement; develop was honestly delegated (card targets ada-pi, this
-worktree is chaba) with a request raised. Run artifact:
-`reports/ci/tts-artifact-clean-20261004-203950.json`. Re-run is
-idempotent — requests dedup, `before` is never overwritten.
+## Where
 
-## How to verify
+- Job trail: `docs/ssot/jobs/ada/2026-10-04-inbox-general-symptom-sweep.yml`
+- Decision artifacts: `.triage2/` (bank dumps, per-file `report.json`, `actions.json`, `classify.py`)
 
-- `python3 scripts/board/board-api.py --selftest` → `selftest ok`
-- `python3 scripts/ci/card-pipeline.py --selftest` → `selftest ok`
-- `node scripts/ssot-validate-all.mjs` → 0 errors (2 pre-existing
-  bloat-review warnings on quality/reports)
-- Card `tts-artifact-clean.yml` shows the `pipeline:` block, two open
-  requests, per-stage comms.
+## Not done / notes
 
-## Follow-ups (noted in the trail)
+- Root cause untouched per card: overnight focus pipeline exits 1 (separate
+  card). `export_inbox` in `scripts/ada/sync-ada-memory-to-mddb.py` re-exports
+  draft + voice/active docs — processed files may re-accumulate until the
+  pipeline fix lands.
+- Other bank inboxes still populated (out of scope): devin-handoff 86,
+  note 31, people 52, personal 142, personal-kk 27, personal-testo 1,
+  purchase 13, tony-projects 101.
 
-- Deploy the `/pipeline` endpoint to the live board-api (served
-  checkout chaba-tony-dell) — until then api-mode falls back to a
-  `pipeline-status:` comms line, nothing is lost.
-- Dispatch `tts-artifact-clean` against ada-pi to satisfy the develop
-  request, then re-run `--stages benchmark` for the after value.
-- Live card `tts-artifact-clean` was deliberately NOT touched via the
-  API — all demo writes are in the worktree file to avoid a cross-
-  checkout merge conflict on the comms list.
+## Verify
+
+    ls docs/ada-memory/inbox/general | wc -l      # 0
+    ls docs/ada-memory/inbox/processed | wc -l    # 217
+    # spot-check a promoted file:
+    cat docs/ada-memory/general/extract-2026-10-04-e7afe759ba-4.md

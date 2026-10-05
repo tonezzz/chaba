@@ -1,0 +1,53 @@
+# SSOT Job Trail: ada-memory inbox/general symptom sweep
+# Kanban card: inbox-triage-round-2. Follow-up to
+# 2026-10-04-memory-inbox-triage-round2.yml — the extract files
+# re-accumulated because the overnight focus pipeline exits 1
+# (pipeline fix tracked separately on the focus board). This sweep only
+# re-classified files against MDDB bank doc status; no MDDB writes.
+
+title: Ada memory inbox/general symptom sweep
+subtitle: 222 re-accumulated files classified by bank-doc status; 0 live items remained
+icon: inbox
+
+result:
+  status: done
+  date: 2026-10-04
+  host: tony-dell (dispatch worktree)
+
+method:
+  - "dumped ada-ha-bank-general (230 docs) + ada-ha-bank-devin-handoff (223 docs) key->status via mddb MCP"
+  - "matched each inbox file's frontmatter key to its bank doc"
+  - "terminal (superseded|retracted) or active-with-vault-file -> inbox/processed/"
+  - "active but missing vault mirror -> promoted file to general/ (round-2 'P' convention)"
+  - "yomi-vs-line-bot: doc rewritten devin-side 10-04 (Yomi offline), inbox copy stale -> processed/, NOT promoted"
+
+findings:
+  classification:
+    superseded: 53
+    retracted: 63
+    active_already_mirrored: 100   # bank file exists in general/ — stale dup inbox copy
+    active_missing_mirror: 6       # 5 promoted to general/, 1 stale (yomi-vs-line-bot) -> processed/
+    draft_or_missing: 0            # nothing left in inbox/general
+  live_items: 0                    # no open bugs / awaiting-user requests among the 222
+  note: every re-accumulated file already had a resolved bank doc; the
+    inbox queue itself was pure symptom of the failed pipeline run.
+
+actions:
+  moved_to_processed: 217          # docs/ada-memory/inbox/processed/
+  promoted_to_general: 5           # extract-2026-10-04-{519088cb6d-0,e7afe759ba-0,-1,-3,-4}
+  mddb_writes: 0                   # status sweep only — no doc superseded or edited
+  files_verified:
+    - "inbox/general now empty (222 -> 0)"
+    - "inbox/processed: 217 files, content untouched (archive, never synced)"
+    - "promoted files: status draft->active, last_verified 2026-10-04, session_id dropped per bank convention; body identical to MDDB doc"
+
+artifacts:
+  - .triage2/bank-general.json        # full general-bank status dump
+  - .triage2/bank-devin-handoff.json  # full handoff-bank status dump
+  - .triage2/report.json              # per-file key/status/decision map
+  - .triage2/actions.json             # move/promote lists
+  - .triage2/classify.py              # classifier
+
+known_issues:
+  - "root cause open: overnight focus pipeline exits 1; extract files will re-accumulate until fixed (tracked on focus board, separate card)"
+  - "export_inbox in sync-ada-memory-to-mddb.py re-exports draft + voice/active docs into inbox/<bank>/ — files moved to inbox/processed/ will be re-created on next export unless the pipeline stops re-queueing resolved docs"
