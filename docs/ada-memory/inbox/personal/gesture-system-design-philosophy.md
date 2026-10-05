@@ -1,16 +1,19 @@
 ---
+attribute: intent
 bank: personal
 key: personal/gesture-system-design-philosophy
-kind: note
-last_used: '2026-09-27'
-last_verified: '2026-09-27'
+kind: fact
+last_used: '2026-10-05'
+last_verified: '2026-10-05'
+origin_source: voice
+origin_written_by: ada_remember
 scope: tony
-session_id: b01042039b
+session_id: 906f83beb1
 source: voice
 status: active
-subject: gesture-system-design-philosophy
-use_count: '21'
+subject: hand-gesture-rebuild
+use_count: '1'
 valid_from: '2026-09-27'
 written_by: ada_remember
 ---
-Gesture interpretation in ada_v2 was fully browser-local. The MediaPipe path for UI control operated independently of Downscaled frames sent to the backend for AI vision.
+Tony is considering driving the gesture pointer cursor from YOLO bounding boxes.
