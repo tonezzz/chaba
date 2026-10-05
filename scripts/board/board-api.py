@@ -11,6 +11,10 @@ Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
   GET  /cards                        -> cards.json payload
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move
+      close/move->done runs the merge guard (dispatch_repos.guard): a
+      dispatch card whose session branch still has commits not in
+      origin/<default_branch> gets a comms entry ('unmerged commits
+      remain …') and stays in review instead of closing.
   POST /respond  {id, request_id, answer, from?, reopen?}
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
   POST /request  {id, ask, request_id?, options?, from?}
@@ -39,6 +43,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dispatch_repos as dr
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -94,6 +101,22 @@ def slugify(text: str) -> str:
     return f"{slug}-{h}" if slug else f"req-{h}"
 
 
+def apply_merge_guard(card: dict) -> str:
+    """review->done gate (card dispatch-merge-guard). Returns a block
+    message when the session branch still has commits not in
+    origin/<default_branch>; "" when the transition may proceed. Guard
+    notes are appended to card comms either way; a guard error never
+    wedges the board — it logs and allows."""
+    try:
+        g = dr.guard(card)
+    except Exception as e:
+        comms_add(card, "chaba", f"merge guard skipped (error: {e})")
+        return ""
+    if g["note"]:
+        comms_add(card, "chaba", g["note"])
+    return "" if g["allowed"] else f"blocked — {g['summary']}"
+
+
 def do_action(card: dict, verb: str, frm: str) -> str:
     a = card.setdefault("action", {})
     st = a.get("status", "idle")
@@ -112,6 +135,9 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":
+        blocked = apply_merge_guard(card)
+        if blocked:
+            return blocked
         card["column"] = "done"
         a["status"] = "done"
         comms_add(card, frm, "closed by Tony")
@@ -131,6 +157,10 @@ def do_move(card: dict, body: dict) -> str:
     old = card.get("column", "backlog")
     if col == old:
         return f"already in {col}"
+    if col == "done":
+        blocked = apply_merge_guard(card)
+        if blocked:
+            return blocked
     card["column"] = col
     if col == "done":
         card.setdefault("action", {})["status"] = "done"

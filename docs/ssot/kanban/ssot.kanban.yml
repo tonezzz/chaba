@@ -61,7 +61,8 @@ card_schema:
     type: "dispatch | manual"        # dispatch => devin-dispatch start
     status: "idle | queued | running | done | failed"
     button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
-    repo: "chaba | ada-pi | sunsynk-card — devin-dispatch whitelist"
+    repo: "chaba | ada-pi | sunsynk-card | mddb-fork — devin-dispatch
+           whitelist ($DISPATCH_DIR/repos.conf: name path default_branch)"
     host: "optional — pin the card to one host's dispatcher (e.g. idc01
            for mddb work). Unpinned = first eligible host under cap."
     runner: "hostname that claimed/executed — written by the dispatcher"
@@ -125,7 +126,27 @@ execution:
   dispatcher: "kanban-dispatch.timer (2min) -> scripts/board/kanban-dispatch.py —
                scans action.status==queued, devin-dispatch start <repo> <spec+rails>,
                writes task_id/claim/runner; polls running tasks, on finish -> status
-               done, column review. Tony reviews and presses Close."
+               done, column review + session-end comms when the worktree is
+               dirty (uncommitted file count) or the session branch has
+               commits not in origin/<default_branch>. Tony reviews and
+               presses Close."
+  worktree_base: "devin-dispatch cuts worktrees from origin/<default_branch>
+               (repos.conf; best-effort fetch first) — never the checkout's
+               current branch, so a repo parked on a stale branch can't
+               poison new sessions (sunsynk-bat34 failure mode)."
+  merge_guard: "board-api apply_merge_guard (scripts/board/dispatch_repos.py)
+               gates every transition into done (close + move->done):
+               git merge-base --is-ancestor <session-head> origin/<default>
+               in the target repo — non-ancestor => comms 'unmerged commits
+               remain on <branch> (N not in <base>)' and the card stays in
+               review. Resolved via action.task_id -> DISPATCH_DIR
+               tasks/<id>/meta.json {worktree, branch, default_branch} with
+               fallbacks (~/CascadeProjects/dispatch-wt-<id>, dispatch/<id>
+               branch scan across whitelisted repos, origin/HEAD ->
+               master|main probe). Unresolvable sessions log a skip note and
+               allow — the guard never wedges the board. Dirty worktrees
+               never block; the leftover file count rides along in the
+               comms line."
   concurrency:
     # today's model — one dispatcher per host, caps local:
     host_cap: "KANBAN_HOST_CAP env on the dispatcher (default 3; tony-dell is
@@ -136,7 +157,7 @@ execution:
                whose action.host matches (or unpinned), claim atomically via
                POST /action do=claim {host} (flock-serialized — no double
                dispatch), run locally, and agents post comms back over tailnet.
-               Card must git pull --ff-only first — worktrees cut from local HEAD."
+               Card should fetch first — worktrees cut from origin/<default>."
     merge_safety: "parallel sessions converge on origin/master; generated files
                (index.html, cards.json, *-assessment.yml) are the recurring
                conflict source — prefer regenerating over hand-merging them"

@@ -12,7 +12,10 @@ chaba-tony-dell checkout (the web-served tree). For each queued card:
 
 For cards already 'running', polls `devin-dispatch status <task_id>`;
 when the unit finishes, marks action.status done, moves the card to
-review, and writes a comms entry. Tony reviews then presses Close.
+review, and writes a comms entry — plus session-end notes when the
+worktree is dirty (uncommitted file count) or the session branch has
+commits not in origin/<default_branch> (board-api blocks close on
+that until merged). Tony reviews then presses Close.
 """
 import fcntl
 import json
@@ -23,6 +26,9 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dispatch_repos as dr
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -116,6 +122,32 @@ def queue_one(path: Path, card: dict) -> str:
     return f"dispatched {task_id}"
 
 
+def session_end_notes(card: dict) -> list:
+    """Comms lines for leftover work at session end (merge-guard spec c):
+    dirty worktree file count, plus commits not yet in the default branch
+    (the same condition the board-api close gate blocks on)."""
+    notes = []
+    try:
+        s = dr.session(card)
+        if s["worktree"]:
+            dirty = dr.dirty_count(s["worktree"])
+            if dirty:
+                notes.append(
+                    f"session end: worktree {s['worktree'].name} dirty — "
+                    f"{dirty} uncommitted file(s); commit or clean before "
+                    f"pruning")
+        if s["head"] and s["base_ref"]:
+            m = dr.merge_state(s["repo_root"], s["head"], s["base_ref"])
+            if m.get("checked") and not m["ancestor"]:
+                notes.append(
+                    f"session end: {m['unmerged']} commit(s) on "
+                    f"{s['branch']} not in {s['base_ref']} — close will "
+                    f"block until merged")
+    except Exception:
+        pass
+    return notes
+
+
 def poll_one(path: Path, card: dict) -> str:
     a = card["action"]
     tid = a.get("task_id") or ""
@@ -128,6 +160,8 @@ def poll_one(path: Path, card: dict) -> str:
     card["column"] = "review"
     card.setdefault("claim", {}).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
+    for n in session_end_notes(card):
+        comms_add(card, "chaba", n)
     return "finished"
 
 
