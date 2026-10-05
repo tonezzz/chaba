@@ -17,7 +17,13 @@ Endpoints (after prefix strip):
       remain …') and stays in review instead of closing.
   POST /respond  {id, request_id, answer, from?, reopen?}
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
-  POST /request  {id, ask, request_id?, options?, from?}
+  POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
+      raises a requests[] entry {id, ask, status: open, at, from, to?};
+      `to` defaults to tony (absent = tony). A request targeting tony
+      raised by a non-tony actor queues a push notification
+      (board_notify.py — HA iPhone push by default, debounced
+      BOARD_NOTIFY_DEBOUNCE_S=30s so bursts arrive as one batched
+      summary). request-sweep.py re-pings once after 12h unanswered.
   POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}
       CI pipeline write path (docs/ssot/ssot.ci.yml). opt_in:true sets the
       `pipeline: ci` opt-in; pipeline:{...} merges a full status block
@@ -37,6 +43,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -46,6 +53,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
+import board_notify as bn
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -222,11 +230,17 @@ def do_request(card: dict, body: dict) -> str:
     if not ask:
         raise ValueError("ask required")
     frm = actor(body)
+    to = str(body.get("to") or "tony").strip()
+    if to not in ACTORS:
+        raise ValueError(f"to must be one of {sorted(ACTORS)}")
     rid = str(body.get("request_id") or "").strip() or slugify(ask)
     reqs = card.setdefault("requests", [])
     if any(r.get("id") == rid for r in reqs):
         raise ValueError(f"duplicate request id {rid}")
-    req = {"id": rid, "ask": ask, "status": "open"}
+    req = {"id": rid, "ask": ask, "status": "open",
+           "at": now(), "from": frm}
+    if to != "tony":
+        req["to"] = to  # absent = tony
     if body.get("options"):
         req["options"] = body["options"]
     sug = str(body.get("suggested") or "").strip()
@@ -246,6 +260,62 @@ def do_request(card: dict, body: dict) -> str:
     reqs.append(req)
     comms_add(card, frm, f"raised request {rid}: {ask[:120]}")
     return f"request {rid} raised"
+
+
+# --- request push notifications (card kanban-push-notify) ---------------
+# New requests fire a push after a short debounce so a burst of /request
+# POSTs arrives as ONE batched summary, not a ping storm. Pending items
+# are in-process only — a restart loses at most the pending pings, and
+# request-sweep.py re-pings unanswered requests after 12h anyway.
+NOTIFY_DEBOUNCE_S = float(os.environ.get("BOARD_NOTIFY_DEBOUNCE_S", "30"))
+_notify_pending: list = []
+_notify_timer: threading.Timer | None = None
+_notify_lock = threading.Lock()
+
+
+def request_needs_notify(req: dict) -> bool:
+    """Push only requests that target tony and weren't raised by him —
+    anything else (to:ada, self-notes) stays quiet."""
+    return req.get("to", "tony") == "tony" and req.get("from") != "tony"
+
+
+def _req_line(cid: str, req: dict) -> str:
+    opts = ""
+    if req.get("options"):
+        labels = [str(o) if not isinstance(o, dict)
+                  else str(o.get("label") or o.get("id"))
+                  for o in req["options"]]
+        opts = f"  [{' / '.join(labels[:4])}]"
+    return f"• {cid}: {str(req.get('ask'))[:80]}{opts}"
+
+
+def _flush_request_notify() -> None:
+    global _notify_timer
+    with _notify_lock:
+        items, _notify_pending[:] = _notify_pending[:], []
+        _notify_timer = None
+    if not items:
+        return
+    if len(items) == 1:
+        cid, req = items[0]
+        bn.send("Board request — needs Tony",
+                f"{cid}: {str(req.get('ask'))[:180]}")
+    else:
+        body = "\n".join(_req_line(c, r) for c, r in items[:10])
+        if len(items) > 10:
+            body += f"\n… +{len(items) - 10} more"
+        bn.send(f"Board: {len(items)} new requests", body)
+
+
+def queue_request_notify(cid: str, req: dict) -> None:
+    global _notify_timer
+    with _notify_lock:
+        _notify_pending.append((cid, req))
+        if _notify_timer is None:
+            _notify_timer = threading.Timer(
+                NOTIFY_DEBOUNCE_S, _flush_request_notify)
+            _notify_timer.daemon = True
+            _notify_timer.start()
 
 
 PIPELINE_STAGES = {"plan", "structure", "develop", "audit", "benchmark"}
@@ -354,6 +424,7 @@ class H(BaseHTTPRequestHandler):
         except Exception:
             return self._send(400, {"error": "bad json"})
 
+        notify_req = None
         with LOCK.open("w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
             try:
@@ -395,6 +466,10 @@ class H(BaseHTTPRequestHandler):
                     msg = do_request(card, body)
                     card["updated"] = now()
                     save(p, card)
+                    req = card["requests"][-1]
+                    if request_needs_notify(req):
+                        notify_req = (card.get("id") or body.get("id"), req)
+                        msg += " — notify queued"
                 elif path == "/pipeline":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
@@ -408,8 +483,13 @@ class H(BaseHTTPRequestHandler):
                 return self._send(400, {"error": str(e)})
             except Exception as e:
                 return self._send(500, {"error": str(e)})
-        # card lock released — render under its own lock so a slow render
-        # doesn't stall other writers
+        # card lock released — queue the push (debounced, best-effort) and
+        # render under its own lock so neither stalls other writers
+        if notify_req:
+            try:
+                queue_request_notify(*notify_req)
+            except Exception as e:
+                sys.stderr.write(f"board-api notify queue failed: {e}\n")
         render()
         self._send(200, {"ok": True, "message": msg})
 
@@ -447,16 +527,31 @@ def _selftest() -> None:
     do_request(card, {"ask": "ship it?", "request_id": "rq2",
                       "options": ["y", "n"], "from": "ada"})
     req = card["requests"][-1]
-    assert req == {"id": "rq2", "ask": "ship it?", "status": "open",
-                   "options": ["y", "n"]}
+    assert req["id"] == "rq2" and req["ask"] == "ship it?"
+    assert req["status"] == "open" and req["options"] == ["y", "n"]
+    assert req["at"] and req["from"] == "ada" and "to" not in req
+    assert request_needs_notify(req)          # agent -> tony: push
     assert card["comms"][-1]["from"] == "ada"
     assert "raised request rq2" in card["comms"][-1]["text"]
     rejects(lambda: do_request(card, {"ask": "again", "request_id": "rq2"}),
             "duplicate request id")
+    rejects(lambda: do_request(card, {"ask": "q", "to": "nobody"}),
+            "to must be one of")
     do_request(card, {"ask": "auto id please"})
     assert card["requests"][-1]["id"].startswith("auto-id-please-")
     do_request(card, {"ask": "ตอบหน่อย"})  # non-ascii ask still gets an id
     assert card["requests"][-1]["id"].startswith("req-")
+    # notify gate: tony-raised and non-tony-targeted requests stay quiet
+    do_request(card, {"ask": "note to self", "from": "tony"})
+    assert not request_needs_notify(card["requests"][-1])
+    do_request(card, {"ask": "ada check this", "from": "devin", "to": "ada"})
+    r2 = card["requests"][-1]
+    assert r2["to"] == "ada" and not request_needs_notify(r2)
+    # batched summary format
+    assert "•" in _req_line("c1", {"ask": "q" * 100,
+                                   "options": [{"id": "a", "label": "A"}]})
+    assert "[A]" in _req_line("c1", {"ask": "x",
+                                     "options": [{"id": "a", "label": "A"}]})
 
     # /pipeline
     card = {}

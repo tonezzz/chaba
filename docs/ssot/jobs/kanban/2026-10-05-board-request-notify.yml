@@ -1,0 +1,79 @@
+id: board-request-notify
+date: 2026-10-05
+card: kanban-push-notify
+host: tony_dell
+status: implemented
+
+goal: >
+  Push Tony when a board request is created for him, and re-ping once when
+  an open request rots >12h. Quiet-by-design: burst-debounced on create,
+  one batched summary on escalate, once per request.
+
+channel_decision:
+  chosen: ha-iphone-push
+  how: "POST http://127.0.0.1:8123/api/services/notify/mobile_app_tony_ip
+    (tony-ha loopback; token ~/.config/secrets/home-assistant-token.env,
+    HA_LONG_LIVED_TOKEN|HASS_TOKEN). clickAction /chaba-admin/board —
+    in-app deep link to the kanban tab."
+  why: >
+    Proven path — devin-dispatch-watch.sh has pushed every finished
+    dispatch job through it; token file and service already wired;
+    lands on the phone Tony carries. Zero new dependencies.
+  rejected:
+    yomi-line: >
+      Card preference ('LINE — where Tony already lives'), but the send
+      path is currently dead: /api/yomi/session-status returns
+      valid:false (LINE revoked session — re-login is rate-limited to
+      1/h and needs Tony). No notification chatId is configured anywhere
+      (YOMI_CHAT_ID empty in health-monitor-config.sh), and sending a
+      LINE message to Tony's own account is unverified. Implemented
+      behind BOARD_NOTIFY_CHANNEL=yomi + BOARD_NOTIFY_YOMI_CHAT for when
+      the session is restored.
+    ntfy-sh: >
+      Works (simple POST) but adds an external SaaS dependency plus a
+      new phone app + topic subscription; nothing in the repo uses it.
+      Implemented behind BOARD_NOTIFY_CHANNEL=ntfy +
+      BOARD_NOTIFY_NTFY_TOPIC.
+
+components:
+  - scripts/board/board_notify.py: >
+      shared push helper + CLI. Channels ha|yomi|ntfy|file|off via
+      BOARD_NOTIFY_CHANNEL (default ha). Best-effort, 8s timeouts,
+      never raises — a dead channel cannot break a card write.
+  - scripts/board/board-api.py: >
+      /request now stamps at/from/to on each request (to absent = tony).
+      Agent-raised requests targeting tony queue a push after
+      BOARD_NOTIFY_DEBOUNCE_S (30s) — concurrent creates collapse into
+      one 'Board: N new requests' summary.
+  - scripts/board/request-sweep.py: >
+      runs inside the kanban-sync tick (every 15min, tony-dell). Open
+      requests to tony older than BOARD_SWEEP_AGE_H (12h) get ONE batched
+      escalation push; escalated_at stamped on the request under
+      /tmp/board-api.lock (single-writer rule). Push failure -> nothing
+      stamped -> next tick retries. --dry-run previews.
+  - scripts/ada/kanban-sync.sh: step 2b runs the sweep.
+
+quiet_rules:
+  - create hook only fires for to=tony/absent AND from!=tony.
+  - burst debounce 30s collapses concurrent creates into one summary.
+  - sweep sends one message for all overdue requests, capped at 10 lines.
+  - escalated_at = exactly-once per request, durable in the card YAML.
+  - done-column cards and answered requests are never re-scanned.
+
+verification:
+  - "board_notify.py CLI -> 'sent'; real iPhone push arrived (ha channel)."
+  - "test board-api on :9877 — POST /request devin->tony -> sink entry
+    'Board request — needs Tony'; to:ada and from:tony stayed quiet;
+    3 concurrent POSTs -> one 'Board: 3 new requests' push."
+  - "request-sweep vs /tmp/sweep-test — 13h-old open request -> exactly one
+    'unanswered >12h' push, escalated_at stamped, second run quiet;
+    legacy requests without `at` fall back to comms / card.updated;
+    batched 4 requests across 3 cards into one push."
+  - "python3 scripts/board/board-api.py --selftest -> ok."
+
+followups:
+  - "To switch to LINE later: restore the yomi session (1 login attempt/h,
+    needs Tony), pick a chatId, set BOARD_NOTIFY_CHANNEL=yomi +
+    BOARD_NOTIFY_YOMI_CHAT on board-api.service and the kanban-sync job."
+  - "board-api.service restart needed to pick up the hook on the live
+    127.0.0.1:8787 instance after merge."

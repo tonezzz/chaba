@@ -5,6 +5,8 @@
 #      logs-kanban -> logs-auto-* cards, gev-auto-health -> gev-auto-*
 #      cards, vcast-auto-health -> vcast-auto-* cards
 #      (all write files under docs/ssot/kanban/cards/)
+#   2b. request-sweep: open requests targeting tony unanswered >12h get
+#      ONE batched escalation push (stamps escalated_at, never repeats)
 #   3. commit + push ONLY cards/ changes the health checks made
 #   4. kanban-cms: render the live board into the dev-kanban CMS page
 #
@@ -28,6 +30,7 @@ python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
 python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"
 python3 scripts/ada/gev-auto-health.py || echo "gev-auto-health failed (non-fatal)"
 python3 scripts/ada/vcast-auto-health.py || echo "vcast-auto-health failed (non-fatal)"
+python3 scripts/board/request-sweep.py || echo "request-sweep failed (non-fatal)"
 # L2 'kanban' report node — stats read the live cards in the served
 # checkout; outputs mirror back into $SRC (reports/kanban + web data).
 python3 scripts/board/kanban-stats.py \
