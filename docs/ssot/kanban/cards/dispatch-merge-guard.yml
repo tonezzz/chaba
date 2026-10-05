@@ -20,7 +20,7 @@ action:
     origin default or dirty files remain — emit comms instead. Verify with a deliberate-unmerged test dispatch.'
   task_id: 20261005-105032-in-scripts-board-kanban-dispat
   runner: tony-dell
-updated: 2026-10-05 10:54
+updated: 2026-10-05 11:02
 comms:
 - at: 2026-10-05 10:48
   from: tony
@@ -28,6 +28,18 @@ comms:
 - at: 2026-10-05 10:51
   from: chaba
   text: dispatched 20261005-105032-in-scripts-board-kanban-dispat on chaba
+- at: 2026-10-05 10:55
+  from: devin
+  text: 'starting: plan is (a) REPOS gains default_branch via $DISPATCH_DIR/repos.conf + inline fallback, worktrees
+    cut from origin/<default>; (b) merge-guard on close/move->done in board-api.py (ancestry vs origin/<default>);
+    (c) dirty-worktree comms at session end in kanban-dispatch.py'
+- at: 2026-10-05 11:01
+  from: devin
+  text: 'done. (a) worktrees now cut from origin/<default_branch> per repo — repo whitelist externalized to ~/.local/share/devin-dispatch/repos.conf
+    (versioned: scripts/devin/dispatch-repos.conf), applied live to ~/.local/bin/devin-dispatch + repo copy; meta.json
+    records default_branch/base. Verified live: sunsynk-card dispatch cut origin/main while checkout sits on stale
+    sunsynk. (b) board-api apply_merge_guard gates close+move->done via merge-base --is-ancestor vs origin/<default>
+    — verified e2e: block'
 claim:
   session: 20261005-105032-in-scripts-board-kanban-dispat
   since: 2026-10-05 10:51

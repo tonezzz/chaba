@@ -13,11 +13,24 @@ spec: 'scripts/render-board.py: add a ''Needs You'' band above the columns. Cont
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: 'Build the Needs You strip in render-board.py per card spec: inline request-answer buttons + stale-review
     + failed dispatches in a collapsible top band using existing POST endpoints. Verify per spec.'
-updated: 2026-10-05 10:54
+  task_id: 20261005-105816-scripts-render-board-py-add-a-
+  runner: tony-dell
+updated: 2026-10-05 11:02
 comms:
 - at: 2026-10-05 10:54
   from: tony
   text: queued for processing
+- at: 2026-10-05 10:58
+  from: chaba
+  text: dispatched 20261005-105816-scripts-render-board-py-add-a- on chaba
+- at: 2026-10-05 11:02
+  from: devin
+  text: 'Working: read render-board.py + board-api. Plan: needs-you band renders open requests w/ inline answer
+    buttons, stale (>24h, unverified) review cards w/ verify button, failed dispatches w/ retry. All reuse existing
+    endpoints.'
+claim:
+  session: 20261005-105816-scripts-render-board-py-add-a-
+  since: 2026-10-05 10:58

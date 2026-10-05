@@ -1,16 +1,23 @@
 id: mddb-rotated-files-cleanup
 title: Remove ~4.2 GB rotated mddb.db.stale-*/suspect-* files on tony-dell
 column: backlog
-note: rotated DB copies in ~/.config/containers/mddb/data and ~/.local/share/mddb-backups; standby follower verified healthy, so stale copies are pure reclaim
-updated: 2026-10-04
+note: rotated DB copies in ~/.config/containers/mddb/data and ~/.local/share/mddb-backups; standby follower verified
+  healthy, so stale copies are pure reclaim
+updated: 2026-10-05 11:02
 requests:
-  - id: confirm-delete
-    ask: "Delete ~4.2 GB of rotated mddb database files (mddb.db.stale-*, mddb.db.suspect-*) on tony-dell? The read-only follower is verified healthy and resyncs from idc01 anyway."
-    options:
-      - "Delete all — they're stale"
-      - "Keep the newest one, delete the rest"
-      - "Leave them"
-    status: open
-    answer: null
+- id: confirm-delete
+  ask: Delete ~4.2 GB of rotated mddb database files (mddb.db.stale-*, mddb.db.suspect-*) on tony-dell? The read-only
+    follower is verified healthy and resyncs from idc01 anyway.
+  options:
+  - Delete all — they're stale
+  - Keep the newest one, delete the rest
+  - Leave them
+  status: answered
+  answer: Keep the newest one, delete the rest
 comms:
-  - {at: "2026-10-04 21:10", from: devin, text: "pending tony decision since 2026-09-27"}
+- at: 2026-10-04 21:10
+  from: devin
+  text: pending tony decision since 2026-09-27
+- at: 2026-10-05 11:02
+  from: tony
+  text: 'answered confirm-delete: Keep the newest one, delete the rest'
