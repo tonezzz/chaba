@@ -26,7 +26,8 @@ findings:
     systemd_run_s: 0.02
     rootless_mem_cap: works            # memory.max lands (systemd>=252 default delegation)
     rootless_cpu_cap: works
-    blocker: "devin -p reaches 'Login canceled' — auth only, per scope no token provisioned"
+    blocker: "resolved 2026-10-05 — creds copied per Tony answer 'b'; devin -p verified e2e (rc=0)"
+    run_recipe: "podman run --rm --memory=1536m --cpus=1.5 --userns=keep-id -v ~/.local/share/devin:~/.local/share/devin -v ~/.config/devin:~/.config/devin -v <wt>:/wt -w /wt -e HOME=$HOME devin-dispatch:test devin -p --permission-mode smart --respect-workspace-trust false -- <prompt>"
     gotcha: "ENTRYPOINT [bash] swallows podman-run args -> ENOEXEC; use CMD"
 
 recommendation:
@@ -35,8 +36,9 @@ recommendation:
   idc02: "first podman runner, cap 4 (CPU-bound); needs credentials.toml decision"
   idc01: "avoid — prod ada+mddb, 2 cores"
   per_task_budget_mb: 1100             # capacity math; real tasks ~2x trivial floor
+resolved:
+  - "credentials.toml distribution: copy per-host + bind-mount (Tony answer 'b' 2026-10-05); idc02 provisioned, devin -p verified"
 open_questions:
-  - "credentials.toml distribution model for remote runners (mount vs copy vs scoped token)"
   - "repo checkout freshness on remote runners (worktrees cut from local HEAD)"
   - "multi-host queue fan-out: dispatch-queue.sh is dell-local today"
   - "image distribution: podman save/load vs tailnet registry"

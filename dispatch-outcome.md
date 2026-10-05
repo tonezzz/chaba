@@ -22,9 +22,14 @@ record at `docs/ssot/jobs/infrastructure/2026-10-04-dispatch-capacity-bench.yml`
 ## Recommendation
 
 tony-dell bare + `MemoryMax=1536m` (units are unbounded today); omen/mn01
-bare (caps 2/1); idc02 first podman runner (cap 4, needs credentials.toml
-decision from Tony); avoid idc01 (prod). Podman wins where the CLI isn't
-installed; bare wins where it already is.
+bare (caps 2/1); idc02 first podman runner (cap 4); avoid idc01 (prod).
+Podman wins where the CLI isn't installed; bare wins where it already is.
+
+Update 2026-10-05: Tony chose per-host credential copies (board answer
+"b"); `credentials.toml` + `config.json` provisioned on idc02 and
+`devin -p` verified end-to-end inside the rootless container (rc=0) —
+the podman runner path is fully proven. Verified run recipe is in the
+assessment section 4.
 
 ## How to verify
 

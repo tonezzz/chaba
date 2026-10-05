@@ -86,7 +86,8 @@ CMD ["/bin/bash"]
 | `systemd-run --user` on same host | 0.02–0.03 s |
 | Rootless `--memory=512m` | works — `memory.max=536870912` inside |
 | Rootless `--cpus=0.5` | works — `cpu.max=50000 100000` inside |
-| `devin -p` inside container | initializes, stops at `Login canceled` — auth is the only gap |
+| `devin -p` inside container | initializes, stops at `Login canceled` without creds |
+| `devin -p` + creds bind-mounted | **works end-to-end** — real session ran, replied `ok`, rc=0 (verified 2026-10-05 with `--memory=1536m --cpus=1.5`) |
 
 Notes:
 - cgroup delegation under rootless podman needs **no setup** on
@@ -98,9 +99,20 @@ Notes:
   `ENTRYPOINT`.
 - Overhead vs bare: ~0.25 s per launch — noise next to the ~23–30 s
   session init.
-- Auth story: bind-mount `credentials.toml` read-only
-  (`-v ~/.local/share/devin:/root/.local/share/devin:ro` or a copied
-  secret dir) — one file, revocable, no CLI install on the host.
+- Auth: **decided 2026-10-05 — copy `credentials.toml` + `config.json`
+  to each runner host** (option b), bind-mount into the container.
+  Verified recipe on idc02 (`~/dispatch-wt-test` as scratch worktree):
+  ```
+  podman run --rm --memory=1536m --cpus=1.5 --userns=keep-id \
+    -v $HOME/.local/share/devin:$HOME/.local/share/devin \
+    -v $HOME/.config/devin:$HOME/.config/devin \
+    -v <worktree>:/wt -w /wt -e HOME=$HOME \
+    devin-dispatch:test devin -p --permission-mode smart \
+      --respect-workspace-trust false -- "<prompt>"
+  ```
+  `--userns=keep-id` keeps files host-owned; `$HOME` mounts avoid the
+  `/root` path mismatch. Needs `--respect-workspace-trust false` (same
+  as `devin-dispatch.sh`) or the CLI refuses an untrusted worktree.
 - Image distribution: no registry today → `podman save | ssh host podman load`
   (~400 MB) or a tailnet registry. Build-on-host is 20 s once the binary
   is there.
@@ -150,13 +162,16 @@ per task container.
 5. **Skip** mn01 (standby, 2.9 GB) and idc01 (prod ada+mddb, 2 cores)
    except emergencies.
 
-Open follow-ups before multi-host dispatch ships:
-- Tony's decision on `credentials.toml` distribution (bind-mount vs.
-  per-host copy vs. a dispatch-scoped token if the CLI supports one).
+Resolved 2026-10-05: credentials distribution = **copy `credentials.toml`
++ `config.json` to each runner** (Tony, board request answer "b").
+idc02 provisioned and verified end-to-end — full recipe in section 4.
+
+Remaining follow-ups before multi-host dispatch ships:
 - Repo-checkout freshness on remote runners (per-host pull cron or
   fetch-during-dispatch; worktrees cut from stale HEADs dispatch stale code).
 - Task routing: queue is dell-local today (`dispatch-queue.sh` +
   `devin-task-*` unit count). Multi-host needs a per-host cap table +
-  ssh-level `devin-dispatch start` fan-out.
+  ssh-level `devin-dispatch start` fan-out (podman hosts need the
+  `podman run` wrapper above instead of `systemd-run`).
 - Image versioning/distribution (podman save/load or a small tailnet
   registry; rebuild path when devin CLI revs).
