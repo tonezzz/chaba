@@ -1,0 +1,55 @@
+title: Board "Needs You" strip — retry run = verification pass
+subtitle: Re-verified the already-merged band; no code delta needed
+icon: layout
+version: 1
+
+card: board-needs-you-strip
+date: 2026-10-05
+dispatch: 20261005-125644-scripts-render-board-py-add-a-
+supersedes_run: 20261005-105816-scripts-render-board-py-add-a- (implemented the feature)
+
+summary: |
+  Tony hit "retry" on the card after closing it, so this dispatch re-ran
+  the spec on a worktree cut from origin/master — which already contains
+  the Needs You band (merged from the first dispatch, page_version
+  vb1df757525cc identical to live). This run therefore became a pure
+  end-to-end verification; no code changes were needed.
+
+implementation (from first run, confirmed):
+  - scripts/render-board.py — client-side needsYou() over cards.json:
+    (1) open requests render ask + reqAnswerHtml() INLINE in the band
+        (option buttons POST /respond one-click; free-text input + Answer
+        button / Enter also wired band-scoped), (2) review cards >24h
+        since last '-> review' comm with no comm matching
+        /verif|confirm|works|lgtm|tested|checks out/i get a ✔ verify
+        button (POST /comment 'verified'), (3) action.status
+        failed|error get ↺ Retry (POST /action do=retry).
+  - Band: '#needs-you' div above #board-cols; header 'N things need
+    you'; collapsible via #ny-toggle; expanded by default; state in
+    localStorage board-ny-collapsed; hidden entirely when N=0;
+    preserves rq-in input values/focus across 30s poll re-renders.
+  - No new API surface — reuses /respond, /comment, /action.
+  - Documented in ssot.kanban.yml page_standard.needs_you_band.
+
+verification (this run, headless Chrome CDP + worktree board-api :8899):
+  - 3 test cards (zz-ny-test-{req,stale,fail}) exercised all three kinds;
+    band showed '11 things need you' including 7 real stale-review items.
+  - Option button click -> request answered 'Red' in card YAML.
+  - Free-text input + Answer -> request answered 'typed via band'.
+  - Verify click -> 'verified' comm appended; item left band.
+  - Retry click -> action.status queued + 'retry requested' comm; item
+    left band.
+  - Final band: '7 things need you' — all test items cleared after their
+    action. Collapse toggle hides/shows body and persists.
+  - Note: answered-state appears on the NEXT cards.json fetch because
+    board-api re-renders synchronously inside the POST (~1-2s); the UI
+    awaits load() after the POST so it lands within one poll.
+  - Cleanup: test cards + helper scripts removed; no live state touched.
+
+known_limitations:
+  - Verification heuristic scans ALL comms for the verify regex — a
+    'works'-type comment from before the card entered review suppresses
+    the stale flag. Cheap heuristic; tighten to 'comms after last
+    ->review' if it ever hides a genuinely stale card.
+  - 'error' action.status is matched in JS but board-api never writes it
+    today (only failed) — harmless future-proofing.
