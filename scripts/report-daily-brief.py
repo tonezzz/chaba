@@ -556,70 +556,11 @@ def regen_reports_index() -> bool:
     The canonical regen (ada-pi tool_runner._cms_reports_index) only fires
     on Ada's own cms tool writes — raw /v1/add never triggers it, and the
     whole point of the brief is that the index is fresh at 07:05 after a
-    quiet night. Same table format; written_by stays honest."""
-    docs = _mddb_post("search", {"collection": "ada-cms-pages",
-                                 "limit": 200})
-    if isinstance(docs, dict):
-        docs = docs.get("documents") or docs.get("docs") or []
-    now = datetime.datetime.now(datetime.timezone.utc)
-
-    def stale(meta: dict) -> bool:
-        ff = (meta.get("fresh_for") or [""])[0]
-        upd = (meta.get("updated") or [""])[0]
-        if not ff or not upd:
-            return False
-        try:
-            secs = int(float(ff[:-1]) * {"h": 3600, "d": 86400,
-                                         "m": 60}[ff[-1]])
-            dt = datetime.datetime.fromisoformat(
-                upd.replace("Z", "+00:00"))
-            return (now - dt).total_seconds() > secs
-        except Exception:
-            return False
-
-    rows = []
-    for d in docs:
-        meta = d.get("meta") or {}
-        kind = (meta.get("kind") or [""])[0]
-        if kind not in ("report", "page"):
-            continue
-        slug = (meta.get("slug") or [d.get("key") or "?"])[0]
-        if slug == "reports-index":
-            continue
-        rows.append({
-            "slug": slug,
-            "title": (meta.get("title") or [slug])[0],
-            "domain": (meta.get("domain") or ["-"])[0],
-            "summary": (meta.get("summary") or [""])[0],
-            "updated": (meta.get("updated") or ["-"])[0][:16],
-            "fresh": (meta.get("fresh_for") or ["-"])[0],
-            "stale": stale(meta),
-        })
-    rows.sort(key=lambda r: r["updated"], reverse=True)
-    lines = [f"# Reports index — {now:%Y-%m-%d %H:%M}Z\n",
-             "Brief summaries of every report page — read the linked page",
-             "only when the summary isn't enough.\n",
-             "| slug | domain | updated | fresh | summary |",
-             "|---|---|---|---|---|"]
-    for r in rows[:60]:
-        flag = " ⚠STALE" if r["stale"] else ""
-        summ = (r["summary"] or r["title"])[:80]
-        lines.append(f"| {r['slug']} | {r['domain']} | {r['updated']}"
-                     f"{flag} | {r['fresh']} | {summ} |")
-    _mddb_post("add", {
-        "collection": "ada-cms-pages", "key": "reports-index", "lang": "en",
-        "contentMd": "\n".join(lines),
-        "meta": {
-            "kind": ["page"], "slug": ["reports-index"],
-            "title": [f"Reports index — {now:%Y-%m-%d %H:%M}Z"],
-            "format": ["markdown"], "domain": ["meta"],
-            "summary": ["Auto-generated index of report pages — "
-                        "slug, domain, staleness, one-line brief."],
-            "fresh_for": ["6h"],
-            "updated": [now.isoformat(timespec="seconds")],
-            "written_by": ["report-daily-brief.py"],
-        }}, timeout=60)
-    return True
+    quiet night. Shared render lives in scripts/lib/cms_index.py (same
+    table format, superseded/archived docs never surface, paginated);
+    written_by stays honest."""
+    from lib.cms_index import regen_reports_index as _regen
+    return _regen(MDDB, written_by="report-daily-brief.py")
 
 
 def mirror_web(md: str) -> list[str]:
