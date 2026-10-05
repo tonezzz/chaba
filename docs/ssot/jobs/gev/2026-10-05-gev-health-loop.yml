@@ -1,0 +1,70 @@
+title: gev-auto-* health loop — GEV lane probes -> kanban cards
+subtitle: Mirror of cms-auto-health/logs-kanban card lifecycle for the God's Eye View stack
+icon: eye
+version: 1
+
+card: gev-health-loop
+date: 2026-10-05
+dispatch: 20261005-131449-new-chaba-probe-script-mirrori
+
+summary: |
+  scripts/ada/gev-auto-health.py probes the GEV stack on tony-dell each
+  kanban-sync tick (15min) and opens a gev-auto-<check> card in review on
+  failure, auto-closing to done on recovery — same lifecycle as
+  cms-auto-health.py / logs-kanban.py. Five lanes:
+
+    page        GET http://127.0.0.1/apps/gev/ via Caddy -> must be 200
+    ws          ws upgrade ws://127.0.0.1/apps/gev-live/ws?remote=1 -> 101
+                + valid Sec-WebSocket-Accept (stdlib socket, no deps)
+    api         GET http://127.0.0.1:4173/<bogus> -> any HTTP < 500
+    bridge      systemctl --user is-active gev-gemini
+    api-service systemctl --user is-active gods-eye-view-api
+
+deliverables:
+  - scripts/ada/gev-auto-health.py — 5 checks, card lifecycle, 12h
+    escalation, glob-close of retired-check cards; env overrides
+    GEV_PAGE_URL / GEV_WS_URL / GEV_API_URL / CHABA_REPO
+  - scripts/ada/kanban-sync.sh — runs gev-auto-health after logs-kanban;
+    existing `git add docs/ssot/kanban/cards/` commit+push covers output
+  - docs/ssot/kanban/ssot.kanban.yml ops.lanes + ssot.jobs.yml
+    kanban-sync note — lane documented
+  - docs/ssot/kanban/cards/gev-auto-{bridge,ws}.yml — done-state records
+    left by the live verification cycle (stop/start gev-gemini)
+
+decisions:
+  - ws probe uses ?remote=1 — bridge.py registers those as passive remote
+    clients and never opens a Gemini Live session — probing is free.
+    Caddy strips /apps/gev-live so the bridge sees /ws?remote=1.
+  - api probe hits a bogus path and counts any HTTP < 500 as alive —
+    server.mjs has no health endpoint, real routes proxy slow external
+    calls (>15s), unknown paths 404 in ms. TCP refuse/timeout/5xx = fail.
+  - one card per lane, not a single merged card — the verify card spec
+    expects gev-auto-bridge; ws/page/api failures get their own cards
+    with lane-specific remediation in `help`.
+  - probes go through 127.0.0.1:80 (Caddy), not the tailnet URL — kanban-sync
+    runs on the same host; loopback drops the tailscale dependency.
+  - escalation inherits the sibling lanes' date-granular age calc — a card
+    opened after 12:00 local shows priority=high immediately (age measured
+    from midnight of `updated`). Kept identical to cms-auto-health /
+    logs-kanban deliberately — fix precision uniformly if it bothers.
+
+finding:
+  bridge_start_stall: |
+    During verification, fresh gev-gemini container starts twice landed the
+    bridge process in D state (folio_wait_bit_common — page-in wait) for
+    ~90-100s before binding :8789/:8790; unit reads "active" the whole
+    time. Root cause not chased (container/image page-in, possibly
+    fuse-overlayfs latency). The ws lane catches this window; is-active
+    alone does not — the multi-lane design is load-bearing, not redundant.
+    Seen 2 of 3 starts on 2026-10-05 ~13:21 + ~13:25 +07.
+
+verify: |
+  python3 scripts/ada/gev-auto-health.py      # live run, prints lane status
+  systemctl --user stop gev-gemini
+  python3 scripts/ada/gev-auto-health.py      # -> gev-auto-bridge + gev-auto-ws in review
+  systemctl --user start gev-gemini; sleep 100   # bridge binds ~90s after start
+  python3 scripts/ada/gev-auto-health.py      # -> both cards auto-close to done
+
+  Ran exactly this cycle on 2026-10-05: bridge card opened on the tick
+  after stop, closed on the tick after start; ws card opened alongside
+  (caddy 502 while bridge down) and closed once the port bound.
