@@ -55,17 +55,19 @@ sections:
       - label: manifest.json
         text: "PWA install metadata for the standalone app — dies with the root mount."
       - label: "/redeem/{token}"
-        text: "One-time redeem → session cookie + 302 to dest/ with the raw key in the query string. Still needed for QR pairing of non-HA consumers (guest chat key, cms-viewer) and headless keys; HA-native browsers self-mint via script.ada_voice_key and never touch it."
+        text: "One-time redeem → session cookie + 302 to dest/ with the raw key in the query string. Still needed for QR pairing of non-HA consumers (guest chat key, cms-viewer key) and headless keys; HA-native browsers self-mint via script.ada_voice_key and never touch it."
       - label: "Static /apps/ada-pi/ (dash) snapshot"
         text: "stacks/web/public/apps/ada-pi/ is a frozen static copy served by Caddy file_server — no WS/API proxying, so it's a broken shell. Pure cleanup candidate."
       - label: "LAN exposure — resolved 2026-09-23"
         text: "ada-pi-pwa previously bound 0.0.0.0:8001 on tony-dell (full PWA on plain-HTTP LAN). Service moved to idc01 (loopback + tailnet-only serve); the tony-dell unit is stopped+disabled."
       - label: "Backend routes that must stay"
-        text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/speakers/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
+        text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
       - label: "backend/tools.d drop-in tools (added 2026-09-30)"
         text: "New tools ship as one module + one manifest.yml line under backend/tools.d/ — no tool_runner/realtime_provider edits. Module contract: DECLARATION dict + async run(runner, **args). Manifest sets policy (read|confirmed|owner_only), secondary_allowed (default deny), timeout_s. Authoring standard + ship flow: ada-pi docs/ada-tool-dev.md; loader: backend/tools_loader.py; reference tool: ada_mddb_health."
       - label: "devteam pipeline (added 2026-09-30)"
         text: "ada_devteam_review (owner_only tools.d tool) runs backend/devteam.py: draft spec -> parallel expert panel (security_privacy/standards/qa/scope, each pass|warn|block) -> revised spec -> persists kind=spec-review doc to devin-handoff for dispatch. Model: DEVTEAM_MODEL env (ada-dev uses gemini-3.5-flash-lite — the shared free-tier gemini-2.5-flash bucket is only 20 req/day); 429/503 retried bounded. Bar scenario: tests/scenarios-live/devteam_review.yaml (full tier). Verified live on ada-dev 2026-09-30: QA expert correctly BLOCKED a spec missing its test plan."
+      - label: "playbook registry (added 2026-10-05)"
+        text: "backend/playbooks/*.yml — named dispatch contracts (build-tool, fix-scenario, investigate) declaring params, task_template, memory_domains, gate{confirm,identity}, requires, verify commands, report_to, max_runtime_min. devin_dispatch(repo, task, playbook, params) renders the task from the template, enforces the gate (build-tool requires the params.spec_key devin-handoff spec-review doc at status=pass — refuses and steers to ada_devteam_review otherwise; fails closed when mddb is unreachable), and stamps job/<task_id>/contract in the handoff ledger (kind=job-contract) carrying playbook + verify for devin-dispatch-watch. Gate scenario: ada-pi tests/scenarios-live/devin_build_tool_gate.yaml (full tier, exercises the real blocked spec spec/20260930-125800-*)."
   - title: Testing
     icon: "🧪"
     layout: list
@@ -113,7 +115,7 @@ sections:
 config:
   version: 2
   created: "2026-09-12"
-  updated: "2026-09-22"
+  updated: "2026-10-05"
   maintainer: tony
   status: experimental
   deployment: tony-omen
