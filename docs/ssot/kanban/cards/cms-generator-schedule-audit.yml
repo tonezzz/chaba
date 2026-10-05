@@ -1,22 +1,25 @@
 id: cms-generator-schedule-audit
-title: "Audit: which ada-cms generators still lack a timer"
+title: 'Audit: which ada-cms generators still lack a timer'
 column: backlog
-note: >-
-  cms-services-weekly-regen gave host-services-cms.py its weekly timer, but a
-  2026-10-04 check found most scripts/ada generators have no systemd unit
-  (repo or installed) and aren't in overnight-jobs-expanded.sh: ops-report,
-  journal-report, ha-report, logs-report, net-report, tasks-report,
-  caddy-report, session-report, devin-report, spend-report, ha-events-report,
-  cms-auto-health, kanban-cms, personal-rollup, focus-rollup. Audit each:
-  replayable + worth scheduling -> add a timer reusing the
-  chaba-services-regen pattern (OnFailure -> board comms, focus-inbox
-  fallback); manual-on-purpose or dead -> say so in ssot.automation.yml so the
-  next audit doesn't re-check.
-spec: >-
-  Enumerate scripts/ada/*.py that publish ada-cms-pages or write reports/;
-  record per generator {scheduled | manual-on-purpose | dead} in
-  ssot.automation.yml. For the live+valuable ones, install a timer in
-  systemd/ following chaba-services-regen.{service,timer} +
-  chaba-services-regen-fail.service, and register each in
-  ssot.audit.hosts.yml expected_services.
-updated: '2026-10-04'
+note: 'cms-services-weekly-regen gave host-services-cms.py its weekly timer, but a 2026-10-04 check found most scripts/ada
+  generators have no systemd unit (repo or installed) and aren''t in overnight-jobs-expanded.sh: ops-report, journal-report,
+  ha-report, logs-report, net-report, tasks-report, caddy-report, session-report, devin-report, spend-report, ha-events-report,
+  cms-auto-health, kanban-cms, personal-rollup, focus-rollup. Audit each: replayable + worth scheduling -> add a
+  timer reusing the chaba-services-regen pattern (OnFailure -> board comms, focus-inbox fallback); manual-on-purpose
+  or dead -> say so in ssot.automation.yml so the next audit doesn''t re-check.'
+spec: Enumerate scripts/ada/*.py that publish ada-cms-pages or write reports/; record per generator {scheduled |
+  manual-on-purpose | dead} in ssot.automation.yml. For the live+valuable ones, install a timer in systemd/ following
+  chaba-services-regen.{service,timer} + chaba-services-regen-fail.service, and register each in ssot.audit.hosts.yml
+  expected_services.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Audit ada-cms generator scheduling per card spec: classify each scripts/ada generator scheduled|manual-on-purpose|dead
+    in ssot.automation.yml; install timers for live ones following the chaba-services-regen pattern; register in
+    ssot.audit.hosts.yml expected_services.'
+updated: 2026-10-05 12:52
+comms:
+- at: 2026-10-05 12:52
+  from: tony
+  text: queued for processing
