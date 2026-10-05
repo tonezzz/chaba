@@ -169,3 +169,12 @@ comms:
     --lag-budget (5s default): segments borrow drift from a pool; when
     it runs dry, atempo pins them to cue time. Lag 59.8->39.0s, speech
     lands inside window. Coverage still 89%.
+- at: '2026-10-05 15:15'
+  from: devin
+  text: >-
+    v16e: residual lag fix — the forced 0.4/0.65s breath gap after
+    EVERY segment double-paused on top of natural caption pauses and
+    compounded into ~10s drift. New model: the caption pause IS the
+    breath — segments start at cue time (or immediately when late);
+    +0.3s only on zero-air speaker turns. Lag 39->17s (residual =
+    real speech overflow beyond 1.4x atempo cap).
