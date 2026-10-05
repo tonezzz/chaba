@@ -3,11 +3,13 @@ title: Consolidate tasks + status tools (10 -> 3)
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:11
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: running
+  task_id: 20261005-183350-merge-the-tasks-status-group-1
+  runner: tony-dell
 spec: "Merge the tasks+status group (10 -> 3) per the consolidation spec:\n- NEW tasks absorbs tasks_add, tasks_list,\
   \ tasks_complete, tasks_move ->\n  tasks(action=add|list|done|move)\n- NEW home_status absorbs get_battery_status,\
   \ get_battery_detail,\n  get_power_summary, get_inverter_status, get_pool_status,\n  get_dashboard_tab, get_habit_status\
@@ -17,3 +19,18 @@ spec: "Merge the tasks+status group (10 -> 3) per the consolidation spec:\n- NEW
   \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
   \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
   \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 18:33
+  from: chaba
+  text: dispatched 20261005-183350-merge-the-tasks-status-group-1 on ada-pi
+- at: 2026-10-05 18:50
+  from: devin
+  text: 'starting: read spec + prior merges (calendar/cms). Plan: new canonical tasks(action=add|list|done|move)
+    + home_status(what=...) + chat_send(photo|doc); 16 _ALIASES rows; provider decls + inline dispatch consolidated;
+    SSOT families + scenario + tests.'
+claim:
+  session: 20261005-183350-merge-the-tasks-status-group-1
+  since: 2026-10-05 18:33

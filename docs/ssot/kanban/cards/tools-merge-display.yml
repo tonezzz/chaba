@@ -1,13 +1,16 @@
 id: tools-merge-display
 title: Consolidate vcast + cast_to_screen display tools
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:03
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: done
+  task_id: 20261005-175553-merge-the-display-tool-group-8
+  runner: tony-dell
+  result: 20261005-175553-merge-the-display-tool-group-8 finished (inactive) — see `devin-dispatch logs 20261005-175553-merge-the-display-tool-group-8`
 spec: "Merge the display tool group (8 -> 2) per the consolidation spec:\n- cast_to_screen absorbs vcast_say, vcast_list,\
   \ vcast_status, vcast_shortcut ->\n  cast_to_screen(action=cast|say|list|status|shortcut, ...)\n- vcast_snapshot\
   \ absorbs capture_frame (name unchanged — verification loop\n  needs it separate)\n- vcast_gesture: unchanged\
@@ -16,3 +19,31 @@ spec: "Merge the display tool group (8 -> 2) per the consolidation spec:\n- cast
   \ chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE from an ada-pi\
   \ worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias routes to its parent,\
   \ post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 17:56
+  from: chaba
+  text: dispatched 20261005-175553-merge-the-display-tool-group-8 on ada-pi
+- at: 2026-10-05 18:26
+  from: devin
+  text: 'working — spec mapped: cast_to_screen absorbs vcast_say/vcast_list/vcast_status/vcast_shortcut (action=say|list|status|shortcut);
+    vcast_status/vcast_shortcut are census-journal names with no committed impl — they alias to the new status/shortcut
+    action seats; vcast_gesture untouched; capture_frame already aliases to vcast_snapshot'
+- at: 2026-10-05 18:59
+  from: devin
+  text: DONE — display group merged 8->2 canonical seats. cast_to_screen absorbs vcast_say/vcast_list/vcast_status/vcast_shortcut
+    as action=say|list|status|shortcut (+content-routed cast); vcast_snapshot keeps its own name and absorbs capture_frame;
+    vcast_gesture unchanged. 5 absorbed names route via _ALIASES (27 total retirees). Surface 88->86 declared. tool-lint
+    clean; 109 unit tests pass incl. 13 new DisplayMergeAliasTests; absorbed read/narrate seats keep pre-merge access
+    (no secondary-block/control
+- at: 2026-10-05 19:03
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 19:03
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-175553-merge-the-display-tool-group-8 dirty — 10 uncommitted
+    file(s); commit or clean before pruning'
+claim:
+  since: 2026-10-05 17:56

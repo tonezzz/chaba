@@ -3,11 +3,13 @@ title: Consolidate meta/voice tools (8 -> 3)
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:11
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: running
+  task_id: 20261005-182958-merge-the-meta-voice-group-8-3
+  runner: tony-dell
 spec: "Merge the meta/voice group (8 -> 3) per the consolidation spec:\n- ada_persona absorbs ada_set_voice -> persona(set_voice?...)\n\
   - NEW ada_ops absorbs ada_outcome, ada_usage_summary, ada_mddb_health,\n  ada_decision_check, ada_deep_research\
   \ ->\n  ops(action=outcome|usage|health|check|research)\n- ada_enroll_speaker absorbs guest_register -> enroll(who=speaker|guest)\n\
@@ -15,3 +17,17 @@ spec: "Merge the meta/voice group (8 -> 3) per the consolidation spec:\n- ada_pe
   \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
   \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
   \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 18:30
+  from: chaba
+  text: dispatched 20261005-182958-merge-the-meta-voice-group-8-3 on ada-pi
+- at: 2026-10-05 18:48
+  from: devin
+  text: 'started: read spec + prior merges; plan = persona(set_voice|show_voice|list_voices), new ada_ops(action=outcome|usage|health|check|research),
+    enroll(who=speaker|guest); absorbed names -> _ALIASES, gates keyed on resolved names'
+claim:
+  session: 20261005-182958-merge-the-meta-voice-group-8-3
+  since: 2026-10-05 18:30
