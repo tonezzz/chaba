@@ -456,6 +456,7 @@ function showCard(id) {{
     catch (e) {{ toast('error: ' + e.message, true); }}
   }};
   document.getElementById('cm-comment').onkeydown = e => {{ if (e.key === 'Enter') document.getElementById('cm-send').click(); }};
+  wire(); // modal buttons (.abtn/.mv-btn/.rq-*) are injected after render — bind them now
   modal.classList.remove('hidden');
 }}
 
