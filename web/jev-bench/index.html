@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev edge bench — WASM/WebGPU</title>
+<style>
+  body{font:14px/1.5 system-ui,sans-serif;max-width:820px;margin:24px auto;padding:0 16px;background:#111;color:#ddd}
+  select,button{font-size:15px;padding:8px 12px;margin:4px 4px 4px 0}
+  #log{white-space:pre-wrap;font:12px/1.4 ui-monospace,monospace;background:#1c1c1c;padding:12px;border-radius:8px;max-height:50vh;overflow:auto}
+  table{border-collapse:collapse;margin-top:12px;width:100%}
+  td,th{border:1px solid #333;padding:4px 8px;text-align:left;font-size:12px}
+  .miss{color:#f88}
+  h1{font-size:18px}
+  #bar{height:8px;background:#333;border-radius:4px;margin:8px 0}
+  #bar>i{display:block;height:8px;background:#4a7;border-radius:4px;width:0}
+</style>
+</head>
+<body>
+<h1>Jev edge bench — WASM / WebGPU</h1>
+<div>
+  <select id="model">
+    <option value="minilm">minilm q8 + MLP head (~24MB)</option>
+    <option value="v5">v5 distilbert fp32 (~541MB)</option>
+    <option value="mbert">mbert modernbert fp32 (~1.2GB)</option>
+  </select>
+  <select id="ep">
+    <option value="auto">auto (webgpu → wasm)</option>
+    <option value="wasm">wasm only</option>
+  </select>
+  <button id="run">Run bench</button>
+  <button id="dl" disabled>Download results</button>
+</div>
+<div id="bar"><i></i></div>
+<div id="log">Pick a model and run. First run downloads the model over LAN.</div>
+<table id="tbl" style="display:none"><thead><tr><th>#</th><th>text</th><th>exp</th><th>p</th><th>ms</th></tr></thead><tbody></tbody></table>
+
+<script type="module">
+import { AutoTokenizer, AutoModel, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1";
+import * as ort from "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.webgpu.min.mjs";
+
+env.allowLocalModels = true;
+env.localModelPath = "models/";
+
+const $ = id => document.getElementById(id);
+const logEl = $("log"), bar = $("bar").firstElementChild;
+const say = s => { logEl.textContent += s + "\n"; logEl.scrollTop = 1e9; };
+
+const CASES = await (await fetch("models/cases.json")).json();
+const MODELS = {
+  minilm: { kind: "embed+head" },
+  v5:     { kind: "ort", dir: "v5", thr: 0.55 },
+  mbert:  { kind: "ort", dir: "mbert", thr: 0.55 },
+};
+// thresholds match the measured best per model
+MODELS.v5.thr = 0.75; MODELS.mbert.thr = 0.55;
+
+let tokCache = {}, results = null;
+
+async function pickEP(want) {
+  if (want === "wasm") return ["wasm"];
+  if (navigator.gpu) return ["webgpu", "wasm"];
+  return ["wasm"];
+}
+
+async function scoreOrt(sess, texts) {
+  // per-case for honest latency
+  const out = [];
+  for (const t of texts) {
+    const enc = await tokCache.cur(t, { truncation: true, max_length: 96,
+      padding: "max_length" });
+    const feeds = {};
+    for (const name of sess.inputNames) {
+      if (!enc[name]) throw new Error(`tokenizer missing input ${name}`);
+      feeds[name] = new ort.Tensor("int64",
+        BigInt64Array.from(enc[name].data.map(BigInt)), enc[name].dims);
+    }
+    const t0 = performance.now();
+    const r = await sess.run(feeds);
+    const ms = performance.now() - t0;
+    const lg = (r.logits ?? Object.values(r)[0]).data;
+    const e0 = Math.exp(lg[0] - lg[1]), e1 = 1;
+    out.push({ p: e1 / (e0 + e1), ms });
+  }
+  return out;
+}
+
+let mbertHead = null;
+async function scoreMinilm(texts) {
+  // encoder via transformers.js AutoModel (quantized), MLP head in JS
+  if (!mbertHead) mbertHead = await (await fetch("models/minilm/minilm-head.json")).json();
+  const H = mbertHead;
+  const out = [];
+  const model = await AutoModel.from_pretrained("minilm", { dtype: "q8" });
+  for (const t of texts) {
+    const t0 = performance.now();
+    const f = await model(await tokCache.cur(t, { truncation: true, max_length: 96, padding: true }));
+    // mean-pool last_hidden_state
+    const hs = f.last_hidden_state ?? f.token_embeddings ?? Object.values(f)[0];
+    const [b, s, d] = hs.dims;
+    const data = hs.data, mask = (await tokCache.cur(t, {truncation:true,max_length:96,padding:"max_length"})).attention_mask.data;
+    const emb = new Float32Array(d);
+    let n = 0;
+    for (let i = 0; i < s; i++) if (mask[i]) { for (let j = 0; j < d; j++) emb[j] += data[i * d + j]; n++; }
+    for (let j = 0; j < d; j++) emb[j] /= n;
+    // MLP: Linear(d,128)->gelu->Linear(128,1)
+    const h = new Float32Array(128);
+    for (let i = 0; i < 128; i++) {
+      let s2 = H["0.bias"][i];
+      for (let j = 0; j < d; j++) s2 += H["0.weight"][i][j] * emb[j];
+      h[i] = 0.5 * s2 * (1 + Math.tanh(0.7978845608 * (s2 + 0.044715 * s2 * s2 * s2)));
+    }
+    let z = H["3.bias"][0];
+    for (let i = 0; i < 128; i++) z += H["3.weight"][0][i] * h[i];
+    out.push({ p: 1 / (1 + Math.exp(-z)), ms: performance.now() - t0 });
+  }
+  return out;
+}
+
+$("run").onclick = async () => {
+  const key = $("model").value, spec = MODELS[key];
+  logEl.textContent = ""; results = null; $("dl").disabled = true;
+  $("tbl").style.display = "none"; $("tbl").tBodies[0].innerHTML = "";
+  const eps = await pickEP($("ep").value);
+  say(`model=${key} ep=${eps.join("/")} cases=${CASES.length}`);
+  try {
+    tokCache.cur = await AutoTokenizer.from_pretrained(spec.dir || "minilm");
+    let sess;
+    if (spec.kind === "ort") {
+      sess = await ort.InferenceSession.create(`models/${spec.dir}/model.onnx`,
+        { executionProviders: eps });
+      say(`session up (ep=${sess.executionProviders ?? eps[0]})`);
+    }
+    // warm-up
+    if (spec.kind === "ort") await scoreOrt(sess, ["warm up"]);
+    else await scoreMinilm(["warm up"]);
+    const texts = CASES.map(c => c.text);
+    const res = spec.kind === "ort" ? await scoreOrt(sess, texts)
+                                    : await scoreMinilm(texts);
+    let ok = 0, okPos = 0, nPos = 0, okNeg = 0, nNeg = 0, okTh = 0, nTh = 0;
+    const lat = [], rows = [];
+    res.forEach((r, i) => {
+      const thr = spec.kind === "embed+head" ? (mbertHead?.thr ?? 0.65) : spec.thr;
+      const c = CASES[i], got = r.p >= thr;
+      const corr = got === c.label;
+      if (corr) ok++;
+      if (c.label) { nPos++; if (corr) okPos++; } else { nNeg++; if (corr) okNeg++; }
+      if (c.thai || /[ก-๙]/.test(c.text)) { nTh++; if (corr) okTh++; }
+      lat.push(r.ms); bar.style.width = `${(i + 1) / CASES.length * 100}%`;
+      rows.push({ i, text: c.text, exp: c.label, p: +r.p.toFixed(3), ms: +r.ms.toFixed(1), ok: corr });
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i}</td><td>${c.text.slice(0, 44)}</td><td>${c.label}</td><td>${r.p.toFixed(3)}</td><td>${r.ms.toFixed(0)}</td>`;
+      if (!corr) tr.className = "miss";
+      $("tbl").tBodies[0].appendChild(tr);
+    });
+    $("tbl").style.display = "";
+    lat.sort((a, b) => a - b);
+    const q = f => (lat[Math.floor(f * (lat.length - 1))]).toFixed(0);
+    results = { model: key, ep: eps[0], n: CASES.length,
+      acc: +(ok / CASES.length).toFixed(3), acc_pos: +(okPos / nPos).toFixed(3),
+      acc_neg: +(okNeg / nNeg).toFixed(3), acc_thai: +(okTh / nTh).toFixed(3),
+      p50_ms: +q(.5), p90_ms: +q(.9),
+      ua: navigator.userAgent.slice(0, 120), when: new Date().toISOString(), rows };
+    say(`\nacc ${(ok / CASES.length * 100).toFixed(1)}%  pos ${(okPos / nPos * 100).toFixed(0)}%  neg ${(okNeg / nNeg * 100).toFixed(0)}%  thai ${(okTh / nTh * 100).toFixed(0)}%`);
+    say(`latency p50 ${q(.5)}ms  p90 ${q(.9)}ms`);
+    $("dl").disabled = false;
+  } catch (e) { say("ERROR: " + (e.message || e)); console.error(e); }
+};
+
+const auto = new URLSearchParams(location.search).get("autorun");
+if (auto && MODELS[auto]) { $("model").value = auto; $("run").click(); }
+
+$("dl").onclick = () => {
+  const b = new Blob([JSON.stringify(results, null, 1)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(b);
+  a.download = `jev-bench-${results.model}-${results.ep}-${Date.now()}.json`;
+  a.click();
+};
+</script>
+</body>
+</html>
