@@ -182,19 +182,38 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
     hkey = f"{key}:{lang}"
     if _pub_hash.get(hkey) == h:
         return True  # unchanged — skip write + re-embedding
-    meta = {
+    # Merge existing meta so memory-schema fields set by
+    # cms-normalize-meta.py (and the original valid_from) survive.
+    old_meta = {}
+    try:
+        req = urllib.request.Request(
+            f"{MDDB}/get",
+            data=json.dumps({"collection": COLLECTION, "key": key,
+                             "lang": lang}).encode(),
+            headers={"Content-Type": "application/json"})
+        old = json.load(urllib.request.urlopen(req, timeout=30))
+        old_meta = {k: (v if isinstance(v, list) else [str(v)])
+                    for k, v in (old.get("meta") or {}).items()}
+    except Exception:
+        pass
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    meta = dict(old_meta)
+    meta.update({
         "kind": ["page"], "attribute": ["page"], "bank": ["cms"],
         "slug": [key], "subject": [key], "title": [title],
         "format": ["markdown"], "lang": [lang],
         "domain": ["cctv"], "scope": ["tony"], "status": ["active"],
         "source": ["api"], "generated_by": ["cam-wall-cms"],
+        "written_by": ["cam-wall-cms"],
         # cms-audit R1: generated pages must name their inputs
         "sources": sources or ["cam-wall-manifest"],
         "fresh_for": ["600"],
         "updated": [time.strftime("%Y-%m-%dT%H:%M:%S+00:00",
                                   time.gmtime())],
+        "last_verified": [today],
         "instance": ["cam-wall-cms"],
-    }
+    })
+    meta.setdefault("valid_from", [today])
     if summary:
         meta["summary"] = [summary]
     if parent:

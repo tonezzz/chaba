@@ -395,8 +395,12 @@ def main():
     failed = 0
     for slug, (title, content) in pages.items():
         extra = {"report_role": ["index" if slug == INDEX_SLUG else "leaf"]}
-        extra["children"] = LEAF_SLUGS if slug == INDEX_SLUG else []
-        if slug != INDEX_SLUG:
+        # children is rollup/index-only — leaves must not carry the key at
+        # all (an empty/None value serializes as a dangling "None" slug and
+        # trips cms-audit R3).
+        if slug == INDEX_SLUG:
+            extra["children"] = LEAF_SLUGS
+        else:
             extra["parent"] = [INDEX_SLUG]
         if args.dry_run:
             print(f"--- {slug} ({len(content)} chars) ---\n{content}\n")

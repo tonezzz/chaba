@@ -129,17 +129,36 @@ def publish(md: str, title: str, lang: str = "en") -> bool:
     hkey = f"dev-kanban:{lang}"
     if pub.get(hkey) == h:
         return True
-    meta = {
+    # Merge existing meta so memory-schema fields set by
+    # cms-normalize-meta.py (and the original valid_from) survive.
+    old_meta = {}
+    try:
+        req = urllib.request.Request(
+            f"{MDDB}/get",
+            data=json.dumps({"collection": COLLECTION, "key": "dev-kanban",
+                             "lang": lang}).encode(),
+            headers={"Content-Type": "application/json"})
+        old = json.load(urllib.request.urlopen(req, timeout=30))
+        old_meta = {k: (v if isinstance(v, list) else [str(v)])
+                    for k, v in (old.get("meta") or {}).items()}
+    except Exception:
+        pass
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    meta = dict(old_meta)
+    meta.update({
         "kind": ["page"], "attribute": ["page"], "bank": ["cms"],
         "slug": ["dev-kanban"], "subject": ["dev-kanban"],
         "title": [title], "format": ["markdown"], "lang": [lang],
         "domain": ["dev"], "scope": ["tony"], "status": ["active"],
         "source": ["api"], "generated_by": ["kanban-cms"],
+        "written_by": ["kanban-cms"],
         "sources": ["kanban-cards"], "fresh_for": ["3600"],
         "updated": [time.strftime("%Y-%m-%dT%H:%M:%S+00:00",
                                   time.gmtime())],
+        "last_verified": [today],
         "instance": ["kanban-cms"],
-    }
+    })
+    meta.setdefault("valid_from", [today])
     body = json.dumps({"collection": COLLECTION, "key": "dev-kanban",
                        "lang": lang, "contentMd": md,
                        "meta": meta}).encode()

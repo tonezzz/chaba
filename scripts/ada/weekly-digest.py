@@ -106,11 +106,30 @@ def main() -> int:
     if dry:
         print(content)
         return 0
-    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    meta = {"format": ["markdown"], "instance": ["tony"], "kind": ["page"],
-            "slug": [SLUG], "lang": ["en"],
-            "title": [f"Weekly Digest — {datetime.now(ICT):%Y-%m-%d}"],
-            "updated": [now]}
+    now = datetime.now(timezone.utc)
+    # Merge existing meta — a bare replace would wipe the memory-schema
+    # fields cms-normalize-meta.py stamps (S1 churn every weekly run).
+    try:
+        old = post("/get", {"collection": COLLECTION, "key": SLUG,
+                            "lang": "en"})
+    except Exception:
+        old = None
+    meta = {k: (v if isinstance(v, list) else [str(v)])
+            for k, v in ((old or {}).get("meta") or {}).items()}
+    meta.update({"format": ["markdown"], "instance": ["tony"],
+                 "kind": ["page"], "slug": [SLUG], "lang": ["en"],
+                 "title": [f"Weekly Digest — {datetime.now(ICT):%Y-%m-%d}"],
+                 "updated": [now.isoformat(timespec="seconds")],
+                 "last_verified": [now.date().isoformat()]})
+    created = ""
+    if old and old.get("addedAt"):
+        created = datetime.fromtimestamp(
+            old["addedAt"], timezone.utc).date().isoformat()
+    for k, v in {"bank": "cms", "scope": "tony", "status": "active",
+                 "source": "api", "written_by": "weekly-digest",
+                 "subject": SLUG, "attribute": "summary",
+                 "valid_from": created or now.date().isoformat()}.items():
+        meta.setdefault(k, [v])
     post("/add", {"collection": COLLECTION, "key": SLUG, "lang": "en",
                   "contentMd": content, "meta": meta})
     print("digest-weekly published")
