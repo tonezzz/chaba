@@ -1,6 +1,6 @@
 id: tts-artifact-clean
 title: TTS output leaks artifacts — &nbsp;, ][, markdown remnants spoken
-column: review
+column: backlog
 priority: low
 metric: 0 transcript lines containing &nbsp; or ][ in Ada speech
 verify: grep latest transcripts for artifact tokens after a cast session
@@ -38,7 +38,7 @@ pipeline:
 action:
   type: dispatch
   repo: ada-pi
-  status: done
+  status: queued
   task_id: 20261005-122233-tts-output-leaks-artifacts-nbs
   runner: tony-dell
   result: 20261005-122233-tts-output-leaks-artifacts-nbs finished (inactive) — see `devin-dispatch logs 20261005-122233-tts-output-leaks-artifacts-nbs`
@@ -47,7 +47,7 @@ benchmark:
   command: grep -cE '&nbsp;|\]\[' tests/fixtures/tts-artifact-clean-transcript.txt | tail -1
 note: '2026-10-04 transcript 519088cb6d: Ada spoke "&nbsp;ชัดเจน" and "][พาสเจอร์ไรซ์]" — HTML entities + bracket
   junk reaching TTS. Sanitize stage exists (transcript_tool_leak event) but misses these patterns.'
-updated: 2026-10-05 12:38
+updated: 2026-10-05 12:47
 comms:
 - at: 2026-10-04 20:39
   from: devin
@@ -129,6 +129,13 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-122233-tts-output-leaks-artifacts-nbs not in origin/main
     — close will block until merged'
+- at: 2026-10-05 12:47
+  from: devin
+  text: 'fix merged to ada-pi main (7f3aa2e): speech sanitize strips markup artifacts; 14 tests pass. benchmark
+    re-run is the remaining half'
+- at: 2026-10-05 12:47
+  from: tony
+  text: queued for processing
 requests:
 - id: ci-develop-tts-artifact-clean-implement-f79735
   ask: Implement the fix in ada-pi — work was delegated by the ci pipeline (card targets repo ada-pi).

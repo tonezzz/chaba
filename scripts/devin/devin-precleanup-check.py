@@ -4,6 +4,9 @@
 Read-only preflight for docs/ssot/infrastructure/ssot.devin.maintenance.yml.
 Captures the baseline, integrity, locks/writers, archive preservation, dispatch
 state, and the dry-run list of sessions older than the host retention cutoff.
+Dispatch worktrees are also checked for branch commits not reachable from the
+repo's base branch (master/main), so a clean tree with unmerged work is
+flagged unsafe to prune.
 Writes a Markdown report under ~/.local/share/devin/cleanup-reports/.
 
 Usage:
@@ -227,6 +230,55 @@ def dispatch_tasks(active_units: list[str]) -> list[dict]:
     return tasks
 
 
+def worktree_branch(wt: Path, task: dict | None) -> tuple[str, str]:
+    """Resolve the ref to ancestry-check: meta.branch first, then HEAD.
+
+    Returns (ref, label); ref may be "" when nothing resolves.
+    """
+    meta_branch = (task or {}).get("branch") or ""
+    if meta_branch:
+        proc = run(["git", "-C", str(wt), "rev-parse", "--verify",
+                    f"refs/heads/{meta_branch}"], timeout=10)
+        if proc.returncode == 0:
+            return meta_branch, meta_branch
+    proc = run(["git", "-C", str(wt), "rev-parse", "--abbrev-ref", "HEAD"], timeout=10)
+    head = proc.stdout.strip()
+    if proc.returncode == 0 and head and head != "HEAD":
+        return head, head
+    sha = run(["git", "-C", str(wt), "rev-parse", "--short", "HEAD"], timeout=10)
+    if sha.returncode == 0 and sha.stdout.strip():
+        return "HEAD", f"detached:{sha.stdout.strip()}"
+    return "", "unresolved"
+
+
+BASE_CANDIDATES = ("master", "main", "origin/master", "origin/main")
+
+
+def base_ref(wt: Path) -> str:
+    """First resolvable base branch for the worktree's repo."""
+    for cand in BASE_CANDIDATES:
+        proc = run(["git", "-C", str(wt), "rev-parse", "--verify", cand], timeout=10)
+        if proc.returncode == 0:
+            return cand
+    return ""
+
+
+def unmerged_commits(wt: Path, ref: str) -> tuple[list[str], str, str]:
+    """Commits on ref not reachable from the repo's base branch.
+
+    Returns (commits as 'sha subject' lines, base ref used, error).
+    """
+    if not ref:
+        return [], "", "no branch resolved"
+    base = base_ref(wt)
+    if not base:
+        return [], "", "no base ref (master/main) found"
+    proc = run(["git", "-C", str(wt), "log", "--format=%h %s", f"{base}..{ref}"], timeout=15)
+    if proc.returncode != 0:
+        return [], base, (proc.stderr or proc.stdout).strip() or "rev-list failed"
+    return [line for line in proc.stdout.splitlines() if line.strip()], base, ""
+
+
 def worktrees(tasks: list[dict]) -> list[dict]:
     by_path = {t.get("worktree"): t for t in tasks if t.get("worktree")}
     rows = []
@@ -239,12 +291,19 @@ def worktrees(tasks: list[dict]) -> list[dict]:
         else:
             status = "dirty" if proc.stdout.strip() else "clean"
             detail = ""
+        ref, branch_label = worktree_branch(wt, task)
+        unmerged, base, merge_error = unmerged_commits(wt, ref)
         rows.append({
             "path": str(wt),
             "task": task["id"] if task else "unregistered",
             "task_state": task["state"] if task else "unknown",
             "git": status,
             "detail": detail,
+            "branch": branch_label,
+            "base": base,
+            "unmerged": unmerged,
+            "merge_error": merge_error,
+            "unsafe": bool(unmerged),
         })
     return rows
 
@@ -384,6 +443,7 @@ def main() -> int:
 
     active_tasks = [t for t in tasks if t["state"] == "active"]
     dirty_trees = [t for t in trees if t["git"] != "clean"]
+    unmerged_trees = [t for t in trees if t["unmerged"]]
     cleanup_timer = unit_state("devin-cleanup.timer")
     cleanup_service = unit_state("devin-cleanup.service")
     active_candidate_locks = [x for x in candidates if x["lock"].startswith("active pid")]
@@ -413,6 +473,8 @@ def main() -> int:
         warnings.append(f"{len(active_tasks)} active dispatch tasks")
     if dirty_trees:
         warnings.append(f"{len(dirty_trees)} dispatch worktrees dirty/unknown")
+    if unmerged_trees:
+        warnings.append(f"{len(unmerged_trees)} dispatch worktrees hold commits not reachable from the base branch (master/main)")
     if not free_for_backup:
         warnings.append("free space is below 2x DB footprint")
     if os.environ.get("NO_BACKUP") == "1" and not no_backup_allowed:
@@ -449,6 +511,7 @@ def main() -> int:
         "dispatch_tasks": len(tasks),
         "dispatch_worktrees": len(trees),
         "dirty_worktrees": len(dirty_trees),
+        "unmerged_worktrees": len(unmerged_trees),
         "free_for_backup": free_for_backup,
         "delete_ready": delete_ready,
         "vacuum_ready": vacuum_ready,
@@ -527,6 +590,7 @@ def main() -> int:
             ["active dispatch tasks", len(active_tasks)],
             ["dispatch worktrees", len(trees)],
             ["dirty/unknown worktrees", len(dirty_trees)],
+            ["worktrees with unmerged commits", len(unmerged_trees)],
             ["systemd unit scan", unit_error or "ok"],
         ]),
     ]
@@ -538,9 +602,18 @@ def main() -> int:
                             for t in tasks[:100]])]
     if trees:
         lines += ["", "### Dispatch worktrees", "",
-                  md_table(["worktree", "task", "task state", "git"],
+                  md_table(["worktree", "task", "task state", "git", "branch", "unmerged"],
                            [[md_escape(t["path"], 70), md_escape(t["task"], 40),
-                             t["task_state"], t["git"]] for t in trees])]
+                             t["task_state"], t["git"], md_escape(t["branch"], 40),
+                             len(t["unmerged"]) if t["unmerged"] else
+                             ("?" if t["merge_error"] else "0")] for t in trees])]
+    if unmerged_trees:
+        lines += ["", "### Stranded commits (not reachable from base branch)", ""]
+        for t in unmerged_trees:
+            lines.append(f"- `{md_escape(t['path'], 70)}` — `{md_escape(t['base'], 15)}..{md_escape(t['branch'], 40)}`:")
+            lines += [f"  - `{md_escape(c, 90)}`" for c in t["unmerged"]]
+        lines += ["",
+                  "Merge or drop these commits explicitly before pruning the worktree."]
     lines += [
         "",
         "## Archive / preservation",
