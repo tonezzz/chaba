@@ -117,6 +117,55 @@ LABEL_TH = {
     "C201": "กล้อง C201",
     "Coffee Corner": "มุมกาแฟ",
     "IP65 Low": "กล้อง IP65 มุมต่ำ",
+    "4. Entrance Gate": "ประตูทางเข้า",
+}
+
+# cam key -> (en, th) one-liner: what the camera actually watches. Curated —
+# the difference between a dossier and a telemetry dump.
+CAM_NOTES = {
+    "washing-machines": (
+        "Laundry room — washer/dryer row and the seating area inside",
+        "ห้องซักผ้า — แถวเครื่องซัก/อบและพื้นที่นั่งรอภายใน"),
+    "stairway-room": (
+        "Stairwell room — the indoor stairs between floors",
+        "ห้องบันได — บันไดภายในระหว่างชั้น"),
+    "mini-mart": (
+        "Mini-mart — counter and shelf aisles",
+        "มินิมาร์ท — เคาน์เตอร์และทางเดินระหว่างชั้นวาง"),
+    "front-rd-left": (
+        "Front road, left side — covers the inbound stretch",
+        "ถนนหน้าฝั่งซ้าย — ครอบคลุมช่วงขาเข้า"),
+    "front-rd-right": (
+        "Front road, right side — covers the outbound stretch",
+        "ถนนหน้าฝั่งขวา — ครอบคลุมช่วงขาออก"),
+    "swimming-pool": (
+        "Pool deck and water — safety-critical view",
+        "รอบสระว่ายน้ำ — มุมสำคัญด้านความปลอดภัย"),
+    "tennis-court": (
+        "Tennis court — full court view",
+        "สนามเทนนิส — เห็นเต็มคอร์ท"),
+    "play-ground": (
+        "Children's playground",
+        "สนามเด็กเล่น"),
+    "road-in": (
+        "Estate entry road — approaching vehicles and pedestrians",
+        "ถนนเข้าโครงการ — รถและคนเดินขาเข้า"),
+    "guard-view": (
+        "Guard post view — what the gate guard watches",
+        "มุมกระจกยาม — เหมือนที่ยามเห็นที่ประตู"),
+    "walkway-in": (
+        "Entry walkway — foot traffic into the building",
+        "ทางเดินเข้า — คนเดินเข้าอาคาร"),
+    "road-corner": (
+        "Road corner — the turn at the far edge of the estate",
+        "หัวมุมถนน — โค้งสุดขอบโครงการ"),
+    "entrance-gate": (
+        "Entrance gate — gate leaf and barrier approach",
+        "ประตูทางเข้า — บานประตูและทางขึ้นไม้กั้น"),
+    "c100": ("House — C100 interior cam", "บ้าน — กล้อง C100 ภายใน"),
+    "c201": ("House — C201 interior cam", "บ้าน — กล้อง C201 ภายใน"),
+    "coffee-corner": ("Coffee corner — kitchen nook",
+                      "มุมกาแฟ — ติดในครัว"),
 }
 
 
@@ -133,12 +182,25 @@ def _label(cam: dict, lang: str) -> str:
         else cam["label"]
 
 
+def _ascii_slug(s: str) -> str:
+    """ASCII-normalize a cam key for CMS slugs — registry cams carry Thai
+    road-group prefixes that mangle into runs of dashes
+    ('ทางพ-เศษบ-รพาว-ถ----bangna-…' -> 'bangna-…')."""
+    import re
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s).lower()
+    s = "".join(c for c in s if ord(c) < 128 and (c.isalnum() or c in "-_"))
+    s = re.sub(r"^[^a-z0-9]+", "", s)   # drop leading dash-runs (dead Thai)
+    return re.sub(r"-{2,}", "-", s).strip("-") or "cam"
+
+
 def cam_slug(zone: str, cam: dict) -> str:
     """Canonical cam-page key. VMS cams key on <device>-<camkey> so the
     same physical camera is ONE page even when several walls list it
     (a retired wall may share channels with a per-DVR wall)."""
     dev = cam.get("dev")
-    return f"cam-{dev}-{cam['key']}" if dev else f"cam-{zone}-{cam['key']}"
+    key = _ascii_slug(cam["key"])
+    return f"cam-{dev}-{key}" if dev else f"cam-{zone}-{key}"
 
 
 def cam_area(zone: str, cam: dict) -> str:
@@ -403,6 +465,34 @@ def cam_dets(zone: str, cam_key: str, hours: int = 24) -> tuple[str, str]:
     return top, time.strftime("%H:%M", time.localtime(last))
 
 
+def _err_short(err: str, lang: str = "en") -> str:
+    """Normalize puller/ffmpeg stderr into a short readable status — raw
+    stderr leaks pointer addresses and truncates mid-word on the page."""
+    import re
+    e = (err or "").lower()
+    if "404" in e or "not found" in e:
+        s = "source not found (404)"
+    elif "503" in e or "502" in e or "service unavailable" in e:
+        s = "source unavailable"
+    elif "timed out" in e or "timeout" in e:
+        s = "source timed out"
+    elif "connection refused" in e:
+        s = "connection refused"
+    elif "tls" in e or "ssl" in e:
+        s = "TLS error"
+    else:
+        # strip ffmpeg internals, cap at a sane length on word boundary
+        s = re.sub(r"\[[^\]]*\]", "", err).split(": ")[-1].strip()
+        s = (s[:77] + "…") if len(s) > 80 else s
+    return (_t(lang, s, {
+        "source not found (404)": "ไม่พบแหล่งภาพ (404)",
+        "source unavailable": "แหล่งภาพไม่พร้อมใช้งาน",
+        "source timed out": "แหล่งภาพหมดเวลาตอบสนอง",
+        "connection refused": "แหล่งภาพปฏิเสธการเชื่อมต่อ",
+        "TLS error": "ข้อผิดพลาด TLS",
+    }.get(s, s)))
+
+
 def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
              lang: str = "en") -> str:
     """One CMS dossier per PHYSICAL camera — `entries` is every
@@ -429,9 +519,18 @@ def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
         state = _t(lang, "down — no frame on record",
                    "ขัดข้อง — ไม่มีเฟรมบันทึกไว้")
     det_top, det_last = cam_dets(zone, key)
-    det_line = (_t(lang, f"{det_top} (last seen {det_last}, 24h window)",
-                   f"{det_top} (พบล่าสุด {det_last} น., ช่วง 24 ชม.)")
-                if det_top else _t(lang, "none in window", "ไม่มีในช่วง"))
+    if det_top:
+        det_line = _t(lang, f"{det_top} (last seen {det_last}, 24h window)",
+                      f"{det_top} (พบล่าสุด {det_last} น., ช่วง 24 ชม.)")
+    elif any(c.get("det") for c in man.get("cams") or []):
+        det_line = _t(lang, "none in window", "ไม่มีในช่วง")
+    else:
+        det_line = _t(lang, "no detection feed on this wall",
+                      "กำแพงนี้ไม่มีการตรวจจับ")
+    note = CAM_NOTES.get(key)
+    note_line = (f"- **{_t(lang, 'Covers', 'ครอบคลุม')}**: "
+                 f"{_t(lang, *note)}\n" if note else "")
+    img = f"{key}-status.jpg" if not ok else f"{key}.jpg"
     walls = ", ".join(f"[{z}]({BASE}/?zone={z})"
                       for z, _, _ in sorted(
                           entries, key=lambda e: e[0]))
@@ -440,12 +539,12 @@ def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
              if cam.get("dev") else "")
     return f"""# {_t(lang, 'CCTV', 'กล้อง')}: {_area(cam_area(zone, cam), lang)} — {_label(cam, lang)}
 
-![latest]({BASE}/data/{zone}/{key}.jpg)
+![{_t(lang, 'latest', 'ล่าสุด')}]({BASE}/data/{zone}/{img})
 
 {ident}- **{_t(lang, 'Walls', 'กำแพง')}**: {walls} (`{"`, `".join(
         wall_key(z) for z in sorted({z for z, _, _ in entries}))}`)
-- **{_t(lang, 'State', 'สถานะ')}**: {state} · {_t(lang, 'manifest as of', 'ข้อมูล ณ')} {bucket}
-{f"- **{_t(lang, 'Error', 'ข้อผิดพลาด')}**: {err}" if err else ""}
+{note_line}- **{_t(lang, 'State', 'สถานะ')}**: {state} · {_t(lang, 'manifest as of', 'ข้อมูล ณ')} {bucket}
+{f"- **{_t(lang, 'Error', 'ข้อผิดพลาด')}**: {_err_short(err, lang)}" if err else ""}
 - **{_t(lang, 'Detections', 'การตรวจจับ')}**: {det_line}
 
 {_t(lang, f'Part of `cctv-walls` — camera dossier for `{slug_key}`.',
@@ -686,11 +785,15 @@ def main() -> int:
                     f"({'ออนไลน์' if cam.get('ok') else 'ขัดข้อง'})"),
                 sources=sorted({f"zone:{z}" for z, _, _ in entries})
                 + ["cam-wall-detections"])
-        # retire the old zone-scoped key the canonical dev-key replaced
+        # retire the old zone-scoped key the canonical dev-key replaced,
+        # plus any raw (un-normalized) key the ascii slug superseded
         for z, c, _ in entries:
-            legacy = f"cam-{z}-{c['key']}"
-            if legacy != slug_key:
-                mddb_delete(legacy)
+            forms = [f"cam-{z}-{c['key']}"]
+            if c.get("dev"):
+                forms.append(f"cam-{c['dev']}-{c['key']}")
+            for legacy in forms:
+                if legacy != slug_key:
+                    mddb_delete(legacy)
     if zones:
         for lang in ("en", "th"):
             ok &= mddb_add(
