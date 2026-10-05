@@ -1,45 +1,50 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# Dispatch outcome — kanban-commit-conflict-marker-guard
 
-## What happened
+## What changed
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+`scripts/board/kanban-commit.sh` now refuses to commit unsafe staged state instead
+of silently writing conflict markers into git history:
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+- **Mid-operation gate** — refuses (before `git add`, so staging can't mark
+  conflicts resolved) when `rebase-merge/`, `rebase-apply/`, `MERGE_HEAD`, or
+  `CHERRY_PICK_HEAD` is present under `git rev-parse --git-dir`. This is the exact
+  incident vector: the script's own `git pull --rebase` conflict leaves
+  `<<<<<<<`/`=======`/`>>>>>>>` in card files; the next tick used to stage+commit
+  them, and the poisoned YAML then crashed render-board + kanban-dispatch on parse.
+- **Marker gate** — after staging, `git diff --cached --check`; any output line
+  containing `conflict marker` (i.e. `file:line: leftover conflict marker`)
+  refuses the commit and logs the `file:line` list to stderr (journal). Only
+  newly-added marker lines flag — pre-existing markers at HEAD can't wedge the
+  loop, and trailing-whitespace warnings do not block.
+- **Board alert** — on refuse, upserts
+  `docs/ssot/kanban/cards/ops-kanban-commit-guard.yml` (column `review`, note
+  names the offending files) under the `/tmp/board-api.lock` flock — the
+  sanctioned direct-write path. Deduped: a repeat hit with the same file set
+  only bumps `updated` (no 15-min comms spam); a changed reason or a re-hit
+  after close appends comms and re-opens. The card rides into git on the next
+  healthy commit.
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
+Trail doc: `docs/ssot/jobs/kanban/2026-10-05-kanban-commit-conflict-marker-guard.yml`.
 
-## Deliverables
+## Result
 
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
+Verified end-to-end in a scratch bare-remote+clone inside the worktree
+(`KANBAN_REPO` pointed at it): clean run commits+pushes as before; planted
+`<<<<<<<`/`=======`/`>>>>>>>` in a test card → exit 1, stderr names
+`test-card.yml:{3,5,7}`, zero new commits, alert card created with the file
+named in its note; repeat run dedupes; faked `rebase-merge/` refuses before
+staging; after fixing markers the next run commits normally (alert card lands
+in git); a trailing-whitespace file commits fine.
 
-## Notes for operator
+## How to verify
 
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+`KANBAN_REPO=<any clone> bash scripts/board/kanban-commit.sh` after planting a
+marker in a file under `docs/ssot/kanban/` — expect exit 1, `REFUSING` stderr,
+and `ops-kanban-commit-guard.yml` updated in that repo.
+
+## Known gap (out of scope)
+
+If markers are pushed to origin/master from another writer, render/dispatch
+still crash on parse — a parse-tolerant loader in render-board.py /
+kanban-dispatch.py is separate work. `kanban-sync.sh` reviewed: ff-only merge +
+machine-generated files → no equivalent vector.
