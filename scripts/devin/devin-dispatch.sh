@@ -16,7 +16,12 @@
 #   devin-dispatch logs <id>                 journal for the task's unit(s)
 #   devin-dispatch tail <id>                 tail the exported transcript
 #
-# Repos are whitelisted below — add a name=path pair to allow more.
+# Repos are whitelisted in $DISPATCH_DIR/repos.conf (name path
+# default_branch per line; scripts/devin/dispatch-repos.conf is the
+# versioned copy). The built-in table below is the fallback when no
+# repos.conf exists. Worktrees are always cut from origin/<default_branch>
+# — never the checkout's current branch (a checkout parked on a stale
+# branch used to poison every dispatch on that repo).
 # Env: DISPATCH_PERMISSION_MODE (default smart), DISPATCH_DIR, DEVIN_BIN.
 #
 # Permission modes (devin --help): auto = read-only only, accept-edits =
@@ -27,8 +32,9 @@
 # doc-archive task died after two rejections). Worktree isolation +
 # the no-push/no-deploy prompt rails are the real guardrails.
 #
-# Gotcha: worktrees are cut from THIS host's local HEAD — files committed
-# on another host won't exist in the worktree until tony-dell pulls.
+# Gotcha: worktrees are cut from origin/<default_branch> as last fetched —
+# files committed on another host won't exist in the worktree until
+# tony-dell pulls/fetches (cmd_start does a best-effort fetch first).
 # Copy spec inputs into the worktree explicitly if they're unpushed.
 
 set -euo pipefail
@@ -43,11 +49,33 @@ DEVIN_BIN="${DEVIN_BIN:-$(command -v devin 2>/dev/null \
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 PERMISSION_MODE="${DISPATCH_PERMISSION_MODE:-smart}"
 
-declare -A REPOS=(
-  [chaba]="$HOME/CascadeProjects/chaba"
-  [ada-pi]="$HOME/CascadeProjects/ada-pi"
-  [sunsynk-card]="$HOME/CascadeProjects/sunsynk-power-flow-card"
-)
+# Fallback whitelist — canonical table is $DISPATCH_DIR/repos.conf
+# (name path default_branch). Keep both in sync.
+declare -A REPOS REPO_DEFAULT_BRANCH
+_load_repos() {
+  local conf="$DISPATCH_DIR/repos.conf"
+  if [[ -f $conf ]]; then
+    local name path branch
+    while read -r name path branch _; do
+      [[ -n ${name:-} && $name != \#* && -n ${path:-} ]] || continue
+      [[ ${branch:-} == \#* ]] && branch=""
+      REPOS[$name]="$path"
+      REPO_DEFAULT_BRANCH[$name]="${branch:-master}"
+    done < "$conf"
+  else
+    REPOS=(
+      [chaba]="$HOME/CascadeProjects/chaba"
+      [ada-pi]="$HOME/CascadeProjects/ada-pi"
+      [sunsynk-card]="$HOME/CascadeProjects/sunsynk-power-flow-card"
+      [mddb-fork]="$HOME/CascadeProjects/mddb-fork"
+    )
+    REPO_DEFAULT_BRANCH=(
+      [chaba]="master" [ada-pi]="main"
+      [sunsynk-card]="main" [mddb-fork]="main"
+    )
+  fi
+}
+_load_repos
 
 _slug() { tr '[:upper:]' '[:lower:]' <<<"$1" | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-30; }
 
@@ -82,12 +110,14 @@ PY
 
 _meta_get() { python3 -c "import json,sys;print(json.load(open('$1')).get('$2') or '')"; }
 
-_meta_write() { # dir repo worktree branch unit
-  python3 - "$1" "$2" "$3" "$4" "$5" <<'PY'
+_meta_write() { # dir repo worktree branch unit default_branch
+  python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
 import json, sys
 from datetime import datetime, timezone
-d, repo, wt, branch, unit = sys.argv[1:6]
+d, repo, wt, branch, unit, dbranch = sys.argv[1:7]
 meta = {"repo": repo, "worktree": wt, "branch": branch, "unit": unit,
+        "default_branch": dbranch,
+        "base": f"origin/{dbranch}" if dbranch else "",
         "permission_mode": "see prompt", "started_at": datetime.now(timezone.utc).isoformat()}
 json.dump(meta, open(f"{d}/meta.json", "w"), indent=1)
 PY
@@ -121,12 +151,31 @@ cmd_start() {
   [[ -n $task ]] || { echo "usage: devin-dispatch start <repo> \"<task>\"" >&2; exit 2; }
   local root="${REPOS[$repo]:-}"
   [[ -n $root && -d $root ]] || { echo "unknown repo '$repo' (allowed: ${!REPOS[*]})" >&2; exit 1; }
+  # Canonical base: origin/<default_branch>, never the checkout's current
+  # branch. Fall back to origin/HEAD symref, then local <default>.
+  local dbranch="${REPO_DEFAULT_BRANCH[$repo]:-}"
+  if [[ -z $dbranch ]]; then
+    dbranch="$(git -C "$root" symbolic-ref --quiet --short \
+      refs/remotes/origin/HEAD 2>/dev/null || true)"; dbranch="${dbranch#origin/}"
+  fi
+  : "${dbranch:=master}"
+  git -C "$root" fetch -q origin "$dbranch" >/dev/null 2>&1 \
+    || echo "warn: fetch origin/$dbranch failed — using last-fetched ref" >&2
+  local base="origin/$dbranch"
+  git -C "$root" rev-parse --verify --quiet "$base" >/dev/null || {
+    if git -C "$root" rev-parse --verify --quiet "$dbranch" >/dev/null; then
+      echo "warn: no $base — basing on local $dbranch" >&2; base="$dbranch"
+    else
+      echo "no $base in $root — cannot cut worktree from default branch" >&2
+      exit 1
+    fi
+  }
   local id="$(date +%Y%m%d-%H%M%S)-$(_slug "$task")"
   local wt="$HOME/CascadeProjects/dispatch-wt-$id"
   local dir="$DISPATCH_DIR/tasks/$id"
   mkdir -p "$dir"
-  git -C "$root" worktree add "$wt" -b "dispatch/$id" >/dev/null 2>&1 || {
-    echo "worktree failed for $root" >&2; exit 1; }
+  git -C "$root" worktree add "$wt" -b "dispatch/$id" "$base" >/dev/null 2>&1 || {
+    echo "worktree failed for $root (base $base)" >&2; exit 1; }
   cat > "$dir/prompt.txt" <<EOF
 You are running unattended via devin-dispatch (a headless, user-triggered
 session). Work only inside this worktree. Do not commit to the default
@@ -147,7 +196,7 @@ Task: $task
 EOF
   _devin_run "devin-task-$id" "$wt" "$dir/prompt.txt" \
     --export "$dir/transcript.json"
-  _meta_write "$dir" "$repo" "$wt" "dispatch/$id" "devin-task-$id"
+  _meta_write "$dir" "$repo" "$wt" "dispatch/$id" "devin-task-$id" "$dbranch"
   mddb_job "$id" "running" "$task" &
   echo "$id"
 }
@@ -224,7 +273,7 @@ $msg
 EOF
     _devin_run "devin-task-$id" "$cwd" "$dir/prompt.txt" \
         --export "$dir/transcript.json" -r "$sid"
-    _meta_write "$dir" "resume" "$cwd" "resume/$sid" "devin-task-$id"
+    _meta_write "$dir" "resume" "$cwd" "resume/$sid" "devin-task-$id" ""
     mddb_job "$id" "running" "resume: $title" &
     echo "$id"
 }

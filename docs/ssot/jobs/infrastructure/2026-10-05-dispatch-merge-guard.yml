@@ -1,0 +1,114 @@
+title: dispatcher merge-guard + canonical default-branch worktree base
+subtitle: >-
+  Two session-verified failure modes closed: dispatch worktrees were cut
+  from the checkout's CURRENT branch (sunsynk-bat34 rebuilt shipped
+  features on the stale 'sunsynk' branch), and cards closed while session
+  commits stayed unmerged or worktrees stayed dirty (~10 orphaned
+  workstreams in two days). Now worktrees always base on
+  origin/<default_branch>, and board-api blocks review->done while
+  session commits are non-ancestors of the default branch.
+icon: shield
+id: 2026-10-05-dispatch-merge-guard
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-merge-guard
+branch: dispatch/20261005-105032-in-scripts-board-kanban-dispat
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    (a) add default_branch per repo — worktrees always from
+    origin/<default_branch>, never the checkout's current branch;
+    (b) before review->done assert `git merge-base --is-ancestor
+    <session-head> origin/<default>` — non-ancestor = comms 'unmerged
+    commits remain' + keep in review; (c) dirty worktree on session end =
+    comms entry listing file count. Verify by dispatching a test card
+    with an unmerged commit and confirming it cannot close.
+  spec_correction: >-
+    The card says "REPOS map in ~/.local/share/devin-dispatch" — the map
+    actually lived inline in ~/.local/bin/devin-dispatch. Implemented
+    closer to the spec than the literal read: the whitelist is now
+    externalized to $DISPATCH_DIR/repos.conf
+    (~/.local/share/devin-dispatch/repos.conf), versioned copy at
+    scripts/devin/dispatch-repos.conf, with a built-in fallback table so
+    hosts without the file keep working.
+
+deliverables:
+  - >-
+    scripts/board/dispatch_repos.py (new) — shared resolver: repos.conf
+    parsing (+builtin fallback), tasks/<id>/meta.json lookup, session
+    -> {worktree, repo_root, head, default_branch, base_ref} resolution
+    with fallbacks (~/CascadeProjects/dispatch-wt-<id>, dispatch/<id>
+    branch scan across whitelisted repos, origin/HEAD -> master|main
+    probe), merge_state() ancestry + unmerged count/subjects,
+    dirty_count(), guard() decision for the close gate.
+  - >-
+    scripts/board/board-api.py — apply_merge_guard() gates every
+    transition into done (do=close AND do=move column=done): blocked
+    close returns "blocked — unmerged commits remain on <branch> (N not
+    in <base>)" and appends the comms entry, card stays in review; a
+    passed guard appends a merged/skipped note incl. leftover dirty file
+    count; guard errors log a skip note and allow — never wedges the
+    board.
+  - >-
+    scripts/board/kanban-dispatch.py — poll_one session end now posts
+    "worktree <name> dirty — N uncommitted file(s)" and "N commit(s) on
+    dispatch/<id> not in origin/<branch> — close will block until merged"
+    when they apply.
+  - >-
+    scripts/devin/devin-dispatch.sh + live ~/.local/bin/devin-dispatch —
+    _load_repos reads $DISPATCH_DIR/repos.conf (name path default_branch;
+    builtin fallback); cmd_start resolves default_branch (conf ->
+    origin/HEAD -> master), best-effort `git fetch origin <branch>`,
+    worktree add ... -b dispatch/<id> origin/<branch> (local <branch>
+    fallback with warning; fails loudly if neither ref exists);
+    meta.json gains default_branch + base fields.
+  - >-
+    ~/.local/share/devin-dispatch/repos.conf (live) +
+    scripts/devin/dispatch-repos.conf (versioned copy) —
+    chaba=master, ada-pi=main, sunsynk-card=main, mddb-fork=main.
+  - >-
+    docs/ssot/kanban/ssot.kanban.yml — execution section documents
+    worktree_base, merge_guard, and session-end comms.
+
+verification:
+  - >-
+    Real dispatch on sunsynk-card (checkout parked on 'sunsynk'):
+    DEVIN_BIN=/usr/bin/true devin-dispatch start -> worktree HEAD ==
+    origin/main (b41ffcc), NOT the checkout branch (a84b9b6); meta.json
+    records default_branch=main, base=origin/main.
+  - >-
+    Scratch origin+repo in worktree + fake session meta: POST close ->
+    "blocked — unmerged commits remain on dispatch/mgt-1 (1 not in
+    origin/master)", card stays in review; move->done blocked likewise;
+    after merging branch into origin/master -> close succeeds with comms
+    "merge guard: dispatch/mgt-1 merged into origin/master; worktree
+    still dirty: 1 uncommitted file(s)".
+  - >-
+    Deleted-worktree path: session resolved via repos.conf branch scan,
+    still blocks on unmerged branch. Unresolvable session -> allowed
+    with "nothing to verify" note (no board wedge).
+  - >-
+    Real metadata path: unmerged commit on the actual sunsynk dispatch
+    worktree -> live DISPATCH_DIR resolution blocked close identically.
+  - >-
+    kanban-dispatch session_end_notes: poll_one on finished unit posts
+    "worktree wt dirty — 1 uncommitted file(s)" + "1 commit(s) ...
+    not in origin/master — close will block until merged".
+  - "bash -n clean; py_compile clean; board-api --selftest ok"
+
+notes:
+  - >-
+    Live effect needs this merged to master and the served checkout
+    (chaba-tony-dell) updated — board-api.service and kanban-dispatch.timer
+    run from that tree. devin-dispatch + repos.conf are already live
+    (~/.local/bin, ~/.local/share/devin-dispatch).
+  - >-
+    Guard checks the card's LATEST action.task_id only; branches from
+    earlier retried dispatches on the same card are covered by
+    devin-precleanup-check.py / the dispatch-cleanup-unmerged-guard card.
+  - >-
+    Dirty worktrees warn but never block close — uncommitted leftovers
+    surface in comms at session end and again at close; Tony decides.
