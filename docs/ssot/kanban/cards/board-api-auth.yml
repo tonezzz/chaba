@@ -1,0 +1,12 @@
+id: board-api-auth
+title: board-api has no auth — anyone on the tailnet can mutate cards
+column: backlog
+updated: 2026-10-05 21:12
+note: 'Caddy proxies /apps/board-api tailnet-wide with no auth gate. Options: Tailscale-User-Login header check
+  (pattern used by /apps/vms/), or tailnet ACL on the route. Low risk today (tailnet-only) but unguarded writes
+  = attribution + accidental-mutation risk.'
+priority: low
+tags:
+- board
+- dispatch
+- followup

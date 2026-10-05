@@ -227,7 +227,9 @@ function reqAnswerHtml(c, r) {{
     for (const o of opts) {{
       const lbl = typeof o === 'string' ? o : (o.label || o.id);
       const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
-      h += `<button class="rq-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{esc(lbl)}}</button>`;
+      const sug = r.suggested && (r.suggested === val || r.suggested === lbl ||
+        (typeof o !== 'string' && r.suggested === o.id));
+      h += `<button class="rq-opt text-xs ${{sug ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 ring-1 ring-emerald-400 font-semibold' : 'bg-amber-800/70 hover:bg-amber-700 text-amber-100'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{sug ? '★ ' : ''}}${{esc(lbl)}}</button>`;
     }}
     return h + '</div>';
   }}
@@ -282,6 +284,12 @@ function cardHtml(c) {{
   if (st === 'queued') badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span> ';
   else if (st === 'running') badges += '<span class="text-xs bg-sky-700/80 text-sky-100 rounded px-1.5 py-0.5">⚙ running</span> ';
   else if (st === 'failed') badges += '<span class="text-xs bg-red-800/70 text-red-100 rounded px-1.5 py-0.5">✖ failed</span> ';
+  if ((c.column || 'backlog') === 'review') {{
+    const verified = (c.comms || []).some(m => TRUST_RE.test(m.text || ''));
+    badges += verified
+      ? '<span class="text-xs bg-emerald-800/80 text-emerald-100 rounded px-1.5 py-0.5">✔ verified</span> '
+      : '<span class="text-xs bg-amber-900/80 text-amber-200 rounded px-1.5 py-0.5">⚠ claimed</span> ';
+  }}
 
   return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
@@ -292,6 +300,13 @@ function cardHtml(c) {{
 }}
 
 const VERIFY_RE = /verif|confirm|works|lgtm|tested|checks out/i;
+// 'verified' signals incl. the auto-merge comm — note: bare /merged/
+// would match "unmerged commits remain", so require 'merged into'|'auto-merged'
+const TRUST_RE = /verif|auto-merged|merged into|confirm|works|lgtm|tested|checks out/i;
+// automation-generated card ids — collapsed under per-column groups
+const AUTO_RE = /^(cms-auto-|logs-auto-)|-auto-health$/;
+let autoOpen = {{}};
+try {{ autoOpen = JSON.parse(localStorage.getItem('board-auto-open') || '{{}}'); }} catch (e) {{}}
 const REVIEW_RE = /(?:->|→|—|–)\\s*review\\b/i;
 
 function tsOf(s) {{
@@ -360,8 +375,17 @@ function render() {{
 
   let cols = '';
   for (const col of DATA.columns) {{
-    let body = '';
-    for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) body += cardHtml(c);
+    const all = DATA.cards.filter(c => (c.column || 'backlog') === col.id);
+    const norm = all.filter(c => !AUTO_RE.test(c.id));
+    const autos = all.filter(c => AUTO_RE.test(c.id));
+    let body = norm.map(cardHtml).join('');
+    if (autos.length) {{
+      const open = !!autoOpen[col.id];
+      body += `<div class="border border-slate-700/50 rounded p-2 mt-1 opacity-75">` +
+        `<div class="auto-tog text-xs text-slate-500 cursor-pointer select-none" data-col="${{esc(col.id)}}">${{open ? '▾' : '▸'}} automation (${{autos.length}})</div>` +
+        (open ? `<div class="mt-1.5">${{autos.map(cardHtml).join('')}}</div>` : '') +
+        '</div>';
+    }}
     if (!body) body = '<div class="text-slate-500 text-sm italic">—</div>';
     cols += `<div><div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">` +
       `<span class="col-title" data-en="${{esc(col.title)}}" data-th="${{esc(col.title)}}">${{esc(col.title)}}</span> · ${{counts[col.id] || 0}}</div>` +
@@ -543,6 +567,13 @@ function wire() {{
       e.stopPropagation();
       try {{ await api('/comment', {{id: b.dataset.id, from: 'tony', text: 'verified'}}); toast('marked verified'); await load(); }}
       catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.auto-tog').forEach(el =>
+    el.onclick = e => {{
+      e.stopPropagation();
+      autoOpen[el.dataset.col] = !autoOpen[el.dataset.col];
+      try {{ localStorage.setItem('board-auto-open', JSON.stringify(autoOpen)); }} catch (err) {{}}
+      render();
     }});
 }}
 

@@ -229,6 +229,20 @@ def do_request(card: dict, body: dict) -> str:
     req = {"id": rid, "ask": ask, "status": "open"}
     if body.get("options"):
         req["options"] = body["options"]
+    sug = str(body.get("suggested") or "").strip()
+    if sug:
+        valid = set()
+        for o in req.get("options") or []:
+            if isinstance(o, str):
+                valid.add(o)
+            else:
+                valid.update(str(o.get(k) or "") for k in ("id", "label"))
+                valid.add(f"{o.get('id')} — {o.get('label', '')}")
+        if not valid:
+            raise ValueError("suggested requires options")
+        if sug not in valid:
+            raise ValueError("suggested must match one of the options")
+        req["suggested"] = sug
     reqs.append(req)
     comms_add(card, frm, f"raised request {rid}: {ask[:120]}")
     return f"request {rid} raised"
