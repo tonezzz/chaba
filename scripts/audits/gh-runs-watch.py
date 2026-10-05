@@ -135,7 +135,23 @@ def git_commit_push(files):
     msg = "chore(ci): gh-runs-watch failure alerts"
     subprocess.run(["git", "-C", str(REPO_ROOT), "commit", "-m", msg],
                    check=True)
-    subprocess.run(["git", "-C", str(REPO_ROOT), "push"], check=True)
+    # This runs in a non-served checkout that is often behind origin; a bare
+    # push rejects non-ff and strands the alert commit locally (the recurring
+    # "uncommitted findings" bug — card kanban-commit-single-writer). Replay
+    # onto upstream via the shared safe-pull before each retry instead.
+    safe_pull = REPO_ROOT / "scripts" / "git-safe-pull.sh"
+    for _ in range(3):
+        push = subprocess.run(["git", "-C", str(REPO_ROOT), "push"],
+                              capture_output=True, text=True)
+        if push.returncode == 0:
+            return
+        pull = subprocess.run(["bash", str(safe_pull), str(REPO_ROOT)],
+                              capture_output=True, text=True)
+        if pull.returncode != 0:
+            break
+    raise subprocess.CalledProcessError(
+        push.returncode, push.args, output=push.stdout,
+        stderr=push.stderr or (pull.stderr if pull else ""))
 
 
 def main():
