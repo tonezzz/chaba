@@ -1,28 +1,25 @@
 id: board-automation-dimmer
 title: 'Board: collapse automation-generated cards under a toggle'
 column: backlog
-note: cms-auto-* and logs-auto-* cards are bookkeeping — the automation health loop
-  working as designed — but they now dominate review/doing columns and bury human-decision
-  cards.
-spec: 'render-board.py: cards whose id matches automation patterns (cms-auto-*, logs-auto-*,
-  *-auto-health) render dimmed/collapsed into a per-column ''automation (N)'' group,
-  expandable on click; persist the toggle in localStorage. Human cards always render
-  normally. Verify: automation cards grouped but still reachable; count badge correct.'
+note: cms-auto-* and logs-auto-* cards are bookkeeping — the automation health loop working as designed — but they
+  now dominate review/doing columns and bury human-decision cards.
+spec: 'render-board.py: cards whose id matches automation patterns (cms-auto-*, logs-auto-*, *-auto-health) render
+  dimmed/collapsed into a per-column ''automation (N)'' group, expandable on click; persist the toggle in localStorage.
+  Human cards always render normally. Verify: automation cards grouped but still reachable; count badge correct.'
 action:
   type: dispatch
   repo: chaba
   status: done
-  task: 'Add automation-card dimmer to the board per card spec: pattern-grouped, collapsed,
-    expandable, localStorage toggle. Verify per spec.'
+  task: 'Add automation-card dimmer to the board per card spec: pattern-grouped, collapsed, expandable, localStorage
+    toggle. Verify per spec.'
   runner: tony-dell
   task_id: 20261005-211653-render-board-py-cards-whose-id
-updated: 2026-10-05 21:21
+updated: 2026-10-05 22:04
 comms:
 - at: 2026-10-05 21:12
   from: devin
-  text: 'implemented inline: cms-auto-*/logs-auto-*/*-auto-health collapse into per-column
-    ''automation (N)'' groups, expandable, localStorage-persisted. Verify visually
-    then close.'
+  text: 'implemented inline: cms-auto-*/logs-auto-*/*-auto-health collapse into per-column ''automation (N)'' groups,
+    expandable, localStorage-persisted. Verify visually then close.'
 - at: 2026-10-05 21:14
   from: tony
   text: queued for processing
@@ -31,14 +28,17 @@ comms:
   text: dispatched 20261005-211653-render-board-py-cards-whose-id on chaba
 - at: 2026-10-05 21:21
   from: devin
-  text: 're-dispatched session: prior inline impl confirmed present (dcffce02). Auditing
-    vs spec — found gap: sidebar click on a collapsed automation card no-ops scrollToCard
-    (card not in DOM). Patching auto-expand, then verifying counts/grouping/persistence
-    with a node DOM-stub harness.'
+  text: 're-dispatched session: prior inline impl confirmed present (dcffce02). Auditing vs spec — found gap: sidebar
+    click on a collapsed automation card no-ops scrollToCard (card not in DOM). Patching auto-expand, then verifying
+    counts/grouping/persistence with a node DOM-stub harness.'
 - ts: 1791210209
   who: devin
-  text: Duplicate dispatch aborted (implemented inline earlier in chaba-tony-dell,
-    commit pushed). Ignoring this session's branch if one was created.
+  text: Duplicate dispatch aborted (implemented inline earlier in chaba-tony-dell, commit pushed). Ignoring this
+    session's branch if one was created.
+- at: 2026-10-05 22:04
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-211653-render-board-py-cards-whose-id — 1 commit(s) not in
+    origin/master: Devin checkpoint for session functional-research'
 claim:
   session: 20261005-211653-render-board-py-cards-whose-id
   since: 2026-10-05 21:17

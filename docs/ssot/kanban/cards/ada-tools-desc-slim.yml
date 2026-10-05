@@ -9,7 +9,7 @@ note: 'gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the
   the model at the moment it errs. Cut descriptions to 1-2 lines (what + when), move the IMPORTANT prose into result-side
   hints and a lazy ada_tool_help lookup the model can query on demand.'
 help: needs_confirm/displaced/verify_warn in tool_runner.py cast_to_screen — that pattern applied to every fat description
-updated: 2026-10-05 21:50
+updated: 2026-10-05 22:02
 spec: 'Slim tool declarations: move per-tool prose guidance out of the shipped schema description into the error
   path (the needs_confirm/displaced/verify_warn/render_warn pattern already proves this). Target: each declaration
   description <= 2 short lines; domain guidance moves into error payloads/docs the model sees only on failure. Verify:
@@ -32,6 +32,10 @@ comms:
 - at: 2026-10-05 21:50
   from: chaba
   text: dispatched 20261005-215023-slim-tool-declarations-move-pe on ada-pi
+- at: 2026-10-05 22:02
+  from: devin
+  text: 'Started. Plan: move fat per-tool prose into backend/tool_guide.yml surfaced via a usage key on failed/denied
+    results (needs_confirm pattern); slim every decl description to <=2 lines; add desc-size check to tool-lint.'
 claim:
   session: 20261005-215023-slim-tool-declarations-move-pe
   since: 2026-10-05 21:50

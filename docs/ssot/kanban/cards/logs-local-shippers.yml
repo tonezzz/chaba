@@ -7,7 +7,7 @@ note: Current model SSHes from tony-omen nightly — dies silently whenever a ta
   absent ~1 week unnoticed). log-shipper.py already runs local when host in {tony-omen,localhost} — a per-host user
   timer + small env (MDDB_BASE_URL -> idc01 tailnet) removes the hop entirely and makes adding a host = installing
   one timer. Keep the central ssh run as a fallback lane.
-updated: 2026-10-05 21:16
+updated: 2026-10-05 22:00
 spec: 'Per-host local log-shipper timers — kill the ssh dependency (tony-omen nightly ssh dies silently on tailscale
   auth expiry; dell was absent ~1 week unnoticed). log-shipper.py already runs local for tony-omen/localhost — extend
   + install a user timer on EACH host (tony-dell, tony-omen, idc01, idc02, idc03, mn01, michael-ha) shipping to
@@ -16,8 +16,10 @@ priority: high
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261005-220029-per-host-local-log-shipper-tim
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -25,3 +27,9 @@ comms:
 - at: 2026-10-05 21:16
   from: tony
   text: queued for processing
+- at: 2026-10-05 22:00
+  from: chaba
+  text: dispatched 20261005-220029-per-host-local-log-shipper-tim on chaba
+claim:
+  session: 20261005-220029-per-host-local-log-shipper-tim
+  since: 2026-10-05 22:00

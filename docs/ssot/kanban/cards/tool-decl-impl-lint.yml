@@ -1,6 +1,6 @@
 id: tool-decl-impl-lint
 title: ada tools — decl-impl consistency lint in CI
-column: backlog
+column: review
 program: ada-tools
 metric: CI fails on declaration without method, method without declaration, or manifest/schema drift
 verify: deliberately break a decl in a test PR -> lint catches it
@@ -9,7 +9,7 @@ note: 'Gap left by tools-ci-audit (done — it lints the alias table + count cap
   manifest entries can drift from their module DECLARATION. One lint test: enumerate declarations, enumerate methods/run(),
   diff, plus param-schema vs signature sanity.'
 help: 'existing suites: tests/benchmark.yml, scripts/scenario-live.py; tools.d/manifest.yml contract in backend/tools_loader.py'
-updated: 2026-10-05 21:48
+updated: 2026-10-05 22:08
 spec: 'Extend scripts/tool-lint.py: for every realtime_provider tool declaration assert a working ToolRunner method
   exists (and vice versa for public tools_ methods); flag decl-without-impl and impl-without-decl. Run in CI (tools-ci-audit
   family). Verify: lint fails on a deliberately orphaned decl, passes clean tree.'
@@ -17,8 +17,11 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: done
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261005-220046-extend-scripts-tool-lint-py-fo
+  result: 20261005-220046-extend-scripts-tool-lint-py-fo finished (inactive) — see `devin-dispatch logs 20261005-220046-extend-scripts-tool-lint-py-fo`
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -26,3 +29,34 @@ comms:
 - at: 2026-10-05 21:48
   from: tony
   text: queued for processing
+- at: 2026-10-05 22:01
+  from: chaba
+  text: dispatched 20261005-220046-extend-scripts-tool-lint-py-fo on ada-pi
+- at: 2026-10-05 22:05
+  from: devin
+  text: 'starting: census done — decl->impl gap is only set_facial_expression (provider-dispatched); impl->decl
+    gap is execute + 75 alias-key absorbed impls. Adding provider_dispatched + runner_internal SSOT lists, runner_methods()
+    AST pass, impl check class, fixture tests.'
+- at: 2026-10-05 22:06
+  from: devin
+  text: impl check landed + verified both directions on the real tree (orphan decl -> FAIL, rogue method -> FAIL,
+    clean -> 0). 25/25 audit tests pass. Writing outcome + job file.
+- at: 2026-10-05 22:07
+  from: devin
+  text: 'Done. tool-lint.py gains an impl check: builtin decls need a same-named public async ToolRunner method
+    (execute() awaits getattr(self,name)) unless in new ssot provider_dispatched [set_facial_expression]; every
+    public async method must be declared / an _ALIASES key / in new ssot runner_internal [execute]. Verified live:
+    orphan decl FAIL, rogue method FAIL, clean tree 0. 25/25 test_tool_audit pass. Deliverables: scripts/tool-lint.py,
+    docs/ssot/ssot.tool-surface.yml, tests/test_tool_audit.py, job '
+- at: 2026-10-05 22:08
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 22:08
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (5 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 22:08
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-220046-extend-scripts-tool-lint-py-fo dirty — 5 uncommitted
+    file(s); commit or clean before pruning'
+claim:
+  since: 2026-10-05 22:01

@@ -20,21 +20,19 @@ requests:
     Phase 2 (baseline + capacity check) can start. Also confirm idc03 spec (vCPU/RAM/disk) from the provider panel.'
   status: answered
   answer: can you install keys from tony-omen?
-updated: 2026-10-05 21:26
+updated: 2026-10-05 21:58
 comms:
 - at: 2026-10-05 20:17
   from: tony
   text: 'answered scope: everything to idc03 now.'
 - at: 2026-10-05 21:40
   from: devin
-  text: 'MIGRATED. idc03 tailnet 100.102.134.91 (public IP in ssot.values.yml). mddb leader moved
-    (LSN continuity kept via binlog copy — 139.16M); idc02 follower repointed, healthy
-    lag 0. ada-pi-pwa+ha workers+relays+edges+doc-archive+jev-student+obsidian-vault+
-    vcast+input-bridge+mddb-panel live on idc03. api.surf-thailand.com DNS flipped
-    (CF), certs carried over, public path 200. 24 timers enabled on idc03, disabled
-    on idc01. idc01 mddb MASKED (its restart timer split-brained it — never unmask
-    on this host). ~10+54 stray docs reconciled old->new leader. Sessions: repoint
-    any 100.74.146.0 refs to 100.102.134.91; SSOT/memory updated.'
+  text: 'MIGRATED. idc03 tailnet 100.102.134.91 (public IP in ssot.values.yml). mddb leader moved (LSN continuity
+    kept via binlog copy — 139.16M); idc02 follower repointed, healthy lag 0. ada-pi-pwa+ha workers+relays+edges+doc-archive+jev-student+obsidian-vault+
+    vcast+input-bridge+mddb-panel live on idc03. api.surf-thailand.com DNS flipped (CF), certs carried over, public
+    path 200. 24 timers enabled on idc03, disabled on idc01. idc01 mddb MASKED (its restart timer split-brained
+    it — never unmask on this host). ~10+54 stray docs reconciled old->new leader. Sessions: repoint any 100.74.146.0
+    refs to 100.102.134.91; SSOT/memory updated.'
 - at: 2026-10-05 20:48
   from: devin
   text: answer recorded (migrate everything). Spec'd phase 1 = read-only inventory + plan doc; armed for dispatch
@@ -80,6 +78,10 @@ comms:
 - at: 2026-10-05 21:26
   from: tony
   text: 'answered idc03-ssh-access-tony-idc03-and-root-rej-308cc5: can you install keys from tony-omen?'
+- at: 2026-10-05 21:58
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-205012-phase-1-inventory-plan-only-no — 1 commit(s) not in
+    origin/master: Devin checkpoint for session quilted-jacket; worktree still dirty: 2 uncommitted file(s)'
 spec: 'Phase 1 — inventory + plan only, NO changes to production. Tony''s decision: migrate EVERYTHING off idc01
   onto idc03 (answered 2026-10-05). ssh tony@idc01 + tony@idc03. Produce docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
   with: (a) full inventory of idc01 services/containers/quadlets/timers/cron + data dirs + ports + TLS routes, (b)

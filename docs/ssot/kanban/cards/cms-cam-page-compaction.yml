@@ -1,6 +1,6 @@
 id: cms-cam-page-compaction
 title: 'Cam-wall CMS pages: supersede-by-construction'
-column: backlog
+column: review
 note: 45% of ada-cms-pages (140/313) are cam-* / camwall pages from the 15-min cam-wall-cms timer. Index weight
   keeps growing; meta_contract has supersedes but generated pages don't use it — nothing compacts.
 spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set supersedes=<previous slug> + fresh_for
@@ -8,16 +8,17 @@ spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set 
   (NOT delete — camera pages are operational history; archive keeps them queryable while removing them from index
   weight). reports-index must not surface superseded/archived cam pages. Verify: ada-cms-pages cam-* count stabilizes,
   index one-liners stay fresh, a 7-day-old superseded page flips to kind:archive.'
-updated: 2026-10-05 21:35
+updated: 2026-10-05 22:02
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Implement cam-page supersede-by-construction per card spec: supersedes+fresh_for on every generated page;
     retention pass marks >7d superseded pages kind:archive (never delete); reports-index excludes superseded/archived.
     Verify per spec.'
   runner: tony-dell
   task_id: 20261005-211715-cam-wall-cms-py-when-regenerat
+  result: 20261005-211715-cam-wall-cms-py-when-regenerat finished (inactive) — see `devin-dispatch logs 20261005-211715-cam-wall-cms-py-when-regenerat`
 comms:
 - at: 2026-10-05 21:16
   from: tony
@@ -31,6 +32,26 @@ comms:
     leftovers, retired dohweb/traffic cams, noble-a cam01). Plan: supersede-instead-of-delete (status:superseded+superseded_by,
     new page meta.supersedes=prev slug), orphan sweep scoped by zone: sources, 7d->kind:archive retention, fresh_for
     600s->1h (unparseable today, never flags stale), reports-index filter in shared lib used by cam-wall-cms + report-daily-brief.'
+- at: 2026-10-05 22:00
+  from: devin
+  text: 'done: supersede-by-construction lifecycle in cam-wall-cms.py — missing-from-publish-set generated pages
+    get status:superseded+superseded_by (no deletes ever), new pages carry supersedes links, >7d superseded docs
+    flip kind:archive, fresh_for 600->1h so stale flags work. New scripts/lib/cms_index.py renders reports-index
+    for cam-wall + daily-brief with dead-status exclusion; cms-audit skips superseded/archived for C1/C2 noise.
+    tests/camwall 3/3 pass; simulated live run (real manifests + backup): '
+- at: 2026-10-05 22:00
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 22:02
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (4 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 22:02
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-211715-cam-wall-cms-py-when-regenerat dirty — 4 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 22:02
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-211715-cam-wall-cms-py-when-regenerat not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-211715-cam-wall-cms-py-when-regenerat
   since: 2026-10-05 21:17

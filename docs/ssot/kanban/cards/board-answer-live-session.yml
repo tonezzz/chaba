@@ -1,7 +1,7 @@
 id: board-answer-live-session
 title: Answers to running dispatch sessions don't reach the session
 column: backlog
-updated: 2026-10-05 21:15
+updated: 2026-10-05 22:03
 note: '/respond lands in comms but a session that raised a request and kept working never re-reads the card. Options:
   dispatcher injects pending answers into the session''s worktree (e.g. writes answers.txt + signals), or sessions
   poll the card. Low urgency — most answer-needed sessions end quickly.'
@@ -17,9 +17,12 @@ spec: 'Answers reach running sessions: when /respond lands on a card whose actio
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   button: ▶ Start
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, low)
+- at: 2026-10-05 22:03
+  from: tony
+  text: queued for processing
