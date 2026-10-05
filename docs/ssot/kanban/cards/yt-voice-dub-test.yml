@@ -68,3 +68,15 @@ comms:
     some cues mix both speakers' words; next step auto turn detection
     (pause+question heuristics or diarization). v7 queue-lag + v8 dedup
     also on the compare page (v1-v9).
+- at: '2026-10-05 08:45'
+  from: devin
+  text: >-
+    Tony: "voice speed ok but Thai transcript looks gibberish" — the
+    BURNED-IN subs still carried rolling-caption fragments (audio dedup
+    only fixed TTS text). Frame check confirmed: cues like "...met me
+    what happened" — two speakers' words + repeated tails in one line.
+    v10 (dub-v10-clean.mp4 on screen 5): rebuilt from src.mp4 with a
+    DEDUPED burn — clean-vtt.py strips rolling repeats per language
+    (304->152 cues, tolerant suffix match for re-translated TH tails),
+    merges near-simultaneous starts, orders EN-top/TH-bottom. Text now
+    shows only new words per cue. Same v9 2-voice audio, natural speed.
