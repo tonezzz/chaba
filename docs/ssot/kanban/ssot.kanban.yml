@@ -194,6 +194,7 @@ ops:
     - {id: kanban-dispatch, interval: "2min",  role: "action.queued cards -> devin-dispatch sessions -> review"}
     - {id: chaba-board-render, interval: "60s", role: "cards.yml -> cards.json + board page (--if-changed)"}
     - {id: kanban-sync, interval: "15min", role: "health lanes (cms-auto-*, logs-auto-*) -> cards -> push + dev-kanban CMS render"}
+    - {id: kanban-stats, interval: "15min", role: "rides kanban-sync.timer — board stats -> reports/kanban meta.yml + apps/system-report/data/kanban.md (L2 'kanban' node, ssot.reports.yml)"}
     - {id: kanban-commit, interval: "15min", role: "scoped commit+push of cards/ from the served checkout"}
     - {id: devin-dispatch-watch, interval: "15min", role: "watch local devin-task-* units, notify"}
     - {id: lab-review-sweep, interval: "weekly", role: "lab cards past review_by must promote or retire"}

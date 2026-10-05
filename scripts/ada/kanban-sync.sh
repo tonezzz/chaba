@@ -23,6 +23,11 @@ git merge --ff-only origin/master || { echo "ff-pull failed"; exit 1; }
 
 python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
 python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"
+# L2 'kanban' report node — stats read the live cards in the served
+# checkout; outputs mirror back into $SRC (reports/kanban + web data).
+python3 scripts/board/kanban-stats.py \
+    --cards-dir "$SRC/docs/ssot/kanban/cards" \
+    || echo "kanban-stats failed (non-fatal)"
 
 git add docs/ssot/kanban/cards/ 2>/dev/null
 if ! git diff --cached --quiet 2>/dev/null; then

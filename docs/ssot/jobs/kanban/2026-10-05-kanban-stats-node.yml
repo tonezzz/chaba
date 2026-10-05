@@ -1,0 +1,49 @@
+title: Kanban stats as a reports-layer node (L2)
+subtitle: Board statistics generator registered as the 'kanban' node in ssot.reports.yml
+icon: layout
+version: 1
+
+card: kanban-stats-node
+date: 2026-10-05
+dispatch: 20261005-105130-new-node-kanban-in-ssot-report
+
+summary: |
+  The kanban board was the busiest producer in the system but emitted no
+  reporting artifacts — every stats view was computed ad-hoc. This job adds an
+  L2-domain `kanban` node to the layered reporting standard
+  (docs/ssot/infrastructure/ssot.reports.yml) with generator
+  scripts/board/kanban-stats.py running under kanban-sync.timer (15m cadence).
+
+deliverables:
+  - scripts/board/kanban-stats.py — reads docs/ssot/kanban/cards/*.yml, computes
+    stats, writes reports/kanban/{kanban-stats.yml,meta.yml} via
+    scripts/lib/report.py write_meta()+append_timeline, renders
+    apps/system-report/data/kanban.md; dual-root mirror into the served
+    chaba-tony-dell checkout (same pattern as report-system.py)
+  - ssot.reports.yml — `kanban` node (L2-domain, cadence 15m, meta
+    reports/kanban/meta.yml) registered + added to system-report children
+  - scripts/ada/kanban-sync.sh — runs kanban-stats.py each tick with
+    --cards-dir pointing at the live served-checkout cards
+  - ssot.kanban.yml ops.lanes + ssot.jobs.yml kanban-sync note updated
+
+metrics_emitted: |
+  counts by column, action.status breakdown, open requests (card/request ids),
+  cards-touched-24h, dispatch throughput (dispatched/finished/failed last 7d +
+  median dispatch->finish cycle), stale-in-review >48h. Status `delta` when a
+  stale review card or a 7d dispatch failure exists, else `ok`.
+
+decisions:
+  - rides kanban-sync.timer rather than its own unit — cadence aligns (15m),
+    one fewer timer; the sync worktree self-bootstraps the script via ff-pull
+  - reads live cards from chaba-tony-dell via --cards-dir so stats include
+    board-api writes not yet committed by kanban-commit (read-only, flock-safe)
+  - cadence written as `15m` (not `15min`) — report.py::parse_cadence only
+    understands single-letter units, so `15min` would never go stale
+  - node renders `missing` from checkouts on other hosts — artifacts are
+    tony-dell-local, same accepted limitation as health-monitor
+
+verify: |
+  python3 scripts/board/kanban-stats.py --check   # stats + md, no writes
+  python3 scripts/board/kanban-stats.py           # writes meta/stats/md
+  python3 scripts/report-system.py --print | grep -A8 '### kanban'
+  systemctl --user list-timers kanban-sync.timer  # next tick runs it live
