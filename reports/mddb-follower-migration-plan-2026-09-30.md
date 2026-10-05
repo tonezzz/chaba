@@ -1,10 +1,20 @@
 # mddb follower migration: tony-dell → idc02
 
-**Status: benchmarked — idc02 wins by ~800× on the metric that hurt us.
-Recommendation: migrate as second follower, soak, then cutover.**
+**Status: EXECUTED 2026-10-05 — follower now runs on idc02, dell is a
+stopped standby.**
 
 ## Latest
 
+- **2026-10-05** — **migration done.** Root cause of the dell follower's
+  endless "rescan" turned out to be worse than freelist rescan: the new
+  fork's snapshot-replace path integrity-checks the received DB and
+  dell's contended HDD never finished inside `MDDB_VERIFY_TIMEOUT=6h` —
+  it looped pull-4.2GB → verify-6h → discard → repeat, never converging.
+  On idc02 the identical pipeline took **~100 s stream + ~4 min verify +
+  7.7 s vector-index load**. Dell unit stopped, auto-start removed, its
+  `mddb-standby-pull.timer` (nightly verified-filecopy refresh) was
+  already designed for exactly this standby role. No Caddy repoint
+  needed — nothing external consumed the follower.
 - **2026-10-01** — idc01 nightly backup fixed (data-dir ownership →
   `podman cp`; verify needed `-p` port mapping + a 20-min window for the
   `NoFreelistSync` rescan). First **verified** backup of the clean

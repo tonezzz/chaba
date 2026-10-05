@@ -228,3 +228,21 @@ comms:
     Dell freed to 16G free / 87% (was 100%). Sources for future
     renders now live on mn01 — pull via scp or run pipeline there.
     Dell keeps only public/apps/yt-live (546M served renders).
+- at: '2026-10-05 18:15'
+  from: devin
+  text: >-
+    v17 REAL DIARIZATION working: pyannote speaker-diarization-3.1
+    runs on tony-omen GPU (~/.venvs/diarize, torch 2.14 cu130 — needed
+    protobuf7 + latest onnx + ml_dtypes despite nemo's 5.29 pin, plus
+    pyannote-core/database/metrics upgrades nemo downgraded).
+    gn-diarize-pyan.txt = 98 raw turns -> 62 after <0.3s filter.
+    Speaker identity verified by transcript anchors: SPEAKER_00=Norton
+    ("you're a fan of Noel's, aren't you?"), SPEAKER_01=Noel
+    ("IT'S MY SONG", congrats/album chat), SPEAKER_02=Guest
+    ("9 months for my son Dominic... finished my album" — Noel has no
+    son Dominic). Voices: Norton=Niwat, Noel=Niwat@+8Hz, Guest=-10Hz.
+    Render: 23 segs, rate 0.95 natural, lag 18.8s, subs burned ->
+    gn-v17-diar.mp4 served + playing on TONY-TV.
+    CAST FIX (last night's Ada failure): media_player.tony_tv_cast was
+    'off' — play_media on off Chromecast returns 200 but no-ops.
+    yt-live.sh cast_now() now turn_on + 5s wait when player is off.

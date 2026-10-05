@@ -161,7 +161,7 @@ def make_inbox_item(reasons, metrics, breach_secs, now):
             "tags": ["health", "inbox", "mddb", "binlog"],
             "missing_info": [
                 "Is the retention janitor still running on idc01 (journalctl --user -u mddb.service)?",
-                "Is the tony-dell follower (100.68.142.13:11023) still connected and caught up?",
+                "Is the idc02 follower (100.123.163.11:11023) still connected and caught up?",
             ],
         },
         "source": {"session": "mddb-binlog-canary", "date": ts[:10]},

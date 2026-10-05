@@ -16,11 +16,31 @@ Decision: `docs/ssot/decisions/ssot.technical-decisions.yml` → `tv-casting-gro
 | TTS speak | `tts.speak` on `media_player.tony_tv_cast` | e.g. speak_hello event |
 | IR control | `script.tv_*` via `remote.tony_tv` | power/vol/nav |
 
-Subtitle policy (`yt-live.sh` + `yt-vtt-translate.py`, `~/.local/bin/` — no repo
-home yet): the **original-language line always renders on top**, translations
+Subtitle policy (`yt-live.sh` + `yt-vtt-translate.py`): the
+**original-language line always renders on top**, translations
 below it. `src=EN → +target`, `src==target (e.g. TH→TH) → +EN` (never a
 same-language duplicate), `other src → +EN +target`. Default target is `th`;
 Ada passes `language` to override.
+
+**Repo home (since 2026-10-05):** the pipeline lives in chaba
+`scripts/ops/` — `yt-live.sh`, `yt-live-api.py`, `yt-vtt-translate.py`,
+`yt-vtt-dub.py`, `yt-cast-detect.py`, `yt-whisper-vtt.py`,
+`yt-pipeline-install.sh`. `~/.local/bin/` holds installed copies
+(`yt-pipeline-install.sh` refreshes them; scripts resolve siblings from
+their own dir first, so repo and installed copies both work standalone).
+
+Voice-dub lane (`yt-vtt-dub.py`, kanban program `yt-voice-dub`):
+`--sentences --en-vtt <karaoke.vtt>` merges the karaoke word stream into
+sentence groups, `--cast-detect` auto-detects speaker turns (cue-gap
+clustering + question/answer-opener cues, `--speakers` round-robin — 2
+speakers = alternation) and maps them to `--cast-voices` for the whole
+video. `yt-cast-detect.py <vtt>` previews turns without rendering;
+`--dump-turns/--dump-groups`/`--dub-wav` export the turn table, group
+table, and bare dub track for verification. Videos with no captions go
+through `yt-whisper-vtt.py` (faster-whisper → karaoke VTT) first.
+edge-tts has exactly 2 TH voices (`th-TH-PremwadeeNeural` F,
+`th-TH-NiwatNeural` M) — 2-speaker demos only; TH text runs ~1.4x the EN
+cue window so the uniform-rate fit is the honest fix.
 
 Serving path (changed 2026-09-26): HLS output goes to
 `chaba-tony-dell/stacks/web/public/apps/yt-live/` — the containerized web

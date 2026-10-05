@@ -4,6 +4,9 @@ Description=Kanban git persistence (every 15 min)
 [Timer]
 OnBootSec=5min
 OnUnitActiveSec=15min
+# Stagger the tick so it doesn't collide deterministically with other
+# 15-min writers (kanban-sync, dispatch merges) — card kanban-commit-single-writer
+RandomizedDelaySec=120
 
 [Install]
 WantedBy=timers.target

@@ -1,0 +1,168 @@
+title: Cast lane audit — cast-browser/proxy/cast-cam/cast-ha-panel/yt-live
+subtitle: >
+  Dispatch audit of kanban card vcast-cast-lane: service health, lease wiring,
+  cam_to_screen + cctv_snapshot_to_screen scenarios, tony-omen single-point
+  dependency documentation.
+icon: target
+
+planning:
+  goal: Verify the full cast lane is healthy and document the tony-omen
+    single-point dependency in SSOT.
+  scope: >
+    cast-browser.service + cast-desktop@N + cast-shots-http on tony-omen;
+    cast-browser-proxy :8799, cast-ha-panel.timer/cast-ha-selected.sh,
+    audit-cast.timer, yt-live-api :8791 on tony-dell; input-bridge relay
+    + /capture leases on idc01; ada-pi cast tools (cast_to_screen,
+    ada_camera_snapshot, tv_action) on ada-ha-tony.
+  success_criteria:
+    - All lane services active and answering
+    - Capture-lease chain reachable end-to-end (Ada -> VCAST_API -> relay)
+    - cam_to_screen + cctv_snapshot_to_screen scenarios pass
+    - Cam cast to first frame < 5s
+    - tony-omen degradation documented in SSOT
+  risks:
+    - Scenarios cast to real screen 6 (vcast-real@6, idc02) — transient
+      display state changes only
+    - cast-ha-panel.timer fix is host-local (not repo-tracked) — must be
+      recorded here and in the card comms
+  resources:
+    - ssh tony-omen / idc01 (tailnet)
+    - ada-pi checkout on idc01 + ~/.config/secrets/ada-ha-tony.env
+    - input-bridge relay http://100.74.146.0:3010
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: vcast-cast-lane
+      file: docs/ssot/kanban/cards/vcast-cast-lane.yml
+
+processing:
+  status: in_progress
+  started_at: "2026-10-05 15:05 +07"
+  steps:
+    - id: 1
+      label: Map lane + read SSOT
+      status: done
+      notes: >
+        ssot.apps.vcast.yml, ssot.home-assistant.automations.yml (cast_entities,
+        host_side), ssot.audit.hosts.yml, stacks/services/cast-{browser,cam}/.
+    - id: 2
+      label: Service health sweep
+      status: done
+      notes: >
+        tony-dell: cast-browser-proxy.service active (socat 127.0.0.1:8799 ->
+        tony-omen 192.168.2.86:8799, verified end-to-end — same
+        {"err":"unknown path"} payload as direct omen hit). yt-live-api.service
+        active, GET /health {"ok":true}, /status shows last job complete
+        (49 segs). audit-cast.timer ticking 5min, log healthy with real
+        intermittent WARN: xiaomi_c201 0 go2rtc consumers (flaps 0<->1).
+        tony-omen: cast-browser.service active 3d (153 tasks, 175MB);
+        cast-shots-http active; cast-desktop@0 failed (display idle-asleep,
+        disabled); cast-desktop@1 in restart loop counter=17368 —
+        display :1 does not exist on omen (only X0), unit already disabled.
+    - id: 3
+      label: Found + fixed dead cast-ha-panel.timer
+      status: done
+      notes: >
+        Timer was active/elapsed, LastTriggerUSec empty, NextElapse empty —
+        dead since boot (14d). OnUnitActiveSec=60s is self-rearming relative
+        to cast-ha-panel.service's last activation; after reboot the service
+        has never run so there is no reference point and the timer never
+        fires. Result: tv_display=camera for days but nothing casting
+        (tony_tv_cast=off). Fix: added OnActiveSec=2min to
+        ~/.config/systemd/user/cast-ha-panel.timer (host-local file, .bak
+        kept), daemon-reload, restart timer, start service once. Now
+        SubState=waiting, firing every 60s. First camera cast:
+        camera/play_stream HTTP 200, media_player.tony_tv app -> mediashell,
+        go2rtc xiaomi_c201 consumers=1.
+    - id: 4
+      label: Lease wiring verified
+      status: done
+      notes: >
+        Ada tool_runner -> VCAST_API (default
+        https://tony-dell.taila0626a.ts.net/api/input-bridge -> Caddy ->
+        idc01:3010). POST /capture sets {screen->{source,ch,active,since,by}},
+        POST active:false clears. GET /capture showed {} (no stale leases).
+        camwall zones on /camwall. Ada tv_action -> cast-browser DIRECT
+        (CAST_BROWSER_URL http://100.75.102.88:8799 tailnet) — the dell
+        :8799 socat proxy is loopback-only, for dell-local callers
+        (cast-ha-selected.sh /tick path).
+    - id: 5
+      label: Run cam_to_screen + cctv_snapshot_to_screen on idc01
+      status: done
+      notes: >
+        Both PASS (0 failed expectations) against ada-ha-tony
+        ws://127.0.0.1:8002/ws via scenario-live.py. cam_to_screen:
+        4/4 turns (VMS snap 28s -> cast delivered -> vcast_snapshot
+        self-snap timed out on screen 6 but turn tolerates honest
+        failure report -> teardown). cctv_snapshot_to_screen: 1/1 turn —
+        NOTE Ada substituted the pool camera because xiaomi_c201 was
+        flapping unavailable at run time (calls_any ada_camera_snapshot
+        passed). Post-run /capture = {} (no stale leases). Manual
+        verification: direct /pub stop to screen 6 -> idle in ~8s; the
+        scenario teardown stop appears to have been replayed-over by a
+        display reconnect (lastCast replay on re-register — cosmetic).
+  decisions:
+    - label: Stop cast-desktop@1 flap loop on omen
+      rationale: >
+        17k+ restarts on a display that does not exist; unit already
+        disabled so no boot persistence lost; 'systemctl --user start
+        cast-desktop@1' revives it if ever needed.
+      alternatives_considered: leave running (wasteful, noisy journal)
+    - label: OnActiveSec vs OnBootSec for cast-ha-panel.timer
+      rationale: >
+        OnActiveSec fires relative to the timer unit's own activation —
+        works under linger without a boot event; OnUnitActiveSec keeps
+        the 60s cadence once primed.
+      alternatives_considered: >
+        OnCalendar=*:0/1 (changes cadence semantics); OnUnitInactiveSec
+        (same cold-start problem as OnUnitActiveSec).
+  changes:
+    - file: "~/.config/systemd/user/cast-ha-panel.timer (host tony-dell, host-local, NOT repo-tracked)"
+      summary: added OnActiveSec=2min so the re-cast loop self-starts
+    - file: "tony-omen runtime only"
+      summary: systemctl --user stop cast-desktop@1.service (already disabled)
+
+followup:
+  verification:
+    - "systemctl --user list-timers cast-ha-panel.timer — NEXT populated, ticks 60s"
+    - "ssh tony-omen 'systemctl --user is-active cast-desktop@1' -> inactive"
+    - "curl http://127.0.0.1:8799/ (dell) -> {'err':'unknown path'} = proxy->omen alive"
+    - "curl http://127.0.0.1:8791/health -> {\"ok\": true}"
+    - "curl http://100.74.146.0:3010/capture -> {\"captures\":{}} post-scenario (no stale lease)"
+    - "scenario-live.py cam_to_screen.yaml + cctv_snapshot_to_screen.yaml on idc01 -> exit 0"
+  rollback_plan: >
+    cp ~/.config/systemd/user/cast-ha-panel.timer.bak-20261005
+    ~/.config/systemd/user/cast-ha-panel.timer && systemctl --user
+    daemon-reload && systemctl --user restart cast-ha-panel.timer
+  handoff:
+    - "cast-desktop@1 permanent removal or re-point — decide if omen will ever have :1"
+    - "Repo-track cast-ha-panel.{service,timer} + cast-ha-selected.sh (same gap noted in vcast-audit-cast card for audit-cast.sh)"
+    - "audit-cast WARN 'xiaomi_c201 0 go2rtc consumers' still fires intermittently — receiver-side HLS pull drops between/after casts; cosmetic vs real gap TBD"
+  deferred:
+    - "cast-desktop@0 retirement decision (audit.hosts already flagged verify-cast-instance-needed)"
+    - "event-driven rework of cast-ha-panel.timer (60s poll) — already deferred in tv-casting-groups decision"
+
+report:
+  status: done
+  completed_at: "2026-10-05 15:50 +07"
+  summary: >
+    Cast lane audited end-to-end. HEALTHY: cast-browser (omen, 3d up),
+    cast-browser-proxy socat :8799 (dell loopback -> omen LAN), yt-live-api
+    :8791, input-bridge relay (7 screens, 0 stale leases), cast-cam scan,
+    cast-shots-http :8090 (LAN-bound by design). FIXED: cast-ha-panel.timer
+    was dead since last boot — OnUnitActiveSec=60s never fires without a
+    first service run; added OnActiveSec=2min, loop now ticking and
+    re-casting xiaomi_c201 to TONY-TV (camera/play_stream 200, mediashell
+    live, go2rtc consumers=1). STOPPED: cast-desktop@1 on omen — 17,368
+    restart loop on nonexistent display :1 (unit already disabled).
+    SCENARIOS: cam_to_screen + cctv_snapshot_to_screen both PASS.
+    METRIC: vcast cam cast 0.6s to first frame (<5s PASS); TV path warm
+    <1s dispatch, cold receiver wake ~15-20s. WATCH ITEMS: xiaomi_c201
+    flaps idle<->unavailable (go2rtc producer wedging — audit-cast WARNs
+    are real); cast-desktop@0 retirement decision still open; weekly
+    casting suite timed out at its 2h cap on 2026-10-03 (Result=timeout)
+    — worth a look at suite duration vs budget; vcast_snapshot self-snap
+    timed out once on screen 6 during cam_to_screen T3.
+    tony-omen single-point dependency now documented in
+    docs/ssot/apps/ssot.apps.vcast.yml ('Cast lane — host topology &
+    single points').
