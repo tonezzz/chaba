@@ -1,0 +1,13 @@
+id: mddb-primary-unattributed-stop
+title: mddb primary on idc01 was stopped 21:00 — cause unknown
+column: backlog
+updated: 2026-10-05 21:12
+note: systemd user 'Stopping mddb.service' at 21:00:11 (SIGTERM→SIGKILL, exit 137 — deliberate stop, not crash).
+  Bursts of ssh disconnects from idc02 in the preceding minute; no unit claims it. Restarted 21:06, reindex clean.
+  If it recurs, add stop-requester logging (audit or a wrapper). ada-flood-news on idc02 + ada-memory-sync failed
+  during the window — self-healing.
+priority: medium
+tags:
+- mddb
+- idc01
+- incident

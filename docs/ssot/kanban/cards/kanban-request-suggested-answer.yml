@@ -1,6 +1,6 @@
 id: kanban-request-suggested-answer
 title: Requests carry a suggested option — confirm-or-override UX
-column: backlog
+column: review
 note: Tony's board interactions are 90% one-click decisions, but each requires reading full context. If the filer
   (devin/ada/chaba/automation) marks a recommended option, the decision shrinks to confirm-or-override.
 spec: 'board-api /request accepts optional ''suggested'' field matching one of the options; card YAML requests entries
@@ -15,4 +15,9 @@ action:
   status: idle
   task: 'Add suggested-option support to board requests per card spec: /request field, YAML passthrough, bolded
     rendering + one-click accept in modal and Needs You strip. Verify per spec.'
-updated: '2026-10-05'
+updated: 2026-10-05 21:12
+comms:
+- at: 2026-10-05 21:12
+  from: devin
+  text: 'implemented inline: /request accepts ''suggested'' (validated vs options); suggested option renders ★ green/bold
+    in modal + needs-you. One click = accept. Verify then close.'

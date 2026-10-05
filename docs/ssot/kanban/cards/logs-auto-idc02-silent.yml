@@ -6,10 +6,15 @@ program: logs-digest
 priority: high
 note: 'Auto-recovered 2026-10-05: `idc02-silent` condition cleared — shipper healthy again.'
 help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
-updated: 2026-10-05 20:11
+updated: 2026-10-05 21:12
 action:
   status: idle
 comms:
 - at: 2026-10-05 20:11
   from: tony
   text: put on hold
+- at: 2026-10-05 21:12
+  from: devin
+  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed — SIGTERM then SIGKILL,
+    no crash), which made idc02 jobs error (ada-flood-news exit 2 = MDDB refused). mddb restarted 21:06 + vector
+    reindex OK. Watch whether logs resume.'
