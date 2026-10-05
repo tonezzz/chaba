@@ -440,6 +440,10 @@ async function load() {{
     }}
     document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
     render();
+    // keep an open modal in sync (answers/actions land while it's up) —
+    // but don't clobber a comment the user is typing
+    const cmInp = document.getElementById('cm-comment');
+    if (openCard && !(cmInp && (cmInp.value || document.activeElement === cmInp))) showCard(openCard);
   }} catch (e) {{
     document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-red-500';
   }}

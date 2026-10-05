@@ -2,17 +2,16 @@ id: mddb-embed-providers-down
 title: MDDB embedding outage — OpenRouter key limit + Gemini quota both dead
 column: backlog
 priority: high
-note: 'gemini-ollama-proxy on idc01 reports all same-space providers down: OpenRouter
-  403 "Key limit exceeded (total limit)" (breaker circuit-open) + Gemini direct 429 quota.
-  Docs still store (adds land) but every /add burns ~25-60s on failed embed retries and
-  vectors are dropped — embed queue full (4000), droppedTotal >2900. cam-wall-cms and
-  roster-audit services fail each cycle on the resulting slow adds. embed-probe canary
-  firing every 15min. Needs an account-side fix — client timeouts alone won''t cover it.'
-updated: 2026-10-05 10:30
+note: 'gemini-ollama-proxy on idc01 reports all same-space providers down: OpenRouter 403 "Key limit exceeded (total
+  limit)" (breaker circuit-open) + Gemini direct 429 quota. Docs still store (adds land) but every /add burns ~25-60s
+  on failed embed retries and vectors are dropped — embed queue full (4000), droppedTotal >2900. cam-wall-cms and
+  roster-audit services fail each cycle on the resulting slow adds. embed-probe canary firing every 15min. Needs
+  an account-side fix — client timeouts alone won''t cover it.'
+updated: 2026-10-05 11:06
 requests:
 - id: provider-fix
-  ask: 'Embedding upstream is down: raise/reset the OpenRouter key total limit (403),
-    or wait for the Gemini daily quota reset — which path do you want?'
+  ask: 'Embedding upstream is down: raise/reset the OpenRouter key total limit (403), or wait for the Gemini daily
+    quota reset — which path do you want?'
   status: open
   options:
   - id: or-limit
@@ -21,16 +20,22 @@ requests:
     label: Wait for Gemini quota reset; OR stays down meanwhile
   - id: other-provider
     label: Point the proxy at another same-space embed provider
+  answer: null
 comms:
 - at: 2026-10-05 10:30
   from: devin
-  text: 'Filed while finishing the cam01-rename CMS work: every mddb /add retries embeds
-    ~25-60s then often drops ("Remote end closed"), so cam-wall-cms.timer runs keep
-    failing. Raised mddb_add/http_json timeouts 30s/15s->120s (commit 0858b5e5) which
-    helps marginally, but the root cause is upstream. Recovery note: restarting
-    mddb.service after providers are back should reindex missing vectors (reindex
-    skips docs whose stored vector hash matches).'
+  text: 'Filed while finishing the cam01-rename CMS work: every mddb /add retries embeds ~25-60s then often drops
+    ("Remote end closed"), so cam-wall-cms.timer runs keep failing. Raised mddb_add/http_json timeouts 30s/15s->120s
+    (commit 0858b5e5) which helps marginally, but the root cause is upstream. Recovery note: restarting mddb.service
+    after providers are back should reindex missing vectors (reindex skips docs whose stored vector hash matches).'
 - at: 2026-10-05 10:30
   from: devin
-  text: 'raised request provider-fix: embedding upstream is down — OpenRouter key total
-    limit (403) or Gemini daily quota (429)?'
+  text: 'raised request provider-fix: embedding upstream is down — OpenRouter key total limit (403) or Gemini daily
+    quota (429)?'
+- at: 2026-10-05 11:06
+  from: tony
+  text: 'answered provider-fix: test-probe-delete-me'
+- ts: '2026-10-05T11:15:00+07:00'
+  from: devin
+  text: reopened provider-fix — earlier entry was a server-side probe verifying the /respond endpoint during the
+    click-handler bug investigation
