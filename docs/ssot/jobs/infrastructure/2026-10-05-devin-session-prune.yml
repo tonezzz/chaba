@@ -119,10 +119,8 @@ verification:
     - "devin CLI opens: 'devin 3000.10.35' via bundled binary"
     - "timeline suppression verified: --db override runs do not write audit
       events (no false 'pruned' claims from test copies)"
-  pending:
-    - "PRAGMA integrity_check on the live 3GB DB (HDD, many minutes) —
-      logical integrity is already covered by the snapshot quick_check, but
-      the full live check runs in background as belt-and-braces"
+    - "PRAGMA integrity_check on a fresh sqlite-backup snapshot of the
+      live DB: ok (209s incl. copy)"
 
 known_limits:
   - "devin-cleanup.timer (Sun 04:00, prune-devin-sessions.sh 7) still deletes

@@ -45,8 +45,8 @@ the first fire.
 - Real run on the live DB: 0 candidates (the Sun-04:00 `devin-cleanup.timer`
   already deletes everything >7d — see caveat). Vacuum correctly skipped
   while a devin session held the DB; timeline event confirmed.
-- `devin 3000.10.35` opens; live `PRAGMA integrity_check` launched
-  (HDD-slow; snapshot quick_check already passed clean).
+- `devin 3000.10.35` opens; `PRAGMA integrity_check` on a consistent
+  snapshot of the live DB: **ok** (209s).
 
 ## Caveat for Tony
 
