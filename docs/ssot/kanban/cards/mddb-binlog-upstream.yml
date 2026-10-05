@@ -1,6 +1,6 @@
 id: mddb-binlog-upstream
 title: Upstream binlog-retention + replication fixes to tradik/mddb
-column: review
+column: done
 note: 'Patch lives only on mddb-fork — a stock image bump would lose it. Now 4 commits on binlog-retention: 598c57d
   janitor, bfb3b7c stream Rotate, dc88ede snapshot-below-oldest (incl LSN 0), 0b46e57 Recv-side FailedPrecondition
   -> snapshot. All proven on idc01+tony-dell.'
@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-05 07:53
+updated: 2026-10-05 08:41
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -79,6 +79,9 @@ comms:
   text: 'Upstream prep underway: reviewed all 4 binlog-retention commits on mddb-fork — clean, disjoint from vector-algorithm
     commits, cherry-pick onto origin/main (47dda9b) should apply cleanly. Next: build+test, fork to tonezzz, open
     focused PR(s).'
+- at: 2026-10-05 08:41
+  from: tony
+  text: closed by Tony
 action:
   type: devin-dispatch
   repo: mddb-fork
