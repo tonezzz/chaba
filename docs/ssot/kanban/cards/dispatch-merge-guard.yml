@@ -1,6 +1,6 @@
 id: dispatch-merge-guard
 title: 'Dispatcher: merge-guard + canonical default branch'
-column: backlog
+column: review
 note: Two session-verified failure modes in the dispatch loop. (1) Sessions report done while leaving work uncommitted
   or unmerged — ~10 orphaned workstreams recovered in two days; a card only truly finishes when a human audits git
   state. (2) Worktrees are based on the checkout's CURRENT branch, not the repo default — the sunsynk-bat34 dispatch
@@ -14,13 +14,14 @@ spec: 'In scripts/board/kanban-dispatch.py (and REPOS map in ~/.local/share/devi
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Implement merge-guard + canonical base in the dispatch loop per card spec: REPOS gains default_branch;
     worktrees base on origin/<default>; card cannot move review->done while session commits are non-ancestors of
     origin default or dirty files remain — emit comms instead. Verify with a deliberate-unmerged test dispatch.'
   task_id: 20261005-105032-in-scripts-board-kanban-dispat
   runner: tony-dell
-updated: 2026-10-05 11:02
+  result: 20261005-105032-in-scripts-board-kanban-dispat finished (inactive) — see `devin-dispatch logs 20261005-105032-in-scripts-board-kanban-dispat`
+updated: 2026-10-05 11:04
 comms:
 - at: 2026-10-05 10:48
   from: tony
@@ -40,6 +41,8 @@ comms:
     records default_branch/base. Verified live: sunsynk-card dispatch cut origin/main while checkout sits on stale
     sunsynk. (b) board-api apply_merge_guard gates close+move->done via merge-base --is-ancestor vs origin/<default>
     — verified e2e: block'
+- at: 2026-10-05 11:04
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261005-105032-in-scripts-board-kanban-dispat
   since: 2026-10-05 10:51

@@ -1,6 +1,6 @@
 id: ada-cms-first-answers
 title: Ada CMS-first answers + save-back standard
-column: backlog
+column: review
 note: 'Bring Ada up to standard on CMS documents: (1) always answer from reports-index / ada-cms-pages BEFORE searching
   elsewhere — reports are the first read, search is the fallback; (2) when she does answer from an outside source,
   save the finding back to CMS (cms_note_update / cms_publish_page) so repeat questions never need a re-search.
@@ -9,11 +9,11 @@ note: 'Bring Ada up to standard on CMS documents: (1) always answer from reports
   + language_lock.yaml (install into ada-pi tests/scenarios-live/).
 
   '
-updated: 2026-10-05 11:02
+updated: 2026-10-05 11:06
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task: "Bring Ada up to the CMS-first standard. Card spec:\n1) Always answer from reports-index / ada-cms-pages\
     \ BEFORE searching elsewhere —\n   reports are the first read, search is the fallback.\n2) When she answers\
     \ from an outside source, save the finding back to CMS\n   (cms_note_update / cms_publish_page) so repeat questions\
@@ -25,6 +25,7 @@ action:
     \ on the card."
   task_id: 20261005-105014-ada-cms-first-answers-save-bac
   runner: tony-dell
+  result: 20261005-105014-ada-cms-first-answers-save-bac finished (inactive) — see `devin-dispatch logs 20261005-105014-ada-cms-first-answers-save-bac`
 comms:
 - at: 2026-10-05 10:48
   from: tony
@@ -35,6 +36,15 @@ comms:
 - at: 2026-10-05 10:51
   from: devin
   text: 'starting: exploring ada-pi instruction + tool plumbing for CMS-first answering and save-back'
+- at: 2026-10-05 11:04
+  from: devin
+  text: 'Done (uncommitted diff in worktree dispatch-wt-20261005-105014). CMS-first enforced at instruction + tool-result
+    level: CMS_INSTRUCTIONS gained READ ORDER (reports-index→page→banks→outside; web_search/deep_research are fallback)
+    and SAVE-BACK (cms_note_update free / cms_publish_page confirm); web_search + ada_deep_research descriptions
+    reframed as fallback-first; every web_search result now carries a save-back note field. Scenarios installed:
+    tests/scenarios-live/cms_first_answer.yaml (full tier'
+- at: 2026-10-05 11:06
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261005-105014-ada-cms-first-answers-save-bac
   since: 2026-10-05 10:50
