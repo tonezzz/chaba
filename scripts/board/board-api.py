@@ -300,9 +300,13 @@ def do_pipeline(card: dict, body: dict, frm: str) -> str:
 
 
 def render() -> None:
-    subprocess.run(
-        [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
-    )
+    # own lock, not the card lock — renders may serialize among themselves
+    # without blocking card mutations
+    with Path("/tmp/board-render.lock").open("w") as rl:
+        fcntl.flock(rl, fcntl.LOCK_EX)
+        subprocess.run(
+            [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
+        )
 
 
 class H(BaseHTTPRequestHandler):
@@ -390,7 +394,9 @@ class H(BaseHTTPRequestHandler):
                 return self._send(400, {"error": str(e)})
             except Exception as e:
                 return self._send(500, {"error": str(e)})
-            render()
+        # card lock released — render under its own lock so a slow render
+        # doesn't stall other writers
+        render()
         self._send(200, {"ok": True, "message": msg})
 
 

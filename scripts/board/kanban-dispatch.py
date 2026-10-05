@@ -101,28 +101,55 @@ def unit_state(task_id: str) -> str:
     return r.stdout.strip() or "unknown"
 
 
-def queue_one(path: Path, card: dict) -> str:
+def load_card(path: Path) -> dict:
+    card = yaml.safe_load(path.read_text()) or {}
+    card.setdefault("id", path.stem)
+    return card
+
+
+def save_card(path: Path, card: dict) -> None:
+    card["updated"] = now()
+    path.write_text(
+        yaml.safe_dump(card, allow_unicode=True, sort_keys=False, width=110))
+
+
+def mark_start(path: Path, card: dict) -> None:
+    """Phase-A claim (under the lock): transient 'starting' state keeps the
+    card out of other dispatchers' reach; phase B runs the slow start."""
     a = card["action"]
     card.pop("awaiting_action", None)  # being dispatched = triaged
-    repo = a.get("repo", "chaba")
-    spec = (card.get("spec") or "").strip() or f"{card.get('title','')}\n\n{card.get('note','')}"
-    task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
-
-    r = sh([DISPATCH, "start", repo, task], timeout=120)
-    if r.returncode != 0:
-        a["status"] = "failed"
-        a["result"] = f"dispatch failed: {(r.stderr or r.stdout).strip()[:300]}"
-        comms_add(card, "chaba", f"dispatch failed: {a['result'][:120]}")
-        return "dispatch failed"
-
-    task_id = r.stdout.strip().splitlines()[-1].strip()
-    a["status"] = "running"
-    a["task_id"] = task_id
+    a["status"] = "starting"
     a["runner"] = HOST
-    card.setdefault("claim", {})["session"] = task_id
-    card["claim"]["since"] = now()
-    comms_add(card, "chaba", f"dispatched {task_id} on {repo}")
-    return f"dispatched {task_id}"
+
+
+def finish_one(path: Path, card: dict) -> str:
+    """Phase-A finish (under the lock): cheap status flip only. A clean
+    finish defers the git merge to phase B (merge_pending flag)."""
+    a = card["action"]
+    tid = a.get("task_id") or ""
+    state = unit_state(tid) if tid else "unknown"
+    if state in ("active", "activating"):
+        return "still running"
+    if state == "failed":
+        # crashed unit — do NOT mark done or auto-merge: the branch may
+        # hold partial work; card stays in doing with a retry affordance
+        a["status"] = "failed"
+        a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
+        card.setdefault("claim", {}).pop("session", None)
+        comms_add(card, "chaba", "run failed — check logs, then retry")
+        return "failed"
+    # unit left the active state — treat as finished
+    a["status"] = "done"
+    a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
+    card["column"] = "review"
+    card.setdefault("claim", {}).pop("session", None)
+    comms_add(card, "chaba", f"run finished ({state}) → review")
+    if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
+        a["merge_pending"] = True  # merged outside the lock in phase B
+    else:
+        for n in session_end_notes(card):
+            comms_add(card, "chaba", n)
+    return "finished"
 
 
 def session_end_notes(card: dict) -> list:
@@ -151,75 +178,112 @@ def session_end_notes(card: dict) -> list:
     return notes
 
 
-def poll_one(path: Path, card: dict) -> str:
+def _with_lock(fn):
+    with LOCK.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        return fn()
+
+
+def start_pending(path: Path) -> str:
+    """Phase B: devin-dispatch start (slow, no lock), then write back."""
+    card = load_card(path)  # read-only peek for spec/task build
     a = card["action"]
-    tid = a.get("task_id") or ""
-    state = unit_state(tid) if tid else "unknown"
-    if state in ("active", "activating"):
-        return "still running"
-    if state == "failed":
-        # crashed unit — do NOT mark done or auto-merge: the branch may
-        # hold partial work; card stays in doing with a retry affordance
-        a["status"] = "failed"
-        a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
-        card.setdefault("claim", {}).pop("session", None)
-        comms_add(card, "chaba", f"run failed — check logs, then retry")
-        return "failed"
-    # unit left the active state — treat as finished
-    a["status"] = "done"
-    a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
-    card["column"] = "review"
-    card.setdefault("claim", {}).pop("session", None)
-    comms_add(card, "chaba", f"run finished ({state}) → review")
-    if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
-        try:
-            res = dr.try_merge(card)
-            if res.get("merged"):
-                comms_add(card, "chaba",
-                          res.get("note") or "session branch merged")
-            else:
-                why = res.get("error") or res.get("skipped") or "unknown"
-                comms_add(card, "chaba",
-                          f"auto-merge not done: {why} — close will block "
-                          f"until merged")
-        except Exception as e:
+    repo = a.get("repo", "chaba")
+    spec = (card.get("spec") or "").strip() \
+        or f"{card.get('title','')}\n\n{card.get('note','')}"
+    task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
+    r = sh([DISPATCH, "start", repo, task], timeout=120)
+
+    def apply():
+        card = load_card(path)  # re-read — API may have touched the card
+        a = card.setdefault("action", {})
+        if r.returncode != 0:
+            a["status"] = "failed"
+            a["result"] = f"dispatch failed: {(r.stderr or r.stdout).strip()[:300]}"
+            comms_add(card, "chaba", f"dispatch failed: {a['result'][:120]}")
+            save_card(path, card)
+            return "dispatch failed"
+        task_id = r.stdout.strip().splitlines()[-1].strip()
+        a["status"] = "running"
+        a["task_id"] = task_id
+        a["runner"] = HOST
+        card.setdefault("claim", {})["session"] = task_id
+        card["claim"]["since"] = now()
+        comms_add(card, "chaba", f"dispatched {task_id} on {repo}")
+        save_card(path, card)
+        return f"dispatched {task_id}"
+    return _with_lock(apply)
+
+
+def merge_pending_one(path: Path) -> str:
+    """Phase B: git auto-merge (slow, no lock), then write back."""
+    try:
+        res = dr.try_merge(load_card(path))
+    except Exception as e:
+        res = {"merged": False, "error": str(e)}
+
+    def apply():
+        card = load_card(path)
+        a = card.get("action") or {}
+        a.pop("merge_pending", None)
+        if res.get("merged"):
             comms_add(card, "chaba",
-                      f"auto-merge error: {e} — merge manually")
-    for n in session_end_notes(card):
-        comms_add(card, "chaba", n)
-    return "finished"
+                      res.get("note") or "session branch merged")
+        else:
+            why = res.get("error") or res.get("skipped") or "unknown"
+            comms_add(card, "chaba",
+                      f"auto-merge not done: {why} — close will block "
+                      f"until merged")
+        for n in session_end_notes(card):
+            comms_add(card, "chaba", n)
+        save_card(path, card)
+        return "merged" if res.get("merged") else f"merge: {res}"
+    return _with_lock(apply)
 
 
 def main() -> int:
+    starts, merges = [], []
     changed = False
+    # Phase A — under the lock: cheap card mutations only (no network/git).
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
+        claimed = 0
         for p in sorted(CARD_DIR.glob("*.yml")):
-            card = yaml.safe_load(p.read_text()) or {}
+            card = load_card(p)
             a = card.get("action") or {}
             st = a.get("status")
-            if st == "queued":
-                card.setdefault("id", p.stem)
+            if st in ("queued", "starting"):  # 'starting' = crashed mid-start
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
                     continue  # pinned to another host's dispatcher
                 if a.get("runner") and a["runner"] != HOST:
-                    continue  # already claimed by another host
-                if active_tasks() >= HOST_CAP:
+                    continue  # claimed/starting on another host
+                if active_tasks() + claimed >= HOST_CAP:
                     print(f"{card['id']}: skipped — host cap {HOST_CAP}")
                     continue
-                msg = queue_one(p, card)
+                mark_start(p, card)
+                save_card(p, card)
+                starts.append(p)
+                claimed += 1
+                changed = True
+                print(f"{card['id']}: claimed")
             elif st == "running":
-                card.setdefault("id", p.stem)
-                msg = poll_one(p, card)
-            else:
-                continue
-            card["updated"] = now()
-            p.write_text(
-                yaml.safe_dump(card, allow_unicode=True, sort_keys=False, width=110))
-            print(f"{card['id']}: {msg}")
-            changed = True
-    if changed:
+                if a.get("runner") and a["runner"] != HOST:
+                    continue  # runs on another host — don't touch its unit
+                msg = finish_one(p, card)
+                if msg == "still running":
+                    continue
+                save_card(p, card)
+                changed = True
+                if (card.get("action") or {}).get("merge_pending"):
+                    merges.append(p)
+                print(f"{card['id']}: {msg}")
+    # Phase B — lock released: slow ops (devin-dispatch start, git merge).
+    for p in starts:
+        print(f"{p.stem}: {start_pending(p)}")
+    for p in merges:
+        print(f"{p.stem}: {merge_pending_one(p)}")
+    if changed or starts or merges:
         subprocess.run([sys.executable, str(RENDER)], cwd=REPO, check=False)
     return 0
 

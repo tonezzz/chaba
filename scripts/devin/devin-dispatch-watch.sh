@@ -291,7 +291,7 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     fi
     out=""
     wt=$(python3 -c "import json;print(json.load(open('$d/meta.json')).get('worktree') or '')" 2>/dev/null)
-    [ -n "$wt" ] && out=$(cat "$wt/dispatch-outcome.md" 2>/dev/null | head -c 3000)
+    [ -n "$wt" ] && out=$(cat "$wt"/dispatch-outcome*.md 2>/dev/null | head -c 3000)
     [ -n "$out" ] || out=$(outcome "$d/transcript.json")
     sid=$(session_id "$d/transcript.json")
 

@@ -176,18 +176,19 @@ def load_dispatches() -> list[dict]:
 
 
 def dispatch_outcome(rec: dict) -> str:
-    """First prose line of the task's dispatch-outcome.md, if it survives."""
+    """First prose line of the task's dispatch-outcome*.md, if it survives
+    (sessions write per-id files — dispatch-outcome-<task_id>.md)."""
     wt = rec.get("worktree")
     if not wt:
         return ""
-    p = Path(wt) / "dispatch-outcome.md"
-    try:
-        for line in p.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line and not line.startswith("#"):
-                return line[:140]
-    except Exception:
-        pass
+    for p in sorted(Path(wt).glob("dispatch-outcome*.md")):
+        try:
+            for line in p.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    return line[:140]
+        except Exception:
+            pass
     return ""
 
 

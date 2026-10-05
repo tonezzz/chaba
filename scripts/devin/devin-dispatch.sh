@@ -182,9 +182,11 @@ session). Work only inside this worktree. Do not commit to the default
 branch, do not push, and do not deploy unless the task explicitly says so.
 Access outside this worktree may be rejected, and in this mode a rejected
 tool call ends the session — keep everything inside the worktree.
-When finished, write your final summary to ./dispatch-outcome.md in this
-worktree (what changed or was found, the result, how to verify), then end
-with the same one-paragraph summary as your last message.
+When finished, write your final summary to ./dispatch-outcome-$id.md in
+this worktree (what changed or was found, the result, how to verify), then
+end with the same one-paragraph summary as your last message. The
+per-session name is deliberate — a shared dispatch-outcome.md conflicts on
+every merge.
 If you are blocked and need a decision from the user, write your question to
 \$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
 stop — the operator is notified and can resume you with an answer.
