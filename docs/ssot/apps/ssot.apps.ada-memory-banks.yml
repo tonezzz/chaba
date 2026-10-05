@@ -481,6 +481,9 @@ banks:
     writable: false
     write_policy: confirmed
     allowed_tools: []
+    # Docs' meta.status is the run outcome (pass/fail/flaky), not a
+    # memory lifecycle — recall must not treat 'fail'/'flaky' as inactive.
+    status_outcome: true
     status: active
     public: false
 
