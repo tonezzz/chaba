@@ -1,13 +1,13 @@
 id: logs-local-shippers
 title: Per-host local log-shipper timers (kill the ssh dependency)
-column: backlog
+column: review
 program: logs-digest
 metric: each host ships its own journal to idc01:11023 on its own timer
 note: Current model SSHes from tony-omen nightly — dies silently whenever a tailscale auth check expires (dell was
   absent ~1 week unnoticed). log-shipper.py already runs local when host in {tony-omen,localhost} — a per-host user
   timer + small env (MDDB_BASE_URL -> idc01 tailnet) removes the hop entirely and makes adding a host = installing
   one timer. Keep the central ssh run as a fallback lane.
-updated: 2026-10-05 22:17
+updated: 2026-10-05 22:39
 spec: 'Per-host local log-shipper timers — kill the ssh dependency (tony-omen nightly ssh dies silently on tailscale
   auth expiry; dell was absent ~1 week unnoticed). log-shipper.py already runs local for tony-omen/localhost — extend
   + install a user timer on EACH host (tony-dell, tony-omen, idc01, idc02, idc03, mn01, michael-ha) shipping to
@@ -16,10 +16,11 @@ priority: high
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261005-220029-per-host-local-log-shipper-tim
+  result: 20261005-220029-per-host-local-log-shipper-tim finished (inactive) — see `devin-dispatch logs 20261005-220029-per-host-local-log-shipper-tim`
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -36,6 +37,26 @@ comms:
     michael-ha CANNOT — ssh lands in the Alpine core-ssh addon (no python3/systemd/journalctl); will cover it with
     a ha-cli pull lane on dell instead. Also found: committed MDDB default 100.74.146.0 is stale — live leader is
     100.102.134.91 (tailscale idc03).'
+- at: 2026-10-05 22:37
+  from: devin
+  text: DONE + installed. log-shipper.timer armed on dell/omen/idc01/idc02/idc03/mn01 (hourly --self, script self-contained
+    at ~/.local/share/log-shipper/, installer scripts/ada/install-log-shipper.sh, --via for jump-host installs).
+    michael-ha CANNOT run a local timer (HAOS addon has no python/systemd/journald) — covered by log-shipper-mha.timer
+    on dell pulling `ha host logs` over key-auth ssh. All 7 ship/<host> state docs fresh with lane=local/ha-cli-ssh;
+    omen nightly kept as ssh fallback sharing curso
+- at: 2026-10-05 22:38
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 22:39
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 22:39
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-220029-per-host-local-log-shipper-tim dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 22:39
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-220029-per-host-local-log-shipper-tim not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-220029-per-host-local-log-shipper-tim
   since: 2026-10-05 22:00

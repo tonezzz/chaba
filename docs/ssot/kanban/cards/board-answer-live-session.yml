@@ -1,7 +1,7 @@
 id: board-answer-live-session
 title: Answers to running dispatch sessions don't reach the session
-column: backlog
-updated: 2026-10-05 22:03
+column: review
+updated: 2026-10-05 22:38
 note: '/respond lands in comms but a session that raised a request and kept working never re-reads the card. Options:
   dispatcher injects pending answers into the session''s worktree (e.g. writes answers.txt + signals), or sessions
   poll the card. Low urgency — most answer-needed sessions end quickly.'
@@ -17,8 +17,11 @@ spec: 'Answers reach running sessions: when /respond lands on a card whose actio
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
   button: ▶ Start
+  runner: tony-omen
+  result: 'exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223028-answers-reach-running-sessions.service:
+    Consumed 1min 12.940s CPU time over 8min 14.652s wall clock time, 920.3M memory peak, 51.4M memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -26,3 +29,17 @@ comms:
 - at: 2026-10-05 22:03
   from: tony
   text: queued for processing
+- at: 2026-10-05 22:30
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 22:30
+  from: chaba
+  text: started devin-task-20261005-223028-answers-reach-running-sessions on tony-omen (dispatch)
+- at: 2026-10-05 22:35
+  from: devin
+  text: 'working: plan is /respond appends answers.jsonl into the running session task dir (ssh for remote runners)
+    + TASK_RAILS poll line'
+- at: 2026-10-05 22:38
+  from: tony-omen
+  text: 'finished (ok): exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223028-answers-reach-running-'
+claim: {}

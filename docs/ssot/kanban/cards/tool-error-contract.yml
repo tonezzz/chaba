@@ -1,6 +1,6 @@
 id: tool-error-contract
 title: ada tools — uniform {ok, error} result contract
-column: backlog
+column: doing
 program: ada-tools
 metric: 'every tool result normalizes to {ok: bool, error?: str}; no buried nested failures'
 verify: 'lint test: dispatch every tool with a failing fixture, assert top-level shape'
@@ -10,7 +10,7 @@ note: 'Today: raise, {error}, ok:false, {err}, and errors buried in responses[].
   phantom-write detection.'
 help: ToolRunner.dispatch wrapper — one place to normalize; tools.d manifest can declare the contract for drop-ins
   too
-updated: 2026-10-05 21:48
+updated: 2026-10-05 22:39
 spec: 'Uniform tool result contract: every ToolRunner method returns {ok: bool, ...} — raise/{error}/ok:false/{err}/buried
   responses[].response.ok all coexist today. Pick {ok,error} as canonical; normalize at the runner boundary (wrap
   legacy returns), keep the gev_command all-failed->top-level-error pattern (0bb8e9b). Update the honesty checks
@@ -19,8 +19,9 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-omen
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -28,3 +29,12 @@ comms:
 - at: 2026-10-05 21:48
   from: tony
   text: queued for processing
+- at: 2026-10-05 22:38
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 22:38
+  from: chaba
+  text: started devin-task-20261005-223854-uniform-tool-result-contract-e on tony-omen (dispatch)
+- at: 2026-10-05 22:39
+  from: devin
+  text: 'Starting: exploring ToolRunner and current result contract'

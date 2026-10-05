@@ -8,7 +8,7 @@ note: 'Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES in pwa/cms/inde
   grouping e.g. noble estate vs tony-house) to the zone config, propagate into manifests + CMS page metadata, and
   have the sidebar read the tag. Unknown zones should land in a visible ''Unsorted'' bucket, not silently guess.
   Security/Traffic become display labels over the privacy semantic — survives future zones without retitling.'
-updated: 2026-10-05 22:04
+updated: 2026-10-05 22:38
 spec: 'Zone metadata drives classification — kill prefix gymnastics. Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES
   in pwa/cms/index.html, DEV_AREA in cam-wall-cms.py, ZONES in the puller) and cms guesses via slug prefixes + title
   regexes, unknown CCTV defaulting wrong. Add a single zones.yml SSOT (zone->tab + camera membership), all three
@@ -16,8 +16,10 @@ spec: 'Zone metadata drives classification — kill prefix gymnastics. Today zon
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261005-223841-zone-metadata-drives-classific
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -25,3 +27,12 @@ comms:
 - at: 2026-10-05 22:04
   from: tony
   text: queued for processing
+- at: 2026-10-05 22:38
+  from: chaba
+  text: dispatched 20261005-223841-zone-metadata-drives-classific on chaba
+- at: 2026-10-05 22:38
+  from: devin
+  text: 'Starting: exploring worktree for the 3 zone-mapping consumers (cms index.html, cam-wall-cms.py, puller)'
+claim:
+  session: 20261005-223841-zone-metadata-drives-classific
+  since: 2026-10-05 22:38
