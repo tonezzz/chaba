@@ -1,15 +1,16 @@
 id: tools-merge-tasks-status
 title: Consolidate tasks + status tools (10 -> 3)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 19:27
+updated: 2026-10-05 19:33
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-183350-merge-the-tasks-status-group-1
   runner: tony-dell
+  result: 20261005-183350-merge-the-tasks-status-group-1 finished (inactive) — see `devin-dispatch logs 20261005-183350-merge-the-tasks-status-group-1`
 spec: "Merge the tasks+status group (10 -> 3) per the consolidation spec:\n- NEW tasks absorbs tasks_add, tasks_list,\
   \ tasks_complete, tasks_move ->\n  tasks(action=add|list|done|move)\n- NEW home_status absorbs get_battery_status,\
   \ get_battery_detail,\n  get_power_summary, get_inverter_status, get_pool_status,\n  get_dashboard_tab, get_habit_status\
@@ -42,6 +43,18 @@ comms:
     photos_pick/picked + 3 chaba-side doc-upload names->chat_send(photo=|doc=)). Declared surface 88->77, _ALIASES
     23->39, all hidden/not declared. Gates key off resolved names: task writes keep confirm gate (action=list free);
     chat_send photo=/doc= keep documents-bank+secondary gates, plain sends ungated; DEVIN_CONFIRMED_TOOLS/con'
+- at: 2026-10-05 19:30
+  from: devin
+  text: 'follow-up fix: provider resolved alias names to canonical before runner.execute, so _alias_call_args surrogate
+    remaps (action->op, intake_key->key — also slug->key/end->day from prior merges) were skipped on the live path.
+    Provider now applies the shim at resolve time; new test test_doc_card_alias_remaps_args_before_dispatch proves
+    remap + as-called FunctionResponse echo. Focused suite 165 ok, tool-lint still clean (77 declared / 39 aliases).'
+- at: 2026-10-05 19:33
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 19:33
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-183350-merge-the-tasks-status-group-1 dirty — 13 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261005-183350-merge-the-tasks-status-group-1
   since: 2026-10-05 18:33
