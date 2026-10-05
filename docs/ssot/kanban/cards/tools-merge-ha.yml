@@ -1,15 +1,16 @@
 id: tools-merge-ha
 title: Consolidate ha control + sensor + logbook tools
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 17:41
+updated: 2026-10-05 18:02
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-173343-merge-the-ha-tool-group-14-6-p
   runner: tony-dell
+  result: 20261005-173343-merge-the-ha-tool-group-14-6-p finished (inactive) — see `devin-dispatch logs 20261005-173343-merge-the-ha-tool-group-14-6-p`
 spec: "Merge the ha tool group (14 -> 6) per the consolidation spec:\n- NEW home_search absorbs search_home_devices,\
   \ list_home_devices,\n  search_sensors, list_sensors, ada_ha_search_devices, ada_ha_search_sensors,\n  ada_ha_search_events,\
   \ search_devices -> home_search(q, kind=device|sensor|event)\n- get_home_state absorbs ada_ha_get_state -> state(entity?\
@@ -32,6 +33,23 @@ comms:
 - at: 2026-10-05 17:34
   from: devin
   text: 'Started: exploring worktree, locating HA tool declarations and tool_runner.'
+- at: 2026-10-05 17:53
+  from: devin
+  text: 'Merge landed in worktree: 21->6 (home_search/get_home_state/home_history/control_entity/tv_action/ha_confidence),
+    19 _ALIASES rows, tool-lint clean (73 declared, 42 aliases). Writing unit tests next.'
+- at: 2026-10-05 17:59
+  from: devin
+  text: 'DONE: ha group merged 21->6 (home_search, get_home_state, home_history, control_entity, tv_action, ha_confidence);
+    19 absorbed names -> _ALIASES + arg defaults, 18 decls removed/3 added (88->73 surface). Gates verified: aliases
+    resolve before _execute_gated, control_entity holds CONTROL_TOOLS, ha_confidence secondary-blocked on writes
+    only, DEVIN_CONFIRMED_TOOLS + confirm_strip unchanged. tool-lint clean (73 declared/42 aliases); 109 unit tests
+    OK incl. 10 new HaMergeAliasTests. Deliverables: ba'
+- at: 2026-10-05 18:02
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 18:02
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-173343-merge-the-ha-tool-group-14-6-p dirty — 10 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261005-173343-merge-the-ha-tool-group-14-6-p
   since: 2026-10-05 17:34

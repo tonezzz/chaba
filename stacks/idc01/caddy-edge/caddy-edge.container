@@ -1,0 +1,13 @@
+[Container]
+ContainerName=caddy-edge
+Image=docker.io/library/caddy:2
+Network=host
+Volume=%h/.config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro,Z
+Volume=%h/.config/containers/caddy/data:/data,Z
+Volume=%h/.config/containers/caddy/config:/config,Z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

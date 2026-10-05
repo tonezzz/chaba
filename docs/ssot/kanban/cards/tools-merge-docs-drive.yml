@@ -1,13 +1,16 @@
 id: tools-merge-docs-drive
 title: Consolidate docs + drive tools (8 -> 2)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:06
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: done
+  task_id: 20261005-180155-merge-the-docs-drive-group-8-2
+  runner: tony-dell
+  result: 20261005-180155-merge-the-docs-drive-group-8-2 finished (inactive) — see `devin-dispatch logs 20261005-180155-merge-the-docs-drive-group-8-2`
 spec: "Merge the docs+drive group (8 -> 2) per the consolidation spec:\n- NEW docs absorbs ada_doc_search, ada_doc_get,\
   \ ada_doc_print,\n  ada_doc_archive -> docs(action=search|get|print|archive)\n- NEW drive absorbs drive_search,\
   \ drive_show, drive_get, drive_update ->\n  drive(action=search|show|get|update)\nRules: absorbed names stay registered\
@@ -15,3 +18,33 @@ spec: "Merge the docs+drive group (8 -> 2) per the consolidation spec:\n- NEW do
   \ off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
   \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
   \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 18:02
+  from: chaba
+  text: dispatched 20261005-180155-merge-the-docs-drive-group-8-2 on ada-pi
+- at: 2026-10-05 18:02
+  from: devin
+  text: 'started: reading spec + prior merge jobs, then wiring docs/drive canonical tools + aliases'
+- at: 2026-10-05 18:30
+  from: devin
+  text: 'done — docs+drive merged 8->2. Canonical docs(action=search|get|print|archive) + drive(action=search|show|get|update)
+    declared; all 8 absorbed names are _ALIASES rows (31 total). Gates key off resolved name: docs holds DOC_TOOLS/DOC_CONFIRMED_TOOLS,
+    drive holds DRIVE_TOOLS/DRIVE_CONFIRMED_TOOLS; per-action splits keep reads free, archive/print/update confirm-gated;
+    DEVIN_CONFIRMED_TOOLS/confirm_strip untouched. tool-lint clean (82 declared, 31 aliases); 20 doc/drive unit
+    tests pass incl. new Doc'
+- at: 2026-10-05 18:33
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 18:33
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-180155-merge-the-docs-drive-group-8-2 not in origin/main
+    — close will block until merged'
+- at: 2026-10-05 19:06
+  from: devin
+  text: 'merged to origin/main (b5f8576 in a0f044f): 8->2 canonical, only dispatch-outcome.md conflicted. Gate:
+    tool_merge_docs_drive scenario run on idc02.'
+claim:
+  since: 2026-10-05 18:02

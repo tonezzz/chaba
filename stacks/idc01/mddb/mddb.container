@@ -1,0 +1,60 @@
+# mddb leader quadlet — idc01 (primary)
+# Repo version: secrets externalized to ~/.config/secrets/mddb.env —
+#   MDDB_MCP_API_KEYS=<keys>           (live file has them inline — do not copy back)
+#   MDDB_REPLICATION_SECRET=<secret>
+# State: ~/.config/containers/mddb/{data,vaults} — see README for the move runbook.
+[Unit]
+Description=mddb document database (primary, idc01)
+Wants=network-online.target
+After=network-online.target gemini-ollama-proxy.service
+
+[Container]
+Image=localhost/mddb:2.15.4-allowlist
+ContainerName=mddb
+Network=host
+Volume=/home/tony/.config/containers/mddb/data:/app/data:U
+Volume=/home/tony/.config/containers/mddb/vaults:/vaults:U
+EnvironmentFile=%h/.config/secrets/mddb.env
+Environment=MDDB_ADDR=100.74.146.0:11023
+Environment=MDDB_GRPC_ADDR=100.74.146.0:11024
+Environment=MDDB_MCP_API_KEY_ENABLED=true
+Environment=MDDB_MCP_ADDR=100.74.146.0:9000
+Environment=MDDB_PATH=/app/data/mddb.db
+Environment=MDDB_MODE=wr
+Environment=MDDB_HTTP_ENABLED=true
+Environment=MDDB_GRPC_ENABLED=true
+Environment=MDDB_MCP_ENABLED=true
+Environment=MDDB_MCP_STDIO=false
+Environment=MDDB_HTTP3_ENABLED=false
+Environment=MDDB_TLS_ENABLED=false
+Environment=MDDB_CORS_ORIGINS=*
+Environment=MDDB_LOG_LEVEL=INFO
+Environment=MDDB_RATE_LIMIT_ENABLED=false
+Environment=MDDB_AUDIT_ENABLED=false
+Environment=MDDB_AUTH_ENABLED=false
+Environment=MDDB_PRODUCTION=false
+Environment=MDDB_EMBEDDING_PROVIDER=ollama
+Environment=MDDB_EMBEDDING_API_URL=http://127.0.0.1:11435
+Environment=MDDB_EMBEDDING_MODEL=gemini-embedding-2
+Environment=MDDB_EMBEDDING_DIMENSIONS=768
+Environment=MDDB_VECTOR_ALGORITHMS=flat,quantized
+Environment=MDDB_EMBEDDING_QUEUE_SIZE=4000
+Environment=MDDB_EMBEDDING_QUEUE_WAIT=30s
+Environment=MDDB_SEARCH_MAX_CONCURRENT=4
+Environment=MDDB_SEARCH_QUEUE_TIMEOUT_MS=10000
+Environment=MDDB_REPLICATION_ROLE=leader
+Environment=MDDB_NODE_ID=idc01
+Environment=GOMEMLIMIT=12000MiB
+Environment=GOGC=150
+Environment=TZ=Asia/Bangkok
+
+[Service]
+Restart=on-failure
+TimeoutStopSec=70
+# repopulate the RAM vector index after every start — reindex
+# skips docs whose stored vector hash matches, so it is cheap
+# once the index is healthy (2026-09-30: restart wiped recall)
+ExecStartPost=/usr/bin/systemctl --user start --no-block mddb-vector-reindex.service
+
+[Install]
+WantedBy=default.target

@@ -1,13 +1,16 @@
 id: tools-merge-meta-voice
 title: Consolidate meta/voice tools (8 -> 3)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:19
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: done
+  task_id: 20261005-182958-merge-the-meta-voice-group-8-3
+  runner: tony-dell
+  result: 20261005-182958-merge-the-meta-voice-group-8-3 finished (inactive) — see `devin-dispatch logs 20261005-182958-merge-the-meta-voice-group-8-3`
 spec: "Merge the meta/voice group (8 -> 3) per the consolidation spec:\n- ada_persona absorbs ada_set_voice -> persona(set_voice?...)\n\
   - NEW ada_ops absorbs ada_outcome, ada_usage_summary, ada_mddb_health,\n  ada_decision_check, ada_deep_research\
   \ ->\n  ops(action=outcome|usage|health|check|research)\n- ada_enroll_speaker absorbs guest_register -> enroll(who=speaker|guest)\n\
@@ -15,3 +18,30 @@ spec: "Merge the meta/voice group (8 -> 3) per the consolidation spec:\n- ada_pe
   \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
   \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
   \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 18:30
+  from: chaba
+  text: dispatched 20261005-182958-merge-the-meta-voice-group-8-3 on ada-pi
+- at: 2026-10-05 18:48
+  from: devin
+  text: 'started: read spec + prior merges; plan = persona(set_voice|show_voice|list_voices), new ada_ops(action=outcome|usage|health|check|research),
+    enroll(who=speaker|guest); absorbed names -> _ALIASES, gates keyed on resolved names'
+- at: 2026-10-05 19:16
+  from: devin
+  text: 'DONE: meta/voice merged 8->3. ada_persona absorbed ada_set_voice (*_voice actions); NEW ada_ops absorbed
+    ada_outcome/ada_usage_summary/ada_mddb_health/ada_decision_check/ada_deep_research (action=outcome|usage|health|check|research);
+    ada_enroll_speaker absorbed guest_register (who=guest). All 7 absorbed names are hidden _ALIASES rows routed
+    through execute() — verified end-to-end. tools.d ada_mddb_health module retired (ported into runner). Gates
+    key off resolved names; DEVIN_CONFIRMED_TOOLS/con'
+- at: 2026-10-05 19:19
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 19:19
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-182958-merge-the-meta-voice-group-8-3 dirty — 16 uncommitted
+    file(s); commit or clean before pruning'
+claim:
+  since: 2026-10-05 18:30

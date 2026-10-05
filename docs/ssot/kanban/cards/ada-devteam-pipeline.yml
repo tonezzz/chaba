@@ -1,9 +1,9 @@
 id: ada-devteam-pipeline
 title: Ada self-developing tools — devteam review pipeline + playbook dispatch
-column: doing
+column: review
 note: Stages 1–3 live on ada-dev (spec → expert panel → handoff doc); playbook registry is the missing stage-4 link
   to dispatch.
-updated: 2026-10-05 17:41
+updated: 2026-10-05 18:09
 help: 'Goal: Ada designs a tool → devteam expert panel reviews the spec →
 
   a playbook dispatches the build → CI verifies → report lands in
@@ -113,11 +113,12 @@ spec: 'Build the playbook registry that closes Ada''s self-development loop in
   '
 action:
   type: dispatch
-  status: running
+  status: done
   button: ▶ Build playbook registry
   repo: ada-pi
   task_id: 20261005-173154-build-the-playbook-registry-th
   runner: tony-dell
+  result: 20261005-173154-build-the-playbook-registry-th finished (inactive) — see `devin-dispatch logs 20261005-173154-build-the-playbook-registry-th`
 comms:
 - at: 2026-10-04 10:20
   from: devin
@@ -133,6 +134,18 @@ comms:
   from: devin
   text: picked up — reading devin_dispatch/devteam/tools_loader + handoff spec docs, then building backend/playbooks
     registry
+- at: 2026-10-05 18:07
+  from: devin
+  text: 'DONE: playbook registry landed on dispatch/20261005-173154-build-the-playbook-registry-th (b48c6ae, 11
+    files, +1030). backend/playbooks/{build-tool,fix-scenario,investigate}.yml declare params/task_template/gate{confirm,identity}/requires/verify/report_to/max_runtime_min.
+    devin_dispatch(repo,task,playbook,params) renders the task, enforces the gate — build-tool refuses unless params.spec_key
+    names a kind=spec-review doc at status=pass (fails closed w/o mddb, offers ada_devteam_review) — and stam'
+- at: 2026-10-05 18:09
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 18:09
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-173154-build-the-playbook-registry-th not in origin/main
+    — close will block until merged'
 claim:
-  session: 20261005-173154-build-the-playbook-registry-th
   since: 2026-10-05 17:32

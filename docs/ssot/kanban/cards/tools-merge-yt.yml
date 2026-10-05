@@ -1,16 +1,46 @@
 id: tools-merge-yt
 title: Consolidate yt tools (4 -> 1)
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-04 20:15
+updated: 2026-10-05 19:23
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: done
+  task_id: 20261005-190356-merge-the-yt-group-4-1-per-the
+  runner: tony-dell
+  result: 20261005-190356-merge-the-yt-group-4-1-per-the finished (inactive) — see `devin-dispatch logs 20261005-190356-merge-the-yt-group-4-1-per-the`
 spec: "Merge the yt group (4 -> 1) per the consolidation spec:\n- yt_cast absorbs yt_cast_status, yt_cast_stop,\
   \ yt_transcript ->\n  yt(action=cast|status|stop|transcript)\nRules: absorbed names stay registered but hidden\
   \ (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged (gate keys off resolved\
   \ tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell\
   \ — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl lint passes,\
   \ each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 17:55
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 19:04
+  from: chaba
+  text: dispatched 20261005-190356-merge-the-yt-group-4-1-per-the on ada-pi
+- at: 2026-10-05 19:11
+  from: devin
+  text: 'starting: merging yt_cast/yt_cast_status/yt_cast_stop/yt_transcript into yt(action=cast|status|stop|transcript),
+    4 aliases via _ALIASES'
+- at: 2026-10-05 19:22
+  from: devin
+  text: 'Done: yt group merged 4 -> 1 — yt(action=cast|status|stop|transcript) absorbs yt_cast/yt_cast_status/yt_cast_stop/yt_transcript;
+    all 4 stay callable via _ALIASES (hidden). Declared surface 88->85, aliases 23->27. Gates: yt was never confirm-gated
+    — DEVIN_CONFIRMED_TOOLS/confirm_strip untouched; actuation budget keeps parity via per-action probe (cast|stop
+    count, status|transcript dont). SSOT: new yt family, display family now absorbs yt (avoids alias chains), yt_cast_status
+    out of coverage_debt.'
+- at: 2026-10-05 19:23
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 19:23
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-190356-merge-the-yt-group-4-1-per-the dirty — 9 uncommitted
+    file(s); commit or clean before pruning'
+claim:
+  since: 2026-10-05 19:04
