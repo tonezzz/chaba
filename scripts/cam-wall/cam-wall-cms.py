@@ -11,10 +11,20 @@ Runs on tony-dell (systemd timer ~15min, or on demand). Sources:
 The pages are what Ada reads when asked about a wall — so they carry
 plain-language coverage notes, the roster, live health, the knobs that
 exist (and the cctv_wall call to change them), and recent detections.
+
+Page lifecycle (supersede-by-construction, card cms-cam-page-compaction):
+the publish set this run computes is canonical truth — any page we
+generated that is no longer in it (legacy key forms, cams/zones retired
+from the manifests) gets status:superseded + superseded_by, never deleted
+(cam pages are operational history). New pages carry meta.supersedes
+back to the keys they replace. A retention pass then flips generated
+docs that are both superseded AND older than ARCHIVE_DAYS to
+kind:archive — queryable, but out of reports-index weight.
 """
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import sys
@@ -31,6 +41,17 @@ DATA = Path(os.environ.get(
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))
 BASE = "https://tony-dell.taila0626a.ts.net/apps/camwall"
 COLLECTION = "ada-cms-pages"
+GENERATOR = "cam-wall-cms"
+# fresh_for feeds the reports-index ⚠STALE flag — must be a parseable TTL
+# ('1h'/'30m'/'1d'); bare seconds like the old "600" never evaluated, so
+# dead/orphan pages could never flag stale. ~4 missed 15-min ticks.
+FRESH_FOR = "1h"
+# superseded generated pages whose content is older than this get
+# kind:archive — retention, not deletion.
+ARCHIVE_DAYS = 7
+# memory-schema statuses that take a doc out of the live corpus
+DROP_STATUS = {"superseded", "archived", "retracted", "expired"}
+DRY = "--dry-run" in sys.argv
 
 # Zone metadata — areas, coverage notes, group/site/tab classification —
 # lives in zones.yml next to this script (single SSOT, shared with the
@@ -196,10 +217,76 @@ except Exception:
     _pub_hash = {}
 
 
+def _now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime())
+
+
+def mddb_post(path: str, payload: dict, timeout: float = 30):
+    req = urllib.request.Request(
+        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
+
+
+def mddb_get(key: str, lang: str) -> dict | None:
+    try:
+        return mddb_post("get", {"collection": COLLECTION, "key": key,
+                                 "lang": lang})
+    except urllib.error.HTTPError as exc:
+        if exc.code in (400, 404):
+            return None
+        print(f"mddb get {key}/{lang}: {exc}", file=sys.stderr)
+        return None
+    except Exception as exc:
+        print(f"mddb get {key}/{lang}: {exc}", file=sys.stderr)
+        return None
+
+
+def mddb_write(key: str, lang: str, md: str, meta: dict) -> bool:
+    """POST /add — a full doc replace. MDDB re-embeds on every write."""
+    if DRY:
+        print(f"[dry] write {key}/{lang} "
+              f"(kind={meta.get('kind')} status={meta.get('status')})")
+        return True
+    body = json.dumps({"collection": COLLECTION, "key": key, "lang": lang,
+                       "contentMd": md, "meta": meta}).encode()
+    req = urllib.request.Request(
+        f"{MDDB}/add", data=body,
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            return r.status < 300
+    except Exception as exc:
+        print(f"mddb add {key}: {exc}", file=sys.stderr)
+        return False
+
+
+def collection_docs() -> list[dict]:
+    """Paginated ada-cms-pages listing — the supersede/archive passes and
+    the superseded_by->supersedes link map all read from this one fetch."""
+    docs, offset = [], 0
+    while True:
+        try:
+            page = mddb_post("search", {"collection": COLLECTION,
+                                        "query": "", "limit": 500,
+                                        "offset": offset}, timeout=60)
+        except Exception as exc:
+            print(f"mddb search failed: {exc}", file=sys.stderr)
+            return docs
+        if isinstance(page, dict):
+            page = page.get("documents") or page.get("docs") or []
+        docs += page
+        if len(page) < 500:
+            return docs
+        offset += 500
+
+
 def mddb_add(key: str, md: str, title: str, lang: str = "en",
              summary: str = "", parent: str = "cctv-walls",
              sources: list[str] | None = None,
-             classification: dict | None = None) -> bool:
+             classification: dict | None = None,
+             supersedes: list[str] | None = None,
+             force: bool = False) -> bool:
     import hashlib
     # cms-audit R2: every generated page needs a provenance footer.
     # Static text only — a timestamp here would change the pub hash
@@ -210,7 +297,11 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         "thumbnail puller state and detection log.*\n",
         "\n\n---\n*รวบรวมอัตโนมัติโดย cam-wall-cms จาก manifest ของแต่ละโซน "
         "สถานะตัวดึงภาพ และบันทึกการตรวจจับ*\n")
-    h = hashlib.sha256(md.encode()).hexdigest()[:16]
+    # The hash covers the supersedes link set too, so a page republishes
+    # the cycle it gains a predecessor even when its body is unchanged.
+    h = hashlib.sha256(
+        md.encode() + b"\x00" +
+        ",".join(sorted(supersedes or ())).encode()).hexdigest()[:16]
     if classification:
         # fold classification into the dedup hash — a zones.yml change
         # republishes the affected pages so the meta tag actually lands
@@ -218,22 +309,13 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
             json.dumps(classification, sort_keys=True).encode()
         ).hexdigest()[:8]
     hkey = f"{key}:{lang}"
-    if _pub_hash.get(hkey) == h:
+    if not force and _pub_hash.get(hkey) == h:
         return True  # unchanged — skip write + re-embedding
     # Merge existing meta so memory-schema fields set by
     # cms-normalize-meta.py (and the original valid_from) survive.
-    old_meta = {}
-    try:
-        req = urllib.request.Request(
-            f"{MDDB}/get",
-            data=json.dumps({"collection": COLLECTION, "key": key,
-                             "lang": lang}).encode(),
-            headers={"Content-Type": "application/json"})
-        old = json.load(urllib.request.urlopen(req, timeout=30))
-        old_meta = {k: (v if isinstance(v, list) else [str(v)])
-                    for k, v in (old.get("meta") or {}).items()}
-    except Exception:
-        pass
+    old = mddb_get(key, lang) or {}
+    old_meta = {k: (v if isinstance(v, list) else [str(v)])
+                for k, v in (old.get("meta") or {}).items()}
     today = time.strftime("%Y-%m-%d", time.gmtime())
     meta = dict(old_meta)
     meta.update({
@@ -241,19 +323,15 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         "slug": [key], "subject": [key], "title": [title],
         "format": ["markdown"], "lang": [lang],
         "domain": ["cctv"], "scope": ["tony"], "status": ["active"],
-        "source": ["api"], "generated_by": ["cam-wall-cms"],
-        "written_by": ["cam-wall-cms"],
+        "source": ["api"], "generated_by": [GENERATOR],
+        "written_by": [GENERATOR],
         # cms-audit R1: generated pages must name their inputs
         "sources": sources or ["cam-wall-manifest"],
-        "fresh_for": ["600"],
-        "updated": [time.strftime("%Y-%m-%dT%H:%M:%S+00:00",
-                                  time.gmtime())],
+        "fresh_for": [FRESH_FOR],
+        "updated": [_now_iso()],
         "last_verified": [today],
-        "instance": ["cam-wall-cms"],
+        "instance": [GENERATOR],
     })
-    # zones.yml classification as page meta — the CMS sidebar reads the
-    # tag instead of guessing tabs from slug prefixes + title regexes.
-    # Values may be str or list (multi-zone pages like dvr-wall/cctv-walls
     # tag every tab they span).
     if classification:
         for mk, cv in (("zone_tab", classification.get("tab")),
@@ -261,51 +339,217 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
                        ("zone_site", classification.get("site"))):
             if cv:
                 meta[mk] = cv if isinstance(cv, list) else [cv]
+    # A page being (re)published is canonically live: strip the lifecycle
+    # markers a supersede/archive pass may have stamped — this is how a
+    # cam returning to the roster revives cleanly.
+    for f in ("superseded_by", "superseded_at", "archived_at"):
+        meta.pop(f, None)
+    sup = sorted({*old_meta.get("supersedes", []), *(supersedes or [])})
+    if sup:
+        meta["supersedes"] = sup
     meta.setdefault("valid_from", [today])
     if summary:
         meta["summary"] = [summary]
     if parent:
         meta["parent"] = [parent]
-    body = json.dumps({
-        "collection": COLLECTION, "key": key, "lang": lang,
-        "contentMd": md, "meta": meta,
-    }).encode()
-    req = urllib.request.Request(
-        f"{MDDB}/add", data=body,
-        headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            if r.status < 300:
-                _pub_hash[hkey] = h
-                try:
-                    PUB_HASH.write_text(json.dumps(_pub_hash))
-                except Exception:
-                    pass
-                return True
-            return False
-    except Exception as exc:
-        print(f"mddb add {key}: {exc}", file=sys.stderr)
+    if not mddb_write(key, lang, md, meta):
         return False
-
-
-def mddb_delete(key: str) -> None:
-    """Remove a superseded page (e.g. cam-<zone>-* replaced by the
-    canonical cam-<dev>-* key). Deletes both lang variants."""
-    for lang in ("en", "th"):
-        body = json.dumps({"collection": COLLECTION, "key": key,
-                           "lang": lang}).encode()
-        req = urllib.request.Request(
-            f"{MDDB}/delete", data=body,
-            headers={"Content-Type": "application/json"})
+    if not DRY:
+        _pub_hash[hkey] = h
         try:
-            urllib.request.urlopen(req, timeout=15).read()
-        except urllib.error.HTTPError as exc:
-            # 400 'document not found' is fine — key was never published
-            if exc.code != 400:
-                print(f"mddb delete {key}/{lang}: {exc}", file=sys.stderr)
-        except Exception as exc:
-            print(f"mddb delete {key}/{lang}: {exc}", file=sys.stderr)
-        _pub_hash.pop(f"{key}:{lang}", None)
+            PUB_HASH.write_text(json.dumps(_pub_hash))
+        except Exception:
+            pass
+    return True
+
+
+def mddb_supersede(old_key: str, new_key: str) -> bool:
+    """Mark `old_key` as replaced by `new_key`, both lang variants —
+    the memory-schema supersede verb (status:superseded + superseded_by).
+    Never deletes: the retention pass archives the doc once its content
+    crosses ARCHIVE_DAYS. Returns True when a doc existed."""
+    existed = False
+    for lang in ("en", "th"):
+        doc = mddb_get(old_key, lang)
+        if not doc:
+            continue
+        existed = True
+        meta = {k: (v if isinstance(v, list) else [str(v)])
+                for k, v in (doc.get("meta") or {}).items()}
+        if (meta.get("status") or [""])[0] in DROP_STATUS \
+                or (meta.get("kind") or [""])[0] == "archive":
+            continue  # already superseded/archived — idempotent
+        meta["status"] = ["superseded"]
+        meta["superseded_by"] = [new_key]
+        meta["superseded_at"] = [_now_iso()]
+        if DRY:
+            print(f"[dry] supersede {old_key}/{lang} -> {new_key}")
+            continue
+        mddb_write(old_key, lang, doc.get("contentMd") or "", meta)
+    return existed
+
+
+def _ours(meta: dict) -> bool:
+    """Doc was generated by this script (either lane — dell or VPS)."""
+    return any((meta.get(f) or [""])[0] == GENERATOR
+               for f in ("generated_by", "written_by", "instance"))
+
+
+def _zone_sources(meta: dict) -> set[str]:
+    return {s[5:] for s in meta.get("sources") or []
+            if isinstance(s, str) and s.startswith("zone:")}
+
+
+def _cam_successor(raw: str, zones: dict, current: set[str]) -> str | None:
+    """The live page for a cam whose key moved across zones or key forms
+    (raw/Thai slug -> ascii, zone-scoped -> dev-canonical)."""
+    for z, m in zones.items():
+        for c in m["manifest"].get("cams") or []:
+            if _ascii_slug(c["key"]) == raw:
+                slug = cam_slug(z, c)
+                if slug in current:
+                    return slug
+    return None
+
+
+def _successor_for(key: str, meta: dict, zones: dict,
+                   current: set[str]) -> str | None:
+    """Which live page replaces `key` — or None when the doc belongs to
+    another lane (zone: sources we don't own) or matches nothing we can
+    name. The two lanes share this collection and instance tag, so the
+    zone-source check is the boundary that keeps each lane honest."""
+    my = set(zones)
+    zsrc = _zone_sources(meta)
+    if zsrc and not zsrc & my:
+        return None  # foreign lane's zone — not ours to touch
+    for z in sorted(my):
+        if key == f"wall-{z}":
+            return wall_key(z) if wall_key(z) in current else "cctv-walls"
+        pre = f"cam-{z}-"
+        if key.startswith(pre):
+            raw = _ascii_slug(key[len(pre):])
+            return (_cam_successor(raw, zones, current)
+                    or (wall_key(z) if wall_key(z) in current
+                        else "cctv-walls"))
+    for dev in sorted(DEV_AREA):
+        pre = f"cam-{dev}-"
+        if key.startswith(pre):
+            raw = _ascii_slug(key[len(pre):])
+            if f"cam-{dev}-{raw}" in current:
+                return f"cam-{dev}-{raw}"
+            return (_cam_successor(raw, zones, current)
+                    or (f"camwall-{dev}" if f"camwall-{dev}" in current
+                        else "cctv-walls"))
+    if key == "dvr-wall":
+        return "cctv-walls" if "cctv-walls" in current else None
+    return None
+
+
+def supersede_stale_pages(docs: list[dict], current: set[str],
+                          zones: dict) -> int:
+    """Supersede-by-construction: every page we generated that is absent
+    from this run's publish set (legacy key forms, cams/zones that left
+    the manifests) is marked status:superseded + superseded_by. Returns
+    how many keys were newly marked."""
+    if not zones:
+        return 0  # empty roster means we can't know the intended state
+    n = 0
+    seen = set()
+    for d in docs:
+        key = d.get("key") or ""
+        if key in seen or key in current:
+            continue
+        meta = d.get("meta") or {}
+        if not _ours(meta):
+            continue
+        if (meta.get("status") or [""])[0] in DROP_STATUS \
+                or (meta.get("kind") or [""])[0] == "archive":
+            continue
+        succ = _successor_for(key, meta, zones, current)
+        if not succ or succ == key:
+            continue
+        seen.add(key)
+        if mddb_supersede(key, succ):
+            n += 1
+            # keep every lang variant current in-memory so the archive
+            # pass and the supersedes link map see this mark in the
+            # same run
+            for dd in docs:
+                if dd.get("key") == key:
+                    m = dd.setdefault("meta", {})
+                    m["status"] = ["superseded"]
+                    m["superseded_by"] = [succ]
+                    m["superseded_at"] = [_now_iso()]
+    return n
+
+
+def supersede_links(docs: list[dict]) -> dict[str, list[str]]:
+    """new key -> old keys it replaces (the mirror of superseded_by) —
+    feeds meta.supersedes on each generated page."""
+    links: dict[str, set[str]] = {}
+    for d in docs:
+        for n in (d.get("meta") or {}).get("superseded_by") or []:
+            k = d.get("key")
+            if k:
+                links.setdefault(str(n), set()).add(k)
+    return {k: sorted(v) for k, v in links.items()}
+
+
+def _doc_age_epoch(doc: dict) -> float:
+    """Content age — meta.updated first (it freezes when a page stops
+    being regenerated), updatedAt/addedAt epochs as fallback."""
+    upd = ((doc.get("meta") or {}).get("updated") or [""])[0]
+    if upd:
+        try:
+            return datetime.datetime.fromisoformat(
+                upd.replace("Z", "+00:00")).timestamp()
+        except Exception:
+            pass
+    return float(doc.get("updatedAt") or doc.get("addedAt") or 0)
+
+
+def archive_superseded(docs: list[dict]) -> int:
+    """Retention pass: generated docs that are superseded AND whose
+    content is older than ARCHIVE_DAYS flip to kind:archive. Archive is
+    not delete — the page stays queryable, it just leaves reports-index
+    weight (the index only lists kind:page|report)."""
+    cutoff = time.time() - ARCHIVE_DAYS * 86400
+    n = 0
+    for d in docs:
+        meta = d.get("meta") or {}
+        if not _ours(meta):
+            continue
+        if (meta.get("status") or [""])[0] != "superseded":
+            continue
+        if (meta.get("kind") or [""])[0] == "archive":
+            continue
+        age = _doc_age_epoch(d)
+        if not age or age > cutoff:
+            continue
+        new_meta = {k: (v if isinstance(v, list) else [str(v)])
+                    for k, v in meta.items()}
+        new_meta["kind"] = ["archive"]
+        new_meta["archived_at"] = [_now_iso()]
+        if DRY:
+            print(f"[dry] archive {d.get('key')}/{d.get('lang')}")
+            n += 1
+            continue
+        if mddb_write(d["key"], d.get("lang") or "en",
+                      d.get("contentMd") or "", new_meta):
+            meta.update(new_meta)
+            n += 1
+    return n
+
+
+def regen_reports_index() -> None:
+    """Re-render reports-index after lifecycle marks — shared lib so the
+    same superseded/archived filter applies to every writer."""
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from lib.cms_index import regen_reports_index as _regen
+        _regen(MDDB, written_by=GENERATOR, instance=GENERATOR)
+    except Exception as exc:
+        print(f"reports-index regen failed: {exc}", file=sys.stderr)
 
 
 DET_MAX_BYTES = 8 * 1024 * 1024   # ~14d of hourly-ish sweeps
@@ -318,7 +562,7 @@ def _det_recs(zone: str) -> list[dict]:
     if not f.exists():
         return []
     try:
-        if f.stat().st_size > DET_MAX_BYTES:
+        if f.stat().st_size > DET_MAX_BYTES and not DRY:
             lines = f.read_text().splitlines()
             f.write_text("\n".join(lines[-50_000:]) + "\n")
         return [json.loads(x) for x in f.read_text().splitlines() if x.strip()]
@@ -721,6 +965,41 @@ def main() -> int:
     cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for zone, m in zones.items():
         cls = zone_cls(zone)
+        for c in m["manifest"].get("cams") or []:
+            cam_groups.setdefault(cam_slug(zone, c), []).append(
+                (zone, c, m["manifest"]))
+    cam_pages = len(cam_groups)
+
+    # ---- lifecycle: supersede-by-construction, then retention ----------
+    # The publish set this run computes is canonical truth — any page we
+    # generated that is absent from it gets status:superseded (never
+    # deleted; cam pages are operational history). superseded docs whose
+    # content crosses ARCHIVE_DAYS flip to kind:archive. Both passes run
+    # off one collection listing, before publishing so the new pages pick
+    # up their supersedes links in the same cycle.
+    has_dev = any(c.get("dev") for m in zones.values()
+                  for c in m["manifest"].get("cams") or [])
+    current = {wall_key(z) for z in zones} | set(cam_groups)
+    if zones:
+        current.add("cctv-walls")
+    if has_dev:
+        current.add("dvr-wall")
+    docs = collection_docs() if zones else []
+    n_sup = supersede_stale_pages(docs, current, zones)
+    links = supersede_links(docs)
+    n_arch = archive_superseded(docs)
+    # A page whose key is back in the publish set revives — force the
+    # write so status/kind flip back even when the body is unchanged.
+    revive = {d.get("key") for d in docs
+              if d.get("key") in current
+              and (((d.get("meta") or {}).get("status") or [""])[0]
+                   in DROP_STATUS
+                   or ((d.get("meta") or {}).get("kind") or [""])[0]
+                      == "archive")}
+
+    for zone, m in zones.items():
+        area = AREA.get(zone, zone)
+        info = ZONE_INFO.get(zone, "Camera wall zone.")
         for lang in ("en", "th"):
             ok &= mddb_add(
                 wall_key(zone),
@@ -731,15 +1010,13 @@ def main() -> int:
                                       zone_info(zone, "th")),
                 sources=[f"zone:{zone}", "cam-wall-manifest",
                          "cam-wall-state", "cam-wall-detections"],
-                classification=cls)
+                classification=cls,
+                supersedes=links.get(wall_key(zone)),
+                force=wall_key(zone) in revive)
         # retire the old wall-<zone> key (renamed to camwall-<area>)
         legacy_wall = f"wall-{zone}"
         if legacy_wall != wall_key(zone):
             mddb_delete(legacy_wall)
-        for c in m["manifest"].get("cams") or []:
-            cam_groups.setdefault(cam_slug(zone, c), []).append(
-                (zone, c, m["manifest"]))
-    cam_pages = len(cam_groups)
     # multi-zone pages tag every tab/group/site they span
     dev_cls = [zone_meta.cam_classify(z, c, ZMETA)
                for es in cam_groups.values() for z, c, _ in es
@@ -755,7 +1032,9 @@ def main() -> int:
                 summary=_t(lang, "Every DVR channel as a tile grid",
                            "ทุกช่อง DVR เป็นช่องภาพกดได้"),
                 sources=["cam-wall-manifest", "vms-snap"],
-                classification=dvr_cls)
+                classification=dvr_cls,
+                supersedes=links.get("dvr-wall"),
+                force="dvr-wall" in revive)
     for slug_key, entries in sorted(cam_groups.items()):
         fzone, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
         zone, _cam, _ = entries[0]
@@ -776,7 +1055,9 @@ def main() -> int:
                     f"({'ออนไลน์' if cam.get('ok') else 'ขัดข้อง'})"),
                 sources=sorted({f"zone:{z}" for z, _, _ in entries})
                 + ["cam-wall-detections"],
-                classification=cam_cls)
+                classification=cam_cls,
+                supersedes=links.get(slug_key),
+                force=slug_key in revive)
         # retire the old zone-scoped key the canonical dev-key replaced,
         # plus any raw (un-normalized) key the ascii slug superseded
         for z, c, _ in entries:
@@ -799,10 +1080,14 @@ def main() -> int:
                            "และสวิตช์ควบคุมกลาง"),
                 parent="",
                 sources=[f"zone:{z}" for z in sorted(zones)],
-                classification=_cls_union([zone_cls(z) for z in zones]))
+                classification=_cls_union([zone_cls(z,
+                supersedes=links.get("cctv-walls"),
+                force="cctv-walls" in revive)
+ for z in zones]))
         notify_transitions(zones)
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
-          f"{'ok' if ok else 'ERR'}")
+          f"{'ok' if ok else 'ERR'} · superseded {n_sup} "
+          f"archived {n_arch}")
     return 0
 
 

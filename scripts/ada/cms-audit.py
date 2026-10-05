@@ -92,7 +92,10 @@ A5_EXEMPT = {"cms-audit-report", "document-audit-policy", "dev-kanban"}
 # Intentional stubs (marker pages) — skip the A1 thin check when the
 # page carries status=stub so the corpus can keep a placeholder on
 # record without failing the audit.
-STUB_STATUS = {"stub", "archived"}
+STUB_STATUS = {"stub", "archived", "superseded"}
+# Docs that left the live corpus — excluded from C1 duplicate-pair and
+# C2 staleness warnings (they are supposed to be stale).
+DEAD_STATUS = {"superseded", "archived", "retracted", "expired"}
 AUTO_OPEN_RE = re.compile(r"<!--\s*([\w-]+):auto\s*-->")
 AUTO_CLOSE_RE = re.compile(r"<!--\s*/([\w-]+):auto\s*-->")
 
@@ -181,8 +184,11 @@ def consolidation_warnings(docs: list[dict]) -> list[str]:
     warns: list[str] = []
     today = datetime.date.today()
     docs_by_key = {d["key"]: d for d in docs}
+    dead = {k for k, d in docs_by_key.items()
+            if ((d.get("meta") or {}).get("status") or [""])[0]
+               in DEAD_STATUS}
     toks = {d["key"]: slug_tokens(d["key"]) for d in docs}
-    keys = sorted(toks)
+    keys = [k for k in sorted(toks) if k not in dead]
     for i, key in enumerate(keys):
         for other in keys[i + 1:]:
             a, b = toks[key], toks[other]
