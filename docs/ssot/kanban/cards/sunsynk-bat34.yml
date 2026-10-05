@@ -1,8 +1,8 @@
 id: sunsynk-bat34
 title: SunSynk card — batteries 3/4 support
-column: review
+column: done
 note: Extend the power-flow card to render a 3rd and 4th battery (bat3/bat4 elements + entity mapping).
-updated: 2026-10-04 21:56
+updated: 2026-10-05 09:01
 blocked_by: tony
 spec: 'Add batteries 3 and 4 to the sunsynk-power-flow-card (repo: sunsynk-card).
 
@@ -67,5 +67,19 @@ comms:
 - at: 2026-10-04 21:56
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-05 08:58
+  from: devin
+  text: 'verified+merged: dispatch commit e52346e (bat3/bat4 in compact card + editor, +783 LOC) — tsc clean, rollup
+    build clean, merged to sunsynk branch + pushed.'
+- at: 2026-10-05 08:58
+  from: tony
+  text: moved review -> done
+- at: 2026-10-05 09:01
+  from: devin
+  text: 'CORRECTION: e52346e is NOT merged — it was built on the stale local sunsynk checkout (Sep-2 state) and
+    reimplements bat3/4 support that mainline already ships (v24: packs 2/3/4, v29: four-battery render, data/battery-calc
+    module). Merging would regress ~12k lines of newer upstream work — leaving unmerged+superseded. Feature itself
+    verified present on origin/main, so card stays done. PROCESS BUG: dispatcher bases worktrees on the checkouts
+    current branch (sunsynk), not default main — stale bases '
 claim:
   since: 2026-10-04 20:45
