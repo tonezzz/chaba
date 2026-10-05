@@ -151,3 +151,12 @@ comms:
     Noel=-6Hz, Leto/Freeman=-12Hz. Interviews ship no TH subs so
     --th-file carries all Thai (23 segments). The Egg's >> markers
     proved too noisy for auto-turns (72/240s); still hand-labeled.
+- at: '2026-10-05 14:05'
+  from: devin
+  text: >-
+    v16b: Tony spotted multi-slice groups showing one repeated TH line
+    while EN wrapped over several lines. Fix: --th-file groups with no
+    TH pieces now time-slice at word boundaries (>9s), and the TH
+    override splits on clause punctuation (,—…!) distributed across
+    slices proportional to EN word count. Also clamps negative cue
+    starts from --offset windows.
