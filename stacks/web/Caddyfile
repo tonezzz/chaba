@@ -37,9 +37,19 @@ http://127.0.0.1:8080 {
 		header Cache-Control "no-cache, no-store, must-revalidate"
 	}
 
-	# Kanban board write API — card actions/respond/comment on tony-dell
+	# Kanban board write API — card actions/respond/comment on tony-dell.
+	# Writes require a tailnet identity: tailscale serve injects
+	# Tailscale-User-Login on tailnet-authed requests, so a POST without it
+	# (LAN, or any future funnel mount) gets 403 at the edge. Reads stay
+	# open. board-api re-verifies server-side (rejects forged headers —
+	# a LAN client can't keep its IP out of X-Forwarded-For).
 	handle /apps/board-api/* {
 		uri strip_prefix /apps/board-api
+		@anon_write {
+			not method GET HEAD
+			not header Tailscale-User-Login *
+		}
+		respond @anon_write "forbidden: board-api writes need a tailnet identity" 403
 		reverse_proxy 127.0.0.1:8787
 	}
 

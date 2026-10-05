@@ -37,6 +37,18 @@ ALL card writes must go through this API — any direct card-YAML edit
 outside it (scripts, dispatch rails, hand fixes) must hold LOCK
 (/tmp/board-api.lock) first or it races the server.
 
+Write auth (card board-api-auth): POSTs need a verified identity —
+either the Tailscale-User-Login header that tailscale serve injects on
+tailnet-authed requests, or a direct loopback caller (dispatch rails,
+systemd units, card-pipeline — they hit 127.0.0.1:8787 with no
+X-Forwarded-For). A LAN client can forge the login header, but Caddy
+appends the real client IP to X-Forwarded-For at every hop, so a forged
+request still carries a non-tailnet/non-loopback address in the chain
+and is denied. Reads (GET /cards, /health) stay open. Caddy also denies
+unauthenticated non-GETs at the edge (stacks/web/Caddyfile).
+BOARD_API_ALLOWED_LOGINS (comma list) optionally restricts which
+tailnet logins may write; unset = any tailnet identity.
+
 Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import fcntl
@@ -49,6 +61,7 @@ import sys
 import threading
 from datetime import datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from ipaddress import ip_address, ip_network
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -67,6 +80,48 @@ ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish"}
 COLUMNS = {"backlog", "doing", "review", "done"}
+
+# --- write gate (card board-api-auth) ------------------------------------
+LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
+TRUSTED_NETS = LOOPBACK_NETS + [
+    ip_network("100.64.0.0/10"),       # tailnet CGNAT
+    ip_network("fd7a:115c:a1e0::/48"), # tailnet ULA
+]
+ALLOWED_LOGINS = {x.strip() for x in
+                  os.environ.get("BOARD_API_ALLOWED_LOGINS", "").split(",")
+                  if x.strip()}
+
+
+def _in_nets(ip_s: str, nets: list) -> bool:
+    try:
+        ip = ip_address(ip_s)
+    except ValueError:
+        return False
+    return any(ip in n for n in nets)
+
+
+def caller_identity(headers, peer_ip: str) -> str:
+    """Verified writer identity: the tailnet login, 'local' for a direct
+    loopback caller, or '' when the request may not write.
+
+    tailscale serve injects Tailscale-User-Login on tailnet-authed
+    requests; Caddy appends the real client IP to X-Forwarded-For at
+    every hop, so a forged login header from LAN still leaves a LAN
+    address in the chain -> denied. Local automation posts straight to
+    127.0.0.1:8787 (loopback peer, no XFF) and is trusted."""
+    login = (headers.get("Tailscale-User-Login") or "").strip()
+    xff = [h.strip() for h in
+           (headers.get("X-Forwarded-For") or "").split(",") if h.strip()]
+    if login:
+        if ALLOWED_LOGINS and login not in ALLOWED_LOGINS:
+            return ""
+        if _in_nets(peer_ip, TRUSTED_NETS) and \
+                all(_in_nets(h, TRUSTED_NETS) for h in xff):
+            return login
+        return ""
+    if not xff and _in_nets(peer_ip, LOOPBACK_NETS):
+        return "local"
+    return ""
 
 
 def now() -> str:
@@ -561,6 +616,15 @@ class H(BaseHTTPRequestHandler):
         except Exception:
             return self._send(400, {"error": "bad json"})
 
+        ident = caller_identity(self.headers, self.client_address[0])
+        if not ident:
+            return self._send(403, {
+                "error": "writes need a tailnet identity "
+                         "(Tailscale-User-Login) or a local caller"})
+        sys.stderr.write(
+            "board-api write %s id=%s via=%s\n"
+            % (path, body.get("id"), ident))
+
         notify_req = None
         with LOCK.open("w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
@@ -630,7 +694,7 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
         render()
-        self._send(200, {"ok": True, "message": msg})
+        self._send(200, {"ok": True, "message": msg, "via": ident})
 
 
 def _selftest() -> None:
@@ -715,6 +779,38 @@ def _selftest() -> None:
     assert card["pipeline"]["benchmark"]["before"] == "2"
     do_pipeline(card, {"opt_in": False}, "devin")
     assert "pipeline" not in card
+
+    # write gate (card board-api-auth) — caller_identity is pure: fake
+    # headers dict + peer ip stand in for a request
+    def hdrs(**kw):
+        return kw
+    # direct loopback caller (scripts/units): no XFF -> trusted local
+    assert caller_identity(hdrs(), "127.0.0.1") == "local"
+    assert caller_identity(hdrs(), "::1") == "local"
+    # tailnet-authed via serve -> Caddy chain (ts ip, loopback hops)
+    ts = {"Tailscale-User-Login": "tonezzzz@github",
+          "X-Forwarded-For": "100.99.1.2, 127.0.0.1, 127.0.0.1"}
+    assert caller_identity(ts, "127.0.0.1") == "tonezzzz@github"
+    # tailnet IPv6 ULA hop is trusted too
+    ts6 = {"Tailscale-User-Login": "tonezzzz@github",
+           "X-Forwarded-For": "fd7a:115c:a1e0::1, 127.0.0.1"}
+    assert caller_identity(ts6, "127.0.0.1") == "tonezzzz@github"
+    # anonymous proxied request (XFF present, no login) -> deny
+    assert caller_identity(hdrs(**{"X-Forwarded-For": "192.168.2.50"}),
+                           "127.0.0.1") == ""
+    # forged login from LAN: LAN IP stays in the chain -> deny
+    forged = {"Tailscale-User-Login": "tonezzzz@github",
+              "X-Forwarded-For": "192.168.2.50, 127.0.0.1"}
+    assert caller_identity(forged, "127.0.0.1") == ""
+    # forged login with spoofed all-trusted XFF still leaves the LAN
+    # client IP between the forged entries and the appended hop
+    forged2 = {"Tailscale-User-Login": "tonezzzz@github",
+               "X-Forwarded-For": "100.99.1.2, 192.168.2.50, 127.0.0.1"}
+    assert caller_identity(forged2, "127.0.0.1") == ""
+    # garbage XFF entry can't parse -> deny
+    bad = {"Tailscale-User-Login": "x@y",
+           "X-Forwarded-For": "not-an-ip"}
+    assert caller_identity(bad, "127.0.0.1") == ""
     print("selftest ok")
 
 
