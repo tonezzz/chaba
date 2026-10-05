@@ -1,10 +1,10 @@
 id: lab-disk-trend-watch
 title: Disk trend watch — tony-dell hit 100% on 2026-10-05
-column: backlog
+column: review
 note: 'Original card file was written as 0 bytes during the disk-full event (~14:23). Recovered skeleton. Context:
   / hit 100%; freed ~7GB (mddb backups, pip/go caches). Watchers: yt-live-media cache (8.6G) grows with dub pipeline;
   system journal 3G needs sudo vacuum.'
-updated: 2026-10-05 23:23
+updated: 2026-10-05 23:30
 comms:
 - at: 2026-10-05 14:45
   from: devin
@@ -22,6 +22,32 @@ comms:
   from: devin
   text: 'start: building disk-trend-watch.py mirroring cms-auto-health lifecycle — SSH df+du probe per host, JSONL
     history in ~/var/chaba/health, slope→days-to-full, disk-auto-* cards, board_notify push'
+- at: 2026-10-05 23:27
+  from: devin
+  text: 'implemented + verified: scripts/ada/disk-trend-watch.py in the kanban-sync tick (SSH df+du per host, JSONL
+    history, 7d least-squares slope, disk-auto-* cards, ha,yomi push). Selftest PASS on synthetic >90% fixture;
+    live run 5/6 hosts 14 mounts trended, 0 alerts at 81%. Job doc: docs/ssot/jobs/infrastructure/2026-10-05-disk-trend-watch.yml'
+- at: 2026-10-05 23:28
+  from: devin
+  text: 'done: disk-trend-watch.py shipped in kanban-sync health lane. SSH df+du probe ×6 hosts -> ~/var/chaba/health/disk-trend.jsonl,
+    7d slope -> days-to-full; disk-auto-* cards at >=90% or fill<=7d, one batched push (ha,yomi) on open, auto-close
+    on recovery; top-grower dirs flagged in report+card notes. Verified: --selftest synthetic >90% fixture PASS,
+    trend-path card at 70%/+25GiB-d, live run 5/6 hosts 14 mounts. Docs: docs/ssot/jobs/infrastructure/2026-10-05-disk-trend-watch.yml,
+    outcome file in wor'
+- at: 2026-10-05 23:30
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 23:30
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (3 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 23:30
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-232048-disk-trend-watcher-tony-dell-h dirty — 3 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 23:30
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-232048-disk-trend-watcher-tony-dell-h not in origin/master
+    — close will block until merged'
 spec: 'Disk trend watcher — tony-dell hit 100% 2026-10-05 (the original card file was 0-bytes from the disk-full
   event). Add a periodic check (fold into cms-auto-health or ops-health): df trend per host, alert on board + LINE
   when a disk will fill within ~7d at current growth, and flag top growers (yt-live-media cache grew 8.6G during
@@ -30,10 +56,10 @@ priority: medium
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261005-232048-disk-trend-watcher-tony-dell-h
+  result: 20261005-232048-disk-trend-watcher-tony-dell-h finished (inactive) — see `devin-dispatch logs 20261005-232048-disk-trend-watcher-tony-dell-h`
 claim:
-  session: 20261005-232048-disk-trend-watcher-tony-dell-h
   since: 2026-10-05 23:20
