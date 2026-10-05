@@ -286,3 +286,4 @@ def try_merge(card: dict) -> dict:
     finally:
         sh(["git", "-C", str(repo), "worktree", "remove", "--force",
             str(wt)], timeout=30)
+        sh(["git", "-C", str(repo), "worktree", "prune"], timeout=30)

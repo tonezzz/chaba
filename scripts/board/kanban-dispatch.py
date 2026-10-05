@@ -103,6 +103,7 @@ def unit_state(task_id: str) -> str:
 
 def queue_one(path: Path, card: dict) -> str:
     a = card["action"]
+    card.pop("awaiting_action", None)  # being dispatched = triaged
     repo = a.get("repo", "chaba")
     spec = (card.get("spec") or "").strip() or f"{card.get('title','')}\n\n{card.get('note','')}"
     task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
