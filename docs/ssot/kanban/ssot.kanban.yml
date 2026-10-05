@@ -92,6 +92,11 @@ card_schema:
         or {id, label} objects. Answering posts the option text."
       status: "open | answered"
       answer: null
+      at: "YYYY-MM-DD HH:MM — stamped by POST /request (kanban-push-notify)"
+      from: "devin | ada | chaba | tony — who raised it"
+      to: "target actor; absent = tony. Tony-targeted agent-raised requests
+        push a notification on create and one escalation after 12h open
+        (escalated_at stamp, once per request — see request-sweep.py)."
   # optional — append-only log; every actor writes here (board shows last 4)
   comms:
     - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}
@@ -109,10 +114,14 @@ write_path:
       'already answered' on re-answer unless reopen:true (logs 're-answered')."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
       400 'text required' on empty/whitespace text"
-    "POST /request {id, ask, request_id?, options?, from?}":
-      "raises a requests[] entry {id, ask, status: open, options?}; id is
-      request_id or a slugged ask. 400 on missing ask or duplicate id. The
-      ONLY safe way for agents/Ada to add a request — direct card-YAML
+    "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
+      "raises a requests[] entry {id, ask, status: open, at, from, to?,
+      options?}; id is request_id or a slugged ask. 400 on missing ask,
+      duplicate id, or bad to. A request targeting tony (to absent/tony)
+      raised by a non-tony actor queues a push notification — debounced
+      30s so bursts batch into one summary (board_notify.py; channel env
+      BOARD_NOTIFY_CHANNEL, default HA iPhone push -> /chaba-admin/board).
+      The ONLY safe way for agents/Ada to add a request — direct card-YAML
       edits race the write flock (must hold /tmp/board-api.lock)."
     "POST /action {id, do: claim, host}": "atomic first-wins claim under the
       write flock — for multi-host dispatchers. Sets action.runner."
