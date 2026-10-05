@@ -3,7 +3,8 @@
 #   1. ff-pull the dedicated worktree to origin/master
 #   2. health lanes: cms-auto-health -> cms-auto-* cards,
 #      logs-kanban -> logs-auto-* cards, gev-auto-health -> gev-auto-*
-#      cards (all write files under docs/ssot/kanban/cards/)
+#      cards, vcast-auto-health -> vcast-auto-* cards
+#      (all write files under docs/ssot/kanban/cards/)
 #   3. commit + push ONLY cards/ changes the health checks made
 #   4. kanban-cms: render the live board into the dev-kanban CMS page
 #
@@ -26,6 +27,7 @@ git merge --ff-only origin/master || { echo "ff-pull failed"; exit 1; }
 python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
 python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"
 python3 scripts/ada/gev-auto-health.py || echo "gev-auto-health failed (non-fatal)"
+python3 scripts/ada/vcast-auto-health.py || echo "vcast-auto-health failed (non-fatal)"
 # L2 'kanban' report node — stats read the live cards in the served
 # checkout; outputs mirror back into $SRC (reports/kanban + web data).
 python3 scripts/board/kanban-stats.py \
