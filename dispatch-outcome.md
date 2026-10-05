@@ -1,46 +1,70 @@
-# dispatch outcome — inbox-triage-round-2 (symptom sweep)
+# dispatch-outcome — board-needs-you-strip
 
-## What was done
+## What changed
 
-Triaged `docs/ada-memory/inbox/general/` — 222 files (201 `extract-*` dated
-2026-09-20→2026-10-02 plus 21 stray notes, including 6 newer 10-04 items).
-Each file's frontmatter `key` was matched against its MDDB bank doc
-(`ada-ha-bank-general`, 230 docs, cross-checked `ada-ha-bank-devin-handoff`,
-223 docs — no inbox key lived there).
+`scripts/render-board.py` — the old "Needs you" strip (title buttons that only
+opened the card modal) is replaced by a collapsible band above the columns,
+`N things need you` in the header, expanded by default when N>0 (collapse
+state persisted in `localStorage.board-ny-collapsed`). Items:
 
-Classification result — **every file's bank doc was already resolved**:
+1. **Open requests** — every `requests[]` entry with `status != 'answered'`
+   renders the card title, the ask text, and the answer controls INLINE:
+   option buttons for `options:` requests, a free-text input + Answer button
+   (Enter submits) otherwise. One click posts `/respond` — no modal.
+2. **Stale review cards** — `column: review` and >24h since the last comms
+   entry matching `-> review`/`→ review` (falls back to `updated`, then last
+   comm timestamp), with no comms text matching
+   `/verif|confirm|works|lgtm|tested|checks out/i`. Inline `✔ verify` button
+   posts `/comment {from: tony, text: 'verified'}` which clears the item.
+3. **Failed dispatches** — `action.status` in `failed|error`, with an inline
+   `↺ Retry` button (`/action do=retry`) and the `action.result` snippet.
 
-| bank doc status | files | action |
-|---|---|---|
-| superseded | 53 | → `inbox/processed/` |
-| retracted | 63 | → `inbox/processed/` |
-| active + vault file exists | 100 | → `inbox/processed/` (stale dup) |
-| active + no vault file | 5 | promoted to `general/` (round-2 "P" convention: status→active, session_id dropped, body verified identical to MDDB doc) |
-| active, stale vs live doc | 1 | `yomi-vs-line-bot.md` → `inbox/processed/` (doc rewritten devin-side 10-04: Yomi offline; promoting the stale copy would conflict) |
-| draft / missing / live | 0 | — |
+No new API surface — the band reuses `/respond`, `/comment`, `/action`.
+Detection is page-side JS over the existing `cards.json` payload.
 
-**0 live items** found (no open bugs, no awaiting-user requests, no drafts).
-`inbox/general/` is now empty; `inbox/processed/` holds 217 archived files.
-No MDDB writes — no bank doc statuses were changed.
+Supporting changes in the same file:
+- `reqAnswerHtml(c, r)` extracted so the modal and the band share the answer
+  controls; all `.rq-*` elements now carry `data-id` (card id) so they work
+  outside the modal, with scope-aware lookups (band vs modal) so a request
+  visible in both places can't cross-talk.
+- Poll re-renders preserve in-progress typed answers + focus in the band.
+- Regex escapes written as `\\d`/`\\s` in the f-string (same emitted JS,
+  no Python 3.14 SyntaxWarning).
+- `out_path.parent.mkdir` moved before the `cards.json` write — the renderer
+  previously crashed in a fresh worktree where the gitignored output dir
+  didn't exist.
 
-## Where
+`docs/ssot/kanban/ssot.kanban.yml` — `page_standard.needs_you_band` documents
+the item rules and endpoints.
 
-- Job trail: `docs/ssot/jobs/ada/2026-10-04-inbox-general-symptom-sweep.yml`
-- Decision artifacts: `.triage2/` (bank dumps, per-file `report.json`, `actions.json`, `classify.py`)
+## Verification (done)
 
-## Not done / notes
+Ran the real `board-api.py` from this worktree on :8899 behind a tiny static+
+proxy server (:8898), drove headless Chrome over CDP:
 
-- Root cause untouched per card: overnight focus pipeline exits 1 (separate
-  card). `export_inbox` in `scripts/ada/sync-ada-memory-to-mddb.py` re-exports
-  draft + voice/active docs — processed files may re-accumulate until the
-  pipeline fix lands.
-- Other bank inboxes still populated (out of scope): devin-handoff 86,
-  note 31, people 52, personal 142, personal-kk 27, personal-testo 1,
-  purchase 13, tony-projects 101.
+- Created a temp card (`zz-ny-band-test`, column=review, failed action,
+  stale comms) and raised a request via `POST /request` with 3 options.
+- Band showed "14 things need you" including all three item types; the test
+  ask + red/blue/green buttons rendered inline.
+- Clicked `blue` in the band → `/respond` wrote `answer: blue` on the card
+  and the item disappeared on re-render.
+- Clicked `✔ verify` → `verified` comm landed; the stale-review item cleared
+  (one FAIL in the first pass was only a 3s wait being shorter than the
+  write+render+load cycle — confirmed gone on re-check).
+- Collapse toggle works and persists across re-renders.
+- Test card deleted; `node --check` on the generated JS passes;
+  `ssot-validate-all.mjs`: 1137 files, 0 errors.
 
-## Verify
+## How to verify on the live board
 
-    ls docs/ada-memory/inbox/general | wc -l      # 0
-    ls docs/ada-memory/inbox/processed | wc -l    # 217
-    # spot-check a promoted file:
-    cat docs/ada-memory/general/extract-2026-10-04-e7afe759ba-4.md
+After merge, the served checkout regenerates `index.html`/`cards.json`
+(60s render timer or any board-api write). Open `/apps/board/` — the band
+appears above the columns listing current open requests (mddb-rotated-files,
+redispatch, tts-artifact-clean), the ~7 stale logs-* review cards, and any
+failed dispatches. Answer a request by clicking an option button directly in
+the band; it disappears after the ~1s write+render cycle.
+
+## Git state
+
+Uncommitted in this worktree (per dispatch rails): `scripts/render-board.py`,
+`docs/ssot/kanban/ssot.kanban.yml`. No push, no deploy.

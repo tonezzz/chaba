@@ -162,6 +162,8 @@ let lang = 'en';
 let filter_q = '';
 let openCard = null;
 let busy = false;
+let nyCollapsed = false;
+try {{ nyCollapsed = localStorage.getItem('board-ny-collapsed') === '1'; }} catch (e) {{}}
 
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -213,6 +215,21 @@ function actBtns(c, inModal) {{
   return h;
 }}
 
+function reqAnswerHtml(c, r) {{
+  const opts = r.options || [];
+  if (opts.length) {{
+    let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
+    for (const o of opts) {{
+      const lbl = typeof o === 'string' ? o : (o.label || o.id);
+      const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
+      h += `<button class="rq-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{esc(lbl)}}</button>`;
+    }}
+    return h + '</div>';
+  }}
+  return `<div class="flex gap-1 mt-1"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
+         `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}">Answer</button></div>`;
+}}
+
 function reqList(c, inModal) {{
   const reqs = c.requests || [];
   if (!reqs.length) return '';
@@ -222,21 +239,7 @@ function reqList(c, inModal) {{
       h += `<div class="text-xs text-slate-400 mt-1">❓ ${{esc(r.ask)}} <span class="text-emerald-300">→ ${{esc(r.answer)}}</span></div>`;
     else {{
       h += `<div class="text-xs text-amber-300 mt-1">❓ ${{esc(r.ask)}}</div>`;
-      if (inModal) {{
-        const opts = r.options || [];
-        if (opts.length) {{
-          h += '<div class="flex flex-wrap gap-1.5 mt-1">';
-          for (const o of opts) {{
-            const lbl = typeof o === 'string' ? o : (o.label || o.id);
-            const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
-            h += `<button class="rq-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{esc(lbl)}}</button>`;
-          }}
-          h += '</div>';
-        }} else {{
-          h += `<div class="flex gap-1 mt-0.5"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
-               `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">Answer</button></div>`;
-        }}
-      }}
+      if (inModal) h += reqAnswerHtml(c, r);
     }}
   }}
   return h;
@@ -283,6 +286,58 @@ function cardHtml(c) {{
     '</div>';
 }}
 
+const VERIFY_RE = /verif|confirm|works|lgtm|tested|checks out/i;
+const REVIEW_RE = /(?:->|→|—|–)\\s*review\\b/i;
+
+function tsOf(s) {{
+  const m = String(s || '').match(/^(\\d{{4}}-\\d{{2}}-\\d{{2}})(?:[ T](\\d{{2}}:\\d{{2}}))?/);
+  return m ? Date.parse(m[1] + 'T' + (m[2] || '00:00') + ':00+07:00') : NaN;
+}}
+
+function reviewSince(c) {{
+  let t = tsOf(c.updated);
+  for (const m of c.comms || [])
+    if (REVIEW_RE.test(m.text || '')) {{ const d = tsOf(m.at); if (!isNaN(d)) t = d; }}
+  if (isNaN(t))
+    for (const m of c.comms || []) {{ const d = tsOf(m.at); if (!isNaN(d) && (isNaN(t) || d > t)) t = d; }}
+  return t;
+}}
+
+function needsYou() {{
+  const items = [];
+  for (const c of DATA.cards) {{
+    for (const r of c.requests || [])
+      if (r.status !== 'answered') items.push({{kind: 'request', c, r}});
+    if ((c.column || 'backlog') === 'review') {{
+      const verified = (c.comms || []).some(m => VERIFY_RE.test(m.text || ''));
+      const t = reviewSince(c);
+      if (!verified && !isNaN(t) && Date.now() - t > 24 * 3600e3)
+        items.push({{kind: 'stale-review', c, ageH: Math.round((Date.now() - t) / 3600e3)}});
+    }}
+    const st = (c.action || {{}}).status;
+    if (st === 'failed' || st === 'error') items.push({{kind: 'failed', c}});
+  }}
+  return items;
+}}
+
+function nyItemHtml(it) {{
+  const c = it.c;
+  const head = `<button class="ny-btn text-xs font-medium text-sky-300 hover:text-sky-200" data-id="${{esc(c.id)}}">${{esc(c.title || c.id)}}</button>` +
+    `<span class="text-[10px] text-slate-500">${{esc(c.id)}}</span>`;
+  if (it.kind === 'request')
+    return `<div class="border border-amber-700/40 rounded p-2 bg-amber-950/30"><div class="flex items-baseline gap-2 flex-wrap">${{head}}</div>` +
+      `<div class="text-xs text-amber-200 mt-1">❓ ${{esc(it.r.ask)}}</div>${{reqAnswerHtml(c, it.r)}}</div>`;
+  if (it.kind === 'stale-review')
+    return `<div class="border border-violet-700/40 rounded p-2 bg-violet-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
+      `<span class="text-xs text-violet-200">in review ${{it.ageH}}h — no verification entry</span>` +
+      `<button class="ny-verify text-xs bg-emerald-800 hover:bg-emerald-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}">✔ verify</button></div></div>`;
+  const res = (c.action || {{}}).result;
+  return `<div class="border border-red-700/40 rounded p-2 bg-red-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
+    `<span class="text-xs text-red-300">dispatch ${{esc((c.action || {{}}).status || 'failed')}}</span>` +
+    `<button class="abtn text-xs bg-red-800 hover:bg-red-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ Retry</button></div>` +
+    (res ? `<div class="text-xs text-slate-400 mt-1">${{esc(String(res).slice(0, 160))}}</div>` : '') + '</div>';
+}}
+
 function render() {{
   if (!DATA) return;
   const counts = {{}};
@@ -299,14 +354,40 @@ function render() {{
   }}
   document.getElementById('board-cols').innerHTML = cols;
 
-  // needs-you strip
-  const needy = DATA.cards.filter(c => (c.requests || []).some(r => r.status !== 'answered'));
-  document.getElementById('needs-you').innerHTML = needy.length
-    ? `<div class="bg-amber-900/40 border border-amber-600/60 rounded p-2.5 mb-3 text-amber-100 text-sm flex flex-wrap items-center gap-2">` +
-      `<b>Needs you (${{needy.length}}):</b>` +
-      needy.map(c => `<button class="ny-btn text-xs bg-amber-800/70 hover:bg-amber-700 rounded px-2 py-0.5" data-id="${{esc(c.id)}}">${{esc(c.title || c.id)}}</button>`).join('') +
-      '</div>'
-    : '';
+  // needs-you band
+  const nyInVals = {{}};
+  let nyFocus = null;
+  document.querySelectorAll('#needs-you .rq-in').forEach(i => {{
+    nyInVals[i.dataset.id + '|' + i.dataset.rq] = i.value;
+    if (document.activeElement === i) nyFocus = i.dataset.id + '|' + i.dataset.rq;
+  }});
+  const nyItems = needsYou();
+  const nyEl = document.getElementById('needs-you');
+  if (!nyItems.length) {{
+    nyEl.innerHTML = '';
+  }} else {{
+    const n = nyItems.length;
+    nyEl.innerHTML =
+      `<div class="bg-amber-900/40 border border-amber-600/60 rounded mb-3">` +
+      `<button id="ny-toggle" class="w-full text-left px-2.5 py-2 text-amber-100 text-sm flex items-center gap-2">` +
+      `<span id="ny-caret">${{nyCollapsed ? '▸' : '▾'}}</span>` +
+      `<b>${{n}} thing${{n === 1 ? '' : 's'}} need${{n === 1 ? 's' : ''}} you</b></button>` +
+      `<div id="ny-body" class="px-2.5 pb-2.5 space-y-2${{nyCollapsed ? ' hidden' : ''}}">` +
+      nyItems.map(nyItemHtml).join('') + '</div></div>';
+    document.getElementById('ny-toggle').onclick = () => {{
+      nyCollapsed = !nyCollapsed;
+      try {{ localStorage.setItem('board-ny-collapsed', nyCollapsed ? '1' : '0'); }} catch (e) {{}}
+      document.getElementById('ny-body').classList.toggle('hidden', nyCollapsed);
+      document.getElementById('ny-caret').textContent = nyCollapsed ? '▸' : '▾';
+    }};
+    document.querySelectorAll('#needs-you .rq-in').forEach(i => {{
+      const k = i.dataset.id + '|' + i.dataset.rq;
+      if (k in nyInVals) {{
+        i.value = nyInVals[k];
+        if (nyFocus === k) {{ i.focus(); i.setSelectionRange(i.value.length, i.value.length); }}
+      }}
+    }});
+  }}
 
   let list = '';
   for (const col of DATA.columns) {{
@@ -402,15 +483,33 @@ function wire() {{
   document.querySelectorAll('.rq-btn').forEach(b =>
     b.onclick = async e => {{
       e.stopPropagation();
-      const inp = document.querySelector(`.rq-in[data-rq="${{b.dataset.rq}}"]`);
+      const cid = b.dataset.id || openCard;
+      const scope = b.closest('#needs-you') ? '#needs-you' : '#card-modal';
+      const inp = [...document.querySelectorAll(scope + ' .rq-in')]
+        .find(i => i.dataset.rq === b.dataset.rq && (i.dataset.id || openCard) === cid);
       if (!inp || !inp.value.trim()) return;
-      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
+      try {{ await api('/respond', {{id: cid, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
       catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.rq-in').forEach(inp =>
+    inp.onkeydown = e => {{
+      if (e.key !== 'Enter') return;
+      e.stopPropagation();
+      const scope = inp.closest('#needs-you') ? '#needs-you' : '#card-modal';
+      const b = [...document.querySelectorAll(scope + ' .rq-btn')]
+        .find(x => x.dataset.rq === inp.dataset.rq && x.dataset.id === inp.dataset.id);
+      if (b) b.click();
     }});
   document.querySelectorAll('.rq-opt').forEach(b =>
     b.onclick = async e => {{
       e.stopPropagation();
-      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
+      try {{ await api('/respond', {{id: b.dataset.id || openCard, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.ny-verify').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      try {{ await api('/comment', {{id: b.dataset.id, from: 'tony', text: 'verified'}}); toast('marked verified'); await load(); }}
       catch (err) {{ toast('error: ' + err.message, true); }}
     }});
 }}
@@ -504,11 +603,11 @@ setInterval(load, POLL_MS);
         "over_limit": over,
         "cards": cards,
     }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     json_path = out_path.with_name("cards.json")
     json_path.write_text(json.dumps(payload, ensure_ascii=False,
                                     default=str))  # yaml scalars -> date/datetime
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page)
     print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
     return 0
