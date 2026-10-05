@@ -14,8 +14,37 @@ requests:
   ask: Migrate everything off idc03, or keep idc01 as edge/backup after maintenance?
   status: answered
   answer: everything to idc03 now.
-updated: 2026-10-05 20:17
+updated: 2026-10-05 20:56
 comms:
 - at: 2026-10-05 20:17
   from: tony
   text: 'answered scope: everything to idc03 now.'
+- at: 2026-10-05 20:48
+  from: devin
+  text: answer recorded (migrate everything). Spec'd phase 1 = read-only inventory + plan doc; armed for dispatch
+    — press Start to run. Migration itself phases out per plan, each phase gated.
+- at: 2026-10-05 20:49
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 20:50
+  from: chaba
+  text: dispatched 20261005-205012-phase-1-inventory-plan-only-no on chaba
+- at: 2026-10-05 20:50
+  from: devin
+  text: 'Phase 1 started: reading SSOT + inventorying idc01/idc03 read-only.'
+spec: 'Phase 1 — inventory + plan only, NO changes to production. Tony''s decision: migrate EVERYTHING off idc01
+  onto idc03 (answered 2026-10-05). ssh tony@idc01 + tony@idc03. Produce docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+  with: (a) full inventory of idc01 services/containers/quadlets/timers/cron + data dirs + ports + TLS routes, (b)
+  per-item migrate/retire decision and dependency order, (c) idc03 capacity check (RAM/disk), (d) cutover steps
+  + rollback per item, (e) what stays (if anything). Read-only commands only; do not stop, move, or change any service.
+  Flag items needing Tony approval for later phases.'
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  button: ▶ Plan migration
+  task_id: 20261005-205012-phase-1-inventory-plan-only-no
+  runner: tony-dell
+claim:
+  session: 20261005-205012-phase-1-inventory-plan-only-no
+  since: 2026-10-05 20:50
