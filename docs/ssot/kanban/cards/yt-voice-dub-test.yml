@@ -160,3 +160,12 @@ comms:
     override splits on clause punctuation (,—…!) distributed across
     slices proportional to EN word count. Also clamps negative cue
     starts from --offset windows.
+- at: '2026-10-05 14:40'
+  from: devin
+  text: >-
+    v16d: voice/text sync fix. Coverage-full TH (v16c) pushed total
+    queued lag to 59.8s — speech drifted off-scene. Root cause:
+    --lag allowed 3s overrun PER segment (~70s possible). Now a shared
+    --lag-budget (5s default): segments borrow drift from a pool; when
+    it runs dry, atempo pins them to cue time. Lag 59.8->39.0s, speech
+    lands inside window. Coverage still 89%.
