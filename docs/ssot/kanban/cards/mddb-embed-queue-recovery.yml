@@ -15,7 +15,17 @@ help: >-
   Reindex path: mddb-vector-reindex.service (dropin exists per
   idc01-units-inventory card). Alert could hook the existing
   ops-health-report.service or a systemd watchdog on the WARN pattern.
-action: {type: dispatch, status: idle, repo: chaba, button: '▶ Reindex dropped docs'}
+comms:
+- at: 2026-10-05 22:15
+  from: devin
+  text: >-
+    Reindex ran against the NEW leader (idc03 100.102.134.91 — migration
+    landed 21:40): 39,822 docs swept, embedded=1 skipped=39,822 failed=0.
+    The vectors survived the binlog migration intact; droppedTotal=3135
+    was cumulative history already covered by retries. Remaining value in
+    this card is the saturation alert half — queueSize/droppedTotal
+    tripwire into ops-health.
+action: {type: dispatch, status: idle, repo: chaba, button: '▶ Add saturation tripwire'}
 spec: >-
   1) Enumerate docs dropped from the mddb embed queue on 2026-10-05
   (journal "dropping job" lines carry docID) plus any docs still lacking
