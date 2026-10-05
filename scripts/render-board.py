@@ -224,13 +224,17 @@ function reqAnswerHtml(c, r) {{
   const opts = r.options || [];
   if (opts.length) {{
     let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
+    let sugVal = '';
     for (const o of opts) {{
       const lbl = typeof o === 'string' ? o : (o.label || o.id);
       const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
       const sug = r.suggested && (r.suggested === val || r.suggested === lbl ||
         (typeof o !== 'string' && r.suggested === o.id));
+      if (sug) sugVal = val;
       h += `<button class="rq-opt text-xs ${{sug ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 ring-1 ring-emerald-400 font-semibold' : 'bg-amber-800/70 hover:bg-amber-700 text-amber-100'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{sug ? '★ ' : ''}}${{esc(lbl)}}</button>`;
     }}
+    if (r.suggested)
+      h += `<button class="rq-opt text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded px-2 py-1" title="accept the suggested option" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(sugVal || r.suggested)}}">✓ accept suggestion</button>`;
     return h + '</div>';
   }}
   return `<div class="flex gap-1 mt-1"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +

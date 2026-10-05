@@ -1,0 +1,48 @@
+id: request-suggested-option
+date: 2026-10-06
+card: kanban-request-suggested-answer
+host: tony_dell
+status: implemented
+
+goal: >
+  Let the filer of a board request mark a recommended option so Tony's
+  decision shrinks to confirm-or-override. Convention: suggested is a
+  recommendation, never a default — nothing auto-answers.
+
+pieces:
+  api: >
+    POST /request accepts `suggested` (scripts/board/board-api.py
+    do_request). Validated against options[] — a string item, a {id,label}
+    option's id or label, or the 'id — label' composite. 400 'suggested
+    requires options' with no options; 400 'suggested must match one of
+    the options' on mismatch. Stored verbatim as requests[].suggested.
+    Merged earlier in dcffce02; this session added docstring notes +
+    selftest coverage.
+  render: >
+    scripts/render-board.py reqAnswerHtml (shared by the card modal
+    requests section AND the Needs You strip). The suggested option
+    renders ★ + emerald/bold ring (dcffce02); this session added an
+    explicit '✓ accept suggestion' button that posts the same value the
+    option button would — one click, no typing. Other options remain the
+    override path.
+  schema: >
+    requests[].suggested documented in docs/ssot/kanban/ssot.kanban.yml
+    (field doc + /request endpoint doc).
+
+verify:
+  selftest: "python3 scripts/board/board-api.py --selftest — covers
+    suggested validation (missing options, mismatch, string + dict option
+    forms)."
+  live: >
+    2026-10-06: three open requests carry suggested: on the live board —
+    kanban-request-suggested-answer (sug 'Close'),
+    dispatch-merged-branch-prune (sug 'Keep through one weekly run'),
+    lab-disk-trend-watch (sug 'Keep open a week'). No open requests
+    existed to retrofit, so fresh ones were raised via POST /request —
+    that exercises the same path. A to:devin self-check request on the
+    demo card was raised + answered via /respond (from:devin) — status
+    flipped to answered, answer + actor recorded in comms.
+  caveat: >
+    The live board already renders the ★ marker (dcffce02 in the served
+    checkout); the '✓ accept suggestion' button ships with this commit's
+    merge.

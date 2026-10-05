@@ -98,6 +98,11 @@ card_schema:
       options: "optional list — renders one-click answer buttons instead of
         a free-text box. Items are strings ('A — syncthing clipboard dir')
         or {id, label} objects. Answering posts the option text."
+      suggested: "optional — must equal one of options[] (string item, the
+        option's id or label, or the 'id — label' composite). A
+        recommendation, NOT a default: the suggested option renders ★
+        green/bold next to a one-click 'accept suggestion' button; nothing
+        auto-answers (kanban-request-suggested-answer)."
       status: "open | answered"
       answer: null
       at: "YYYY-MM-DD HH:MM — stamped by POST /request (kanban-push-notify)"
@@ -129,8 +134,9 @@ write_path:
       400 'text required' on empty/whitespace text"
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
       "raises a requests[] entry {id, ask, status: open, at, from, to?,
-      options?}; id is request_id or a slugged ask. 400 on missing ask,
-      duplicate id, or bad to. A request targeting tony (to absent/tony)
+      options?, suggested?}; id is request_id or a slugged ask. 400 on
+      missing ask, duplicate id, bad to, or a suggested that doesn't match
+      an option ('suggested requires options' when options absent). A request targeting tony (to absent/tony)
       raised by a non-tony actor queues a push notification — debounced
       30s so bursts batch into one summary (board_notify.py; channel env
       BOARD_NOTIFY_CHANNEL, default HA iPhone push -> /chaba-admin/board).
