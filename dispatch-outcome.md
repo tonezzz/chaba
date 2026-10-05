@@ -1,52 +1,45 @@
-# dispatch-cleanup-unmerged-guard — outcome
+# dispatch outcome — board-needs-you-strip (retry)
 
-## What changed
+## What happened
 
-`scripts/devin/devin-precleanup-check.py` — `worktrees()` now ancestry-checks each
-dispatch worktree, not just its dirty state:
+This was a **retry** of a card whose work was already merged. The first
+dispatch (task `20261005-105816`) implemented the Needs You band in
+`scripts/render-board.py` and it reached `origin/master` — this
+worktree is 0 commits ahead of `origin/master`, and the rendered
+`page_version` (`b1df757525cc`) is byte-identical to what the live board
+serves. This run therefore performed a full end-to-end verification and
+left a record; **no changes to render-board.py were needed**.
 
-- `worktree_branch()` resolves the ref to check: task `meta.branch` first (when it
-  still resolves via `rev-parse --verify refs/heads/<branch>`), else the worktree's
-  checked-out branch, else detached `HEAD`.
-- `base_ref()` picks the repo's base: `master` → `main` → `origin/master` →
-  `origin/main` (ada-pi worktrees have no `master`; previously they'd silently
-  skip the check).
-- `unmerged_commits()` runs `git log --format='%h %s' <base>..<ref>`; a non-empty
-  list marks the row `unsafe`.
-- Report additions: `branch` and `unmerged` columns in the Dispatch worktrees
-  table, a "Stranded commits (not reachable from base branch)" section listing
-  each commit, a top-level warning (`N dispatch worktrees hold commits not
-  reachable from the base branch`), and `unmerged_worktrees` in the `--json`
-  summary.
+## Verified (headless Chrome CDP against worktree board-api on :8899)
 
-## Result
+- Test card with an option-button request → clicked "Red" in the band →
+  `POST /respond` saved `answer: Red`; item left the band.
+- Second request (no options) → free-text input + Answer →
+  `answer: typed via band` saved; item left the band.
+- Stale review card (>24h, no verification comm) → ✔ verify →
+  `POST /comment` appended "verified"; item left the band.
+- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
+  `action.status: queued` + "retry requested" comm; item left the band.
+- Band header "N things need you", collapsible (state in localStorage
+  `board-ny-collapsed`), expanded by default, hidden when N=0.
+- Live board already shows the band working: 7 real stale-review items
+  (`logs-auto-*` cards, ~37h in review).
 
-Verified live on tony-dell:
+## Deliverables
 
-- Created `~/CascadeProjects/dispatch-wt-99999999-testunmerged` from a throwaway
-  repo — CLEAN tree, branch `test-unmerged-branch` with 2 commits not on master.
-- Ran the script (`--report-dir /tmp/wtguard-report --skip-integrity --db
-  /tmp/wtguard-empty.db`). Report flagged the row `clean | test-unmerged-branch |
-  2`, listed both commits under "Stranded commits", and emitted the warning.
-- Pruned the test worktree (`git worktree remove`, branch deleted, repo removed) —
-  this is exactly the silent-loss scenario from the card (a clean tree would have
-  read as safe before this change).
-- Real-world bonus: the run surfaced 11 pre-existing dispatch worktrees (chaba and
-  ada-pi) holding commits not on their base branch — the guard already works on
-  real data.
+- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
+  verification record + known limitations (verify-regex heuristic scans
+  all comms, not just post-review ones; `error` status is dead-code
+  future-proofing).
+- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
+  (`page_standard.needs_you_band`) from the first run.
 
-## How to verify
+## Notes for operator
 
-`python3 scripts/devin/devin-precleanup-check.py` — check the "Dispatch worktrees"
-table for the `unmerged` column and the "Stranded commits" section in
-`~/.local/share/devin/cleanup-reports/devin-precleanup-*-latest.md`.
-
-## Trail
-
-`docs/ssot/jobs/infrastructure/2026-10-05-precleanup-unmerged-guard.yml`
-
-## Deferred (per card note, not in spec)
-
-Card note also suggested emitting a focus-inbox/comms entry for stranded commits;
-only the report output was implemented. A follow-up could push
-`unmerged_worktrees > 0` findings into `docs/ssot/focus-inbox/`.
+- If the retry was meant to signal the band wasn't working on the live
+  board: it IS live and populated (checked `GET /cards` + live band
+  items). If Tony saw something broken, it needs a concrete symptom —
+  happy to dig with specifics.
+- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
+  only (never the live board) and deleted; helper server/scripts removed;
+  test ports (8898/8899/9333) closed. Live board-api untouched.
