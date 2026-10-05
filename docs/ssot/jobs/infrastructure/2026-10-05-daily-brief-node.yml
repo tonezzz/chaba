@@ -1,0 +1,93 @@
+title: daily-brief — L2 report node, morning + evening editions, CMS + Ada-readable
+subtitle: >-
+  Twice-daily rollup for Tony: morning = overnight results (dispatches since
+  19:00, new cards, red flags, open requests); evening = day's completions +
+  "what still needs you before tomorrow". Published to ada-cms-pages so Ada's
+  reports-index can answer "what needs me?" from the summary line.
+icon: newspaper
+id: 2026-10-05-daily-brief-node
+status: done
+owner: devin-dispatch
+project: chaba
+card: daily-brief-node
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Kanban card daily-brief-node: development is outpacing Tony's perception —
+    overnight dispatches land while he sleeps and he has no 30-second rollup.
+    Morning (~07:00) AND evening (~19:00) editions; renders into the reports
+    layer AND a CMS page so Ada can answer "what needs me?".
+
+data_sources:
+  dispatches: ~/.local/share/devin-dispatch/tasks/*/meta.json — result,
+    started_at/finished_at (UTC), worktree; exit_code file overrides a
+    false "success". dispatch-outcome.md first prose line = outcome column.
+    Tasks with no finished_at >24h are marked stale-running.
+  cards: --cards-dir <served checkout>/docs/ssot/kanban/cards (deployed job)
+    or GET board-api/cards (fallback). "New cards filed" = git log
+    --diff-filter=A on the card dir — comms/`updated` heuristic fallback
+    (lanes touch updated constantly, so it's labelled approx).
+  health_flags: reports/system-report.yml bad node states +
+    ~/var/chaba/health/meta.yml unhealthy count +
+    tony-dell-mcp-health.json critical/high recommendations.
+  needs_you: open card requests + review queue >24h (same bar as the
+    board Needs You strip) + failed card actions/dispatches.
+
+deliverables:
+  - scripts/report-daily-brief.py — generator; --edition auto|morning|evening
+    (auto = hour<12 → morning), --cards-dir, --no-cms, --print
+  - docs/ssot/infrastructure/ssot.reports.yml — daily-brief node (L2-domain,
+    cadence 12h, meta reports/meta.daily-brief.yml, artifact reports/
+    daily-brief/DAILY-BRIEF-*.md, children health-monitor+focus-inbox);
+    added to system-report children + schedule.daily_brief + plan
+  - docs/ssot/infrastructure/ssot.jobs.yml — job daily-brief (host
+    tony_dell, OnCalendar *-*-* 07,19:05:00, Persistent, 10m timeout)
+  - systemd/generated/tony_dell/daily-brief.{service,timer} — rendered by
+    render-jobs.py
+  - ada-cms-pages/daily-brief — kind:report page, meta_contract fields
+    (summary/domain=ops/fresh_for=12h/confidence=high/timeline/links/
+    updated), timeline append capped 40
+
+outputs:
+  - reports/daily-brief/DAILY-BRIEF-<yyyymmdd>-<edition>.md (dated artifact)
+  - reports/meta.daily-brief.yml (node meta via lib/report.py write_meta)
+  - ~/var/chaba/reports/timeline.jsonl (append_timeline event)
+  - stacks/web/public/apps/system-report/data/DAILY-BRIEF.md — latest copy,
+    dual-root mirror to chaba-tony-dell like report-system.py
+  - ada-cms-pages/daily-brief (en)
+
+install_state:
+  units: >
+    rendered in-repo only — NOT installed. To activate:
+    `python3 scripts/render-jobs.py --host tony_dell --install` on tony-dell
+    after this branch merges to the checkout the job exec points at
+    (%h/CascadeProjects/chaba).
+  next_elapse_when_installed: 19:05 +07 / 07:05 +07 daily, Persistent catchup
+
+verification:
+  done:
+    - "both --edition morning and --edition evening ran in the worktree:
+      artifact + meta + web copy + timeline event written; status=delta"
+    - "ada-cms-pages/daily-brief confirmed via MDDB get (kind:report,
+      fresh_for=12h, summary answers needs-me)"
+    - "render-jobs.py --check OK; systemd-analyze calendar accepts
+      '07,19:05:00' (next elapse 19:05 +07)"
+    - "MDDB /v1/add occasionally drops the response AFTER the write lands
+      ('Remote end closed connection') — publish is best-effort warn-only;
+      verify page presence with get, not the exit path"
+  pending:
+    - "reports-index surfacing: the _cms_reports_index regen hook had not
+      re-run within ~10min of publish during verification — confirm the
+      next regen cycle picks daily-brief up (page meta is complete, so
+      surfacing is a regen-lag question, not a meta-contract gap)"
+    - "install the timer on tony-dell post-merge"
+
+known_limits:
+  - "new-cards detection needs a git checkout; on the board-api-only path it
+    falls back to a comms/updated heuristic labelled 'approx' in the md"
+  - "card requests carry no timestamp — 'top open requests' order by the
+    card's updated field"
+  - "focus-inbox count is top-level yml files; big backlog number until the
+    inbox is triaged"
