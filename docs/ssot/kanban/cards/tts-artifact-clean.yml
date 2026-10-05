@@ -38,12 +38,15 @@ pipeline:
 action:
   type: dispatch
   repo: ada-pi
+  status: running
+  task_id: 20261005-122233-tts-output-leaks-artifacts-nbs
+  runner: tony-dell
 benchmark:
   metric: 0 transcript lines containing &nbsp; or ][ in Ada speech
   command: grep -cE '&nbsp;|\]\[' tests/fixtures/tts-artifact-clean-transcript.txt | tail -1
 note: '2026-10-04 transcript 519088cb6d: Ada spoke "&nbsp;ชัดเจน" and "][พาสเจอร์ไรซ์]" — HTML entities + bracket
   junk reaching TTS. Sanitize stage exists (transcript_tool_leak event) but misses these patterns.'
-updated: 2026-10-04 20:40
+updated: 2026-10-05 12:22
 comms:
 - at: 2026-10-04 20:39
   from: devin
@@ -91,10 +94,27 @@ comms:
 - at: 2026-10-04 20:40
   from: devin
   text: 'ci run complete: plan=pass structure=pass develop=delegated audit=pass benchmark=blocked'
+- at: 2026-10-05 12:22
+  from: tony
+  text: 'answered ci-develop-tts-artifact-clean-implement-f79735: proceed.'
+- at: 2026-10-05 12:22
+  from: tony
+  text: 'answered ci-benchmark-tts-artifact-clean-re-run-c-d8c429: Proceed.'
+- at: 2026-10-05 12:22
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 12:22
+  from: chaba
+  text: dispatched 20261005-122233-tts-output-leaks-artifacts-nbs on ada-pi
 requests:
 - id: ci-develop-tts-artifact-clean-implement-f79735
   ask: Implement the fix in ada-pi — work was delegated by the ci pipeline (card targets repo ada-pi).
-  status: open
+  status: answered
+  answer: proceed.
 - id: ci-benchmark-tts-artifact-clean-re-run-c-d8c429
   ask: Re-run `card-pipeline.py tts-artifact-clean --stages benchmark` after the fix lands to capture 'after' (before=2).
-  status: open
+  status: answered
+  answer: Proceed.
+claim:
+  session: 20261005-122233-tts-output-leaks-artifacts-nbs
+  since: 2026-10-05 12:22

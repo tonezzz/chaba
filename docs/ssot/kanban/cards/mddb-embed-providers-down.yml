@@ -7,12 +7,12 @@ note: 'gemini-ollama-proxy on idc01 reports all same-space providers down: OpenR
   on failed embed retries and vectors are dropped — embed queue full (4000), droppedTotal >2900. cam-wall-cms and
   roster-audit services fail each cycle on the resulting slow adds. embed-probe canary firing every 15min. Needs
   an account-side fix — client timeouts alone won''t cover it.'
-updated: 2026-10-05 11:06
+updated: 2026-10-05 12:20
 requests:
 - id: provider-fix
   ask: 'Embedding upstream is down: raise/reset the OpenRouter key total limit (403), or wait for the Gemini daily
     quota reset — which path do you want?'
-  status: open
+  status: answered
   options:
   - id: or-limit
     label: Raise/reset OpenRouter key limit (account-side)
@@ -20,7 +20,7 @@ requests:
     label: Wait for Gemini quota reset; OR stays down meanwhile
   - id: other-provider
     label: Point the proxy at another same-space embed provider
-  answer: null
+  answer: or-limit — Raise/reset OpenRouter key limit (account-side)
 comms:
 - at: 2026-10-05 10:30
   from: devin
@@ -39,3 +39,6 @@ comms:
   from: devin
   text: reopened provider-fix — earlier entry was a server-side probe verifying the /respond endpoint during the
     click-handler bug investigation
+- at: 2026-10-05 12:20
+  from: tony
+  text: 'answered provider-fix: or-limit — Raise/reset OpenRouter key limit (account-side)'
