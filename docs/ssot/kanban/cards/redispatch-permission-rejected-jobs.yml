@@ -3,7 +3,7 @@ title: Re-dispatch 3 permission-rejected jobs under hardened dispatcher
 column: backlog
 note: 081016 enroll-speaker investigation, 115509 traffic camera, 120132 automation tool — all exited 0 with zero
   output because tool calls were rejected pre-hardening
-updated: 2026-10-05 14:36
+updated: 2026-10-05 14:41
 requests:
 - id: confirm-redispatch
   ask: Re-dispatch all 3 failed jobs (enroll-speaker investigation, traffic-camera integration, news automation
@@ -36,6 +36,16 @@ comms:
 - at: 2026-10-05 14:36
   from: chaba
   text: dispatched 20261005-143657-re-dispatch-3-permission-rejec on chaba
+- at: 2026-10-05 14:38
+  from: devin
+  text: picked up — verifying whether the 124438/123304/123308 redispatch batch produced output before deciding
+    on another relaunch
+- at: 2026-10-05 14:41
+  from: devin
+  text: 'verified: no third relaunch needed — the 124438/123304/123308 batch (dangerous mode) completed all 3 jobs
+    and every deliverable is merged to origin/master: enroll-speaker findings f6cd3f22 (merge 6d78f3eb), traffic-snap
+    29dcc5f0 (merge 67e110db), flood-news automation e532690a (merge 471d6eaa). Trail: docs/ssot/jobs/infrastructure/2026-10-05-redispatch-permission-rejected-verify.yml
+    + dispatch-outcome.md on dispatch/20261005-143657 (commit 69632f9f)'
 action:
   type: dispatch
   status: running
