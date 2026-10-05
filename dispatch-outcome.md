@@ -1,46 +1,78 @@
-# dispatch outcome — inbox-triage-round-2 (symptom sweep)
+# dispatch outcome — daily-brief-node (L2 report node, morning + evening, CMS + Ada-readable)
 
 ## What was done
 
-Triaged `docs/ada-memory/inbox/general/` — 222 files (201 `extract-*` dated
-2026-09-20→2026-10-02 plus 21 stray notes, including 6 newer 10-04 items).
-Each file's frontmatter `key` was matched against its MDDB bank doc
-(`ada-ha-bank-general`, 230 docs, cross-checked `ada-ha-bank-devin-handoff`,
-223 docs — no inbox key lived there).
+- **`scripts/report-daily-brief.py`** (new) — generator for the `daily-brief`
+  L2-domain node. `--edition auto|morning|evening` (auto = run-hour <12 →
+  morning), `--cards-dir`, `--no-cms`, `--print`.
+  - Morning edition: dispatches completed/failed since 19:00 (from the
+    `~/.local/share/devin-dispatch/tasks/*/meta.json` ledger, outcome line
+    pulled from each worktree's `dispatch-outcome.md`, zombie "running"
+    tasks flagged >24h), new cards filed (git `--diff-filter=A` on the card
+    dir — comms/`updated` heuristic fallback, labelled approx), red health
+    flags (system-report bad nodes + health-monitor unhealthy +
+    MCP critical/high recommendations), top open requests.
+  - Evening edition: the day's dispatch completions + cards closed today +
+    "what still needs you before tomorrow" — unanswered requests, review
+    queue with >24h stale marking (same bar as the board Needs You strip),
+    failed card actions/dispatches, stale-running dispatches.
+  - Writes: `reports/daily-brief/DAILY-BRIEF-<date>-<edition>.md` artifact,
+    `reports/meta.daily-brief.yml` via `lib/report.py::write_meta`,
+    `append_timeline` event, latest copy to
+    `stacks/web/public/apps/system-report/data/DAILY-BRIEF.md` (dual-root
+    mirror to chaba-tony-dell, same as report-system.py), and upserts CMS
+    page `ada-cms-pages/daily-brief` (kind:report, full meta_contract:
+    summary/domain=ops/fresh_for=12h/confidence=high/timeline/links/updated).
+  - The summary line answers "what needs me?": `needs-Tony: N open
+    request(s), M review (S stale), K stale-running dispatch(es)` + top asks.
 
-Classification result — **every file's bank doc was already resolved**:
+- **`docs/ssot/infrastructure/ssot.reports.yml`** — `daily-brief` node
+  registered (L2-domain, cadence 12h, meta `reports/meta.daily-brief.yml`,
+  artifact `reports/daily-brief/DAILY-BRIEF-*.md`, children
+  health-monitor+focus-inbox); added to system-report children; new
+  `schedule.daily_brief` entry + plan/related_files updated.
 
-| bank doc status | files | action |
-|---|---|---|
-| superseded | 53 | → `inbox/processed/` |
-| retracted | 63 | → `inbox/processed/` |
-| active + vault file exists | 100 | → `inbox/processed/` (stale dup) |
-| active + no vault file | 5 | promoted to `general/` (round-2 "P" convention: status→active, session_id dropped, body verified identical to MDDB doc) |
-| active, stale vs live doc | 1 | `yomi-vs-line-bot.md` → `inbox/processed/` (doc rewritten devin-side 10-04: Yomi offline; promoting the stale copy would conflict) |
-| draft / missing / live | 0 | — |
+- **`docs/ssot/infrastructure/ssot.jobs.yml`** — `daily-brief` job,
+  host tony_dell, `OnCalendar=*-*-* 07,19:05:00` (one timer, two editions;
+  morning lands after the 06:45 system report), Persistent, 10m timeout.
+  Exec points `--cards-dir` at the served checkout's card dir (live state +
+  real git-add history); board-api fallback inside the script.
 
-**0 live items** found (no open bugs, no awaiting-user requests, no drafts).
-`inbox/general/` is now empty; `inbox/processed/` holds 217 archived files.
-No MDDB writes — no bank doc statuses were changed.
+- **`systemd/generated/tony_dell/daily-brief.{service,timer}`** — rendered
+  via `render-jobs.py` (validated: `--check` OK; `systemd-analyze calendar`
+  accepts the comma hour list; next elapse 19:05 +07).
 
-## Where
+- **`docs/ssot/jobs/infrastructure/2026-10-05-daily-brief-node.yml`** — job trail.
 
-- Job trail: `docs/ssot/jobs/ada/2026-10-04-inbox-general-symptom-sweep.yml`
-- Decision artifacts: `.triage2/` (bank dumps, per-file `report.json`, `actions.json`, `classify.py`)
+## Result
 
-## Not done / notes
+Verified working end-to-end from the worktree:
 
-- Root cause untouched per card: overnight focus pipeline exits 1 (separate
-  card). `export_inbox` in `scripts/ada/sync-ada-memory-to-mddb.py` re-exports
-  draft + voice/active docs — processed files may re-accumulate until the
-  pipeline fix lands.
-- Other bank inboxes still populated (out of scope): devin-handoff 86,
-  note 31, people 52, personal 142, personal-kk 27, personal-testo 1,
-  purchase 13, tony-projects 101.
+- `python3 scripts/report-daily-brief.py --edition morning` and
+  `--edition evening` both wrote artifact + meta + web copies + timeline
+  events; node renders in `report-system.py --print` as `daily-brief`
+  L2-domain DELTA with children resolved.
+- CMS page `ada-cms-pages/daily-brief` confirmed via MDDB `get` — kind:report,
+  fresh_for=12h, meta timeline accumulating across editions.
+- `reports-index` regenerated by the script — `daily-brief` is the top row;
+  Ada can answer "what needs me" from the index summary alone.
 
-## Verify
+Notable finding baked into the script: Ada's canonical
+`_cms_reports_index` regen only fires on Ada's own cms tool calls — raw
+`/v1/add` writes never trigger it, so a quiet night would leave the index
+stale at 07:05. The generator therefore re-renders `reports-index` itself
+after each publish (same table format, `written_by: report-daily-brief.py`).
+Also: MDDB `/v1/add` occasionally drops the response AFTER the write lands
+("Remote end closed connection") — publish is warn-only and the script
+verifies the page via `get` afterwards.
 
-    ls docs/ada-memory/inbox/general | wc -l      # 0
-    ls docs/ada-memory/inbox/processed | wc -l    # 217
-    # spot-check a promoted file:
-    cat docs/ada-memory/general/extract-2026-10-04-e7afe759ba-4.md
+## Caveats / not done
+
+- **Timer not installed** — units rendered in-repo only. Activate post-merge
+  on tony-dell: `python3 scripts/render-jobs.py --host tony_dell --install`.
+- New-cards detection needs a git checkout for truth; on the board-api-only
+  path it falls back to a comms/`updated` heuristic (labelled in the md).
+- Card `requests` carry no timestamp — "top open requests" order by the
+  card's `updated` field.
+- If Ada's index format changes, `regen_reports_index()` in the generator
+  must be updated to match (it's a verbatim mirror of ada-pi's render).
