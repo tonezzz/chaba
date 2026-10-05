@@ -40,8 +40,13 @@ hosts:
   idc01:
     name: idc01
     tailscale: idc01.taila0626a.ts.net
+    tailscale_ip: "100.74.146.0"
+    note: "Siamdata VPS, Bangkok — offline for maintenance 2026-10-05; all services migrated to idc03. Public IP masked per data-isolation; security posture in ssot.security.idc01.yml."
+  idc03:
+    name: idc03
+    tailscale: idc03.taila0626a.ts.net
     tailscale_ip: "100.102.134.91"
-    note: "Siamdata VPS, Bangkok — public edge (Caddy 80/443) + MDDB replica + Ada backends. Public IP masked per data-isolation; security posture in ssot.security.idc01.yml."
+    note: "Siamdata VPS, Bangkok — provisioned 2026-10-05, full idc01 replacement: mddb leader + Ada backends + public edge (Caddy 80/443, api.surf-thailand.com). Public IP masked per data-isolation."
 
 ports:
   mcp_debug_cors: 9100
