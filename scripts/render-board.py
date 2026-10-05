@@ -184,15 +184,20 @@ document.addEventListener('click', e => {{
   if (e.target === t) t.classList.add('hidden');
 }});
 
-async function api(path, body) {{
-  const r = await fetch(API + path, {{
-    method: 'POST',
-    headers: {{'Content-Type': 'application/json'}},
-    body: JSON.stringify(body),
-  }});
-  const j = await r.json().catch(() => ({{}}));
-  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
-  return j;
+async function api(path, body, timeoutMs) {{
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs || 90000);
+  try {{
+    const r = await fetch(API + path, {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify(body),
+      signal: ac.signal,
+    }});
+    const j = await r.json().catch(() => ({{}}));
+    if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    return j;
+  }} finally {{ clearTimeout(t); }}
 }}
 
 function actBtns(c, inModal) {{
@@ -455,13 +460,15 @@ function showCard(id) {{
 }}
 
 async function doAct(id, verb, extra) {{
-  if (busy) return;
+  if (busy) {{ toast('still working on previous action…', true); return; }}
   busy = true;
   try {{
     const r = await api('/action', Object.assign({{id, do: verb}}, extra || {{}}));
     toast(r.message || 'ok', /^blocked/i.test(r.message || ''));
     await load();
-  }} catch (e) {{ toast('error: ' + e.message, true); }}
+  }} catch (e) {{
+    toast('error: ' + (e.name === 'AbortError' ? 'request timed out — click again' : e.message), true);
+  }}
   busy = false;
 }}
 
