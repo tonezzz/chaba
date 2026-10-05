@@ -70,6 +70,24 @@ sections:
         text: "systemctl --user status input-bridge.service on idc01 (quadlet; source+unit in stacks/idc01/input-bridge/). The old tony-dell unit is disabled."
       - label: Known limits
         text: "Not a real Chromecast — castv2/Chrome-cast/AirPlay senders cannot target it. nav-mode iframes cannot pass Tailscale-User-Login-gated pages (same caveat as the VMS cast path). iOS standalone-PWA mic is untrusted (use Safari tab). No auth on /pub beyond tailnet reachability. Snapshots: canvas capture works for video/img (cross-origin img via /img proxy); a nav-mode iframe returns error 'uncapturable-iframe' with the page URL in detail — Ada cannot screenshot arbitrary web pages."
+  - title: Cast lane — host topology & single points (audited 2026-10-05)
+    icon: "🧭"
+    layout: list
+    items:
+      - label: tony-omen carries cast-browser (SPOF)
+        text: "cast-browser.service = persistent headless Chrome + Playwright on :8799 (LAN 0.0.0.0, systemd user unit, source stacks/services/cast-browser/). Ada tv_action calls it DIRECTLY via CAST_BROWSER_URL=http://100.75.102.88:8799 (tailnet). cast-shots-http.service :8090 serves page PNGs the Chromecast fetches; cast-desktop@N.service streams X display :N to HLS (omen has only :0). WebGL pages run on SwiftShader (--enable-unsafe-swiftshader) — the GPU is not actually required, the seat/Chrome-profile is what lives there."
+      - label: What degrades when tony-omen is off
+        text: "DEAD: Ada tv_action (nav/click/scroll/press/type + shotAndCast PNG-to-TV) — every command fails; HA automation assist_tv_control cast-browser sentences fail; cast-desktop screenlive:/tony-omen: desktop casts; cast-shots-http. DEGRADED-BUT-UP: cast-ha-panel.timer's cast-ha-selected.sh — /tick on 127.0.0.1:8799 fails -> falls back to cast-ha-page.sh one-shot Playwright render on tony-dell (works, loses interactivity). UNAFFECTED: the whole vcast path (input-bridge idc01 + displays + /capture leases + cast_to_screen/cctv_wall), cast-cam camera/play_stream->Chromecast, yt-live-api :8791->HA play_media."
+      - label: cast-browser-proxy (tony-dell :8799)
+        text: "socat TCP-LISTEN:8799,bind=127.0.0.1,fork -> TCP:192.168.2.86:8799 (omen LAN). Loopback-only — exists for dell-local callers (cast-ha-selected.sh /tick), NOT for Ada (Ada goes direct to the tailnet IP). No /health endpoint on cast-browser — liveness check = any path returning JSON {err:'unknown path'} proves proxy+upstream both alive."
+      - label: tv_display camera lane (tony-dell)
+        text: "cast-ha-panel.timer (OnActiveSec=2min prime + OnUnitActiveSec=60s self-rearm) -> cast-ha-selected.sh -> tv_display=camera casts input_select.tv_camera via HA camera/play_stream HLS to media_player.tony_tv_cast. Guards: input_boolean.cast_enabled kill switch, camera-unavailable skip, audit-cast.timer 5min host audit (~/.local/bin/audit-cast.sh, log ~/.local/share/cast-audit.log). 2026-10-05 fix: timer previously never fired after reboot — OnUnitActiveSec has no reference until the service runs once; OnActiveSec primes the chain."
+      - label: yt-live-api (tony-dell :8791)
+        text: "~/.local/bin/yt-live-api.py wraps yt-live.sh: POST /cast {q|url,lang}, POST /stop, GET /status|/health. Downloads+transcodes YouTube to HLS under stacks/web/public/apps/yt-live/, casts via HA media_player/play_media to media_player.tony_tv_cast. No cast-browser/omen dependency. Media cache ~/.cache/yt-live-media (~9.5GB/16 entries at audit)."
+      - label: Lease wiring (idc01 input-bridge)
+        text: "GET/POST /capture: screen->{source,ch,active,since,by} capture leases — ground truth for 'camera capture running on this screen' (camera_cast_permission gate + _capture_reminder + stale-lease reconcile in ada-pi tool_runner). Ada reaches it via VCAST_API=https://tony-dell.taila0626a.ts.net/api/input-bridge (Caddy -> 100.74.146.0:3010). Verified 2026-10-05: relay healthy, no stale leases after runs."
+      - label: Metric (measured 2026-10-05)
+        text: "cam cast to first frame on a vcast screen: 0.6s (POST /frame publish + /pub image -> screen state=image, screen 7 vcast-real). TV path warm re-cast <1s (play_stream dispatch is async; receiver already on mediashell). Cold TV wake from receiver-off ~15-20s (Chromecast app launch + HLS buffer — outside the 5s metric but expected)."
   - title: Testing
     icon: "🧪"
     layout: list
