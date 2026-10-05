@@ -116,3 +116,15 @@ comms:
     ellipses) so edge-tts itself pauses mid-sentence naturally.
     Speech 128s -> 140s from added pauses, still 0.95 natural rate,
     ends 175.7s inside the cut.
+- at: '2026-10-05 12:10'
+  from: devin
+  text: >-
+    Tony: voice should carry over scene changes, not stop at each cut.
+    v14 (dub-v14-flow.mp4 on screen 5): sentence grouping threshold
+    raised to --sent-gap 1.4s so only real pauses split utterances —
+    26 groups, voice flows through visual cuts. Cast map replaced by
+    --cast-times (second-precise turn borders on the karaoke word
+    stream) after discovering cue-index maps drift under timestamp
+    clamping; iterated borders against dumped word times until turns
+    are ~95% clean (single-word slips only). TH file realigned to the
+    26 groups. Bug fix: voice_at() now bisects pre-clamp cue times.
