@@ -1,0 +1,13 @@
+[Unit]
+Description=traffic-snap — HTTP snapshot shim for Thai traffic cameras
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.local/share/traffic-cam/traffic-snap.py --bind __TAILIP__ --port 8378
+Environment=CAMERAS_JSON=%h/CascadeProjects/chaba-tony-dell/frigate/cameras.json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

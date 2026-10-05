@@ -1,73 +1,73 @@
-# dispatch outcome — dispatch-merge-guard
+# dispatch outcome — traffic camera integration (traffic-snap)
 
 ## What was done
 
-Closed the two dispatch-loop failure modes from the card:
+Built `traffic-snap`, an HTTP snapshot shim for public Thai traffic
+cameras that speaks the **same contract as `vms-snap`** (the XMEye CCTV
+shim): `GET /health`, `GET /channels`, `GET /search?q=`, and
+`GET /snap?ch=<name>[&fresh=1]` → `image/jpeg`. Any consumer that already
+fetches a CCTV frame via `/snap?ch=` can fetch a traffic cam identically.
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+Camera sources, in `ch` resolution order:
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+1. **Registry** (`frigate/cameras.json` SSOT, `CAMERAS_JSON` override):
+   every enabled non-local cam — DOH/iTIC HLS playlists snapped via
+   `ffmpeg -frames:v 1` with `alt_urls` failover, RTSP via ffmpeg, or
+   direct `jpeg_url` GET. 33 cams loaded in the worktree registry.
+2. **Longdo feed** (`camera.longdo.com/feed/?command=json`, ~190 cams):
+   `longdo:<camid>` or title-substring resolution; imgurl jpeg → mjpeg
+   first-frame → hls ffmpeg fallback — ported from ada-pi's
+   `backend/traffic_camera.py`, including the dead-cam stub heuristic
+   (<8KB jpeg = "No sengnal"/not-found stub).
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
+15s per-cam frame cache (`fresh=1` bypasses), ffmpeg semaphore (4),
+response headers `X-Camera`/`X-Camera-Source`/`X-Camera-Title`
+(percent-encoded — Thai titles crash latin-1 headers, bug found and fixed
+during live test)/`X-Cache`/`X-Frame-Age`. 404s return `did_you_mean`
+suggestions.
+
+## Premise correction — chaba0
+
+The task says previous implementation lives in "the chaba0 repository".
+Verified by cloning `github.com/tonezzz/chaba0` (archived) and grepping:
+**chaba0 contains no camera/traffic-cam code** — only unrelated network
+"traffic" and a photo-capture UI. The real lineage is in this repo and
+ada-pi: `stacks/web/public/cameras.json` → `frigate/cameras.json`
+registry (DOH/iTIC/Longdo/Windy URLs already curated) →
+`cam-wall-pull.py` (hls/jpeg/youtube pull kinds, traffic/burapha/chonburi
+zones) → ada-pi `traffic_camera.py` (now `ada_camera_snapshot
+source=traffic`). The missing piece was the on-demand HTTP shim — that's
+what was built. Documented in the stack README.
 
 ## Where
 
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
+- `stacks/services/traffic-cam/traffic-snap.py` (new)
+- `stacks/services/traffic-cam/{traffic-snap.service,install.sh,verify.sh,README.md}` (new)
+- `docs/ssot/jobs/infrastructure/2026-10-05-traffic-cam-snap.yml` (new job trail)
+- `docs/ssot/apps/ssot.apps.camwall.yml` (implementation map: Traffic shim)
 
 ## Verify
 
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
+Local run on `127.0.0.1:18378` (test only, not installed):
 
-## Not done / notes
+- `/health` → `{"ok": true, "cameras": 33}`
+- `/snap?ch=itic_pracha` → 200, 704×576 live JPEG — OSD "CHARLIE
+  CCTV_PRACHANIWET1_92", timestamped 05-10-2026 (verified visually)
+- `/snap?ch=longdo:ITICM_BMAMI0081` → 200, 320×240 jpeg (feed path)
+- Repeat snap → `X-Cache: hit`; unknown name → 404 + suggestions;
+  `/search?q=bangna` → ranked registry+feed matches
+- `py_compile` + `bash -n` clean; `ssot-validate-all.mjs` 0 errors
 
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+To deploy (explicit approval required — not done in dispatch mode):
+`stacks/services/traffic-cam/install.sh` → binds `<tailscale-ip>:8378`,
+user unit, registry pointed at the live checkout.
+
+## Notes / not done
+
+- DOH upstream `180.180.242.207:1935` was connection-refused during
+  testing (direct `camerai1.iticfoundation.org/hls/` cams unaffected) —
+  `alt_urls` failover is the designed mitigation; keep them populated.
+- Ada-side wiring (`ada_camera_snapshot source=traffic` → this shim) is
+  an ada-pi change; documented in the README as a follow-up, not made
+  from a chaba worktree.
+- No deploy, no push, no live-checkout edits — per dispatch rules.

@@ -1,0 +1,112 @@
+title: traffic-snap — on-demand traffic camera snapshot shim
+subtitle: >-
+  HTTP service that serves live stills from Thai public traffic cameras
+  through the same /snap?ch=<name> contract as vms-snap (XMEye CCTV), so
+  traffic cams are reachable exactly like CCTV cams.
+icon: camera
+id: 2026-10-05-traffic-cam-snap
+status: done
+owner: devin-dispatch
+project: chaba
+branch: dispatch/20261005-123304-implement-a-traffic-camera-int
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >-
+    Implement a traffic camera integration feature. Search the chaba0
+    repository for previous implementation details/camera URLs, build a
+    service that fetches live images from traffic cameras and makes them
+    accessible in the same way as existing CCTV cameras. Document source
+    URLs and integration steps.
+  premise_correction: >-
+    chaba0 (github.com/tonezzz/chaba0, archived) was cloned and grepped —
+    it contains NO camera/traffic-cam code (only network "traffic" and
+    unrelated "snapshot"/"camera UI" hits). The real lineage lives in this
+    repo: stacks/web/public/cameras.json + frigate/cameras.json registry
+    (DOH/iTIC/Longdo/Windy sources) -> cam-wall-pull.py hls/jpeg/youtube
+    pull kinds -> ada-pi backend/traffic_camera.py (Longdo feed snap). The
+    missing piece was an on-demand HTTP shim matching vms-snap's contract;
+    that is what was built.
+  prior_dispatches: >-
+    Card dispatched twice before (20260928-115509, 20261005-122644) — both
+    exited with zero output; first was a permission-rejection failure
+    pre-dispatch-hardening (see redispatch-permission-rejected-jobs card).
+
+deliverables:
+  - >-
+    stacks/services/traffic-cam/traffic-snap.py — stdlib+ffmpeg HTTP shim:
+    /health, /channels, /search?q=, /snap?ch=<name>[&fresh=1]; registry
+    (frigate/cameras.json) hls/rtsp/jpeg_url sources with alt_urls
+    failover + lazy Longdo feed (longdo:<camid> or title search); 15s
+    per-cam frame cache; ffmpeg semaphore (4); dead-frame rejection
+    (<8KB jpeg stub heuristic, same as cam-wall-pull/traffic_camera)
+  - >-
+    stacks/services/traffic-cam/traffic-snap.service + install.sh +
+    verify.sh — user unit, tailnet-only bind rendered like xmeye-vms
+    (port 8378, next to vms-snap 8377)
+  - >-
+    stacks/services/traffic-cam/README.md — endpoint contract, source URL
+    table (DOH Wowza 180.180.242.207/208:1935, camerai1/camera1
+    .iticfoundation.org, streaming{1,2}.highwaytraffic.go.th, Longdo feed,
+    Windy), install + Ada/cam-wall/vms-snap-parity integration notes
+  - docs/ssot/apps/ssot.apps.camwall.yml — implementation map: shim entry
+
+processing:
+  steps:
+    - >-
+      Searched chaba0 (git clone + grep; also docs/kb/archive/chaba0
+      distillations): no camera implementation found — premise corrected,
+      real sources are in chaba registry + ada-pi traffic_camera.py.
+    - >-
+      Surveyed existing surface: cam-wall-pull.py TRAFFIC_ZONE_MAP
+      generates traffic/burapha/chonburi zones from frigate/cameras.json;
+      ada-pi merged traffic_camera into ada_camera_snapshot(source=traffic)
+      (tools-merge-camera card). Gap = no on-demand HTTP snap endpoint.
+    - >-
+      Built traffic-snap.py porting the ada-pi Longdo fallback chain
+      (imgurl jpeg -> vdourl mjpeg first-frame -> hls ffmpeg) plus the
+      cam-wall-pull hls/ffmpeg + alt_urls logic.
+    - >-
+      Live-tested on 127.0.0.1:18378: /health 33 registry cams,
+      /snap?ch=itic_pracha -> live 704x576 jpeg (OSD timestamp verified
+      visually), longdo:ITICM_BMAMI0081 -> 320x240 jpeg, cache hit +
+      404/did_you_mean verified.
+  decisions:
+    - >-
+      vms-snap contract parity (/snap?ch=) over inventing a new API —
+      "same way as existing CCTV cameras" read literally.
+    - >-
+      Registry-driven camera set (skips source==local house cams) +
+      opt-in Longdo feed — curated cams resolve by name, the ~190-cam
+      feed stays searchable without polluting /channels.
+    - >-
+      X-Camera-Title percent-encodes non-ASCII (Thai titles crash
+      latin-1 header encoding — found during live test).
+    - >-
+      No auto-deploy: dispatch mode; install.sh renders tailnet bind but
+      was not executed.
+
+followup:
+  verification: >-
+    verify.sh runs /health + /channels + one live snap. Manual check used:
+    CAMERAS_JSON=<wt>/frigate/cameras.json python3 traffic-snap.py --bind
+    127.0.0.1 --port 18378, then curl /snap?ch=itic_pracha.
+  rollback: >-
+    systemctl --user disable --now traffic-snap.service + remove
+    ~/.config/systemd/user/traffic-snap.service and
+    ~/.local/share/traffic-cam/; deleting the stack dir reverts the repo.
+  notes: >-
+    Ada-side wiring (ada_camera_snapshot source=traffic -> this shim) is
+    an ada-pi change — documented in README, intentionally not done from a
+    chaba worktree. DOH 180.180.242.207:1935 was connection-refused during
+    testing (camerai1 direct-hls cams unaffected); alt_urls failover is
+    the designed mitigation.
+
+report:
+  outcome: success
+  summary: >-
+    New traffic-snap service exposes live traffic-cam stills via the
+    vms-snap contract; verified against live DOH/iTIC + Longdo sources.
+    chaba0 premise corrected — no prior camera code existed there;
+    documented where the real implementation lineage lives.
