@@ -1,13 +1,21 @@
 id: gev-tours
-title: 'gev tours — flyover/tour definitions + playback'
+title: gev tours — flyover/tour definitions + playback
 column: backlog
+priority: low
 program: gev
 area: tours
-metric: 'a named tour plays to completion with camera path + narration cues'
-verify: 'run one tour on TV/browser; checkpoints reached in order'
-note: >-
-  Tour/flyover capability exists in the app but has no scenario coverage
-  or tracking. Define what a tour is (waypoints, dwell, narration), pick
-  one flagship route, make it verifiable.
+metric: a named tour plays to completion with camera path + narration cues
+verify: run one tour on TV/browser; checkpoints reached in order
+note: Tour/flyover capability exists in the app but has no scenario coverage or tracking. Define what a tour is
+  (waypoints, dwell, narration), pick one flagship route, make it verifiable.
 help: 'related: gev-map; camera-move tool calls live in GEV_REALTIME_TOOLS'
-updated: '2026-10-04'
+spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-design). Define a tour format: ordered
+  waypoints (locationId or lat/lon), dwell time per stop, narration cues; implement one flagship route end-to-end;
+  a tour must report checkpoints reached in order so a scenario can verify playback.'
+updated: 2026-10-05 13:03
+comms:
+- at: 2026-10-05 13:03
+  from: devin
+  text: 'spec written 2026-10-05 but left unarmed: gods-eye-view has no pushable remote (origin=upstream bilawalsidhu,
+    local main 6 ahead) and is not in dispatch-repos.conf. To dispatch: fork/push-remote + whitelist entry, or pull
+    the work into chaba staging. See gev-program-design.'

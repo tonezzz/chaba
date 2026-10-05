@@ -1,12 +1,25 @@
 id: vcast-cast-lane
 title: cast lane — cast-browser, proxy to tony-omen, cast-cam, yt-live
 column: backlog
+priority: high
 program: vcast
 area: cast-lane
 metric: cast-browser-proxy + yt-live-api stay active; cam cast <5s to first frame
 verify: cam_to_screen + cctv_snapshot_to_screen scenarios
-note: >-
-  cast-browser (tony-omen) + cast-browser-proxy :8799 (tony-dell),
-  cast-cam, cast-ha-panel, yt-live-api. The GPU host carrying cast-browser
-  is a coupling worth tracking — note single-point risk if tony-omen is off.
-updated: '2026-10-04'
+note: cast-browser (tony-omen) + cast-browser-proxy :8799 (tony-dell), cast-cam, cast-ha-panel, yt-live-api. The
+  GPU host carrying cast-browser is a coupling worth tracking — note single-point risk if tony-omen is off.
+spec: 'Audit the cast lane services: cast-browser on tony-omen (GPU host — document the single-point dependency
+  in SSOT: what degrades when tony-omen is off), cast-browser-proxy :8799 on tony-dell, cast-cam, cast-ha-panel,
+  yt-live-api :8791. Check service health and lease wiring; confirm cam_to_screen + cctv_snapshot_to_screen scenarios
+  still pass. Metric: cam cast <5s to first frame.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Audit cast lane per card spec: cast-browser/tony-omen single-point doc, proxy/cast-cam/cast-ha-panel/yt-live-api
+    health + lease wiring, cam_to_screen + cctv_snapshot_to_screen scenarios green.'
+updated: 2026-10-05 13:03
+comms:
+- at: 2026-10-05 13:03
+  from: tony
+  text: queued for processing

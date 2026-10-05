@@ -1,6 +1,9 @@
 id: yt-voice-dub-e2e
 title: 'YT voice dub — E2E assessment: pros/cons + improvement roadmap'
 column: backlog
+program: yt-voice-dub
+area: assessment
+priority: low
 metric: 'assessment note records ranked improvements; minimal-test vs production boundary explicit'
 verify: 'card note reviewed by Tony; follow-on cards filed for chosen lanes'
 note: >-
@@ -22,4 +25,12 @@ note: >-
   cloning, lip-sync, or cloning-grade diarization until the minimal
   test lands.
 help: 'parent test: yt-voice-dub-test; same pipeline refs'
+spec: >-
+  Write the E2E assessment as docs/assessments/yt-voice-dub-e2e-<date>.md: pros/cons of cue-level edge-tts (free, offline cache, reuses VTT+HLS plumbing vs rough cue timing, no speaker separation, caption-error flow-through, flat ducking, no lip-sync); ranked improvements — cue-fit TTS, caption QC gate, sidechain ducking, voice-mode selector on the cast URL, voice casting, then cloud neural TTS only if demand proves out; explicit boundary — no voice cloning, lip-sync, or cloning-grade diarization until the minimal test lands. File follow-on cards for chosen lanes; card closes on Tony review.
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Write the yt voice-dub E2E assessment doc per card spec: pros/cons, ranked improvements, minimal-vs-production boundary; file follow-on cards for chosen lanes.
 updated: '2026-10-04'

@@ -1,38 +1,47 @@
 id: yt-voice-dub-cast
-title: 'YT voice dub — cast TTS voices to match actors/speakers'
+title: YT voice dub — cast TTS voices to match actors/speakers
 column: backlog
-metric: 'each distinct speaker keeps one consistent voice, plausibly matched on gender/age/tone'
-verify: 'dub output has N distinct voices aligned to detected/labelled speakers'
-note: >-
-  Next step after yt-voice-dub-test (Tony ask 2026-10-04). Two
-  sub-problems: (a) speaker detection — YouTube auto-captions carry no
-  speaker labels, so use audio diarization (pyannote / whisperx-style
-  align+diarize) or heuristic cue-gap clustering; (b) voice casting —
-  map each speaker to an edge-tts voice matched on gender/age/tone,
-  fixed for the whole video. Start heuristic: 2-speaker assumption on
-  interview/talk videos before paying for full diarization.
-help: >-
-  voices: edge-tts --list-voices (filter th-*/en-*); diarize:
-  pyannote/speaker-diarization; verify loop in yt-voice-dub-scenarios
-updated: '2026-10-04'
+program: yt-voice-dub
+area: casting
+priority: high
+metric: each distinct speaker keeps one consistent voice, plausibly matched on gender/age/tone
+verify: dub output has N distinct voices aligned to detected/labelled speakers
+note: 'Next step after yt-voice-dub-test (Tony ask 2026-10-04). Two sub-problems: (a) speaker detection — YouTube
+  auto-captions carry no speaker labels, so use audio diarization (pyannote / whisperx-style align+diarize) or heuristic
+  cue-gap clustering; (b) voice casting — map each speaker to an edge-tts voice matched on gender/age/tone, fixed
+  for the whole video. Start heuristic: 2-speaker assumption on interview/talk videos before paying for full diarization.'
+help: 'voices: edge-tts --list-voices (filter th-*/en-*); diarize: pyannote/speaker-diarization; verify loop in
+  yt-voice-dub-scenarios'
+spec: 'Two parts. (1) Repo-home the pipeline: move ~/.local/bin/{yt-vtt-dub.py, yt-live-api.py, yt-live.sh, yt-vtt-translate.py}
+  into chaba scripts/ops/ keeping installed copies working. (2) Speaker casting, heuristic first: detect speaker
+  turns via cue-gap clustering on VTT timings + question-cue heuristics, 2-speaker assumption for interview/talk
+  videos; map each speaker to a fixed edge-tts voice for the whole video (--cast-map index ranges already exist).
+  Constraints: edge-tts has exactly 2 TH voices (Premwadee F, Niwat M) — 2-speaker demos only; TH text runs ~1.4x
+  longer than the EN cue window so uniform-rate fit is the honest fix; sNh4pVMFhvQ ships NO captions — needs a Whisper
+  transcription lane first. Corpus staged at ~/yt-dub-prep/: U_io-pqPFfQ (3-speaker probe), 4njFdBF_42I (2+1). Verify:
+  dub output shows N distinct voices aligned to detected speakers on the staged corpus.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'YT voice dub speaker casting per card spec: repo-home yt-vtt-dub/yt-live scripts into scripts/ops/, then
+    heuristic speaker detection (cue-gap clustering + question cues) + fixed per-speaker edge-tts voice mapping;
+    verify distinct voices per speaker on ~/yt-dub-prep corpus.'
+updated: 2026-10-05 13:03
 comms:
-- at: '2026-10-04 19:55'
+- at: 2026-10-04 19:55
   from: devin
-  text: >-
-    Multi-speaker test corpus staged at tony-dell:~/yt-dub-prep/:
-    U_io-pqPFfQ (Jonathan Ross, both brothers + host, 20min, mp4+subs
-    ready), 4njFdBF_42I (Graham Norton, 19min, mp4+subs ready),
-    MRD8m52CJuw (Noel solo, 25min, en-orig.vtt ready, mp4 pending YT
-    429 retry), sNh4pVMFhvQ (Sweden 1994, 17min, mp4 only — video
-    ships NO captions at all, needs Whisper transcription first —
-    good transcribe-lane specimen). Jonathan Ross is the 3-speaker
-    casting probe; Graham Norton the 2+1.
-- at: '2026-10-05 06:15'
+  text: 'Multi-speaker test corpus staged at tony-dell:~/yt-dub-prep/: U_io-pqPFfQ (Jonathan Ross, both brothers
+    + host, 20min, mp4+subs ready), 4njFdBF_42I (Graham Norton, 19min, mp4+subs ready), MRD8m52CJuw (Noel solo,
+    25min, en-orig.vtt ready, mp4 pending YT 429 retry), sNh4pVMFhvQ (Sweden 1994, 17min, mp4 only — video ships
+    NO captions at all, needs Whisper transcription first — good transcribe-lane specimen). Jonathan Ross is the
+    3-speaker casting probe; Graham Norton the 2+1.'
+- at: 2026-10-05 06:15
   from: devin
-  text: >-
-    First 2-voice render done (dub-v9-2voice.mp4, screen 5): The Egg
-    = 2-speaker dialogue (man + God). Premwadee=God, Niwat=man via
-    --cast-map index ranges. Hand-labeled turns — auto detection next:
-    turn boundaries ~ question cues + pause gaps; a 3B classifier tried
-    earlier is too weak for Thai (4% on a compression task). Constraint:
-    edge-tts has exactly 2 TH voices (M+F) — covers 2-speaker demos only.
+  text: 'First 2-voice render done (dub-v9-2voice.mp4, screen 5): The Egg = 2-speaker dialogue (man + God). Premwadee=God,
+    Niwat=man via --cast-map index ranges. Hand-labeled turns — auto detection next: turn boundaries ~ question
+    cues + pause gaps; a 3B classifier tried earlier is too weak for Thai (4% on a compression task). Constraint:
+    edge-tts has exactly 2 TH voices (M+F) — covers 2-speaker demos only.'
+- at: 2026-10-05 13:03
+  from: tony
+  text: queued for processing

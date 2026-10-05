@@ -1,14 +1,38 @@
 id: gev-bridge
-title: 'gev bridge — gemini-live ws proxy + tool declarations'
+title: gev bridge — gemini-live ws proxy + tool declarations
 column: backlog
+priority: high
 program: gev
 area: bridge
-metric: 'text tool-call cycle completes end-to-end through /apps/gev-live/ws'
-verify: 'send {"type":"text",...} -> function_call -> tool_response over wss /apps/gev-live/ws'
-note: >-
-  gev-gemini container (ws 127.0.0.1:8789) proxies Gemini Live. Known
-  constraint: Live rejects additionalProperties in function-declaration
-  params — bridge strips them recursively; regression risk when
-  GEV_REALTIME_TOOLS in vite.config.js changes -> tools.json regen.
-help: 'stacks/tony-dell/gev-gemini/{bridge.py,tools.json,Containerfile}'
-updated: '2026-10-04'
+metric: text tool-call cycle completes end-to-end through /apps/gev-live/ws
+verify: send {"type":"text",...} -> function_call -> tool_response over wss /apps/gev-live/ws
+note: 'gev-gemini container (ws 127.0.0.1:8789) proxies Gemini Live. Known constraint: Live rejects additionalProperties
+  in function-declaration params — bridge strips them recursively; regression risk when GEV_REALTIME_TOOLS in vite.config.js
+  changes -> tools.json regen.'
+help: stacks/tony-dell/gev-gemini/{bridge.py,tools.json,Containerfile}
+spec: 'chaba stacks/tony-dell/gev-gemini: add a tools.json regen guard — a script/test that re-extracts GEV_REALTIME_TOOLS
+  from ~/gods-eye-view vite.config.js, strips additionalProperties recursively (Gemini Live rejects it), diffs against
+  committed tools.json and fails on drift. Then verify the live ws path: connect ws://127.0.0.1:8789 (or /apps/gev-live/ws
+  via caddy), send {"type":"text",...}, expect function_call, return tool_response.'
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  task: Add tools.json regen guard in stacks/tony-dell/gev-gemini per card spec (re-extract GEV_REALTIME_TOOLS,
+    strip additionalProperties, drift-diff) and verify the ws tool-call cycle end-to-end.
+  task_id: 20261005-130841-chaba-stacks-tony-dell-gev-gem
+  runner: tony-dell
+updated: 2026-10-05 13:09
+comms:
+- at: 2026-10-05 13:03
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 13:08
+  from: chaba
+  text: dispatched 20261005-130841-chaba-stacks-tony-dell-gev-gem on chaba
+- at: 2026-10-05 13:09
+  from: devin
+  text: 'Session started: building tools.json regen guard + live ws verification.'
+claim:
+  session: 20261005-130841-chaba-stacks-tony-dell-gev-gem
+  since: 2026-10-05 13:08

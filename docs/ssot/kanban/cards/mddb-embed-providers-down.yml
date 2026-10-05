@@ -1,13 +1,13 @@
 id: mddb-embed-providers-down
 title: MDDB embedding outage — OpenRouter key limit + Gemini quota both dead
-column: backlog
+column: done
 priority: high
 note: 'gemini-ollama-proxy on idc01 reports all same-space providers down: OpenRouter 403 "Key limit exceeded (total
   limit)" (breaker circuit-open) + Gemini direct 429 quota. Docs still store (adds land) but every /add burns ~25-60s
   on failed embed retries and vectors are dropped — embed queue full (4000), droppedTotal >2900. cam-wall-cms and
   roster-audit services fail each cycle on the resulting slow adds. embed-probe canary firing every 15min. Needs
   an account-side fix — client timeouts alone won''t cover it.'
-updated: 2026-10-05 12:35
+updated: 2026-10-05 13:03
 requests:
 - id: provider-fix
   ask: 'Embedding upstream is down: raise/reset the OpenRouter key total limit (403), or wait for the Gemini daily
@@ -49,3 +49,14 @@ comms:
     HAS fresh quota (per-model 429) BUT is a different vector space — verified empirically: 001-vector of on-topic
     text scored 0.05 vs unrelated text 0.08 on /v1/vector-search, i.e. noise — enabling GEMINI_EMBEDDING_FALLBACK_MODEL
     would poison retrieval, correctly refused by desig'
+- at: 2026-10-05 13:03
+  from: tony
+  text: closed by Tony
+- at: 2026-10-05 13:03
+  from: devin
+  text: 'RESOLVED 2026-10-05: Tony raised the OR limit — logs show clean google/gemini-embedding-2 routing, no more
+    403s. vector_reindex backfilled the outage-window drops (devin-handoff +5 embedded); all other collections already
+    fully vectorized per vector_stats. Residual risk: single OR key is the only embed provider (backup key expired,
+    Gemini-2 direct quota-limited, 001/ollama are wrong vector space).'
+action:
+  status: done

@@ -1,14 +1,28 @@
 id: gev-health-loop
-title: 'build gev-auto-* health loop (page + ws + api probes -> kanban)'
+title: build gev-auto-* health loop (page + ws + api probes -> kanban)
 column: backlog
+priority: high
 program: gev
 area: monitoring
-metric: 'gev-auto-* cards auto-open within 15min of a lane failure'
-verify: 'stop gev-gemini, see gev-auto-bridge card appear in review'
-note: >-
-  Mirror of cms-auto-health.py, sources = HTTP probe /apps/gev/ (200),
-  ws connect probe /apps/gev-live/ws, api 127.0.0.1:4173, systemctl
-  status gev-gemini + gods-eye-view-api. Emit gev-auto-<check> cards,
-  auto-close on recovery. Fold into kanban-sync tick.
+metric: gev-auto-* cards auto-open within 15min of a lane failure
+verify: stop gev-gemini, see gev-auto-bridge card appear in review
+note: Mirror of cms-auto-health.py, sources = HTTP probe /apps/gev/ (200), ws connect probe /apps/gev-live/ws, api
+  127.0.0.1:4173, systemctl status gev-gemini + gods-eye-view-api. Emit gev-auto-<check> cards, auto-close on recovery.
+  Fold into kanban-sync tick.
 help: 'pattern: scripts/ada/cms-auto-health.py — same card lifecycle'
-updated: '2026-10-04'
+spec: 'New chaba probe script mirroring scripts/ada/cms-auto-health.py''s card lifecycle. Sources: HTTP GET /apps/gev/
+  ==200 via caddy, ws connect probe to /apps/gev-live/ws, api probe 127.0.0.1:4173, systemctl status gev-gemini
+  + gods-eye-view-api. On failure emit gev-auto-<check> cards into review; auto-close on recovery. Fold into the
+  kanban-sync tick like cms-auto-health does. Verify: stop gev-gemini, watch a gev-auto-bridge card appear within
+  a tick; restart and watch it close.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task: 'Build gev-auto-* health loop per card spec: mirror cms-auto-health.py, probes for page/ws/api/services,
+    emit gev-auto-<check> cards auto-closing on recovery, fold into kanban-sync tick.'
+updated: 2026-10-05 13:03
+comms:
+- at: 2026-10-05 13:03
+  from: tony
+  text: queued for processing
