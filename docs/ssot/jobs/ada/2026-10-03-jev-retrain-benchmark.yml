@@ -118,3 +118,16 @@ round2_2026-10-04: |
   Recommendation: mbert is the strongest swap candidate for the gate
   (same size class, +6 OOD pts, no orchestration). Cascade only pays
   if OOD assurance matters more than known-set perfection.
+
+edge_matrix_2026-10-05: |
+  Measured on real targets (open-jev venv, torch fp32 CPU):
+    idc01 2vCPU QEMU (prod host): mbert 125ms p50 / 160ms p90;
+      minilm 10ms / 22ms — both fit the gate budget easily.
+    No Pi5 on tailnet — ada-pi workload lives on idc01 QEMU.
+    iPhone = Safari WASM only (no ssh); Chrome-WASM bench page deferred.
+  mbert ONNX: fp32 599MB clean (eval 100% / hard 80%); int8 151MB
+  FAILED worse than v5-int8 — eval-all 62.5% (ModernBERT heads are
+  MORE quant-sensitive, not less). int8 path closed for both encoders;
+  edge-small = minilm-45MB or accept fp32.
+  Corpus shadow (3057 rows incl 603 live): g270m 99.2% > v5 98.6% >
+  mbert 98.4% >> minilm 84.2%.
