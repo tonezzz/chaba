@@ -1,0 +1,23 @@
+id: idc01-to-idc03-migration
+title: "Migrate idc01 -> idc03 (maintenance window)"
+column: backlog
+blocked_by: idc-vps-game
+note: >-
+  Plan: provision idc03 (card idc-vps-game) -> mddb via replication
+  (fork image follower on idc03 -> promote -> idc02 re-points leader addr)
+  -> edge: caddy-edge + DNS/CF to idc03 public IP -> small containers
+  (ollama/input-bridge/vcast/gemini-proxy/mddb-panel) via rsync+quadlet
+  -> ada-* units + timers + secrets via rsync -> soak 24-48h.
+help: >-
+  Inventory (2026-10-05): 9 containers, ~20 systemd units+timers,
+  ~/.config/secrets/*, ~26G state (17G mddb-backups, 4.1G mddb data,
+  3.8G ollama). Public edge: caddy-edge holds the VPS public 80/443.
+  Portability standards to apply while moving:
+  state in ~/.local/share/<svc>/, secrets ~/.config/secrets/<svc>.env,
+  quadlets rendered from stacks/<host>/<svc>/ (xmeye-vms is the model),
+  images via podman image scp or the idc02 build host.
+requests:
+  - id: scope
+    ask: "Migrate everything off idc03, or keep idc01 as edge/backup after maintenance?"
+    status: open
+updated: '2026-10-05'
