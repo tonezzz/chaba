@@ -27,6 +27,9 @@ Endpoints (after prefix strip):
       (board_notify.py — HA iPhone push by default, debounced
       BOARD_NOTIFY_DEBOUNCE_S=30s so bursts arrive as one batched
       summary). request-sweep.py re-pings once after 12h unanswered.
+      `suggested` must match one of options[] (string, {id,label}, or the
+      'id — label' composite) — stored on the entry as a recommendation
+      the UI renders ★ + 'accept suggestion'; never auto-applied.
   POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}
       CI pipeline write path (docs/ssot/ssot.ci.yml). opt_in:true sets the
       `pipeline: ci` opt-in; pipeline:{...} merges a full status block
@@ -738,6 +741,26 @@ def _selftest() -> None:
     assert "raised request rq2" in card["comms"][-1]["text"]
     rejects(lambda: do_request(card, {"ask": "again", "request_id": "rq2"}),
             "duplicate request id")
+    # suggested — recommendation validated against options, never applied
+    rejects(lambda: do_request(card, {"ask": "q", "suggested": "y"}),
+            "suggested requires options")
+    rejects(lambda: do_request(card, {"ask": "q", "options": ["y", "n"],
+                                      "suggested": "maybe"}),
+            "suggested must match one of the options")
+    do_request(card, {"ask": "ship it now?", "options": ["y", "n"],
+                      "suggested": "y"})
+    rs = card["requests"][-1]
+    assert rs["suggested"] == "y" and rs["status"] == "open"
+    # dict options: suggested may be the id, the label, or 'id — label'
+    for sug in ("a", "A", "a — A"):
+        do_request(card, {"ask": f"pick {sug}",
+                          "options": [{"id": "a", "label": "A"}],
+                          "suggested": sug})
+        assert card["requests"][-1]["suggested"] == sug
+    rejects(lambda: do_request(card, {"ask": "pick b",
+                                      "options": [{"id": "a", "label": "A"}],
+                                      "suggested": "b"}),
+            "suggested must match one of the options")
     rejects(lambda: do_request(card, {"ask": "q", "to": "nobody"}),
             "to must be one of")
     do_request(card, {"ask": "auto id please"})
