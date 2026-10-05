@@ -20,6 +20,7 @@ Consumers:
 import json
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 
 # name -> (path, default_branch). Fallback whitelist — canonical table is
@@ -214,3 +215,74 @@ def guard(card: dict) -> dict:
             "summary": "",
             "note": f"merge guard: {s['branch']} merged into "
                     f"{s['base_ref']}{dirty_txt}"}
+
+
+def _merge_in(wt: Path, ref: str) -> bool:
+    """Merge ref inside wt. True on a clean merge; auto-resolves when the
+    only conflict is the per-session dispatch-outcome.md scratch file."""
+    r = sh(["git", "-C", str(wt), "merge", "--no-edit", ref], timeout=90)
+    if r.returncode == 0:
+        return True
+    conflicted = sh(["git", "-C", str(wt), "diff", "--name-only",
+                     "--diff-filter=U"]).stdout.split()
+    if conflicted == ["dispatch-outcome.md"]:
+        sh(["git", "-C", str(wt), "checkout", "--theirs",
+            "dispatch-outcome.md"])
+        sh(["git", "-C", str(wt), "add", "dispatch-outcome.md"])
+        return sh(["git", "-C", str(wt), "commit", "--no-edit"],
+                  timeout=30).returncode == 0
+    sh(["git", "-C", str(wt), "merge", "--abort"], timeout=30)
+    return False
+
+
+def try_merge(card: dict) -> dict:
+    """Best-effort merge of the session branch into origin/<default>.
+
+    Runs in a throwaway detached worktree so the live checkouts are never
+    touched. {"merged": bool, "skipped"|"error": str, "note": str}."""
+    s = session(card)
+    if not s.get("repo_root") or not s.get("branch"):
+        return {"merged": False, "skipped": "no session branch"}
+    if not s.get("base_ref"):
+        return {"merged": False, "skipped": "no origin default branch"}
+    dirty = dirty_count(s["worktree"]) if s["worktree"] else None
+    if dirty:
+        return {"merged": False,
+                "skipped": f"worktree dirty ({dirty} file(s)) — commit first"}
+    repo, branch, base = s["repo_root"], s["branch"], s["default_branch"]
+    m = merge_state(repo, s["head"], s["base_ref"])
+    if not m["checked"]:
+        return {"merged": False, "skipped": m["error"]}
+    if m["ancestor"]:
+        return {"merged": True,
+                "note": f"{branch} already merged into {s['base_ref']}"}
+    sh(["git", "-C", str(repo), "fetch", "-q", "origin", base], timeout=45)
+    wt = Path(tempfile.mkdtemp(prefix="dispatch-merge-"))
+    try:
+        r = sh(["git", "-C", str(repo), "worktree", "add", "--detach",
+                str(wt), s["base_ref"]], timeout=60)
+        if r.returncode != 0:
+            return {"merged": False,
+                    "error": f"worktree add: {r.stderr.strip()[:200]}"}
+        if not _merge_in(wt, branch):
+            return {"merged": False,
+                    "error": f"conflicts merging {branch} — left unmerged"}
+        r = sh(["git", "-C", str(wt), "push", "-q", "origin",
+                f"HEAD:{base}"], timeout=60)
+        if r.returncode != 0:
+            # remote moved between fetch and push — resync once, retry
+            sh(["git", "-C", str(repo), "fetch", "-q", "origin", base],
+               timeout=45)
+            if not _merge_in(wt, s["base_ref"]):
+                return {"merged": False,
+                        "error": "post-push resync conflict — left unmerged"}
+            r = sh(["git", "-C", str(wt), "push", "-q", "origin",
+                    f"HEAD:{base}"], timeout=60)
+            if r.returncode != 0:
+                return {"merged": False,
+                        "error": f"push: {(r.stderr or r.stdout).strip()[:200]}"}
+        return {"merged": True,
+                "note": f"auto-merged {branch} → origin/{base}"}
+    finally:
+        sh(["git", "-C", str(repo), "worktree", "remove", "--force",
+            str(wt)], timeout=30)

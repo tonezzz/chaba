@@ -12,10 +12,12 @@ chaba-tony-dell checkout (the web-served tree). For each queued card:
 
 For cards already 'running', polls `devin-dispatch status <task_id>`;
 when the unit finishes, marks action.status done, moves the card to
-review, and writes a comms entry — plus session-end notes when the
-worktree is dirty (uncommitted file count) or the session branch has
-commits not in origin/<default_branch> (board-api blocks close on
-that until merged). Tony reviews then presses Close.
+review, writes a comms entry, and best-effort merges the session branch
+into origin/<default_branch> in a throwaway detached worktree (skipped
+when the worktree is dirty or the merge conflicts — the board-api close
+gate still blocks those until merged by hand; KANBAN_AUTOMERGE=0
+disables). Session-end notes report leftover dirty/unmerged state.
+Tony reviews then presses Close.
 """
 import fcntl
 import json
@@ -160,6 +162,20 @@ def poll_one(path: Path, card: dict) -> str:
     card["column"] = "review"
     card.setdefault("claim", {}).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
+    if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
+        try:
+            res = dr.try_merge(card)
+            if res.get("merged"):
+                comms_add(card, "chaba",
+                          res.get("note") or "session branch merged")
+            else:
+                why = res.get("error") or res.get("skipped") or "unknown"
+                comms_add(card, "chaba",
+                          f"auto-merge not done: {why} — close will block "
+                          f"until merged")
+        except Exception as e:
+            comms_add(card, "chaba",
+                      f"auto-merge error: {e} — merge manually")
     for n in session_end_notes(card):
         comms_add(card, "chaba", n)
     return "finished"
