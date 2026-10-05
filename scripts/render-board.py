@@ -410,7 +410,9 @@ function render() {{
   wire();
   setLang(lang);
   applyFilter();
-  if (openCard) showCard(openCard);   // keep the open modal fresh
+  // keep the open modal fresh — but don't wipe an in-progress comment
+  const ae = document.activeElement;
+  if (openCard && !(ae && (ae.classList.contains('cm-in') || ae.classList.contains('rq-in')))) showCard(openCard);
 }}
 
 function showCard(id) {{
