@@ -459,7 +459,7 @@ async function doAct(id, verb, extra) {{
   busy = true;
   try {{
     const r = await api('/action', Object.assign({{id, do: verb}}, extra || {{}}));
-    toast(r.message || 'ok');
+    toast(r.message || 'ok', /^blocked/i.test(r.message || ''));
     await load();
   }} catch (e) {{ toast('error: ' + e.message, true); }}
   busy = false;
