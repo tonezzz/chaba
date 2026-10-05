@@ -21,32 +21,45 @@ Standard workflow for ending a session when the user asks to finish/close.
 
 1. Detect the trigger
    - Primary phrases: 'Let's finish and close', 'finish and close', 'session closed',
+     'end session', 'close session', 'session complete', 'wrap up the session',
      'what have we learnt? how can we improve?'
-   - Aliases: 'finish', 'close', 'wrap up', 'wrap it up', 'close this out', 'end session',
-     'close session', 'session complete', 'we are done', 'done for now', 'that is all'.
-   - Normalize extra whitespace and punctuation; match intent, not exact text.
+   - The trigger must refer to ending the SESSION. Phrases about closing a card,
+     a task, a PR, or an item of work ('close the card', 'finish the rename',
+     'close this out' about a ticket) are NOT session-end triggers.
+   - If the intent is ambiguous, ask before proceeding — never commit code on a
+     misread cue.
 
-2. Summarize and review
+2. Pre-close sweep (do this before committing anything)
+   - `git worktree list` — report session worktrees that still need merge/removal.
+   - Check in-flight work: cards with `action.status: running` or `queued` that this
+     session dispatched, open `requests:` on touched cards — list them so nothing is
+     orphaned mid-flight.
+   - Check the live checkout (`chaba-tony-dell`) for dirty state if this session
+     touched it — flag unsynced/uncommitted work instead of closing blind.
+   - If the session pushed dashboard changes, run
+     `scripts/home-assistant/sync-ssot-from-live.sh` and commit before closing.
+
+3. Summarize and review
    - Summarize what was done, what is pending, and any errors or surprises.
    - If the user asks 'what have we learnt? how can we improve?', capture the lessons
      into a learning SSOT under `docs/ssot/` (e.g. `ssot.learning.session-close.2026.yml`).
 
-3. Validate
+4. Validate
    - Run `node scripts/ssot-validate-all.mjs`.
    - If SSOT files changed, ensure validation passes. Fix YAML errors before committing.
 
-4. Commit
+5. Commit
    - `git status --short` to confirm the intended files are included.
    - Use `git add` for specific files or `git add -A` when the user says "everything".
    - Commit with a generated message if the user did not supply one.
-   - If the pre-commit hook blocks due to SSOT bloat warnings and splitting is not practical
-     for the session, use `git commit --no-verify` and tell the user the reason.
+   - If a pre-commit hook blocks the commit, STOP and tell the user why — do not
+     use `--no-verify` or otherwise bypass hooks.
 
-5. Catch leftovers
+6. Catch leftovers
    - After commit, run `git status --short` again. If anything remains, do a second focused
      commit automatically or warn the user.
 
-6. Park unfinished work in the kanban inbox
+7. Park unfinished work in the kanban inbox
    - Anything still pending at close — deferred subtasks, follow-ups, "would be nice"
      items — must not die in the summary. File it in `docs/ssot/focus-inbox/` per the
      save-to-focus convention: one `<UTC-timestamp>-<slug>.yml` per coherent topic,
@@ -55,13 +68,14 @@ Standard workflow for ending a session when the user asks to finish/close.
    - Items deliberately dropped or already tracked elsewhere don't need parking.
    - Tell the user what was parked; the next active session triages it from the inbox.
 
-7. Push (only if asked)
+8. Push (only if asked)
    - Push to `origin` for the current branch only when the user explicitly asks for it
      ('push', 'push/etc.', or similar).
    - Report the remote tracking status.
 
-8. Close
-   - Report final status and commit hash(es).
+9. Close
+   - Report final status, commit hash(es), and anything the pre-close sweep surfaced
+     (running dispatches, open requests, dirty live checkout).
    - End with 'Session closed.'
 
 Edge cases
