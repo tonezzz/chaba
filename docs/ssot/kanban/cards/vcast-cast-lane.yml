@@ -20,7 +20,7 @@ action:
     health + lease wiring, cam_to_screen + cctv_snapshot_to_screen scenarios green.'
   task_id: 20261005-145917-audit-the-cast-lane-services-c
   runner: tony-dell
-updated: 2026-10-05 15:11
+updated: 2026-10-05 15:27
 comms:
 - at: 2026-10-05 13:03
   from: tony
@@ -31,6 +31,12 @@ comms:
 - at: 2026-10-05 15:02
   from: devin
   text: 'starting audit: mapping cast-browser (tony-omen), proxy :8799, cast-cam, cast-ha-panel, yt-live-api :8791'
+- at: 2026-10-05 15:17
+  from: devin
+  text: 'health: omen cast-browser active 3d; dell proxy :8799 socat->omen ok; yt-live-api :8791 ok; input-bridge
+    relay ok (7 screens, 0 stale leases). FOUND: cast-ha-panel.timer dead since boot (OnUnitActiveSec never fires
+    w/o first svc run) — fixed with OnActiveSec=2min, loop ticking again; omen cast-desktop@1 flap-looping x17368
+    on nonexistent :1 display'
 claim:
   session: 20261005-145917-audit-the-cast-lane-services-c
   since: 2026-10-05 15:00

@@ -1,24 +1,34 @@
 id: kanban-commit-conflict-marker-guard
 title: 'kanban-commit: reject files containing git conflict markers before committing'
 column: backlog
-note: 'Incident 2026-10-05 ~14:20: a kanban-commit auto-commit captured files mid-rebase
-  with <<<<<<< markers intact (logs-auto-*.yml x6 + coverage). YAML parse then failed
-  on the NEXT run, killing kanban-commit AND kanban-dispatch ~15min until manually
-  resolved. The validator caught it a cycle too late — the poison was already committed+pushed.'
-spec: 'scripts/board/kanban-commit.sh (or its validate step) must refuse to commit
-  any staged file containing conflict markers (lines starting <<<<<<< / ======= /
-  >>>>>>>) — not just invalid syntax. Cheap: git diff --check --cached, or grep the
-  staged set. On hit: skip the commit, log which file, and file/annotate a card (this
-  failure class is silent otherwise — today it surfaced only because dispatch also
-  died). Verify: plant a marker in a test card, run the service, confirm it skips+reports
-  rather than committing.'
+note: 'Incident 2026-10-05 ~14:20: a kanban-commit auto-commit captured files mid-rebase with <<<<<<< markers intact
+  (logs-auto-*.yml x6 + coverage). YAML parse then failed on the NEXT run, killing kanban-commit AND kanban-dispatch
+  ~15min until manually resolved. The validator caught it a cycle too late — the poison was already committed+pushed.'
+spec: 'scripts/board/kanban-commit.sh (or its validate step) must refuse to commit any staged file containing conflict
+  markers (lines starting <<<<<<< / ======= / >>>>>>>) — not just invalid syntax. Cheap: git diff --check --cached,
+  or grep the staged set. On hit: skip the commit, log which file, and file/annotate a card (this failure class
+  is silent otherwise — today it surfaced only because dispatch also died). Verify: plant a marker in a test card,
+  run the service, confirm it skips+reports rather than committing.'
 action:
   type: dispatch
   repo: chaba
-  status: queued
-updated: '2026-10-05T15:00:00+07:00'
+  status: running
+  task_id: 20261005-151544-scripts-board-kanban-commit-sh
+  runner: tony-dell
+updated: 2026-10-05 15:27
 comms:
 - at: 2026-10-05 15:00
   from: devin
-  text: filed after the 2026-10-05 poisoned-commit incident — found during system-wide
-    scan
+  text: filed after the 2026-10-05 poisoned-commit incident — found during system-wide scan
+- at: 2026-10-05 15:16
+  from: chaba
+  text: dispatched 20261005-151544-scripts-board-kanban-commit-sh on chaba
+- at: 2026-10-05 15:26
+  from: devin
+  text: 'Investigated: root cause confirmed — `git pull --rebase` conflict leaves markers; next tick stages+commits
+    them, then render/dispatch die on YAML parse. Plan: refuse commit on (a) rebase/merge/cherry-pick in progress,
+    (b) `git diff --cached --check` leftover conflict markers; alert via dedicated ops card upserted under the board
+    flock.'
+claim:
+  session: 20261005-151544-scripts-board-kanban-commit-sh
+  since: 2026-10-05 15:16

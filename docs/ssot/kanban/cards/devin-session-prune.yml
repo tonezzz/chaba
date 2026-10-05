@@ -1,6 +1,6 @@
 id: devin-session-prune
 title: Prune old headless dispatch sessions from sessions.db
-column: backlog
+column: review
 note: 160 sessions accumulated — every devin-dispatch run creates one. They clutter the IDE session list. Vacuum
   path exists (devin-vacuum-when-closed.sh -> ~/.config/devin/scripts/vacuum-devin-db.sh) but isn't scheduled.
 spec: 'Build a session-prune housekeeping job for tony-dell:
@@ -22,10 +22,11 @@ spec: 'Build a session-prune housekeeping job for tony-dell:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task_id: 20261005-143056-build-a-session-prune-housekee
   runner: tony-dell
-updated: 2026-10-05 15:11
+  result: 20261005-143056-build-a-session-prune-housekee finished (inactive) — see `devin-dispatch logs 20261005-143056-build-a-session-prune-housekee`
+updated: 2026-10-05 15:25
 comms:
 - at: 2026-10-05 13:45
   from: devin
@@ -38,6 +39,19 @@ comms:
   from: devin
   text: 'starting: explored sessions.db schema, devin-dispatch task meta, devin-vacuum-when-closed.sh two-clear-checks,
     render-jobs.py pipeline. Writing session-prune.py next.'
+- at: 2026-10-05 15:14
+  from: devin
+  text: 'Done on dispatch/20261005-143056 (c4163d6a). scripts/devin/session-prune.py: prunes dispatch-era sessions
+    >14d only (title prefix / dispatch-wt+task meta / resume-<sid>); keeps needs-input, live locks, dirty/unmerged
+    worktrees+branches; per-session timeline.jsonl audit via lib/report.py; two-clear-checks + watchdog-flag guard
+    then vacuum-devin-db.sh. ssot.jobs.yml entry + rendered units; timer installed on tony-dell, next fire Sun 2026-10-11
+    03:00 (needs this branch merged first). Verified: snap'
+- at: 2026-10-05 15:25
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:25
+  from: chaba
+  text: 'session end: 3 commit(s) on dispatch/20261005-143056-build-a-session-prune-housekee not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-143056-build-a-session-prune-housekee
   since: 2026-10-05 14:31
