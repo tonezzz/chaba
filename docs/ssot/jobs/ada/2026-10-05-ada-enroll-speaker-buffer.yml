@@ -1,0 +1,154 @@
+# SSOT Job: ada_enroll_speaker "not enough audio buffered"
+# Dispatch task dispatch-wt-20261005-124438-investigate-why-ada-enroll-spe
+# (3rd dispatch of this investigation; earlier runs 20260928-081016 and
+# 20261005-122613 produced no output — permission-rejected exits).
+# Origin: Ada voice report — Tony spoke a Thai tongue twister
+# ("ชาวฟาผัดฟักเย็นฟาผัดฟักผัด") and counting on request, yet
+# ada_enroll_speaker still returned 'not enough audio buffered'.
+
+title: ada_enroll_speaker — "not enough audio buffered"
+subtitle: frontend capture verified clean; the enrollment buffer is starved server-side (ada-pi)
+icon: microphone
+
+status: diagnosed   # chaba-side observability shipped; root-cause fix belongs in ada-pi
+project: chaba + ada-pi
+owner: devin-dispatch
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context: |
+  Symptom: Ada offers voice enrollment, the user speaks a full phrase
+  (tongue twister ~4s, then counting), and ada_enroll_speaker answers
+  'not enough audio buffered' — repeatedly.
+
+  Key evidence that the FRONTEND capture path is NOT the failure:
+
+  - The tongue-twister turn was transcribed correctly by Gemini — it is
+    in scripts/jev/train-all.jsonl (line 1513, src: mined, ingested
+    2026-10-03 19:00 ICT). Real mic audio reached the backend and was
+    understood; only the speaker-enrollment buffer was empty.
+  - ada-voice-card.js (the chaba-side voice surface) streams mic PCM16
+    unconditionally on every ScriptProcessor callback while the socket
+    is OPEN: getUserMedia -> 2048-frame ScriptProcessor -> box
+    downsample to 16 kHz Int16 -> ws.send(). Verified by read-through;
+    no conditional drop other than intentional mute/auto-mute zeros.
+  - Enrollment buffering is entirely server-side: ada-pi
+    backend/speaker_id.py SpeakerSession._recent (30 s rolling tail of
+    fed audio, ADA_SPEAKER_RECENT_S) + _pending_voice (voiced chunks
+    accrued while unrecognized) -> enroll_from_buffer. See
+    benchmark/speaker-enrollment-20260928-1505 (passed live on idc01
+    after the 09-28 fixes 242b387/272e253).
+
+root_cause_candidates: |
+  Ordered by likelihood. All are in ada-pi (pwa_server.py /
+  speaker_id.py / realtime_provider.py) — that repo is OUTSIDE this
+  dispatch worktree, so the fixes below are specified, not applied.
+
+  1) response_active feed gate starves the enrollment buffer (prime
+     suspect). Commit bc06168 (deployed 2026-10-03 — AFTER the 09-28
+     enrollment fix passed) makes pwa_server skip speaker_session.feed()
+     while provider._response_active plus a 0.6 s echo tail
+     (ssot.learning.speaker-id-tts-echo.2026-10-03). Two starvation
+     modes:
+       a) Enrollment UX is call-and-response: Ada's "say a sentence"
+          prompt keeps _response_active up; a user who starts speaking
+          as/just after she finishes loses the head of the utterance to
+          the gate (and the whole utterance if she is still streaming).
+       b) STUCK GATE: _response_active is cleared on
+          response_completed/interrupted — but the Gemini Live 1008
+          abort (~11 in 3 days on ada-ha-tony, known issue) mid-response
+          may leave it latched; every feed() is then skipped for the
+          rest of the session. Gemini transcription is unaffected
+          (provider-side), so conversation works while enrollment can
+          never buffer — matching "tongue twister AND counting both
+          failed" in one session.
+  2) _pending_voice clearing: it only accrues while the speaker is
+     UNRECOGNIZED and is cleared on attribution. If auto_learn lands a
+     mid-phrase identification (Tony's ha-4d0e0dee mic scores
+     0.25-0.35, mostly-unrecognized — but any lucky hit clears it),
+     enrollment falls back to the _recent tail, which under a gate
+     contains mostly prompt-time-dropped/zero audio.
+  3) ws reconnect resets SpeakerSession: _recent/_pending_voice are
+     per-connection; a flap right before the enroll call empties both.
+     Session churn is a documented recurring issue.
+
+chaba_fixes:
+  - path: stacks/tony-dell/tony-ha/www/ada-voice-card.js
+    what: >
+      _handleControl now surfaces the speaker ws events the card used to
+      drop silently — 'speaker' (identified name + score),
+      'speaker_unrecognized' (best score), 'speaker_enrolled' /
+      'identity_changed', and a generic 'enroll_result' diagnostic slot.
+      They render on the card's status line and the ada-activity-card
+      feed (avcLog). Makes the next enrollment failure self-describing:
+      the operator can see whether the server ever identified, fed, or
+      enrolled — instead of a bare "audio wasn't captured".
+    why: >
+      The failure was undiagnosable from the client: server speaker
+      events arrived but were ignored, so nobody could tell "mic never
+      sent audio" apart from "server dropped the feed". This is the
+      chaba-side half of the fix; the buffer starvation itself is
+      ada-pi-side.
+
+ada_pi_recommendations: |
+  For a follow-up dispatch against ~/CascadeProjects/ada-pi (could not
+  be edited from this worktree):
+
+  1) Narrow the echo gate: feed() should still append received audio to
+     _recent during _response_active — gate only the parts that ACT on
+     the audio: identify/auto_learn/_pending_voice accrual. The TTS-echo
+     incident was about Ada's voice reaching the *identifier*, not about
+     buffering. Buffering costs nothing; starving it breaks enrollment.
+     If Ada-echo contamination of _recent is a concern for enrollment,
+     prefer _pending_voice/user-turn-bounded audio (frames fed between
+     server VAD speech_started..speech_stopped) in enroll_from_buffer
+     over the raw tail.
+  2) Reset _response_active defensively on provider reconnect/go_away/
+     1008 abort so the feed gate can never latch open.
+  3) Emit a ws event on ada_enroll_speaker attempts, e.g.
+     {type:"enroll_result", ok, fed_s, voiced_s} — the card now renders
+     it (this commit), giving end-to-end visibility of exactly how much
+     audio the buffer held at enroll time.
+  4) Consider an explicit capture contract: server sends
+     {type:"enroll_listen", seconds:8}; the client mutes Gemini turns,
+     streams only for the window, and enroll consumes exactly that
+     window — immune to response timing, barge-in, and VAD edge cases.
+  5) Diagnostics to run on idc01 before/after: journalctl -u ada-ha-tony
+     | grep -E 'enroll|feed|response_active|voiced' across a failed
+     attempt; confirm whether feed() was skipped (gate) vs fed-but-unvoiced.
+
+verification:
+  - >-
+    node --check ada-voice-card.js: OK.
+  - >-
+    speaker events render: connect a voice session as an unknown voice
+    -> card shows "voice not recognized"; after enroll -> "voice
+    enrolled — <name>"; both appear in the Live activity feed.
+  - >-
+    Root cause is verified by an ada-pi-side check (this dispatch had no
+    ada-pi worktree access): re-run
+    scripts/scenario-live.py tests/scenarios-live/speaker_enrollment.yaml
+    on idc01 — if the buffer starves while audio streams, the
+    response_active gate is the regression.
+  - >-
+    Manual repro that distinguishes candidates: enroll attempt during a
+    CLEAN session (fresh connect, no 1008s). Pass = transient gate
+    window; fail = latched gate or buffer bug.
+
+notes:
+  - >-
+    ada-voice-card Auto-mute (ada_voice_auto_mute) was audited as a
+    suspect and cleared: it can only engage after a detected speech
+    burst ends, and the same RMS threshold re-opens it — it cannot
+    strand a speaker in the muted state. The zeros it sends are
+    intentional (server VAD turn-close, commit 1669c39f).
+  - >-
+    Pre-open frame drop exists (mic starts before ws open; frames are
+    discarded until OPEN) but is unrelated to this mid-session failure.
+    If buffered-and-flushed later, keep it small (<5 s) and paced.
+  - >-
+    pwa/enroll.html + /api/speakers/enroll (guest clip upload) is the
+    server-side alternate enrollment path — candidate for a future
+    card-side "record clip -> upload" enrollment button, but its request
+    contract is not documented in this repo; confirm in ada-pi
+    pwa/guest/guest.js before wiring.

@@ -1,73 +1,60 @@
-# dispatch outcome — dispatch-merge-guard
+# dispatch outcome — ada_enroll_speaker "not enough audio buffered"
 
-## What was done
+## Finding
 
-Closed the two dispatch-loop failure modes from the card:
+The frontend capture path is **not** the failure. Proof: the tongue-
+twister turn the user spoke ("ชาวฟาผัดฟักเย็นฟาผัดฟักผัด…") reached the
+backend and was transcribed correctly by Gemini — it's in
+`scripts/jev/train-all.jsonl` (line 1513, mined 2026-10-03). Real audio
+streams; the *enrollment buffer* is what stays empty.
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+Buffering is server-side (ada-pi `SpeakerSession._recent` /
+`_pending_voice` → `enroll_from_buffer`), outside this worktree. The
+prime suspect is the **TTS-echo feed gate** (ada-pi commit bc06168,
+deployed 2026-10-03 — after the 09-28 enrollment fix passed its live
+benchmark): `pwa_server` now skips `speaker_session.feed()` while
+`provider._response_active` + 0.6 s tail. If the user answers Ada's
+"speak now" prompt inside that window — or if `_response_active` latches
+after one of the recurring Gemini 1008 mid-response aborts — every enroll
+attempt reports "not enough audio buffered" while conversation keeps
+working. Full analysis + ranked candidates in
+`docs/ssot/jobs/ada/2026-10-05-ada-enroll-speaker-buffer.yml`.
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+## What changed (this worktree)
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
+- `stacks/tony-dell/tony-ha/www/ada-voice-card.js` — `_handleControl` now
+  surfaces the speaker ws events the card previously dropped:
+  `speaker`, `speaker_unrecognized`, `speaker_enrolled`,
+  `identity_changed`, plus a generic `enroll_result` diagnostic slot.
+  They render on the status line and the ada-activity-card feed — the
+  next failure will show whether the server identified/fed/enrolled
+  instead of looking like "audio wasn't captured". `node --check` OK.
 
-## Where
+## Recommended ada-pi fix (needs a dispatch with ada-pi access)
 
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
+1. Narrow the gate: keep appending fed audio to `_recent` during
+   `_response_active`; gate only identify/auto_learn/`_pending_voice`.
+   (The echo incident was about *identifying* Ada's voice, not
+   buffering.)
+2. Reset `_response_active` on provider reconnect/abort so the gate
+   can't latch.
+3. Emit `{type:"enroll_result", ok, fed_s, voiced_s}` on enroll attempts
+   — the card now renders it.
+4. Re-run `tests/scenarios-live/speaker_enrollment.yaml` on idc01 to
+   confirm.
 
 ## Verify
 
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
+- Card change: `node --check` passes; speaker events appear in the Live
+  activity feed on the next session.
+- Root cause: on idc01, `journalctl -u ada-ha-tony | grep -E 'enroll|
+  response_active|voiced'` across a failed attempt shows whether feed()
+  was gated vs fed-but-unvoiced.
 
-## Not done / notes
+## Notes
 
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+- No commit/push/deploy performed beyond this worktree branch, per
+  dispatch rules. ada-pi could not be edited (outside worktree).
+- Prior dispatches of this task (20260928-081016, 20261005-122613)
+  exited with zero output; this run produced the analysis + the
+  chaba-side half of the fix.

@@ -546,6 +546,34 @@ class AdaVoiceCard extends HTMLElement {
       case "speech_stopped":
         this._setStatus("Listening");
         break;
+      case "speaker": {
+        // Server-side speaker-ID hit — {name, score|confidence|best_score}.
+        const who = ev.name || ev.speaker || "?";
+        const sc = ev.score ?? ev.confidence ?? ev.best_score;
+        avcLog("status", `Speaker identified: ${who}${sc != null ? ` (${Math.round(sc * 100)}%)` : ""}`);
+        this._line.textContent = `🎙 ${who}`;
+        break;
+      }
+      case "speaker_unrecognized":
+        // Server fired its miss threshold — Ada may offer ada_enroll_speaker.
+        // Surfacing matters: enrollment failures look like "audio not
+        // captured" unless the unrecognized state is visible.
+        avcLog("status", `Voice not recognized (best ${Math.round((ev.best_score || 0) * 100)}%)`);
+        this._line.textContent = "🎙 voice not recognized — Ada may offer to enroll it";
+        break;
+      case "speaker_enrolled":
+      case "identity_changed": {
+        const who = ev.name || ev.speaker || "";
+        avcLog("status", `Speaker enrolled${who ? `: ${who}` : ""}`);
+        this._line.textContent = `🎙 voice enrolled${who ? ` — ${who}` : ""}`;
+        break;
+      }
+      case "enroll_result":
+        // Optional server diagnostic (fed/voiced seconds) if pwa_server
+        // emits it — shows exactly how much audio the enroll buffer saw.
+        avcLog("status", `Enroll: ${ev.message || JSON.stringify(ev)}`);
+        this._line.textContent = `🎙 enroll: ${ev.message || ""}`;
+        break;
       case "clear_audio":
         this._assistantPlaying = false;
         this._playbackNode?.port.postMessage({ type: "clear" });
