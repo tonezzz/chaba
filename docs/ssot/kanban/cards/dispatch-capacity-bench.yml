@@ -3,7 +3,7 @@ title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
 column: review
 note: 'Measure before deciding multi-host dispatch architecture. Key gap found 2026-10-04: devin CLI exists ONLY
   on tony-dell — remote hosts can''t dispatch today regardless of the card system.'
-updated: 2026-10-04 20:58
+updated: 2026-10-05 08:10
 help: "Current capacity snapshot (measured 2026-10-04):\n  tony-omen  12c / 3G avail / load 7.0   — loaded, not\
   \ free capacity\n  idc01       2c / 26G avail / load 0.6  — RAM-rich CPU-poor, runs ada+mddb\n  mn01        4c\
   \ / 2G avail  / load 2.0  — standby-sized\n  idc02       4c / 11G avail / load 0.08 — idle VPS, best free capacity\n\
@@ -60,7 +60,9 @@ requests:
     credentials.toml read-only into the idc02 podman container per run; (b) copy credentials.toml to each bare runner
     (omen/mn01 already have it); (c) hold until a dispatch-scoped token exists. Details in docs/assessments/dispatch-capacity-2026-10.md
     section 6.'
-  status: open
+  status: answered
+  answer: b — copy credentials.toml to each runner; omen/mn01 already have it, place on idc02 and bind-mount into
+    the dispatch container
 comms:
 - at: 2026-10-04 10:20
   from: devin
@@ -115,5 +117,16 @@ comms:
 - at: 2026-10-04 20:58
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-05 08:09
+  from: tony
+  text: 'answered multi-host-dispatch-is-unblocked-except-915b8b: b — copy credentials.toml to each runner; omen/mn01
+    already have it, place on idc02 and bind-mount into the dispatch container'
+- at: 2026-10-05 08:10
+  from: devin
+  text: 'Acted on answer b: credentials.toml + config.json provisioned on idc02 (mode 600/700). devin -p verified
+    END-TO-END inside rootless podman container — real session ran, rc=0, with --memory=1536m/--cpus=1.5 enforced.
+    Working run recipe documented in assessment section 4 (--userns=keep-id + $HOME mounts + --respect-workspace-trust
+    false). Committed a06560ac. Podman runner path on idc02 is now fully proven — remaining gaps for multi-host
+    dispatch are queue fan-out, repo-checkout freshness, and imag'
 claim:
   since: 2026-10-04 20:42
