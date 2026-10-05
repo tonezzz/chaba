@@ -1,0 +1,29 @@
+id: cms-services-michael-ha-live
+title: "services-michael-ha — collect live data via tony-omen"
+column: backlog
+note: >-
+  The weekly regen (cms-services-weekly-regen) permanently renders
+  services-michael-ha as "unreachable from the collector" — host-services-cms.py
+  runs on tony-dell and dell has no ssh path to michael-ha, so the index row is
+  always a stub and the leaf replays a static last-known-layout body.
+  HOST_META already documents "reachable via ssh from tony-omen only". Add a
+  per-host jump_host (michael-ha -> tony-omen) so probe_host() wraps the remote
+  command as `ssh tony-omen 'ssh -o BatchMode=yes michael-ha "<probe>"'` —
+  then the index row gets real load/disk/containers like every other host.
+spec: >-
+  In scripts/ada/host-services-cms.py: add `jump: tony-omen` to HOST_META for
+  michael-ha; in probe_host() wrap the probe command through the jump host
+  when set. Regen once and verify services-michael-ha shows live data and the
+  index drops its unreachable row; keep the unreachable_body fallback for the
+  case tony-omen itself is down.
+comms:
+- ts: '2026-10-04T20:05:00'
+  from: devin
+  text: >-
+    Implemented (HOST_META.jump + probe fed over stdin via the jump host) and
+    verified live — michael-ha leaf renders up 7d / load 0.79 / mem 2.3G/3.9G /
+    disk 74% and the index reports 0 unreachable. NOTE: the original commit was
+    lost when the dispatch worktree was removed pre-merge; re-applied on branch
+    services-regen-followup. Known cosmetic gap: containers shows "?" — the HAOS
+    ssh add-on container cannot see host docker.
+updated: '2026-10-04'

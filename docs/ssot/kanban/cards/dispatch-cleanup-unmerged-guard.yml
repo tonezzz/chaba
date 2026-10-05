@@ -1,0 +1,19 @@
+id: dispatch-cleanup-unmerged-guard
+title: "Dispatch cleanup must check branch ancestry, not just dirty state"
+column: backlog
+note: >-
+  dispatch-wt-20261004-141859 was removed while its tree was CLEAN but its
+  branch held 3 commits that never reached master (michael-ha jump code + 2
+  kanban cards) — silently lost, re-applied on branch services-regen-followup.
+  devin-precleanup-check.py already enumerates dispatch worktrees and flags
+  dirty/unknown ones, but a clean tree with unmerged commits still reads as
+  safe. Extend the check: `git cherry master <branch>` non-empty (or
+  `! git merge-base --is-ancestor <branch> master`) means NOT safe to remove;
+  emit a focus-inbox/comms entry listing the stranded commits so the reviewer
+  merges or drops them explicitly instead of losing work.
+spec: >-
+  In scripts/devin/devin-precleanup-check.py worktrees(): resolve each
+  worktree's branch (meta.branch or HEAD), flag unsafe when it has commits
+  not reachable from master, and include the commit list in the report.
+  Verify by pruning a test worktree whose branch carries an unmerged commit.
+updated: '2026-10-04'

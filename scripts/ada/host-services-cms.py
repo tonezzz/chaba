@@ -52,7 +52,7 @@ HOST_META = {
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",
                    "ip": "100.106.196.22"},
     "michael-ha": {"role": "HAOS appliance", "ts": "michael-ha.taila0626a.ts.net",
-                   "ip": "100.80.105.88",
+                   "ip": "100.80.105.88", "jump": "tony-omen",
                    "unreachable_body": (
                        "## Last known layout\n\n"
                        "- Home Assistant OS — services are HA core + supervisor-\n"
@@ -63,8 +63,8 @@ HOST_META = {
                        "ui.nabu.casa/`\n"
                        "- Consumed by: `ada-ha-michael` on idc01 (:8003),\n"
                        "  `mha-state-push` / `michael-ha-mcp-tunnel` on tony-dell\n"
-                       "- Reachable via ssh from tony-omen only (collector on\n"
-                       "  tony-dell cannot reach it — expected)")},
+                       "- Normally probed via the tony-omen ssh hop (jump host)\n"
+                       "  — this page means even that path failed")},
 }
 LEAF_SLUGS = [f"services-{h}" for h in HOST_META]
 INDEX_SLUG = "services-by-host"
@@ -97,15 +97,21 @@ BUCKET_RULES = [
 ]
 
 
-def sh(cmd, timeout=90):
+def sh(cmd, timeout=90, stdin=None):
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=timeout, input=stdin)
         return p.stdout, p.returncode
     except Exception:
         return "", 1
 
 
 def ssh(host, remote, timeout=60):
+    jump = HOST_META.get(host, {}).get("jump")
+    if jump:
+        # Probe fed to `sh` on the target over stdin — avoids nested quoting.
+        return sh(SSH + [jump, f"ssh -o BatchMode=yes -o ConnectTimeout=8 "
+                               f"{host} sh"], timeout, stdin=remote)
     return sh(SSH + [host, remote], timeout)
 
 
