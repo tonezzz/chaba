@@ -1,0 +1,27 @@
+id: runner-agent-smoke
+title: runner-agent smoke test — container task on idc02
+column: review
+note: alpine echo via podman — first remote-claimed card
+updated: 2026-10-05 22:24
+action:
+  type: container
+  status: done
+  host: idc02
+  container:
+    image: docker.io/library/alpine:latest
+    cmd: echo runner-agent-ok && sleep 3
+  runner: idc02
+  result: exit=0 -smoke-1791213800) | 2026-10-05 22:23:26.612911598 +0700 +07 m=+0.077364799 container remove b19b628b7ce780c23d50c54f9121d6b8e62f2333355dff592889015cfd0491fb
+    (image=docker.io/library/alpine:latest, name=runner-runner-agent-smoke-1791213800)
+comms:
+- at: 2026-10-05 22:23
+  from: idc02
+  text: claimed
+- at: 2026-10-05 22:23
+  from: chaba
+  text: started runner-runner-agent-smoke-1791213800 on idc02 (container)
+- at: 2026-10-05 22:24
+  from: idc02
+  text: 'finished (ok): exit=0 -smoke-1791213800) | 2026-10-05 22:23:26.612911598 +0700 +07 m=+0.077364799 container
+    remove b19b628b7ce780c23d50'
+claim: {}

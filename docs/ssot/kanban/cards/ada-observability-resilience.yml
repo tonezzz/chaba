@@ -22,7 +22,7 @@ spec: '1) Document the audit flow change: ada-transcript-audit should consult se
   on mddb/transient errors — retry with backoff for a bounded window, surface a persistent failure to the user verbally
   on the next turn. 3) Flag dropped-log risk: optionally log function_call lines to a session-scoped file so journald
   suppression can''t erase them.'
-updated: 2026-10-05 22:08
+updated: 2026-10-05 22:17
 comms:
 - at: 2026-10-05 22:02
   from: tony
@@ -30,6 +30,12 @@ comms:
 - at: 2026-10-05 22:08
   from: chaba
   text: dispatched 20261005-220830-1-document-the-audit-flow-chan on ada-pi
+- at: 2026-10-05 22:17
+  from: devin
+  text: 'starting: explored write paths — devin_answer/cms_* swallow mddb failures (add_document returns None unchecked);
+    memory_ops fails loud via _must. Building write_outbox.py (JSONL pending + dead-letters, bounded backoff, notices
+    drained at turn boundary), durable= flag on MddbClient, session-scoped function_call JSONL mirror, and a session-audit
+    runbook doc.'
 claim:
   session: 20261005-220830-1-document-the-audit-flow-chan
   since: 2026-10-05 22:08
