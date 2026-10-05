@@ -267,8 +267,10 @@ jobs:
   persistent: true
   on_failure: ada-report-fail@%p.service
   note: 'xmatch pair: cms-auto-health -> cms-auto-* kanban cards (commit+push), kanban-cms
-    -> live dev-kanban page; also runs logs-kanban, gev-auto-health (gev-auto-* cards,
-    added 2026-10-05), and kanban-stats.py (L2 kanban report node,
+    -> live dev-kanban page; also runs logs-kanban, gev-auto-health (gev-auto-* cards),
+    vcast-auto-health (vcast-auto-* cards — audit-cast, cast-browser-proxy :8799,
+    yt-live-api :8791, flap-check, capture-lease age; added 2026-10-05), and
+    kanban-stats.py (L2 kanban report node,
     ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04.
     on_failure added 2026-10-05 (cms-generator-schedule-audit) — a dead sync
     would silently stall every cms-auto-* card and the dev-kanban page.'
