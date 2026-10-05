@@ -1,6 +1,6 @@
 id: vcast-cast-lane
 title: cast lane — cast-browser, proxy to tony-omen, cast-cam, yt-live
-column: backlog
+column: review
 priority: high
 program: vcast
 area: cast-lane
@@ -15,12 +15,13 @@ spec: 'Audit the cast lane services: cast-browser on tony-omen (GPU host — doc
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Audit cast lane per card spec: cast-browser/tony-omen single-point doc, proxy/cast-cam/cast-ha-panel/yt-live-api
     health + lease wiring, cam_to_screen + cctv_snapshot_to_screen scenarios green.'
   task_id: 20261005-145917-audit-the-cast-lane-services-c
   runner: tony-dell
-updated: 2026-10-05 15:41
+  result: 20261005-145917-audit-the-cast-lane-services-c finished (inactive) — see `devin-dispatch logs 20261005-145917-audit-the-cast-lane-services-c`
+updated: 2026-10-05 15:49
 comms:
 - at: 2026-10-05 13:03
   from: tony
@@ -42,6 +43,19 @@ comms:
   text: 'more findings: cast-shots-http :8090 healthy (LAN-bound by design); xiaomi_c201 camera flaps idle<->unavailable
     (known go2rtc issue — timer skips correctly); vcast cam cast measured 0.6s to first frame on screen 7 (metric
     <5s PASS). Scenario run waiting on hourly smoke suite lock (TCP :8198/:8199, ~done)'
+- at: 2026-10-05 15:46
+  from: devin
+  text: 'DONE — audit complete. All lane services healthy after 2 fixes: (1) cast-ha-panel.timer was dead since
+    boot — OnUnitActiveSec never fires w/o first svc run; added OnActiveSec=2min, now ticking 60s and casting xiaomi_c201->TV.
+    (2) cast-desktop@1 on omen stopped — 17k-restart flap loop on nonexistent :1 (already disabled). Scenarios cam_to_screen
+    + cctv_snapshot_to_screen BOTH PASS on idc01/ada-ha-tony. Metric: vcast cam cast 0.6s to first frame (<5s PASS).
+    Leases clean (/capture={}). tony-omen SP'
+- at: 2026-10-05 15:49
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:49
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261005-145917-audit-the-cast-lane-services-c not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-145917-audit-the-cast-lane-services-c
   since: 2026-10-05 15:00

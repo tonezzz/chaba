@@ -1,6 +1,6 @@
 id: vcast-health-loop
 title: 'build vcast-auto-* health loop (xmatch: systemd/journal -> kanban)'
-column: backlog
+column: review
 priority: high
 program: vcast
 area: monitoring
@@ -17,12 +17,13 @@ spec: 'New chaba probe mirroring scripts/ada/cms-auto-health.py. Sources: system
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Build vcast-auto-* health loop per card spec: mirror cms-auto-health.py, systemctl/journald sources (audit-cast,
     cast-browser-proxy, yt-live-api, flap-check, lease age), auto-close on recovery.'
   task_id: 20261005-152540-new-chaba-probe-mirroring-scri
   runner: tony-dell
-updated: 2026-10-05 15:41
+  result: 20261005-152540-new-chaba-probe-mirroring-scri finished (inactive) — see `devin-dispatch logs 20261005-152540-new-chaba-probe-mirroring-scri`
+updated: 2026-10-05 15:43
 comms:
 - at: 2026-10-05 13:03
   from: tony
@@ -34,6 +35,22 @@ comms:
   from: devin
   text: 'started: probing live sources (cast-browser-proxy :8799 200, yt-live-api :8791 /status 200, audit-cast
     Result=success, /capture leases empty). writing scripts/ada/vcast-auto-health.py mirroring gev-auto-health.py'
+- at: 2026-10-05 15:42
+  from: devin
+  text: 'done: scripts/ada/vcast-auto-health.py (5 lanes: audit-cast, cast-browser-proxy :8799, yt-live-api :8791,
+    flap-check, lease age) wired into kanban-sync tick; ssot.jobs/ssot.kanban notes updated; job record docs/ssot/jobs/vcast/2026-10-05-vcast-health-loop.yml.
+    Verified live: stop yt-live-api -> vcast-auto-yt-live-api opened in review; start -> auto-closed to done. All
+    lanes green; no push/deploy.'
+- at: 2026-10-05 15:43
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:43
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-152540-new-chaba-probe-mirroring-scri dirty — 4 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 15:43
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-152540-new-chaba-probe-mirroring-scri not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-152540-new-chaba-probe-mirroring-scri
   since: 2026-10-05 15:26
