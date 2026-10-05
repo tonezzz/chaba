@@ -1,6 +1,6 @@
 title: Chaba System Automation
 description: Automated monitoring and maintenance schedules for Chaba infrastructure
-version: 7
+version: 8
 
 automation:
   gpu_monitoring:
@@ -227,6 +227,188 @@ automation:
     status: active — installed on tony-dell 2026-10-04 (kanban card
       cms-services-weekly-regen); service ExecStart also fails the unit on
       any PUBLISH FAIL line so partial publishes alert too
+
+  ada_cms_generators:
+    description: >-
+      Audit of scripts/ada/*.py generators that publish ada-cms-pages or
+      write report artifacts (ada-review corpus, reports/, kanban cards).
+      Audited 2026-10-05 (kanban card cms-generator-schedule-audit) against
+      live timers on tony-dell, tony-omen, idc01, idc02 — every live+valuable
+      generator is ALREADY scheduled; none needed a new timer. The real gap
+      was failure visibility, closed by systemd/ada-report-fail@.service +
+      OnFailure= on the chain/dedicated units.
+    status_enum: "scheduled | manual-on-purpose | dead"
+    chain_timers:
+      ada-review-refresh.timer:
+        host: tony-omen
+        schedule: daily 08:45 (Persistent)
+        units: systemd/ada-review-refresh.{service,timer}
+        entrypoint: scripts/ada/export-transcripts.py
+        on_failure: ada-report-fail@ada-review-refresh.service
+      kanban-sync.timer:
+        host: tony-dell
+        schedule: every 15min
+        job: ssot.jobs.yml kanban-sync (rendered — do not edit generated unit)
+        entrypoint: scripts/ada/kanban-sync.sh (detached worktree, ff-pulls master)
+        on_failure: ada-report-fail@kanban-sync.service
+    generators:
+      # --- ada-cms-pages publishers ---
+      host-services-cms.py:
+        status: scheduled
+        scheduler: chaba-services-regen.timer — Sun 05:30 tony-dell
+        outputs: ada-cms-pages services-by-host + services-{6 hosts}
+        on_failure: chaba-services-regen-fail.service (precedent unit)
+      flood-news-update.py:
+        status: scheduled
+        scheduler: ada-flood-news.timer — every 15min, idc02 (ssot.jobs.yml)
+        outputs: ada-cms-pages flood-report* auto blocks + ada-cms-automation write-back
+        note: >-
+          STALE DUPLICATE: the pre-migration unit still fires on tony-dell
+          alongside idc02 (verified live 2026-10-05) — retire the dell copy.
+          No OnFailure: exits 2 on all-skipped ticks (known wart), would
+          spam the board.
+      news-flood-fetch.py:
+        status: scheduled
+        scheduler: news-flood.timer — hourly, idc01
+        outputs: ada-cms-pages news-flood (md5-gated)
+        on_failure: ada-report-fail@news-flood.service
+      kanban-cms.py:
+        status: scheduled
+        scheduler: kanban-sync.timer — every 15min, tony-dell
+        outputs: ada-cms-pages dev-kanban (hash-gated)
+      vocab-pages-sync.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain (daily, tony-omen)
+        outputs: ada-cms-pages my-words* per-speaker sections
+      weekly-digest.py:
+        status: scheduled
+        scheduler: weekly-digest.timer — Mon 07:00, tony-omen
+        outputs: ada-cms-pages digest-weekly
+        on_failure: ada-report-fail@weekly-digest.service
+      embed-bench.py:
+        status: scheduled
+        scheduler: ada-embed-bench.timer — Sat 06:00, idc01 (runs --publish)
+        outputs: ada-cms-pages embed-route benchmark page
+      cms-audit.py:
+        status: scheduled
+        scheduler: chaba-audit suite audit cms-pages-live — weekly on idc02
+          (ssot.audit.yml); CI lane .github/workflows/cms-audit.yml runs the
+          snapshot+ratchet variant on pushes
+        outputs: ada-cms-pages cms-audit-report (--publish lane)
+      cms-normalize-meta.py:
+        status: manual-on-purpose
+        outputs: rewrites ada-cms-pages doc meta onto the memory-bank schema
+        note: maintenance fixup — run after schema changes or cms-audit S* warnings
+      # --- report-artifact writers (ada-review corpus / kanban cards) ---
+      export-transcripts.py:
+        status: scheduled
+        scheduler: IS the ada-review-refresh entrypoint (daily 08:45, tony-omen)
+        outputs: ~/.local/share/ada-review/ corpus refresh
+      session-report.py:
+        status: scheduled
+        scheduler: event-driven — ada-pi conversation_memory runs it at each
+          session end on the ada hosts; export-transcripts --backfill covers
+          gaps (manual flag, LLM cost)
+        outputs: ~/.local/share/ada/reports/*.json (mirrored to ada-review)
+      journal-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: session-ops.jsonl + ops{} merged into reports/*.json
+      host-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: host-ops.jsonl
+      ha-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: ha-ops.jsonl
+      logs-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain (--no-publish; still posts
+          host-logs-state report/24h for logs-kanban)
+        outputs: infra-digest block + host-logs-state rollup
+      ops-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain (personal-tier collectors loop)
+        outputs: ada-ops-events.jsonl
+      devin-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: devin-ops.jsonl
+      net-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: net-ops.jsonl (reads reports/network-inventory-scan-*.json)
+      tasks-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: tasks-ops.jsonl
+      spend-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: spend-ops.jsonl
+      caddy-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: apps-ops.jsonl
+      ha-events-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: ha-events-ops.jsonl
+      personal-rollup.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: personal-digest.md + infra-digest.md
+      focus-rollup.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: focus-digest.md + focus-index.json
+      bloat-report.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: MDDB growth block in the digest
+      log-shipper.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: MDDB host-logs collection
+      prune-old-docs.py:
+        status: scheduled
+        scheduler: ada-review-refresh chain
+        outputs: retention sweep (host-logs 14d, events/snapshots 30d)
+      cms-auto-health.py:
+        status: scheduled
+        scheduler: kanban-sync.timer — every 15min, tony-dell
+        outputs: docs/ssot/kanban/cards/cms-auto-*.yml (committed by wrapper)
+      logs-kanban.py:
+        status: scheduled
+        scheduler: kanban-sync.timer — every 15min, tony-dell
+        outputs: docs/ssot/kanban/cards/logs-auto-*.yml
+      transcript-index.py:
+        status: manual-on-purpose
+        outputs: transcript-index.jsonl (stage-1 mechanical index)
+        note: no callers anywhere — stage-1 diagnostic kept as a tool; the
+          live pipeline produces stage-2 reports via session-report.py at
+          session end instead of batch-indexing transcripts
+      # --- verified dead ---
+      # none — every enumerated generator is either scheduled or a live tool
+    out_of_scope_scheduled: >-
+      scripts/ada bank/memory pipeline (not cms/report generators, all already
+      scheduled): sync-ada-memory-to-mddb (ada-memory-sync, idc01 hourly),
+      rollup-summaries (ada-memory-rollup, omen), memory-distill
+      (ada-memory-distill, idc01), memory-gap-report (ada-memory-gaps, idc01),
+      recall-drift-report (ada-memory-drift, idc01), recall-canary
+      (ada-recall-canary, idc01), memory-health-check (ada-memory-health,
+      omen), memory-staleness-sweep (ada-memory-staleness, omen),
+      backup-mddb-banks (ada-memory-backup, omen), distill-devin-bank
+      (devin-bank-distill, idc02 — STALE DUPLICATE still firing on omen),
+      sync-devin-summaries (devin-summaries-sync, dell hourly).
+    out_of_scope_manual: >-
+      consolidate-memory (human-gated inbox promotion), memory-distill-benchmark,
+      embed-probe, google-calendar-auth, restore-mddb-banks,
+      seed-purchase-criteria, calendar-smoke, webui-timing, flood-hub-check
+      (waitlist-gated API probe), render-memory-banks + render-calendar-providers
+      (SSOT->runtime renderers, run after registry edits).
+    status: audited 2026-10-05
 
 monitoring:
   gpu:

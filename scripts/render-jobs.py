@@ -79,6 +79,10 @@ def render_service(j, man):
     lines = [
         "[Unit]",
         f"Description={j['name']} (job:{j['id']}, rendered from ssot.jobs.yml — do not edit)",
+    ]
+    if j.get("on_failure"):
+        lines.append(f"OnFailure={esc(j['on_failure'])}")
+    lines += [
         "",
         "[Service]",
         "Type=oneshot",

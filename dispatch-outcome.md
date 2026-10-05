@@ -1,73 +1,69 @@
-# dispatch outcome — dispatch-merge-guard
+# Dispatch outcome — cms-generator-schedule-audit
 
-## What was done
+## Finding
 
-Closed the two dispatch-loop failure modes from the card:
+Every `scripts/ada/*.py` generator that publishes `ada-cms-pages` or writes
+report artifacts is **already scheduled** — the card's premise (no per-script
+units, absent from overnight-jobs-expanded.sh) was technically true but
+misleading: nearly all run inside two chain timers, verified live on all
+four hosts via `systemctl --user list-timers`:
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+- `ada-review-refresh.timer` (daily 08:45, tony-omen) → `export-transcripts.py`
+  chain → journal/host/ha/logs-report, log-shipper, vocab-pages-sync,
+  prune-old-docs, bloat-report, 7 personal-tier collectors (devin/net/ops/
+  tasks/spend/caddy/ha-events), personal-rollup, focus-rollup — 16 generators.
+- `kanban-sync.timer` (15min, tony-dell, rendered job) → cms-auto-health,
+  logs-kanban, kanban-stats, kanban-cms.
+- Dedicated: chaba-services-regen (host-services-cms), ada-flood-news
+  (flood-news-update), news-flood (news-flood-fetch), weekly-digest,
+  ada-embed-bench (embed-bench --publish), chaba-audit suite → cms-pages-live
+  (cms-audit --publish) + CI lane.
+- Event-driven: session-report.py at each Ada session end (ada-pi).
+- manual-on-purpose: cms-normalize-meta, transcript-index (no callers —
+  superseded diagnostic), plus the out-of-scope tools. dead: none.
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+So **no new generator timers were needed**. The real gap was failure
+visibility and registry drift.
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
+## Changes (repo only — no live installs, per dispatch rules)
 
-## Where
+- `systemd/ada-report-fail@.service` — NEW templated failure reporter
+  generalizing `chaba-services-regen-fail.service`: board comms POST
+  (CARD env, default `cms-generator-schedule-audit`) + focus-inbox fallback.
+- `OnFailure=ada-report-fail@%p.service` added to `ada-review-refresh.service`,
+  `weekly-digest.service`, `news-flood.service` (hand-maintained units).
+- `scripts/render-jobs.py` — new `on_failure:` job field → `OnFailure=` in
+  rendered `[Unit]`; used by the `kanban-sync` job in `ssot.jobs.yml`;
+  `systemd/generated/tony_dell/kanban-sync.service` re-rendered.
+- `docs/ssot/infrastructure/ssot.automation.yml` v8 — `ada_cms_generators`
+  section: per-generator {scheduled|manual-on-purpose|dead} + scheduler +
+  outputs, so the next audit doesn't re-check.
+- `docs/ssot/infrastructure/ssot.audit.hosts.yml` — registered missing timers:
+  tony-omen (ada-review-refresh, weekly-digest), tony-dell (kanban-sync,
+  ada-flood-news), idc01 (news-flood, ada-embed-bench), idc02 (ada-flood-news,
+  devin-bank-distill, chaba-system-report).
+- `docs/ssot/jobs/ada/2026-10-05-cms-generator-schedule-audit.yml` — audit trail.
 
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
+Deliberately skipped: `OnFailure` on ada-flood-news (exits 2 on all-skipped
+ticks — would spam the board every 15min).
+
+## Drift found (needs operator action)
+
+Post-migration duplicate timers firing on BOTH sides:
+
+- `ada-flood-news.timer` — tony-dell + idc02 (canonical: idc02)
+- `devin-bank-distill.timer` — tony-omen + idc02 (canonical: idc02)
+- `chaba-system-report.timer` — tony-dell + idc02 (canonical: idc02)
+
+Retire stale copies: `systemctl --user disable --now <unit>` on dell/omen.
 
 ## Verify
 
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
+```
+python3 scripts/render-jobs.py --check     # OK 21 jobs
+node scripts/ssot-validate-all.mjs         # 1176 valid, 0 errors
+systemd-analyze verify --user systemd/ada-report-fail@.service ...
+```
 
-## Not done / notes
-
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+After merge, sync units on each host (copy + `daemon-reload`); the
+OnFailure lines are inert until `ada-report-fail@.service` exists on that host.

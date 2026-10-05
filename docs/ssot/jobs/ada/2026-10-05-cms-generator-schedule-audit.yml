@@ -1,0 +1,94 @@
+# SSOT Job: CMS generator schedule audit — cms-generator-schedule-audit card
+# Dispatch worktree dispatch-wt-20261005-130242-*. Verified live timer state
+# on tony-dell (local), tony-omen, idc01, idc02 via `systemctl --user
+# list-timers` before writing anything.
+
+title: Ada CMS/report generator scheduling audit + failure reporting
+subtitle: All generators already scheduled — real gap was OnFailure coverage and stale registrations
+icon: clock
+status: done
+project: chaba
+owner: devin-dispatch
+started: "2026-10-05"
+card: cms-generator-schedule-audit
+
+findings: |
+  The card's premise ("most scripts/ada generators have no systemd unit
+  and aren't in overnight-jobs-expanded.sh") is literally true but
+  misleading: almost every generator runs inside one of two CHAIN timers,
+  not via a per-script unit.
+
+  Chain 1 — ada-review-refresh.timer (daily 08:45, tony-omen):
+    export-transcripts.py -> journal-report, host-report, ha-report,
+    log-shipper, vocab-pages-sync (CMS my-words*), prune-old-docs,
+    bloat-report, logs-report, devin-report, net-report, ops-report,
+    ha-events-report, spend-report, caddy-report, tasks-report,
+    personal-rollup, focus-rollup. 16 generators in one run.
+  Chain 2 — kanban-sync.timer (15min, tony-dell, rendered job):
+    kanban-sync.sh -> cms-auto-health, logs-kanban, kanban-stats,
+    kanban-cms (dev-kanban page). Runs from a detached ff-pulled worktree.
+  Dedicated timers: chaba-services-regen (host-services-cms),
+    ada-flood-news (flood-news-update), news-flood (news-flood-fetch),
+    weekly-digest, ada-embed-bench (embed-bench --publish),
+    chaba-audit suite -> cms-pages-live (cms-audit --publish).
+  Event-driven: session-report.py runs at each Ada session end inside
+    ada-pi conversation_memory; export-transcripts --backfill fills gaps.
+  CI lane: cms-audit also runs in .github/workflows/cms-audit.yml.
+
+  Classification recorded in ssot.automation.yml -> ada_cms_generators:
+    scheduled: 30 generators (everything live+valuable)
+    manual-on-purpose: cms-normalize-meta, transcript-index (no callers —
+      stage-1 diagnostic superseded by live session-report), plus the
+      out-of-scope tools (calendar-smoke, webui-timing, flood-hub-check,
+      google-calendar-auth, restore-mddb-banks, seed-purchase-criteria,
+      consolidate-memory, memory-distill-benchmark, embed-probe,
+      render-memory-banks, render-calendar-providers)
+    dead: none
+
+changes: |
+  systemd/ada-report-fail@.service (NEW) — templated failure reporter,
+    generalizes chaba-services-regen-fail.service: %i = failed unit,
+    POSTs board comms (CARD env, default cms-generator-schedule-audit),
+    focus-inbox fallback at ~/CascadeProjects/chaba/docs/ssot/focus-inbox.
+  systemd/ada-review-refresh.service — +OnFailure=ada-report-fail@%p.service
+  systemd/weekly-digest.service   — +OnFailure=ada-report-fail@%p.service
+  systemd/news-flood.service      — +OnFailure=ada-report-fail@%p.service
+  scripts/render-jobs.py          — new `on_failure:` job field -> OnFailure=
+    in the rendered [Unit] section (specifiers like %p survive esc()).
+  ssot.jobs.yml                   — kanban-sync job gained on_failure;
+    systemd/generated/tony_dell/kanban-sync.service re-rendered.
+  ssot.automation.yml v8          — ada_cms_generators audit section.
+  ssot.audit.hosts.yml            — registered previously-missing timers:
+    tony-omen: ada-review-refresh.timer, weekly-digest.timer
+    tony-dell: kanban-sync.timer, ada-flood-news.timer
+    idc01:     news-flood.timer, ada-embed-bench.timer
+    idc02:     ada-flood-news.timer, devin-bank-distill.timer,
+               chaba-system-report.timer
+
+deliberately_not_done: |
+  - No new generator timers: none were needed — adding per-script timers
+    for chain members would double-run them.
+  - ada-flood-news has no OnFailure: exits 2 on all-skipped ticks (known
+    wart per ssot.jobs.yml) — a reporter would spam the board every tick.
+  - No live installs: units edited in-repo only; live hosts pick them up
+    on the next unit sync / `systemctl --user daemon-reload` + reinstall
+    (same convention as chaba-services-regen: "committed, install after
+    merge"). The fail template must exist on a host before OnFailure can
+    trigger it there.
+
+drift_found_for_followup: |
+  Post-migration duplicates still firing on both sides:
+    ada-flood-news.timer   — tony-dell AND idc02 (jobs.yml: canonical idc02)
+    devin-bank-distill.timer — tony-omen AND idc02 (jobs.yml: canonical idc02)
+    chaba-system-report.timer — tony-dell AND idc02 (jobs.yml: canonical idc02)
+  Retire the stale copies on dell/omen (systemctl --user disable --now).
+  idc02 expected_services also lacks the other rendered jobs
+  (chaba-audit*, chaba-kb-audit, ssot-optimization-snapshot, camwall-*,
+  mddb-lab-pull, report-distill, jev-*) — noted in-file, out of scope.
+
+verify: |
+  python3 scripts/render-jobs.py --check
+  node scripts/ssot-validate-all.mjs
+  # after merge + unit sync on each host:
+  systemctl --user cat ada-review-refresh.service | grep OnFailure
+  systemctl --user start ada-report-fail@test.service  # dry-run the reporter

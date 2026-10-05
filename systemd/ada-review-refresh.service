@@ -2,6 +2,9 @@
 Description=Refresh ada-review corpus — transcripts, reports, memory, ops, hosts, digest
 # Runs on tony-omen: pulls from idc01 over tailscale, then rebuilds
 # session-ops.jsonl + host-ops.jsonl + focus-digest.md.
+# Chain entrypoint for ~15 scripts/ada generators — a crash here silently
+# starves the whole digest layer, so failures post to the board.
+OnFailure=ada-report-fail@%p.service
 
 [Service]
 Type=oneshot

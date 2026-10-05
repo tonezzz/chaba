@@ -265,9 +265,12 @@ jobs:
   exec: '%h/CascadeProjects/chaba-kanban-sync/scripts/ada/kanban-sync.sh'
   timeout: 10m
   persistent: true
+  on_failure: ada-report-fail@%p.service
   note: 'xmatch pair: cms-auto-health -> cms-auto-* kanban cards (commit+push), kanban-cms
     -> live dev-kanban page; also runs kanban-stats.py (L2 kanban report node,
-    ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04.'
+    ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04.
+    on_failure added 2026-10-05 (cms-generator-schedule-audit) — a dead sync
+    would silently stall every cms-auto-* card and the dev-kanban page.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
