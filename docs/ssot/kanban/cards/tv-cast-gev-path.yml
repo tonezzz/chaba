@@ -1,0 +1,30 @@
+id: tv-cast-gev-path
+title: "TV cast: GEV needs a live path + tv_action must stop lying ok"
+column: backlog
+note: >-
+  Tony asked Ada for GEV on TONY-TV (2026-10-05 11:50-11:53). Six
+  tv_action calls returned ok=True; the TV showed nothing. Two bugs:
+  (a) 'gev' is not a key in cast-browser KEYS — nav gev returns
+  {"ok":false,"err":"unknown key"} yet sessions logged ok=True (check
+  whether tv_action/err surfaced or a different cmd ran);
+  (b) even a successful nav produces shotAndCast — a static PNG of the
+  page, useless for a live WebGL app like GEV. Right vehicle is the
+  screenlive/desktop-cast lane (camera.play_stream of a workspace
+  running GEV) or a direct play_media of an HLS render.
+help: >-
+  cast-browser-server.mjs on tony-omen :8799 — KEYS map + gotoInternal +
+  shotAndCast; screenlive path uses cast-desktop@N + camera.play_stream.
+  Fix honesty first: tv_action should propagate cast-browser's
+  {ok:false,err} and verify media_player state after cast (200 !=
+  playing — same class of bug as the off-Chromecast 200 no-op).
+action: {type: dispatch, status: idle, repo: ada-pi, button: '▶ Design GEV-to-TV path'}
+spec: >-
+  1) Confirm which path ada-ha-tony's tv_action took at 11:51-53
+  2026-10-05 (CAST_BROWSER_URL default omen:8799 is reachable — find the
+  actual cmd/text args and the response). 2) Add GEV support: register a
+  'gev' key OR route 'send GEV to TV' through screenlive with GEV loaded
+  in a workspace — decide which gives live video, not a PNG. 3) Make
+  tv_action fail loudly: err bodies already raise; add post-cast
+  media_player state verification (idle/off after cast = report failure).
+  4) Extend the cast_dub_to_tv / a GEV scenario to cover it.
+updated: '2026-10-05'

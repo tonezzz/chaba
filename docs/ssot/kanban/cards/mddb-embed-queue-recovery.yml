@@ -1,0 +1,27 @@
+id: mddb-embed-queue-recovery
+title: "mddb embed queue: reindex 3.1k dropped docs + saturation alert"
+column: backlog
+note: >-
+  2026-10-05 11:40-11:55 UTC: mddb embedding queue saturated at 4000-deep;
+  WARN logs show droppedTotal=3135 and climbing — each "embedding queue
+  full, dropping job" means that document has NO vector until reindexed.
+  Same window: /v1/vector-search returned 400/503, Ada's memory search
+  ran degraded:true, and devin_answer/cms_publish_page writes failed.
+  Queue is via gemini-ollama-proxy (OpenRouter gemini-embedding-2,
+  ~1 req/s drain rate). Recovery: bulk-reindex docs lacking vectors;
+  Prevention: alert when queueSize > ~500 or droppedTotal grows.
+help: >-
+  On idc01: journalctl -u mddb | grep "queue full" lists dropped docIDs.
+  Reindex path: mddb-vector-reindex.service (dropin exists per
+  idc01-units-inventory card). Alert could hook the existing
+  ops-health-report.service or a systemd watchdog on the WARN pattern.
+action: {type: dispatch, status: idle, repo: chaba, button: '▶ Reindex dropped docs'}
+spec: >-
+  1) Enumerate docs dropped from the mddb embed queue on 2026-10-05
+  (journal "dropping job" lines carry docID) plus any docs still lacking
+  vectors. 2) Reindex them via the existing mddb-vector-reindex service
+  path — do not hammer the proxy faster than its drain rate. 3) Add a
+  saturation tripwire: surface queueSize/droppedTotal in the ops-health
+  report or an ada-ops event when it exceeds a threshold. Read-only
+  against serving collections otherwise; idc01 is prod.
+updated: '2026-10-05'
