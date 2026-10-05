@@ -1,73 +1,51 @@
-# dispatch outcome — dispatch-merge-guard
+# dispatch outcome — gev-bridge (2026-10-05)
 
-## What was done
+## What changed
 
-Closed the two dispatch-loop failure modes from the card:
+- `stacks/tony-dell/gev-gemini/tools-check.mjs` (new) — drift guard. Re-extracts
+  `GEV_REALTIME_TOOLS` from `~/gods-eye-view/vite.config.js` (balanced-bracket
+  literal scan, evaluated via `new Function`), strips `additionalProperties`/
+  `additional_properties` recursively (mirrors `bridge.py _clean_schema`), and
+  deep-diffs against committed `tools.json` with per-path output. Exit 1 on
+  drift; `--write` regenerates; `--config`/`--tools`/`$GEV_VITE_CONFIG` overrides.
+- `stacks/tony-dell/gev-gemini/live-check.py` (new) — live ws smoke: connect →
+  `status` → `{"type":"text"}` → `function_call` → `tool_response` → `done`.
+- `stacks/tony-dell/gev-gemini/README.md` (new) — runbook for both checks.
+- `docs/ssot/jobs/gev/2026-10-05-tools-json-regen-guard.yml` — job record.
+- `tools.json` left **unchanged** (see drift note).
 
-**(a) canonical worktree base.** `devin-dispatch` now resolves a
-per-repo `default_branch` and cuts worktrees from
-`origin/<default_branch>` — never the checkout's current branch. The
-repo whitelist moved to `$DISPATCH_DIR/repos.conf`
-(`~/.local/share/devin-dispatch/repos.conf`; versioned copy
-`scripts/devin/dispatch-repos.conf`; built-in fallback table in the
-script for hosts without the file). `cmd_start` does a best-effort
-`git fetch origin <branch>` first, falls back to a local `<default>`
-ref with a warning, and fails loudly if neither exists. `meta.json`
-now records `default_branch` and `base`. Applied to both
-`scripts/devin/devin-dispatch.sh` and live `~/.local/bin/devin-dispatch`.
-(Note: the card said "REPOS map in ~/.local/share/devin-dispatch" — it
-actually lived inline in `~/.local/bin/devin-dispatch`; the new
-repos.conf makes the spec's location literally true.)
+## Findings
 
-**(b) review→done merge guard.** New `scripts/board/dispatch_repos.py`
-resolves the card's `action.task_id` → meta.json → worktree/branch/
-head/default-branch (with fallbacks for pre-change meta and deleted
-worktrees) and checks `git merge-base --is-ancestor <head>
-origin/<default>` in the target repo. `board-api.py`
-`apply_merge_guard()` gates `close` and `move→done`: a non-ancestor
-session head returns "blocked — unmerged commits remain on <branch>
-(N not in <base>)", appends the comms entry, and leaves the card in
-review. Passed/skipped guards append a note (incl. leftover dirty file
-count); guard errors log-and-allow so the board never wedges.
+- **Guard works — and immediately caught real bidirectional drift.** Committed
+  `tools.json` is AHEAD of the source repo: the 2026-10-04 `move_camera`
+  zoom/fly/`amount` + extended direction enums exist only in the deployed
+  bundle/tools.json (source_port still pending). Source has its own newer
+  bits (`stop` motion, reworded descriptions). Do NOT `--write` until the
+  source port lands — it would regress the live declarations.
+- **Live ws path was broken since the Sep-30 unpinned rebuild.** Voice
+  sessions died with `timed out during opening handshake`; the Oct-3
+  traceback shows the timeout expiring while `loop.getaddrinfo` was still
+  queued, plus a 3m23s gap between adjacent synchronous log lines — the
+  bridge's event loop was freezing under host memory pressure (psi avg300
+  1.68, swap 11.3G/16G). Fresh connects with the same SDK/config succeeded
+  in 0.6s, so neither the model name, the key, nor the schema was at fault.
+  `systemctl --user restart gev-gemini` cleared it; watch for recurrence
+  while the host stays memory-pressured.
 
-**(c) dirty-worktree comms at session end.** `kanban-dispatch.py`
-`poll_one` now calls `session_end_notes()`: posts "worktree <name>
-dirty — N uncommitted file(s)" and, when applicable, "N commit(s) on
-dispatch/<id> not in origin/<branch> — close will block until merged".
+## Verification results
 
-## Where
+- `node tools-check.mjs` → FAIL with precise per-path diff (expected — real drift)
+- `--write` to temp → check PASS (round-trip proven; 28 decls, 0 `additionalProperties`)
+- `python3 live-check.py` → PASS on `ws://127.0.0.1:8789`:
+  text → `function_call zoom_to_globe` → `tool_response` → spoken reply + `done`
+- `python3 live-check.py --url wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws`
+  → PASS (full cycle through Caddy)
+- `node scripts/ssot-validate-all.mjs` → 1176/1176 valid, 0 errors
 
-- `scripts/board/dispatch_repos.py` (new), `scripts/board/board-api.py`,
-  `scripts/board/kanban-dispatch.py`, `scripts/devin/devin-dispatch.sh`,
-  `scripts/devin/dispatch-repos.conf` (new)
-- Live: `~/.local/bin/devin-dispatch`,
-  `~/.local/share/devin-dispatch/repos.conf`
-- Docs: `docs/ssot/kanban/ssot.kanban.yml` (execution section),
-  `docs/ssot/jobs/infrastructure/2026-10-05-dispatch-merge-guard.yml`
+## Follow-ups for the operator
 
-## Verify
-
-- Real dispatch on `sunsynk-card` (checkout parked on stale `sunsynk`
-  branch): worktree HEAD == `origin/main` (b41ffcc), not `sunsynk`
-  (a84b9b6); meta.json has `default_branch: main`, `base: origin/main`.
-- Close gate e2e (worktree board-api on test port, real dispatch
-  metadata): `POST /action do=close` → "blocked — unmerged commits
-  remain on dispatch/<id> (1 not in origin/main)", card stays in
-  review; `move→done` blocked likewise; after merging the branch →
-  close succeeds with "merge guard: ... merged into origin/master;
-  worktree still dirty: 1 uncommitted file(s)". Deleted-worktree and
-  unresolvable-session fallbacks verified.
-- `session_end_notes` on a dirty+unmerged worktree produced both comms
-  lines via `poll_one`.
-- `bash -n`, `py_compile`, `board-api --selftest` all pass.
-
-## Not done / notes
-
-- Board-side guards go live when this merges to master and
-  `chaba-tony-dell` syncs (board-api.service + kanban-dispatch.timer
-  run from that checkout). The `devin-dispatch` + repos.conf changes
-  are already live.
-- Guard checks only the card's latest `task_id`; orphaned earlier
-  dispatch branches remain `devin-precleanup-check.py` /
-  `dispatch-cleanup-unmerged-guard` territory.
-- Dirty worktrees warn but never block close (spec: comms entry only).
+- Port the bundle-side `move_camera`/`adjust_camera_zoom` declarations into
+  `~/gods-eye-view/vite.config.js` (per `jobs/gev/2026-10-04-gev-map-zoom-flight.yml`
+  source_port), then `node tools-check.mjs --write`.
+- Consider pinning `requirements.txt` (genai 2.25.0 + websockets 16.1.1 are the
+  verified-good set) so the next rebuild doesn't silently move the target.
