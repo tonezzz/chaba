@@ -321,6 +321,8 @@ function needsYou() {{
     }}
     const st = (c.action || {{}}).status;
     if (st === 'failed' || st === 'error') items.push({{kind: 'failed', c}});
+    if (c.awaiting_action && (c.column || 'backlog') !== 'done')
+      items.push({{kind: 'answered', c}});
   }}
   return items;
 }}
@@ -336,6 +338,14 @@ function nyItemHtml(it) {{
     return `<div class="border border-violet-700/40 rounded p-2 bg-violet-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
       `<span class="text-xs text-violet-200">in review ${{it.ageH}}h — no verification entry</span>` +
       `<button class="ny-verify text-xs bg-emerald-800 hover:bg-emerald-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}">✔ verify</button></div></div>`;
+  if (it.kind === 'answered') {{
+    const a = c.action || {{}};
+    const queueBtn = a.type && a.status !== 'queued' && a.status !== 'running'
+      ? `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue">▶ queue it</button>`
+      : `<span class="text-[10px] text-slate-500">no action armed — spec one or triage manually</span>`;
+    return `<div class="border border-sky-700/40 rounded p-2 bg-sky-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
+      `<span class="text-xs text-sky-200">answer recorded — needs triage</span>${{queueBtn}}</div></div>`;
+  }}
   const res = (c.action || {{}}).result;
   return `<div class="border border-red-700/40 rounded p-2 bg-red-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
     `<span class="text-xs text-red-300">dispatch ${{esc((c.action || {{}}).status || 'failed')}}</span>` +

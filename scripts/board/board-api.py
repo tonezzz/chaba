@@ -119,6 +119,7 @@ def apply_merge_guard(card: dict) -> str:
 
 def do_action(card: dict, verb: str, frm: str) -> str:
     a = card.setdefault("action", {})
+    card.pop("awaiting_action", None)  # any deliberate action is triage
     st = a.get("status", "idle")
     if verb == "queue":
         if st in ("queued", "running"):
@@ -162,6 +163,7 @@ def do_move(card: dict, body: dict) -> str:
         if blocked:
             return blocked
     card["column"] = col
+    card.pop("awaiting_action", None)  # a manual move is triage too
     if col == "done":
         card.setdefault("action", {})["status"] = "done"
         card.setdefault("claim", {}).pop("session", None)
@@ -182,6 +184,7 @@ def do_claim(card: dict, body: dict) -> str:
     if pinned and pinned != host:
         raise ValueError(f"card is pinned to {pinned}")
     a["runner"] = host
+    card.pop("awaiting_action", None)
     comms_add(card, host, "claimed")
     return "claimed"
 
@@ -201,6 +204,15 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
             r["status"] = "answered"
             r["answer"] = answer[:500]
             comms_add(card, frm, f"{verb} {rid}: {answer[:200]}")
+            # answer recorded but nothing is armed to act on it —
+            # flag for triage so the decision doesn't sit silent
+            a = card.get("action") or {}
+            if (card.get("column") != "done"
+                    and a.get("status") not in ("queued", "running")):
+                card["awaiting_action"] = True
+                comms_add(card, "chaba",
+                          "answer recorded but no active action — card needs "
+                          "triage (queue it, or spec+arm an action)")
             return "answer saved"
     raise ValueError(f"no request {rid}")
 
@@ -400,12 +412,14 @@ def _selftest() -> None:
             "no request")
     do_respond(card, {"request_id": "r1", "answer": "yes"}, "ada")
     assert card["requests"][0]["status"] == "answered"
-    assert card["comms"][-1]["from"] == "ada"
+    assert any(m["from"] == "ada" and "answered r1" in m["text"]
+               for m in card["comms"])
+    assert card.get("awaiting_action") is True  # no armed action -> nudge
     rejects(lambda: do_respond(card, {"request_id": "r1", "answer": "b"}, "tony"),
             "already answered")
     do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
     assert card["requests"][0]["answer"] == "b"
-    assert "re-answered r1" in card["comms"][-1]["text"]
+    assert any("re-answered r1" in m["text"] for m in card["comms"])
 
     rejects(lambda: do_request(card, {"ask": "  "}), "ask required")
     rejects(lambda: do_request(card, {"ask": "q", "from": "nobody"}),

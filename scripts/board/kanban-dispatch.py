@@ -156,6 +156,14 @@ def poll_one(path: Path, card: dict) -> str:
     state = unit_state(tid) if tid else "unknown"
     if state in ("active", "activating"):
         return "still running"
+    if state == "failed":
+        # crashed unit — do NOT mark done or auto-merge: the branch may
+        # hold partial work; card stays in doing with a retry affordance
+        a["status"] = "failed"
+        a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
+        card.setdefault("claim", {}).pop("session", None)
+        comms_add(card, "chaba", f"run failed — check logs, then retry")
+        return "failed"
     # unit left the active state — treat as finished
     a["status"] = "done"
     a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
