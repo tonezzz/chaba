@@ -368,6 +368,26 @@ function showCard(id) {{
     catch (e) {{ toast('error: ' + e.message, true); }}
   }};
   document.getElementById('cm-comment').onkeydown = e => {{ if (e.key === 'Enter') document.getElementById('cm-send').click(); }};
+  // in-modal controls are created here — wire() ran before they existed,
+  // so they must be bound inside the modal, not at board render.
+  modal.querySelectorAll('.abtn').forEach(b =>
+    b.onclick = e => {{ e.stopPropagation(); doAct(b.dataset.id, b.dataset.do); }});
+  modal.querySelectorAll('.mv-btn').forEach(b =>
+    b.onclick = e => {{ e.stopPropagation(); doAct(id, 'move', {{column: b.dataset.col}}); }});
+  modal.querySelectorAll('.rq-opt').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      try {{ await api('/respond', {{id, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  modal.querySelectorAll('.rq-btn').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      const inp = modal.querySelector(`.rq-in[data-rq="${{b.dataset.rq}}"]`);
+      if (!inp || !inp.value.trim()) return;
+      try {{ await api('/respond', {{id, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
   modal.classList.remove('hidden');
 }}
 
@@ -399,20 +419,7 @@ function wire() {{
     b.onclick = e => {{ e.stopPropagation(); doAct(b.dataset.id, b.dataset.do); }});
   document.querySelectorAll('.mv-btn').forEach(b =>
     b.onclick = e => {{ e.stopPropagation(); doAct(openCard, 'move', {{column: b.dataset.col}}); }});
-  document.querySelectorAll('.rq-btn').forEach(b =>
-    b.onclick = async e => {{
-      e.stopPropagation();
-      const inp = document.querySelector(`.rq-in[data-rq="${{b.dataset.rq}}"]`);
-      if (!inp || !inp.value.trim()) return;
-      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: inp.value.trim()}}); toast('answer saved'); await load(); }}
-      catch (err) {{ toast('error: ' + err.message, true); }}
-    }});
-  document.querySelectorAll('.rq-opt').forEach(b =>
-    b.onclick = async e => {{
-      e.stopPropagation();
-      try {{ await api('/respond', {{id: openCard, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
-      catch (err) {{ toast('error: ' + err.message, true); }}
-    }});
+  // .rq-* buttons exist only inside the card modal — bound in showCard().
 }}
 
 function applyFilter() {{
