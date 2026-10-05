@@ -1,7 +1,7 @@
 id: board-api-auth
 title: board-api has no auth — anyone on the tailnet can mutate cards
 column: backlog
-updated: 2026-10-05 21:12
+updated: 2026-10-05 21:15
 note: 'Caddy proxies /apps/board-api tailnet-wide with no auth gate. Options: Tailscale-User-Login header check
   (pattern used by /apps/vms/), or tailnet ACL on the route. Low risk today (tailnet-only) but unguarded writes
   = attribution + accidental-mutation risk.'
@@ -10,3 +10,16 @@ tags:
 - board
 - dispatch
 - followup
+spec: 'Gate /apps/board-api/* behind Tailscale identity: replicate the /apps/vms/ pattern (require Tailscale-User-Login
+  header via Caddy/tailscale auth) OR add an allowlist check in board-api._send. Goal: writes attributable + no
+  accidental/anonymous mutation. Keep GET /cards + /health readable. Verify: unauthenticated POST gets 403, tailnet-authed
+  POST works.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)

@@ -5,10 +5,21 @@ program: vcast
 area: cast-lane
 metric: cast to TV while on True input results in visible content or honest report
 verify: 'manual: cast with TV on HDMI-input — Ada detects mismatch or applies browser workaround'
-note: >-
-  2026-10-04 transcript: cctv_wall delivered fine but TV showed the
-  True set-top box for 3min; tools reported "casting". Ada's own
-  workaround was pushing the wall URL to the TV browser — teach that
-  as remediation, and surface input/source state in vcast_list if
-  detectable.
-updated: '2026-10-04'
+note: '2026-10-04 transcript: cctv_wall delivered fine but TV showed the True set-top box for 3min; tools reported
+  "casting". Ada''s own workaround was pushing the wall URL to the TV browser — teach that as remediation, and surface
+  input/source state in vcast_list if detectable.'
+updated: 2026-10-05 21:15
+spec: 'Cast input-mismatch detect+remediate: 2026-10-04 transcript — cctv_wall delivered fine but TV stayed on True
+  STB input for 3min while tools reported ''casting''. After cast lands, verify TV input/source state via HA; on
+  mismatch, run remediation (the proven workaround: push the wall URL to the TV browser) + surface the failure honestly
+  in the tool result. Verify: scenario simulating wrong input reports/remediates instead of claiming success.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

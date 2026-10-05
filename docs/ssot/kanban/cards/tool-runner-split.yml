@@ -2,15 +2,26 @@ id: tool-runner-split
 title: tool_runner.py — split 4.8k-line monolith into domain mixins
 column: backlog
 program: ada-tools
-metric: 'tool_runner.py under ~1.5k lines (dispatch + shared helpers); domain files own their methods'
-verify: 'pyflakes+scenario smoke green; git-blame still reaches domain files for future edits'
-note: >-
-  126 async methods in one file = the other half of the merge-collision
-  problem. Split into mixins: tool_runner/screens.py (vcast/cast/cctv),
-  ha.py (ha read+write+confidence), gev.py, memory.py, cms.py,
-  docs_drive.py, devin.py, usage.py. Class keeps the dispatch point; only
-  the method bodies move. Do after/alongside ada-tools-manifest so decl
-  and impl land in the same domain file eventually.
-help: 'mixin pattern — class ToolRunner(ScreensMixin, HaMixin, ...) in
-  backend/tool_runner/; keep public method names identical'
-updated: '2026-10-04'
+metric: tool_runner.py under ~1.5k lines (dispatch + shared helpers); domain files own their methods
+verify: pyflakes+scenario smoke green; git-blame still reaches domain files for future edits
+note: '126 async methods in one file = the other half of the merge-collision problem. Split into mixins: tool_runner/screens.py
+  (vcast/cast/cctv), ha.py (ha read+write+confidence), gev.py, memory.py, cms.py, docs_drive.py, devin.py, usage.py.
+  Class keeps the dispatch point; only the method bodies move. Do after/alongside ada-tools-manifest so decl and
+  impl land in the same domain file eventually.'
+help: mixin pattern — class ToolRunner(ScreensMixin, HaMixin, ...) in backend/tool_runner/; keep public method names
+  identical
+updated: 2026-10-05 21:15
+spec: 'Split backend/tool_runner.py (~4.8k lines, 126 async methods) into domain mixins: tool_runner/screens.py
+  (vcast/cast/cctv), ha.py, gev.py, memory.py, cms.py, docs_drive.py, devin.py, etc. ToolRunner class composes them
+  via multiple inheritance; public method names unchanged. Pure mechanical move — no behavior change. Verify: tool-lint
+  green + 91-test suite passes + scenario-live smoke. SERIALIZE with other ada-tools-*/tools-merge-* cards.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

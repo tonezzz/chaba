@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
 column: backlog
-updated: 2026-10-05 21:12
+updated: 2026-10-05 21:15
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -10,3 +10,17 @@ tags:
 - board
 - dispatch
 - followup
+spec: 'Weekly prune of merged dispatch/* branches + their worktrees: for each dispatch/* branch fully merged into
+  origin/<default> (merge-base --is-ancestor), delete the branch and `git worktree remove` its dispatch-wt-* if
+  present. NEVER touch dirty worktrees or unmerged branches (devin-precleanup-check semantics). Extend devin-precleanup
+  or a new weekly timer on tony-dell for both chaba and ada-pi. Verify: a merged test branch disappears, a dirty
+  one survives.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)

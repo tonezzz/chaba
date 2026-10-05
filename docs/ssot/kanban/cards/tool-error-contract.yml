@@ -4,13 +4,24 @@ column: backlog
 program: ada-tools
 metric: 'every tool result normalizes to {ok: bool, error?: str}; no buried nested failures'
 verify: 'lint test: dispatch every tool with a failing fixture, assert top-level shape'
-note: >-
-  Today: raise, {error}, ok:false, {err}, and errors buried in
-  responses[].response.ok all coexist — the "does it claim success
-  honestly" checks can't be uniform. gev_command all-failed->top-level fix
-  (0bb8e9b) is the pattern; wrap the ToolRunner dispatch so every tool
-  normalizes, then delete per-tool ad-hoc handling. Prereq for reliable
-  phantom-write detection.
-help: 'ToolRunner.dispatch wrapper — one place to normalize; tools.d
-  manifest can declare the contract for drop-ins too'
-updated: '2026-10-04'
+note: 'Today: raise, {error}, ok:false, {err}, and errors buried in responses[].response.ok all coexist — the "does
+  it claim success honestly" checks can''t be uniform. gev_command all-failed->top-level fix (0bb8e9b) is the pattern;
+  wrap the ToolRunner dispatch so every tool normalizes, then delete per-tool ad-hoc handling. Prereq for reliable
+  phantom-write detection.'
+help: ToolRunner.dispatch wrapper — one place to normalize; tools.d manifest can declare the contract for drop-ins
+  too
+updated: 2026-10-05 21:15
+spec: 'Uniform tool result contract: every ToolRunner method returns {ok: bool, ...} — raise/{error}/ok:false/{err}/buried
+  responses[].response.ok all coexist today. Pick {ok,error} as canonical; normalize at the runner boundary (wrap
+  legacy returns), keep the gev_command all-failed->top-level-error pattern (0bb8e9b). Update the honesty checks
+  to rely on it. Verify: tests pass; a forced-fail tool reports ok:false at top level.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

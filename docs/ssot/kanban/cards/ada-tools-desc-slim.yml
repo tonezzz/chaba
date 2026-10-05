@@ -2,15 +2,25 @@ id: ada-tools-desc-slim
 title: ada tools — slim declarations; guidance moves to the error path
 column: backlog
 program: ada-tools
-metric: 'total declaration text <30% of current; zero regressions in scenario-live suite'
-verify: 'scenario-benchmark pass; token count of tool block before/after in session log'
-note: >-
-  gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the
-  model every turn while most turns use 2-3 tools. The working pattern is
-  already in results: needs_confirm, displaced, verify_warn, render_warn
-  teach the model at the moment it errs. Cut descriptions to 1-2 lines
-  (what + when), move the IMPORTANT prose into result-side hints and a
-  lazy ada_tool_help lookup the model can query on demand.
-help: 'needs_confirm/displaced/verify_warn in tool_runner.py cast_to_screen —
-  that pattern applied to every fat description'
-updated: '2026-10-04'
+metric: total declaration text <30% of current; zero regressions in scenario-live suite
+verify: scenario-benchmark pass; token count of tool block before/after in session log
+note: 'gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the model every turn while most turns
+  use 2-3 tools. The working pattern is already in results: needs_confirm, displaced, verify_warn, render_warn teach
+  the model at the moment it errs. Cut descriptions to 1-2 lines (what + when), move the IMPORTANT prose into result-side
+  hints and a lazy ada_tool_help lookup the model can query on demand.'
+help: needs_confirm/displaced/verify_warn in tool_runner.py cast_to_screen — that pattern applied to every fat description
+updated: 2026-10-05 21:15
+spec: 'Slim tool declarations: move per-tool prose guidance out of the shipped schema description into the error
+  path (the needs_confirm/displaced/verify_warn/render_warn pattern already proves this). Target: each declaration
+  description <= 2 short lines; domain guidance moves into error payloads/docs the model sees only on failure. Verify:
+  tool-lint green; spot-check a fat decl (gev_command ~40 lines) is slimmed; a smoke scenario still routes the tools.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

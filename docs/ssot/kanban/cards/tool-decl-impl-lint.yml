@@ -2,15 +2,24 @@ id: tool-decl-impl-lint
 title: ada tools — decl-impl consistency lint in CI
 column: backlog
 program: ada-tools
-metric: 'CI fails on declaration without method, method without declaration, or manifest/schema drift'
-verify: 'deliberately break a decl in a test PR -> lint catches it'
-note: >-
-  Gap left by tools-ci-audit (done — it lints the alias table + count cap
-  + scenario coverage, but NOT decl<->impl). Nothing enforces that a
-  realtime_provider declaration has a working ToolRunner method (or vice
-  versa), and tools.d manifest entries can drift from their module
-  DECLARATION. One lint test: enumerate declarations, enumerate
-  methods/run(), diff, plus param-schema vs signature sanity.
-help: 'existing suites: tests/benchmark.yml, scripts/scenario-live.py;
-  tools.d/manifest.yml contract in backend/tools_loader.py'
-updated: '2026-10-04'
+metric: CI fails on declaration without method, method without declaration, or manifest/schema drift
+verify: deliberately break a decl in a test PR -> lint catches it
+note: 'Gap left by tools-ci-audit (done — it lints the alias table + count cap + scenario coverage, but NOT decl<->impl).
+  Nothing enforces that a realtime_provider declaration has a working ToolRunner method (or vice versa), and tools.d
+  manifest entries can drift from their module DECLARATION. One lint test: enumerate declarations, enumerate methods/run(),
+  diff, plus param-schema vs signature sanity.'
+help: 'existing suites: tests/benchmark.yml, scripts/scenario-live.py; tools.d/manifest.yml contract in backend/tools_loader.py'
+updated: 2026-10-05 21:15
+spec: 'Extend scripts/tool-lint.py: for every realtime_provider tool declaration assert a working ToolRunner method
+  exists (and vice versa for public tools_ methods); flag decl-without-impl and impl-without-decl. Run in CI (tools-ci-audit
+  family). Verify: lint fails on a deliberately orphaned decl, passes clean tree.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

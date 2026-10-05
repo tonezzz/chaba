@@ -9,7 +9,7 @@ note: 'Ada-made reports need a higher, enforced standard: every report page must
   units_failed: ada-scenario-casting.service).
 
   '
-updated: 2026-10-05 20:42
+updated: 2026-10-05 21:15
 comms:
 - at: 2026-10-05 13:08
   from: tony
@@ -20,3 +20,16 @@ comms:
 - at: 2026-10-05 20:42
   from: tony
   text: status?
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)
+spec: 'Enforce the report meta contract on Ada-generated reports: every report page carries summary ~240 chars,
+  domain, fresh_for, confidence, timeline, updated (meta_contract in ssot.apps.ada-cms-reports.yml). Add a validation
+  pass at report-write time (reject/warn on missing fields) + fix the generator prompts to emit them. Verify: a
+  report missing meta fails validation; existing reports pass.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start

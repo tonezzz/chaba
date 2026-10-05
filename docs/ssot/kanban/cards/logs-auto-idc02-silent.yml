@@ -1,12 +1,12 @@
 id: logs-auto-idc02-silent
 title: logs `idc02` silent 28h
-column: backlog
+column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 'Auto-recovered 2026-10-05: `idc02-silent` condition cleared — shipper healthy again.'
 help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
-updated: 2026-10-05 21:12
+updated: 2026-10-05 21:15
 action:
   status: idle
 comms:
@@ -18,3 +18,6 @@ comms:
   text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed — SIGTERM then SIGKILL,
     no crash), which made idc02 jobs error (ada-flood-news exit 2 = MDDB refused). mddb restarted 21:06 + vector
     reindex OK. Watch whether logs resume.'
+- at: 2026-10-05 21:15
+  from: devin
+  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage window explains the gap

@@ -2,19 +2,32 @@ id: ada-tools-manifest
 title: ada tools — move 103 declarations to per-domain manifests
 column: backlog
 program: ada-tools
-metric: 'realtime_provider.py carries zero inline declarations; tools_loader composes suites from tools/*.yml'
-verify: 'scenario-live boot still exposes full tool list; a light suite (screens+memory only) loads <20 tools'
-note: >-
-  Highest-leverage structural fix. Today every tool declaration lives inline
-  in realtime_provider.py (~5k lines) — the single biggest merge-collision
-  surface for parallel sessions. Move to per-domain manifests
-  (tools/screens.yml, tools/ha.yml, tools/gev.yml...) with the same contract
-  as tools.d, loaded by tools_loader. Side effect: per-suite loading means a
-  light session carries only the tools it needs instead of all 103 + fat
-  descriptions. Sequence alongside tools-merge-* — consolidation shrinks
-  the surface, this decides where whatever remains is declared.
-help: '1. extract decl dicts -> per-domain yml (name/desc/schema)
-  2. tools_loader loads core manifests like tools.d modules
-  3. realtime_provider composes suite by session type
-  4. delete inline decls; keep behavior identical'
-updated: '2026-10-04'
+metric: realtime_provider.py carries zero inline declarations; tools_loader composes suites from tools/*.yml
+verify: scenario-live boot still exposes full tool list; a light suite (screens+memory only) loads <20 tools
+note: 'Highest-leverage structural fix. Today every tool declaration lives inline in realtime_provider.py (~5k lines)
+  — the single biggest merge-collision surface for parallel sessions. Move to per-domain manifests (tools/screens.yml,
+  tools/ha.yml, tools/gev.yml...) with the same contract as tools.d, loaded by tools_loader. Side effect: per-suite
+  loading means a light session carries only the tools it needs instead of all 103 + fat descriptions. Sequence
+  alongside tools-merge-* — consolidation shrinks the surface, this decides where whatever remains is declared.'
+help: 1. extract decl dicts -> per-domain yml (name/desc/schema) 2. tools_loader loads core manifests like tools.d
+  modules 3. realtime_provider composes suite by session type 4. delete inline decls; keep behavior identical
+updated: 2026-10-05 21:16
+spec: 'Move Ada''s 103 inline tool declarations out of backend/realtime_provider.py (~5k lines, the top merge-collision
+  surface) into per-domain manifests under tools/ (e.g. tools/screens.py, tools/ha.py, tools/memory.py — one module
+  per domain, each exporting its declaration list). realtime_provider loads + concatenates manifests at startup;
+  behavior and schema byte-identical. Constraints: no declaration renames/drops; keep the alias table working; python3
+  scripts/tool-lint.py must stay green and decl count unchanged. SERIALIZE with other ada-tools-* cards — same files.'
+priority: high
+action:
+  type: dispatch
+  repo: ada-pi
+  status: starting
+  button: ▶ Start
+  runner: tony-dell
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, high)
+- at: 2026-10-05 21:16
+  from: tony
+  text: queued for processing

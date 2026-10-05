@@ -1,7 +1,7 @@
 id: board-answer-live-session
 title: Answers to running dispatch sessions don't reach the session
 column: backlog
-updated: 2026-10-05 21:12
+updated: 2026-10-05 21:15
 note: '/respond lands in comms but a session that raised a request and kept working never re-reads the card. Options:
   dispatcher injects pending answers into the session''s worktree (e.g. writes answers.txt + signals), or sessions
   poll the card. Low urgency — most answer-needed sessions end quickly.'
@@ -10,3 +10,16 @@ tags:
 - board
 - dispatch
 - followup
+spec: 'Answers reach running sessions: when /respond lands on a card whose action.status==''running'', write the
+  answer into the session worktree ($DISPATCH_DIR/tasks/<tid>/answers.jsonl or worktree file the rails tell sessions
+  to check) so a session that raised a request and kept working sees it. Update devin-dispatch TASK_RAILS to check
+  answers file. Verify: answer during a test session appears in its worktree.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)

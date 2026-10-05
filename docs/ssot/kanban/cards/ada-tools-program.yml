@@ -14,7 +14,7 @@ note: 'Structural complement to the tools-merge-* consolidation program (docs/as
   lanes reorganize.'
 help: backend/realtime_provider.py (decls), backend/tool_runner.py (impl), backend/tools.d/ + tools_loader.py (the
   drop-in pattern to mirror), tools-merge-* cards (the consolidation program this complements)
-updated: 2026-10-05 18:17
+updated: 2026-10-05 21:15
 comms:
 - at: 2026-10-04 19:35
   from: devin
@@ -41,3 +41,11 @@ comms:
     tools_probe_*.yaml. Your merges should close THROUGH this suite (tools-ci-audit already specified regression-gating).
     Note: probes list both canonical and legacy names in calls_any so they pass either way, and tool-coverage-report.py
     counts realtime_provider decls — absorbed tool'
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)
+spec: 'PROGRAM TRACKER (no dispatch — coordination card). The ada-tools plumbing family complements the tools-merge-*
+  consolidation: manifest split (ada-tools-manifest), desc slimming, runner split (tool-runner-split), error contract,
+  decl-impl lint, regression scenarios (tools-regression-scenarios). Drain order: manifest first (kills the collision
+  surface), then split, then contract+lint, scenarios last. All ada-pi-lane, serialized.'
+priority: low

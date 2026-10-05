@@ -3,11 +3,25 @@ title: Per-host local log-shipper timers (kill the ssh dependency)
 column: backlog
 program: logs-digest
 metric: each host ships its own journal to idc01:11023 on its own timer
-note: >-
-  Current model SSHes from tony-omen nightly — dies silently whenever a
-  tailscale auth check expires (dell was absent ~1 week unnoticed).
-  log-shipper.py already runs local when host in {tony-omen,localhost}
-  — a per-host user timer + small env (MDDB_BASE_URL -> idc01 tailnet)
-  removes the hop entirely and makes adding a host = installing one
-  timer. Keep the central ssh run as a fallback lane.
-updated: '2026-10-04'
+note: Current model SSHes from tony-omen nightly — dies silently whenever a tailscale auth check expires (dell was
+  absent ~1 week unnoticed). log-shipper.py already runs local when host in {tony-omen,localhost} — a per-host user
+  timer + small env (MDDB_BASE_URL -> idc01 tailnet) removes the hop entirely and makes adding a host = installing
+  one timer. Keep the central ssh run as a fallback lane.
+updated: 2026-10-05 21:16
+spec: 'Per-host local log-shipper timers — kill the ssh dependency (tony-omen nightly ssh dies silently on tailscale
+  auth expiry; dell was absent ~1 week unnoticed). log-shipper.py already runs local for tony-omen/localhost — extend
+  + install a user timer on EACH host (tony-dell, tony-omen, idc01, idc02, idc03, mn01, michael-ha) shipping to
+  the central store. Verify: each host''s newest log entry < 26h in the digest.'
+priority: high
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, high)
+- at: 2026-10-05 21:16
+  from: tony
+  text: queued for processing

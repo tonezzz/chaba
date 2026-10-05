@@ -1,12 +1,24 @@
 id: lab-disk-trend-watch
 title: Disk trend watch — tony-dell hit 100% on 2026-10-05
 column: backlog
-note: 'Original card file was written as 0 bytes during the disk-full event (~14:23).
-  Recovered skeleton. Context: / hit 100%; freed ~7GB (mddb backups, pip/go caches).
-  Watchers: yt-live-media cache (8.6G) grows with dub pipeline; system journal 3G
-  needs sudo vacuum.'
-updated: '2026-10-05T14:45:00+07:00'
+note: 'Original card file was written as 0 bytes during the disk-full event (~14:23). Recovered skeleton. Context:
+  / hit 100%; freed ~7GB (mddb backups, pip/go caches). Watchers: yt-live-media cache (8.6G) grows with dub pipeline;
+  system journal 3G needs sudo vacuum.'
+updated: 2026-10-05 21:15
 comms:
 - at: 2026-10-05 14:45
   from: devin
   text: reconstructed after finding 0-byte file blocking kanban-commit validation
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, medium)
+spec: 'Disk trend watcher — tony-dell hit 100% 2026-10-05 (the original card file was 0-bytes from the disk-full
+  event). Add a periodic check (fold into cms-auto-health or ops-health): df trend per host, alert on board + LINE
+  when a disk will fill within ~7d at current growth, and flag top growers (yt-live-media cache grew 8.6G during
+  dub work). Verify: watcher reports trend + fires on a synthetic >90% fixture.'
+priority: medium
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start

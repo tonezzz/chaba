@@ -8,11 +8,16 @@ spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set 
   (NOT delete — camera pages are operational history; archive keeps them queryable while removing them from index
   weight). reports-index must not surface superseded/archived cam pages. Verify: ada-cms-pages cam-* count stabilizes,
   index one-liners stay fresh, a 7-day-old superseded page flips to kind:archive.'
-updated: '2026-10-05'
+updated: 2026-10-05 21:16
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: starting
   task: 'Implement cam-page supersede-by-construction per card spec: supersedes+fresh_for on every generated page;
     retention pass marks >7d superseded pages kind:archive (never delete); reports-index excludes superseded/archived.
     Verify per spec.'
+  runner: tony-dell
+comms:
+- at: 2026-10-05 21:16
+  from: tony
+  text: queued for processing

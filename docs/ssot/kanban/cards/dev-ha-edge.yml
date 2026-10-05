@@ -1,12 +1,22 @@
 id: dev-ha-edge
 title: Add michael-dev/tony-dev to idc02 edge pattern
 column: backlog
-note: >-
-  Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com ->
-  edge + one Caddy block on idc02 + trusted_proxies (remember: .storage/http
-  on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell
-  port 8124 (http://127.0.0.1:8124 on dell; tailnet HTTPS via
-  tony-dell.taila0626a.ts.net:8124). tony-dev does not exist.
-  Caution: dev instance — exposing publicly widens attack surface for a
-  non-production service; recommend CF Access gate BEFORE publishing
-  (see cf-access-gate card).
+note: 'Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com -> edge + one Caddy block on idc02 +
+  trusted_proxies (remember: .storage/http on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell
+  port 8124 (http://127.0.0.1:8124 on dell; tailnet HTTPS via tony-dell.taila0626a.ts.net:8124). tony-dev does not
+  exist. Caution: dev instance — exposing publicly widens attack surface for a non-production service; recommend
+  CF Access gate BEFORE publishing (see cf-access-gate card).'
+spec: 'Add michael-dev/tony-dev to the idc02 edge pattern — same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com
+  -> edge + one Caddy block on idc02 + trusted_proxies (HA 2026.x: .storage/http — yaml http: is dead config). michael-dev
+  lives on tony-dell port 8124. Verify: https://<name>.surf-thailand.com serves the dev HA instance.'
+priority: low
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)
+updated: 2026-10-05 21:15

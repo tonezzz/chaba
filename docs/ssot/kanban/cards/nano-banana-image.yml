@@ -16,7 +16,7 @@ note: 'Thin layer — plumbing already exists, this is generator + URL hop. Scop
 help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model; tg send: tg_relay.send_photo (fetch
   url -> sendPhoto); LINE: line_relay._images_from (cast_url/image_url -> imageMessage, public https only); tool
   group: ada_render_* — new `render` domain for tools.d/manifests'
-updated: 2026-10-05 10:48
+updated: 2026-10-05 21:15
 comms:
 - at: 2026-10-04 19:34
   from: devin
@@ -30,3 +30,16 @@ comms:
     also exhausted (total limit). Demo delivered via pollinations.ai/flux fallback instead — TG sendPhoto multipart
     + LINE pushMessage via a nonce file on the pwa public mount (cleaned up after). To land ada_render_image: enable
     billing on the Google AI project, or budget the OpenRoute'
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)
+spec: 'New tool group render: ada_render_image(prompt, ref_url?, aspect?) -> gemini-2.5-flash-image via REST generateContent;
+  save artifact, return LINE/Telegram-sendable photo URL (same hop the CMS/report path uses). Declaration slim per
+  ada-tools-desc-slim conventions. Verify: unit test with stubbed REST; live scenario renders a cat picture into
+  a LINE-sendable URL.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start

@@ -2,7 +2,19 @@ id: tools-regression-scenarios
 title: Tool-merge regression — live scenarios covering merged tool paths
 column: backlog
 blocked_by: tool-consolidation-design
-note: >-
-  Scenario per merged tool family: old alias still works, new action=
-  param reachable, confirm-gates preserved, persona/prompt text updated.
-updated: '2026-10-04'
+note: 'Scenario per merged tool family: old alias still works, new action= param reachable, confirm-gates preserved,
+  persona/prompt text updated.'
+updated: 2026-10-05 21:15
+spec: 'Add tests/scenarios-live/tool_merge_*.yaml coverage per merged tool family: old alias still routes, new action=
+  param reachable, confirm-gates preserved, persona text updated. Runs LAST in the ada-tools program — it''s the
+  regression gate over all merges. Verify: scenario-live --suite tools on idc02 all pass.'
+priority: medium
+action:
+  type: dispatch
+  repo: ada-pi
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)

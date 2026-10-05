@@ -2,13 +2,23 @@ id: logs-digest-signal
 title: Digest signal density — new-today flag + noise reduction
 column: backlog
 program: logs-digest
-metric: >-
-  digest calls out first-seen-in-7d lines; matched/shipped ratio stops
-  carrying ~90% filter noise (4650 matched / 500 cap on omen 2026-10-04)
-note: >-
-  Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a
-  'new today' flag for normalized lines absent from the prior 7d —
-  where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run
-  cap carries signal not churn (feeds directly into the backlog check's
-  accuracy).
-updated: '2026-10-04'
+metric: digest calls out first-seen-in-7d lines; matched/shipped ratio stops carrying ~90% filter noise (4650 matched
+  / 500 cap on omen 2026-10-04)
+note: 'Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a ''new today'' flag for normalized lines
+  absent from the prior 7d — where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal
+  not churn (feeds directly into the backlog check''s accuracy).'
+updated: 2026-10-05 21:15
+spec: 'Digest signal density: (a) ''new today'' flag for normalized lines absent from the prior 7d — where real
+  incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal not noise. Repeat offenders already
+  collapse via RX_VOLATILE — build on that. Verify: digest shows a new-today marker on an injected novel line and
+  drops a known-noise line.'
+priority: low
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, low)

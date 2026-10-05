@@ -1,7 +1,7 @@
 id: mddb-primary-unattributed-stop
 title: mddb primary on idc01 was stopped 21:00 — cause unknown
 column: backlog
-updated: 2026-10-05 21:12
+updated: 2026-10-05 21:15
 note: systemd user 'Stopping mddb.service' at 21:00:11 (SIGTERM→SIGKILL, exit 137 — deliberate stop, not crash).
   Bursts of ssh disconnects from idc02 in the preceding minute; no unit claims it. Restarted 21:06, reindex clean.
   If it recurs, add stop-requester logging (audit or a wrapper). ada-flood-news on idc02 + ada-memory-sync failed
@@ -11,3 +11,16 @@ tags:
 - mddb
 - idc01
 - incident
+spec: 'Investigate: who stopped mddb.service on idc01 at 21:00:11 (deliberate SIGTERM, not crash). Leads: ssh disconnect
+  bursts from idc02 at 20:59-21:00; check idc02 units that ssh idc01, audit log if enabled, ~/.local/share devin-dispatch
+  task transcripts around that window, and add requester logging (audit rule or systemd drop-in wrapper) so the
+  next stop is attributable. Read-only investigation — do NOT restart/stop services.'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  button: ▶ Start
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (chaba lane, medium)
