@@ -51,7 +51,7 @@ sections:
     layout: list
     items:
       - label: Puller
-        text: "scripts/cam-wall/cam-wall-pull.py (timer 30s on tony-dell): zones ZONES + traffic from frigate/cameras.json; VMS serial w/ VMS_BUDGET cap; bake_montage keeps stale tiles dimmed."
+        text: "scripts/cam-wall/cam-wall-pull.py (timer 30s on tony-dell): zones from scripts/cam-wall/zones.yml (single SSOT — roster + group/site/tab classification; registry zones expand from frigate/cameras.json); VMS serial w/ VMS_BUDGET cap; bake_montage keeps stale tiles dimmed; writes data/zones.json for the CMS sidebar."
       - label: Ada
         text: "backend/vms_camera.py stale_snapshot() + realtime_provider._camera_snapshot fallback; follow-up frame text marks '(STALE — last known frame)'. vision sidecar describes stale frames identically."
       - label: CMS

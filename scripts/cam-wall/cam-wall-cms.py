@@ -32,71 +32,41 @@ DATA = Path(os.environ.get(
 BASE = "https://tony-dell.taila0626a.ts.net/apps/camwall"
 COLLECTION = "ada-cms-pages"
 
-# zone -> human coverage note (what Ada should say it watches)
-ZONE_INFO = {
-    "vms-noble-club": "Every channel on the Noble-Club DVR — laundry/"
-                      "washing machines, stairway room, mini mart, front "
-                      "roads, pool, tennis, playground.",
-    "vms-noble-a": "Every channel on the Noble-A DVR — road in, guard "
-                   "view, walkway, road corner, entrance gate.",
-    "tony-house": "Tony's house cams — C100, C201, the coffee-corner "
-                  "ip-cam (go2rtc, local).",
-    "rama9": "Rama 9 demo traffic wall — Petchaburi Rd and Sukhumvit "
-             "Soi 11 YouTube cams plus iTIC Rama 4 / Sathorn stills.",
-    "traffic": "DOH Bangkok traffic cams from the camera registry "
-               "(frigate/cameras.json) — HLS playlists snapshotted.",
-    "burapha": "Bangna–Burapha expressway cams (registry group "
-               "ทางพิเศษบูรพาวิถี).",
-    "chonburi": "Chonburi corridor cams (registry group ชลบุรี).",
-    "dohweb": "DOH national highway cams (กล้องกรมทางหลวง) — Wowza HLS on "
-              "the DOH survey-station network (PER_* site codes, same feeds "
-              "DOHWeb maps); Bangkok ring + upcountry trunk roads.",
-}
-ZONE_INFO_TH = {
-    "vms-noble-club": "ทุกช่องกล้องบน DVR โนเบิล คลับ — ห้องซักผ้า "
-                      "ห้องบันได มินิมาร์ท ถนนหน้าสองฝั่ง สระว่ายน้ำ "
-                      "สนามเทนนิส และสนามเด็กเล่น",
-    "vms-noble-a": "ทุกช่องกล้องบน DVR โนเบิล-เอ — ถนนขาเข้า มุมมองยาม "
-                   "ทางเดินเข้า หัวมุมถนน และประตูทางเข้า",
-    "tony-house": "กล้องบ้านโทนี่ — C100, C201 และกล้องมุมกาแฟ "
-                  "(go2rtc เครือข่ายภายใน)",
-    "rama9": "กำแพงจราจรตัวอย่างพระราม 9 — กล้องยูทูบถนนเพชรบุรีและ"
-             "สุขุมวิท 11 บวกภาพนิ่ง iTIC พระราม 4 / สาทร",
-    "traffic": "กล้องจราจรกรุงเทพของ DOH จากทะเบียนกล้อง "
-               "(frigate/cameras.json) — ดึงเฟรมจาก HLS playlist",
-    "burapha": "กล้องทางพิเศษบูรพาวิถี ช่วงบางนา (กลุ่ม "
-               "ทางพิเศษบูรพาวิถี ในทะเบียน)",
-    "chonburi": "กล้องเส้นทางชลบุรี (กลุ่ม ชลบุรี ในทะเบียน)",
-    "dohweb": "กล้องทางหลวงทั่วประเทศของกรมทางหลวง — Wowza HLS บนเครือข่าย"
-              "สถานีสำรวจ DOH (รหัส PER_*) เส้นรอบนอกกรุงเทพและทางหลวงสายหลัก"
-              "ต่างจังหวัด",
-}
+# Zone metadata — areas, coverage notes, group/site/tab classification —
+# lives in zones.yml next to this script (single SSOT, shared with the
+# puller; see zone_meta.py). A zone absent from zones.yml classifies as
+# 'unsorted' and keeps its raw slug as the area — visible, never guessed.
+import zone_meta  # noqa: E402 — sibling module, script dir on sys.path
 
-# zone -> display area for page titles: "CCTV Wall: <Area>"
-AREA = {
-    "vms-noble-club": "Noble Club",
-    "vms-noble-a": "Noble-A",
-    "tony-house": "Tony House",
-    "rama9": "Rama 9 Traffic",
-    "traffic": "Bangkok Traffic",
-    "burapha": "Burapha Expressway",
-    "chonburi": "Chonburi Corridor",
-    "dohweb": "DOH Highways",
-}
-AREA_TH = {
-    "Noble Club": "โนเบิล คลับ",
-    "Noble-A": "โนเบิล-เอ",
-    "Tony House": "บ้านโทนี่",
-    "Rama 9 Traffic": "จราจรพระราม 9",
-    "Bangkok Traffic": "จราจรกรุงเทพ",
-    "Burapha Expressway": "ทางพิเศษบูรพาวิถี",
-    "Chonburi Corridor": "ชลบุรี",
-    "DOH Highways": "ทางหลวง DOH",
-}
+ZMETA = zone_meta.load()
 
-# VMS DVR device -> display area (a camera's canonical area is its DVR,
-# not whichever wall happens to list it)
-DEV_AREA = {"noble-club": "Noble Club", "noble-a": "Noble-A"}
+
+def zone_cls(zone: str) -> dict:
+    return zone_meta.classify(zone, ZMETA)
+
+
+def zone_area(zone: str, lang: str) -> str:
+    c = zone_cls(zone)
+    return c["area_th"] if lang == "th" else c["area"]
+
+
+def dev_area(dev: str, lang: str) -> str:
+    a = (zone_meta.device_entry(dev, ZMETA).get("area") or {})
+    return a.get(lang) or a.get("en") or dev
+
+
+def zone_info(zone: str, lang: str) -> str:
+    info = zone_cls(zone).get("info") or {}
+    if lang == "th":
+        return info.get("th") or info.get("en") or "กำแพงกล้องวงจรปิด"
+    return info.get("en") or "Camera wall zone."
+
+
+def _cls_union(classifications: list[dict]) -> dict:
+    """Merge per-zone/cam classifications for a multi-zone page — each
+    field becomes the sorted set of values present."""
+    return {k: sorted({c[k] for c in classifications if c.get(k)})
+            for k in ("tab", "group", "site")}
 
 # cam label -> Thai (proper nouns / traffic registry names stay as-is)
 LABEL_TH = {
@@ -173,10 +143,6 @@ def _t(lang: str, en: str, th: str) -> str:
     return th if lang == "th" else en
 
 
-def _area(area: str, lang: str) -> str:
-    return AREA_TH.get(area, area) if lang == "th" else area
-
-
 def _label(cam: dict, lang: str) -> str:
     return LABEL_TH.get(cam["label"], cam["label"]) if lang == "th" \
         else cam["label"]
@@ -203,8 +169,11 @@ def cam_slug(zone: str, cam: dict) -> str:
     return f"cam-{dev}-{key}" if dev else f"cam-{zone}-{key}"
 
 
-def cam_area(zone: str, cam: dict) -> str:
-    return DEV_AREA.get(cam.get("dev") or "", AREA.get(zone, zone))
+def cam_area(zone: str, cam: dict, lang: str = "en") -> str:
+    """Localized display area — canonical DVR device area when the cam
+    carries one, else the zone's area, else the raw zone slug."""
+    c = zone_meta.cam_classify(zone, cam, ZMETA)
+    return c["area_th"] if lang == "th" else c["area"]
 
 
 def wall_key(zone: str) -> str:
@@ -229,7 +198,8 @@ except Exception:
 
 def mddb_add(key: str, md: str, title: str, lang: str = "en",
              summary: str = "", parent: str = "cctv-walls",
-             sources: list[str] | None = None) -> bool:
+             sources: list[str] | None = None,
+             classification: dict | None = None) -> bool:
     import hashlib
     # cms-audit R2: every generated page needs a provenance footer.
     # Static text only — a timestamp here would change the pub hash
@@ -241,6 +211,12 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         "\n\n---\n*รวบรวมอัตโนมัติโดย cam-wall-cms จาก manifest ของแต่ละโซน "
         "สถานะตัวดึงภาพ และบันทึกการตรวจจับ*\n")
     h = hashlib.sha256(md.encode()).hexdigest()[:16]
+    if classification:
+        # fold classification into the dedup hash — a zones.yml change
+        # republishes the affected pages so the meta tag actually lands
+        h = h + ":" + hashlib.sha256(
+            json.dumps(classification, sort_keys=True).encode()
+        ).hexdigest()[:8]
     hkey = f"{key}:{lang}"
     if _pub_hash.get(hkey) == h:
         return True  # unchanged — skip write + re-embedding
@@ -275,6 +251,16 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         "last_verified": [today],
         "instance": ["cam-wall-cms"],
     })
+    # zones.yml classification as page meta — the CMS sidebar reads the
+    # tag instead of guessing tabs from slug prefixes + title regexes.
+    # Values may be str or list (multi-zone pages like dvr-wall/cctv-walls
+    # tag every tab they span).
+    if classification:
+        for mk, cv in (("zone_tab", classification.get("tab")),
+                       ("zone_group", classification.get("group")),
+                       ("zone_site", classification.get("site"))):
+            if cv:
+                meta[mk] = cv if isinstance(cv, list) else [cv]
     meta.setdefault("valid_from", [today])
     if summary:
         meta["summary"] = [summary]
@@ -420,11 +406,9 @@ def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
             f"{_t(lang, '(append-only while the yolo effect is on).',
                  '(บันทึกต่อเนื่องขณะเปิดเอฟเฟกต์ yolo)')}\n")
     det_block += detections_timeline(zone, lang)
-    area = AREA.get(zone, zone)
-    return f"""# {_t(lang, 'CCTV Wall', 'กำแพงกล้อง')}: {_area(area, lang)} (`{zone}`)
+    return f"""# {_t(lang, 'CCTV Wall', 'กำแพงกล้อง')}: {zone_area(zone, lang)} (`{zone}`)
 
-{_t(lang, ZONE_INFO.get(zone, 'Camera wall zone.'),
-    ZONE_INFO_TH.get(zone, 'กำแพงกล้องวงจรปิด'))}
+{zone_info(zone, lang)}
 
 ![montage]({BASE}/data/{zone}/montage.jpg)
 
@@ -537,7 +521,7 @@ def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
     ident = (f"- **{_t(lang, 'Source', 'แหล่ง')}**: DVR `{cam['dev']}` · "
              f"{_t(lang, 'channel', 'ช่อง')} `{cam['ch']}`\n"
              if cam.get("dev") else "")
-    return f"""# {_t(lang, 'CCTV', 'กล้อง')}: {_area(cam_area(zone, cam), lang)} — {_label(cam, lang)}
+    return f"""# {_t(lang, 'CCTV', 'กล้อง')}: {cam_area(zone, cam, lang)} — {_label(cam, lang)}
 
 ![{_t(lang, 'latest', 'ล่าสุด')}]({BASE}/data/{zone}/{img})
 
@@ -590,7 +574,7 @@ def dvr_wall_page(cam_groups: dict[str, list[tuple[str, dict, dict]]],
             rows.append("| " + " | ".join(row) + " |")
         live = sum(1 for _, c, _, _ in cams if c.get("ok"))
         sections.append(
-            f"## {_area(DEV_AREA.get(dev, dev), lang)} DVR (`{dev}`) — "
+            f"## {dev_area(dev, lang)} DVR (`{dev}`) — "
             f"{live}/{len(cams)} {_t(lang, 'live', 'ออนไลน์')}\n\n"
             "| | | | |\n|---|---|---|---|\n" + "\n".join(rows))
     return f"""# {_t(lang, 'DVR Video Wall', 'กำแพงวิดีโอ DVR')}
@@ -736,18 +720,18 @@ def main() -> int:
     # group cams by canonical slug — one dossier per physical camera
     cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for zone, m in zones.items():
-        area = AREA.get(zone, zone)
-        info = ZONE_INFO.get(zone, "Camera wall zone.")
+        cls = zone_cls(zone)
         for lang in ("en", "th"):
             ok &= mddb_add(
                 wall_key(zone),
                 wall_page(zone, m["manifest"], m["state"], lang),
-                _t(lang, f"CCTV Wall: {area}",
-                   f"กำแพงกล้อง: {_area(area, lang)}"),
-                lang=lang, summary=_t(lang, info,
-                                      ZONE_INFO_TH.get(zone, "")),
+                _t(lang, f"CCTV Wall: {cls['area']}",
+                   f"กำแพงกล้อง: {cls['area_th']}"),
+                lang=lang, summary=_t(lang, zone_info(zone, "en"),
+                                      zone_info(zone, "th")),
                 sources=[f"zone:{zone}", "cam-wall-manifest",
-                         "cam-wall-state", "cam-wall-detections"])
+                         "cam-wall-state", "cam-wall-detections"],
+                classification=cls)
         # retire the old wall-<zone> key (renamed to camwall-<area>)
         legacy_wall = f"wall-{zone}"
         if legacy_wall != wall_key(zone):
@@ -756,6 +740,11 @@ def main() -> int:
             cam_groups.setdefault(cam_slug(zone, c), []).append(
                 (zone, c, m["manifest"]))
     cam_pages = len(cam_groups)
+    # multi-zone pages tag every tab/group/site they span
+    dev_cls = [zone_meta.cam_classify(z, c, ZMETA)
+               for es in cam_groups.values() for z, c, _ in es
+               if c.get("dev")]
+    dvr_cls = _cls_union(dev_cls)
     for lang in ("en", "th"):
         dvr = dvr_wall_page(cam_groups, lang)
         if dvr:
@@ -765,26 +754,29 @@ def main() -> int:
                 lang=lang,
                 summary=_t(lang, "Every DVR channel as a tile grid",
                            "ทุกช่อง DVR เป็นช่องภาพกดได้"),
-                sources=["cam-wall-manifest", "vms-snap"])
+                sources=["cam-wall-manifest", "vms-snap"],
+                classification=dvr_cls)
     for slug_key, entries in sorted(cam_groups.items()):
-        _, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
+        fzone, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
         zone, _cam, _ = entries[0]
+        cam_cls = zone_meta.cam_classify(fzone, cam, ZMETA)
         for lang in ("en", "th"):
             ok &= mddb_add(
                 slug_key, cam_page(slug_key, entries, lang),
-                _t(lang, f"CCTV: {cam_area(zone, cam)} — {cam['label']}",
-                   f"กล้อง: {_area(cam_area(zone, cam), lang)} — "
+                _t(lang, f"CCTV: {cam_cls['area']} — {cam['label']}",
+                   f"กล้อง: {cam_cls['area_th']} — "
                    f"{_label(cam, lang)}"),
                 lang=lang,
                 summary=_t(
                     lang,
-                    f"{cam_area(zone, cam)} — {cam['label']} "
+                    f"{cam_cls['area']} — {cam['label']} "
                     f"({'live' if cam.get('ok') else 'down'})",
-                    f"{_area(cam_area(zone, cam), lang)} — "
+                    f"{cam_cls['area_th']} — "
                     f"{_label(cam, lang)} "
                     f"({'ออนไลน์' if cam.get('ok') else 'ขัดข้อง'})"),
                 sources=sorted({f"zone:{z}" for z, _, _ in entries})
-                + ["cam-wall-detections"])
+                + ["cam-wall-detections"],
+                classification=cam_cls)
         # retire the old zone-scoped key the canonical dev-key replaced,
         # plus any raw (un-normalized) key the ascii slug superseded
         for z, c, _ in entries:
@@ -806,7 +798,8 @@ def main() -> int:
                            "ดัชนีกำแพงกล้องทั้งหมด — ภาพรวม จำนวนออนไลน์ "
                            "และสวิตช์ควบคุมกลาง"),
                 parent="",
-                sources=[f"zone:{z}" for z in sorted(zones)])
+                sources=[f"zone:{z}" for z in sorted(zones)],
+                classification=_cls_union([zone_cls(z) for z in zones]))
         notify_transitions(zones)
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
           f"{'ok' if ok else 'ERR'}")

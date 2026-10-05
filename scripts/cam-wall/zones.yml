@@ -1,0 +1,184 @@
+# camwall zone metadata — the single SSOT for zone -> tab classification
+# and camera membership.
+#
+# Consumers:
+#   cam-wall-pull.py  — roster + pull config (interval/warm/cams), registry
+#                       expansion (registry_group), tab/group/site stamped
+#                       into each manifest + data/zones.json for the web tier.
+#   cam-wall-cms.py   — page titles/areas, CMS meta tags (zone_tab,
+#                       zone_group, zone_site), DVR device -> area.
+#   ada-pi pwa/cms    — the CMS sidebar reads the propagated copies
+#                       (manifest fields / data/zones.json / page meta);
+#                       it does NOT parse this file.
+#
+# Semantics:
+#   group: private|public — the privacy boundary. Display labels (Security,
+#     Traffic) live in `tabs` and are keyed BY group unless a zone sets an
+#     explicit `tab:`. A zone absent from this file classifies as
+#     `unsorted` — visible on the sidebar, never silently guessed.
+#   site: compound grouping (noble estate vs tony-house vs bangkok).
+#   cams: [label, kind, key, *alt_urls] — kind is vms|go2rtc|jpeg|youtube|hls.
+#   registry_group: pull roster comes from frigate/cameras.json cams whose
+#     `group` equals this value (hls_url required, enabled only).
+
+tabs:
+  private:  {en: "Security", th: "ความปลอดภัย"}
+  public:   {en: "Traffic",  th: "จราจร"}
+  unsorted: {en: "Unsorted", th: "ยังไม่จัดหมวด"}
+
+# VMS DVR device -> canonical site/area — a camera's identity is its DVR,
+# not whichever wall happens to list it.
+devices:
+  noble-club: {group: private, site: noble-club,
+               area: {en: "Noble Club", th: "โนเบิล คลับ"}}
+  noble-a:    {group: private, site: noble-a,
+               area: {en: "Noble-A", th: "โนเบิล-เอ"}}
+
+# display-name overrides keyed by slug(label) — the tuple label stays
+# ASCII so jpg/CMS keys stay stable; this is what walls/dossiers render.
+labels:
+  entrance-gate: "ทางคนเดินออก/รถเข้า"
+
+zones:
+  # per-DVR walls — every channel the VMS device list exposes for that
+  # recorder. Serial pulls (~16s/cam + poll headroom): club 8, A 5.
+  vms-noble-club:
+    group: private
+    site: noble-club
+    area: {en: "Noble Club", th: "โนเบิล คลับ"}
+    info:
+      en: "Every channel on the Noble-Club DVR — laundry/washing machines, stairway room, mini mart, front roads, pool, tennis, playground."
+      th: "ทุกช่องกล้องบน DVR โนเบิล คลับ — ห้องซักผ้า ห้องบันได มินิมาร์ท ถนนหน้าสองฝั่ง สระว่ายน้ำ สนามเทนนิส และสนามเด็กเล่น"
+    interval: 180
+    warm: 1800
+    cams:
+      - ["Washing Machines", vms, "Washing Machines"]
+      - ["Stairway Room",    vms, "Stairway Room"]
+      - ["Mini Mart",        vms, "Mini Mart"]
+      - ["Front Rd Left",    vms, "Front Rd. Left"]
+      - ["Front Rd Right",   vms, "Front Rd. Right"]
+      - ["Swimming Pool",    vms, "Swimming Pool"]
+      - ["Tennis Court",     vms, "Tennis Court"]
+      - ["Play Ground",      vms, "Play Ground"]
+
+  vms-noble-a:
+    group: private
+    site: noble-a
+    area: {en: "Noble-A", th: "โนเบิล-เอ"}
+    info:
+      en: "Every channel on the Noble-A DVR — road in, guard view, walkway, road corner, entrance gate."
+      th: "ทุกช่องกล้องบน DVR โนเบิล-เอ — ถนนขาเข้า มุมมองยาม ทางเดินเข้า หัวมุมถนน และประตูทางเข้า"
+    interval: 120
+    warm: 1800
+    cams:
+      - ["Road In",       vms, "1. Road In"]
+      - ["Guard View",    vms, "2. Guard View"]
+      - ["Walkway In",    vms, "3. Walkway In"]
+      - ["Road Corner",   vms, "5. Road Corner"]
+      - ["Entrance Gate", vms, "4. Entrance Gate"]
+
+  tony-house:
+    group: private
+    site: tony-house
+    area: {en: "Tony House", th: "บ้านโทนี่"}
+    info:
+      en: "Tony's house cams — C100, C201, the coffee-corner ip-cam (go2rtc, local)."
+      th: "กล้องบ้านโทนี่ — C100, C201 และกล้องมุมกาแฟ (go2rtc เครือข่ายภายใน)"
+    interval: 15
+    warm: 300
+    cams:
+      - ["C100",          go2rtc, "xiaomi_c100_hd"]
+      - ["C201",          go2rtc, "xiaomi_c201_hd"]
+      - ["Coffee Corner", go2rtc, "ip_cam_65_hd"]
+      - ["IP65 Low",      go2rtc, "ip_cam_65_low"]
+
+  # demo traffic wall around Rama 9 — mixes direct JPEG stills (iTIC via
+  # the Longdo feed) with YouTube live cams grabbed via yt-dlp+ffmpeg.
+  rama9:
+    group: public
+    site: bangkok
+    area: {en: "Rama 9 Traffic", th: "จราจรพระราม 9"}
+    info:
+      en: "Rama 9 demo traffic wall — Petchaburi Rd and Sukhumvit Soi 11 YouTube cams plus iTIC Rama 4 / Sathorn stills."
+      th: "กำแพงจราจรตัวอย่างพระราม 9 — กล้องยูทูบถนนเพชรบุรีและสุขุมวิท 11 บวกภาพนิ่ง iTIC พระราม 4 / สาทร"
+    interval: 60
+    warm: 600
+    cams:
+      - ["Petchaburi Rd",    youtube, "a_bUVExv_Cg"]
+      - ["Sukhumvit Soi 11", youtube, "UemFRPrl1hk"]
+      - ["Rama4 x Expy A",   jpeg, "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8001"]
+      - ["Rama4 x Expy B",   jpeg, "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8003"]
+      - ["Rama4 x Expy C",   jpeg, "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8002"]
+      - ["Sathorn Embassy",  jpeg, "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.15:8002"]
+
+  # registry-driven zones — roster from frigate/cameras.json by group.
+  # interval/warm here override the traffic defaults.
+  traffic:
+    group: public
+    site: bangkok
+    registry_group: "Traffic"
+    area: {en: "Bangkok Traffic", th: "จราจรกรุงเทพ"}
+    info:
+      en: "DOH Bangkok traffic cams from the camera registry (frigate/cameras.json) — HLS playlists snapshotted."
+      th: "กล้องจราจรกรุงเทพของ DOH จากทะเบียนกล้อง (frigate/cameras.json) — ดึงเฟรมจาก HLS playlist"
+    interval: 120
+    warm: 900
+
+  burapha:
+    group: public
+    site: burapha
+    registry_group: "ทางพิเศษบูรพาวิถี"
+    area: {en: "Burapha Expressway", th: "ทางพิเศษบูรพาวิถี"}
+    info:
+      en: "Bangna–Burapha expressway cams (registry group ทางพิเศษบูรพาวิถี)."
+      th: "กล้องทางพิเศษบูรพาวิถี ช่วงบางนา (กลุ่ม ทางพิเศษบูรพาวิถี ในทะเบียน)"
+    interval: 120
+    warm: 900
+
+  chonburi:
+    group: public
+    site: chonburi
+    registry_group: "ชลบุรี"
+    area: {en: "Chonburi Corridor", th: "ชลบุรี"}
+    info:
+      en: "Chonburi corridor cams (registry group ชลบุรี)."
+      th: "กล้องเส้นทางชลบุรี (กลุ่ม ชลบุรี ในทะเบียน)"
+    interval: 120
+    warm: 900
+
+  # DOH national highway network — Wowza HLS on 180.180.242.207/208
+  # (same infra DOHWeb uses; camera list probed 2026-10-01 — 72 live
+  # PER_* streams on Phase3/7/9/10 alone; this is a Bangkok-and-ring
+  # subset. Site IDs match DOHWeb survey-station codes.)
+  dohweb:
+    group: public
+    site: dohweb
+    area: {en: "DOH Highways", th: "ทางหลวง DOH"}
+    info:
+      en: "DOH national highway cams (กล้องกรมทางหลวง) — Wowza HLS on the DOH survey-station network (PER_* site codes, same feeds DOHWeb maps); Bangkok ring + upcountry trunk roads."
+      th: "กล้องทางหลวงทั่วประเทศของกรมทางหลวง — Wowza HLS บนเครือข่ายสถานีสำรวจ DOH (รหัส PER_*) เส้นรอบนอกกรุงเทพและทางหลวงสายหลักต่างจังหวัด"
+    interval: 120
+    warm: 900
+    cams:
+      - ["Vibhavadi Don Mueang IN", hls,
+         "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
+         "http://180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8"]
+      - ["Min Buri Hwy304 IN", hls,
+         "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
+         "http://180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8"]
+      - ["Bang Pu Sukhumvit OUT", hls,
+         "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8"]
+      - ["Hwy303 Phra Samut Chedi IN", hls,
+         "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8"]
+      - ["Hwy302 Suwinthawong km54", hls,
+         "http://180.180.242.207:1935/Phase3/PER_3_005_IN.stream/playlist.m3u8"]
+      - ["Hwy320 Pathum Thani km15", hls,
+         "http://180.180.242.207:1935/Phase3/PER_3_015.stream/playlist.m3u8"]
+      - ["Hwy302 Lam Luk Ka km5", hls,
+         "http://180.180.242.207:1935/Phase3/PER_3_017.stream/playlist.m3u8"]
+      - ["Hwy21 Saraburi km530", hls,
+         "http://180.180.242.207:1935/Phase7/PER_7_002.stream/playlist.m3u8"]
+      - ["Hwy305 km55", hls,
+         "http://180.180.242.207:1935/Phase7/PER_7_017.stream/playlist.m3u8"]
+      - ["Hwy32 Ayutthaya km95 IN", hls,
+         "http://180.180.242.207:1935/Phase10/PER_10_016_IN.stream/playlist.m3u8"]
