@@ -1,15 +1,16 @@
 id: tools-merge-cms
 title: Consolidate cms_* publish/verify/note/delete tools
-column: backlog
+column: review
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 10:24
+updated: 2026-10-05 10:32
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261005-100603-merge-the-cms-tool-group-7-3-p
   runner: tony-dell
+  result: 20261005-100603-merge-the-cms-tool-group-7-3-p finished (inactive) — see `devin-dispatch logs 20261005-100603-merge-the-cms-tool-group-7-3-p`
 spec: "Merge the cms tool group (7 -> 3) per the consolidation spec:\n- cms_publish_page: unchanged (the big writer)\n\
   - NEW cms_read absorbs cms_get_page, cms_list_pages, cms_verify_page ->\n  cms_read(action=get|list|verify, key=...)\n\
   - NEW cms_edit absorbs cms_note_update, cms_delete_page, cms_automation ->\n  cms_edit(action=note|delete|automate,\
@@ -28,6 +29,15 @@ comms:
   from: devin
   text: 'starting: cms 7->3 merge — cms_read absorbs get/list/verify, cms_edit absorbs note/delete/automation; publish
     stays. Alias+gate pattern follows tools-merge-memory/camera.'
+- at: 2026-10-05 10:29
+  from: devin
+  text: 'Done: cms group merged 7->3 on branch dispatch/20261005-100603-merge-the-cms-tool-group-7-3-p (commit 418a131,
+    not pushed). cms_publish_page unchanged; cms_read absorbs list/get/verify (action=, key=slug); cms_edit absorbs
+    note/delete/automate (action=, op= carries the registry op). All 6 absorbed names stay callable via tool_runner._ALIASES
+    (15 aliases total now). Gates preserved: cms_edit holds the CMS_WRITE_TOOLS seat, note + automate list/get stay
+    free, delete/automate-writes confirmed, publ'
+- at: 2026-10-05 10:32
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261005-100603-merge-the-cms-tool-group-7-3-p
   since: 2026-10-05 10:06
