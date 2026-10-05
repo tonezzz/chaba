@@ -4,7 +4,7 @@ column: doing
 blocked_by: tool-consolidation-design
 note: 'Scenario per merged tool family: old alias still works, new action= param reachable, confirm-gates preserved,
   persona/prompt text updated.'
-updated: 2026-10-05 23:27
+updated: 2026-10-05 23:44
 spec: 'Add tests/scenarios-live/tool_merge_*.yaml coverage per merged tool family: old alias still routes, new action=
   param reachable, confirm-gates preserved, persona text updated. Runs LAST in the ada-tools program — it''s the
   regression gate over all merges. Verify: scenario-live --suite tools on idc02 all pass.'
@@ -34,3 +34,10 @@ comms:
 - at: 2026-10-05 23:27
   from: devin
   text: 'Explored: 12 tool_merge_*.yaml exist; reviewing card spec + suite runner to find coverage gaps'
+- at: 2026-10-05 23:44
+  from: devin
+  text: 'Progress: all 12 tool_merge_*.yaml now carry the merge contract — direct /api/tools/call alias-routing
+    probes (new tool_call turn type in scenario-live.py), action= assertions, confirm-gate denials on nonexistent
+    targets, response_not_contains persona checks. Driver LEGACY_* tables resynced to runner._ALIASES (meta-voice/tasks/yt/devin
+    rows were stranded in the wrong dict) + DriverAliasSyncTests guards drift. tools suite appends all 12 merge
+    scenarios last; coverage_debt cleared (22->0). tool-li'
