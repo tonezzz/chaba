@@ -1,9 +1,9 @@
 id: redispatch-permission-rejected-jobs
 title: Re-dispatch 3 permission-rejected jobs under hardened dispatcher
-column: backlog
+column: review
 note: 081016 enroll-speaker investigation, 115509 traffic camera, 120132 automation tool — all exited 0 with zero
   output because tool calls were rejected pre-hardening
-updated: 2026-10-05 14:41
+updated: 2026-10-05 14:42
 requests:
 - id: confirm-redispatch
   ask: Re-dispatch all 3 failed jobs (enroll-speaker investigation, traffic-camera integration, news automation
@@ -46,11 +46,18 @@ comms:
     and every deliverable is merged to origin/master: enroll-speaker findings f6cd3f22 (merge 6d78f3eb), traffic-snap
     29dcc5f0 (merge 67e110db), flood-news automation e532690a (merge 471d6eaa). Trail: docs/ssot/jobs/infrastructure/2026-10-05-redispatch-permission-rejected-verify.yml
     + dispatch-outcome.md on dispatch/20261005-143657 (commit 69632f9f)'
+- at: 2026-10-05 14:42
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 14:42
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-143657-re-dispatch-3-permission-rejec not in origin/master
+    — close will block until merged'
 action:
   type: dispatch
-  status: running
+  status: done
   task_id: 20261005-143657-re-dispatch-3-permission-rejec
   runner: tony-dell
+  result: 20261005-143657-re-dispatch-3-permission-rejec finished (inactive) — see `devin-dispatch logs 20261005-143657-re-dispatch-3-permission-rejec`
 claim:
-  session: 20261005-143657-re-dispatch-3-permission-rejec
   since: 2026-10-05 14:36

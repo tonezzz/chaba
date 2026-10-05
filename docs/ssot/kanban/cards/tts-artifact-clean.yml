@@ -1,6 +1,6 @@
 id: tts-artifact-clean
 title: TTS output leaks artifacts — &nbsp;, ][, markdown remnants spoken
-column: backlog
+column: review
 priority: low
 metric: 0 transcript lines containing &nbsp; or ][ in Ada speech
 verify: grep latest transcripts for artifact tokens after a cast session
@@ -38,16 +38,16 @@ pipeline:
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
-  task_id: 20261005-122233-tts-output-leaks-artifacts-nbs
+  status: done
+  task_id: 20261005-144238-tts-output-leaks-artifacts-nbs
   runner: tony-dell
-  result: 20261005-122233-tts-output-leaks-artifacts-nbs finished (inactive) — see `devin-dispatch logs 20261005-122233-tts-output-leaks-artifacts-nbs`
+  result: 20261005-144238-tts-output-leaks-artifacts-nbs finished (deactivating) — see `devin-dispatch logs 20261005-144238-tts-output-leaks-artifacts-nbs`
 benchmark:
   metric: 0 transcript lines containing &nbsp; or ][ in Ada speech
   command: grep -cE '&nbsp;|\]\[' tests/fixtures/tts-artifact-clean-transcript.txt | tail -1
 note: '2026-10-04 transcript 519088cb6d: Ada spoke "&nbsp;ชัดเจน" and "][พาสเจอร์ไรซ์]" — HTML entities + bracket
   junk reaching TTS. Sanitize stage exists (transcript_tool_leak event) but misses these patterns.'
-updated: 2026-10-05 12:47
+updated: 2026-10-05 14:56
 comms:
 - at: 2026-10-04 20:39
   from: devin
@@ -136,6 +136,27 @@ comms:
 - at: 2026-10-05 12:47
   from: tony
   text: queued for processing
+- at: 2026-10-05 14:42
+  from: chaba
+  text: dispatched 20261005-144238-tts-output-leaks-artifacts-nbs on ada-pi
+- at: 2026-10-05 14:45
+  from: devin
+  text: 'starting: fix already merged to main as 7f3aa2e (speech_sanitize stage). This run = verification pass +
+    benchmark after-capture; card-pipeline.py is chaba-side so I run the benchmark command directly in this worktree.'
+- at: 2026-10-05 14:54
+  from: devin
+  text: 'Verified on ada-pi main (7f3aa2e merged): speech_sanitize stage strips &nbsp;/][/markdown remnants from
+    transcript deltas + vcast_say. tests.test_speech_sanitize 16/16; full suite 510 tests, 2F/3E all environmental
+    (litert/mddb absent); tool-lint clean. Benchmark after=0 (grep fixture returns 0; before=2) — card-pipeline.py
+    is chaba-side, formal benchmark stage needs a chaba run or comms-close. Outcome: dispatch-outcome.md; SSOT job
+    yaml updated with re-verify note.'
+- at: 2026-10-05 14:56
+  from: chaba
+  text: run finished (deactivating) → review
+- at: 2026-10-05 14:56
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-144238-tts-output-leaks-artifacts-nbs dirty — 2 uncommitted
+    file(s); commit or clean before pruning'
 requests:
 - id: ci-develop-tts-artifact-clean-implement-f79735
   ask: Implement the fix in ada-pi — work was delegated by the ci pipeline (card targets repo ada-pi).
@@ -146,4 +167,4 @@ requests:
   status: answered
   answer: Proceed.
 claim:
-  since: 2026-10-05 12:22
+  since: 2026-10-05 14:42
