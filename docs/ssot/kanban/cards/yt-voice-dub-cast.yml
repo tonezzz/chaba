@@ -1,6 +1,6 @@
 id: yt-voice-dub-cast
 title: YT voice dub — cast TTS voices to match actors/speakers
-column: backlog
+column: review
 program: yt-voice-dub
 area: casting
 priority: high
@@ -23,13 +23,14 @@ spec: 'Two parts. (1) Repo-home the pipeline: move ~/.local/bin/{yt-vtt-dub.py, 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'YT voice dub speaker casting per card spec: repo-home yt-vtt-dub/yt-live scripts into scripts/ops/, then
     heuristic speaker detection (cue-gap clustering + question cues) + fixed per-speaker edge-tts voice mapping;
     verify distinct voices per speaker on ~/yt-dub-prep corpus.'
   task_id: 20261005-152912-two-parts-1-repo-home-the-pipe
   runner: tony-dell
-updated: 2026-10-05 15:55
+  result: 20261005-152912-two-parts-1-repo-home-the-pipe finished (inactive) — see `devin-dispatch logs 20261005-152912-two-parts-1-repo-home-the-pipe`
+updated: 2026-10-05 15:59
 comms:
 - at: 2026-10-04 19:55
   from: devin
@@ -60,6 +61,19 @@ comms:
     mode for post-merge); installed copies refreshed. part2: --cast-detect in yt-vtt-dub.py + yt-cast-detect.py
     CLI — cue-gap Otsu + question/answer-opener cues, 2-spk alternation -> cast-times; 4nj=14 turns/240s, U_io=21
     turns/240s. Whisper lane script written; faster-whisper venv installing. TH translate running for verify render.'
+- at: 2026-10-05 15:58
+  from: devin
+  text: 'done. (1) pipeline repo-homed: scripts/ops/{yt-vtt-dub,yt-live-api,yt-live,yt-vtt-translate} + yt-pipeline-install.sh;
+    ~/.local/bin refreshed, yt-live-api :8791 healthy. (2) --cast-detect in yt-vtt-dub.py: Otsu cue-gap clustering
+    + question/response-opener cues -> cast-times, 2-spk alternation; yt-cast-detect.py previews turns. VERIFY:
+    4nj 180s render /tmp/4nj-dub-cast.mp4 — 11 turns, 15xNiwat+8xPremwadee groups, F0 bimodal 134/213Hz matches
+    refs; detection 14 turns/240s on 4nj, 21 on U_io (3-sp'
+- at: 2026-10-05 15:59
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:59
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-152912-two-parts-1-repo-home-the-pipe not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-152912-two-parts-1-repo-home-the-pipe
   since: 2026-10-05 15:29
