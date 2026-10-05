@@ -1,6 +1,6 @@
 id: gev-screens
 title: gev screens — cast/HA screen integration + verify-after-act
-column: backlog
+column: review
 priority: medium
 blocked_by: vcast-cast-lane
 program: gev
@@ -18,10 +18,13 @@ spec: 'Verify-after-act for GEV casts: casting /apps/gev/ to a screen must be fo
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
   task: 'Implement verify-after-act for GEV screen casts per card spec: post-cast state read via vcast_list/snapshot,
     displaced-content path, apps-v6 stale-cache case.'
-updated: 2026-10-05 22:53
+  runner: tony-omen
+  result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-231554-verify-after-act-for-gev-casts.service:
+    Consumed 1min 33.703s CPU time over 5min 59.694s wall clock time, 1.2G memory peak.'
+updated: 2026-10-05 23:22
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -31,3 +34,18 @@ comms:
 - at: 2026-10-05 22:53
   from: tony
   text: queued for processing
+- at: 2026-10-05 23:15
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 23:15
+  from: chaba
+  text: started devin-task-20261005-231554-verify-after-act-for-gev-casts on tony-omen (dispatch)
+- at: 2026-10-05 23:21
+  from: devin
+  text: 'started: exercising verify-after-act on live relay — cast /apps/gev/ to vcast-real screens + displaced-content
+    on headless-2 + apps-v6 SW purge test'
+- at: 2026-10-05 23:22
+  from: tony-omen
+  text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261005-231'
+claim: {}

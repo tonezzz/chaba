@@ -1,6 +1,6 @@
 id: lab-kanban-ha-control
 title: 'Lab: kanban as an HA control surface'
-column: lab
+column: review
 priority: high
 note: 'Experiment: a `type: control` card + `chaba-ha-exec` executor gives the board a real HA control lane — auditable,
   atomic-claimed, confirm-gated, retryable — that voice and dashboards don''t cover. Not a dashboard replacement;
@@ -24,11 +24,25 @@ help: 'Schema sketch: ha: {instance, domain, entity_id, service, data: {}, verif
   bool}. Ada''s CONTROLLABLE_DOMAINS in ada-pi backend/home_assistant.py is the whitelist reference.'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
   button: ▶ Build ha-exec + benchmark
-updated: 2026-10-05 22:54
+  runner: tony-omen
+  result: 'exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-232205-phase-1-executor-scripts-board.service:
+    Consumed 1min 1.372s CPU time over 3min 28.831s wall clock time, 1G memory peak.'
+updated: 2026-10-05 23:26
 comms:
 - at: 2026-10-05 22:54
   from: tony
   text: queued for processing
+- at: 2026-10-05 23:22
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 23:22
+  from: chaba
+  text: started devin-task-20261005-232205-phase-1-executor-scripts-board on tony-omen (dispatch)
+- at: 2026-10-05 23:26
+  from: tony-omen
+  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261005-'
+claim: {}

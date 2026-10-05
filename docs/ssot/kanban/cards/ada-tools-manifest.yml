@@ -11,7 +11,7 @@ note: 'Highest-leverage structural fix. Today every tool declaration lives inlin
   alongside tools-merge-* — consolidation shrinks the surface, this decides where whatever remains is declared.'
 help: 1. extract decl dicts -> per-domain yml (name/desc/schema) 2. tools_loader loads core manifests like tools.d
   modules 3. realtime_provider composes suite by session type 4. delete inline decls; keep behavior identical
-updated: 2026-10-05 22:59
+updated: 2026-10-05 23:20
 spec: 'Move Ada''s 103 inline tool declarations out of backend/realtime_provider.py (~5k lines, the top merge-collision
   surface) into per-domain manifests under tools/ (e.g. tools/screens.py, tools/ha.py, tools/memory.py — one module
   per domain, each exporting its declaration list). realtime_provider loads + concatenates manifests at startup;
@@ -21,10 +21,11 @@ priority: high
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   task_id: 20261005-224838-move-ada-s-103-inline-tool-dec
   runner: tony-dell
+  result: 20261005-224838-move-ada-s-103-inline-tool-dec finished (inactive) — see `devin-dispatch logs 20261005-224838-move-ada-s-103-inline-tool-dec`
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -71,6 +72,22 @@ comms:
   text: 'start: extracting 36 main + camera + 3 chaba decls into per-domain manifests under tools/; EXPRESSION_NAMES
     moves to pironman (stdlib-only) to avoid a circular import; tool-lint will scan tools/*.py so decl count stays
     38'
+- at: 2026-10-05 23:19
+  from: devin
+  text: 'done: 40 decls / 37 builtin names moved out of realtime_provider.py (4987->3225 lines) into 12 per-domain
+    modules under tools/ (meta,ha,screens,comms,memory,calendar,tasks,cms,devin,docs,camera,chaba), assembled lazily
+    at connect via tools/__init__.py + _WIRE_ORDER so the serialized surface is byte-identical to HEAD incl. order.
+    EXPRESSION_NAMES -> backend/pironman.py (breaks a circular import). tool-lint scans tools/*.py: still 38 declared
+    (37 builtin + 1 tools.d), clean. unittest discover 625 '
+- at: 2026-10-05 23:20
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 23:20
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (11 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 23:20
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-224838-move-ada-s-103-inline-tool-dec dirty — 11 uncommitted
+    file(s); commit or clean before pruning'
 claim:
   since: 2026-10-05 22:48
-  session: 20261005-224838-move-ada-s-103-inline-tool-dec

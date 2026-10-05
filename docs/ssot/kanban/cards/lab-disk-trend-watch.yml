@@ -4,7 +4,7 @@ column: backlog
 note: 'Original card file was written as 0 bytes during the disk-full event (~14:23). Recovered skeleton. Context:
   / hit 100%; freed ~7GB (mddb backups, pip/go caches). Watchers: yt-live-media cache (8.6G) grows with dub pipeline;
   system journal 3G needs sudo vacuum.'
-updated: 2026-10-05 22:53
+updated: 2026-10-05 23:23
 comms:
 - at: 2026-10-05 14:45
   from: devin
@@ -15,6 +15,13 @@ comms:
 - at: 2026-10-05 22:53
   from: tony
   text: queued for processing
+- at: 2026-10-05 23:20
+  from: chaba
+  text: dispatched 20261005-232048-disk-trend-watcher-tony-dell-h on chaba
+- at: 2026-10-05 23:23
+  from: devin
+  text: 'start: building disk-trend-watch.py mirroring cms-auto-health lifecycle — SSH df+du probe per host, JSONL
+    history in ~/var/chaba/health, slope→days-to-full, disk-auto-* cards, board_notify push'
 spec: 'Disk trend watcher — tony-dell hit 100% 2026-10-05 (the original card file was 0-bytes from the disk-full
   event). Add a periodic check (fold into cms-auto-health or ops-health): df trend per host, alert on board + LINE
   when a disk will fill within ~7d at current growth, and flag top growers (yt-live-media cache grew 8.6G during
@@ -23,5 +30,10 @@ priority: medium
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261005-232048-disk-trend-watcher-tony-dell-h
+claim:
+  session: 20261005-232048-disk-trend-watcher-tony-dell-h
+  since: 2026-10-05 23:20

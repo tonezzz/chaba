@@ -1,9 +1,9 @@
 id: cms-regen-autofix
 title: cms-regen auto-fix playbook — close the detect→fix loop on CMS automations
-column: backlog
+column: review
 note: cms-auto-health detects and cards stale automations, but a human still presses the fix. This playbook makes
   the cards self-healing.
-updated: 2026-10-05 22:57
+updated: 2026-10-05 23:26
 help: 'Today: cms-auto-health.py writes cms-auto-<slug> cards when a CMS
 
   automation is stale, and auto-closes them on recovery — but recovery
@@ -93,11 +93,12 @@ spec: 'Build the cms-regen auto-fix playbook for Ada/kanban.
   '
 action:
   type: dispatch
-  status: running
+  status: done
   button: ▶ Build cms-regen playbook
   repo: ada-pi
   runner: tony-dell
   task_id: 20261005-225638-build-the-cms-regen-auto-fix-p
+  result: 20261005-225638-build-the-cms-regen-auto-fix-p finished (inactive) — see `devin-dispatch logs 20261005-225638-build-the-cms-regen-auto-fix-p`
 comms:
 - at: 2026-10-04 19:40
   from: devin
@@ -117,6 +118,23 @@ comms:
   text: 'Exploring ada-pi worktree: playbook registry exists (backend/playbooks/*.yml), cms_automation lives in
     tool_runner. Kanban ssot/card files are not in this repo — working from pwa_server regenerate endpoint + tool_runner
     cms_automation contract.'
+- at: 2026-10-05 23:25
+  from: devin
+  text: 'Landed: backend/playbooks/cms-regen.yml + scripts/ada/cms_regen.py executor (regen->poll->health->phantom
+    mark) + scripts/ada/kanban_autofix.py (auto_fix cms-auto-* rule, dispatch|run modes) + 25 unit tests, all mocked.
+    chaba-side wiring (call site in kanban-dispatch) is a followup — different repo.'
+- at: 2026-10-05 23:26
+  from: devin
+  text: 'Done. ada-pi side shipped on dispatch/20261005-225638 (commit a578cb0): backend/playbooks/cms-regen.yml
+    (gate owner, confirm=false per card), scripts/ada/cms_regen.py executor (POST regenerate -> poll last_run ->
+    health re-check -> phantom mark interval_min=0+managed_by), scripts/ada/kanban_autofix.py auto_fix rule (cms-auto-*
+    -> cms-regen on review-enter, dispatch|run, 30min dedup), 25 mocked tests all green. Comms post as devin (board
+    whitelist). REMAINING: chaba-side wiring — kanban-dispatch '
+- at: 2026-10-05 23:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 23:26
+  from: chaba
+  text: auto-merged dispatch/20261005-225638-build-the-cms-regen-auto-fix-p → origin/main
 claim:
-  session: 20261005-225638-build-the-cms-regen-auto-fix-p
   since: 2026-10-05 22:56

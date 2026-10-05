@@ -1,6 +1,6 @@
 id: cast-input-mismatch
 title: cast lands but TV stays on STB input — detect + remediate path
-column: backlog
+column: review
 program: vcast
 area: cast-lane
 metric: cast to TV while on True input results in visible content or honest report
@@ -8,7 +8,7 @@ verify: 'manual: cast with TV on HDMI-input — Ada detects mismatch or applies 
 note: '2026-10-04 transcript: cctv_wall delivered fine but TV showed the True set-top box for 3min; tools reported
   "casting". Ada''s own workaround was pushing the wall URL to the TV browser — teach that as remediation, and surface
   input/source state in vcast_list if detectable.'
-updated: 2026-10-05 22:57
+updated: 2026-10-05 23:26
 spec: 'Cast input-mismatch detect+remediate: 2026-10-04 transcript — cctv_wall delivered fine but TV stayed on True
   STB input for 3min while tools reported ''casting''. After cast lands, verify TV input/source state via HA; on
   mismatch, run remediation (the proven workaround: push the wall URL to the TV browser) + surface the failure honestly
@@ -17,10 +17,11 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261005-225636-cast-input-mismatch-detect-rem
+  result: 20261005-225636-cast-input-mismatch-detect-rem finished (inactive) — see `devin-dispatch logs 20261005-225636-cast-input-mismatch-detect-rem`
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -34,6 +35,26 @@ comms:
 - at: 2026-10-05 22:57
   from: devin
   text: 'starting: locating cast tool path + HA input-state check + scenario harness'
+- at: 2026-10-05 23:24
+  from: devin
+  text: 'done: post-cast TV input verify via HA (media_player.tony_tv app_id) + browser-push remediation wired into
+    cctv_wall/cast_to_screen/ada_camera_snapshot (tv.screens mapping), tv_action nav post-check + vcast_list surfacing.
+    Scenario cast_input_mismatch replays incident both ways; 9 unit tests; 220 pass, tool-lint clean. Commit 34d3cf1
+    on dispatch branch (not pushed). OPERATOR STEP: add tv block to idc01 cast-screens.json (or ADA_TV_SCREENS)
+    once the TV''s vcast screen number is known — none in cur'
+- at: 2026-10-05 23:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 23:26
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 23:26
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-225636-cast-input-mismatch-detect-rem dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 23:26
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-225636-cast-input-mismatch-detect-rem not in origin/main
+    — close will block until merged'
 claim:
-  session: 20261005-225636-cast-input-mismatch-detect-rem
   since: 2026-10-05 22:56

@@ -1,6 +1,6 @@
 id: tool-runner-split
 title: tool_runner.py — split 4.8k-line monolith into domain mixins
-column: backlog
+column: doing
 program: ada-tools
 metric: tool_runner.py under ~1.5k lines (dispatch + shared helpers); domain files own their methods
 verify: pyflakes+scenario smoke green; git-blame still reaches domain files for future edits
@@ -10,7 +10,7 @@ note: '126 async methods in one file = the other half of the merge-collision pro
   impl land in the same domain file eventually.'
 help: mixin pattern — class ToolRunner(ScreensMixin, HaMixin, ...) in backend/tool_runner/; keep public method names
   identical
-updated: 2026-10-05 21:48
+updated: 2026-10-05 23:23
 spec: 'Split backend/tool_runner.py (~4.8k lines, 126 async methods) into domain mixins: tool_runner/screens.py
   (vcast/cast/cctv), ha.py, gev.py, memory.py, cms.py, docs_drive.py, devin.py, etc. ToolRunner class composes them
   via multiple inheritance; public method names unchanged. Pure mechanical move — no behavior change. Verify: tool-lint
@@ -19,8 +19,9 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-omen
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -28,3 +29,9 @@ comms:
 - at: 2026-10-05 21:48
   from: tony
   text: queued for processing
+- at: 2026-10-05 23:23
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 23:23
+  from: chaba
+  text: started devin-task-20261005-232307-split-backend-tool-runner-py-4 on tony-omen (dispatch)

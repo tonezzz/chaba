@@ -1,6 +1,6 @@
 id: tool-error-contract
 title: ada tools — uniform {ok, error} result contract
-column: doing
+column: review
 program: ada-tools
 metric: 'every tool result normalizes to {ok: bool, error?: str}; no buried nested failures'
 verify: 'lint test: dispatch every tool with a failing fixture, assert top-level shape'
@@ -10,7 +10,7 @@ note: 'Today: raise, {error}, ok:false, {err}, and errors buried in responses[].
   phantom-write detection.'
 help: ToolRunner.dispatch wrapper — one place to normalize; tools.d manifest can declare the contract for drop-ins
   too
-updated: 2026-10-05 22:39
+updated: 2026-10-05 23:23
 spec: 'Uniform tool result contract: every ToolRunner method returns {ok: bool, ...} — raise/{error}/ok:false/{err}/buried
   responses[].response.ok all coexist today. Pick {ok,error} as canonical; normalize at the runner boundary (wrap
   legacy returns), keep the gev_command all-failed->top-level-error pattern (0bb8e9b). Update the honesty checks
@@ -19,9 +19,11 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-omen
+  result: 'exit=0 mits or pushes were made — work is confined to this worktree. | devin-task-20261005-223854-uniform-tool-result-contract-e.service:
+    Consumed 9min 40.820s CPU time over 43min 12.507s wall clock time, 1.1G memory peak, 260.6M memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -38,3 +40,13 @@ comms:
 - at: 2026-10-05 22:39
   from: devin
   text: 'Starting: exploring ToolRunner and current result contract'
+- at: 2026-10-05 23:21
+  from: devin
+  text: 'done: normalize_tool_result() at the execute() boundary — every result now carries top-level ok; method
+    raises become {ok:false,error,error_type}; gates/unknown-tool still raise. gev all-failed lift generalized.
+    Provider passes dict through (no output wrap); honesty checks read top-level ok. 637 tests pass incl. 14 new
+    contract tests + forced-fail fixture; tool-lint clean. Job trail: docs/ssot/jobs/ada/2026-10-05-uniform-tool-result-contract.yml'
+- at: 2026-10-05 23:23
+  from: tony-omen
+  text: 'finished (ok): exit=0 mits or pushes were made — work is confined to this worktree. | devin-task-20261005-223854-uniform-tool-result-co'
+claim: {}
