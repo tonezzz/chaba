@@ -1,0 +1,46 @@
+title: Gate /apps/board-api writes behind Tailscale identity
+subtitle: board-api-auth card — deny anonymous/accidental card mutations, keep reads open
+icon: shield
+
+decision:
+  summary: >
+    Dual-layer gate. Layer 1 (edge): stacks/web/Caddyfile /apps/board-api/*
+    responds 403 to non-GET/HEAD requests lacking the Tailscale-User-Login
+    header that tailscale serve injects on tailnet-authed requests.
+    Layer 2 (app): board-api.caller_identity() verifies the login header AND
+    that every X-Forwarded-For hop is a tailnet (100.64.0.0/10,
+    fd7a:115c:a1e0::/48) or loopback address — Caddy appends the real client
+    IP at each hop, so a LAN client forging the header still leaves its LAN
+    IP in the chain and is denied. Direct loopback callers (dispatch rails,
+    systemd fail units, card-pipeline, kanban-dispatch) post to
+    127.0.0.1:8787 with no XFF and are trusted as 'local'.
+  why_not_edge_only: >
+    The header arrives as a plain request header at Caddy :80 — a LAN client
+    can forge it, and the edge can't distinguish injected vs forged. The
+    app-level XFF-chain check closes that hole.
+  allowlist: >
+    BOARD_API_ALLOWED_LOGINS env (comma list) optionally restricts which
+    tailnet logins may write; unset = any tailnet identity (tailnet itself
+    is the trust boundary today).
+  attribution: >
+    Every write logs 'board-api write <path> id=<card> via=<login|local>'
+    to stderr (journald: journalctl --user -u chaba-board-api) and returns
+    the identity as 'via' in the JSON response.
+  verified: >
+    2026-10-05 on worktree instance (BOARD_API_PORT=18787): anonymous
+    proxied POST -> 403; forged login + LAN XFF -> 403; tailnet-authed
+    POST -> 200; direct loopback POST -> 200; GETs open. caddy validate
+    passed on the updated Caddyfile.
+  post_merge_verify: >
+    After merge + service restarts (systemctl --user restart
+    chaba-board-api web): curl -X POST
+    https://tony-dell.taila0626a.ts.net/apps/board-api/comment (no creds)
+    must 403 at the edge; a tailnet browser board click must succeed.
+    Note: LAN access to the board page (http://<lan-ip>/...) can read but
+    its write buttons now 403 — use the tailnet URL.
+
+files:
+  - scripts/board/board-api.py        # caller_identity + do_POST gate
+  - stacks/web/Caddyfile              # @anon_write matcher on /apps/board-api/*
+  - docs/ssot/kanban/ssot.kanban.yml  # write_path.api documents the gate
+  - docs/ssot/infrastructure/ssot.security.tony-dell.yml  # listener row

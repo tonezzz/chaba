@@ -108,7 +108,12 @@ card_schema:
 
 write_path:
   api: "board-api.service on tony-dell 127.0.0.1:8787 (scripts/board/board-api.py);
-        Caddy proxies /apps/board-api/* (prefix stripped). Tailnet-gated."
+        Caddy proxies /apps/board-api/* (prefix stripped). Writes gated on
+        tailnet identity (board-api-auth, 2026-10-05): Caddy 403s non-GET
+        without Tailscale-User-Login (injected by tailscale serve), and
+        board-api re-verifies — header + all-trusted XFF chain, or a direct
+        loopback caller (scripts/units). GET /cards + /health stay open.
+        BOARD_API_ALLOWED_LOGINS narrows to named logins when set."
   endpoints:
     "POST /action {id, do: queue|close|hold|retry}":
       "queue: action.status->queued (idle/failed/done cards; column resets to
