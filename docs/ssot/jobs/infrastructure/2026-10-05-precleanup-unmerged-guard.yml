@@ -1,0 +1,90 @@
+title: Precleanup check flags worktrees with unmerged commits
+subtitle: Extend devin-precleanup-check.py so a clean tree with commits not on the base branch reads unsafe
+icon: shield
+card: dispatch-cleanup-unmerged-guard
+
+planning:
+  goal: |
+    dispatch-wt-20261004-141859 was pruned while CLEAN but holding 3 commits that never
+    reached master (michael-ha jump code + 2 kanban cards). Extend the pre-cleanup
+    worktree scan to resolve each worktree's branch (task meta.branch, else HEAD) and
+    flag it unsafe when `git log <base>..<branch>` is non-empty, listing the stranded
+    commits in the report.
+  scope: |
+    - worktrees() gains branch resolution + ancestry check per worktree.
+    - Base ref resolves master -> main -> origin/master -> origin/main (ada-pi
+      worktrees default to main, not master).
+    - Report: new 'branch'/'unmerged' columns, 'Stranded commits' section, warning,
+      and unmerged_worktrees in the JSON summary.
+  success_criteria:
+    - A clean worktree whose branch has commits not on the base is flagged unsafe.
+    - Stranded commits are listed in the Markdown report.
+    - Verified by creating then pruning a test worktree with an unmerged commit.
+  owner: devin
+
+processing:
+  status: completed
+  started_at: "2026-10-05"
+  completed_at: "2026-10-05"
+  steps:
+    - id: 1
+      label: Add worktree_branch() / base_ref() / unmerged_commits() helpers
+      status: completed
+    - id: 2
+      label: Wire unsafe flag into warnings, JSON summary, and report sections
+      status: completed
+    - id: 3
+      label: Verify with a test worktree carrying unmerged commits, then prune it
+      status: completed
+      notes: |
+        Created dispatch-wt-99999999-testunmerged (throwaway repo in /tmp) with
+        branch test-unmerged-branch holding 2 commits over master. Report flagged it
+        clean|test-unmerged-branch|unmerged=2 and listed both commits under
+        'Stranded commits'. Worktree and branch then removed via git worktree remove.
+  decisions:
+    - meta.branch preferred when it still resolves; HEAD branch is the fallback so a
+      stale meta entry cannot mask what is actually checked out.
+    - Detached HEAD falls back to checking HEAD itself against the base.
+    - Base falls back to main/origin-* because ada-pi worktrees have no master;
+      rows that resolve no base report '?' rather than a false '0'.
+  changes:
+    - file: scripts/devin/devin-precleanup-check.py
+      summary: Branch ancestry guard in worktrees(); report + JSON + warnings extended.
+
+followup:
+  verification:
+    - Run devin-precleanup-check.py on tony-dell; check 'Dispatch worktrees' table
+      and 'Stranded commits' section.
+    - Runbook reference: docs/ssot/infrastructure/ssot.devin.maintenance.yml.
+  deferred:
+    - Card note also mentions emitting a focus-inbox/comms entry for stranded
+      commits; not implemented here (spec covered report output only). A follow-up
+      could push unmerged_worktrees>0 findings into docs/ssot/focus-inbox/.
+
+report:
+  status: completed
+  completed_at: "2026-10-05"
+  summary: |
+    worktrees() in devin-precleanup-check.py now resolves each dispatch worktree's
+    branch (task meta.branch, else checked-out HEAD, else detached HEAD), diffs it
+    against the repo's base (master/main/origin-*), and flags the row unsafe when
+    commits are not reachable from the base. The report shows branch + unmerged
+    count per worktree, a 'Stranded commits' listing, a top-level warning, and
+    unmerged_worktrees in --json. Verified live: a clean test worktree with 2
+    unmerged commits was flagged and listed, then pruned.
+  links:
+    - title: Kanban card
+      file: docs/ssot/kanban/cards/dispatch-cleanup-unmerged-guard.yml
+  kb_review: []
+  lessons_learned:
+    - Clean != safe: git status porcelain misses branch-only work; ancestry check
+      (base..branch) is the real prune guard.
+
+config:
+  version: 1
+  created_at: "2026-10-05"
+  last_updated: "2026-10-05"
+  maintainer: devin
+  related_files:
+    - scripts/devin/devin-precleanup-check.py
+    - docs/ssot/infrastructure/ssot.devin.maintenance.yml
