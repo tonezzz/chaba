@@ -1,0 +1,42 @@
+title: Board drain — pending items at session close 2026-10-05
+subtitle: Deferred work and physical items left after the board hardening + spec batch
+icon: inbox
+
+focus:
+  label: Board drain tail
+  text: |
+    Remaining items after the board-API hardening session: armed idle cards
+    waiting for queue slots, review-column verification, the ada-pi tool-card
+    serial lane, blocked/external items, and physical tasks only Tony can do.
+  priority: medium
+  status: draft
+  tags: [kanban, board, dispatch, ops]
+  missing_info:
+    - ada-pi tool cards serialize on tool_runner.py/realtime_provider.py —
+      queue one at a time as each merges; do not run the lane in parallel
+    - flood-hub-integration blocked on Google waitlist approval (external)
+    - mddb stop on idc01 at 21:00 was unattributed — watch for recurrence
+  safe_to_parallel:
+    value: false
+    reason: ada-pi lane must serialize; chaba-lane cards can overlap
+  subtasks:
+    - label: Queue remaining armed idle cards as dispatch slots free
+      status: not_started
+    - label: Verify + close review cards (merge guard is green; trust badges show verified/claimed)
+      status: in_progress
+    - label: "idc01-to-idc03-migration — answer open request re: idc03 ssh access"
+      status: not_started
+    - label: Physical — dead tony-house cams, noble-a road-corner, echo-leak replay with KK, yt-dub v17 listen test, CF Access policy for idc-vps-game
+      status: not_started
+    - label: 27 stale dispatch worktrees under ~/CascadeProjects — pruned by dispatch-merged-branch-prune card
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: board-hardening-batch2
+  date: 2026-10-05

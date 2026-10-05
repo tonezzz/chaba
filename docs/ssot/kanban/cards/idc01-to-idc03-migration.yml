@@ -18,8 +18,9 @@ requests:
   ask: 'idc03 ssh access: tony@idc03 and root@ reject all keys from tony-dell/idc01/idc02 (tailnet + public :22
     answer but no authorized key). Please authorize tony-dell''s ed25519 key on idc03 via the Siamdata panel so
     Phase 2 (baseline + capacity check) can start. Also confirm idc03 spec (vCPU/RAM/disk) from the provider panel.'
-  status: open
-updated: 2026-10-05 21:04
+  status: answered
+  answer: can you install keys from tony-omen?
+updated: 2026-10-05 21:26
 comms:
 - at: 2026-10-05 20:17
   from: tony
@@ -66,6 +67,9 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-205012-phase-1-inventory-plan-only-no not in origin/master
     — close will block until merged'
+- at: 2026-10-05 21:26
+  from: tony
+  text: 'answered idc03-ssh-access-tony-idc03-and-root-rej-308cc5: can you install keys from tony-omen?'
 spec: 'Phase 1 — inventory + plan only, NO changes to production. Tony''s decision: migrate EVERYTHING off idc01
   onto idc03 (answered 2026-10-05). ssh tony@idc01 + tony@idc03. Produce docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
   with: (a) full inventory of idc01 services/containers/quadlets/timers/cron + data dirs + ports + TLS routes, (b)

@@ -1,0 +1,46 @@
+title: Board API hardening batch 2 — UX fixes, auto-merge, lock restructure
+subtitle: Second pass on the board/dispatch rails — click-path bugs, session-end merging, lock scope
+icon: clipboard-check
+date: 2026-10-05
+
+summary:
+  - |
+    Board click failures were a stack of four bugs, not one: modal action
+    buttons never wired (showCard injects HTML after wire() runs), a fetch
+    with no timeout could wedge `busy` forever, the 30s poll wiped the
+    comment input (missing cm-in class), and blocked-close responses rendered
+    as auto-hiding success toasts. All four fixed in render-board.py.
+  - |
+    kanban-dispatch now auto-merges session branches on task finish
+    (dispatch_repos.try_merge): throwaway detached worktree, dirty/conflict
+    skip, dispatch-outcome.md auto-resolve, push retry on remote-moved.
+    KANBAN_AUTOMERGE=0 disables.
+  - |
+    Restructured so slow I/O (devin-dispatch start, git fetch/merge/push,
+    render) runs outside the card lock; renders serialize under
+    /tmp/board-render.lock. Fixed cross-host polling bug (local systemd
+    check only for runner==HOST cards) and failed units no longer count
+    as done.
+  - |
+    Sessions now write dispatch-outcome-<task_id>.md — unique filename,
+    no more systematic merge conflicts, useful per-session history.
+    Readers glob dispatch-outcome*.md.
+  - |
+    Answered /respond requests now flag awaiting_action + comms nudge
+    when the card has no active action; needs-you band surfaces them.
+  - |
+    mddb.service on idc01 was stopped at 21:00 by an unattributed actor
+    (SIGTERM→SIGKILL). Restarted + vector reindex (39815 docs, 0 failed).
+    Tracked on card mddb-primary-unattributed-stop.
+
+verification:
+  - "POST /action via Caddy returned 200 in ~0.5s; cards.json re-rendered"
+  - "try_merge sandbox-tested: clean merge, real-conflict abort, outcome-only auto-resolve, dirty skip, push race retry"
+  - bash -n + ast-parse clean on all touched scripts; board-api selftest pass
+  - 23 backlog cards spec'd + armed; 4 queued on disjoint lanes
+
+followups:
+  - dispatch-merged-branch-prune (armed card) — merged-branch/worktree sprawl
+  - board-answer-live-session (armed card) — answers don't reach running sessions
+  - board-api-auth (armed card) — API is unauthenticated on tailnet
+  - unit_state 'unknown' treated as done — rare mislabel, noted only

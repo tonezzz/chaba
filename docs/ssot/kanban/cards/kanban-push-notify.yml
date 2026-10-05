@@ -12,11 +12,19 @@ spec: 'Notifier hook in board-api.py /request POST: after creating a request tar
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task: 'Build request-notification per card spec: evaluate LINE-vs-ntfy in plan stage (prefer existing LINE path),
     hook /request POST + 12h escalation sweep, batched/quiet. Verify per spec.'
-updated: 2026-10-05 21:16
+  runner: tony-dell
+  task_id: 20261005-212426-notifier-hook-in-board-api-py-
+updated: 2026-10-05 21:24
 comms:
 - at: 2026-10-05 21:16
   from: tony
   text: queued for processing
+- at: 2026-10-05 21:24
+  from: chaba
+  text: dispatched 20261005-212426-notifier-hook-in-board-api-py- on chaba
+claim:
+  session: 20261005-212426-notifier-hook-in-board-api-py-
+  since: 2026-10-05 21:24
