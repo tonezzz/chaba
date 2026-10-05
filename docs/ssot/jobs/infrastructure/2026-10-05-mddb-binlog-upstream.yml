@@ -1,0 +1,55 @@
+title: Upstream mddb binlog-retention + replication fixes to tradik/mddb
+subtitle: Two focused PRs from tonezzz/mddb fork; stock image bumps no longer risk losing the patch once merged
+icon: source-pull
+id: 2026-10-05-mddb-binlog-upstream
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-04"
+completed: "2026-10-05"
+card: mddb-binlog-upstream
+
+what:
+  summary: >
+    The 4 commits on mddb-fork `binlog-retention` (proven on idc01 +
+    tony-dell) were split into two focused PRs against tradik/mddb main,
+    per upstream CONTRIBUTING ("keep PRs focused"). The commits sat on top
+    of the unrelated feat/vector-algorithms work, so they were cherry-picked
+    onto clean origin/main (47dda9b, v2.15.4) in two scratch worktrees —
+    all four applied with zero conflicts.
+  prs:
+    - "tradik/mddb#285 — fix(replication): snapshot followers below oldest, incl. Recv-side FailedPrecondition (dc88ede + 0b46e57)"
+    - "tradik/mddb#286 — feat(binlog): enforce MaxSize/MaxAge retention; stream Rotate (598c57d + bfb3b7c + docs row)"
+  fork: >
+    First fork under Tony's account: github.com/tonezzz/mddb, created via
+    `gh repo fork`. Branches pushed: upstream/binlog-retention,
+    upstream/repl-snapshot-fallback. mddb-fork gained remote `fork` →
+    tonezzz/mddb (origin stays tradik/mddb).
+  docs: >
+    Added the missing docs/config.md rows for MDDB_BINLOG_MAX_SIZE /
+    MAX_AGE / ROTATE_INTERVAL as a third commit on the retention PR —
+    upstream's contributing guide requires docs for user-facing changes.
+    (MDDB_FREELIST_SYNC / MDDB_BACKUP_VERIFY / MDDB_VERIFY_TIMEOUT turned
+    out to be documented upstream already — the freelist work from the
+    canary-breach triage does not need a separate PR.)
+
+verified:
+  - go build ./... clean on both branches (Go 1.27 toolchain auto-fetched)
+  - gofmt + go vet clean on all touched packages
+  - go test ./internal/binlog/ — pass
+  - go test -run 'Replication|StreamBinlog|Snapshot' . — pass
+  - "prior production proof stands — idc01 leader bounded at 256MB cap, disk 94%→54%; tony-dell follower took ~3.8GB snapshot instead of a 16M-entry replay"
+
+upstream_state: >
+  No CI checks reported on either PR yet — tradik/mddb workflow runs
+  likely need maintainer approval for first-time fork contributors.
+  No open issues/PRs collided; all previously filed issues (#266-#270)
+  are closed.
+
+followups:
+  - "When PRs 285/286 merge, chaba can pin stock tradik/mddb:<tag> again on idc01/tony-dell and retire the localhost/mddb:2.15.4-blrotate image; keep mddb-fork only for feat/vector-algorithms until that too is upstreamed (separate card)."
+  - "If the maintainer asks for the PRs squashed or reordered, the scratch worktrees are /tmp/mddb-upstream-retention and /tmp/mddb-upstream-replfix (ephemeral — recreate by cherry-picking the same 4 SHAs from mddb-fork binlog-retention)."
+
+files:
+  - ~/CascadeProjects/mddb-fork                 # remote `fork` added; source of the 4 SHAs
+  - tonezzz/mddb upstream/* branches            # PR heads
