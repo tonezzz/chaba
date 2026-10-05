@@ -90,6 +90,7 @@ def main():
   <title>Board</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    html {{ font-size: 18px; }}
     .bg-bg {{ background-color: #1a1a2e; }}
     .bg-card {{ background-color: #16213e; }}
     .bg-accent {{ background-color: #0a84ff; }}
@@ -192,7 +193,7 @@ async function api(path, body) {{
   return j;
 }}
 
-function actBtns(c) {{
+function actBtns(c, inModal) {{
   const a = c.action || {{}};
   const st = a.status || 'idle';
   let h = '';
@@ -205,8 +206,10 @@ function actBtns(c) {{
          `<button class="abtn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ retry</button>`;
   else if (st === 'failed')
     h += `<button class="abtn text-xs bg-red-800 hover:bg-red-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ Retry</button>`;
-  else
+  else if (a.type)
     h += `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue">${{esc(a.button || '▶ Start')}}</button>`;
+  else if (inModal)
+    h += `<span class="text-xs text-slate-500">no action spec — add <code>action:</code> to the card to dispatch</span>`;
   return h;
 }}
 
@@ -345,7 +348,7 @@ function showCard(id) {{
       `<button id="cm-close" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 shrink-0">✕</button></div>` +
     `<div class="text-[10px] text-slate-500 mb-3">${{esc(c.id)}} · ${{esc(c.column || 'backlog')}} · ${{esc(c.updated || '')}}${{claim.session ? ' · ⚙ ' + esc(claim.session) : ''}}${{a.runner ? ' · ran on ' + esc(a.runner) : ''}}</div>` +
     (c.note ? `<div class="text-sm text-slate-300 mb-3">${{esc(c.note)}}</div>` : '') +
-    `<div class="flex flex-wrap gap-1.5 mb-3">${{actBtns(c)}}${{c.help ? `<button id="cm-help" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1">? help</button>` : ''}}</div>` +
+    `<div class="flex flex-wrap gap-1.5 mb-3">${{actBtns(c, true)}}${{c.help ? `<button id="cm-help" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1">? help</button>` : ''}}</div>` +
     `<div class="flex flex-wrap gap-1.5 mb-4">${{colBtns}}</div>` +
     ((c.lab && (c.lab.hypothesis || c.lab.metric)) ? `<div class="mb-3 border-l-2 border-violet-600 pl-2"><div class="text-[10px] uppercase tracking-wide text-violet-400 mb-1">Lab</div>${{c.lab.hypothesis ? `<div class="text-xs text-slate-300">hypothesis: ${{esc(c.lab.hypothesis)}}</div>` : ''}}${{c.lab.metric ? `<div class="text-xs text-slate-400">metric: ${{esc(c.lab.metric)}}</div>` : ''}}</div>` : '') +
     (c.spec ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Spec</div><pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre></div>` : '') +
