@@ -1,10 +1,10 @@
 id: tools-regression-scenarios
 title: Tool-merge regression — live scenarios covering merged tool paths
-column: doing
+column: review
 blocked_by: tool-consolidation-design
 note: 'Scenario per merged tool family: old alias still works, new action= param reachable, confirm-gates preserved,
   persona/prompt text updated.'
-updated: 2026-10-05 23:44
+updated: 2026-10-06 00:25
 spec: 'Add tests/scenarios-live/tool_merge_*.yaml coverage per merged tool family: old alias still routes, new action=
   param reachable, confirm-gates preserved, persona text updated. Runs LAST in the ada-tools program — it''s the
   regression gate over all merges. Verify: scenario-live --suite tools on idc02 all pass.'
@@ -12,9 +12,11 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-omen
+  result: 'exit=0 ng pull+restart was the sanctioned verify path per AGENTS.md. | devin-task-20261005-232613-add-tests-scenarios-live-tool-.service:
+    Consumed 4min 30.661s CPU time over 58min 57.143s wall clock time, 1.1G memory peak, 436.3M memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -41,3 +43,14 @@ comms:
     targets, response_not_contains persona checks. Driver LEGACY_* tables resynced to runner._ALIASES (meta-voice/tasks/yt/devin
     rows were stranded in the wrong dict) + DriverAliasSyncTests guards drift. tools suite appends all 12 merge
     scenarios last; coverage_debt cleared (22->0). tool-li'
+- at: 2026-10-06 00:24
+  from: devin
+  text: 'VERIFIED on idc02: ada-lab pulled to origin/main + restarted, suite run from /tmp copy of the worktree
+    (checkout clean). scenario-benchmark --suite tools: ALL 12 tool_merge_* PASS first-try — every absorbed alias
+    routes through /api/tools/call, every confirm gate denies correctly (tasks_move/calendar_delete_event/cms_delete_page/devin_answer+followup/drive_update
+    all return requires-confirmation), action= seats reachable, no retired names spoken. Suite 18p/1flaky/1fail/1skip
+    — the fail is educat'
+- at: 2026-10-06 00:25
+  from: tony-omen
+  text: 'finished (ok): exit=0 ng pull+restart was the sanctioned verify path per AGENTS.md. | devin-task-20261005-232613-add-tests-scenarios-li'
+claim: {}
