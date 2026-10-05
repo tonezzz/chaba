@@ -93,3 +93,16 @@ comms:
     per slice). TH group text re-deduped with tolerant tail match.
     This is the architecture answer to every speed/overlap/gibberish
     complaint so far — sentence-level units are the right primitive.
+- at: '2026-10-05 10:20'
+  from: devin
+  text: >-
+    Tony: v11 much better, but Thai needs to sound like natural spoken
+    Thai. v12 (dub-v12-thai.mp4 on screen 5): --th-file override with
+    hand-written natural-register Thai per sentence group (28 lines —
+    conversational particles, no literal MT phrasing). Lesson learned:
+    the MT Thai was translated FRAGMENT-BY-FRAGMENT which guarantees
+    choppy output — the scalable fix is translating at sentence level
+    (the same groups the renderer already builds). --dump-groups emits
+    the group table so an override file can be written aligned to real
+    groups; wire a Gemini/LLM pass on that table when quota returns.
+    v12: 128s speech, rate 0.95, ends 173s, 5.7s total lag.
