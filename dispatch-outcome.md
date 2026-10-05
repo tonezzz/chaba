@@ -1,45 +1,64 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# dispatch outcome — ha-michael-worktree-sync
 
-## What happened
+## What was done
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+Reconciled the HA/michael-lane dispatch sprawl (chaba + sunsynk-power-flow-card)
+with origin/master.
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+### chaba (origin/master 8182733f → 69807c91)
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
+- **Merged 6 diverged branches** holding real unmerged session work:
+  traffic-snap shim (123304), flood-news CMS + normalization (123308),
+  tony-ha ada-voice-card speaker-ws fix (124438), cms-generator schedule
+  audit (130242), gev-gemini tools/live checks (130841), and the
+  gev-auto-health probe (131449 — its files were left **uncommitted**;
+  committed as db2d0fdf before merging).
+- **Archived 4 patch-merged dead branches** as `archive/20261005-*` tags
+  (pushed) — their real work was already on master; only
+  `dispatch-outcome.md` scratch remained.
+- **Removed 15 dead worktrees + deleted 15 branches.** Remaining worktrees:
+  this session, a duplicate dispatch of this card (132452, left alone —
+  possibly live), and a new dispatch (133043).
+- Merge method: plumbing only (`merge-tree --write-tree` + `commit-tree` +
+  `push <commit>:master`) — live checkout at `~/CascadeProjects/chaba` never
+  touched; local master stays 4-behind as before, plain `git pull` fixes.
+- One merge needed a manual union (`ssot.jobs.yml` kanban-sync note —
+  master's `on_failure` text + branch's gev-auto-health mention), pushed as
+  fix commit 69807c91.
+
+### sunsynk-power-flow-card
+
+- `sunsynk` is 1 ahead of origin/main (a84b9b6 battery 3/4); orphan
+  `dispatch/20261004-204448-*` holds an additional e52346e — left for Tony.
+- **Live checkout is dirty with ~24-file battery-3/4 WIP** differing from
+  e52346e (probably a newer iteration). Snapshotted non-destructively to
+  `wip/bat34-uncommitted-snapshot-20261005` (5befc79 via `git stash
+  create`); worktree untouched, nothing lost if it's abandoned.
+
+### Out-of-scope lanes (inventoried in the manifest, not acted on)
+
+- ada-pi: 4 merged worktrees removable; 2 diverged dead-session branches
+  with real tool-merge work (memory 8→4, camera).
+- mddb-fork: prunable `~/mddb-bench/stock-src` registration.
 
 ## Deliverables
 
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
+- `docs/ssot/audit/ha-michael-worktree-sync-20261005.md` — full manifest.
+- `docs/ssot/jobs/infrastructure/2026-10-05-ha-michael-worktree-sync.yml` —
+  job record.
+
+## Verify
+
+- `git -C ~/CascadeProjects/chaba fetch && git log --oneline origin/master -8`
+  → merge commits 67e110db…93d98ec6 + 19612282 + 69807c91 on top.
+- `git worktree list` → main + 3 live dispatch worktrees only.
+- `git tag -l 'archive/*'` → 4 archive tags.
+- `git -C ~/CascadeProjects/sunsynk-power-flow-card branch | grep wip` →
+  snapshot branch present; `git status` there still shows the 24 dirty files.
 
 ## Notes for operator
 
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+- Decide the sunsynk bat34 lineage (e52346e vs wip-snapshot) — it's the only
+  remaining HA-lane divergence, and it needs build+typecheck before deploy.
+- `dispatch-outcome.md` conflicts on literally every merge of a dispatch
+  branch — worth gitignoring repo-wide.

@@ -1,0 +1,47 @@
+title: HA/michael worktree sync — reconcile dispatch sprawl with origin/master
+card: ha-michael-worktree-sync
+date: 2026-10-05
+dispatch: 20261005-132701-reconcile-ha-michael-related-w
+
+summary: |
+  Classified all dispatch worktrees/branches across the 4 whitelisted repos,
+  scoped actions to the HA/michael lanes (chaba + sunsynk-power-flow-card).
+  chaba went from 16 dispatch worktrees to 3 (2 reconcile + 1 new dispatch);
+  origin/master advanced 8182733f -> 69807c91 carrying 6 recovered branches
+  of real session work. sunsynk-card's uncommitted battery-3/4 WIP in the
+  live checkout was snapshotted to wip/bat34-uncommitted-snapshot-20261005
+  without touching the tree.
+
+actions:
+  merged_to_origin_master:
+    - {branch: dispatch/20261005-123304-implement-a-traffic-camera-int, merge: '67e110db', scope: 'stacks/services/traffic-cam traffic-snap shim'}
+    - {branch: dispatch/20261005-123308-build-an-automation-tool-to-fe, merge: '471d6eaa', scope: 'flood-news CMS + memory-schema normalization'}
+    - {branch: dispatch/20261005-124438-investigate-why-ada-enroll-spe, merge: '6d78f3eb', scope: 'tony-ha ada-voice-card.js speaker-ws fix'}
+    - {branch: dispatch/20261005-130242-enumerate-scripts-ada-py-that-, merge: '49dd1b2a', scope: 'cms-generator schedule audit + systemd units'}
+    - {branch: dispatch/20261005-130841-chaba-stacks-tony-dell-gev-gem, merge: '93d98ec6', scope: 'gev-gemini tools-check + live-check'}
+    - {branch: dispatch/20261005-131449-new-chaba-probe-script-mirrori, merge: '19612282', scope: 'gev-auto-health probe — uncommitted work committed as db2d0fdf first; ssot.jobs.yml union fix 69807c91'}
+  archived_tags:
+    - archive/20261005-105032-in-scripts-board-kanban-dispat
+    - archive/20261005-105130-new-node-kanban-in-ssot-report
+    - archive/20261005-105816-scripts-render-board-py-add-a-
+    - archive/20261005-110419-new-reports-node-daily-brief-l
+  worktrees_removed: 15
+  branches_deleted: 15
+  snapshots:
+    - {branch: wip/bat34-uncommitted-snapshot-20261005, repo: sunsynk-power-flow-card, commit: 5befc79, note: 'stash-create snapshot of dirty live checkout — battery 3/4 WIP, 24 files'}
+
+open_items:
+  - 'sunsynk-card: live checkout still dirty (24 files bat34 WIP); orphan branch e52346e vs wip-snapshot — Tony picks which iteration lands on sunsynk/main, then npm build + tsc --noEmit + deploy-card.sh'
+  - 'duplicate dispatch 132452-reconcile-ha-michael-related-w of this card still registered — remove when confirmed dead'
+  - 'ada-pi lane (out of scope): 4 merged worktrees removable; 2 diverged dead-session branches hold real unmerged tool-merge work (memory 8->4, camera)'
+  - 'mddb-fork: /home/tony/mddb-bench/stock-src prunable registration'
+  - 'dispatch-outcome.md keeps colliding on merges — consider gitignoring it repo-wide (every dispatch branch writes it)'
+
+method_notes: |
+  Merges done plumbing-only (merge-tree --write-tree + temp index +
+  commit-tree + push <commit>:master) so no live checkout was touched and
+  local master was not moved out from under ~/CascadeProjects/chaba.
+  dispatch-outcome.md resolved to master's copy each merge; ssot.jobs.yml
+  needed a manual union (see fix commit 69807c91).
+
+manifest: docs/ssot/audit/ha-michael-worktree-sync-20261005.md
