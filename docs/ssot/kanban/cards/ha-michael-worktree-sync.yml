@@ -1,8 +1,8 @@
 id: ha-michael-worktree-sync
 title: HA/Michael branch worktree sync
-column: backlog
+column: review
 note: Reconcile the HA/Michael worktrees with origin — several sessions left diverged branches.
-updated: 2026-10-05 12:51
+updated: 2026-10-05 13:41
 spec: 'Reconcile HA/michael-related worktrees and branches with origin/master:
 
   list worktrees (git worktree list), classify each branch merged /
@@ -16,9 +16,47 @@ spec: 'Reconcile HA/michael-related worktrees and branches with origin/master:
   '
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  task_id: 20261005-132701-reconcile-ha-michael-related-w
+  runner: tony-dell
+  result: 20261005-132701-reconcile-ha-michael-related-w finished (inactive) — see `devin-dispatch logs 20261005-132701-reconcile-ha-michael-related-w`
 comms:
 - at: 2026-10-05 12:51
   from: tony
   text: queued for processing
+- at: 2026-10-05 13:27
+  from: chaba
+  text: dispatched 20261005-132701-reconcile-ha-michael-related-w on chaba
+- at: 2026-10-05 13:27
+  from: devin
+  text: 'started: enumerating worktrees/branches in chaba + sibling HA repos, classifying vs origin/master'
+- at: 2026-10-05 13:27
+  from: devin
+  text: 'started: enumerating worktrees and classifying branches vs origin/master'
+- at: 2026-10-05 13:32
+  from: devin
+  text: 'inventory done. chaba: 6 merged-dead wts, 4 patch-merged dead (work already on master), 5 diverged w/ real
+    work (traffic-snap, flood-cms, tony-ha ada-voice-card, ada cms audit, gev-gemini tools-check) — all merge clean
+    except dispatch-outcome.md. sunsynk-card: sunsynk 1 ahead; orphan dispatch branch holds e52346e bat34; LIVE
+    CHECKOUT DIRTY w/ huge bat34 WIP. ada-pi+mddb = other lanes, report only. merging diverged chaba branches to
+    origin/master per spec'
+- at: 2026-10-05 13:37
+  from: devin
+  text: 'done. chaba origin/master 8182733f->e947de0e: 6 diverged branches merged (traffic-snap, flood-cms, tony-ha
+    voice-card fix, cms audit, gev-gemini checks, gev-auto-health recovered from uncommitted), 4 patch-merged archived
+    as archive/20261005-* tags, 15 dead worktrees+branches removed. sunsynk-card: dirty live checkout (bat34 WIP)
+    snapshotted to wip/bat34-uncommitted-snapshot-20261005 untouched; orphan branch e52346e flagged for Tony. manifest:
+    docs/ssot/audit/ha-michael-worktree-sync-20261005.md'
+- at: 2026-10-05 13:38
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:41
+  from: devin
+  text: 'duplicate session 132452 reporting: sibling dispatch 132701 completed the reconcile (verified — all chaba
+    dispatch branches merged or archive-tagged, worktrees removed, manifest+job yml on origin/master @e947de0e).
+    My branch carries no unique work — safe to discard. NEW findings outside the dispatch whitelist: ~/CascadeProjects/chaba-tony-dell
+    clone has a STUCK mid-rebase main checkout (needs rebase --continue/--abort) + diverged lanes tony-ha (45 unique
+    commits), test/ultralytics-yolo-ha (23), '
+claim:
+  since: 2026-10-05 13:27

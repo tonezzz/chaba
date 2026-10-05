@@ -1,6 +1,6 @@
 id: dispatch-cleanup-unmerged-guard
 title: Dispatch cleanup must check branch ancestry, not just dirty state
-column: backlog
+column: review
 note: 'dispatch-wt-20261004-141859 was removed while its tree was CLEAN but its branch held 3 commits that never
   reached master (michael-ha jump code + 2 kanban cards) — silently lost, re-applied on branch services-regen-followup.
   devin-precleanup-check.py already enumerates dispatch worktrees and flags dirty/unknown ones, but a clean tree
@@ -13,12 +13,13 @@ spec: 'In scripts/devin/devin-precleanup-check.py worktrees(): resolve each work
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Extend devin-precleanup-check.py per card spec: flag worktrees whose branch has commits not reachable from
     master as unsafe, list stranded commits in the report. Verify per spec.'
   task_id: 20261005-130445-in-scripts-devin-devin-preclea
   runner: tony-dell
-updated: 2026-10-05 13:08
+  result: 20261005-130445-in-scripts-devin-devin-preclea finished (inactive) — see `devin-dispatch logs 20261005-130445-in-scripts-devin-devin-preclea`
+updated: 2026-10-05 13:23
 comms:
 - at: 2026-10-05 12:52
   from: tony
@@ -30,6 +31,28 @@ comms:
   from: devin
   text: 'in progress: extending worktrees() in devin-precleanup-check.py to flag branches with commits not reachable
     from master'
+- at: 2026-10-05 13:13
+  from: devin
+  text: 'done: worktrees() now resolves each worktree branch (meta.branch->HEAD->detached) and flags unsafe when
+    commits are not reachable from base (master/main/origin-*). Report gains branch+unmerged columns, a Stranded
+    commits section, warning, and unmerged_worktrees in --json. Verified: clean test worktree w/ 2 unmerged commits
+    flagged+listed, then pruned. Trail: docs/ssot/jobs/infrastructure/2026-10-05-precleanup-unmerged-guard.yml;
+    details in dispatch-outcome.md. Deferred: focus-inbox emit (card no'
+- at: 2026-10-05 13:14
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:14
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-130445-in-scripts-devin-devin-preclea dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 13:14
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-130445-in-scripts-devin-devin-preclea not in origin/master
+    — close will block until merged'
+- at: 2026-10-05 13:23
+  from: devin
+  text: 'merged to master (a0dfa35c): devin-precleanup-check.py now flags worktrees whose branch carries commits
+    not reachable from master — the exact dispatch-wt-141859 loss mode. Stray job doc committed alongside. Card
+    stays in review for the live prune-test gate.'
 claim:
-  session: 20261005-130445-in-scripts-devin-devin-preclea
   since: 2026-10-05 13:04

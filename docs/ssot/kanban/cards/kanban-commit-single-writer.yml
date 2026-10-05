@@ -1,6 +1,6 @@
 id: kanban-commit-single-writer
 title: 'kanban-commit: single-writer rule across checkouts'
-column: backlog
+column: review
 note: kanban-commit.timer + parallel sessions + autostash = recurring 'untracked files would be overwritten' pull
   stalls (3x this session) and inbox findings landing uncommitted in the unwatched 'chaba' checkout. Convention
   fix worked; structural fix didn't happen.
@@ -9,15 +9,44 @@ spec: 'Two options — pick one in spec phase: (a) only the served checkout (cha
   + conflict resolver that takes upstream for generated files. Also: add a pre-commit hook or lint that warns when
   writing docs/ssot/focus-inbox/ outside the served checkout. Verify: two parallel sessions + one untracked-collision
   case completes pull --rebase without manual intervention.'
-updated: 2026-10-05 12:51
+updated: 2026-10-05 13:54
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
   task: Implement single-writer commit rule per card spec — evaluate option (a) served-checkout-only auto-commit
     with divergence warning vs (b) jittered autostash rebase; pick in plan stage, implement, verify the untracked-collision
     case completes unattended.
+  task_id: 20261005-133043-two-options-pick-one-in-spec-p
+  runner: tony-dell
+  result: 20261005-133043-two-options-pick-one-in-spec-p finished (inactive) — see `devin-dispatch logs 20261005-133043-two-options-pick-one-in-spec-p`
 comms:
 - at: 2026-10-05 12:51
   from: tony
   text: queued for processing
+- at: 2026-10-05 13:30
+  from: chaba
+  text: dispatched 20261005-133043-two-options-pick-one-in-spec-p on chaba
+- at: 2026-10-05 13:31
+  from: devin
+  text: 'spec phase: exploring kanban-commit machinery, will pick option (a) or (b)'
+- at: 2026-10-05 13:45
+  from: devin
+  text: 'spec decision: option (a) single-writer. Folding (b) mechanics (autostash + upstream-wins resolver + jitter)
+    INTO the single writer since verify clause requires surviving an untracked collision. Implementing now.'
+- at: 2026-10-05 13:54
+  from: devin
+  text: 'done — picked option (a) single-writer; folded (b) mechanics inside the writer: new scripts/git-safe-pull.sh
+    resolves untracked collisions pre-rebase (identical→drop, different→aside as <name>.local-<ts>) + upstream-wins
+    for generated paths; kanban-commit sweeps focus-inbox too and retries push 3x; .husky/pre-commit warns on focus-inbox
+    writes outside served + >10 divergence (warn-only); install-hooks.sh arms it per checkout; check-single-writer.sh
+    audits drift; gh-runs-watch rebase-retries push'
+- at: 2026-10-05 13:54
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:54
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-133043-two-options-pick-one-in-spec-p not in origin/master
+    — close will block until merged'
+claim:
+  since: 2026-10-05 13:30

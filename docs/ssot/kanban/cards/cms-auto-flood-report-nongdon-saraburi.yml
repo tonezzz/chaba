@@ -3,13 +3,17 @@ title: CMS automation `flood-report-nongdon-saraburi` error
 column: done
 generated: cms-auto-health
 priority: medium
-note: 'Auto-recovered 2026-10-05: flood-report-nongdon-saraburi healthy again (status=ok,
-  state=ok).'
-help: 'Trigger a manual regen: cms_automation run_now for ''flood-report-nongdon-saraburi''
-  (or POST /api/cms/pages/flood-report-nongdon-saraburi/regenerate). If it repeats,
-  check the page''s generator command in the registry doc.'
-updated: '2026-10-05'
+note: 'Auto-recovered 2026-10-05: flood-report-nongdon-saraburi healthy again (status=ok, state=ok).'
+help: 'Trigger a manual regen: cms_automation run_now for ''flood-report-nongdon-saraburi'' (or POST /api/cms/pages/flood-report-nongdon-saraburi/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-10-05 13:13
 comms:
 - at: 2026-10-05 09:26
   from: tony
   text: status?
+- at: 2026-10-05 13:13
+  from: devin
+  text: 'status: the 03:46 UTC error was collateral of the MDDB embed outage (OR 403 limit + Gemini 429 — both recovered
+    ~11:00 after Tony raised the OR limit). Dependent writers are healthy again — news-flood.service succeeded 12:00
+    + 13:00 on idc01. This auto-card should self-close on the next clean interval run; leaving it for the checker
+    to confirm.'

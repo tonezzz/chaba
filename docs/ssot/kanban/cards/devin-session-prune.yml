@@ -1,0 +1,39 @@
+id: devin-session-prune
+title: Prune old headless dispatch sessions from sessions.db
+column: backlog
+note: 160 sessions accumulated — every devin-dispatch run creates one. They clutter the IDE session list. Vacuum
+  path exists (devin-vacuum-when-closed.sh -> ~/.config/devin/scripts/vacuum-devin-db.sh) but isn't scheduled.
+spec: 'Build a session-prune housekeeping job for tony-dell:
+
+  1. scripts/devin/session-prune.py — delete dispatch-era sessions older than N days (default 14, keep sessions
+  with unmerged worktrees or needs-input.txt), then run the existing vacuum-devin-db.sh guarded path (only when
+  no devin/devin-desktop process holds sessions.db — reuse the two-clear-checks logic from devin-vacuum-when-closed.sh).
+
+  2. Identify dispatch sessions by title prefix (''You are running unattended via devin-dispatch'') or by ~/.local/share/devin-dispatch/tasks/<id>
+  meta; never prune interactive sessions.
+
+  3. systemd user timer (weekly, e.g. Sun 03:00) generated into systemd/generated/tony_dell/; install on tony-dell.
+
+  4. Log each pruned session id+title to ~/var/chaba/reports/timeline.jsonl via scripts/lib/report.py so the cleanup
+  is auditable.
+
+  5. Verify: run once with --dry-run listing what would be pruned; then a real run; confirm devin CLI still opens
+  and sessions.db integrity (sqlite3 ''PRAGMA integrity_check'').'
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  task_id: 20261005-143056-build-a-session-prune-housekee
+  runner: tony-dell
+updated: 2026-10-05 14:36
+comms:
+- at: 2026-10-05 13:45
+  from: devin
+  text: filed after tony asked what to do about 160 IDE sessions — all dispatch spawn records; prune is the housekeeping
+    answer
+- at: 2026-10-05 14:31
+  from: chaba
+  text: dispatched 20261005-143056-build-a-session-prune-housekee on chaba
+claim:
+  session: 20261005-143056-build-a-session-prune-housekee
+  since: 2026-10-05 14:31

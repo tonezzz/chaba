@@ -1,13 +1,12 @@
 id: lab-disk-trend-watch
-title: "Lab: disk-usage trend watch"
-column: lab
-lab:
-  hypothesis: "Disk% sampled daily per host predicts fullness early enough to
-    prevent incidents — a trend beats a threshold"
-  metric: "predicts a crossing >7 days out on 2 of 3 incidents replayed from
-    history (binlog 11.4G, dell 99%, idc01 94% all had visible run-ups)"
-  review_by: '2026-11-01'
-note: "Born 2026-10-03/04: idc01 binlog grew ~1G/day for 11 days before the
-  OOM. Cheap version = append disk% to ssot.health samples, linear fit,
-  flag <30d-to-full. Promote = chaba health-loop card."
-updated: '2026-10-04'
+title: Disk trend watch — tony-dell hit 100% on 2026-10-05
+column: backlog
+note: 'Original card file was written as 0 bytes during the disk-full event (~14:23).
+  Recovered skeleton. Context: / hit 100%; freed ~7GB (mddb backups, pip/go caches).
+  Watchers: yt-live-media cache (8.6G) grows with dub pipeline; system journal 3G
+  needs sudo vacuum.'
+updated: '2026-10-05T14:45:00+07:00'
+comms:
+- at: 2026-10-05 14:45
+  from: devin
+  text: reconstructed after finding 0-byte file blocking kanban-commit validation

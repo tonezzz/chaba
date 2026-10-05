@@ -3,7 +3,7 @@ title: Re-dispatch 3 permission-rejected jobs under hardened dispatcher
 column: backlog
 note: 081016 enroll-speaker investigation, 115509 traffic camera, 120132 automation tool — all exited 0 with zero
   output because tool calls were rejected pre-hardening
-updated: 2026-10-05 12:47
+updated: 2026-10-05 14:36
 requests:
 - id: confirm-redispatch
   ask: Re-dispatch all 3 failed jobs (enroll-speaker investigation, traffic-camera integration, news automation
@@ -33,6 +33,14 @@ comms:
   from: devin
   text: 'first redispatch died on smart-mode rejections (same bug); relaunched under dangerous: 123304 traffic-camera,
     123308 automation-tool, 124438 enroll-speaker'
+- at: 2026-10-05 14:36
+  from: chaba
+  text: dispatched 20261005-143657-re-dispatch-3-permission-rejec on chaba
 action:
   type: dispatch
-  status: queued
+  status: running
+  task_id: 20261005-143657-re-dispatch-3-permission-rejec
+  runner: tony-dell
+claim:
+  session: 20261005-143657-re-dispatch-3-permission-rejec
+  since: 2026-10-05 14:36

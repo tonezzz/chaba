@@ -1,6 +1,6 @@
 id: gev-bridge
 title: gev bridge — gemini-live ws proxy + tool declarations
-column: backlog
+column: review
 priority: high
 program: gev
 area: bridge
@@ -17,12 +17,13 @@ spec: 'chaba stacks/tony-dell/gev-gemini: add a tools.json regen guard — a scr
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: Add tools.json regen guard in stacks/tony-dell/gev-gemini per card spec (re-extract GEV_REALTIME_TOOLS,
     strip additionalProperties, drift-diff) and verify the ws tool-call cycle end-to-end.
   task_id: 20261005-130841-chaba-stacks-tony-dell-gev-gem
   runner: tony-dell
-updated: 2026-10-05 13:09
+  result: 20261005-130841-chaba-stacks-tony-dell-gev-gem finished (inactive) — see `devin-dispatch logs 20261005-130841-chaba-stacks-tony-dell-gev-gem`
+updated: 2026-10-05 13:26
 comms:
 - at: 2026-10-05 13:03
   from: tony
@@ -33,6 +34,18 @@ comms:
 - at: 2026-10-05 13:09
   from: devin
   text: 'Session started: building tools.json regen guard + live ws verification.'
+- at: 2026-10-05 13:24
+  from: devin
+  text: 'Guard built (tools-check.mjs) — immediately found real drift: tools.json is AHEAD of source (zoom/fly source-port
+    still pending) while source gained stop-motion+reworded descs. Live ws: was failing w/ frozen event loop (mem-pressure
+    stalls, handshake timeouts since Sep30 rebuild); restarted service — text→function_call→tool_response→done now
+    PASS on both ws://127.0.0.1:8789 and wss /apps/gev-live/ws.'
+- at: 2026-10-05 13:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:26
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-130841-chaba-stacks-tony-dell-gev-gem not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-130841-chaba-stacks-tony-dell-gev-gem
   since: 2026-10-05 13:08

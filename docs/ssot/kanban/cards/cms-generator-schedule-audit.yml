@@ -1,6 +1,6 @@
 id: cms-generator-schedule-audit
 title: 'Audit: which ada-cms generators still lack a timer'
-column: backlog
+column: review
 note: 'cms-services-weekly-regen gave host-services-cms.py its weekly timer, but a 2026-10-04 check found most scripts/ada
   generators have no systemd unit (repo or installed) and aren''t in overnight-jobs-expanded.sh: ops-report, journal-report,
   ha-report, logs-report, net-report, tasks-report, caddy-report, session-report, devin-report, spend-report, ha-events-report,
@@ -14,13 +14,14 @@ spec: Enumerate scripts/ada/*.py that publish ada-cms-pages or write reports/; r
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Audit ada-cms generator scheduling per card spec: classify each scripts/ada generator scheduled|manual-on-purpose|dead
     in ssot.automation.yml; install timers for live ones following the chaba-services-regen pattern; register in
     ssot.audit.hosts.yml expected_services.'
   task_id: 20261005-130242-enumerate-scripts-ada-py-that-
   runner: tony-dell
-updated: 2026-10-05 13:08
+  result: 20261005-130242-enumerate-scripts-ada-py-that- finished (inactive) — see `devin-dispatch logs 20261005-130242-enumerate-scripts-ada-py-that-`
+updated: 2026-10-05 13:26
 comms:
 - at: 2026-10-05 12:52
   from: tony
@@ -32,6 +33,19 @@ comms:
   from: devin
   text: 'Starting audit: enumerating scripts/ada generators, classifying in ssot.automation.yml, installing timers
     for live ones.'
+- at: 2026-10-05 13:23
+  from: devin
+  text: 'Done — audit complete, committed in worktree (10ab10b4). FINDING: every live+valuable scripts/ada generator
+    is ALREADY scheduled — the 2026-10-04 check missed that they run inside two chain timers: ada-review-refresh.timer
+    (daily 08:45 omen -> export-transcripts.py -> 16 generators incl. ops/journal/ha/logs/net/tasks/caddy/devin/spend/ha-events
+    reports + both rollups + vocab-pages-sync) and kanban-sync.timer (15min dell -> cms-auto-health + logs-kanban
+    + kanban-cms). Plus dedicated timers (servi'
+- at: 2026-10-05 13:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 13:26
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-130242-enumerate-scripts-ada-py-that- not in origin/master
+    — close will block until merged'
 claim:
-  session: 20261005-130242-enumerate-scripts-ada-py-that-
   since: 2026-10-05 13:02

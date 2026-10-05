@@ -1,9 +1,9 @@
 id: dispatch-capacity-bench
 title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
-column: review
+column: done
 note: 'Measure before deciding multi-host dispatch architecture. Key gap found 2026-10-04: devin CLI exists ONLY
   on tony-dell — remote hosts can''t dispatch today regardless of the card system.'
-updated: 2026-10-05 08:10
+updated: 2026-10-05 13:13
 help: "Current capacity snapshot (measured 2026-10-04):\n  tony-omen  12c / 3G avail / load 7.0   — loaded, not\
   \ free capacity\n  idc01       2c / 26G avail / load 0.6  — RAM-rich CPU-poor, runs ada+mddb\n  mn01        4c\
   \ / 2G avail  / load 2.0  — standby-sized\n  idc02       4c / 11G avail / load 0.08 — idle VPS, best free capacity\n\
@@ -128,5 +128,8 @@ comms:
     Working run recipe documented in assessment section 4 (--userns=keep-id + $HOME mounts + --respect-workspace-trust
     false). Committed a06560ac. Podman runner path on idc02 is now fully proven — remaining gaps for multi-host
     dispatch are queue fan-out, repo-checkout freshness, and imag'
+- at: 2026-10-05 13:13
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-04 20:42
