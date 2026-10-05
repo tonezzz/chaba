@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""runner-agent — remote kanban executor.
+
+Runs oneshot (timer-driven, e.g. every 60s) on any tailnet host. Each
+pass:
+  1. poll claimed tasks (state.json: card_id -> unit) — when the systemd
+     unit leaves active state, collect exit status + journal tail and
+     POST /action {do:finish, host, ok, result}
+  2. if under cap, GET /cards and claim queued cards matching this host:
+     - action.host absent or == RUNNER_HOST
+     - action.runner absent
+     - every action.labels[] entry is in RUNNER_LABELS
+     - an executor exists for action.type
+  3. POST /action {do:claim, host} (atomic first-wins under the api
+     flock), then start the task under systemd-run and record the unit.
+
+Task types (card `action` block):
+  dispatch   (default) — `devin-dispatch start <repo> <spec+rails>`;
+             needs the devin CLI + repos.conf on this host.
+  container  — `podman run --rm <env> <image> <cmd...>` under
+             systemd-run; card supplies action.container:
+             {image, cmd (str|list), env: {K: V}, pull: missing|always}
+
+Env:
+  RUNNER_API     board api base — default the tailnet Caddy route so the
+                 same value works on every host incl. tony-dell itself
+  RUNNER_HOST    hostname claim identity (default: uname nodename)
+  RUNNER_CAP     max concurrent claimed tasks (default 2)
+  RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd")
+  RUNNER_STATE   state dir (default ~/.local/share/runner-agent)
+
+State is just unit names — a restart re-polls systemctl, so an agent
+crash loses at most bookkeeping, not running work. All API calls are
+idempotent-ish: finish on a card that was moved/reset returns 400 and
+the state entry is dropped on the next pass ("not running" errors are
+treated as terminal for the entry).
+"""
+
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+API = os.environ.get(
+    "RUNNER_API",
+    "https://tony-dell.taila0626a.ts.net/apps/board-api").rstrip("/")
+HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
+CAP = int(os.environ.get("RUNNER_CAP", "2"))
+LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
+          if x.strip()}
+STATE_DIR = Path(os.environ.get(
+    "RUNNER_STATE", str(Path.home() / ".local/share/runner-agent")))
+STATE_FILE = STATE_DIR / "state.json"
+DISPATCH = os.environ.get(
+    "DEVIN_DISPATCH", str(Path.home() / ".local/bin/devin-dispatch"))
+
+RAILS = """
+---
+Rails: you are processing kanban card '{id}' on runner '{host}'.
+- Post progress so the board stays live:
+    curl -s -X POST {api}/comment -H 'Content-Type: application/json' \\
+      -d '{{"id":"{id}","from":"devin","text":"<short status>"}}'
+- Do NOT push to git remotes unless the card spec explicitly says to.
+- If you need Tony to answer something, raise a board request instead of
+  stalling:
+    curl -s -X POST {api}/request -H 'Content-Type: application/json' \\
+      -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
+""".strip()
+
+
+def sh(cmd: list, timeout: int = 60,
+       **kw) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          timeout=timeout, **kw)
+
+
+def api(path: str, body: dict | None = None) -> dict:
+    url = API + path
+    try:
+        if body is None:
+            with urllib.request.urlopen(url, timeout=20) as r:
+                return json.loads(r.read())
+        req = urllib.request.Request(
+            url, data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return {"error": e.read().decode()[:300] or str(e)}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}
+
+
+def load_state() -> dict:
+    try:
+        return json.loads(STATE_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def save_state(st: dict) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(st, indent=1))
+
+
+def unit_active(unit: str) -> bool:
+    r = sh(["systemctl", "--user", "is-active", unit], timeout=15)
+    return r.stdout.strip() in ("active", "activating")
+
+
+def collect(unit: str) -> tuple[bool, str]:
+    """(ok, result-text) from the finished unit's exit status + log tail."""
+    r = sh(["systemctl", "--user", "show", unit,
+            "-p", "ExecMainStatus", "-p", "Result"], timeout=15)
+    kv = dict(ln.split("=", 1) for ln in r.stdout.splitlines()
+              if "=" in ln)
+    ok = kv.get("ExecMainStatus") == "0" and kv.get("Result") == "success"
+    j = sh(["journalctl", "--user", "-u", unit, "-n", "12",
+            "--no-pager", "-o", "cat"], timeout=15)
+    tail = " | ".join(x for x in j.stdout.strip().splitlines() if x)[-240:]
+    return ok, f"exit={kv.get('ExecMainStatus', '?')} {tail}".strip()
+
+
+def claimable(card: dict) -> str:
+    """task type the card wants if this host may claim it, else ""."""
+    a = card.get("action") or {}
+    if a.get("status") != "queued" or a.get("runner"):
+        return ""
+    pinned = a.get("host")
+    if pinned and pinned != HOST:
+        return ""
+    needs = set(a.get("labels") or [])
+    if not needs <= LABELS:
+        return ""
+    typ = a.get("type") or "dispatch"
+    if typ == "dispatch" and not Path(DISPATCH).exists():
+        return ""
+    if typ == "container":
+        c = a.get("container") or {}
+        if not c.get("image") or not shutil_which("podman"):
+            return ""
+    elif typ != "dispatch":
+        return ""
+    return typ
+
+
+def shutil_which(name: str) -> bool:
+    return any((Path(p) / name).exists()
+               for p in os.environ.get("PATH", "").split(":"))
+
+
+def start_task(card: dict, typ: str) -> tuple[str, str]:
+    """Kick off the claimed card; returns (unit_name, error)."""
+    cid = card["id"]
+    a = card.get("action") or {}
+    unit = re.sub(r"[^a-zA-Z0-9_-]", "-",
+                  f"runner-{cid}-{int(time.time())}")[:60]
+    if typ == "container":
+        c = a.get("container") or {}
+        cmd = c.get("cmd")
+        cmd = (["sh", "-c", cmd] if isinstance(cmd, str)
+               else [str(x) for x in (cmd or [])])
+        env = []
+        for k, v in (c.get("env") or {}).items():
+            env += ["-e", f"{k}={v}"]
+        argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
+                 "--description", f"runner {cid}",
+                 "podman", "run", "--rm",
+                 f"--pull={c.get('pull', 'missing')}",
+                 f"--name={unit}"] + env +
+                [str(c["image"])] + cmd)
+    else:  # dispatch
+        spec = (card.get("spec") or "").strip() or \
+            f"{card.get('title', '')}\n\n{card.get('note', '')}"
+        task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
+        argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
+    r = sh(argv, timeout=180)
+    if r.returncode != 0:
+        return "", (r.stderr or r.stdout).strip()[:240]
+    if typ == "dispatch":
+        # devin-dispatch prints the task id (unit is devin-task-<id>)
+        tid = r.stdout.strip().splitlines()[-1].strip()
+        unit = f"devin-task-{tid}"
+    return unit, ""
+
+
+def finish_pass(st: dict) -> bool:
+    """Report claimed tasks whose units exited. Returns state changed."""
+    changed = False
+    for cid, ent in list(st.items()):
+        unit = ent.get("unit") or ""
+        if not unit or unit_active(unit):
+            continue
+        ok, result = collect(unit)
+        resp = api("/action", {"id": cid, "do": "finish", "host": HOST,
+                               "ok": ok, "result": result})
+        err = resp.get("error") or ""
+        if not err or "not running" in err or "claimed by" in err \
+                or "no card" in err:
+            del st[cid]  # reported, or card moved on — stop tracking
+            changed = True
+            print(f"{cid}: finish {'ok' if ok else 'failed'} — {err or 'reported'}")
+    return changed
+
+
+def claim_pass(st: dict) -> bool:
+    if len(st) >= CAP:
+        return False
+    cards = (api("/cards") or {}).get("cards") or []
+    changed = False
+    for card in cards:
+        if len(st) >= CAP:
+            break
+        cid = card.get("id") or ""
+        typ = claimable(card)
+        if not cid or not typ:
+            continue
+        resp = api("/action", {"id": cid, "do": "claim", "host": HOST})
+        if resp.get("error"):
+            continue  # lost the race or rejected — next card
+        unit, err = start_task(card, typ)
+        if err:
+            api("/action", {"id": cid, "do": "finish", "host": HOST,
+                            "ok": False, "result": f"start failed: {err}"})
+            continue
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"started {unit} on {HOST} ({typ})"})
+        st[cid] = {"unit": unit, "type": typ, "at": int(time.time())}
+        changed = True
+        print(f"{cid}: claimed + started {unit}")
+    return changed
+
+
+def main() -> int:
+    st = load_state()
+    changed = finish_pass(st) | claim_pass(st)
+    if changed:
+        save_state(st)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

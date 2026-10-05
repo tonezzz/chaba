@@ -10,11 +10,14 @@ immediately. Git persistence is handled by kanban-commit.timer.
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
   GET  /cards                        -> cards.json payload
-  POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move
+  POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
       dispatch card whose session branch still has commits not in
       origin/<default_branch> gets a comms entry ('unmerged commits
       remain …') and stays in review instead of closing.
+      finish {host, ok?, result?} is the remote-runner report path
+      (runner-agent.py): only the claiming host may finish; ok:true
+      moves the card to review, ok:false marks it failed in place.
   POST /respond  {id, request_id, answer, from?, reopen?}
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
   POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
@@ -61,7 +64,8 @@ RENDER = REPO / "scripts/render-board.py"
 LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
-TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move"}
+TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
+               "finish"}
 COLUMNS = {"backlog", "doing", "review", "done"}
 
 
@@ -294,9 +298,39 @@ def do_claim(card: dict, body: dict) -> str:
     if pinned and pinned != host:
         raise ValueError(f"card is pinned to {pinned}")
     a["runner"] = host
+    a["status"] = "running"  # claimed = running from the board's view;
+    # the runner's finish call (or a sweeper) is the only way out
+    if card.get("column") == "backlog":
+        card["column"] = "doing"
     card.pop("awaiting_action", None)
     comms_add(card, host, "claimed")
     return "claimed"
+
+
+def do_finish(card: dict, body: dict) -> str:
+    """Remote runner reports its claimed task finished — status->done and
+    column->review on success, status->failed (card stays put) on failure.
+    Only the claiming host may finish a card."""
+    a = card.setdefault("action", {})
+    host = (body.get("host") or "").strip()
+    if not host:
+        raise ValueError("finish needs host")
+    if a.get("status") != "running":
+        raise ValueError(f"not running (status={a.get('status', 'idle')})")
+    if a.get("runner") and a["runner"] != host:
+        raise ValueError(f"claimed by {a['runner']}")
+    ok = bool(body.get("ok", True))
+    a["status"] = "done" if ok else "failed"
+    result = str(body.get("result") or "").strip()
+    if result:
+        a["result"] = result[:300]
+    if ok:
+        card["column"] = "review"
+        card.setdefault("claim", {}).pop("session", None)
+    comms_add(card, host,
+              f"finished ({'ok' if ok else 'failed'})"
+              + (f": {result[:120]}" if result else ""))
+    return "finished -> review" if ok else "marked failed"
 
 
 def do_respond(card: dict, body: dict, frm: str) -> str:
@@ -540,6 +574,8 @@ class H(BaseHTTPRequestHandler):
                         msg = do_claim(card, body)
                     elif verb == "move":
                         msg = do_move(card, body)
+                    elif verb == "finish":
+                        msg = do_finish(card, body)
                     else:
                         msg = do_action(card, verb, "tony")
                     card["updated"] = now()

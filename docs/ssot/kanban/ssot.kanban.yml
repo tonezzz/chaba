@@ -58,13 +58,18 @@ card_schema:
   # optional — hands-off execution (the Start button)
   spec: "full task text — what gets dispatched; be self-contained"
   action:
-    type: "dispatch | manual"        # dispatch => devin-dispatch start
+    type: "dispatch | manual | container   # dispatch => devin-dispatch
+           start; container => podman run via runner-agent"
     status: "idle | queued | running | done | failed"
     button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
     repo: "chaba | ada-pi | sunsynk-card | mddb-fork — devin-dispatch
            whitelist ($DISPATCH_DIR/repos.conf: name path default_branch)"
     host: "optional — pin the card to one host's dispatcher (e.g. idc01
            for mddb work). Unpinned = first eligible host under cap."
+    labels: "optional list — capability requirements; a runner only claims
+             the card if every label is in its RUNNER_LABELS (e.g. gpu)"
+    container: "type=container only: {image, cmd (str|list), env {K:V},
+                pull: missing|always} — podman run --rm under systemd-run"
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
@@ -160,13 +165,20 @@ execution:
     # today's model — one dispatcher per host, caps local:
     host_cap: "KANBAN_HOST_CAP env on the dispatcher (default 3; tony-dell is
                RAM-tight — dispatch-queue.sh used the same cap)"
-    multi_host: "devin-dispatch exists only on tony-dell today. To dispatch
-               elsewhere: install devin-dispatch + a remote runner on the host;
-               remote runners poll GET /apps/board-api/cards for queued cards
-               whose action.host matches (or unpinned), claim atomically via
-               POST /action do=claim {host} (flock-serialized — no double
-               dispatch), run locally, and agents post comms back over tailnet.
-               Card should fetch first — worktrees cut from origin/<default>."
+    multi_host: "scripts/board/runner-agent.py — oneshot poller on any
+               tailnet host (systemd timer). Polls GET /apps/board-api/cards
+               for queued cards matching its host pin + RUNNER_LABELS,
+               claims atomically via POST /action do=claim {host}
+               (flock-serialized — no double dispatch), runs under
+               systemd-run, reports via do=finish {host, ok, result}.
+               Only the claiming host may finish a card.
+               type=container needs only podman (idc hosts); type=dispatch
+               needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
+    runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
+               RUNNER_LABELS, RUNNER_API (default tailnet route —
+               works identically on every host incl. dell)"
+    dead_runner: "a claimed card whose runner dies stays 'running' —
+               requeue is manual today (sweeper = future work)"
     merge_safety: "parallel sessions converge on origin/master; generated files
                (index.html, cards.json, *-assessment.yml) are the recurring
                conflict source — prefer regenerating over hand-merging them"

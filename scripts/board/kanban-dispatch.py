@@ -50,6 +50,12 @@ SESSION = f"kanban-dispatch@{HOST}"
 # tony-dell is RAM-tight (dispatch-queue.sh used CAP=3); other hosts raise it
 # via env until a per-host table lands in ssot.kanban.yml rules.
 HOST_CAP = int(os.environ.get("KANBAN_HOST_CAP", "3"))
+# Capability labels this host satisfies (runner-agent parity). A card with
+# action.labels only runs where every label is satisfied — e.g.
+# labels: [gpu] won't be grabbed by a label-less host.
+MY_LABELS = {x.strip() for x in
+             os.environ.get("KANBAN_HOST_LABELS", "").split(",")
+             if x.strip()}
 
 
 def active_tasks() -> int:
@@ -256,6 +262,11 @@ def main() -> int:
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
                     continue  # pinned to another host's dispatcher
+                if a.get("type") == "container":
+                    continue  # runner-agent territory — not a devin session
+                needs = set(a.get("labels") or [])
+                if needs and not needs <= MY_LABELS:
+                    continue  # needs capabilities this host lacks
                 if a.get("runner") and a["runner"] != HOST:
                     continue  # claimed/starting on another host
                 if active_tasks() + claimed >= HOST_CAP:
