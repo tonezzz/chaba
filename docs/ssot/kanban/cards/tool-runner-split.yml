@@ -10,7 +10,7 @@ note: '126 async methods in one file = the other half of the merge-collision pro
   impl land in the same domain file eventually.'
 help: mixin pattern — class ToolRunner(ScreensMixin, HaMixin, ...) in backend/tool_runner/; keep public method names
   identical
-updated: 2026-10-05 21:15
+updated: 2026-10-05 21:48
 spec: 'Split backend/tool_runner.py (~4.8k lines, 126 async methods) into domain mixins: tool_runner/screens.py
   (vcast/cast/cctv), ha.py, gev.py, memory.py, cms.py, docs_drive.py, devin.py, etc. ToolRunner class composes them
   via multiple inheritance; public method names unchanged. Pure mechanical move — no behavior change. Verify: tool-lint
@@ -19,9 +19,12 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: queued
   button: ▶ Start
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (ada-pi lane, medium)
+- at: 2026-10-05 21:48
+  from: tony
+  text: queued for processing

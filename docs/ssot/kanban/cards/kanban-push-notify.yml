@@ -1,6 +1,6 @@
 id: kanban-push-notify
 title: Push notification when a board request is created (or rots 12h)
-column: backlog
+column: review
 note: 'Tony only sees requests when he opens the board. The system already has an escalation concept (ESCALATE_H
   in cms-auto-health) — apply it to human requests too. Channel decision needed in plan: LINE (yomi path exists)
   vs ntfy.sh vs both. LINE preferred — it''s where Tony already lives.'
@@ -12,12 +12,13 @@ spec: 'Notifier hook in board-api.py /request POST: after creating a request tar
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Build request-notification per card spec: evaluate LINE-vs-ntfy in plan stage (prefer existing LINE path),
     hook /request POST + 12h escalation sweep, batched/quiet. Verify per spec.'
   runner: tony-dell
   task_id: 20261005-212426-notifier-hook-in-board-api-py-
-updated: 2026-10-05 21:38
+  result: 20261005-212426-notifier-hook-in-board-api-py- finished (inactive) — see `devin-dispatch logs 20261005-212426-notifier-hook-in-board-api-py-`
+updated: 2026-10-05 21:51
 comms:
 - at: 2026-10-05 21:16
   from: tony
@@ -31,6 +32,18 @@ comms:
     configured; ntfy.sh = new external dep; picking HA iPhone push (notify.mobile_app_tony_ip on tony-ha loopback,
     same proven path devin-dispatch-watch uses, clickAction /chaba-admin/board), channel env-selectable so LINE
     can be enabled later. Implementing board_notify.py + /request hook + 12h sweep in kanban-sync tick.'
+- at: 2026-10-05 21:48
+  from: devin
+  text: 'done. Channel decision: HA iPhone push (notify.mobile_app_tony_ip on tony-ha :8123, clickAction /chaba-admin/board)
+    — the proven devin-dispatch-watch path. yomi LINE rejected: session-status valid:false right now, no chatId
+    configured anywhere; ntfy rejected: new external dep. Both implemented behind BOARD_NOTIFY_CHANNEL anyway. Changes:
+    board_notify.py (channel helper+CLI), board-api.py /request hook (at/from/to fields, 30s debounce -> batched
+    summary), request-sweep.py in kanban-sync tick (12h'
+- at: 2026-10-05 21:50
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 21:51
+  from: chaba
+  text: auto-merged dispatch/20261005-212426-notifier-hook-in-board-api-py- → origin/master
 claim:
-  session: 20261005-212426-notifier-hook-in-board-api-py-
   since: 2026-10-05 21:24
