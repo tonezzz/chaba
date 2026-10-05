@@ -1,45 +1,74 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# dispatch-outcome — 20261005-132452-reconcile-ha-michael-related-w
 
-## What happened
+Card: `ha-michael-worktree-sync` — reconcile HA/michael worktrees/branches with origin/master.
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+## Result
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+**Task was completed by the duplicate dispatch session `20261005-132701` while this session
+was still auditing.** This card was dispatched twice, 3 minutes apart. The 132701 session
+finished at ~13:37 (exit 0) and pushed the full deliverable set to origin/master
+(`8182733f → e947de0e`):
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
+- 6 diverged dispatch branches merged to origin/master (traffic-snap, flood-news CMS,
+  ada-enroll/tony-ha voice card, cms-generator audit, gev-gemini tools check,
+  gev-auto-health — the last including recovery of uncommitted worktree files).
+- 4 patch-equivalent dead branches tagged `archive/20261005-*`, worktrees+branches removed.
+- 5 fully-merged dead branches' worktrees+branches removed.
+- sunsynk dirty battery-3/4 WIP snapshotted to `wip/bat34-uncommitted-snapshot-20261005`
+  (5befc79) via stash-create, worktree untouched.
+- Manifest: `docs/ssot/audit/ha-michael-worktree-sync-20261005.md`;
+  job record: `docs/ssot/jobs/infrastructure/2026-10-05-ha-michael-worktree-sync.yml`.
 
-## Deliverables
+## This session's contribution — verification + extended audit
 
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
+I independently reproduced the classification before the sibling finished and verified
+its result afterwards:
 
-## Notes for operator
+- `git worktree list` (chaba): now 4 entries — main checkout + 3 live session worktrees
+  (132452 = me, 132701 sibling, 133043 new dispatch). Branches: `master` + the same 3.
+  No stale registrations; `git worktree prune` unnecessary.
+- All former dispatch branch tips are ancestors of origin/master (or archived under
+  `archive/*` tags). Nothing left diverged in the chaba dispatch lanes.
+- sunsynk repo: verified `wip/bat34-...` snapshot exists; live checkout still dirty
+  (21 files) — intentionally untouched; `dispatch/20261004-204448` orphan branch intact.
+- ada-pi + mddb-fork: sibling's inventory confirmed (4 merged ada-pi worktrees removable,
+  prunable mddb registration at `/home/tony/mddb-bench/stock-src`).
 
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+### New finding — `~/CascadeProjects/chaba-tony-dell` clone (outside dispatch whitelist)
+
+A second full clone of chaba that the sibling's whitelist-scoped pass did not cover:
+
+- **Main checkout is stuck mid-rebase**: `git status` reports "interactive rebase in
+  progress; onto 8182733f — no commands remaining" (needs `git rebase --continue` or
+  `--abort`). 22 files modified, mostly `docs/ssot/kanban/cards/*.yml` — a live writer
+  (board sync) is active there, so I did not touch it.
+- `tony-ha` branch (worktree `chaba-tony-dell-worktrees/tony-ha`, 3 dirty files):
+  **45 commits ahead**, none patch-equivalent to origin/master — the cast /
+  desktop-caster dashboard lane (last commit 2026-09-11). Real diverged work;
+  merge/archive needs an operator decision.
+- `test/ultralytics-yolo-ha`: 24 ahead, 23 unique patches (1 patch-equivalent).
+- `experiment/tony-dell-task-runner`: 11 ahead, 7 unique / 4 equivalent.
+- `chaba.h3` (worktree `chaba-h3-tony-dell`): 1158 ahead / 3519 behind — ancient
+  host lane, effectively permanent divergence; candidate for archive tag only.
+- Merged/dead there: `iphone-dev`, `tmp_master_for_deploy`, `drift/tony-dell-live-2026-09-30`
+  (0 ahead), and all 4 detached-HEAD worktrees (`chaba-kanban-sync`,
+  `chaba-tony-dell-experiment`, `worktrees/master`) — tips are ancestors of
+  origin/master, but these checkouts are likely live workspaces; left alone.
+- Local `master` in `~/CascadeProjects/chaba` is behind origin (was 14 at audit time,
+  fast-forwardable; 1 dirty file `ssot.dev-system.assessment.yml`) — sibling deliberately
+  did not move it; a plain `git pull` in the main checkout reconciles when convenient.
+
+## Open items for the operator
+
+1. chaba-tony-dell main checkout rebase is suspended — run `git -C ~/CascadeProjects/chaba-tony-dell rebase --continue` (or `--abort`) after checking intent.
+2. Disposition for `tony-ha` (45 commits), `test/ultralytics-yolo-ha` (23 unique), `experiment/tony-dell-task-runner` (7 unique), `chaba.h3` — same decision class as yesterday's branch-disposition request.
+3. sunsynk battery-3/4: choose between orphan-branch `e52346e` and the newer dirty-tree WIP (snapshotted at `wip/bat34-uncommitted-snapshot-20261005`), then `npm run build` + `tsc --noEmit` before merge/deploy.
+4. This duplicate branch `dispatch/20261005-132452-...` carries no unique work — safe to discard; my worktree can be removed at session end.
+5. Dispatch spawned this card twice 3 min apart — worth a dedupe check in devin-dispatch.
+
+## Verify
+
+- `git -C ~/CascadeProjects/chaba worktree list` → main + ≤3 live session worktrees.
+- `git -C ~/CascadeProjects/chaba branch` → `master` + live dispatch branches only.
+- Manifest/job record on origin/master (commits `64ed464b`, `e947de0e`).
+- `git -C ~/CascadeProjects/sunsynk-power-flow-card branch --list 'wip/*'` → snapshot branch.
