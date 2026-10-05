@@ -10,8 +10,8 @@ Runs on tony-dell (systemd timer every 30s). Each run:
                       (cached ~4h) + ffmpeg -frames:v 1 (~5-10s)
        hls         -> ffmpeg -frames:v 1 on a playlist.m3u8 (~3-8s),
                       alt_urls tried in order on failure.
-                      Zones traffic/burapha/chonburi are generated from
-                      frigate/cameras.json (registry SSOT).
+                      Zones carrying a registry_group in zones.yml are
+                      generated from frigate/cameras.json (registry SSOT).
   3. Write <DATA>/<zone>/<slug>.jpg + manifest-<zone>.json
      (served at https://tony-dell.taila0626a.ts.net/apps/camwall/data/)
 
@@ -41,116 +41,26 @@ DATA = Path(os.environ.get(
     "CAMWALL_DATA",
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))
 
-# Display-name overrides keyed by slug(label) — keep the tuple label
-# ASCII so jpg/CMS keys stay stable; LABELS is what walls and dossiers
-# actually render.
-LABELS = {"entrance-gate": "ทางคนเดินออก/รถเข้า"}
+# Zone roster + classification live in zones.yml next to this script —
+# the single SSOT for zone->tab mapping and camera membership (see
+# zone_meta.py for the group/site/tab semantics). zone-a and noble-park
+# were retired 2026-10-02 (subsets of the per-DVR walls; each duplicate
+# pull burned ~80s of the shared serial VMS budget) — retired zones are
+# simply absent from zones.yml.
+import zone_meta  # noqa: E402 — sibling module, script dir on sys.path
 
-# label -> ("vms", channel) | ("go2rtc", stream) | ("jpeg"|"youtube"|"hls", url)
+ZMETA = zone_meta.load()
+# slug(label) -> display label overrides (walls/dossiers render these;
+# tuple labels stay ASCII so jpg/CMS keys stay stable)
+LABELS = zone_meta.labels(ZMETA)
+
+# zone -> {"interval", "warm", "cams": [(label, kind, key, *alt_urls)]}
+# kind: "vms" (channel) | "go2rtc" (stream) | "jpeg"|"youtube"|"hls" (url)
 # interval = refresh cadence while the zone is enabled; warm = keep thumbs
 # fresh while DISABLED so casting a cold wall still shows recent frames.
 # VMS zones get outage backoff: a dead P2P uplink makes each serial snap
 # burn ~35s — when every vms cam in a zone failed last cycle, the warm
 # wait is quadrupled.
-ZONES: dict[str, dict] = {
-    # zone-a retired 2026-10-02 — it was 2 noble-club channels (Front Rd
-    # Left/Right) + 3 noble-a channels (Road In, Walkway, Road Corner);
-    # every cam lives on the per-DVR walls below and each duplicate pull
-    # burned ~80s of the shared serial VMS budget.
-    # noble-park retired 2026-10-02 — it was 4 noble-club channels +
-    # noble-a Guard View, i.e. a subset of the two per-DVR walls below;
-    # every pull spent ~80s of the shared VMS budget re-snapping the same
-    # channels. Pool/Tennis/PlayGround/Mini Mart live on vms-noble-club,
-    # Guard View on vms-noble-a.
-    # per-DVR walls — every channel the VMS device list exposes for that
-    # recorder. Serial pulls (~16s/cam + poll headroom): club 8, A 5.
-    "vms-noble-club": {
-        "interval": 180,
-        "warm": 1800,
-        "cams": [
-            ("Washing Machines", "vms", "Washing Machines"),
-            ("Stairway Room", "vms", "Stairway Room"),
-            ("Mini Mart", "vms", "Mini Mart"),
-            ("Front Rd Left", "vms", "Front Rd. Left"),
-            ("Front Rd Right", "vms", "Front Rd. Right"),
-            ("Swimming Pool", "vms", "Swimming Pool"),
-            ("Tennis Court", "vms", "Tennis Court"),
-            ("Play Ground", "vms", "Play Ground"),
-        ],
-    },
-    "vms-noble-a": {
-        "interval": 120,
-        "warm": 1800,
-        "cams": [
-            ("Road In", "vms", "1. Road In"),
-            ("Guard View", "vms", "2. Guard View"),
-            ("Walkway In", "vms", "3. Walkway In"),
-            ("Road Corner", "vms", "5. Road Corner"),
-            ("Entrance Gate", "vms", "4. Entrance Gate"),
-        ],
-    },
-    "tony-house": {
-        "interval": 15,
-        "warm": 300,
-        "cams": [
-            ("C100", "go2rtc", "xiaomi_c100_hd"),
-            ("C201", "go2rtc", "xiaomi_c201_hd"),
-            ("Coffee Corner", "go2rtc", "ip_cam_65_hd"),
-            ("IP65 Low", "go2rtc", "ip_cam_65_low"),
-        ],
-    },
-    # demo traffic wall around Rama 9 — mixes direct JPEG stills (iTIC
-    # via the Longdo feed) with YouTube live cams grabbed via yt-dlp+ffmpeg.
-    # All kinds are independent HTTP pulls — no serial bottleneck.
-    "rama9": {
-        "interval": 60,
-        "warm": 600,
-        "cams": [
-            ("Petchaburi Rd", "youtube", "a_bUVExv_Cg"),
-            ("Sukhumvit Soi 11", "youtube", "UemFRPrl1hk"),
-            ("Rama4 x Expy A", "jpeg",
-             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8001"),
-            ("Rama4 x Expy B", "jpeg",
-             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8003"),
-            ("Rama4 x Expy C", "jpeg",
-             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8002"),
-            ("Sathorn Embassy", "jpeg",
-             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.15:8002"),
-        ],
-    },
-    # DOH national highway network — Wowza HLS on 180.180.242.207/208
-    # (same infra DOHWeb uses; camera list probed 2026-10-01 — 72 live
-    # PER_* streams on Phase3/7/9/10 alone; this is a Bangkok-and-ring
-    # subset. Site IDs match DOHWeb survey-station codes.)
-    "dohweb": {
-        "interval": 120,
-        "warm": 900,
-        "cams": [
-            ("Vibhavadi Don Mueang IN", "hls",
-             "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
-             "http://180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8"),
-            ("Min Buri Hwy304 IN", "hls",
-             "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
-             "http://180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8"),
-            ("Bang Pu Sukhumvit OUT", "hls",
-             "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8"),
-            ("Hwy303 Phra Samut Chedi IN", "hls",
-             "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8"),
-            ("Hwy302 Suwinthawong km54", "hls",
-             "http://180.180.242.207:1935/Phase3/PER_3_005_IN.stream/playlist.m3u8"),
-            ("Hwy320 Pathum Thani km15", "hls",
-             "http://180.180.242.207:1935/Phase3/PER_3_015.stream/playlist.m3u8"),
-            ("Hwy302 Lam Luk Ka km5", "hls",
-             "http://180.180.242.207:1935/Phase3/PER_3_017.stream/playlist.m3u8"),
-            ("Hwy21 Saraburi km530", "hls",
-             "http://180.180.242.207:1935/Phase7/PER_7_002.stream/playlist.m3u8"),
-            ("Hwy305 km55", "hls",
-             "http://180.180.242.207:1935/Phase7/PER_7_017.stream/playlist.m3u8"),
-            ("Hwy32 Ayutthaya km95 IN", "hls",
-             "http://180.180.242.207:1935/Phase10/PER_10_016_IN.stream/playlist.m3u8"),
-        ],
-    },
-}
 
 YTDLP = os.environ.get("YTDLP", str(Path.home() / ".local/bin/yt-dlp"))
 FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
@@ -160,47 +70,63 @@ CAMERAS_JSON = Path(os.environ.get(
 YT_CACHE_TTL = 4 * 3600  # yt live manifest URLs expire (~6h); re-resolve often
 _yt_cache: dict[str, tuple[float, str]] = {}
 
-# camera registry group -> wall zone for traffic cams (frigate/cameras.json
-# is the SSOT; streams are DOH/iTIC HLS playlists snapshotted via ffmpeg).
-TRAFFIC_ZONE_MAP = {
-    "Traffic": "traffic",
-    "ทางพิเศษบูรพาวิถี": "burapha",
-    "ชลบุรี": "chonburi",
-}
-TRAFFIC_INTERVAL = 120  # hls grabs ~3-8s each, parallel — 2min is plenty
 
-
-def load_traffic_zones() -> dict[str, dict]:
+def load_registry_zones() -> dict[str, dict]:
     """Build zones from the camera registry (frigate/cameras.json).
 
-    Each enabled cam with an hls_url becomes ("title", "hls", url, alts...);
-    alt_urls are tried in order when the primary playlist stalls/dies.
-    A missing/unreadable registry just means no traffic zones.
+    Zones with a `registry_group` in zones.yml take every enabled registry
+    cam whose `group` matches and that has an hls_url — each becomes
+    ("title", "hls", url, alts...); alt_urls are tried in order when the
+    primary playlist stalls/dies. A missing/unreadable registry just
+    means no registry zones.
     """
     try:
         reg = json.loads(CAMERAS_JSON.read_text())
     except Exception as exc:
-        print(f"traffic zones: cannot read {CAMERAS_JSON}: {exc}",
+        print(f"registry zones: cannot read {CAMERAS_JSON}: {exc}",
               file=sys.stderr)
         return {}
+    # registry `group` value -> (zone name, pull config), from zones.yml
+    reg_map = {zd["registry_group"]: (name, zd)
+               for name, zd in zone_meta.pull_zones(ZMETA).items()
+               if zd.get("registry_group")}
     zones: dict[str, dict] = {}
     for cam in reg.get("cameras", []):
-        zone = TRAFFIC_ZONE_MAP.get(cam.get("group"))
-        if not zone or not cam.get("enabled", True):
+        hit = reg_map.get(cam.get("group"))
+        if not hit or not cam.get("enabled", True):
             continue
+        zone, zd = hit
         url = cam.get("hls_url")
         if not url:
             continue
         alts = [u for u in cam.get("alt_urls") or [] if u != url]
         entry = (cam.get("title") or cam.get("name") or url,
                  "hls", url, *alts)
-        zones.setdefault(zone, {"interval": TRAFFIC_INTERVAL,
-                                "warm": 900,
+        zones.setdefault(zone, {"interval": zd["interval"],
+                                "warm": zd["warm"],
                                 "cams": []})["cams"].append(entry)
     return zones
 
 
-ZONES.update(load_traffic_zones())
+def load_zones() -> dict[str, dict]:
+    """The puller roster: static cams from zones.yml + registry-expanded
+    zones. A zone with no cams anywhere is skipped loudly, not pulled
+    into an empty manifest."""
+    out: dict[str, dict] = {}
+    for name, zd in zone_meta.pull_zones(ZMETA).items():
+        if zd.get("registry_group"):
+            continue  # roster comes from the camera registry below
+        if not zd["cams"]:
+            print(f"{name}: zone has no cams in zones.yml — skipped",
+                  file=sys.stderr)
+            continue
+        out[name] = {"interval": zd["interval"], "warm": zd["warm"],
+                     "cams": zd["cams"]}
+    out.update(load_registry_zones())
+    return out
+
+
+ZONES = load_zones()
 
 
 def slug(s: str) -> str:
@@ -737,7 +663,11 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
                                "cams": {c["key"]: c["dets"] for c in recs}})
             with (zdir / f"detections-{zone}.jsonl").open("a") as f:
                 f.write(line + "\n")
-    return {"zone": zone, "updated": int(time.time()), "cams": cams}
+    # zones.yml classification rides inside the manifest — the CMS sidebar
+    # and any other HTTP consumer get group/site/tab without guessing.
+    cls = zone_meta.classify(zone, ZMETA)
+    return {"zone": zone, "group": cls["group"], "site": cls["site"],
+            "tab": cls["tab"], "updated": int(time.time()), "cams": cams}
 
 
 def _vms_backoff(zone: str, cfg: dict, manifest: Path) -> bool:
@@ -819,9 +749,44 @@ def main() -> int:
         ok = sum(1 for c in man["cams"] if c.get("ok"))
         mode = "enabled" if enabled else "warm" if not forced else "forced"
         print(f"{zone}: {ok}/{len(man['cams'])} thumbs refreshed ({mode})")
+    write_zones_index()
     if own:
         _push_zones(own)
     return 0
+
+
+def write_zones_index() -> None:
+    """DATA/zones.json — the web-readable mirror of zones.yml: tab labels
+    + per-zone {group, site, tab, cams}. The CMS sidebar (ada-pi
+    pwa/cms) fetches this ONE file instead of guessing tabs from slug
+    prefixes; zones absent from zones.yml land in 'unsorted'."""
+    if not DATA.is_dir():
+        return
+    idx = {"updated": int(time.time()),
+           "tabs": zone_meta.tabs(ZMETA), "zones": {}}
+    for zdir in sorted(DATA.iterdir()):
+        if not zdir.is_dir():
+            continue
+        zone = zdir.name
+        mf = zdir / f"manifest-{zone}.json"
+        if not mf.exists():
+            continue
+        try:
+            man = json.loads(mf.read_text())
+        except Exception:
+            continue
+        cls = zone_meta.classify(zone, ZMETA)
+        idx["zones"][zone] = {
+            "group": cls["group"], "site": cls["site"], "tab": cls["tab"],
+            "cams": [{"key": c["key"], "label": c.get("label"),
+                      **({"dev": c["dev"]} if c.get("dev") else {})}
+                     for c in man.get("cams") or []]}
+    try:
+        tmp = DATA / "zones.json.tmp"
+        tmp.write_text(json.dumps(idx, ensure_ascii=False))
+        os.replace(tmp, DATA / "zones.json")
+    except Exception as exc:
+        print(f"zones.json write failed: {exc}", file=sys.stderr)
 
 
 def _push_zones(zones: set[str]) -> None:

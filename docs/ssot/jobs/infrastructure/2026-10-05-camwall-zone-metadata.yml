@@ -1,0 +1,76 @@
+title: camwall — zone metadata drives classification (zones.yml SSOT)
+subtitle: >-
+  Zone -> tab mapping + camera membership moved into a single
+  scripts/cam-wall/zones.yml; puller and CMS generator read it via
+  zone_meta.py; classification propagates into manifests, data/zones.json,
+  and CMS page meta so the sidebar never guesses from slug prefixes.
+icon: camera
+id: 2026-10-05-camwall-zone-metadata
+status: done
+owner: devin-dispatch
+project: chaba
+card: camwall-zone-metadata
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Kanban card camwall-zone-metadata: zone->tab mapping lived in 3 places
+    (SEC/TRAF_ZONES in ada-pi pwa/cms/index.html, DEV_AREA in
+    cam-wall-cms.py, ZONES in cam-wall-pull.py) and the cms sidebar guessed
+    via slug prefixes + title regexes — unknown CCTV silently defaulted to
+    Security, a wrong-way default at a privacy boundary. Single zones.yml
+    SSOT; all consumers read it; verify a non-prefix-name camera lands on
+    the right tab.
+
+design:
+  file: scripts/cam-wall/zones.yml — per-zone {group, site, area{en,th},
+    info{en,th}, interval, warm, cams[[label,kind,key,*alts]],
+    registry_group}; top-level tabs (group -> display label), devices
+    (DVR -> site/area), labels (slug -> display override).
+  semantics: >
+    group: private|public is the privacy semantic; tab is the display
+    label (Security/Traffic) keyed by group unless a zone pins `tab:`.
+    A zone absent from zones.yml classifies group/tab = 'unsorted' — the
+    visible bucket, not a silent guess. `site` groups compounds
+    (noble-club vs tony-house vs bangkok). A camera's canonical class is
+    its DVR `devices` entry when it carries `dev`, else its zone's.
+  loader: scripts/cam-wall/zone_meta.py — load(), classify(zone),
+    cam_classify(zone, cam), pull_zones(), labels(); env override
+    CAMWALL_ZONES_YML. Missing file -> warn + all 'unsorted'; malformed
+    YAML -> raise (loud on the timer, never silently reclassifies).
+
+consumers:
+  cam-wall-pull.py: >
+    ZONES + LABELS + registry expansion all derive from zones.yml;
+    each manifest-<zone>.json now carries {group, site, tab}; end of
+    run writes <DATA>/zones.json — {tabs, zones:{zone:{group,site,tab,
+    cams:[{key,label,dev?}]}}} — the ONE web-readable file the CMS
+    sidebar fetches.
+  cam-wall-cms.py: >
+    ZONE_INFO/AREA/AREA_TH/DEV_AREA deleted — areas/info via
+    zone_meta.classify; cam pages classify by DVR device first.
+    mddb_add stamps meta zone_tab / zone_group / zone_site (multi-zone
+    pages like dvr-wall + cctv-walls tag the sorted set they span).
+  ada-pi-pwa-cms-followup: >
+    ada-pi pwa/cms/index.html (lives in the ada-pi repo, outside this
+    card's worktree): replace SEC/TRAF_ZONES + slug-prefix/title-regex
+    guesses with a fetch of /apps/camwall/data/zones.json (or the
+    zone_tab/zone_group page meta). Pages for unknown zones must render
+    under an 'Unsorted' bucket.
+
+verify:
+  - "cam 'q7x-random-cam' (no prefix) in vms-noble-club -> tab Security,
+    group private — classification from zone metadata, not the name."
+  - "cam with dev=noble-club on any wall -> Noble Club/Security (device
+    wins over the listing zone)."
+  - "zone absent from zones.yml -> tab Unsorted in zones.json and
+    zone_group=unsorted in page meta."
+  - "ZONES built from yaml is byte-equivalent to the old dict (8 zones,
+    registry zones expanded 11 cams each); roster-audit import path ok."
+
+notes:
+  - "Puller crash-on-bad-yaml is intentional: a timer failure is visible,
+    a silent reclassify-everything-to-unsorted is not."
+  - "zone-a and noble-park stay retired — absence from zones.yml is the
+    retirement mechanism; history noted in the file header comments."
