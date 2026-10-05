@@ -3,7 +3,7 @@ title: Consolidate devin_* tools + MCP server consolidation
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 14:56
+updated: 2026-10-05 15:11
 action:
   type: dispatch
   repo: ada-pi
@@ -32,6 +32,30 @@ comms:
   text: 'started: devin group 8->2 (devin dispatch|followup|answer + devin_read status|jobs|pending|report|review).
     ada_devteam_review maps to devin_read action=review keeping its owner_only gate. chaba-side MCP audit will be
     raised as a board request at the end.'
+- at: 2026-10-05 15:05
+  from: devin
+  text: 'merge landed in worktree: 88->82 declared, 31 aliases. devin(action=dispatch|followup|answer) holds the
+    DEVIN_CONFIRMED_TOOLS seat; devin_read(action=status|jobs|pending|report|review) — review carries the absorbed
+    ada_devteam_review tools.d pipeline, owner gate + 300s cap preserved inline. tool-lint clean, 126 unit tests
+    pass. Note: added a 5th action review to devin_read — the card listed only 4 read actions but assigned ada_devteam_review
+    there; review is the honest verb for that pipeline.'
+- at: 2026-10-05 15:09
+  from: devin
+  text: 'raised request chaba-side-half-of-this-card-the-mcp-ser-c047fe: Chaba-side half of this card — the MCP-server
+    audit (is mcp-health still needed vs mcp-debug? ha vs michael-ha vs michae'
+- at: 2026-10-05 15:11
+  from: devin
+  text: DONE — devin group merged 8 -> 2. Declared surface 88->82, _ALIASES 23->31. devin(action=dispatch|followup|answer)
+    holds the confirm gate; devin_read(action=status|jobs|pending|report|review) absorbs the reads + ada_devteam_review
+    (tools.d module deleted, owner gate + 300s cap preserved inline; publish re-checks confirmation under the canonical
+    name). tool-lint clean; 126 unit tests OK incl. 9 new DevinMergeAliasTests covering all 8 alias routes + gates.
+    Deliverables in worktree dispatch-wt-2026
 claim:
   session: 20261005-143702-merge-the-devin-tool-group-8-2
   since: 2026-10-05 14:38
+requests:
+- id: chaba-side-half-of-this-card-the-mcp-ser-c047fe
+  ask: Chaba-side half of this card — the MCP-server audit (is mcp-health still needed vs mcp-debug? ha vs michael-ha
+    vs michael-dev dups?) — reads chaba/Devin config that an ada-pi worktree cannot reach. Please dispatch a chaba-side
+    job to audit which Devin MCP servers are still needed post-consolidation and prune the dead ones.
+  status: open
