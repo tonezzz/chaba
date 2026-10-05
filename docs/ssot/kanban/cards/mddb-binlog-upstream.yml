@@ -8,7 +8,7 @@ help: 'The last two are upstream-worthy bugs independent of retention: (a) ScanF
   so fresh followers replayed the entire retained log instead of snapshotting; (b) the client''s snapshot fallback
   only checked the dial error while gRPC delivers rejections via Recv — followers looped on ''stream recv error''
   forever.'
-updated: 2026-10-04 21:47
+updated: 2026-10-05 07:53
 comms:
 - at: 2026-10-04 19:11
   from: devin
@@ -74,6 +74,11 @@ comms:
 - at: 2026-10-04 21:47
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-05 07:53
+  from: devin
+  text: 'Upstream prep underway: reviewed all 4 binlog-retention commits on mddb-fork — clean, disjoint from vector-algorithm
+    commits, cherry-pick onto origin/main (47dda9b) should apply cleanly. Next: build+test, fork to tonezzz, open
+    focused PR(s).'
 action:
   type: devin-dispatch
   repo: mddb-fork
