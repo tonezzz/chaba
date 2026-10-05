@@ -12,7 +12,7 @@ overview:
 
 config:
   version: 1
-  last_updated: "2026-10-01"
+  last_updated: "2026-10-05"
   maintainer: tony
   status: active
   origin: >
@@ -293,6 +293,25 @@ nodes:
       - docs/ssot/ssot.ci.yml
       - docs/ssot/kanban/ssot.kanban.yml
     children: []
+  # --- Kanban domain ---
+  - id: kanban
+    layer: L2-domain
+    purpose: Board health — column counts, action/dispatch throughput,
+      open requests, stale review lane
+    generator: scripts/board/kanban-stats.py via kanban-sync.timer
+    cadence: 15m
+    output: reports/kanban
+    artifact_pattern: "kanban-stats.yml"
+    meta: reports/kanban/meta.yml
+    references:
+      - docs/ssot/kanban/ssot.kanban.yml
+    children: []
+    note: >
+      Rides kanban-sync.timer inside the chaba-kanban-sync worktree and
+      mirrors meta + stats + the system-report data/kanban.md rollup
+      into the served chaba-tony-dell checkout (dual-root pattern, same
+      as report-system.py). Observable on tony-dell checkouts; renders
+      as missing from checkouts on other hosts.
   # --- Attention domain ---
   - id: focus-inbox
     layer: L1-producer
@@ -328,6 +347,7 @@ nodes:
       - audit-suite
       - ada-memory-report
       - overnight-assessment
+      - kanban
       - focus-inbox
 
 schedule:
@@ -349,6 +369,7 @@ plan:
     - tony-dell-monitor.sh emits ~/var/chaba/health/meta.yml + timeline event per cycle (installed to ~/.local/bin)
     - staleness-audit.mjs reads per-host cadences from this registry (meta.generated_at preferred over SSOT last_observed; fallback 14d)
     - chaba-system-report.service/.timer installed on tony-dell — daily chain: audit-hosts x5 -> --consolidate -> report-system.py
+    - kanban L2 node (2026-10-05): scripts/board/kanban-stats.py rides kanban-sync.timer, writes reports/kanban/{meta.yml,kanban-stats.yml} + apps/system-report/data/kanban.md, mirrored to the served checkout
   next_steps:
     - ada-memory-report L2 renderer (memory-suite + recall-canary)
     - migrate tony-dell production units off the chaba-tony-dell checkout onto chaba (audit suite still writes reports/audits under the old checkout, so the audit-suite node reports missing here until then)
