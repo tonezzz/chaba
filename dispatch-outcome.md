@@ -1,45 +1,56 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# dispatch outcome — devin-session-prune
 
-## What happened
+Built the dispatch-era session prune job for tony-dell, verified it end to
+end, and installed the weekly timer.
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+## Deliverables (commit c4163d6a on dispatch/20261005-143056-…)
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+- `scripts/devin/session-prune.py` — the job. Prunes sessions.db rows older
+  than `--days` (14) ONLY when they're provably dispatch-era: dispatch prompt
+  title prefix, `dispatch-wt-<task_id>` worktree + `~/.local/share/
+  devin-dispatch/tasks/<task_id>/` meta, or a `resume/<sid>` task branch.
+  Interactive sessions are never candidates. Keep-guards: live session lock,
+  `needs-input.txt`, dirty/unmerged/unreadable worktree, recorded branch with
+  commits not in master/main. Deletes child tables first (incl.
+  `prompt_history`, which the older blunt prune orphaned). Each pruned
+  session id+title → `~/var/chaba/reports/timeline.jsonl` via
+  `scripts/lib/report.py`; a run-complete summary event follows.
+- Integrity guard: pre-delete `quick_check` runs against a tmpfs
+  sqlite-backup snapshot — a live check measured 200MB/12min on the busy HDD
+  (2.1G db + ~1G WAL); snapshot does the same coverage in ~3min. `--skip-check`
+  escape hatch included.
+- Vacuum: reuses devin-vacuum-when-closed.sh's two-clear-checks (no
+  `devin-desktop|devin acp` + no fuser, twice consecutively) plus the
+  watchdog-flag rename; then runs repo `scripts/devin/session/vacuum-devin-db.sh`
+  (fallback `~/.config/devin/scripts/`). Skips cleanly when Devin is open.
+- `docs/ssot/infrastructure/ssot.jobs.yml` — new job `devin-session-prune`
+  (Sun 03:00, Persistent, 30m); rendered units in
+  `systemd/generated/tony_dell/`.
+- `docs/ssot/jobs/infrastructure/2026-10-05-devin-session-prune.yml` — trail
+  doc with the full decision record.
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
+## Install state
 
-## Deliverables
+Timer installed + enabled on tony-dell: next elapse **Sun 2026-10-11 03:00
++07**. NOTE: the unit's ExecStart is `%h/CascadeProjects/chaba/scripts/devin/
+session-prune.py` — resolves once this branch merges; merge must land before
+the first fire.
 
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
+## Verification
 
-## Notes for operator
+- `--dry-run` + real run on a sqlite-backup snapshot: 83/164 sessions
+  dispatch-era → 56 pruned / 27 kept (active-lock, worktree-dirty,
+  worktree-git-unknown, branch-unmerged all exercised); sessions 164→107,
+  message_nodes 204242→168877, zero orphans in FK'd tables.
+- Real run on the live DB: 0 candidates (the Sun-04:00 `devin-cleanup.timer`
+  already deletes everything >7d — see caveat). Vacuum correctly skipped
+  while a devin session held the DB; timeline event confirmed.
+- `devin 3000.10.35` opens; live `PRAGMA integrity_check` launched
+  (HDD-slow; snapshot quick_check already passed clean).
 
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+## Caveat for Tony
+
+`devin-cleanup.timer` (Sun 04:00) deletes **all** sessions >7d, dispatch or
+not — so this job's 14-day window and keep-guards currently overlap
+nothing. If the guards should actually protect dispatch sessions up to 14d,
+retune or retire the blunt timer (one hour after this job).
