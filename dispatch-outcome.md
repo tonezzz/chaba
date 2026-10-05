@@ -1,45 +1,59 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# Dispatch outcome — vcast-cast-lane audit
 
-## What happened
+**Result: lane healthy after two fixes; both verify scenarios PASS; metric met (0.6s < 5s).**
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+## Service health (verified 2026-10-05 ~15:10–15:50 +07)
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+| Service | Host | State | Notes |
+|---|---|---|---|
+| cast-browser.service | tony-omen :8799 (LAN) | active, 3d | headless Chrome+Playwright; 175MB, 153 tasks |
+| cast-shots-http.service | tony-omen :8090 | active | binds LAN IP by design (Chromecast fetches) |
+| cast-desktop@0 | tony-omen | failed/disabled | exits when :0 idle-asleep — retirement decision open |
+| cast-desktop@1 | tony-omen | **was flap-looping, now stopped** | 17,368 restarts on nonexistent display :1; unit already disabled → `systemctl --user stop` applied |
+| cast-browser-proxy.service | tony-dell :8799 | active | socat 127.0.0.1:8799 → omen 192.168.2.86:8799; verified end-to-end |
+| cast-ha-panel.timer | tony-dell | **was dead, fixed** | see below |
+| yt-live-api.service | tony-dell :8791 | active | `{"ok":true}`; last job complete (49 segs) |
+| audit-cast.timer | tony-dell | active | 5-min host audit healthy; WARNs real (c201 consumer flaps) |
+| input-bridge relay | idc01 :3010 | healthy | 7 screens registered, `{"captures":{}}` — no stale leases |
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
+## Fixes applied
 
-## Deliverables
+1. **cast-ha-panel.timer dead since boot (14d).** `OnUnitActiveSec=60s` is self-rearming relative to the service's last activation; after reboot it never runs so the timer never fires — `tv_display=camera` was silently not casting. Added `OnActiveSec=2min` to `~/.config/systemd/user/cast-ha-panel.timer` (host-local, `.bak-20261005` kept), daemon-reload, timer restarted → now ticking every 60s and re-casting `xiaomi_c201` → TONY-TV (play_stream 200, mediashell live, go2rtc consumers=1). Rollback: restore `.bak` + daemon-reload.
+2. **cast-desktop@1 flap loop on omen stopped** (`systemctl --user stop`). Unit was already `disabled`, so no persistence lost; `systemctl --user start cast-desktop@1` revives if ever needed.
 
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
+## Lease wiring
 
-## Notes for operator
+Ada → `VCAST_API` (`https://tony-dell.taila0626a.ts.net/api/input-bridge` → Caddy → idc01:3010) → `GET/POST /capture` screen leases + `/camwall` zones + `/pub`. Verified live; post-run lease table clean (`{}`). Note: Ada's `tv_action` calls cast-browser **directly** at `http://100.75.102.88:8799` (tailnet) — the dell :8799 socat proxy is loopback-only for dell-local callers (cast-ha-selected.sh `/tick`).
 
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+## Scenario verification (ran on idc01, ada-ha-tony ws://127.0.0.1:8002/ws)
+
+- `cam_to_screen` — **PASS** 4/4 turns (VMS snap ~28s → cast delivered → teardown)
+- `cctv_snapshot_to_screen` — **PASS** 1/1 (note: Ada substituted pool camera because xiaomi_c201 was flapping `unavailable` at run time — reasonable, but watch that camera)
+
+## Metric
+
+- **Cam cast to first frame on vcast screen: 0.6s** (go2rtc frame → POST /frame → /pub image → screen state=image, screen 7). PASS vs <5s.
+- TV path (Chromecast): warm re-cast <1s dispatch; cold receiver wake ~15–20s (app launch + HLS buffer).
+
+## SSOT changes (committed on dispatch branch `dispatch/20261005-145917-audit-the-cast-lane-services-c`, commit e7b32084)
+
+- `docs/ssot/apps/ssot.apps.vcast.yml` — new section **"Cast lane — host topology & single points"**: documents the tony-omen SPOF (what dies: tv_action/assist sentences/desktop casts/cast-shots; what survives: all of vcast, cast-cam, yt-live, cast-ha-panel fallback via cast-ha-page.sh), proxy topology, lease wiring, measured metrics.
+- `docs/ssot/jobs/infrastructure/2026-10-05-vcast-cast-lane-audit.yml` — full job lifecycle artifact.
+
+## Watch items / follow-ups
+
+- `xiaomi_c201` flaps idle↔unavailable — audit-cast WARNs are a real go2rtc producer issue (known, still open).
+- Weekly `ada-scenario-casting.service` timed out at its 2h cap on 2026-10-03 (`Result=timeout`, ExecMainStatus=15) — suite duration vs budget worth a look; `cctv_snapshot_to_screen` has zero historical reports.
+- `vcast_snapshot` self-snap timed out once on screen 6 (cam_to_screen T3) — screen was showing the image; snap-request round-trip lapsed.
+- Repo-track `cast-ha-panel.{service,timer}` + `cast-ha-selected.sh` + `audit-cast.sh` (host-local only today — same gap flagged by the audit-cast card).
+- `cast-desktop@0` on omen: retire or keep? (`verify-cast-instance-needed` already flagged in ssot.audit.hosts.yml)
+
+## Verify
+
+```
+systemctl --user list-timers cast-ha-panel.timer   # NEXT populated, 60s cadence
+curl http://127.0.0.1:8799/                        # {"err":"unknown path"} = proxy→omen alive
+curl http://127.0.0.1:8791/health                  # {"ok":true}
+curl http://100.74.146.0:3010/capture              # {"captures":{}}
+ssh tony-omen 'systemctl --user is-active cast-desktop@1'   # inactive
+```
