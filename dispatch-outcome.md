@@ -1,70 +1,73 @@
-# dispatch outcome — vcast-health-loop
+# yt-voice-dub-cast — dispatch outcome
 
-## What changed
+## Part 1 — repo-home the pipeline
 
-Built `scripts/ada/vcast-auto-health.py` — a chaba probe mirroring
-`cms-auto-health.py` / `gev-auto-health.py` that turns cast-lane failures
-on tony-dell into `vcast-auto-<lane>` kanban cards (review on failure,
-auto-close to done on recovery, 12h priority escalation, glob-close of
-retired-check cards). It runs inside the existing `kanban-sync.sh` tick
-(15min), so no new job entry was needed — the tick's commit+push covers
-its output.
+All four pipeline scripts are now canonical in `scripts/ops/`:
 
-Five lanes (all probed from tony-dell):
+- `scripts/ops/yt-live.sh`, `yt-live-api.py`, `yt-vtt-dub.py`,
+  `yt-vtt-translate.py` (copied from `~/.local/bin`, plus sibling
+  resolution: each script finds its neighbours in its own directory
+  first — repo checkout or `~/.local/bin` — so both locations work
+  standalone).
+- New `scripts/ops/yt-pipeline-install.sh` installs/refreshes the
+  `~/.local/bin` copies (default: real files; `--link <repo>` for
+  symlinks into a persistent checkout after merge — never a worktree).
+- `~/.local/bin` copies were refreshed in place; `yt-live-api :8791`
+  still answers `/health`.
 
-| slug | source | failure signal |
-|---|---|---|
-| `audit-cast` | systemctl | timer inactive / `Result!=success` / last run >15min (3 missed 5-min ticks) |
-| `cast-browser-proxy` | systemctl + http :8799 | unit inactive or `GET /state` != 200 (socat -> tony-omen, so a dead omen backend opens the card too) |
-| `yt-live-api` | systemctl + http :8791 | unit inactive or `GET /status` != 200 |
-| `flap-check` | node `vcast-flap-check.mjs` | harness rc!=0; falls back to `~/CascadeProjects/chaba-tony-dell` when the running checkout lacks `ws`; one retry (fixed ports 13010/13991 can collide) |
-| `lease` | http `/api/input-bridge/{capture,displays}` | active capture lease on a `connected:false` screen, lease >24h (`VCAST_LEASE_MAX_H`), or unparseable `since` |
+## Part 2 — heuristic speaker casting
 
-Files touched:
+New in `scripts/ops/yt-vtt-dub.py` (and mirrored to `~/.local/bin`):
 
-- `scripts/ada/vcast-auto-health.py` (new)
-- `scripts/ada/kanban-sync.sh` — added the lane + header comment
-- `docs/ssot/kanban/ssot.kanban.yml` — kanban-sync lane role lists `vcast-auto-*`
-- `docs/ssot/infrastructure/ssot.jobs.yml` — kanban-sync note updated
-- `docs/ssot/jobs/vcast/2026-10-05-vcast-health-loop.yml` — job record
-  (decisions, findings, verify runbook)
-- `docs/ssot/kanban/cards/vcast-auto-{flap-check,yt-live-api}.yml` —
-  done-state cards left by the live verification cycle
+- `--cast-detect` — auto-derives a `--cast-times` map from the karaoke
+  word stream. Phrases split at `--detect-gap` (0.6s) word-start deltas;
+  each boundary scores cue-gap clustering (Otsu 2-class split on real
+  inter-phrase air) + question cues: a non-tag phrase ending `?` flips
+  the speaker unconditionally (interview Q→A is the dominant turn
+  signal; caption air is ~0), whole-phrase tag-questions suppressed,
+  question openers after a ≥12s turn count as host interjections,
+  response openers (Yeah/No/Well/…) weak bonus. `--speakers` does
+  round-robin assignment (default 2 → alternation).
+- `--cast-voices` (default `th-TH-NiwatNeural,th-TH-PremwadeeNeural`),
+  `--dump-turns` (turn table JSON), `--dub-wav` (bare pre-mix dub track
+  for acoustic verification).
+- New CLI `scripts/ops/yt-cast-detect.py` — turn preview +
+  `--format cast-times` without rendering.
 
-## Verified live on tony-dell
+New `scripts/ops/yt-whisper-vtt.py` — Whisper transcription lane for
+caption-less videos (faster-whisper → karaoke-format VTT feeding
+`parse_words`/`--sentences`/`--cast-detect` unchanged). Created
+`~/.venvs/whisper` (av pinned 15.1.0 — fw 1.2.x breaks on av 19);
+sNh4pVMFhvQ transcribed end-to-end → `~/yt-dub-prep/sNh4pVMFhvQ.sv.vtt`
+(3491 words). Non-English `q_start` cue not implemented — detection
+there is gap+q_end only.
 
-    systemctl --user stop yt-live-api
-    python3 scripts/ada/vcast-auto-health.py
-      -> FAIL yt-live-api; card vcast-auto-yt-live-api in review
-         (note carried both is-active=inactive and :8791 conn-refused)
-    systemctl --user start yt-live-api; sleep 3
-    python3 scripts/ada/vcast-auto-health.py
-      -> card auto-closed to done
+## Verification (staged corpus)
 
-`yt-live-api` was picked for the kill test because `/status` showed it
-idle (transcoding=false); `cast-browser-proxy` feeds the 60s panel-cast
-path so it was left alone. All 5 lanes currently green.
+- Detection: `4njFdBF_42I` 14 turns/240s, `U_io-pqPFfQ` 21 turns/240s —
+  Q→A flips land correctly; U_io is the 3-speaker probe so guests share
+  voices in alternation (documented limit).
+- Render: 180s TH dub of `4njFdBF_42I` → `/tmp/4nj-dub-cast.mp4`
+  (dumps: `/tmp/4nj.{turns,groups}.json`, `/tmp/4nj-dub-only.wav`).
+  21 spoken groups; `dump-groups` shows 15×Niwat + 8×Premwadee aligned
+  to detected turns — **2 distinct voices per detected speaker** ✓.
+- Acoustic check on the bare dub track: F0 2-cluster split gives
+  134/213Hz modes vs edge-tts refs (Niwat ~163, Premwadee ~203);
+  long single-voice windows match expected pitch family. Edge-window
+  mismatches trace to queue-lag drift, not wrong synthesis.
+- Constraints honored: exactly the 2 TH voices; uniform-rate fit kept
+  (global rate 1.05 on this render); TH ~1.4x-longer text noted.
 
-## Findings worth knowing
+## Trail
 
-- flap-check's first run crashed rc=1 with only a Node version banner on
-  stderr (likely a bind race on the harness's fixed ports); rerun passed
-  7/7. The probe now retries once and surfaces the first real error line
-  in the card note.
-- Escalation inherits the sibling lanes' date-granular quirk: a card
-  opened after 12:00 local is `priority: high` immediately. Same wart as
-  cms/gev lanes — noted in the job record, fix uniformly if it bothers.
-- `ssot-validate-all.mjs`: all touched/created files valid; the single
-  repo-wide error is pre-existing and unrelated
-  (`jobs/infrastructure/2026-10-05-precleanup-unmerged-guard.yml` YAML
-  syntax error from another session).
-- If the kanban-sync worktree should run flap-check against its own copy
-  instead of falling back to chaba-tony-dell: `npm ci` once in
-  `~/CascadeProjects/chaba-kanban-sync/stacks/web/input-bridge`.
+- `docs/ssot/jobs/yt-dub/2026-10-05-yt-voice-dub-cast.yml`
+- `docs/kb/home-assistant/tv-casting-runbook.md` updated (repo home +
+  dub lane).
 
-## Rollout note
+## Notes for review
 
-The lane becomes live the next time `origin/master` contains this commit
-and `kanban-sync.timer` ticks (it ff-pulls `chaba-kanban-sync` first).
-Nothing else to install — no new units, no secrets, all probes are
-loopback/systemctl.
+- Heuristic ≠ diarization: `~/.venvs/diarize` (resemblyzer/librosa/
+  webrtcvad) is staged for the real pass when casting needs to be
+  gender/speaker-true rather than turn-plausible.
+- `compress_lines` returned 0% shorter on this run (Gemini quota /
+  ollama weakness — existing behavior, unrelated).
