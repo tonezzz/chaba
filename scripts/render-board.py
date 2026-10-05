@@ -417,7 +417,19 @@ function render() {{
   applyFilter();
   // keep the open modal fresh — but don't wipe an in-progress comment
   const ae = document.activeElement;
-  if (openCard && !(ae && (ae.classList.contains('cm-in') || ae.classList.contains('rq-in')))) showCard(openCard);
+  const typing = ae && (ae.classList.contains('cm-in') || ae.classList.contains('rq-in'));
+  const prevCmt = document.getElementById('cm-comment');
+  const cmtVal = prevCmt ? prevCmt.value : '';
+  const rqVals = {{}};
+  document.querySelectorAll('#card-modal .rq-in').forEach(i => {{ if (i.value) rqVals[i.dataset.rq] = i.value; }});
+  if (openCard && !typing) {{
+    showCard(openCard);
+    if (cmtVal) {{ const i = document.getElementById('cm-comment'); if (i) i.value = cmtVal; }}
+    for (const rq in rqVals) {{
+      const i = document.querySelector(`#card-modal .rq-in[data-rq="${{CSS.escape(rq)}}"]`);
+      if (i) i.value = rqVals[rq];
+    }}
+  }}
 }}
 
 function showCard(id) {{
@@ -443,7 +455,7 @@ function showCard(id) {{
     ((c.requests || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Requests</div>${{reqList(c, true)}}</div>` : '') +
     ((c.comms || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Comms</div>${{commsList(c)}}</div>` : '') +
     `<div class="flex gap-1.5 mt-4 border-t border-slate-700/60 pt-3">` +
-      `<input id="cm-comment" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs" placeholder="comment on this card…">` +
+      `<input id="cm-comment" class="cm-in flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs" placeholder="comment on this card…">` +
       `<button id="cm-send" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-3">Send</button></div>`;
 
   document.getElementById('cm-close').onclick = () => {{ modal.classList.add('hidden'); openCard = null; }};
@@ -451,7 +463,7 @@ function showCard(id) {{
   if (c.help) document.getElementById('cm-help').onclick = () => openHelp(c.title || c.id, c.help);
   document.getElementById('cm-send').onclick = async () => {{
     const inp = document.getElementById('cm-comment');
-    if (!inp.value.trim()) return;
+    if (!inp.value.trim()) {{ toast('type a comment first'); return; }}
     try {{ await api('/comment', {{id, from: 'tony', text: inp.value.trim()}}); toast('comment added'); await load(); }}
     catch (e) {{ toast('error: ' + e.message, true); }}
   }};
