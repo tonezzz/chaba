@@ -1,45 +1,55 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# dispatch-outcome — kanban-commit-single-writer
 
-## What happened
+## Decision
+Picked **option (a)**: `chaba-tony-dell` stays the only checkout with a
+periodic auto-committer (kanban-commit.timer). Option (b)'s mechanics were
+kept but folded *inside* the single writer, because the verify clause
+requires `pull --rebase` to survive an untracked collision — the exact stall
+in the card note. Multi-checkout auto-committers were the bug source;
+spreading jittered writers would not fix it structurally.
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+## What changed
+- `scripts/git-safe-pull.sh` (new) — shared `git pull --rebase --autostash`
+  hardening: resolves untracked paths colliding with incoming upstream files
+  *before* the pull (identical → dropped; different → renamed aside as
+  `<name>.local-<ts>`), resolves mid-rebase conflicts under generated paths
+  upstream-wins (local side preserved as `.local-conflict-<ts>`), handles
+  autostash-pop conflicts, verifies upstream is in HEAD.
+- `scripts/board/kanban-commit.sh` — scoped add now also sweeps
+  `docs/ssot/focus-inbox/` (stray served-checkout findings get persisted);
+  pull goes through git-safe-pull; push retries 3x with jitter.
+- `.husky/pre-commit` — warn-only single-writer block: committing
+  `docs/ssot/focus-inbox/` outside the served checkout warns it won't be
+  swept; >N-commit divergence (default 10, `CHABA_DIVERGENCE_N`) warns to
+  rebase. Node validations now guarded by script existence so the warnings
+  work in checkouts without `npm install`.
+- `scripts/install-hooks.sh` (new) — arms the hook via `core.hooksPath`
+  (`.husky/_` if husky installed, else `.husky`) + sets `pull.rebase` /
+  `rebase.autoStash`. `--all` covers every `~/CascadeProjects/chaba*`.
+- `scripts/check-single-writer.sh` (new) — drift lint: uncommitted
+  focus-inbox files, divergence >N, missing hooksPath per checkout.
+- `scripts/audits/gh-runs-watch.py` — `git_commit_push` now safe-pulls
+  before each of 3 push attempts; previously a bare non-ff push failure
+  stranded alert commits in the `chaba` checkout forever.
+- `systemd/kanban-commit.timer` — `RandomizedDelaySec=120`.
+- `docs/ssot/jobs/kanban/2026-10-05-kanban-commit-single-writer.yml` —
+  decision record + rollout steps.
+- `AGENTS.md` — one-line pointer under Chaba memory.
+- Drive-by fix: `docs/ssot/jobs/infrastructure/2026-10-05-precleanup-unmerged-guard.yml`
+  had a broken YAML scalar (`": "` inside a list item) failing repo-wide
+  SSOT validation; fixed.
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
+## Result
+`bash tests/test-kanban-commit.sh` → **22/22 checks pass** (self-contained
+bare-origin + two clones): two parallel writers both land; untracked
+collision (different content) completes `pull --rebase` unattended with the
+local copy preserved aside; identical collision absorbed silently; hook
+warns outside served checkout and stays silent inside it; lint flags
+drift. `ssot-validate-all.mjs` → 1189 files, 0 errors.
 
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
-
-## Deliverables
-
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
-
-## Notes for operator
-
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+## How to verify / rollout
+1. `bash tests/test-kanban-commit.sh`
+2. After merge: reinstall `kanban-commit.timer` for the jitter, then run
+   `scripts/install-hooks.sh --all` once on tony-dell to arm warnings in
+   every chaba checkout.
+3. `scripts/check-single-writer.sh` anytime to audit drift.

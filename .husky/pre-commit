@@ -13,6 +13,38 @@ if git diff --cached --name-only | grep -q '^docs/ada-memory/personal/'; then
     exit 1
 fi
 
+# --- Single-writer pre-flight (card kanban-commit-single-writer) ------------
+# Warn-only, fires before the SSOT early-exit below so it also applies to
+# non-SSOT commits. The served checkout (chaba-tony-dell) is the only one
+# kanban-commit.timer sweeps — commits anywhere else only reach the board
+# when pushed/merged, and stale checkouts are the source of pull stalls.
+SERVED_CHECKOUT="${CHABA_SERVED_CHECKOUT:-$HOME/CascadeProjects/chaba-tony-dell}"
+SW_TOP="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -n "$SW_TOP" ] \
+   && [ "$(realpath -m "$SW_TOP" 2>/dev/null || echo "$SW_TOP")" \
+        != "$(realpath -m "$SERVED_CHECKOUT" 2>/dev/null || echo "$SERVED_CHECKOUT")" ]; then
+    if git diff --cached --name-only | grep -q '^docs/ssot/focus-inbox/'; then
+        echo "⚠️  single-writer: docs/ssot/focus-inbox/ staged outside the served checkout" >&2
+        echo "   ($SERVED_CHECKOUT). kanban-commit.timer does not sweep this checkout —" >&2
+        echo "   push/merge it yourself or write the files there." >&2
+    fi
+    SW_UP="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null \
+             || echo origin/master)"
+    SW_COUNTS="$(git rev-list --left-right --count "$SW_UP...HEAD" 2>/dev/null \
+                 || printf '0\t0')"
+    SW_BEHIND="${SW_COUNTS%%[[:space:]]*}"; SW_AHEAD="${SW_COUNTS##*[[:space:]]}"
+    SW_N="${CHABA_DIVERGENCE_N:-10}"
+    if [ "${SW_BEHIND:-0}" -gt "$SW_N" ] 2>/dev/null; then
+        echo "⚠️  single-writer: $SW_TOP is $SW_BEHIND commits behind $SW_UP —" >&2
+        echo "   run 'git pull --rebase --autostash' before more work accumulates." >&2
+    fi
+    if [ "$(git branch --show-current 2>/dev/null)" = "master" ] \
+       && [ "${SW_AHEAD:-0}" -gt "$SW_N" ] 2>/dev/null; then
+        echo "⚠️  single-writer: $SW_TOP is $SW_AHEAD unpushed commits ahead of $SW_UP —" >&2
+        echo "   the board can't see them; push or rebase soon." >&2
+    fi
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -93,34 +125,41 @@ echo -e "${GREEN}✅ Required fields present${NC}"
 
 # Run full SSOT validation suite
 # This catches bloat, data-isolation, and structure warnings beyond basic YAML syntax.
-echo "🔍 Running full SSOT validation..."
-if ! node scripts/ssot-validate-all.mjs --staged > /tmp/ssot-precommit.log 2>&1; then
-    echo -e "${RED}❌ SSOT validation failed. See /tmp/ssot-precommit.log or run 'node scripts/ssot-validate-all.mjs'.${NC}"
-    tail -n 30 /tmp/ssot-precommit.log
-    exit 1
-fi
-
-echo -e "${GREEN}✅ SSOT validation passed${NC}"
-
-# Preventive optimization: fail the commit if bloat/data-isolation/other warnings exist
-echo "🎯 Running SSOT optimization check..."
-if ! node scripts/ssot-optimize.mjs --staged > /tmp/ssot-optimize-precommit.log 2>&1; then
-    echo -e "${RED}❌ SSOT optimization run failed. See /tmp/ssot-optimize-precommit.log.${NC}"
-    tail -n 20 /tmp/ssot-optimize-precommit.log
-    exit 1
-fi
-
-METRICS_FILE="reports/SSOT_OPTIMIZATION_METRICS.json"
-if [ -f "$METRICS_FILE" ]; then
-    BLOAT=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('bloat', 0))")
-    DATA_ISOLATION=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('data_isolation', 0))")
-    OTHER=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('other', 0))")
-    if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ]; then
-        echo -e "${RED}❌ SSOT optimization warnings found (bloat: $BLOAT, data_isolation: $DATA_ISOLATION, other: $OTHER).${NC}"
-        echo "Run 'node scripts/ssot-optimize.mjs' and fix the warnings before committing."
+# Guarded by script existence so lightweight checkouts (no npm install) still
+# get the warn-only single-writer checks above instead of a hard failure.
+if [ -f scripts/ssot-validate-all.mjs ]; then
+    echo "🔍 Running full SSOT validation..."
+    if ! node scripts/ssot-validate-all.mjs --staged > /tmp/ssot-precommit.log 2>&1; then
+        echo -e "${RED}❌ SSOT validation failed. See /tmp/ssot-precommit.log or run 'node scripts/ssot-validate-all.mjs'.${NC}"
+        tail -n 30 /tmp/ssot-precommit.log
         exit 1
     fi
+    echo -e "${GREEN}✅ SSOT validation passed${NC}"
+else
+    echo "⚠️  scripts/ssot-validate-all.mjs not found — skipping full SSOT validation"
 fi
 
-echo -e "${GREEN}✅ SSOT optimization check passed${NC}"
+# Preventive optimization: fail the commit if bloat/data-isolation/other warnings exist
+if [ -f scripts/ssot-optimize.mjs ]; then
+    echo "🎯 Running SSOT optimization check..."
+    if ! node scripts/ssot-optimize.mjs --staged > /tmp/ssot-optimize-precommit.log 2>&1; then
+        echo -e "${RED}❌ SSOT optimization run failed. See /tmp/ssot-optimize-precommit.log.${NC}"
+        tail -n 20 /tmp/ssot-optimize-precommit.log
+        exit 1
+    fi
+
+    METRICS_FILE="reports/SSOT_OPTIMIZATION_METRICS.json"
+    if [ -f "$METRICS_FILE" ]; then
+        BLOAT=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('bloat', 0))")
+        DATA_ISOLATION=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('data_isolation', 0))")
+        OTHER=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('other', 0))")
+        if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ]; then
+            echo -e "${RED}❌ SSOT optimization warnings found (bloat: $BLOAT, data_isolation: $DATA_ISOLATION, other: $OTHER).${NC}"
+            echo "Run 'node scripts/ssot-optimize.mjs' and fix the warnings before committing."
+            exit 1
+        fi
+    fi
+    echo -e "${GREEN}✅ SSOT optimization check passed${NC}"
+fi
+
 exit 0

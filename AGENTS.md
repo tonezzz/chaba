@@ -20,6 +20,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Dashboard config changes: mutate live over websocket, then sync. No rebuild needed.
 - Verify card changes on michael-dev before promoting; promotion needs explicit approval.
 - This repo's memory/context system is Chaba (ชบา). Ada is the separate voice assistant — her memory lives in ada-* MDDB banks; do not write to them from here.
+- Single-writer rule (2026-10-05): only chaba-tony-dell has the periodic auto-committer (kanban-commit.timer); its pull goes through `scripts/git-safe-pull.sh` (untracked-collision + upstream-wins generated-path resolution). Arm every checkout once with `scripts/install-hooks.sh` (pre-commit warns on focus-inbox writes outside served + >10-commit divergence); audit drift with `scripts/check-single-writer.sh`.
 
 ## Operator correction & education duty (added 2026-09-28)
 
