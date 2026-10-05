@@ -3,7 +3,7 @@ title: Consolidate meta/voice tools (8 -> 3)
 column: backlog
 blocked_by: tool-consolidation-design
 note: Implement per consolidation spec; keep old names as soft aliases initially.
-updated: 2026-10-05 19:11
+updated: 2026-10-05 19:16
 action:
   type: dispatch
   repo: ada-pi
@@ -28,6 +28,13 @@ comms:
   from: devin
   text: 'started: read spec + prior merges; plan = persona(set_voice|show_voice|list_voices), new ada_ops(action=outcome|usage|health|check|research),
     enroll(who=speaker|guest); absorbed names -> _ALIASES, gates keyed on resolved names'
+- at: 2026-10-05 19:16
+  from: devin
+  text: 'DONE: meta/voice merged 8->3. ada_persona absorbed ada_set_voice (*_voice actions); NEW ada_ops absorbed
+    ada_outcome/ada_usage_summary/ada_mddb_health/ada_decision_check/ada_deep_research (action=outcome|usage|health|check|research);
+    ada_enroll_speaker absorbed guest_register (who=guest). All 7 absorbed names are hidden _ALIASES rows routed
+    through execute() — verified end-to-end. tools.d ada_mddb_health module retired (ported into runner). Gates
+    key off resolved names; DEVIN_CONFIRMED_TOOLS/con'
 claim:
   session: 20261005-182958-merge-the-meta-voice-group-8-3
   since: 2026-10-05 18:30
