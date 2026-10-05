@@ -1,0 +1,44 @@
+# SSOT Job Record: dispatch capacity benchmark (bare systemd vs podman)
+# Card: dispatch-capacity-bench
+title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
+date: 2026-10-04
+host_scope: [tony-dell, tony-omen, mn01, idc01, idc02]
+deliverable: docs/assessments/dispatch-capacity-2026-10.md
+raw_logs: docs/assessments/dispatch-capacity-2026-10/
+
+findings:
+  tony_dell_baseline:
+    dispatch_overhead_s: 6.5   # worktree add + systemd-run
+    session_init_s: 23         # unit active -> first transcript write
+    trivial_task_peak_mb: [549, 660]   # cgroup MemoryPeak, n=3, all rc=0
+    real_task_peak_mb: 1072            # add-batteries npm task, observed live
+    four_concurrent_min_avail_gb: 3.1
+    memorymax_today: infinity          # no per-task cap; DISPATCH_UNIT_PROPS supports it
+  remote_state_correction:
+    note: "card premise 'CLI absent on omen/mn01' was stale"
+    tony_omen: "devin 3000.10.31 + credentials.toml + devin-dispatch present; 6.1G avail, load 8.7-10.9"
+    mn01: "devin 3000.10.31 + credentials.toml + devin-dispatch present; 2.9G avail, load 4.7"
+    idc01: "no CLI; podman 4.9.3; 28.7G avail; prod ada+mddb"
+    idc02: "no CLI; podman 4.9.3; 12.9G avail; idle"
+  podman_idc02:
+    image_mb: 402                      # slim + git + python3 + openssh-client + devin
+    container_start_s: [0.27, 0.46]
+    systemd_run_s: 0.02
+    rootless_mem_cap: works            # memory.max lands (systemd>=252 default delegation)
+    rootless_cpu_cap: works
+    blocker: "resolved 2026-10-05 — creds copied per Tony answer 'b'; devin -p verified e2e (rc=0)"
+    run_recipe: "podman run --rm --memory=1536m --cpus=1.5 --userns=keep-id -v ~/.local/share/devin:~/.local/share/devin -v ~/.config/devin:~/.config/devin -v <wt>:/wt -w /wt -e HOME=$HOME devin-dispatch:test devin -p --permission-mode smart --respect-workspace-trust false -- <prompt>"
+    gotcha: "ENTRYPOINT [bash] swallows podman-run args -> ENOEXEC; use CMD"
+
+recommendation:
+  tony_dell: "bare systemd-run (cap 3, validated) + MemoryMax=1536m via DISPATCH_UNIT_PROPS"
+  omen_mn01: "bare — already dispatch-capable; omen cap 2 when load<6, mn01 cap 1"
+  idc02: "first podman runner, cap 4 (CPU-bound); needs credentials.toml decision"
+  idc01: "avoid — prod ada+mddb, 2 cores"
+  per_task_budget_mb: 1100             # capacity math; real tasks ~2x trivial floor
+resolved:
+  - "credentials.toml distribution: copy per-host + bind-mount (Tony answer 'b' 2026-10-05); idc02 provisioned, devin -p verified"
+open_questions:
+  - "repo checkout freshness on remote runners (worktrees cut from local HEAD)"
+  - "multi-host queue fan-out: dispatch-queue.sh is dell-local today"
+  - "image distribution: podman save/load vs tailnet registry"
