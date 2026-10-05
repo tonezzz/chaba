@@ -121,17 +121,39 @@ tony-dell:
     related_units:
       - mddb.service
       - gemini-ollama-proxy.service
-    status: replication leader on idc01 (follower on tony-dell since 2026-09-25)
+    status: replication leader on idc01 (follower on idc02 since 2026-10-05; tony-dell follower stopped, kept as seeded standby)
     replication:
       role: leader
       node_id: idc01
       secret_var: MDDB_REPLICATION_SECRET (shared, in each host's mddb.container — not committed)
       grpc: 100.74.146.0:11024
       follower:
-        host: tony-dell
-        node_id: tony-dell
-        host_port: 100.68.142.13:11023
+        host: idc02
+        node_id: idc02
+        host_port: 100.123.163.11:11023
+        image: localhost/mddb:2.15.4-blrotate (local fork build — binlog rotation, snapshot-on-recv, vector-algorithm allowlist; built in ~/CascadeProjects/mddb-fork on tony-dell)
         mode: read-only (forced by follower role)
+        migration_20261005: |
+          Follower moved tony-dell -> idc02. Root cause: fork's snapshot-replace
+          path integrity-checks the received DB before swapping in — on dell's
+          contended HDD the check never finished inside MDDB_VERIFY_TIMEOUT=6h,
+          so the follower looped: pull ~4.2 GB snapshot -> verify 6h -> discard
+          -> repeat, never converging. On idc02's SSD the same pipeline took
+          ~100 s to stream + ~4 min to verify/swap + 7.7 s vector-index load.
+          Deploy: scp dell's mddb.container, sed bind IPs + node_id to idc02,
+          `podman save | ssh idc02 podman load` for the fork image, start
+          mddb.service — it self-seeds via the leader snapshot (no manual seed
+          needed). Verified: health mode:read, cms-pages 315 docs checksum-
+          matched leader (d656a474). No external consumer pointed at the
+          follower — no Caddy route to repoint (/api/mddb entry is for the
+          decommissioned Aug service). Dell unit stopped; quadlet + data kept
+          as standby.
+        standby_follower:
+          host: tony-dell
+          node_id: tony-dell
+          host_port: 100.68.142.13:11023
+          status: stopped 2026-10-05 (verify-timeout loop on HDD); quadlet kept,
+            reseed before any restart — its LSN will be stale
         seed: full /v1/backup from leader (2026-09-25) — fresh-start snapshot path
           does not trigger because mddbd creates the DB file before the replication
           freshness check; seed via backup restore instead
