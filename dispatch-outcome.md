@@ -1,45 +1,19 @@
-# dispatch outcome — board-needs-you-strip (retry)
+# Outcome — re-dispatch 3 permission-rejected jobs
 
-## What happened
+**Result: already done and verified — no third relaunch needed.** The card's board
+request was answered "Yes — redispatch all 3 on tony-dell" and two earlier sessions
+performed the relaunch. The first batch (122613/122644/122651) hit the same
+smart-mode auto-rejection bug; the second batch ran under
+`DISPATCH_PERMISSION_MODE=dangerous` and all three completed with real work:
 
-This was a **retry** of a card whose work was already merged. The first
-dispatch (task `20261005-105816`) implemented the Needs You band in
-`scripts/render-board.py` and it reached `origin/master` — this
-worktree is 0 commits ahead of `origin/master`, and the rendered
-`page_version` (`b1df757525cc`) is byte-identical to what the live board
-serves. This run therefore performed a full end-to-end verification and
-left a record; **no changes to render-board.py were needed**.
+- `20261005-124438` enroll-speaker investigation — 503KB transcript, exit 0.
+  Findings + tony-ha voice card fix merged as `6d78f3eb` (commit `f6cd3f22`).
+- `20261005-123304` traffic-camera — 495KB transcript, exit 0. Built the
+  `traffic-snap` shim (`stacks/services/traffic-cam/`); merged as `67e110db`
+  (commit `29dcc5f0`).
+- `20261005-123308` automation tool — 615KB transcript, exit 0. Verified and
+  extended flood-news CMS automation; merged as `471d6eaa` (commit `e532690a`).
 
-## Verified (headless Chrome CDP against worktree board-api on :8899)
-
-- Test card with an option-button request → clicked "Red" in the band →
-  `POST /respond` saved `answer: Red`; item left the band.
-- Second request (no options) → free-text input + Answer →
-  `answer: typed via band` saved; item left the band.
-- Stale review card (>24h, no verification comm) → ✔ verify →
-  `POST /comment` appended "verified"; item left the band.
-- Failed dispatch card → ↺ Retry → `POST /action do=retry` →
-  `action.status: queued` + "retry requested" comm; item left the band.
-- Band header "N things need you", collapsible (state in localStorage
-  `board-ny-collapsed`), expanded by default, hidden when N=0.
-- Live board already shows the band working: 7 real stale-review items
-  (`logs-auto-*` cards, ~37h in review).
-
-## Deliverables
-
-- `docs/ssot/jobs/kanban/2026-10-05-board-needs-you-strip-verify.yml` —
-  verification record + known limitations (verify-regex heuristic scans
-  all comms, not just post-review ones; `error` status is dead-code
-  future-proofing).
-- Feature docs already in `docs/ssot/kanban/ssot.kanban.yml`
-  (`page_standard.needs_you_band`) from the first run.
-
-## Notes for operator
-
-- If the retry was meant to signal the band wasn't working on the live
-  board: it IS live and populated (checked `GET /cards` + live band
-  items). If Tony saw something broken, it needs a concrete symptom —
-  happy to dig with specifics.
-- Test hygiene: 3 `zz-ny-test-*` cards were created in the **worktree**
-  only (never the live board) and deleted; helper server/scripts removed;
-  test ports (8898/8899/9333) closed. Live board-api untouched.
+All three commits are confirmed ancestors of chaba `origin/master`; dispatch
+branches/worktrees were cleaned up post-merge. Verification trail recorded in
+`docs/ssot/jobs/infrastructure/2026-10-05-redispatch-permission-rejected-verify.yml`.

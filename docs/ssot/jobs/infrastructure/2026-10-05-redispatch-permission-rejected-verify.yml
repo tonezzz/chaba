@@ -1,0 +1,96 @@
+title: re-dispatch of 3 permission-rejected jobs — verification record
+subtitle: >-
+  The 2026-09-28 jobs 081016 (ada enroll-speaker investigation), 115509
+  (traffic-camera integration), and 120132 (news automation tool) exited 0
+  with no deliverables because 'smart' permission mode auto-rejected their
+  tool calls. Redispatched 2026-10-05 under the hardened dispatcher
+  (DISPATCH_PERMISSION_MODE=dangerous); this session verified all three
+  produced real work and that every deliverable is merged into
+  chaba origin/master.
+icon: check
+id: 2026-10-05-redispatch-permission-rejected-verify
+status: done
+owner: devin-dispatch
+project: chaba
+card: redispatch-permission-rejected-jobs
+branch: dispatch/20261005-143657-re-dispatch-3-permission-rejec
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  user_request: >
+    Re-dispatch the 3 permission-rejected jobs under the hardened
+    dispatcher. Tony had already answered the card's board request
+    ("Yes — redispatch all 3 on tony-dell"); two earlier sessions did the
+    relaunch — first batch (122613/122644/122651) still died on smart-mode
+    rejections, second batch (123304/123308/124438) ran under 'dangerous'.
+    This session's job was end-to-end verification, not a third relaunch.
+
+redispatch_ledger:
+  - job: ada enroll-speaker investigation
+    original_task: "20260928-081016-investigate-why-ada-enroll-spe"
+    redispatch_task: "20261005-124438-investigate-why-ada-enroll-spe"
+    session: sincere-guanaco
+    result: >-
+      exit=0, 503KB transcript, 61 steps. Found ada_enroll_speaker's
+      "not enough audio buffered" is server-side (mic audio reached the
+      backend — the tongue-twister turn is in jev/train-all.jsonl);
+      prime suspect is the ada-pi TTS-echo feed gate (commit bc06168).
+    landed: >-
+      merge 6d78f3eb "ada-enroll-speaker buffer findings + tony-ha voice
+      card fix" (commit f6cd3f22) in origin/master.
+  - job: traffic-camera integration
+    original_task: "20260928-115509-implement-a-traffic-camera-int"
+    redispatch_task: "20261005-123304-implement-a-traffic-camera-int"
+    session: quilled-pleasure
+    result: >-
+      exit=0, 495KB transcript, 78 steps. Corrected the spec premise —
+      archived tonezzz/chaba0 has no camera code; real lineage is
+      stacks/web/public/cameras.json + cam-wall-pull.py. Built
+      traffic-snap (stacks/services/traffic-cam/): stdlib+ffmpeg HTTP
+      shim, vms-snap-compatible /snap?ch= over the DOH/iTIC registry +
+      Longdo feed.
+    landed: >-
+      merge 67e110db "traffic-snap — public traffic camera snapshot shim"
+      (commit 29dcc5f0) in origin/master.
+  - job: flood/news automation tool
+    original_task: "20260928-120132-build-an-automation-tool-to-fe"
+    redispatch_task: "20261005-123308-build-an-automation-tool-to-fe"
+    session: polyester-tsunami
+    result: >-
+      exit=0, 615KB transcript, 79 steps. Flood-news automation already
+      existed; verified end-to-end and extended — flood-report-pattaya-
+      rayong added to flood-news-feeds.json with live flood-news:auto
+      block, all three report leaves in seed config + live registry, and
+      a force-run recovered flood-report-nongdon-saraburi.
+    landed: >-
+      merge 471d6eaa "flood-news CMS automation + memory-schema
+      normalization" (commit e532690a) in origin/master.
+
+verification:
+  - >-
+    dispatch ledger ~/.local/share/devin-dispatch/tasks/: all three
+    redispatch tasks have exit_code=0 and transcripts of 494-615KB
+    (vs the pre-hardening runs that exited 0 with no deliverables).
+  - >-
+    First redispatch batch (122613/122644/122651) transcripts confirmed
+    the same smart-mode rejection failure; second batch under
+    'dangerous' succeeded — consistent with the card comms trail.
+  - >-
+    `git merge-base --is-ancestor` / `git branch --contains` in chaba:
+    commits 29dcc5f0, e532690a, f6cd3f22 all reachable from
+    origin/master via their merge commits; dispatch branches were
+    deleted post-merge (worktrees cleaned by precleanup).
+
+notes:
+  - >-
+    Lesson re-confirmed: 'smart' permission mode is unsafe for
+    unattended dispatch — the fast model auto-rejects curl/pytest/
+    systemctl and the session exits 0 with nothing done. The fix is
+    already documented in devin-dispatch.sh (use dangerous + worktree
+    rails); dispatch-queue.sh defaults DISPATCH_PERMISSION_MODE to
+    dangerous.
+  - >-
+    No third relaunch was needed; if a future card looks identical,
+    check tasks/<id>/transcript.json size and `git branch --contains`
+    on the claimed commit before re-dispatching.
