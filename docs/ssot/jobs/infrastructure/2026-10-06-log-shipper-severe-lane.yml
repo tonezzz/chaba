@@ -76,11 +76,14 @@ code_changes:
 install_state:
   installed_2026-10-06:
     tony-dell: log-shipper-severe.timer + log-shipper-severe-mha.timer
-      armed; severe first run shipped 500 (984 severe matched over the
-      7-day initial window — drains at 500/run)
-    tony-omen: severe timer armed; --self --severe --dry-run matched 382
-    idc01/idc02/idc03/mn01: installed via installer from tony-omen
-    michael-ha: severe pull runs on tony-dell (same HAOS constraint)
+      armed; severe lane shipped 500/972 matched (backfill drains hourly)
+    tony-omen: severe timer armed; shipped 356 backfill + 34 incl. probe
+    idc01: severe timer armed; shipped 430
+    idc02: severe timer armed; shipped 500/2722 (drains next ticks)
+    idc03: severe timer armed; shipped 500/1117
+    mn01: severe timer armed; shipped 500/792
+    michael-ha: severe pull runs on tony-dell (same HAOS constraint);
+      ship-severe/michael-ha live (ha-cli-ssh lane)
   propagate: >-
     shipper updates propagate by re-running install-log-shipper.sh —
     the script runs self-contained from ~/.local/share/log-shipper/,
@@ -89,20 +92,36 @@ install_state:
 verification:
   done:
     - "--self --severe --dry-run on tony-omen: 382 severe matched, 0 fail"
-    - "installer armed severe timers on all 6 journald hosts + severe-mha
-      on dell; dell first severe run shipped 500"
-    - "injected `kernel: Out of memory: Killed process` probe line on
-      tony-omen user journal via systemd-cat; landed in host-logs as
-      kind=oom within the same minute (hostlog/tony-omen/...)"
-    - "ship-severe/tony-omen state doc written; ship/tony-omen untouched
-      (separate keys)"
+    - "probe injected 10:55 +07 via systemd-run --user
+      severe-probe-verify.service (`Out of memory: Killed process 4242`)
+      landed in host-logs as hostlog/tony-omen/258916433008-9ca33cd9
+      kind=oom at the 11:02 log-shipper-severe.service run — ~7 min,
+      well within the hour"
+    - "all 7 ship-severe/<host> state docs fresh with run=severe and
+      err=-; ship/<host> full-lane heartbeats untouched"
+    - "fleet timers armed: log-shipper-severe.timer on 6 journald hosts,
+      log-shipper-severe-mha.timer on dell"
+  incident_during_rollout: >-
+    MDDB leader (idc03 :11023) wedged 10:48-11:01 — a manually started
+    mddb-vector-reindex blocked the HTTP API (health timeout; MCP port
+    still cycling). Reindex was TERM'd at 11:00:31 and the API recovered
+    immediately. Mid-wedge /add failures hit the install run-once on
+    idc01/02/03/mn01 — by design the cursors didn't advance past
+    unshipped lines and a manual re-run after recovery drained them
+    clean. Same wedge family as card mddb-search-wedge (done 2026-10-03):
+    vector-reindex still wedges the API while it runs.
   ongoing:
     - "hourly ticks keep ship-severe/<host> docs fresh; the digest's
       severe counters see new oom/panic/failed lines within ~1h"
 
 known_limits:
   - "first severe run per host backfills up to 500 severe lines from the
-    7-day initial window (cap binds once, then drains — dell hit it)"
+    7-day initial window (cap binds once, then drains — dell/idc02/idc03/
+    mn01 all hit it; VPSes have ~800-2700 severe lines/7d, mostly
+    recurring 'failed' app errors — steady-state is ~tens/hour)"
+  - "severe volume on idc02 (~390/day) is well above the kanban
+    SEVERE_24H=40 spike threshold — faster shipping makes spike cards
+    more likely to fire on noisy VPSes; that's legit incident signal"
   - "severe lines are posted twice (once per lane) — same deterministic
     key, idempotent upsert; negligible at severe volume"
   - "idc01/idc02/idc03 system journals still unreadable by user tony —
