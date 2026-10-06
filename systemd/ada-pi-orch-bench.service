@@ -1,0 +1,9 @@
+[Unit]
+Description=Orch topology bench (gemma-1b/4b structures) + nest-bench page refresh — tony-omen
+
+[Service]
+Type=oneshot
+TimeoutStartSec=5400
+WorkingDirectory=%h/CascadeProjects/ada-pi
+ExecStart=%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778 --heavy http://100.75.102.88:8777 --mddb http://100.102.134.91:11023/v1 --report-cms
+ExecStart=/usr/bin/python3 scripts/nest-bench-update.py --force

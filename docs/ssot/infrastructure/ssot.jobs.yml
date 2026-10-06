@@ -164,6 +164,19 @@ jobs:
     auto_done_when checks all pass (card_done/page_exists/file_exists/
     service_active — bounded vocabulary, no shell); every close emits a
     kanban_act ops event. Deployed 2026-10-06.'
+- id: ada-pi-orch-bench
+  name: Nest topology bench + nest-bench CMS trend refresh
+  host: tony_omen
+  dispatch: systemd
+  on_calendar: Mon *-*-* 04:30
+  persistent: true
+  timeout: 90m
+  exec: tests/bench/orch-bench.py --student 100.75.102.88:8778 --heavy 100.75.102.88:8777 --mddb + --report-cms, then nest-bench-update.py --force
+  note: 'weekly compound-AI structure comparison (student/cascade/parallel/
+    router/verifier on golden+tool+hard sets) -> bench/orch-* docs +
+    nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local
+    on tony-omen. Corpus loop feeds misses into the next run.
+    Deployed 2026-10-06.'
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen
