@@ -1,0 +1,124 @@
+title: Digest signal density — new-today flag + noise reduction
+subtitle: >-
+  The shipper's 500/run (now 2000) cap was being eaten by bookkeeping
+  churn — session-scope starts (~83k/day on tony-omen), crash-loop
+  restart counters, uvicorn INFO lifecycle lines. Meanwhile the report
+  side had silently gone stale: /v1/search returns docs in KEY order
+  (hostlog/<host>/<rt-µs-suffix>), not insertion order, so the forward
+  offset-0 scan pinned the "24h" digest to the oldest 5000 docs — at a
+  ~97k-doc collection it was reporting Oct-3 data on Oct-6 and five of
+  six hosts were invisible.
+icon: filter
+id: 2026-10-06-log-digest-signal-density
+status: done
+owner: devin-dispatch
+project: chaba
+card: logs-digest-signal
+started: "2026-10-06"
+completed: "2026-10-06"
+
+context:
+  user_request: >
+    Card logs-digest-signal: (a) a 'new today' flag for normalized lines
+    absent from the prior 7d — where real incidents hide; (b) tighten
+    GREP/KINDS/DROP so the run cap carries signal not noise. Repeat
+    offenders already collapse via RX_VOLATILE — build on that. Verify:
+    digest shows a new-today marker on an injected novel line and drops
+    a known-noise line.
+
+design:
+  noise_reduction:
+    remote_predrop: >-
+      New GREP_DROP regex applied as `grep -avE` between journalctl
+      --grep and the tail on the remote — session-scope bookkeeping
+      never crosses the wire. Measured on tony-omen system journal:
+      116,695 -> 33,208 matched lines/24h (-72%). Kept a strict subset
+      of the client DROP list; an over-broad remote pattern would
+      silently lose signal.
+    drop_additions: >-
+      DROP += session-N.scope lifecycle (Started/Stopped/Stopping
+      session-), uvicorn/hypercorn INFO lifecycle (Started/Stopped/
+      Finished server process — caught by the "Started " GREP term),
+      and "Scheduled restart job, restart counter is at" (crash-loop
+      bookkeeping; the Failed/Failed-to-start lines still carry the
+      incident).
+    repeat_cap: >-
+      _cap_repeats() bounds each RX_VOLATILE-normalized (unit|line)
+      signature to REPEAT_CAP=25 docs per run. Suppressed copies are
+      counted onto the last kept row's `suppressed` field -> posted as
+      meta.suppressed so the digest's xN stays truthful. Cursor still
+      advances (deliberate drop, not a failure). `scanned` in ship-state
+      is now post-cap matched, which keeps logs-kanban's backlog check
+      (scanned - shipped >= 200) honest — a crash loop no longer reads
+      as undrainable backlog. `suppressed` is reported in state and the
+      run summary line.
+    tail_window: tail -3000 -> tail -6000 post-pre-drop, headroom for
+      an hourly crash-loop window.
+  new_today_flag:
+    mechanism: >-
+      logs-report now scans the WHOLE host-logs collection (PAGE=5000 —
+      the server honors large pages, ~0.5s/5k; bounded by --max-docs
+      default 250000, effectively the 14d prune horizon) and windows
+      client-side. baseline_sigs = {(host, RX_VOLATILE-normalized line)}
+      for docs with ts in [now - --baseline-days, window_start); a
+      window row whose (host, sig) is absent gets 🆕. Exact "absent from
+      prior 7d" semantics, no state file, no cold-start problem — the
+      baseline is just the older slice of the same scan.
+    rendering: >-
+      Host header gains ", N new 🆕"; up to 4 new signatures render as
+      "🆕 xN <line>" before the repeat-offender lines; a repeat offender
+      that is also new carries 🆕 too (crash loop born today). JSONL
+      rows carry `new` count + `new_lines` for downstream consumers.
+    suppressed_weighting: >-
+      offender xN counts each doc as 1 + meta.suppressed, so a capped
+      crash loop still shows its true magnitude (verified x40 = 25
+      shipped + 15 suppressed).
+
+code_changes:
+  - scripts/ada/log-shipper.py — GREP_DROP remote pre-filter; DROP
+    += session-scope/uvicorn/restart-counter classes; RX_VOLATILE +
+    REPEAT_CAP=25 + _cap_repeats() applied in _journal and _journal_ha;
+    ship() reports suppressed; meta.suppressed posted on the marker doc;
+    tail -3000 -> -6000.
+  - scripts/ada/logs-report.py — full-scan fetch_logs(PAGE=5000) with
+    baseline_sigs; distill() weights offenders by 1+suppressed and
+    collects new_sigs; logs_block() renders 🆕 markers and per-host new
+    counts; --baseline-days flag (default 7).
+
+verification:
+  done:
+    - "classify() drops all five new noise classes (session-scope,
+      uvicorn lifecycle, restart counter); keeps Failed/ACPI/tailscaled
+      signal"
+    - "_cap_repeats: 40 identical rows -> 25 kept, suppressed=15 on the
+      last kept row"
+    - "stub-MDDB digest: injected novel line renders '🆕 x1 kernel:
+      BUG: unable to handle page fault'; baseline-known line renders
+      unflagged; capped offender shows truthful x40 (25+15 suppressed)"
+    - "live MDDB full scan: all 6 hosts in the true 24h window in ~15s
+      (was: idc01 only, Oct-3 data); 🆕 flags surfaced real incidents
+      (mcp-link-monitor crash loop on tony-dell, cam-wall-pull-vps on
+      idc03, vms-snap RuntimeErrors on mn01)"
+    - "--self --dry-run on tony-omen: 49 matched post-filter in the
+      current cursor window"
+    - "py_compile both files; weekly-digest.py reads only
+      host/total/kinds/severe — extra JSONL keys ignored"
+  pending:
+    - "install-log-shipper.sh re-run per host to deploy the new shipper
+      — the installed copies at ~/.local/share/log-shipper/ are not the
+      repo checkout (deploy step, needs Tony's approval)"
+    - "first real digest with 🆕 markers in tomorrow's
+      ada-review-refresh / chaba memory render"
+
+known_limits:
+  - "scan is whole-collection every run — fine while prune holds ~14d;
+      if the collection ever outgrows --max-docs the run warns and 🆕
+      flags may over-report"
+  - "new-today is per (host, normalized sig): a signature is new for a
+      host even if another host saw it last week — deliberate, a first
+      occurrence on a host is the incident"
+  - "a doc with unparseable meta.ts counts as in-window and always reads
+      new — same 'keep it' convention as before"
+  - "old noise already in host-logs (session-scope lines etc.) still
+      renders in digests — it aged out of shipping but was shipped; it
+      ages out of the digest as prune/14d removes it"

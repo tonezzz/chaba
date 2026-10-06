@@ -86,6 +86,17 @@ STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
 # server-side pre-filter (cheap, keeps ssh payload small)
 GREP = ("error|fail|oom|kill|panic|warn|refus|restart|Started |Stopped |"
         "timeout|denied|critical|emerg|alert")
+# remote-side drop (grep -vE after --grep, before the tail) — mirrors the
+# top-volume DROP classes below so they never cross the wire. tony-omen's
+# system journal matched ~117k GREP lines/day, ~83k of them session-scope
+# churn; without this the `tail -3000` window drowned all real signal.
+# Keep this a strict subset of DROP — an over-broad pattern silently
+# loses signal nobody can see is missing.
+GREP_DROP = ("Started session-[0-9]+\\.scope|Stopped session-[0-9]+\\.scope|"
+             "Stopping session-[0-9]+\\.scope|"
+             "Started server process|Stopped server process|"
+             "Finished server process|"
+             "Scheduled restart job, restart counter is at")
 # client-side classifier — ordered, first match wins
 KINDS = [
     ("oom",    re.compile(r"oom[-_ ]?kill|Out of memory|Killed process",
@@ -105,6 +116,48 @@ DROP = [
     "kept)",                               # were being misclassified 'failed'
     "Started podman-", "Stopped podman-",  # per-transaction container scopes —
 ]                                          # podman churn is not a restart event
+# high-volume bookkeeping with no independent signal (the matching
+# failure lines still ship): login session-scope churn (~83k/day on
+# tony-omen), uvicorn/hypercorn INFO lifecycle caught by "Started ",
+# systemd restart-counter lines from crash loops.
+DROP += [
+    "Started session-", "Stopped session-", "Stopping session-",
+    "Started server process", "Stopped server process",
+    "Finished server process",
+    "Scheduled restart job, restart counter is at",
+]
+# repeat-cap: normalize a line the same way logs-report's RX_VOLATILE
+# does so a crash loop shipping the same error N times only sends the
+# first REPEAT_CAP copies; the last kept copy carries meta.suppressed =
+# the withheld count, so digest xN stays truthful. KEEP IN SYNC with
+# logs-report.py's RX_VOLATILE.
+RX_VOLATILE = re.compile(
+    r"\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^ ]*|"
+    r"\bpid[ =:]\d+|\b0x[0-9a-f]+\b|\b[0-9a-f]{8}\b|\b\d+\b", re.I)
+REPEAT_CAP = 25  # docs per normalized (unit,line) signature per run
+
+
+def _cap_repeats(rows: list[dict]) -> tuple[list[dict], int]:
+    """Drop copies of a (unit,line) signature beyond REPEAT_CAP, in
+    journal order. Suppressed counts accumulate onto the last kept row's
+    `suppressed` field (posted as meta); rows are skipped entirely, so
+    the cursor still advances past them — a deliberate drop, not a
+    shipping failure."""
+    kept: list[dict] = []
+    counts: dict[str, int] = {}
+    last_idx: dict[str, int] = {}
+    suppressed = 0
+    for r in rows:
+        sig = RX_VOLATILE.sub("#", f"{r['unit']}|{r['line']}")[:140]
+        counts[sig] = counts.get(sig, 0) + 1
+        if counts[sig] <= REPEAT_CAP:
+            last_idx[sig] = len(kept)
+            kept.append(r)
+        else:
+            suppressed += 1
+            kept[last_idx[sig]]["suppressed"] = \
+                kept[last_idx[sig]].get("suppressed", 0) + 1
+    return kept, suppressed
 
 
 def classify(line: str) -> str | None:
@@ -157,12 +210,14 @@ def _ha_state_file(host: str) -> Path:
     return Path.home() / ".cache" / f"log-shipper-ha-{host}.json"
 
 
-def _journal_ha(host: str) -> list[dict]:
+def _journal_ha(host: str) -> tuple[list[dict], int]:
     """ha-cli hosts: `ha host logs` text tail — the supervisor exposes no
     journald cursor protocol, so dedup is (ts watermark, boundary hashes)
     kept in a collector-side state file. Rows carry a JSON cursor
-    snapshot so the write-back-after-post rule still holds."""
-    out = _ssh(host, "ha host logs -n 1500 --no-progress 2>/dev/null",
+    snapshot so the write-back-after-post rule still holds.
+    -> (rows, suppressed) where suppressed counts repeat-capped drops."""
+    out = _ssh(host, "ha host logs -n 1500 --no-progress 2>/dev/null"
+                     f" | grep -avE '{GREP_DROP}'",
                timeout=60)
     st = {}
     try:
@@ -209,7 +264,7 @@ def _journal_ha(host: str) -> list[dict]:
                      "cursor": json.dumps({"ts": max_ts,
                                            "seen": boundary}),
                      "line": msg.strip()[:400]})
-    return rows
+    return _cap_repeats(rows)
 
 
 def _save_ha_state(host: str, cursor_json: str) -> None:
@@ -223,9 +278,10 @@ def _save_ha_state(host: str, cursor_json: str) -> None:
               file=sys.stderr)
 
 
-def _journal(host: str, user: bool) -> list[dict]:
+def _journal(host: str, user: bool) -> tuple[list[dict], int]:
     """json lines since last SHIPPED cursor; cursor file is read-only
-    here — written back by ship() after posts succeed."""
+    here — written back by ship() after posts succeed. -> (rows,
+    suppressed) where suppressed counts repeat-capped drops."""
     scope = "--user" if user else "--system"
     cur = _cursor_path(user)
     # --grep filters at journal level — on noisy hosts (idc01's user
@@ -240,7 +296,10 @@ def _journal(host: str, user: bool) -> list[dict]:
         f"--grep='{GREP}' --case-sensitive=false; "
         f"else journalctl {scope} -o json --no-pager --since '7 days ago' "
         f"--grep='{GREP}' --case-sensitive=false; "
-        f"fi 2>/dev/null | tail -3000",
+        # grep -vE pre-drops the bookkeeping classes (see GREP_DROP) so
+        # the tail window carries matched signal, not churn; 6000 covers
+        # a crash-looping hour with headroom
+        f"fi 2>/dev/null | grep -avE '{GREP_DROP}' | tail -6000",
         timeout=150)
     rows = []
     for ln in out.splitlines():
@@ -274,7 +333,7 @@ def _journal(host: str, user: bool) -> list[dict]:
                      "unit": unit, "ts": ts, "kind": kind,
                      "cursor": cursor,
                      "line": msg.strip()[:400]})
-    return rows
+    return _cap_repeats(rows)
 
 
 def _post(path: str, payload: dict, timeout: int = 15) -> bool:
@@ -303,21 +362,23 @@ def _reachable(host: str) -> bool:
 
 
 def ship(host: str, dry: bool, max_docs: int) -> dict:
-    sent = fail = scanned = 0
+    sent = fail = scanned = suppressed = 0
     journals = {"user": 0, "sys": 0}
     ha = host in HA_CLI_HOSTS
     lane = ("ha-cli-ssh" if ha else
             "local" if _is_local(host) else "ssh")
     if not _reachable(host):
         return {"host": host, "shipped": 0, "failed": 0, "scanned": 0,
+                "suppressed": 0,
                 "reachable": False, "journals": journals, "lane": lane,
                 "error": "ha-cli probe failed" if ha else
                          "ssh probe failed"}
     # ha-cli hosts have a single host journal; others run user+system.
     sides = [(False, _journal_ha(host))] if ha else \
             [(user, _journal(host, user)) for user in (True, False)]
-    for user, rows in sides:
-        scanned += len(rows)
+    for user, (rows, sup) in sides:
+        scanned += len(rows)          # post-cap matched — keeps the
+        suppressed += sup             # kanban backlog check honest
         journals["user" if user else "sys"] = len(rows)
         last_ok = ""
         for r in rows:
@@ -326,15 +387,18 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
             if dry:
                 sent += 1
                 continue
+            meta = {"host": [r["host"]],
+                    "journal": [r["journal"]],
+                    "unit": [r["unit"]], "ts": [r["ts"]],
+                    "kind": [r["kind"]]}
+            if r.get("suppressed"):
+                meta["suppressed"] = [str(r["suppressed"])]
             if not _post("/add", {
                     "collection": COLLECTION, "key": r["key"],
                     "lang": "en",
                     "contentMd":
                         f"`{r['ts']}` [{r['unit']}] {r['line']}",
-                    "meta": {"host": [r["host"]],
-                             "journal": [r["journal"]],
-                             "unit": [r["unit"]], "ts": [r["ts"]],
-                             "kind": [r["kind"]]}}):
+                    "meta": meta}):
                 fail += 1
                 # ordered lines — stop here; everything after last_ok
                 # replays next run
@@ -351,7 +415,8 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
-            "scanned": scanned, "reachable": True, "lane": lane,
+            "scanned": scanned, "suppressed": suppressed,
+            "reachable": True, "lane": lane,
             "journals": journals,
             "error": "mddb add failed" if fail else ""}
 
@@ -427,7 +492,10 @@ def main() -> int:
         try:
             r = ship(h, args.dry_run, args.max_docs)
             print(f"{r['host']}: {r['shipped']} shipped "
-                  f"({r['scanned']} lines matched, {r['failed']} failed)"
+                  f"({r['scanned']} lines matched"
+                  + (f", {r.get('suppressed')} dups capped"
+                     if r.get("suppressed") else "")
+                  + f", {r['failed']} failed)"
                   + ("" if r.get("reachable") else " — unreachable"))
             if not args.dry_run:
                 post_state(r)

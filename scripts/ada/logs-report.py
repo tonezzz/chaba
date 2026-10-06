@@ -13,6 +13,26 @@ MDDB-down tolerant: network reads with a hard timeout; returns an empty
 digest block so the rollup still renders. Works while the vector index
 is rebuilding — /v1/search is keyword/meta, not vector.
 
+Scan coverage (2026-10-06): /v1/search returns docs in KEY order —
+hostlog/<host>/<rt-µs-suffix> — not insertion order, so no chronological
+paging shortcut exists. The old forward scan (offset 0 .. 5000) silently
+pinned the digest to the oldest docs once the collection outgrew the
+page budget — at ~97k docs the "24h" digest was reporting Oct-3 data.
+The server honors large pages, so this now scans the WHOLE collection
+(PAGE=5000, bounded by --max-docs) and windows client-side — every run
+sees the true window and the true baseline.
+
+New-today flag: a line's RX_VOLATILE-normalized signature that appears
+inside the report window but has no occurrence in the prior
+--baseline-days days gets a 🆕 marker — that's where first-seen
+incidents hide. Exact semantics, no state file: the baseline is just
+the older slice of the same full scan.
+
+Repeat-cap counts: the shipper caps duplicate (unit,line) signatures at
+REPEAT_CAP copies per run and marks the last copy with meta.suppressed;
+offender xN counts weigh those docs by 1+suppressed so crash-loop
+magnitude stays truthful.
+
 Usage:
   logs-report.py [--hours 24] [--out DIR]
   logs-report.py --no-publish            # skip the ops-digests write
@@ -40,8 +60,9 @@ STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
 STATE_URL = (os.environ.get("MDDB_OPS_URL") or MDDB_URL).rstrip("/")
 DIGEST_COLLECTION = os.environ.get("DIGEST_COLLECTION", "ops-digests")
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
-PAGE = 200
+PAGE = 5000
 SEVERE = {"oom", "panic", "failed"}
+BASELINE_DAYS = 7        # 'new today' = absent from the prior N days
 # normalize a line for repeat-counting: strip volatile parts (timestamps,
 # PIDs, hex ids) so the same recurring error collapses into one entry
 RX_VOLATILE = re.compile(
@@ -60,50 +81,92 @@ def _post(path: str, payload: dict, timeout: int = 15):
         return None
 
 
-def fetch_logs(hours: int, max_docs: int = 5000) -> list[dict]:
-    """Page /v1/search over host-logs; filter client-side to the window."""
-    cutoff = (datetime.datetime.now(datetime.timezone.utc)
-              - datetime.timedelta(hours=hours))
-    docs, offset = [], 0
-    while len(docs) < max_docs:
+def _parse_ts(ts: str):
+    try:
+        dt = datetime.datetime.fromisoformat(ts)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except Exception:
+        return None
+
+
+def _sig(line: str) -> str:
+    return RX_VOLATILE.sub("#", line)[:110]
+
+
+def fetch_logs(hours: int, baseline_days: int, max_docs: int):
+    """Full collection scan, client-side windowing. -> (rows,
+    baseline_sigs, truncated).
+
+    rows          — docs with meta.ts inside the last `hours`
+                    (unparseable ts counts as in-window — the shipper
+                    always sets it)
+    baseline_sigs — {(host, normalized_sig)} for every doc with ts in
+                    [now-baseline_days, window_start): the 'prior 7d'
+                    membership set behind the 🆕 new-today flag
+    truncated     — the page budget ran out mid-collection; both the
+                    window and the baseline may be incomplete
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    win_start = now - datetime.timedelta(hours=hours)
+    base_start = now - datetime.timedelta(days=baseline_days)
+    rows, base_sigs = [], set()
+    offset = scanned = 0
+    while scanned < max_docs:
         page = _post("/search", {"collection": LOG_COLLECTION,
                                  "query": "", "limit": PAGE,
                                  "offset": offset})
         if not isinstance(page, list):
             if page is None:
-                print("warn: mddb unreachable — empty digest",
+                print("warn: mddb unreachable — empty digest"
+                      if scanned == 0 else
+                      "warn: mddb read failed mid-scan — partial digest",
                       file=sys.stderr)
             break
-        docs.extend(page)
+        if not page:
+            break
+        scanned += len(page)
+        offset += PAGE
+        for d in page:
+            meta = d.get("meta") or {}
+            ts = (meta.get("ts") or [""])[0]
+            dt = _parse_ts(ts)
+            host = (meta.get("host") or ["?"])[0]
+            line = re.sub(r"^`[^`]*`\s*\[[^\]]*\]\s*", "",
+                          (d.get("contentMd") or "").strip())
+            if dt is not None:
+                if dt < base_start:
+                    continue        # older than the baseline horizon
+                if dt < win_start:
+                    base_sigs.add((host, _sig(line)))
+                    continue
+            try:
+                sup = int((meta.get("suppressed") or ["0"])[0] or 0)
+            except Exception:
+                sup = 0
+            rows.append({
+                "host": host,
+                "journal": (meta.get("journal") or ["?"])[0],
+                "unit": (meta.get("unit") or ["?"])[0],
+                "ts": ts,
+                "kind": (meta.get("kind") or ["?"])[0],
+                "line": line,
+                "suppressed": sup,
+            })
         if len(page) < PAGE:
             break
-        offset += PAGE
-    rows = []
-    for d in docs:
-        meta = d.get("meta") or {}
-        ts = (meta.get("ts") or [""])[0]
-        try:
-            dt = datetime.datetime.fromisoformat(ts)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=datetime.timezone.utc)
-            if dt < cutoff:
-                continue
-        except Exception:
-            pass  # unparseable ts still counts — shipper always sets it
-        rows.append({
-            "host": (meta.get("host") or ["?"])[0],
-            "journal": (meta.get("journal") or ["?"])[0],
-            "unit": (meta.get("unit") or ["?"])[0],
-            "ts": ts,
-            "kind": (meta.get("kind") or ["?"])[0],
-            "line": re.sub(r"^`[^`]*`\s*\[[^\]]*\]\s*", "",
-                           (d.get("contentMd") or "").strip()),
-        })
-    return rows
+    if scanned >= max_docs:
+        print(f"warn: scan hit {max_docs}-doc budget — window/baseline "
+              "coverage partial, 🆕 flags may over-report",
+              file=sys.stderr)
+    return rows, base_sigs, scanned >= max_docs
 
 
-def distill(rows: list[dict]) -> list[dict]:
-    """One summary row per host."""
+def distill(rows: list[dict], base_sigs: set | None = None) -> list[dict]:
+    """One summary row per host. base_sigs is the {(host, sig)} set from
+    the prior baseline-days window — a window row whose sig is absent
+    gets the 🆕 new-today flag."""
     by_host: dict[str, list[dict]] = {}
     for r in rows:
         by_host.setdefault(r["host"], []).append(r)
@@ -111,8 +174,13 @@ def distill(rows: list[dict]) -> list[dict]:
     for host, hs in sorted(by_host.items()):
         kinds = Counter(r["kind"] for r in hs)
         units = Counter(r["unit"] for r in hs)
-        offenders = Counter(RX_VOLATILE.sub("#", r["line"])[:110]
-                            for r in hs)
+        offenders: Counter = Counter()
+        new_sigs = set()
+        for r in hs:
+            sig = _sig(r["line"])
+            offenders[sig] += 1 + r.get("suppressed", 0)
+            if base_sigs is not None and (host, sig) not in base_sigs:
+                new_sigs.add(sig)
         tss = sorted(r["ts"] for r in hs if r["ts"])
         out.append({
             "host": host,
@@ -120,7 +188,12 @@ def distill(rows: list[dict]) -> list[dict]:
             "kinds": dict(kinds),
             "severe": sum(kinds[k] for k in SEVERE),
             "top_units": dict(units.most_common(6)),
-            "top_lines": [{"n": n, "line": ln}
+            "new": len(new_sigs),
+            "new_lines": [{"n": offenders[s], "line": s}
+                          for s in sorted(new_sigs,
+                                          key=lambda s: -offenders[s])
+                          [:5]],
+            "top_lines": [{"n": n, "line": ln, "new": ln in new_sigs}
                           for ln, n in offenders.most_common(5) if n > 1],
             "first": tss[0] if tss else "",
             "last": tss[-1] if tss else "",
@@ -141,12 +214,20 @@ def logs_block(rows: list[dict], since: str) -> str:
             + ", ".join(f"{k} x{c}" for k, c in
                         sorted(r["kinds"].items(), key=lambda kv: -kv[1]))
             + (f" ⚠ [{r['first'][:16]}..{r['last'][11:16]}]"
-               if r["severe"] else ""))
+               if r["severe"] else "")
+            + (f", {r['new']} new 🆕" if r["new"] else ""))
         for u, c in sorted(r["top_units"].items(),
                            key=lambda kv: -kv[1])[:4]:
             lines.append(f"  {u} x{c}")
+        shown = set()
+        for t in r["new_lines"][:4]:
+            shown.add(t["line"])
+            lines.append(f"  🆕 x{t['n']} {t['line'][:95]}")
         for t in r["top_lines"][:3]:
-            lines.append(f"  x{t['n']} {t['line'][:95]}")
+            if t["line"] in shown:
+                continue
+            lines.append(("  🆕" if t.get("new") else "  ")
+                         + f" x{t['n']} {t['line'][:95]}")
     return "\n".join(lines)
 
 
@@ -200,15 +281,19 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--hours", type=int, default=24)
-    ap.add_argument("--max-docs", type=int, default=5000)
+    ap.add_argument("--max-docs", type=int, default=250000,
+                    help="page budget for the whole-collection scan "
+                         "(bounded by the 14d prune retention)")
+    ap.add_argument("--baseline-days", type=int, default=BASELINE_DAYS,
+                    help="'new today' = absent from the prior N days")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--no-publish", action="store_true")
     args = ap.parse_args()
 
-    rows = fetch_logs(args.hours, args.max_docs)
-    summary = distill(rows)
-
     args.out.mkdir(parents=True, exist_ok=True)
+    rows, base_sigs, _truncated = fetch_logs(
+        args.hours, args.baseline_days, args.max_docs)
+    summary = distill(rows, base_sigs)
     ops = args.out / "hostlogs-ops.jsonl"
     with ops.open("w") as fh:
         for r in summary:
