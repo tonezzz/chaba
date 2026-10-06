@@ -37,7 +37,9 @@ sections:
       - label: bridge.py
         text: Gemini Live WebSocket proxy inside the gev-gemini container.
       - label: tools.json
-        text: 28 function declarations sent to Gemini during setup.
+        text: 31 function declarations sent to Gemini during setup (includes play_tour/stop_tour/tour_status).
+      - label: tours/
+        text: "Data-driven flyover tours: tours/index.json manifest + <id>.json definitions (ordered waypoint stops, dwellS, narration, annotate); flagship london-icons. Player at tours/player.js — see docs/ssot/jobs/gev/2026-10-06-gev-tour-format.yml."
       - label: Caddyfile.tony-dell
         text: Reverse proxy and static file routes for /apps/gev and /apps/gev-live.
   - title: Deployment
@@ -66,6 +68,8 @@ sections:
         text: Open https://tony-dell.taila0626a.ts.net/apps/gev/ in Chrome, hard-refresh, click the mic.
       - label: Voice command test
         text: Say "go to New York", click again to end, filter console for [GEV].
+      - label: Tour playback verify
+        text: "node stacks/web/input-bridge/gev-tour-verify.mjs --screen 6 — plays london-icons on a cast screen and asserts checkpoints arrive in order (tour_status poll + /command/events stream)."
   - title: Integration
     icon: "🔗"
     layout: list

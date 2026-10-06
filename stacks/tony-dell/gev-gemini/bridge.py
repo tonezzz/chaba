@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import json
 import os
 import re
@@ -27,7 +28,35 @@ REMOTE: dict = {}
 # cmd_id -> asyncio.Queue — remote clients' tool_response frames resolve
 # here so /command can return what the page actually did.
 PENDING: dict = {}
+# Tour/event telemetry ring buffer. Pages emit {'type':'tour_event', ...}
+# over the remote ws (tours/player.js via the __gevTourEmit hook in
+# index.html); GET /command/events?since=N returns them in arrival order
+# so a scenario can verify checkpoints fired in sequence.
+EVENTS = collections.deque(maxlen=2000)
+_EV_SEQ = 0
 _loop = None
+
+
+def _record_event(obj: dict, meta: dict) -> None:
+    global _EV_SEQ
+    _EV_SEQ += 1
+    EVENTS.append({
+        'n': _EV_SEQ,
+        'at': time.time(),
+        'screen': meta.get('screen'),
+        'pane': meta.get('pane'),
+        'kind': obj.get('kind'),
+        'tour': obj.get('tour'),
+        'seq': obj.get('seq'),
+        'id': obj.get('id'),
+        'label': obj.get('label'),
+        'state': obj.get('state'),
+        'when': obj.get('when'),
+        'text': obj.get('text'),
+        'arrived': obj.get('arrived'),
+        'visited': obj.get('visited'),
+        'error': obj.get('error'),
+    })
 
 SYSTEM_INSTRUCTION = (
     "You are GEV Voice Control, a concise voice controller for the God's Eye View Cesium geospatial app. "
@@ -317,7 +346,21 @@ def _cmd_handler():
             self.wfile.write(body)
 
         def do_GET(self):
-            if self.path == '/command/health':
+            if self.path.startswith('/command/events'):
+                from urllib.parse import urlparse, parse_qs
+                q = parse_qs(urlparse(self.path).query)
+                try:
+                    since = int((q.get('since') or ['0'])[0] or 0)
+                except ValueError:
+                    since = 0
+                try:
+                    limit = min(int((q.get('limit') or ['500'])[0] or 500), 2000)
+                except ValueError:
+                    limit = 500
+                evs = [e for e in list(EVENTS) if e['n'] > since][:limit]
+                self._reply(200, {'ok': True, 'since': since,
+                                  'last': _EV_SEQ, 'events': evs})
+            elif self.path == '/command/health':
                 # screen may be None — a remote that connected before its
                 # vcast page exposed __vcastScreen (hello-retry covers it,
                 # but health must not crash meanwhile)
@@ -422,6 +465,8 @@ async def client_handler(websocket):
                         q = PENDING.get(r.get('id'))
                         if q:
                             q.put_nowait(r)
+                elif t == 'tour_event':
+                    _record_event(obj, meta)
         except Exception:
             pass
         finally:

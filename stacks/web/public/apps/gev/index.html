@@ -3,6 +3,7 @@
 <head>
   <link rel="stylesheet" href="/apps/gev/cesium/Widgets/widgets.css">
   <script src="/apps/gev/cesium/Cesium.js"></script>
+  <script src="/apps/gev/tours/player.js"></script>
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1014,6 +1015,16 @@
       const myPane = () => {
         const q = new URLSearchParams(location.search).get('pane');
         return q !== null ? parseInt(q, 10) : null;
+      };
+      // Tour checkpoint reporting: tours/player.js calls this for every
+      // tour event (tour_start/leg/checkpoint/narration/tour_end); the
+      // bridge logs them at GET /apps/gev-cmd/command/events so a scenario
+      // can verify checkpoints arrived in order.
+      window.__gevTourEmit = (ev) => {
+        try {
+          ws && ws.readyState === 1 && ws.send(JSON.stringify(
+            Object.assign({ type: 'tour_event', screen: myScreen(), pane: myPane() }, ev)));
+        } catch {}
       };
       function connect() {
         try {

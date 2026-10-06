@@ -1155,5 +1155,49 @@
         }
       }
     }
+  },
+  {
+    "type": "function",
+    "name": "play_tour",
+    "description": "Play a named flyover tour: the camera visits each waypoint in order, dwells at each stop, and shows narration captions. Playback is detached — checkpoints are reported in order; use tour_status to read progress.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tour": {
+          "type": "string",
+          "description": "Tour id from the tours index (flagship: 'london-icons') or a URL to a tour JSON file."
+        },
+        "startAt": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional 0-based stop index to resume from."
+        },
+        "lang": {
+          "type": "string",
+          "description": "Narration language code when the tour provides alternates (e.g. 'th')."
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "name": "stop_tour",
+    "description": "Stop the currently playing tour at its current stop.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    }
+  },
+  {
+    "type": "function",
+    "name": "tour_status",
+    "description": "Read tour playback state: idle/playing/done/stopped, the current stop, and the ordered list of checkpoints reached so far.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    }
   }
 ]
