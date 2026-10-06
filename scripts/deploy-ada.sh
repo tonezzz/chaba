@@ -9,7 +9,7 @@
 #   - inactive services are reported, never started silently
 #   - flock prevents concurrent deploys to the same host
 #
-# Usage: deploy-ada.sh <mn01|tony-dell|idc01|all> [--restart]
+# Usage: deploy-ada.sh <mn01|tony-dell|idc03|all> [--restart]
 set -euo pipefail
 
 target="${1:-}"; force_restart="${2:-}"
@@ -17,9 +17,9 @@ target="${1:-}"; force_restart="${2:-}"
 case "$target" in
   mn01)      hosts=(mn01) ;;
   tony-dell) hosts=(tony-dell) ;;
-  idc01)     hosts=(idc01) ;;
-  all)       hosts=(mn01 tony-dell idc01) ;;
-  *) echo "usage: $0 <mn01|tony-dell|idc01|all> [--restart]" >&2; exit 2 ;;
+  idc03)     hosts=(idc03) ;;
+  all)       hosts=(mn01 tony-dell idc03) ;;
+  *) echo "usage: $0 <mn01|tony-dell|idc03|all> [--restart]" >&2; exit 2 ;;
 esac
 
 host_config() {
@@ -29,7 +29,9 @@ host_config() {
   case "$1" in
     mn01)      echo "ada-ha-tony.service,ada-ha-michael.service|8002,8003" ;;
     tony-dell) echo "chaba-guest.service|8014" ;;
-    idc01)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service|8001,8002,8003" ;;
+    # idc03 = post-migration Ada home (idc01 retired 2026-10-05). Relays have
+    # no HTTP port — their auth/status probe prints 000, which is expected.
+    idc03)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service,ada-dev.service,ada-line-relay.service,ada-tg-relay.service|8001,8002,8003,8005,," ;;
   esac
 }
 
