@@ -1,0 +1,122 @@
+title: YT voice dub — residual cue-fit polish (group TH translation, per-group rate, fit metrics)
+subtitle: kanban card yt-voice-dub-cuefit — dispatch session 2026-10-06
+icon: microphone
+
+planning:
+  goal: |
+    Close the residual cue-fit gaps from the E2E assessment:
+    (1) sentence-level TH translation on the --dump-groups table —
+        natural register, sized to each group's window, LLM-batched and
+        disk-cached, replacing the hand-written --th-file step;
+    (2) bounded per-group synth rate (+-0.1 around the global rate) so
+        atempo rarely engages — 1.4x atempo cap and shared lag budget
+        unchanged;
+    (3) a machine-readable DUBFIT metrics line per render for
+        yt-voice-dub-scenarios to consume.
+  out_of_scope: |
+    Diarization/casting changes (yt-voice-dub-speakers), caption QC
+    (yt-voice-dub-qc), wiring the dub into /cast (yt-voice-dub-mode).
+
+processing:
+  status: completed
+  last_updated: "2026-10-06"
+
+report:
+  summary: |
+    (1) yt-vtt-translate.py --groups mode: consumes a --dump-groups
+    table ([{i,s,e,voice,en,th}]) and writes a JSON array of per-group
+    translations = the --th-file format. One Gemini call per --batch
+    groups (default 20), model-chain retry like translate_batch, disk
+    cache at ~/.cache/yt-live-subs/groups/<sha>.<lang>.json keyed on
+    prompt-version + lang + model + all inputs (en, secs, mt hint).
+    Fallback when no API: each group's cue-level MT text (the "th"
+    field) — i.e. the pipeline degrades to pre-existing behaviour, never
+    to silence. yt-vtt-dub.py --th-auto runs the same table in-process
+    via the sibling translator; explicit --th-file still wins. --dump-
+    groups now emits "e" (fit-window end = next group start) so the
+    translator sees the real time budget. When group-level text supplies
+    the spoken line (th-file or th-auto) the compress pass is skipped —
+    re-tightening window-sized text only degrades register.
+
+    (2) --rate-spread (default 0.10): pass-2 resynth gives each group
+    its own rate = clamp(dur/window, max(global-spread,1.0),
+    min(global+spread,max-rate)), quantized to edge-tts 5% steps. A long
+    group is no longer pinned to one global rate, and groups needing
+    less than the band floor stay natural — never synthesized slower.
+    fit_wav now reports atempo factor + atrim clip per segment for
+    metrics.
+
+    (3) DUBFIT line: `DUBFIT {json}` on stdout per render plus optional
+    --metrics-json PATH. Fields: speech_s/window_s, global_rate,
+    rate_lo/rate_hi band, rate_min/rate_max applied, rate_resynth count,
+    atempo_segments/atempo_max/atempo_cap, clipped count, lag_s
+    (cumulative per-segment lateness), lag_max (worst segment lateness —
+    the honest "residual lag" number), lag_budget, ends_at. Lag
+    accounting fix: negative cue starts from --offset slices clamp to 0
+    and no longer count as lag.
+
+    Side fix: edge-tts retries now back off (1.5s*n, 5 tries) — the
+    demo endpoint rate-limits under 4-way parallel synth and 3
+    back-to-back retries kept hitting the same throttle window (~19% of
+    groups were silently dropped before).
+
+  metrics:
+    - variant: 4njFdBF_42I slice 20-200s, 3-voice cast, --th-auto
+      groups: 38
+      segments: 37/37 rendered
+      rate: "1.00-1.05 applied (global 0.95, band 1.00-1.05)"
+      atempo: "1 segment @1.13, 0 clipped"
+      lag: "lag_max 2.45s, cumulative 9.5s, ends_at 179.8/180"
+      th: auto sentence-level — conversational register (สินะ/แหละ/เถอะ)
+    - variant: h6fcK_fRYaI (The Egg) 180s, single voice, --th-auto
+      groups: 11
+      segments: 11/11 rendered
+      rate: "1.00-1.05 applied (global 0.95)"
+      atempo: "0 segments, 0 clipped"
+      lag: "0.0s, ends_at 162.7/180"
+    - variant: The Egg baseline (cue-MT + compress, no --th-auto)
+      note: rate/lag were already fine post-dedup — the auto pass buys
+      register (natural spoken Thai), not speed, on this specimen.
+
+  lessons_learned:
+    - The verify metric "lag <=5s" needs the right lag: lag_s is the
+      CUMULATIVE sum of per-segment lateness (9.5s over 37 segments ≈
+      0.26s avg); lag_max (2.45s) is the number a viewer experiences.
+      Both are in DUBFIT — scenarios should gate on lag_max.
+    - edge-tts parallel-synth failures are rate-limit 403s; a retry with
+      no delay is worthless — 1.5s*n backoff turned 19% group loss into
+      zero on the same corpus.
+    - TH chars/sec at natural pace ~12-14; telling the translator the
+      per-group window in seconds lets it self-size — the interview's
+      TH speech dropped from overflow territory to 142s in a 179s
+      window with no hand editing.
+    - Group windows for translation = next group START (the fit window),
+      not the caption end — caption pauses are free space the dub can
+      speak through.
+
+changes:
+  - file: scripts/ops/yt-vtt-translate.py
+    summary: "--groups mode: group-table -> --th-file JSON array; batched
+      Gemini call w/ window-sized natural-register prompt, model-chain
+      retry, disk cache (~/.cache/yt-live-subs/groups/), cue-MT fallback"
+  - file: scripts/ops/yt-vtt-dub.py
+    summary: "--th-auto (sibling translate on group table), --rate-spread
+      per-group rate band, fit_wav reports atempo/trim, DUBFIT metrics
+      line + --metrics-json, lag clamp fix for negative cue starts,
+      edge-tts retry backoff"
+
+verification:
+  artifacts:
+    - /tmp/cuefit/4nj-cuefit.mp4          # interview dub, --th-auto
+    - /tmp/cuefit/egg-cuefit.mp4          # Egg dub, --th-auto
+    - /tmp/cuefit/egg-baseline.mp4        # Egg dub, cue-MT baseline
+    - /tmp/cuefit/4nj-fit.json /tmp/cuefit/egg-fit.json  # DUBFIT dicts
+    - /tmp/cuefit/4nj-groups.json /tmp/cuefit/egg-groups.json
+    - /tmp/cuefit/4nj-th.json /tmp/cuefit/egg-th.json    # generated TH
+    - /tmp/cuefit/*-burn.vtt              # display subs
+    - apps/yt-live/dub-cuefit-4nj.mp4 + dub-cuefit-egg.mp4 (listen check)
+  checks:
+    - "grep '^DUBFIT ' on renderer stdout -> parse as JSON"
+    - "4nj: rate_max<=1.05, atempo_max<=1.2, lag_max<=5, clipped=0 — all pass"
+    - "egg: lag 0, no atempo, no clipping — pass"
+    - "Tony listen check on the two /apps/yt-live/dub-cuefit-* renders"
