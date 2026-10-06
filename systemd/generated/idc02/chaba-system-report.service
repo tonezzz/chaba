@@ -4,4 +4,4 @@ Description=Chaba System Report (job:chaba-system-report, rendered from ssot.job
 [Service]
 Type=oneshot
 TimeoutStartSec=900
-ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3 scripts/report-system.py'
+ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3 scripts/report-system.py'

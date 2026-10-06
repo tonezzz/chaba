@@ -1,0 +1,92 @@
+title: Log Digest Standard
+subtitle: Measurable bars for the journald → MDDB → digest pipeline — enforced by scripts/ada/logs-kanban.py
+icon: gauge
+version: 1
+last_updated: "2026-10-06"
+
+overview:
+  purpose: |
+    Defines "healthy" for log digesting as executable numbers, not vibes.
+    The pipeline is: journald -> log-shipper.py (filter/classify/cap) ->
+    host-logs (+ host-logs-state heartbeats) -> logs-report.py ->
+    digest blocks + report/24h state -> logs-kanban.py -> logs-auto-*
+    cards on the dev-kanban board. Breach -> card -> kanban-dispatch
+    investigates. That loop is the point: a broken pipeline must become
+    tracked work, not a quietly empty digest.
+  token_policy: |
+    Log docs are meta-filtered telemetry, not recall text — nobody
+    vector-searches raw journal lines. Embedding them on the leader
+    burned the OR/Gemini quota that Ada and CMS embeds actually need
+    (the 2026-10-04/05 429 storms). Ops collections therefore route to
+    MDDB_OPS_URL, a no-embedding instance; the embedding budget for ops
+    telemetry on the leader is exactly zero.
+
+bars:
+  fleet:
+    hosts: [idc01, idc02, idc03, mn01, tony-dell, tony-omen, michael-ha]
+      # every host runs a local log-shipper.timer (--self) posting a
+      # ship/<host> state doc each run — even when nothing ships. A host
+      # absent from host-logs-state is a gap, not a quiet host.
+    cadence_min: 60
+      # hourly --self sweeps + --severe fast lane. Silence bar scales
+      # from this: a host with no state write in >1.5× cadence is silent.
+    journals_per_host: [user, sys]
+      # both journals unless declared below. VPS user units log to the
+      # user journal only; home services to sys. Losing either side
+      # hides a class of failures (idc01/02 sys=0 gap found 2026-10-06).
+    journal_overrides:
+      michael-ha: [sys]   # HAOS: no user journald, user units n/a
+  pipeline:
+    silent_factor: 1.5      # x cadence_min -> silent (hourly = 90min)
+    unreachable: card        # reachable=false -> logs-auto-<h>-unreachable
+    add_failures_max: 0      # fail>0 in a state doc -> card; cursor
+                           # replay makes it self-healing but the card
+                           # tracks frequency
+    backlog_min: 200         # scanned - shipped above this -> card; the
+                           # per-run cap can't drain it before next run
+    embed_probe: up          # adds must not stall on the embed step —
+                           # stalled adds on the ops DB = mis-routing
+  signal:
+    severe_24h_max: 40       # severe (oom/panic/failed) lines/day/host —
+                           # this is an incident bar, not pipeline noise
+    repeat_cap: 25           # _cap_repeats bound; suppressed must be
+                           # reported on the marker doc, never silently
+    new_sig_visibility: true # novel normalized lines get 🆕 in the
+                           # digest; recurring noise stays collapsed
+    matched_shipped_ratio_warn: 3.0
+      # scanned > 3× shipped sustained -> filter is carrying churn the
+      # cap can't drain; tighten GREP/DROP, don't raise the cap blindly
+  token:
+    ops_collections: [host-logs, host-logs-state, ops-digests]
+      # must be served by MDDB_OPS_URL (no-embed instance)
+    embed_adds_on_leader_max: 0
+      # ops docs must never land on the embedding leader — measured as
+      # new host-logs docs in the leader collection per day
+    embed_model: gemini-embedding-2   # for the CMS/ada banks on the
+      # leader — ops traffic has no business on it
+  retention:
+    host_logs_days: 14
+    ops_digests_days: 0      # kept — trend queries need history
+    state_docs: same-key     # ~1 revision per host per run — never grows
+  board:
+    card_prefix: logs-auto-
+    lifecycle: [review, done]
+    escalate_h: 12           # open this long -> priority high
+    coverage_card: logs-auto-coverage   # single matrix card for
+      # "which expected logs never arrive" — never one-per-gap spam
+
+deployment:
+  shipper: scripts/ada/log-shipper.py (--self timers each host; central
+    ssh sweep stays as fallback)
+  digest: scripts/ada/logs-report.py (daily 08:45 via
+    ada-review-refresh.timer on tony-omen; weekly rollup Mon 07:00)
+  checker: scripts/ada/logs-kanban.py (inside kanban-sync.timer 15min on
+    tony-dell — commits via the worktree's git add cards/ lane)
+  ops_db: mddb-ops on idc03 :11026 — same binary, no embedding env
+    (11025 is doc-archive; 11024 is leader gRPC)
+  state_collection: host-logs-state (ship/<host>, report/24h)
+
+reads:
+  standard_file: this file — logs-kanban reads bars from here so
+    threshold changes are config, not code. Constants in the script are
+    fallbacks only.

@@ -50,14 +50,18 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-MDDB_URL = os.environ.get("MDDB_BASE_URL",
-                          "http://100.102.134.91:11023/v1").rstrip("/")
+# ops collections live on the no-embed ops DB (idc03 :11026) per
+# ssot.log-digest-standard.yml — reads AND writes; the leader stays for
+# CMS/banks. MDDB_OPS_URL env overrides for local dev.
+OPS_URL = os.environ.get(
+    "MDDB_OPS_URL",
+    os.environ.get("MDDB_BASE_URL",
+                   "http://100.102.134.91:11026/v1")).rstrip("/")
+MDDB_URL = OPS_URL  # host-logs + ops-digests are both ops collections
 LOG_COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
 STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
                                   "host-logs-state")
-# state docs must land in the same DB the shipper writes to (mddb-ops
-# when configured) — logs-kanban reads a single collection.
-STATE_URL = (os.environ.get("MDDB_OPS_URL") or MDDB_URL).rstrip("/")
+STATE_URL = OPS_URL
 DIGEST_COLLECTION = os.environ.get("DIGEST_COLLECTION", "ops-digests")
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
 PAGE = 5000

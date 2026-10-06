@@ -19,12 +19,16 @@ kb-* / chaba-* / cms collection is bounded by maxRevisions instead.
 """
 
 import json
+import os
 import sys
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
 MDDB = "http://100.102.134.91:11023/v1"
+# ops telemetry lives on the no-embed ops DB (ssot.log-digest-standard)
+OPS_MDB = os.environ.get("MDDB_OPS_URL",
+                         "http://100.102.134.91:11026/v1").rstrip("/")
 
 # collection -> (timestamp meta key, retention days)
 POLICY = {
@@ -34,23 +38,26 @@ POLICY = {
     "ada-ha-snapshots-tony": ("refreshed_at", 30),
     "ada-ha-snapshots-michael": ("refreshed_at", 30),
 }
+# collections served from the ops DB instead of the leader
+OPS_COLLECTIONS = {"host-logs"}
 
 
-def post(path: str, body: dict) -> object:
+def post(path: str, body: dict, base: str = MDDB) -> object:
     req = urllib.request.Request(
-        f"{MDDB}{path}", data=json.dumps(body).encode(),
+        f"{base}{path}", data=json.dumps(body).encode(),
         headers={"content-type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
 
 
-def sweep(collection: str, ts_key: str, days: int, dry: bool) -> str:
+def sweep(collection: str, ts_key: str, days: int, dry: bool,
+          base: str = MDDB) -> str:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     skip, deleted, scanned = 0, 0, 0
     while True:
         try:
             page = post("/search", {"collection": collection, "query": "",
-                                    "limit": 100, "offset": skip})
+                                    "limit": 100, "offset": skip}, base)
         except Exception as e:
             return f"{collection}: list failed — {e}"
         if not page:
@@ -67,7 +74,8 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool) -> str:
                     try:
                         post("/delete", {"collection": collection,
                                          "key": d["key"],
-                                         "lang": d.get("lang", "en")})
+                                         "lang": d.get("lang", "en")},
+                             base)
                         deleted += 1
                     except urllib.error.HTTPError:
                         kept += 1
@@ -84,7 +92,11 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool) -> str:
 def main() -> int:
     dry = "--dry-run" in sys.argv
     for coll, (ts_key, days) in POLICY.items():
-        print(sweep(coll, ts_key, days, dry))
+        base = OPS_MDB if coll in OPS_COLLECTIONS else MDDB
+        print(sweep(coll, ts_key, days, dry, base))
+    # one-shot leader cleanup: host-logs migrated to the ops DB — the
+    # stale leader copy still ages out on its own 14d window
+    print(sweep("host-logs", "ts", 14, dry, MDDB))
     return 0
 
 

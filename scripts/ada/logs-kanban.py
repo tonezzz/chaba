@@ -52,7 +52,7 @@ import yaml
 MDDB = os.environ.get(
     "MDDB_OPS_URL",
     os.environ.get("MDDB_BASE_URL",
-                   "http://100.102.134.91:11023/v1")).rstrip("/")
+                   "http://100.102.134.91:11026/v1")).rstrip("/")
 REPO = Path(os.environ.get("CHABA_REPO",
                            str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
