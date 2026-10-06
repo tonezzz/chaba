@@ -9,6 +9,13 @@ async function load() {
     if (yml.ok) {
       const doc = jsyaml.load(await yml.text());
       meta.textContent = `Generated: ${doc.generated_at || "unknown"} — ${doc.node_count} nodes`;
+      try {
+        const p = await fetch("api/pending", { cache: "no-store" });
+        const pb = await p.json();
+        const names = Object.keys(pb.pending || {});
+        if (names.length)
+          meta.textContent += ` — ⟳ ${names.length} update${names.length > 1 ? "s" : ""} pending (${names.join(", ")})`;
+      } catch (e) { /* pending view is optional */ }
       const counts = doc.status_counts || {};
       const order = ["error", "missing", "stale", "delta", "warn", "ok"];
       for (const k of order.concat(Object.keys(counts).filter((x) => !order.includes(x)))) {
