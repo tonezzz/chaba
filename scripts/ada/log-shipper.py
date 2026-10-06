@@ -297,10 +297,13 @@ def _save_ha_state(host: str, cursor_json: str, tag: str = "") -> None:
 
 
 def _journal(host: str, user: bool, kinds: set | None = None,
-             tag: str = "") -> tuple[list[dict], int]:
+             tag: str = "") -> tuple[list[dict], int, str]:
     """json lines since last SHIPPED cursor; cursor file is read-only
     here — written back by ship() after posts succeed. -> (rows,
-    suppressed) where suppressed counts repeat-capped drops."""
+    suppressed, leg) where suppressed counts repeat-capped drops and
+    leg is 'ok'|'denied'|'empty' — distinguishes "journal unreadable"
+    (a real coverage gap) from "journal simply quiet" so logs-kanban
+    doesn't flag healthy-but-silent hosts."""
     scope = "--user" if user else "--system"
     cur = _cursor_path(user, tag)
     # --grep filters at journal level — on noisy hosts (idc01's user
@@ -309,6 +312,16 @@ def _journal(host: str, user: bool, kinds: set | None = None,
     # every user-unit log on the VPSes. Requires systemd >=243.
     out = _ssh(
         host,
+        # leg probe FIRST: `journalctl -n 1` on a journal the caller
+        # can't read prints the "not seeing messages" hint; an empty
+        # journal prints "-- No entries --" — both exit 0, so the text
+        # is the only reliable signal
+        f"probe=$(journalctl {scope} -n 1 -o cat 2>&1 | head -3); "
+        f"if echo \"$probe\" | grep -q 'not seeing messages'; then "
+        f"echo '__LEGSTATUS=denied'; "
+        f"elif echo \"$probe\" | grep -q 'No entries' "
+        f"|| [ -z \"$probe\" ]; then echo '__LEGSTATUS=empty'; "
+        f"else echo '__LEGSTATUS=ok'; fi; "
         f"mkdir -p ~/.cache; "
         f"if [ -s {cur} ]; then "
         f"journalctl {scope} -o json --no-pager --cursor=\"$(cat {cur})\" "
@@ -321,8 +334,14 @@ def _journal(host: str, user: bool, kinds: set | None = None,
         f"fi 2>/dev/null | grep -avE '{GREP_DROP}' | tail -6000",
         timeout=150)
     rows = []
+    leg = "empty"  # probe line absent (ssh cut, old remote) -> assume
+    #               empty not denied; a denied leg still scans 0 rows
+    #               anyway so the kanban check errs toward silence
     for ln in out.splitlines():
         ln = ln.strip()
+        if ln.startswith("__LEGSTATUS="):
+            leg = ln.split("=", 1)[1]
+            continue
         if not ln.startswith("{"):
             continue
         try:
@@ -352,7 +371,8 @@ def _journal(host: str, user: bool, kinds: set | None = None,
                      "unit": unit, "ts": ts, "kind": kind,
                      "cursor": cursor,
                      "line": msg.strip()[:400]})
-    return _cap_repeats(rows)
+    rows, sup = _cap_repeats(rows)
+    return rows, sup, leg
 
 
 def _post(path: str, payload: dict, timeout: int = 15) -> bool:
@@ -385,24 +405,27 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
          tag: str = "") -> dict:
     sent = fail = scanned = suppressed = 0
     journals = {"user": 0, "sys": 0}
+    legs = {"user": "n/a", "sys": "n/a"}
     ha = host in HA_CLI_HOSTS
     lane = ("ha-cli-ssh" if ha else
             "local" if _is_local(host) else "ssh")
     if not _reachable(host):
         return {"host": host, "shipped": 0, "failed": 0, "scanned": 0,
                 "suppressed": 0,
-                "reachable": False, "journals": journals, "lane": lane,
+                "reachable": False, "journals": journals,
+                "journal_legs": legs, "lane": lane,
                 "run": tag or "full",
                 "error": "ha-cli probe failed" if ha else
                          "ssh probe failed"}
     # ha-cli hosts have a single host journal; others run user+system.
-    sides = [(False, _journal_ha(host, kinds, tag))] if ha else \
+    sides = [(False, (*_journal_ha(host, kinds, tag), "ok"))] if ha else \
             [(user, _journal(host, user, kinds, tag))
              for user in (True, False)]
-    for user, (rows, sup) in sides:
+    for user, (rows, sup, leg) in sides:
         scanned += len(rows)          # post-cap matched — keeps the
         suppressed += sup             # kanban backlog check honest
         journals["user" if user else "sys"] = len(rows)
+        legs["user" if user else "sys"] = leg
         last_ok = ""
         for r in rows:
             if sent >= max_docs:
@@ -440,7 +463,8 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
     return {"host": host, "shipped": sent, "failed": fail,
             "scanned": scanned, "suppressed": suppressed,
             "reachable": True, "lane": lane,
-            "journals": journals, "run": tag or "full",
+            "journals": journals, "journal_legs": legs,
+            "run": tag or "full",
             "error": "mddb add failed" if fail else ""}
 
 
