@@ -73,6 +73,9 @@ card_schema:
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
+    verified: "optional bool — reserved for dispatch-merge-guard's real
+              merge/push check. The review-column badge prefers it over the
+              comms heuristic (explicit false = checked and NOT verified)"
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
   # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
   # normalizes it to the status block on first run:
@@ -217,8 +220,9 @@ page_standard:
       - "open requests — ask text + options/answer box INLINE; one click
          posts /respond {id, request_id, answer} (no modal)"
       - "review cards >24h since their last '-> review'/'→ review' comms
-         entry with no comms text matching
-         /verif|confirm|works|lgtm|tested|checks out/i — ✔ verify posts
+         entry that fail isVerified() — explicit action.verified beats the
+         TRUST_RE comms heuristic
+         /verif|auto-merged|merged into|…|pushed <sha>/i — ✔ verify posts
          /comment 'verified'"
       - "action.status failed|error dispatches — ↺ Retry posts /action
          do=retry"

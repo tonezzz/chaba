@@ -1,0 +1,54 @@
+title: Review column verified-vs-claimed badge
+subtitle: action.verified override + pushed-SHA comms heuristic on the board
+icon: layout
+version: 1
+
+card: review-trust-badge
+date: 2026-10-06
+dispatch: 20261006-065813-render-board-py-review-column-
+
+summary: |
+  Second pass on the review-column trust badge. dcffce02 already rendered
+  "✔ verified" vs "⚠ claimed" per card from a comms regex (TRUST_RE); this
+  pass reserves the explicit override the card spec asked for and widens the
+  heuristic to the spec's pattern. An `action.verified` bool on the card
+  (reserved for dispatch-merge-guard's real merge/push check) now wins over
+  the comms heuristic — including explicit false (guard checked, work is NOT
+  verified). TRUST_RE gained a pushed-SHA arm so comms like "pushed
+  022cad43 to origin" count as verification, while "02b2c15, not pushed"
+  and "unmerged commits remain" stay negative. The badge carries a title
+  tooltip naming the source (merge-guard vs comms heuristic), and the
+  needs-you stale-review check now uses the same isVerified() so a guard
+  flag clears the nudge too.
+
+deliverables:
+  - scripts/render-board.py — new isVerified(c) helper; an explicit
+    action.verified (set) wins by truthiness, unset falls back to the first
+    comm matching TRUST_RE. cardHtml review badge + needsYou() stale-review
+    both consume it (VERIFY_RE removed — TRUST_RE is a superset).
+  - TRUST_RE extended with pushed-SHA arm —
+    (?<!not )(?<!n't )pushed\b[^.\n]{0,60}\b(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b
+    — the lookahead for a hex letter excludes pure-digit timestamps like
+    20261005; the lookbehinds exclude "not pushed"/"isn't pushed".
+  - docs/ssot/kanban/ssot.kanban.yml — card_schema.action documents
+    `verified`; needs_you_band item updated to isVerified()/TRUST_RE.
+
+decisions:
+  - explicit false overrides the heuristic — a merge-guard that has actually
+    checked is more authoritative than a comm saying "verified"; only an
+    absent field falls back to comms.
+  - pushed-SHA requires >=1 hex letter — dispatch comms embed timestamps
+    (20261005) and task ids that are valid all-digit "SHAs"; real git SHAs
+    practically always contain a-f.
+  - isVerified shared between badge + needs-you — the two "is this review
+    card real" signals must agree or the board contradicts itself.
+
+verify: |
+  python3 scripts/render-board.py   # regenerates index.html + cards.json
+  # node harness evals the page script with DOM stubs and calls cardHtml():
+  # done-claim-only -> "⚠ claimed"; "verified" comm -> "✔ verified";
+  # "auto-merged" comm -> ✔; "pushed 022cad43" -> ✔; "unmerged commits
+  # remain" -> ⚠; "(02b2c15, not pushed)" -> ⚠; action.verified:true with
+  # no comms -> ✔; action.verified:false + "verified" comm -> ⚠.
+  # All 9 cases pass; live board data: 31 review cards -> 14 verified /
+  # 17 claimed.

@@ -285,10 +285,10 @@ function cardHtml(c) {{
   else if (st === 'running') badges += '<span class="text-xs bg-sky-700/80 text-sky-100 rounded px-1.5 py-0.5">⚙ running</span> ';
   else if (st === 'failed') badges += '<span class="text-xs bg-red-800/70 text-red-100 rounded px-1.5 py-0.5">✖ failed</span> ';
   if ((c.column || 'backlog') === 'review') {{
-    const verified = (c.comms || []).some(m => TRUST_RE.test(m.text || ''));
-    badges += verified
-      ? '<span class="text-xs bg-emerald-800/80 text-emerald-100 rounded px-1.5 py-0.5">✔ verified</span> '
-      : '<span class="text-xs bg-amber-900/80 text-amber-200 rounded px-1.5 py-0.5">⚠ claimed</span> ';
+    const v = isVerified(c);
+    badges += v.ok
+      ? `<span class="text-xs bg-emerald-800/80 text-emerald-100 rounded px-1.5 py-0.5" title="${{esc(v.how)}}">✔ verified</span> `
+      : `<span class="text-xs bg-amber-900/80 text-amber-200 rounded px-1.5 py-0.5" title="${{esc(v.how)}}">⚠ claimed</span> `;
   }}
 
   return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
@@ -299,10 +299,24 @@ function cardHtml(c) {{
     '</div>';
 }}
 
-const VERIFY_RE = /verif|confirm|works|lgtm|tested|checks out/i;
 // 'verified' signals incl. the auto-merge comm — note: bare /merged/
-// would match "unmerged commits remain", so require 'merged into'|'auto-merged'
-const TRUST_RE = /verif|auto-merged|merged into|confirm|works|lgtm|tested|checks out/i;
+// would match "unmerged commits remain", so require 'merged into'|'auto-merged';
+// the pushed-SHA arm requires >=1 hex letter so timestamps like 20261005
+// don't count, and lookbehinds keep "not pushed"/"n't pushed" negative
+const TRUST_RE = /verif|auto-merged|merged into|confirm|works|lgtm|tested|checks out|(?<!not )(?<!n't )pushed\\b[^.\\n]{{0,60}}\\b(?=[0-9a-f]*[a-f])[0-9a-f]{{7,40}}\\b/i;
+// Verified-vs-claimed: an explicit action.verified (bool — dispatch-merge-guard
+// writes it once real merge/push checks land) wins over the comms heuristic,
+// including an explicit false (guard checked and the work is NOT verified).
+function isVerified(c) {{
+  const v = (c.action || {{}}).verified;
+  if (v !== undefined && v !== null)
+    return {{ok: v === true || v === 'true',
+             how: 'action.verified=' + v + ' (merge-guard)'}};
+  const hit = (c.comms || []).find(m => TRUST_RE.test(m.text || ''));
+  return {{ok: !!hit,
+           how: hit ? 'comms heuristic: ' + String(hit.text).slice(0, 80)
+                    : 'no verification entry in comms'}};
+}}
 // automation-generated card ids — collapsed under per-column groups
 const AUTO_RE = /^(cms-auto-|logs-auto-)|-auto-health$/;
 let autoOpen = {{}};
@@ -329,7 +343,7 @@ function needsYou() {{
     for (const r of c.requests || [])
       if (r.status !== 'answered') items.push({{kind: 'request', c, r}});
     if ((c.column || 'backlog') === 'review') {{
-      const verified = (c.comms || []).some(m => VERIFY_RE.test(m.text || ''));
+      const verified = isVerified(c).ok;
       const t = reviewSince(c);
       if (!verified && !isNaN(t) && Date.now() - t > 24 * 3600e3)
         items.push({{kind: 'stale-review', c, ageH: Math.round((Date.now() - t) / 3600e3)}});
