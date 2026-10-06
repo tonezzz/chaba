@@ -1011,10 +1011,6 @@ def main() -> int:
                 classification=cls,
                 supersedes=links.get(wall_key(zone)),
                 force=wall_key(zone) in revive)
-        # retire the old wall-<zone> key (renamed to camwall-<area>)
-        legacy_wall = f"wall-{zone}"
-        if legacy_wall != wall_key(zone):
-            mddb_delete(legacy_wall)
     # multi-zone pages tag every tab/group/site they span
     dev_cls = [zone_meta.cam_classify(z, c, ZMETA)
                for es in cam_groups.values() for z, c, _ in es
@@ -1056,15 +1052,6 @@ def main() -> int:
                 classification=cam_cls,
                 supersedes=links.get(slug_key),
                 force=slug_key in revive)
-        # retire the old zone-scoped key the canonical dev-key replaced,
-        # plus any raw (un-normalized) key the ascii slug superseded
-        for z, c, _ in entries:
-            forms = [f"cam-{z}-{c['key']}"]
-            if c.get("dev"):
-                forms.append(f"cam-{c['dev']}-{c['key']}")
-            for legacy in forms:
-                if legacy != slug_key:
-                    mddb_delete(legacy)
     if zones:
         for lang in ("en", "th"):
             ok &= mddb_add(
