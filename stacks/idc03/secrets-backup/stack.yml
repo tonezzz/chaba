@@ -1,0 +1,25 @@
+id: secrets-backup
+host: idc03
+description: >-
+  Daily age-encrypted tarball of credential-shaped state (.config/secrets,
+  .ssh, .config/rclone, .config/camwall.env, .config/systemd/user), pushed to
+  recovery hosts. Timer secrets-backup.timer fires 03:00 ICT daily.
+verify: >-
+  ls -lh ~/secrets-backup/ on each target shows a fresh secrets-*.tar.age;
+  `age -d -i ~/.config/secrets/backup-age.key <file> | tar tzf -` lists ~160
+  files on every recovery host.
+secrets:
+  - "~/.config/secrets/backup-age.key — age PRIVATE key; also placed at the
+     same path on each recovery host (restore needs it there). NEVER in git."
+requires:
+  - "ssh edges idc03 -> {idc02, idc01, tony-dell-m2m} (dedicated keys in
+     ~/.ssh/id_idc02, ~/.ssh/id_idc01, ~/.ssh/id_tony_dell)"
+  - "age package on every recovery host"
+state:
+  - "outbound only — writes ~/secrets-backup/ on targets; keeps 14 days"
+restore: >-
+  On a recovery host: age -d -i ~/.config/secrets/backup-age.key
+  ~/secrets-backup/secrets-<stamp>.tar.age | tar xz -C ~/
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-06

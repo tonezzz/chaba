@@ -1,11 +1,15 @@
 id: idc01-return-role
 title: 'idc01 returns: warm-DR node — mddb follower #2, standby edge, lab sandbox'
-column: backlog
+column: review
 priority: high
-note: 'idc01 survived (2vCPU/31G/96G, 37G free, tailnet rejoined). Role:
-  designated warm spare — follower + promote target, standby caddy-edge on its
-  own public IP, ada stack installed-but-stopped, secrets-backup target #3,
-  lab sandboxes. Zombie stack still running and must be cleaned first.'
+review_kind: verify
+note: 'DEPLOYED 2026-10-06: zombies stopped+disabled; mddb-follower live
+  (snapshot applied 4m17s, catching up to leader LSN); standby caddy-edge
+  answers api.surf-thailand.com via pinned cert (502=no backends = correct);
+  secrets-backup.timer daily 03:00 on idc03 -> idc02+idc01+dell (verified
+  decryptable x3); ada warm-boot 181s->200. Cold-restore on 2vCPU >25min
+  (vector index load dominates) — replica path is the fast RTO. Findings +
+  numbers: CMS page idc01-return-dr-capability.'
 review_kind: decide
 spec: 'Phase 0 - zombie cleanup: stop+disable duplicate services on idc01
   (caddy-edge, ollama, gemini-ollama-proxy, camwall-edge, input-bridge,
