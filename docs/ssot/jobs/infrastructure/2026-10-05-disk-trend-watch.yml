@@ -1,0 +1,129 @@
+id: disk-trend-watch
+title: Disk trend watcher — df forecast + top growers per host
+date: 2026-10-05
+card: lab-disk-trend-watch
+host: tony_dell
+status: implemented
+
+trigger: >
+  tony-dell / hit 100% on 2026-10-05 (~14:23) — the lab-disk-trend-watch
+  card file itself was written 0-bytes by the disk-full event. ~7GB freed
+  (mddb backups, pip/go caches). health-monitor.sh already alerts on
+  instantaneous pct (>85/90%) but nothing watched the *trend*: the
+  yt-live-media cache grew 8.6G during dub work and filled the disk
+  between threshold crossings.
+
+goal: >
+  Periodic df trend per host: alert on the board + LINE when a mount is
+  forecast to fill within ~7 days at current growth (or >=90% now), and
+  flag the top-grower directories so the alert says *what* is eating it.
+
+design:
+  placement: >
+    Folded into the kanban-sync health lane (15-min tick on tony-dell,
+    scripts/ada/kanban-sync.sh) next to cms-auto-health / logs-kanban /
+    gev-auto-health — same generated-card lifecycle, same escalation
+    policy (priority high when critical or card open >12h).
+  sampler: >
+    scripts/ada/disk-trend-watch.py. One SSH probe per host in
+    ssot.audit.hosts.yml (local exec on the host it runs on). Linux gets
+    `df -PTk` (fstype-filtered, squashfs/tmpfs/overlay/fuse dropped,
+    same-device mounts deduped — APFS roles and btrfs subvols collapse);
+    macOS gets `df -Pk` keeping /dev/disk* only. Probe then runs `du -sk`
+    on the dir watchlist ($HOME/.cache children, then the .cache parent,
+    then /var/log — children first so a parent-total timeout still
+    leaves the per-child numbers that feed top-growers). Each du is
+    capped at DISK_TREND_DU_EACH_S=45s (`timeout`, gtimeout fallback,
+    plain du where neither exists — macOS). df is emitted before du so
+    a watchlist overrun still yields the df section: TimeoutExpired's
+    partial stdout IS kept (bytes under text=True — decoded 2026-10-06
+    after a live run showed tony-dell 'unreachable': its ~/.cache du
+    takes ~77s cold, blew the old 60s cap, and the isinstance(str)
+    check dropped the captured df output). Outer probe budget
+    DISK_TREND_SSH_TIMEOUT=90s.
+  history: >
+    ~/var/chaba/health/disk-trend.jsonl — one JSON line per host per
+    tick (~2.3KB avg), pruned to DISK_TREND_RETAIN_D=45d only when it
+    exceeds 60k lines so steady-state cost is one append.
+  trend: >
+    Least-squares KiB/day per host+mount over DISK_TREND_WINDOW_D=7d.
+    A forecast needs >=2 samples spanning >=DISK_TREND_MIN_SPAN_H=6h —
+    blocks single-blip false positives from two points minutes apart.
+    days_to_full = avail / slope when slope > 0.
+  alerts: >
+    pct >= DISK_TREND_CRIT_PCT (90) -> critical card; days_to_full <=
+    DISK_TREND_FILL_D (7) -> fill card. Card id
+    disk-auto-<host>-<mountslug> in column=review; auto-closes to done
+    when the mount returns to bounds or stops being sampled — but the
+    stale-mount sweep skips cards whose host was unreachable this tick
+    (added 2026-10-06: a flaky host must not flap an open alert and
+    re-push later). Push is one batched board_notify send per tick
+    covering only newly opened cards — quiet-by-design, no per-tick
+    re-pings.
+  top_growers: >
+    Per-host du watchlist trended like mounts; dirs with 24h delta >=
+    256MiB land in the report's top_growers_24h and inside alert card
+    notes.
+  channels: >
+    board_notify.send now accepts a comma-separated channel list
+    ('ha,yomi') — fans out, True when any accepts. Watcher default
+    DISK_TREND_NOTIFY_CHANNELS="ha,yomi": HA iPhone push is live today;
+    yomi fires once the LINE session is restored and
+    BOARD_NOTIFY_YOMI_CHAT is set (decision record:
+    docs/ssot/jobs/kanban/2026-10-05-board-request-notify.yml). Until
+    then the yomi leg just fails soft per tick — cheap and silent.
+  reports: >
+    reports/disk-trend/disk-trend.yml + meta.disk-trend.yml (L1 node
+    'disk-trend' in ssot.reports.yml, fleet child) so the system report
+    shows watcher health. --reports-root points at the served checkout in
+    kanban-sync so the detached worktree stays ff-clean (same pattern as
+    kanban-stats).
+
+components:
+  - scripts/ada/disk-trend-watch.py — sampler + trend + cards + report.
+  - scripts/ada/kanban-sync.sh — new tick line after vcast-auto-health.
+  - scripts/board/board_notify.py — multi-channel comma list.
+  - docs/ssot/infrastructure/ssot.reports.yml — disk-trend L1 node under fleet.
+
+verification:
+  - "python3 scripts/ada/disk-trend-watch.py --selftest -> PASS: synthetic
+    host at 92% growing -> disk-auto-synth-dell-root card in review
+    (priority high), file-channel push fired, trend +13.33 GiB/d ->
+    full in 3.0d, yt-live-media flagged +2.0 GiB/24h."
+  - "70% mount growing 25 GiB/d -> 'fills in ~2.4d' card + push (trend
+    path fires below the 90% instantaneous threshold)."
+  - "re-run on open card -> updates in place, zero extra pushes."
+  - "flat/low history -> card auto-closes to done with slope in note."
+  - "live run on tony-dell: 5/6 hosts reachable (macbook offline),
+    14 mounts trended, history seeded at
+    ~/var/chaba/health/disk-trend.jsonl, 0 alerts at 81%."
+  - "2026-10-06 redispatch: live re-run exposed two probe bugs, both
+    fixed — TimeoutExpired.stdout is bytes under text=True (the
+    isinstance(str) guard dropped it, so a slow du erased the whole
+    sample -> tony-dell reported 'unreachable' on its own host), and
+    ~/.cache du needs ~77s cold > the old 60s cap. Fixes: decode bytes,
+    per-dir du cap 45s, watchlist children-first, SSH timeout 90s.
+    Post-fix live run: 5/6 hosts, 14 mounts, tony-dell sampled locally
+    in ~1s (warm) — and a REAL alert: / at 83%, +7.42 GiB/d -> full in
+    ~2.6d (2.8 GiB vanished overnight). disk-auto-tony-dell-root card
+    landed on the board with this change."
+
+known_limits:
+  - "Push fires only when a card newly opens; if the channel is dead at
+    that moment the push is lost (the board card remains — same
+    best-effort contract as request-sweep)."
+  - "Trend needs >=6h of history — first ticks report 'n/a slope'; fill
+    forecasts become meaningful after half a day of samples."
+  - "du watchlist covers ~/.cache + /var/log; a growth source elsewhere
+    (e.g. ~/CascadeProjects) shows only at mount level until added to
+    DISK_TREND_DU_ROOTS."
+  - "macbook is usually unreachable when closed — mount shows
+    [unreachable] in the report, no card."
+
+followups:
+  - "Watch the first real trend cards after ~24h of samples; tune
+    MIN_SPAN_H / FILL_D if the dub pipeline's bursty growth trips or
+    misses."
+  - "Set BOARD_NOTIFY_YOMI_CHAT + confirm DISK_TREND_NOTIFY_CHANNELS
+    includes yomi once the LINE session is back to make the LINE leg
+    live."

@@ -30,6 +30,10 @@ python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
 python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"
 python3 scripts/ada/gev-auto-health.py || echo "gev-auto-health failed (non-fatal)"
 python3 scripts/ada/vcast-auto-health.py || echo "vcast-auto-health failed (non-fatal)"
+# disk-trend: cards land in this worktree (committed below); reports go to
+# the served checkout so the detached worktree stays ff-clean.
+python3 scripts/ada/disk-trend-watch.py --reports-root "$SRC/reports" \
+    || echo "disk-trend-watch failed (non-fatal)"
 python3 scripts/board/request-sweep.py || echo "request-sweep failed (non-fatal)"
 # L2 'kanban' report node — stats read the live cards in the served
 # checkout; outputs mirror back into $SRC (reports/kanban + web data).

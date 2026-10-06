@@ -24,7 +24,8 @@ break a card write. Returns True when the channel accepted the message.
 CLI:  python3 board_notify.py [--channel ha|yomi|ntfy|file|off] TITLE [BODY]
 
 Env:
-  BOARD_NOTIFY_CHANNEL   ha (default) | yomi | ntfy | file | off
+  BOARD_NOTIFY_CHANNEL   ha (default) | yomi | ntfy | file | off;
+                         comma list ('ha,yomi') fans out to each
   HA_NOTIFY_URL          default http://127.0.0.1:8123
   HA_NOTIFY_SERVICE      default notify/mobile_app_tony_ip
   HA_TOKEN_FILE          default ~/.config/secrets/home-assistant-token.env
@@ -143,18 +144,22 @@ CHANNELS = {
 
 def send(title: str, body: str = "",
          url: str | None = None, channel: str | None = None) -> bool:
-    """One push. channel defaults to BOARD_NOTIFY_CHANNEL / 'ha'.
-    'off' is a silent no-op that returns True (for quiet contexts)."""
+    """One push. channel defaults to BOARD_NOTIFY_CHANNEL / 'ha' and
+    accepts a comma list ('ha,yomi') — fans out to each, True when any
+    channel accepted. 'off' is a silent no-op (for quiet contexts)."""
     chan = (channel or os.environ.get("BOARD_NOTIFY_CHANNEL") or "ha").strip()
     if chan == "off":
         return True
     if url is None:
         url = os.environ.get("BOARD_NOTIFY_CLICK", "/chaba-admin/board")
-    fn = CHANNELS.get(chan)
-    if not fn:
-        print(f"board_notify: unknown channel {chan!r}", file=sys.stderr)
-        return False
-    return fn(title, body, url)
+    ok_any = False
+    for c in [x.strip() for x in chan.split(",") if x.strip()]:
+        fn = CHANNELS.get(c)
+        if not fn:
+            print(f"board_notify: unknown channel {c!r}", file=sys.stderr)
+            continue
+        ok_any = fn(title, body, url) or ok_any
+    return ok_any
 
 
 if __name__ == "__main__":

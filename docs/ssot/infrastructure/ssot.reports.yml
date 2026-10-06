@@ -195,6 +195,20 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
+  - id: disk-trend
+    layer: L1-producer
+    purpose: Per-host df trend — SSH samples to ~/var/chaba/health/disk-trend.jsonl,
+      least-squares slope over 7d window; disk-auto-* kanban cards + push when a
+      mount is >=90% or forecast to fill <=7d; flags top-grower dirs (du watchlist)
+    generator: scripts/ada/disk-trend-watch.py via kanban-sync.timer (15 min)
+    cadence: 1h
+    output: reports/disk-trend
+    artifact_pattern: "disk-trend.yml"
+    meta: reports/disk-trend/meta.disk-trend.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+      - docs/ssot/jobs/infrastructure/2026-10-05-disk-trend-watch.yml
+    children: []
   - id: fleet
     layer: L2-domain
     purpose: Cross-host rollup — delta trend + resource min/max over window
@@ -210,6 +224,7 @@ nodes:
       - audit-hosts/macbook
       - health-monitor
       - host-loads
+      - disk-trend
   # --- Audit domain ---
   - id: audit-suite
     layer: L2-domain
