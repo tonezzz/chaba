@@ -1,0 +1,115 @@
+title: cam-wall CMS page lifecycle — supersede-by-construction + 7d archive retention
+subtitle: >-
+  cam-wall-cms.py now treats each run's publish set as canonical truth:
+  every generated page absent from it gets status:superseded +
+  superseded_by instead of delete, new pages carry meta.supersedes
+  back-links, and superseded docs older than 7d flip to kind:archive.
+  reports-index never surfaces superseded/archived pages.
+icon: camera
+id: 2026-10-05-cam-cms-page-lifecycle
+status: done
+owner: devin-dispatch
+project: chaba
+branch: dispatch/20261005-211715-cam-wall-cms-py-when-regenerat
+started: "2026-10-05"
+completed: "2026-10-05"
+
+context:
+  card: cms-cam-page-compaction
+  prior_state: >
+    Every 15-min regeneration re-published the same cam-* / wall-* keys
+    while legacy forms (raw Thai-keyed slugs, zone-scoped cam-<zone>-*
+    forms, retired cams) accumulated as live-looking pages — ~140 of 313
+    ada-cms-pages docs were cam-generated, and the old code hard-DELETED
+    legacy keys, losing operational history. fresh_for was the bare
+    string "600" — the index stale() parser only understands h/d/m
+    suffixes, so cam pages could never flag ⚠STALE. ada-pi's
+    _cms_reports_index and report-daily-brief each had private index
+    renders that didn't filter lifecycle status.
+
+decisions:
+  - >-
+    Lifecycle model follows the memory schema: supersede = new key
+    replaces old key (status:superseded + superseded_by + supersedes),
+    correct = overwrite in place. Camera pages are operational history —
+    retention is kind:archive, never delete. Archived docs stay
+    queryable in MDDB but drop out of reports-index (kind gate +
+    status filter).
+  - >-
+    Archive age is content age: meta.updated freezes when a page stops
+    being regenerated (the supersede write does not restamp it), so a
+    page superseded for the first time whose last publish was >7d ago
+    archives in the same cycle; freshly-superseded pages wait out the
+    7d retention window.
+  - >-
+    Lane boundary is the zone: sources meta — a doc whose zone: sources
+    don't intersect the running lane's zones is left alone, so the dell
+    and VPS lanes can't supersede each other's pages even though they
+    share the collection and generated_by tag.
+  - >-
+    Revive path: a key back in the publish set is force-rewritten
+    (hash dedup bypassed) with status:active, kind:page and the
+    superseded_*/archived_at markers stripped — a cam returning to the
+    roster cleanly resurrects its page.
+
+deliverables:
+  - >-
+    scripts/cam-wall/cam-wall-cms.py — publish-set lifecycle:
+    collection_docs() paginated listing, supersede_stale_pages() marks
+    every generated doc absent from the current set (mddb_supersede
+    replaces mddb_delete — zero deletes anywhere), supersede_links()
+    builds new->old supersedes from superseded_by back-links,
+    archive_superseded() flips superseded+>7d docs to kind:archive,
+    FRESH_FOR "600"->"1h", revive set force-republishes returned keys,
+    reports-index regenerates when lifecycle marks changed, --dry-run
+    flag (no writes, no notify state, no index write, no detections
+    trim).
+  - >-
+    scripts/lib/cms_index.py — new shared index: paginated collection
+    scan, kind gate (report|page), EXCLUDED_STATUS
+    (superseded/archived/retracted/expired), fresh_for TTL stale flag,
+    one render for all callers.
+  - >-
+    scripts/report-daily-brief.py — regen_reports_index() delegates to
+    lib.cms_index (was a private duplicate render without the status
+    filter or pagination — it silently capped at 200 docs).
+  - >-
+    scripts/ada/cms-audit.py — STUB_STATUS gains superseded (archived
+    pages skip A1 thin check); DEAD_STATUS set excludes
+    superseded/archived/retracted/expired from C1 duplicate-pair and C2
+    staleness warnings — historical pages are supposed to be old.
+  - >-
+    tests/camwall/test_cam_wall_cms.py — FakeMDDB transport covering:
+    empty-zones marks nothing, full lifecycle (supersede + 7d archive +
+    zero deletes + supersedes links on canonical pages), index exclusion
+    of superseded/archived + "1h" stale flag + "600" non-parse.
+
+verify:
+  - "python3 -m unittest discover -s tests/camwall -v — 3/3 pass"
+  - "python3 -m py_compile on all touched files — clean"
+  - >-
+    Simulated live run (real manifests + backup ada-cms-pages export
+    through FakeMDDB): 'walls: 8 pages + 38 cams + index ok · superseded
+    44 archived 0' — 88 lang-docs superseded, 0 deletes, reports-index
+    contains no superseded/archived key, canonical pages carry
+    supersedes to their legacy keys.
+  - >-
+    Live --dry-run deferred: MDDB (100.74.146.0:11023) was refusing
+    connections at verify time (host pings; service down). Re-run
+    'python3 scripts/cam-wall/cam-wall-cms.py --dry-run' post-merge for
+    the live readout.
+
+notes:
+  - >-
+    First live run after merge will supersede ~44 legacy keys (88 docs
+    incl. Thai variants) in one sweep — expected one-time compaction,
+    thereafter steady-state churn is ~0.
+  - >-
+    Steady-state cost: each 15-min tick adds one paginated collection
+    scan (~1-2 calls at current size) plus GETs only for keys that left
+    the publish set.
+  - >-
+    ada-pi's tool_runner._cms_reports_index still filters only by kind —
+    superseded kind:page docs in the 7d retention window can surface via
+    that path until ada-pi adopts the same EXCLUDED_STATUS gate.
+    in-repo regens (brief + cam-wall) are clean.
