@@ -12,11 +12,13 @@ secrets:
   - "~/.config/secrets/backup-age.key — age PRIVATE key; also placed at the
      same path on each recovery host (restore needs it there). NEVER in git."
 requires:
-  - "ssh edges idc03 -> {idc02, idc01, tony-dell-m2m} (dedicated keys in
-     ~/.ssh/id_idc02, ~/.ssh/id_idc01, ~/.ssh/id_tony_dell)"
-  - "age package on every recovery host"
+  - "ssh:idc02 — dedicated key ~/.ssh/id_idc02"
+  - "ssh:idc01 — dedicated key ~/.ssh/id_idc01"
+  - "ssh:tony-dell-m2m — dedicated key ~/.ssh/id_tony_dell"
+  - "tool:age — encrypts the tarball"
+  - "tool:age on each recovery host — needed for restore"
 state:
-  - "outbound only — writes ~/secrets-backup/ on targets; keeps 14 days"
+  - "~/.config/secrets — source set must exist"
 restore: >-
   On a recovery host: age -d -i ~/.config/secrets/backup-age.key
   ~/secrets-backup/secrets-<stamp>.tar.age | tar xz -C ~/
