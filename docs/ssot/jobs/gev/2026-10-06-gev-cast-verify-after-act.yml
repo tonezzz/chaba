@@ -1,0 +1,153 @@
+title: GEV cast verify-after-act — state-read contract + displaced path + apps-v6 case
+subtitle: >
+  Dispatch of kanban card gev-screens: made "cast ok != screen showing it"
+  into a repeatable live check (gev-cast-verify.mjs) that casts /apps/gev/
+  to a real vcast display and requires a state read before passing;
+  exercised the displaced-content path (camwall over GEV) and the shared
+  /apps/sw.js apps-v6 stale-cache self-heal; wrote the displaced-content
+  tool contract into a runbook.
+icon: target
+
+planning:
+  goal: >
+    Prove and codify that a GEV cast is only "done" after a state read —
+    relay registry state (vcast_list surface) plus the gev-gemini remote
+    registry — and document the displaced-content contract (ada-pi feafff7)
+    and the apps-v6 stale-cache behavior.
+  scope: >
+    stacks/web/public/apps/{gev,vcast}/, stacks/web/input-bridge
+    (gev-cast-verify.mjs check script), stacks/tony-dell/gev-gemini
+    (/command/health remote registry), docs on the displaced-content tool
+    contract (docs/runbooks/vcast-gev-verify-after-act.md). The ada-pi
+    tool_runner side of the contract (feafff7) is a different repo —
+    verified here via the ground truths it reads, not re-implemented.
+  success_criteria:
+    - A repeatable check exits 0 only when the screen's OWN state reports
+      prove the GEV page rendered (state=nav + pN:frame-ok + gev remote)
+    - "Displaced-content path exercised live: camwall nav over GEV flips
+      both ground truths"
+    - Split/PiP remediation exercised live
+    - /apps/sw.js purge + vcast-* namespace checks wired into the script
+  risks:
+    - Lab screens 6-9 shared with ada-pi live scenarios — cast to a screen
+      marked connected+idle and restore to idle afterwards (done)
+    - GEV is heavy under SwiftShader — frame-ok polls need real timeouts
+  resources:
+    - input-bridge relay via Caddy https://tony-dell.taila0626a.ts.net/api/input-bridge
+    - gev-gemini cmd relay /apps/gev-cmd/command/health (tony-dell :8790)
+    - vcast-real-6 lab screen (headless Chromium, idc02)
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: gev-screens
+      file: docs/ssot/kanban/cards/gev-screens.yml
+    - label: verify-after-act
+      file: docs/ssot/kanban/cards/verify-after-act.yml
+
+processing:
+  status: done
+  started_at: "2026-10-06 10:15 +07"
+  steps:
+    - id: 1
+      label: Recon — relay protocol + state surface
+      status: done
+      notes: >
+        server.mjs: /displays returns per-screen {state, state_detail,
+        panes}; display index.html sendState("nav", "P:url") + paneSummary
+        "pN:frame-ok" (iframe onload — render proof). vcast nav() injects
+        screen=N&pane=P + _vcast cache-buster into same-origin iframe srcs.
+        gev-gemini bridge.py keeps passive remotes keyed {screen,pane};
+        GET /command/health lists them via /apps/gev-cmd/. Prior tony-omen
+        dispatch (23:15) produced no repo artifacts — re-run.
+    - id: 2
+      label: Live exercise on screen 6 (vcast-real)
+      status: done
+      notes: >
+        cast nav /apps/gev/ -> /displays state=nav
+        "0:.../apps/gev/ | p0:frame-ok" on first poll; gev-cmd health
+        remotes [{screen:6,pane:0}]. snap-request -> /frame:
+        error=uncapturable-iframe, detail=live iframe src incl.
+        screen=6&pane=0 (expected nav-mode contract). camwall nav ->
+        state flips to camwall + remote drops (displacement, both ground
+        truths). layout 2/pip + per-pane nav -> panes=2,
+        p0:frame-ok p1:frame-ok, remote {6,0} re-registers. stop -> idle.
+    - id: 3
+      label: gev-cast-verify.mjs check script
+      status: done
+      notes: >
+        stacks/web/input-bridge/gev-cast-verify.mjs — same conventions as
+        vcast-cast-check/vcast-real (plain node, fetch, PASS/FAIL/WARN,
+        exit code). 14 checks live 2026-10-06: screen connected, sw.js
+        purge present + no fetch listener, vcast-* cache namespace, GEV
+        state read (both ground truths), snapshot contract, displaced
+        path, pip remediation, idle restore. Caught + reported the
+        vcast/sw.js v2-deployed vs v3-repo drift as WARN.
+    - id: 4
+      label: Docs — runbook + registry + SSOT touch-ups
+      status: done
+      notes: >
+        docs/runbooks/vcast-gev-verify-after-act.md (verified 2026-10-06):
+        ground-truth table, snapshot contract for nav casts, displaced-
+        content contract, apps-v6 case, how to run the check. Registered
+        in ssot.runbooks.yml; Testing sections of ssot.apps.vcast.yml and
+        ssot.apps.gev.yml point at the script.
+  decisions:
+    - label: Check script targets the live relay, not a loopback stub
+      rationale: >
+        verify-after-act is about real rendering — frame-ok and the gev
+        remote only exist when a real browser displays the page. Loopback
+        checks (vcast-cast-check.mjs) already cover relay mechanics; this
+        one is deliberately a live-read harness like vcast-real.mjs.
+      alternatives_considered: >
+        headless-chromium self-spawn (heavy, needs playwright — duplicates
+        vcast-real.mjs's job); sim display (acks but never renders — would
+        pass vacuously, exactly the failure mode the card exists to kill).
+    - label: uncapturable-iframe accepted as snapshot evidence
+      rationale: >
+        Cross-origin iframe pixels can't be read — the contract is that
+        the error's detail carries the live iframe src (with screen/pane
+        params), which is the evidence available for nav casts.
+      alternatives_considered: treat as FAIL (would fail every nav cast).
+
+changes:
+  - file: stacks/web/input-bridge/gev-cast-verify.mjs
+    summary: New live verify-after-act check — cast GEV, require state reads, displace, remediate, restore; sw.js purge + drift checks.
+  - file: docs/runbooks/vcast-gev-verify-after-act.md
+    summary: Runbook — ground truths, snapshot contract, displaced-content contract (feafff7), apps-v6 stale-cache case.
+  - file: docs/ssot/ssot.runbooks.yml
+    summary: Registered vcast-gev-verify-after-act (verified 2026-10-06).
+  - file: docs/ssot/apps/ssot.apps.vcast.yml
+    summary: Testing section — added gev-cast-verify.mjs line.
+  - file: docs/ssot/apps/ssot.apps.gev.yml
+    summary: Deployment section — remote (screen,pane) registration + verify-after-act requirement for casts.
+
+followup:
+  verification:
+    - "node stacks/web/input-bridge/gev-cast-verify.mjs -> 14/14 PASS, exit 0 (ran twice live on screen 6)"
+    - "GET /displays post-run: screen 6 back to idle, panes=1"
+    - "GET /apps/gev-cmd/command/health: no stale remotes after stop"
+  rollback_plan:
+    - New files only; revert the commit. No live state mutated beyond a restored lab screen.
+  handoff:
+    - Deploy drift to resolve: live serves vcast sw.js CACHE_NAME=vcast-v2 while master has the v3 rework (2026-10-06 sw-hls-audit). Live checkout needs a pull — flagged on the gev-screens card; not deployed here per dispatch rules.
+    - ada-pi side already shipped (feafff7): cast_to_screen displaced note + split/PiP suggestion keys off these same reads.
+  deferred:
+    - Per-client apps-v6 purge proof needs a browser that ran a caching generation — the self-heal code path is verified by source + deploy diff, the end-to-end client purge is hard to stage from a fresh context.
+
+report:
+  status: done
+  completed_at: "2026-10-06 11:00 +07"
+  summary: >
+    Verify-after-act for GEV casts is now executable and documented.
+    gev-cast-verify.mjs exercises the full contract live: cast /apps/gev/
+    to a connected vcast screen, require the relay's own state read
+    (state=nav + p0:frame-ok) AND the gev-gemini remote registration
+    ({screen,pane}) before passing, accept the nav-mode snapshot contract
+    (uncapturable-iframe whose detail is the live iframe src), displace
+    with camwall (both ground truths flip — this is what ada-pi turns
+    into the displaced note + split/PiP suggestion), remediate with a
+    real pip layout, restore to idle. Runbook
+    docs/runbooks/vcast-gev-verify-after-act.md documents the
+    displaced-content tool contract and the apps-v6 self-heal. One real
+    finding: deployed /apps/vcast/sw.js is v2; repo has the v3 rework —
+    the live checkout is behind master.

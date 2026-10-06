@@ -129,6 +129,20 @@ runbooks:
       - stacks/web/Caddyfile
     note: Migration executed; gemini-live renamed to rview-live on 2026-08-25 — paths in the doc are historical.
 
+  vcast-gev-verify-after-act:
+    path: docs/runbooks/vcast-gev-verify-after-act.md
+    type: markdown
+    status: verified
+    last_verified: 2026-10-06
+    scope: vcast displays (input-bridge idc01) + /apps/gev/ nav casts + ada-pi displaced-content contract (feafff7) + shared /apps/sw.js apps-* purge
+    related:
+      - stacks/web/input-bridge/gev-cast-verify.mjs
+      - stacks/web/input-bridge/vcast-cast-check.mjs
+      - stacks/tony-dell/gev-gemini/bridge.py
+      - docs/ssot/apps/ssot.apps.vcast.yml
+      - docs/ssot/jobs/gev/2026-10-06-gev-cast-verify-after-act.yml
+    note: Live-exercised on screen 6 (vcast-real@idc02) — cast->state-read->displace->PiP-remediate->restore, 14/14 PASS via gev-cast-verify.mjs. Caught deployed vcast/sw.js v2 vs repo v3 drift.
+
   # ── Tier 2: SSOT-embedded runbooks ────────────────────────────────────────
   home-assistant-howto:
     path: docs/ssot/infrastructure/ssot.home-assistant.howto.yml
