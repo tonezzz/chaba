@@ -7,7 +7,7 @@ note: 'Today every native-res pull is serial: activate channel -> ~18s attach + 
   DVR costs ~90s+. Idea: bind several channels to panes once, take ONE monitor-composite native shot, split into
   tiles. Per-pane OSD icon x-position depends on the active layout (single ~1599, 4-pane-focus ~1042) — recalibrate
   channels.json per layout. See docs/ssot/ssot.learning.vms-native-snapshot.2026-10-03.yml.'
-updated: 2026-10-06 11:18
+updated: 2026-10-06 13:08
 spec: 'VMS native capture — one-shot multi-pane composite: today each native-res pull is serial (activate channel
   -> ~18s attach + BMP->PNG; a 5-cam DVR wall refresh costs ~90s+). Bind several channels to panes once, take ONE
   monitor-composite native shot, split into tiles. Spec scope: implement in the vms-snap stack (scripts/cam-wall/
@@ -16,10 +16,12 @@ spec: 'VMS native capture — one-shot multi-pane composite: today each native-r
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   button: ▶ Start
   runner: tony-dell
   task_id: 20261006-111612-vms-native-capture-one-shot-mu
+  result: 20261006-111612-vms-native-capture-one-shot-mu finished (inactive) — see `devin-dispatch logs 20261006-111612-vms-native-capture-one-shot-mu`
+  merge_pending: true
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -46,6 +48,8 @@ comms:
 - at: 2026-10-06 11:18
   from: devin
   text: 'starting: exploring vms-snap stack + puller; checking mn01 reachability for live UI probing'
+- at: 2026-10-06 13:08
+  from: chaba
+  text: run finished (inactive) → review
 claim:
-  session: 20261006-111612-vms-native-capture-one-shot-mu
   since: 2026-10-06 11:16
