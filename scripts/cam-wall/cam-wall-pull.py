@@ -22,6 +22,7 @@ the wall; a down zone simply keeps its last thumbs with stale mtimes.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -29,6 +30,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -291,6 +293,14 @@ THUMB_W = int(os.environ.get("CAMWALL_THUMB_W", "960"))
 # Cap the serial section per zone so a degraded VMS can't push one cycle
 # past TimeoutStartSec — skipped cams keep their last thumbs.
 VMS_BUDGET = float(os.environ.get("CAMWALL_VMS_BUDGET", "180"))
+# One-shot multi-pane composite: one /composite call per DVR group binds
+# every channel to a monitor pane once and captures all panes in a single
+# cycle — ~3s/cam once bound vs ~18s serial attach. Pane bindings persist,
+# so steady-state refreshes stay cheap; a failed composite call falls back
+# to the serial per-channel path. CAMWALL_VMS_COMPOSITE=0 disables.
+VMS_COMPOSITE = os.environ.get("CAMWALL_VMS_COMPOSITE", "1") != "0"
+VMS_COMPOSITE_TIMEOUT = float(
+    os.environ.get("CAMWALL_VMS_COMPOSITE_TIMEOUT", "240"))
 
 
 def _yolo_session():
@@ -593,11 +603,14 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     if not any(e.startswith("thumb_") for e in effects):
         effects = [*effects, f"thumb_w:{THUMB_W}"]
 
-    def one(cam: tuple) -> dict:
+    def one(cam: tuple, data: bytes | None = None, err: str | None = None,
+            via: str | None = None) -> dict:
         label, kind, key = cam[0], cam[1], cam[2]
         alts = tuple(cam[3:])
         out = {"key": slug(label), "label": LABELS.get(slug(label), label),
                "ts": 0, "ok": False}
+        if via:
+            out["via"] = via
         # canonical camera identity — vms channels carry DVR device+channel
         # so the same physical cam shares one CMS page no matter how many
         # walls list it (zone-a / vms-noble-a both pull "1. Road In").
@@ -607,7 +620,10 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
                 out["dev"] = dev
                 out["ch"] = key
         try:
-            data = pull_cam(kind, key, alts)
+            if data is None:
+                if err:                    # composite already reported a
+                    raise ValueError(err)  # per-cam failure — don't re-pull
+                data = pull_cam(kind, key, alts)
             if len(data) < 500:
                 raise ValueError("short frame")
             if effects:
@@ -639,7 +655,56 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     with ThreadPoolExecutor(max_workers=4) as pool:
         cams += list(pool.map(one, fast))
     t_vms = time.time()
-    for cam in vms:
+    # One-shot composite per DVR device: a single /composite call binds the
+    # group's channels to monitor panes once and captures all panes in one
+    # cycle (bindings persist — warm refreshes cost ~capture-only). Any
+    # call-level failure pushes the whole group back to the serial path.
+    pending: list[tuple] = []
+    if VMS_COMPOSITE:
+        groups: dict[str, list[tuple]] = {}
+        for cam in vms:
+            dev = vms_device(cam[2])
+            (groups.setdefault(dev, []).append(cam) if dev
+             else pending.append(cam))
+        for dev, members in groups.items():
+            if len(members) < 2 or time.time() - t_vms > VMS_BUDGET:
+                pending.extend(members)
+                continue
+            # a composite call may not outlive the zone's VMS budget —
+            # with the 240s default one dead-DVR group would otherwise eat
+            # all 180s before the serial fallback ever ran (2026-10-06).
+            ctimeout = min(VMS_COMPOSITE_TIMEOUT,
+                           VMS_BUDGET - (time.time() - t_vms))
+            if ctimeout < 30:
+                pending.extend(members)
+                continue
+            url = (f"{VMS_SNAP}/composite?chs=" + ",".join(
+                urllib.parse.quote(c[2]) for c in members))
+            try:
+                _, zdata = http_get(url, ctimeout)
+                zf = zipfile.ZipFile(io.BytesIO(zdata))
+                zman = {c["i"]: c for c in
+                        json.loads(zf.read("_manifest.json"))["cams"]}
+            except Exception as exc:
+                print(f"{zone}: composite {dev} failed "
+                      f"({str(exc)[:100]}) — serial fallback",
+                      file=sys.stderr)
+                pending.extend(members)
+                continue
+            for i, cam in enumerate(members):
+                entry = zman.get(i) or {}
+                data = None
+                if entry.get("ok"):
+                    try:
+                        data = zf.read(f"{i}.png")
+                    except KeyError:
+                        entry["err"] = "composite: member missing from zip"
+                cams.append(one(cam, data=data,
+                                err=entry.get("err") or "composite: no frame",
+                                via="composite"))
+    else:
+        pending = list(vms)
+    for cam in pending:
         if time.time() - t_vms > VMS_BUDGET:
             out = {"key": slug(cam[0]), "label": LABELS.get(slug(cam[0]), cam[0]),
                    "ts": 0, "ok": False, "err": "skipped: vms budget"}

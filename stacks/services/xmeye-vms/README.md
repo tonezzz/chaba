@@ -73,10 +73,24 @@ tailscale IP, port **8377** — same never-LAN rule as VNC). Ada's
     GET /health              -> {"ok": true}
     GET /channels            -> {"channels": [...]}
     GET /snap?ch=<name>      -> image/png  (404 JSON + channel list on a miss)
+    GET /composite?chs=a,b,c[&native=1][&layout=4|9]
+                             -> application/zip of "<i>.png" + _manifest.json
 
 Per request it clicks monitor pane 1, double-clicks the channel row in the
 device tree via xdotool, waits ~9s for the cloud-P2P stream, captures :99
 with xwd, crops the pane, and encodes PNG in pure Python (no PIL/ffmpeg).
+
+`/composite` is the multi-pane one-shot: it binds each requested channel to
+a monitor pane once (bindings persist per pane index across calls and
+layout switches), verifies each pane shows *moving* video, then captures
+every pane in the same cycle — per-pane context-menu Snapshot -> native BMP
+(native=1, ~3-5s/pane once bound) or a single xwd split into tiles
+(native=0, grid res). cam-wall-pull.py groups a zone's vms cams by DVR
+device and calls this instead of serial /snap; a call-level failure falls
+back to serial, and `CAMWALL_VMS_COMPOSITE=0` disables it entirely.
+Offline channels (red-X rows) and slow cold attaches (P2P serializes at
+the DVR — first bind of N panes can take ~90-120s) fail per-cam in the
+manifest, so keep the serial budget intact as fallback.
 
 **Calibration**: channel rows live in `channels.json` as `{name: {x, y}}`
 screen coordinates. If the device tree layout changes (new DVR, group
