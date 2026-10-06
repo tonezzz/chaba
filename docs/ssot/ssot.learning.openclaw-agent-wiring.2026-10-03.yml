@@ -47,14 +47,24 @@ sections:
           openclaw's saved openrouter:manual profile kept the old one —
           auth profile needs re-pasting whenever the source rotates.
           Verify the real key with /api/v1/auth/key before suspecting config.
-      - label: GhostRoute writes unprefixed fallback ids
+      - label: GhostRoute writes unprefixed fallback ids — TWO code paths
         text: |
           ghostroute calls format_for_openclaw(with_routing_prefix=False)
           for fallbacks, producing thinkingmachines/inkling:free etc.
           OpenClaw 2026.9.6 requires openrouter/ prefix on ALL refs —
-          model_not_found otherwise. Patched editable pipx install at
-          ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py;
+          model_not_found otherwise. Patching cli.py alone is NOT enough:
+          watcher.py (the rotation path — the one firing constantly)
+          rebuilds fallbacks with its own unprefixed calls. Patched both
+          in the editable pipx install at
+          ~/.openclaw/workspace/skills/ghost-route/ghostroute/;
           upstream PR to kittimasak/GhostRoute still owed.
+      - label: Scheduled jobs should not need correct tool args
+        text: |
+          Free-tier models intermittently fumble MCP call schemas — the
+          nightly digest agent turn got 'schema errors' then wandered to a
+          stale /tmp/bltest test DB. Fix: deterministic command job
+          (scripts/ops-digest.py, zero-arg) announced to telegram instead
+          of an LLM fetching its own data.
       - label: Free-tier needs the fallback chain, not a single model
         text: |
           Ranked primary (ling-3.0-flash-sante) can 429/401 while
