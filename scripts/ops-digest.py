@@ -19,7 +19,8 @@ MDDB_URL = os.environ.get(
 ).rstrip("/")
 COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 WINDOW_H = int(os.environ.get("OPS_WINDOW_H", "24"))
-FLAGGED = {"tool_storm", "actuation_cap", "confirm_strip", "voiceprint_drift"}
+FLAGGED = {"tool_storm", "actuation_cap", "confirm_strip", "voiceprint_drift",
+           "embed_queue_saturated", "embed_queue_drops"}
 
 
 def fetch() -> list[dict]:

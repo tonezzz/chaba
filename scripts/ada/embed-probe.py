@@ -6,13 +6,23 @@ the OpenRouter key hit its spend limit (403) while the Gemini fallback
 429'd — the vector index was loaded and healthy, only query embedding
 was dead, so nothing noticed until a manual benchmark.
 
-State: ~/.local/share/ada/embed-probe.state ("up" | "down")
+Also runs the embed-queue saturation tripwire each run: reads the
+`queue` block from /v1/vector-stats and emits ops-events when depth
+crosses EMBED_QUEUE_WARN_DEPTH / EMBED_QUEUE_CRIT_DEPTH, when the
+queue drains again, and (rate-limited) whenever droppedTotal grows —
+each dropped job is a doc with no vector until reindexed. Added after
+the 2026-10-05 incident: queue pinned at 4000/4000 for ~15h dropped
+3,160 embed jobs silently (card mddb-embed-queue-recovery).
+
+State: ~/.local/share/ada/embed-probe.state ("up" | "down"),
+       ~/.local/share/ada/embed-queue.state (JSON: level/dropped/alert ts)
 Usage: python3 embed-probe.py          # probe once (systemd oneshot)
 """
 import json
 import os
 import subprocess
 import sys
+import time
 import urllib.request
 from datetime import datetime, timezone
 
@@ -22,7 +32,14 @@ PROBE_COLLECTION = "ada-ha-bank-general"
 PROBE_QUERY = "ada memory recall probe"
 EVENTS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 STATE = os.path.expanduser("~/.local/share/ada/embed-probe.state")
+QUEUE_STATE = os.path.expanduser("~/.local/share/ada/embed-queue.state")
 REINDEX_SERVICE = os.environ.get("MDDB_REINDEX_SERVICE", "mddb-vector-reindex.service")
+# Queue tripwire thresholds. Queue size is 4000 (MDDB_EMBEDDING_QUEUE_SIZE);
+# log-shipper bursts of ~2000/hr are routine, so warn below that and
+# critical near the cap where drops start.
+QUEUE_WARN_DEPTH = int(os.environ.get("EMBED_QUEUE_WARN_DEPTH", "500"))
+QUEUE_CRIT_DEPTH = int(os.environ.get("EMBED_QUEUE_CRIT_DEPTH", "3000"))
+QUEUE_DROP_ALERT_MIN_S = int(os.environ.get("EMBED_QUEUE_DROP_ALERT_MIN_S", "1800"))
 
 
 def _post(path: str, payload: dict, timeout: int = 30) -> dict:
@@ -30,6 +47,10 @@ def _post(path: str, payload: dict, timeout: int = 30) -> dict:
         MDDB + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+
+
+def _get(path: str, timeout: int = 30) -> dict:
+    return json.loads(urllib.request.urlopen(MDDB + path, timeout=timeout).read())
 
 
 def _emit(ev_type: str, detail: str) -> None:
@@ -57,6 +78,61 @@ def _kick_reindex(why: str) -> None:
         print(f"reindex triggered ({why})")
     except Exception as exc:
         print(f"reindex trigger failed: {exc}", file=sys.stderr)
+
+
+def check_queue() -> str:
+    """Embed-queue saturation tripwire. Returns a short "queue ..." note for
+    the probe event detail; emits ops-events on transitions:
+      embed_queue_saturated — depth crossed warn/crit threshold (rising edge)
+      embed_queue_drops     — droppedTotal grew since last run (rate-limited)
+      embed_queue_drained   — depth fell back under the warn threshold
+    """
+    try:
+        q = _get("/v1/vector-stats", timeout=15).get("queue") or {}
+    except Exception as exc:
+        print(f"queue stats unavailable: {exc}", file=sys.stderr)
+        return ""
+    depth = int(q.get("depth", -1))
+    dropped = int(q.get("dropped", 0))
+    size = int(q.get("size", 0))
+    note = f"queue depth={depth}/{size} dropped={dropped}"
+    print(note)
+    if depth < 0:
+        return note
+
+    try:
+        prev = json.loads(open(QUEUE_STATE).read())
+    except Exception:
+        prev = {}
+    prev_level = prev.get("level", "ok")
+    prev_dropped = int(prev.get("dropped", 0))
+    last_drop_alert = float(prev.get("last_drop_alert", 0))
+    now = time.time()
+
+    level = "crit" if depth >= QUEUE_CRIT_DEPTH else (
+        "warn" if depth >= QUEUE_WARN_DEPTH else "ok")
+
+    if dropped > prev_dropped and now - last_drop_alert >= QUEUE_DROP_ALERT_MIN_S:
+        _emit("embed_queue_drops",
+              f"embed queue droppedTotal {prev_dropped}->{dropped} "
+              f"(+{dropped - prev_dropped} docs lost vectors); {note} — "
+              f"run {REINDEX_SERVICE} after the queue drains to backfill")
+        last_drop_alert = now
+
+    if level != prev_level:
+        if level == "ok":
+            _emit("embed_queue_drained",
+                  f"embed queue drained — {note} (was {prev_level})")
+        else:
+            _emit("embed_queue_saturated",
+                  f"embed queue {level.upper()} — {note} "
+                  f"(warn>={QUEUE_WARN_DEPTH} crit>={QUEUE_CRIT_DEPTH})")
+
+    os.makedirs(os.path.dirname(QUEUE_STATE), exist_ok=True)
+    open(QUEUE_STATE, "w").write(json.dumps(
+        {"level": level, "dropped": dropped,
+         "last_drop_alert": last_drop_alert}))
+    return note
 
 
 def probe() -> tuple[bool, str, int, bool]:
@@ -87,6 +163,9 @@ def probe() -> tuple[bool, str, int, bool]:
 
 def main() -> int:
     ok, detail, index_size, wiped = probe()
+    qnote = check_queue()
+    if qnote:
+        detail = f"{detail} | {qnote}"
     try:
         prev = open(STATE).read().strip()
     except OSError:

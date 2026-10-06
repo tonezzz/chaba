@@ -121,6 +121,12 @@ tony-dell:
     related_units:
       - mddb.service
       - gemini-ollama-proxy.service
+      - mddb-embed-probe.timer  # idc03, 15min — vector-search canary + embed-queue
+        # saturation tripwire (queue.depth/dropped from /v1/vector-stats ->
+        # ada-ops events). Thresholds EMBED_QUEUE_WARN_DEPTH=500 /
+        # EMBED_QUEUE_CRIT_DEPTH=3000. See docs/ssot/jobs/infrastructure/
+        # 2026-10-06-mddb-embed-queue-recovery.yml
+      - mddb-vector-reindex.service  # idc03, oneshot — re-embed sweep after drops/outage
     status: replication leader on idc01 (follower on idc02 since 2026-10-05; tony-dell follower stopped, kept as seeded standby)
     replication:
       role: leader
