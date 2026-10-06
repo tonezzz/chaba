@@ -1,0 +1,50 @@
+name: Camwall smoke
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "scripts/cam-wall/**"
+      - ".github/workflows/camwall-smoke.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "scripts/cam-wall/**"
+      - ".github/workflows/camwall-smoke.yml"
+
+jobs:
+  camwall-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: deps
+        run: pip install pyyaml
+      - name: Fixture zone manifest
+        run: |
+          mkdir -p /tmp/cwtest/data/testzone
+          python3 - <<'PY'
+          import json, time
+          mf = {"zone": "testzone", "updated": int(time.time()),
+                "cams": [
+                    {"key": "cam-one", "label": "Cam One", "ok": True,
+                     "ts": int(time.time()) - 30},
+                    {"key": "cam-two", "label": "Cam Two", "ok": False,
+                     "ts": 0, "err": "ffmpeg frame failed: [x] 404 Not Found"},
+                ]}
+          open("/tmp/cwtest/data/testzone/manifest-testzone.json",
+               "w").write(json.dumps(mf))
+          PY
+      # Runs the full render path (zone_cls, cam_page, supersede_links,
+      # index) with all network endpoints dead — the point is catching
+      # NameError/broken-refs like the zones.yml refactor scars, not
+      # correctness of MDDB output.
+      - name: cam-wall-cms --dry-run
+        working-directory: scripts/cam-wall
+        env:
+          CAMWALL_DATA: /tmp/cwtest/data
+          MDDB_BASE_URL: http://127.0.0.1:1/v1
+          VCAST_API: http://127.0.0.1:1
+        run: python3 cam-wall-cms.py --dry-run
