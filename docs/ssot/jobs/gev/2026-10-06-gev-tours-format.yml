@@ -1,0 +1,158 @@
+title: GEV tours — format + runner + flagship route via the /command relay
+subtitle: >
+  Dispatch of kanban card gev-tours (spec'd HELD — gods-eye-view repo not
+  dispatchable). Key unlock: bridge.py already exposes
+  POST /apps/gev-cmd/command pushing function_call frames to registered
+  GEV remotes with tool_response collection, and fly_to_location honors
+  waitForArrival — so the entire tour capability lives in chaba as a
+  runner script and needs zero app-repo changes. Defined the tour JSON
+  format (ordered waypoints locationId|query|lat/lon, dwell_s, narration
+  cues -> annotate_map labels), implemented gev-tour.mjs, authored the
+  world-landmarks flagship tour, and played it live on vcast-real-6:
+  7/7 checkpoints reached in order, 70.5s.
+icon: route
+
+planning:
+  goal: >
+    Give GEV a defined, replayable tour/flyover capability: a tour file
+    format, one flagship route executed end-to-end, and a checkpoint
+    report a scenario (gev-scenarios) can verify for ordered playback.
+  scope: >
+    stacks/web/input-bridge (gev-tour.mjs runner, gev-tour-selftest.mjs,
+    tours/*.json), docs/runbooks/gev-tours.md, SSOT registry entries.
+    Explicitly NOT touched: ~/gods-eye-view (held — no pushable remote,
+    not in dispatch-repos.conf; unnecessary anyway since /command drives
+    the existing tool surface).
+  success_criteria:
+    - Tour format covers ordered waypoints (locationId | query | lat/lon),
+      per-stop dwell, narration cues
+    - Runner reports checkpoints reached in order (machine-readable)
+    - One flagship route plays to completion on a real display
+    - Contract verifiable without a display (stub-relay selftest)
+  risks:
+    - Bridge wait cap is 10s — longer flights need the view-state poll
+      fallback (implemented — flying->settled flags + coord_match)
+    - Narration is a visual cue (map label), not TTS — voice narration
+      would need a Gemini turn on a voice client, out of scope
+  resources:
+    - gev-gemini cmd relay /apps/gev-cmd/command (tony-dell :8790)
+    - vcast-real-6 lab display (relay screen 1) for the live run
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: gev-tours
+      file: docs/ssot/kanban/cards/gev-tours.yml
+    - label: gev-scenarios
+      file: docs/ssot/kanban/cards/gev-scenarios.yml
+
+processing:
+  status: done
+  started_at: "2026-10-06 17:30 +07"
+  steps:
+    - id: 1
+      label: Format + runner + selftest
+      status: done
+      notes: >
+        gev-tour.mjs: validates tour JSON, requires a matching GEV remote
+        before driving (honest refuse), per-stop fly_to_location
+        waitForArrival with 10s relay window, view-state poll fallback to
+        arrival_timeout_s, annotate_map narration labels on arrival,
+        dwell, checkpoint report with seq/reached_at/verification per stop,
+        reached_in_order + ok flags, exit code. Flags: --dry-run,
+        --dwell-scale, --arrival-timeout, --stop-on-fail, --report, --json.
+        Selftest caught a real bug class: spawnSync blocks the event loop —
+        stub must be driven with async spawn.
+    - id: 2
+      label: Flagship tour — world-landmarks
+      status: done
+      notes: >
+        tours/world-landmarks.json — 7 stops exercising all three target
+        forms: query (Bangkok, Eiffel Tower), locationId (dubai, london,
+        nyc), lat/lon (Golden Gate 37.8199,-122.4783 close/rangeM 5000),
+        plus a non-flight zoom_to_globe finale (checkpoints on delivery).
+    - id: 3
+      label: Live run — vcast-real-6
+      status: done
+      notes: >
+        Cast /apps/gev/ to relay screen 1 (vcast-real-6), remote
+        registered {screen:1,pane:0}, ran the tour --dwell-scale 0.5:
+        7/7 checkpoints in order, all fly stops verified via tool_response,
+        70.5s wall, screen restored to idle. Report artifact:
+        reports/gev-tour-world-landmarks-20261006.json.
+    - id: 4
+      label: Docs — runbook + registry + app SSOT
+      status: done
+      notes: >
+        docs/runbooks/gev-tours.md (format table, checkpoint contract,
+        run + author instructions), registered in ssot.runbooks.yml,
+        Testing entry in ssot.apps.gev.yml.
+
+decisions:
+  - label: Tour runner lives in chaba, drives the /command relay
+    rationale: >
+      The app repo is held (no pushable remote, not whitelisted), and
+      nothing in the app needs to change — the relay already reaches every
+      tool with response collection. A runner in chaba also means tours
+      are dispatchable NOW and the same file drives any display.
+    alternatives_considered: >
+      in-app tour controller (blocked by the hold; adds a second playback
+      engine); fly_route cinematic dollies (needs a drawn route
+      annotation and gives no per-stop dwell/narration semantics).
+  - label: Narration cue = annotate_map label + report text
+    rationale: >
+      annotate_map type=label draws the cue on the 3D map at the stop
+      anchor; the full cue text is preserved on the checkpoint record so
+      a scenario or a later TTS path can consume it.
+    alternatives_considered: >
+      injecting text turns into a Gemini voice session (couples tour
+      playback to a live paid session and an audio path that is not what
+      a remote display is for).
+
+changes:
+  - file: stacks/web/input-bridge/gev-tour.mjs
+    summary: Tour runner — format validation, remote preflight, sequential stop execution with arrival verification (tool_response / view_state / coord_match), narration via annotate_map, checkpoint report + exit code.
+  - file: stacks/web/input-bridge/tours/world-landmarks.json
+    summary: Flagship route — Bangkok -> Dubai -> London -> Eiffel Tower -> NYC -> Golden Gate -> zoom_to_globe; exercises query/locationId/lat-lon + a non-flight stop.
+  - file: stacks/web/input-bridge/gev-tour-selftest.mjs
+    summary: Stub-relay test suite — 24 checks over happy/stuck/no-remote/dry-run cases; asserts ordered checkpoints, monotonic reached_at, honest failure, refusal without a remote.
+  - file: docs/runbooks/gev-tours.md
+    summary: Runbook — tour format table, checkpoint contract for scenarios, run/author instructions.
+  - file: docs/ssot/ssot.runbooks.yml
+    summary: Registered gev-tours (verified 2026-10-06).
+  - file: docs/ssot/apps/ssot.apps.gev.yml
+    summary: Testing section — tour playback check entry.
+  - file: reports/gev-tour-world-landmarks-20261006.json
+    summary: Live-run report artifact — 7/7 checkpoints in order, 70.5s.
+
+followup:
+  verification:
+    - "node stacks/web/input-bridge/gev-tour-selftest.mjs -> 24/24 PASS, exit 0"
+    - "live: gev-tour.mjs --tour tours/world-landmarks.json --screen 1 --dwell-scale 0.5 -> PASS, 7/7 in order, 70.5s (report: reports/gev-tour-world-landmarks-20261006.json)"
+    - "screen 1 restored to idle after the run"
+  rollback_plan: >
+    New files only (plus two additive SSOT/doc entries). Revert the
+    commit. No live state mutated — the lab screen was restored to idle.
+  handoff: >
+    gev-scenarios can consume the contract now: run gev-tour.mjs (or the
+    selftest) and assert report.ok + reached_in_order. If a future app
+    change exposes a richer view-state (e.g. an explicit flight phase),
+    the view_state/coord_match fallbacks in gev-tour.mjs get stronger for
+    >10s flights.
+  deferred:
+    - Spoken narration (would route cue text through a Gemini turn on a
+      voice client — needs the held app repo or a bridge text-inject
+      endpoint; noted in the runbook).
+
+report:
+  status: done
+  completed_at: "2026-10-06 17:45 +07"
+  summary: >
+    Tours are defined, implemented, and live-verified without touching
+    the held gods-eye-view repo: the gev-gemini /command relay +
+    fly_to_location(waitForArrival) is the whole playback primitive.
+    gev-tour.mjs plays tour JSON files (ordered waypoints in all three
+    target forms, dwell_s, narration cues drawn as map labels and recorded
+    on checkpoints) and writes a report whose reached_in_order/ok flags +
+    per-checkpoint {seq, reached_at, verification} are exactly what a
+    scenario asserts. Flagship world-landmarks played end-to-end on
+    vcast-real-6: 7/7 in order, 70.5s. Stub-relay selftest: 24/24.
