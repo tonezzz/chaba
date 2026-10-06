@@ -9,7 +9,7 @@ ENV_FILE="${DOC_ARCHIVE_ENV:-$HOME/.config/secrets/doc-archive.env}"
 PORT=$(grep -oP 'DOC_ARCHIVE_PORT=\K.*' "$ENV_FILE")
 BIND=$(grep -oP 'DOC_ARCHIVE_BIND=\K.*' "$ENV_FILE")
 KEY=$(grep -oP 'API_KEY=\K.*' "$ENV_FILE")
-MDDB="${MDDB_BASE:-http://100.74.146.0:11023}"
+MDDB="${MDDB_BASE:-http://100.102.134.91:11023}"
 # tony-dell-m2m = ssh alias → 100.68.142.13:8222 (socket-activated sshd, key
 # auth only) — bypasses tailscale-ssh :22 check mode which gates automation on
 # periodic browser re-auth. See ssot.learning.idc01-warp-tailscaled.2026-09-24.
