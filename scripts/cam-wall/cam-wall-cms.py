@@ -431,7 +431,7 @@ def _successor_for(key: str, meta: dict, zones: dict,
             return (_cam_successor(raw, zones, current)
                     or (wall_key(z) if wall_key(z) in current
                         else "cctv-walls"))
-    for dev in sorted(DEV_AREA):
+    for dev in sorted(ZMETA.get("devices") or {}):
         pre = f"cam-{dev}-"
         if key.startswith(pre):
             raw = _ascii_slug(key[len(pre):])
@@ -998,8 +998,6 @@ def main() -> int:
                       == "archive")}
 
     for zone, m in zones.items():
-        area = AREA.get(zone, zone)
-        info = ZONE_INFO.get(zone, "Camera wall zone.")
         for lang in ("en", "th"):
             ok &= mddb_add(
                 wall_key(zone),
