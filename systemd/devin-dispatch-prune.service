@@ -1,0 +1,9 @@
+[Unit]
+Description=Prune merged dispatch/* branches and their dispatch-wt-* worktrees
+# Reads the same repos.conf whitelist as devin-dispatch; guards match
+# devin-precleanup-check.py (never touches dirty/locked/active-task
+# worktrees or unmerged branches). Journal has the per-branch verdicts.
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/devin-dispatch-prune
