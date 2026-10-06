@@ -1,0 +1,52 @@
+title: mddb follower — persist applied LSN across restarts
+subtitle: >
+  Dispatch of kanban card mddb-follower-lsn-persist. Follower restarts used
+  to re-pull a full multi-GB snapshot because lastAppliedLSN was in-memory
+  only; it is now persisted in a meta bucket inside the replicated DB,
+  committed in the same bolt transaction as the applied entries.
+icon: database
+
+planning:
+  goal: >
+    Stop the restart -> LSN 0 -> full-snapshot loop on mddb followers
+    (observed live: idc02 re-pulled 4.27 GB on 2026-10-05, 6.1 GB on
+    2026-10-06).
+  scope: >
+    mddb-fork (~/CascadeProjects/mddb-fork), worktree mddb-wt-lsn-persist,
+    branch follower-lsn-persist rebased onto feat/vector-algorithms.
+    Image localhost/mddb:2.15.4-lsn built on idc02, shipped to idc03.
+  decisions:
+    - marker in _mddb_replication/last_applied_lsn inside the follower DB,
+      written in the apply tx — atomic with data, no extra fsync, cannot
+      run ahead of the file the way a sidecar can after a manual swap
+    - snapshot swap re-persists snapshotLSN (incoming file has no marker)
+    - manual restore reloads the marker into the applier
+    - Dockerfile FROM lines fully qualified (idc02 podman has no
+      unqualified-search registries)
+  findings:
+    - binlog-retention branch is NOT a superset of feat/vector-algorithms —
+      it lacked the 10-commit snapshot-loop fix merge (d77c6ae). An image
+      built on it was briefly live on idc02 before the rebase; build mddb
+      deploys only off feat/vector-algorithms.
+    - idc03 ssh: tony-dell has no authorized key; use tony-omen hop
+      (tony-omen has ~/.ssh/id_idc03) or podman save/load piped through it.
+  related_focus:
+    - label: mddb-follower-lsn-persist
+      file: docs/ssot/kanban/cards/mddb-follower-lsn-persist.yml
+
+processing:
+  status: done-pending-leader-restart
+  commits:
+    - e1192e2 feat(replication): persist follower applied LSN across restarts
+    - 8a16d20 build(mddbd): fully-qualify Dockerfile base images
+  image: localhost/mddb:2.15.4-lsn (3c22910c755f), built on idc02
+  deployed:
+    idc02: image pinned + restarted (follower)
+    idc03: image loaded + quadlet pinned; restart pending approval (leader = prod outage)
+  deliverables:
+    - mddb-fork worktree commits on follower-lsn-persist
+    - reports/2026-10-06-follower-lsn-persist.md (mddb-fork)
+    - stacks/idc03/mddb/mddb.container Image= bump (this worktree)
+  verify:
+    - go test -count=1 . in services/mddbd
+    - idc02 podman logs: 'resuming from persisted LSN' on restart, no snapshot
