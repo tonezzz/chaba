@@ -87,6 +87,14 @@ meta_schema:
     summary: one line — the headline finding
     sources: artifacts consumed this run (paths or names)
     children: node ids rolled up into this one (L1/L2/L3 only)
+    inputs_at: "map child_id -> the child generated_at this render
+      consumed; the refresh graph diffs it against current child
+      generated_at to detect drift (scripts/report/run-node.py writes
+      it after each run)"
+    pending: "list of queued refresh requests {requested_at, by, reason,
+      depth} — the per-page update list (docs/design/report-live-refresh.md);
+      written via lib/report.py::pending_add/pending_clear, carried
+      forward by write_meta"
     extra: free-form map for node-specific details (deltas, counts, scores)
 
 status_enum:

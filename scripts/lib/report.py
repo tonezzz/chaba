@@ -80,10 +80,16 @@ def _resolve_repo_path(value: str | None) -> Path | None:
 
 def write_meta(meta_path, *, node: str, layer: str, generated_by: str,
                status: str, purpose: str | None = None, summary: str = "",
-               sources=None, children=None, extra=None) -> Path:
-    """Write a node's meta.yml (canonical writer per ssot.reports.yml)."""
+               sources=None, children=None, extra=None,
+               inputs_at=None) -> Path:
+    """Write a node's meta.yml (canonical writer per ssot.reports.yml).
+
+    `pending` entries are carried forward from the existing meta —
+    generators rewriting meta must never silently drop a queued refresh
+    request; the coordinator resolves them via pending_clear()."""
     meta_path = Path(meta_path).expanduser()
     meta_path.parent.mkdir(parents=True, exist_ok=True)
+    prior = load_meta(meta_path)
     doc = {
         "node": node,
         "layer": layer,
@@ -96,8 +102,106 @@ def write_meta(meta_path, *, node: str, layer: str, generated_by: str,
         "children": list(children or []),
         "extra": dict(extra or {}),
     }
+    if inputs_at is not None:
+        doc["inputs_at"] = dict(inputs_at)
+    elif prior.get("inputs_at"):
+        doc["inputs_at"] = prior["inputs_at"]
+    if prior.get("pending"):
+        doc["pending"] = prior["pending"]
     meta_path.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
     return meta_path
+
+
+def load_meta(meta_path) -> dict:
+    """Read a node's meta.yml; {} when absent/unreadable."""
+    p = _resolve_repo_path(str(meta_path))
+    try:
+        return yaml.safe_load(p.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def pending_add(meta_path, *, by: str, reason: str,
+                depth: str = "subtree") -> dict:
+    """Append a refresh request to a node's pending list (the per-page
+    update list from docs/design/report-live-refresh.md). Dedupes on
+    (by, reason) so repeat asks coalesce instead of stacking."""
+    meta_path = _resolve_repo_path(str(meta_path))
+    meta = load_meta(meta_path)
+    pend = [e for e in (meta.get("pending") or [])
+            if not (e.get("by") == by and e.get("reason") == reason)]
+    pend.append({"requested_at": now_iso(), "by": by,
+                 "reason": reason, "depth": depth})
+    meta["pending"] = pend
+    meta.setdefault("node", meta_path.stem.removeprefix("meta."))
+    meta_path.parent.mkdir(parents=True, exist_ok=True)
+    meta_path.write_text(yaml.safe_dump(meta, sort_keys=False,
+                                        allow_unicode=True))
+    return meta
+
+
+def pending_clear(meta_path, before_iso: str | None = None) -> int:
+    """Resolve pending entries requested at/before `before_iso`
+    (default: all). Returns how many were cleared."""
+    meta_path = _resolve_repo_path(str(meta_path))
+    meta = load_meta(meta_path)
+    pend = meta.get("pending") or []
+    keep = [e for e in pend
+            if before_iso and str(e.get("requested_at") or "") > before_iso]
+    meta["pending"] = keep
+    if pend or "pending" in meta:
+        meta_path.write_text(yaml.safe_dump(meta, sort_keys=False,
+                                            allow_unicode=True))
+    return len(pend) - len(keep)
+
+
+def _as_node_map(registry_or_nodes) -> dict:
+    """Accept a registry dict, a node list, or an id->node map."""
+    if isinstance(registry_or_nodes, dict):
+        if "nodes" in registry_or_nodes:
+            nodes = registry_or_nodes.get("nodes") or []
+        else:
+            return registry_or_nodes  # already id->node
+    else:
+        nodes = registry_or_nodes or []
+    return {n.get("id"): n for n in nodes}
+
+
+def inputs_snapshot(node: dict, registry=None) -> dict:
+    """{child_id: child generated_at} — what a render consumed. Parents
+    compare future child generated_at values against this to detect
+    drift without re-reading content."""
+    nodes = _as_node_map(registry)
+    out = {}
+    for cid in node.get("children") or []:
+        child = nodes.get(cid)
+        meta = load_meta(child.get("meta")) if child else {}
+        out[cid] = meta.get("generated_at")
+    return out
+
+
+def node_dirty(node: dict, registry=None) -> tuple[bool, str]:
+    """A node needs a run when it has pending entries, or any child's
+    generated_at is newer than what this node's last render consumed
+    (inputs_at; falls back to the node's own generated_at — a child
+    newer than its parent was never consumed)."""
+    meta = load_meta(node.get("meta"))
+    if meta.get("pending"):
+        return True, "pending"
+    if not meta.get("generated_at"):
+        return True, "no-meta"
+    nodes = _as_node_map(registry)
+    consumed = meta.get("inputs_at") or {}
+    base = str(meta.get("generated_at"))
+    for cid in node.get("children") or []:
+        child = nodes.get(cid)
+        cmeta = load_meta(child.get("meta")) if child else {}
+        cgen = str(cmeta.get("generated_at") or "")
+        if not cgen:
+            return True, f"child-missing:{cid}"
+        if cgen > str(consumed.get(cid) or base):
+            return True, f"child-newer:{cid}"
+    return False, ""
 
 
 def append_timeline(node: str, layer: str, status: str, summary: str = "",

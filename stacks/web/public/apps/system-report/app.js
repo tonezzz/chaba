@@ -41,7 +41,11 @@ async function refresh() {
   const status = document.getElementById("refresh-status");
   btn.disabled = true;
   try {
-    const r = await fetch("api/refresh", { method: "POST" });
+    const r = await fetch("api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ node: "system-report", depth: "subtree" }),
+    });
     if (r.status === 403) {
       status.textContent = "refresh needs a tailnet login";
       return;

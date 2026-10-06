@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address, ip_network
 from pathlib import Path
@@ -34,6 +35,112 @@ REPO = Path(__file__).resolve().parent.parent.parent
 SUMMARY_YML = REPO / "stacks/web/public/apps/system-report/data/system-report.yml"
 SERVICE = "chaba-system-report.service"
 PORT = int(os.environ.get("REPORT_API_PORT", "8792"))
+RUN_NODE = REPO / "scripts/report/run-node.py"
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+import report as reportlib  # noqa: E402
+
+_GRAPH_LOCK = threading.Lock()  # one walk at a time — requests coalesce
+_GRAPH_LAST: dict = {}          # last walk result for /status
+
+
+def _subtree(nodes: dict, root: str) -> dict:
+    """root + every node it consumes (transitive children)."""
+    out, stack = {}, [root]
+    while stack:
+        nid = stack.pop()
+        if nid in out or nid not in nodes:
+            continue
+        out[nid] = nodes[nid]
+        stack.extend(nodes[nid].get("children") or [])
+    return out
+
+
+def _ancestors(nodes: dict, root: str) -> set:
+    """depth=full sideways fan-out: nodes that consume root (and so on
+    up), so a leaf refresh reaches every report built on it."""
+    parents = {}
+    for n in nodes.values():
+        for c in n.get("children") or []:
+            parents.setdefault(c, set()).add(n["id"])
+    out, stack = set(), [root]
+    while stack:
+        nid = stack.pop()
+        for p in parents.get(nid, ()):
+            if p not in out:
+                out.add(p)
+                stack.append(p)
+    return out
+
+
+def _depth_of(nodes: dict, nid: str, memo: dict) -> int:
+    """Leaves-first ordering: 0 = no children."""
+    if nid in memo:
+        return memo[nid]
+    kids = [c for c in (nodes.get(nid) or {}).get("children") or []
+            if c in nodes]
+    memo[nid] = 1 + max((_depth_of(nodes, c, memo) for c in kids),
+                        default=-1)
+    return memo[nid]
+
+
+def _run_node(nid: str) -> dict:
+    proc = subprocess.run(
+        ["/usr/bin/python3", str(RUN_NODE), nid],
+        capture_output=True, text=True, timeout=1200)
+    try:
+        return json.loads(proc.stdout.strip().splitlines()[-1])
+    except Exception:
+        return {"node": nid, "rc": proc.returncode,
+                "stderr_tail": (proc.stderr or "")[-400:]}
+
+
+def _walk(root: str, depth: str, by: str) -> dict:
+    """Dirty-driven walk: mark the requested node pending, then run
+    leaves whose inputs are clean; parents go dirty as children land
+    fresher than their inputs_at, and run once all inputs are fresh.
+    Failure isolation: an un-runnable/failed child doesn't block the
+    parent — it renders last-known-good with a delta."""
+    reg = reportlib.load_registry()
+    nodes = {n["id"]: n for n in reg.get("nodes") or []}
+    if root not in nodes:
+        return {"error": f"unknown node {root}"}
+    target = _subtree(nodes, root)
+    if depth == "leaf":
+        target = {root: nodes[root]}
+    elif depth == "full":
+        target.update({a: nodes[a] for a in _ancestors(nodes, root)
+                       if a in nodes})
+
+    reportlib.pending_add(target[root]["meta"], by=by,
+                          reason="user-refresh", depth=depth)
+    if depth == "full":  # sideways: linked reports get their own mark
+        for nid in _ancestors(nodes, root):
+            reportlib.pending_add(nodes[nid]["meta"], by=by,
+                                  reason="linked", depth=depth)
+
+    order = sorted(target, key=lambda n: _depth_of(target, n, {}))
+    ran, passes = {}, 0
+    max_passes = len(target) + 2
+    while passes < max_passes:
+        passes += 1
+        progressed = False
+        for nid in order:
+            node = target[nid]
+            if nid in ran:
+                continue
+            dirty, why = reportlib.node_dirty(node, reg)
+            if not dirty:
+                continue
+            kids_dirty = any(
+                reportlib.node_dirty(target[c], reg)[0]
+                for c in node.get("children") or [] if c in target)
+            if kids_dirty:
+                continue
+            ran[nid] = _run_node(nid)
+            progressed = True
+        if root in ran or not progressed:
+            break
+    return {"root": root, "depth": depth, "passes": passes, "ran": ran}
 
 
 def _running() -> bool:
@@ -67,8 +174,17 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             self._json(200, {"ok": True})
         elif self.path == "/status":
-            self._json(200, {"running": _running(),
-                             "generated_at": _generated_at()})
+            self._json(200, {"running": _running() or _GRAPH_LAST.get(
+                                 "state") == "running",
+                             "generated_at": _generated_at(),
+                             "graph": _GRAPH_LAST or None})
+        elif self.path == "/pending":
+            reg = reportlib.load_registry()
+            self._json(200, {"pending": {
+                n["id"]: (reportlib.load_meta(n.get("meta"))
+                          .get("pending") or [])
+                for n in reg.get("nodes") or []
+                if reportlib.load_meta(n.get("meta")).get("pending")}})
         else:
             self._json(404, {"error": "not found"})
 
@@ -80,6 +196,42 @@ class Handler(BaseHTTPRequestHandler):
         if not who:
             self._json(403, {"error": "writes need a tailnet identity"})
             return
+        body = {}
+        if self.headers.get("Content-Length"):
+            try:
+                body = json.loads(
+                    self.rfile.read(int(self.headers["Content-Length"])))
+            except Exception:
+                self._json(400, {"error": "bad json"})
+                return
+        node, depth = body.get("node"), body.get("depth", "subtree")
+        if node:
+            # Graph refresh: mark pending, walk dirty inputs leaves-first,
+            # re-render ancestors as their inputs land (design:
+            # docs/design/report-live-refresh.md). One walk at a time.
+            if depth not in ("leaf", "subtree", "full"):
+                self._json(400, {"error": "depth must be leaf|subtree|full"})
+                return
+            if _GRAPH_LOCK.locked():
+                self._json(409, {"ok": False, "running": True})
+                return
+
+            def _go():
+                with _GRAPH_LOCK:
+                    _GRAPH_LAST.clear()
+                    _GRAPH_LAST.update({"state": "running", "root": node})
+                    try:
+                        _GRAPH_LAST.update(
+                            _walk(node, depth, by=who))
+                        _GRAPH_LAST["state"] = "done"
+                    except Exception as exc:
+                        _GRAPH_LAST.update({"state": "error",
+                                            "error": str(exc)})
+            threading.Thread(target=_go, daemon=True).start()
+            self._json(202, {"ok": True, "node": node, "depth": depth,
+                             "started_by": who})
+            return
+        # legacy: no body -> the whole L1->L3 oneshot
         if _running():
             self._json(409, {"ok": False, "running": True,
                              "generated_at": _generated_at()})
