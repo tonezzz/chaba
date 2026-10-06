@@ -1,0 +1,54 @@
+id: idc01-return-role
+title: 'idc01 returns: warm-DR node — mddb follower #2, standby edge, lab sandbox'
+column: backlog
+priority: high
+note: 'idc01 survived (2vCPU/31G/96G, 37G free, tailnet rejoined). Role:
+  designated warm spare — follower + promote target, standby caddy-edge on its
+  own public IP, ada stack installed-but-stopped, secrets-backup target #3,
+  lab sandboxes. Zombie stack still running and must be cleaned first.'
+review_kind: decide
+spec: 'Phase 0 - zombie cleanup: stop+disable duplicate services on idc01
+  (caddy-edge, ollama, gemini-ollama-proxy, camwall-edge, input-bridge,
+  mddb-panel, obsidian-vault, vcast-headless@2/4) but keep quadlets+state
+  installed = warm standby. Mask against accidental restart. Keep
+  mddb.service masked at all times until it is re-seeded as follower.
+  Phase 1 - follower #2: rsync a fresh snapshot OR seed via replication
+  from idc03 leader; run mddb quadlet with FOLLOWER_ADDR pointing at
+  idc03; verify lag->0 and LSN parity. Phase 2 - standby edge: caddy-edge
+  already installed; sync ACME certs from idc03 (~/.local/share/caddy or
+  via secrets-backup); verify curl --resolve api.surf-thailand.com:443:
+  <idc01-public> returns 200 WITHOUT touching DNS. Phase 3 - secrets
+  backup: make idc01 a third target in secrets-backup.sh TARGETS + put
+  backup-age.key on it. Phase 4 - batch offload candidates: vector-
+  reindex and doc-mirror timers can run on idc01 (both hit mddb over
+  tailnet). Phase 5 - SSOT: update ssot.values.yml idc01 note, services
+  SSOT, memory regenerate.'
+lab:
+  hypothesis: 'A warm-standby node gives the fleet a measured <10min
+    RTO for the "idc03 dies" event, with zero data loss (follower lag
+    bounded) and a verified edge+ada bring-up path.'
+  metric: 'DRILL results: T(promote follower->leader healthy),
+    T(edge answers on idc01 public IP), T(ada-pi-pwa health 200),
+    follower lag distribution under live load (idc01 2vCPU might lag
+    bursts - measure), cold-restore from nightly backup (boot->healthy
+    time). Report in comms.'
+  review_by: '2026-10-20'
+help: 'Standby envs on idc01 should point at idc03 mddb (not the local
+  masked instance) so a promoted stack works immediately. Failover order:
+  promote mddb follower -> start ada units -> repoint api.surf-thailand.com
+  CF record to idc01 public -> verify. The old public IP answers today -
+  that makes the curl --resolve edge test work without touching DNS.'
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+  button: ▶ idc01 warm-spare setup + DR drill
+  runner: null
+  host: tony-omen
+updated: 2026-10-06
+comms:
+- at: 2026-10-06 13:30
+  from: devin
+  text: 'role proposed from fleet restructure: warm DR + lab + batch.
+    mddb.service stays masked until seeded as follower - never unmask
+    the old leader data dir.'
