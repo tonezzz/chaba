@@ -467,6 +467,25 @@ jobs:
     local timer (Alpine core-ssh addon), so dell pulls `ha host logs`
     hourly with --severe; dedup file is tag-suffixed
     (log-shipper-ha-severe-michael-ha.json).'
+- id: report-distill
+  name: Report distill (L1 bank -> L2 domain digests)
+  host: idc02
+  dispatch: systemd
+  on_calendar: '*-*-* 04:00:00'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/report-distill.py
+  on_failure: ada-report-fail@%p.service
+  note: 'nightly bank->report promotion per ssot.apps.ada-cms-reports.yml
+    distill_jobs — refreshes every <domain>-digest page (kind:report, full
+    meta_contract incl. supersedes; health domain carries the v1
+    bank-delta template). Registered 2026-10-06 (card report-distill-v1).
+    Same idc02 04:00 slot as the hand-installed ada-pi prototype timer —
+    installing this unit retires the ~/CascadeProjects/ada-pi copy
+    (git pull the chaba checkout first so the script exists). On idc02
+    it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot
+    (03:30); the SSOT ''after ada-scenario-* timers'' note targets idc01,
+    whose scenario timers are weekly, not nightly.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

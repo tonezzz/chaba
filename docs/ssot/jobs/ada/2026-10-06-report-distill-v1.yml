@@ -1,0 +1,91 @@
+# SSOT Job: report-distill.py — nightly bank->report promotion
+# Dispatch worktree dispatch-wt-20261006-093749-* (card report-distill-v1).
+# Verified live on MDDB 2026-10-06 ~10:00 ICT.
+
+title: report-distill.py — L1 bank -> L2 CMS report promotion
+subtitle: Deterministic per-domain digest pages with meta_contract + supersedes chain
+icon: newspaper
+status: done
+project: chaba
+owner: devin-dispatch
+started: "2026-10-06"
+card: report-distill-v1
+
+findings: |
+  The card's premise ("distill_jobs declares a job 'to write' that never
+  got built") is half stale: a working prototype already exists —
+  ada-pi/scripts/report-distill.py (commit 1f50d0f, 2026-09-30; meta
+  contract gate added 94b939f, 2026-10-05), deployed on a hand-installed
+  report-distill.timer on idc02 at 04:00 daily and a disabled copy on
+  idc01. What was actually missing: the canonical chaba copy, ada-* bank
+  deltas, the supersedes chain, ada-cms-automation registration, and a
+  ssot.jobs.yml manifest entry.
+
+changes: |
+  scripts/ada/report-distill.py (NEW) — canonical chaba implementation.
+    Superset of the ada-pi prototype: per-domain <domain>-digest pages are
+    now kind:report with the full meta_contract (summary, domain,
+    fresh_for, confidence, timeline, links, supersedes, updated) plus
+    writer-contract schema fields; previous-day digests are archived to
+    <domain>-digest-YYYY-MM-DD (status: superseded, superseded_by back-
+    link) so the supersedes chain is real; archives >14d flip to
+    status: archived. The `health` domain is the v1 template and adds a
+    bank-delta section covering every ada-ha-bank-* collection
+    (enumerated from ssot.apps.ada-memory-banks.yml, {instance}->tony)
+    plus ada-ha-ops-events + ada-ha-scenario-reports since the last run
+    (registry last_run -> page meta.updated -> 24h watermark).
+    Private/person banks (personal-*, devin*, recall-summary, note-*)
+    report counts only — privacy rule honored. Registry docs are
+    auto-seeded (enabled, interval_min 1440, generator command) and get
+    last_* write-back — flood-news-update.py pattern. reports-index is
+    regenerated after the run (status filter added so superseded pages
+    drop out).
+  scripts/ada/cms-normalize-meta.py — kind no longer forced to "page";
+    an existing kind:report is preserved (writer-contract conflict would
+    have reflagged every kind:report page on the next --apply).
+  ssot.jobs.yml — new job report-distill on idc02, OnCalendar 04:00,
+    on_failure ada-report-fail@%p.service. Renders
+    systemd/generated/idc02/report-distill.{service,timer} — same idc02
+    04:00 slot as the hand-installed ada-pi timer it retires.
+  systemd/generated/idc02/ssot-optimization-snapshot.service —
+    pre-existing manifest/generated drift (MDDB_BASE 100.74.146.0 ->
+    100.102.134.91) picked up by the re-render; committed together.
+  ssot.apps.ada-cms-reports.yml — distill_jobs updated: script shipped,
+    host idc02, registry + supersedes semantics documented.
+  LIVE (MDDB): ada-cms-automation/health-digest seeded + last_run
+    stamped; ada-cms-pages/health-digest refreshed as kind:report with
+    supersedes -> health-digest-2026-10-04 (snapshot of the ada-pi-era
+    page, status: superseded); reports-index regenerated.
+
+deliberately_not_done: |
+  - No live unit install — convention is "committed, install after
+    merge": on idc02 run `git -C ~/CascadeProjects/chaba pull` then
+    `python3 scripts/render-jobs.py --host idc02 --install` +
+    `systemctl --user enable --now report-distill.timer`. The ada-pi
+    timer keeps running the old copy until then — harmless overlap, same
+    page set.
+  - --register/--domain/--dry-run/--force are the operator knobs; other
+    domains (flood, bench, cctv, ...) get the same digest shape minus
+    the bank-delta section until they get a DOMAINS entry.
+  - ada-pi's scripts/report-distill.py + backend/report_meta.py stay as
+    the ada-side validator source; chaba's copy re-implements the
+    contract check inline (stdlib-only for idc02's bare python3).
+
+verify: |
+  python3 scripts/ada/report-distill.py --domain health --dry-run
+  python3 scripts/render-jobs.py --check          # OK 23 jobs
+  # live evidence (2026-10-06):
+  #   ada-cms-pages/health-digest kind:report, meta_contract complete,
+  #     supersedes -> health-digest-2026-10-04 (status: superseded)
+  #   ada-cms-automation/health-digest interval_min=1440
+  #     last_status=ok last_run=2026-10-06T02:56Z
+  #   reports-index updated 2026-10-06T02:56Z, lists health-digest row
+  #   cms-auto-health.py judge(health-digest) -> "ok"
+  python3 scripts/ada/cms-auto-health.py          # sees the registry entry
+
+risks: |
+  - If the idc02 unit is installed before the chaba checkout pulls, the
+    ExecStart path won't exist — the note on the job says pull first.
+  - cms-audit offline lane: health-digest now kind:report — audit rules
+    are generated_by-gated and the page carries sources+footer, so no
+    new R-failures expected; watch the next cms-audit run.
