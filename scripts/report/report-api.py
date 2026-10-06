@@ -189,7 +189,7 @@ def _emit_event(root: str, depth: str, ran: dict, by: str) -> None:
     try:
         import urllib.request
         req = urllib.request.Request(
-            f"{EVENTS_URL}/collections/{EVENTS_COLLECTION}/add",
+            f"{EVENTS_URL}/add",
             data=json.dumps(payload).encode(),
             headers={"Content-Type": "application/json"})
         urllib.request.urlopen(req, timeout=10)
