@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import re
+import time
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -122,6 +123,12 @@ def main() -> int:
                     help="run only the resume-chain supersede pass — "
                          "no new file writes (avoids the embed storm "
                          "when a large backlog is pending)")
+    ap.add_argument("--max-writes", type=int, default=0,
+                    help="cap new/changed doc writes this run — drain a "
+                         "large backlog in chunks instead of one embed "
+                         "storm (every add costs an embed call)")
+    ap.add_argument("--write-delay", type=float, default=0.0,
+                    help="seconds to sleep between doc writes")
     args = ap.parse_args()
 
     mddb = ada_sync.Mddb(args.mddb, timeout=120)  # large histories embed slowly
@@ -161,12 +168,18 @@ def main() -> int:
         print(f"  {'(dry) ' if args.dry_run else ''}{'~' if old else '+'} {key} "
               f"({len(body)} chars, {mtime})")
         if not args.dry_run:
+            if args.max_writes and added >= args.max_writes:
+                print(f"  … write cap {args.max_writes} reached — "
+                      "rerun to continue the backlog")
+                break
             try:
                 mddb.add(COLLECTION, key, body, meta)
             except Exception as exc:
                 print(f"  ! {key} failed ({exc}) — continuing")
                 skipped += 1
                 continue
+            if args.write_delay:
+                time.sleep(args.write_delay)
         added += 1
 
     # Dedupe pass: ancestors of resume chains become superseded — their

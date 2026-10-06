@@ -149,7 +149,11 @@ class Mddb:
         return r.json()
 
     def list_docs(self, collection: str) -> list[dict]:
-        return self._post("/search", {"collection": collection, "limit": 1000})
+        # Banks with >1000 docs (devin-tony is ~2000) silently truncated —
+        # unsynced-looking docs got re-added every run, burning an embed
+        # call each. 5000 covers current collections; revisit paging if
+        # any bank grows past it.
+        return self._post("/search", {"collection": collection, "limit": 5000})
 
     def add(self, collection: str, key: str, content: str, meta: dict) -> None:
         self._post("/add", {"collection": collection, "key": key,
