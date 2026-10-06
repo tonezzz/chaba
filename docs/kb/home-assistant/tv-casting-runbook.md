@@ -42,6 +42,16 @@ edge-tts has exactly 2 TH voices (`th-TH-PremwadeeNeural` F,
 `th-TH-NiwatNeural` M) — 2-speaker demos only; TH text runs ~1.4x the EN
 cue window so the uniform-rate fit is the honest fix.
 
+Cast-path integration (2026-10-06, card `yt-voice-dub-mode`):
+`POST /cast` accepts `voice: off|th|en` (default off → unchanged subs
+cast); it becomes arg3 of `yt-live.sh` / `YT_LIVE_VOICE`. With captions
+present the dub renders in a detached `__dub` worker in parallel with
+the transcode — the subs cast still plays at MIN_SEGS, and when
+`dub.mp4` lands it's remuxed (codec copy, seconds) to `dseg_*.ts` +
+`dub.m3u8` and the TV is re-pointed at the dubbed playlist (mid-play
+upgrade — restarts at 0 dubbed). TTS/mux failure leaves the subs cast
+running untouched. `dub.state` (`<voice>:<phase>`) feeds `/status.dub`.
+
 Serving path (changed 2026-09-26): HLS output goes to
 `chaba-tony-dell/stacks/web/public/apps/yt-live/` — the containerized web
 Caddy serves it as `http://<lan-ip>/apps/yt-live/media.m3u8` (`:80` proxies to
@@ -55,7 +65,11 @@ the same video+lang replays instantly (copy dir → `play_media`, ~1–6s);
 search queries check the cache again after yt-dlp resolves the id. LRU cap
 `YT_LIVE_CACHE_MAX` (default 8 GiB) evicts by `last_used`. Bypass with
 `YT_LIVE_NOCACHE=1`; `yt-live.sh cache` lists entries. `/status` exposes
-`media_cache_bytes`/`media_cache_entries`. Subtitle-only cache is separate:
+`media_cache_bytes`/`media_cache_entries`. Voice variants key on
+`<vid>.<srclang>.<langs>.<voice>` and additionally carry
+`dub.m3u8`/`dseg_*.ts`; a voice request that only finds the subs-only
+entry replays it instantly and upgrades mid-play while the dubbed
+variant fills in under its own key. Subtitle-only cache is separate:
 `~/.cache/yt-live-subs/<vid>.<langs>.vtt` (skips the Gemini pass).
 
 ## TVs
