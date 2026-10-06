@@ -5,7 +5,10 @@ review_kind: triage
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: 92% used (9.5 GiB free)
+note: 'WORSENING: 94% used (7.4 GiB free) as of 2026-10-06 — was 92%/9.5G
+  same day. A podman image build added ~1G. tony-dell playbook (2026-10-05):
+  mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media
+  LRU (8GiB), podman image prune (old trade-trade-api 4efe5317 + build layers).'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
   tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
   ~/.cache/yt-live-media LRU is 8GiB.'

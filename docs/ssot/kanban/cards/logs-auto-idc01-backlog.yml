@@ -1,11 +1,12 @@
 id: logs-auto-idc01-backlog
 title: logs `idc01` backlog 972
-column: review
+column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: medium
-note: last run matched 1472 but the 500/run cap shipped only 500 — drains 2 days behind
+note: 'ROOT CAUSE KNOWN: shipper 500/run cap drains slower than accrual (1472 matched vs 500 shipped). Fix tracked in card logs-drain-rate. Verified by tony 2026-10-05.'
+
 help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until
   it drains.
 updated: '2026-10-06'

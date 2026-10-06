@@ -1,0 +1,12 @@
+id: logs-drain-rate
+title: Log shipper drains slower than volume accrues (500/run cap)
+column: backlog
+priority: medium
+note: >-
+  Root cause behind the four logs-auto-*-backlog cards (closed
+  2026-10-06 with known cause): shipper matches 1.4k-3.2k lines/run but
+  ships only 500 — idc01 2d behind, tony-dell 6d. Options: raise
+  --max-docs for a catch-up run, tighten GREP/KINDS filters (noise
+  share high — idc01 caddy-edge scanner 502s dominate), or batch-drain
+  on a schedule. Design choice, not incident.
+updated: '2026-10-06'
