@@ -769,7 +769,7 @@ tony-omen:
       home-assistant: "streamable-http tony-dell:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
       opennb: "REMOVED 2026-10-04 — ONB retired; server kept in repo at mcp-servers/mcp-opennb/server.py for revive"
     cron:
-      nightly-digest: "0 8 * * * Asia/Bangkok, announce→telegram to 8960073266; id d920fb81-c083-4705-89ee-12b7ea2a85e3"
+      nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
     known_issues:
       - "ghostroute writes OR model ids unprefixed to fallbacks — openclaw 2026.9.6 needs openrouter/ prefix; patched locally in ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py (editable pipx install); upstream fix to kittimasak/GhostRoute worthwhile"
       - "OR key in auth profile openrouter:manual must be re-pasted whenever idc01 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
