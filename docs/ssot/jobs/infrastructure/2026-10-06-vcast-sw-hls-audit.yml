@@ -1,0 +1,207 @@
+title: vcast app audit — SW cache strategy, pair->play timing, HLS drop retry
+subtitle: >
+  Dispatch audit of kanban card vcast-app: reworked the vcast service worker
+  so stale-bundle playback is impossible, added fatal-HLS drop recovery to
+  the receiver, fixed a lastCast drop for casts landing mid-reconnect, and
+  added a repo-side cast-flow check covering the cast_interrupt_gate
+  contract.
+icon: target
+
+planning:
+  goal: >
+    Make stale-bundle playback failures impossible via an explicit
+    version/bump strategy, verify pair->play <10s on a fresh device, and
+    make an HLS stream drop mid-play self-healing.
+  scope: >
+    stacks/web/public/apps/vcast/ (index.html, pair.html, sw.js,
+    manifest.json), stacks/web/input-bridge/server.mjs lastCast replay.
+    The cast_interrupt_gate scenario itself lives in ada-pi (different
+    repo) — verified the repo-side contract it depends on.
+  success_criteria:
+    - SW never serves a stale bundle while the edge is reachable
+    - pair->claim->registered->play path has no serial stalls >10s
+    - Fatal hls.js errors recover without a re-cast
+    - vcast-cast-check.mjs + vcast-flap-check.mjs exit 0
+    - Live manual cast round-trip works (image cast + stop on lab screen)
+  risks:
+    - SW strategy change alters offline behavior (cache is shell-only now)
+    - hls.js retry loop must not resurrect a torn-down pane
+  resources:
+    - input-bridge relay http://100.74.146.0:3010 (idc01, tailnet)
+    - local loopback server.mjs + stubbed ada auth for checks
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: vcast-app
+      file: docs/ssot/kanban/cards/vcast-app.yml
+
+processing:
+  status: done
+  started_at: "2026-10-06 07:20 +07"
+  steps:
+    - id: 1
+      label: SW cache audit
+      status: done
+      notes: >
+        Found: vcast/sw.js used cache name vcast-v2 (correctly outside the
+        apps-* namespace the shared worker purges) but served vendored
+        hls.min.js/qrcode.min.js cache-first with NO revalidation and never
+        deleted old vcast-* caches — a lib upgrade + network-first HTML =
+        permanent skew: new page code against an old bundle, the exact
+        stale-bundle failure mode the card calls out. Reworked to
+        vcast-v3: ALL same-origin /apps/vcast/ GETs are now network-first
+        with fetch(cache:'no-cache') (forces ETag revalidation — a deploy
+        cannot strand a client while the edge is reachable), activate
+        deletes older vcast-* caches, and the offline fallback matches
+        with ignoreSearch so ?sid=/?_r=/?room= navigations still find the
+        cached shell. Bump discipline: CACHE_NAME per deploy + ?v= pins on
+        the vendored script tags (covers the pre-SW first load where
+        heuristic HTTP caching could serve a stale lib).
+    - id: 2
+      label: pair.html / pair->play timing
+      status: done
+      notes: >
+        Flow is tight: pending sid -> QR -> pair.html (parallel
+        /pair-info + /displays) -> POST /claim -> relay mints ada key,
+        burns redeem server-side, pushes api_key over the display's own
+        pending ws -> re-register -> registered -> play. Local check
+        measured claim->registered in ~80-165ms (includes two stubbed ada
+        hops + server-side redeem); live path adds a few tailnet hops —
+        well under the 10s budget. lastCast replay covers a play sent
+        between claim and registered. One real gap fixed: pair.html
+        fetches had no timeout — a hung relay left the button stuck at
+        'pairing…' forever; api() now aborts at 10s and shows a retryable
+        error.
+    - id: 3
+      label: HLS mid-play drop recovery
+      status: done
+      notes: >
+        Found: the only ERROR handling was `if (d.fatal) showToast(...)` —
+        once hls.js escalates to fatal (playlist 404, producer restart,
+        segment timeout) the screen froze on the last frame until a new
+        play arrived. Now: NETWORK_ERROR -> startLoad() re-poll;
+        MEDIA_ERROR -> recoverMediaError() up to 2x then rebuild; other
+        -> destroy + recreate the Hls instance. Bounded backoff 1.5s ->
+        15s cap, reset on 'playing', each retry sent as state 'hls-retry'
+        so /displays shows recovery instead of stale 'playing'. Timers
+        are per-pane and cleared in paneTeardown so a retry can't
+        resurrect a stopped pane. Native-Safari path: video 'error' and
+        'ended' (live playlists only — duration=Infinity / early-end vs
+        seekable heuristic, so a finished VOD doesn't loop) reload the
+        source with the same backoff.
+    - id: 4
+      label: lastCast mid-reconnect drop (server.mjs)
+      status: done
+      notes: >
+        Found by the new check: broadcastTo() early-returned when the room
+        had no clients — the room entry is deleted when the last client
+        leaves, so a cast published while a display was mid-reconnect was
+        never recorded in lastCast and the re-register replayed the STALE
+        earlier cast (repro: play A -> stop -> disconnect -> play B ->
+        reconnect replays 'stop', screen stays idle). Fixed: lastCast
+        bookkeeping now runs before the no-clients bail.
+    - id: 5
+      label: cast_interrupt_gate contract + manual cast flow verify
+      status: done
+      notes: >
+        New stacks/web/input-bridge/vcast-cast-check.mjs (mirrors
+        vcast-flap-check.mjs conventions — real server.mjs on loopback,
+        stubbed ada auth incl. keys POST + redeem 302): 15/15 PASS —
+        pending/pair-info/claim/paired/registered (claim->registered
+        82-165ms), play + pane-1 image delivery, capture lease
+        set/get/clear, interrupt cast delivered while a lease is active
+        (the gate is in ada-pi tool_runner, not the relay — the scenario
+        itself runs in the ada-pi suite), stop, and lastCast replay after
+        a ws flap. flap-check: 7/7 PASS, no regression. Live verify:
+        relay /health ok (7 screens registered); manual image cast to
+        screen 7 (vcast-real, idle lab display) -> state=image in <8s,
+        stop -> state=idle.
+
+decisions:
+  - label: Network-first-everything instead of cache-first assets + manual ?v= alone
+    rationale: >
+      A ?v= pin alone still depends on deploy discipline; cache-first with
+      revalidation is what actually makes stale impossible. The display is
+      useless offline anyway (needs the ws relay), so the SW cache is only
+      an offline shell — correctness beats load-time speed for a 415KB
+      vendored lib on a LAN.
+    alternatives_considered: >
+      stale-while-revalidate (can still serve one stale generation ->
+      HTML/JS skew); versioned filenames hls-v123.js (more churn, same
+      manual step); keep cache-first (status quo, proven failure mode).
+  - label: Retry forever (capped backoff) rather than giving up
+    rationale: >
+      A cast display should recover when the producer comes back; 15s
+      cap means <=15s recovery lag. Every attempt is reported via
+      sendState so the registry/HUD show 'hls-retry' not a fake 'playing'.
+    alternatives_considered: give up after N retries and report error
+      (leaves a dark screen until someone re-casts).
+
+changes:
+  - file: stacks/web/public/apps/vcast/sw.js
+    summary: vcast-v3 — network-first+revalidate for all same-origin vcast
+      GETs, old-cache cleanup on activate, ignoreSearch offline fallback
+  - file: stacks/web/public/apps/vcast/index.html
+    summary: ?v=3 pins on vendored scripts; attachHls() with fatal-error
+      recovery (net->startLoad, media->recoverMediaError x2, else rebuild,
+      1.5s->15s backoff, reset on playing, hls-retry state reports);
+      native-HLS error/ended watchdog; retry state torn down per-pane
+  - file: stacks/web/public/apps/vcast/pair.html
+    summary: 10s AbortController on api() so a hung relay can't stick the
+      pair button
+  - file: stacks/web/input-bridge/server.mjs
+    summary: broadcastTo stores lastCast before the empty-room bail —
+      casts published mid-reconnect replay instead of dropping
+  - file: stacks/web/input-bridge/vcast-cast-check.mjs (new)
+    summary: repo-side pair->play + capture-lease + flap-replay check,
+      15 assertions, exit 0 on pass
+  - file: docs/ssot/apps/ssot.apps.vcast.yml
+    summary: receiver-page section documents SW strategy + HLS recovery;
+      testing section lists both check scripts; fixed three stale relay
+      IPs 100.102.134.91 (idc03) -> 100.74.146.0 (idc01)
+  - file: docs/ssot/infrastructure/ssot.health.home.api.yml
+    summary: same stale relay IP fix in the input-bridge-relay note
+
+followup:
+  verification:
+    - "cd stacks/web/input-bridge && node vcast-cast-check.mjs -> exit 0 (needs node_modules: npm install)"
+    - "node vcast-flap-check.mjs -> exit 0"
+    - "DevTools on a vcast client: sw.js vcast-v3 active, only vcast-v3 in Cache Storage"
+    - "Live: POST /api/input-bridge/pub {screen:N,msg:{type:'play',url:...m3u8}} -> kill the producer -> state becomes hls-retry -> restart producer -> state returns to playing"
+    - "ada-pi: scenario-live.py cast_interrupt_gate.yaml — the gate itself is Ada-side (ada-pi repo); this work only touched the contracts it consumes"
+  rollback_plan: >
+    git revert the commit on this dispatch branch; the live relay on idc01
+    keeps the OLD server.mjs until the quadlet is updated — the page-side
+    fixes are independent and safe to keep either way.
+  handoff:
+    - "Deploy step is NOT done (dispatch mode): pages land on next chaba sync to ~/CascadeProjects/chaba-tony-dell/stacks/web/public; server.mjs needs the idc01 quadlet image/content updated + restart to take effect"
+    - "cast_interrupt_gate scenario run belongs to the ada-pi suite (vcast-scenarios card) — repo-side contract verified here"
+  deferred:
+    - "A deliberately-killed-producer live HLS test on a lab screen (needs a controlled HLS endpoint; documented as manual verification above)"
+
+report:
+  status: done
+  completed_at: "2026-10-06 08:10 +07"
+  summary: >
+    Audited vcast per card spec and fixed four real gaps. (1) SW: vendored
+    libs were cache-first forever with no old-cache cleanup — new HTML +
+    stale hls.min.js skew was possible; now vcast-v3 does network-first +
+    no-cache revalidation for every same-origin /apps/vcast/ GET, deletes
+    older vcast-* caches on activate, and ?v= pins cover the pre-SW first
+    load — stale-bundle playback is impossible while the edge is
+    reachable. (2) pair->play: flow is already tight (local check measured
+    claim->registered ~0.1s incl. ada hops; lastCast replay covers the
+    claim->registered gap); added a 10s fetch timeout in pair.html so a
+    hung relay can't silently eat the budget. (3) HLS drop: fatal errors
+    only toasted before — now NETWORK_ERROR re-polls, MEDIA_ERROR
+    recovers x2 then rebuilds, other fatals recreate the instance;
+    bounded backoff, retry state reported as hls-retry, per-pane teardown
+    guards. Native Safari gets an error/ended watchdog for live
+    playlists. (4) Found+fixed a relay bug: casts published while a
+    display is mid-reconnect were dropped from lastCast and the
+    re-register replayed a STALE cast — bookkeeping now runs before the
+    empty-room early return. Verified: vcast-cast-check.mjs 15/15,
+    vcast-flap-check.mjs 7/7, live image cast+stop round-trip on screen
+    7, relay healthy. cast_interrupt_gate's Ada-side gate lives in
+    ada-pi; the /capture lease contract it depends on is exercised by the
+    new check.
