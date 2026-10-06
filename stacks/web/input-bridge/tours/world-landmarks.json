@@ -1,0 +1,63 @@
+{
+  "id": "world-landmarks",
+  "title": "World landmarks flyover — Bangkok to San Francisco",
+  "version": 1,
+  "defaults": {
+    "dwell_s": 8,
+    "arrival_timeout_s": 45,
+    "camera": { "viewMode": "overview" }
+  },
+  "stops": [
+    {
+      "id": "bangkok",
+      "target": { "query": "Bangkok, Thailand" },
+      "camera": { "viewMode": "overview", "rangeM": 60000 },
+      "dwell_s": 8,
+      "narration": "Bangkok — home base. Chao Phraya river plain, 11M people."
+    },
+    {
+      "id": "dubai",
+      "target": { "locationId": "dubai" },
+      "camera": { "viewMode": "overview", "rangeM": 40000 },
+      "dwell_s": 8,
+      "narration": "Dubai — Gulf desert skyline, Burj Khalifa at the center."
+    },
+    {
+      "id": "london",
+      "target": { "locationId": "london" },
+      "camera": { "viewMode": "overview", "rangeM": 50000 },
+      "dwell_s": 8,
+      "narration": "London — Thames winding through the old capital."
+    },
+    {
+      "id": "eiffel-tower",
+      "target": { "query": "Eiffel Tower, Paris" },
+      "camera": { "viewMode": "close" },
+      "dwell_s": 10,
+      "narration": "Eiffel Tower — 330 m of iron lattice, Champ de Mars.",
+      "annotate": [
+        { "type": "highlight", "target": "Eiffel Tower, Paris", "color": "amber" }
+      ]
+    },
+    {
+      "id": "nyc",
+      "target": { "locationId": "nyc" },
+      "camera": { "viewMode": "overview", "rangeM": 45000 },
+      "dwell_s": 8,
+      "narration": "New York — Manhattan grid between the Hudson and East rivers."
+    },
+    {
+      "id": "golden-gate",
+      "target": { "latitude": 37.8199, "longitude": -122.4783 },
+      "camera": { "viewMode": "close", "rangeM": 5000 },
+      "dwell_s": 10,
+      "narration": "Golden Gate Bridge — explicit lat/lon stop, the tour's coordinate leg."
+    },
+    {
+      "id": "globe-out",
+      "tool": "zoom_to_globe",
+      "dwell_s": 4,
+      "narration": "Tour complete — pulling back to the whole planet."
+    }
+  ]
+}

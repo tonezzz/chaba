@@ -143,6 +143,21 @@ runbooks:
       - docs/ssot/jobs/gev/2026-10-06-gev-cast-verify-after-act.yml
     note: Live-exercised on screen 6 (vcast-real@idc02) — cast->state-read->displace->PiP-remediate->restore, 14/14 PASS via gev-cast-verify.mjs. Caught deployed vcast/sw.js v2 vs repo v3 drift.
 
+  gev-tours:
+    path: docs/runbooks/gev-tours.md
+    type: markdown
+    status: verified
+    last_verified: 2026-10-06
+    scope: gev-gemini /command relay + vcast displays — tour JSON format (ordered waypoints, dwell, narration cues), gev-tour.mjs runner, checkpoint report contract for scenario verification
+    related:
+      - stacks/web/input-bridge/gev-tour.mjs
+      - stacks/web/input-bridge/gev-tour-selftest.mjs
+      - stacks/web/input-bridge/tours/world-landmarks.json
+      - stacks/tony-dell/gev-gemini/bridge.py
+      - reports/gev-tour-world-landmarks-20261006.json
+      - docs/ssot/jobs/gev/2026-10-06-gev-tours-format.yml
+    note: Live-verified 2026-10-06 — world-landmarks played end-to-end on vcast-real-6 (relay screen 1), 7/7 checkpoints in order in 70.5s. No gods-eye-view change needed — rides the existing /command relay + fly_to_location waitForArrival.
+
   # ── Tier 2: SSOT-embedded runbooks ────────────────────────────────────────
   home-assistant-howto:
     path: docs/ssot/infrastructure/ssot.home-assistant.howto.yml
