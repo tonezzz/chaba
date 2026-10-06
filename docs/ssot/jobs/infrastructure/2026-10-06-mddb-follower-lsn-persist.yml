@@ -28,8 +28,8 @@ planning:
       it lacked the 10-commit snapshot-loop fix merge (d77c6ae). An image
       built on it was briefly live on idc02 before the rebase; build mddb
       deploys only off feat/vector-algorithms.
-    - idc03 ssh: tony-dell has no authorized key; use tony-omen hop
-      (tony-omen has ~/.ssh/id_idc03) or podman save/load piped through it.
+    - "idc03 ssh: tony-dell has no authorized key; use tony-omen hop
+      (tony-omen has ~/.ssh/id_idc03) or podman save/load piped through it."
   related_focus:
     - label: mddb-follower-lsn-persist
       file: docs/ssot/kanban/cards/mddb-follower-lsn-persist.yml
@@ -49,4 +49,4 @@ processing:
     - stacks/idc03/mddb/mddb.container Image= bump (this worktree)
   verify:
     - go test -count=1 . in services/mddbd
-    - idc02 podman logs: 'resuming from persisted LSN' on restart, no snapshot
+    - "idc02 podman logs: 'resuming from persisted LSN' on restart, no snapshot"

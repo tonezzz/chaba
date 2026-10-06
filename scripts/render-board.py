@@ -70,6 +70,11 @@ def main():
         STATE.write_text(h + "\n")
 
     cards = load_cards(man)
+    # legibility: `priority` drives intra-column order — "next-up" is
+    # readable without a separate queue column. Stable: same-priority
+    # cards keep file order.
+    rank = {"high": 0, "medium": 1, "low": 3}
+    cards.sort(key=lambda c: rank.get(str(c.get("priority") or "").lower(), 2))
     cols = man["columns"]
     limit = man.get("rules", {}).get("doing_limit", 2)
     doing_sessions = {}
@@ -276,6 +281,11 @@ function cardHtml(c) {{
   const openReqs = (c.requests || []).filter(r => r.status !== 'answered').length;
   if (openReqs)
     badges += `<span class="text-xs bg-amber-800/80 text-amber-100 rounded px-1.5 py-0.5">needs you ×${{openReqs}}</span> `;
+  const PRIO = {{high: ['bg-red-900/70 text-red-200', '▲ high'],
+               medium: ['bg-sky-900/60 text-sky-200', '● medium'],
+               low: ['bg-slate-700/60 text-slate-400', '▽ low']}};
+  const pv = PRIO[String(c.priority || '').toLowerCase()];
+  if (pv) badges += `<span class="text-xs ${{pv[0]}} rounded px-1.5 py-0.5">${{pv[1]}}</span> `;
   const lab = c.lab || {{}};
   if (lab.review_by) {{
     const overdue = !lab.outcome && lab.review_by < new Date().toISOString().slice(0,10);
@@ -322,7 +332,7 @@ function isVerified(c) {{
                     : 'no verification entry in comms'}};
 }}
 // automation-generated card ids — collapsed under per-column groups
-const AUTO_RE = /^(cms-auto-|logs-auto-)|-auto-health$/;
+const AUTO_RE = /^(cms|logs|gev|vcast|disk)-auto-|-auto-health$/;
 let autoOpen = {{}};
 try {{ autoOpen = JSON.parse(localStorage.getItem('board-auto-open') || '{{}}'); }} catch (e) {{}}
 const REVIEW_RE = /(?:->|→|—|–)\\s*review\\b/i;
@@ -352,6 +362,11 @@ function needsYou() {{
       if (!verified && !isNaN(t) && Date.now() - t > 24 * 3600e3)
         items.push({{kind: 'stale-review', c, ageH: Math.round((Date.now() - t) / 3600e3)}});
     }}
+    if ((c.column || 'backlog') === 'doing') {{
+      const cs = tsOf((c.claim || {{}}).since);
+      if (!isNaN(cs) && Date.now() - cs > 72 * 3600e3)
+        items.push({{kind: 'stale-claim', c, ageH: Math.round((Date.now() - cs) / 3600e3)}});
+    }}
     const st = (c.action || {{}}).status;
     if (st === 'failed' || st === 'error') items.push({{kind: 'failed', c}});
     if (c.awaiting_action && (c.column || 'backlog') !== 'done')
@@ -371,6 +386,9 @@ function nyItemHtml(it) {{
     return `<div class="border border-violet-700/40 rounded p-2 bg-violet-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
       `<span class="text-xs text-violet-200">in review ${{it.ageH}}h — no verification entry</span>` +
       `<button class="ny-verify text-xs bg-emerald-800 hover:bg-emerald-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}">✔ verify</button></div></div>`;
+  if (it.kind === 'stale-claim')
+    return `<div class="border border-slate-600/60 rounded p-2 bg-slate-800/40"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
+      `<span class="text-xs text-slate-300">claim ${{it.ageH}}h old — reclaimable per doing SLA</span></div></div>`;
   if (it.kind === 'answered') {{
     const a = c.action || {{}};
     const queueBtn = a.type && a.status !== 'queued' && a.status !== 'running'
@@ -396,7 +414,19 @@ function render() {{
     const all = DATA.cards.filter(c => (c.column || 'backlog') === col.id);
     const norm = all.filter(c => !AUTO_RE.test(c.id));
     const autos = all.filter(c => AUTO_RE.test(c.id));
-    let body = norm.map(cardHtml).join('');
+    let body;
+    if (col.id === 'review') {{
+      // review is three jobs in one column — group by review_kind so
+      // decisions don't drown under verify-me dispatches and auto triage
+      const grp = {{decide: [], verify: [], triage: []}};
+      for (const c of norm) (grp[c.review_kind] || grp.verify).push(c);
+      const grpHtml = (tag, list) => !list.length ? '' :
+        `<div class="text-[10px] uppercase tracking-wide text-slate-500 mt-2 mb-1">${{tag}} (${{list.length}})</div>` +
+        list.map(cardHtml).join('');
+      body = grpHtml('❓ decide', grp.decide) + grpHtml('✔ verify', grp.verify) + grpHtml('🤖 triage', grp.triage);
+    }} else {{
+      body = norm.map(cardHtml).join('');
+    }}
     if (autos.length) {{
       const open = !!autoOpen[col.id];
       body += `<div class="border border-slate-700/50 rounded p-2 mt-1 opacity-75">` +

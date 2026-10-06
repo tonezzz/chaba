@@ -1,6 +1,7 @@
 id: mddb-follower-lsn-persist
 title: Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G
 column: review
+review_kind: decide
 note: 'During the idc03 cutover: every mddb follower restart pulls a FULL 4.3G snapshot (~100s stream + verify)
   because lastAppliedLSN lives only in memory — restart reports fromLSN=0, trips the new below-oldest check, re-snapshots.
   Persist lastAppliedLSN in the follower DB (or a sidecar file in data dir) so restarts TAIL the binlog instead

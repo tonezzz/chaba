@@ -44,6 +44,12 @@ card_schema:
   title: "short human title"
   column: "backlog | doing | review | done"
   # optional — status
+  priority: "high | medium | low — sorts cards within every column
+             (absent = normal). Backlog's 'next-up' signal."
+  review_kind: "verify | decide | triage — only on column:review cards.
+             verify = dispatched work needing proof-check (default when
+             absent); decide = a judgment call for Tony; triage = sweep-
+             generated cleanup. Renders as sub-groups in the column."
   claim: {session: "worker session/task id", since: "datetime"}
   note: "current status line shown on the card"
   updated: "YYYY-MM-DD or YYYY-MM-DD HH:MM"
@@ -265,9 +271,14 @@ ops:
     backlog: "unbounded; >90d untouched = retire-or-replan candidate (sweep)"
     doing:   "soft cap 2/session; >3d claimed with no comms = stale claim, reclaimable"
     review:  "Tony's queue — target <10 open; >48h waiting = the bottleneck is
-              review bandwidth, not automation"
+              review bandwidth, not automation. Sub-grouped by review_kind;
+              stale (>24h) unverified cards surface in the needs-you band"
     lab:     "bounded by review_by; past date with no outcome = sweep violation"
-    done:    "terminal; verified-by evidence expected in note/comms"
+    done:    "terminal; verified-by evidence expected in note/comms.
+              Archive: done cards >30d old move to cards/archive/ (non-
+              recursive glob keeps them off the board but in git). Do NOT
+              archive *-auto-* ids — sweepers glob cards/*.yml by prefix
+              and would recreate them"
 
   cadence_rule:
     # When to adjust a lane's timer — decide by detection SLA + churn,
