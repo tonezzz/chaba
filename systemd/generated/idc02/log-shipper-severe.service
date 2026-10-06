@@ -1,0 +1,8 @@
+[Unit]
+Description=Log shipper — severe kinds fast lane (job:log-shipper-severe, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
+Environment="MDDB_BASE_URL=http://100.102.134.91:11023/v1"

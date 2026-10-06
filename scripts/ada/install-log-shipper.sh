@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# install-log-shipper.sh — install the per-host local log-shipper timer.
+# install-log-shipper.sh — install the per-host local log-shipper timers.
 #
 # Bundles log-shipper.py + the rendered systemd user units for a fleet
-# host, pushes them over ssh, and enables the timer. The shipper runs
+# host (full lane + severe fast lane, card logs-severe-hourly), pushes
+# them over ssh, and enables the timers. The shipper runs
 # self-contained from ~/.local/share/log-shipper/ — deliberately NOT the
 # repo checkout, so a stale/divergent checkout never breaks shipping.
 # Adding a new host = add the job to ssot.jobs.yml, re-render, run this.
@@ -71,9 +72,17 @@ mkdir -p "$D" "$U"
 install -m 0644 "$S/log-shipper.py" "$D/log-shipper.py"
 install -m 0644 "$S/log-shipper.service" "$S/log-shipper.timer" "$U/"
 TIMERS="log-shipper.timer"
+if [ -f "$S/log-shipper-severe.timer" ]; then
+    install -m 0644 "$S/log-shipper-severe.service" "$S/log-shipper-severe.timer" "$U/"
+    TIMERS="$TIMERS log-shipper-severe.timer"
+fi
 if [ -f "$S/log-shipper-mha.timer" ]; then
     install -m 0644 "$S/log-shipper-mha.service" "$S/log-shipper-mha.timer" "$U/"
     TIMERS="$TIMERS log-shipper-mha.timer"
+fi
+if [ -f "$S/log-shipper-severe-mha.timer" ]; then
+    install -m 0644 "$S/log-shipper-severe-mha.service" "$S/log-shipper-severe-mha.timer" "$U/"
+    TIMERS="$TIMERS log-shipper-severe-mha.timer"
 fi
 systemctl --user daemon-reload
 # shellcheck disable=SC2086
@@ -83,9 +92,17 @@ EOS
     cat > "$1/run-once.sh" <<'EOS'
 #!/usr/bin/env bash
 /usr/bin/python3 "$HOME/.local/share/log-shipper/log-shipper.py" --self 2>&1 | tail -3
+if [ -f "$HOME/.config/systemd/user/log-shipper-severe.timer" ]; then
+    /usr/bin/python3 "$HOME/.local/share/log-shipper/log-shipper.py" \
+        --self --severe 2>&1 | tail -3
+fi
 if [ -f "$HOME/.config/systemd/user/log-shipper-mha.timer" ]; then
     /usr/bin/python3 "$HOME/.local/share/log-shipper/log-shipper.py" \
         --hosts michael-ha 2>&1 | tail -3
+fi
+if [ -f "$HOME/.config/systemd/user/log-shipper-severe-mha.timer" ]; then
+    /usr/bin/python3 "$HOME/.local/share/log-shipper/log-shipper.py" \
+        --hosts michael-ha --severe 2>&1 | tail -3
 fi
 EOS
 }
@@ -99,9 +116,16 @@ for host in "${HOSTS[@]}"; do
     tmp="$(mktemp -d)"
     cp "$SHIPPER" "$tmp/"
     cp "$gdir"/log-shipper.service "$gdir"/log-shipper.timer "$tmp/"
+    # severe fast-lane units render for every shipper host
+    if [ -f "$gdir/log-shipper-severe.timer" ]; then
+        cp "$gdir"/log-shipper-severe.service "$gdir"/log-shipper-severe.timer "$tmp/"
+    fi
     # pull-lane units only exist where the manifest renders them (dell)
     if [ -f "$gdir/log-shipper-mha.timer" ]; then
         cp "$gdir"/log-shipper-mha.service "$gdir"/log-shipper-mha.timer "$tmp/"
+    fi
+    if [ -f "$gdir/log-shipper-severe-mha.timer" ]; then
+        cp "$gdir"/log-shipper-severe-mha.service "$gdir"/log-shipper-severe-mha.timer "$tmp/"
     fi
     write_remote_install "$tmp"
 

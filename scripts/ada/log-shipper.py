@@ -36,7 +36,16 @@ Usage:
   log-shipper.py                          # all hosts, user+system journals
   log-shipper.py --self                   # this host only (per-host timer)
   log-shipper.py --hosts idc01 --dry-run
+  log-shipper.py --self --severe          # severe-kinds fast lane
   log-shipper.py --prune-days 14          # retention sweep (delete old docs)
+
+Severe lane (2026-10-06, card logs-severe-hourly): `--severe` ships only
+oom/panic/failed kinds on an INDEPENDENT tagged cursor + state file, so a
+second per-host timer can run it hourly without disturbing the full
+lane's cursor — a severe line never queues behind a capped backlog.
+`--kinds`/`--cursor-tag` are the generic knobs underneath; `--severe` is
+`--kinds oom,panic,failed --cursor-tag severe`. Severe runs post
+`ship-severe/<host>` state docs (logs-kanban only reads `ship/`).
 """
 
 from __future__ import annotations
@@ -96,6 +105,10 @@ KINDS = [
     ("deny",   re.compile(r"denied|refused", re.I)),
     ("error",  re.compile(r"error|critical|alert|emerg", re.I)),
 ]
+# Severe subset for the hourly fast lane — mirrors SEVERE in
+# logs-report.py, keep in sync. "error" is deliberately excluded: it's
+# the catch-all bucket and would make the lane noisy on spammy hosts.
+SEVERE_KINDS = ("oom", "panic", "failed")
 DROP = [
     "function_call result",          # transcript dumps, not real events
     "[RATELIMIT]",                   # tailscaled log-suppression noise
@@ -143,8 +156,9 @@ def _ssh(host: str, remote: str, timeout: int = 120) -> str:
                  *extra, target, remote], timeout)
 
 
-def _cursor_path(user: bool) -> str:
-    return f"~/.cache/log-shipper-{'user' if user else 'sys'}.cursor"
+def _cursor_path(user: bool, tag: str = "") -> str:
+    t = f"{tag}-" if tag else ""
+    return f"~/.cache/log-shipper-{t}{'user' if user else 'sys'}.cursor"
 
 
 # `ha host logs` line: "2026-10-05 15:06:34.360 homeassistant systemd[1]: msg"
@@ -153,11 +167,13 @@ HA_LINE = re.compile(
     r"([^:\[\s]+)(?:\[\d+\])?: (.*)$")
 
 
-def _ha_state_file(host: str) -> Path:
-    return Path.home() / ".cache" / f"log-shipper-ha-{host}.json"
+def _ha_state_file(host: str, tag: str = "") -> Path:
+    t = f"{tag}-" if tag else ""
+    return Path.home() / ".cache" / f"log-shipper-ha-{t}{host}.json"
 
 
-def _journal_ha(host: str) -> list[dict]:
+def _journal_ha(host: str, kinds: set | None = None,
+                tag: str = "") -> list[dict]:
     """ha-cli hosts: `ha host logs` text tail — the supervisor exposes no
     journald cursor protocol, so dedup is (ts watermark, boundary hashes)
     kept in a collector-side state file. Rows carry a JSON cursor
@@ -166,7 +182,7 @@ def _journal_ha(host: str) -> list[dict]:
                timeout=60)
     st = {}
     try:
-        st = json.loads(_ha_state_file(host).read_text())
+        st = json.loads(_ha_state_file(host, tag).read_text())
     except Exception:
         pass
     last_ts = st.get("ts", "")
@@ -181,7 +197,7 @@ def _journal_ha(host: str) -> list[dict]:
         if not msg.strip():
             continue
         kind = classify(msg)
-        if not kind:
+        if not kind or (kinds and kind not in kinds):
             continue
         # journal-gatewayd renders in the HAOS host's TZ (UTC)
         try:
@@ -212,22 +228,23 @@ def _journal_ha(host: str) -> list[dict]:
     return rows
 
 
-def _save_ha_state(host: str, cursor_json: str) -> None:
+def _save_ha_state(host: str, cursor_json: str, tag: str = "") -> None:
     """Collector-side dedup file for ha-cli hosts (the remote addon has
     no persistent $HOME)."""
     try:
-        _ha_state_file(host).parent.mkdir(parents=True, exist_ok=True)
-        _ha_state_file(host).write_text(cursor_json)
+        _ha_state_file(host, tag).parent.mkdir(parents=True, exist_ok=True)
+        _ha_state_file(host, tag).write_text(cursor_json)
     except Exception as e:
         print(f"warn: {host}: ha state save failed: {e}",
               file=sys.stderr)
 
 
-def _journal(host: str, user: bool) -> list[dict]:
+def _journal(host: str, user: bool, kinds: set | None = None,
+             tag: str = "") -> list[dict]:
     """json lines since last SHIPPED cursor; cursor file is read-only
     here — written back by ship() after posts succeed."""
     scope = "--user" if user else "--system"
-    cur = _cursor_path(user)
+    cur = _cursor_path(user, tag)
     # --grep filters at journal level — on noisy hosts (idc01's user
     # journal = days of uvicorn INFO spam) piping the full journal into
     # grep blew past the ssh timeout and silently yielded 0 rows, hiding
@@ -255,7 +272,7 @@ def _journal(host: str, user: bool) -> list[dict]:
         if not isinstance(msg, str) or not msg.strip():
             continue
         kind = classify(msg)
-        if not kind:
+        if not kind or (kinds and kind not in kinds):
             continue
         unit = (e.get("_SYSTEMD_USER_UNIT") or e.get("_SYSTEMD_UNIT")
                 or e.get("UNIT") or e.get("SYSLOG_IDENTIFIER") or "?")
@@ -289,9 +306,10 @@ def _post(path: str, payload: dict, timeout: int = 15) -> bool:
         return False
 
 
-def _save_cursor(host: str, user: bool, cursor: str) -> None:
+def _save_cursor(host: str, user: bool, cursor: str,
+                 tag: str = "") -> None:
     _ssh(host, f"mkdir -p ~/.cache; printf '%s' '{cursor}' "
-               f"> {_cursor_path(user)}", timeout=30)
+               f"> {_cursor_path(user, tag)}", timeout=30)
 
 
 def _reachable(host: str) -> bool:
@@ -302,7 +320,8 @@ def _reachable(host: str) -> bool:
     return "ok" in _ssh(host, probe, timeout=15)
 
 
-def ship(host: str, dry: bool, max_docs: int) -> dict:
+def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
+         tag: str = "") -> dict:
     sent = fail = scanned = 0
     journals = {"user": 0, "sys": 0}
     ha = host in HA_CLI_HOSTS
@@ -311,11 +330,13 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
     if not _reachable(host):
         return {"host": host, "shipped": 0, "failed": 0, "scanned": 0,
                 "reachable": False, "journals": journals, "lane": lane,
+                "run": tag or "full",
                 "error": "ha-cli probe failed" if ha else
                          "ssh probe failed"}
     # ha-cli hosts have a single host journal; others run user+system.
-    sides = [(False, _journal_ha(host))] if ha else \
-            [(user, _journal(host, user)) for user in (True, False)]
+    sides = [(False, _journal_ha(host, kinds, tag))] if ha else \
+            [(user, _journal(host, user, kinds, tag))
+             for user in (True, False)]
     for user, rows in sides:
         scanned += len(rows)
         journals["user" if user else "sys"] = len(rows)
@@ -345,22 +366,28 @@ def ship(host: str, dry: bool, max_docs: int) -> dict:
             last_ok = r["cursor"]
         if not dry and last_ok:
             if ha:
-                _save_ha_state(host, last_ok)
+                _save_ha_state(host, last_ok, tag)
             else:
-                _save_cursor(host, user, last_ok)
+                _save_cursor(host, user, last_ok, tag)
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
             "scanned": scanned, "reachable": True, "lane": lane,
-            "journals": journals,
+            "journals": journals, "run": tag or "full",
             "error": "mddb add failed" if fail else ""}
 
 
 def post_state(r: dict) -> None:
     """Upsert the per-host ship heartbeat. Runs even when shipped=0 — a
-    quiet host and a broken shipper must not look identical."""
+    quiet host and a broken shipper must not look identical. Tagged lanes
+    (e.g. severe) write `ship-<tag>/<host>` — separate key so the fast
+    lane's counters never clobber the full lane's `ship/<host>` doc that
+    logs-kanban judges backlog/coverage against."""
+    run = r.get("run") or "full"
+    key = f"ship/{r['host']}" if run == "full" else \
+        f"ship-{run}/{r['host']}"
     _post("/add", {
-        "collection": STATE_COLLECTION, "key": f"ship/{r['host']}",
+        "collection": STATE_COLLECTION, "key": key,
         "lang": "en",
         "contentMd": json.dumps(r),
         "meta": {"host": [r["host"]], "kind": ["ship-state"],
@@ -412,6 +439,17 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-docs", type=int, default=500,
                     help="cap docs shipped per host per run")
+    ap.add_argument("--severe", action="store_true",
+                    help="severe-kinds fast lane: "
+                         f"--kinds {','.join(SEVERE_KINDS)} on an "
+                         "independent 'severe' cursor/state — safe to run "
+                         "hourly alongside the full sweep")
+    ap.add_argument("--kinds", default="",
+                    help="comma-separated kind allowlist (oom,panic,"
+                         "failed,restart,deny,error)")
+    ap.add_argument("--cursor-tag", default="",
+                    help="separate cursor/state lane tag — keeps this "
+                         "run from disturbing the full lane's cursor")
     ap.add_argument("--prune-days", type=int, default=0,
                     help="delete host-logs docs older than N days, then exit")
     args = ap.parse_args()
@@ -421,11 +459,18 @@ def main() -> int:
               f"{args.prune_days}d")
         return 0
 
+    kinds = {k.strip() for k in args.kinds.split(",") if k.strip()}
+    tag = args.cursor_tag
+    if args.severe:
+        kinds = kinds or set(SEVERE_KINDS)
+        tag = tag or "severe"
+
     hosts = [_local_name()] if args.self_host else \
         [x.strip() for x in args.hosts.split(",") if x.strip()]
     for h in hosts:
         try:
-            r = ship(h, args.dry_run, args.max_docs)
+            r = ship(h, args.dry_run, args.max_docs,
+                     kinds or None, tag)
             print(f"{r['host']}: {r['shipped']} shipped "
                   f"({r['scanned']} lines matched, {r['failed']} failed)"
                   + ("" if r.get("reachable") else " — unreachable"))
@@ -436,7 +481,8 @@ def main() -> int:
             if not args.dry_run:
                 post_state({"host": h, "shipped": 0, "failed": 0,
                             "scanned": 0, "reachable": False,
-                            "journals": {}, "error": str(e)[:200]})
+                            "journals": {}, "run": tag or "full",
+                            "error": str(e)[:200]})
     return 0
 
 

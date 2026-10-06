@@ -1,0 +1,112 @@
+title: Hourly severe-line shipping lane (log-shipper --severe)
+subtitle: >-
+  Second per-host timer ships only severe kinds (oom/panic/failed) on an
+  independent tagged cursor — a host's last-gasp lines reach MDDB
+  host-logs within the hour instead of waiting for the daily 08:45 batch,
+  and severe lines never queue behind a capped full-lane backlog.
+icon: rocket
+id: 2026-10-06-log-shipper-severe-lane
+status: done
+owner: devin-dispatch
+project: chaba
+card: logs-severe-hourly
+started: "2026-10-06"
+completed: "2026-10-06"
+
+context:
+  user_request: >
+    Kanban card logs-severe-hourly: the daily 08:45 batch means a host
+    dying at 09:00 waits ~24h to show in the digest. Add an hourly lane
+    that ships only severe kinds (small volume — the 500/run cap almost
+    never binds), reusing log-shipper.py with a severity filter + a
+    second timer per host. Pairs with logs-local-shippers (done
+    2026-10-05 — per-host hourly timers already exist).
+  why_separate_cursor: >
+    A severe lane CANNOT share the full lane's cursor files: the cursor
+    marks "last shipped position", so a severe run writing it would
+    silently skip every non-severe line it scanned past — the full lane
+    would then never see them. The severe lane therefore keeps its own
+    cursor (`log-shipper-severe-{sys,user}.cursor` /
+    `log-shipper-ha-severe-<host>.json`) and its own state doc
+    (`ship-severe/<host>`). Consequence: severe lines are posted by both
+    lanes — same deterministic key, so it's an idempotent same-key
+    upsert, not a duplicate doc.
+
+topology:
+  full_lane: >-
+    unchanged — `log-shipper.timer` hourly on each host
+    (`--self --max-docs 2000`), ssh fallback from the omen nightly.
+  severe_lane: >-
+    `log-shipper-severe.timer` hourly on tony-dell, tony-omen, idc01,
+    idc02, idc03, mn01 — `--self --severe` = `--kinds oom,panic,failed
+    --cursor-tag severe`. "error" kind deliberately excluded (catch-all
+    bucket, too noisy on spammy hosts — mirrors SEVERE in
+    logs-report.py).
+  severe_mha: >-
+    `log-shipper-severe-mha.timer` on tony-dell —
+    `--hosts michael-ha --severe` pull twin of log-shipper-mha (HAOS has
+    no journald/python; collector-side dedup file is tag-suffixed).
+
+code_changes:
+  - >-
+    scripts/ada/log-shipper.py — new flags --severe (shortcut for
+    --kinds oom,panic,failed --cursor-tag severe), --kinds, --cursor-tag.
+    Tagged lanes use separate cursor files
+    (~/.cache/log-shipper-<tag>-{sys,user}.cursor), separate ha-cli dedup
+    file (log-shipper-ha-<tag>-<host>.json), and post
+    `ship-<tag>/<host>` state docs with a "run" field instead of
+    `ship/<host>` — the full lane's heartbeat is never clobbered.
+    SEVERE_KINDS = (oom, panic, failed), mirrors SEVERE in
+    logs-report.py.
+  - >-
+    scripts/ada/logs-kanban.py — ship_states() now only consumes
+    `ship/` keys; side-lane heartbeats (ship-severe/<host>) are ignored
+    so severe-lane counters can't trigger false backlog/one-sided cards.
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — 6x log-shipper-severe jobs
+    (tony_dell, tony_omen, idc01, idc02, idc03, mn01; hourly) +
+    log-shipper-severe-mha on tony_dell.
+  - >-
+    scripts/ada/install-log-shipper.sh — bundles + arms the severe units
+    alongside the full lane; run-once exercises both lanes.
+  - >-
+    systemd/generated/<host>/log-shipper-severe.{service,timer} +
+    dell's log-shipper-severe-mha.* — rendered by render-jobs.py.
+
+install_state:
+  installed_2026-10-06:
+    tony-dell: log-shipper-severe.timer + log-shipper-severe-mha.timer
+      armed; severe first run shipped 500 (984 severe matched over the
+      7-day initial window — drains at 500/run)
+    tony-omen: severe timer armed; --self --severe --dry-run matched 382
+    idc01/idc02/idc03/mn01: installed via installer from tony-omen
+    michael-ha: severe pull runs on tony-dell (same HAOS constraint)
+  propagate: >-
+    shipper updates propagate by re-running install-log-shipper.sh —
+    the script runs self-contained from ~/.local/share/log-shipper/,
+    not the repo checkout.
+
+verification:
+  done:
+    - "--self --severe --dry-run on tony-omen: 382 severe matched, 0 fail"
+    - "installer armed severe timers on all 6 journald hosts + severe-mha
+      on dell; dell first severe run shipped 500"
+    - "injected `kernel: Out of memory: Killed process` probe line on
+      tony-omen user journal via systemd-cat; landed in host-logs as
+      kind=oom within the same minute (hostlog/tony-omen/...)"
+    - "ship-severe/tony-omen state doc written; ship/tony-omen untouched
+      (separate keys)"
+  ongoing:
+    - "hourly ticks keep ship-severe/<host> docs fresh; the digest's
+      severe counters see new oom/panic/failed lines within ~1h"
+
+known_limits:
+  - "first severe run per host backfills up to 500 severe lines from the
+    7-day initial window (cap binds once, then drains — dell hit it)"
+  - "severe lines are posted twice (once per lane) — same deterministic
+    key, idempotent upsert; negligible at severe volume"
+  - "idc01/idc02/idc03 system journals still unreadable by user tony —
+    severe lane inherits the same blind spot (usermod -aG systemd-journal
+    tony would fix fleet-wide)"
+  - "a truly dead host still can't ship — the dead-host signal remains
+    the stale ship/<host> + ship-severe/<host> heartbeats going silent"
