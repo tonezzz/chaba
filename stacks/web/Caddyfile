@@ -113,21 +113,21 @@ http://127.0.0.1:8080 {
 	}
 	# --- routes ported from the retired :8085 edge (caddy-tony-dell) 2026-09-25 ---
 
-	# Ada HA PWAs — canonical on idc01 tailscale serve
+	# Ada HA PWAs — canonical on idc03 tailscale serve (idc01 retired 2026-10-05)
 	handle /apps/ha/ada-tony {
 		redir * /apps/ha/ada-tony/ 308
 	}
 	handle /apps/ha/ada-tony/* {
-		reverse_proxy https://idc01.taila0626a.ts.net {
-			header_up Host idc01.taila0626a.ts.net
+		reverse_proxy https://idc03.taila0626a.ts.net {
+			header_up Host idc03.taila0626a.ts.net
 		}
 	}
 	handle /apps/ha/ada-michael {
 		redir * /apps/ha/ada-michael/ 308
 	}
 	handle /apps/ha/ada-michael/* {
-		reverse_proxy https://idc01.taila0626a.ts.net {
-			header_up Host idc01.taila0626a.ts.net
+		reverse_proxy https://idc03.taila0626a.ts.net {
+			header_up Host idc03.taila0626a.ts.net
 		}
 	}
 
@@ -151,12 +151,12 @@ http://127.0.0.1:8080 {
 		redir * /apps/ha/ada{uri} 308
 	}
 
-	# ada-pi PWA retired on tony-dell — canonical instance is idc01 serve root
+	# ada-pi PWA retired on tony-dell — canonical instance is idc03 serve root
 	handle /apps/ada_pi {
 		redir * /apps/ada_pi/ 308
 	}
 	handle_path /apps/ada_pi/* {
-		redir * https://idc01.taila0626a.ts.net{uri} 308
+		redir * https://idc03.taila0626a.ts.net{uri} 308
 	}
 
 	# HA convenience redirects
