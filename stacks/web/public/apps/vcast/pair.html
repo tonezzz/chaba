@@ -53,9 +53,19 @@
   const sid = new URLSearchParams(location.search).get("sid") || "";
 
   async function api(path, opts) {
-    const r = await fetch(`/api/input-bridge${path}`, opts);
-    const data = await r.json().catch(() => ({}));
-    return { status: r.status, data };
+    // 10s ceiling — a hung relay otherwise leaves the button stuck at
+    // "pairing…" forever and the pair->play budget dies silently
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(`/api/input-bridge${path}`, { ...opts, signal: ctrl.signal });
+      const data = await r.json().catch(() => ({}));
+      return { status: r.status, data };
+    } catch (e) {
+      return { status: 0, data: { error: "relay unreachable — check tailnet, then retry" } };
+    } finally {
+      clearTimeout(t);
+    }
   }
 
   async function loadPending() {

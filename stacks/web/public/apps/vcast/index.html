@@ -102,8 +102,11 @@
   <div id="toast"></div>
   <audio id="audio"></audio>
 
-  <script src="/apps/vcast/qrcode.min.js"></script>
-  <script src="/apps/vcast/hls.min.js"></script>
+  <!-- ?v= pins: bump alongside sw.js CACHE_NAME when a vendored file
+       changes — covers the pre-SW first load where heuristic HTTP
+       caching could serve a stale lib next to fresh HTML -->
+  <script src="/apps/vcast/qrcode.min.js?v=3"></script>
+  <script src="/apps/vcast/hls.min.js?v=3"></script>
   <script>
     const params = new URLSearchParams(location.search);
     const KEY_STORE = "vcast.api_key";
@@ -162,7 +165,23 @@
         el, video: el.querySelector("video"), img: el.querySelector("img"),
         frame: el.querySelector("iframe"), hls: null, imgTimer: null,
         frameOk: false,
+        // hls drop-recovery state (see attachHls/nativeHlsReload)
+        hlsUrl: "", hlsRetries: 0, hlsMediaRecoveries: 0, hlsRetryT: null,
       };
+      p.video.addEventListener("playing", () => resetHlsRetry(p));
+      // native-HLS path (Safari): a dropped producer ends the element with
+      // a MEDIA_ERR_* (or 'ended' on a live playlist) — reload with the
+      // same backoff instead of freezing on the last frame
+      p.video.addEventListener("error", () => {
+        if (!p.hlsUrl || p.hls) return;   // hls.js path self-recovers
+        sendState("hls-retry", `native reload #${p.hlsRetries + 1}`);
+        armHlsRetry(p, () => nativeHlsReload(p));
+      });
+      p.video.addEventListener("ended", () => {
+        if (!p.hlsUrl || p.hls || !isLiveVideo(p.video)) return;
+        sendState("hls-retry", `native ended #${p.hlsRetries + 1}`);
+        armHlsRetry(p, () => nativeHlsReload(p));
+      });
       p.frame.addEventListener("load", () => {
         if (p.frame.src && p.frame.src !== "about:blank") {
           p.frameOk = true;
@@ -204,6 +223,7 @@
       sendState("layout", `${n} pane${n > 1 ? "s" : ""}${pip ? " (pip)" : ""}`);
     }
     function paneTeardown(p) {
+      resetHlsRetry(p); p.hlsUrl = "";
       if (p.hls) { try { p.hls.destroy(); } catch (e) {} p.hls = null; }
       p.video.pause(); p.video.removeAttribute("src"); p.video.load();
       p.video.style.display = "none";
@@ -334,18 +354,74 @@
       video.muted = !audioOK;
       if (!audioOK) audioGate.style.display = "block";
       const isHls = /\.m3u8($|\?)/i.test(url);
+      p.hlsUrl = isHls ? url : "";   // remembered for native-HLS reload
       if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
         if (!window.Hls || !Hls.isSupported()) { showToast("hls unsupported"); return sendState("error", "hls unsupported"); }
-        p.hls = new Hls({ liveSyncDurationCount: 3 });
-        p.hls.loadSource(mediaUrl(url));
-        p.hls.attachMedia(video);
-        p.hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) showToast("hls: " + (d.details || "error")); });
+        attachHls(p, url);
       } else {
         video.src = mediaUrl(url);
       }
       video.play().catch(() => showToast("tap for playback"));
       setHud(`screen ${screenNum} · video`, true);
       sendState("playing", `${pi || 0}:${url}`);
+    }
+    // HLS drop recovery — when the stream dies mid-play, hls.js escalates
+    // to a FATAL error after its internal retries give up. NETWORK_ERROR
+    // (playlist/segment gone) -> startLoad() re-polls the playlist until
+    // the producer returns; MEDIA_ERROR -> recoverMediaError() a couple of
+    // times then rebuild; anything else -> destroy + recreate. Bounded
+    // exponential backoff (1.5s..15s), reset once playback resumes, and
+    // every retry is reported as state so /displays shows the screen
+    // recovering instead of a stale "playing" over a frozen frame.
+    function resetHlsRetry(p) {
+      p.hlsRetries = 0; p.hlsMediaRecoveries = 0;
+      clearTimeout(p.hlsRetryT); p.hlsRetryT = null;
+    }
+    function armHlsRetry(p, fn) {
+      clearTimeout(p.hlsRetryT);
+      const n = ++p.hlsRetries;
+      p.hlsRetryT = setTimeout(fn, Math.min(15000, 1500 * Math.pow(2, n - 1)));
+    }
+    function isLiveVideo(v) {
+      // Infinity duration = live/event playlist; a finite VOD that 'ended'
+      // legitimately must NOT auto-reload (it would loop forever)
+      return v.duration === Infinity ||
+        (v.seekable.length && v.seekable.end(v.seekable.length - 1) - v.currentTime > 8);
+    }
+    function nativeHlsReload(p) {
+      if (!p.hlsUrl) return;
+      p.video.src = mediaUrl(p.hlsUrl);
+      p.video.play().catch(() => {});
+    }
+    function attachHls(p, url) {
+      const video = p.video;
+      p.hls = new Hls({ liveSyncDurationCount: 3 });
+      p.hls.loadSource(mediaUrl(url));
+      p.hls.attachMedia(video);
+      p.hls.on(Hls.Events.ERROR, (_, d) => {
+        if (!d.fatal) return;
+        const details = d.details || "error";
+        showToast("hls: " + details);
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          sendState("hls-retry", `net ${details} #${p.hlsRetries + 1}`);
+          armHlsRetry(p, () => {
+            if (!p.hls) return;   // pane torn down since the error fired
+            try { p.hls.startLoad(); } catch (e) {}
+          });
+        } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR
+                   && p.hlsMediaRecoveries < 2) {
+          p.hlsMediaRecoveries++;
+          sendState("hls-retry", `media ${details} #${p.hlsMediaRecoveries}`);
+          try { p.hls.recoverMediaError(); } catch (e) {}
+        } else {
+          sendState("hls-retry", `rebuild ${details} #${p.hlsRetries + 1}`);
+          armHlsRetry(p, () => {
+            if (!p.hls) return;
+            try { p.hls.destroy(); } catch (e) {}
+            attachHls(p, url);
+          });
+        }
+      });
     }
     function showImage(pi, url, interval) {
       const p = paneAt(pi), img = p.img;
