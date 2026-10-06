@@ -354,5 +354,14 @@ done
 # P4: keep focus-inbox entries in sync with the ada-ha-bank-devin-handoff
 # bank so repo triage picks up pending Ada-written specs. Best-effort —
 # never block or fail the watch on it.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HANDOFF_RENDERER="$HOME/CascadeProjects/chaba/scripts/devin/render-handoff-inbox.py"
+[ -f "$HANDOFF_RENDERER" ] || HANDOFF_RENDERER="$SCRIPT_DIR/render-handoff-inbox.py"
 [ -f "$HANDOFF_RENDERER" ] && log "handoff-inbox: $(python3 "$HANDOFF_RENDERER" 2>&1)" || true
+
+# Hide finished dispatch sessions from the Devin session list — hides
+# tasks that never had a card or never produced transcript.json, which
+# board-api's card-close path can't reach. Cheap UPDATE, no quick_check.
+SESSION_PRUNE="$SCRIPT_DIR/session-prune.py"
+[ -f "$SESSION_PRUNE" ] \
+    && log "hide-finished: $(python3 "$SESSION_PRUNE" --hide-finished 2>&1 | head -1)" || true

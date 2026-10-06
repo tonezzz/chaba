@@ -80,11 +80,13 @@ SSH_TARGETS = {
 }
 # Ops telemetry goes to mddb-ops when configured — keeps host-logs
 # (the largest collection) off the leader's vector index.
-# Default = live MDDB leader (idc03 tailnet IP; docs' "idc01" label is
-# stale — the leader moved and 100.74.146.0 no longer serves MDDB).
+# Default = mddb-ops no-embed instance (idc03 :11026) — everything the
+# shipper writes is ops telemetry per ssot.log-digest-standard.yml; raw
+# journal lines must not burn embed quota on the leader. MDDB_BASE_URL
+# is honoured as a local-dev fallback only when MDDB_OPS_URL is unset.
 MDDB_URL = (os.environ.get("MDDB_OPS_URL")
             or os.environ.get("MDDB_BASE_URL",
-                              "http://100.102.134.91:11023/v1")).rstrip("/")
+                              "http://100.102.134.91:11026/v1")).rstrip("/")
 COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
 # one doc per host in a sidecar collection — the ship heartbeat that
 # logs-kanban judges silence/unreachable/backlog against. Same-key upsert

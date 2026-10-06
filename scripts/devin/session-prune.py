@@ -355,10 +355,80 @@ def guarded_vacuum(db: Path, wait_s: int, vacuum: Path | None) -> dict:
                 pass
 
 
+def hide_finished(db: Path, tasks_dir: Path, dry_run: bool) -> dict:
+    """Hide dispatch-era sessions whose task is finished — decouples
+    hiding from kanban card close (board-api's hide_dispatch_session
+    needs a card + transcript.json, so cardless dispatch tasks and
+    killed/no-transcript tasks stayed visible forever).
+
+    A task counts as finished when its task dir is gone, the wrapper
+    wrote exit_code, or the dispatch watch stamped meta.finished_at.
+    Sessions with a live session-lock are left alone.
+    """
+    tasks = load_tasks(tasks_dir)
+    resume_sids = {
+        t["meta"]["branch"][len("resume/"):]: tid
+        for tid, t in tasks.items()
+        if str(t["meta"].get("branch", "")).startswith("resume/")
+    }
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        rows = [
+            {"id": r[0], "title": r[1] or "", "cwd": r[2] or "",
+             "hidden": bool(r[3])}
+            for r in conn.execute(
+                "SELECT id, title, working_directory, hidden FROM sessions")
+        ]
+    finally:
+        conn.close()
+
+    hide, skip = [], []
+    for row in rows:
+        if row["hidden"]:
+            continue
+        task_id, via = classify(row, tasks, resume_sids)
+        if via is None:
+            continue
+        if session_lock_active(row["id"]):
+            skip.append({**row, "reason": "active-lock"})
+            continue
+        task = tasks.get(task_id) if task_id else None
+        finished = task is None or \
+            (task["dir"] / "exit_code").exists() or \
+            bool(task["meta"].get("finished_at"))
+        if finished:
+            hide.append({**row, "task_id": task_id, "via": via})
+        else:
+            skip.append({**row, "reason": "task-still-running"})
+
+    errors = []
+    if hide and not dry_run:
+        conn = sqlite3.connect(str(db), timeout=15)
+        try:
+            with conn:
+                for r in hide:
+                    try:
+                        conn.execute("UPDATE sessions SET hidden=1 WHERE id=?",
+                                     (r["id"],))
+                    except Exception as exc:
+                        errors.append(f"{r['id']}: {exc}")
+        finally:
+            conn.close()
+        if db == DEFAULT_DB:
+            append_timeline(
+                NODE, LAYER, "error" if errors else "ok",
+                f"hid {len(hide)} finished dispatch sessions" +
+                (f" ({len(errors)} errors)" if errors else ""))
+    return {"hidden": hide, "skipped": skip, "errors": errors}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--hide-finished", action="store_true",
+                    help="only mark finished dispatch sessions hidden=1 "
+                         "(no prune/vacuum); safe to run frequently")
     ap.add_argument("--days", type=int, default=14,
                     help="retention window; dispatch sessions older than this are candidates")
     ap.add_argument("--db", type=Path, default=DEFAULT_DB)
@@ -378,6 +448,21 @@ def main() -> int:
     if not db.is_file():
         print(f"error: {db} not found", file=sys.stderr)
         return 2
+
+    if args.hide_finished:
+        res = hide_finished(db, args.tasks_dir.expanduser(), args.dry_run)
+        if args.json:
+            print(json.dumps(res, indent=2, default=str))
+        else:
+            mode = "would-hide" if args.dry_run else "hidden"
+            print(f"{mode} {len(res['hidden'])} dispatch sessions, "
+                  f"{len(res['skipped'])} still active/running")
+            for r in res["hidden"]:
+                print(f"  {mode:11} {r['id']:24} {r['via']:18} "
+                      f"{(r['title'] or 'untitled')[:70]}")
+            for e in res["errors"]:
+                print(f"  error: {e}")
+        return 1 if res["errors"] else 0
 
     qc = "skipped" if args.skip_check else quick_check(db)
     if qc != "ok":

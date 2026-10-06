@@ -166,6 +166,8 @@ sections:
         text: scripts/ops/ssh-canary.sh + systemd/ssh-canary.{service,timer} (repo); runs on tony-omen as user timer, log ~/var/chaba/health/ssh-canary.log
       - label: remote-protect drop-in
         text: systemd/dropins/chaba-remote-protect.conf + scripts/ops/install-ssh-protect.sh (installs to /etc/systemd/system/<unit>.d/ on the target host)
+      - label: screen blank + wake
+        text: 'X screen saver 900s on both seats (autostart screen-blank-15min.desktop on tony-omen:0 and tony-dell:1). wake-screens.timer on tony-omen polls xprintidle every 20s (scripts/ops/wake-screens-on-activity.sh): return from >=60s idle -> xset s reset on tony-dell:1, 45s cooldown.'
 
   - title: Verification
     icon: 🧪
