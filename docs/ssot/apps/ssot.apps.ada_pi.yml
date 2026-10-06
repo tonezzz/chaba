@@ -31,9 +31,9 @@ sections:
     layout: list
     items:
       - label: Live services running pwa_server.py
-        text: "ada-pi-pwa on idc01 :8001 (loopback, tailnet-only via tailscale serve at the idc01 root — moved from tony-dell 2026-09-23), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on idc01 :8002 and ada-ha-michael on idc01 :8003 (tailscale serve path mounts /apps/ha/ada-*/; moved from mn01 2026-09-23 — mn01 units stopped+disabled as standby, its Caddy proxies to idc01 as a legacy alias)."
+        text: "ada-pi-pwa on idc03 :8001 (loopback, tailnet-only via tailscale serve at the idc03 root — idc01→idc03 migration 2026-10-05/06, previously idc01 after tony-dell 2026-09-23), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on idc03 :8002 and ada-ha-michael on idc03 :8003 (tailscale serve path mounts /apps/ha/ada-*/; idc01 units stopped+disabled 2026-10-06 — mn01 standby units were already stopped, mn01/idc01 Caddy aliases are dead unless repointed)."
       - label: Tailnet URLs
-        text: "https://idc01.taila0626a.ts.net/ (standalone PWA, tailnet only), https://idc01.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/ (mn01.taila0626a.ts.net aliases still work via Caddy proxy)."
+        text: "https://idc03.taila0626a.ts.net/ (standalone PWA, tailnet only), https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/. idc01.taila0626a.ts.net aliases now 502 (backend stopped); idc02 edge /cms* + /api/cms* repointed to idc03 2026-10-06."
       - label: Registry
         text: Listed in docs/ssot/apps/ssot.apps.yml.
   - title: Frontend surfaces — retirement audit (2026-09-23)
@@ -51,7 +51,7 @@ sections:
       - label: "pwa/guest/"
         text: "Chaba guest page (register → voice clip → guest chat). Served by chaba-guest :8014 on LAN :8126 via the gate QR flow. KEEP — this is the guest surface, not a miniapp duplicate."
       - label: pwa/enroll.html
-        text: "Standalone speaker-enrollment page. No internal links; apps index points at idc01/enroll.html (host currently unreachable). Guest enrollment goes through guest.js instead — likely obsolete, confirm before removal."
+        text: "Standalone speaker-enrollment page. No internal links; apps index pointed at idc01/enroll.html — now on idc03 /enroll.html. Guest enrollment goes through guest.js instead — likely obsolete, confirm before removal."
       - label: manifest.json
         text: "PWA install metadata for the standalone app — dies with the root mount."
       - label: "/redeem/{token}"
