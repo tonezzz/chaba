@@ -31,7 +31,7 @@ from collections import Counter
 from pathlib import Path
 
 MDDB_URL = os.environ.get("MDDB_BASE_URL",
-                          "http://100.74.146.0:11023/v1").rstrip("/")
+                          "http://100.102.134.91:11023/v1").rstrip("/")
 LOG_COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
 STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
                                   "host-logs-state")

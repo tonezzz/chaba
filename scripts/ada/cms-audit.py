@@ -33,7 +33,7 @@ from the baseline — the ratchet only moves toward zero).
 """
 import datetime, json, os, re, sys, urllib.request
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 STALE_DAYS = int(os.environ.get("CMS_AUDIT_STALE_DAYS", "14"))
 # Living pages exempt from C2 staleness — point-in-time reports are
 # SUPPOSED to be dated. Opt out by keeping a -report/-assessment/-proposal

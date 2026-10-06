@@ -16,14 +16,14 @@ Usage:
     python3 scripts/mddb/reindex.py                        # default set
     python3 scripts/mddb/reindex.py --collection test --collection kb-system
     python3 scripts/mddb/reindex.py --dry-run              # list counts only
-    MDDB_BASE=http://100.74.146.0:11023 python3 scripts/mddb/reindex.py
+    MDDB_BASE=http://100.102.134.91:11023 python3 scripts/mddb/reindex.py
 """
 import argparse
 import json
 import os
 import urllib.request
 
-MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.74.146.0:11023")
+MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.102.134.91:11023")
 COLLECTIONS = [c for c in os.environ.get("COLLECTIONS", "").split(",") if c]
 
 DEFAULT_COLLECTIONS = [

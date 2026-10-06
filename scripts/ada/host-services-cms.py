@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 AUDIT = REPO / "scripts" / "audit-hosts.py"
 DUMPS = REPO / "reports" / "audit-hosts"
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 ICT = timezone(timedelta(hours=7))
 SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
@@ -46,7 +46,7 @@ HOST_META = {
     "tony-omen":  {"role": "dev / GPU desktop", "ts": "tony-omen.taila0626a.ts.net",
                    "ip": "100.75.102.88"},
     "idc01":      {"role": "public VPS · mddb leader · Ada", "ts": "idc01.taila0626a.ts.net",
-                   "ip": "100.74.146.0", "public": "157.85.110.99"},
+                   "ip": "100.102.134.91", "public": "157.85.110.99"},
     "idc02":      {"role": "offload / lab VPS", "ts": "idc02.taila0626a.ts.net",
                    "ip": ""},
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",

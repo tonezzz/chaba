@@ -21,7 +21,7 @@ Usage:
     python3 scripts/sync-docs-to-mddb.py --source devin-kb  # one source only
 
 Env:
-    MDDB_BASE    default http://100.74.146.0:11023 (idc01, tailnet-only)
+    MDDB_BASE    default http://100.102.134.91:11023 (idc01, tailnet-only)
     DEVIN_KB_DIR default ~/devin-kb/docs
 """
 import argparse
@@ -36,7 +36,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.74.146.0:11023")
+MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.102.134.91:11023")
 
 # Docs trees that have their own pipelines or must never be synced here.
 _EXCLUDED_CHABA_DIRS = {

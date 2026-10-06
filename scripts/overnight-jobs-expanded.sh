@@ -737,7 +737,7 @@ for d in /home/tony/CascadeProjects/ada-pi /home/tony/ada-pi; do
 done
 if [ -n "$ADA_PI" ]; then
     python3 "$ADA_PI/scripts/scenario-prune.py" \
-        --mddb http://100.74.146.0:11023/v1 \
+        --mddb http://100.102.134.91:11023/v1 \
         >> "$REPORT_FILE" 2>&1 \
         || echo "scenario-prune.py failed" >> "$REPORT_FILE"
 else

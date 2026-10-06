@@ -25,7 +25,7 @@ set -uo pipefail
 
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 EVENT_LOG="$HOME/.config/home-assistant/scripts/chaba-event-log.py"
-MDDB="${MDDB_URL:-http://100.74.146.0:11023/v1}"
+MDDB="${MDDB_URL:-http://100.102.134.91:11023/v1}"
 COLLECTION="ada-ha-bank-devin-tony"
 HA_URL="http://127.0.0.1:8123"
 

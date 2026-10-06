@@ -25,7 +25,7 @@ from pathlib import Path
 
 BRIDGE = os.environ.get(
     "VCAST_API", "https://tony-dell.taila0626a.ts.net/api/input-bridge")
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 DATA = Path(os.environ.get(
     "CAMWALL_DATA",
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))

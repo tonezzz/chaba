@@ -9,7 +9,7 @@ Pipeline per case:
 Outputs: audio/*.wav, voice-bench.json with per-clip WER proxy,
 gate accuracy (ASR vs clean), and per-tier latency.
 
-  voice-bench.py eval-all.jsonl --gate http://100.74.146.0:8778 \
+  voice-bench.py eval-all.jsonl --gate http://100.102.134.91:8778 \
       --sizes tiny,base,small --out voice-bench.json
 """
 import argparse, asyncio, json, re, subprocess, time
@@ -66,7 +66,7 @@ def cer(a, b):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("corpus")
-    ap.add_argument("--gate", default="http://100.74.146.0:8778")
+    ap.add_argument("--gate", default="http://100.102.134.91:8778")
     ap.add_argument("--thr", type=float, default=0.75)
     ap.add_argument("--sizes", default="tiny,base,small")
     ap.add_argument("--out", default="voice-bench.json")

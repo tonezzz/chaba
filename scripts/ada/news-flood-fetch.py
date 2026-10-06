@@ -25,7 +25,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 COLLECTION = "ada-cms-pages"
 SLUG = "news-flood"
 ICT = timezone(timedelta(hours=7))

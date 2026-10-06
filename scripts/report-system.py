@@ -41,7 +41,7 @@ OUT_MD = REPO / "reports" / "SYSTEM-REPORT.md"
 OUT_YML = REPO / "reports" / "system-report.yml"
 CMS_SLUG = "system-report"
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 META = REPO / "reports" / "meta.system-report.yml"
 FOCUS_META = REPO / "reports" / "meta.focus-inbox.yml"
 FOCUS_DIR = REPO / "docs" / "ssot" / "focus-inbox"

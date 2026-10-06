@@ -24,7 +24,7 @@ from pathlib import Path
 
 LIMIT_BINLOG_BYTES = 1_073_741_824  # 1 GiB
 LIMIT_LSN_GAP = 5_000_000
-DEFAULT_URL = "http://100.74.146.0:11023/v1/replication/status"
+DEFAULT_URL = "http://100.102.134.91:11023/v1/replication/status"
 DEFAULT_STATE = Path.home() / "var/chaba/health/mddb-binlog-state.json"
 INBOX_CANDIDATES = [
     # served checkout first — kanban-commit.timer only watches this repo

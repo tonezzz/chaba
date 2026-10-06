@@ -38,7 +38,7 @@ import yaml
 import chaba_event
 
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
-MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 STATE = Path.home() / ".cache/ada-memory-gaps.json"
 
 DEFAULT_UNITS = ["ada-ha-tony.service", "ada-ha-michael.service"]

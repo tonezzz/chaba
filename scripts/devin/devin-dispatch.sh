@@ -85,7 +85,7 @@ mddb_job() { # id status summary question
   local id="$1" st="$2" summ="${3:-}" q="${4:-}"
   ID="$id" ST="$st" SUMM="$summ" Q="$q" HOSTN="$(hostname)" python3 - <<'PY' \
     | curl -sf -m 15 -X POST -H "Content-Type: application/json" -d @- \
-      "${MDDB_URL:-http://100.74.146.0:11023/v1}/add" >/dev/null 2>&1
+      "${MDDB_URL:-http://100.102.134.91:11023/v1}/add" >/dev/null 2>&1
 import json, os
 from datetime import datetime, timezone
 meta = {"kind": ["job"], "status": [os.environ["ST"]],

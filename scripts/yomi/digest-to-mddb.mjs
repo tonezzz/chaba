@@ -10,13 +10,13 @@
  * /v1/add upserts by key, so re-mirroring a window is idempotent.
  *
  * Runs inside the same podman node image/env as update-conversations.mjs.
- * Env: DIGEST_DAYS (default 2), MDDB_URL (default http://100.74.146.0:11023).
+ * Env: DIGEST_DAYS (default 2), MDDB_URL (default http://100.102.134.91:11023).
  */
 import pool from './db.mjs';
 
 // yomi-digest is an ops collection — goes to mddb-ops when configured
 const MDDB = (process.env.MDDB_OPS_URL || process.env.MDDB_URL
-              || 'http://100.74.146.0:11023').replace(/\/+$/, '');
+              || 'http://100.102.134.91:11023').replace(/\/+$/, '');
 const COLLECTION = process.env.DIGEST_COLLECTION || 'yomi-digest';
 const DAYS = parseInt(process.env.DIGEST_DAYS || '2', 10);
 

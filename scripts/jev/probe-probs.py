@@ -2,7 +2,7 @@
 """Score a labeled jsonl through every candidate backend, dump per-model probs.
 
   probe-probs.py cases.jsonl --out probs.json \
-      --http v5=http://100.74.146.0:8778 \
+      --http v5=http://100.102.134.91:8778 \
       --http g1b=http://127.0.0.1:8780 \
       --minilm minilm=minilm-clf \
       --hf g270m=g270m-clf

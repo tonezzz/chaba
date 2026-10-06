@@ -28,7 +28,7 @@ from pathlib import Path
 
 import yaml
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 REPO = Path(os.environ.get(
     "CHABA_REPO",
     str(Path(__file__).resolve().parents[2])))

@@ -17,7 +17,7 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 COLLECTION = "ada-cms-pages"
 SLUG = "digest-weekly"
 REVIEW = Path.home() / ".local/share/ada-review"

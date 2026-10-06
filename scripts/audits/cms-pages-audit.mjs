@@ -15,7 +15,7 @@
 import http from "http";
 import { URL } from "url";
 
-const MDDB_BASE = process.env.MDDB_BASE || "http://100.74.146.0:11023";
+const MDDB_BASE = process.env.MDDB_BASE || "http://100.102.134.91:11023";
 const COLLECTION = process.env.CMS_COLLECTION || "ada-cms-pages";
 const LIMIT = 500;
 const MAX_RESPONSE_MS = 5000;

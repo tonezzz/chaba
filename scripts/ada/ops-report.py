@@ -25,7 +25,7 @@ from pathlib import Path
 # Reads ada-ha-events-* — an ops collection once the split lands.
 MDDB_URL = (os.environ.get("MDDB_OPS_URL")
             or os.environ.get("MDDB_BASE_URL",
-                              "http://100.74.146.0:11023/v1")).rstrip("/")
+                              "http://100.102.134.91:11023/v1")).rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
 

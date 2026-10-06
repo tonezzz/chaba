@@ -43,7 +43,7 @@ LOCAL_NAMES = {"tony-omen", "localhost", ""}
 # (the largest collection) off the leader's vector index.
 MDDB_URL = (os.environ.get("MDDB_OPS_URL")
             or os.environ.get("MDDB_BASE_URL",
-                              "http://100.74.146.0:11023/v1")).rstrip("/")
+                              "http://100.102.134.91:11023/v1")).rstrip("/")
 COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
 # one doc per host in a sidecar collection — the ship heartbeat that
 # logs-kanban judges silence/unreachable/backlog against. Same-key upsert

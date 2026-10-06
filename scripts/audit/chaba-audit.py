@@ -24,7 +24,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 
 ENDPOINTS = {
     "vcast_api":  "https://tony-dell.taila0626a.ts.net/api/input-bridge/displays",

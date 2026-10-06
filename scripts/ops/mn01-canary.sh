@@ -8,7 +8,7 @@ set -uo pipefail
 
 EVENT_SSH="${EVENT_SSH:-192.168.2.67}"
 ADA_REPO="${ADA_REPO:-$HOME/CascadeProjects/ada-pi}"
-MDDB_URL="${MDDB_URL:-http://100.74.146.0:11023}"
+MDDB_URL="${MDDB_URL:-http://100.102.134.91:11023}"
 
 fails=()
 ok()   { echo "ok   $1"; }

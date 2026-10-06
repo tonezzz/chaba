@@ -61,7 +61,7 @@ DISPATCH_DIR = Path(
 ).expanduser() / "tasks"
 BOARD_API = os.environ.get("BOARD_API", "http://127.0.0.1:8787").rstrip("/")
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 CMS_SLUG = "daily-brief"
 REVIEW_STALE_H = 24  # same bar as the board's Needs You strip
 MAX_LIST = 8

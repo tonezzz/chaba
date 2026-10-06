@@ -32,7 +32,7 @@ page slug -> [[name, rss-url], ...]. Override with --config or env
 FLOOD_NEWS_FEEDS. --feed name=url can be repeated for ad-hoc runs.
 
 Env:
-    MDDB_BASE_URL     default http://100.74.146.0:11023/v1
+    MDDB_BASE_URL     default http://100.102.134.91:11023/v1
     FLOOD_NEWS_FEEDS  path to the feeds config
 """
 import argparse
@@ -47,7 +47,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"  # per-page switches/knobs + worker state
 BLOCK_BEGIN = "<!-- flood-news:auto -->"

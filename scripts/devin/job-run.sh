@@ -23,7 +23,7 @@
 set -uo pipefail
 
 JOBRUN_DIR="${JOBRUN_DIR:-$HOME/.local/share/job-run}"
-MDDB="${MDDB_URL:-http://100.74.146.0:11023/v1}"
+MDDB="${MDDB_URL:-http://100.102.134.91:11023/v1}"
 COLLECTION="${JOB_COLLECTION:-ada-ha-bank-devin-handoff}"
 HA_URL="${HA_URL:-https://tony-dell.taila0626a.ts.net:8123}"
 EVENT_LOG="${EVENT_LOG:-$HOME/.config/home-assistant/scripts/chaba-event-log.py}"

@@ -319,7 +319,7 @@ def build_ada() -> dict:
 
 
 MDDB_URL = os.environ.get("MDDB_BASE_URL",
-                          "http://100.74.146.0:11023/v1").rstrip("/")
+                          "http://100.102.134.91:11023/v1").rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION",
                                 "ada-ha-events-tony")
 OPS_WINDOW_H = 24

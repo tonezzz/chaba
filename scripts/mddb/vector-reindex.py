@@ -22,7 +22,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
 EVENTS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 HEALTH_DEADLINE_S = int(os.environ.get("MDDB_REINDEX_HEALTH_WAIT", "300"))

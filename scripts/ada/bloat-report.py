@@ -13,7 +13,7 @@ import json
 import sys
 import urllib.request
 
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 # rev/doc above this is "churny" even after caps — worth a look
 WARN_RATIO = 25
 

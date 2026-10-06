@@ -22,7 +22,7 @@ import time
 import urllib.parse
 import urllib.request
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 OR_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OR_BASE = os.environ.get("OPENROUTER_BASE", "https://openrouter.ai/api/v1")

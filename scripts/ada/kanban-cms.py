@@ -20,7 +20,7 @@ from pathlib import Path
 
 import yaml
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REPO = Path(os.environ.get(
     "CHABA_REPO",

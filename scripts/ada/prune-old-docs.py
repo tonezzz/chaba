@@ -24,7 +24,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 
 # collection -> (timestamp meta key, retention days)
 POLICY = {

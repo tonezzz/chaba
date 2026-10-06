@@ -16,7 +16,7 @@ import sys
 import urllib.request
 from datetime import datetime, timezone
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
 PROBE_COLLECTION = "ada-ha-bank-general"
 PROBE_QUERY = "ada memory recall probe"

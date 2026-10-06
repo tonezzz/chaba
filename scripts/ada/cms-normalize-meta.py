@@ -36,7 +36,7 @@ Usage:
     cms-normalize-meta.py --key flood-report --apply
 
 Env:
-    MDDB_BASE_URL   default http://100.74.146.0:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
 """
 import argparse
 import json
@@ -46,7 +46,7 @@ import sys
 import urllib.request
 from datetime import datetime, timezone
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 SOURCE_ENUM = {"voice", "manual", "import", "extract", "api"}
 

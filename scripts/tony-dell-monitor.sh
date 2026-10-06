@@ -19,7 +19,7 @@ fi
 # MDDB lives on idc01 since the 2026-09-22 cutover
 IDC01_IP=$(tailscale ip -4 idc01 2>/dev/null || true)
 if [[ -z "$IDC01_IP" ]]; then
-    IDC01_IP="100.74.146.0"
+    IDC01_IP="100.102.134.91"
 fi
 
 # mn01 — secondary node (caddy :8080, yolo-xiaomi, weaviate-embedding)

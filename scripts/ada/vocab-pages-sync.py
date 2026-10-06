@@ -22,7 +22,7 @@ import sys
 import urllib.request
 from datetime import datetime, timezone
 
-MDDB = "http://100.74.146.0:11023/v1"
+MDDB = "http://100.102.134.91:11023/v1"
 
 # person -> (personal-bank collection, cms page slug)
 PEOPLE = {

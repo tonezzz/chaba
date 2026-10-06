@@ -14,7 +14,7 @@ import time
 import urllib.request
 from datetime import datetime
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 INSTANCE = os.environ.get("ADA_INSTANCE_ID", "tony")
 OPS_COLLECTION = f"ada-ha-events-{INSTANCE}"
 PROFILES = os.path.expanduser("~/.local/share/ada-pi/speaker_profiles.json")
