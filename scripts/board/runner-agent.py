@@ -59,6 +59,10 @@ STATE_DIR = Path(os.environ.get(
 STATE_FILE = STATE_DIR / "state.json"
 DISPATCH = os.environ.get(
     "DEVIN_DISPATCH", str(Path.home() / ".local/bin/devin-dispatch"))
+# Parity with kanban-dispatch: unattended sessions die on permission
+# rejection — 'smart' auto-rejects curl/systemctl and the rails ask
+# agents to curl /comment.
+os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 
 RAILS = """
 ---
@@ -130,8 +134,10 @@ def collect(unit: str) -> tuple[bool, str]:
 def claimable(card: dict) -> str:
     """task type the card wants if this host may claim it, else ""."""
     a = card.get("action") or {}
-    if a.get("status") != "queued" or a.get("runner"):
+    if a.get("status") != "queued":
         return ""
+    if a.get("runner") and a["runner"] != HOST:
+        return ""  # queued but tagged with another host's runner
     pinned = a.get("host")
     if pinned and pinned != HOST:
         return ""

@@ -293,6 +293,8 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             return f"already {st}"
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
+        a.pop("runner", None)   # a re-queue after done/failed must be
+        a.pop("task_id", None)  # claimable by any host, not its last one
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
