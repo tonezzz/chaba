@@ -4,6 +4,8 @@ Description=Kanban Eisenhower brief -> CMS kanban-brief page
 [Service]
 Type=oneshot
 TimeoutStartSec=120
+Environment=KANBAN_BRIEF_LLM_URL=http://100.75.102.88:11434/v1
+Environment=KANBAN_BRIEF_LLM_MODEL=phi3-gguf:latest
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
 WorkingDirectory=%h/CascadeProjects/chaba-tony-dell

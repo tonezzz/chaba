@@ -1,0 +1,10 @@
+[Unit]
+Description=open-jev student scorer (gemma-3-1b) for orch cascade bench — tony-omen
+
+[Service]
+WorkingDirectory=%h/CascadeProjects/open-jev
+ExecStart=%h/.local/bin/uv run openjev serve --backend torch --device cpu --host 100.75.102.88 --port 8778 --model models/gemma-3-1b-it
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
