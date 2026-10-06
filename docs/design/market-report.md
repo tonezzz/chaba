@@ -1,8 +1,11 @@
 # Market Report — design
 
-**Status:** design (kanban: `market-report-design`)
+**Status:** approved (kanban: `market-report-design`)
 **Ask (2026-10-06, Tony):** a structural report covering Thai gold, USD/THB,
 other FX, and interesting stocks — published to CMS, usable by Ada.
+**Decisions (2026-10-06):** rolling page (no daily leafs); watchlist =
+`^SET.BK` + PTT/AOT/KBANK/DELTA `.BK`; feeds Ada's **proactive morning
+briefing**.
 
 ## 1. What it is
 
@@ -35,19 +38,24 @@ Everything except SET stocks is already in the trade prod DB
 Schema ref: `trade/src/models.py`. Series registry:
 `trade/config/ssot/ssot.datasource-catalog.sources.yml`.
 
-**Stocks (the gap):** no SET stock data in the DB. Options:
+**Stocks:** no SET stock data in the DB; fetch at render time from Yahoo.
+Verified live 2026-10-06: `^SET.BK` (SET index — the earlier "dead ticker"
+note was stale), `PTT.BK` 41.25, `AOT.BK` 58.75, `KBANK.BK` 236,
+`DELTA.BK` 268 all return. `^SETI` returns null — don't use it.
 
-- **v1:** fetch a small watchlist (e.g. `PTT.BK`, `AOT.BK`, `KBANK.BK`,
-  `DELTA.BK`) from Yahoo at render time — 5 tickers is cheap. `^SET.BK` was
-  a dead ticker on Yahoo (today's probe confirmed); use `^SETI` or skip the
-  index and rely on constituents.
-- **v2:** persist fetched quotes to a new `stock_prices` table so the report
-  and the future `ada_market_quote` tool share one source of truth.
+- **v1 (approved):** `^SET.BK` + PTT/AOT/KBANK/DELTA `.BK`, Yahoo chart API
+  at render time.
+- **v2 (option):** persist fetched quotes to a `stock_prices` table so the
+  report and `ada_market_quote` share one source of truth.
 
-**Trade API note:** `trade-api.service` on tony-dell (port 9002) answers `/`
-but data endpoints hang (observed 2026-10-04 — DB query stall, likely needs
-the postgres-era code path or index attention). The generator should use
-**direct SQL**, not the HTTP API. Fixing the API is a separate card.
+**Trade API note (fixed 2026-10-06):** `trade-api` :9002 looked dead — root
+cause was `async def` endpoints calling blocking sync SQLAlchemy on the
+single uvicorn worker; one unbounded request starved the event loop so
+every endpoint queued. Fixed: 26 handlers converted to sync `def`
+(threadpool), `sqlalchemy<2.1` pinned (2.1 flips `postgresql://` to the
+missing psycopg3 driver), explicit `postgresql+psycopg2` in
+`database_config.py`. Commits on `research/banpu-ptt-strategy`. Generator
+still uses **direct SQL** — simpler, no HTTP dependency.
 
 ## 3. Queries
 
@@ -98,6 +106,11 @@ trade-db:commodity_prices, yahoo:set-watchlist]`,
   scripts living where the data is).
 - Timer: `ada-market-report.timer`, daily **07:30 ICT** — after
   `gta_history.py`/`yahoo_*` ingest completes, before Tony's morning.
+- **Morning briefing (approved):** after publishing, the script also
+  leaves a `market_briefing` hint that Ada's proactive morning routine
+  reads — implementation detail TBD with the briefing pipeline (likely
+  an `ada_remember` general-tier note the morning skill picks up, or a
+  flag file the briefing script reads). Do not call Ada directly.
 - Registry: `ada-cms-automation` doc `market-report` —
   `generated_by`, schedule, `pages: [market-report]`, `owner`.
 
@@ -117,14 +130,12 @@ trade-db:commodity_prices, yahoo:set-watchlist]`,
 - Ada can already say "check the market report" once the page exists;
   the tool is what turns it into live numbers.
 
-## 8. Open questions
+## 8. Open questions — answered
 
-1. Stock watchlist contents — which names does Tony actually want daily?
-2. Does the spoken briefing need it (proactive morning read) or is
-   pull-only enough for v1?
-3. THB cross-rates worth showing (THB/JPY, THB/EUR) or USD-pairs only?
-4. Retention: does each day snapshot into a leaf page, or is
-   `market-report` rolling? (v1: rolling — leafs only if asked.)
+1. ~~Stock watchlist~~ → `^SET.BK` + PTT/AOT/KBANK/DELTA `.BK` (approved).
+2. ~~Spoken briefing~~ → yes, proactive morning briefing (approved).
+3. ~~Rolling vs snapshots~~ → rolling page, no daily leafs.
+4. THB cross-rates: USD-pairs only for v1 (THB crosses easy to add later).
 
 ## 9. Build order
 

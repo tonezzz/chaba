@@ -1,18 +1,17 @@
 id: market-report-design
 title: Structural market report — gold, USD/THB, stocks → CMS page
-column: review
+column: doing
 note: >-
-  Design done: docs/design/market-report.md (2026-10-06). Shape: single
-  generated CMS page `market-report` (en+th, `<!-- market:auto -->`
-  block) rendered daily 07:30 ICT on tony-dell by
-  `scripts/ada/market-report-update.py` — psycopg2 direct to trade DB
-  (exchange_rates/dollar_index/commodity_prices), Yahoo fetch at render
-  time for a small .BK watchlist. Follows page-family standard:
-  rollup role, declared sources, provenance footer, ada-cms-automation
-  registry entry. Findings: trade-api :9002 root responds but /api/*
-  data endpoints hang (DB stall — separate card candidate); ^SET.BK
-  confirmed dead on Yahoo, use ^SETI or constituents. Open questions in
-  the doc §8: watchlist contents, proactive briefing vs pull, THB
-  crosses, rolling vs snapshot pages. Next: build the script + timer,
-  or answer the open questions first.
+  Approved 2026-10-06: rolling `market-report` page (en+th, managed
+  block, daily 07:30 ICT on tony-dell); watchlist = ^SET.BK +
+  PTT/AOT/KBANK/DELTA .BK via Yahoo at render time; feeds Ada's
+  proactive morning briefing (mechanism TBD — hint via ada_remember or
+  flag file, not a direct call). Design: docs/design/market-report.md.
+  Side fixes same day: trade-api event-loop starvation resolved (26
+  async endpoints -> sync def, sqlalchemy<2.1 pin, psycopg2 driver
+  pinned — commits on trade@research/banpu-ptt-strategy, new image
+  building on tony-dell); ^SET.BK verified live (earlier dead-ticker
+  note was stale; ^SETI is the dead one). Next: build
+  scripts/ada/market-report-update.py, publish page, registry doc,
+  timer, briefing hook, market_report scenario.
 updated: '2026-10-06'
