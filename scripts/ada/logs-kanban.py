@@ -59,14 +59,39 @@ CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
 STATE_COLLECTION = os.environ.get("LOG_STATE_COLLECTION",
                                   "host-logs-state")
 
-SILENT_H = 26          # no state write this long -> host dropped out
-BACKLOG_MIN = 200      # matched - shipped this big -> cap can't drain
-SEVERE_24H = 40        # severe lines/day on one host -> spike card
-ESCALATE_H = 12        # open this long -> priority high
+# thresholds live in docs/ssot/infrastructure/ssot.log-digest-standard.yml
+# — these are fallbacks only; the SSOT is authoritative
+STANDARD = REPO / "docs" / "ssot" / "infrastructure" / \
+    "ssot.log-digest-standard.yml"
+
+
+def _bars() -> dict:
+    try:
+        return (yaml.safe_load(STANDARD.read_text()) or {}).get(
+            "bars") or {}
+    except Exception:
+        return {}
+
+
+_B = _bars()
+_fleet = _B.get("fleet") or {}
+_pipe = _B.get("pipeline") or {}
+_sig = _B.get("signal") or {}
+_brd = _B.get("board") or {}
+
+EXPECTED_JOURNALS = _fleet.get("journals_per_host") or ["user", "sys"]
+JOURNAL_OVERRIDES = _fleet.get("journal_overrides") or {}
+SILENT_H = float(_fleet.get("cadence_min", 40)) / 60 * \
+    float(_pipe.get("silent_factor", 39.0))  # 60min * 1.5 = 90min
+BACKLOG_MIN = int(_pipe.get("backlog_min", 200))
+SEVERE_24H = int(_sig.get("severe_24h_max", 40))
+ESCALATE_H = int(_brd.get("escalate_h", 12))
 
 
 def _expected_hosts() -> list[str]:
-    """Single source of truth: DEFAULT_HOSTS in log-shipper.py."""
+    """SSOT fleet list wins; log-shipper.py DEFAULT_HOSTS is fallback."""
+    if _fleet.get("hosts"):
+        return list(_fleet["hosts"])
     spec = importlib.util.spec_from_file_location(
         "logshipper", Path(__file__).with_name("log-shipper.py"))
     try:
@@ -208,14 +233,15 @@ def coverage_note(states: dict[str, dict], expected: list[str],
             continue
         age_h = (now - float(st.get("_ts") or 0)) / 3600
         jr = st.get("journals") or {}
-        # ha-cli pull hosts (michael-ha) only ever have the host journal
+        want = JOURNAL_OVERRIDES.get(host, EXPECTED_JOURNALS)
+        # a journal the host is declared to have but scanned 0 rows is a
+        # gap; declared-absent (michael-ha sys-only) or ha-cli lanes don't
+        # count — the override / lane says "that side doesn't exist"
+        missing = [j for j in want if jr.get(j, 0) == 0
+                   and sum(jr.get(x, 0) for x in want) > 0]
         if st.get("lane") == "ha-cli-ssh":
-            one_sided = ""
-        else:
-            one_sided = \
-                "sys" if jr.get("sys") == 0 and jr.get("user", 0) > 0 \
-                else "user" if jr.get("user") == 0 and jr.get("sys", 0) > 0 \
-                else ""
+            missing = []
+        one_sided = missing[0] if missing else ""
         status = "ok"
         if not st.get("reachable", True):
             status, gap = f"UNREACHABLE ({st.get('error')})", True
@@ -232,10 +258,35 @@ def coverage_note(states: dict[str, dict], expected: list[str],
     return lines, gap
 
 
+RESPECT_CLOSE_D = int((_brd.get("respect_close_days") or 3))
+
+
+def _human_closed(card: dict, now: float) -> bool:
+    """A card a human moved out of review stays closed for
+    RESPECT_CLOSE_D days — auto-cards must not fight the operator. A
+    persisting condition resurfaces after the cool-down."""
+    if card.get("column") != "done":
+        return False
+    last_human = None
+    for c in card.get("comms") or []:
+        if c.get("from") not in (None, "logs-kanban", "cms-auto-health"):
+            last_human = str(c.get("at") or "")
+    if not last_human:
+        return False
+    try:
+        closed_ts = time.mktime(time.strptime(last_human[:10],
+                                              "%Y-%m-%d"))
+        return (now - closed_ts) < RESPECT_CLOSE_D * 86400
+    except (ValueError, TypeError):
+        return True  # unparseable stamp -> err on the side of the human
+
+
 def upsert_card(path: Path, card_id: str, title: str, note: str,
                 help_text: str, now: float, today: str) -> str:
-    """Write a review card. -> 'created'|'updated'|'unchanged'."""
+    """Write a review card. -> 'created'|'updated'|'unchanged'|'held'."""
     card = load_card(path)
+    if _human_closed(card, now):
+        return "held"
     opened = card.get("updated") if card.get("column") == "review" \
         else today
     try:

@@ -8,22 +8,22 @@ priority: high
 note: 'Expected log sources vs what actually ships:
 
 
-  - `idc01` — ok [local]; shipped 500/1472 matched; only `sys` journal scanned (other
+  - `idc01` — ok [local]; shipped 3/3 matched; only `sys` journal scanned (other side
+  unreadable?)
+
+  - `idc02` — ok [local]; shipped 135/135 matched; only `sys` journal scanned (other
   side unreadable?)
 
-  - `idc02` — ok [local]; shipped 2000/2837 matched; only `sys` journal scanned (other
-  side unreadable?)
+  - `idc03` — ok [local]; shipped 5/5 matched; only `sys` journal scanned (other side
+  unreadable?)
 
-  - `idc03` — ok [local]; shipped 958/958 matched; only `sys` journal scanned (other
-  side unreadable?)
+  - `mn01` — ok [local]; shipped 2/2 matched
 
-  - `mn01` — ok [local]; shipped 39/39 matched
+  - `tony-dell` — ok [local]; shipped 500/1102 matched
 
-  - `tony-dell` — ok [local]; shipped 500/3208 matched
+  - `tony-omen` — ok [local]; shipped 10/10 matched
 
-  - `tony-omen` — ok [local]; shipped 500/1709 matched
-
-  - `michael-ha` — ok [ha-cli-ssh]; shipped 0/0 matched'
+  - `michael-ha` — ok [ha-cli-ssh]; shipped 2/2 matched'
 help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
   usually mean `journalctl --user` isn't permitted for the ssh login.
 updated: '2026-10-05'

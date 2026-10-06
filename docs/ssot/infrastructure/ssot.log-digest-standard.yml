@@ -37,7 +37,9 @@ bars:
     journal_overrides:
       michael-ha: [sys]   # HAOS: no user journald, user units n/a
   pipeline:
-    silent_factor: 1.5      # x cadence_min -> silent (hourly = 90min)
+    silent_factor: 3.0      # x cadence_min -> silent (hourly = 3h; a
+      # single missed tick/reboot must not churn cards, but an auth-
+      # broken host surfaces in hours not days)
     unreachable: card        # reachable=false -> logs-auto-<h>-unreachable
     add_failures_max: 0      # fail>0 in a state doc -> card; cursor
                            # replay makes it self-healing but the card
