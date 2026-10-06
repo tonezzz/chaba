@@ -594,7 +594,12 @@ function render() {{
       body = norm.map(cardHtml).join('');
     }}
     if (autos.length) {{
-      const open = !!autoOpen[col.id];
+      // an active filter also uncollapses groups with matching cards so
+      // automation hits stay reachable without a manual toggle (view-only —
+      // does not write autoOpen)
+      const fq = filter_q.toLowerCase();
+      const open = !!autoOpen[col.id] ||
+        (fq !== '' && autos.some(c => ((c.title || '') + ' ' + c.id).toLowerCase().includes(fq)));
       body += `<div class="border border-slate-700/50 rounded p-2 mt-1 opacity-75">` +
         `<div class="auto-tog text-xs text-slate-500 cursor-pointer select-none" data-col="${{esc(col.id)}}">${{open ? '▾' : '▸'}} automation (${{autos.length}})</div>` +
         (open ? `<div class="mt-1.5">${{autos.map(cardHtml).join('')}}</div>` : '') +
@@ -734,6 +739,18 @@ async function doAct(id, verb, extra) {{
 }}
 
 function scrollToCard(id) {{
+  // a collapsed automation group keeps its cards out of the DOM — a sidebar
+  // or needs-you click on one must expand the column group first or the
+  // scroll target doesn't exist
+  const c = DATA && DATA.cards.find(x => x.id === id);
+  if (c && AUTO_RE.test(c.id)) {{
+    const col = c.column || 'backlog';
+    if (!autoOpen[col]) {{
+      autoOpen[col] = true;
+      try {{ localStorage.setItem('board-auto-open', JSON.stringify(autoOpen)); }} catch (e) {{}}
+      render();
+    }}
+  }}
   const el = document.querySelector(`.board-card[data-id="${{CSS.escape(id)}}"]`);
   if (!el) return;
   el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
@@ -793,6 +810,16 @@ function wire() {{
 
 function applyFilter() {{
   const q = filter_q.toLowerCase();
+  if (q && DATA) {{
+    // a query that only matches cards inside collapsed automation groups
+    // would show nothing — re-render (the group then opens via the fq
+    // check in render()) so the hit is actually visible. Guarded by the
+    // DOM query: after re-render the card exists and this can't loop.
+    const hit = DATA.cards.find(c => AUTO_RE.test(c.id) &&
+      ((c.title || '') + ' ' + c.id).toLowerCase().includes(q) &&
+      !document.querySelector(`.board-card[data-id="${{CSS.escape(c.id)}}"]`));
+    if (hit) {{ render(); return; }}
+  }}
   document.querySelectorAll('.board-card,.side-card').forEach(el => {{
     el.style.display = el.dataset.text.includes(q) ? '' : 'none';
   }});
