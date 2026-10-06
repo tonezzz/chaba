@@ -1065,10 +1065,9 @@ def main() -> int:
                            "และสวิตช์ควบคุมกลาง"),
                 parent="",
                 sources=[f"zone:{z}" for z in sorted(zones)],
-                classification=_cls_union([zone_cls(z,
+                classification=_cls_union([zone_cls(z) for z in zones]),
                 supersedes=links.get("cctv-walls"),
                 force="cctv-walls" in revive)
- for z in zones]))
         notify_transitions(zones)
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
           f"{'ok' if ok else 'ERR'} · superseded {n_sup} "
