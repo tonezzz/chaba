@@ -35,6 +35,16 @@ REPO = Path(__file__).resolve().parent.parent.parent
 SUMMARY_YML = REPO / "stacks/web/public/apps/system-report/data/system-report.yml"
 SERVICE = "chaba-system-report.service"
 PORT = int(os.environ.get("REPORT_API_PORT", "8792"))
+BIND = os.environ.get("REPORT_API_BIND", "127.0.0.1")
+# Service-to-service auth (Ada, automation): bearer token alongside the
+# tailnet-identity gate. Empty = disabled.
+TOKEN = os.environ.get("REPORT_API_TOKEN", "")
+# Completion notice — POST a report-updated doc into Ada's ops events
+# collection so she can surface it on the next turn (design §5).
+EVENTS_URL = os.environ.get(
+    "REPORT_EVENTS_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+EVENTS_COLLECTION = os.environ.get(
+    "REPORT_EVENTS_COLLECTION", "ada-ha-events-tony")
 RUN_NODE = REPO / "scripts/report/run-node.py"
 sys.path.insert(0, str(REPO / "scripts" / "lib"))
 import report as reportlib  # noqa: E402
@@ -154,7 +164,37 @@ def _walk(root: str, depth: str, by: str) -> dict:
     if root not in ran and reportlib.generator_argv(
             target[root].get("generator")):
         ran[root] = _run_node(root)
-    return {"root": root, "depth": depth, "passes": passes, "ran": ran}
+    result = {"root": root, "depth": depth, "passes": passes, "ran": ran}
+    _emit_event(root, depth, ran, by)
+    return result
+
+
+def _emit_event(root: str, depth: str, ran: dict, by: str) -> None:
+    """report-updated doc into ada-ha-events-* — Ada reads ops events on
+    her next turn ('the refresh you asked for landed, X changed')."""
+    ok = [k for k, v in ran.items() if v.get("rc") == 0]
+    bad = [k for k, v in ran.items() if v.get("rc") not in (0, None)]
+    skipped = [k for k, v in ran.items() if v.get("skipped")]
+    body = (f"report refresh ({depth}) by {by}: "
+            f"{len(ok)} nodes regenerated"
+            + (f", failed: {', '.join(bad)}" if bad else "")
+            + (f", skipped: {', '.join(skipped)}" if skipped else ""))
+    payload = {"collection": EVENTS_COLLECTION,
+               "key": f"report-updated-{root}-"
+                      f"{reportlib.now_iso().replace(':', '')}",
+               "lang": "en",
+               "contentMd": f"## Report updated\n\n{body}\n",
+               "meta": {"kind": ["report-updated"], "node": [root],
+                        "by": [by]}}
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{EVENTS_URL}/collections/{EVENTS_COLLECTION}/add",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as exc:
+        sys.stderr.write(f"report-api event emit failed: {exc}\n")
 
 
 def _running() -> bool:
@@ -206,7 +246,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/refresh":
             self._json(404, {"error": "not found"})
             return
-        who = caller_identity(self.headers, self.client_address[0])
+        auth = self.headers.get("Authorization", "")
+        if TOKEN and auth == f"Bearer {TOKEN}":
+            who = "svc-token"  # service caller (Ada, automation)
+        else:
+            who = caller_identity(self.headers, self.client_address[0])
         if not who:
             self._json(403, {"error": "writes need a tailnet identity"})
             return
@@ -267,4 +311,4 @@ if __name__ == "__main__":
     import unittest
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         sys.exit(unittest.main(argv=[sys.argv[0]]))
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    ThreadingHTTPServer((BIND, PORT), Handler).serve_forever()

@@ -3,6 +3,11 @@ Description=System report refresh API (POST /refresh -> chaba-system-report.serv
 After=default.target
 
 [Service]
+# Bind all interfaces: tailnet peers reach it for service-to-service
+# calls (Ada's report refresh from idc03). Write gate = tailnet identity
+# OR bearer token OR loopback — LAN/anonymous peers get 403.
+Environment=REPORT_API_BIND=0.0.0.0
+EnvironmentFile=-%h/.config/secrets/report-api.env
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/report/report-api.py
 Restart=on-failure
 RestartSec=10
