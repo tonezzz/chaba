@@ -1,36 +1,83 @@
 id: yt-voice-dub-e2e
 title: 'YT voice dub — E2E assessment: pros/cons + improvement roadmap'
-column: backlog
+column: done
 program: yt-voice-dub
 area: assessment
 priority: low
-metric: 'assessment note records ranked improvements; minimal-test vs production boundary explicit'
-verify: 'card note reviewed by Tony; follow-on cards filed for chosen lanes'
-note: >-
-  E2E pass over the dub pipeline before scaling past the minimal test.
-  Pros of cue-level edge-tts: free, offline-capable cache, reuses existing
-  VTT + HLS plumbing, decent TH/EN voices, no new infra. Cons: cue timing
-  is rough (stretch/pad sounds mechanical on long/short lines), no
-  speaker separation, auto-caption errors flow straight into TTS, flat
-  ducking drowns music/fx uniformly, no lip-sync (fine for info videos,
-  bad for dialogue). Improvements ranked: (1) cue-fit TTS — pick voice
-  rate per cue instead of post-stretch; (2) caption QC gate — flag cues
-  with too few chars or implausible duration before TTS; (3) sidechain
-  ducking keyed to dub segments instead of flat 20%; (4) voice-mode
-  selector (off/TH/EN) on the cast URL; (5) voice casting — match a TTS
-  voice to each detected speaker (gender/age/tone), consistent for the
-  whole video, tracked in yt-voice-dub-cast + verified via
-  yt-voice-dub-scenarios benchmark; (6) only if demand proves out:
-  cloud neural TTS or full speaker-aware dub. Boundary: no voice
-  cloning, lip-sync, or cloning-grade diarization until the minimal
-  test lands.
+metric: assessment note records ranked improvements; minimal-test vs production boundary explicit
+verify: card note reviewed by Tony; follow-on cards filed for chosen lanes
+note: 'E2E pass over the dub pipeline before scaling past the minimal test. Pros of cue-level edge-tts: free, offline-capable
+  cache, reuses existing VTT + HLS plumbing, decent TH/EN voices, no new infra. Cons: cue timing is rough (stretch/pad
+  sounds mechanical on long/short lines), no speaker separation, auto-caption errors flow straight into TTS, flat
+  ducking drowns music/fx uniformly, no lip-sync (fine for info videos, bad for dialogue). Improvements ranked:
+  (1) cue-fit TTS — pick voice rate per cue instead of post-stretch; (2) caption QC gate — flag cues with too few
+  chars or implausible duration before TTS; (3) sidechain ducking keyed to dub segments instead of flat 20%; (4)
+  voice-mode selector (off/TH/EN) on the cast URL; (5) voice casting — match a TTS voice to each detected speaker
+  (gender/age/tone), consistent for the whole video, tracked in yt-voice-dub-cast + verified via yt-voice-dub-scenarios
+  benchmark; (6) only if demand proves out: cloud neural TTS or full speaker-aware dub. Boundary: no voice cloning,
+  lip-sync, or cloning-grade diarization until the minimal test lands.'
 help: 'parent test: yt-voice-dub-test; same pipeline refs'
-spec: >-
-  Write the E2E assessment as docs/assessments/yt-voice-dub-e2e-<date>.md: pros/cons of cue-level edge-tts (free, offline cache, reuses VTT+HLS plumbing vs rough cue timing, no speaker separation, caption-error flow-through, flat ducking, no lip-sync); ranked improvements — cue-fit TTS, caption QC gate, sidechain ducking, voice-mode selector on the cast URL, voice casting, then cloud neural TTS only if demand proves out; explicit boundary — no voice cloning, lip-sync, or cloning-grade diarization until the minimal test lands. File follow-on cards for chosen lanes; card closes on Tony review.
+spec: 'Write the E2E assessment as docs/assessments/yt-voice-dub-e2e-<date>.md: pros/cons of cue-level edge-tts
+  (free, offline cache, reuses VTT+HLS plumbing vs rough cue timing, no speaker separation, caption-error flow-through,
+  flat ducking, no lip-sync); ranked improvements — cue-fit TTS, caption QC gate, sidechain ducking, voice-mode
+  selector on the cast URL, voice casting, then cloud neural TTS only if demand proves out; explicit boundary —
+  no voice cloning, lip-sync, or cloning-grade diarization until the minimal test lands. File follow-on cards for
+  chosen lanes; card closes on Tony review.'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Write the yt voice-dub E2E assessment doc per card spec: pros/cons, ranked improvements, minimal-vs-production boundary; file follow-on cards for chosen lanes.
-updated: '2026-10-04'
+  status: done
+  task: 'Write the yt voice-dub E2E assessment doc per card spec: pros/cons, ranked improvements, minimal-vs-production
+    boundary; file follow-on cards for chosen lanes.'
+  runner: tony-dell
+  task_id: 20261006-071315-write-the-e2e-assessment-as-do
+  result: 20261006-071315-write-the-e2e-assessment-as-do finished (inactive) — see `devin-dispatch logs 20261006-071315-write-the-e2e-assessment-as-do`
+updated: 2026-10-06 10:05
+comms:
+- at: 2026-10-06 06:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:13
+  from: chaba
+  text: dispatched 20261006-071315-write-the-e2e-assessment-as-do on chaba
+- at: 2026-10-06 07:15
+  from: devin
+  text: 'starting: gathering pipeline state (yt-vtt-dub.py options, test-card v1-v17 history) -> docs/assessments/yt-voice-dub-e2e-2026-10-06.md
+    + follow-on cards for open lanes'
+- at: 2026-10-06 07:18
+  from: devin
+  text: 'done. Assessment at docs/assessments/yt-voice-dub-e2e-2026-10-06.md: pros/cons, per-lane status from v1-v17
+    history (sidechain landed; cue-fit + casting partial; QC-gate + voice-mode open), re-ranked drain order mode->qc->speakers->cuefit,
+    explicit no-cloning/lip-sync/diarization-grade boundary. 4 follow-on cards filed: yt-voice-dub-mode (high),
+    yt-voice-dub-qc, yt-voice-dub-speakers, yt-voice-dub-cuefit (low). Cloud TTS parked pending demand. Closes on
+    Tony review.'
+- at: 2026-10-06 07:20
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 07:20
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 07:20
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-071315-write-the-e2e-assessment-as-do dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 07:20
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261006-071315-write-the-e2e-assessment-as-do not in origin/master
+    — close will block until merged'
+- at: 2026-10-06 10:03
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-071315-write-the-e2e-assessment-as-do — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; docs(yt-voice-dub): E2E assessment +
+    4 follow-on lane cards'
+- at: 2026-10-06 10:05
+  from: chaba
+  text: 'merge guard: dispatch/20261006-071315-write-the-e2e-assessment-as-do merged into origin/master'
+- at: 2026-10-06 10:05
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 10:05
+  from: chaba
+  text: session thankful-geology… hidden
+claim:
+  since: 2026-10-06 07:13

@@ -1,25 +1,79 @@
 id: service-name-indirection
-title: "Service-name indirection — stop pinning tailnet IPs in configs"
-column: backlog
-note: >-
-  The idc01->idc03 move required sed'ing 100.74.146.0 in ~30 live files
-  (units, secrets, dropins) + ~106 repo files. Every service should
-  resolve a NAME not an IP — next move becomes a one-line update.
-help: >-
-  Options ranked: (a) MagicDNS names — idc03.taila0626a.ts.net works
-  today but pins the HOST not the service (mddb moving again breaks
-  the same way). (b) Caddy alias on the edge — svc domains like
-  http://mddb.internal -> current leader:11023; consumers hit the
-  domain, moves = one Caddyfile line. Works for HTTP; gRPC followers
-  (LEADER_ADDR) can take the MagicDNS name of the current leader —
-  only 2 places. (c) ssot() value refs — ssot.values.yml already
-  centralizes host IPs; make configs render from it instead of
-  literals. Realistic: (a)+(c) for units/secrets, (b) for HTTP clients.
-action: {type: dispatch, status: idle, repo: chaba, button: '▶ Indirection plan'}
-spec: >-
-  Inventory remaining hardcoded tailnet IPs across ~/.config on the
-  fleet + repo configs. Decide per class: unit envs -> MagicDNS host
-  names (already valid); HTTP service clients -> edge alias
-  (caddy svc.internal blocks); secrets env files -> rendered from
-  ssot.values.yml. Produce the migration list; don't mass-edit yet.
-updated: '2026-10-05'
+title: Service-name indirection — stop pinning tailnet IPs in configs
+column: done
+note: The idc01->idc03 move required sed'ing 100.74.146.0 in ~30 live files (units, secrets, dropins) + ~106 repo
+  files. Every service should resolve a NAME not an IP — next move becomes a one-line update.
+help: 'Options ranked: (a) MagicDNS names — idc03.taila0626a.ts.net works today but pins the HOST not the service
+  (mddb moving again breaks the same way). (b) Caddy alias on the edge — svc domains like http://mddb.internal ->
+  current leader:11023; consumers hit the domain, moves = one Caddyfile line. Works for HTTP; gRPC followers (LEADER_ADDR)
+  can take the MagicDNS name of the current leader — only 2 places. (c) ssot() value refs — ssot.values.yml already
+  centralizes host IPs; make configs render from it instead of literals. Realistic: (a)+(c) for units/secrets, (b)
+  for HTTP clients.'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  button: ▶ Indirection plan
+  runner: tony-dell
+  task_id: 20261006-103616-inventory-remaining-hardcoded-
+  result: 20261006-103616-inventory-remaining-hardcoded- finished (inactive) — see `devin-dispatch logs 20261006-103616-inventory-remaining-hardcoded-`
+spec: 'Inventory remaining hardcoded tailnet IPs across ~/.config on the fleet + repo configs. Decide per class:
+  unit envs -> MagicDNS host names (already valid); HTTP service clients -> edge alias (caddy svc.internal blocks);
+  secrets env files -> rendered from ssot.values.yml. Produce the migration list; don''t mass-edit yet.'
+updated: 2026-10-06 11:31
+comms:
+- at: 2026-10-06 06:58
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:03
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 07:03
+  from: chaba
+  text: started devin-task-20261006-070347-inventory-remaining-hardcoded- on tony-omen (dispatch)
+- at: 2026-10-06 07:04
+  from: devin
+  text: 'starting: scanning ~/.config fleet + repo for hardcoded 100.64/10 tailnet IPs'
+- at: 2026-10-06 07:11
+  from: tony-omen
+  text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-070'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:36
+  from: chaba
+  text: dispatched 20261006-103616-inventory-remaining-hardcoded- on chaba
+- at: 2026-10-06 10:37
+  from: devin
+  text: 'Session started: inventorying hardcoded tailnet IPs (~/.config + repo), will classify and produce migration
+    list.'
+- at: 2026-10-06 11:09
+  from: devin
+  text: 'Inventory done. Deliverable: docs/ssot/jobs/infrastructure/2026-10-06-tailnet-ip-indirection-inventory.yml
+    — per-file list for dell ~/.config (16 live files), fleet (omen 6, idc02 10, mn01 ~10, idc01 28 stale/retired;
+    idc03+michael-ha unreachable via ssh), repo (~120 files: ~65 scripts w/ env-overridable MDDB defaults, stacks/web/Caddyfile
+    14 upstreams, quadlets, generated units). Classed per card: (a) unit envs→MagicDNS ~40 lines, (b) HTTP clients→svc.internal
+    — PREREQ: alias+resolver dont exis'
+- at: 2026-10-06 11:10
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 11:10
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (2 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 11:10
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-103616-inventory-remaining-hardcoded- dirty — 2 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 11:31
+  from: chaba
+  text: 'merge guard: dispatch/20261006-103616-inventory-remaining-hardcoded- merged into origin/master; worktree
+    still dirty: 2 uncommitted file(s)'
+- at: 2026-10-06 11:31
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 11:31
+  from: chaba
+  text: session terrific-figure… hidden
+claim:
+  since: 2026-10-06 10:36

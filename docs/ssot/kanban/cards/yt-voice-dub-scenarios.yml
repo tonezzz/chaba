@@ -1,28 +1,32 @@
 id: yt-voice-dub-scenarios
-title: 'YT voice dub — scenario + benchmark coverage'
+title: YT voice dub — scenario + benchmark coverage
 column: backlog
 program: yt-voice-dub
 area: testing
 priority: medium
 blocked_by: yt-voice-dub-cast
-metric: 'dub scenarios pass in ada-pi suite; benchmark tracks cue overflow % + voices-per-speaker'
-verify: 'dub_cue_timing + dub_voice_consistency scenarios green; benchmark.yml entries run'
-note: >-
-  Add dub checks to ada-pi scenario-live + tests/benchmark.yml (Tony ask
-  2026-10-04 — reuse for scenario & benchmark). Scenarios:
-  dub_cue_timing (each TTS segment fits its cue window within
-  tolerance), dub_voice_consistency (same speaker keeps same voice
-  across cues — doubles as the yt-voice-dub-cast regression gate),
-  dub_duck_mix (original ducks during dub segments, recovers after).
-  Benchmark metrics: cue overflow %, WER of dub vs source captions,
-  voices-per-speaker = 1, dub-vs-original loudness delta.
-help: 'ada-pi tests/scenarios-live/ + tests/benchmark.yml; template gev_pane_honest_fail'
-spec: >-
-  ada-pi: add to tests/scenarios-live/ — dub_cue_timing (TTS segment fits its cue window within tolerance), dub_voice_consistency (same speaker keeps the same voice across cues — doubles as the yt-voice-dub-cast regression gate), dub_duck_mix (original ducks during dub segments, recovers after). Plus tests/benchmark.yml metrics: cue overflow %, WER of dub vs source captions, voices-per-speaker == 1, dub-vs-original loudness delta. QUEUE AFTER yt-voice-dub-cast lands — gate for the dub program.
+metric: dub scenarios pass in ada-pi suite; benchmark tracks cue overflow % + voices-per-speaker
+verify: dub_cue_timing + dub_voice_consistency scenarios green; benchmark.yml entries run
+note: 'Add dub checks to ada-pi scenario-live + tests/benchmark.yml (Tony ask 2026-10-04 — reuse for scenario &
+  benchmark). Scenarios: dub_cue_timing (each TTS segment fits its cue window within tolerance), dub_voice_consistency
+  (same speaker keeps same voice across cues — doubles as the yt-voice-dub-cast regression gate), dub_duck_mix (original
+  ducks during dub segments, recovers after). Benchmark metrics: cue overflow %, WER of dub vs source captions,
+  voices-per-speaker = 1, dub-vs-original loudness delta.'
+help: ada-pi tests/scenarios-live/ + tests/benchmark.yml; template gev_pane_honest_fail
+spec: 'ada-pi: add to tests/scenarios-live/ — dub_cue_timing (TTS segment fits its cue window within tolerance),
+  dub_voice_consistency (same speaker keeps the same voice across cues — doubles as the yt-voice-dub-cast regression
+  gate), dub_duck_mix (original ducks during dub segments, recovers after). Plus tests/benchmark.yml metrics: cue
+  overflow %, WER of dub vs source captions, voices-per-speaker == 1, dub-vs-original loudness delta. QUEUE AFTER
+  yt-voice-dub-cast lands — gate for the dub program.'
 action:
   type: dispatch
   repo: ada-pi
   status: idle
-  task: >-
-    Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).
-updated: '2026-10-04'
+  task: 'Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix
+    scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).'
+updated: 2026-10-06 07:18
+comms:
+- at: 2026-10-06 07:18
+  from: devin
+  text: 'note from yt-voice-dub-e2e session: blocked_by yt-voice-dub-cast closed 2026-10-05 — this card is unblocked
+    and ready to queue. Assessment: docs/assessments/yt-voice-dub-e2e-2026-10-06.md'

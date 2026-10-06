@@ -1,6 +1,6 @@
 id: review-trust-badge
 title: 'Review column: verified vs claimed-done badge'
-column: backlog
+column: done
 note: Review column conflates 'verified merged' with 'session claimed done' — Tony can't trust it at a glance, and
   this weekend proved the difference matters (uncommitted tool-merge work found in 'done' worktrees).
 spec: 'render-board.py review column: badge per card — green check when comms contain a verification entry (pattern:
@@ -11,10 +11,13 @@ spec: 'render-board.py review column: badge per card — green check when comms 
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   task: 'Add verified-vs-claimed badge to review column per card spec: comms heuristic now, action.verified field
     path reserved for merge-guard. Verify per spec.'
-updated: 2026-10-05 21:22
+  result: 20261006-093949-render-board-py-review-column- finished (inactive) — see `devin-dispatch logs 20261006-093949-render-board-py-review-column-`
+  runner: tony-dell
+  task_id: 20261006-093949-render-board-py-review-column-
+updated: 2026-10-06 10:03
 comms:
 - at: 2026-10-05 21:12
   from: devin
@@ -26,3 +29,61 @@ comms:
 - at: 2026-10-05 21:22
   from: tony
   text: put on hold
+- at: 2026-10-06 06:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:58
+  from: chaba
+  text: dispatched 20261006-065813-render-board-py-review-column- on chaba
+- at: 2026-10-06 07:01
+  from: devin
+  text: picked up — prior session landed the heuristic badge; now adding action.verified override + pushed-SHA pattern
+    per spec
+- at: 2026-10-06 07:06
+  from: devin
+  text: 'done on dispatch/20261006-065813-render-board-py-review-column- (8197c830, not pushed). render-board.py:
+    new isVerified(c) — explicit action.verified (merge-guard contract) beats comms heuristic incl. false; TRUST_RE
+    gains pushed-SHA arm (not-pushed + all-digit timestamps excluded); badge tooltip names the source; needs-you
+    stale-review uses same check. 10/10 node cases pass; live data 31 review cards -> 14 verified / 17 claimed.
+    Deliverables + verify steps in docs/ssot/jobs/kanban/2026-10-06-re'
+- at: 2026-10-06 07:08
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 07:08
+  from: chaba
+  text: auto-merged dispatch/20261006-065813-render-board-py-review-column- → origin/master
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:39
+  from: chaba
+  text: dispatched 20261006-093949-render-board-py-review-column- on chaba
+- at: 2026-10-06 09:40
+  from: devin
+  text: 're-check: badge already implemented on master (commit 8197c830). Re-verified in this worktree — 9/9 heuristic+field
+    cases pass; 33 review cards: 19 verified / 14 claimed.'
+- at: 2026-10-06 09:41
+  from: devin
+  text: 'done — no changes needed: verified-vs-claimed badge already on master via 8197c830 (isVerified() prefers
+    action.verified over TRUST_RE comms heuristic). Re-verified: 9/9 badge cases pass, render clean (159 cards),
+    33 review cards = 19 verified / 14 claimed. Outcome: dispatch-outcome-20261006-093949-render-board-py-review-column-.md'
+- at: 2026-10-06 09:41
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 09:41
+  from: chaba
+  text: auto-merged dispatch/20261006-093949-render-board-py-review-column- → origin/master
+- at: 2026-10-06 10:03
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093949-render-board-py-review-column- merged into origin/master'
+- at: 2026-10-06 10:03
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 10:03
+  from: chaba
+  text: session foul-mambo… hidden
+claim:
+  since: 2026-10-06 09:39

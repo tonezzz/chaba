@@ -1,6 +1,6 @@
 id: ada-tools-program
 title: ada tools — surface restructure program (plumbing, not consolidation)
-column: backlog
+column: done
 program: ada-tools
 metric: declarations live in per-domain manifests; tool_runner.py split by domain; uniform {ok,error} contract
 note: 'Structural complement to the tools-merge-* consolidation program (docs/assessments/tool-consolidation-spec-2026-10-04.md
@@ -14,7 +14,7 @@ note: 'Structural complement to the tools-merge-* consolidation program (docs/as
   lanes reorganize.'
 help: backend/realtime_provider.py (decls), backend/tool_runner.py (impl), backend/tools.d/ + tools_loader.py (the
   drop-in pattern to mirror), tools-merge-* cards (the consolidation program this complements)
-updated: 2026-10-05 22:56
+updated: 2026-10-06 06:46
 comms:
 - at: 2026-10-04 19:35
   from: devin
@@ -50,8 +50,14 @@ comms:
 - at: 2026-10-05 22:56
   from: tony
   text: Status?
+- at: 2026-10-06 06:46
+  from: tony
+  text: moved backlog -> done
 spec: 'PROGRAM TRACKER (no dispatch — coordination card). The ada-tools plumbing family complements the tools-merge-*
   consolidation: manifest split (ada-tools-manifest), desc slimming, runner split (tool-runner-split), error contract,
   decl-impl lint, regression scenarios (tools-regression-scenarios). Drain order: manifest first (kills the collision
   surface), then split, then contract+lint, scenarios last. All ada-pi-lane, serialized.'
 priority: low
+action:
+  status: done
+claim: {}

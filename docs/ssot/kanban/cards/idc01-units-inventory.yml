@@ -1,27 +1,27 @@
 id: idc01-units-inventory
-title: "Stack-ify idc01's ~65 non-container units + dropins"
-column: backlog
-note: >-
-  The containers got versioned into stacks/idc01/, but the bigger moving
-  part of an idc03 migration is the ~65 plain systemd units + timers +
-  dropins living only in ~/.config/systemd/user/ — ada-*, jev-*,
-  mddb-*.timer, cam-wall-*, doc-*, obsidian-*, ops-health, vcast@.
-  Units are short; each needs: ExecStart app dir + venv path, secrets env
-  file, state dir, and whether it's idc01-bound or host-agnostic.
-help: >-
-  Approach: group by prefix (ada-*, mddb-*, cam-wall-*, doc-*, jev-*,
-  obsidian/open-notebook, ops-*) — one stack dir or a units/ bundle per
-  group under stacks/idc01/, copy unit files verbatim, note per-unit
-  dependencies (venv path under ~/CascadeProjects or ~/apps, secrets in
-  ~/.config/secrets/). Dropins to capture: ada-ha-michael, ada-ha-tony,
-  ada-pi-pwa, mddb.service.d, mddb-vector-reindex.service.d. Full unit
-  list is recoverable via: ssh idc01 ls ~/.config/systemd/user/
-action: {type: dispatch, status: idle, repo: chaba, button: '▶ Inventory + bundle units'}
-spec: >-
-  On idc01, for every unit in ~/.config/systemd/user/ (excluding
-  .wants/.requires/sockets): record ExecStart working dir, EnvironmentFile,
-  timer schedule, dropins. Then bundle them into stacks/idc01/units/
-  grouped by service family with a manifest.yml per group listing
-  units, timers, secrets, state dirs, host-pinned values (tailnet IPs,
-  absolute paths). Do NOT modify the live units — copy out only.
-updated: '2026-10-05'
+title: Stack-ify idc01's ~65 non-container units + dropins
+column: done
+note: 'The containers got versioned into stacks/idc01/, but the bigger moving part of an idc03 migration is the
+  ~65 plain systemd units + timers + dropins living only in ~/.config/systemd/user/ — ada-*, jev-*, mddb-*.timer,
+  cam-wall-*, doc-*, obsidian-*, ops-health, vcast@. Units are short; each needs: ExecStart app dir + venv path,
+  secrets env file, state dir, and whether it''s idc01-bound or host-agnostic.'
+help: 'Approach: group by prefix (ada-*, mddb-*, cam-wall-*, doc-*, jev-*, obsidian/open-notebook, ops-*) — one
+  stack dir or a units/ bundle per group under stacks/idc01/, copy unit files verbatim, note per-unit dependencies
+  (venv path under ~/CascadeProjects or ~/apps, secrets in ~/.config/secrets/). Dropins to capture: ada-ha-michael,
+  ada-ha-tony, ada-pi-pwa, mddb.service.d, mddb-vector-reindex.service.d. Full unit list is recoverable via: ssh
+  idc01 ls ~/.config/systemd/user/'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  button: ▶ Inventory + bundle units
+spec: 'On idc01, for every unit in ~/.config/systemd/user/ (excluding .wants/.requires/sockets): record ExecStart
+  working dir, EnvironmentFile, timer schedule, dropins. Then bundle them into stacks/idc01/units/ grouped by service
+  family with a manifest.yml per group listing units, timers, secrets, state dirs, host-pinned values (tailnet IPs,
+  absolute paths). Do NOT modify the live units — copy out only.'
+updated: 2026-10-06 06:51
+claim: {}
+comms:
+- at: 2026-10-06 06:51
+  from: tony
+  text: moved backlog -> done

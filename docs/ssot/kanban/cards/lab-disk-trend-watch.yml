@@ -1,10 +1,10 @@
 id: lab-disk-trend-watch
 title: Disk trend watch — tony-dell hit 100% on 2026-10-05
-column: review
+column: done
 note: 'Original card file was written as 0 bytes during the disk-full event (~14:23). Recovered skeleton. Context:
   / hit 100%; freed ~7GB (mddb backups, pip/go caches). Watchers: yt-live-media cache (8.6G) grows with dub pipeline;
   system journal 3G needs sudo vacuum.'
-updated: 2026-10-05 23:30
+updated: 2026-10-06 11:13
 comms:
 - at: 2026-10-05 14:45
   from: devin
@@ -48,6 +48,71 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-232048-disk-trend-watcher-tony-dell-h not in origin/master
     — close will block until merged'
+- at: 2026-10-06 06:55
+  from: devin
+  text: 'raised request disk-watcher-live-at-84-close-the-card-o-c61bc2: Disk watcher live (/ at ~84%) — close the
+    card or keep it open while trend history accumulates?'
+- at: 2026-10-06 08:09
+  from: tony
+  text: 'answered disk-watcher-live-at-84-close-the-card-o-c61bc2: Keep open a week'
+- at: 2026-10-06 08:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-06 08:10
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 08:11
+  from: chaba
+  text: dispatched 20261006-081110-disk-trend-watcher-tony-dell-h on chaba
+- at: 2026-10-06 08:13
+  from: devin
+  text: 'redispatch: prev worktree still on disk with untracked disk-trend-watch.py + job doc; checkpoint commit
+    4f3565dc has the kanban-sync hook + board_notify fanout + reports SSOT. Porting all into this worktree, then
+    re-verifying.'
+- at: 2026-10-06 08:25
+  from: devin
+  text: 'done (redispatch): recovered prev worktree''s untracked disk-trend-watch.py + job doc onto this branch
+    (commit 3fe45a06). Verified: --selftest PASS (synthetic 92% -> card+push), live run 5/6 hosts 14 mounts. Fixed
+    2 real bugs found on re-verify: TimeoutExpired.stdout is bytes under text=True (slow du erased whole sample
+    -> tony-dell showed unreachable on itself; ~/.cache du ~77s > 60s cap) and stale-sweep could flap cards on flaky
+    hosts. Added per-dir du cap 45s + children-first ordering + wired '
+- at: 2026-10-06 08:27
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 08:28
+  from: chaba
+  text: auto-merged dispatch/20261006-081110-disk-trend-watcher-tony-dell-h → origin/master
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:33
+  from: chaba
+  text: dispatched 20261006-093349-disk-trend-watcher-tony-dell-h on chaba
+- at: 2026-10-06 09:35
+  from: devin
+  text: 'redispatch #3: deliverables already merged (3fe45a06) — re-verifying watcher end-to-end per spec'
+- at: 2026-10-06 09:38
+  from: devin
+  text: 'done (redispatch #3): implementation already merged via 3fe45a06 — re-verified end-to-end. Selftest PASS
+    on synthetic 92% fixture (card+push+trend+grower). Live state: watcher running in the 15-min kanban-sync tick,
+    history at ~/var/chaba/health/disk-trend.jsonl (42 samples), 5/6 hosts / 14 mounts. REAL alert still open: tony-dell
+    / 84% +7.9 GiB/d -> ~2.4d (disk-auto-tony-dell-root in review). LINE leg wired (ha,yomi) but yomi session still
+    invalid — fails soft, HA push live. Also fixed the last'
+- at: 2026-10-06 09:39
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 09:40
+  from: chaba
+  text: auto-merged dispatch/20261006-093349-disk-trend-watcher-tony-dell-h → origin/master
+- at: 2026-10-06 11:13
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093349-disk-trend-watcher-tony-dell-h merged into origin/master'
+- at: 2026-10-06 11:13
+  from: tony
+  text: closed by Tony
 spec: 'Disk trend watcher — tony-dell hit 100% 2026-10-05 (the original card file was 0-bytes from the disk-full
   event). Add a periodic check (fold into cms-auto-health or ops-health): df trend per host, alert on board + LINE
   when a disk will fill within ~7d at current growth, and flag top growers (yt-live-media cache grew 8.6G during
@@ -58,8 +123,19 @@ action:
   repo: chaba
   status: done
   button: ▶ Start
+  result: 20261006-093349-disk-trend-watcher-tony-dell-h finished (inactive) — see `devin-dispatch logs 20261006-093349-disk-trend-watcher-tony-dell-h`
   runner: tony-dell
-  task_id: 20261005-232048-disk-trend-watcher-tony-dell-h
-  result: 20261005-232048-disk-trend-watcher-tony-dell-h finished (inactive) — see `devin-dispatch logs 20261005-232048-disk-trend-watcher-tony-dell-h`
+  task_id: 20261006-093349-disk-trend-watcher-tony-dell-h
 claim:
-  since: 2026-10-05 23:20
+  since: 2026-10-06 09:33
+requests:
+- id: disk-watcher-live-at-84-close-the-card-o-c61bc2
+  ask: Disk watcher live (/ at ~84%) — close the card or keep it open while trend history accumulates?
+  status: answered
+  at: 2026-10-06 06:55
+  from: devin
+  options:
+  - Close
+  - Keep open a week
+  suggested: Keep open a week
+  answer: Keep open a week

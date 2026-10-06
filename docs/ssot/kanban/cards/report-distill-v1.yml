@@ -1,6 +1,6 @@
 id: report-distill-v1
 title: Write report-distill.py — nightly bank->report promotion
-column: backlog
+column: done
 note: ssot.apps.ada-cms-reports.yml distill_jobs declares a nightly L1 bank -> L2 CMS report job 'to write' — it
   never got built, so the L1->L2 promotion layer is missing. Without it CMS pages stay one-off and Ada's L3-first
   read finds thin coverage.
@@ -10,11 +10,80 @@ spec: 'Write scripts/ada/report-distill.py: deterministic (not LLM in v1) rollup
   supersede yesterday''s page. Register as ada-cms-automation entry with interval 24h; timer on idc01 after ada-scenario
   timers (or idc02 per the offload note). Verify: page exists, meta complete, index regenerated, health monitor
   sees the automation.'
-updated: '2026-10-05'
+updated: 2026-10-06 11:33
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   task: 'Build report-distill.py per card spec — health domain first as the deterministic template: rollup ada-cms-pages
     + ada-* bank deltas -> one kind:report page per domain with full meta_contract, supersede previous, register
     in ada-cms-automation (24h), timer post ada-scenario runs. Verify: page+meta+index+health-monitor visibility.'
+  result: 20261006-093749-write-scripts-ada-report-disti finished (inactive) — see `devin-dispatch logs 20261006-093749-write-scripts-ada-report-disti`
+  runner: tony-dell
+  task_id: 20261006-093749-write-scripts-ada-report-disti
+comms:
+- at: 2026-10-06 06:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:56
+  from: chaba
+  text: dispatched 20261006-065620-write-scripts-ada-report-disti on chaba
+- at: 2026-10-06 07:14
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 07:14
+  from: chaba
+  text: dispatch/20261006-065620-write-scripts-ada-report-disti already merged into origin/master
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:37
+  from: chaba
+  text: dispatched 20261006-093749-write-scripts-ada-report-disti on chaba
+- at: 2026-10-06 09:53
+  from: devin
+  text: 'Found existing prototype: ada-pi/scripts/report-distill.py runs on idc02 04:00 daily (all-domain digests,
+    kind:page). Building canonical chaba scripts/ada/report-distill.py as superset: kind:report + full meta_contract
+    incl supersedes chain, ada-* bank deltas since last run, ada-cms-automation gating/write-back, reports-index
+    regen. Job -> ssot.jobs.yml idc02 04:00 (offload note; replaces ada-pi unit).'
+- at: 2026-10-06 10:00
+  from: devin
+  text: 'DONE. Correction: an ada-pi prototype already ran on idc02 04:00 daily — the real gap was the canonical
+    chaba copy + bank deltas + supersedes + registry + manifest entry. Delivered scripts/ada/report-distill.py (commit
+    43013965): kind:report <domain>-digest pages with full meta_contract incl. supersedes; previous-day digests
+    archived to dated snapshots; health = template domain w/ ada-* bank deltas (private banks counts-only); ada-cms-automation/health-digest
+    seeded (interval 1440) + last_* writ'
+- at: 2026-10-06 10:01
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 10:01
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 10:01
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-093749-write-scripts-ada-report-disti dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 10:01
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261006-093749-write-scripts-ada-report-disti not in origin/master
+    — close will block until merged'
+- at: 2026-10-06 11:31
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-093749-write-scripts-ada-report-disti — 1 commit(s) not in
+    origin/master: feat(ada): report-distill.py — nightly L1 bank -> L2 domain digests; worktree still dirty: 1
+    uncommitted file(s)'
+- at: 2026-10-06 11:33
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093749-write-scripts-ada-report-disti merged into origin/master; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 11:33
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 11:33
+  from: chaba
+  text: session zigzag-scarecrow… hidden
+claim:
+  since: 2026-10-06 09:37

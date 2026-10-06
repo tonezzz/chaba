@@ -10,7 +10,7 @@ note: '126 async methods in one file = the other half of the merge-collision pro
   impl land in the same domain file eventually.'
 help: mixin pattern — class ToolRunner(ScreensMixin, HaMixin, ...) in backend/tool_runner/; keep public method names
   identical
-updated: 2026-10-05 23:43
+updated: 2026-10-06 11:27
 spec: 'Split backend/tool_runner.py (~4.8k lines, 126 async methods) into domain mixins: tool_runner/screens.py
   (vcast/cast/cctv), ha.py, gev.py, memory.py, cms.py, docs_drive.py, devin.py, etc. ToolRunner class composes them
   via multiple inheritance; public method names unchanged. Pure mechanical move — no behavior change. Verify: tool-lint
@@ -22,8 +22,8 @@ action:
   status: done
   button: ▶ Start
   runner: tony-omen
-  result: 'exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-232307-split-backend-tool-runner-py-4.service:
-    Consumed 3min 13.563s CPU time over 19min 39.402s wall clock time, 1.1G memory peak, 127.4M memory swap peak.'
+  result: 'exit=0  `dispatch-outcome-20261006-105550-split-tool-runner-mixins.md`; board comment posted. | devin-task-20261006-105550-split-backend-tool-runner-py-4.service:
+    Consumed 4min 14.435s CPU time over 31min 12.279s wall clock time, 1.6G memory peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -40,4 +40,26 @@ comms:
 - at: 2026-10-05 23:43
   from: tony-omen
   text: 'finished (ok): exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-232307-split-backend-tool-run'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:55
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 10:55
+  from: chaba
+  text: started devin-task-20261006-105550-split-backend-tool-runner-py-4 on tony-omen (dispatch)
+- at: 2026-10-06 10:56
+  from: devin
+  text: 'starting: exploring tool_runner.py structure'
+- at: 2026-10-06 11:24
+  from: devin
+  text: 'done: tool_runner.py (7066 lines) -> backend/tool_runner/ package — common.py + 11 domain mixins (devin/docs_drive/meta/calendar/ha/web/memory/cms/screens/chat/gev)
+    composed by MI. All 209 members byte-identical except 3 deferred ToolRunner imports + 2 path anchors. tool-lint
+    clean (38 declared/90 aliases, same as before); 679 tests + 18 subtests pass. scenario-live smoke needs a live
+    backend — not runnable on this host, flagged as post-merge follow-up in docs/ssot/jobs/ada/2026-10-06-tool-runne'
+- at: 2026-10-06 11:27
+  from: tony-omen
+  text: 'finished (ok): exit=0  `dispatch-outcome-20261006-105550-split-tool-runner-mixins.md`; board comment posted.
+    | devin-task-20261006-1055'
 claim: {}

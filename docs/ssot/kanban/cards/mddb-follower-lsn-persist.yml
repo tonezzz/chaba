@@ -1,26 +1,95 @@
 id: mddb-follower-lsn-persist
-title: "Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G"
-column: backlog
-note: >-
-  During the idc03 cutover: every mddb follower restart pulls a FULL
-  4.3G snapshot (~100s stream + verify) because lastAppliedLSN lives
-  only in memory — restart reports fromLSN=0, trips the new
-  below-oldest check, re-snapshots. Persist lastAppliedLSN in the
-  follower DB (or a sidecar file in data dir) so restarts TAIL the
-  binlog instead of re-snapshotting.
-help: >-
-  Fork repo: ~/CascadeProjects/mddb-fork branch binlog-retention.
-  Fix lives in replication_client.go — on startup read persisted LSN
-  (db meta bucket or mddb.lsn sidecar), use it as fromLSN; write it
-  after each applied entry batch (or at least every N seconds; an
-  fsync per entry is too hot — periodic flush is fine, worst case
-  replays a few seconds of entries idempotently).
-action: {type: dispatch, status: idle, repo: chaba, button: '▶ Persist follower LSN'}
-spec: >-
-  In the mddb fork (~/CascadeProjects/mddb-fork): persist follower's
-  applied LSN across restarts — small meta key in the replicated db or
-  a sidecar file next to mddb.db. Load on startup; flush periodically
-  (interval or batch-count, not per-entry). Idempotent replay means a
-  few-second skew is safe. Update idc02+idc03 images after (build on
-  idc02 via the Dockerfile; image tag bump 2.15.4-blrotate -> next).
-updated: '2026-10-05'
+title: Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G
+column: review
+note: 'During the idc03 cutover: every mddb follower restart pulls a FULL 4.3G snapshot (~100s stream + verify)
+  because lastAppliedLSN lives only in memory — restart reports fromLSN=0, trips the new below-oldest check, re-snapshots.
+  Persist lastAppliedLSN in the follower DB (or a sidecar file in data dir) so restarts TAIL the binlog instead
+  of re-snapshotting.'
+help: 'Fork repo: ~/CascadeProjects/mddb-fork branch binlog-retention. Fix lives in replication_client.go — on startup
+  read persisted LSN (db meta bucket or mddb.lsn sidecar), use it as fromLSN; write it after each applied entry
+  batch (or at least every N seconds; an fsync per entry is too hot — periodic flush is fine, worst case replays
+  a few seconds of entries idempotently).'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  button: ▶ Persist follower LSN
+  runner: tony-dell
+  task_id: 20261006-103003-in-the-mddb-fork-cascadeprojec
+  result: 20261006-103003-in-the-mddb-fork-cascadeprojec finished (inactive) — see `devin-dispatch logs 20261006-103003-in-the-mddb-fork-cascadeprojec`
+spec: 'In the mddb fork (~/CascadeProjects/mddb-fork): persist follower''s applied LSN across restarts — small meta
+  key in the replicated db or a sidecar file next to mddb.db. Load on startup; flush periodically (interval or batch-count,
+  not per-entry). Idempotent replay means a few-second skew is safe. Update idc02+idc03 images after (build on idc02
+  via the Dockerfile; image tag bump 2.15.4-blrotate -> next).'
+updated: 2026-10-06 11:44
+comms:
+- at: 2026-10-06 06:57
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:57
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 06:57
+  from: chaba
+  text: started devin-task-20261006-065745-in-the-mddb-fork-cascadeprojec on tony-omen (dispatch)
+- at: 2026-10-06 07:04
+  from: devin
+  text: 'picked up. Plan: persist follower last_applied_lsn as a meta key INSIDE the replicated bolt db, written
+    in the same tx as the applied entry (marker can never run ahead of data; no extra fsync). Branch follower-lsn-persist
+    off binlog-retention on tony-dell, then build on idc02 -> tag 2.15.4-lsnpersist -> update idc02+idc03.'
+- at: 2026-10-06 07:05
+  from: tony-omen
+  text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-065'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:30
+  from: chaba
+  text: dispatched 20261006-103003-in-the-mddb-fork-cascadeprojec on chaba
+- at: 2026-10-06 10:33
+  from: devin
+  text: 'started. Worktree mddb-wt-lsn-persist (branch follower-lsn-persist off binlog-retention tip). Design: persist
+    applied LSN in a meta bucket inside the follower DB, committed in the same bolt tx as applied entries — atomic
+    with the data, zero extra fsync. Implementing now.'
+- at: 2026-10-06 10:44
+  from: devin
+  text: 'code committed on follower-lsn-persist (8b90b98): LSN marker in _mddb_replication bucket, written in the
+    same bolt tx as applied entries; loaded on applier start; re-persisted after snapshot swap; reloaded after manual
+    restore. New tests pass. Full suite running. Image build started on idc02 as localhost/mddb:2.15.4-lsn. Confirmed
+    live bug on idc02: restart 21:02 pulled a full 4.27G snapshot.'
+- at: 2026-10-06 11:13
+  from: devin
+  text: 'course-corrected: initial branch was based on binlog-retention which LACKS the snapshot-loop fixes merged
+    into feat/vector-algorithms (d77c6ae) — briefly deployed a regressed image to idc02 (slow full-check verify
+    caught it). Rebased, rebuilt localhost/mddb:2.15.4-lsn (3c22910c755f), redeployed to idc02 + loaded on idc03.
+    idc02 follower now re-snapshotting one last time (no marker existed yet); next restart should tail. idc03 quadlet
+    pinned but leader NOT restarted — needs approval.'
+- at: 2026-10-06 11:35
+  from: devin
+  text: 'raised request idc03-leader-restart-needed-to-pick-up-m-2cf496: idc03 leader restart needed to pick up
+    mddb:2.15.4-lsn (image loaded, quadlet pinned). Leader restart = minutes of mddb '
+- at: 2026-10-06 11:42
+  from: devin
+  text: 'DONE (pending leader restart approval). Follower LSN now persisted in _mddb_replication/last_applied_lsn
+    inside the replicated db, committed in the same bolt tx as applied entries — atomic, no extra fsync, cannot
+    run ahead of the file. VERIFIED LIVE on idc02: restart logged resuming from persisted LSN 148280580 and tailed
+    the binlog — no 6GB re-snapshot. Image localhost/mddb:2.15.4-lsn (3c22910c755f) built on idc02, running on idc02,
+    loaded+pinned on idc03 (restart needs approval — board request'
+- at: 2026-10-06 11:44
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 11:44
+  from: chaba
+  text: auto-merged dispatch/20261006-103003-in-the-mddb-fork-cascadeprojec → origin/master
+claim:
+  since: 2026-10-06 10:30
+requests:
+- id: idc03-leader-restart-needed-to-pick-up-m-2cf496
+  ask: 'idc03 leader restart needed to pick up mddb:2.15.4-lsn (image loaded, quadlet pinned). Leader restart =
+    minutes of mddb downtime (freelist walk on ~6GB db) — per runbook needs approval. Restart now, or leave pinned
+    for next maintenance window? Also: merge follower-lsn-persist into feat/vector-algorithms? (deployed image contains
+    the fix; a future rebuild off feat/vector-algorithms would lose it until merged)'
+  status: open
+  at: 2026-10-06 11:35
+  from: devin

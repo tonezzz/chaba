@@ -1,6 +1,6 @@
 id: gev-screens
 title: gev screens — cast/HA screen integration + verify-after-act
-column: review
+column: done
 priority: medium
 blocked_by: vcast-cast-lane
 program: gev
@@ -21,10 +21,10 @@ action:
   status: done
   task: 'Implement verify-after-act for GEV screen casts per card spec: post-cast state read via vcast_list/snapshot,
     displaced-content path, apps-v6 stale-cache case.'
-  runner: tony-omen
-  result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-231554-verify-after-act-for-gev-casts.service:
-    Consumed 1min 33.703s CPU time over 5min 59.694s wall clock time, 1.2G memory peak.'
-updated: 2026-10-05 23:22
+  runner: tony-dell
+  task_id: 20261006-101400-verify-after-act-for-gev-casts
+  result: 20261006-101400-verify-after-act-for-gev-casts finished (inactive) — see `devin-dispatch logs 20261006-101400-verify-after-act-for-gev-casts`
+updated: 2026-10-06 11:33
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -48,4 +48,55 @@ comms:
   from: tony-omen
   text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
     tools. | devin-task-20261005-231'
-claim: {}
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:14
+  from: chaba
+  text: dispatched 20261006-101400-verify-after-act-for-gev-casts on chaba
+- at: 2026-10-06 10:14
+  from: devin
+  text: 'starting: reading card spec + ssot rules, then exploring gev/vcast dirs'
+- at: 2026-10-06 10:24
+  from: devin
+  text: 'live verify-after-act PASSED on screen6/vcast-real: nav gev -> state=nav + p0:frame-ok + gev-cmd remote
+    {6,0}; snapshot=uncapturable-iframe w/ real src; camwall nav displaced gev (remote dropped); PiP remediation
+    verified (2 panes, gev+camwall). Found drift: deployed vcast/sw.js=v2, repo=v3.'
+- at: 2026-10-06 10:28
+  from: devin
+  text: 'DONE — verify-after-act for GEV casts verified live + codified. New stacks/web/input-bridge/gev-cast-verify.mjs
+    ran 14/14 PASS on screen6 (vcast-real): cast->state read (nav+p0:frame-ok in /displays AND {screen,pane} remote
+    in /apps/gev-cmd/command/health), snapshot contract (uncapturable-iframe carries live src), displaced-content
+    path (camwall over GEV dropped the remote — the feafff7 displaced-note ground truth), pip split remediation,
+    idle restore. Docs: docs/runbooks/vcast-gev-verify-after-'
+- at: 2026-10-06 10:29
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 10:30
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 10:30
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-101400-verify-after-act-for-gev-casts dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 10:30
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261006-101400-verify-after-act-for-gev-casts not in origin/master
+    — close will block until merged'
+- at: 2026-10-06 11:31
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-101400-verify-after-act-for-gev-casts — 1 commit(s) not in
+    origin/master: feat(vcast): gev-cast-verify — verify-after-act harness + displaced-content runbook; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 11:33
+  from: chaba
+  text: 'merge guard: dispatch/20261006-101400-verify-after-act-for-gev-casts merged into origin/master; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 11:33
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 11:33
+  from: chaba
+  text: session bustling-stone… hidden
+claim:
+  since: 2026-10-06 10:14

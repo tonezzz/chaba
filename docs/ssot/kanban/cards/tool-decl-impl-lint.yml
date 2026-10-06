@@ -1,6 +1,6 @@
 id: tool-decl-impl-lint
 title: ada tools — decl-impl consistency lint in CI
-column: review
+column: done
 program: ada-tools
 metric: CI fails on declaration without method, method without declaration, or manifest/schema drift
 verify: deliberately break a decl in a test PR -> lint catches it
@@ -9,7 +9,7 @@ note: 'Gap left by tools-ci-audit (done — it lints the alias table + count cap
   manifest entries can drift from their module DECLARATION. One lint test: enumerate declarations, enumerate methods/run(),
   diff, plus param-schema vs signature sanity.'
 help: 'existing suites: tests/benchmark.yml, scripts/scenario-live.py; tools.d/manifest.yml contract in backend/tools_loader.py'
-updated: 2026-10-05 22:08
+updated: 2026-10-06 10:03
 spec: 'Extend scripts/tool-lint.py: for every realtime_provider tool declaration assert a working ToolRunner method
   exists (and vice versa for public tools_ methods); flag decl-without-impl and impl-without-decl. Run in CI (tools-ci-audit
   family). Verify: lint fails on a deliberately orphaned decl, passes clean tree.'
@@ -58,5 +58,14 @@ comms:
   from: chaba
   text: 'session end: worktree dispatch-wt-20261005-220046-extend-scripts-tool-lint-py-fo dirty — 5 uncommitted
     file(s); commit or clean before pruning'
+- at: 2026-10-06 10:03
+  from: chaba
+  text: 'merge guard: dispatch/20261005-220046-extend-scripts-tool-lint-py-fo merged into origin/main'
+- at: 2026-10-06 10:03
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 10:03
+  from: chaba
+  text: session expensive-mayflower… hidden
 claim:
   since: 2026-10-05 22:01

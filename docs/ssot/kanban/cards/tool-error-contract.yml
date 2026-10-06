@@ -1,6 +1,6 @@
 id: tool-error-contract
 title: ada tools — uniform {ok, error} result contract
-column: review
+column: done
 program: ada-tools
 metric: 'every tool result normalizes to {ok: bool, error?: str}; no buried nested failures'
 verify: 'lint test: dispatch every tool with a failing fixture, assert top-level shape'
@@ -10,7 +10,7 @@ note: 'Today: raise, {error}, ok:false, {err}, and errors buried in responses[].
   phantom-write detection.'
 help: ToolRunner.dispatch wrapper — one place to normalize; tools.d manifest can declare the contract for drop-ins
   too
-updated: 2026-10-05 23:23
+updated: 2026-10-06 10:03
 spec: 'Uniform tool result contract: every ToolRunner method returns {ok: bool, ...} — raise/{error}/ok:false/{err}/buried
   responses[].response.ok all coexist today. Pick {ok,error} as canonical; normalize at the runner boundary (wrap
   legacy returns), keep the gev_command all-failed->top-level-error pattern (0bb8e9b). Update the honesty checks
@@ -49,4 +49,7 @@ comms:
 - at: 2026-10-05 23:23
   from: tony-omen
   text: 'finished (ok): exit=0 mits or pushes were made — work is confined to this worktree. | devin-task-20261005-223854-uniform-tool-result-co'
+- at: 2026-10-06 10:03
+  from: tony
+  text: closed by Tony
 claim: {}

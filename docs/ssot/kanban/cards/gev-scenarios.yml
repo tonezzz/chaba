@@ -1,6 +1,6 @@
 id: gev-scenarios
 title: gev scenarios — deepen scenario-live coverage
-column: review
+column: done
 priority: medium
 program: gev
 area: testing
@@ -21,10 +21,10 @@ action:
   status: done
   task: 'Add gev_* scenario coverage per card spec: ws tool-call round trip, mute no-leak, tools.json regen check,
     stale SW cache — reusing gev_pane_honest_fail.yaml as template.'
-  runner: tony-omen
-  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-230943-ada-pi-tests-scenarios-live-ad.service:
-    Consumed 1min 6.612s CPU time over 4min 51.234s wall clock time, 1.1G memory peak.'
-updated: 2026-10-05 23:14
+  runner: tony-dell
+  task_id: 20261006-101358-ada-pi-tests-scenarios-live-ad
+  result: 20261006-101358-ada-pi-tests-scenarios-live-ad finished (inactive) — see `devin-dispatch logs 20261006-101358-ada-pi-tests-scenarios-live-ad`
+updated: 2026-10-06 11:33
 comms:
 - at: 2026-10-05 22:53
   from: tony
@@ -39,4 +39,57 @@ comms:
   from: tony-omen
   text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
     tools. | devin-task-20261005-23'
-claim: {}
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:13
+  from: chaba
+  text: dispatched 20261006-101358-ada-pi-tests-scenarios-live-ad on ada-pi
+- at: 2026-10-06 10:21
+  from: devin
+  text: 'started: probed live surfaces — bridge ws round-trip confirmed (text→function_call→tool_response→text/done),
+    sw.js is the non-caching self-heal worker, tools.json not HTTP-served (regen check must be behavioral via ws).
+    Designing driver primitives: gev_bridge turn + http_check/bundle guard.'
+- at: 2026-10-06 10:35
+  from: devin
+  text: 'done: 4 new gev_* scenarios, all PASS live. scenario-live.py gained gev_bridge turns (bridge ws text→function_call→tool_response,
+    normalized into the expect vocabulary; connect fail=INFRA) + http_check turns (url/page→bundle guard) + lazy
+    Ada ws connect. Files: gev_ws_tool_roundtrip, gev_tools_regen (behavioral additionalProperties/drift guard —
+    tools.json isnt HTTP-served, drift-diff stays in chaba tools-check.mjs), gev_mute_no_leak (served-bundle mute-wiring
+    invariant), gev_sw_stale_cache (sw.'
+- at: 2026-10-06 10:36
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 10:36
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 10:36
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-101358-ada-pi-tests-scenarios-live-ad dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 10:36
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261006-101358-ada-pi-tests-scenarios-live-ad not in origin/main
+    — close will block until merged'
+- at: 2026-10-06 11:31
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-101358-ada-pi-tests-scenarios-live-ad — 1 commit(s) not in
+    origin/main: test(gev): bridge round-trip + served-code guard scenarios; worktree still dirty: 1 uncommitted
+    file(s)'
+- at: 2026-10-06 11:33
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-101358-ada-pi-tests-scenarios-live-ad — 1 commit(s) not in
+    origin/main: test(gev): bridge round-trip + served-code guard scenarios; worktree still dirty: 1 uncommitted
+    file(s)'
+- at: 2026-10-06 11:33
+  from: chaba
+  text: 'merge guard: dispatch/20261006-101358-ada-pi-tests-scenarios-live-ad merged into origin/main; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 11:33
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 11:33
+  from: chaba
+  text: session receptive-juice… hidden
+claim:
+  since: 2026-10-06 10:13

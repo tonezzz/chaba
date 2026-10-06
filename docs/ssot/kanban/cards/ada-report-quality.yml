@@ -1,6 +1,6 @@
 id: ada-report-quality
 title: Improve standard of Ada-generated reports
-column: review
+column: done
 note: 'Ada-made reports need a higher, enforced standard: every report page must carry the meta contract (summary
   ~240 chars, domain, fresh_for, confidence, timeline, updated — see meta_contract in ssot.apps.ada-cms-reports.yml),
   state time-of-event before quoting, mark staleness honestly, and follow the benchmark report structure (H1, score
@@ -9,7 +9,7 @@ note: 'Ada-made reports need a higher, enforced standard: every report page must
   units_failed: ada-scenario-casting.service).
 
   '
-updated: 2026-10-05 22:56
+updated: 2026-10-06 09:44
 comms:
 - at: 2026-10-05 13:08
   from: tony
@@ -45,6 +45,34 @@ comms:
 - at: 2026-10-05 22:56
   from: chaba
   text: auto-merged dispatch/20261005-222628-enforce-the-report-meta-contra → origin/main
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:33
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 09:33
+  from: chaba
+  text: started devin-task-20261006-093313-enforce-the-report-meta-contra on tony-omen (dispatch)
+- at: 2026-10-06 09:33
+  from: devin
+  text: 'Starting: exploring report meta contract + generator code'
+- at: 2026-10-06 09:42
+  from: devin
+  text: 'Re-dispatch verified — work already merged on origin/main (94b939f+54fdee0). Meta-contract tests pass (missing
+    meta rejected pre-confirm; conformant writes land). Live audit via mddb MCP: ada-cms-pages 316 docs — 2 conformant
+    (benchmark-cms, daily-brief, post-contract writers), 314 pre-contract legacy FAILs as designed. Outcome: dispatch-outcome-20261006-093313
+    on dispatch/20261006-093313.'
+- at: 2026-10-06 09:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 a.md`, committed as `6524f3b` on the dispatch branch (not pushed); board comment
+    posted | devin-task-20261006-093'
+- at: 2026-10-06 09:44
+  from: tony
+  text: closed by Tony
 spec: 'Enforce the report meta contract on Ada-generated reports: every report page carries summary ~240 chars,
   domain, fresh_for, confidence, timeline, updated (meta_contract in ssot.apps.ada-cms-reports.yml). Add a validation
   pass at report-write time (reject/warn on missing fields) + fix the generator prompts to emit them. Verify: a
@@ -55,8 +83,8 @@ action:
   repo: ada-pi
   status: done
   button: ▶ Start
-  runner: tony-dell
-  task_id: 20261005-222628-enforce-the-report-meta-contra
-  result: 20261005-222628-enforce-the-report-meta-contra finished (inactive) — see `devin-dispatch logs 20261005-222628-enforce-the-report-meta-contra`
+  result: 'exit=0 a.md`, committed as `6524f3b` on the dispatch branch (not pushed); board comment posted | devin-task-20261006-093313-enforce-the-report-meta-contra.service:
+    Consumed 2min 34.256s CPU time over 9min 57.123s wall clock time, 2.7G memory peak.'
+  runner: tony-omen
 claim:
   since: 2026-10-05 22:26

@@ -1,6 +1,6 @@
 id: idc01-to-idc03-migration
 title: Migrate idc01 -> idc03 (maintenance window)
-column: review
+column: done
 blocked_by: idc-vps-game
 note: 'Plan: provision idc03 (card idc-vps-game) -> mddb via replication (fork image follower on idc03 -> promote
   -> idc02 re-points leader addr) -> edge: caddy-edge + DNS/CF to idc03 public IP -> small containers (ollama/input-bridge/vcast/gemini-proxy/mddb-panel)
@@ -20,7 +20,7 @@ requests:
     Phase 2 (baseline + capacity check) can start. Also confirm idc03 spec (vCPU/RAM/disk) from the provider panel.'
   status: answered
   answer: can you install keys from tony-omen?
-updated: 2026-10-05 21:58
+updated: 2026-10-06 09:46
 comms:
 - at: 2026-10-05 20:17
   from: tony
@@ -82,6 +82,19 @@ comms:
   from: chaba
   text: 'unmerged commits remain on dispatch/20261005-205012-phase-1-inventory-plan-only-no — 1 commit(s) not in
     origin/master: Devin checkpoint for session quilted-jacket; worktree still dirty: 2 uncommitted file(s)'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-205012-phase-1-inventory-plan-only-no — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; Devin checkpoint for session quilted-jacket'
+- at: 2026-10-06 09:46
+  from: chaba
+  text: 'merge guard: dispatch/20261005-205012-phase-1-inventory-plan-only-no merged into origin/master'
+- at: 2026-10-06 09:46
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:46
+  from: chaba
+  text: session quilted-jacket… hidden
 spec: 'Phase 1 — inventory + plan only, NO changes to production. Tony''s decision: migrate EVERYTHING off idc01
   onto idc03 (answered 2026-10-05). ssh tony@idc01 + tony@idc03. Produce docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
   with: (a) full inventory of idc01 services/containers/quadlets/timers/cron + data dirs + ports + TLS routes, (b)

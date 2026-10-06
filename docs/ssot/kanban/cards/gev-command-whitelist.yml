@@ -1,6 +1,6 @@
 id: gev-command-whitelist
 title: gev_command — client-side arg whitelist per command name
-column: review
+column: done
 priority: medium
 program: ada-tools
 metric: bad args rejected locally with the real schema in the error; zero round-trip arg failures in gev scenarios
@@ -22,10 +22,10 @@ action:
   status: done
   task: 'Add per-command arg whitelist to the gev_command tool per card spec: known-args map, local reject with
     schema error, keep the {name,args} unwrap, passthrough default. Verify gev_* scenarios + bad-args probe.'
-  runner: tony-omen
-  result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-230232-in-the-ada-pi-gev-command-tool.service:
-    Consumed 1min 15.280s CPU time over 6min 55.696s wall clock time, 999M memory peak.'
-updated: 2026-10-05 23:09
+  runner: tony-dell
+  task_id: 20261006-101356-in-the-ada-pi-gev-command-tool
+  result: 20261006-101356-in-the-ada-pi-gev-command-tool finished (inactive) — see `devin-dispatch logs 20261006-101356-in-the-ada-pi-gev-command-tool`
+updated: 2026-10-06 11:31
 comms:
 - at: 2026-10-05 22:53
   from: tony
@@ -40,4 +40,40 @@ comms:
   from: tony-omen
   text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
     tools. | devin-task-20261005-230'
-claim: {}
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:13
+  from: chaba
+  text: dispatched 20261006-101356-in-the-ada-pi-gev-command-tool on ada-pi
+- at: 2026-10-06 10:20
+  from: devin
+  text: 'implemented: _GEV_ARG_SCHEMAS map (all 28 cmds from chaba stacks/tony-dell/gev-gemini/tools.json) + _gev_args_error
+    local check in gev_command after the 0bb8e9b unwrap; unknown/missing/wrong-shape args return {ok:false,error,expected}
+    with the schema — passthrough for unmapped names. 9 new unit tests green (191/191 file); probe shows 0ms schema
+    errors, no relay round-trip. tool-lint clean.'
+- at: 2026-10-06 10:22
+  from: devin
+  text: 'Done on branch dispatch/20261006-101356-in-the-ada-pi-gev-command-tool (2d595b1, not pushed). gev_command
+    now validates args against _GEV_ARG_SCHEMAS — all 28 cmds from chaba stacks/tony-dell/gev-gemini/tools.json,
+    cross-checked 1:1 vs gevActions.js client dispatch — after the 0bb8e9b unwrap, before the relay. Unknown/missing/bad-shape
+    args -> {ok:false,error,expected} with the schema; unmapped names passthrough. Verified: 702/702 suite, tool-lint
+    clean, synthetic probe returns schema errors in '
+- at: 2026-10-06 10:23
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 10:24
+  from: chaba
+  text: auto-merged dispatch/20261006-101356-in-the-ada-pi-gev-command-tool → origin/main
+- at: 2026-10-06 11:31
+  from: chaba
+  text: 'merge guard: no session branch/worktree for 20261006-101356-in-the-ada-pi-gev-command-tool — nothing to
+    verify'
+- at: 2026-10-06 11:31
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 11:31
+  from: chaba
+  text: session glowing-river… hidden
+claim:
+  since: 2026-10-06 10:13

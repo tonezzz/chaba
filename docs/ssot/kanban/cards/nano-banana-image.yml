@@ -1,6 +1,6 @@
 id: nano-banana-image
 title: ada render — nano-banana image gen/edit -> LINE/Telegram photo
-column: backlog
+column: review
 program: media-gen
 metric: prompt (+ optional ref image) -> generated PNG arrives as photo in Tony LINE + TG chats
 verify: scenario img_render_* passes; ask Ada in tg chat -> sendPhoto <30s; LINE chat -> imageMessage
@@ -16,7 +16,7 @@ note: 'Thin layer — plumbing already exists, this is generator + URL hop. Scop
 help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model; tg send: tg_relay.send_photo (fetch
   url -> sendPhoto); LINE: line_relay._images_from (cast_url/image_url -> imageMessage, public https only); tool
   group: ada_render_* — new `render` domain for tools.d/manifests'
-updated: 2026-10-05 21:15
+updated: 2026-10-06 11:37
 comms:
 - at: 2026-10-04 19:34
   from: devin
@@ -33,6 +33,90 @@ comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (ada-pi lane, medium)
+- at: 2026-10-06 06:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:56
+  from: chaba
+  text: dispatched 20261006-065614-new-tool-group-render-ada-rend on ada-pi
+- at: 2026-10-06 07:04
+  from: devin
+  text: 'starting: ada_render_image as tools.d drop-in — REST generateContent (vcast_tts pattern) -> /frame store
+    -> image_url hop'
+- at: 2026-10-06 07:11
+  from: devin
+  text: 'done: ada_render_image tools.d drop-in (REST generateContent, ref_url edit, /frame publish -> image_url),
+    manifest read/owner-tier/90s, guide + IMAGE RENDERING persona bullet, 13 unit tests pass, tool-lint clean. img_render_*
+    flipped to smoke w/ needs_tools+calls_any. CAVEAT: gemini-2.5-flash-image quota-zero on idc01 keys still needs
+    billing — tool reports it honestly. Deliverables: worktree dispatch/20261006-065614; outcome + job record in
+    dispatch-outcome-*.md and docs/ssot/jobs/ada/2026-10-0'
+- at: 2026-10-06 07:12
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 07:13
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (9 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 07:13
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-065614-new-tool-group-render-ada-rend dirty — 9 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:33
+  from: chaba
+  text: dispatched 20261006-093352-new-tool-group-render-ada-rend on ada-pi
+- at: 2026-10-06 09:34
+  from: devin
+  text: 'started: exploring tool-group + artifact URL conventions'
+- at: 2026-10-06 09:53
+  from: devin
+  text: 'done: ada_render_image tools.d drop-in — REST generateContent (gemini-2.5-flash-image), artifact -> frontend/render/
+    served at idc01 /static/render/ (LINE/TG-sendable). 20 unit tests stubbed-REST all pass, tool-lint clean, img-render-*
+    scenarios flipped to smoke. /api/tools now lists drop-ins so needs_tools gates work. Live render untested here
+    (no GEMINI_API_KEY) — smoke scenarios are the post-deploy gate. Details: dispatch-outcome-20261006-093352-*.md
+    + docs/ssot/jobs/ada/2026-10-06-render-ima'
+- at: 2026-10-06 09:53
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 09:53
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (11 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 09:53
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-093352-new-tool-group-render-ada-rend dirty — 11 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 11:14
+  from: tony
+  text: retry requested
+- at: 2026-10-06 11:15
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 11:15
+  from: chaba
+  text: started devin-task-20261006-111525-new-tool-group-render-ada-rend on tony-omen (dispatch)
+- at: 2026-10-06 11:15
+  from: devin
+  text: 'Starting: exploring ada-pi worktree, locating tool-group conventions and CMS/report photo-upload hop.'
+- at: 2026-10-06 11:35
+  from: devin
+  text: 'ada_render_image landed in the dispatch worktree: tools.d drop-in (read policy, 90s), REST generateContent
+    to gemini-2.5-flash-image, artifact saved under ADA_RENDER_DIR, published via the shared input-bridge /frame
+    hop → image_url/cast_url. 18 unit tests + tool-lint clean; publish hop verified live (minted URL serves 200
+    image/png). Both local GEMINI keys are 429-quota on the image model — the live cat-render assert runs post-deploy
+    via img-render-gen (tier smoke, needs_tools-gated). Also fixed'
+- at: 2026-10-06 11:37
+  from: devin
+  text: 'Done, committed on dispatch/20261006-111525 (a76d804, not pushed). 18/18 unit tests, tool-lint clean (39
+    declared / cap 107), publish hop verified live. Caveat: both local Gemini keys 429 on gemini-2.5-flash-image
+    (quota) — the real cat render asserts via img-render-gen smoke on the billed idc03 key post-deploy.'
+- at: 2026-10-06 11:37
+  from: tony-omen
+  text: 'finished (ok): exit=0  exercise on the billed idc03 key via the `img-render-gen` smoke scenario post-deploy.
+    | devin-task-20261006-1115'
 spec: 'New tool group render: ada_render_image(prompt, ref_url?, aspect?) -> gemini-2.5-flash-image via REST generateContent;
   save artifact, return LINE/Telegram-sendable photo URL (same hop the CMS/report path uses). Declaration slim per
   ada-tools-desc-slim conventions. Verify: unit test with stubbed REST; live scenario renders a cat picture into
@@ -41,5 +125,11 @@ priority: medium
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: done
   button: ▶ Start
+  task_id: 20261006-093352-new-tool-group-render-ada-rend
+  runner: tony-omen
+  result: 'exit=0  exercise on the billed idc03 key via the `img-render-gen` smoke scenario post-deploy. | devin-task-20261006-111525-new-tool-group-render-ada-rend.service:
+    Consumed 3min 12.793s CPU time over 22min 18.199s wall clock time, 1.4G memory peak.'
+claim:
+  since: 2026-10-06 09:33

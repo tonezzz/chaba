@@ -1,7 +1,7 @@
 id: board-answer-live-session
 title: Answers to running dispatch sessions don't reach the session
-column: review
-updated: 2026-10-05 22:38
+column: done
+updated: 2026-10-06 11:30
 note: '/respond lands in comms but a session that raised a request and kept working never re-reads the card. Options:
   dispatcher injects pending answers into the session''s worktree (e.g. writes answers.txt + signals), or sessions
   poll the card. Low urgency — most answer-needed sessions end quickly.'
@@ -20,8 +20,8 @@ action:
   status: done
   button: ▶ Start
   runner: tony-omen
-  result: 'exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223028-answers-reach-running-sessions.service:
-    Consumed 1min 12.940s CPU time over 8min 14.652s wall clock time, 920.3M memory peak, 51.4M memory swap peak.'
+  result: 'exit=0 ew dispatches won''t carry the updated prompt until it''s refreshed. | devin-task-20261006-101315-answers-reach-running-sessions.service:
+    Consumed 1min 896ms CPU time over 5min 5.386s wall clock time, 926.9M memory peak, 16K memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -42,4 +42,25 @@ comms:
 - at: 2026-10-05 22:38
   from: tony-omen
   text: 'finished (ok): exit=0 e. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223028-answers-reach-running-'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:13
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 10:13
+  from: chaba
+  text: started devin-task-20261006-101315-answers-reach-running-sessions on tony-omen (dispatch)
+- at: 2026-10-06 10:17
+  from: devin
+  text: 'done: /respond on running cards now appends {at,card,from,request_id,answer} to $TASK_DIR/answers.jsonl
+    on the runner (ssh for remote); rails in kanban-dispatch + runner-agent + devin-dispatch prompts tell sessions
+    to poll it. Cherry-picked + extended the unmerged 10-05 attempt; live e2e verified — answer landed in this session''s
+    own task dir. Selftest ok. Committed on dispatch branch.'
+- at: 2026-10-06 10:18
+  from: tony-omen
+  text: 'finished (ok): exit=0 ew dispatches won''t carry the updated prompt until it''s refreshed. | devin-task-20261006-101315-answers-reach-run'
+- at: 2026-10-06 11:30
+  from: tony
+  text: closed by Tony
 claim: {}

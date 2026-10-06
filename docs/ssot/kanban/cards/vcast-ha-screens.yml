@@ -1,21 +1,44 @@
 id: vcast-ha-screens
 title: vcast HA screens card — tony-ha/www/vcast-screens-card.js
-column: backlog
+column: done
 priority: medium
 program: vcast
 area: ha-screens
 metric: screen list reflects real cast targets; click->cast works on tony-ha
 verify: cast to a screen via the card on tony-ha
-note: >-
-  HA dashboard card listing cast screens. Work: sync targets with the
-  actual cast-browser/device registry; verify on tony-ha after any
-  dashboard promote.
-spec: >-
-  Sync tony-ha/www/vcast-screens-card.js screen list with the real cast-target registry (cast-browser devices). Stage and verify on michael-dev only — promotion to tony-ha requires explicit Tony approval, do NOT deploy live. Verify: the card lists only real, currently-registered cast targets.
+note: 'HA dashboard card listing cast screens. Work: sync targets with the actual cast-browser/device registry;
+  verify on tony-ha after any dashboard promote.'
+spec: 'Sync tony-ha/www/vcast-screens-card.js screen list with the real cast-target registry (cast-browser devices).
+  Stage and verify on michael-dev only — promotion to tony-ha requires explicit Tony approval, do NOT deploy live.
+  Verify: the card lists only real, currently-registered cast targets.'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Sync vcast-screens-card.js target list with the real cast registry per card spec; stage+verify on michael-dev, no live deploy.
-updated: '2026-10-04'
+  status: done
+  task: Sync vcast-screens-card.js target list with the real cast registry per card spec; stage+verify on michael-dev,
+    no live deploy.
+  runner: tony-omen
+  result: 'exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-071151-sync-tony-ha-www-vcast-screens.service:
+    Consumed 1min 14.766s CPU time over 7min 16.552s wall clock time, 811M memory peak.'
+updated: 2026-10-06 10:03
+comms:
+- at: 2026-10-06 06:58
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:11
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 07:11
+  from: chaba
+  text: started devin-task-20261006-071151-sync-tony-ha-www-vcast-screens on tony-omen (dispatch)
+- at: 2026-10-06 07:12
+  from: devin
+  text: 'Started: locating vcast-screens-card.js and cast-target registry'
+- at: 2026-10-06 07:19
+  from: tony-omen
+  text: 'finished (ok): exit=0 ing in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-071'
+- at: 2026-10-06 10:03
+  from: tony
+  text: closed by Tony
+claim: {}

@@ -1,30 +1,75 @@
 id: tv-cast-gev-path
-title: "TV cast: GEV needs a live path + tv_action must stop lying ok"
-column: backlog
-note: >-
-  Tony asked Ada for GEV on TONY-TV (2026-10-05 11:50-11:53). Six
-  tv_action calls returned ok=True; the TV showed nothing. Two bugs:
-  (a) 'gev' is not a key in cast-browser KEYS — nav gev returns
-  {"ok":false,"err":"unknown key"} yet sessions logged ok=True (check
-  whether tv_action/err surfaced or a different cmd ran);
-  (b) even a successful nav produces shotAndCast — a static PNG of the
-  page, useless for a live WebGL app like GEV. Right vehicle is the
-  screenlive/desktop-cast lane (camera.play_stream of a workspace
-  running GEV) or a direct play_media of an HLS render.
-help: >-
-  cast-browser-server.mjs on tony-omen :8799 — KEYS map + gotoInternal +
-  shotAndCast; screenlive path uses cast-desktop@N + camera.play_stream.
-  Fix honesty first: tv_action should propagate cast-browser's
-  {ok:false,err} and verify media_player state after cast (200 !=
-  playing — same class of bug as the off-Chromecast 200 no-op).
-action: {type: dispatch, status: idle, repo: ada-pi, button: '▶ Design GEV-to-TV path'}
-spec: >-
-  1) Confirm which path ada-ha-tony's tv_action took at 11:51-53
-  2026-10-05 (CAST_BROWSER_URL default omen:8799 is reachable — find the
-  actual cmd/text args and the response). 2) Add GEV support: register a
-  'gev' key OR route 'send GEV to TV' through screenlive with GEV loaded
-  in a workspace — decide which gives live video, not a PNG. 3) Make
-  tv_action fail loudly: err bodies already raise; add post-cast
-  media_player state verification (idle/off after cast = report failure).
-  4) Extend the cast_dub_to_tv / a GEV scenario to cover it.
-updated: '2026-10-05'
+title: 'TV cast: GEV needs a live path + tv_action must stop lying ok'
+column: review
+note: 'Tony asked Ada for GEV on TONY-TV (2026-10-05 11:50-11:53). Six tv_action calls returned ok=True; the TV
+  showed nothing. Two bugs: (a) ''gev'' is not a key in cast-browser KEYS — nav gev returns {"ok":false,"err":"unknown
+  key"} yet sessions logged ok=True (check whether tv_action/err surfaced or a different cmd ran); (b) even a successful
+  nav produces shotAndCast — a static PNG of the page, useless for a live WebGL app like GEV. Right vehicle is the
+  screenlive/desktop-cast lane (camera.play_stream of a workspace running GEV) or a direct play_media of an HLS
+  render.'
+help: 'cast-browser-server.mjs on tony-omen :8799 — KEYS map + gotoInternal + shotAndCast; screenlive path uses
+  cast-desktop@N + camera.play_stream. Fix honesty first: tv_action should propagate cast-browser''s {ok:false,err}
+  and verify media_player state after cast (200 != playing — same class of bug as the off-Chromecast 200 no-op).'
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  button: ▶ Design GEV-to-TV path
+  runner: tony-dell
+  task_id: 20261006-111008-1-confirm-which-path-ada-ha-to
+  result: 20261006-111008-1-confirm-which-path-ada-ha-to finished (inactive) — see `devin-dispatch logs 20261006-111008-1-confirm-which-path-ada-ha-to`
+spec: '1) Confirm which path ada-ha-tony''s tv_action took at 11:51-53 2026-10-05 (CAST_BROWSER_URL default omen:8799
+  is reachable — find the actual cmd/text args and the response). 2) Add GEV support: register a ''gev'' key OR
+  route ''send GEV to TV'' through screenlive with GEV loaded in a workspace — decide which gives live video, not
+  a PNG. 3) Make tv_action fail loudly: err bodies already raise; add post-cast media_player state verification
+  (idle/off after cast = report failure). 4) Extend the cast_dub_to_tv / a GEV scenario to cover it.'
+updated: 2026-10-06 11:30
+comms:
+- at: 2026-10-06 06:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:05
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 07:05
+  from: chaba
+  text: started devin-task-20261006-070548-1-confirm-which-path-ada-ha-to on tony-omen (dispatch)
+- at: 2026-10-06 07:06
+  from: devin
+  text: 'investigating: reading tv_action/cast-browser path code, locating logs for 11:51-53 10-05 window'
+- at: 2026-10-06 07:11
+  from: tony-omen
+  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 11:10
+  from: chaba
+  text: dispatched 20261006-111008-1-confirm-which-path-ada-ha-to on ada-pi
+- at: 2026-10-06 11:11
+  from: devin
+  text: 're-dispatched on tony-dell. Starting: exploring repo for tv_action paths, screenlive lane, cast_dub_to_tv
+    scenario; then checking idc03 logs for the 11:51-53 10-05 window.'
+- at: 2026-10-06 11:18
+  from: devin
+  text: 'Task 1 CONFIRMED via cast-browser journal on omen: 18:50:59-18:53:37 +07 (=11:50-53 UTC) six runCommand
+    entries — 5x {cmd:nav,text:https://tony-dell.taila0626a.ts.net/apps/gev/,speaker:person.tony} + 1x {cmd:scroll,text:down}.
+    Direct CAST_BROWSER_URL path (omen:8799), each nav -> gotoInternal -> shotAndCast -> PNG play_media -> {ok:true,cast:cast:200}.
+    So ok=True was literal truth: a STATIC PNG cast. The nav gev unknown-key call was separate (20:40, no speaker)
+    and raises cleanly since 7c440ba. '
+- at: 2026-10-06 11:27
+  from: devin
+  text: 'DONE on branch dispatch/20261006-111008 (e649a26+be7d7b2, not pushed). 1) CONFIRMED: 18:50:59-18:53:37+07
+    ada-ha-tony hit omen:8799/cmd directly — 5x nav <full /apps/gev/ URL> + 1x scroll, all returned ok (PNG cast
+    via shotAndCast). The nav gev unknown-key was a separate 20:40 probe and already raises since 7c440ba. 2) DECISION:
+    screenlive — a KEYS entry can only produce PNG. runner.tv_action now rewrites gev/gods-eye-view//apps/gev/ nav
+    targets to tony-omen:workspace:4 (ADA_GEV_TV_TARGET or cas'
+- at: 2026-10-06 11:30
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 11:30
+  from: chaba
+  text: auto-merged dispatch/20261006-111008-1-confirm-which-path-ada-ha-to → origin/main
+claim:
+  since: 2026-10-06 11:10

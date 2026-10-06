@@ -1,6 +1,6 @@
 id: camwall-zone-metadata
 title: camwall — zone metadata drives classification (kill prefix gymnastics)
-column: review
+column: done
 priority: medium
 note: 'Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES in pwa/cms/index.html, DEV_AREA in cam-wall-cms.py,
   ZONES in the puller) and cms/index.html guesses via slug prefixes + title regexes, with unknown CCTV defaulting
@@ -8,7 +8,7 @@ note: 'Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES in pwa/cms/inde
   grouping e.g. noble estate vs tony-house) to the zone config, propagate into manifests + CMS page metadata, and
   have the sidebar read the tag. Unknown zones should land in a visible ''Unsorted'' bucket, not silently guess.
   Security/Traffic become display labels over the privacy semantic — survives future zones without retitling.'
-updated: 2026-10-05 22:48
+updated: 2026-10-06 09:46
 spec: 'Zone metadata drives classification — kill prefix gymnastics. Today zone->tab mapping lives in 3 places (SEC/TRAF_ZONES
   in pwa/cms/index.html, DEV_AREA in cam-wall-cms.py, ZONES in the puller) and cms guesses via slug prefixes + title
   regexes, unknown CCTV defaulting wrong. Add a single zones.yml SSOT (zone->tab + camera membership), all three
@@ -61,5 +61,19 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-223841-zone-metadata-drives-classific not in origin/master
     — close will block until merged'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-223841-zone-metadata-drives-classific — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; feat(camwall): zones.yml SSOT — zone
+    metadata drives classification'
+- at: 2026-10-06 09:46
+  from: chaba
+  text: 'merge guard: dispatch/20261005-223841-zone-metadata-drives-classific merged into origin/master'
+- at: 2026-10-06 09:46
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:46
+  from: chaba
+  text: session likeable-origami… hidden
 claim:
   since: 2026-10-05 22:38

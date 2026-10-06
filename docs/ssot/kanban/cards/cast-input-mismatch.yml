@@ -1,6 +1,6 @@
 id: cast-input-mismatch
 title: cast lands but TV stays on STB input — detect + remediate path
-column: review
+column: done
 program: vcast
 area: cast-lane
 metric: cast to TV while on True input results in visible content or honest report
@@ -8,7 +8,7 @@ verify: 'manual: cast with TV on HDMI-input — Ada detects mismatch or applies 
 note: '2026-10-04 transcript: cctv_wall delivered fine but TV showed the True set-top box for 3min; tools reported
   "casting". Ada''s own workaround was pushing the wall URL to the TV browser — teach that as remediation, and surface
   input/source state in vcast_list if detectable.'
-updated: 2026-10-05 23:26
+updated: 2026-10-06 09:44
 spec: 'Cast input-mismatch detect+remediate: 2026-10-04 transcript — cctv_wall delivered fine but TV stayed on True
   STB input for 3min while tools reported ''casting''. After cast lands, verify TV input/source state via HA; on
   mismatch, run remediation (the proven workaround: push the wall URL to the TV browser) + surface the failure honestly
@@ -19,9 +19,10 @@ action:
   repo: ada-pi
   status: done
   button: ▶ Start
-  runner: tony-dell
   task_id: 20261005-225636-cast-input-mismatch-detect-rem
-  result: 20261005-225636-cast-input-mismatch-detect-rem finished (inactive) — see `devin-dispatch logs 20261005-225636-cast-input-mismatch-detect-rem`
+  runner: tony-omen
+  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-081709-cast-input-mismatch-detect-rem.service:
+    Consumed 1min 1.015s CPU time over 1min 44.802s wall clock time, 1.1G memory peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -56,5 +57,30 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-225636-cast-input-mismatch-detect-rem not in origin/main
     — close will block until merged'
+- at: 2026-10-06 08:15
+  from: tony
+  text: merge, finish&close.
+- at: 2026-10-06 08:15
+  from: tony
+  text: retry requested
+- at: 2026-10-06 08:17
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 08:17
+  from: chaba
+  text: started devin-task-20261006-081709-cast-input-mismatch-detect-rem on tony-omen (dispatch)
+- at: 2026-10-06 08:19
+  from: tony-omen
+  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-08'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'merge guard: dispatch/20261005-225636-cast-input-mismatch-detect-rem merged into origin/main'
+- at: 2026-10-06 09:44
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:44
+  from: chaba
+  text: session ritzy-wishbone… hidden
 claim:
   since: 2026-10-05 22:56

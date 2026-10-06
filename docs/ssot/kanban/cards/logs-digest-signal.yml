@@ -1,13 +1,13 @@
 id: logs-digest-signal
 title: Digest signal density — new-today flag + noise reduction
-column: backlog
+column: done
 program: logs-digest
 metric: digest calls out first-seen-in-7d lines; matched/shipped ratio stops carrying ~90% filter noise (4650 matched
   / 500 cap on omen 2026-10-04)
 note: 'Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a ''new today'' flag for normalized lines
   absent from the prior 7d — where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal
   not churn (feeds directly into the backlog check''s accuracy).'
-updated: 2026-10-05 21:15
+updated: 2026-10-06 11:31
 spec: 'Digest signal density: (a) ''new today'' flag for normalized lines absent from the prior 7d — where real
   incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal not noise. Repeat offenders already
   collapse via RX_VOLATILE — build on that. Verify: digest shows a new-today marker on an injected novel line and
@@ -16,9 +16,55 @@ priority: low
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   button: ▶ Start
+  runner: tony-omen
+  result: 'exit=0 ut. Trail: `docs/ssot/jobs/infrastructure/2026-10-06-log-digest-signal-density.yml`. | devin-task-20261006-101722-digest-signal-density-a-new-to.service:
+    Consumed 3min 44.646s CPU time over 37min 58.090s wall clock time, 965.6M memory peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, low)
+- at: 2026-10-06 06:52
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:52
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 06:52
+  from: chaba
+  text: started devin-task-20261006-065243-digest-signal-density-a-new-to on tony-omen (dispatch)
+- at: 2026-10-06 06:53
+  from: tony-omen
+  text: 'finished (ok): exit=0 tion. Running in non-interactive mode. Use --permission-mode dangerous to auto-approve
+    all tools. | devin-task-20'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:17
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 10:17
+  from: chaba
+  text: started devin-task-20261006-101722-digest-signal-density-a-new-to on tony-omen (dispatch)
+- at: 2026-10-06 10:37
+  from: devin
+  text: 'in progress — found the noise: 83k/d session-scope Started lines + 30k/d yomi start-limit churn on omen,
+    uvicorn INFO Started on idc01; also found report only scans oldest 5000 docs (collection is 97k) so digest is
+    stale. Building: tail-anchored scan + 7d sig baseline file + new-today flag; DROP tightening + per-sig repeat
+    cap in shipper.'
+- at: 2026-10-06 10:54
+  from: devin
+  text: 'done on dispatch branch 0a17913f. (a) 🆕 new-today flag: full-scan + prior-7d baseline sigs — verified on
+    stub (novel line flagged, baseline-known line not) and live (all 6 hosts now in the true window — found the
+    old scan was pinned to oldest 5000 docs, digest was showing Oct-3 data). (b) noise: remote grep -vE pre-drop
+    (-72% payload on omen), DROP += session-scope/uvicorn/restart-counter, REPEAT_CAP=25/sig with meta.suppressed
+    so xN stays truthful. Pending: install-log-shipper.sh re-run per hos'
+- at: 2026-10-06 10:55
+  from: tony-omen
+  text: 'finished (ok): exit=0 ut. Trail: `docs/ssot/jobs/infrastructure/2026-10-06-log-digest-signal-density.yml`.
+    | devin-task-20261006-101722'
+- at: 2026-10-06 11:31
+  from: tony
+  text: closed by Tony
+claim: {}

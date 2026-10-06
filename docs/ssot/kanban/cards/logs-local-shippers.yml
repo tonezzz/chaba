@@ -1,13 +1,13 @@
 id: logs-local-shippers
 title: Per-host local log-shipper timers (kill the ssh dependency)
-column: review
+column: done
 program: logs-digest
 metric: each host ships its own journal to idc01:11023 on its own timer
 note: Current model SSHes from tony-omen nightly — dies silently whenever a tailscale auth check expires (dell was
   absent ~1 week unnoticed). log-shipper.py already runs local when host in {tony-omen,localhost} — a per-host user
   timer + small env (MDDB_BASE_URL -> idc01 tailnet) removes the hop entirely and makes adding a host = installing
   one timer. Keep the central ssh run as a fallback lane.
-updated: 2026-10-05 22:39
+updated: 2026-10-06 09:46
 spec: 'Per-host local log-shipper timers — kill the ssh dependency (tony-omen nightly ssh dies silently on tailscale
   auth expiry; dell was absent ~1 week unnoticed). log-shipper.py already runs local for tony-omen/localhost — extend
   + install a user timer on EACH host (tony-dell, tony-omen, idc01, idc02, idc03, mn01, michael-ha) shipping to
@@ -58,5 +58,19 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-220029-per-host-local-log-shipper-tim not in origin/master
     — close will block until merged'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-220029-per-host-local-log-shipper-tim — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; feat(log-shipper): per-host local timers
+    — kill the ssh dependency'
+- at: 2026-10-06 09:46
+  from: chaba
+  text: 'merge guard: dispatch/20261005-220029-per-host-local-log-shipper-tim merged into origin/master'
+- at: 2026-10-06 09:46
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:46
+  from: chaba
+  text: session stream-scorpion… hidden
 claim:
   since: 2026-10-05 22:00

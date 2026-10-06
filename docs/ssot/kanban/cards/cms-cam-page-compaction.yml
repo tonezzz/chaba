@@ -1,6 +1,6 @@
 id: cms-cam-page-compaction
 title: 'Cam-wall CMS pages: supersede-by-construction'
-column: review
+column: done
 note: 45% of ada-cms-pages (140/313) are cam-* / camwall pages from the 15-min cam-wall-cms timer. Index weight
   keeps growing; meta_contract has supersedes but generated pages don't use it — nothing compacts.
 spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set supersedes=<previous slug> + fresh_for
@@ -8,7 +8,7 @@ spec: 'cam-wall-cms.py: when regenerating wall-<zone>/cam-*/dvr-wall pages, set 
   (NOT delete — camera pages are operational history; archive keeps them queryable while removing them from index
   weight). reports-index must not surface superseded/archived cam pages. Verify: ada-cms-pages cam-* count stabilizes,
   index one-liners stay fresh, a 7-day-old superseded page flips to kind:archive.'
-updated: 2026-10-05 22:02
+updated: 2026-10-06 09:46
 action:
   type: dispatch
   repo: chaba
@@ -53,5 +53,18 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261005-211715-cam-wall-cms-py-when-regenerat not in origin/master
     — close will block until merged'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-211715-cam-wall-cms-py-when-regenerat — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; Devin checkpoint for session cheerful-crib'
+- at: 2026-10-06 09:46
+  from: chaba
+  text: 'merge guard: dispatch/20261005-211715-cam-wall-cms-py-when-regenerat merged into origin/master'
+- at: 2026-10-06 09:46
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:46
+  from: chaba
+  text: session cheerful-crib… hidden
 claim:
   since: 2026-10-05 21:17

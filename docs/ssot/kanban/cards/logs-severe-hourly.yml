@@ -1,12 +1,12 @@
 id: logs-severe-hourly
 title: Hourly severe-line shipping lane
-column: backlog
+column: done
 program: logs-digest
 metric: oom/panic/failed lines reach host-logs within ~1h, not next morning
 note: 'Daily 08:45 batch means a host dying at 09:00 waits ~24h to show in the digest. Cheap middle ground: hourly
   ship of severe kinds only (small volume — the 500/run cap almost never binds) alongside the daily full sweep.
   Pair with the local-shipper card once per-host timers exist.'
-updated: 2026-10-05 21:15
+updated: 2026-10-06 11:31
 spec: 'Hourly severe-line shipping lane alongside the daily 08:45 batch: ship only severe kinds (small volume, the
   500/run cap almost never binds) so a host dying at 09:00 shows in the digest within the hour, not ~24h. Reuse
   log-shipper.py with a severity filter + a second timer per host (pairs with logs-local-shippers). Verify: inject
@@ -15,9 +15,54 @@ priority: medium
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: done
   button: ▶ Start
+  runner: tony-omen
+  result: 'exit=0 -spike card (>40/day) may fire on noisy VPSes — legit signal, not pipeline breakage. | devin-task-20261006-101823-hourly-severe-line-shipping-la.service:
+    Consumed 3min 47.494s CPU time over 55min 56.980s wall clock time, 955.3M memory peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, medium)
+- at: 2026-10-06 06:53
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 06:53
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 06:53
+  from: chaba
+  text: started devin-task-20261006-065344-hourly-severe-line-shipping-la on tony-omen (dispatch)
+- at: 2026-10-06 06:57
+  from: tony-omen
+  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 10:18
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 10:18
+  from: chaba
+  text: started devin-task-20261006-101823-hourly-severe-line-shipping-la on tony-omen (dispatch)
+- at: 2026-10-06 10:23
+  from: devin
+  text: 'picked up. plan: --severe/--kinds/--cursor-tag flags on log-shipper.py (separate cursor so the full lane''s
+    cursor is untouched), log-shipper-severe.timer per host + severe-mha pull on dell, install on all 6+mha, verify
+    by injecting an oom line on tony-omen.'
+- at: 2026-10-06 11:13
+  from: devin
+  text: 'DONE + installed + verified live. log-shipper-severe.timer armed on dell/omen/idc01/idc02/idc03/mn01 +
+    severe-mha pull on dell. Probe: injected an oom line on tony-omen 10:55, landed in host-logs (kind=oom) at the
+    11:02 severe run — ~7min. Independent cursor + ship-severe/<host> heartbeats; full lane untouched. NOTE: MDDB
+    leader wedged 10:48-11:01 by a manually-started vector-reindex (same family as mddb-search-wedge) — mid-wedge
+    failures replayed clean after recovery. Caveat: VPSes carry ~390 s'
+- at: 2026-10-06 11:15
+  from: tony-omen
+  text: 'finished (ok): exit=0 -spike card (>40/day) may fire on noisy VPSes — legit signal, not pipeline breakage.
+    | devin-task-20261006-101823'
+- at: 2026-10-06 11:31
+  from: tony
+  text: closed by Tony
+claim: {}

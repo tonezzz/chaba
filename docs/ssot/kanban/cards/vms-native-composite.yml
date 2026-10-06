@@ -1,12 +1,12 @@
 id: vms-native-composite
 title: VMS native capture — multi-pane one-shot composite
-column: backlog
+column: review
 priority: low
 note: 'Today every native-res pull is serial: activate channel -> ~18s attach + BMP->PNG. Wall refresh for a 5-cam
   DVR costs ~90s+. Idea: bind several channels to panes once, take ONE monitor-composite native shot, split into
   tiles. Per-pane OSD icon x-position depends on the active layout (single ~1599, 4-pane-focus ~1042) — recalibrate
   channels.json per layout. See docs/ssot/ssot.learning.vms-native-snapshot.2026-10-03.yml.'
-updated: 2026-10-05 21:15
+updated: 2026-10-06 11:18
 spec: 'VMS native capture — one-shot multi-pane composite: today each native-res pull is serial (activate channel
   -> ~18s attach + BMP->PNG; a 5-cam DVR wall refresh costs ~90s+). Bind several channels to panes once, take ONE
   monitor-composite native shot, split into tiles. Spec scope: implement in the vms-snap stack (scripts/cam-wall/
@@ -15,9 +15,36 @@ spec: 'VMS native capture — one-shot multi-pane composite: today each native-r
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: running
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261006-111612-vms-native-capture-one-shot-mu
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, low)
+- at: 2026-10-06 06:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:11
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 07:11
+  from: chaba
+  text: started devin-task-20261006-071154-vms-native-capture-one-shot-mu on tony-omen (dispatch)
+- at: 2026-10-06 07:15
+  from: tony-omen
+  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261006-'
+- at: 2026-10-06 10:12
+  from: tony
+  text: retry requested
+- at: 2026-10-06 11:16
+  from: chaba
+  text: dispatched 20261006-111612-vms-native-capture-one-shot-mu on chaba
+- at: 2026-10-06 11:18
+  from: devin
+  text: 'starting: exploring vms-snap stack + puller; checking mn01 reachability for live UI probing'
+claim:
+  session: 20261006-111612-vms-native-capture-one-shot-mu
+  since: 2026-10-06 11:16

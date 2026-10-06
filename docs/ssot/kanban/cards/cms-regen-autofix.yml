@@ -1,9 +1,9 @@
 id: cms-regen-autofix
 title: cms-regen auto-fix playbook — close the detect→fix loop on CMS automations
-column: review
+column: done
 note: cms-auto-health detects and cards stale automations, but a human still presses the fix. This playbook makes
   the cards self-healing.
-updated: 2026-10-05 23:26
+updated: 2026-10-06 09:44
 help: 'Today: cms-auto-health.py writes cms-auto-<slug> cards when a CMS
 
   automation is stale, and auto-closes them on recovery — but recovery
@@ -96,9 +96,9 @@ action:
   status: done
   button: ▶ Build cms-regen playbook
   repo: ada-pi
+  result: 20261006-093347-build-the-cms-regen-auto-fix-p finished (inactive) — see `devin-dispatch logs 20261006-093347-build-the-cms-regen-auto-fix-p`
   runner: tony-dell
-  task_id: 20261005-225638-build-the-cms-regen-auto-fix-p
-  result: 20261005-225638-build-the-cms-regen-auto-fix-p finished (inactive) — see `devin-dispatch logs 20261005-225638-build-the-cms-regen-auto-fix-p`
+  task_id: 20261006-093347-build-the-cms-regen-auto-fix-p
 comms:
 - at: 2026-10-04 19:40
   from: devin
@@ -136,5 +136,45 @@ comms:
 - at: 2026-10-05 23:26
   from: chaba
   text: auto-merged dispatch/20261005-225638-build-the-cms-regen-auto-fix-p → origin/main
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:33
+  from: chaba
+  text: dispatched 20261006-093347-build-the-cms-regen-auto-fix-p on ada-pi
+- at: 2026-10-06 09:34
+  from: devin
+  text: 'Re-dispatched session: prior dispatch already merged cms-regen playbook + cms_regen.py + kanban_autofix.py
+    + tests (a578cb0). Verifying deliverables against spec and re-running tests now.'
+- at: 2026-10-06 09:36
+  from: devin
+  text: 'Re-dispatch 20261006-093347: no new work needed — all 5 deliverables merged in a578cb0. Verified: cms-regen
+    playbook loads in registry (gate owner/confirm:false), cms_regen.py + kanban_autofix.py present, 51 tests OK,
+    tool-lint clean, dry-run hook correctly fires only on cms-auto-* cards entering review and no-ops everything
+    else. Open followup unchanged: chaba-side call site wiring kanban-dispatch -> kanban_autofix.py on column-enter-review
+    (in docs/ssot/jobs/ada/2026-10-05-cms-regen-autofix.ym'
+- at: 2026-10-06 09:37
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 09:37
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 09:37
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-093347-build-the-cms-regen-auto-fix-p dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093347-build-the-cms-regen-auto-fix-p merged into origin/main; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 09:44
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:44
+  from: chaba
+  text: session muddled-glasses… hidden
 claim:
-  since: 2026-10-05 22:56
+  since: 2026-10-06 09:33

@@ -1,21 +1,72 @@
 id: vcast-app
 title: vcast PWA — pair/QR, HLS playback, service worker
-column: backlog
+column: done
 priority: medium
 program: vcast
 area: app
 metric: pair->play <10s on a fresh device; no stale-cache playback failures
 verify: manual cast flow + cast_interrupt_gate scenario
-note: >-
-  stacks/web/public/apps/vcast/ (index, pair.html, hls.min.js, sw.js,
-  manifest, qrcode). Work: review SW cache strategy vs shared apps-v6
-  name, pair-page flow, HLS retry behavior on stream drop.
-spec: >-
-  stacks/web/public/apps/vcast/: audit the SW cache strategy — vcast's sw.js vs the shared apps-v6 cache name; stale-bundle playback failures must be impossible (explicit version/bump strategy). Review pair.html QR flow for pair->play <10s on a fresh device, and HLS retry behavior when a stream drops mid-play. Verify: manual cast flow + cast_interrupt_gate scenario.
+note: 'stacks/web/public/apps/vcast/ (index, pair.html, hls.min.js, sw.js, manifest, qrcode). Work: review SW cache
+  strategy vs shared apps-v6 name, pair-page flow, HLS retry behavior on stream drop.'
+spec: 'stacks/web/public/apps/vcast/: audit the SW cache strategy — vcast''s sw.js vs the shared apps-v6 cache name;
+  stale-bundle playback failures must be impossible (explicit version/bump strategy). Review pair.html QR flow for
+  pair->play <10s on a fresh device, and HLS retry behavior when a stream drops mid-play. Verify: manual cast flow
+  + cast_interrupt_gate scenario.'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Audit vcast PWA per card spec: SW cache strategy vs apps-v6, pair/QR flow timing, HLS drop retry. Verify manual cast flow + cast_interrupt_gate.
-updated: '2026-10-04'
+  status: done
+  task: 'Audit vcast PWA per card spec: SW cache strategy vs apps-v6, pair/QR flow timing, HLS drop retry. Verify
+    manual cast flow + cast_interrupt_gate.'
+  runner: tony-dell
+  task_id: 20261006-070834-stacks-web-public-apps-vcast-a
+  result: 20261006-070834-stacks-web-public-apps-vcast-a finished (inactive) — see `devin-dispatch logs 20261006-070834-stacks-web-public-apps-vcast-a`
+updated: 2026-10-06 10:05
+comms:
+- at: 2026-10-06 06:55
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 07:08
+  from: chaba
+  text: dispatched 20261006-070834-stacks-web-public-apps-vcast-a on chaba
+- at: 2026-10-06 07:13
+  from: devin
+  text: 'Audit underway: read vcast index/pair/sw + input-bridge server. Found real gaps — sw.js cache-first on
+    vendored libs never revalidates (stale bundle possible), no old-cache cleanup, fatal HLS errors only toast (no
+    recovery on stream drop). Writing fixes + a local relay-level cast-flow check.'
+- at: 2026-10-06 07:25
+  from: devin
+  text: 'DONE. Audited + fixed 4 gaps: (1) sw.js vcast-v3 — vendored libs were cache-first-forever (stale-bundle
+    skew possible); now network-first + no-cache revalidation for all /apps/vcast/ GETs, old vcast-* caches purged
+    on activate, ?v= pins on script tags for pre-SW first load. (2) pair->play path already tight (claim->registered
+    ~0.1s local, lastCast replay covers the gap); added 10s timeout in pair.html so a hung relay cant stick the
+    button. (3) Fatal HLS errors previously only toasted — now net->'
+- at: 2026-10-06 07:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 07:26
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (3 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 07:26
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-070834-stacks-web-public-apps-vcast-a dirty — 3 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 07:26
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261006-070834-stacks-web-public-apps-vcast-a not in origin/master
+    — close will block until merged'
+- at: 2026-10-06 10:03
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-070834-stacks-web-public-apps-vcast-a — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; Devin checkpoint for session parallel-lobster'
+- at: 2026-10-06 10:05
+  from: chaba
+  text: 'merge guard: dispatch/20261006-070834-stacks-web-public-apps-vcast-a merged into origin/master'
+- at: 2026-10-06 10:05
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 10:05
+  from: chaba
+  text: session parallel-lobster… hidden
+claim:
+  since: 2026-10-06 07:08
