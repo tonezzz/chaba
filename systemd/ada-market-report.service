@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily market snapshot -> CMS market-report page (trade API + Yahoo)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/market-report-update.py

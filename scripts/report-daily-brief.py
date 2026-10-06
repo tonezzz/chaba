@@ -345,6 +345,33 @@ def failed_cards(cards: list[dict]) -> list[dict]:
 
 # ----------------------------------------------------------------- render
 
+MARKET_SUMMARY = REPO / "reports" / "market-summary.json"
+
+
+def market_line() -> list[str]:
+    """One-liner from market-report-update.py's sidecar (best-effort)."""
+    try:
+        s = json.loads(MARKET_SUMMARY.read_text())
+    except Exception:
+        return []
+    parts = []
+    if s.get("usd_thb") is not None:
+        parts.append(f"USD/THB {s['usd_thb']}"
+                     + (f" ({s['usd_thb_d']} w/w)" if s.get("usd_thb_d") else ""))
+    if s.get("gold_bar_thb") is not None:
+        parts.append(f"gold ฿{s['gold_bar_thb']:,}"
+                     + (f" ({s['gold_bar_d']} w/w)" if s.get("gold_bar_d") else ""))
+    for key, label in (("xauusd", "XAU"), ("dxy", "DXY"),
+                       ("wti", "WTI"), ("set", "SET")):
+        if s.get(key) is not None:
+            parts.append(f"{label} {s[key]:,}")
+    line = "- " + " · ".join(parts)
+    if s.get("stale"):
+        line += " ⚠ some series stale"
+    line += f"  _(as of {(s.get('generated') or '?')[:16]} — market-report)_"
+    return ["## Market", "", line, ""]
+
+
 def needs_you_line(reqs, review, failed_cards_, failed_disp) -> str:
     parts = []
     if reqs:
@@ -421,6 +448,7 @@ def render(edition: str, start, end, disp, cards, flags,
                     and (now_ - r["started_at"]).total_seconds() > 86400
                     else "")
                 for r in d["running"][:5]), ""]
+        lines += market_line()
         nc, nc_src = new_cards(cards, start, end, cards_dir)
         lines += [f"## New cards filed ({len(nc)})", ""]
         if nc_src == "comms-heuristic":
