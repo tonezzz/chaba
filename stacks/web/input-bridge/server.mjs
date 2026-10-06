@@ -677,11 +677,11 @@ function joinRoom(ws, room) {
 }
 
 function broadcastTo(room, data) {
-  const clients = rooms.get(room);
-  if (!clients) return 0;
+  // remember display-state casts BEFORE the no-clients bail — a cast that
+  // lands while a display is mid-reconnect (the room evaporates on the
+  // last leave) must still replay on re-register; previously it was
+  // dropped and the re-register replayed the STALE earlier cast instead
   const msg = typeof data === "string" ? data : JSON.stringify(data);
-  // remember display-state casts so a reconnecting screen re-renders instead
-  // of going idle after a ws flap
   try {
     const obj = typeof data === "string" ? JSON.parse(data) : data;
     if (["play", "image", "nav", "stop", "layout", "zoom"].includes(obj?.type)) {
@@ -694,6 +694,8 @@ function broadcastTo(room, data) {
       lastCast.set(`${room}|${pane}`, obj);
     }
   } catch (e) { /* ignore */ }
+  const clients = rooms.get(room);
+  if (!clients) return 0;
   let delivered = 0;
   for (const client of clients) {
     if (client.readyState === 1) {
