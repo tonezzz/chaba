@@ -233,14 +233,19 @@ def coverage_note(states: dict[str, dict], expected: list[str],
             continue
         age_h = (now - float(st.get("_ts") or 0)) / 3600
         jr = st.get("journals") or {}
+        legs = st.get("journal_legs") or {}
         want = JOURNAL_OVERRIDES.get(host, EXPECTED_JOURNALS)
-        # a journal the host is declared to have but scanned 0 rows is a
-        # gap; declared-absent (michael-ha sys-only) or ha-cli lanes don't
-        # count — the override / lane says "that side doesn't exist"
-        missing = [j for j in want if jr.get(j, 0) == 0
-                   and sum(jr.get(x, 0) for x in want) > 0]
         if st.get("lane") == "ha-cli-ssh":
             missing = []
+        elif legs:
+            # authoritative: "denied" = journal unreadable (real gap);
+            # "empty"/"ok" = readable, just quiet — not a gap
+            missing = [j for j in want if legs.get(j) == "denied"]
+        else:
+            # legacy states (pre journal_legs): zero rows on a declared
+            # journal while a sibling scanned rows — heuristic only
+            missing = [j for j in want if jr.get(j, 0) == 0
+                       and sum(jr.get(x, 0) for x in want) > 0]
         one_sided = missing[0] if missing else ""
         status = "ok"
         if not st.get("reachable", True):
@@ -253,7 +258,7 @@ def coverage_note(states: dict[str, dict], expected: list[str],
             f"- `{host}` — {status} [{st.get('lane') or '?'}]; "
             f"shipped {st.get('shipped', 0)}"
             f"/{st.get('scanned', 0)} matched"
-            + (f"; `{one_sided}` journal 0 rows (unreadable or empty?)"
+            + (f"; `{one_sided}` journal denied (unreadable)"
                if one_sided else ""))
     return lines, gap
 
