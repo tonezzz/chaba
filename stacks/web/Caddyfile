@@ -53,6 +53,18 @@ http://127.0.0.1:8080 {
 		reverse_proxy 127.0.0.1:8787
 	}
 
+	# System report — on-demand refresh of the L1->L3 report chain
+	# (report-api on tony-dell starts chaba-system-report.service).
+	# Same write gate as board-api: non-GET needs a tailnet identity.
+	handle_path /apps/system-report/api/* {
+		@anon_write {
+			not method GET HEAD
+			not header Tailscale-User-Login *
+		}
+		respond @anon_write "forbidden: report-api writes need a tailnet identity" 403
+		reverse_proxy 127.0.0.1:8792
+	}
+
 	handle /apps/jev-bench {
 		redir /apps/jev-bench/ 308
 	}

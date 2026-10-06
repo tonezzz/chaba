@@ -23,12 +23,23 @@
     #report pre { white-space: pre-wrap; background: #020617; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
     .err-text { color: var(--fail); }
     a { color: #60a5fa; }
+    .topbar { display: flex; align-items: center; gap: 1rem; }
+    .topbar h1 { flex: 1; }
+    #refresh { background: var(--card); color: var(--text); border: 1px solid #334155;
+               border-radius: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer; }
+    #refresh:hover:not(:disabled) { border-color: #60a5fa; }
+    #refresh:disabled { opacity: 0.5; cursor: default; }
+    #refresh-status { color: var(--muted); font-size: 0.8rem; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 </head>
 <body>
-  <h1>Chaba System Report</h1>
+  <div class="topbar">
+    <h1>Chaba System Report</h1>
+    <span id="refresh-status"></span>
+    <button id="refresh" type="button">Refresh now</button>
+  </div>
   <div class="meta" id="meta">Loading…</div>
   <div class="summary" id="summary"></div>
   <div id="report"></div>

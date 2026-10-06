@@ -120,11 +120,12 @@ jobs:
   persistent: true
   timeout: 15m
   exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen
-    mn01 idc01 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" ||
+    mn01 idc01 idc03 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" ||
     true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3
     scripts/report-system.py'
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran
-    bash chain, not the nonexistent .sh)
+    bash chain, not the nonexistent .sh); audit host list + idc03 2026-10-06;
+    on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
 - id: daily-brief
   name: Daily Brief (morning+evening)
   host: tony_dell
