@@ -138,6 +138,18 @@ jobs:
     reports/starboard-catalogs/catalogs.yml into a managed block on CMS
     page starboard-catalogs (en+th); interval-gated via ada-cms-automation
     registry doc'
+- id: device-telemetry
+  name: Device telemetry beacon (lost-device locate)
+  host: tony_omen
+  dispatch: systemd
+  on_calendar: '*:0/5'
+  persistent: true
+  timeout: 30s
+  exec: /usr/bin/python3 %h/.local/share/device-telemetry/agent.py
+  note: 'hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/
+    users/top-procs) to MDDB device-telemetry collection on idc03
+    (<device>/<ts> history + <device>/latest). install.sh also supports
+    macOS launchd for kk-macbook. scripts/device-telemetry/'
 - id: daily-brief
   name: Daily Brief (morning+evening)
   host: tony_dell
