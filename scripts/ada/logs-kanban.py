@@ -112,6 +112,9 @@ def ship_states() -> tuple[dict[str, dict], dict[str, dict]]:
             except Exception:
                 pass
             continue
+        if not d.get("key", "").startswith("ship/"):
+            continue  # ship-severe/<host> etc. — side lanes' heartbeats,
+            #           judged separately, must not clobber ship/<host>
         st["_ts"] = (d.get("updatedAt") or 0)
         host = st.get("host") or d.get("key", "").split("/")[-1]
         ships[host] = st

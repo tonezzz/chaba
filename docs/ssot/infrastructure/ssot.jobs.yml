@@ -383,6 +383,90 @@ jobs:
     serves text logs. Pull lane instead: `ha host logs` over key-auth ssh
     (root@michael-ha -i ~/.ssh/michael-ha — key-based, not tailscale-ssh
     auth). Dedup is a collector-side ts+hash file (no journald cursor).'
+# --- severe fast lane (card logs-severe-hourly, 2026-10-06) ---
+# Second timer per host shipping ONLY severe kinds (oom/panic/failed —
+# mirrors SEVERE in logs-report.py) on an independent tagged cursor +
+# ship-severe/<host> state docs. Purpose: a severe line never queues
+# behind a capped backlog of the full lane, and a host going down gets
+# its last-gasp oom/panic lines into host-logs within the hour rather
+# than waiting for the next full sweep. The daily 08:45
+# ada-review-refresh digest then sees them on the next render.
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: tony_omen
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: idc01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: idc02
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: idc03
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+  note: idc03 ssh needs the id_idc03 key that lives on tony-omen —
+    install via `install-log-shipper.sh idc03 --via tony-omen`.
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: mn01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
+    --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+- id: log-shipper-severe-mha
+  name: Log shipper severe pull — michael-ha via ha-cli
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py
+    --hosts michael-ha --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+  note: 'severe-lane twin of log-shipper-mha — michael-ha cannot host a
+    local timer (Alpine core-ssh addon), so dell pulls `ha host logs`
+    hourly with --severe; dedup file is tag-suffixed
+    (log-shipper-ha-severe-michael-ha.json).'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

@@ -1,0 +1,131 @@
+title: Hourly severe-line shipping lane (log-shipper --severe)
+subtitle: >-
+  Second per-host timer ships only severe kinds (oom/panic/failed) on an
+  independent tagged cursor — a host's last-gasp lines reach MDDB
+  host-logs within the hour instead of waiting for the daily 08:45 batch,
+  and severe lines never queue behind a capped full-lane backlog.
+icon: rocket
+id: 2026-10-06-log-shipper-severe-lane
+status: done
+owner: devin-dispatch
+project: chaba
+card: logs-severe-hourly
+started: "2026-10-06"
+completed: "2026-10-06"
+
+context:
+  user_request: >
+    Kanban card logs-severe-hourly: the daily 08:45 batch means a host
+    dying at 09:00 waits ~24h to show in the digest. Add an hourly lane
+    that ships only severe kinds (small volume — the 500/run cap almost
+    never binds), reusing log-shipper.py with a severity filter + a
+    second timer per host. Pairs with logs-local-shippers (done
+    2026-10-05 — per-host hourly timers already exist).
+  why_separate_cursor: >
+    A severe lane CANNOT share the full lane's cursor files: the cursor
+    marks "last shipped position", so a severe run writing it would
+    silently skip every non-severe line it scanned past — the full lane
+    would then never see them. The severe lane therefore keeps its own
+    cursor (`log-shipper-severe-{sys,user}.cursor` /
+    `log-shipper-ha-severe-<host>.json`) and its own state doc
+    (`ship-severe/<host>`). Consequence: severe lines are posted by both
+    lanes — same deterministic key, so it's an idempotent same-key
+    upsert, not a duplicate doc.
+
+topology:
+  full_lane: >-
+    unchanged — `log-shipper.timer` hourly on each host
+    (`--self --max-docs 2000`), ssh fallback from the omen nightly.
+  severe_lane: >-
+    `log-shipper-severe.timer` hourly on tony-dell, tony-omen, idc01,
+    idc02, idc03, mn01 — `--self --severe` = `--kinds oom,panic,failed
+    --cursor-tag severe`. "error" kind deliberately excluded (catch-all
+    bucket, too noisy on spammy hosts — mirrors SEVERE in
+    logs-report.py).
+  severe_mha: >-
+    `log-shipper-severe-mha.timer` on tony-dell —
+    `--hosts michael-ha --severe` pull twin of log-shipper-mha (HAOS has
+    no journald/python; collector-side dedup file is tag-suffixed).
+
+code_changes:
+  - >-
+    scripts/ada/log-shipper.py — new flags --severe (shortcut for
+    --kinds oom,panic,failed --cursor-tag severe), --kinds, --cursor-tag.
+    Tagged lanes use separate cursor files
+    (~/.cache/log-shipper-<tag>-{sys,user}.cursor), separate ha-cli dedup
+    file (log-shipper-ha-<tag>-<host>.json), and post
+    `ship-<tag>/<host>` state docs with a "run" field instead of
+    `ship/<host>` — the full lane's heartbeat is never clobbered.
+    SEVERE_KINDS = (oom, panic, failed), mirrors SEVERE in
+    logs-report.py.
+  - >-
+    scripts/ada/logs-kanban.py — ship_states() now only consumes
+    `ship/` keys; side-lane heartbeats (ship-severe/<host>) are ignored
+    so severe-lane counters can't trigger false backlog/one-sided cards.
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — 6x log-shipper-severe jobs
+    (tony_dell, tony_omen, idc01, idc02, idc03, mn01; hourly) +
+    log-shipper-severe-mha on tony_dell.
+  - >-
+    scripts/ada/install-log-shipper.sh — bundles + arms the severe units
+    alongside the full lane; run-once exercises both lanes.
+  - >-
+    systemd/generated/<host>/log-shipper-severe.{service,timer} +
+    dell's log-shipper-severe-mha.* — rendered by render-jobs.py.
+
+install_state:
+  installed_2026-10-06:
+    tony-dell: log-shipper-severe.timer + log-shipper-severe-mha.timer
+      armed; severe lane shipped 500/972 matched (backfill drains hourly)
+    tony-omen: severe timer armed; shipped 356 backfill + 34 incl. probe
+    idc01: severe timer armed; shipped 430
+    idc02: severe timer armed; shipped 500/2722 (drains next ticks)
+    idc03: severe timer armed; shipped 500/1117
+    mn01: severe timer armed; shipped 500/792
+    michael-ha: severe pull runs on tony-dell (same HAOS constraint);
+      ship-severe/michael-ha live (ha-cli-ssh lane)
+  propagate: >-
+    shipper updates propagate by re-running install-log-shipper.sh —
+    the script runs self-contained from ~/.local/share/log-shipper/,
+    not the repo checkout.
+
+verification:
+  done:
+    - "--self --severe --dry-run on tony-omen: 382 severe matched, 0 fail"
+    - "probe injected 10:55 +07 via systemd-run --user
+      severe-probe-verify.service (`Out of memory: Killed process 4242`)
+      landed in host-logs as hostlog/tony-omen/258916433008-9ca33cd9
+      kind=oom at the 11:02 log-shipper-severe.service run — ~7 min,
+      well within the hour"
+    - "all 7 ship-severe/<host> state docs fresh with run=severe and
+      err=-; ship/<host> full-lane heartbeats untouched"
+    - "fleet timers armed: log-shipper-severe.timer on 6 journald hosts,
+      log-shipper-severe-mha.timer on dell"
+  incident_during_rollout: >-
+    MDDB leader (idc03 :11023) wedged 10:48-11:01 — a manually started
+    mddb-vector-reindex blocked the HTTP API (health timeout; MCP port
+    still cycling). Reindex was TERM'd at 11:00:31 and the API recovered
+    immediately. Mid-wedge /add failures hit the install run-once on
+    idc01/02/03/mn01 — by design the cursors didn't advance past
+    unshipped lines and a manual re-run after recovery drained them
+    clean. Same wedge family as card mddb-search-wedge (done 2026-10-03):
+    vector-reindex still wedges the API while it runs.
+  ongoing:
+    - "hourly ticks keep ship-severe/<host> docs fresh; the digest's
+      severe counters see new oom/panic/failed lines within ~1h"
+
+known_limits:
+  - "first severe run per host backfills up to 500 severe lines from the
+    7-day initial window (cap binds once, then drains — dell/idc02/idc03/
+    mn01 all hit it; VPSes have ~800-2700 severe lines/7d, mostly
+    recurring 'failed' app errors — steady-state is ~tens/hour)"
+  - "severe volume on idc02 (~390/day) is well above the kanban
+    SEVERE_24H=40 spike threshold — faster shipping makes spike cards
+    more likely to fire on noisy VPSes; that's legit incident signal"
+  - "severe lines are posted twice (once per lane) — same deterministic
+    key, idempotent upsert; negligible at severe volume"
+  - "idc01/idc02/idc03 system journals still unreadable by user tony —
+    severe lane inherits the same blind spot (usermod -aG systemd-journal
+    tony would fix fleet-wide)"
+  - "a truly dead host still can't ship — the dead-host signal remains
+    the stale ship/<host> + ship-severe/<host> heartbeats going silent"
