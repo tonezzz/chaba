@@ -139,3 +139,28 @@ the writers' sources (logs, events regenerate).
 - idc01 stays leader — idc02 is lab + expendable ops, never authoritative
 - No live replication between leader and ops (the OOM lesson)
 - tony-dell follows only the leader — it doesn't need telemetry
+
+## Read replica split (2026-10-06, ada-pi `backend/mddb_client.py`)
+
+A third routing layer for the idc01 read-only follower (`mode:"read"`,
+binds `100.74.146.0:11123`, gRPC replication from leader `:11024`):
+
+- `MDDB_READ_URL` — follower base URL; unset = all reads on leader
+- `MDDB_READ_MODE` = `prefer` (default): follower-first, lag-gated —
+  for batch/remote consumers offloading the leader
+- `MDDB_READ_MODE` = `fallback`: leader-first, follower only on
+  transport/5xx failure — for services co-located with the leader
+  (leader-down recall resilience without replica latency on the
+  happy path)
+- `MDDB_READ_MAX_LAG_MS` (default 120000) — follower is only used while
+  `healthy:true` and `replication_lag_ms` under this; checked against
+  `/v1/replication/status`, cached 30s, fails closed to leader
+
+Invariants: writes AND `update_document`'s merge-read always hit the
+leader (`prefer_leader=True`) — a stale replica would merge-then-write
+missing fresh edits. Ops collections never route to the follower.
+
+Caution: follower can run hours behind (post-snapshot catch-up, bulk
+reindex) — never set `MDDB_READ_URL` without the lag gate doing its
+job; `healthy:false` in `/v1/replication/status` means replicate is
+broken or catching up.
