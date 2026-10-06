@@ -1,0 +1,100 @@
+title: mddb embed-queue saturation — drop enumeration + tripwire
+subtitle: 2026-10-04/05 outage forensics and the queueSize/droppedTotal watchdog
+icon: bell
+version: 1
+
+card: mddb-embed-queue-recovery
+date: 2026-10-06
+dispatch: 20261006-102401-1-enumerate-docs-dropped-from-
+
+summary: |
+  The mddb embed queue (MDDB_EMBEDDING_QUEUE_SIZE=4000,
+  MDDB_EMBEDDING_QUEUE_WAIT=30s) silently dropped embed jobs during the
+  OpenRouter/Gemini provider outage. Each drop = one doc revision with no
+  vector until reindexed. This job enumerated the drops, verified the
+  backfill, and added a saturation tripwire to the existing embed probe.
+
+enumeration:
+  source: journalctl --user -u mddb.service on idc01 (pre-migration leader)
+  window: 2026-10-04 20:47:12 +07 -> 2026-10-05 11:50:42 +07
+  drop_events: 3160
+  unique_docids: 1320
+  note: >-
+    The card quoted 2026-10-05 11:40-11:55 UTC; the real window is wider —
+    drops began 2026-10-04 evening local time and ended when Tony raised the
+    OpenRouter key limit (~12:35 +07 on 10-05). idc03 leader journal since
+    migration (10-05 ~21:40 +07): zero "dropping job" lines.
+  top_collections: |
+    ada-ha-bank-devin-tony 1223, ada-cms-pages 1106, infrastructure-ssot 276,
+    ada-ha-bank-general 182, ada-ha-scenario-reports 72, ada-cms-automation 63,
+    ada-ha-bank-personal-tony 50, ada-ha-bank-projects-tony 40 (+ 22 smaller)
+  artifacts:
+    - docs/ssot/jobs/infrastructure/2026-10-06-mddb-embed-queue-dropped-docids.txt
+      (1320 docIDs, git-tracked)
+    - reports/mddb-embed-queue/mddb-dropped-detail.json (per-doc drop counts,
+      worktree-local — reports/ is gitignored)
+
+coverage: |
+  The 22:15 vector-reindex sweep on the new idc03 leader already covered the
+  dropped docs (39,822 docs swept, embedded=1 skipped=39,822 — vectors
+  survived the binlog migration). Re-verified 2026-10-06 via a full
+  /v1/vector-reindex sweep over every collection except host-logs:
+  embedded=15 skipped=12,259 failed=0 — the only docs still lacking stored
+  vectors were a handful of post-sweep writes.
+  IMPORTANT: /v1/vector-stats embedded_documents < total_documents does NOT
+  mean missing vectors — it reflects in-memory index residency; docs with
+  persisted vectors outside the RAM index still reindex-skip. The reindex
+  endpoint's skipped count is the coverage source of truth.
+  host-logs was deliberately deferred: its ~835-doc gap is embed jobs
+  already queued and draining (queue depth sat at 4000/4000 much of the
+  session from hourly log-shipper bursts, 6 hosts x ~2000 docs/run,
+  dropped=0 — no enqueue losses). Reindexing them inline would double-embed
+  and hammer the proxy; the live drain covers them, and the tripwire now
+  guards future drops.
+  Fixed en route: mddb-vector-reindex.service.d/endpoint.conf on idc03
+  pointed at 127.0.0.1:11023, but mddb binds only the tailnet IP
+  100.102.134.91:11023 — the unit would never have run post-migration.
+  Updated the dropin; idc01's copy is likely equally stale but its mddb is
+  masked anyway.
+
+tripwire:
+  implementation: scripts/ada/embed-probe.py — new check_queue() step
+  runs_on: idc03 via mddb-embed-probe.timer (every 15min, hand-installed unit
+    from ~/CascadeProjects/chaba checkout — NOT registry-rendered; the change
+    goes live when that checkout pulls master)
+  source_metric: GET /v1/vector-stats -> queue {depth, dropped, size, wait}
+  thresholds:
+    warn_depth: 500   # EMBED_QUEUE_WARN_DEPTH — card asked for ~500
+    crit_depth: 3000  # EMBED_QUEUE_CRIT_DEPTH — 75% of the 4000 cap
+    drop_alert_min_interval: 1800s  # EMBED_QUEUE_DROP_ALERT_MIN_S
+  events_to: ada-ha-events-tony (kind=ops-event, session_id=embed-probe)
+  event_types:
+    embed_queue_saturated: rising edge into warn/crit
+    embed_queue_drops: droppedTotal grew vs last probe (rate-limited 30min)
+    embed_queue_drained: depth back under warn threshold
+  state: "~/.local/share/ada/embed-queue.state (JSON: level, dropped, ts)"
+  verified: live run on 2026-10-06 emitted ops-embed-probe-embed_queue_saturated-20261006104100
+    while queue sat at 3978/4000 — event confirmed present via
+    /v1/search filterMeta kind=ops-event.
+
+decisions:
+  - "Put the tripwire in embed-probe.py, not ops-health-report.py — the report
+    script lives in the ada-pi repo (outside this card's repo) while
+    embed-probe is chaba code already running on the same 15-min cadence on
+    idc03 with the same ada-ops emit path."
+  - "Threshold transitions only (plus rate-limited drop-growth) — no per-tick
+    spam during sustained saturation."
+  - "No auto-reindex kick on drop-growth — when the queue is saturated the
+    fix is drain, not more enqueue pressure. The drop event text tells the
+    operator to run mddb-vector-reindex.service after drain."
+  - "Routine log-shipper bursts (~2000 docs/hr/host) make depth>500 common —
+    warn is a soft tripwire; crit>=3000 is where drops actually begin."
+
+verify: |
+  python3 scripts/ada/embed-probe.py          # prints "queue depth=N/4000 dropped=M"
+  # ops events:
+  curl -s -X POST http://100.102.134.91:11023/v1/search -H 'content-type: application/json' \
+    -d '{"collection":"ada-ha-events-tony","filterMeta":{"kind":["ops-event"]},"limit":100}' \
+    | grep embed_queue
+  # live queue:
+  curl -s http://100.102.134.91:11023/v1/vector-stats | jq .queue
