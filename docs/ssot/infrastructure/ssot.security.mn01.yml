@@ -2,7 +2,7 @@ title: Security Posture — mn01
 subtitle: Declared security state for the mn-home portable node; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: 2026-09-28
+last_updated: "2026-10-06"
 maintainer: tony
 
 host: mn01
@@ -28,16 +28,20 @@ expected_exposure:
   - { listener: "100.106.196.22:5000", class: tailnet, service: weaviate-embedding, note: "all-MiniLM-L6-v2 embeddings; moved from tony-omen 2026-09-27 — rebound tailnet-only 2026-09-28; omen keeps 127.0.0.1:5000 proxy" }
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "off — key-only (drop-in 00-no-password.conf, 2026-10-06)" }
   recovery: { physical: "portable PC at mn-home", note: "remote site — no OOB console; tailnet is the only path" }
 
 firewall:
-  tool: nftables
-  inbound_default: accept
+  tool: ufw
+  inbound_default: deny
   rules:
-    - "tailscale ts-input/ts-forward chains installed by tailscaled"
-    - "libvirt virbr0 chains (192.168.123.0/24)"
-  note: "no ufw; INPUT policy accept — inbound exposure governed by listeners + tailnet, verified 2026-09-24"
+    - "allow in on tailscale0 (all traffic — tailnet)"
+    - "allow 22/tcp (ssh — key-only)"
+    - "allow 8080/tcp (caddy — Ada funnel backend)"
+  note: "Installed + enabled 2026-10-06. tailscale ts-input/ts-forward
+        chains continue under tailscaled; libvirt virbr0 dnsmasq :53
+        unaffected (bridge, not inbound). Funnel ingress arrives via
+        tailscale0 — unaffected."
 
 tailscale:
   ip: "100.106.196.22"
@@ -51,10 +55,7 @@ egress:
   warp: { enabled: false }
   transparent_proxy: { enabled: false }
 
-deviations:
-  - item: "sshd PasswordAuthentication yes"
-    reason: "remote site — password fallback if tailnet breaks; PermitRootLogin prohibit-password"
-    last_verified: "2026-09-24"
+deviations: []
 
 last_observed: {}
 deltas: []

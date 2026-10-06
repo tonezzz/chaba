@@ -17,7 +17,7 @@ expected_exposure:
       note: "caddy-edge quadlet TLS — Let's Encrypt per-name certs; added 2026-10-03" }
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "off — key-only (drop-in 00-no-password.conf, 2026-10-06)" }
   tailscale_ssh: false
   recovery:
     provider_panel: "VPS provider web console — recovery path if tailnet+ssh both break"
@@ -49,10 +49,7 @@ baseline_applied:
   - "ufw deny-incoming / allow-outgoing + 22/tcp, enabled on boot"
   - "tailscaled installed, joined tailnet 2026-09-30 (100.123.163.11); ufw :22 tightened to tailscale0; PermitRootLogin prohibit-password; fail2ban+unattended-upgrades+auditd+chrony active; sysctl.d/90-tuning.conf (bbr+fq, swappiness=10, inotify 524288, somaxconn 8192)"
 
-deviations:
-  - item: "sshd PasswordAuthentication yes"
-    reason: "VPS image default; key auth installed 2026-09-30 — disable password auth once root+tony key logins confirmed stable, or keep as panel-recovery fallback like idc01"
-    last_verified: "2026-10-04"
+deviations: []
 
 last_observed: {}
 deltas: []

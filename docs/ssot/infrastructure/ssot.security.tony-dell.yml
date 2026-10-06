@@ -2,7 +2,7 @@ title: Security Posture — tony-dell
 subtitle: Declared security state for the secondary workstation / web edge; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-04"
+last_updated: "2026-10-06"
 maintainer: tony
 
 host: tony-dell
@@ -66,17 +66,29 @@ expected_exposure:
   # Retired: 0.0.0.0:8001 ada-pi-pwa moved to idc01 2026-09-23 (plain-HTTP LAN exposure removed).
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: needs-verification, note: "LAN+tailnet" }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "off — key-only (drop-in 00-no-password.conf, 2026-10-06)", note: "LAN+tailnet" }
   xrdp: { port: 3389, class: lan }
   chrome_remote_desktop: { display: ":20", note: "separate Xvfb session; unit chrome-remote-desktop@tony" }
   openvpn: { service: "openvpn.service active — verify config/peer on first audit" }
   recovery: { chrome_remote_desktop: "primary OOB path", physical: "seat on vt7 (xfce-seat)" }
 
 firewall:
-  tool: ufw                 # ufw.service active (system)
-  inbound_default: needs-verification
-  rules: []                 # capture `sudo -n ufw status numbered` on first audit
-  note: "service is enabled; rule set not yet recorded in SSOT"
+  tool: ufw
+  inbound_default: deny
+  rules:
+    - "allow in on tailscale0 (all traffic — tailnet)"
+    - "deny 6379 (redis — local+tailnet consumers only; LAN blocked 2026-10-06)"
+    - "deny 9001 (php-fpm — only local nginx consumes; LAN blocked)"
+    - "allow 22/tcp + 8222/tcp (ssh — key-only)"
+    - "allow 3389/tcp (xrdp — pre-existing rule kept)"
+    - "allow 6080/tcp (websockify-macbook) 8083 (nginx) 8090 (frigate)"
+    - "allow 8125/tcp 8126/tcp (caddy/socat LAN edge)"
+    - "allow 1880/tcp (node-red) 8300 8301 (weaviate)"
+    - "allow 9584 9585 (HA instances) 8791 8789 9005 11435 19584 (identified APIs + GatewayPorts forward)"
+  note: "Enabled 2026-10-06. Verified: redis+php-fpm LAN-blocked,
+        tailnet-open; node-red still serving on LAN. Unidentified new
+        listeners are now denied by default — declare in expected_exposure
+        + add an allow rule when adding services."
 
 tailscale:
   ip: "100.68.142.13"

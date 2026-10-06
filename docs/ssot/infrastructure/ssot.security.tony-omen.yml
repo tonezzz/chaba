@@ -2,7 +2,7 @@ title: Security Posture — tony-omen
 subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-04"
+last_updated: "2026-10-06"
 maintainer: tony
 
 host: tony-omen
@@ -33,16 +33,25 @@ expected_exposure:
   # KNOWN STRAY: 0.0.0.0:9999 `nc -l` leftover debug listener seen 2026-09-24 — intentionally NOT declared; audit keeps flagging until killed
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "off — key-only (drop-in 00-no-password.conf, 2026-10-06)" }
   tailscale_ssh: needs-verification
   recovery: { physical: "console workstation", note: "barrier-server seat" }
 
 firewall:
-  tool: nftables
-  inbound_default: accept
+  tool: ufw
+  inbound_default: deny
   rules:
-    - "ufw inactive; nft INPUT policy accept with tailscale ts-input + libvirt + docker chains"
-  note: "verified 2026-09-24 — no ufw; inbound exposure governed by listeners"
+    - "allow in on tailscale0 (all traffic — tailnet)"
+    - "allow 22/tcp (ssh — key-only)"
+    - "allow 3389/tcp (xrdp — pre-existing rule kept)"
+    - "allow 24800/tcp (barrier — LAN by design)"
+    - "allow 19999/tcp (netdata — LAN dashboards)"
+    - "allow 8090/tcp (cast-shots http.server — LAN-bound on purpose)"
+    - "allow 8799/tcp (cast-browser-server — LAN cast devices)"
+  note: "Enabled 2026-10-06. Listeners still bound 0.0.0.0 (8123 michael-dev,
+        3000 yomi, 3002 weaviate-api, 9100 mcp-debug, 9010 ts-connections)
+        are now effectively tailnet-only — LAN side denied by default;
+        verified LAN-blocked + tailnet-open same day."
 
 tailscale:
   ip: "100.75.102.88"
@@ -55,10 +64,7 @@ egress:
   transparent_proxy: { enabled: false }
   note: "multi-WAN ECMP wired 1Gbps + iPhone USB tether — ssot.tony-omen-multi-wan.yml"
 
-deviations:
-  - item: "sshd PasswordAuthentication yes"
-    reason: "workstation password fallback; PermitRootLogin prohibit-password"
-    last_verified: "2026-09-24"
+deviations: []
 
 last_observed: {}
 deltas: []
