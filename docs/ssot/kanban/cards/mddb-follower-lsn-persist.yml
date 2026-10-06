@@ -1,6 +1,6 @@
 id: mddb-follower-lsn-persist
 title: Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G
-column: review
+column: doing
 review_kind: decide
 note: 'During the idc03 cutover: every mddb follower restart pulls a FULL 4.3G snapshot (~100s stream + verify)
   because lastAppliedLSN lives only in memory — restart reports fromLSN=0, trips the new below-oldest check, re-snapshots.
@@ -12,17 +12,16 @@ help: 'Fork repo: ~/CascadeProjects/mddb-fork branch binlog-retention. Fix lives
   a few seconds of entries idempotently).'
 action:
   type: dispatch
-  status: done
+  status: running
   repo: chaba
   button: ▶ Persist follower LSN
-  runner: tony-dell
-  task_id: 20261006-103003-in-the-mddb-fork-cascadeprojec
   result: 20261006-103003-in-the-mddb-fork-cascadeprojec finished (inactive) — see `devin-dispatch logs 20261006-103003-in-the-mddb-fork-cascadeprojec`
+  runner: tony-omen
 spec: 'In the mddb fork (~/CascadeProjects/mddb-fork): persist follower''s applied LSN across restarts — small meta
   key in the replicated db or a sidecar file next to mddb.db. Load on startup; flush periodically (interval or batch-count,
   not per-entry). Idempotent replay means a few-second skew is safe. Update idc02+idc03 images after (build on idc02
   via the Dockerfile; image tag bump 2.15.4-blrotate -> next).'
-updated: 2026-10-06 11:44
+updated: 2026-10-06 14:33
 comms:
 - at: 2026-10-06 06:57
   from: tony
@@ -83,6 +82,21 @@ comms:
 - at: 2026-10-06 11:44
   from: chaba
   text: auto-merged dispatch/20261006-103003-in-the-mddb-fork-cascadeprojec → origin/master
+- at: 2026-10-06 14:33
+  from: tony
+  text: 'answered idc03-leader-restart-needed-to-pick-up-m-2cf496: continue'
+- at: 2026-10-06 14:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-06 14:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 14:33
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 14:33
+  from: chaba
+  text: started devin-task-20261006-143331-in-the-mddb-fork-cascadeprojec on tony-omen (dispatch)
 claim:
   since: 2026-10-06 10:30
 requests:
@@ -91,6 +105,7 @@ requests:
     minutes of mddb downtime (freelist walk on ~6GB db) — per runbook needs approval. Restart now, or leave pinned
     for next maintenance window? Also: merge follower-lsn-persist into feat/vector-algorithms? (deployed image contains
     the fix; a future rebuild off feat/vector-algorithms would lose it until merged)'
-  status: open
+  status: answered
   at: 2026-10-06 11:35
   from: devin
+  answer: continue
