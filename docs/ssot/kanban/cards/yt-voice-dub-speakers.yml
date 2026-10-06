@@ -1,0 +1,48 @@
+id: yt-voice-dub-speakers
+title: 'YT voice dub — diarization-driven casting, >2 speakers'
+column: backlog
+program: yt-voice-dub
+area: casting
+priority: medium
+metric: 'a render assigns voices purely from diarization output (no hand-labeled --cast-times) on the staged corpus; >2 speakers get separable voices'
+verify: 'gn-style interview renders with N distinct voices aligned to pyannote turns; turn table verified against transcript anchors; benchmark voices-per-speaker == 1'
+note: >-
+  From the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md).
+  Both halves are proven separately: heuristic --cast-detect (cue-gap Otsu
+  + question cues) and real pyannote diarization on tony-omen GPU (v17:
+  98->62 turns, anchor-verified SPEAKER_00/01/02). Open work: (a) wire
+  diarization output directly into yt-vtt-dub.py — a --diarize-file (or
+  --diarize cmd) that produces the turn table without hand labeling;
+  diarization runs on tony-omen, render on tony-dell, so pass the turn
+  file between hosts (scp or corpus path on mn01). (b) >2 speakers:
+  edge-tts has exactly 2 TH voices — extend the voice@NHz pitch-offset
+  syntax into a speaker->voice family map and document separability
+  limits (v16g widened to -10/-18Hz). (c) Boundary: SPEAKER_NN labels +
+  transcript-anchor naming only — no voiceprint identity, no cloning.
+help: 'diarization: ~/.venvs/diarize on tony-omen (pyannote
+  speaker-diarization-3.1, torch cu130); renderer --cast-times/--names;
+  anchors method in yt-voice-dub-test comms 2026-10-05 18:15'
+spec: >-
+  Upgrade speaker casting to diarization-driven. (1) yt-vtt-dub.py accepts
+  a diarization turn file (RTTM or the txt format v17 used: start end
+  SPEAKER_NN) and converts it to internal turn borders on the karaoke word
+  stream — reuse the voice_at() bisect, filter <0.3s micro-turns like v17.
+  (2) Speaker naming: keep the transcript-anchor method (match known
+  phrases to SPEAKER_NN) and feed --names; produce a names map file so
+  renders are reproducible. (3) Voice assignment: extend --cast-voices to
+  accept voice@pitchHz entries and round-robin speakers beyond 2 into
+  pitch-offset families; document the separability ceiling in the card
+  comms. (4) Glue: document/script the tony-omen diarize -> mn01 corpus
+  -> tony-dell render handoff (corpus already lives at mn01:~/media-corpus).
+  Verify: full interview render with zero hand-labeled turns; turn table
+  spot-checked against anchors; voices-per-speaker == 1 ready for the
+  yt-voice-dub-scenarios benchmark.
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Wire diarization into the dub render per card spec: --diarize-file
+    input, anchor-based speaker naming, pitch-offset voice families for
+    >2 speakers, host-handoff doc; verify end-to-end on the corpus.
+updated: '2026-10-06'

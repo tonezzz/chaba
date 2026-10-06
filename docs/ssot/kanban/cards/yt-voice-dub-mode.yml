@@ -1,0 +1,48 @@
+id: yt-voice-dub-mode
+title: 'YT voice dub — voice-mode selector on the cast URL'
+column: backlog
+program: yt-voice-dub
+area: productization
+priority: high
+metric: 'POST /cast {"voice": "th"} produces a dubbed cast end-to-end; "off" and omitted preserve today''s behavior'
+verify: 'cast a cached video with voice=th -> dub.mp4 muxed into HLS output plays on TV; /status reports dub phase; media cache stores the dubbed variant under its own key'
+note: >-
+  Productization lane from the E2E assessment
+  (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Today the dub is an
+  offline side-render (yt-vtt-dub.py -> dub.mp4 -> manual play_media);
+  yt-live.sh casts subs-only. Add a voice-mode parameter end-to-end:
+  POST /cast accepts {voice: off|th|en} (default off = current behavior);
+  yt-live.sh runs yt-vtt-dub.py after subs.vtt exists and muxes the dub
+  audio into the transcode; dub variants get their own media-cache key
+  (vid.srclang.langs.voice) so a subs cast and a dubbed cast coexist.
+  Constraint: dub render time >> transcode — cast subs version
+  immediately, swap to dubbed stream when ready, or gate cast on dub
+  completion (pick one, document in note).
+help: 'pipeline: scripts/ops/{yt-live-api.py, yt-live.sh, yt-vtt-dub.py};
+  assessment: docs/assessments/yt-voice-dub-e2e-2026-10-06.md;
+  runbook: docs/kb/home-assistant/tv-casting-runbook.md'
+spec: >-
+  Wire voice dubbing into the cast path. (1) yt-live-api.py POST /cast:
+  accept optional "voice" field (off|th|en, default off), pass through to
+  yt-live.sh as arg/env. (2) yt-live.sh: when voice != off and subs exist,
+  invoke yt-vtt-dub.py against the merged subs.vtt + downloaded src.mp4
+  (or the cached media), producing a dub audio track; mux it over the
+  sidechain-ducked original in the HLS output. Handle the latency gap —
+  dub synthesis is slower than transcode; either delay the cast or
+  upgrade the stream mid-play, whichever is simpler, and record the
+  choice. (3) Extend the media-cache key with the voice mode so dubbed
+  and subs-only variants cache independently; replay path must serve the
+  right variant. (4) /status should expose the dub phase. Constraints:
+  keep voice=off path byte-identical to today; edge-tts failures must
+  fall back to subs-only cast, never fail the whole cast; edge-tts lives
+  in ~/.venvs/edge-tts on tony-dell and is flaky under parallel load
+  (3-try retry already in yt-vtt-dub.py).
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Implement the voice-mode selector per card spec: voice param on POST
+    /cast -> yt-live.sh -> yt-vtt-dub.py muxed into HLS, media-cache key
+    includes voice mode, subs-only fallback on TTS failure.
+updated: '2026-10-06'
