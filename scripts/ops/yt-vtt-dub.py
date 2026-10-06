@@ -360,10 +360,14 @@ def tts(text, out, voice=None, rate=None):
         cmd += ["--pitch", pitch]
     if rate:
         cmd += ["--rate", rate]
-    for attempt in range(3):
+    for attempt in range(5):
         r = subprocess.run(cmd, capture_output=True)
         if r.returncode == 0 and Path(out).exists() and Path(out).stat().st_size > 0:
             return
+        # demo endpoint rate-limits under parallel load — back off,
+        # back-to-back retries hit the same throttle window
+        import time as _t
+        _t.sleep(1.5 * (attempt + 1))
     raise subprocess.CalledProcessError(r.returncode, cmd, stderr=r.stderr)
 
 
@@ -430,9 +434,8 @@ def synth_one(i, text, work, voice=None, rate=None):
 
 def fit_wav(i, mp3, window, work):
     """mp3 -> wav; strip TTS onset/lead silence; atempo residual over
-    window (cap 1.4x), atrim the tail."""
+    window (cap 1.4x), atrim the tail. Returns (wav, atempo, trimmed)."""
     wav = work / f"c{i:04d}.wav"
-    dur = probe(mp3)
     # edge-tts emits ~200ms leading silence + ~150ms tail — both steal
     # sync accuracy and window budget; strip them before timing math
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(mp3),
@@ -440,17 +443,19 @@ def fit_wav(i, mp3, window, work):
            "start_silence=0.04,areverse,"
            "silenceremove=start_periods=1:start_threshold=-45dB:"
            "start_silence=0.04,areverse"]
-    dur = None
+    atempo, trimmed = 1.0, False
     if dur := probe(mp3):
         if dur > window * 1.05:
             r = min(dur / window, 1.4)
             chain = cmd[-1] + f",atempo={r:.3f}"
+            atempo = r
             if dur / r > window:
                 chain += f",atrim=duration={window:.3f}"
+                trimmed = True
             cmd[-1] = chain
     cmd += ["-ar", "44100", "-ac", "1", str(wav)]
     subprocess.run(cmd, check=True, capture_output=True)
-    return wav
+    return wav, atempo, trimmed
 
 
 def main():
@@ -462,7 +467,11 @@ def main():
     ap.add_argument("--secs", type=int, default=180)
     ap.add_argument("--duck", default="0.22")
     ap.add_argument("--max-rate", type=float, default=1.25,
-                    help="cap global speed-up factor (default 1.25x)")
+                    help="cap speed-up factor (default 1.25x)")
+    ap.add_argument("--rate-spread", type=float, default=0.10,
+                    help="per-group rate may deviate +-this much around the "
+                         "global rate (default 0.10) — long groups aren't "
+                         "pinned by short ones, so atempo rarely engages")
     ap.add_argument("--no-compress", action="store_true",
                     help="skip the Gemini tighten pass on the text")
     ap.add_argument("--lag-budget", type=float, default=5.0,
@@ -514,6 +523,12 @@ def main():
     ap.add_argument("--th-file", default="",
                     help="JSON array of polished TH text per sentence group "
                          "(overrides translated text for speech + burn)")
+    ap.add_argument("--th-auto", action="store_true",
+                    help="auto-translate the sentence-group table via "
+                         "yt-vtt-translate.py --groups (natural spoken "
+                         "register sized to each group's window; disk-cached) "
+                         "— replaces a hand-written --th-file. An explicit "
+                         "--th-file wins")
     ap.add_argument("--fix-map", default="",
                     help="JSON object of TH pronunciation fixups applied to "
                          "spoken text, e.g. '{\"โล่งอก\": \"โล่ง\\u200bอก\"}' "
@@ -525,6 +540,8 @@ def main():
                          "original bed) — for voice/pitch verification")
     ap.add_argument("--dump-only", action="store_true",
                     help="exit after --dump-groups (tune maps without TTS)")
+    ap.add_argument("--metrics-json", default="",
+                    help="also write the DUBFIT metrics dict to this path")
     a = ap.parse_args()
     if a.cast_detect and not a.sentences:
         print("--cast-detect needs --sentences --en-vtt; ignoring",
@@ -564,6 +581,7 @@ def main():
 
     # sentence-merge: karaoke word times -> pause/turn boundaries ->
     # one utterance per sentence group (natural TTS prosody + clean subs)
+    th_over = False  # spoken text came from --th-file/--th-auto
     if a.sentences:
         if not a.en_vtt:
             sys.exit("--sentences needs --en-vtt (karaoke <c> word times)")
@@ -661,16 +679,62 @@ def main():
                 g_pieces[gi].append((c[0], new))
         groups = [(s, e, ws, v, " ".join(p[1] for p in g_pieces[i]), g_pieces[i])
                   for i, (s, e, ws, v) in enumerate(groups)]
+        def _groups_table():
+            # e = fit-window end (next group's start) — the size budget an
+            # LLM translation pass needs per group
+            return [{"i": i, "s": round(g[0], 2),
+                     "e": round(groups[i + 1][0]
+                                if i + 1 < len(groups) else a.secs, 2),
+                     "voice": g[3] or "",
+                     "en": " ".join(w for _, w in g[2]),
+                     "th": g[4]} for i, g in enumerate(groups)]
+
         dump = getattr(a, "dump_groups", "")
         if dump:
             import json as _j
-            _j.dump([{"i": i, "s": round(g[0], 2), "voice": g[3] or "",
-                      "en": " ".join(w for _, w in g[2]),
-                      "th": g[4]} for i, g in enumerate(groups)],
+            _j.dump(_groups_table(),
                     open(dump, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
             print(f"dumped {len(groups)} groups -> {dump}")
             if a.dump_only:
                 sys.exit(0)
+        th_over = bool(a.th_file)
+        if a.th_auto:
+            # sentence-level translation on the group table — natural
+            # register Thai sized to each group's window, replacing the
+            # hand-written --th-file step (cached in the translator)
+            if a.th_file:
+                print("both --th-file and --th-auto given — --th-file wins",
+                      file=sys.stderr)
+            else:
+                import json as _ja
+                exe = Path(__file__).resolve().parent / "yt-vtt-translate.py"
+                if not exe.exists():
+                    exe = Path.home() / ".local/bin/yt-vtt-translate.py"
+                with tempfile.TemporaryDirectory() as _tt:
+                    gjson, tjson = (Path(_tt) / "groups.json",
+                                    Path(_tt) / "th.json")
+                    _ja.dump(_groups_table(),
+                             open(gjson, "w", encoding="utf-8"),
+                             ensure_ascii=False)
+                    tgt = "th" if a.lang.startswith("th") else a.lang
+                    r = subprocess.run(
+                        [sys.executable, str(exe), str(gjson), str(tjson),
+                         "--groups", "--target", tgt, "--jobs", "3"],
+                        capture_output=True, text=True)
+                    for ln in r.stderr.splitlines():
+                        print(f"  th-auto: {ln}", file=sys.stderr)
+                    if r.returncode == 0 and tjson.exists():
+                        over = _ja.loads(tjson.read_text(encoding="utf-8"))
+                        groups = [(*g[:4],
+                                   over[i] if i < len(over) and over[i]
+                                   else g[4], g[5])
+                                  for i, g in enumerate(groups)]
+                        th_over = True
+                        print(f"th-auto: translated {min(len(over), len(groups))}"
+                              f" groups (lang={tgt})")
+                    else:
+                        print("th-auto failed; keeping cue-level text",
+                              file=sys.stderr)
         if a.th_file:
             import json as _json
             over = _json.loads(open(a.th_file, encoding="utf-8").read())
@@ -716,7 +780,7 @@ def main():
                                 b = wt
                     bounds.append(gend)
                     ns = len(bounds) - 1
-                    if a.th_file and g[4]:
+                    if th_over and g[4]:
                         # distribute the TH line across slices ~proportionally
                         # to each slice's EN word count, splitting on
                         # Thai-friendly clause punctuation
@@ -752,8 +816,12 @@ def main():
                     burn_prev[0] = g[3]
 
     # tighten the text for spoken dub — TH translations run ~1.4x too long
-    # for the EN timing window; shorter text is the honest speed fix
-    if not a.no_compress:
+    # for the EN timing window; shorter text is the honest speed fix.
+    # Group-level translations (--th-file/--th-auto) are already sized to
+    # their window — compressing them again would just degrade register.
+    if th_over:
+        print("group translation is already window-sized — skipping compress")
+    elif not a.no_compress:
         import os
         try:
             before = [c[2] for c in cues]
@@ -778,35 +846,55 @@ def main():
         total_speech = sum(d for _, _, d in ok)
         total_window = sum(cues[i][1] - cues[i][0] for i, _, _ in ok)
         g_rate = min(max(total_speech / max(total_window, 0.1), 0.95), a.max_rate)
-        rate_pct = int(round((g_rate - 1.0) * 100 / 5) * 5)
+        # bounded per-group rate around the global rate — a long group is
+        # not pinned by short ones, and atempo then only mops up what's
+        # left past the band (the 1.4x hard cap in fit_wav is unchanged)
+        lo = max(g_rate - a.rate_spread, 1.0)  # never synth below natural
+        hi = min(g_rate + a.rate_spread, a.max_rate)
+        pct_of = {}
+        for i, _, d in ok:
+            win = cues[i][1] - cues[i][0]
+            need = d / max(win, 0.1)
+            pct_of[i] = int(round((min(max(need, lo), hi) - 1.0) * 100 / 5) * 5)
+        applied = [1.0 + pct_of[i] / 100 for i, _, _ in ok] or [1.0]
+        n_up = sum(1 for i, _, _ in ok if pct_of[i] > 0)
         print(f"speech {total_speech:.0f}s vs window {total_window:.0f}s -> "
-              f"global rate {g_rate:.2f} ({rate_pct:+d}%)")
+              f"global {g_rate:.2f}, group band {lo:.2f}-{hi:.2f} "
+              f"(applied {min(applied):.2f}-{max(applied):.2f}; "
+              f"{n_up}/{len(ok)} resynth)")
 
-        # pass 2: resynth every cue at the SAME rate — uniform voice speed
-        if rate_pct > 0:
+        # pass 2: resynth each cue at ITS banded rate — uniform-ish voice
+        # speed without pinning every group to the worst case
+        mp3_of = {i: p for i, p, d in ok}
+        jobs = [(i, cues[i][2], voice_of.get(i), f"+{pct_of[i]}%")
+                for i, _, _ in ok if pct_of[i] > 0]
+        if jobs:
             with ThreadPoolExecutor(4) as ex:
-                res2 = list(ex.map(lambda t: synth_one(t[0], t[1], work, t[2],
-                                                       rate=f"+{rate_pct}%"),
-                                   [(i, cues[i][2], voice_of.get(i))
-                                    for i, _, _ in ok]))
-            mp3_of = {i: p for i, p, d in res2}
-        else:
-            mp3_of = {i: p for i, p, d in ok}
+                res2 = list(ex.map(lambda t: synth_one(t[0], t[1], work,
+                                                       t[2], rate=t[3]),
+                                   jobs))
+            # failures keep the natural-rate pass-1 mp3 (fit_wav adapts)
+            mp3_of.update({i: p for i, p, d in res2 if d > 0})
 
         segs = []
         lag_pool = a.lag_budget
+        atempos, trims = [], 0
         for i, _, _ in ok:
             try:
                 # bound = cue window + lag drawn from a shared budget —
                 # when the pool runs dry, atempo pins speech to cue time
                 win = cues[i][1] - cues[i][0]
                 bound = win + min(a.lag, lag_pool)
-                w = fit_wav(i, mp3_of[i], bound, work)
+                w, at, tr = fit_wav(i, mp3_of[i], bound, work)
                 lag_pool = max(0.0, lag_pool - max(0.0, probe(w) - win))
+                atempos.append(at)
+                trims += tr
                 segs.append((w, i))
             except subprocess.CalledProcessError:
                 print(f"  cue {i} failed", file=sys.stderr)
-        print(f"{len(segs)} segments rendered")
+        print(f"{len(segs)} segments rendered "
+              f"({sum(1 for x in atempos if x > 1.001)} atempo-fit, "
+              f"{trims} clipped)")
 
         # queue layout: each segment starts at its cue start OR right when
         # the previous segment ends — the caption pause IS the breath gap;
@@ -815,6 +903,7 @@ def main():
         prev_i = None
         placed = []
         total_lag = 0.0
+        lag_max = 0.0
         for w, i in segs:
             cue_start = cues[i][0]
             air = cue_start - prev_end
@@ -823,7 +912,11 @@ def main():
                     and voice_of.get(i) != voice_of.get(prev_i)
                     and air < 0.25):
                 pos += 0.3  # zero-air turn — beat so the voice switch reads
-            total_lag += pos - cue_start
+            # negative cue starts (--offset slices) clamp to 0 — the clamp
+            # is not lag, only the overrun past t=0 is
+            lag_i = pos - max(cue_start, 0.0)
+            total_lag += lag_i
+            lag_max = max(lag_max, lag_i)
             placed.append((w, int(pos * 1000)))
             prev_end = pos + probe(w)
             prev_i = i
@@ -863,6 +956,36 @@ def main():
             "-map", "0:v", "-map", "[a]",
             "-t", str(a.secs), "-c:v", "copy", "-c:a", "aac", a.out,
         ], check=True)
+
+        # machine-readable fit report — one line for yt-voice-dub-scenarios
+        # (and humans) to grep; --metrics-json writes the same dict
+        import json as _jm
+        metrics = {
+            "v": 1, "secs": a.secs,
+            "segments": len(segs),
+            "speech_s": round(total_speech, 1),
+            "window_s": round(total_window, 1),
+            "global_rate": round(g_rate, 3),
+            "rate_lo": round(lo, 3), "rate_hi": round(hi, 3),
+            "rate_min": round(min(applied), 3),
+            "rate_max": round(max(applied), 3),
+            "rate_resynth": n_up,
+            "atempo_cap": 1.4,
+            "atempo_segments": sum(1 for x in atempos if x > 1.001),
+            "atempo_max": round(max(atempos, default=1.0), 3),
+            "clipped": trims,
+            "lag_s": round(total_lag, 2),   # sum of per-segment lateness
+            "lag_max": round(lag_max, 2),   # worst single-segment lateness
+            "lag_budget": a.lag_budget,
+            "ends_at": round(prev_end, 1),
+            "th_auto": bool(a.th_auto), "th_file": bool(a.th_file),
+            "out": str(a.out),
+        }
+        print("DUBFIT " + _jm.dumps(metrics, sort_keys=True))
+        if a.metrics_json:
+            Path(a.metrics_json).write_text(
+                _jm.dumps(metrics, ensure_ascii=False, indent=1) + "\n",
+                encoding="utf-8")
     print(f"wrote {a.out}")
 
 
