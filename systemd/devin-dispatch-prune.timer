@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly prune of merged dispatch/* branches + worktrees (Sun 05:30)
+
+[Timer]
+OnCalendar=Sun *-*-* 05:30:00
+Persistent=true
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target
