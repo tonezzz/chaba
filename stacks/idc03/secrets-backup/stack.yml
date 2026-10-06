@@ -16,7 +16,9 @@ requires:
   - "ssh:idc01 — dedicated key ~/.ssh/id_idc01"
   - "ssh:tony-dell-m2m — dedicated key ~/.ssh/id_tony_dell"
   - "tool:age — encrypts the tarball"
-  - "tool:age on each recovery host — needed for restore"
+  - "remote-tool:idc02:age — restore needs it there"
+  - "remote-tool:idc01:age — restore needs it there"
+  - "remote-tool:tony-dell-m2m:age — restore needs it there"
 state:
   - "~/.config/secrets — source set must exist"
 restore: >-

@@ -1,0 +1,26 @@
+id: mddb-follower
+host: idc01
+description: >-
+  mddb read-only follower #2 on idc01 (tailnet :11123/:11124) — the
+  designated promote target if idc03 dies. Old leader data preserved at
+  ~/.config/containers/mddb/data.leader-retired-20261006; the original
+  mddb.service stays masked forever.
+verify: >-
+  curl -sf http://100.74.146.0:11123/v1/health | grep -q '"status":"healthy"'
+  && curl -sf http://100.74.146.0:11123/v1/replication/status | grep -q '"role": *"follower"'
+secrets:
+  - "~/.config/containers/systemd/mddb-follower.container — carries
+     MDDB_REPLICATION_SECRET inline (version it, never print it)"
+requires:
+  - "tool:podman — quadlet runtime"
+  - "tcp:100.102.134.91:11024 — idc03 replication gRPC"
+state:
+  - "~/.config/containers/mddb-follower/data — DB lives here"
+  - "~/.config/containers/mddb-follower/vaults — blob vaults"
+restore: >-
+  Fresh seed: stop, wipe data/, start — the follower pulls a full snapshot
+  (~4min for 6.6GB). Promote: set MDDB_REPLICATION_ROLE=leader + remove
+  LEADER_ADDR/SECRET envs, then repoint consumers.
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-06
