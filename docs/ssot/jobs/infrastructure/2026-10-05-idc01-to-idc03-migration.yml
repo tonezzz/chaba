@@ -1,0 +1,111 @@
+title: idc01 -> idc03 migration
+subtitle: Phase 1 inventory + plan for moving everything off the idc01 Siamdata VPS onto idc03
+icon: target
+
+planning:
+  goal: >-
+    Migrate every workload off idc01 (157.85.110.99 / 100.74.146.0) onto idc03
+    (157.85.102.125 / 100.102.134.91) per Tony's 2026-10-05 scope decision.
+  scope: >-
+    Phase 1 (this session): read-only inventory + written plan only —
+    docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md.
+    Phase 2 (later, gated): provision/baseline idc03, migrate services,
+    DNS cutover, soak. Phase 3: idc01 decommission decision.
+  success_criteria:
+    - Full live inventory of idc01 services/containers/timers/ports/TLS/data captured
+    - Per-item migrate/retire decision + dependency order documented
+    - idc03 capacity assessed (blocked: no ssh key — flagged)
+    - Cutover + rollback per item documented
+    - Items needing Tony approval flagged
+  risks:
+    - idc03 ssh not authorized for any known key -> Phase 2 cannot start until Tony adds a key
+    - Hardcoded 100.74.146.0 tailnet IP in configs/SSOT -> bulk repoint needed on cutover
+    - mddb is replication leader -> leader promotion is the sensitive step
+  resources:
+    - ssh tony@idc01 (works), ssh tony@idc03 (denied), tailscale, Siamdata panel
+  owner: tony
+  estimated_duration: phase-1 done in 1 session; phases 2-3 need a maintenance window
+  related_focus:
+    - label: idc01-to-idc03-migration kanban card
+      file: docs/ssot/kanban/cards/idc01-to-idc03-migration.yml
+
+processing:
+  status: completed
+  started_at: "2026-10-05T20:51:00+07:00"
+  steps:
+    - id: 1
+      label: Read SSOT + kanban cards for idc01/idc02/idc03 context
+      status: done
+      notes: ssot.idc01.yml, ssot.security.idc01/idc02.yml, idc-vps-game, idc01-units-inventory, ssot.services.yml
+    - id: 2
+      label: Live inventory on idc01 (read-only)
+      status: done
+      notes: 9 containers, 9 quadlets, 20 running svc units, 24 timers (22 enabled), full port map, Caddy TLS routes, ~30G data, 17 secrets files, ufw/serve state
+    - id: 3
+      label: Probe idc03 + idc02
+      status: done
+      notes: idc03 tailnet-online, public 157.85.102.125, ssh denied all keys (gate). idc02 = 4C/15G/290G follower+edge (untouched by migration)
+    - id: 4
+      label: Write migration plan doc
+      status: done
+      notes: docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+  decisions:
+    - label: mddb migrates via replication, not file copy
+      rationale: card's stated plan; follower on idc03 -> promote -> idc02 repoints leader addr — minimal downtime, idc01 stays leader until promotion verified
+      alternatives_considered: rsync of stopped 4.3G mddb.db — slower, longer downtime, kept as fallback
+    - label: caddy-edge/DNS cutover is last
+      rationale: public edge flips only after all backends verified on idc03; rollback = CF DNS back to idc01 IP
+      alternatives_considered: parallel dual-edge — rejected, api.surf-thailand.com is single-origin CF
+  changes:
+    - file: docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+      summary: new — full inventory + migration plan (this job's deliverable)
+    - file: docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml
+      summary: new — this lifecycle artifact
+
+followup:
+  verification:
+    - Plan doc exists and renders; inventory cross-checked against live ss/podman/systemctl output
+    - Phase 2 first gate: ssh tony@idc03 succeeds after Tony authorizes a key
+  rollback_plan:
+    - Phase 1 made zero changes — nothing to roll back. Plan doc is reversible by deletion.
+  handoff:
+    - Phase 2 executor (dispatch or interactive session) — after Tony resolves flagged items
+  deferred:
+    - idc03 capacity numbers (RAM/disk/vCPU) — requires ssh access
+    - chaba-vault 41 dirty files on idc01 — reconcile before rsync in Phase 2
+    - input-bridge wildcard :3010 bind fix — folded into migration
+    - doc-archive tailnet :11025 listener missing from security SSOT — record at migrate time
+
+report:
+  status: completed
+  completed_at: "2026-10-05T21:00:00+07:00"
+  summary: >-
+    Phase 1 complete. Full read-only inventory of idc01 captured (9 containers,
+    20 service units, 22 enabled timers, complete port+TLS map, ~30G state,
+    secrets inventory). Plan doc written with per-item decisions, dependency
+    waves, capacity notes, cutover+rollback per item, and 9 flagged approvals.
+    Hard blocker found: idc03 accepts no known ssh key — Phase 2 gated on Tony.
+  metrics:
+    - containers_inventoried: 9
+    - user_timers: "24 (22 enabled)"
+    - data_to_migrate: "~30G total, ~12G essential"
+    - approvals_flagged: 9
+  links:
+    - title: Migration plan (deliverable)
+      url: docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+    - title: Kanban card
+      file: docs/ssot/kanban/cards/idc01-to-idc03-migration.yml
+  kb_review:
+    - idc01 live spec is 2vCPU/31Gi/96G — SSOT says 8-12G; update host doc in Phase 2
+    - idc03 = new Siamdata VPS 157.85.102.125, tailnet-joined 2026-10-05, unhardened (public :22 open)
+  lessons_learned:
+    - Tailnet join does not imply ssh access — verify key authorization before dispatching migration phases
+
+config:
+  version: 1
+  created_at: 2026-10-05
+  last_updated: 2026-10-05
+  maintainer: devin
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
