@@ -253,8 +253,8 @@ def coverage_note(states: dict[str, dict], expected: list[str],
             f"- `{host}` — {status} [{st.get('lane') or '?'}]; "
             f"shipped {st.get('shipped', 0)}"
             f"/{st.get('scanned', 0)} matched"
-            + (f"; only `{one_sided}` journal scanned (other side "
-               "unreadable?)" if one_sided else ""))
+            + (f"; `{one_sided}` journal 0 rows (unreadable or empty?)"
+               if one_sided else ""))
     return lines, gap
 
 
