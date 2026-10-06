@@ -126,6 +126,18 @@ jobs:
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran
     bash chain, not the nonexistent .sh); audit host list + idc03 2026-10-06;
     on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
+- id: chaba-cached-videos
+  name: yt-live media cache -> CMS cached-videos-report
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*:0/30'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cached-videos-update.py
+  note: 'scans ~/.cache/yt-live-media (real entries need info.json id
+    match; mismatches listed as misplaced) + ~/.cache/yt-live-subs into
+    CMS page cached-videos-report (en+th); replaces the hand-written
+    2026-09-27 snapshot'
 - id: chaba-starboard-tracker
   name: Starboard catalogs tracker -> CMS page
   host: tony_dell
