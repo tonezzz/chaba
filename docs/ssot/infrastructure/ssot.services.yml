@@ -777,7 +777,7 @@ tony-omen:
     cron:
       nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
     known_issues:
-      - "ghostroute writes OR model ids unprefixed to fallbacks — openclaw 2026.9.6 needs openrouter/ prefix; patched locally in ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py (editable pipx install); upstream fix to kittimasak/GhostRoute worthwhile"
+      - "ghostroute writes OR model ids unprefixed — FIXED via fork tonezzz/GhostRoute c6ca06d (cli.py + watcher.py). Standard: fork patched deps to tonezzz, keep fixes quiet — no upstream PR unless explicitly decided. Local install at ~/.openclaw/workspace/skills/ghost-route now tracks origin=tonezzz/GhostRoute (upstream=kittimasak for pulls)"
       - "OR key in auth profile openrouter:manual must be re-pasted whenever idc01 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
       - "opennb MCP removed 2026-10-04 (ONB retired); if revived, first fix upstream quota — gemini flash key saturates under ada/yomi load, OR-provider inside ONB was the planned dodge"
     status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29, paired 2026-10-02
