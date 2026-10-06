@@ -58,10 +58,12 @@ instances:
       svg + link + expiry countdown + close); Revoke calls
       script.ada_pair_revoke_named. Rows also show a bound/unbound/shared
       badge from the sensor's `bindings` attribute.
-      Tabs (2026-10-04): pair → board → events → log → ada-pages → obsidian
-      → monitor. `board` is the kanban page (iframe → /apps/board/) using
-      the full_page_iframe convention below; ada-pages is the Ada CMS
-      surface; `monitor` iframes the L3 system report app
+      Tabs (2026-10-06): pair → board → chaba-cms → chaba-cms-security →
+      chaba-cms-traffic → chaba-cms-flood → monitor → events → log →
+      obsidian. `board` is the kanban page (iframe → /apps/board/) using
+      the full_page_iframe convention below; chaba-cms* are the four Ada
+      CMS category views (iframe → public /cms/ edge with ?tab= deep-link);
+      `monitor` iframes the L3 system report app
       (/apps/system-report/ — public mirror: monitor.surf-thailand.com).
       ada_pair_reissue (voice|chat|cms ui) → rest_command.ada_repair_key POST
       /api/auth/keys/{name}/redeem on mn01 (preserves key identity/audit;
@@ -213,25 +215,28 @@ instances:
         cards: chaba-log-card v6 live (full-height
           isolated /logbook copy; defaults to Live·1h, range dropdown up to
           7d or custom datetime window, ⤢ fullscreen expand)
-      - title: Ada Pages
-        path: ada-pages
-        icon: mdi:file-document-edit-outline
+      - title: Chaba CMS (+ CMS Security / CMS Traffic / CMS Flood)
+        path: chaba-cms (+ chaba-cms-security / chaba-cms-traffic / chaba-cms-flood)
+        icon: mdi:file-document-edit-outline (+ shield-home / car-multiple / home-flood)
         type: panel
-        cards: iframe → https://idc03.taila0626a.ts.net/apps/ha/ada-tony/cm)
+        cards: iframe → https://tony-ha.surf-thailand.com/cms/ with api_key +
+          tab params (tab is pages|security|traffic|flood)
+          — renamed from ada-pages 2026-10-06; iframe moved off the tailnet-only
+          idc03 name to the public /cms/ edge so it loads from non-Tailscale
+          clients (LAN/app). The tab param deep-links the CMS sidebar split.
       - title: Obsidian
         path: obsidian
         icon: mdi:notebook-outline
         type: panel
         cards: iframe → https://mn01.taila0626a.ts.net/apps/obsidian/
           (added 2026-09-24 via push-dashboard.py mutate; no api_key —
-          tailnet reads open, app prompts for write key itselfs/?api_key=...
-          (dedicated ada-ha-tony key 'cms-viewer' on idc01; key is embedded in the
-          URL because iframes can't set headers — it is revocable via the Pair
-          tab. The key is a shared viewer key (device='*' in the keys file),
-          so it works from any browser without binding. Added 2026-09-22; the
-          api_key param was restored 2026-09-23 via push-dashboard.py websocket
-          mutate — a HA restart had flushed its in-memory config over the
-          earlier .storage edit. Use push-dashboard.py, not .storage edits.)
+          tailnet reads open, app prompts for write key itself)
+      - note: >-
+          chaba-cms iframes embed the dedicated ada-ha-tony 'cms-viewer'
+          api_key in the URL (iframes can't set headers) — shared viewer
+          key, device='*', works from any browser; revocable via the Pair
+          tab. Use push-dashboard.py, never .storage edits (a HA restart
+          flushes .storage edits — learned 2026-09-23).
   chaba_home:
     name: chaba-home
     instance: tony-ha
@@ -442,14 +447,14 @@ manual_steps:
 conventions:
   full_page_iframe:
     # Standard for embedding a full app page as a dashboard tab
-    # (Ada Pages, Obsidian, kanban Board).
+    # (Chaba CMS tabs, Obsidian, kanban Board).
     view: {type: panel}                 # REQUIRED — panel renders the single card full-bleed
     card: {type: iframe, url: "<app url>"}
     rules:
       - view MUST have type: panel — without it the iframe card renders at default tile height
       - no aspect_ratio on the card — bare iframe expands to fill the panel
       - append ?v=N to the url to bust the iframe cache after redeploys
-    examples: [chaba-admin/ada-pages, chaba-admin/board]
+    examples: [chaba-admin/chaba-cms, chaba-admin/board]
 
 status:
   last_updated: "2026-10-02"
