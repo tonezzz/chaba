@@ -190,6 +190,9 @@ every merge.
 If you are blocked and need a decision from the user, write your question to
 \$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
 stop — the operator is notified and can resume you with an answer.
+If you raised a question and kept working, the reply may arrive while you
+run: answers are appended to \$TASK_DIR/answers.jsonl (one JSON object per
+line: {at, card, from, request_id, answer}). Check it before finishing.
 If the work produces a decision, runbook, or new infra, write it to
 docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
 leave a trail.
@@ -267,6 +270,9 @@ the task explicitly says so.
 If you are blocked and need a decision from the user, write your question to
 \$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
 stop — the operator is notified and can resume you with an answer.
+If you raised a question and kept working, the reply may arrive while you
+run: answers are appended to \$TASK_DIR/answers.jsonl (one JSON object per
+line: {at, card, from, request_id, answer}). Check it before finishing.
 If the work produces a decision, runbook, or new infra, write it to
 docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
 leave a trail.

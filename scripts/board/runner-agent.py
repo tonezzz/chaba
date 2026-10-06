@@ -75,6 +75,10 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
   stalling:
     curl -s -X POST {api}/request -H 'Content-Type: application/json' \\
       -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
+- If you raised a request and kept working, the answer may arrive while
+  you run: board-api appends it to $TASK_DIR/answers.jsonl (one JSON
+  object per line: {{"at","card","from","request_id","answer"}}). Check
+  that file before finishing; newest line wins per request_id.
 """.strip()
 
 

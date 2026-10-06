@@ -19,6 +19,10 @@ Endpoints (after prefix strip):
       (runner-agent.py): only the claiming host may finish; ok:true
       moves the card to review, ok:false marks it failed in place.
   POST /respond  {id, request_id, answer, from?, reopen?}
+      also pushes the answer into a running dispatch session: when the
+      card's action.status=='running', the answer line is appended to
+      $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host
+      (ssh for remote runners) — TASK_RAILS tells sessions to poll it.
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
   POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
       raises a requests[] entry {id, ask, status: open, at, from, to?};
@@ -422,6 +426,60 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
     raise ValueError(f"no request {rid}")
 
 
+def deliver_answer(card: dict, frm: str, rid: str, answer: str) -> str:
+    """Best-effort push of a /respond answer into a still-running dispatch
+    session (card board-answer-live-session). TASK_RAILS tells sessions to
+    check $TASK_DIR/answers.jsonl; this is what makes that file exist —
+    appended directly for a local runner, over ssh for a remote one (same
+    pattern as hide_dispatch_session). Never raises: returns a short note
+    for comms, or "" when the card has no running dispatch to feed."""
+    a = card.get("action") or {}
+    if a.get("status") != "running":
+        return ""
+    tid = str(a.get("task_id") or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,120}", tid):
+        return "answer saved but session delivery skipped (bad task_id)"
+    line = json.dumps({"at": datetime.now(timezone.utc).isoformat(),
+                       "card": str(card.get("id") or ""),
+                       "from": frm, "request_id": rid,
+                       "answer": answer[:500]},
+                      ensure_ascii=False) + "\n"
+    runner = str(a.get("runner") or "").strip()
+    if not runner or runner == HOST:
+        try:
+            d = DISPATCH_TASKS / tid
+            if d.is_dir():
+                with (d / "answers.jsonl").open("a") as f:
+                    f.write(line)
+                return f"answer delivered to running session {tid}"
+            if runner:
+                return ("answer saved but task dir missing on runner "
+                        f"({tid})")
+        except OSError as e:
+            return f"answer saved but session delivery failed: {e}"
+    hosts = []
+    if runner and runner != HOST:
+        if re.fullmatch(r"[A-Za-z0-9_.-]+", runner):
+            hosts.append(runner)
+        else:
+            return f"answer saved but bad runner name {runner!r}"
+    hosts += [h for h in REMOTE_DISPATCH_HOSTS if h not in hosts]
+    for host in hosts:
+        try:
+            # test -d, not mkdir -p: a fallback host that never ran this
+            # task must not grow a phantom task dir holding only answers
+            d = f"~/.local/share/devin-dispatch/tasks/{tid}"
+            r = subprocess.run(
+                ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+                 host, f"test -d {d} && cat >> {d}/answers.jsonl"],
+                input=line, capture_output=True, text=True, timeout=15)
+            if r.returncode == 0:
+                return f"answer delivered to running session {tid} on {host}"
+        except Exception:
+            continue
+    return "answer saved but session delivery failed (runner unreachable)"
+
+
 def do_request(card: dict, body: dict) -> str:
     ask = str(body.get("ask") or "").strip()
     if not ask:
@@ -655,6 +713,13 @@ class H(BaseHTTPRequestHandler):
                     p = card_path(body.get("id", ""))
                     card = load(p)
                     msg = do_respond(card, body, frm)
+                    note = deliver_answer(
+                        card, frm,
+                        str(body.get("request_id") or "").strip(),
+                        str(body.get("answer") or "").strip())
+                    if note:
+                        comms_add(card, "chaba", note)
+                        msg += f" — {note}"
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/comment":
@@ -728,6 +793,39 @@ def _selftest() -> None:
     do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
     assert card["requests"][0]["answer"] == "b"
     assert any("re-answered r1" in m["text"] for m in card["comms"])
+
+    # deliver_answer — /respond on a running card lands in the session's
+    # task dir as answers.jsonl (board-answer-live-session)
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    globals()["DISPATCH_TASKS"] = tmp / "tasks"
+    sess = tmp / "tasks" / "20990101-000000-test_sess"
+    sess.mkdir(parents=True)
+    assert deliver_answer({"action": {"status": "queued"}},
+                          "tony", "r1", "x") == ""        # not running
+    run = {"id": "zz-test", "action": {"status": "running",
+                      "task_id": sess.name, "runner": HOST}}
+    note = deliver_answer(run, "tony", "r1", "go left")
+    assert "delivered" in note, note
+    lines = (sess / "answers.jsonl").read_text().splitlines()
+    assert len(lines) == 1
+    rec = json.loads(lines[0])
+    assert rec["request_id"] == "r1" and rec["answer"] == "go left"
+    assert rec["from"] == "tony" and rec["at"] and rec["card"] == "zz-test"
+    note = deliver_answer(run, "tony", "r1", "again")     # appends
+    assert len((sess / "answers.jsonl").read_text().splitlines()) == 2
+    # bad ids / missing dirs degrade to a note, never raise
+    assert "skipped" in deliver_answer(
+        {"action": {"status": "running", "task_id": "../x"}},
+        "tony", "r", "a")
+    note = deliver_answer({"action": {"status": "running",
+                                      "task_id": "20990101-nope",
+                                      "runner": HOST}}, "tony", "r", "a")
+    assert "task dir missing" in note, note
+    assert "bad runner" in deliver_answer(
+        {"action": {"status": "running", "task_id": "t",
+                    "runner": "-oProxyCommand=evil"}},
+        "tony", "r", "a")
 
     rejects(lambda: do_request(card, {"ask": "  "}), "ask required")
     rejects(lambda: do_request(card, {"ask": "q", "from": "nobody"}),

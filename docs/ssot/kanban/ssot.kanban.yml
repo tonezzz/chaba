@@ -129,7 +129,11 @@ write_path:
     "POST /respond {id, request_id, answer, from?, reopen?}":
       "answers a requests[] entry; from ∈ devin|ada|chaba|tony (default tony —
       the board UI sends none). 400 'answer required' on empty answer; 400
-      'already answered' on re-answer unless reopen:true (logs 're-answered')."
+      'already answered' on re-answer unless reopen:true (logs 're-answered').
+      When action.status=='running', the answer is also pushed into the live
+      session: appended to $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the
+      runner host (local write or ssh; best-effort, comms note either way —
+      board-answer-live-session). Sessions are told to poll that file."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
       400 'text required' on empty/whitespace text"
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
@@ -201,7 +205,11 @@ execution:
                conflict source — prefer regenerating over hand-merging them"
   task_rails: "dispatched agents are told to post progress via POST {api}/comment
                and to raise questions via POST {api}/request instead of
-               blocking on Tony (never direct card-YAML edits — flock race)"
+               blocking on Tony (never direct card-YAML edits — flock race).
+               Answers arrive out-of-band: /respond appends to
+               $TASK_DIR/answers.jsonl while the card is running — rails tell
+               sessions to check it before finishing (newest line wins per
+               request_id)."
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
            via the API; the API renders synchronously on every write"
   persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/
