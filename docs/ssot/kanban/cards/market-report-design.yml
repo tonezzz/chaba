@@ -1,17 +1,18 @@
 id: market-report-design
 title: Structural market report — gold, USD/THB, stocks → CMS page
-column: backlog
+column: review
 note: >-
-  Tony ask (2026-10-06): design a structured market report covering Thai
-  gold (GTA fixings, 2006+ in DB), USD/THB + majors (FRED/ECB/Yahoo,
-  1971+), DXY, WTI, and interesting SET/global stocks. Suggested shape:
-  generated CMS page `market-report` (en+th) with a managed block, daily
-  job on a timer, provenance per ssot.apps.cms-reports.yml — same pattern
-  as flood-report (flood-news-update.py). Data source: trade prod
-  PostgreSQL (290k exchange_rates / 58k commodity_prices / 13k
-  dollar_index rows) — query, don't re-scrape. Open questions for the
-  design: which stocks make the "interesting" list; day-over-day deltas
-  vs 7d trend; does it feed Ada's spoken briefing; where the daily job
-  runs (idc01 vs tony-dell). Design doc goes to docs/assessments/ or
-  docs/design/, then a generator script + registry entry.
+  Design done: docs/design/market-report.md (2026-10-06). Shape: single
+  generated CMS page `market-report` (en+th, `<!-- market:auto -->`
+  block) rendered daily 07:30 ICT on tony-dell by
+  `scripts/ada/market-report-update.py` — psycopg2 direct to trade DB
+  (exchange_rates/dollar_index/commodity_prices), Yahoo fetch at render
+  time for a small .BK watchlist. Follows page-family standard:
+  rollup role, declared sources, provenance footer, ada-cms-automation
+  registry entry. Findings: trade-api :9002 root responds but /api/*
+  data endpoints hang (DB stall — separate card candidate); ^SET.BK
+  confirmed dead on Yahoo, use ^SETI or constituents. Open questions in
+  the doc §8: watchlist contents, proactive briefing vs pull, THB
+  crosses, rolling vs snapshot pages. Next: build the script + timer,
+  or answer the open questions first.
 updated: '2026-10-06'
