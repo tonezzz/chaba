@@ -1,0 +1,49 @@
+id: yt-voice-dub-cuefit
+title: 'YT voice dub — residual cue-fit polish'
+column: backlog
+program: yt-voice-dub
+area: quality
+priority: low
+blocked_by: yt-voice-dub-mode
+metric: 'dub holds natural rate on TH-over-EN content without a hand-written --th-file; residual lag <=5s on the corpus slices'
+verify: 'render 4njFdBF_42I slice with auto sentence-level TH translation -> rate <=1.05, no per-group atempo >1.2x, lag <=5s'
+note: >-
+  Residual lane from the E2E assessment
+  (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Most of cue-fit
+  already landed in evolved form: sentence groups, uniform global rate,
+  atempo <=1.4x, shared lag budget, silence strip. What remains: (a)
+  per-group rate spread — currently one global rate; allow mild
+  per-group variance inside a band so long groups aren't pinned by short
+  ones; (b) translation-length-aware fitting — TH runs ~1.4x the EN cue
+  window, so generate the TH text at *sentence-group* level (the v12
+  lesson: fragment-by-fragment MT guarantees choppy register) and/or
+  compress to fit; --dump-groups already emits the aligned table an LLM
+  pass can consume. Wire a Gemini pass on the group table with a local
+  fallback, replacing the hand-written --th-file step.
+help: 'renderer: scripts/ops/yt-vtt-dub.py (--sentences, --dump-groups,
+  --th-file, --lag-budget); translator: yt-vtt-translate.py (Gemini,
+  quota-limited — llama3.2 fallback was too weak, 4%)'
+spec: >-
+  Polish the residual cue-fit gaps. (1) Sentence-level TH translation:
+  yt-vtt-translate.py (or a new group-table pass) consumes
+  --dump-groups output and returns natural-register Thai aligned to
+  groups — one LLM call per group batch, cached like subs translations;
+  this replaces hand-written --th-file and shortens TH text toward the
+  EN window (target: remove most of the ~1.4x overflow). (2) Per-group
+  rate: replace the single global rate with a bounded per-group rate
+  (e.g. +-0.1 around global) so atempo rarely engages; keep the 1.4x
+  hard cap and shared lag budget. (3) Measure: report rate/atempo/lag
+  per render in a machine-readable line for yt-voice-dub-scenarios to
+  consume. Verify on 4njFdBF_42I + The Egg slices: natural rate, no
+  clipping, lag <=5s, and the TH audio sounds conversational (Tony
+  listen check at review).
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+  task: >-
+    Implement residual cue-fit per card spec: sentence-level TH
+    translation on the group table (cached, LLM with documented
+    fallback), bounded per-group rate, machine-readable fit metrics;
+    verify on the corpus slices.
+updated: '2026-10-06'
