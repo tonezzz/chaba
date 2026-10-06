@@ -177,11 +177,21 @@ tiers:
 
 distill_jobs:
   # Nightly bank→report promotion — scheduled like the bench timers.
-  # Renderer: scripts/ada/report-distill.py (to write) — deterministic
-  # rollup per domain, NOT an LLM synthesis in v1.
-  schedule: "nightly, after ada-scenario-* timers"
-  host: idc01
-  note: "candidate to move to idc02 with the other offload work"
+  # Renderer: scripts/ada/report-distill.py — deterministic rollup per
+  # domain, NOT an LLM synthesis in v1. Shipped 2026-10-06 (card
+  # report-distill-v1): <domain>-digest pages are kind:report with the
+  # full meta_contract incl. supersedes (previous-day digest is archived
+  # to <domain>-digest-YYYY-MM-DD, status: superseded); health is the
+  # template domain with the ada-* bank-delta section. Registry:
+  # ada-cms-automation/<domain>-digest (interval_min 1440, run_now
+  # honored) — cms-auto-health.py watches it.
+  schedule: "nightly 04:00, after the idc02 nightly chain"
+  host: idc02
+  job: ssot.jobs.yml -> report-distill (rendered systemd unit)
+  note: "runs on idc02 per the offload note — same 04:00 slot as the
+    hand-installed ada-pi prototype it supersedes; idc01's ada-scenario-*
+    timers are weekly so 'after scenario timers' is ordering, not a
+    nightly constraint"
 
 # Per-section contract (mirrors ssot.chaba.memory.yml sections.*):
 #   description — what the section is for (rendered as the section header note)

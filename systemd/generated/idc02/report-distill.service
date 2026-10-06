@@ -1,0 +1,8 @@
+[Unit]
+Description=Report distill (L1 bank -> L2 domain digests) (job:report-distill, rendered from ssot.jobs.yml — do not edit)
+OnFailure=ada-report-fail@%p.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/report-distill.py

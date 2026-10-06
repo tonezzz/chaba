@@ -7,7 +7,9 @@ Adds/aligns (never removes existing keys like use_count/last_used):
 
   bank          "cms"                                   (registry bank name)
   scope         "tony"                                  (cms bank is tony-instance)
-  kind          "page"                                  (fixes docs missing kind)
+  kind          "page"                                  (fixes docs missing kind —
+                                                         existing kind:report etc.
+                                                         is preserved)
   status        "active"                                (recall filters on this)
   source        api | voice | manual | import | extract (non-enum values move
                                                         to origin_source)
@@ -114,7 +116,7 @@ def normalized_meta(doc, today):
     want = {
         "bank": "cms",
         "scope": "tony",
-        "kind": "page",
+        "kind": first(meta, "kind") or "page",
         "status": first(meta, "status") or "active",
         "source": source if source in SOURCE_ENUM else "api",
         "written_by": first(meta, "written_by") or
