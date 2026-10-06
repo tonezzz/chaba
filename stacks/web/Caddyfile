@@ -354,7 +354,7 @@ http://127.0.0.1:8080 {
 		redir /apps/camwall/ 308
 	}
 	handle_path /apps/camwall/* {
-		reverse_proxy http://100.74.146.0:8380 http://100.123.163.11:8380 {
+		reverse_proxy http://100.102.134.91:8380 http://100.123.163.11:8380 {
 			lb_policy least_conn
 			lb_retries 2
 			fail_duration 15s
@@ -406,9 +406,9 @@ http://127.0.0.1:8080 {
 	# NotebookLM REST moved off the public edge 2026-09-25 — consumers use the
 	# tailnet address http://100.68.142.13:3011/v1 directly (API-key gated there).
 
-	# input-bridge relay moved to idc01 2026-09-25 (co-located with ada auth)
+	# input-bridge relay: idc01 -> idc03 2026-10-05 (idc01 migration)
 	handle_path /api/input-bridge/* {
-		reverse_proxy 100.74.146.0:3010
+		reverse_proxy 100.102.134.91:3010
 	}
 
 	handle /api/* {
