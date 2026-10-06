@@ -112,6 +112,24 @@ def write_meta(meta_path, *, node: str, layer: str, generated_by: str,
     return meta_path
 
 
+def generator_argv(gen: str) -> list[str] | None:
+    """Registry `generator` strings are human-readable recipes
+    ("scripts/x.py --flag via some.timer"); reduce to an argv or None
+    when the entry isn't a runnable command."""
+    cmd = (gen or "").split(" via ")[0].strip()
+    if not cmd or cmd.startswith(("planned", "multiple", "manual")) \
+            or "<" in cmd:
+        return None
+    parts = cmd.split()
+    if parts[0] in ("node", "python3", "bash", "/usr/bin/python3"):
+        return parts
+    if parts[0].endswith(".py"):
+        return ["/usr/bin/python3", *parts]
+    if parts[0].endswith(".sh"):
+        return ["/bin/bash", *parts]
+    return parts
+
+
 def load_meta(meta_path) -> dict:
     """Read a node's meta.yml; {} when absent/unreadable."""
     p = _resolve_repo_path(str(meta_path))

@@ -32,24 +32,6 @@ LOCK_DIR = Path("/tmp/report-nodes")
 DEFAULT_TIMEOUT = 600
 
 
-def generator_argv(gen: str) -> list[str] | None:
-    """Registry `generator` strings are human-readable recipes
-    ("scripts/x.py --flag via some.timer"); reduce to an argv or None
-    when the entry isn't a runnable command."""
-    cmd = (gen or "").split(" via ")[0].strip()
-    if not cmd or cmd.startswith(("planned", "multiple", "manual")) \
-            or "<" in cmd:
-        return None
-    parts = cmd.split()
-    if parts[0] in ("node", "python3", "bash", "/usr/bin/python3"):
-        return parts
-    if parts[0].endswith(".py"):
-        return ["/usr/bin/python3", *parts]
-    if parts[0].endswith(".sh"):
-        return ["/bin/bash", *parts]
-    return parts
-
-
 def run(node_id: str) -> int:
     reg = report.load_registry()
     node = next((n for n in reg.get("nodes") or []
@@ -58,7 +40,7 @@ def run(node_id: str) -> int:
         print(json.dumps({"node": node_id, "error": "unknown node"}))
         return 1
 
-    argv = generator_argv(node.get("generator"))
+    argv = report.generator_argv(node.get("generator"))
     if argv is None:
         print(json.dumps({"node": node_id, "skipped": "not runnable",
                           "generator": node.get("generator")}))
@@ -88,7 +70,8 @@ def run(node_id: str) -> int:
             import yaml
             p.write_text(yaml.safe_dump(meta, sort_keys=False,
                                         allow_unicode=True))
-            report.pending_clear(meta_path, meta.get("generated_at"))
+            if ok:  # failed runs keep pending — the request wasn't served
+                report.pending_clear(meta_path, meta.get("generated_at"))
         else:
             report.write_meta(
                 meta_path, node=node_id, layer=node.get("layer", "?"),
@@ -96,7 +79,8 @@ def run(node_id: str) -> int:
                 summary=(proc.stdout or "").strip().splitlines()[-1][:200]
                 if proc.stdout.strip() else "",
                 children=node.get("children"), inputs_at=inputs)
-            report.pending_clear(meta_path)
+            if ok:
+                report.pending_clear(meta_path)
     print(json.dumps({"node": node_id, "rc": proc.returncode,
                       "inputs_at": inputs,
                       "stderr_tail": (proc.stderr or "")[-400:]}))

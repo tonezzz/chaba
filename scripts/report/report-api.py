@@ -119,7 +119,7 @@ def _walk(root: str, depth: str, by: str) -> dict:
                                   reason="linked", depth=depth)
 
     order = sorted(target, key=lambda n: _depth_of(target, n, {}))
-    ran, passes = {}, 0
+    ran, attempted, passes = {}, set(), 0
     max_passes = len(target) + 2
     while passes < max_passes:
         passes += 1
@@ -131,15 +131,29 @@ def _walk(root: str, depth: str, by: str) -> dict:
             dirty, why = reportlib.node_dirty(node, reg)
             if not dirty:
                 continue
-            kids_dirty = any(
-                reportlib.node_dirty(target[c], reg)[0]
-                for c in node.get("children") or [] if c in target)
-            if kids_dirty:
+            # Blocking children: dirty AND runnable AND not yet tried.
+            # A failed or non-runnable child can't block — parents render
+            # last-known-good with the delta (design §6).
+            blocking = [
+                c for c in node.get("children") or [] if c in target
+                and c not in attempted
+                and reportlib.node_dirty(target[c], reg)[0]
+                and reportlib.generator_argv(target[c].get("generator"))]
+            if blocking:
                 continue
-            ran[nid] = _run_node(nid)
+            if reportlib.generator_argv(node.get("generator")) is None:
+                attempted.add(nid)  # non-runnable: satisfied by definition
+                ran[nid] = {"node": nid, "skipped": "not runnable"}
+            else:
+                ran[nid] = _run_node(nid)
+                attempted.add(nid)
             progressed = True
         if root in ran or not progressed:
             break
+    # root blocked by dead children — run it anyway with last-known inputs
+    if root not in ran and reportlib.generator_argv(
+            target[root].get("generator")):
+        ran[root] = _run_node(root)
     return {"root": root, "depth": depth, "passes": passes, "ran": ran}
 
 
