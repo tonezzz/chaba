@@ -1,0 +1,83 @@
+title: answers reach running dispatch sessions via answers.jsonl
+subtitle: >-
+  /respond on a card with action.status=='running' now appends the answer to
+  the live session's $TASK_DIR/answers.jsonl (local write or ssh to the
+  runner); task rails tell sessions to poll it before finishing
+icon: radio
+id: 2026-10-06-answers-reach-running-sessions
+status: done
+owner: devin-dispatch
+project: chaba
+card: board-answer-live-session
+branch: dispatch/20261006-101315-answers-reach-running-sessions
+started: "2026-10-06"
+completed: "2026-10-06"
+
+context:
+  user_request: >
+    /respond landed answers in card comms, but a dispatch session that
+    raised a board request and kept working never re-read the card — the
+    answer sat silent until the session ended. Spec: push the answer into
+    the running session's task dir and point the rails at it.
+  prior_attempt: >
+    First dispatched run (20261005-223028, session placid-thrush) wrote a
+    working implementation + live e2e but ran under 'smart' permission mode,
+    hit tool rejections, and only an auto-checkpoint survived — never
+    merged. This run cherry-picked that diff, refined it, extended it to
+    the surfaces it missed (runner-agent rails, devin-dispatch prompts,
+    ssot.kanban.yml), and re-verified.
+
+deliverables:
+  - >-
+    scripts/board/board-api.py — deliver_answer(): after /respond saves the
+    answer, action.status=='running' + action.task_id appends one JSON line
+    {at, card, from, request_id, answer} to
+    $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host — direct
+    write when runner==HOST/absent, `ssh <runner> 'test -d <dir> && cat >>
+    .../answers.jsonl'` for remote runners with REMOTE_DISPATCH_HOSTS
+    fallback. task_id and runner are regex-validated (ssh arg injection
+    guard); test -d so fallback hosts don't grow phantom task dirs.
+    Best-effort — returns a comms note, never raises.
+  - >-
+    scripts/board/kanban-dispatch.py — TASK_RAILS bullet: poll
+    $TASK_DIR/answers.jsonl for answers to raised requests (newest line
+    wins per request_id)
+  - >-
+    scripts/board/runner-agent.py — same bullet in the remote-runner RAILS
+    block
+  - >-
+    scripts/devin/devin-dispatch.sh — cmd_start + cmd_resume prompts gain
+    an answers.jsonl paragraph next to the needs-input.txt protocol
+  - >-
+    docs/ssot/kanban/ssot.kanban.yml — /respond endpoint + task_rails
+    contract updated
+
+verification:
+  selftest: "python3 scripts/board/board-api.py --selftest -> 'selftest ok'
+    (deliver_answer covered: queued no-op, local append, bad task_id,
+    missing dir, bad runner name)"
+  live_e2e: >-
+    ran the patched server on BOARD_API_PORT=18787 in this worktree against
+    a temp card {action.status: running, task_id: <this session's task id>,
+    runner: tony-omen}; POST /respond returned 'answer saved — answer
+    delivered to running session 20261006-101315-…' and the JSON line
+    appeared in the live session's
+    ~/.local/share/devin-dispatch/tasks/<tid>/answers.jsonl. Temp card
+    removed; test instance stopped.
+  prior_e2e: >-
+    same path verified 2026-10-05 by the first attempt — its answers.jsonl
+    line still sits in tasks/20261005-223028-…/answers.jsonl on tony-omen
+
+notes:
+  - >-
+    Deploys with board-api (runs from the chaba-tony-dell served checkout —
+    lands on its next pull/deploy, no separate step here).
+  - >-
+    Remote delivery rides BatchMode ssh like hide_dispatch_session; a down
+    runner degrades to a comms note 'session delivery failed (runner
+    unreachable)' — the answer stays on the card regardless.
+  - >-
+    ~/.local/bin/devin-dispatch on tony-omen is an older copy than
+    scripts/devin/devin-dispatch.sh (no repos.conf, no answers line in
+    prompts) — the installed binary needs a refresh for new dispatches to
+    carry the updated prompt.

@@ -10,6 +10,10 @@ chaba-tony-dell checkout (the web-served tree). For each queued card:
   2. devin-dispatch start <repo> "<task>"  -> action.task_id
   3. claims the card for this dispatch session, status -> running
 
+Answers to a running card's requests are pushed into the session task
+dir by board-api ($TASK_DIR/answers.jsonl); the rails below tell the
+session to poll it.
+
 For cards already 'running', polls `devin-dispatch status <task_id>`;
 when the unit finishes, marks action.status done, moves the card to
 review, writes a comms entry, and best-effort merges the session branch
@@ -148,6 +152,10 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
     curl -s -X POST {api}/request \\
       -H 'Content-Type: application/json' \\
       -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
+- If you raised a request and kept working, the answer may arrive while
+  you run: board-api appends it to $TASK_DIR/answers.jsonl (one JSON
+  object per line: {{"at","card","from","request_id","answer"}}). Check
+  that file before finishing; newest line wins per request_id.
 - If the card opts into the CI pipeline (a `pipeline: ci` field), run
   `python3 scripts/ci/card-pipeline.py {id} --api {api}` near the end —
   it audits your worktree diff and records benchmark before/after on the
