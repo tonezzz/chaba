@@ -186,16 +186,9 @@ write_path:
       pushed into the live session: appended to
       $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host (local
       write or ssh; best-effort, comms note either way —
-      board-answer-live-session) as a kind:\"answer\" line. Sessions are
-      told to poll that file."
+      board-answer-live-session). Sessions are told to poll that file."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
-      400 'text required' on empty/whitespace text. When
-      action.status=='running', comments from ada|tony are also pushed
-      into the live session's answers.jsonl as kind:\"comment\" lines —
-      card comms the session weighs as review input (Tony's notes, Ada's
-      [opinion]-tagged takes; report-loop-comment-delivery). devin|chaba
-      comments are never echoed back: a session must not get its own
-      progress posts, and chaba system notes are noise."
+      400 'text required' on empty/whitespace text"
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
       "raises a requests[] entry {id, ask, status: open, at, from, to?,
       options?, suggested?}; id is request_id or a slugged ask. 400 on
@@ -206,21 +199,6 @@ write_path:
       BOARD_NOTIFY_CHANNEL, default HA iPhone push -> /chaba-admin/board).
       The ONLY safe way for agents/Ada to add a request — direct card-YAML
       edits race the write flock (must hold /tmp/board-api.lock)."
-    "POST /card {id?, title, column?, note?, help?, text?, from?, spec?, report?, action?, queue?, brief?, priority?, tags?, program?, blocked_by?, on_exists?}":
-      "creates a card — including ARMED dispatch cards (report-session-loop
-      §1a). spec stored verbatim; absent + report (cms slug
-      ^[a-z0-9-]{1,80}) => spec composed from REPORT_SPAWN_TEMPLATE so
-      every spawn caller files an identical card. action {type:
-      dispatch|manual, repo?} — repo must be in the dispatch whitelist
-      (dispatch_repos.repos / repos.conf); unknown action keys are dropped
-      so a spawn can't pre-seed status/runner. queue:true sets
-      action.status=queued in the same locked write — no create+queue
-      race. priority ∈ high|medium|low; tags is a list. on_exists:
-      'error' (default — 400 on duplicate id) | 'queue': an existing card
-      already queued/running returns its status ('already active'),
-      otherwise re-arms it to queued + comms 're-spawned from report
-      page' — a second click on the report-page spawn button is safe.
-      Response carries id (+ status when armed)."
     "POST /action {id, do: claim, host}": "atomic first-wins claim under the
       write flock — for multi-host dispatchers. Sets action.runner."
     "POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}":
@@ -297,6 +275,13 @@ execution:
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
                works identically on every host incl. dell)"
+    runner_fleet: "as of 2026-10-07 — tony-dell: kanban-dispatch local cap 3
+               (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
+               +container); idc01: cap 2 labels always-on,cold-batch,high-mem;
+               idc02: cap 3 labels ssd,always-on; idc03: cap 2 labels
+               ssd,always-on; mn01: cap 1 labels low-mem,edge. Nest lanes:
+               micro-training cold batch -> idc01, bench cadence/corpus ->
+               idc02/idc03, GPU FT/LoRA -> omen (labels)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
                a runner unreachable via ssh for KANBAN_REQUEUE_MISSES
                consecutive passes (default 3 ≈ 6min) gets its card
@@ -311,10 +296,7 @@ execution:
                Answers arrive out-of-band: /respond appends to
                $TASK_DIR/answers.jsonl while the card is running — rails tell
                sessions to check it before finishing (newest line wins per
-               request_id). The same file carries kind:'comment' lines —
-               ada|tony card comms pushed live; sessions weigh them as
-               review input while request_id/answer lines (kind:'answer')
-               stay the authoritative answer channel."
+               request_id)."
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
            via the API; the API renders synchronously on every write"
   persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/
