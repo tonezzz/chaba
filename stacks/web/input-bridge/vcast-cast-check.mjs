@@ -37,7 +37,7 @@ function check(name, cond, detail = "") {
 }
 
 // --- stub ada auth: admin key -> admin user; minted keys -> screen-N ----
-const keyNames = { adm: "admin" };          // api_key -> ada key name
+const keyNames = { adm: "admin", "key-screen9": "screen-9" };
 let mintCounter = 0;
 const auth = http.createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -72,6 +72,13 @@ await new Promise((r) => auth.listen(AUTH_PORT, "127.0.0.1", r));
 
 const regFile = `/tmp/vcast-cast-registry-${process.pid}.json`;
 fs.rmSync(regFile, { force: true });
+// preseed a DRIFTED binding: name "screen-9" parked on slot 2 — the
+// migration-scramble state (registerDisplay used to take lowest-free and
+// never heal it). The register below must move it home to slot 9.
+fs.writeFileSync(regFile, JSON.stringify({ screens: {
+  "2": { name: "screen-9", label: "drifted",
+         assigned_at: "2026-10-01T00:00:00Z" },
+} }));
 const relay = spawn("node", [SERVER], {
   env: {
     ...process.env,
@@ -212,6 +219,21 @@ try {
     replay && replay.url === "https://x/last.m3u8",
     replay ? `url=${replay.url}` : `inbox=${JSON.stringify(inboxTypes(d2))}`);
   d2.terminate();
+
+  // --- slot pinning: screen-N names take slot N on ANY attach path ------
+  // the seeded "screen-9" entry sits on slot 2; a display registering with
+  // its key must re-home it to slot 9 (registerDisplay only ever took
+  // lowest-free before — that is how the 2026-10-06 migration scramble
+  // put screen-6 on slot 1 and stranded {real_screen} casts).
+  const d9 = display("checkdev-9", "key-screen9", "drifted-9");
+  const reg9 = await d9.waitFor("registered");
+  check("register re-homes drifted name to screen-N slot",
+    reg9.screen === 9, `screen=${reg9.screen}`);
+  const drifted = (await api("/displays")).screens
+    .find((s) => s.screen === 2);
+  check("old slot released", !drifted || drifted.name !== "screen-9",
+    drifted ? `slot2=${drifted.name}` : "slot2 empty");
+  d9.terminate();
 } finally {
   relay.kill();
   auth.close();

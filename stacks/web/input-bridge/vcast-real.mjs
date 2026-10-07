@@ -44,16 +44,23 @@ async function findPendingSid() {
 
 async function claim() {
   const deadline = Date.now() + CLAIM_WAIT_MS;
+  let forced = false;
   while (Date.now() < deadline) {
     const sid = await findPendingSid();
     if (sid) {
       const r = await fetch(`${API}/claim`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sid, name: NAME || LABEL, admin_key: ADMIN }),
+        body: JSON.stringify({
+          sid, name: NAME || LABEL, admin_key: ADMIN,
+          force: forced || undefined,
+        }),
       });
       const j = await r.json().catch(() => ({}));
       console.log("[claim]", JSON.stringify({ status: r.status, ...j }));
+      // 409 = a stale ada key still pins the screen-N name — revoke and
+      // re-mint once (same failure that parked vcast-headless on 409s)
+      if (r.status === 409 && !forced) { forced = true; continue; }
       return r.ok;
     }
     await sleep(2000);
@@ -87,8 +94,15 @@ async function run() {
       const url = `${PAGE}?label=${encodeURIComponent(LABEL)}`;
       console.log("[open]", url);
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+      const tClaim = Date.now();
       const ok = await claim();
-      console.log(ok ? "[ready] claimed" : "[warn] claim timed out — still holding page");
+      if (!ok) {
+        // don't hold a pending page forever — relaunch and re-claim
+        // (a 409 stale-key pin once parked the display silently)
+        console.log("[warn] claim timed out — relaunching");
+        continue;   // finally closes the browser; loop re-opens + re-claims
+      }
+      console.log(`[ready] claimed attach_ms=${Date.now() - tClaim}`);
       // stay attached until the page dies; any disconnect -> relaunch loop
       await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
       console.log("[down] page closed — relaunching in 5s");

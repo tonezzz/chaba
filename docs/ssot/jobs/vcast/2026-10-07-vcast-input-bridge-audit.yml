@@ -1,0 +1,166 @@
+title: vcast input-bridge audit — flap-check cadence + headless/real lease handoff
+subtitle: >
+  Dispatch audit of kanban card vcast-input-bridge. Found the lane was
+  broken three ways at once: the flap-check health script was never
+  merged (dead 15-min lane), both headless displays had been stuck on a
+  claim 409 since the idc01->idc03 move, and the whole screen registry
+  had drifted off the screen-N convention — {real_screen} casts were
+  stranded.
+icon: monitor
+
+planning:
+  goal: Audit vcast-flap-check cadence + headless<->real lease handoff;
+    metric 0 flap events/24h, headless attach <5s; verify
+    cast_recast_stale_lease + cast_switch_flow scenarios pass.
+  scope: >
+    stacks/web/input-bridge/ (server.mjs, vcast-headless.mjs,
+    vcast-real.mjs, vcast-flap-check.mjs, vcast-cast-check.mjs,
+    vcast-headless@.service); the kanban-sync vcast lane on tony-dell;
+    live fleet on idc03 (relay, headless@2/@4) + idc02 (vcast-real@6/@7).
+  owner: devin (dispatch, runner tony-omen)
+
+processing:
+  status: done
+  started_at: "2026-10-07 20:45 +07"
+  steps:
+    - id: 1
+      label: flap-check cadence audit — DEAD LANE FOUND
+      status: done
+      notes: >
+        Intended cadence: vcast-auto-health.py inside the 15-min
+        kanban-sync tick on tony-dell (card vcast-health-loop, marked
+        done 2026-10-05). Reality: the dispatch session wrote the script
+        in its worktree, the session ended with "1 commit not in
+        origin/master", the card was closed anyway, and the weekly
+        dispatch-worktree prune deleted the only copy.
+        scripts/ada/vcast-auto-health.py has never existed on master —
+        every kanban-sync tick since then logs "vcast-auto-health failed
+        (non-fatal)". Additionally kanban-sync itself has been failing
+        since at least 20:15 today: its detached worktree diverged
+        (local auto-commit + remote moved) and `git merge --ff-only`
+        fails on EVERY tick — a permanent wedge, not a transient.
+        Net cadence: zero. Recreated the script (8 lanes, see changes)
+        and patched kanban-sync.sh to rebase-and-continue on ff-pull
+        failure.
+    - id: 2
+      label: headless<->real lease handoff audit — HANDOFF BROKEN
+      status: done
+      notes: >
+        Live state on idc03: vcast-headless@2 and @4 "active running"
+        since Oct 05 21:21 but absent from /displays AND /displays
+        pending — dead. Journal: register -> pending -> POST /claim ->
+        409 "name screen-2 already issued" -> nothing, forever. The
+        pre-migration ada keys still pinned the names; the client had no
+        retry, no force, and no persisted api_key, so every restart
+        needed a fresh claim and every claim 409'd. Pending slot TTL'd
+        out after 5 min, making the failure invisible — "running" per
+        systemd, dead per relay. Same trap armed in vcast-real.mjs
+        (claim timeout held a dead pending page forever instead of
+        relaunching).
+    - id: 3
+      label: registry slot drift — convention violated live
+      status: done
+      notes: >
+        /displays on idc03: slot1=name screen-6 (vcast-real-6),
+        slot2=name screen-5 (Browser), slot3=name screen-7
+        (vcast-real-7), slot4=name screen-1 (iPad, offline). Mechanism:
+        the explicit-screen-N honor lived only in POST /claim; the
+        api_key re-register path (registerDisplay -> allocScreen) always
+        took lowest-free. After the migration's fresh registry, every
+        display re-attached in arrival order and scrambled the
+        numbering. cast_switch_flow's {real_screen}=6 no longer exists;
+        cast_recast_stale_lease's "screen 4" is the offline iPad — both
+        scenarios cannot pass against this state.
+    - id: 4
+      label: fixes + checks
+      status: done
+      notes: >
+        server.mjs allocScreen now honors screen-N on every attach path
+        (fresh alloc AND re-homes a drifted existing entry when its
+        wanted slot is free, carrying the live ws binding along).
+        vcast-headless.mjs: VCAST_KEY_FILE persists the minted key
+        (reattach = one ada auth hop, no /claim); 409 -> one force
+        claim (revoke+re-mint the stale key); other failures retry on a
+        30s-capped backoff forever; attach_ms logged per connect.
+        vcast-real.mjs: same 409->force retry; claim timeout now
+        relaunches instead of holding a dead page. New repo check
+        vcast-handoff-check.mjs drives the REAL headless client through
+        the exact incident (stale pin -> force -> registered, SIGKILL,
+        reattach via persisted key). Results: flap-check 7/7 PASS,
+        cast-check 17/17 PASS (incl. new slot-pinning assertions),
+        handoff-check 6/6 PASS (attach 570ms cold / 259ms warm).
+  decisions:
+    - label: Fix the handoff client-side (force + persisted key), not server-side
+      rationale: >
+        The relay already supports force:true on /claim (revoke+recreate)
+        — the missing piece was that no client used it. Persisting the
+        api_key removes the claim hop from every restart, which is what
+        actually meets attach <5s deterministically.
+      alternatives_considered: >
+        Server auto-force on 409 for tailnet callers (works, but hides
+        key churn in ada and doesn't help attach latency); persist keys
+        server-side in registry (keys are display secrets — keeping them
+        off the relay preserves the current trust boundary).
+    - label: Re-home drifted entries inside allocScreen instead of a repair script
+      rationale: >
+        Self-healing on the next natural re-register beats a one-shot
+        fixer: the convention holds across future migrations/registry
+        wipes for free. Move is conservative — only when the wanted
+        slot is free; an occupied slot leaves the display where it is.
+      alternatives_considered: >
+        Manual registry edit on idc03 (fixes today, rots tomorrow);
+        eviction of the occupant (too aggressive — could flap two live
+        displays).
+    - label: flap telemetry emitted by the relay, counted by the health lane
+      rationale: >
+        "0 flap events/24h" was unmeasurable — the relay logged nothing.
+        Now logs '[vcast] screen N superseded by new socket' (the flap
+        event) and 'screen N disconnected'; the vcast-auto flap lane
+        counts them in journald.
+      alternatives_considered: >
+        Run vcast-flap-check.mjs on a schedule as the flap signal —
+        it's a synthetic check, not the live metric; kept as a separate
+        regression lane anyway.
+
+followup:
+  verification:
+    - "cd stacks/web/input-bridge && node vcast-flap-check.mjs -> 7/7 PASS"
+    - "node vcast-cast-check.mjs -> 17/17 PASS (incl. drift re-home)"
+    - "node vcast-handoff-check.mjs -> 6/6 PASS (409->force, reattach 259ms)"
+    - "post-merge: kanban-sync tick on tony-dell runs vcast-auto-health.py clean"
+    - "post-deploy: ssh idc03 journalctl --user -u vcast-headless@2 -> [registered] attach_ms <5000"
+    - "post-remediation: scenario-live.py cast_recast_stale_lease.yaml + cast_switch_flow.yaml -> pass"
+  needs_approval:
+    - "Deploy stacks/web/input-bridge/server.mjs + vcast-headless.mjs to idc03 ~/apps/input-bridge/; restart input-bridge.service + vcast-headless@2 + @4 (units also need the updated vcast-headless@.service for /state mount + VCAST_KEY_FILE)"
+    - "Deploy vcast-real.mjs to idc02 ~/apps/vcast-real/; restart vcast-real@6 + @7"
+    - "One-time heal of the wedged kanban-sync worktree on tony-dell: cd ~/CascadeProjects/chaba-kanban-sync && git fetch origin && git rebase origin/master (or reset --hard — only generated card commits at stake)"
+    - "Registry drift self-heals as each display re-registers once patched server.mjs is live (iPad/screen-1 -> slot 1, screen-5 -> 5, screen-6 -> 6, screen-7 -> 7); stale ada keys screen-2/screen-4 get force-claimed away by the patched headless on first boot — no manual /release needed"
+    - "THEN run cast_recast_stale_lease + cast_switch_flow — they cannot pass while screen 6 doesn't exist and screen 4 is the offline iPad"
+  deferred:
+    - "screens 5/'Browser' and 1/'iPad' labels: real-device registry — confirm which physical device 'screen-5' is before assuming the convention map"
+    - "registerDisplay is async — two concurrent registers for the same name can still interleave (pre-existing, low odds; a per-name mutex would close it)"
+
+report:
+  status: done
+  completed_at: "2026-10-07 21:30 +07"
+  summary: >
+    Audit found the input-bridge test lane broken in three independent
+    places and fixed all of them in-repo. (1) flap-check cadence was
+    zero: vcast-auto-health.py was lost to an unmerged dispatch-branch
+    prune — recreated with 8 lanes (relay, displays fleet+drift, flap
+    journald count, flap-check on the DEPLOYED relay via podman, stale
+    capture/camwall leases, audit-cast, cast-browser-proxy, yt-live-api);
+    kanban-sync.sh now rebases its generated commits when a raced push
+    wedges ff-pull. (2) The headless<->real lease handoff dead-ended on
+    claim 409 — headless@2/@4 were dead on idc03 since Oct 05 while
+    systemd showed them running; both clients now force-claim once on
+    409, headless persists its api_key (VCAST_KEY_FILE) and retries
+    forever on a 30s cap, vcast-real relaunches on claim timeout.
+    (3) allocScreen pinned screen-N only in /claim — re-registers
+    scrambled every slot on migration day; now all paths honor and
+    re-home screen-N. Metric evidence: handoff-check attach 570ms
+    cold-claim / 259ms warm reattach (budget 5s); flap events are now
+    greppable in the relay journal. Live remediation (deploy + unit
+    restarts + kanban-sync worktree heal) listed under needs_approval —
+    the two verify scenarios can't pass until the fleet is back on its
+    numbered slots.
