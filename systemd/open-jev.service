@@ -1,0 +1,15 @@
+[Unit]
+Description=open-jev — local /v1/systemone decision service (gemma-3-4b-it)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/tony/CascadeProjects/open-jev
+ExecStart=/home/tony/.local/bin/uv run openjev serve --backend torch --device cpu --host 100.75.102.88 --port 8777 --model models/gemma-3-4b-it
+Restart=always
+RestartSec=10
+# Model load ~80s on CPU; kill_grace for clean shutdown
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target
