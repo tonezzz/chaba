@@ -37,7 +37,7 @@ action:
     pitch-offset voice families for >2 speakers, host-handoff doc; verify end-to-end on the corpus.'
   runner: tony-dell
   task_id: 20261007-203823-upgrade-speaker-casting-to-dia
-updated: 2026-10-07 20:38
+updated: 2026-10-07 20:47
 comms:
 - at: 2026-10-07 20:27
   from: tony
@@ -45,6 +45,11 @@ comms:
 - at: 2026-10-07 20:38
   from: chaba
   text: dispatched 20261007-203823-upgrade-speaker-casting-to-dia on chaba
+- at: 2026-10-07 20:47
+  from: devin
+  text: 'picked up. Plan: --diarize-file (RTTM+start-end-SPEAKER txt, <0.3s filter) -> cast-times via voice_at();
+    --cast-voices voice@pitchHz families for >2 speakers; --anchors transcript-anchor naming -> --names-map JSON;
+    yt-diarize.py on tony-omen + remote handoff script to mn01 corpus. Verify: full U_io render zero hand-labels.'
 claim:
   session: 20261007-203823-upgrade-speaker-casting-to-dia
   since: 2026-10-07 20:38

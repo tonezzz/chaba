@@ -30,12 +30,11 @@ spec: 'Add a caption QC gate to yt-vtt-dub.py. (1) A --qc pass that scores every
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: running
   task: 'Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc scoring pass, quarantine-before-TTS
     gate, QC report artifact, seeded TH fix-map watch-list; verify on the media-corpus slices.'
-  runner: mn01
-  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
-updated: 2026-10-07 20:33
+  runner: tony-omen
+updated: 2026-10-07 20:51
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -46,3 +45,16 @@ comms:
 - at: 2026-10-07 20:33
   from: mn01
   text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 20:40
+  from: tony
+  text: retry requested
+- at: 2026-10-07 20:45
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 20:45
+  from: chaba
+  text: started devin-task-20261007-204538-add-a-caption-qc-gate-to-yt-vt on tony-omen (dispatch)
+- at: 2026-10-07 20:51
+  from: devin
+  text: started on tony-omen — QC gate design settled (score post-dedup cues pre-TTS, flag->skip synth keep burn,
+    report at <out>.qc.json). Corpus pulled from mn01; subs/th-file artifacts located on tony-dell.

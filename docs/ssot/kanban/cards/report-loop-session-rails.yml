@@ -3,10 +3,10 @@ title: 'Report loop: report-linked dispatch rails + cms-report-note.py helper + 
 brief: 'Part 3 of the report→session loop (umbrella: report-session-loop). When a card carries report:<slug>, its
   dispatched session gets extra rails: read the report first, mirror progress into the report''s session-log, leave
   it updated. Queued when Tony presses Start.'
-column: doing
+column: done
 priority: high
 program: ada-tools
-updated: 2026-10-07 20:15
+updated: 2026-10-07 20:44
 tags:
 - report-session-loop
 - kanban
@@ -30,9 +30,12 @@ spec: "Design: docs/design/report-session-loop.md §2 (contract). Repo: chaba.\n
   \ a queued card with report: dev-kanban produces a prompt containing the report rails (grep the task build)."
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  result: 'exit=0 d `5796d3a0` on `dispatch/20261007-201520-design-docs-design-report-sess` (not pushed). | devin-task-20261007-201520-design-docs-design-report-sess.service:
+    Consumed 3min 49.484s CPU time over 27min 3.696s wall clock time, 1.9G memory peak.'
+  verified: true
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -49,3 +52,22 @@ comms:
 - at: 2026-10-07 20:15
   from: devin
   text: session started — reading design doc §2 and related scripts
+- at: 2026-10-07 20:41
+  from: devin
+  text: 'done: cms-report-note.py (read/note, session-log block + meta merge + index regen), REPORT_RAILS in kanban-dispatch
+    build_task, 📄 badge in render-board, tests 12/12 green; live-verified --read and --note on dev-kanban. Job trail:
+    docs/ssot/jobs/kanban/2026-10-07-report-loop-session-rails.yml'
+- at: 2026-10-07 20:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 d `5796d3a0` on `dispatch/20261007-201520-design-docs-design-report-sess` (not pushed).
+    | devin-task-20261007-201'
+- at: 2026-10-07 20:43
+  from: chaba
+  text: pushed dispatch/20261007-201520-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:43
+  from: chaba
+  text: auto-merged 01e65aaa (dispatch/20261007-201520-design-docs-design-report-sess) → origin/master
+- at: 2026-10-07 20:44
+  from: tony
+  text: closed by Tony
+claim: {}

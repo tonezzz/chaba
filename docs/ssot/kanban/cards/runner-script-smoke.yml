@@ -1,0 +1,36 @@
+id: runner-script-smoke
+title: runner script-type smoke (idc01)
+column: done
+priority: low
+created: '2026-10-07'
+updated: 2026-10-07 20:48
+brief: 'E2E: script executor syncs chaba and runs a repo command on idc01.'
+action:
+  type: script
+  status: done
+  host: idc01
+  script:
+    repo: chaba
+    cmd: git log --oneline -1 && hostname && python3 --version
+  runner: idc01
+  result: 'exit=0 Started runner-runner-script-smoke-1791380473.service - runner runner-script-smoke. | c7e561b
+    board: live card updates (2026-10-07 20:38) | Python 3.12.3'
+spec: smoke test
+comms:
+- at: 2026-10-07 20:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 20:41
+  from: idc01
+  text: claimed
+- at: 2026-10-07 20:41
+  from: chaba
+  text: started runner-runner-script-smoke-1791380473 on idc01 (script)
+- at: 2026-10-07 20:43
+  from: idc01
+  text: 'finished (ok): exit=0 Started runner-runner-script-smoke-1791380473.service - runner runner-script-smoke.
+    | c7e561b board: live card up'
+- at: 2026-10-07 20:48
+  from: tony
+  text: closed by Tony
+claim: {}

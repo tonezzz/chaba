@@ -17,12 +17,11 @@ spec: 'stacks/web/input-bridge/: audit vcast-flap-check cadence and the headless
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: running
   task: Audit input-bridge flap-check cadence + headless/real lease handoff per card spec; cast_recast_stale_lease
     + cast_switch_flow scenarios green.
-  runner: mn01
-  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
-updated: 2026-10-07 20:33
+  runner: tony-omen
+updated: 2026-10-07 20:45
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -33,3 +32,15 @@ comms:
 - at: 2026-10-07 20:33
   from: mn01
   text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 20:40
+  from: tony
+  text: retry requested
+- at: 2026-10-07 20:43
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 20:43
+  from: chaba
+  text: started devin-task-20261007-204337-stacks-web-input-bridge-audit- on tony-omen (dispatch)
+- at: 2026-10-07 20:45
+  from: devin
+  text: 'dispatch picked up: auditing flap-check cadence + headless/real lease handoff'

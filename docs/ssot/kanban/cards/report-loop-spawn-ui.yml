@@ -3,10 +3,10 @@ title: 'Report loop: "Start Devin session" button on CMS pages + /api/cms/spawn 
 brief: 'Part 2 of the report→session loop (umbrella: report-session-loop). Adds the visible affordance: a button
   on Ada''s CMS report pages that files an armed kanban card — same effect as asking Ada to dispatch a session.
   Queued when Tony presses Start.'
-column: doing
+column: done
 priority: high
 program: ada-tools
-updated: 2026-10-07 20:33
+updated: 2026-10-07 20:47
 tags:
 - report-session-loop
 - cms
@@ -31,9 +31,12 @@ spec: "Design: docs/design/report-session-loop.md §1b (contract). Repo: ada-pi.
   \ — do NOT deploy, leave a needs-input/done note)."
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: tony-omen
+  result: 'exit=0  on `dispatch/20261007-203220-design-docs-design-report-sess`. Not pushed, not deployed. | devin-task-20261007-203220-design-docs-design-report-sess.service:
+    Consumed 1min 45.415s CPU time over 12min 17.092s wall clock time, 1G memory peak.'
+  verified: true
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -50,3 +53,22 @@ comms:
 - at: 2026-10-07 20:33
   from: devin
   text: started — reading cms viewer, pwa_server auth, board-write helper to ground the §1b contract
+- at: 2026-10-07 20:43
+  from: devin
+  text: 'implemented §1b: board_client shared path + dispatch key capability + POST /api/cms/spawn + ▶ Devin session
+    button. 44 tests green. Deep-link fix for §1a: viewer routes pages by hash — /cms/#/<slug>, NOT ?page=. Deploy
+    order: spawn-api (board-api fields) must land first or /card files a bare unarmed card.'
+- at: 2026-10-07 20:45
+  from: tony-omen
+  text: 'finished (ok): exit=0  on `dispatch/20261007-203220-design-docs-design-report-sess`. Not pushed, not deployed.
+    | devin-task-20261007-20'
+- at: 2026-10-07 20:45
+  from: chaba
+  text: pushed dispatch/20261007-203220-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:45
+  from: chaba
+  text: auto-merged 30f5dac4 (dispatch/20261007-203220-design-docs-design-report-sess) → origin/main
+- at: 2026-10-07 20:47
+  from: tony
+  text: closed by Tony
+claim: {}
