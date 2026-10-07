@@ -1,0 +1,67 @@
+id: dispatch-auto-merge
+title: kanban-dispatch auto-merge — verified dispatch work lands without human merge
+column: review
+priority: high
+created: 2026-10-07
+updated: 2026-10-07 18:23
+brief: 'Dispatch sessions keep finishing real work but never merging it — 4 cards were rescued in one evening (ada-pi
+  ×3, chaba ×1; one existed only on tony-omen, never pushed). The merge-guard correctly blocks review→done, but
+  nobody merges. Expected action: none — dispatch will build this; afterward review cards should close themselves.'
+note: 'Pattern observed 2026-10-07: ada-remember-confirm-flake (7 uncommitted files), speaker-profile-tool (12 files),
+  yt-voice-dub-mode (1 commit unpushed), google-token-loud-fail (committed on tony-omen, never fetched/pushed).
+  Each needed a human to find the branch, commit, test, merge, push, close. The dispatch-merge-guard catches the
+  symptom (blocks close); this card fixes the cause.'
+links:
+- docs/ssot/kanban/cards/dispatch-merge-guard.yml
+- docs/ssot/kanban/cards/dispatch-cleanup-unmerged-guard.yml
+spec: "Add a merge step to the dispatch lifecycle (kanban-dispatch.py /\nrunner-agent close-out):\n\n1. On session\
+  \ end: commit any remaining worktree changes as a\n   checkpoint commit (sessions already do this partially —\
+  \ enforce it).\n2. Push the dispatch branch to origin (always — google-token-loud-fail\n   stranded on tony-omen\
+  \ because nothing pushed).\n3. Attempt merge to origin/<default_branch> via the repo's safe-pull\n   conventions:\n\
+  \     - clean → merge --no-ff, push, post comms \"auto-merged <sha>\"\n     - conflict → post comms with conflict\
+  \ list, keep card in review\n       for human resolution (correct outcome — not everything merges)\n4. Preconditions\
+  \ before auto-merge: session reported done/ok AND the\n   card's expected_goals (when declared) pass in the worktree\
+  \ — reuse\n   scripts/lib/goals.py executor from expected-goals-verify.\n5. Only for cards whose dispatch actually\
+  \ produced commits; docs-only\n   or no-op runs skip silently.\n6. Keep the dirty-worktree warning but make it\
+  \ actionable in the same\n   pass (auto-commit outcome docs + job records as the checkpoint)."
+expected_goals:
+- id: auto-merge-path
+  check: grep -q 'auto.merge\|auto_merge' scripts/board/kanban-dispatch.py scripts/board/runner-agent.py
+  expect: exit
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0 d can''t self-merge (bootstrap). Both noted in the job record. | devin-task-20261007-181146-add-a-merge-step-to-the-dispat.service:
+    Consumed 1min 37.753s CPU time over 10min 51.685s wall clock time, 1.1G memory peak, 438.1M memory swap peak.'
+comms:
+- at: 2026-10-07 18:11
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 18:11
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 18:11
+  from: chaba
+  text: started devin-task-20261007-181146-add-a-merge-step-to-the-dispat on tony-omen (dispatch)
+- at: 2026-10-07 18:12
+  from: devin
+  text: Session started — exploring kanban-dispatch.py / runner-agent close-out before implementing merge step
+- at: 2026-10-07 18:21
+  from: devin
+  text: 'close_out pipeline implemented in dispatch_repos.py (checkpoint→push→goals gate→--no-ff merge w/ safe-pull
+    conflict policy); wired into kanban-dispatch phase B + runner-agent finish (verified flag rides finish body
+    via new board-api field). 8/8 e2e tests pass in tests/board/test_dispatch_close_out.py. FYI: the card’s expected_goals
+    entry is malformed for goals.py — check needs a kind prefix, e.g. `command grep -qE "auto.merge|auto_merge"
+    scripts/board/*.py`; bare `grep …` + a separate `expect:` '
+- at: 2026-10-07 18:22
+  from: devin
+  text: 'Done — commit 0585cf0c on dispatch/20261007-181146 (not pushed per session rails). Pipeline: dispatch_repos.close_out
+    = checkpoint→always-push→goals gate→merge --no-ff→push; conflicts post path list + stay in review; no-ops silent.
+    Wired into kanban-dispatch phase B and runner-agent finish (verified flag via do=finish). 8/8 e2e tests + docs
+    + job record in-tree. Deployment note: ~/.local/bin/runner-agent on remote hosts is a manual copy — re-copy
+    after merge or remote cards just report a skip. T'
+- at: 2026-10-07 18:23
+  from: tony-omen
+  text: 'finished (ok): exit=0 d can''t self-merge (bootstrap). Both noted in the job record. | devin-task-20261007-181146-add-a-merge-step-to-th'
+claim: {}
