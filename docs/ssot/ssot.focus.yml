@@ -50,32 +50,29 @@ sections:
   layout: list
   items:
   - label: Jev student v5 deploy + optional 4b fine-tune
-    text:
-      Trained jev-student v5 (distilbert-multilingual) on merged live+mined+reviewed
-      corpus with targeted Thai/embedded-affirmation augmentation — 100% on the
-      32-case failure set at the 0.75 gate, 13/13 golden, thr 0.70. Checkpoint at
-      tony-omen jev-student/ckpt-v2-20261002. Benchmark + job record in
-      docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml. MiniLM-45MB and
-      gemma-1b attention-head candidates trained but inferior. ckpt-v2 deployed
-      2026-10-04; production jev-student.service now runs on idc03:8778.
+    text: Trained jev-student v5 (distilbert-multilingual) on merged live+mined+reviewed corpus with targeted Thai/embedded-affirmation
+      augmentation — 100% on the 32-case failure set at the 0.75 gate, 13/13 golden, thr 0.70. Checkpoint at tony-omen jev-student/ckpt-v2-20261002.
+      Benchmark + job record in docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml. MiniLM-45MB and gemma-1b attention-head
+      candidates trained but inferior. ckpt-v2 deployed 2026-10-04; production jev-student.service now runs on idc03:8778.
     branch: chaba
     status: active
-    started: "2026-10-03"
+    started: '2026-10-03'
     priority: medium
     tags:
-      - jev
-      - ada
-      - ml
-      - deploy-pending
+    - jev
+    - ada
+    - ml
+    - deploy-pending
     subtasks:
-      - label: Deploy ckpt-v2-20261002 to the JEV host (serve-jev-student.py THR=0.70, restart jev-student.service — was idc01, production now on idc03) — needs Tony approval
-        status: completed
-        completed: "2026-10-04"
-      - label: Optional — gemma-3-4b QLoRA via Colab PAYG/Enterprise A100 (~$3-5/run) if a calibrated 4b Jev is wanted
-        status: pending
-      - label: Wire scripts/jev/{merge,augment}-corpus.py into the weekly jev-retrain.sh so live corpus keeps flowing
-        status: completed
-        completed: "2026-10-04"
+    - label: Deploy ckpt-v2-20261002 to the JEV host (serve-jev-student.py THR=0.70, restart jev-student.service — was idc01,
+        production now on idc03) — needs Tony approval
+      status: completed
+      completed: '2026-10-04'
+    - label: Optional — gemma-3-4b QLoRA via Colab PAYG/Enterprise A100 (~$3-5/run) if a calibrated 4b Jev is wanted
+      status: pending
+    - label: Wire scripts/jev/{merge,augment}-corpus.py into the weekly jev-retrain.sh so live corpus keeps flowing
+      status: completed
+      completed: '2026-10-04'
   note: 17 completed items archived to ssot.focus.backlog.archive.2026.yml
   archive_count: 17
 - title: Quick Wins
@@ -117,16 +114,13 @@ sections:
   layout: timeline
   items:
   - label: Jev retrain + 4-candidate benchmark (2026-10-02/03)
-    text: Merged live+mined+reviewed jev corpora (1,767 rows), added targeted
-      augmentation for Thai/embedded affirmations (3,057 train rows). Retrained
-      distilbert student to v5 — 100% on the 32-case failure set vs 62.5% for the
-      deployed model; also trained MiniLM-45MB (71.9%) and a torch gemma-1b
-      attention head (81.3%, MLX path ported to CUDA on the 1650).
+    text: Merged live+mined+reviewed jev corpora (1,767 rows), added targeted augmentation for Thai/embedded affirmations
+      (3,057 train rows). Retrained distilbert student to v5 — 100% on the 32-case failure set vs 62.5% for the deployed model;
+      also trained MiniLM-45MB (71.9%) and a torch gemma-1b attention head (81.3%, MLX path ported to CUDA on the 1650).
     date: '2026-10-03'
     duration: 2 sessions
-    outcome: 'v5 student deployable pending approval (thr 0.70); artifacts on
-      tony-omen; job record docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml;
-      follow-ups in backlog'
+    outcome: v5 student deployable pending approval (thr 0.70); artifacts on tony-omen; job record docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml;
+      follow-ups in backlog
     tags:
     - jev
     - ada
@@ -853,6 +847,18 @@ sections:
     - barrier
     - home-assistant
     - mcp
+    - completed
+  - label: 'Fix CI: tonezzz/chaba / CMS audit'
+    text: 'GitHub Actions run failed. workflow=CMS audit branch=master sha-title=''chore(ci): gh-runs-watch failure alerts''
+      url=https://github.com/tonezzz/chaba/actions/runs/36797537465 Detected 2026-10-01T00:56:36Z by gh-runs-watch. Resolved
+      2026-10-07: translate-probe-de residue page deleted from MDDB + snapshot regenerated (f6b84df4); audit green.'
+    date: '2026-10-07'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ci
+    - github-actions
+    - chaba
     - completed
   note: 30 recent records. Oldest records archived to docs/ssot/ssot.focus.history.archive.2026.yml.
   archive_count: 10

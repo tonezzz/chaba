@@ -1,39 +1,48 @@
 id: idc03-vault-checkout-drift
-title: 'idc03 chaba-vault checkout 4217 commits behind origin + dirty'
+title: idc03 chaba-vault checkout 4217 commits behind origin + dirty
 column: backlog
 priority: medium
-note: 'idc03 runs ada-memory services (sync, staleness, gap-report,
-  memory-standard) from ~/CascadeProjects/chaba-vault — a checkout of the
-  main chaba repo that is 4217 commits behind origin/master, 1 ahead, and
-  has uncommitted local mods (memory-distill, gap-report, health-check,
-  staleness-sweep, recall-drift-report). Root cause of the 2026-10-07
-  ada-memory-sync failure: the checkout still had stale mddb IP
-  100.74.146.0 while origin fixed it in bf67fff1. Surgically patched
-  scripts/ada/sync-ada-memory-to-mddb.py from origin/master; the other 40
-  stale-IP files and the drift itself remain. Production services run
-  from this tree — a blind pull risks breaking them.'
-spec: 'Decide the durable model: (a) full convergence — snapshot local
-  mods, review the 5 dirty files vs origin, pull to master, re-run
-  ada-memory services to verify; (b) freeze vault as a pinned deployment
-  with an explicit update procedure. Either way: sweep remaining
-  100.74.146.0 literals in live scripts (sync-docs-to-mddb, chaba-ask,
-  recall-canary, memory-gap-report, memory-staleness-sweep, reindex.py,
-  obsidian server.py), preferring hostname idc03 over IP literals. Separate
-  open item from same session: ada-memory-sync reported 5 vault-vs-voice
-  CONFLICTs (extract docs written remotely by conversation_memory, vault
-  differs) — needs --take-remote/--take-vault/manual merge decision;
-  service exits 1 on conflicts by design.'
+note: 'idc03 runs ada-memory services (sync, staleness, gap-report, memory-standard) from ~/CascadeProjects/chaba-vault
+  — a checkout of the main chaba repo that is 4217 commits behind origin/master, 1 ahead, and has uncommitted local
+  mods (memory-distill, gap-report, health-check, staleness-sweep, recall-drift-report). Root cause of the 2026-10-07
+  ada-memory-sync failure: the checkout still had stale mddb IP 100.74.146.0 while origin fixed it in bf67fff1.
+  Surgically patched scripts/ada/sync-ada-memory-to-mddb.py from origin/master; the other 40 stale-IP files and
+  the drift itself remain. Production services run from this tree — a blind pull risks breaking them.'
+spec: 'SAFETY: this checkout is LIVE — production user services run from it and the tree is dirty. Snapshot before
+  any pull (git stash push -m or commit to a wip branch); NEVER reset --hard / checkout -f. Work: (a) review the
+  5 dirty files vs origin (memory-distill, gap-report, health-check, staleness-sweep, recall-drift-report) — decide
+  per-file keep-local vs take-origin, record reasoning in comms; (b) pull to origin/master (ff or merge, preserving
+  local mods); (c) sweep remaining 100.74.146.0 literals under scripts/ and apps/ — prefer hostname idc03; (d) re-run
+  ada-memory-sync.service and one memory-* service to verify no regression; (e) report convergence state + any leftovers.
+  The 5 vault-vs-voice conflicts are already resolved (take-vault 2026-10-07). If the dirty files reveal unmerged
+  local work that looks intentional, stop and report rather than discard.'
+action:
+  type: dispatch
+  status: running
+  runner: tony-dell
+  task_id: 20261007-171350-safety-this-checkout-is-live-p
 expected_goals:
-  - id: vault-current
-    check: "ssh idc03 'cd ~/CascadeProjects/chaba-vault && git fetch origin --quiet && test \"$(git rev-list --count HEAD..origin/master)\" -lt 100' expect exit"
-  - id: no-stale-ip-scripts
-    check: "ssh idc03 'test \"$(grep -rl 100.74.146.0 ~/CascadeProjects/chaba-vault/scripts/ ~/CascadeProjects/chaba-vault/apps/ | wc -l)\" = 0' expect exit"
-  - id: memory-sync-runs
-    check: "ssh idc03 'systemctl --user start ada-memory-sync.service' expect exit"
+- id: vault-current
+  check: ssh idc03 'cd ~/CascadeProjects/chaba-vault && git fetch origin --quiet && test "$(git rev-list --count
+    HEAD..origin/master)" -lt 100' expect exit
+- id: no-stale-ip-scripts
+  check: ssh idc03 'test "$(grep -rl 100.74.146.0 ~/CascadeProjects/chaba-vault/scripts/ ~/CascadeProjects/chaba-vault/apps/
+    | wc -l)" = 0' expect exit
+- id: memory-sync-runs
+  check: ssh idc03 'systemctl --user start ada-memory-sync.service' expect exit
 comms:
 - at: 2026-10-07 16:55
   from: devin
-  text: 'Found during idc03 service triage. Surgical fix applied for the
-    immediate outage (sync script updated from origin); full convergence
-    needs care because services run from this checkout and the tree is
-    dirty.'
+  text: Found during idc03 service triage. Surgical fix applied for the immediate outage (sync script updated from
+    origin); full convergence needs care because services run from this checkout and the tree is dirty.
+- at: 2026-10-07 17:13
+  from: chaba
+  text: dispatched 20261007-171350-safety-this-checkout-is-live-p on chaba
+- at: 2026-10-07 17:15
+  from: devin
+  text: 'Session started. Vault checkout confirmed: master ahead 1 / behind 4217, 7 modified + staged sync script
+    + untracked vault docs. Reviewing dirty files vs origin/master before snapshot+merge.'
+updated: 2026-10-07 17:15
+claim:
+  session: 20261007-171350-safety-this-checkout-is-live-p
+  since: 2026-10-07 17:13
