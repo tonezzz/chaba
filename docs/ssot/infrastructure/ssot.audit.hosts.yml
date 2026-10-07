@@ -1392,11 +1392,13 @@ hosts:
       - ada
       - mddb-leader
     expected_services:
-      - name: sshd.service
+      - name: ssh.service
         type: service
         scope: system
         expected_state: active
         critical: true
+        note: Debian unit is ssh.service (sshd.service is an alias); audit
+          flagged sshd.service-missing while ssh.service was active 2026-10-07
       - name: tailscaled.service
         type: service
         scope: system
