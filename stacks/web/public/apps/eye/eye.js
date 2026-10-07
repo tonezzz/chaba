@@ -1,25 +1,39 @@
 /* eye.js — Chaba Nest edge vision.
  *
  * Sources:
- *   ?src=me            device camera via getUserMedia (default)
- *   ?src=cam:<name>    cameras.json HLS stream (hls.js / native on iOS)
- *   ?src=snap:<name>   Frigate latest.jpg refresh (weakest devices)
+ *   ?src=me              device camera via getUserMedia (default)
+ *   ?src=cam:<name>      cameras.json HLS stream (hls.js / native on iOS)
+ *   ?src=snap:<name>     Frigate latest.jpg refresh (weakest devices)
+ *   ?src=snap:<zone>/<key>  camwall last-good thumb — covers xmeye/DVR
+ *                        channels (vms-noble-*) and all pulled zones
+ *   ?src=vms:<channel>   fresh xmeye frame via /apps/vms-snap proxy
+ *                        (mn01 shim ~10s/capture; serial polling)
+ *   ?src=test            synthetic frames — no camera needed
  *
  * Detection: MediaPipe tasks-vision ObjectDetector, efficientdet-lite0
  * int8 (~4.4MB), VIDEO mode, drawn on an overlay canvas. Runs entirely
  * in-browser — the Nest's edge tier; server only serves static files.
  *
  * Bench: ?bench=N runs N detections, reports fps + inference ms
- * (p50/p95), model, and device UA in-page; attempts to POST the row to
- * MDDB (bench/edge-*) so device capability is measured, not guessed.
+ * (p50/p95), model, and device UA in-page; POSTs the row to MDDB
+ * (ada-ha-scenario-reports bench/edge-*) via the same-origin
+ * /apps/eye-mddb route so device capability is measured, not guessed.
+ *
+ * Publish: ?pub=N rewrites the eye/latest doc every N seconds with the
+ * freshest detection list — the read side of Ada's ada_look tool.
+ * Off by default; point a cast at ?src=...&pub=10 to give Ada eyes.
  */
 import { FilesetResolver, ObjectDetector } from '../vendor/mediapipe/vision_bundle.mjs';
 
 const params = new URLSearchParams(location.search);
 const src = params.get('src') || 'me';
 const benchN = parseInt(params.get('bench') || '0', 10);
+const pubSec = parseFloat(params.get('pub') || '0');
 const MODEL = 'efficientdet_lite0_int8';
-const MDDB = 'https://idc03.taila0626a.ts.net/mddb/v1';
+// Same-origin MDDB write lane (edge route eye-mddb -> mddb /v1/add,
+// tailnet-identity gated). Cross-origin to idc03 never worked — there is
+// no /mddb mount on that edge.
+const MDDB = '/apps/eye-mddb/v1';
 
 const vid = document.getElementById('vid');
 const overlay = document.getElementById('overlay');
@@ -82,14 +96,22 @@ async function startStream() {
     // inference latency without a camera/stream. Bench-safe source.
     srcEl.textContent = 'source: test (synthetic)';
     return '__test__';
+  } else if (src.startsWith('vms:')) {
+    const name = src.slice(4);
+    srcEl.textContent = `source: vms:${name} (fresh xmeye snap)`;
+    return `vms:${name}`;
   } else if (src.startsWith('snap:')) {
     const name = src.slice(5);
     // Snapshot refresh -> draw frames onto a synthetic video-like path:
     // reuse an <img> polled every 2s, detect on the drawn image.
-    srcEl.textContent = `source: snap:${name} (2s poll)`;
+    // <zone>/<key> resolves to a camwall last-good thumb (xmeye/DVR
+    // channels live there — the puller IS the xmeye proxy); a bare name
+    // goes to frigate latest.jpg as before.
+    srcEl.textContent = `source: snap:${name} (${name.includes('/') ? 'camwall' : '2s poll'})`;
     return name;
   }
-  return null;
+  throw new Error(`unknown src "${src}" — me | cam:<name> | ` +
+    `snap:<name|zone/key> | vms:<channel> | test`);
 }
 
 let snapImg = null;
@@ -119,10 +141,25 @@ async function snapFrame(name) {
   if (!snapImg) {
     snapImg = new Image();
     snapImg.crossOrigin = 'anonymous';
+    snapImg.style.cssText =
+      'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;';
+    document.getElementById('stage').insertBefore(snapImg, overlay);
+  }
+  let url;
+  if (name.startsWith('vms:')) {
+    // Fresh xmeye capture through the same-origin vms-snap proxy
+    // (mn01 shim clicks the channel in the VMS desktop ~10s/frame).
+    url = `/apps/vms-snap/snap?ch=${encodeURIComponent(name.slice(4))}&native=1&r=${Date.now()}`;
+  } else if (name.includes('/')) {
+    // <zone>/<key> — camwall last-good thumb (never 404s while the
+    // puller ran once; staleness is the puller's honesty model).
+    url = `/apps/camwall/data/${name}.jpg?t=${Date.now()}`;
+  } else {
+    url = `/frigate/api/${name}/latest.jpg?t=${Date.now()}`;
   }
   await new Promise((res) => {
     snapImg.onload = res; snapImg.onerror = res;
-    snapImg.src = `/frigate/api/${name}/latest.jpg?t=${Date.now()}`;
+    snapImg.src = url;
   });
   return snapImg;
 }
@@ -170,9 +207,9 @@ async function finishBench(samples, modelLoadMs) {
   const txt = `bench done — ${MODEL}\n${samples.length} frames  ${fps} fps\ninfer p50 ${p50.toFixed(0)}ms  p95 ${p95.toFixed(0)}ms\nload ${modelLoadMs}ms`;
   benchEl.textContent = txt;
   statEl.textContent = txt.split('\n')[1];
-  // Best-effort record — MDDB CORS may refuse; keep it non-fatal.
+  // Best-effort record — same-origin write lane; keep it non-fatal.
   try {
-    await fetch(`${MDDB}/add`, {
+    const r = await fetch(`${MDDB}/add`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         collection: 'ada-ha-scenario-reports',
@@ -183,12 +220,61 @@ async function finishBench(samples, modelLoadMs) {
                 lang: ['en'], written_by: ['eye-page'] },
       }),
     });
-  } catch (_) { /* offline/closed-origin: the on-page panel still shows */ }
+    if (!r.ok) benchEl.textContent = txt + `\nMDDB ${r.status}`;
+  } catch (e) {
+    benchEl.textContent = txt + `\nMDDB ${e.message}`;
+  }
+}
+
+// --- ada_look read side --------------------------------------------------
+// ?pub=N rewrites ada-ha-scenario-reports/eye:latest every N seconds with
+// the freshest detections. Fixed key, small doc — the ada tool reads this
+// one doc ("what do you see") instead of scanning. Actions on detections
+// stay behind the confirm-gated tools; this doc is read-only state.
+let lastPub = 0;
+async function publish(dets) {
+  const now = Date.now();
+  if (!pubSec || now - lastPub < pubSec * 1000) return;
+  lastPub = now;
+  const ts = new Date(now).toISOString();
+  const list = dets.map(d => ({
+    cls: d.categories?.[0]?.categoryName ?? '?',
+    score: +(d.categories?.[0]?.score ?? 0).toFixed(3),
+    box: d.boundingBox ? [d.boundingBox.originX, d.boundingBox.originY,
+                        d.boundingBox.width, d.boundingBox.height]
+                       .map(v => Math.round(v)) : null,
+  }));
+  const counts = {};
+  for (const d of list) counts[d.cls] = (counts[d.cls] || 0) + 1;
+  const summary = Object.entries(counts)
+    .map(([k, n]) => `${k}×${n}`).join(', ') || 'nothing detected';
+  const payload = { ts, src, model: MODEL, detections: list,
+                    ua: navigator.userAgent.slice(0, 160),
+                    pub_s: pubSec };
+  try {
+    await fetch(`${MDDB}/add`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        collection: 'ada-ha-scenario-reports',
+        key: 'eye/latest',
+        contentMd:
+          `# eye/latest — ${ts}\n\n` +
+          `**${list.length} detection(s) on \`${src}\`** — ${summary}.\n\n` +
+          '```json\n' + JSON.stringify(payload, null, 2) + '\n```\n',
+        meta: { kind: ['state'], domain: ['eye'], attribute: ['detections'],
+                title: ['eye — latest detections'], updated: [ts],
+                fresh_for: ['1h'], status: ['active'], lang: ['en'],
+                written_by: ['eye-page'], src: [src] },
+      }),
+    });
+  } catch (_) { /* non-fatal — the overlay is the primary output */ }
 }
 
 async function loop(snapName, modelLoadMs) {
   const samples = [];
   const tick = async () => {
+    // Ticks are inherently serial — the next one is only scheduled when
+    // this one returns, so a slow vms-snap capture (~10s) can never stack.
     const srcEl2 = snapName ? await snapFrame(snapName) : vid;
     const ready = snapName === '__test__' ? true
                 : snapName ? (snapImg?.naturalWidth > 0)
@@ -198,7 +284,9 @@ async function loop(snapName, modelLoadMs) {
       // VIDEO-mode API accepts any ImageSource (video/img/canvas).
       const res = detector.detectForVideo(srcEl2, t0);
       const ms = performance.now() - t0;
-      draw(res.detections || []);
+      const dets = res.detections || [];
+      draw(dets);
+      publish(dets);   // throttled internally; fire-and-forget
       if (bench) {
         samples.push(ms);
         if (samples.length <= benchN) {
@@ -207,7 +295,8 @@ async function loop(snapName, modelLoadMs) {
           if (samples.length === benchN) { bench = false; await finishBench(samples, modelLoadMs); }
         }
       } else {
-        statEl.textContent = `${(res.detections || []).length} obj · ${ms.toFixed(0)}ms`;
+        statEl.textContent = `${dets.length} obj · ${ms.toFixed(0)}ms` +
+          (pubSec ? ` · pub ${pubSec}s` : '');
       }
     }
     setTimeout(tick, snapName ? 2000 : 0);   // rAF-ish; snap polls slower

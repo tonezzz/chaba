@@ -275,6 +275,28 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	handle /apps/vms-snap {
+		redir * /apps/vms-snap/ 308
+	}
+	handle_path /apps/vms-snap/* {
+		reverse_proxy 100.106.196.22:8377
+	}
+
+
+	# MDDB write lane for /apps/eye — exposes ONLY /v1/add (bench rows
+	# bench/edge-* and the eye/latest detections doc). Writes need a
+	# tailnet identity; there is no read surface here (CMS scripts read
+	# MDDB directly by tailnet IP).
+	handle /apps/eye-mddb/v1/add {
+		@anon_write_eye-mddb {
+			not method GET HEAD
+			not header Tailscale-User-Login *
+		}
+		respond @anon_write_eye-mddb "forbidden: eye-mddb writes need a tailnet identity" 403
+		uri strip_prefix /apps/eye-mddb
+		reverse_proxy 100.102.134.91:11023
+	}
+
 	handle /snapshot {
 		reverse_proxy 127.0.0.1:9005
 	}

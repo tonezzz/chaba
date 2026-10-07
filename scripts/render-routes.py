@@ -214,6 +214,21 @@ CUSTOM_BLOCKS = {
 		}
 	}
 """,
+    "eye-mddb": """
+	# MDDB write lane for /apps/eye — exposes ONLY /v1/add (bench rows
+	# bench/edge-* and the eye/latest detections doc). Writes need a
+	# tailnet identity; there is no read surface here (CMS scripts read
+	# MDDB directly by tailnet IP).
+	handle /apps/eye-mddb/v1/add {
+		@anon_write_eye-mddb {
+			not method GET HEAD
+			not header Tailscale-User-Login *
+		}
+		respond @anon_write_eye-mddb "forbidden: eye-mddb writes need a tailnet identity" 403
+		uri strip_prefix /apps/eye-mddb
+		reverse_proxy 100.102.134.91:11023
+	}
+""",
     "helm": """
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
