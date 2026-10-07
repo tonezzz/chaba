@@ -1,6 +1,6 @@
 id: vms-native-composite
 title: VMS native capture — multi-pane one-shot composite
-column: review
+column: done
 review_kind: verify
 priority: low
 note: 'Today every native-res pull is serial: activate channel -> ~18s attach + BMP->PNG. Wall refresh for a 5-cam
@@ -21,7 +21,7 @@ action:
   runner: tony-dell
   task_id: 20261006-111612-vms-native-capture-one-shot-mu
   result: 20261006-111612-vms-native-capture-one-shot-mu finished (inactive) — see `devin-dispatch logs 20261006-111612-vms-native-capture-one-shot-mu`
-  merge_pending: true
+  merge_pending: false
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -51,5 +51,15 @@ comms:
 - at: 2026-10-06 13:08
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-07 08:20
+  from: devin
+  text: >-
+    closed: third run 20261006-211751 (bead-avocado) ported + hardened the
+    111612 build, deployed to mn01, self-verified. Merged to master
+    (de2b61b6 + 2227d343 incl. outcome md + jobs yml). Independent live
+    verify: /composite?chs=Washing Machines,Swimming Pool,Tennis Court
+    &native=1 — 200 zip, per-pane 2560x1440 PNGs, manifest per-cam errs
+    (Tennis Court channel dead — red-X, not a call failure). Serial /snap
+    fallback untouched. mn01 file md5 matches branch.
 claim:
   since: 2026-10-06 11:16
