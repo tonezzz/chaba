@@ -1,8 +1,7 @@
 id: ada-dead-turn-guard
 title: Guard against bare 'response:' dead turns + tool-call text leak after tool results
-brief: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory
-  search had ALREADY returned the answer (plate 5ขว 6249 in hits)… A worker session is on it — nothing needed unless
-  it posts a question.'
+brief: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory search had ALREADY returned the answer (plate 5ขว 6249 in hits)… A worker session is on it
+  — nothing needed unless it posts a question.'
 column: done
 priority: high
 program: ada-tools
@@ -12,20 +11,14 @@ tags:
 - tools
 - reliability
 - audit
-note: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory search
-  had ALREADY returned the answer (plate 5ขว 6249 in hits) but Ada emitted literal "response:" text both times —
-  user heard nothing and repeated the question. Same session: "tool-call text leaked into transcript" WARNs (set_facial_expression{...}
-  spoken verbatim). Known class — ada-session-health doc (2026-09-27) diagnosed empty/off-focus turns. Likely contributor:
-  ada_memory_search hits return entire documents (30-50KB each); input tokens ran 27-33k/turn.'
-spec: 'ada-pi realtime_provider: three guards. 1) Dead-turn detector — when the model output text is empty or degenerate
-  after a completed turn ("response:" prefix only, whitespace, lone structural tags), do NOT pass it to TTS/transcript
-  as the answer; emit an ops event (dead_turn) and deterministically retry once, or synthesize a fallback that speaks
-  the actual tool result ("พบแล้วค่ะ ทะเบียน 5ขว 6249" shape). 2) Tool-call text sanitizer — strip model-emitted
-  text shaped like tool calls (name{key:value,...}) before TTS + transcript write; log leak_detected ops event.
-  3) Memory hit truncation — cap ada_memory_search hit content (~2KB, keep key/title/score/meta) so a 5-hit search
-  cannot inject 100KB+ into context. Regression test: replay the plate-question turn shape — tool returns hits with
-  the plate, model output stubbed to "response:" — assert user-facing answer contains the plate, never the literal
-  tag. Preserve confirm-gate + degraded flag behavior; a degraded search should still be announced as degraded.'
+note: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory search had ALREADY returned the answer (plate 5ขว 6249 in hits) but Ada emitted literal "response:"
+  text both times — user heard nothing and repeated the question. Same session: "tool-call text leaked into transcript" WARNs (set_facial_expression{...} spoken verbatim). Known class — ada-session-health
+  doc (2026-09-27) diagnosed empty/off-focus turns. Likely contributor: ada_memory_search hits return entire documents (30-50KB each); input tokens ran 27-33k/turn.'
+spec: 'ada-pi realtime_provider: three guards. 1) Dead-turn detector — when the model output text is empty or degenerate after a completed turn ("response:" prefix only, whitespace, lone structural tags),
+  do NOT pass it to TTS/transcript as the answer; emit an ops event (dead_turn) and deterministically retry once, or synthesize a fallback that speaks the actual tool result ("พบแล้วค่ะ ทะเบียน 5ขว 6249"
+  shape). 2) Tool-call text sanitizer — strip model-emitted text shaped like tool calls (name{key:value,...}) before TTS + transcript write; log leak_detected ops event. 3) Memory hit truncation — cap ada_memory_search
+  hit content (~2KB, keep key/title/score/meta) so a 5-hit search cannot inject 100KB+ into context. Regression test: replay the plate-question turn shape — tool returns hits with the plate, model output
+  stubbed to "response:" — assert user-facing answer contains the plate, never the literal tag. Preserve confirm-gate + degraded flag behavior; a degraded search should still be announced as degraded.'
 action:
   type: dispatch
   repo: ada-pi
@@ -47,14 +40,13 @@ expected_goals:
 - id: hit-truncation
   label: memory search hit content capped
   check:
-    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "truncat\|max_content\|2000\|2048" backend/tool_runner/*.py
-      backend/mddb_client.py
+    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "truncat\|max_content\|2000\|2048" backend/tool_runner/*.py backend/mddb_client.py
     expect: exit 0
 comms:
 - at: 2026-10-07 18:05
   from: devin
-  text: 'filed from transcript audit — session 56d2e4d167 evidence: bare response: x2 at 13:41 BKK, set_facial_expression
-    leak WARNs, 27-33k token/turn bloat; memory tool had already returned the correct answer both times'
+  text: 'filed from transcript audit — session 56d2e4d167 evidence: bare response: x2 at 13:41 BKK, set_facial_expression leak WARNs, 27-33k token/turn bloat; memory tool had already returned the correct
+    answer both times'
 - at: 2026-10-07 18:04
   from: chaba
   text: dispatched 20261007-180359-ada-pi-realtime-provider-three on ada-pi
@@ -63,10 +55,8 @@ comms:
   text: 'started: exploring realtime_provider.py for dead-turn/tool-leak/memory-truncation guard points'
 - at: 2026-10-07 18:33
   from: devin
-  text: 'done: 3 guards landed in realtime_provider.py + tool_runner/memory.py — dead_turn detector w/ 1x digest
-    retry + พบแล้วค่ะ-fallback, generic name{key:value} sanitizer (leak_detected ops), 2048-char hit cap. tests/test_dead_turn.py
-    13/13 (plate replay, degraded announced, scaffold never persisted). Suite 799p/2f — both pre-existing tool-lint
-    fails unrelated. SSOT: docs/ssot/jobs/ada/2026-10-07-dead-turn-guard.yml'
+  text: 'done: 3 guards landed in realtime_provider.py + tool_runner/memory.py — dead_turn detector w/ 1x digest retry + พบแล้วค่ะ-fallback, generic name{key:value} sanitizer (leak_detected ops), 2048-char
+    hit cap. tests/test_dead_turn.py 13/13 (plate replay, degraded announced, scaffold never persisted). Suite 799p/2f — both pre-existing tool-lint fails unrelated. SSOT: docs/ssot/jobs/ada/2026-10-07-dead-turn-guard.yml'
 - at: 2026-10-07 18:34
   from: chaba
   text: run finished (inactive) → review
@@ -75,17 +65,20 @@ comms:
   text: 'auto-merge not done: worktree dirty (5 file(s)) — commit first — close will block until merged'
 - at: 2026-10-07 18:34
   from: chaba
-  text: 'session end: worktree dispatch-wt-20261007-180359-ada-pi-realtime-provider-three dirty — 5 uncommitted
-    file(s); commit or clean before pruning'
+  text: 'session end: worktree dispatch-wt-20261007-180359-ada-pi-realtime-provider-three dirty — 5 uncommitted file(s); commit or clean before pruning'
 - at: 2026-10-07 18:37
   from: chaba
-  text: 'merge guard: dispatch/20261007-180359-ada-pi-realtime-provider-three merged into origin/main; worktree
-    still dirty: 5 uncommitted file(s)'
+  text: 'merge guard: dispatch/20261007-180359-ada-pi-realtime-provider-three merged into origin/main; worktree still dirty: 5 uncommitted file(s)'
 - at: 2026-10-07 18:37
   from: tony
   text: closed by Tony
 - at: 2026-10-07 18:37
   from: chaba
   text: session recondite-speedwell… hidden
+- at: 2026-10-07 18:55
+  from: devin
+  text: 'correction: the 18:37 merge-guard merge landed an EMPTY branch — dispatch left 5 files uncommitted, main had 0 guard code. Recovered: committed the worktree (same pattern as web-search-fallback),
+    pushed branch, ff-merged to main 50c3abc, deployed to idc03 (all 4 services active). tests 13/13. Second uncommitted-dispatch close in a day — merge guard should verify diff content, not just branch
+    ancestry.'
 claim:
   since: 2026-10-07 18:04
