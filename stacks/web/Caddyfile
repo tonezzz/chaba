@@ -452,6 +452,14 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	handle /apps/board2 {
+		redir * /apps/board2/ 308
+	}
+	handle_path /apps/board2/* {
+		root * /srv/public/apps/board2
+		file_server
+	}
+
 	handle /apps/sw.js {
 		root * /srv/public/apps/sw.js
 		file_server

@@ -119,6 +119,7 @@ routes:
   - {id: trade,            kind: static, path: /apps/trade/*,          owner: trade, headers: {Cache-Control: "public, max-age=3600"}}
   - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "127.0.0.1:1880", owner: nodered}
   - {id: board,            kind: static, path: /apps/board/*,          owner: chaba}
+  - {id: board2,           kind: static, path: /apps/board2/*,         owner: chaba, note: "tabbed comparison view (render-board2.py)"}
   - {id: sw,               kind: static, path: /apps/sw.js,            owner: chaba, note: "shared service worker"}
 
 consumers:
