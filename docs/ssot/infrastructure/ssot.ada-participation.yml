@@ -1,0 +1,207 @@
+id: ssot.ada-participation
+title: Ada Participation Tiers — the kanban loop
+subtitle: >-
+  How far Ada may act on the card board on her own, the educate-vs-educated
+  standard that governs corrections, and the mutual reach-out escalation
+  ladder. T3+ is bench-gated, not permission-gated.
+category: infrastructure
+status: active              # T0–T2 live; T3 gated on card-judgment bench; T4 future
+source_of_truth: true
+card: docs/ssot/kanban/cards/ada-card-loop-tiers.yml
+related:
+  - docs/ssot/kanban/cards/ada-kanban-access.yml      # authority standard + tool gap
+  - docs/design/ada-kanban-access.md                  # per-action allow/deny table
+  - docs/ssot/kanban/cards/ada-board-write.yml        # ada_board_write tool (live)
+  - docs/ssot/infrastructure/ssot.nest-bench.yml      # card-judgment domain + T3 gate
+  - docs/ssot/kanban/ssot.kanban.yml                  # card schema, columns, requests[]
+
+# ---------------------------------------------------------------------------
+# The tier ladder — what Ada may do to cards, and what each tier is for.
+# Distinct axis from the card-side `autonomy:` field (kanban-act.py):
+#   `autonomy:` on a CARD caps what ANY automation may do to that card.
+#   `tier`     on ADA caps what the Ada entity may do at all.
+# A card with `autonomy: t1` refuses Ada's T2+ actions even after T3 unlocks.
+# ---------------------------------------------------------------------------
+tiers:
+  t0_observe:
+    summary: >-
+      Answer "what's this card / what's running" from live state. No writes.
+    mechanisms:
+      - 'GET /apps/board-api/cards — compact live board payload'
+      - 'ada_board_write action=read (ada-pi backend/tools.d/ada_board_write.py)'
+      - 'CMS kanban-brief page — kanban-brief.py Eisenhower mirror, 30m timer'
+      - 'MDDB semantic search over synced card/ssot docs'
+    status: live
+    note: >-
+      Read path is already authenticated over tailnet. Optional improvement:
+      a card-summary tool for "catch me up on card X" without a full payload.
+
+  t1_comment:
+    summary: >-
+      Post comms notes WITH evidence — "this alert is stale, service healthy
+      now". Low risk; Ada often sees live state before anyone else.
+    mechanisms:
+      - 'POST /apps/board-api/comment {id, from: ada, text} — ada is a
+        whitelisted ACTOR in board-api.py'
+      - 'ada_board_write action=comment'
+    status: live
+    rule: >-
+      Every T1 claim must cite a verifiable check she ran (service is-active,
+      HTTP status, log line, page fetch). No bare assertions — the evidence
+      IS the comment. See educate_standard.evidence_rule.
+
+  t2_request:
+    summary: >-
+      Raise card `requests[]` to Tony — the durable "needs you" channel.
+      Requests survive session end; silence is never the failure mode.
+    mechanisms:
+      - 'POST /apps/board-api/request {id, ask, options?, from: ada, to?}
+        — endpoint live since board-api-hardening (2026-10-04)'
+      - 'push notify: board-api queue_request_notify -> board_notify.py
+        (60s debounce, batched) -> HA notify.mobile_app_tony_ip'
+      - 'request-sweep.py — one batched re-ping for open requests >12h,
+        stamps escalated_at, fires exactly once'
+      - 'requests also target Ada (to: ada) — quiet by design
+        (request_needs_notify only pushes to: tony); she answers via
+        POST /respond, owner-gated to full-access sessions in the tool'
+    status: live
+    gap: >-
+      ada_board_write does not yet expose action=request — the endpoint
+      exists and accepts from:ada, but the tool only wraps
+      comment/respond/read/create. One-action patch in ada-pi
+      tools.d/ada_board_write.py; safe to ship (endpoint + notify already
+      proven by devin/dispatch usage).
+
+  t3_queue:
+    summary: >-
+      Propose/queue card actions — suggest column moves, file structured
+      backlog cards, propose dispatch specs. She recommends; the action
+      executes only through the normal rails (dispatch claim, Tony confirm,
+      or card autonomy contract).
+    mechanisms:
+      - 'POST /apps/board-api/action {id, do: queue|hold|move} — same
+        endpoint dispatch uses; card-side autonomy: field still applies'
+      - 'ada_board_write action=create — already live for backlog cards'
+    status: gated
+    gate: >-
+      card-judgment bench domain (ssot.nest-bench.yml) — unlocks when the
+      declared threshold holds on the corpus. Until then Ada may write the
+      proposal as a T1 comment + T2 request, never the action itself.
+
+  t4_act:
+    summary: >-
+      Perform card work herself — execute the spec, produce the artifact.
+    status: future
+    scope: >-
+      Micro-entity scope only (a nest brain that owns a narrow card class —
+      e.g. log-triage sweeps — with its own bench). Not a near-term target;
+      revisit after T3 is proven in production and portable-brains respawn
+      is routine.
+
+# ---------------------------------------------------------------------------
+# Educate-vs-educated standard — generalizes the education_correction
+# scenario (ada-pi tests/scenarios-live/education_correction.yaml, smoke
+# tier, tools+gate suites).
+# ---------------------------------------------------------------------------
+educate_standard:
+  rule: >-
+    Whoever holds fresher VERIFIED state educates. "Verified" means a check
+    that just ran — not memory, not a prior conversation, not the card's
+    stale note.
+  ada_educates_when: >-
+    She has live probe evidence: a service is-active, an HTTP status, a log
+    line, a page fetch, a health-check row. She posts it as a T1 comment
+    naming the check — that is the correction.
+  ada_gets_educated_when: >-
+    She asserts from stale memory and a fresher check contradicts her —
+    Tony, devin, or kanban-act's auto_done_when checks are all valid
+    correctors. She must accept the correction, not re-assert.
+  evidence_rule: >-
+    A correction without a check is an opinion. T1 comments carry the
+    evidence inline; corrections asserted without evidence count against
+    correction-precision in the bench.
+  corpus_feed: >-
+    Every correction event — either direction — becomes a card-judgment
+    bench corpus case (ssot.nest-bench.yml): the stale assertion, the live
+    evidence, and the action that proved right. Regressions then surface in
+    the hourly scenario bench instead of being re-learned per session.
+  applies_to: [ada, devin, chaba]   # the standard is symmetric — see
+                                    # mutual_contact below
+
+# ---------------------------------------------------------------------------
+# Reach-out escalation ladder — MUTUAL. Tony 2026-10-07: "I like it when
+# Ada tries to reach me in any way she can ... That's for you too — all of
+# us as a team." Any teammate who loses the channel escalates through
+# whatever path remains; the same duty runs Tony -> Ada.
+# ---------------------------------------------------------------------------
+mutual_contact:
+  principle: >-
+    Silence is never acceptable when something needs the other side. If a
+    channel dies, escalate to the next rung — do not retry the dead one
+    forever.
+  ladder:
+    - rung: board_request
+      mechanism: 'POST /apps/board-api/request — durable, survives
+                  everything; the always-on floor'
+      fails_when: 'board-api down / card-dir unwritable'
+    - rung: ha_notification
+      mechanism: 'board_notify.py -> HA notify.mobile_app_tony_ip via
+                  tony-ha loopback :8123 (auto-fired by board-api on
+                  requests to: tony; request-sweep re-pings once >12h)'
+      fails_when: 'tony-ha down, HA token stale, phone offline'
+    - rung: openclaw
+      mechanism: 'openclaw-gateway.service on tony-dell -> Telegram bot
+                  (paired 2026-10-02, channel live) — the path ops-digest
+                  and critical->telegram already use'
+      fails_when: 'gateway down, OR free-tier outage, telegram pairing lost'
+    - rung: telegram
+      mechanism: 'direct bot send — ~/.config/secrets/telegram-bot.env,
+                  chat 8960073266'
+      fails_when: 'telegram API unreachable'
+    - rung: ntfy
+      mechanism: 'BOARD_NOTIFY_CHANNEL=ntfy + BOARD_NOTIFY_NTFY_TOPIC —
+                  external SaaS, works off-tailnet; last resort'
+      fails_when: 'everything above dead AND ntfy.sh down — then the
+                  request still sits on the board (rung 0 is durable)'
+  notes:
+    - 'yomi/LINE was evaluated and rejected 2026-10-05 (session invalid);
+      revisit if the LINE session returns — would slot between
+      ha_notification and openclaw'
+    - 'ladder order is by durability-then-reach: earlier rungs are
+      persistent+quiet, later rungs are louder and more external'
+    - 'dedupe: board-api already debounces request notify (60s batch);
+      rung escalation must not re-send the same text — stamp, don''t spam'
+
+# ---------------------------------------------------------------------------
+# Hard boundaries — independent of tier. From ada-kanban-access design;
+# keep synced with docs/design/ada-kanban-access.md section 3.
+# ---------------------------------------------------------------------------
+boundaries:
+  never:
+    - 'decide review_kind:decide cards — comment only, Tony decides'
+    - 'close priority:high or prod/security-posture cards — kanban_ask instead'
+    - 'delete, archive, reorder, or silently reprioritize cards'
+    - 'exceed the doing_limit (2) — same SLA as every other worker'
+    - 'write card YAML directly — all writes via board-api (single-writer)'
+  always:
+    - 'every write appends a comms entry from: ada — auditable on the board'
+    - 'claims cite the check that just ran (evidence_rule)'
+    - 'uncertainty degrades a tier: when unsure, comment+request beats act'
+
+audit:
+  comms_actor: ada           # board-api ACTORS whitelist
+  ops_events: >-
+    kanban_act events already flow to ada-ha-events-tony (kanban-act.py);
+    Ada-tier actions should emit the same shape so the ops digest audits
+    every autonomous move.
+  bench_regression: >-
+    card-judgment corpus cases feed the scenario bench — a drift in
+    correction behavior shows as a metric drop, not a surprise in prod.
+
+open_items:
+  - 'ada_board_write: add action=request -> POST /request (T2 gap, ada-pi)'
+  - 'card-judgment corpus: mine closed cards'' comms for decided cases
+     (stale-alert flags, raise-vs-act calls) — first batch ≥50 cases'
+  - 'T3 shadow mode: after corpus exists, run Ada''s proposed actions
+     against outcomes WITHOUT executing — fastest safe way to the gate'
+  - 'CMS board mirror for T0 card-summary (kanban-brief already half of it)'
