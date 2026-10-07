@@ -17,6 +17,8 @@ card-dir manifest hash is unchanged — cheap for the 60s timer run.)
 import hashlib
 import html
 import json
+import re
+import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -48,6 +50,141 @@ def dir_hash(card_dir: Path) -> str:
     return h.hexdigest()
 
 
+# --- verification checklist ---------------------------------------------
+# Computed at render time against git + filesystem reality, so a card's
+# chips reflect the repo — not hand-set flags that can lie (2026-10-06:
+# vms-native-composite said merge_pending while run 3 was already deployed).
+
+_TRUST_PY = re.compile(
+    r"verif|auto-merged|merged into|confirm|works|lgtm|tested|checks out|"
+    r"(?<!not )pushed\b[^\n]{0,60}\b[0-9a-f]*[a-f][0-9a-f]{6,39}\b", re.I)
+_DEPLOY_PY = re.compile(r"\bdeploy", re.I)
+_TASK_TS = re.compile(r"^(\d{8}-\d{6})-")
+
+
+def _git(*args: str):
+    try:
+        p = subprocess.run(["git", "-C", str(REPO), *args],
+                           capture_output=True, text=True, timeout=15)
+        return p.returncode, p.stdout.strip()
+    except Exception:
+        return 1, ""
+
+
+def _run_branches() -> dict:
+    """dispatch/* branch names grouped by task slug (one card -> many runs)."""
+    out = {}
+    rc, txt = _git("branch", "--format=%(refname:short)", "--list",
+                   "dispatch/*")
+    if rc:
+        return out
+    for br in txt.splitlines():
+        slug = _TASK_TS.sub("", br[len("dispatch/"):])
+        out.setdefault(slug, []).append(br)
+    for lst in out.values():
+        lst.sort()  # timestamps sort lexically — last is newest
+    return out
+
+
+def _branch_merged(br: str) -> bool:
+    """True if br's work is on origin/master — by ancestry, or by patch
+    (a plain `git rebase` linearizes merge commits, so ancestry alone
+    lies after an autostash rebase; git cherry catches that)."""
+    if _git("merge-base", "--is-ancestor", br, "origin/master")[0] == 0:
+        return True
+    rc, out = _git("cherry", "origin/master", br)
+    return rc == 0 and not any(l.startswith("+") for l in out.splitlines())
+
+
+def _outcome_index() -> dict:
+    """dispatch-outcome-*.md files, stem -> path. Scoped to docs/ssot/jobs
+    in the repo and each dispatch worktree — a full-tree rglob per card
+    made renders take ~17s."""
+    idx = {}
+    roots = [REPO / "docs/ssot/jobs"]
+    roots += [wt / "docs/ssot/jobs" for wt in REPO.parent.glob("dispatch-wt-*")]
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for f in root.rglob("dispatch-outcome-*.md"):
+            idx.setdefault(f.stem, f)
+    return idx
+
+
+def _outcome_file(idx: dict, task_id: str):
+    for stem, f in idx.items():
+        if stem == f"dispatch-outcome-{task_id}" or \
+                stem.startswith(f"dispatch-outcome-{task_id}"):
+            try:
+                return str(f.relative_to(REPO))
+            except ValueError:
+                return str(f)
+    return None
+
+
+def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
+    """Per-card verification chips; only for cards that had a dispatch run."""
+    a = c.get("action") or {}
+    tid = str(a.get("task_id") or "")
+    slug = _TASK_TS.sub("", tid) if tid else ""
+    runs = runs_by_slug.get(slug, []) if slug else []
+    if not runs and a.get("status") not in ("done", "failed", "error"):
+        return []
+    checks = []
+
+    # multi-run visibility — the blind spot that hid vms run 3
+    if len(runs) > 1:
+        checks.append({"k": f"{len(runs)} runs", "ok": None,
+                       "how": "dispatch branches: " + ", ".join(runs)})
+
+    # code merged — newest run branch vs origin/master; fall back to flag
+    if runs:
+        newest = runs[-1]
+        if _branch_merged(newest):
+            checks.append({"k": "code", "ok": True,
+                           "how": f"{newest} on origin/master (ancestry or patch-equiv)"})
+        else:
+            merged = [b for b in runs if _branch_merged(b)]
+            checks.append({"k": "code", "ok": False,
+                           "how": f"{newest} NOT merged" +
+                                  (f" (merged: {', '.join(merged)})"
+                                   if merged else "")})
+    elif "merge_pending" in a:
+        checks.append({"k": "code", "ok": not a.get("merge_pending"),
+                       "how": "merge_pending flag (no local branch found)"})
+
+    # outcome artifact — any run's file counts
+    tids = [tid] if tid else []
+    tids += [b[len("dispatch/"):] for b in runs
+             if b[len("dispatch/"):] != tid]
+    found = next((p for t in tids if (p := _outcome_file(outcomes, t))),
+                 None)
+    if tid or runs:
+        checks.append({"k": "outcome", "ok": found is not None,
+                       "how": found or f"no dispatch-outcome-{slug or '?'}*.md"})
+
+    # deploy + verify — comms heuristics (verify mirrors isVerified)
+    comms = c.get("comms") or []
+    dep = next((m.get("text", "") for m in comms
+                if _DEPLOY_PY.search(m.get("text") or "")), None)
+    checks.append({"k": "deploy",
+                   "ok": True if dep else (None if not tid else False),
+                   "how": ("comms: " + dep[:80]) if dep
+                          else "no deploy mention in comms"})
+    v = a.get("verified")
+    if v is not None:
+        checks.append({"k": "verify",
+                       "ok": v is True or v == "true",
+                       "how": f"action.verified={v} (merge-guard)"})
+    else:
+        hit = next((m.get("text", "") for m in comms
+                    if _TRUST_PY.search(m.get("text") or "")), None)
+        checks.append({"k": "verify", "ok": hit is not None,
+                       "how": ("comms: " + hit[:80]) if hit
+                              else "no verification entry in comms"})
+    return checks
+
+
 def load_cards(man: dict) -> list:
     card_dir = REPO / man["card_dir"]
     cards = []
@@ -75,6 +212,12 @@ def main():
     # cards keep file order.
     rank = {"high": 0, "medium": 1, "low": 3}
     cards.sort(key=lambda c: rank.get(str(c.get("priority") or "").lower(), 2))
+    runs_by_slug = _run_branches()
+    outcomes = _outcome_index()
+    for c in cards:
+        checks = compute_checks(c, runs_by_slug, outcomes)
+        if checks:
+            c["checks"] = checks
     cols = man["columns"]
     limit = man.get("rules", {}).get("doing_limit", 2)
     doing_sessions = {}
@@ -303,6 +446,14 @@ function cardHtml(c) {{
     badges += v.ok
       ? `<span class="text-xs bg-emerald-800/80 text-emerald-100 rounded px-1.5 py-0.5" title="${{esc(v.how)}}">✔ verified</span> `
       : `<span class="text-xs bg-amber-900/80 text-amber-200 rounded px-1.5 py-0.5" title="${{esc(v.how)}}">⚠ claimed</span> `;
+  }}
+  // verification checklist — computed server-side against git/fs reality
+  for (const k of (c.checks || [])) {{
+    const cls = k.ok === true ? 'bg-emerald-900/70 text-emerald-200'
+              : k.ok === false ? 'bg-red-900/70 text-red-200'
+              : 'bg-slate-700/60 text-slate-400';
+    const mark = k.ok === true ? '✓' : k.ok === false ? '✗' : '·';
+    badges += `<span class="text-xs ${{cls}} rounded px-1.5 py-0.5" title="${{esc(k.how || '')}}">${{mark}} ${{esc(k.k)}}</span> `;
   }}
 
   return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
