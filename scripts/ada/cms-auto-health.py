@@ -170,6 +170,9 @@ def main() -> int:
             card.update({
                 "id": f"cms-auto-{slug}",
                 "title": f"CMS automation `{slug}` {state}",
+                "brief": (f"A scheduled report-page job ('{slug}') is "
+                          f"{state}. Re-run it or check the generator — "
+                          "details in the note."),
                 "column": "review",
                 "generated": "cms-auto-health",
                 "priority": "high" if age_h >= ESCALATE_H else "medium",

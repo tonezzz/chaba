@@ -224,6 +224,8 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
     card.update({
         "id": card_id,
         "title": title,
+        "brief": (f"An automated health check flagged: {title}. "
+                  "Read the note, fix it, then close the card."),
         "column": "review",
         "generated": "gev-auto-health",
         "program": "gev",

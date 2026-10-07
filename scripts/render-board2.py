@@ -128,7 +128,7 @@ function cardsFor(t) {{
 }}
 function matchQ(c, q) {{
   if (!q) return true;
-  const hay = ((c.title||'')+' '+c.id+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
+  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
   return q.toLowerCase().split(/\\s+/).every(w => hay.includes(w));
 }}
 function needYou(c) {{
@@ -155,8 +155,11 @@ function badgeHtml(c) {{
 }}
 
 function rowHtml(c) {{
-  return `<div class="row board-card cursor-pointer border border-slate-700/60 rounded p-2 bg-slate-800/40" data-id="${{esc(c.id)}}">` +
+  const brief1 = (c.brief || '').split('\\n')[0];
+  const tip = esc(c.brief || '').replace(/"/g, '&quot;');
+  return `<div class="row board-card cursor-pointer border border-slate-700/60 rounded p-2 bg-slate-800/40" data-id="${{esc(c.id)}}"${{c.brief ? ` title="${{tip}}"` : ''}}>` +
     `<div class="text-sm leading-snug">${{esc(c.title)}}</div>` +
+    (brief1 ? `<div class="text-[11px] text-slate-400 truncate mt-0.5">${{esc(brief1)}}</div>` : '') +
     `<div class="flex items-center gap-1 mt-1 flex-wrap"><span class="text-[10px] text-slate-500">${{esc(c.id)}}</span> ${{badgeHtml(c)}}</div>` +
     `</div>`;
 }}
@@ -247,6 +250,9 @@ function renderDetail() {{
         ${{(DATA.columns||[]).map(x=>`<option ${{x.id===c.column?'selected':''}}>${{esc(x.id)}}</option>`).join('')}}
       </select>
     </div></div>`;
+  if (c.brief) h += `<div class="mt-3 border-l-4 border-sky-400 bg-sky-900/25 rounded-r px-3 py-2">` +
+    `<div class="text-[10px] uppercase tracking-wide text-sky-300/80 mb-0.5">In plain terms</div>` +
+    `<div class="text-[15px] leading-snug text-sky-50 whitespace-pre-wrap">${{esc(c.brief)}}</div></div>`;
   if ((c.lab||{{}}).hypothesis) h += field('🧪 hypothesis', c.lab.hypothesis) + field('metric', c.lab.metric) + field('outcome', c.lab.outcome);
   h += field('note', c.note) + field('spec', c.spec) + field('verify', c.verify) + field('help', c.help);
   for (const r of (c.requests||[])) h += reqHtml(c, r);

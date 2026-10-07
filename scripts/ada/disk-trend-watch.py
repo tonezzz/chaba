@@ -404,6 +404,10 @@ def upsert_alert_card(path: Path, host: str, mount: str, state: str,
     card.update({
         "id": path.stem,
         "title": (f"Disk {host} {mount} {'critical' if state == 'critical' else 'fills in <' + str(int(FILL_D)) + 'd'}"),
+        "brief": (f"Disk space on {host} ({mount}) is running "
+                  f"{'critically ' if state == 'critical' else ''}low — "
+                  "check the note for the rate and top growers, then "
+                  "free space or close the card."),
         "column": "review",
         "generated": "disk-trend-watch",
         "area": "monitoring",

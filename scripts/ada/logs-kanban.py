@@ -302,6 +302,9 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
     card.update({
         "id": card_id,
         "title": title,
+        "brief": (f"The log digest flagged something worth a look: "
+                  f"{title}. Read the note, then fix it or close the "
+                  "card."),
         "column": "review",
         "generated": "logs-kanban",
         "program": "logs-digest",
