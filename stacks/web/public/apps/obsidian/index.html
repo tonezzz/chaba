@@ -153,6 +153,7 @@
           <span id="q-coverage" class="text-xs text-gray-500"></span>
           <input id="q-filter" placeholder="filter queue…"
                  class="ml-auto text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-40 focus:border-accent outline-none">
+          <button class="navbtn" onclick="loadQueue(true)">Refresh</button>
         </div>
         <p class="text-xs text-gray-500 mb-3">MDDB docs not yet exported to the vault — sorted by recall count. Export the ones worth keeping; the rest can stay MDDB-only.</p>
         <div id="q-msg" class="text-xs text-gray-500 mb-2"></div>
@@ -161,9 +162,11 @@
       <!-- ===== GRAPH VIEW ===== -->
       <div id="v-graph" class="view hidden -m-6 flex flex-col" style="min-height: calc(100vh - 3rem)">
         <div id="graph-toolbar" class="flex items-center gap-3 px-3 py-2 bg-card/60 border-b border-gray-800 relative">
-          <input id="search" list="nodes-list" placeholder="search nodes…"
-                 class="text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-28 md:w-40 focus:border-accent outline-none">
-          <datalist id="nodes-list"></datalist>
+          <div class="relative">
+            <input id="search" placeholder="search nodes…" autocomplete="off"
+                   class="text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-28 md:w-40 focus:border-accent outline-none">
+            <div id="search-drop" class="hidden absolute top-8 left-0 z-50 w-72 max-h-80 overflow-y-auto bg-card border border-gray-700 rounded-lg shadow-xl"></div>
+          </div>
           <button id="btn-ctl" class="navbtn md:hidden" title="Filters & actions">⚙</button>
           <div id="ctls" class="hidden md:flex absolute md:static top-10 right-0 z-50
                flex-col md:flex-row items-start md:items-center gap-3
@@ -496,19 +499,59 @@ async function loadQueue(force = false) {
   }
 }
 
+const Q_PER_GROUP = 25;
+const qExpanded = new Set();
+
 function renderQueue(docs) {
   const q = (document.getElementById('q-filter').value || '').toLowerCase();
   const list = document.getElementById('q-list');
   list.innerHTML = '';
+  const filtered = docs.filter(n => {
+    const title = n.label || n.key || n.id;
+    return !q || title.toLowerCase().includes(q) ||
+      (n.excerpt || '').toLowerCase().includes(q) || (n.bank || '').includes(q) ||
+      (n.subject || '').toLowerCase().includes(q);
+  });
+  const groups = new Map();
+  for (const n of filtered) {
+    const b = n.bank || '?';
+    if (!groups.has(b)) groups.set(b, []);
+    groups.get(b).push(n);
+  }
   const frag = document.createDocumentFragment();
   let shown = 0;
-  for (const n of docs) {
-    if (shown >= 200) break;
-    const title = n.label || n.key || n.id;
-    if (q && !(title.toLowerCase().includes(q) || (n.excerpt || '').toLowerCase().includes(q) || (n.bank || '').includes(q))) continue;
-    shown++;
-    const row = document.createElement('div');
-    row.className = 'q-row flex items-start gap-3 px-3 py-2 rounded border border-gray-800';
+  for (const [bank, items] of [...groups.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    const gh = document.createElement('div');
+    gh.className = 'text-[11px] uppercase tracking-wide text-gray-500 px-2 pt-4 pb-1 cursor-pointer select-none flex items-center gap-2';
+    gh.innerHTML = `<span>${esc(bank)}</span><span class="text-gray-600">(${items.length})</span>` +
+      `<span class="ml-auto">${qExpanded.has(bank) ? '▾ collapse' : '▸'}</span>`;
+    gh.onclick = () => {
+      qExpanded.has(bank) ? qExpanded.delete(bank) : qExpanded.add(bank);
+      renderQueue(docs);
+    };
+    frag.appendChild(gh);
+    const collapsedGroup = !qExpanded.has(bank) && !q;
+    const vis = collapsedGroup ? items.slice(0, Q_PER_GROUP) : items;
+    for (const n of vis) {
+      frag.appendChild(qRow(n));
+      shown++;
+    }
+    if (collapsedGroup && items.length > Q_PER_GROUP) {
+      const more = document.createElement('button');
+      more.className = 'text-xs text-accent px-3 py-1';
+      more.textContent = `… ${items.length - Q_PER_GROUP} more in ${bank}`;
+      more.onclick = () => { qExpanded.add(bank); renderQueue(docs); };
+      frag.appendChild(more);
+    }
+  }
+  list.appendChild(frag);
+  if (!shown) list.innerHTML = '<div class="text-xs text-gray-500 px-3 py-6 text-center">nothing to review 🎉</div>';
+}
+
+function qRow(n) {
+  const row = document.createElement('div');
+  row.className = 'q-row flex items-start gap-3 px-3 py-2 rounded border border-gray-800';
+  const title = n.label || n.key || n.id;
     row.innerHTML =
       `<div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
@@ -539,13 +582,10 @@ function renderQueue(docs) {
         document.getElementById('q-msg').textContent = `export failed: ${j.detail || r.status}`;
       }
     };
-    row.querySelector('.q-graph').onclick = () => {
-      location.hash = '#/graph-focus/' + encodeURIComponent(n.id);
-    };
-    frag.appendChild(row);
-  }
-  list.appendChild(frag);
-  if (!shown) list.innerHTML = '<div class="text-xs text-gray-500 px-3 py-6 text-center">nothing to review 🎉</div>';
+  row.querySelector('.q-graph').onclick = () => {
+    location.hash = '#/graph-focus/' + encodeURIComponent(n.id);
+  };
+  return row;
 }
 document.getElementById('q-filter').addEventListener('input', async () => {
   if (queueCache) {
@@ -702,20 +742,46 @@ function startGraph() {
     render(lastG);
   };
 
-  document.getElementById('search').addEventListener('change', e => {
-    const q = e.target.value.trim().toLowerCase();
-    if (!q) return;
-    const n = gdNodes.find(x => (x.key || '') === e.target.value.trim() || x.id === e.target.value.trim())
-          || gdNodes.find(x => (x.label || '').toLowerCase() === q)
-          || gdNodes.find(x => (x.key || '').toLowerCase().includes(q)
-                            || (x.label || '').toLowerCase().includes(q));
-    if (n) {
-      focusNodeId = n.id;
-      if (depth() > 0) render(lastG);
-      else flyTo(n);
-      updateChip();
+  const sInput = document.getElementById('search');
+  const sDrop = document.getElementById('search-drop');
+  const pickNode = n => {
+    focusNodeId = n.id;
+    if (depth() > 0) render(lastG);
+    else flyTo(n);
+    updateChip(); showDetail(n);
+    sDrop.classList.add('hidden');
+    sInput.value = n.label || n.key || '';
+  };
+  sInput.addEventListener('input', () => {
+    const q = sInput.value.trim().toLowerCase();
+    sDrop.innerHTML = '';
+    if (!q) { sDrop.classList.add('hidden'); return; }
+    const hits = gdNodes.filter(n => !n.hub && !n.missing &&
+      ((n.label || '').toLowerCase().includes(q) ||
+       (n.key || '').toLowerCase().includes(q) ||
+       n.id.toLowerCase().includes(q))).slice(0, 12);
+    if (!hits.length) {
+      sDrop.innerHTML = '<div class="px-3 py-2 text-xs text-gray-500">no matches</div>';
+      sDrop.classList.remove('hidden');
+      return;
     }
-    else document.getElementById('msg').textContent = `no node matching "${e.target.value.trim()}"`;
+    for (const n of hits) {
+      const d = document.createElement('div');
+      d.className = 'px-3 py-1.5 text-xs cursor-pointer hover:bg-white/5 flex items-center gap-2';
+      d.innerHTML =
+        `<span style="color:${(window._catColor || {})[n.bank] || '#8aa0b5'}">●</span>` +
+        `<span class="truncate">${esc(n.label || n.key)}</span>` +
+        `<span class="text-gray-500 truncate ml-auto pl-2">${esc(n.key || '')}</span>`;
+      d.onclick = () => pickNode(n);
+      sDrop.appendChild(d);
+    }
+    sDrop.classList.remove('hidden');
+  });
+  sInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const first = sDrop.querySelector('div');
+      if (first) first.click();
+    } else if (e.key === 'Escape') sDrop.classList.add('hidden');
   });
 
   document.getElementById('btn-pause').onclick = () => {
@@ -734,6 +800,8 @@ function startGraph() {
     if (window.matchMedia('(max-width: 767px)').matches && !c.classList.contains('hidden')
         && !e.target.closest('#ctls') && e.target.id !== 'btn-ctl')
       c.classList.add('hidden');
+    if (!e.target.closest('#search') && !e.target.closest('#search-drop'))
+      sDrop.classList.add('hidden');
   });
   document.getElementById('btn-legend').onclick = () =>
     document.getElementById('legend').classList.toggle('hidden');
@@ -1076,16 +1144,6 @@ function render(g) {
   };
   gdNodes = gd.nodes;
   for (const n of gdNodes) byId.set(n.id, n);
-
-  const dl = document.getElementById('nodes-list');
-  dl.innerHTML = '';
-  for (const n of gdNodes) {
-    if (n.hub || n.missing) continue;
-    const o = document.createElement('option');
-    o.value = n.label || n.key;
-    o.label = n.key || '';
-    dl.appendChild(o);
-  }
 
   Graph.graphData(gd)
     .nodeLabel(tip)
