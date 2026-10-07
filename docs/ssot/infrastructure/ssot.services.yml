@@ -127,10 +127,10 @@ tony-dell:
         # EMBED_QUEUE_CRIT_DEPTH=3000. See docs/ssot/jobs/infrastructure/
         # 2026-10-06-mddb-embed-queue-recovery.yml
       - mddb-vector-reindex.service  # idc03, oneshot — re-embed sweep after drops/outage
-    status: replication leader on idc01 (follower on idc02 since 2026-10-05; tony-dell follower stopped, kept as seeded standby)
+    status: replication leader on idc03 (followers on idc02 + idc01 since 2026-10-05/06; tony-dell follower stopped, kept as seeded standby)
     replication:
       role: leader
-      node_id: idc01
+      node_id: idc03
       secret_var: MDDB_REPLICATION_SECRET (shared, in each host's mddb.container — not committed)
       grpc: 100.102.134.91:11024
       follower:
@@ -154,6 +154,15 @@ tony-dell:
           follower — no Caddy route to repoint (/api/mddb entry is for the
           decommissioned Aug service). Dell unit stopped; quadlet + data kept
           as standby.
+        follower_idc01:
+          host: idc01
+          node_id: idc01
+          host_port: 100.74.146.0:11123
+          service: mddb-follower.service (separate quadlet — the old leader
+            mddb.service is masked with data retired to
+            data.leader-retired-20261006)
+          status: running since 2026-10-06 — warm-DR replica; promote-first
+            path if the leader dies
         standby_follower:
           host: tony-dell
           node_id: tony-dell
@@ -195,7 +204,7 @@ tony-dell:
           multiple sessions SIGQUIT-debugging the same unit caused restart
           churn — coordinate before killing.
         note: home consumers get a local read replica; promotion to standalone is manual
-    note: "Primary moved tony-dell -> idc01 (public VPS, tailnet-only access — UFW allows tailscale0 only). Snapshot /v1/backup pre-migration-20260922-0914 copied to idc01; all consumers repointed to 100.102.134.91. Embedding via gemini-ollama-proxy on idc01 (option A — Gemini-compatible vectors preserved); embeddings replicate to follower via binlog. tony-dell copy retired after soak, then re-deployed as follower. Cold-start caveats — vector index load takes ~45 min after HTTP is up and /v1/stats blocks during it; on the follower, initial BoltDB open of a seeded DB can take hours if the seed carries freelist damage (see corruption_repair_20260930)."
+    note: "Primary moved tony-dell -> idc01 2026-09-22, then idc01 -> idc03 2026-10-05/06 (public VPS, tailnet-only access — UFW allows tailscale0 only). All consumers point at 100.102.134.91. Embedding via gemini-ollama-proxy on idc03 (option A — Gemini-compatible vectors preserved); embeddings replicate to followers via binlog. tony-dell copy retired after soak, then re-deployed as follower. Cold-start caveats — vector index load takes ~45 min after HTTP is up and /v1/stats blocks during it; on a follower, initial BoltDB open of a seeded DB can take hours if the seed carries freelist damage (see corruption_repair_20260930)."
   mddb-panel:
     container: mddb-panel
     image: docker.io/tradik/mddb:panel-latest
@@ -353,9 +362,9 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/gemini-ollama-proxy.container
       service_unit: ~/.config/systemd/user/gemini-ollama-proxy.service
-    source: /home/tony/CascadeProjects/chaba/scripts/mddb/gemini-ollama-proxy.mjs (idc01 copy at ~/.config/containers/mddb/proxy/)
+    source: /home/tony/CascadeProjects/chaba/scripts/mddb/gemini-ollama-proxy.mjs (idc03 copy at ~/.config/containers/mddb/proxy/)
     secrets:
-      - gemini-api-key (idc01: ~/.config/secrets/mddb-gemini.env EnvironmentFile)
+      - gemini-api-key (idc03: ~/.config/secrets/mddb-gemini.env EnvironmentFile)
     environment:
       - GEMINI_EMBEDDING_MODEL=gemini-embedding-2
     status: active
@@ -381,14 +390,14 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/ollama.container
       service_unit: ~/.config/systemd/user/ollama.service
-      repo: stacks/idc01/ollama/ollama.container
+      repo: stacks/idc03/ollama/ollama.container
     models: [nomic-embed-text, phi3-gguf, llama3.2:3b]
     consumers:
-      - mcp-llama (LLAMA_URL → idc01.taila0626a.ts.net:11434, repointed 2026-09-28)
+      - mcp-llama (LLAMA_URL → idc03.taila0626a.ts.net:11434, repointed 2026-09-28 → idc03 2026-10-06)
       - gemini-ollama-proxy OLLAMA_FALLBACK_BASE (when uncommented)
     note: "Bound to tailscale IP only — reachable from tailnet hosts; never exposed on the public interface."
-    status: running on idc01 (2026-09-22) — embedding fallback for mddb
-      (open-notebook consumer retired 2026-10-04)
+    status: running on idc03 — embedding fallback for mddb
+      (open-notebook consumer retired 2026-10-04; idc01 ollama masked warm-standby)
   open-notebook-backup:
     service: Open Notebook SurrealDB nightly export
     host: idc03
@@ -401,8 +410,8 @@ tony-dell:
       file, podman cp into a scratch surrealdb:v2 (memory/rocksdb), surreal
       import --ns open_notebook --db open_notebook. Verified 2026-09-23:
       518 sources + 2 notebooks restored.
-    status: retired 2026-10-04 (timer disabled+stopped on idc01; last exports remain under ~/open-notebook-backups/)
-    note: "MDDB on idc01 connects to http://127.0.0.1:11435. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
+    status: retired 2026-10-04 (timer disabled+stopped; last exports remain under ~/open-notebook-backups/)
+    note: "MDDB connects to gemini-ollama-proxy at http://127.0.0.1:11435 (now on idc03). Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
   obsidian-vault:
     service: Ada Memory Vault web app (notes browser + knowledge graph)
     runtime: python3 venv (~/jobenv)
@@ -410,10 +419,10 @@ tony-dell:
     port: 8004
     host_port: 127.0.0.1:8004
     service_unit: ~/.config/systemd/user/obsidian-vault.service
-    access: tailnet-only via tailscale serve https://idc01.taila0626a.ts.net:8443
+    access: tailnet-only via tailscale serve https://idc03.taila0626a.ts.net:8443
     vault: ~/obsidian-app/vault (rsynced from mn01 canonical docs/ada-memory)
     env: ADA_DEPLOY=tailnet, ADA_API_KEY write-gate, MDDB via 100.102.134.91:11023
-    status: running on idc01 (2026-09-22); migrated from mn01
+    status: running on idc03; migrated mn01 -> idc01 2026-09-22 -> idc03 2026-10-06
   open-notebook:
     service: Open Notebook app+API (eval)
     runtime: rootless podman
@@ -425,7 +434,7 @@ tony-dell:
       service_unit: ~/.config/systemd/user/open-notebook.service
       repo: stacks/idc01/open-notebook/
     env_notes:
-      - OLLAMA_API_BASE=http://100.102.134.91:11434 (idc01-local ollama, tailnet IP; repointed from tony-omen 2026-09-28)
+      - OLLAMA_API_BASE=http://100.102.134.91:11434 (idc03-local ollama, tailnet IP; repointed from tony-omen 2026-09-28)
       - OPEN_NOTEBOOK_CHUNK_SIZE=1500, OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
       - EnvironmentFile=~/.config/secrets/open-notebook.env (password/encryption/google key)
     access: tailnet-only via tailscale serve (UI :8444, API :8445)
@@ -679,7 +688,7 @@ tony-omen:
     network: web_default
     routing:
       - /v1/chat/completions → phi3-gguf (local fallback only)
-    status: slimmed 2026-09-28 — tailnet-only bind (was 0.0.0.0 LAN-exposed); no production consumers (ONB embeddings + mcp-llama moved to idc01:11434); keep for GPU/local use when laptop is home
+    status: slimmed 2026-09-28 — tailnet-only bind (was 0.0.0.0 LAN-exposed); no production consumers (ONB embeddings + mcp-llama moved to the VPS ollama, now idc03:11434); keep for GPU/local use when laptop is home
   openclaw-gateway:
     service: OpenClaw agent gateway (travel-mode agent)
     runtime: systemd user service (openclaw-gateway.service) + npm user prefix ~/.npm-global
@@ -687,7 +696,7 @@ tony-omen:
     port: "127.0.0.1:18789 (loopback, token auth)"
     config: ~/.openclaw/openclaw.json
     models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
-    auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
+    auth_profile: "openrouter:manual — key shared with idc03 mddb-gemini.env OPENROUTER_API_KEY"
     channels:
       telegram:
         bot: "@myChabaBot (polling mode; NOT the ada-tg-relay bot — different token, no update-stealing)"
@@ -696,8 +705,8 @@ tony-omen:
         token: ~/.config/secrets/telegram-bot.env
         approve_cmd: "openclaw pairing approve telegram <code> (channel-scoped; pairing list CLI misreports 'no pairing channels' — check channel_pairing_requests table in ~/.openclaw/state/openclaw.sqlite if list is empty)"
       line:
-        status: "disabled 2026-10-02 — Ada's ada-line-relay on idc01 owns the ชบา bot's sole webhook slot (webhook-only API, Caddy → 127.0.0.1:8912); OpenClaw LINE left installed+configured but disabled — enabling it cannot receive inbound unless the webhook moves"
-        creds: "~/.config/secrets/line-bot.env synced from idc01 (token+secret+allowed-user-ids); plugins.entries.line.enabled=true set"
+        status: "disabled 2026-10-02 — Ada's ada-line-relay on idc03 owns the ชบา bot's sole webhook slot (webhook-only API, Caddy → 127.0.0.1:8912); OpenClaw LINE left installed+configured but disabled — enabling it cannot receive inbound unless the webhook moves"
+        creds: "~/.config/secrets/line-bot.env synced from the VPS secrets dir (token+secret+allowed-user-ids); plugins.entries.line.enabled=true set"
     mcp_servers:
       mddb: "streamable-http http://100.102.134.91:9000/mcp + X-API-Key (same key as devin mcp_config)"
       home-assistant: "streamable-http tony-dell:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
@@ -706,7 +715,7 @@ tony-omen:
       nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
     known_issues:
       - "ghostroute writes OR model ids unprefixed — FIXED via fork tonezzz/GhostRoute c6ca06d (cli.py + watcher.py). Standard: fork patched deps to tonezzz, keep fixes quiet — no upstream PR unless explicitly decided. Local install at ~/.openclaw/workspace/skills/ghost-route now tracks origin=tonezzz/GhostRoute (upstream=kittimasak for pulls)"
-      - "OR key in auth profile openrouter:manual must be re-pasted whenever idc01 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
+      - "OR key in auth profile openrouter:manual must be re-pasted whenever idc03 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
       - "opennb MCP removed 2026-10-04 (ONB retired); if revived, first fix upstream quota — gemini flash key saturates under ada/yomi load, OR-provider inside ONB was the planned dodge"
     status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29, paired 2026-10-02
     risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
@@ -931,10 +940,10 @@ mn01:
     port: 8001
     host_port: 127.0.0.1:8001
     purpose: Standalone Ada PWA backend (voice/chat/cms/enroll frontend + API)
-    status: active on idc01 (2026-09-23); retired on tony-dell same day
-    tailnet_url: "https://idc01.taila0626a.ts.net/"
+    status: active on idc03 (migrated tony-dell -> idc01 2026-09-23 -> idc03 2026-10-06); retired on tony-dell
+    tailnet_url: "https://idc03.taila0626a.ts.net/"
     env_file: "~/.config/secrets/ada-pi-pwa.env"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui, then idc01 -> idc03; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. idc01 keeps a warm-boot copy (ada-pi-pwa.service runs but is not the primary). Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
     host: idc03
@@ -942,11 +951,11 @@ mn01:
     host_port: 127.0.0.1:8002
     purpose: Ada HA Tony instance (voice PWA for tony-ha)
     status: active
-    tailnet_url: "https://idc01.taila0626a.ts.net/apps/ha/ada-tony/"
+    tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony/"
     env_file: "~/.config/secrets/ada-ha-tony.env"
-    edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc01; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
+    edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. A synced mirror runs on idc01 :8002 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-tony/ — same admin keys; issued-keys file synced from mn01 2026-09-23 (re-sync after key churn)."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — same admin keys; issued-keys file synced from mn01 2026-09-23 (re-sync after key churn). idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: idc03
@@ -954,11 +963,11 @@ mn01:
     host_port: 127.0.0.1:8003
     purpose: Ada HA Michael instance (voice PWA for michael-ha)
     status: active
-    tailnet_url: "https://idc01.taila0626a.ts.net/apps/ha/ada-michael/"
+    tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael/"
     env_file: "~/.config/secrets/ada-ha-michael.env"
-    edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc01; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
+    edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. A synced mirror runs on idc01 :8003 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys; idc01 reaches michael-ha directly over tailnet (verified 401 on /api/ 2026-09-23)."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys; idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
   ada-dev:
     service: ada-dev.service
     host: idc03

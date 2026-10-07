@@ -2,7 +2,7 @@
 """mddb binlog canary — flags sustained replication/binlog breaches to the focus inbox.
 
 Runs inside the tony-dell chaba health loop (tony-dell-monitor.sh, 2-min timer).
-GETs {url} (default http://<idc01>:11023/v1/replication/status) and flags when:
+GETs {url} (default http://<idc03>:11023/v1/replication/status) and flags when:
 
   - binlog_size_bytes > 1_073_741_824 (1 GiB)
   - current_lsn - binlog_oldest_lsn > 5_000_000
@@ -153,15 +153,15 @@ def make_inbox_item(reasons, metrics, breach_secs, now):
                 f"lsn_gap={metrics.get('lsn_gap')} "
                 f"(current_lsn={metrics.get('current_lsn')} - "
                 f"binlog_oldest_lsn={metrics.get('binlog_oldest_lsn')}). "
-                "The retention janitor on idc01 may have stalled — check "
+                "The retention janitor on idc03 may have stalled — check "
                 "mddb.service before the disk fills."
             ),
             "status": "draft",
             "priority": "high",
             "tags": ["health", "inbox", "mddb", "binlog"],
             "missing_info": [
-                "Is the retention janitor still running on idc01 (journalctl --user -u mddb.service)?",
-                "Is the idc02 follower (100.123.163.11:11023) still connected and caught up?",
+                "Is the retention janitor still running on idc03 (journalctl --user -u mddb.service)?",
+                "Are the idc02 (100.123.163.11:11023) and idc01 (100.74.146.0:11123) followers still connected and caught up?",
             ],
         },
         "source": {"session": "mddb-binlog-canary", "date": ts[:10]},
@@ -188,7 +188,7 @@ def main():
     result = {
         "timestamp": ts_iso(now),
         "service": "mddb-binlog",
-        "source": "idc01",
+        "source": "idc03",
         "action": "log",
         "url": args.url,
         "http_code": 0,

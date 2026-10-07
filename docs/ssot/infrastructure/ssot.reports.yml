@@ -159,12 +159,23 @@ nodes:
     children: []
   - id: audit-hosts/idc01
     layer: L1-producer
-    purpose: Host snapshot + delta vs expected services/resources
+    purpose: Host snapshot + delta vs expected services/resources (warm-DR role since 2026-10-06)
     generator: scripts/audit-hosts.py --host idc01
     cadence: 24h
     output: reports/audit-hosts
     artifact_pattern: "idc01-*.yml"
     meta: reports/audit-hosts/meta.idc01.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/idc03
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (primary VPS since 2026-10-05/06)
+    generator: scripts/audit-hosts.py --host idc03
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "idc03-*.yml"
+    meta: reports/audit-hosts/meta.idc03.yml
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
@@ -241,6 +252,7 @@ nodes:
       - audit-hosts/tony-omen
       - audit-hosts/mn01
       - audit-hosts/idc01
+      - audit-hosts/idc03
       - audit-hosts/macbook
       - health-monitor
       - host-loads
@@ -313,6 +325,7 @@ nodes:
       - audit-hosts/tony-omen
       - audit-hosts/mn01
       - audit-hosts/idc01
+      - audit-hosts/idc03
       - audit-hosts/macbook
       - memory-suite
   # --- Card CI domain ---

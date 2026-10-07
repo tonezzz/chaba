@@ -30,9 +30,9 @@ sections:
       - label: mcp-health schedule group
         text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
       - label: Cross-host checks
-        text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc01 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125, barrier-client). Retired checks: caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082.'
+        text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc03 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125, barrier-client). Retired checks: caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082, idc01 mddb leader (masked — warm-DR only; follower health rides the binlog canary).'
       - label: mddb binlog canary
-        text: 'scripts/mddb-binlog-canary.py runs inside the monitor loop (2-min timer): GET idc01 :11023/v1/replication/status, flags binlog_size_bytes > 1GiB or (current_lsn - binlog_oldest_lsn) > 5M or followers[].status != healthy. A breach must persist >10min (state: ~/var/chaba/health/mddb-binlog-state.json) before one focus-inbox item is written per episode. Lives here rather than in mcp-health because the mcp-health server only supports http-status/container/systemd/mount checks, not JSON-threshold checks.'
+        text: 'scripts/mddb-binlog-canary.py runs inside the monitor loop (2-min timer): GET idc03 :11023/v1/replication/status, flags binlog_size_bytes > 1GiB or (current_lsn - binlog_oldest_lsn) > 5M or followers[].status != healthy (covers both idc02 and idc01:11123 followers). A breach must persist >10min (state: ~/var/chaba/health/mddb-binlog-state.json) before one focus-inbox item is written per episode. Lives here rather than in mcp-health because the mcp-health server only supports http-status/container/systemd/mount checks, not JSON-threshold checks.'
       - label: ssh canary (inbound)
         text: 'ssh-canary.timer on tony-omen probes tony-dell SSH every 1min over both paths (tailnet 100.68.142.13, LAN 192.168.2.67): TCP connect, SSH banner, and full BatchMode roundtrip timings to ~/var/chaba/health/ssh-canary.log on tony-omen. 2 consecutive failed probes trigger a chaba recent-event + best-effort HA event; recovery pulls /proc/pressure + ssh/tailscaled/smartd journal into ssh-canary-incident-*.log.'
       - label: remote-access protection
@@ -51,7 +51,7 @@ sections:
       - label: tony-omen web
         text: https://tony-dell.taila0626a.ts.net/, http://tony-dell:3000/api/yomi/health, https://tony-dell.taila0626a.ts.net/api/health
       - label: tony-omen AI/data
-        text: http://tony-omen:3002/health (weaviate-search), http://tony-omen:11434/api/tags (ollama — query-time embeddings); MDDB moved to idc01 :11023/v1/health; llama :8008 and imagen2 :8000 disabled (VRAM reserved for WallDance)
+        text: http://tony-omen:3002/health (weaviate-search), http://tony-omen:11434/api/tags (ollama — query-time embeddings); MDDB on idc03 :11023/v1/health; llama :8008 and imagen2 :8000 disabled (VRAM reserved for WallDance)
       - label: tony-omen GPU queue
         text: gpu-queue :3001 unit disabled on tony-omen (GPU stack parked); mn01 caddy :8080 (302) now the web front on that host
       - label: tony-omen playlive

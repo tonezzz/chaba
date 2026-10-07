@@ -12,8 +12,8 @@ Checks:
   memory_render  — render-memory.py produces a fresh, non-trivial context
   services_live  — key endpoints answer (vcast api, camwall, gev, mddb)
   mddb_sync      — mddb stats endpoint healthy (collection count > 0)
-  timers         — ada-* timers on idc01 have a recent LAST fire
-  units_failed   — no failed user units on idc01 / tony-dell
+  timers         — ada-* timers on idc03 have a recent LAST fire
+  units_failed   — no failed user units on idc03 / idc01 / tony-dell
 """
 import argparse
 import json
@@ -69,8 +69,8 @@ def check_services() -> tuple[str, str]:
             _get(url)
         except Exception as exc:
             dead.append(f"{name}({type(exc).__name__})")
-    # Ada's ws server binds loopback on idc01 — check the unit instead
-    rc, out = _sh('ssh -o BatchMode=yes -o ConnectTimeout=8 idc01 '
+    # Ada's ws server binds loopback on idc03 — check the unit instead
+    rc, out = _sh('ssh -o BatchMode=yes -o ConnectTimeout=8 idc03 '
                   '"systemctl --user is-active ada-ha-tony"', 30)
     if out != "active":
         dead.append(f"ada({out or 'unreachable'})")
@@ -93,10 +93,10 @@ def check_mddb() -> tuple[str, str]:
 
 def check_timers() -> tuple[str, str]:
     rc, out = _sh(
-        'ssh -o BatchMode=yes -o ConnectTimeout=8 idc01 '
+        'ssh -o BatchMode=yes -o ConnectTimeout=8 idc03 '
         '"systemctl --user list-timers --all 2>/dev/null | grep ada- "', 30)
     if rc != 0:
-        return "fail", f"idc01 unreachable: {out[:120]}"
+        return "fail", f"idc03 unreachable: {out[:120]}"
     stale = [l.split()[0] for l in out.splitlines()
              if l.strip() and l.split()[1:3] == ["-", "-"]]
     if stale:
@@ -106,7 +106,7 @@ def check_timers() -> tuple[str, str]:
 
 def check_units_failed() -> tuple[str, str]:
     bad = []
-    for h in ("idc01", "tony-dell"):
+    for h in ("idc03", "idc01", "tony-dell"):
         rc, out = _sh(
             f'ssh -o BatchMode=yes -o ConnectTimeout=8 {h} '
             '"systemctl --user --failed --no-legend 2>/dev/null"', 30)

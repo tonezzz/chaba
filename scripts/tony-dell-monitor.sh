@@ -16,10 +16,10 @@ if [[ -z "$TONY_OMEN_IP" ]]; then
     TONY_OMEN_IP="100.75.102.88"
 fi
 
-# MDDB lives on idc01 since the 2026-09-22 cutover
-IDC01_IP=$(tailscale ip -4 idc01 2>/dev/null || true)
-if [[ -z "$IDC01_IP" ]]; then
-    IDC01_IP="100.102.134.91"
+# MDDB leader lives on idc03 since the 2026-10-05/06 cutover (idc01 is warm-DR follower)
+MDDB_IP=$(tailscale ip -4 idc03 2>/dev/null || true)
+if [[ -z "$MDDB_IP" ]]; then
+    MDDB_IP="100.102.134.91"
 fi
 
 # mn01 — secondary node (caddy :8080, yolo-xiaomi, weaviate-embedding)
@@ -50,11 +50,11 @@ if [[ -z "$CANARY_SCRIPT" ]]; then
 fi
 if [[ -n "$CANARY_SCRIPT" && -f "$CANARY_SCRIPT" ]]; then
     CANARY_LINE=$(python3 "$CANARY_SCRIPT" \
-        --url "http://${IDC01_IP}:11023/v1/replication/status" \
+        --url "http://${MDDB_IP}:11023/v1/replication/status" \
         2>>"$LOG_DIR/mddb-binlog-canary.err" || true)
 fi
 
-MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" "$MN01_IP" "$CANARY_LINE" <<'PY'
+MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$MDDB_IP" "$MN01_IP" "$CANARY_LINE" <<'PY'
 import json
 import os
 import re
@@ -62,7 +62,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP, MN01_IP, CANARY_LINE = sys.argv[1:8]
+LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, MDDB_IP, MN01_IP, CANARY_LINE = sys.argv[1:8]
 
 
 def curl_check(url, method="GET", expect=200, timeout=5):
@@ -118,15 +118,15 @@ def process_check(name, cmd, expected_pattern=None):
 
 results = []
 
-# tony-omen / idc01 / mn01 HTTP endpoints — post-migration set (2026-09-28).
+# tony-omen / idc03 / mn01 HTTP endpoints — post-idc03-migration set (2026-10-07).
 # Retired: caddy-omen :8080 (unit disabled 2026-09-12), gpu-queue/llama/imagen2
 # (GPU stack units disabled — VRAM reserved for WallDance/YOLO-TRT),
-# weaviate-embedding moved to mn01.
+# weaviate-embedding moved to mn01, idc01 mddb leader (masked — warm-DR only).
 remote_endpoints = {
     "playlived": (f"http://{TONY_OMEN_IP}:9230/sessions", 200),
     "weaviate-search": (f"http://{TONY_OMEN_IP}:3002/health", 200),
     "ollama-omen": (f"http://{TONY_OMEN_IP}:11434/api/tags", 200),
-    "mddb-api": (f"http://{IDC01_IP}:11023/v1/health", 200),
+    "mddb-api": (f"http://{MDDB_IP}:11023/v1/health", 200),
     "mn01-caddy": (f"http://{MN01_IP}:8080/", 302),
 }
 
@@ -134,7 +134,7 @@ for name, (url, expect) in remote_endpoints.items():
     res = curl_check(url, expect=expect)
     res["timestamp"] = TS
     res["source"] = ("tony-omen" if TONY_OMEN_IP in url else
-                     "idc01" if IDC01_IP in url else
+                     "idc03" if MDDB_IP in url else
                      "mn01" if MN01_IP in url else "remote")
     res["service"] = name
     res["action"] = "log"
