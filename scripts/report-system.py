@@ -87,7 +87,25 @@ def _fmt_age(iso: str | None) -> str:
 
 AUDIT_HOSTS_DIR = REPO / "reports" / "audit-hosts"
 HOST_LOADS_YML = REPO / "reports" / "host-loads" / "host-loads.yml"
+HOST_LOADS_YML_SERVED = (Path("/home/tony/CascadeProjects/chaba-tony-dell")
+                       / "reports" / "host-loads" / "host-loads.yml")
 HOST_LOADS_MAX_AGE_H = 4
+
+
+def _host_loads_path() -> Path:
+    """tony-dell-monitor.sh runs the sampler from the served checkout
+    (chaba-tony-dell) first — prefer whichever copy is freshest so the
+    report never falls back while the sampler is alive."""
+    best = HOST_LOADS_YML
+    best_ts = None
+    for p in (HOST_LOADS_YML, HOST_LOADS_YML_SERVED):
+        try:
+            ts = p.stat().st_mtime
+        except OSError:
+            continue
+        if best_ts is None or ts > best_ts:
+            best, best_ts = p, ts
+    return best
 
 
 def _mb_human(mb) -> str | None:
@@ -100,7 +118,8 @@ def _host_loads() -> list[dict]:
     """Per-host load view. Prefers the 5-min host-loads sampler output;
     falls back to the 24h audit-hosts snapshots when the sampler is dark."""
     try:
-        live = yaml.safe_load(HOST_LOADS_YML.read_text(encoding="utf-8")) or {}
+        live = yaml.safe_load(
+            _host_loads_path().read_text(encoding="utf-8")) or {}
         gen = live.get("generated_at")
         age_ok = _fmt_age(gen) != "-" and (
             datetime.datetime.now(datetime.timezone.utc)
