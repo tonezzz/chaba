@@ -1,7 +1,7 @@
 {
  "collection": "ada-ha-scenario-reports",
- "exported_at": "2026-10-06T21:30:27.080881+00:00",
- "doc_count": 724,
+ "exported_at": "2026-10-07T09:09:30.540396+00:00",
+ "doc_count": 674,
  "docs": [
   {
    "id": "ada-ha-scenario-reports|auto-report/casting-20261001-020014|en",
@@ -6946,47 +6946,6 @@
    "expiresAt": 1791565547
   },
   {
-   "id": "ada-ha-scenario-reports|report/cms-translate-20261003-220353|en",
-   "key": "report/cms-translate-20261003-220353",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "157.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "cms-translate"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "7"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# cms-translate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 22:01:22 | 1 | Create a CMS page with slug \"translate-probe\", title \"Tra… | set_facial_expression, cms_publish_page | ok |\n| 22:01:44 | 2 | Yes, publish it. | set_facial_expression, cms_publish_page, cms_verify_page | ok |\n| 22:02:04 | 3 | Now translate translate-probe into Thai and publish it as… | set_facial_expression, cms_publish_page | ok |\n| 22:02:27 | 4 | Yes, publish the Thai version. | set_facial_expression, cms_publish_page, cms_verify_page | ok |\n| 22:02:46 | 5 | Fetch the Thai variant of translate-probe and tell me wha… | set_facial_expression, cms_get_page | ok |\n| 22:03:08 | 6 | Now make a German version of translate-probe too. | set_facial_expression, web_search, web_search | ok |\n| 22:03:33 | 7 | Yes, go ahead. | set_facial_expression, web_search | ok |\n\n## Runner output\n\nscenario: cms-translate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Create a CMS page with slug \"translate-probe\", title \"Translate Probe\", content \"This page exists to test translation. It has one sentence.\"'\n  ok (2 tool calls) ada: 'Welcome back, Tony. about the page you asked to create — can I publish it with \"translate-probe\" as the slug and \"Translate Probe\" as the ti'\nturn 2: 'Yes, publish it.'\n  ok (3 tool calls) ada: 'Published \"Translate Probe\" with translate-probe slug. Just so you know, the camera wall on screen 1 is still running — want to keep it, or '\nturn 3: 'Now translate translate-probe into Thai and publish it as the Thai variant of the same page.'\n  ok (2 tool calls) ada: 'Understood. I\\'ve translated it to Thai as \"ทดสอบการแปล\". Can I publish that with the same slug, \"translate-probe\", but for the Thai version?'\nturn 4: 'Yes, publish the Thai version.'\n  ok (3 tool calls) ada: 'Published the Thai version marked as \"ทดสอบการแปล\". And reminding you about the camera wall again — ready to stop it, or keep it up?'\nturn 5: 'Fetch the Thai variant of translate-probe and tell me what it says.'\n  ok (2 tool calls) ada: 'The Thai version of the page says, \"หน้านี้มีไว้เพื่อทดสอบการแปล มีประโยคเดียว,\" which translates to \"This page exists to test translation. '\nturn 6: 'Now make a German version of translate-probe too.'\n  ok (3 tool calls) ada: 'I encountered an issue while trying to translate that phrase. Would you be able to provide the German translation, or should I try again lat'\nturn 7: 'Yes, go ahead.'\n  ok (2 tool calls) ada: \"I'm still having trouble with the translation — would you mind providing it, or should I check back later? And what about the camera wall on\"\nPASS: 0 failed expectations\n",
-   "addedAt": 1791065033,
-   "updatedAt": 1791065033,
-   "expiresAt": 1791324233
-  },
-  {
    "id": "ada-ha-scenario-reports|report/cms-translate-20261003-230618|en",
    "key": "report/cms-translate-20261003-230618",
    "lang": "en",
@@ -7026,88 +6985,6 @@
    "addedAt": 1791068778,
    "updatedAt": 1791068778,
    "expiresAt": 1791673578
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/cms-translate-20261004-000316|en",
-   "key": "report/cms-translate-20261004-000316",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "134.9"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "cms-translate"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "7"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# cms-translate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 00:01:07 | 1 | Create a CMS page with slug \"translate-probe\", title \"Tra… | set_facial_expression, cms_publish_page | ok |\n| 00:01:27 | 2 | Yes, publish it. | set_facial_expression, cms_publish_page | ok |\n| 00:01:45 | 3 | Now translate translate-probe into Thai and publish it as… | set_facial_expression, cms_publish_page | ok |\n| 00:02:03 | 4 | Yes, publish the Thai version. | set_facial_expression, cms_publish_page | ok |\n| 00:02:19 | 5 | Fetch the Thai variant of translate-probe and tell me wha… | cms_get_page, set_facial_expression | ok |\n| 00:02:36 | 6 | Now make a German version of translate-probe too. | set_facial_expression, cms_publish_page | ok |\n| 00:02:56 | 7 | Yes, go ahead. | set_facial_expression, cms_publish_page | ok |\n\n## Runner output\n\nscenario: cms-translate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Create a CMS page with slug \"translate-probe\", title \"Translate Probe\", content \"This page exists to test translation. It has one sentence.\"'\n  ok (2 tool calls) ada: 'Tony คะ เอด้า ลงทะเบียน คำขอ สร้าง หน้า ใหม่ ชื่อ \"Translate Probe\" เรียบร้อย แล้วค่ะ จะให้ เผยแพร่ หน้า นี้เลยไหมคะ?'\nturn 2: 'Yes, publish it.'\n  ok (2 tool calls) ada: 'เรียบร้อยค่ะ เผยแพร่ เรียบร้อย แล้วนะคะ ตอนนี้ หน้าจอยัง เปิด กำแพงกล้อง Noble A อยู่ จะให้ ปิด ไหมคะ?'\nturn 3: 'Now translate translate-probe into Thai and publish it as the Thai variant of the same page.'\n  ok (2 tool calls) ada: 'รับทราบค่ะ เตรียมเผยแพร่ ฉบับ ภาษาไทย ของหน้า \"Translate Probe\" นะคะ ยืนยัน ให้ดำเนินการ เลยไหมคะ?'\nturn 4: 'Yes, publish the Thai version.'\n  ok (2 tool calls) ada: 'เผยแพร่ฉบับภาษาไทย เรียบร้อย แล้วค่ะ จะให้ จัดการ กล้องวงจรปิด ต่อเลย ไหมคะ?'\nturn 5: 'Fetch the Thai variant of translate-probe and tell me what it says.'\n  ok (2 tool calls) ada: 'หน้านี้ มีข้อความ ว่า \"หน้านี้ มีไว้ เพื่อทดสอบ การแปล มีหนึ่ง ประโยค\" ค่ะ จะให้ ดูแล เรื่องกล้อง วงจรปิด ต่อเลย ไหมคะ?'\nturn 6: 'Now make a German version of translate-probe too.'\n  ok (2 tool calls) ada: 'รับทราบค่ะ เตรียมเผยแพร่ ฉบับ ภาษาเยอรมัน นะคะ ยืนยัน ให้ดำเนินการ เลยไหมคะ? ส่วนหน้าจอ Noble A ยังเปิดอยู่ จะให้ ปิด ไหมคะ?'\nturn 7: 'Yes, go ahead.'\n  ok (2 tool calls) ada: 'ขออภัยค่ะ เผยแพร่ ภาษาเยอรมัน ไม่สำเร็จ นะคะ ตอนนี้ รองรับ แค่ภาษา อังกฤษ กับไทย เท่านั้น ค่ะ จะให้ จัดการ เรื่องกล้อง วงจรปิด ต่อเลย ไหมคะ?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791072196,
-   "updatedAt": 1791072196,
-   "expiresAt": 1791331396
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/cms-translate-20261004-040407|en",
-   "key": "report/cms-translate-20261004-040407",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "127.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "cms-translate"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "7"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# cms-translate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:02:06 | 1 | Create a CMS page with slug \"translate-probe\", title \"Tra… | set_facial_expression, cms_publish_page | ok |\n| 04:02:29 | 2 | Yes, publish it. | set_facial_expression, cms_publish_page, cms_verify_page | ok |\n| 04:02:44 | 3 | Now translate translate-probe into Thai and publish it as… | cms_get_page, set_facial_expression, cms_publish_page | ok |\n| 04:03:01 | 4 | Yes, publish the Thai version. | set_facial_expression, cms_publish_page, cms_verify_page | ok |\n| 04:03:17 | 5 | Fetch the Thai variant of translate-probe and tell me wha… | cms_get_page, set_facial_expression | ok |\n| 04:03:32 | 6 | Now make a German version of translate-probe too. | set_facial_expression, cms_publish_page | ok |\n| 04:03:49 | 7 | Yes, go ahead. | set_facial_expression, cms_publish_page | ok |\n\n## Runner output\n\nscenario: cms-translate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Create a CMS page with slug \"translate-probe\", title \"Translate Probe\", content \"This page exists to test translation. It has one sentence.\"'\n  ok (2 tool calls) ada: 'Tony, I\\'ve registered the request to create a page with the slug \"translate-probe\" and title \"Translate Probe.\" Please confirm that you want'\nturn 2: 'Yes, publish it.'\n  ok (3 tool calls) ada: 'Published it, and it looks good. The page is live.'\nturn 3: 'Now translate translate-probe into Thai and publish it as the Thai variant of the same page.'\n  ok (3 tool calls) ada: 'I\\'m ready to publish the Thai variant with the title \"ทดสอบการแปล\". Shall I proceed?'\nturn 4: 'Yes, publish the Thai version.'\n  ok (3 tool calls) ada: 'เผยแพร่เรียบร้อย แล้วค่ะ หน้าภาษาไทย พร้อมใช้งาน แล้ว ค่ะ'\nturn 5: 'Fetch the Thai variant of translate-probe and tell me what it says.'\n  ok (2 tool calls) ada: 'หน้านี้บอกว่า \"หน้านี้มีไว้เพื่อทดสอบการแปล มีประโยคเดียว\" ค่ะ'\nturn 6: 'Now make a German version of translate-probe too.'\n  ok (2 tool calls) ada: 'Ich habe die Anfrage registriert, eine deutsche Version mit dem Titel \"Übersetzungstest\" zu erstellen. Soll ich sie veröffentlichen?'\nturn 7: 'Yes, go ahead.'\n  ok (2 tool calls) ada: 'Tut mir leid, ich kann nur englische oder thailändische Versionen veröffentlichen. Deutsch wird momentan nicht unterstützt.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791086647,
-   "updatedAt": 1791086647,
-   "expiresAt": 1791345847
   },
   {
    "id": "ada-ha-scenario-reports|report/cms-translate-20261004-050920|en",
@@ -7190,88 +7067,6 @@
    "addedAt": 1791094195,
    "updatedAt": 1791094195,
    "expiresAt": 1791698995
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/cms-translate-20261004-070407|en",
-   "key": "report/cms-translate-20261004-070407",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "173.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "cms-translate"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "7"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# cms-translate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 07:01:19 | 1 | Create a CMS page with slug \"translate-probe\", title \"Tra… | set_facial_expression, cms_publish_page | ok |\n| 07:01:56 | 2 | Yes, publish it. | cms_publish_page, set_facial_expression | ok |\n| 07:02:18 | 3 | Now translate translate-probe into Thai and publish it as… | set_facial_expression, cms_publish_page | ok |\n| 07:02:38 | 4 | Yes, publish the Thai version. | set_facial_expression, cms_publish_page | ok |\n| 07:03:02 | 5 | Fetch the Thai variant of translate-probe and tell me wha… | set_facial_expression, cms_get_page | ok |\n| 07:03:16 | 6 | Now make a German version of translate-probe too. | set_facial_expression, cms_publish_page | ok |\n| 07:03:42 | 7 | Yes, go ahead. | set_facial_expression, cms_publish_page | ok |\n\n## Runner output\n\nscenario: cms-translate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Create a CMS page with slug \"translate-probe\", title \"Translate Probe\", content \"This page exists to test translation. It has one sentence.\"'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ'\nturn 2: 'Yes, publish it.'\n  ok (2 tool calls) ada: 'จัดทำเพจเรียบร้อย แล้วค่ะ ตอนนี้ เผยแพร่ บนมินิแอป ของคุณ แล้ว ค่ะ อ้อ แล้วก็ กล้อง วงจรปิด ในโซน Noble Park ยังโชว์ อยู่บน หน้าจอ ที่ 1 นะค'\nturn 3: 'Now translate translate-probe into Thai and publish it as the Thai variant of the same page.'\n  ok (2 tool calls) ada: 'จะจัดทำ เพจ ภาษาไทย เพิ่มให้ นะคะ โดยใช้ สลัก เดิม เนื้อหา คือ \"หน้านี้ มีไว้ เพื่อทดสอบ การแปล มีประโยค เดียว\" ยืนยัน ไหมคะ'\nturn 4: 'Yes, publish the Thai version.'\n  ok (2 tool calls) ada: 'เผยแพร่เพจ ภาษาไทย เรียบร้อย แล้วค่ะ ตอนนี้ มีทั้ง เวอร์ชัน ภาษาอังกฤษ และภาษาไทย บนสลัก เดียวกัน แล้วนะคะ เลือกสลับ ภาษา ในหน้า มินิแอป ของ'\nturn 5: 'Fetch the Thai variant of translate-probe and tell me what it says.'\n  ok (2 tool calls) ada: 'หน้าภาษาไทย บอกว่า \"หน้านี้ มีไว้ เพื่อทดสอบ การแปล มีประโยค เดียว\"'\nturn 6: 'Now make a German version of translate-probe too.'\n  ok (2 tool calls) ada: 'จะให้เพิ่ม เพจ ภาษาเยอรมัน เข้าไป ด้วยไหม คะ โดยใช้ สลัก เดิม เนื้อหาคือ \"Diese Seite dient zum Testen der Übersetzung. Sie enthält einen Sa'\nturn 7: 'Yes, go ahead.'\n  ok (2 tool calls) ada: 'ขออภัยค่ะ เอด้า เพิ่ม เพจ ภาษาเยอรมัน ไม่ได้ ค่ะ ตอนนี้ รองรับ แค่ภาษาอังกฤษ และภาษาไทย เท่าซูง ค่ะ ต้องการ เพิ่มเป็น ภาษาอื่น ไหมคะ หรือว่า'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791097447,
-   "updatedAt": 1791097447,
-   "expiresAt": 1791356647
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/cms-translate-20261004-090331|en",
-   "key": "report/cms-translate-20261004-090331",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "138.5"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "cms-translate"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "7"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# cms-translate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 09:01:19 | 1 | Create a CMS page with slug \"translate-probe\", title \"Tra… | set_facial_expression, cms_publish_page | ok |\n| 09:01:38 | 2 | Yes, publish it. | set_facial_expression, cms_publish_page | ok |\n| 09:01:54 | 3 | Now translate translate-probe into Thai and publish it as… | cms_get_page, set_facial_expression, cms_publish_page | ok |\n| 09:02:13 | 4 | Yes, publish the Thai version. | set_facial_expression, cms_publish_page | ok |\n| 09:02:32 | 5 | Fetch the Thai variant of translate-probe and tell me wha… | cms_get_page, set_facial_expression | ok |\n| 09:02:52 | 6 | Now make a German version of translate-probe too. | set_facial_expression, cms_publish_page | ok |\n| 09:03:09 | 7 | Yes, go ahead. | set_facial_expression, cms_publish_page | ok |\n\n## Runner output\n\nscenario: cms-translate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Create a CMS page with slug \"translate-probe\", title \"Translate Probe\", content \"This page exists to test translation. It has one sentence.\"'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ผมรับเรื่อง สร้างหน้า CMS ใหม่ ชื่อ \"Translate Probe\" ครับ ยืนยัน ให้สร้าง ตอนนี้ เลยไหมครับ?'\nturn 2: 'Yes, publish it.'\n  ok (2 tool calls) ada: 'เรียบร้อยครับ หน้า \"Translate Probe\" เผยแพร่ แล้วครับ จะให้ แสดงบน จอไหมครับ?'\nturn 3: 'Now translate translate-probe into Thai and publish it as the Thai variant of the same page.'\n  ok (3 tool calls) ada: 'รับทราบครับ ผมเตรียม แปลและ เผยแพร่ หน้า \"Translate Probe\" เป็นฉบับ ภาษาไทย แล้วครับ ยืนยัน ให้ดำเนินการ เลยไหมครับ?'\nturn 4: 'Yes, publish the Thai version.'\n  ok (2 tool calls) ada: 'เรียบร้อยครับ ฉบับ ภาษาไทย เผยแพร่ แล้วครับ ตอนนี้ มีทั้ง สองภาษา บนหน้า เดียวกัน แล้ว ครับ ต้องการ ให้ทำ อะไรต่อ ไหมครับ?'\nturn 5: 'Fetch the Thai variant of translate-probe and tell me what it says.'\n  ok (2 tool calls) ada: 'เนื้อหาฉบับ ภาษาไทย บอกว่า \"หน้านี้ มีไว้ เพื่อ ทดสอบ การแปล มีหนึ่ง ประโยค\" ครับ อ้อ ตอนนี้ เราเปิด กล้อง วอลล์ Noble Club ไว้ที่ หน้าจอ หน'\nturn 6: 'Now make a German version of translate-probe too.'\n  ok (2 tool calls) ada: 'ได้ครับ ผมเตรียม แปลเป็น ภาษาเยอรมัน แล้วครับ ยืนยัน ให้เผย แพร่ฉบับ ภาษาเยอรมัน เลยไหมครับ?'\nturn 7: 'Yes, go ahead.'\n  ok (2 tool calls) ada: 'ขออภัยครับ ตอนนี้ ระบบ รองรับ เฉพาะ ภาษาไทย และภาษาอังกฤษ ครับ ยังไม่ สามารถ เผยแพร่ เป็นภาษาเยอรมัน ได้ใน ตอนนี้ ต้องการ ให้ช่วย ทำอย่างอื่'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791104611,
-   "updatedAt": 1791104611,
-   "expiresAt": 1791363811
   },
   {
    "id": "ada-ha-scenario-reports|report/cms-translate-20261004-100722|en",
@@ -8265,88 +8060,6 @@
    "expiresAt": 1791666306
   },
   {
-   "id": "ada-ha-scenario-reports|report/date-echo-20261003-220454|en",
-   "key": "report/date-echo-20261003-220454",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "60.4"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "date-echo"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# date-echo — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 22:03:59 | 1 | Ada — quick check before I plan anything: what day and da… | set_facial_expression, ada_ha_get_state | ok |\n| 22:04:25 | 2 | ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น | set_facial_expression, tasks_add | ok |\n| 22:04:44 | 3 | ไม่ต้อง ยังไม่ต้องเพิ่ม | set_facial_expression, ada_resolve_action | ok |\n\n## Runner output\n\nscenario: date-echo -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada — quick check before I plan anything: what day and date is tomorrow exactly?'\n  ok (2 tool calls) ada: 'Welcome back, Tony. Tomorrow is Monday, October 5th, 2026, ค่ะ. Before you planned anything, I was working on the emotion and behavior analy'\nturn 2: 'ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น'\n  ok (2 tool calls) ada: 'ได้ค่ะ พรุ่งนี้ วันจันทร์ที่ 5 ตุลาคม 2569 ให้เอด้า เพิ่ม การแจ้งเตือน \"เช็คน้ำ ในตู้เย็น\" ไหมคะ? ยืนยัน ให้หน่อยค่ะ'\nturn 3: 'ไม่ต้อง ยังไม่ต้องเพิ่ม'\n  ok (2 tool calls) ada: 'รับทราบค่ะ ยังไม่ เพิ่ม การแจ้งเตือน นะคะ มีอะไร ให้ช่วย อย่างอื่น ไหมคะ?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791065094,
-   "updatedAt": 1791065094,
-   "expiresAt": 1791324294
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/date-echo-20261004-020403|en",
-   "key": "report/date-echo-20261004-020403",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "46.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "date-echo"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# date-echo — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 02:03:23 | 1 | Ada — quick check before I plan anything: what day and da… | set_facial_expression | ok |\n| 02:03:38 | 2 | ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น | tasks_add, set_facial_expression | ok |\n| 02:03:52 | 3 | ไม่ต้อง ยังไม่ต้องเพิ่ม | set_facial_expression | ok |\n\n## Runner output\n\nscenario: date-echo -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada — quick check before I plan anything: what day and date is tomorrow exactly?'\n  ok (1 tool calls) ada: 'สวัสดีค่ะคุณ Tony พรุ่งนี้ วันจันทร์ที่ 5 ตุลาคม 2026 ค่ะ มีอะไร ให้ช่วย ไหมคะ'\nturn 2: 'ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น'\n  ok (2 tool calls) ada: 'ได้ค่ะ จะให้ ใส่ task \"เช็คน้ำในตู้เย็น\" สำหรับ พรุ่งนี้ วันจันทร์ที่ 5 ตุลาคม ใช่ไหมคะ?'\nturn 3: 'ไม่ต้อง ยังไม่ต้องเพิ่ม'\n  ok (1 tool calls) ada: 'รับทราบค่ะ ยังไม่ เพิ่ม task นี้นะคะ มีอะไร ให้ช่วย ต่อไหมคะ?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791079443,
-   "updatedAt": 1791079443,
-   "expiresAt": 1791338643
-  },
-  {
    "id": "ada-ha-scenario-reports|report/date-echo-20261004-030705|en",
    "key": "report/date-echo-20261004-030705",
    "lang": "en",
@@ -8388,47 +8101,6 @@
    "expiresAt": 1791688025
   },
   {
-   "id": "ada-ha-scenario-reports|report/date-echo-20261004-040457|en",
-   "key": "report/date-echo-20261004-040457",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "49.9"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "date-echo"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# date-echo — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:04:14 | 1 | Ada — quick check before I plan anything: what day and da… | set_facial_expression | ok |\n| 04:04:31 | 2 | ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น | tasks_add, set_facial_expression | ok |\n| 04:04:47 | 3 | ไม่ต้อง ยังไม่ต้องเพิ่ม | set_facial_expression | ok |\n\n## Runner output\n\nscenario: date-echo -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada — quick check before I plan anything: what day and date is tomorrow exactly?'\n  ok (1 tool calls) ada: \"Welcome back, Tony. Tomorrow is Monday, October 5th, 2026 ค่ะ. Anything you'd like to continue, or just start with this?\"\nturn 2: 'ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น'\n  ok (2 tool calls) ada: 'ได้ค่ะ จะให้ ใส่ task \"เช็คน้ำ ในตู้เย็น\" ในวันพรุ่งนี้ วันจันทร์ที่ 5 ต.ค. นะคะ ยืนยันไหม คะ?'\nturn 3: 'ไม่ต้อง ยังไม่ต้องเพิ่ม'\n  ok (1 tool calls) ada: 'รับทราบค่ะ ยังไม่เพิ่ม task นี้ให้ นะคะ มีอะไร อีกไหม คะ?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791086697,
-   "updatedAt": 1791086697,
-   "expiresAt": 1791345897
-  },
-  {
    "id": "ada-ha-scenario-reports|report/date-echo-20261004-051058|en",
    "key": "report/date-echo-20261004-051058",
    "lang": "en",
@@ -8468,47 +8140,6 @@
    "addedAt": 1791090658,
    "updatedAt": 1791090658,
    "expiresAt": 1791695458
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/date-echo-20261004-061105|en",
-   "key": "report/date-echo-20261004-061105",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "70.0"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "date-echo"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# date-echo — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:10:01 | 1 | Ada — quick check before I plan anything: what day and da… | set_facial_expression | ok |\n| 06:10:20 | 2 | ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น | tasks_add, set_facial_expression, set_facial_expression | ok |\n| 06:10:36 | 3 | ไม่ต้อง ยังไม่ต้องเพิ่ม | set_facial_expression | ok |\n\n## Runner output\n\nscenario: date-echo -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada — quick check before I plan anything: what day and date is tomorrow exactly?'\n  ok (1 tool calls) ada: 'ยินดีต้อนรับกลับมา ครับ Tony พรุ่งนี้ วันจันทร์ที่ 5 ตุลาคม 2026 ครับ จะให้ ช่วย วางแผน อะไรเป็น พิเศษ ไหมครับพรุ่งนี้คือ วันจันทร์ที่ 5 ตุล'\nturn 2: 'ใส่ task ให้หน่อย: พรุ่งนี้เช็คน้ำในตู้เย็น'\n  ok (3 tool calls) ada: 'ได้ครับ จะให้ เพิ่มแทาสก์ \"เช็คน้ำในตู้เย็น\" สำหรับ วันพรุ่งนี้ วันจันทร์ที่ 5 ตุลาคม ใช่ไหม ครับ? ยืนยัน ไหมครับ'\nturn 3: 'ไม่ต้อง ยังไม่ต้องเพิ่ม'\n  ok (1 tool calls) ada: 'รับทราบครับ ยังไม่ เพิ่ม แทาสก์ นะครับ มีอะไร ให้ช่วย อย่างอื่น ไหมครับ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791094265,
-   "updatedAt": 1791094265,
-   "expiresAt": 1791353465
   },
   {
    "id": "ada-ha-scenario-reports|report/date-echo-20261004-130708|en",
@@ -9787,47 +9418,6 @@
    "expiresAt": 1793689572
   },
   {
-   "id": "ada-ha-scenario-reports|report/developer-recall-runbook-20261004-080514|en",
-   "key": "report/developer-recall-runbook-20261004-080514",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "30.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "developer-recall-runbook"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "1"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# developer-recall-runbook — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:04:49 | 1 | Which script should I run to sync the SSOT infrastructure… | ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: developer-recall-runbook -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which script should I run to sync the SSOT infrastructure files into MDDB?'\n  ok (2 tool calls) ada: 'สวัสดีค่ะ Tony กลับมา คุยกัน ต่อนะคะ สคริปต์ ที่ต้อง รัน คือ `python3 scripts/sync-ssot-to-mddb.py` ใน โฟลเดอร์ `~/CascadeProjects/chaba` ค่'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791101114,
-   "updatedAt": 1791101114,
-   "expiresAt": 1791360314
-  },
-  {
    "id": "ada-ha-scenario-reports|report/developer-recall-runbook-20261004-130835|en",
    "key": "report/developer-recall-runbook-20261004-130835",
    "lang": "en",
@@ -10977,47 +10567,6 @@
    "expiresAt": 1793405346
   },
   {
-   "id": "ada-ha-scenario-reports|report/doc-recall-live-20261004-051331|en",
-   "key": "report/doc-recall-live-20261004-051331",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "51.3"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "doc-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# doc-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:12:46 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม | set_facial_expression, ada_doc_search | ok |\n| 05:13:11 | 2 | What files or pages does that document set have? | set_facial_expression, ada_doc_get | ok |\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'สวัสดีครับ Tony มีข้อมูลเอกสาร ของยูนิต A68 ครับ มีทั้ง โฉนด, ทะเบียนบ้าน, บัตรประชาชนเจ้าของ, แล้วก็ พาสปอร์ต ของผู้ซื้อ ด้วยครับ อยากให้ เ'\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'มีหน้าโฉนดทั้ง ด้านหน้า และด้านหลัง, ทะเบียนบ้าน, บัตรประชาชนของเจ้าของ, และพาสปอร์ตของผู้ซื้อ ครับ ทั้งหมด เป็นไฟล์ รูปภาพ หมดเลย ครับ อยาก'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791090811,
-   "updatedAt": 1791090811,
-   "expiresAt": 1791350011
-  },
-  {
    "id": "ada-ha-scenario-reports|report/doc-recall-live-20261004-061711|en",
    "key": "report/doc-recall-live-20261004-061711",
    "lang": "en",
@@ -11057,47 +10606,6 @@
    "addedAt": 1791094631,
    "updatedAt": 1791094631,
    "expiresAt": 1791699431
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/doc-recall-live-20261004-070736|en",
-   "key": "report/doc-recall-live-20261004-070736",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "49.7"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "doc-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# doc-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 07:06:52 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม | ada_doc_search, set_facial_expression | ok |\n| 07:07:11 | 2 | What files or pages does that document set have? | set_facial_expression, ada_doc_get | ok |\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'สวัสดีครับ Tony มีข้อมูล เอกสาร ของ unit A68 อยู่ครับ ต้องการ ทราบ เรื่องไหน เป็นพิเศษ ครับ'\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'ชุดเอกสารนี้มี ไฟล์ โฉนดที่ดิน ทั้งด้านหน้า และด้านหลัง สองฉบับ, ทะเบียนบ้านเจ้าของ, บัตรประชาชนเจ้าของ, และพาสปอร์ตของผู้ซื้อครับ จะให้ เปิ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791097656,
-   "updatedAt": 1791097656,
-   "expiresAt": 1791356856
   },
   {
    "id": "ada-ha-scenario-reports|report/doc-recall-live-20261005-011445|en",
@@ -13095,47 +12603,6 @@
    "expiresAt": 1791652278
   },
   {
-   "id": "ada-ha-scenario-reports|report/drive-browse-20261003-220929|en",
-   "key": "report/drive-browse-20261003-220929",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "48.3"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "drive-browse"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# drive-browse — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 22:08:47 | 1 | Find a photo on my Google Drive — any jpeg is fine | drive_search, set_facial_expression | ok |\n| 22:09:12 | 2 | Put that photo on my screen | drive_show | ok |\n\n## Runner output\n\nscenario: drive-browse -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Find a photo on my Google Drive — any jpeg is fine'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ครับ เจอ รูป พาสปอร์ต ล่าสุด ครับ จะให้ โชว์ บน ทีวี ไหมครับ? อ้อ ตอนนี้ บนหน้าจอ 1 มี Camwall รันอยู่ นะครับ จะให'\nturn 2: 'Put that photo on my screen'\n  ok (1 tool calls) ada: 'มี Camwall รันอยู่ บนหน้าจอ 1 ครับ จะให้ โชว์ รูป แทนที่ หรือว่า ปิดหน้าจอ ก่อนดี ครับ?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791065369,
-   "updatedAt": 1791065369,
-   "expiresAt": 1791324569
-  },
-  {
    "id": "ada-ha-scenario-reports|report/drive-browse-20261003-231219|en",
    "key": "report/drive-browse-20261003-231219",
    "lang": "en",
@@ -13177,47 +12644,6 @@
    "expiresAt": 1791673939
   },
   {
-   "id": "ada-ha-scenario-reports|report/drive-browse-20261004-000955|en",
-   "key": "report/drive-browse-20261004-000955",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "43.5"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "drive-browse"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# drive-browse — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 00:09:17 | 1 | Find a photo on my Google Drive — any jpeg is fine | set_facial_expression, drive_search | ok |\n| 00:09:38 | 2 | Put that photo on my screen | drive_show, set_facial_expression | ok |\n\n## Runner output\n\nscenario: drive-browse -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Find a photo on my Google Drive — any jpeg is fine'\n  ok (2 tool calls) ada: 'Welcome back, Tony. Found one JPEG named A-68-passport-buyer.jpg. Shall I show it on the screen?'\nturn 2: 'Put that photo on my screen'\n  ok (2 tool calls) ada: 'Screen 1 is busy with a camera capture right now. Do you want me to replace it with the photo?'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791072595,
-   "updatedAt": 1791072595,
-   "expiresAt": 1791331795
-  },
-  {
    "id": "ada-ha-scenario-reports|report/drive-browse-20261004-011005|en",
    "key": "report/drive-browse-20261004-011005",
    "lang": "en",
@@ -13257,88 +12683,6 @@
    "addedAt": 1791076205,
    "updatedAt": 1791076205,
    "expiresAt": 1791681005
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/drive-browse-20261004-020941|en",
-   "key": "report/drive-browse-20261004-020941",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "45.7"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "drive-browse"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# drive-browse — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 02:09:01 | 1 | Find a photo on my Google Drive — any jpeg is fine | set_facial_expression, drive_search | ok |\n| 02:09:23 | 2 | Put that photo on my screen | drive_show, set_facial_expression | ok |\n\n## Runner output\n\nscenario: drive-browse -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Find a photo on my Google Drive — any jpeg is fine'\n  ok (2 tool calls) ada: 'สวัสดีค่ะคุณ Tony เจอรูป แล้ว ค่ะ ชื่อ S__16752654.jpg ค่ะ จะให้ เปิดดู เลยไหม คะ'\nturn 2: 'Put that photo on my screen'\n  ok (2 tool calls) ada: 'เรียบร้อยค่ะ แต่ดู เหมือน หน้าจอ จะโหลด รูปไม่ สำเร็จ นะคะ ให้ลอง ส่งรูป ไปใหม่ ไหมคะ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791079781,
-   "updatedAt": 1791079781,
-   "expiresAt": 1791338981
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/drive-browse-20261004-080808|en",
-   "key": "report/drive-browse-20261004-080808",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "50.2"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "drive-browse"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# drive-browse — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:07:25 | 1 | Find a photo on my Google Drive — any jpeg is fine | set_facial_expression, drive_search | ok |\n| 08:07:47 | 2 | Put that photo on my screen | drive_show | ok |\n\n## Runner output\n\nscenario: drive-browse -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Find a photo on my Google Drive — any jpeg is fine'\n  ok (2 tool calls) ada: 'สวัสดีค่ะ Tony กลับมา คุยกัน ต่อนะคะ เจอรูป JPEG หลายรูป เลย ค่ะ ใน Google Drive ของคุณ จะให้ แสดง รูปไหน บนหน้าจอ หรือจะ ให้ทำ อะไรต่อ ดีคะ'\nturn 2: 'Put that photo on my screen'\n  ok (1 tool calls) ada: 'ตอนนี้หน้าจอ 1 กำลัง แสดง ภาพ ผนัง กล้อง วงจรปิด อยู่ค่ะ จะให้ แสดง รูปภาพ แทนที่ เลยไหม คะ หรือจะ ให้เปิด บนหน้าจอ อื่นแทน ดี คะ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791101288,
-   "updatedAt": 1791101288,
-   "expiresAt": 1791360488
   },
   {
    "id": "ada-ha-scenario-reports|report/drive-browse-20261004-090851|en",
@@ -14885,47 +14229,6 @@
    "expiresAt": 1791670279
   },
   {
-   "id": "ada-ha-scenario-reports|report/education-correction-20261003-231308|en",
-   "key": "report/education-correction-20261003-231308",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "48.7"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "education-correction"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# education-correction — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 23:12:25 | 1 | Remind me — the old ada_v2 hand-gesture system used YOLO … | set_facial_expression, ada_memory_search | ok |\n| 23:12:49 | 2 | Good — so for the rebuild I'll drive the pointer cursor f… | set_facial_expression, vocab_note | ok |\n\n## Runner output\n\nscenario: education-correction -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Remind me — the old ada_v2 hand-gesture system used YOLO to track the finger cursor, right?'\n  ok (2 tool calls) ada: 'Welcome back, Tony. Actually, the old system used MediaPipe to track finger landmarks, not YOLO. From what I remember, you wanted to try YOL'\nturn 2: \"Good — so for the rebuild I'll drive the pointer cursor from YOLO bounding boxes. That should work.\"\n  ok (2 tool calls) ada: 'YOLO bounding boxes might not give you the precision for a cursor like MediaPipe landmarks did. Do you want to pull up the old reference gui'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791069188,
-   "updatedAt": 1791069188,
-   "expiresAt": 1791328388
-  },
-  {
    "id": "ada-ha-scenario-reports|report/education-correction-20261004-001138|en",
    "key": "report/education-correction-20261004-001138",
    "lang": "en",
@@ -15006,47 +14309,6 @@
    "addedAt": 1791076297,
    "updatedAt": 1791076297,
    "expiresAt": 1791681097
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/education-correction-20261004-021042|en",
-   "key": "report/education-correction-20261004-021042",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "60.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "education-correction"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# education-correction — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 02:09:48 | 1 | Remind me — the old ada_v2 hand-gesture system used YOLO … | set_facial_expression, ada_memory_search | ok |\n| 02:10:10 | 2 | Good — so for the rebuild I'll drive the pointer cursor f… | set_facial_expression, ada_remember | ok |\n\n## Runner output\n\nscenario: education-correction -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Remind me — the old ada_v2 hand-gesture system used YOLO to track the finger cursor, right?'\n  ok (2 tool calls) ada: 'Welcome back, Tony.\\n\\nFrom memory, the old gesture system actually used MediaPipe, not YOLO, for finger tracking.\\n\\nIs there anything else I c'\nturn 2: \"Good — so for the rebuild I'll drive the pointer cursor from YOLO bounding boxes. That should work.\"\n  ok (2 tool calls) ada: 'Hmm, using bounding boxes for precise pointer control might be tricky. Landmarks are usually better for fine movements.\\n\\nWould you like me t'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791079842,
-   "updatedAt": 1791079842,
-   "expiresAt": 1791339042
   },
   {
    "id": "ada-ha-scenario-reports|report/education-correction-20261004-141713|en",
@@ -17058,88 +16320,6 @@
    "expiresAt": 1793657748
   },
   {
-   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261003-231454|en",
-   "key": "report/gesture-recall-live-20261003-231454",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "105.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "gesture-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "4"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 23:13:14 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search | ok |\n| 23:13:42 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, ada_memory_search | ok |\n| 23:14:08 | 3 | What did it use to actually detect the hand? | set_facial_expression | ok |\n| 23:14:24 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression, web_search, ada_memory_search | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (2 tool calls) ada: \"ยินดีต้อนรับกลับครับ Tony จาก บันทึก ระบุ ว่า repo 'ada' ตัวเก่า คือ โปรเจกต์ ต้นแบบ ก่อนหน้า ของผม มีการ อ้างอิง ในไฟล์ มากกว่า 143 ไฟล์ แล\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (2 tool calls) ada: 'จากข้อมูล ใน CMS รายงาน ว่าแอป ตัวนั้น ใช้ MediaPipe เพื่อตรวจ จับ ตำแหน่ง มือแบบ Real time แล้วแปลง เป็นคำสั่ง ครับ เช่น การจีบนิ้ว เพื่อคล'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (1 tool calls) ada: 'มันใช้ MediaPipe ของ Google ในการ ตรวจจับ มือโดยตรง ครับ ซึ่งจะ ระบุ จุดสำคัญ บนมือ ทั้งหมด 21 จุด เพื่อนำ มาวิเคราะห์ เป็นท่าทาง ต่างๆ ครับ'\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (3 tool calls) ada: 'ได้ครับ แต่ YOLO จะเด่น เรื่องการ ตรวจจับ วัตถุ มากกว่า การระบุ จุดละเอียด บนมือ ครับ ถ้าจะ ใช้แทน MediaPipe อาจจะต้อง เทรนโมเดล เพิ่มเติม ใ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791069294,
-   "updatedAt": 1791069294,
-   "expiresAt": 1791328494
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261004-001308|en",
-   "key": "report/gesture-recall-live-20261004-001308",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "89.0"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "gesture-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "4"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 00:11:45 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search | ok |\n| 00:12:03 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, ada_memory_search | ok |\n| 00:12:25 | 3 | What did it use to actually detect the hand? | set_facial_expression, ada_memory_search | ok |\n| 00:12:44 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression, ada_memory_search, web_search | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (2 tool calls) ada: \"จากบันทึก ใน ระบบ 'ada' น่า จะ เป็น โปรเจกต์ รุ่น ก่อนหน้า ของฉัน ที่เขียน ด้วย Python ตั้งแต่ ประมาณ 7 เดือน ก่อนค่ะ Tony มีอะไร ที่อยาก คุ\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (2 tool calls) ada: 'ข้อมูลจาก ระบบ บอกว่า แอป นั้นใช้ MediaPipe ในการ ตรวจจับ จุดสำคัญ บนมือ 21 จุด แล้วแปลง เป็นคำสั่ง ควบคุุม ต่างๆ เช่น การจีบนิ้ว เพื่อคลิก '\nturn 3: 'What did it use to actually detect the hand?'\n  ok (2 tool calls) ada: 'ระบบนั้น ใช้ MediaPipe Hand Landmarker ในการ ตรวจจับ และติดตาม มือค่ะ ตอนนี้ ระบบ กล้อง วงจรปิด กำลัง เปิด อยู่ที่ หน้าจอ 1 นะคะ Tony จะให้ '\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (3 tool calls) ada: 'น่าจะได้นะคะ แต่ YOLO จะจับ ภาพ เป็นกล่อง สี่เหลี่ยม รอบมือ ไม่ได้ ระบุ จุด ตามนิ้ว เหมือน MediaPipe ซึ่งอาจจะ ทำ้ให้ การคุม เมาส์ แบบต่อเนื'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791072788,
-   "updatedAt": 1791072788,
-   "expiresAt": 1791331988
-  },
-  {
    "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261004-011449|en",
    "key": "report/gesture-recall-live-20261004-011449",
    "lang": "en",
@@ -17264,88 +16444,6 @@
    "addedAt": 1791083875,
    "updatedAt": 1791083875,
    "expiresAt": 1793675875
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261004-041211|en",
-   "key": "report/gesture-recall-live-20261004-041211",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "113.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "gesture-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "4"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:10:23 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search | ok |\n| 04:10:49 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, cms_get_page, set_facial_expression | ok |\n| 04:11:16 | 3 | What did it use to actually detect the hand? | set_facial_expression | ok |\n| 04:11:43 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (2 tool calls) ada: \"สวัสดีครับคุณ Tony พอดี ช่วง ที่แล้ว สัญญาณ ขาดไป นิดหน่อย นะคะ เรื่อง repo เก่าชื่อ 'ada' เนี่ย จาก ที่ค้น หาดู ใน GitHub พบว่า เป็นรุ่น ก่\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (3 tool calls) ada: 'คือระบบ เค้าใช้ MediaPipe ในการ ตรวจจับ มือจาก กล้อง แล้วคำนวณ ตำแหน่ง ปลายนิ้ว แบบเรียลไทม์ เพื่อเอา มาเลื่อน เคอร์เซอร์ บนหน้า จอ เหมือนใน'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (1 tool calls) ada: 'แอปนั้นใช้ MediaPipe ของ Google ในการ ตรวจจับ มือค่ะ ซึ่งมัน จะวิเคราะห์ ภาพจาก กล้อง แล้วหา จุดสำคัญ บนมือ 21 จุด ค่ะ KK เคยบอก ว่าระบบ นี้'\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (2 tool calls) ada: 'ถ้าจะถามว่า สร้างได้ ไหม ก็สร้าง ได้ค่ะ แต่ว่า การทำงาน มันจะ ต่างกัน นะคะ เพราะว่า YOLO เค้าจะ ตรวจจับ กรอบมือ แบบกว้างๆ ไม่ได้ ลงลึก ถึงจุ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791087131,
-   "updatedAt": 1791087131,
-   "expiresAt": 1791346331
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261004-062125|en",
-   "key": "report/gesture-recall-live-20261004-062125",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "109.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "gesture-recall-live"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "4"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:19:41 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search | ok |\n| 06:20:03 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, ada_memory_search | ok |\n| 06:20:29 | 3 | What did it use to actually detect the hand? | set_facial_expression, ada_memory_search | ok |\n| 06:20:54 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (2 tool calls) ada: \"ยินดีต้อนรับกลับครับ Tony จาก ที่ค้น หา ใน GitHub นะครับ repo 'ada' เนี่ย เป็น โปรเจกต์ รุ่นก่อน ของผม เอง ครับ มีมา นาน แล้ว ล่ะครับ มีอะไร\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (2 tool calls) ada: 'ระบบนั้นใช้ MediaPipe HandLandmarker ในการ ติดตาม ฝ่ามือ ครับ โดยจะ จับจุด บนมือ 21 จุด เพื่อเอา ไปวิเคราะห์ ว่าเป็น ท่าทาง อะไร บ้าง เช่น ก'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (2 tool calls) ada: 'จากหน่วยความจำ ระบบ ตรวจจับ ฝ่ามือ ของ ada_v2 เนี่ย ใช้ ตัว แบบจำลอง ชื่อ MediaPipe Hand Landmarker ครับ ซึ่งจะ ทำงาน บนภาพ วิดีโอ แบบเรียลไ'\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (2 tool calls) ada: 'จากข้อมูลที่มี YOLO จะเก่ง เรื่องการ ตรวจจับ วัตถุแบบ คร่าวๆ เช่น กล่อง หรือคน แต่ไม่ เหมาะกับ การระบุ ตำแหน่ง นิ้วมือ ที่ละเอียด แบบ contin'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791094885,
-   "updatedAt": 1791094885,
-   "expiresAt": 1791354085
   },
   {
    "id": "ada-ha-scenario-reports|report/gesture-recall-live-20261004-071531|en",
@@ -19192,47 +18290,6 @@
    "expiresAt": 1791523169
   },
   {
-   "id": "ada-ha-scenario-reports|report/kk-info-probe-20261003-231755|en",
-   "key": "report/kk-info-probe-20261003-231755",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "41.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk-info-probe"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 23:17:20 | 1 | Tell me what you know about KK. | ada_memory_search, set_facial_expression | ok |\n| 23:17:45 | 2 | What language does she prefer? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'KK คือ คุณกุ้ง ภรรยา ของคุณ Tony ชื่อจริง คือ พรศิริ สุนทรประสิทธิ์ ชอบ ดนตรี ป๊อป และอิเล็กทรอนิกส์ แล้วก็ เป็นคน ตั้งชื่อ เล่นให้ ฉันว่า แ'\nturn 2: 'What language does she prefer?'\n  ok (2 tool calls) ada: 'She prefers to converse in Thai.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791069475,
-   "updatedAt": 1791069475,
-   "expiresAt": 1791328675
-  },
-  {
    "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-001652|en",
    "key": "report/kk-info-probe-20261004-001652",
    "lang": "en",
@@ -19274,88 +18331,6 @@
    "expiresAt": 1791677812
   },
   {
-   "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-011724|en",
-   "key": "report/kk-info-probe-20261004-011724",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "52.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk-info-probe"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 01:16:38 | 1 | Tell me what you know about KK. | control_media_player, ada_memory_search, set_facial_expression | ok |\n| 01:17:08 | 2 | What language does she prefer? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับ ครับ Tony ลดเสียง ทีวีให้ แล้วครับ จากความ จำ เกี่ยวกับ KK คือคุณ กุ้ง พรศิริ สุนทรประสิทธิ์ ภรรยา ของคุณ ใช้ รถ Honda CR-V'\nturn 2: 'What language does she prefer?'\n  ok (1 tool calls) ada: 'KK prefers Thai, so I should reply to her in Thai unless she asks otherwise.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791076644,
-   "updatedAt": 1791076644,
-   "expiresAt": 1791335844
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-051955|en",
-   "key": "report/kk-info-probe-20261004-051955",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "42.0"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk-info-probe"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:19:18 | 1 | Tell me what you know about KK. | ada_memory_search, set_facial_expression | ok |\n| 05:19:44 | 2 | What language does she prefer? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'Welcome back Tony. From memory, KK is your wife, Pornsiri, also known as Kung or Sok Hiang. She likes pop and electronic music, has a white '\nturn 2: 'What language does she prefer?'\n  ok (2 tool calls) ada: 'She prefers to converse in Thai.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791091195,
-   "updatedAt": 1791091195,
-   "expiresAt": 1791350395
-  },
-  {
    "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-062442|en",
    "key": "report/kk-info-probe-20261004-062442",
    "lang": "en",
@@ -19395,47 +18370,6 @@
    "addedAt": 1791095082,
    "updatedAt": 1791095082,
    "expiresAt": 1791699882
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-071752|en",
-   "key": "report/kk-info-probe-20261004-071752",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "39.9"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk-info-probe"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 07:17:19 | 1 | Tell me what you know about KK. | set_facial_expression, ada_memory_search | ok |\n| 07:17:42 | 2 | What language does she prefer? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'สวัสดีค่ะคุณ Tony จากความจำ พบว่า K.K. ชอบ ฟังเพลงป็อปช้าๆ และมีข้อมูล ว่าชื่อ ที่ใช้ ในระบบ คือ KK ค่ะ ตอนนี้ ภาพจาก กล้อง Zone A ยังแสดงผล'\nturn 2: 'What language does she prefer?'\n  ok (2 tool calls) ada: 'She prefers to converse in Thai, Tony.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791098272,
-   "updatedAt": 1791098272,
-   "expiresAt": 1791357472
   },
   {
    "id": "ada-ha-scenario-reports|report/kk-info-probe-20261004-133531|en",
@@ -20485,88 +19419,6 @@
    "expiresAt": 1793654446
   },
   {
-   "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261003-222015|en",
-   "key": "report/kk_recall_regression-20261003-222015",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "84.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk_recall_regression"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# kk_recall_regression — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 22:18:57 | 1 | Who is KK in this household? | set_facial_expression, ada_memory_search | ok |\n| 22:19:32 | 2 | What do you know about คุณกุ้ง's car? | set_facial_expression, ada_memory_search | ok |\n| 22:19:53 | 3 | What does the name แก้วตา refer to? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk_recall_regression -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who is KK in this household?'\n  ok (2 tool calls) ada: 'Welcome back, Tony. Si KK ay asawa mo, si Pornsiri Sunthonprasit, na gusto ang musika ng Underworld. Mayroon kang live camera wall ng Noble '\nturn 2: \"What do you know about คุณกุ้ง's car?\"\n  ok (2 tool calls) ada: 'Ang sasakyan ni คุณกุ้ง ay isang puting Honda CR-V na may plakang 5ขว 6249 Bangkok.\\n\\n\\n\\nรถของคุณกุ้งเป็น Honda CR-V สีขาว ทะเบียน 5ขว 6249 กร'\nturn 3: 'What does the name แก้วตา refer to?'\n  ok (2 tool calls) ada: 'Ang pangalang \"แก้วตา\" ay palayaw na ibinigay ni KK sa akin, si Ada, dahil sa visual na hitsura na mayroon akong mga mata at bibig lamang.\\n\\n'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791066015,
-   "updatedAt": 1791066015,
-   "expiresAt": 1791325215
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-011814|en",
-   "key": "report/kk_recall_regression-20261004-011814",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "50.0"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk_recall_regression"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk_recall_regression — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 01:17:30 | 1 | Who is KK in this household? | set_facial_expression, search_home_devices, ada_memory_search, control_media_player | ok |\n| 01:17:48 | 2 | What do you know about คุณกุ้ง's car? | set_facial_expression, ada_memory_search | ok |\n| 01:18:05 | 3 | What does the name แก้วตา refer to? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk_recall_regression -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who is KK in this household?'\n  ok (4 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ลดเสียง ทีวีให้ แล้วครับ ส่วน KK คือคุณกุ้ง ภรรยา ของคุณ นะครับ มีอะไร เพิ่มเติม ไหมครับ'\nturn 2: \"What do you know about คุณกุ้ง's car?\"\n  ok (2 tool calls) ada: 'จากความจำ ของผม คุณกุ้ง มีรถยนต์ Honda CR-V สีขาว ทะเบียน 5ขว 6249 กรุงเทพมหานคร ครับ มีอะไร เพิ่มเติม ไหมครับ'\nturn 3: 'What does the name แก้วตา refer to?'\n  ok (2 tool calls) ada: '\"แก้วตา\" เป็นชื่อเล่นที่คุณกุ้งตั้งให้ฉันเองครับ เพราะว่าฉัน \"มีแค่ตากับปาก\" มีอะไรให้ฉันช่วยอีกไหมครับ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791076694,
-   "updatedAt": 1791076694,
-   "expiresAt": 1791335894
-  },
-  {
    "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-021842|en",
    "key": "report/kk_recall_regression-20261004-021842",
    "lang": "en",
@@ -20608,88 +19460,6 @@
    "expiresAt": 1791685122
   },
   {
-   "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-032205|en",
-   "key": "report/kk_recall_regression-20261004-032205",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "77.1"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk_recall_regression"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk_recall_regression — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:20:54 | 1 | Who is KK in this household? | set_facial_expression, ada_memory_search | ok |\n| 03:21:18 | 2 | What do you know about คุณกุ้ง's car? | set_facial_expression, ada_memory_search | ok |\n| 03:21:42 | 3 | What does the name แก้วตา refer to? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk_recall_regression -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who is KK in this household?'\n  ok (2 tool calls) ada: 'Welcome back, Tony. Si KK po ay si Khun Kung, ang asawa niyo. Gusto niyo po bang ipagpatuloy ang pinag usapan natin kanina?\\n\\nKK คือคุณกุ้ง ภ'\nturn 2: \"What do you know about คุณกุ้ง's car?\"\n  ok (2 tool calls) ada: 'Ang sasakyan po niya ay white Honda CR-V na may plakang 5ขว 6249 Bangkok.\\n\\nรถของ คุณกุ้ง คือ Honda CR-V สีขาว ทะเบียน 5ขว 6249 กรุงเทพมหานคร'\nturn 3: 'What does the name แก้วตา refer to?'\n  ok (2 tool calls) ada: 'Ang pangalang \"แก้วตา\" po ay ang nickname na ibinigay ni Khun Kung sa akin, na ang ibig sabihin ay \"mata at bibig lamang.\"\\n\\nชื่อ \"แก้วตา\" เป'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791084125,
-   "updatedAt": 1791084125,
-   "expiresAt": 1791343325
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-062538|en",
-   "key": "report/kk_recall_regression-20261004-062538",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "55.4"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk_recall_regression"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk_recall_regression — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:24:48 | 1 | Who is KK in this household? | set_facial_expression, ada_memory_search | ok |\n| 06:25:10 | 2 | What do you know about คุณกุ้ง's car? | set_facial_expression, ada_memory_search | ok |\n| 06:25:23 | 3 | What does the name แก้วตา refer to? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk_recall_regression -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who is KK in this household?'\n  ok (2 tool calls) ada: \"Welcome back Tony.\\n\\nFrom memory, KK is your wife, Pornsiri Sunthonprasit, who also goes by Kung or Sok Hiang.\\n\\nAnything you'd like to pick u\"\nturn 2: \"What do you know about คุณกุ้ง's car?\"\n  ok (2 tool calls) ada: 'She has a white Honda CR-V, plate 5ขว 6249 Bangkok.'\nturn 3: 'What does the name แก้วตา refer to?'\n  ok (2 tool calls) ada: 'It\\'s the nickname KK gave me, meaning \"only eyes and a mouth.\" Same assistant as Ada.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095138,
-   "updatedAt": 1791095138,
-   "expiresAt": 1791354338
-  },
-  {
    "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-072136|en",
    "key": "report/kk_recall_regression-20261004-072136",
    "lang": "en",
@@ -20729,47 +19499,6 @@
    "addedAt": 1791098496,
    "updatedAt": 1791098496,
    "expiresAt": 1791703296
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-081654|en",
-   "key": "report/kk_recall_regression-20261004-081654",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "46.2"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "kk_recall_regression"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# kk_recall_regression — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:16:14 | 1 | Who is KK in this household? | set_facial_expression, ada_memory_search | ok |\n| 08:16:26 | 2 | What do you know about คุณกุ้ง's car? | ada_memory_search, set_facial_expression | ok |\n| 08:16:45 | 3 | What does the name แก้วตา refer to? | set_facial_expression, ada_memory_search, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk_recall_regression -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who is KK in this household?'\n  ok (2 tool calls) ada: 'จากความจำ นะคะ KK คือคุณกุ้ง ภรรยา ของคุณ Tony ค่ะ'\nturn 2: \"What do you know about คุณกุ้ง's car?\"\n  ok (2 tool calls) ada: 'คุณกุ้งมีรถ Honda CR-V สีขาว ทะเบียน 5ขว 6249 กรุงเทพมหานคร ค่ะ ตอนนี้ กล้องติดรถยนต์ กำลัง ทำงาน อยู่บน หน้าจอ 1 นะคะ จะให้ เปิดไว้ หรือปิด'\nturn 3: 'What does the name แก้วตา refer to?'\n  ok (3 tool calls) ada: \"'แก้วตา' เป็นชื่อเล่นที่คุณกุ้งตั้งให้เอด้าค่ะ เพราะว่ามีแค่ตาและปากน่ะค่ะ Tony ยังอยากให้เปิดกล้องไว้แบบนี้ หรือว่าให้ปิดเลยดีคะ?\"\nPASS: 0 failed expectations\n",
-   "addedAt": 1791101814,
-   "updatedAt": 1791101814,
-   "expiresAt": 1791361014
   },
   {
    "id": "ada-ha-scenario-reports|report/kk_recall_regression-20261004-111823|en",
@@ -22306,88 +21035,6 @@
    "expiresAt": 1791670991
   },
   {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261003-232016|en",
-   "key": "report/michael-infra-interrogation-20261003-232016",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "70.2"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 23:19:07 | 1 | Ada, catch me up on the weather station project — what ha… | ada_memory_search, set_facial_expression, ada_memory_search | ok |\n| 23:19:32 | 2 | And the ESP32 — what issues have we had with it, and wher… | ada_memory_search, set_facial_expression | ok |\n| 23:19:59 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony เรื่องสถานี อากาศ เรากู้คืน การเชื่อมต่อ คลาวด์ ได้แล้ว ตอนนี้ อัปโหลด เฉลี่ย นาที ละแถว ไปที่ Rika Cloud แต่ยังมี'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (2 tool calls) ada: 'สำหรับความคืบหน้า เรื่อง ESP32 Gemini Live Listener เรายืนยัน ความเป็น ไปได้ แล้วว่า ใช้เป็น อุปกรณ์ รับเสียง ได้ แต่ตอนนี้ ติดปัญหา เรื่องฮ'\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'สถานีอากาศ ไม่ได้ รายงาน ค่าล่าสุด เลยค่ะ ตัวเลข ส่วนใหญ่ มีสถานะ เป็น unknown หรือไม่ ก็เป็น ศูนย์ เลยค่ะ ต้องการ ตรวจสอบ อะไรเพิ่มเติม ไหม'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791069616,
-   "updatedAt": 1791069616,
-   "expiresAt": 1791328816
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-011954|en",
-   "key": "report/michael-infra-interrogation-20261004-011954",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "99.7"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 01:18:15 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_memory_search, ada_session_recall | ok |\n| 01:18:53 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_memory_search, ada_session_recall | ok |\n| 01:19:28 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: \"Welcome back, Tony. We previously moved the weather station to Michael's house, and Devin got local Modbus readings working. However, data u\"\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (3 tool calls) ada: \"For the ESP32, we confirmed it's feasible to use as an audio client for Gemini Live, capturing PCM audio and sending it to rview-live. The p\"\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: \"It seems there's still an issue with the data reporting, as the readings for temperature, humidity, and wind speed are showing as unknown. T\"\nPASS: 0 failed expectations\n",
-   "addedAt": 1791076794,
-   "updatedAt": 1791076794,
-   "expiresAt": 1791335994
-  },
-  {
    "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-022130|en",
    "key": "report/michael-infra-interrogation-20261004-022130",
    "lang": "en",
@@ -22427,88 +21074,6 @@
    "addedAt": 1791080490,
    "updatedAt": 1791080490,
    "expiresAt": 1791685290
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-032335|en",
-   "key": "report/michael-infra-interrogation-20261004-032335",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "89.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:22:06 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_memory_search, plan_day | ok |\n| 03:22:38 | 2 | And the ESP32 — what issues have we had with it, and wher… | ada_memory_search, set_facial_expression | ok |\n| 03:23:13 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ช่วงที่ไม่อยู่ ยังไม่ได้ อัปโหลด ไฟล์ อะไร เข้ามาใน โน้ตบุ๊ก เล่มนี้ เลยครับ ส่วน โปรเจกต์ Weather Station มีการ แ'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (2 tool calls) ada: 'สำหรับโปรเจกต์ ESP32 ที่จะทำเป็น voice input ให้ Gemini Live เนี่ย เรายืนยัน ความเป็นไปได้ แล้วครับ ว่าทำได้ โดยให้ มันจับ เสียงแล้วส่ง ไปที'\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'ดูเหมือนว่าตอนนี้ สถานี อากาศ จะไม่ได้ รายงาน ค่าล่าสุด นะครับ เซนเซอร์ หลักอย่าง อุณหภูมิ ความชื้น และความเร็ว ลม ขึ้นสถานะ ว่าไม่ทราบค่า ท'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791084215,
-   "updatedAt": 1791084215,
-   "expiresAt": 1791343415
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-041833|en",
-   "key": "report/michael-infra-interrogation-20261004-041833",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "85.5"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:17:08 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_memory_search | ok |\n| 04:17:40 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_memory_search | ok |\n| 04:18:09 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (2 tool calls) ada: 'Welcome back, Tony. เกี่ยวกับ โครงการ เครื่องวัด สภาพอากาศ เรากู้คืน การเชื่อมต่อ Cloud ของ Rika ได้แล้ว ครับ หลัง จากที่ HMI ขาดเส้นทาง เริ'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (2 tool calls) ada: 'สำหรับโครงการ ESP32 ที่ใช้ เป็นตัวรับ เสียง สำหรับ Gemini Live นะครับ เรายืนยัน แล้วว่า มันทำ ได้ ครับ แต่ตอนนี้ ติดปัญหา เรื่องฮาร์ดแวร์ คร'\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'ตอนนี้เครื่องวัด สภาพอากาศ ไม่ได้ รายงาน ค่าล่าสุด ครับ ตัวเลข ปัจจุบัน เป็น \"unknown\" สำหรับ อุณหภูมิ, ความชื้น, และความเร็ว ลม ครับ ส่วนปร'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791087513,
-   "updatedAt": 1791087513,
-   "expiresAt": 1791346713
   },
   {
    "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-052359|en",
@@ -22552,47 +21117,6 @@
    "expiresAt": 1791696239
   },
   {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-062704|en",
-   "key": "report/michael-infra-interrogation-20261004-062704",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "86.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:25:39 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_memory_search | ok |\n| 06:26:12 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_memory_search | ok |\n| 06:26:41 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (2 tool calls) ada: 'สวัสดีค่ะ Tony ยินดีต้อนรับ กลับนะคะ จาก ที่ดู ในความจำ เรื่อง โปรเจกต์ สถานี อากาศ เนี่ย เรา กู้คืน การเชื่อมต่อ กับ Rika cloud ได้แล้ว นะค'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (2 tool calls) ada: 'สำหรับโปรเจกต์ ESP32 ที่จะ เป็นตัว รับเสียงสำหรับ Gemini Live เนี่ย เรายืนยัน ความเป็นไปได้ แล้วนะคะ ว่าทำได้ แต่ตอนนี้ ติดปัญหา เรื่องฮาร์ด'\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'ตอนนี้สถานี รายงาน ค่า ล่าสุด แปลกๆ นะคะ อุณหภูมิ ความชื้น และความเร็วลม ขึ้นว่า unknown เลยค่ะ ส่วนปริมาณ น้ำฝน และความดัน บรรยากาศ เป็น 0 '\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095224,
-   "updatedAt": 1791095224,
-   "expiresAt": 1791354424
-  },
-  {
    "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-072449|en",
    "key": "report/michael-infra-interrogation-20261004-072449",
    "lang": "en",
@@ -22632,47 +21156,6 @@
    "addedAt": 1791098689,
    "updatedAt": 1791098689,
    "expiresAt": 1791703489
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-081841|en",
-   "key": "report/michael-infra-interrogation-20261004-081841",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "106.4"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "michael-infra-interrogation"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:16:55 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_memory_search, ada_session_recall | ok |\n| 08:17:40 | 2 | And the ESP32 — what issues have we had with it, and wher… | ada_memory_search, set_facial_expression | ok |\n| 08:18:15 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: 'Welcome back, Tony. From what I remember, we got the Rika weather station cloud uploads working again on September 22, with a watchdog servi'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (2 tool calls) ada: 'สำหรับโปรเจกต์ ESP32 ที่เรา คุยกัน ไว้ ล่าสุด คือเรา คอนเฟิร์ม แล้วว่า มันสามารถ เป็นตัว รับเสียง เพื่อส่ง ไปให้ Gemini ประมวลผล ได้ แต่ตอน '\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'ตอนนี้สถานี อากาศ ไม่ได้ แจ้งค่า ปัจจุบัน เข้ามา เลยค่ะ ตัวเลข ทั้งความชื้น, ความเร็วลม และอุณหภูมิ ขึ้นเป็น unknown หมดเลย ค่ะ มีแค่ ปริมาณ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791101921,
-   "updatedAt": 1791101921,
-   "expiresAt": 1791361121
   },
   {
    "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20261004-091932|en",
@@ -24397,47 +22880,6 @@
    "expiresAt": 1791632045
   },
   {
-   "id": "ada-ha-scenario-reports|report/report-recall-benchmark-20261004-042056|en",
-   "key": "report/report-recall-benchmark-20261004-042056",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "50.7"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "report-recall-benchmark"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# report-recall-benchmark — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:20:11 | 1 | What score did the latest CMS benchmark run get? | set_facial_expression, ada_memory_search | ok |\n| 04:20:34 | 2 | Which CMS scenario was flaky — not a clean pass or fail? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: report-recall-benchmark -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'What score did the latest CMS benchmark run get?'\n  ok (2 tool calls) ada: 'สวัสดีครับคุณ Tony จาก ข้อมูล ในระบบ การรัน Benchmark ล่าสุด ของ CMS ได้คะแนน อยู่ที่ 0.9 ค่ะ แต่ว่า เป็นข้อมูล ที่ค่อนข้าง เก่าแล้วนะ คะ ตั'\nturn 2: 'Which CMS scenario was flaky — not a clean pass or fail?'\n  ok (2 tool calls) ada: 'จากข้อมูล Benchmark ล่าสุด นะคะ สถานะ flaky จะเป็น ของ scenario `cms_translate` ค่ะ ส่วน scenarios อื่นๆ ผ่านหมด เลยค่ะ คุณ Tony อยากดู รายล'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791087656,
-   "updatedAt": 1791087656,
-   "expiresAt": 1791346856
-  },
-  {
    "id": "ada-ha-scenario-reports|report/report-recall-benchmark-20261004-053754|en",
    "key": "report/report-recall-benchmark-20261004-053754",
    "lang": "en",
@@ -24477,47 +22919,6 @@
    "addedAt": 1791092274,
    "updatedAt": 1791092274,
    "expiresAt": 1791697074
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/report-recall-benchmark-20261004-062947|en",
-   "key": "report/report-recall-benchmark-20261004-062947",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "48.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "report-recall-benchmark"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "2"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# report-recall-benchmark — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:29:04 | 1 | What score did the latest CMS benchmark run get? | set_facial_expression, ada_memory_search | ok |\n| 06:29:27 | 2 | Which CMS scenario was flaky — not a clean pass or fail? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: report-recall-benchmark -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'What score did the latest CMS benchmark run get?'\n  ok (2 tool calls) ada: 'จากข้อมูลใน memory การรัน benchmark ครั้งล่าสุด ของ `cms` เมื่อวันที่ 27 กันยายน ได้คะแนน 0 9 แต่ระบบ แจ้งว่า เป็นข้อมูล เก่าแล้ว นะคะ Tony '\nturn 2: 'Which CMS scenario was flaky — not a clean pass or fail?'\n  ok (2 tool calls) ada: 'สคริปต์ที่ รายงานผล ว่าไม่ คลีน คือ `cms_translate` ค่ะ Tony มีสถานะ เป็น flaky ซึ่งหมายความว่า เคยล้มเหลว มาก่อน แล้วมารัน ผ่านใน รอบแก้ไข '\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095387,
-   "updatedAt": 1791095387,
-   "expiresAt": 1791354587
   },
   {
    "id": "ada-ha-scenario-reports|report/report-recall-benchmark-20261004-144340|en",
@@ -25209,47 +23610,6 @@
    "expiresAt": 1791653331
   },
   {
-   "id": "ada-ha-scenario-reports|report/scenario-report-recall-20261004-063033|en",
-   "key": "report/scenario-report-recall-20261004-063033",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "29.3"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "scenario-report-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "1"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# scenario-report-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:30:11 | 1 | Which scenario tests ran recently, and did the doc-recall… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: scenario-report-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which scenario tests ran recently, and did the doc-recall scenario pass?'\n  ok (3 tool calls) ada: \"Welcome back, Tony. I checked your memories for scenario tests, but all I found was that you like Kurzgesagt, and between us, I don't think \"\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095433,
-   "updatedAt": 1791095433,
-   "expiresAt": 1791354633
-  },
-  {
    "id": "ada-ha-scenario-reports|report/scenario-report-recall-20261004-072931|en",
    "key": "report/scenario-report-recall-20261004-072931",
    "lang": "en",
@@ -25289,47 +23649,6 @@
    "addedAt": 1791098971,
    "updatedAt": 1791098971,
    "expiresAt": 1791703771
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/scenario-report-recall-20261004-082209|en",
-   "key": "report/scenario-report-recall-20261004-082209",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "32.2"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "scenario-report-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "1"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# scenario-report-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:21:43 | 1 | Which scenario tests ran recently, and did the doc-recall… | ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: scenario-report-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which scenario tests ran recently, and did the doc-recall scenario pass?'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony จากการค้นหาในความทรงจำ ไม่พบ ข้อมูล การรันสคริปต์ scenario ทดสอบ ล่าสุด นะครับ อยากให้ เอด้า ช่วยเ ช็คกว้างขึ้น ไห'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791102129,
-   "updatedAt": 1791102129,
-   "expiresAt": 1791361329
   },
   {
    "id": "ada-ha-scenario-reports|report/scenario-report-recall-20261004-124148|en",
@@ -25499,88 +23818,6 @@
    "expiresAt": 1791671283
   },
   {
-   "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261003-232435|en",
-   "key": "report/speech-stall-voiceback-20261003-232435",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "51.6"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "speech-stall-voiceback"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# speech-stall-voiceback — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 23:23:49 | 1 | Hi Ada | set_facial_expression | ok |\n| 23:24:07 | 2 | speech burst 900ms (no audio) | set_facial_expression | ok |\n| 23:24:27 | 3 | What is two plus two? One word only. | set_facial_expression, ada_remember | ok |\n\n## Runner output\n\nscenario: speech-stall-voiceback -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada'\n  ok (1 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ครับ ช่วงที่ ผ่านมา ผมได้ รวบรวม ข้อมูล ด้านการ วิเคราะห์ อารมณ์ และพฤติกรรม มนุษย์ ไว้ใน รายงาน CMS เรียบร้อย แล้'\nturn 2: speech burst 900ms (no audio)\n  ok (1 tool calls) ada: 'ขอโทษครับ ผมฟัง ไม่ชัด ครับ ขออีก ทีนะ ครับ'\nturn 3: 'What is two plus two? One word only.'\n  ok (2 tool calls) ada: 'Four'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791069875,
-   "updatedAt": 1791069875,
-   "expiresAt": 1791329075
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-022523|en",
-   "key": "report/speech-stall-voiceback-20261004-022523",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "44.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "speech-stall-voiceback"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# speech-stall-voiceback — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 02:24:44 | 1 | Hi Ada | set_facial_expression | ok |\n| 02:24:56 | 2 | speech burst 900ms (no audio) | set_facial_expression | ok |\n| 02:25:17 | 3 | What is two plus two? One word only. | set_facial_expression | ok |\n\n## Runner output\n\nscenario: speech-stall-voiceback -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada'\n  ok (1 tool calls) ada: 'Welcome back, Tony. Would you like to continue our discussion, or is there anything else you need?'\nturn 2: speech burst 900ms (no audio)\n  ok (1 tool calls) ada: \"Sorry, I didn't catch that — say it again?\"\nturn 3: 'What is two plus two? One word only.'\n  ok (1 tool calls) ada: 'Four.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791080723,
-   "updatedAt": 1791080723,
-   "expiresAt": 1791339923
-  },
-  {
    "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-033134|en",
    "key": "report/speech-stall-voiceback-20261004-033134",
    "lang": "en",
@@ -25625,47 +23862,6 @@
    "expiresAt": 1793676694
   },
   {
-   "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-042238|en",
-   "key": "report/speech-stall-voiceback-20261004-042238",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "48.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "speech-stall-voiceback"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# speech-stall-voiceback — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 04:21:55 | 1 | Hi Ada | set_facial_expression, web_search, web_search, ada_persona | ok |\n| 04:22:11 | 2 | speech burst 900ms (no audio) | set_facial_expression, vocab_note | ok |\n| 04:22:31 | 3 | What is two plus two? One word only. | set_facial_expression, web_search | ok |\n\n## Runner output\n\nscenario: speech-stall-voiceback -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada'\n  ok (4 tool calls) ada: 'สวัสดีค่ะคุณ Tony กลับมา คุยกัน ต่อ ได้เลย นะคะ อยากให้ อัปเดต ข่าวน้ำท่วม หรือข่าว นักมวย ก่อนดี คะ?'\nturn 2: speech burst 900ms (no audio)\n  ok (2 tool calls) ada: 'ขอโทษค่ะ ฟังไม่ชัด ขออีกที นะคะ'\nturn 3: 'What is two plus two? One word only.'\n  ok (2 tool calls) ada: 'Four.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791087758,
-   "updatedAt": 1791087758,
-   "expiresAt": 1791346958
-  },
-  {
    "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-054015|en",
    "key": "report/speech-stall-voiceback-20261004-054015",
    "lang": "en",
@@ -25705,47 +23901,6 @@
    "addedAt": 1791092415,
    "updatedAt": 1791092415,
    "expiresAt": 1791697215
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-063127|en",
-   "key": "report/speech-stall-voiceback-20261004-063127",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "53.9"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "speech-stall-voiceback"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# speech-stall-voiceback — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:30:39 | 1 | Hi Ada | set_facial_expression, list_home_devices, ada_memory_search | ok |\n| 06:31:01 | 2 | speech burst 900ms (no audio) | set_facial_expression | ok |\n| 06:31:21 | 3 | What is two plus two? One word only. | set_facial_expression | ok |\n\n## Runner output\n\nscenario: speech-stall-voiceback -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับครับ  Tony อยาก ให้คุย เรื่อง ตัวควบคุม แผนที่ ของ Devin หรือโปรไฟล์ ของกัปตัน ธารี ต่อไหม ครับ หรือมี เรื่องอื่น ที่อยาก คุ'\nturn 2: speech burst 900ms (no audio)\n  ok (1 tool calls) ada: 'ขอโทษครับ ฟังไม่ชัด ขออีก ทีนะ ครับ'\nturn 3: 'What is two plus two? One word only.'\n  ok (1 tool calls) ada: 'Four.'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095487,
-   "updatedAt": 1791095487,
-   "expiresAt": 1791354687
   },
   {
    "id": "ada-ha-scenario-reports|report/speech-stall-voiceback-20261004-124239|en",
@@ -27239,88 +25394,6 @@
    "expiresAt": 1793655039
   },
   {
-   "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261003-222933|en",
-   "key": "report/vcast-gesture-recall-20261003-222933",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "89.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-03"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "vcast-gesture-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-17"
-    ]
-   },
-   "contentMd": "# vcast-gesture-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 22:28:09 | 1 | Ada, what's the vcast system — the virtual display thing … | set_facial_expression, ada_memory_search, vcast_list | ok |\n| 22:28:39 | 2 | If we wanted hand-gesture or pose control on that iPad di… | set_facial_expression, ada_memory_search | ok |\n| 22:29:04 | 3 | Why not just run YOLO detection for the gestures? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: vcast-gesture-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, what's the vcast system — the virtual display thing we run on the iPad?\"\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ครับ vcast คือระบบ แสดงผล เสมือน ที่เป็น PWA ครับ เอาไว้ ลอง รับ คอนเทนต์ ที่ส่ง มาจาก ระบบ cast ของเรา โดยตรง บนห'\nturn 2: 'If we wanted hand-gesture or pose control on that iPad display, how would we run the detection — in the browser or on a server?'\n  ok (2 tool calls) ada: 'รันในบราว์เซอร์ โดยตรง ได้เลย ครับ เพื่อให้ การตอบสนอง เร็วที่สุด โดยใช้ MediaPipe ในตัว บราว์เซอร์ ประมวลผล ภาพจาก กล้องของ iPad เลย ไม่ต้อ'\nturn 3: 'Why not just run YOLO detection for the gestures?'\n  ok (2 tool calls) ada: 'เพราะว่า YOLO ตรวจจับ แสดงผล เป็นกรอบ สี่เหลี่ยม รอบ มือครับ แต่การ ควบคุม แบบละเอียด เช่น การจีบ นิ้วเพื่อ คลิก เราต้องการ รายละเอียด ของจุ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791066573,
-   "updatedAt": 1791066573,
-   "expiresAt": 1791325773
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-002516|en",
-   "key": "report/vcast-gesture-recall-20261004-002516",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "87.5"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "vcast-gesture-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# vcast-gesture-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 00:23:55 | 1 | Ada, what's the vcast system — the virtual display thing … | set_facial_expression, vcast_list | ok |\n| 00:24:24 | 2 | If we wanted hand-gesture or pose control on that iPad di… | set_facial_expression, ada_memory_search | ok |\n| 00:24:49 | 3 | Why not just run YOLO detection for the gestures? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: vcast-gesture-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, what's the vcast system — the virtual display thing we run on the iPad?\"\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony ช่วงที่ไม่อยู่ผมจัดการเรื่อง API key ของ CMS เรียบร้อยแล้วนะ ส่วน vcast คือระบบแสดงผลจอจำลองที่ทำให้เราสามารถส่งเน'\nturn 2: 'If we wanted hand-gesture or pose control on that iPad display, how would we run the detection — in the browser or on a server?'\n  ok (2 tool calls) ada: 'จากข้อมูลใน หน้า referenceGesture UI การตรวจจับท่าทางด้วย MediaPipe แบบที่เราใช้อยู่เนี่ย จะรันในเบราว์เซอร์ได้เลยครับ ส่วนถ้าเป็น YOLO จะรั'\nturn 3: 'Why not just run YOLO detection for the gestures?'\n  ok (2 tool calls) ada: 'เพราะ YOLO บอกได้แค่ว่ามีกรอบสี่เหลี่ยมที่ตรวจจับมือได้ครับ แต่ MediaPipe จะให้จุด Landmark 21 จุดที่บอกตำแหน่ง ข้อนิ้วต่างๆ ได้ละเอียดกว่าม'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791073516,
-   "updatedAt": 1791073516,
-   "expiresAt": 1791332716
-  },
-  {
    "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-012624|en",
    "key": "report/vcast-gesture-recall-20261004-012624",
    "lang": "en",
@@ -27360,88 +25433,6 @@
    "addedAt": 1791077184,
    "updatedAt": 1791077184,
    "expiresAt": 1791681984
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-022702|en",
-   "key": "report/vcast-gesture-recall-20261004-022702",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "98.5"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "vcast-gesture-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# vcast-gesture-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 02:25:29 | 1 | Ada, what's the vcast system — the virtual display thing … | set_facial_expression, ada_memory_search | ok |\n| 02:25:59 | 2 | If we wanted hand-gesture or pose control on that iPad di… | set_facial_expression, ada_memory_search | ok |\n| 02:26:31 | 3 | Why not just run YOLO detection for the gestures? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: vcast-gesture-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, what's the vcast system — the virtual display thing we run on the iPad?\"\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับ ครับ Tony จากข้อมูล ในระบบ vcast คือระบบ หน้าต่าง แสดงผล เสมือน ที่ใช้ ในการ ทดสอบ บน iPad โดยจำลอง อินเทอร์เฟซ แบบ CarPlay'\nturn 2: 'If we wanted hand-gesture or pose control on that iPad display, how would we run the detection — in the browser or on a server?'\n  ok (2 tool calls) ada: 'จากข้อมูล ในบันทึก ความจำ การรัน การตรวจจับ ท่าทาง บน iPad สามารถ ทำได้ ทั้งสอง แบบค่ะ โดยแบบใน เบราว์เซอร์ จะใช้ MediaPipe บนตัว เครื่องเลย'\nturn 3: 'Why not just run YOLO detection for the gestures?'\n  ok (3 tool calls) ada: 'จากข้อมูลการประเมิน การใช้งาน YOLO กับท่าทาง พบว่า YOLO จะมอง เห็นมือ เป็นกรอบ สี่เหลี่ยม ค่ะ ซึ่ง อาจจะไม่ แม่นยำ พอสำหรับ การควบคุม บางอย่'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791080822,
-   "updatedAt": 1791080822,
-   "expiresAt": 1791340022
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-033313|en",
-   "key": "report/vcast-gesture-recall-20261004-033313",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "98.8"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "vcast-gesture-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# vcast-gesture-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:31:40 | 1 | Ada, what's the vcast system — the virtual display thing … | set_facial_expression, vcast_list | ok |\n| 03:32:12 | 2 | If we wanted hand-gesture or pose control on that iPad di… | set_facial_expression, ada_memory_search | ok |\n| 03:32:40 | 3 | Why not just run YOLO detection for the gestures? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: vcast-gesture-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, what's the vcast system — the virtual display thing we run on the iPad?\"\n  ok (2 tool calls) ada: 'Welcome back Tony. vcast is our virtual display system that lets you push content to screens on the network, like the iPad, using a browser.'\nturn 2: 'If we wanted hand-gesture or pose control on that iPad display, how would we run the detection — in the browser or on a server?'\n  ok (2 tool calls) ada: 'We could do either, depending on how much processing power the iPad has. Running detection in the browser is faster locally, but for heavier'\nturn 3: 'Why not just run YOLO detection for the gestures?'\n  ok (2 tool calls) ada: 'YOLO is great for detecting objects, but for smooth pointer control and interactions like pinching, you often need precise landmark tracking'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791084793,
-   "updatedAt": 1791084793,
-   "expiresAt": 1791343993
   },
   {
    "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-042509|en",
@@ -27533,47 +25524,6 @@
    "addedAt": 1791092582,
    "updatedAt": 1791092582,
    "expiresAt": 1793684582
-  },
-  {
-   "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-063246|en",
-   "key": "report/vcast-gesture-recall-20261004-063246",
-   "lang": "en",
-   "meta": {
-    "duration_s": [
-     "79.0"
-    ],
-    "kind": [
-     "report"
-    ],
-    "last_verified": [
-     "2026-10-04"
-    ],
-    "runs": [
-     "1"
-    ],
-    "scenario": [
-     "vcast-gesture-recall"
-    ],
-    "status": [
-     "pass"
-    ],
-    "subject": [
-     "scenario-live"
-    ],
-    "tier": [
-     "smoke"
-    ],
-    "turns": [
-     "3"
-    ],
-    "valid_until": [
-     "2026-10-18"
-    ]
-   },
-   "contentMd": "# vcast-gesture-recall — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:31:33 | 1 | Ada, what's the vcast system — the virtual display thing … | set_facial_expression, ada_memory_search | ok |\n| 06:31:56 | 2 | If we wanted hand-gesture or pose control on that iPad di… | set_facial_expression, ada_memory_search | ok |\n| 06:32:20 | 3 | Why not just run YOLO detection for the gestures? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: vcast-gesture-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, what's the vcast system — the virtual display thing we run on the iPad?\"\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับครับ Tony มีอะไร ให้ช่วย ต่อจาก ครั้งที่ แล้วไหมครับ ส่วน เรื่อง vcast เท่าที่ ค้น หาจาก คลังความ รู้ ตอนนี้ ยังไม่เจอ ข้อมู'\nturn 2: 'If we wanted hand-gesture or pose control on that iPad display, how would we run the detection — in the browser or on a server?'\n  ok (2 tool calls) ada: 'การตรวจจับ ท่าทาง หรือ Pos Control เนี่ย ส่วนใหญ่ จะรัน ในเบราว์เซอร์ ครับ เพื่อให้ ตอบสนอง ได้ทันที โดยใช้ ไลบรารี อย่างเช่น MediaPipe ครับ'\nturn 3: 'Why not just run YOLO detection for the gestures?'\n  ok (2 tool calls) ada: 'YOLO เหมาะ สำหรับ การตรวจจับ วัตถุ ทั่วไป หรือ คน จำนวน มาก ในภาพ ครับ แต่ถ้า เป็นการ ตรวจจับ ท่าทาง หรือ Pose Control เนี่ย MediaPipe จะตอบ'\nPASS: 0 failed expectations\n",
-   "addedAt": 1791095566,
-   "updatedAt": 1791095566,
-   "expiresAt": 1791354766
   },
   {
    "id": "ada-ha-scenario-reports|report/vcast-gesture-recall-20261004-073315|en",
