@@ -1,9 +1,9 @@
 id: ada-card-loop-tiers
 title: Ada in the card loop — participation tiers, mutual contact, bench gates
-column: todo
+column: review
 priority: high
 created: 2026-10-07
-updated: 2026-10-07 17:52
+updated: 2026-10-07 18:08
 brief: 'Tony wants Ada inside the same loop we just found: inspect card → ask → educate each other. This card defines
   how far she may go on her own and how we measure readiness. Expected action: review the tier table below; T0–T2
   need no approval (mechanisms exist), T3+ gates on bench scores.'
@@ -39,8 +39,10 @@ expected_goals:
   expect: exit
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 valid ✅ | - Commits `5b3d1946`, `0f17e541` — no push, no deploy | devin-task-20261007-175058-participation-tiers-for-ada-on.service:
+    Consumed 2min 21.436s CPU time over 16min 34.479s wall clock time, 1G memory peak, 513.2M memory swap peak.'
 comms:
 - at: 2026-10-07 17:49
   from: tony
@@ -54,3 +56,13 @@ comms:
 - at: 2026-10-07 17:52
   from: devin
   text: 'devin: picked up — reading nest-bench SSOT + board-api mechanisms, then writing ssot.ada-participation.yml'
+- at: 2026-10-07 18:06
+  from: devin
+  text: 'done on dispatch/20261007-175058 (5b3d1946): ssot.ada-participation.yml (T0-T4, educate-standard, mutual
+    escalation ladder, boundaries) + ssot.nest-bench.yml card-judgment domain (metrics + T3 unlock threshold + shadow-mode)
+    + jobs trail. Both expected_goals pass; ssot-validate 1617/1617 clean. Found gap: ada_board_write has no action=request
+    — endpoint exists, tool needs 1-action patch (noted in open_items, ada-pi repo).'
+- at: 2026-10-07 18:08
+  from: tony-omen
+  text: 'finished (ok): exit=0 valid ✅ | - Commits `5b3d1946`, `0f17e541` — no push, no deploy | devin-task-20261007-175058-participation-tiers-'
+claim: {}

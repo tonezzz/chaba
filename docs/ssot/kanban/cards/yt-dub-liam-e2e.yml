@@ -22,7 +22,7 @@ spec: 'Depends on: yt-voice-dub pipeline (scripts/ops/yt-vtt-*.py, yt-live-api :
   (chaba-cached-videos.timer), cast_to_screen screen-2 routing. Risks: "only two people talking" needs caption/content
   judgement — Ada may need to fetch the transcript and check speaker turns; screen-2 routing names are in the cast
   tool guide.'
-updated: 2026-10-07 17:50
+updated: 2026-10-07 18:08
 comms:
 - at: 2026-10-07 08:45
   from: tony
@@ -42,11 +42,57 @@ comms:
 - at: 2026-10-07 17:50
   from: chaba
   text: dispatched 20261007-175000-depends-on-yt-voice-dub-pipeli on chaba
+- at: 2026-10-07 17:53
+  from: devin
+  text: 'readiness re-verified 17:55: (1) dub asset LLALMFmabV4-dub.mp4 valid mp4 180s, served 200 at /apps/yt-live/;
+    (2) cached-videos-report published page (en, updated 17:30) already lists it under Playable dubs, timer next
+    run ~18:00; (3) yt-live-api :8791 healthy, phase=complete; (4) scenario yaml ada-pi tests/scenarios-live/yt_dub_liam_e2e.yaml
+    in place; (5) relay /displays: screen 2 = Browser display (key screen-5), connected+idle — cast_to_screen(screen=2)
+    routes there; note registry number drift'
+- at: 2026-10-07 17:54
+  from: devin
+  text: 'raised request all-headless-preconditions-verified-gree-a29f61: All headless preconditions verified green.
+    The card verify needs your live voice pass — ask Ada to find the Liam+Noel cl'
+- at: 2026-10-07 17:54
+  from: devin
+  text: 'final: headless readiness pass complete — dub served (LLALMFmabV4-dub.mp4 180s, 200), cached-videos-report
+    published en page (17:30) lists it, yt-live-api :8791 healthy, screen 2 (Browser display) connected+idle, scenario
+    yaml in place. Flagged relay screen-number vs key-name drift (route on numeric screen field). Board request
+    raised for Tony''s live voice pass — the only remaining verify step. Trail: docs/ssot/jobs/yt-dub/2026-10-07-yt-dub-liam-e2e-readiness.yml;
+    outcome file in worktree, commi'
+- at: 2026-10-07 17:55
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 17:56
+  from: chaba
+  text: auto-merged dispatch/20261007-175000-depends-on-yt-voice-dub-pipeli → origin/master
+- at: 2026-10-07 18:04
+  from: tony
+  text: 'answered all-headless-preconditions-verified-gree-a29f61: Check my transcript, Ada didn''t know about it.'
+- at: 2026-10-07 18:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-07 18:04
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 18:08
+  from: chaba
+  text: dispatched 20261007-180802-depends-on-yt-voice-dub-pipeli on chaba
 action:
   type: dispatch
   status: running
+  result: 20261007-175000-depends-on-yt-voice-dub-pipeli finished (inactive) — see `devin-dispatch logs 20261007-175000-depends-on-yt-voice-dub-pipeli`
   runner: tony-dell
-  task_id: 20261007-175000-depends-on-yt-voice-dub-pipeli
+  task_id: 20261007-180802-depends-on-yt-voice-dub-pipeli
 claim:
-  session: 20261007-175000-depends-on-yt-voice-dub-pipeli
-  since: 2026-10-07 17:50
+  since: 2026-10-07 18:08
+  session: 20261007-180802-depends-on-yt-voice-dub-pipeli
+requests:
+- id: all-headless-preconditions-verified-gree-a29f61
+  ask: All headless preconditions verified green. The card verify needs your live voice pass — ask Ada to find the
+    Liam+Noel clip, play the Thai dub on screen 2, ask what's cached, then stop. Run it whenever convenient; scenario
+    yaml is ada-pi tests/scenarios-live/yt_dub_liam_e2e.yaml for repeat runs.
+  status: answered
+  at: 2026-10-07 17:54
+  from: devin
+  answer: Check my transcript, Ada didn't know about it.
