@@ -94,6 +94,7 @@ clean_dir() {
   rm -f "$APP_DIR"/seg_*.ts "$APP_DIR"/*.m3u8 "$APP_DIR"/*.vtt \
         "$APP_DIR"/src.* "$APP_DIR"/*.log "$APP_DIR"/meta.json \
         "$APP_DIR"/dseg_*.ts "$APP_DIR"/dub.mp4 "$APP_DIR"/dub.state \
+        "$APP_DIR"/dub.qc.json \
         "$APP_DIR"/.gen-* "$APP_DIR"/.cast-sent "$PIDFILE"
 }
 
@@ -313,8 +314,9 @@ cast_now() {  # $1 playlist (default media.m3u8), $2 "no" = skip Ada announce
 # the "still the current run" check — a newer cast or `stop` removes it via
 # clean_dir and the worker exits before touching the new run's artifacts.
 dub_job() {  # $1 media input (src.mp4|m3u8), $2 karaoke vtt ("" ok),
-             # $3 voice, $4 duration-ish ("" -> ffprobe), $5 gen token path
-  local din="$1" kar="$2" voice="$3" dur="$4" gen="$5"
+             # $3 voice, $4 duration-ish ("" -> ffprobe), $5 gen token path,
+             # $6 video id (per-video fix-map lookup)
+  local din="$1" kar="$2" voice="$3" dur="$4" gen="$5" vid="${6:-}"
   local st="$APP_DIR/dub.state" secs
   # compress_lines wants GEMINI_API_KEY — the replay path never passed
   # through the subs block that sources it
@@ -334,6 +336,17 @@ dub_job() {  # $1 media input (src.mp4|m3u8), $2 karaoke vtt ("" ok),
               --lang "$voice" --secs "$secs")
   # compress_lines' prompt is TH-specific — skip it for non-TH voices
   [ "$voice" = "en" ] && args+=(--no-compress)
+  # caption QC gate: flagged cues skip TTS but stay in the burn; the report
+  # (dub.qc.json) rides into the media cache next to dub.mp4
+  args+=(--qc)
+  # fix-map watch-list: shared seed in the repo + optional per-video dict
+  # (~/.cache/yt-live-subs/fixmap/<vid>.json); files merge in order
+  local fm=()
+  [ "$voice" = "th" ] && [ -f "$SCRIPT_DIR/yt-dub-fixmap.th.json" ] \
+      && fm+=("$SCRIPT_DIR/yt-dub-fixmap.th.json")
+  [ -n "$vid" ] && [ -f "$HOME/.cache/yt-live-subs/fixmap/$vid.json" ] \
+      && fm+=("$HOME/.cache/yt-live-subs/fixmap/$vid.json")
+  [ "${#fm[@]}" -gt 0 ] && args+=(--fix-map "$(IFS=,; echo "${fm[*]}")")
   if [ -n "$kar" ] && grep -qm1 -E '<[0-9:.]{10,}><c>' "$kar" 2>/dev/null; then
     args+=(--sentences --en-vtt "$kar")
     echo "   dub: sentence mode (karaoke: $(basename "$kar"))"
@@ -370,7 +383,7 @@ dub_job() {  # $1 media input (src.mp4|m3u8), $2 karaoke vtt ("" ok),
 # orchestrator may exit before the dub lands — output goes to dub.log
 # (append) so a closed parent stdout can't SIGPIPE the worker.
 dub_spawn() {  # $1 media input, $2 karaoke vtt, $3 duration-ish
-  setsid "$0" __dub "$1" "$2" "$VOICE" "$3" "$GEN_TOKEN" \
+  setsid "$0" __dub "$1" "$2" "$VOICE" "$3" "$GEN_TOKEN" "${VID:-}" \
     >>"$APP_DIR/dub.log" 2>&1 &
 }
 
@@ -417,7 +430,7 @@ case "${1:-}" in
   __finalize)  # internal: detached cache populate, spawned by a cast run
     cache_finalize "$2" "$3" "${4:-off}"; exit 0 ;;
   __dub)       # internal: detached voice-dub worker, spawned by dub_spawn
-    dub_job "$2" "$3" "$4" "$5" "$6"; exit 0 ;;
+    dub_job "$2" "$3" "$4" "$5" "$6" "$7"; exit 0 ;;
   cache)
     [ -d "$MEDIA_CACHE" ] || { echo "media cache empty"; exit 0; }
     python3 - "$MEDIA_CACHE" "$CACHE_MAX" <<'PY'
