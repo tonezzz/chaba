@@ -1,16 +1,19 @@
 id: disk-auto-idc01-root
 title: Disk idc01 / fills in <7d
-column: done
+column: review
 generated: disk-trend-watch
 area: monitoring
-priority: medium
-note: 74% used, growing 11.2 GiB/day -> full in ~2.3d
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook (2026-10-05):
-  mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-07 15:10
+priority: high
+note: 47% used, growing 8.0 GiB/day -> full in ~6.4d
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
+  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
+  ~/.cache/yt-live-media LRU is 8GiB.'
+updated: '2026-10-07'
 comms:
 - at: 2026-10-07 12:51
   from: tony
   text: moved review -> done
 action:
   status: done
+brief: Disk space on idc01 (/) is running low — check the note for the rate and top
+  growers, then free space or close the card.
