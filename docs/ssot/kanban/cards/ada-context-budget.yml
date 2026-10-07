@@ -1,9 +1,9 @@
 id: ada-context-budget
 title: Ada context budget — cap per-turn token growth, catch role-token runaway
-column: doing
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-08 05:52
+updated: 2026-10-08 06:08
 tags:
 - ada
 - context
@@ -23,7 +23,10 @@ spec: 'ada-pi realtime_provider.py: bound per-turn input tokens. 1) Count/contex
 action:
   type: manual
   repo: ada-pi
-  status: queued
+  status: done
+  runner: tony-dell
+  task_id: 20261008-055417-ada-pi-realtime-provider-py-bo
+  result: 20261008-055417-ada-pi-realtime-provider-py-bo finished (inactive) — see `devin-dispatch logs 20261008-055417-ada-pi-realtime-provider-py-bo`
 expected_goals:
 - id: context-cap
   label: per-turn input tokens bounded (session rotation or history trim)
@@ -64,5 +67,27 @@ comms:
 - at: 2026-10-08 05:52
   from: tony
   text: queued for processing
+- at: 2026-10-08 05:54
+  from: chaba
+  text: dispatched 20261008-055417-ada-pi-realtime-provider-py-bo on ada-pi
+- at: 2026-10-08 06:01
+  from: devin
+  text: 'picked up dispatch 20261008-055417 — prior commits already landed per-turn rotate (45k), bare role-tag
+    strip, sliding-window 32k/24k, usage events + context_growth scenario (live PASS). Gaps vs spec: cumulative
+    ~500k gate missing, colon-form markers (\nuser:/\nmodel:) not caught. Implementing both + replay test.'
+- at: 2026-10-08 06:07
+  from: devin
+  text: 'done on dispatch/20261008-055417 (ab9d2c3, no push): closed the two spec gaps left by the 10-07 direct-land
+    — (1) ADA_CONTEXT_TOTAL_BUDGET=500000 cumulative gate in _record_usage, rotates via the same set_voice seam
+    when either gate fires (compressed sessions never trip the 45k per-turn cap — d6cbf6e6e7 shape needs the running-total
+    signal); (2) _ROLE_LEAK_RE now accepts the colon form so \nuser:/—model: fabricated replies strip + latch _leak_active
+    (mid-line user:/model: still passes). tests/te'
+- at: 2026-10-08 06:08
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 06:08
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261008-055417-ada-pi-realtime-provider-py-bo — close will block
+    until merged'
 claim:
-  since: 2026-10-07 21:00
+  since: 2026-10-08 05:54

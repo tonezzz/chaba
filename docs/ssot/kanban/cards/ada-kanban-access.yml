@@ -11,11 +11,13 @@ note: 'Tony ask (2026-10-06): Ada should review and take action on the board. De
   Delivered 2026-10-06: kanban-brief.py (T0/T1 — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer)
   + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when checks all passing get auto-closed, bounded check
   vocabulary, kanban_act ops events). Remaining: board-api token + kanban tool group for Ada voice path.'
-updated: 2026-10-08 05:53
+updated: 2026-10-08 06:01
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-055425-implement-ada-kanban-access-pe
 spec: 'Implement Ada kanban access per docs/design/ada-kanban-access.md (in the chaba checkout — read it first).
   Ada reviews and acts on the board within the authority standard the design defines: which card fields she may
   write, which transitions need Tony''s confirm, and how board requests reach her. Build the ada-pi side: tool(s)
@@ -28,3 +30,19 @@ comms:
 - at: 2026-10-08 05:53
   from: tony
   text: queued for processing
+- at: 2026-10-08 05:54
+  from: chaba
+  text: dispatched 20261008-055425-implement-ada-kanban-access-pe on ada-pi
+- at: 2026-10-08 06:00
+  from: devin
+  text: devin dispatch working on ada-pi kanban tool group — reading design + existing ada_board_write, will live-verify
+    on ada-dev
+- at: 2026-10-08 06:00
+  from: ada
+  text: probe — ignore
+- at: 2026-10-08 06:01
+  from: ada
+  text: write-path probe from idc03 — ada-dev kanban tooling verification
+claim:
+  session: 20261008-055425-implement-ada-kanban-access-pe
+  since: 2026-10-08 05:54

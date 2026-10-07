@@ -2,10 +2,10 @@ id: lab-thai-voice-clone
 title: 'Lab: Thai voice cloning — JaiTTS/ThonburianTTS vs VoxCPM2 ceiling'
 brief: Open-source models can now clone a Thai voice from a ~15s clip — usable for the YouTube dub pipeline and
   a consistent Ada voice. Waiting in the backlog — no action needed.
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 05:53
+updated: 2026-10-08 06:05
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -46,11 +46,12 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   host: tony-omen
   labels:
   - gpu
+  runner: tony-omen
 comms:
 - at: 2026-10-08 06:05
   from: devin
@@ -58,3 +59,26 @@ comms:
 - at: 2026-10-08 05:53
   from: tony
   text: queued for processing
+- at: 2026-10-08 05:54
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 05:54
+  from: chaba
+  text: started devin-task-20261008-055431-procedure-in-help-the-delivera on tony-omen (dispatch)
+- at: 2026-10-08 05:55
+  from: devin
+  text: 'picked up on tony-omen. Plan: locate Thai ref clip + transcript, build venv (uv python + torch cu + thonburian-tts/JaiTTS),
+    run 5-clip bench on GTX1650, score CER (whisper-large-v3) + SIM (CAM++), then write thai-clone-tts wrapper +
+    speaker-echo-leak threat note.'
+- at: 2026-10-08 06:05
+  from: devin
+  text: 'raised request jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc: JaiTTS-F5TTS on HF is gated — our token
+    gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS and accept the '
+requests:
+- id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
+  ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
+    and accept the license for the HF account in ~/.cache/huggingface/token, OR tell me to skip JaiTTS and bench
+    megaF5 only. Continuing with megaF5 meanwhile.
+  status: open
+  at: 2026-10-08 06:05
+  from: devin

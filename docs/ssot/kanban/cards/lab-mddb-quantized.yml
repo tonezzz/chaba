@@ -1,16 +1,16 @@
 id: lab-mddb-quantized
 title: 'Lab: mddb quantized vs flat vectors'
-brief: An experiment to shrink the memory database's vectors so lookups get cheaper; it's now testable on the spare node.
-  Sitting in the backlog — no action needed.
+brief: An experiment to shrink the memory database's vectors so lookups get cheaper; it's now testable on the spare
+  node. Sitting in the backlog — no action needed.
 column: backlog
 lab:
-  hypothesis: The quantized in-memory index is close enough in recall to flat to run as default — saving RAM on the 12G idc01
-    leader
+  hypothesis: The quantized in-memory index is close enough in recall to flat to run as default — saving RAM on
+    the 12G idc01 leader
   metric: recall@10 >= 0.95 vs flat AND RSS reduction >= 25% on the ada-* banks
   review_by: '2026-10-18'
-note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to keep leader
-  stable.'
-updated: 2026-10-07 23:10
+note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to
+  keep leader stable.'
+updated: 2026-10-08 06:03
 comms:
 - at: 2026-10-05 22:55
   from: tony
@@ -27,10 +27,14 @@ comms:
 - at: 2026-10-07 23:10
   from: devin
   text: 'triage: armed as dispatch (chaba), idle until started'
+- at: 2026-10-08 06:03
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
-spec: 'Bench mddb flat vs quantized vectors now that MDDB_VECTOR_ALGORITHMS allowlist is live on both nodes. Run on the follower
-  (keep leader serving): corpus of representative docs, index both algorithms, compare recall@k / latency / storage vs the
-  flat baseline. Post the scorecard to this card''s comms; document recommendation in the card note.'
+spec: 'Bench mddb flat vs quantized vectors now that MDDB_VECTOR_ALGORITHMS allowlist is live on both nodes. Run
+  on the follower (keep leader serving): corpus of representative docs, index both algorithms, compare recall@k
+  / latency / storage vs the flat baseline. Post the scorecard to this card''s comms; document recommendation in
+  the card note.'

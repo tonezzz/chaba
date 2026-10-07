@@ -1,19 +1,31 @@
 id: ada-market-tool
 title: ada_market_quote tool — Ada answers gold/FX/DXY from trade DB
-brief: When you ask Ada about gold, exchange rates, or Thai stocks she often guesses instead of looking up real numbers. The
-  plan is a lookup tool backed by the trade database — waiting in the backlog, no action needed.
+brief: When you ask Ada about gold, exchange rates, or Thai stocks she often guesses instead of looking up real
+  numbers. The plan is a lookup tool backed by the trade database — waiting in the backlog, no action needed.
 column: backlog
-note: 'Stock probe 2026-10-04 (stock-query-probe on ada-dev): 11/11 turns routed to web_search, 4/11 returned real numbers,
-  Thai-market specifics (SET, PTT, movers, USD/THB, diesel) failed honestly. Grounded search can''t do Thai market data and
-  burns Gemini quota. Fix: ada-pi tool backed by trade PostgreSQL — FX pairs (24 ccy), Thai gold fixings, DXY, WTI; instant,
-  free, our own data. SET quotes still need an external feed (settrade/yahoo). After the tool lands: rerun tests/scenarios-live/stock_query_probe.yaml
-  and compare per-turn quality — that delta is the tool''s benchmark.'
-updated: 2026-10-07 23:00
+note: 'Stock probe 2026-10-04 (stock-query-probe on ada-dev): 11/11 turns routed to web_search, 4/11 returned real
+  numbers, Thai-market specifics (SET, PTT, movers, USD/THB, diesel) failed honestly. Grounded search can''t do
+  Thai market data and burns Gemini quota. Fix: ada-pi tool backed by trade PostgreSQL — FX pairs (24 ccy), Thai
+  gold fixings, DXY, WTI; instant, free, our own data. SET quotes still need an external feed (settrade/yahoo).
+  After the tool lands: rerun tests/scenarios-live/stock_query_probe.yaml and compare per-turn quality — that delta
+  is the tool''s benchmark.'
+updated: 2026-10-08 06:08
 action:
   type: dispatch
-  status: idle
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-060842-ada-market-quote-tool-ada-answ
 comms:
 - at: 2026-10-07 23:00
   from: devin
   text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'
+- at: 2026-10-08 06:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 06:08
+  from: chaba
+  text: dispatched 20261008-060842-ada-market-quote-tool-ada-answ on ada-pi
+claim:
+  session: 20261008-060842-ada-market-quote-tool-ada-answ
+  since: 2026-10-08 06:08

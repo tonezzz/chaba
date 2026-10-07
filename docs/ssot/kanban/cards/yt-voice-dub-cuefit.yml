@@ -1,7 +1,8 @@
 id: yt-voice-dub-cuefit
 title: YT voice dub — residual cue-fit polish
-brief: "Polish left over from the voice-dub test — mostly making dubbed speech fit its time slots. It can't start until related dub work lands — the blocker is named on the card."
-column: backlog
+brief: Polish left over from the voice-dub test — mostly making dubbed speech fit its time slots. It can't start
+  until related dub work lands — the blocker is named on the card.
+column: done
 program: yt-voice-dub
 area: quality
 priority: low
@@ -30,12 +31,14 @@ spec: 'Polish the residual cue-fit gaps. (1) Sentence-level TH translation: yt-v
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Implement residual cue-fit per card spec: sentence-level TH translation on the group table (cached, LLM
     with documented fallback), bounded per-group rate, machine-readable fit metrics; verify on the corpus slices.'
   runner: tony-dell
   task_id: 20261006-211756-polish-the-residual-cue-fit-ga
-updated: 2026-10-06 21:39
+  result: 20261006-211756-polish-the-residual-cue-fit-ga finished (inactive) — see `devin-dispatch logs 20261006-211756-polish-the-residual-cue-fit-ga`
+  verified: true
+updated: 2026-10-08 05:56
 comms:
 - at: 2026-10-06 21:16
   from: tony
@@ -57,6 +60,36 @@ comms:
     --th-auto in yt-vtt-dub.py wires it in (hand --th-file still wins); compress auto-skipped for group-level text.
     (2) --rate-spread +-0.10 per-group rate band around global; 1.4x atempo cap + lag budget unchanged. (3) DUBFIT
     json line per render (+--metrics-json): rate band, a'
+- at: 2026-10-08 05:54
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-211756-polish-the-residual-cue-fit-ga — 2 commit(s) not in
+    origin/master: docs: dispatch outcome for yt-voice-dub-cuefit; feat(yt-dub): group-level TH translation + bounded
+    per-group rate + DUBFIT metrics'
+- at: 2026-10-08 05:54
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 05:54
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261006-211756-polish-the-residual-cue-fit-ga — 2 commit(s) not in
+    origin/master: docs: dispatch outcome for yt-voice-dub-cuefit; feat(yt-dub): group-level TH translation + bounded
+    per-group rate + DUBFIT metrics'
+- at: 2026-10-08 05:56
+  from: chaba
+  text: 'merge guard: dispatch/20261006-211756-polish-the-residual-cue-fit-ga merged into origin/master'
+- at: 2026-10-08 05:56
+  from: tony
+  text: closed by Tony
+- at: 2026-10-08 05:56
+  from: chaba
+  text: 'merge guard: dispatch/20261006-211756-polish-the-residual-cue-fit-ga merged into origin/master'
+- at: 2026-10-08 05:56
+  from: tony
+  text: closed by Tony
+- at: 2026-10-08 05:56
+  from: chaba
+  text: pushed dispatch/20261006-211756-polish-the-residual-cue-fit-ga to origin
+- at: 2026-10-08 05:56
+  from: chaba
+  text: auto-merged 9910e863 (dispatch/20261006-211756-polish-the-residual-cue-fit-ga) → origin/master
 claim:
-  session: 20261006-211756-polish-the-residual-cue-fit-ga
   since: 2026-10-06 21:17

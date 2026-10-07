@@ -1,16 +1,16 @@
 id: ada-cms-discovery-fixes
 title: 'ada-pi: cms_read discovery + reports-index flood + memory-search pollution (liam-e2e fallout)'
 column: backlog
-updated: 2026-10-07 23:00
-note: 'From yt-dub-liam-e2e live pass 2026-10-07 (transcript ece770ccb0): Ada could not find the Liam dub though all infra
-  was green. Three ada-pi fixes needed: (1) cms_read list ordering/search — action=list returns an unordered subset (373 docs;
-  model passed limit=10 and wrongly concluded the page did not exist). Add action=search over slug/title/summary, or order
-  list by meta.updated desc. (2) _cms_reports_index in tool_runner/cms.py lacks the chaba lib fixes — port index_rows() from
-  chaba scripts/l'
-help: 'Evidence: session ece770ccb0 journal — cms_read list limit=10 returned cam-* pages only; reports-index had 59/60 cam
-  rows, no cached-videos; ada_memory_search hits were all devin/* session dumps. Chaba-side fixes already landed: voice-dub-demos
-  page updated (LLALMFmabV4 row + vcast routing note), cms_index.py per-domain cap + th dedupe regenerated the index, cached-videos
-  title now bilingual. See docs/ssot/jobs/yt-dub/2026-10-07-yt-dub-liam-e2e-pass1-diagnosis.yml'
+updated: 2026-10-08 06:06
+note: 'From yt-dub-liam-e2e live pass 2026-10-07 (transcript ece770ccb0): Ada could not find the Liam dub though
+  all infra was green. Three ada-pi fixes needed: (1) cms_read list ordering/search — action=list returns an unordered
+  subset (373 docs; model passed limit=10 and wrongly concluded the page did not exist). Add action=search over
+  slug/title/summary, or order list by meta.updated desc. (2) _cms_reports_index in tool_runner/cms.py lacks the
+  chaba lib fixes — port index_rows() from chaba scripts/l'
+help: 'Evidence: session ece770ccb0 journal — cms_read list limit=10 returned cam-* pages only; reports-index had
+  59/60 cam rows, no cached-videos; ada_memory_search hits were all devin/* session dumps. Chaba-side fixes already
+  landed: voice-dub-demos page updated (LLALMFmabV4 row + vcast routing note), cms_index.py per-domain cap + th
+  dedupe regenerated the index, cached-videos title now bilingual. See docs/ssot/jobs/yt-dub/2026-10-07-yt-dub-liam-e2e-pass1-diagnosis.yml'
 comms:
 - at: 2026-10-07 18:24
   from: tony
@@ -18,7 +18,18 @@ comms:
 - at: 2026-10-07 23:00
   from: devin
   text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'
+- at: 2026-10-08 06:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 06:06
+  from: chaba
+  text: dispatched 20261008-060641-ada-pi-cms-read-discovery-repo on ada-pi
 action:
   type: dispatch
-  status: idle
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-060641-ada-pi-cms-read-discovery-repo
+claim:
+  session: 20261008-060641-ada-pi-cms-read-discovery-repo
+  since: 2026-10-08 06:06

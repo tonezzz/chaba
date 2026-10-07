@@ -2,7 +2,7 @@ id: mddb-follower-stall
 title: mddb follower stream stalls silently — connected but stops applying
 brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere.
   Waiting in the backlog — no action needed yet.
-column: backlog
+column: doing
 priority: high
 note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently
   stalled while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828
@@ -12,7 +12,7 @@ note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:
 help: 'Detect: leader /v1/replication/status shows follower confirmed_lsn frozen while current_lsn climbs and last_seen_at
   stays fresh. Fix candidates: heartbeat/timeout on the follower receive loop, or a "applier-alive" metric the canary
   can watch. mddb-fork repo.'
-updated: 2026-10-08 05:53
+updated: 2026-10-08 06:08
 comms:
 - at: 2026-10-06 14:30
   from: devin
@@ -24,10 +24,30 @@ comms:
 - at: 2026-10-08 05:53
   from: tony
   text: queued for processing
+- at: 2026-10-08 05:54
+  from: mn01
+  text: claimed
+- at: 2026-10-08 05:54
+  from: chaba
+  text: started devin-task-20261007-225415-diagnose-the-mddb-follower-s-s on mn01 (dispatch)
+- at: 2026-10-08 06:00
+  from: devin
+  text: 'picked up on mn01. Live check: idc02 follower caught up (lsn 180.26M); idc01 follower lagging 13.2M but
+    CONFIRMED applying (+9k/90s) — not the stall signature. Root cause already diagnosed in mddb-replication-heartbeat
+    (Recv no deadline, no heartbeat). Building: follower-watchdog script+timer (restart on connected-but-frozen
+    confirmed_lsn) + canary apply-stall surfacing. mddb-fork unreachable from mn01 — no code changes there.'
+- at: 2026-10-08 06:08
+  from: devin
+  text: 'done on dispatch branch ff740f2. Root cause confirmed: follower Recv() has no deadline + no heartbeat ->
+    silently-dead stream blocks apply forever while connected (fix exists undeployed on mddb-fork repl-heartbeat@498cdc3).
+    Shipped in chaba: scripts/mddb-follower-watchdog.py + systemd timer — restarts mddb-follower.service when confirmed_lsn
+    frozen >300s while last_seen_at fresh (cooldown 900s, max 3/episode, lsn-0 + absent guards); mddb-binlog-canary.py
+    now emits per-follower stream state (conn'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: mn01
 spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader
   last_seen_at stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state
   surfacing (apply-lag metric/health signal so the freeze is visible without a human comparing LSNs) plus a watchdog
