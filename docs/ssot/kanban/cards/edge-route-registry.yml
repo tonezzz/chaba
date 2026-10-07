@@ -20,10 +20,10 @@ spec: 'Phase 1 (this session): ssot.routes.yml with full dell-edge
   path-strip debugging.'
 action:
   type: manual
-updated: 2026-10-07 10:20
+updated: 2026-10-07 11:50
 claim:
   session: devin
-  since: 2026-10-07 10:20
+  since: 2026-10-07 11:50
 comms:
 - at: 2026-10-07 10:05
   from: devin
@@ -53,3 +53,15 @@ comms:
     Edit flow: registry -> render --caddy -> validate -> cat > Caddyfile
     -> reload. Still open: mn01 edge + VPS edge consume registry (2b),
     verify-probe health lane, cloudflared eval (phase 3).'
+- at: 2026-10-07 11:50
+  from: devin
+  text: 'health lane done (dc37ef23): scripts/check-routes.py probes every
+    registry route — edge path + upstream (docker-net via container state,
+    host-gw skipped, brace paths probe first member). Writes
+    /apps/route-health.json every 5min via chaba-route-health.timer
+    (armed + first service run verified). First probe found 7 REAL
+    failures: dev-v0 :8006, nlm-cookies :9876, snapshot :9005 dead;
+    chaba-h3 + imagen static dirs missing; frigate + imagen-inference
+    containers down. ada-tony ws still points idc03. Still open: mn01/VPS
+    edges (2b), cloudflared eval (phase 3); dead-route findings are now
+    triage items surfaced in route-health.json.'
