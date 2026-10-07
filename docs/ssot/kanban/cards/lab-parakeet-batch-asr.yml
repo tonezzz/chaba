@@ -1,0 +1,44 @@
+id: lab-parakeet-batch-asr
+title: 'Lab: Parakeet Redux local batch ASR (non-Thai lanes)'
+brief: "A 178MB speech model that transcribes on plain CPU at ~100x real time — free local transcripts for our non-Thai audio instead of burning Gemini tokens. Waiting in the backlog — no action needed."
+column: backlog
+priority: low
+created: 2026-10-07
+updated: 2026-10-07
+lab:
+  hypothesis: Parakeet Redux on tony-omen CPU covers all non-Thai batch transcription at ~parity WER vs cloud ASR, at zero marginal cost and full privacy
+  metric: WER <= 10% on a labeled 20-clip corpus AND >= 30x real-time throughput on 8 CPU cores
+  review_by: '2026-10-21'
+note: >-
+  moondream/parakeet-redux — ternary (1.58-bit) quant of NVIDIA
+  parakeet-tdt-0.6b-v3. 178MB weights, 113x RT on 8 x86 cores, word
+  timestamps, punctuation, auto lang-detect, up to 24-min chunks. WER:
+  6.55% EN / 10.56% FLEURS-25 (beats original's 11.62) / 2.51% long-form.
+  Weak spot is noise (9.04% vs 6.72) — Parakeet Ultra (full-precision,
+  GPU) is the fallback for noisy audio. Runtime: `pip install moondream`
+  (Photon engine, CPU/Metal/GPU) or parakeet-redux-c (dependency-free C).
+spec: >-
+  HARD LIMIT: 25 European languages only — NO THAI. Ada's live voice path
+  stays on Gemini Live (bilingual EN/TH + streaming). This is batch-only
+  (offline API, no streaming) — never wire it into the hot ear path.
+  Candidate lanes: (1) drop-catcher/transcript archive — daily sweep of
+  Ada session audio -> transcripts for request-lifecycle scanning, free;
+  (2) voice-corpus labeling — auto-transcribe tests/voice-corpus/clips
+  for speaker-id corpora; (3) yt-dub source-language transcript prep
+  before yt-vtt-translate + edge-tts; (4) privacy-sensitive audio that
+  shouldn't hit Gemini's cloud.
+  Deliverable if bench passes: `batch-transcribe` script/quadlet on
+  tony-omen (venv + moondream pkg, CPU-only so GPU stays free for Nest),
+  stdin/file -> JSON {text, word_ts[]}.
+links:
+  - request-lifecycle
+  - yt-voice-dub-mode
+  - hf:moondream/parakeet-redux
+  - hf:nvidia/parakeet-tdt-0.6b-v3
+help: >-
+  Bench corpus: pull 20 labeled clips from tests/voice-corpus + a few
+  EN TED-LIUM segments as control. Score WER vs reference transcripts.
+  If noise-lane clips fail, retest those on Parakeet Ultra on the GPU
+  before rejecting.
+blocked_by: []
+autonomy: t2
