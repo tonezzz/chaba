@@ -1,9 +1,9 @@
 id: nest-portable-brains
 title: Chaba Nest portable brains — gdrive brain store, respawn anywhere
-column: doing
+column: review
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 16:33
+updated: 2026-10-07 16:47
 note: 'Every Nest entity gets a versioned brain bundle (manifest + weights + memory slice + config + state anchors)
   stored on gdrive as an append-only artifact. Any host can fetch → hydrate → resume with RPO = time since last
   checkpoint. Same tier model as the deployed mddb backup offload: hot local, warm on tailnet, cold on gdrive. Research
@@ -26,8 +26,10 @@ spec: 'P0 DONE 2026-10-07: manifest schema + entity registry live in docs/ssot/i
   '
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 . | **Next on card:** P3 checkpoint cadence + Drive drift signal; P4 FedAvg transport. | devin-task-20261007-162634-p0-done-2026-10-07-manifest-sc.service:
+    Consumed 1min 58.824s CPU time over 20min 26.590s wall clock time, 1.8G memory peak.'
 comms:
 - at: 2026-10-07 15:45
   from: tony
@@ -94,6 +96,17 @@ comms:
   from: devin
   text: P1 in progress — writing scripts/nest/nest-brain-{pack,restore}.sh + drive-props helper, then gcrypt remote
     (approved) and nest-01 round-trip proof.
+- at: 2026-10-07 16:46
+  from: devin
+  text: 'P2 DONE — cross-host respawn proven. pack nest-01-ops-classifier v20261007-0940-770331f0 (epoch1, parent
+    0910-4aa91770) -> gdrive:nest/brains/ -> mn01 hydrate via --from-dir (no rclone on mn01). eval.py on mn01: test_accuracy=0.507
+    (203/400) — exact match to checkpoint, zero drift. Fencing verified: epoch-5 local state refuses epoch-1 brain
+    w/o --force. Artifacts: warm copy /home/tony/var/nest-brains/nest-01-ops-classifier-20261007-0940/ (tony-omen),
+    mn01:/tmp/nest-p2-restore/verify.ok, tony-ome'
+- at: 2026-10-07 16:47
+  from: tony-omen
+  text: 'finished (ok): exit=0 . | **Next on card:** P3 checkpoint cadence + Drive drift signal; P4 FedAvg transport.
+    | devin-task-20261007-1626'
 requests:
 - id: approve-creating-a-gcrypt-rclone-remote-e597ab
   ask: Approve creating a gcrypt rclone remote (crypt over gdrive:nest-brains/) for restricted brains? Blocks only

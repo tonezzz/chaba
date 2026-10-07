@@ -1,57 +1,75 @@
 id: ada-remember-confirm-flake
 title: ada_remember confirmed:true flake — phantom "saved" narrations
-column: backlog
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 16:20
+updated: 2026-10-07 16:51
 tags:
 - ada
 - memory
 - confirm-gate
 - phantom-write
-goal: >-
-  Make the bank confirmation flow deterministic for the voice model and stop
-  Ada narrating "บันทึกเรียบร้อยแล้ว" on NOT EXECUTED results.
+goal: Make the bank confirmation flow deterministic for the voice model and stop Ada narrating "บันทึกเรียบร้อยแล้ว"
+  on NOT EXECUTED results.
 evidence:
   session: 2026-10-07-56d2e4d167 (13:40–13:48 ICT)
-  stats: "ada_remember 8 calls: 2 ok, 6 NOT EXECUTED despite confirmed:true"
-  detail: >-
-    The gate rejects first calls with a bound confirm_token (cfm-*, 120s
-    TTL). The model never replays with the token — it just resends
-    confirmed:true, which sometimes passes and sometimes doesn't (flaky).
-    Three "เรียบร้อยค่ะ บันทึกข้อมูลแล้วค่ะ" narrations rode on failed
-    results; the Khun Nampu document-submission and photo-printing facts
-    were claimed saved but never landed (only general/timeline and
-    general/flood-relief got created). No phantom_write_claim ops event
-    fired — detection gap too.
-spec: >-
-  ada-pi ada_remember confirm gate flake (evidence: voice session
-  2026-10-07-56d2e4d167, 13:40-13:48 ICT — 6/8 writes returned NOT EXECUTED
-  with confirmed:true resent instead of confirm_token, and Ada narrated
-  "saved" on the failed results). In backend confirm logic: accept
-  confirmed:true on a retry of identical (bank,subject,text) within the
-  token window — that is the model's actual behaviour — OR keep the token
-  mandatory but make the rejection text instruct the exact replay arg
-  (confirm_token=...) prominently. Also: when a result is NOT EXECUTED,
-  the voice path must not narrate success — add a phantom_write_claim ops
-  event when the model claims a write after a failed result (see
-  transcript-mine-confirms signal). Add a scenario asserting
-  confirm_token replay works end-to-end.
+  stats: 'ada_remember 8 calls: 2 ok, 6 NOT EXECUTED despite confirmed:true'
+  detail: The gate rejects first calls with a bound confirm_token (cfm-*, 120s TTL). The model never replays with
+    the token — it just resends confirmed:true, which sometimes passes and sometimes doesn't (flaky). Three "เรียบร้อยค่ะ
+    บันทึกข้อมูลแล้วค่ะ" narrations rode on failed results; the Khun Nampu document-submission and photo-printing
+    facts were claimed saved but never landed (only general/timeline and general/flood-relief got created). No phantom_write_claim
+    ops event fired — detection gap too.
+spec: 'ada-pi ada_remember confirm gate flake (evidence: voice session 2026-10-07-56d2e4d167, 13:40-13:48 ICT —
+  6/8 writes returned NOT EXECUTED with confirmed:true resent instead of confirm_token, and Ada narrated "saved"
+  on the failed results). In backend confirm logic: accept confirmed:true on a retry of identical (bank,subject,text)
+  within the token window — that is the model''s actual behaviour — OR keep the token mandatory but make the rejection
+  text instruct the exact replay arg (confirm_token=...) prominently. Also: when a result is NOT EXECUTED, the voice
+  path must not narrate success — add a phantom_write_claim ops event when the model claims a write after a failed
+  result (see transcript-mine-confirms signal). Add a scenario asserting confirm_token replay works end-to-end.'
 fix_options:
-  - Accept confirmed:true on retry of identical content within the token
-    window (what the model already does), OR make the token path the only
-    path and inject the token into the transcript-visible instruction so
-    the model echoes it back.
-  - Suppress/override narration on NOT EXECUTED results server-side, or
-    flag phantom_write_claim ops events when Ada says saved|เรียบร้อย after
-    a failed write (mine transcript mine-confirms signal).
+- Accept confirmed:true on retry of identical content within the token window (what the model already does), OR
+  make the token path the only path and inject the token into the transcript-visible instruction so the model echoes
+  it back.
+- Suppress/override narration on NOT EXECUTED results server-side, or flag phantom_write_claim ops events when Ada
+  says saved|เรียบร้อย after a failed write (mine transcript mine-confirms signal).
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: done
+  runner: tony-dell
+  task_id: 20261007-163943-ada-pi-ada-remember-confirm-ga
+  result: 20261007-163943-ada-pi-ada-remember-confirm-ga finished (inactive) — see `devin-dispatch logs 20261007-163943-ada-pi-ada-remember-confirm-ga`
 related:
 - card: speaker-profile-tool (in-flight retry mentions confirm-token TTL)
 comms:
 - at: 2026-10-07 16:20
   from: devin
   text: filed from transcript audit — session 56d2e4d167 evidence
+- at: 2026-10-07 16:39
+  from: chaba
+  text: dispatched 20261007-163943-ada-pi-ada-remember-confirm-ga on ada-pi
+- at: 2026-10-07 16:43
+  from: devin
+  text: 'Investigated. Root cause: provider strips self-asserted confirmed=true when no voice affirmation is detected
+    (realtime_provider.py ~4685); model retries confirmed:true instead of the minted confirm_token -> repeated NOT
+    EXECUTED. phantom_write_claim exists but only fires on zero-tool-call turns. Implementing: pending-confirm passthrough
+    for identical retries + phantom claim after failed results + scenario + tests.'
+- at: 2026-10-07 16:50
+  from: devin
+  text: 'Done (option a + phantom fix). backend/tool_runner: pending_confirm() + confirmed-grant burns outstanding
+    token + denial text now says TO EXECUTE replay with confirm_token=. backend/realtime_provider: confirmed=true
+    resend of an identical pending call passes through (confirm_retry_accept ops event) instead of being stripped;
+    failed_results_this_turn tracked and phantom_write_claim now fires on write-claims over ANY failed result; _PHANTOM_CLAIM_RE
+    gained saved/บันทึกแล้ว etc. New scenario confir'
+- at: 2026-10-07 16:51
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 16:51
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (7 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 16:51
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-163943-ada-pi-ada-remember-confirm-ga dirty — 7 uncommitted
+    file(s); commit or clean before pruning'
+claim:
+  since: 2026-10-07 16:39

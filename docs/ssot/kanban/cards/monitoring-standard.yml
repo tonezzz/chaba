@@ -2,17 +2,35 @@ id: monitoring-standard
 title: Monitoring standard — ever-evolving healthcheck + attention report
 column: doing
 priority: high
-note: >
-  Design: docs/kb/monitoring-standard-design-2026-10-07.md — five layers
-  (declare→execute→aggregate→report→escalate), action-first report,
-  coverage lint as the evolve-hook, zero-LLM detection rule.
-  P0 lint DONE: scripts/monitor-coverage-lint.py — live-vs-checks diff,
-  coverage.exempt escape hatch. Open attention list: dnsmasq-postgre,
-  obsidian-vault, go2rtc (dell); gemini-api (omen); mcp-link-monitor,
-  ada-dev, google-home-mcp (mn01). Remaining P0 DONE: ops-digest merges
-  snapshot anomalies (2 error/3 unknown live now) + staleness + coverage.
-  New miss found: health_checks pg table empty — mcp-health writes to
-  wrong DB host (omen:localhost). SELF layer proven. P1: ops-state aggregator + /apps/ops-health page +
-  critical→telegram. P2: restart-counter/auth-validity/resource-burn
-  checks. P3: persistent-warn → kanban auto-request.
-updated: '2026-10-07'
+note: 'Design: docs/kb/monitoring-standard-design-2026-10-07.md — five layers (declare→execute→aggregate→report→escalate),
+  action-first report, coverage lint as the evolve-hook, zero-LLM detection rule. P0 lint DONE: scripts/monitor-coverage-lint.py
+  — live-vs-checks diff, coverage.exempt escape hatch. Open attention list: dnsmasq-postgre, obsidian-vault, go2rtc
+  (dell); gemini-api (omen); mcp-link-monitor, ada-dev, google-home-mcp (mn01). Remaining P0 DONE: ops-digest merges
+  snapshot anomalies (2 error/3 unknown live now) + staleness + coverage. New miss found: health_checks pg table
+  empty — mcp-health writes to wrong DB host (omen:localhost). SELF layer proven. P1: ops-state aggregator + /apps/ops-health
+  page + critical→telegram. P2: restart-counter/auth-validity/resource-burn checks. P3: persistent-warn → kanban
+  auto-request.
+
+  '
+updated: 2026-10-07 16:44
+action:
+  type: dispatch
+  status: running
+  runner: tony-omen
+comms:
+- at: 2026-10-07 16:43
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 16:44
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 16:44
+  from: chaba
+  text: started devin-task-20261007-164406-monitoring-standard-ever-evolv on tony-omen (dispatch)
+- at: 2026-10-07 16:44
+  from: devin
+  text: 'coverage lint closed: 35 live / 30 covered / 0 uncovered / 5 exempt. New checks: dnsmasq-postgre, go2rtc
+    (dell), mcp-link-monitor + google-home-mcp (mn01), obsidian-vault + ada-dev (idc03). gemini-api exempt (external
+    API → P2 auth-validity track). Found mcp-link-monitor dead on mn01 despite services.yml active — re-enabled.
+    Tony approved critical→telegram ANYTIME (2026-10-07); keep allowlist tight: Ada-facing path, auth broken, data-loss
+    risk.'
