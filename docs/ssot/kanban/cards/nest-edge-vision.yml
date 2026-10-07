@@ -5,7 +5,7 @@ brief: A page that shows a camera feed and draws object labels on it right in th
 column: todo
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 21:19
+updated: 2026-10-07 21:41
 note: 'Extends the Nest to the client''s eyes: a page that plays a camera feed and runs detection in-browser (WASM),
   overlay drawn locally, and the whole page castable to TV via the proven screenlive lane. Server compute stays
   at zero — the client does vision.'
@@ -70,3 +70,9 @@ comms:
 - at: 2026-10-07 21:19
   from: chaba
   text: started devin-task-20261007-141922-phases-1-apps-eye-page-ada-pi- on mn01 (dispatch)
+- at: 2026-10-07 21:41
+  from: devin
+  text: 'picked up — phase 1 page exists on master (e236153). Gaps found: MDDB endpoint hardcoded to a nonexistent
+    /mddb route (bench POST silently fails), no xmeye source, no bench-edge CMS page, no cast script, no ada_look
+    spec. Implementing: same-origin /apps/eye-mddb write route + camwall-thumb/vms-snap sources + pub=N detections
+    to eye/latest + bench-edge CMS generator + cast-eye.sh + ada-pi handoff spec.'
