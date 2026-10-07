@@ -65,3 +65,16 @@ comms:
     containers down. ada-tony ws still points idc03. Still open: mn01/VPS
     edges (2b), cloudflared eval (phase 3); dead-route findings are now
     triage items surfaced in route-health.json.'
+- at: 2026-10-07 12:20
+  from: devin
+  text: 'route triage done (e2109473): all 7 first-run failures resolved.
+    Real outages fixed: ha-live restarted (/snapshot 200), dev-miniapp-v0
+    env file restored from idc01 archive + restarted (/apps/dev/v0 200),
+    chaba-h3 mounted into web quadlet at /srv/public/chaba-h3 (200 — the
+    repo rename chaba-h3->chaba-h3-tony-dell had broken both compose and
+    quadlet paths). Stale routes removed: nlm-cookies (:9876 sidecar
+    retired, notebooklm-rest :3011 owns auth), imagen static. Repointed:
+    imagen-api docker-net name -> tony-omen.taila0626a.ts.net:8000.
+    expect_down flag added: frigate (on-demand NVR), imagen-api (omen
+    GPU worker pauses) now report "expected down" not "failing". Health
+    lane: 36 ok / 0 failing / 11 expected.'
