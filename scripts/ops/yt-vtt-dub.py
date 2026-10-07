@@ -6,8 +6,14 @@ target-language line per cue with edge-tts, fits each segment to its cue
 window (edge-tts --rate resynth first, atempo as fallback), lays segments
 on a silent timeline, mixes over the ducked original, and muxes to mp4.
 
+--qc gates synthesis on a caption-QC pass: every post-dedup cue/group is
+scored (chars/sec bounds, thin-text-vs-window, rolling-caption residue,
+untranslated EN in a TH line, speaker markers/stage directions); flagged
+cues are skipped for TTS but stay in the display burn, and a JSON report +
+printed table lands at <out>.qc.json (--qc-only scores without rendering).
+
 Usage:
-  yt-vtt-dub.py <media.m3u8> <subs.vtt> <out.mp4> [--lang th] [--secs 180] [--duck 0.22]
+  yt-vtt-dub.py <media.m3u8> <subs.vtt> <out.mp4> [--lang th] [--secs 180] [--duck 0.22] [--qc]
 """
 import argparse
 import html
@@ -40,8 +46,10 @@ def parse_vtt(path, lang, limit):
         start, end = ts(*m.group(1, 2, 3)), ts(*m.group(4, 5, 6))
         lines = [
             TAGS.sub("", l).strip()
-            for l in b[m.end():].splitlines()
+            for l in html.unescape(b[m.end():]).splitlines()
             if l.strip() and "-->" not in l
+            and not re.match(
+                r"(align|position|line|vertical|size|region):", l.strip())
         ]
         if lang.startswith("th"):
             text = " ".join(l for l in lines if THAI.search(l))
@@ -173,6 +181,98 @@ def _fix(text, fm):
     for k, v in fm.items():
         text = text.replace(k, v)
     return text
+
+
+# --- caption QC gate -------------------------------------------------------
+# Scores every post-dedup cue/group before synthesis; flagged cues are
+# skipped for TTS but stay in the display burn (the burn VTT is written from
+# the group table before the gate runs). Report lands at <out>.qc.json —
+# see docs/ssot/jobs/yt-dub/2026-10-07-yt-voice-dub-qc.yml.
+QC_CPS = {            # chars/sec bounds vs the cue's OWN caption span —
+    "th": (2.0, 30.0),   # ~2x natural = unspeakable; below lo the text can't
+    "en": (3.0, 36.0),   # account for the caption duration (truncated/garbage)
+}
+QC_NAT_CPS = {"th": 14.0, "en": 16.0}   # natural-rate chars/sec (fill estimate)
+QC_FILL_MIN = 0.12    # short text covering <12% of a >=5s span = fragment
+QC_PREFIX_MIN = 0.6   # shared prefix with previous cue >= this share = residue
+QC_PREFIX_CHARS = 8   # ... and at least this many chars
+QC_LATIN = re.compile(r"[A-Za-z]{2,}")
+QC_STAGE = re.compile(  # bracketed stage directions + speaker markers that
+    r"\[[^\]]{1,40}\]|>>|^\s*>|\b(applause|laughter|cheering)\b", re.I)
+
+
+def qc_score(cues, lang, spans=None):
+    """Score post-dedup cues [(start,end,text)]; return flag dicts.
+    spans[i] = the cue's own caption span (real VTT duration / group word
+    span) — density is judged against the caption's claim, not the fit
+    window (turn splits leave ~0.2s fit windows under real speech)."""
+    lo, hi = QC_CPS.get(lang[:2], QC_CPS["en"])
+    nat = QC_NAT_CPS.get(lang[:2], 16.0)
+    flags = []
+    prev = ""
+    for i, (s, e, text) in enumerate(cues):
+        win = max((spans[i] if spans else e - s), 0.01)
+        t = " ".join(str(text).split())
+        reasons = []
+        cps = len(t) / win
+        if cps > hi:
+            reasons.append(f"cps-high {cps:.0f}>{hi:.0f}")
+        elif cps < lo and len(t) >= 4:
+            reasons.append(f"cps-low {cps:.1f}<{lo:.0f}")
+        if win >= 5.0 and len(t) <= 12 and len(t) / nat / win < QC_FILL_MIN:
+            reasons.append(f"thin fill={len(t) / nat / win:.0%}")
+        if prev:
+            k = 0
+            for a_ch, b_ch in zip(t, prev):
+                if a_ch != b_ch:
+                    break
+                k += 1
+            if k >= QC_PREFIX_CHARS and k / max(len(t), 1) >= QC_PREFIX_MIN:
+                reasons.append(f"residue prefix={k}ch")
+        if lang.startswith("th"):
+            # missed translation: a "Thai" line that is really English.
+            # pure-EN lines never reach here (parse_vtt drops them), so this
+            # catches latin-dominant fragments + --th-file leftovers while
+            # sparing proper names (>=3 latin words AND latin-dominant)
+            lat = QC_LATIN.findall(t)
+            n_th = len(THAI.findall(t))
+            n_lat = sum(len(w) for w in lat)
+            if (not n_th and len(lat) >= 2) \
+                    or (len(lat) >= 3 and n_lat > n_th):
+                reasons.append("untranslated")
+        if QC_STAGE.search(t):
+            reasons.append("markers")
+        if reasons:
+            flags.append({"i": i, "start": round(s, 2), "end": round(e, 2),
+                          "cps": round(cps, 1), "reasons": reasons,
+                          "text": t[:140]})
+        prev = t
+    return flags
+
+
+def qc_gate(cues, voice_of, lang, out_path, spans=None):
+    """Print the QC table, write <out>.qc.json, drop flagged cues (remapping
+    voice indices). Returns (cues, voice_of, report)."""
+    import json
+    flags = qc_score(cues, lang, spans)
+    print(f"qc: {len(flags)}/{len(cues)} cues flagged "
+          f"(skipped for TTS, kept in burn)")
+    for f in flags:
+        print(f"  [{f['i']:>3}] {f['start']:>7.2f}s "
+              f"{', '.join(f['reasons']):<26} {f['text'][:60]}")
+    report = {"lang": lang, "cues": len(cues), "flagged": len(flags),
+              "gate": "flagged cues skipped for TTS, kept in display burn",
+              "flags": flags}
+    rep_path = out_path
+    with open(rep_path, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, ensure_ascii=False, indent=1)
+    print(f"qc report -> {rep_path}")
+    bad = {f["i"] for f in flags}
+    keep = [i for i in range(len(cues)) if i not in bad]
+    cues = [cues[i] for i in keep]
+    voice_of = {ni: v for ni, oi in enumerate(keep)
+                if (v := voice_of.get(oi))}
+    return cues, voice_of, report
 
 
 # --- heuristic speaker-turn detection ---------------------------------------
@@ -515,9 +615,20 @@ def main():
                     help="JSON array of polished TH text per sentence group "
                          "(overrides translated text for speech + burn)")
     ap.add_argument("--fix-map", default="",
-                    help="JSON object of TH pronunciation fixups applied to "
-                         "spoken text, e.g. '{\"โล่งอก\": \"โล่ง\\u200bอก\"}' "
-                         "— ZWSP forces correct syllable break in edge-tts")
+                    help="JSON object(s) of TH pronunciation fixups applied "
+                         "to spoken text — comma paths merge in order, e.g. "
+                         "'seed.th.json,VID.th.json'; ZWSP \\u200b forces the "
+                         "syllable break ('{\"โล่งอก\": \"โล่ง\\u200bอก\"}')")
+    ap.add_argument("--qc", action="store_true",
+                    help="caption QC gate: score every post-dedup cue/group "
+                         "before TTS (cps bounds, thin-vs-window, rolling "
+                         "residue, untranslated EN, speaker markers/stage "
+                         "directions); flagged cues are skipped for TTS but "
+                         "stay in the burn; report -> <out>.qc.json")
+    ap.add_argument("--qc-report", default="",
+                    help="QC report path (default <out>.qc.json)")
+    ap.add_argument("--qc-only", action="store_true",
+                    help="run the QC pass then exit — no TTS, no render")
     ap.add_argument("--dump-groups", default="",
                     help="write sentence-group table (idx/voice/en/th) as JSON")
     ap.add_argument("--dub-wav", default="",
@@ -537,6 +648,7 @@ def main():
     if not cues and not a.sentences:
         sys.exit("no usable cues")
     orig_cue_starts = [c[0] for c in cues]  # snapshot before clamp shifts
+    qc_spans = [c[1] - c[0] for c in cues]  # real caption spans for --qc
     # clamp overlapping VTT timestamps — auto-captions often overlap;
     # each cue's fit window extends into the gap before the next cue
     # (dead air is free space — absorb overflow before compressing)
@@ -677,17 +789,29 @@ def main():
             groups = [(*g[:4], over[i] if i < len(over) and over[i] else g[4],
                        g[5]) for i, g in enumerate(groups)]
             print(f"th-file overrides: {min(len(over), len(groups))} groups")
+        fm = {}
         if a.fix_map:
             import json as _j2
-            fm = _j2.loads(open(a.fix_map, encoding="utf-8").read())
+            # comma-separated paths merge in order (seed dict first, then a
+            # per-video dict overriding) — see the fix-map watch-list doc
+            for p in a.fix_map.split(","):
+                p = p.strip()
+                if p:
+                    fm.update(_j2.loads(open(p, encoding="utf-8").read()))
             print(f"fix-map: {len(fm)} rules (spoken text only)")
-        else:
-            fm = {}
-        voice_of = {i: g[3] for i, g in enumerate(groups) if g[3]}
-        cues = [[g[0],
-                 groups[i + 1][0] if i + 1 < len(groups) else a.secs,
-                 _fix(g[4], fm)] for i, g in enumerate(groups)]
-        cues = [c for c in cues if len(c[2]) >= 3]
+        # build cues + voice_of in the same index space — dropping a
+        # too-short group must not shift the voice map onto the wrong cue
+        voice_of, cues, qc_spans = {}, [], []
+        for gi, g in enumerate(groups):
+            t = _fix(g[4], fm)
+            if len(t) < 3:
+                continue
+            if g[3]:
+                voice_of[len(cues)] = g[3]
+            qc_spans.append(g[1] - g[0])   # group word-span for --qc
+            cues.append([g[0],
+                         groups[gi + 1][0] if gi + 1 < len(groups) else a.secs,
+                         t])
         print(f"{len(groups)} sentence groups -> {len(cues)} spoken")
         if a.burn_vtt:
             def _ts(x):
@@ -750,6 +874,16 @@ def main():
                                 f"{_ts(max(be, bs + 0.8, 0))}\n"
                                 f"{en}\n{th}\n\n")
                     burn_prev[0] = g[3]
+
+    # caption QC gate — last text transform before TTS; flagged cues leave
+    # the synth list here (display burn was already written from `groups`)
+    if a.qc or a.qc_only:
+        rep = a.qc_report or str(Path(a.out).with_suffix("")) + ".qc.json"
+        cues, voice_of, _ = qc_gate(cues, voice_of, a.lang, rep, qc_spans)
+        if a.qc_only:
+            sys.exit(0)
+        if not cues:
+            sys.exit("qc: nothing left to synthesize")
 
     # tighten the text for spoken dub — TH translations run ~1.4x too long
     # for the EN timing window; shorter text is the honest speed fix
