@@ -1,0 +1,52 @@
+id: report-loop-session-rails
+title: 'Report loop: report-linked dispatch rails + cms-report-note.py helper + board badge'
+brief: >-
+  Part 3 of the report→session loop (umbrella: report-session-loop). When a
+  card carries report:<slug>, its dispatched session gets extra rails:
+  read the report first, mirror progress into the report's session-log,
+  leave it updated. Queued when Tony presses Start.
+column: backlog
+priority: high
+program: ada-tools
+updated: '2026-10-07'
+tags: [report-session-loop, kanban, cms]
+spec: >-
+  Design: docs/design/report-session-loop.md §2 (contract). Repo: chaba.
+
+  1. scripts/ada/cms-report-note.py (new) — session-side CMS write helper.
+     --read prints the ada-cms-pages/<slug> doc (title, key meta fields,
+     body). --note "<text>" fetches the page, appends "* {ts} — {text}
+     (session $TASK_ID if set)" to a managed <!-- session-log:auto --> ...
+     <!-- /session-log:auto --> block (create it just before the
+     provenance footer if absent), appends meta.timeline (cap 40 per
+     ssot.apps.ada-cms-reports.yml meta_contract), MERGES old doc meta per
+     the writer_contract (never bare-replace — bank/scope/status/source/
+     written_by/subject/attribute/valid_from/last_verified preserved or
+     stamped), stamps updated, POSTs MDDB /v1/add, then regenerates
+     reports-index via scripts/lib/cms_index.py (pattern: report-daily-brief.py,
+     cam-wall-cms.py). Idempotent notes are fine (append-only).
+  2. scripts/board/kanban-dispatch.py — when card.report is set, append
+     REPORT_RAILS after TASK_RAILS in start_pending's task build (exact
+     text in the design doc §2b — copy it).
+  3. scripts/render-board.py — render a small 📄 report badge on cards
+     with report: linking to the tailnet CMS page
+     (https://idc03.taila0626a.ts.net/cms/?page=<slug> — confirm the page
+     param name against ada-pi pwa/cms; if unsure use ?page=). No api_key
+     in the URL — the browser's stored key applies.
+  4. tests: unit tests for cms-report-note block-append + meta-merge
+     (mirror tests/board style — FakeMDDB or mocked urllib). Extend an
+     existing kanban-dispatch test or add one asserting REPORT_RAILS is
+     appended iff card.report set.
+
+  Verify: python3 scripts/ada/cms-report-note.py dev-kanban --read prints
+  the page; --note lands a session-log line visible on the CMS page and
+  meta.timeline grows by one; a queued card with report: dev-kanban
+  produces a prompt containing the report rails (grep the task build).
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+comms:
+- at: '2026-10-07 19:30'
+  from: devin
+  text: filed by the report-session-loop design session — see docs/design/report-session-loop.md

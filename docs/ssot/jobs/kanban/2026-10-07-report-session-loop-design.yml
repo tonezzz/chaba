@@ -1,0 +1,95 @@
+id: report-session-loop-design
+title: 'Report → Devin session loop — design + sub-card split'
+date: 2026-10-07
+card: report-session-loop
+host: tony-dell
+status: designed    # sub-cards filed; implementation is per-card dispatch
+
+goal: >
+  Design the loop Tony asked for as four deliverables: SPAWN (a "start
+  session" affordance on CMS report pages that files an armed kanban
+  card), LINK (card carries report:<cms-key>, session rails keep the
+  report updated), ADA-IN-THE-LOOP (Tony asks Ada aloud; she reads the
+  report, posts a from=ada [opinion] comment that reaches running
+  sessions through answers.jsonl — one thread, both voices), TRAIN+BENCH
+  (report_opinion_loop live scenario + report-opinion bench domain).
+  The umbrella card stays for e2e tracking.
+
+context: >
+  Every channel the loop needs already exists — the design composes them:
+  board-api /card (create), /action queue → kanban-dispatch → devin
+  session with TASK_RAILS; /respond already pushes answers into running
+  sessions (board-answer-live-session); ada_board_write posts from=ada
+  comms; cms_get_page/cms_note_update read+write ada-cms-pages; the CMS
+  viewer (ada-pi pwa/cms) is iframed in chaba-admin/chaba-cms*. Gaps
+  found: POST /card can't file an armed card (no spec/action/report); CMS
+  viewer key is read-only so spawn needs a `dispatch` key capability;
+  only /respond reaches a running session — comments don't; Ada has no
+  instruction for the opinion path.
+
+delivered:
+  - docs/design/report-session-loop.md: >
+      The design — per-deliverable interfaces, the spawn spec template,
+      REPORT_RAILS text, the /comment→answers.jsonl delivery rule
+      (from∈{ada,tony}, kind:"comment"), the [opinion] convention, the
+      scenario + bench-domain shape, and the non-goals (no separate
+      kanban_opinion tool — tagged comms are the same channel).
+  - docs/ssot/kanban/ssot.kanban.yml: >
+      card_schema gained `report:` — the link field (points at the design).
+  - docs/ssot/infrastructure/ssot.nest-bench.yml: >
+      New `report-opinion` domain (status: spec) — corpus = real
+      [opinion] comms on report-linked cards; metrics evidence_grounding,
+      actionability, appropriate_deference. Scorer deferred until corpus
+      exists (domain dead-code rule).
+  - docs/ssot/infrastructure/ssot.ada-participation.yml: >
+      t1_comment gained opinion_convention — [opinion] comms on the
+      report-linked card, cite the read; advisory, never an instruction.
+  - stacks/services/ada-scenario-runner/scenarios-staging/report_opinion_loop.yaml: >
+      Staged live scenario (cms_first_answer.yaml precedent) — opinion
+      ask → cms_get_page → ada_board_write; probe card + dev-kanban
+      report fixtures; smoke tier.
+  - Sub-cards (docs/ssot/kanban/cards/, all idle — Start queues each):
+      report-loop-spawn-api        chaba  — /card fields + queue + on_exists
+      report-loop-spawn-ui         ada-pi — CMS button + /api/cms/spawn + dispatch key cap
+      report-loop-session-rails    chaba  — REPORT_RAILS + cms-report-note.py + board badge
+      report-loop-comment-delivery chaba  — /comment → answers.jsonl for running cards
+      report-loop-ada-opinion      ada-pi — opinion instructions + card-by-report lookup
+      report-loop-bench            ada-pi — install scenario; corpus accrues
+      scenario-report-opinion      —      probe card (fixture, report=dev-kanban)
+
+key_decisions:
+  - 'Card-first spawn (not direct devin_dispatch): the card IS the
+     tracking surface — queuing through kanban-dispatch keeps one
+     dispatch path.'
+  - 'Spawn auth: new `dispatch` capability on the key `apps` metadata —
+     the shared cms-viewer key stays read-only; Tony''s keys re-issue
+     with [view, dispatch] via the existing pair flow.'
+  - 'on_exists: queue on /card — a second button click re-queues the
+     same card instead of shadowing it; "already running" answers the
+     repeat-click case.'
+  - '[opinion] is a comms tag, not a tool — action=comment is already
+     whitelisted+audited; sessions treat tagged comms as advisory review
+     input, request_id/answer lines stay authoritative.'
+  - 'Comment delivery filters to from∈{ada,tony} — devin''s own progress
+     posts and chaba system notes must not echo into the session.'
+  - 'Repo boundaries forced the split: dispatch sessions get one
+     worktree, so chaba-side and ada-pi-side halves are separate cards.'
+
+verify: |
+  - test -f docs/design/report-session-loop.md
+  - grep -q 'report:' docs/ssot/kanban/ssot.kanban.yml
+  - grep -q report-opinion docs/ssot/infrastructure/ssot.nest-bench.yml
+  - ls docs/ssot/kanban/cards/report-loop-*.yml | wc -l   # 6 + probe card
+  - python3 -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('docs/ssot/kanban/cards/report-loop-*.yml')]"
+  - node scripts/ssot-validate-all.mjs
+
+open_items:
+  - 'Implement sub-cards in dependency order: spawn-api and
+     session-rails and comment-delivery are parallel; spawn-ui ←
+     spawn-api; ada-opinion ← comment-delivery; bench ← ada-opinion.'
+  - 'E2E proof on the umbrella card: spawn a card off a real report
+     page, watch the session run, have Tony ask Ada''s opinion mid-run.'
+  - 'Confirm the CMS page deep-link param name (?page=) during
+     report-loop-spawn-ui implementation.'
+  - 'ada_board_write action=request T2 gap (already tracked in
+     ssot.ada-participation open_items) — orthogonal but adjacent.'

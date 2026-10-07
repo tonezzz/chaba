@@ -1,0 +1,47 @@
+id: report-loop-comment-delivery
+title: 'Report loop: deliver card comments into running sessions (answers.jsonl)'
+brief: >-
+  Part 4 of the report→session loop (umbrella: report-session-loop). Today
+  only /respond answers reach a running session; this makes Ada's and
+  Tony's mid-run comments land in the same answers.jsonl — one thread,
+  both voices. Queued when Tony presses Start.
+column: backlog
+priority: high
+program: ada-tools
+updated: '2026-10-07'
+tags: [report-session-loop, kanban, board-api]
+spec: >-
+  Design: docs/design/report-session-loop.md §3a (contract). Repo: chaba,
+  file: scripts/board/board-api.py.
+
+  Refactor deliver_answer into a shared _deliver_to_session(card, record)
+  (same local-write / ssh-runner machinery, same never-raises contract
+  returning a short comms note or ""). /respond keeps delivering
+  {at, card, from, request_id, answer} — add kind:"answer" to the record.
+
+  In the /comment path: after comms_add, when card.action.status=='running'
+  AND frm in {ada, tony}, deliver {at, card, from, kind:"comment", text}.
+  devin/chaba comments are NOT delivered — a session must not get its own
+  progress posts echoed back, and chaba system notes are noise.
+
+  kanban-dispatch.py TASK_RAILS gains one line telling sessions:
+  answers.jsonl lines may carry kind:"comment" — those are card comms
+  (Tony's notes, Ada's [opinion]-tagged report takes); treat them as
+  review input to weigh, while request_id/answer lines remain the
+  authoritative answer channel.
+
+  Update _selftest: /comment on a running card appends a kind:comment
+  line; a devin/chaba comment does not; non-running card delivers nothing.
+  Doc: board-api.py docstring endpoint list + ssot.kanban.yml
+  write_path.endpoints /comment line.
+
+  Verify: python3 scripts/board/board-api.py --selftest; a live check on a
+  running card can come from the next dispatched session's task dir.
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+comms:
+- at: '2026-10-07 19:30'
+  from: devin
+  text: filed by the report-session-loop design session — see docs/design/report-session-loop.md

@@ -84,6 +84,42 @@ domains:
       state, or gets corrected asserting stale memory) appends a case.
       Regressions surface in the hourly scenario bench.
 
+  report-opinion:
+    # NEW 2026-10-07 (card report-session-loop, design
+    # docs/design/report-session-loop.md §4b): the opinion-forming step
+    # of the report->session loop — Ada reads a CMS report and posts an
+    # [opinion] comms on the linked card.
+    corpus: >-
+      Real [opinion] comms on report-linked cards (report: field) —
+      the opinion text, the report doc she read (frozen snapshot), and
+      the outcome label: whether Tony/the running session acted on it.
+      Accrues live once the loop ships; seed batch can be mined from
+      ada_board_write comments on existing cards.
+    status: spec           # corpus accrues with the loop; scorer + orch
+                           # topologies wait on it (dead-code rule below)
+    case_shape:
+      report_snapshot: 'the ada-cms-pages doc (title, updated, body) at
+                        opinion time'
+      opinion: 'the [opinion] comms text as posted'
+      proven_right: 'acted-on | ignored | contradicted — what the
+                     session/Tony did with it'
+      category: 'spot-on | partially-useful | off-base | evidence-missing'
+    metrics:
+      evidence_grounding: >-
+        Did the opinion cite the report it just read (slug + updated ts)?
+        The educate_standard evidence_rule applied to opinions — an
+        opinion without a read is noise.
+      actionability: >-
+        Fraction of opinions that named something the session could act
+        on (a gap, a stale claim, a next step) vs generic approval.
+      appropriate_deference: >-
+        Same metric as card-judgment — judgment calls deferred to Tony
+        score UP; hedging on verifiable facts scores DOWN.
+    corpus_feed: >-
+      Every from:ada [opinion] comms line is a candidate case; the label
+      lands when the card closes (acted-on vs ignored is decidable from
+      comms/session outcome).
+
 # future domains named in nest-collective-bench, parked until a corpus
 # exists: kanban-triage, memory-bank routing, tool-selection, learned
 # router (replaces the L0 feature router once any domain corpus is big

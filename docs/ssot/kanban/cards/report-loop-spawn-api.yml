@@ -1,0 +1,56 @@
+id: report-loop-spawn-api
+title: 'Report loop: extend board-api /card — spec/action/report fields + queue + on_exists'
+brief: >-
+  Part 1 of the report→session loop (umbrella: report-session-loop). Makes
+  POST /card able to file an ARMED dispatch card — today it only takes
+  title/note/help, so a CMS "start session" button can't spawn work.
+  Queued when Tony presses Start.
+column: backlog
+priority: high
+program: ada-tools
+updated: '2026-10-07'
+tags: [report-session-loop, kanban, board-api]
+spec: >-
+  Design: docs/design/report-session-loop.md §1a (read it first — it is the
+  contract). Extend scripts/board/board-api.py do_create to accept optional
+  fields on POST /card:
+
+  - spec (str): stored verbatim. If absent AND `report` is set, compose it
+    from a REPORT_SPAWN_TEMPLATE constant so every spawn caller produces an
+    identical card.
+  - report (str): validate ^[a-z0-9-]{1,80}$, stored on the card (field
+    declared in ssot.kanban.yml card_schema).
+  - action (dict): {type: dispatch, repo: <name>} — type must be dispatch
+    or manual; repo validated against the devin-dispatch whitelist
+    (scripts/board/dispatch_repos.py knows repos.conf — reuse its loader,
+    do not re-parse the conf inline).
+  - queue (bool): when true set action.status=queued in the same locked
+    write — no create+queue two-call race.
+  - brief, priority (high|medium|low), tags (list), program, blocked_by —
+    optional pass-throughs. brief is the new-card convention (kanban-card-brief).
+  - on_exists: 'error' (default — today's 400) | 'queue': card exists → if
+    its action.status is running/queued return its status ('already
+    active'); otherwise set action.status=queued + comms 're-spawned from
+    report page' and return ok. This is what makes a second button click
+    safe.
+
+  REPORT_SPAWN_TEMPLATE (server-side): "Work on the CMS report '{slug}' —
+  \"{title}\".\nReport: ada-cms-pages/{slug}\nThis card is report-linked
+  (report: {slug}) — read the report first, keep it updated per the report
+  rails, and post progress to this card."
+
+  Update: _selftest() cases for each new field + on_exists paths; endpoint
+  doc in board-api.py docstring + write_path.endpoints in
+  docs/ssot/kanban/ssot.kanban.yml.
+
+  Verify: python3 scripts/board/board-api.py --selftest passes; a curl
+  POST /card {title, report: 'dev-kanban', action:{type:dispatch,repo:chaba},
+  queue:false, brief:...} creates the YAML; on_exists:queue re-queues it.
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+comms:
+- at: '2026-10-07 19:30'
+  from: devin
+  text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
