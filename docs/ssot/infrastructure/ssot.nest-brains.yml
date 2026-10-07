@@ -29,10 +29,19 @@ manifest_schema:
       suite: 'bench id for cross-host comparability'
   optional:
     parent_version: 'string — previous brain this supersedes'
+    archive: '{file: blobs.tar, sha256, bytes} — the blob tarball itself'
     rpo_marker: 'last-processed offset/ts — what the resume skips'
     sensitivity: 'public | internal | sensitive (sensitive ⇒ rclone crypt remote)'
     epoch: 'int — fencing token; higher wins on respawn conflicts'
     notes: 'free text'
+
+  # Version dir contents (P1, scripts/nest-brain-{pack,restore}.sh):
+  #   manifest.yml  blobs.tar  SHA256SUMS   (+ <entity>/latest pointer file)
+  # blobs.tar contains each blob at its entity-relative path + blobs.sha256.
+  # Restore verifies SHA256SUMS -> extracts -> sha256sum -c blobs.sha256.
+  # .nest-brain-state in the entity dir = respawn lineage marker (version,
+  # epoch, host); pack carries it as a state blob and bumps epoch on the
+  # respawned generation (see policy_defaults.fencing).
 
   blob_roles:
     weights: 'model weights — npz/GGUF/ONNX/safetensors'
@@ -53,11 +62,12 @@ entities:
     blobs:
       - {path: model.npz, role: weights, bytes_approx: 10240}
       - {path: train.py, role: config}
+      - {path: eval.py, role: config}   # zero-dep bench eval — the continuity check
       - {path: ops-events.jsonl, role: corpus, bytes_approx: 200000}
       - {path: README.md, role: config}
     bench: {metric: test_accuracy, suite: orch-bench, score: 0.507}
     sensitivity: internal
-    status: candidate-mvp  # smallest real brain; pack/restore MVP subject
+    status: packed-verified  # P1+P2 2026-10-07: gdrive round-trip + mn01 respawn, eval=0.507
 
   - entity: jev-student
     tier: small            # ~520MB per checkpoint
