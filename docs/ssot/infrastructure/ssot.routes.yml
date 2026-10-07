@@ -1,0 +1,131 @@
+schema: 1
+title: Chaba edge route registry
+purpose: >-
+  Single source of truth for every HTTP/WS route. Motivation (2026-10-07,
+  card edge-route-registry): the same path lived in 5 places — dell Caddy
+  monolith, mn01 Caddy copy, VPS public edge, tailscale-serve mounts, and
+  hardcoded in card JS (idc01 broke chaba-home/ai). render-routes.py emits
+  apps/routes.json for code consumers and (phase 2) per-edge Caddy
+  snippets. Rules: hostnames are tailnet names, never IPs (except
+  loopback); app code NEVER hardcodes hosts — it resolves via routes.json
+  or same-origin relative paths; one host retires = one line here.
+
+edges:
+  # an edge = a reverse-proxy surface that serves `routes` entries
+  tony-dell-web:
+    kind: caddy-container          # stacks/web/Caddyfile, `web` container
+    listen: "http://:80 (lan), tailnet via host"
+    serves: [lan, tailnet]
+  mn01-web:
+    kind: caddy                    # mn01 :8080 behind tailscale-serve /
+    listen: "http://127.0.0.1:8080 via tailscale-serve /"
+    serves: [tailnet, funnel]
+  vps-public:
+    kind: caddy-edge               # quadlet on idc02/idc03 public IP
+    listen: "https://*-ha.surf-thailand.com behind Cloudflare Access"
+    serves: [public]
+  idc03-serve:
+    kind: tailscale-serve          # host fabric exports
+    mounts:
+      /: http://127.0.0.1:8001                    # ada-pi-pwa
+      /apps/ha/ada-tony: http://127.0.0.1:8002    # ada-ha-tony backend
+      /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
+
+services:
+  # fabric exports — where an app actually listens (bind 127.0.0.1 unless
+  # noted); `tailnet` = canonical address other edges proxy to.
+  ada-ha-tony:    {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony"}
+  ada-ha-michael: {host: idc03, listen: "127.0.0.1:8003", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"}
+  ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
+  tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
+  michael-dev:    {host: tony-dell, listen: "127.0.0.1:8124", tailnet: "https://tony-dell.taila0626a.ts.net:8124"}
+  board-api:      {host: tony-dell, listen: "127.0.0.1:8787"}
+  report-api:     {host: tony-dell, listen: "127.0.0.1:8792"}
+  gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
+  gev-api:        {host: tony-dell, listen: "127.0.0.1:4173"}
+  gev-cmd:        {host: tony-dell, listen: "127.0.0.1:8790"}
+  dev-v0:         {host: tony-dell, listen: "127.0.0.1:8006"}
+  nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
+  snapshot:       {host: tony-dell, listen: "127.0.0.1:9005"}
+  chaba-docs:     {host: tony-dell, listen: "127.0.0.1:8092"}
+  helm:           {host: tony-dell, listen: "127.0.0.1:3003"}
+  node-red:       {host: tony-dell, listen: "127.0.0.1:1880"}
+  yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
+  camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
+  camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
+  websockify-dell:  {host: tony-dell, listen: "127.0.0.1:6081"}
+  websockify-vms:   {host: tony-dell, listen: "127.0.0.1:6082"}   # -> mn01 VNC 5900
+  omen-api:       {host: tony-omen, listen: "0.0.0.0:8000", tailnet: "http://100.68.142.13:8000"}
+  omen-gemini-mic: {host: tony-omen, listen: "0.0.0.0:3009", tailnet: "http://100.68.142.13:3009"}
+  omen-yomi:      {host: tony-omen, listen: "0.0.0.0:3000", tailnet: "http://100.68.142.13:3000"}
+  omen-weaviate:  {host: tony-omen, listen: "0.0.0.0:8084", tailnet: "http://100.68.142.13:8084"}
+  omen-gpu-queue: {host: tony-omen, listen: "0.0.0.0:3001", tailnet: "http://100.68.142.13:3001"}
+  omen-trade-api: {host: tony-omen, listen: "0.0.0.0:9002", tailnet: "http://100.68.142.13:9002"}
+  input-bridge:   {host: idc02, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
+  frigate:        {host: tony-dell, listen: "docker-net:5000", tailnet: "frigate:5000"}
+  imagen:         {host: tony-omen, listen: "docker-net:8000", tailnet: "imagen-inference:8000"}
+
+routes:
+  # kind: proxy (upstream sees path per `strip`), static (root under
+  # /srv/public), alias (301/308 to target). `edges:` defaults to
+  # [tony-dell-web]. `verify` = cheap probe for health lane.
+  - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "127.0.0.1:8787", auth: tailnet-identity-write, owner: chaba}
+  - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: null, upstream: "127.0.0.1:8792", auth: tailnet-identity-write, owner: chaba}
+  - {id: system-report,    kind: static, path: /apps/system-report/*,  owner: chaba, public_host: monitor.surf-thailand.com}
+  - {id: jev-bench,        kind: static, path: /apps/jev-bench/*,      owner: chaba}
+  - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        upstream: "127.0.0.1:8790", owner: gev}
+  - {id: gev-api,          kind: proxy,  path: /apps/gev/api/*,        upstream: "127.0.0.1:4173", owner: gev}
+  - {id: gev,              kind: static, path: /apps/gev/*,            owner: gev}
+  - {id: gev-live,         kind: proxy,  path: /apps/gev-live/*,       ws: true, upstream: "127.0.0.1:8789", owner: gev}
+  - {id: gev-token,        kind: proxy,  path: /apps/gev/token,        upstream: "127.0.0.1:8790", owner: gev}
+  - {id: ada-tony,         kind: proxy,  path: /apps/ha/ada-tony/*,    upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi, verify: {get: "/", expect: 200}}
+  - {id: ada-michael,      kind: proxy,  path: /apps/ha/ada-michael/*, upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi}
+  - {id: ada-ha-tony-legacy,  kind: alias, path: /apps/ada_ha_tony*,   target: "/apps/ha/ada-tony{uri}", owner: ada-pi}
+  - {id: ada-ha-michael-legacy, kind: alias, path: /apps/ada_ha_michael*, target: "/apps/ha/ada-michael{uri}", owner: ada-pi}
+  - {id: ada-ha-legacy,    kind: alias,  path: /apps/ada_ha*,          target: "/apps/ha/ada{uri}", owner: ada-pi}
+  - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-pi}
+  - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-dell.taila0626a.ts.net:8123/", owner: tony-ha}
+  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://tony-dell.taila0626a.ts.net:8124/", owner: michael-ha}
+  - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
+  - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
+  - {id: dev-v0,           kind: proxy,  path: /apps/dev/v0/*,         upstream: "127.0.0.1:8006", owner: chaba}
+  - {id: nlm-cookies,      kind: proxy,  path: /apps/notebooklm-cookies/*, upstream: "127.0.0.1:9876", owner: chaba}
+  - {id: yt-live,          kind: static, path: /apps/yt-live/*,        owner: chaba, note: "voice-dub media — cast fetches LAN:80 directly"}
+  - {id: walldance-live,   kind: static, path: /apps/walldance-live/*, owner: chaba}
+  - {id: yolo-api,         kind: proxy,  path: /apps/yolo/api/*,       strip: /apps/yolo, upstream: "100.106.196.22:8780", owner: yolo}
+  - {id: yolo,             kind: static, path: /apps/yolo/*,           owner: yolo}
+  - {id: dance2energy,     kind: static, path: /apps/dance2energy/*,   owner: chaba}
+  - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "host.containers.internal:6081", auth: tailnet-identity, owner: vms}
+  - {id: vnc,              kind: static, path: /apps/vnc/*,            auth: tailnet-identity, owner: vms}
+  - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "127.0.0.1:9005", owner: chaba}
+  - {id: chaba-h3,         kind: static, path: /chaba-h3/*,            owner: chaba}
+  - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "127.0.0.1:8092", owner: chaba}
+  - {id: map,              kind: static, path: /apps/map/*,            owner: chaba}
+  - {id: camwall,          kind: proxy,  path: /apps/camwall/*,        strip: /apps/camwall, upstream: ["http://100.102.134.91:8380", "http://100.123.163.11:8380"], lb: least_conn, owner: camwall}
+  - {id: gemini-mic,       kind: proxy,  path: /api/gemini-mic/*,      strip: /api/gemini-mic, upstream: "100.68.142.13:3009", owner: ada-pi}
+  - {id: yomi,             kind: proxy,  path: /api/yomi/*,            upstream: "100.68.142.13:3000", owner: yomi}
+  - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.68.142.13:8084", owner: weaviate}
+  - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.68.142.13:3001", owner: gpu}
+  - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
+  - {id: api-omen,         kind: proxy,  path: /api/*,                 upstream: "100.68.142.13:8000", owner: chaba, note: "catch-all — must stay last of the /api group"}
+  - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "127.0.0.1:3003", upstream_host: localhost, owner: chaba}
+  - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate}
+  - {id: imagen-api,       kind: proxy,  path: /tony-omen/apps/imagen/api/*, strip: /tony-omen/apps/imagen/api, upstream: "imagen-inference:8000", owner: imagen}
+  - {id: imagen,           kind: static, path: /tony-omen/apps/imagen/*, owner: imagen}
+  - {id: trade-api,        kind: proxy,  path: "{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}", strip: /apps/trade, upstream: "100.68.142.13:9002", upstream_host: localhost, ws: true, owner: trade}
+  - {id: trade,            kind: static, path: /apps/trade/*,          owner: trade}
+  - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "127.0.0.1:1880", owner: nodered}
+  - {id: board,            kind: static, path: /apps/board/*,          owner: chaba}
+  - {id: sw,               kind: static, path: /apps/sw.js,            owner: chaba, note: "shared service worker"}
+
+consumers:
+  # app code that resolves endpoints from routes.json instead of
+  # hardcoding hosts. served at /apps/routes.json (edge) and mirrored to
+  # HA www as /local/routes.json for dashboard cards.
+  routes_json:
+    - stacks/web/public/apps/routes.json
+    - /home/tony/.config/home-assistant/www/routes.json   # /local/routes.json
+    - /home/tony/.config/ada-ha/www/routes.json
+  cards_using:
+    - {file: "stacks/tony-dell/tony-ha/www/ada-voice-card.js", resolves: ada-tony, field: ws}
+    - {file: "stacks/tony-dell/tony-ha/www/ada-chat-card.js",  resolves: ada-tony, field: ws}

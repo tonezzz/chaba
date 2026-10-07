@@ -22,6 +22,25 @@
 const AVC_INPUT_RATE = 16000;
 const AVC_OUTPUT_RATE = 24000;
 const AVC_DEFAULT_WS = "wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws";
+
+// Endpoint resolution order: explicit ws_url config > routes.json
+// (generated from docs/ssot/infrastructure/ssot.routes.yml, served to HA
+// cards as /local/routes.json) > literal fallback. Hostnames must not
+// live in card code — the registry is the single source (edge-route-registry).
+let _avcRoutesP = null;
+async function avcResolveWs(cfg) {
+  if (cfg && cfg.ws_url) return cfg.ws_url;
+  try {
+    if (!_avcRoutesP)
+      _avcRoutesP = fetch("/local/routes.json")
+        .then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const reg = await _avcRoutesP;
+    const ws = reg && reg.routes && reg.routes["ada-tony"] &&
+      reg.routes["ada-tony"].ws;
+    if (ws) return ws;
+  } catch (e) { /* fall through to literal */ }
+  return AVC_DEFAULT_WS;
+}
 const AVC_KEY_STORAGE = "ada_voice_api_key";
 const AVC_DEVICE_STORAGE = "ada_voice_device_id";
 const AVC_AUTO_STORAGE = "ada_voice_auto_mute";
@@ -204,13 +223,14 @@ class AdaVoiceCard extends HTMLElement {
   // ---------- document upload ----------
 
   _apiBase() {
-    const ws = this._config.ws_url || AVC_DEFAULT_WS;
+    const ws = this._wsBase || this._config.ws_url || AVC_DEFAULT_WS;
     return ws.replace(/^ws(s?):/, "http$1:").replace(/\/ws\/?$/, "");
   }
 
   async _uploadDoc(file) {
     if (this._docUploading) return;
     this._docUploading = true;
+    if (!this._wsBase) this._wsBase = await avcResolveWs(this._config);
     this._setStatus(`Uploading ${file.name}…`);
     try {
       const blob = await this._downscale(file);
@@ -643,7 +663,8 @@ class AdaVoiceCard extends HTMLElement {
       }
       await this._createPlayback();
       await this._startMicrophone();
-      const wsUrl = `${this._config.ws_url || AVC_DEFAULT_WS}`
+      if (!this._wsBase) this._wsBase = await avcResolveWs(this._config);
+      const wsUrl = `${this._wsBase}`
         + `?device_id=${encodeURIComponent(this._deviceId())}`
         + `&api_key=${encodeURIComponent(this._apiKey())}`;
       this._socket = new WebSocket(wsUrl);

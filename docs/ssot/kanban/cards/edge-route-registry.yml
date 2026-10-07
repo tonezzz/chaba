@@ -1,0 +1,45 @@
+id: edge-route-registry
+title: 'Edge route registry: one SSOT -> edges, routes.json, Caddy snippets'
+column: doing
+review_kind: verify
+priority: high
+note: 'Route paths/upstreams are declared in 5+ places (dell Caddy 473-line
+  monolith, mn01 Caddy copy, VPS public edge, tailscale-serve mounts, and
+  hardcoded in card JS — the idc01->idc03 miss that broke chaba-home/ai).
+  Goal: ssot.routes.yml is the single source; render-routes.py emits
+  routes.json for consumers + per-edge Caddy snippets; cards fetch
+  routes.json instead of hardcoding hosts.'
+spec: 'Phase 1 (this session): ssot.routes.yml with full dell-edge
+  inventory, render-routes.py -> stacks/web/public/apps/routes.json +
+  validation, ada-voice/ada-chat cards resolve ws via routes.json
+  (/local/routes.json, fallback literal). Phase 2 (future): generate
+  apps.d/*.caddy snippets from registry, modularize monolith; VPS edge +
+  mn01 consume the same registry; verify: probes per route feed a health
+  lane. Phase 3 (evaluate): cloudflared tunnel replaces VPS public edge —
+  registry becomes the ingress config; host-per-app DNS instead of
+  path-strip debugging.'
+action:
+  type: manual
+updated: 2026-10-07 10:20
+claim:
+  session: devin
+  since: 2026-10-07 10:20
+comms:
+- at: 2026-10-07 10:05
+  from: devin
+  text: 'motivation: ada-voice-card broke on chaba-home/ai — AVC_DEFAULT_WS
+    hardcoded retired idc01 while the same route lived in 4 other places.
+    Design agreed with tony: 3-layer model (app->fabric exports->one
+    public edge), hostname-over-path for public, no hostnames in app code.'
+- at: 2026-10-07 10:20
+  from: devin
+  text: 'phase 1 in progress: registry + render-routes.py + card conversion.'
+- at: 2026-10-07 10:45
+  from: devin
+  text: 'phase 1 done: ssot.routes.yml (48 routes, 30 services, 4 edges) +
+    render-routes.py -> apps/routes.json (validation: dup ids, shadow
+    ordering, non-tailnet-IP upstreams). ada-voice/ada-chat cards now
+    resolve ws via /local/routes.json with literal fallback; deployed to
+    tony-ha + ada-ha www (voice ?v=12, chat ?v=7). Verified
+    /local/routes.json serves ada-tony ws->idc03. Next: phase 2 apps.d/
+    Caddy snippets from the same registry.'

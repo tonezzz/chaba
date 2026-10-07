@@ -1,0 +1,455 @@
+{
+  "generated": "2026-10-07 09:13 +07",
+  "schema": 1,
+  "edges": {
+    "tony-dell-web": {
+      "kind": "caddy-container",
+      "listen": "http://:80 (lan), tailnet via host",
+      "serves": [
+        "lan",
+        "tailnet"
+      ]
+    },
+    "mn01-web": {
+      "kind": "caddy",
+      "listen": "http://127.0.0.1:8080 via tailscale-serve /",
+      "serves": [
+        "tailnet",
+        "funnel"
+      ]
+    },
+    "vps-public": {
+      "kind": "caddy-edge",
+      "listen": "https://*-ha.surf-thailand.com behind Cloudflare Access",
+      "serves": [
+        "public"
+      ]
+    },
+    "idc03-serve": {
+      "kind": "tailscale-serve",
+      "mounts": {
+        "/": "http://127.0.0.1:8001",
+        "/apps/ha/ada-tony": "http://127.0.0.1:8002",
+        "/apps/ha/ada-michael": "http://127.0.0.1:8003"
+      }
+    }
+  },
+  "services": {
+    "ada-ha-tony": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8002",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-tony"
+    },
+    "ada-ha-michael": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8003",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"
+    },
+    "ada-pi-pwa": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8001",
+      "tailnet": "https://idc03.taila0626a.ts.net/"
+    },
+    "tony-ha": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8123",
+      "tailnet": "https://tony-dell.taila0626a.ts.net:8123"
+    },
+    "michael-dev": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8124",
+      "tailnet": "https://tony-dell.taila0626a.ts.net:8124"
+    },
+    "board-api": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8787"
+    },
+    "report-api": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8792"
+    },
+    "gev-gemini": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8789"
+    },
+    "gev-api": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:4173"
+    },
+    "gev-cmd": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8790"
+    },
+    "dev-v0": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8006"
+    },
+    "nlm-cookies": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:9876"
+    },
+    "snapshot": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:9005"
+    },
+    "chaba-docs": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:8092"
+    },
+    "helm": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:3003"
+    },
+    "node-red": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:1880"
+    },
+    "yolo": {
+      "host": "mn01",
+      "listen": "0.0.0.0:8780",
+      "tailnet": "http://100.106.196.22:8780"
+    },
+    "camwall-idc02": {
+      "host": "idc02",
+      "listen": "0.0.0.0:8380",
+      "tailnet": "http://100.102.134.91:8380"
+    },
+    "camwall-idc03": {
+      "host": "idc03",
+      "listen": "0.0.0.0:8380",
+      "tailnet": "http://100.123.163.11:8380"
+    },
+    "websockify-dell": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:6081"
+    },
+    "websockify-vms": {
+      "host": "tony-dell",
+      "listen": "127.0.0.1:6082"
+    },
+    "omen-api": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:8000",
+      "tailnet": "http://100.68.142.13:8000"
+    },
+    "omen-gemini-mic": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:3009",
+      "tailnet": "http://100.68.142.13:3009"
+    },
+    "omen-yomi": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:3000",
+      "tailnet": "http://100.68.142.13:3000"
+    },
+    "omen-weaviate": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:8084",
+      "tailnet": "http://100.68.142.13:8084"
+    },
+    "omen-gpu-queue": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:3001",
+      "tailnet": "http://100.68.142.13:3001"
+    },
+    "omen-trade-api": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:9002",
+      "tailnet": "http://100.68.142.13:9002"
+    },
+    "input-bridge": {
+      "host": "idc02",
+      "listen": "0.0.0.0:3010",
+      "tailnet": "http://100.102.134.91:3010"
+    },
+    "frigate": {
+      "host": "tony-dell",
+      "listen": "docker-net:5000",
+      "tailnet": "frigate:5000"
+    },
+    "imagen": {
+      "host": "tony-omen",
+      "listen": "docker-net:8000",
+      "tailnet": "imagen-inference:8000"
+    }
+  },
+  "routes": {
+    "board-api": {
+      "kind": "proxy",
+      "path": "/apps/board-api",
+      "owner": "chaba",
+      "local": true
+    },
+    "report-api": {
+      "kind": "proxy",
+      "path": "/apps/system-report/api",
+      "owner": "chaba",
+      "local": true
+    },
+    "system-report": {
+      "kind": "static",
+      "path": "/apps/system-report",
+      "owner": "chaba"
+    },
+    "jev-bench": {
+      "kind": "static",
+      "path": "/apps/jev-bench",
+      "owner": "chaba"
+    },
+    "gev-cmd": {
+      "kind": "proxy",
+      "path": "/apps/gev-cmd",
+      "owner": "gev",
+      "local": true
+    },
+    "gev-api": {
+      "kind": "proxy",
+      "path": "/apps/gev/api",
+      "owner": "gev",
+      "local": true
+    },
+    "gev": {
+      "kind": "static",
+      "path": "/apps/gev",
+      "owner": "gev"
+    },
+    "gev-live": {
+      "kind": "proxy",
+      "path": "/apps/gev-live",
+      "owner": "gev",
+      "local": true
+    },
+    "gev-token": {
+      "kind": "proxy",
+      "path": "/apps/gev/token",
+      "owner": "gev",
+      "local": true
+    },
+    "ada-tony": {
+      "kind": "proxy",
+      "path": "/apps/ha/ada-tony",
+      "owner": "ada-pi",
+      "http": "https://idc03.taila0626a.ts.net/apps/ha/ada-tony",
+      "ws": "wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws"
+    },
+    "ada-michael": {
+      "kind": "proxy",
+      "path": "/apps/ha/ada-michael",
+      "owner": "ada-pi",
+      "http": "https://idc03.taila0626a.ts.net/apps/ha/ada-michael",
+      "ws": "wss://idc03.taila0626a.ts.net/apps/ha/ada-michael/ws"
+    },
+    "ada-ha-tony-legacy": {
+      "kind": "alias",
+      "path": "/apps/ada_ha_tony",
+      "owner": "ada-pi",
+      "target": "/apps/ha/ada-tony{uri}"
+    },
+    "ada-ha-michael-legacy": {
+      "kind": "alias",
+      "path": "/apps/ada_ha_michael",
+      "owner": "ada-pi",
+      "target": "/apps/ha/ada-michael{uri}"
+    },
+    "ada-ha-legacy": {
+      "kind": "alias",
+      "path": "/apps/ada_ha",
+      "owner": "ada-pi",
+      "target": "/apps/ha/ada{uri}"
+    },
+    "ada-pi-legacy": {
+      "kind": "alias",
+      "path": "/apps/ada_pi",
+      "owner": "ada-pi",
+      "target": "https://idc03.taila0626a.ts.net{uri}"
+    },
+    "ha-tony": {
+      "kind": "alias",
+      "path": "/apps/ha/tony-ha",
+      "owner": "tony-ha",
+      "target": "https://tony-dell.taila0626a.ts.net:8123/"
+    },
+    "ha-michael-dev": {
+      "kind": "alias",
+      "path": "/apps/ha/michael-dev",
+      "owner": "michael-ha",
+      "target": "https://tony-dell.taila0626a.ts.net:8124/"
+    },
+    "ha-michael": {
+      "kind": "alias",
+      "path": "/apps/ha/michael-ha",
+      "owner": "michael-ha",
+      "target": "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/"
+    },
+    "ha-tony-short": {
+      "kind": "alias",
+      "path": "/apps/tony-ha",
+      "owner": "tony-ha",
+      "target": "/apps/ha/tony-ha{uri}"
+    },
+    "dev-v0": {
+      "kind": "proxy",
+      "path": "/apps/dev/v0",
+      "owner": "chaba",
+      "local": true
+    },
+    "nlm-cookies": {
+      "kind": "proxy",
+      "path": "/apps/notebooklm-cookies",
+      "owner": "chaba",
+      "local": true
+    },
+    "yt-live": {
+      "kind": "static",
+      "path": "/apps/yt-live",
+      "owner": "chaba"
+    },
+    "walldance-live": {
+      "kind": "static",
+      "path": "/apps/walldance-live",
+      "owner": "chaba"
+    },
+    "yolo-api": {
+      "kind": "proxy",
+      "path": "/apps/yolo/api",
+      "owner": "yolo",
+      "http": "http://100.106.196.22:8780/apps/yolo/api"
+    },
+    "yolo": {
+      "kind": "static",
+      "path": "/apps/yolo",
+      "owner": "yolo"
+    },
+    "dance2energy": {
+      "kind": "static",
+      "path": "/apps/dance2energy",
+      "owner": "chaba"
+    },
+    "vnc-ws": {
+      "kind": "proxy",
+      "path": "/apps/vnc/ws",
+      "owner": "vms",
+      "local": true
+    },
+    "vnc": {
+      "kind": "static",
+      "path": "/apps/vnc",
+      "owner": "vms"
+    },
+    "snapshot": {
+      "kind": "proxy",
+      "path": "/snapshot",
+      "owner": "chaba",
+      "local": true
+    },
+    "chaba-h3": {
+      "kind": "static",
+      "path": "/chaba-h3",
+      "owner": "chaba"
+    },
+    "docs": {
+      "kind": "proxy",
+      "path": "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}",
+      "owner": "chaba",
+      "local": true
+    },
+    "map": {
+      "kind": "static",
+      "path": "/apps/map",
+      "owner": "chaba"
+    },
+    "camwall": {
+      "kind": "proxy",
+      "path": "/apps/camwall",
+      "owner": "camwall",
+      "http": "http://100.102.134.91:8380/apps/camwall"
+    },
+    "gemini-mic": {
+      "kind": "proxy",
+      "path": "/api/gemini-mic",
+      "owner": "ada-pi",
+      "http": "http://100.68.142.13:3009/api/gemini-mic"
+    },
+    "yomi": {
+      "kind": "proxy",
+      "path": "/api/yomi",
+      "owner": "yomi",
+      "http": "http://100.68.142.13:3000/api/yomi"
+    },
+    "weaviate": {
+      "kind": "proxy",
+      "path": "/api/weaviate",
+      "owner": "weaviate",
+      "http": "http://100.68.142.13:8084/api/weaviate"
+    },
+    "gpu-queue": {
+      "kind": "proxy",
+      "path": "/api/gpu-queue",
+      "owner": "gpu",
+      "http": "http://100.68.142.13:3001/api/gpu-queue"
+    },
+    "input-bridge": {
+      "kind": "proxy",
+      "path": "/api/input-bridge",
+      "owner": "chaba",
+      "http": "http://100.102.134.91:3010/api/input-bridge"
+    },
+    "api-omen": {
+      "kind": "proxy",
+      "path": "/api",
+      "owner": "chaba",
+      "http": "http://100.68.142.13:8000/api"
+    },
+    "helm": {
+      "kind": "proxy",
+      "path": "{/apps/helm,/apps/helm/*}",
+      "owner": "chaba",
+      "local": true
+    },
+    "frigate": {
+      "kind": "proxy",
+      "path": "/frigate",
+      "owner": "frigate",
+      "local": true
+    },
+    "imagen-api": {
+      "kind": "proxy",
+      "path": "/tony-omen/apps/imagen/api",
+      "owner": "imagen",
+      "local": true
+    },
+    "imagen": {
+      "kind": "static",
+      "path": "/tony-omen/apps/imagen",
+      "owner": "imagen"
+    },
+    "trade-api": {
+      "kind": "proxy",
+      "path": "{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}",
+      "owner": "trade",
+      "http": "http://100.68.142.13:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}",
+      "ws": "ws://100.68.142.13:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}/ws"
+    },
+    "trade": {
+      "kind": "static",
+      "path": "/apps/trade",
+      "owner": "trade"
+    },
+    "node-red": {
+      "kind": "proxy",
+      "path": "/apps/node-red",
+      "owner": "nodered",
+      "local": true
+    },
+    "board": {
+      "kind": "static",
+      "path": "/apps/board",
+      "owner": "chaba"
+    },
+    "sw": {
+      "kind": "static",
+      "path": "/apps/sw.js",
+      "owner": "chaba"
+    }
+  }
+}
