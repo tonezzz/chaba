@@ -1,0 +1,125 @@
+title: yt-dub-liam-e2e — Ada transcript audit after failed live pass
+subtitle: why "Ada didn't know about it" — dispatch session 2026-10-07 18:36
+icon: magnify
+
+planning:
+  goal: |
+    Tony ran the card's live voice pass twice (17:55 and 18:34 ICT) and
+    answered the board request with "Check my transcript, Ada didn't
+    know about it." This session audited both ada-ha-tony voice sessions
+    end-to-end (transcript + journal tool calls on idc03) to find why
+    Ada couldn't find the already-built Liam+Noel dub, then fixed what
+    is reachable from the chaba repo.
+  out_of_scope: |
+    ada-pi code changes (separate repo; deploy via deploy-ada.sh on
+    idc03) — filed as card ada-video-query-routing instead. Re-running
+    the live pass itself still needs Tony's voice.
+
+processing:
+  status: completed
+  last_updated: "2026-10-07"
+
+report:
+  summary: |
+    Two ada-ha-tony sessions audited (transcripts on idc03
+    ~/.local/share/ada/transcripts/2026-10-07-ece770ccb0.md and
+    -6e5d59f738.md; tool calls from journalctl -u ada-ha-tony).
+
+    ece770ccb0 (17:55–17:56, 5 user turns, ~10 tool calls):
+    Tony asked (Thai) about the Liam+Noel clip, CMS, voice-over,
+    YouTube video. Ada called ada_memory_search x3, cms_read
+    action=list limit=10 x1. All returned ok:true but none surfaced
+    the dub. She answered "not in memory" and "CMS has only traffic
+    report and CCTV" — an unsupported negative generalised from a
+    10-item page list.
+
+    6e5d59f738 (18:34, 3 user turns, ~8 tool calls):
+    Tony retried. Ada called ada_session_recall x2 and drive
+    search 'Liam Noel' mime=video (0 files — wrong tool). No cms_read
+    at all. She asserted "no videos are cached in the system" — flat
+    wrong, zero supporting evidence.
+  root_causes:
+    - |
+      R1 memory-bank pollution (fixed here): ada_memory_search top
+      hits for every query were devin/* docs — raw Devin CLI thread
+      dumps synced hourly by scripts/ada/sync-devin-summaries.py into
+      ada-ha-bank-devin-tony. Each dump opens with "=== MESSAGE 0 -
+      System ===" carrying the <available_skills>/<system_info>
+      preamble — near-identical boilerplate at the head of every
+      ~50K-char doc, so the embedded vectors hit ~0.73-0.80 on
+      unrelated queries and crowd out real memory.
+    - |
+      R2 CMS listing blind spot (systemic, card filed): cms_read
+      action=list filters meta kind=page. cached-videos-report is
+      published kind=report (as are 15 other reports: market-report,
+      daily-brief, ops-health, kanban-brief…) — invisible to list.
+      reports-index (kind=page) does cover them, and cms_read get by
+      slug works — but Ada must know the slug.
+    - |
+      R3 tool-guide knowledge is error-path only (card filed): the
+      routing fact "voice-dub demos live in the voice-dub-demos CMS
+      page" sits in backend/tool_guide.yml, which per card
+      ada-tools-desc-slim is attached ONLY to failed/denied tool
+      results. Nothing in always-on context names voice-dub-demos or
+      cached-videos-report, so on a clean turn Ada has no way to know
+      those pages exist. She reached for drive instead.
+    - |
+      R4 unsupported negative claims: twice she declared absence
+      ("no cached videos") without a positive lookup — behaviour fix
+      folded into the same card.
+  evidence:
+    - |
+      idc03 journal ada-ha-tony 17:53–18:40 — function_call
+      received/result lines for sessions ece770ccb0 + 6e5d59f738;
+      no ok:false calls. The miss is routing, not tool failure.
+    - |
+      mddb ada-cms-pages — cached-videos-report meta kind=report;
+      voice-dub-demos kind=page, updated 2026-10-07T11:23:49Z,
+      catalog includes LLALMFmabV4-dub.mp4 "Liam + Noel Gallagher —
+      first joint interview since 2009 (~3 min, Thai dub)".
+    - |
+      reports-index regenerated 11:30:01Z, contains
+      cached-videos-report.
+  fixes:
+    - |
+      This repo (committed on this branch):
+      scripts/ada/sync-devin-summaries.py — new _strip_preamble()
+      removes the leading "=== MESSAGE 0 - System ===" block before
+      clip()+embed, so devin/* docs stop leading with identical
+      boilerplate. Verified on history_*.md: drops the block, keeps
+      MESSAGE 1 resume summary (the topical content). All 159 history
+      files start with boilerplate M0 (<available_skills> or
+      <system_info>) — confirmed by scan. On merge, the hourly
+      devin-summaries-sync.timer (:45) resyncs all changed docs
+      (idempotent diff catches the new body; ~159 re-embeds, one-off).
+    - |
+      Filed card ada-video-query-routing (backlog): ada-pi-side fixes —
+      name voice-dub-demos + cached-videos-report in CMS_INSTRUCTIONS,
+      decide the kind=report list gap, add negative-claim discipline,
+      and optionally surface dub routing outside the error-path guide.
+  residual_risk: |
+    devin/* docs remain ~50K thread dumps; if ada_memory_search still
+    prefers them over CMS/session hits after the preamble strip,
+    next step is down-weighting bank=devin or indexing distilled
+    digests (noted on the card). Also: e2e step ASK/DUB for a NEW
+    clip still has no Ada-side dub trigger tool — the pre-built
+    LLALMFmabV4 asset is what the live pass should resolve.
+
+verify:
+  - |
+    python3 scripts/ada/sync-devin-summaries.py --dry-run — each
+    history_* doc shows ~ (changed) once remote content differs.
+  - |
+    After merge + next :45 sync, ada_memory_search 'youtube video'
+    should no longer return MESSAGE-0 skills text.
+  - |
+    Live re-run of scenario tests/scenarios-live/yt_dub_liam_e2e.yaml
+    after card ada-video-query-routing lands on idc03.
+
+refs:
+  card: yt-dub-liam-e2e
+  follow_up_card: ada-video-query-routing
+  transcripts:
+    - idc03:~/.local/share/ada/transcripts/2026-10-07-ece770ccb0.md
+    - idc03:~/.local/share/ada/transcripts/2026-10-07-6e5d59f738.md
+  prior_trail: docs/ssot/jobs/yt-dub/2026-10-07-yt-dub-liam-e2e-readiness.yml

@@ -47,6 +47,20 @@ COLLECTION = "ada-ha-bank-devin-tony"
 MAX_CHARS = 50_000
 HEAD_FRACTION = 0.6
 
+# history_*.md dumps open with "=== MESSAGE 0 - System ===" holding the
+# session preamble (<available_skills> or <system_info>) — near-identical
+# boilerplate in every thread. Embedded whole it skews the doc vector so
+# memory queries hit these dumps ahead of real content (the 2026-10-07
+# 'Liam dub' audit: every ada_memory_search returned devin/* preamble
+# fragments). Strip just that leading block; later System messages carry
+# resume summaries and task context worth keeping.
+_LEADING_PREAMBLE_RE = re.compile(
+    r"\A=== MESSAGE 0 - System ===\n.*?(?==== MESSAGE |\Z)", re.S)
+
+
+def _strip_preamble(text: str) -> str:
+    return _LEADING_PREAMBLE_RE.sub("", text, count=1).lstrip()
+
 
 def clip(text: str) -> str:
     if len(text) <= MAX_CHARS:
@@ -144,7 +158,7 @@ def main() -> int:
         if not text:
             empty += 1
             continue
-        body = clip(text)
+        body = clip(_strip_preamble(text))
         mtime = datetime.fromtimestamp(f.stat().st_mtime).date().isoformat()
         old = remote.get(key)
         if old and (old.get("contentMd") or "") == body:
