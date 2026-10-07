@@ -2,7 +2,7 @@ id: yt-dub-liam-e2e
 title: 'E2E user scenario: Ada finds Liam+Noel clip -> dub -> play screen 2'
 brief: 'End-to-end test: ask Ada to find a Liam-and-Noel interview clip, dub it, and play it on the TV. Waiting
   in the backlog — no action needed.'
-column: backlog
+column: review
 program: yt-voice-dub
 area: scenario
 priority: medium
@@ -24,7 +24,7 @@ spec: 'Depends on: yt-voice-dub pipeline (scripts/ops/yt-vtt-*.py, yt-live-api :
   (chaba-cached-videos.timer), cast_to_screen screen-2 routing. Risks: "only two people talking" needs caption/content
   judgement — Ada may need to fetch the transcript and check speaker turns; screen-2 routing names are in the cast
   tool guide.'
-updated: 2026-10-07 18:36
+updated: 2026-10-07 18:48
 comms:
 - at: 2026-10-07 08:45
   from: tony
@@ -130,15 +130,34 @@ comms:
   from: devin
   text: 'dispatch 183606: Tony reported Ada didn''t know about the clip — auditing Ada transcript to find what she
     was asked and why she missed it'
+- at: 2026-10-07 18:44
+  from: devin
+  text: 'transcript audit done (2 live sessions 17:55+18:34). Root causes: (1) ada_memory_search top hits are all
+    devin/* thread dumps — MESSAGE-0 skills/system boilerplate embedded whole, outranks real memories on every query;
+    (2) cms_read list shows only kind=page — cached-videos-report is kind=report so invisible; voice-dub-demos IS
+    a page and DOES list LLALMFmabV4-dub.mp4 (updated 18:23) but Ada never fetched it — tool guide hints only attach
+    on tool failure. Fixing the devin-dump boilerplate in this'
+- at: 2026-10-07 18:47
+  from: devin
+  text: 'final: audited both live passes (17:55 ece770ccb0 + 18:34 6e5d59f738, idc03 journal). Ada never reached
+    the dub — ada_memory_search drowned in devin/* MESSAGE-0 boilerplate (fixed: sync-devin-summaries.py now strips
+    the preamble before embed, merges -> hourly :45 resync), cms_read list hides kind=report pages, and the voice-dub-demos
+    pointer only shows on tool errors (filed card ada-video-query-routing with exact ada-pi patch spots). voice-dub-demos
+    already catalogs LLALMFmabV4-dub.mp4; dub stil'
+- at: 2026-10-07 18:48
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 18:48
+  from: chaba
+  text: auto-merged dispatch/20261007-183606-depends-on-yt-voice-dub-pipeli → origin/master
 action:
   type: dispatch
-  status: running
-  result: 20261007-180802-depends-on-yt-voice-dub-pipeli finished (inactive) — see `devin-dispatch logs 20261007-180802-depends-on-yt-voice-dub-pipeli`
+  status: done
+  result: 20261007-183606-depends-on-yt-voice-dub-pipeli finished (inactive) — see `devin-dispatch logs 20261007-183606-depends-on-yt-voice-dub-pipeli`
   runner: tony-dell
   task_id: 20261007-183606-depends-on-yt-voice-dub-pipeli
 claim:
   since: 2026-10-07 18:36
-  session: 20261007-183606-depends-on-yt-voice-dub-pipeli
 requests:
 - id: all-headless-preconditions-verified-gree-a29f61
   ask: All headless preconditions verified green. The card verify needs your live voice pass — ask Ada to find the

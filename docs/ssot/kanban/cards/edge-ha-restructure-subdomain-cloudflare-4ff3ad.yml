@@ -1,49 +1,52 @@
 id: edge-ha-restructure-subdomain-cloudflare-4ff3ad
 title: Edge HA restructure — subdomain-per-service + cloudflared active-active
-brief: "The public edge works but every box is a single point of failure and names are inconsistent across three places. It needs a decision — read the note and pick a direction."
+brief: The public edge works but every box is a single point of failure and names are inconsistent across three
+  places. It needs a decision — read the note and pick a direction.
 column: backlog
 priority: high
 review_kind: decide
-note: 'Post-migration topology works but has 3 naming planes (tailnet serve names,
-  /apps/ha/* path prefixes, *.surf-thailand.com public) and every edge is a SPOF.
-  tailscale serve cannot fail over — cert+name are node-bound. Target: real failover
-  on the public edge, fewer naming bugs (ada-chat ws error 10-07 was the path-prefix
-  class). idc01 joins as 3rd connector when ready.'
-spec: 'Recommended design = B+C (analysis in session 2026-10-07):
-  1. Public: one cloudflared tunnel, connectors on idc02 AND idc03 (idc01 later).
-     Same ingress hostnames on both -> CF auto-fails between connectors; zero
-     inbound ports open; ws reconnects handled by existing Ada re-prime.
-  2. Naming: subdomain-per-service for the public surface —
-     ada.surf-thailand.com (PWA/API + LINE/TG webhooks + /relay-img),
-     ha-tony.surf-thailand.com, board.surf-thailand.com (monitor.* already exists).
-     CF Access policy per host. Services live at root path — kills the
-     /apps/ha/ada-tony/ws prefix bug class.
-  3. Internal: tailnet serve unchanged; routes.json gains an optional failover:
-     list per route so cards/clients try alternates (idc03 -> idc01 standby edge).
-  4. Migration order: add cloudflared alongside existing Caddy (no cutover),
-     verify per-host, repoint CF DNS last; keep sslip/Caddy as rollback path.
-  Constraints: CF Access stays in front of all public hosts; LINE webhook needs
-  stable public https; never expose tailnet names publicly; cloudflared free tier
-  acceptable (traffic already TLS-terminates at CF — no posture change).'
+note: 'Post-migration topology works but has 3 naming planes (tailnet serve names, /apps/ha/* path prefixes, *.surf-thailand.com
+  public) and every edge is a SPOF. tailscale serve cannot fail over — cert+name are node-bound. Target: real failover
+  on the public edge, fewer naming bugs (ada-chat ws error 10-07 was the path-prefix class). idc01 joins as 3rd
+  connector when ready.'
+spec: 'Recommended design = B+C (analysis in session 2026-10-07): 1. Public: one cloudflared tunnel, connectors
+  on idc02 AND idc03 (idc01 later). Same ingress hostnames on both -> CF auto-fails between connectors; zero inbound
+  ports open; ws reconnects handled by existing Ada re-prime. 2. Naming: subdomain-per-service for the public surface
+  — ada.surf-thailand.com (PWA/API + LINE/TG webhooks + /relay-img), ha-tony.surf-thailand.com, board.surf-thailand.com
+  (monitor.* already exists). CF Access policy per host. Services live at root path — kills the /apps/ha/ada-tony/ws
+  prefix bug class. 3. Internal: tailnet serve unchanged; routes.json gains an optional failover: list per route
+  so cards/clients try alternates (idc03 -> idc01 standby edge). 4. Migration order: add cloudflared alongside existing
+  Caddy (no cutover), verify per-host, repoint CF DNS last; keep sslip/Caddy as rollback path. Constraints: CF Access
+  stays in front of all public hosts; LINE webhook needs stable public https; never expose tailnet names publicly;
+  cloudflared free tier acceptable (traffic already TLS-terminates at CF — no posture change).'
 ask:
-  question: 'Approve edge restructure?'
+  question: Approve edge restructure?
   options:
-  - 'Yes — full B+C'
+  - Yes — full B+C
   - 'Option 1: cloudflared first, keep path names'
   - 'Option 2: subdomains first, single connector'
-  - 'No — keep warm-standby only'
-help: 'basis: routes.json generated 2026-10-07, ssot.routes.yml edges,
-  stacks/idc03/caddy-edge, idc01-to-idc03-migration-plan.md'
+  - No — keep warm-standby only
+help: 'basis: routes.json generated 2026-10-07, ssot.routes.yml edges, stacks/idc03/caddy-edge, idc01-to-idc03-migration-plan.md'
 action:
   type: manual
-  status: idle
-updated: 2026-10-07 14:30
+  status: running
+  runner: tony-dell
+  task_id: 20261007-184206-recommended-design-b-c-analysi
+updated: 2026-10-07 18:42
 comms:
 - at: 2026-10-07 14:18
   from: tony
   text: card captured via board-api
 - at: 2026-10-07 14:30
   from: devin
-  text: 'spec applied — decision card (review_kind: decide), not dispatchable:
-    DNS/tunnel/Access changes are operator-approved edge work. Options rendered
-    per ask.options once structured responses land.'
+  text: 'spec applied — decision card (review_kind: decide), not dispatchable: DNS/tunnel/Access changes are operator-approved
+    edge work. Options rendered per ask.options once structured responses land.'
+- at: 2026-10-07 18:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 18:42
+  from: chaba
+  text: dispatched 20261007-184206-recommended-design-b-c-analysi on chaba
+claim:
+  session: 20261007-184206-recommended-design-b-c-analysi
+  since: 2026-10-07 18:42

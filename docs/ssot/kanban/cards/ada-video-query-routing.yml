@@ -1,0 +1,29 @@
+id: ada-video-query-routing
+title: Ada can't find dubbed videos — route video/dub/cached queries to voice-dub-demos + cached-videos-report
+column: backlog
+updated: 2026-10-07 18:45
+note: 'Live E2E (yt-dub-liam-e2e) failed twice on 2026-10-07 (sessions ece770ccb0 17:55 + 6e5d59f738 18:34): asked
+  about the Liam+Noel dub, Ada answered ''not in memory / no cached videos'' without ever cms_read''ing her own
+  video pages. voice-dub-demos lists LLALMFmabV4-dub.mp4 + the exact cast recipe; cached-videos-report lists all
+  29 playable dubs. Both unreachable via cms_read list (kind=report excluded; page list capped) and the voice-dub-demos
+  pointer sits in tool_guide.yml which only attaches to FA'
+help: "Fix in ada-pi (edit on tony-dell, deploy via deploy-ada.sh to idc03):\n\n1. backend/realtime_provider.py\
+  \ CMS_INSTRUCTIONS (~line 152, after the reports-index sentence): name the media pages — suggested: \"For video/dub/cached-media\
+  \ questions, cms_read action='get' key='voice-dub-demos' (dub catalog + exact cast recipe) and 'cached-videos-report'\
+  \ (full yt-live cache inventory) — never answer 'nothing cached' from memory, a drive search, or a truncated action='list'.\"\
+  \n\n2. Same pattern anywhere the 'yt' tool description is declared (~line 3513): 'Thai-dub demos: get voice-dub-demos\
+  \ first for file name + cast recipe' — today that pointer only reaches Ada when a yt call fails.\n\n3. Decide\
+  \ the kind=report listing gap: cms_read action='list' filters kind=page — 16 kind=report docs (cached-videos-report,\
+  \ market-report, daily-brief, ops-health…) never appear. Either include kind=report in list output or keep as-is\
+  \ and rely on reports-index + named gets (option 1). \n\n4. Negative-claim discipline: she twice asserted 'no\
+  \ cached videos' on zero supporting evidence — worth a line in CMS_INSTRUCTIONS that absences need a get on the\
+  \ canonical page, not inference from list.\n\nEvidence: ada-ha-tony journal on idc03, sessions ece770ccb0 + 6e5d59f738\
+  \ — tool calls were ada_memory_search/ada_session_recall/drive only; cms_read appeared once as action=list limit=10.\
+  \ Transcripts ~/.local/share/ada/transcripts/2026-10-07-*.md on idc03.\n\nRelated chaba-side fix already in dispatch-wt-20261007-183606:\
+  \ sync-devin-summaries.py strips the MESSAGE-0 skills/system preamble so devin/* dumps stop outranking real memories.\
+  \ Residual: devin bank docs are still ~50K thread dumps — if ada_memory_search still prefers them over cms pages,\
+  \ down-weight bank=devin or index distilled digests instead."
+comms:
+- at: 2026-10-07 18:45
+  from: tony
+  text: card captured via board-api
