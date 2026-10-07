@@ -2,7 +2,7 @@ id: yt-voice-dub-scenarios
 title: YT voice dub — scenario + benchmark coverage
 brief: Adds automated checks so dubbing quality is measured every run instead of by ear. It can't start until related
   dub work lands — the blocker is named on the card.
-column: doing
+column: review
 program: yt-voice-dub
 area: testing
 priority: medium
@@ -23,11 +23,14 @@ spec: 'ada-pi: add to tests/scenarios-live/ — dub_cue_timing (TTS segment fits
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task: 'Add dub scenario + benchmark coverage per card spec: dub_cue_timing, dub_voice_consistency, dub_duck_mix
     scenarios + benchmark.yml metrics (cue overflow %, WER, voices-per-speaker, loudness delta).'
   runner: mn01
-updated: 2026-10-07 20:34
+  result: 'exit=0 ted ada-pi''s `yt` tool lacks a `voice=` param so conversational dub-cast isn''t possible yet.
+    | devin-task-20261007-133317-ada-pi-add-to-tests-scenarios-.service: Consumed 42.003s CPU time over 26min 2.278s
+    wall clock time, 554M memory peak.'
+updated: 2026-10-07 20:59
 comms:
 - at: 2026-10-06 07:18
   from: devin
@@ -46,3 +49,18 @@ comms:
   from: devin
   text: started — studying scenario format + benchmark.yml, then writing dub_cue_timing / dub_voice_consistency
     / dub_duck_mix + dub metrics
+- at: 2026-10-07 20:58
+  from: devin
+  text: 'done (d801a83 on dispatch branch). 3 artifact-gate scenarios via http_check on a dub-metrics/1 sidecar
+    contract: dub_cue_timing (LLALMFmabV4-dub: overflow<=10%, atempo<=1.4, lag<=5s, WER<=0.30), dub_voice_consistency
+    (dub-v9-2voice: voices_per_speaker==1, speakers==2 — the cast regression gate), dub_duck_mix (dub-v16h: delta
+    [6,20]dB, recovery<=2s, ducked<=80%). http_check gained capture: -> benchmark meta.metrics so runs trend real
+    numbers. benchmark.yml: metrics registry + suites.dub (3 gates '
+- at: 2026-10-07 20:59
+  from: mn01
+  text: 'finished (ok): exit=0 ted ada-pi''s `yt` tool lacks a `voice=` param so conversational dub-cast isn''t
+    possible yet. | devin-task-2026100'
+- at: 2026-10-07 20:59
+  from: chaba
+  text: 'auto-merge skipped: dispatch_repos module not found on this host — merge by hand'
+claim: {}

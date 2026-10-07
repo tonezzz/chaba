@@ -1,44 +1,49 @@
 id: nest-micro-training
-title: "Chaba Nest micro-model evolution loop — agent-owned train→bench→promote"
-brief: "The small-model training loop that already turned a weak model into a good one needs an owner to keep improving it. Waiting in the backlog — no action needed."
+title: Chaba Nest micro-model evolution loop — agent-owned train→bench→promote
+brief: The small-model training loop that already turned a weak model into a good one needs an owner to keep improving
+  it. Waiting in the backlog — no action needed.
 column: todo
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07
-note: >-
-  The proven formula (jev-student: 56% gemma-1b -> 100% distilbert via 5
-  corpus iterations) needs an owner. An agent loop (OpenClaw-style or a
-  scripted pipeline) drives: corpus delta -> candidate train -> bench ->
-  scorecard -> shadow -> promote. Train+bench is T2 (reversible),
-  promotion is T1/T3 (human gate).
-spec: >-
-  1. Task suites: per-specialist labeled sets — golden (frozen
-     regression), hard/OOD (rotating in from corpus), adversarial.
-     Registry: tests/bench/suites.yml in ada-pi.
-  2. Model registry: topologies.yml gains models: section — task,
-     checkpoint, corpus version, bench scores, status
-     (train|shadow|prod|retired). jev-student v5 becomes the first entry.
-  3. Training lanes: tony-omen GTX1650 (distilbert FT, 1b LoRA via 4-bit),
-     Colab burst via colab-mcp (bigger runs), idc01 for cold batch jobs.
-     jev-unsloth-finetune page has the recipe.
-  4. Loop owner: agent harness or chaba script — harvest corpus deltas
-     (jev-corpus divergences, orch misses, scenario fails), propose +
-     train candidate, run suite bench, publish bench/train-* doc, queue
-     promotion question when candidate meets gate.
-  5. Promotion gate: candidate >= champ on golden, no hard-set
-     regression -> shadow deploy -> live divergence metrics decide.
-     Same posture as CAM++ speaker shadow and client_noul edge lane.
+updated: 2026-10-07 21:04
+note: 'The proven formula (jev-student: 56% gemma-1b -> 100% distilbert via 5 corpus iterations) needs an owner.
+  An agent loop (OpenClaw-style or a scripted pipeline) drives: corpus delta -> candidate train -> bench -> scorecard
+  -> shadow -> promote. Train+bench is T2 (reversible), promotion is T1/T3 (human gate).'
+spec: "1. Task suites: per-specialist labeled sets — golden (frozen\n   regression), hard/OOD (rotating in from\
+  \ corpus), adversarial.\n   Registry: tests/bench/suites.yml in ada-pi.\n2. Model registry: topologies.yml gains\
+  \ models: section — task,\n   checkpoint, corpus version, bench scores, status\n   (train|shadow|prod|retired).\
+  \ jev-student v5 becomes the first entry.\n3. Training lanes: tony-omen GTX1650 (distilbert FT, 1b LoRA via 4-bit),\n\
+  \   Colab burst via colab-mcp (bigger runs), idc01 for cold batch jobs.\n   jev-unsloth-finetune page has the\
+  \ recipe.\n4. Loop owner: agent harness or chaba script — harvest corpus deltas\n   (jev-corpus divergences, orch\
+  \ misses, scenario fails), propose +\n   train candidate, run suite bench, publish bench/train-* doc, queue\n\
+  \   promotion question when candidate meets gate.\n5. Promotion gate: candidate >= champ on golden, no hard-set\n\
+  \   regression -> shadow deploy -> live divergence metrics decide.\n   Same posture as CAM++ speaker shadow and\
+  \ client_noul edge lane."
 links:
-  - nest-collective-bench
-  - nest-edge-vision
-  - jev-unsloth-finetune
-  - chaba-nest
-  - github:lm-sys/RouteLLM (5.6k★) — trained weak/strong router classifiers; upgrade path for hand-rolled router topology
-  - github:vllm-project/semantic-router (6k★) — programmable decision layer (BERT classify -> route+guardrail+cache); production proof of the Nest pattern
-help: >-
-  Corpus sources already live: jev-corpus.jsonl (regex-vs-jev
-  divergences), orch-bench misses -> corpus-out, scenario failures,
-  client_noul edge rows. Candidates: confirm-gate successor, tool-router
-  specialist, memory-recall classifier, speaker-id student.
+- nest-collective-bench
+- nest-edge-vision
+- jev-unsloth-finetune
+- chaba-nest
+- github:lm-sys/RouteLLM (5.6k★) — trained weak/strong router classifiers; upgrade path for hand-rolled router topology
+- github:vllm-project/semantic-router (6k★) — programmable decision layer (BERT classify -> route+guardrail+cache);
+  production proof of the Nest pattern
+help: 'Corpus sources already live: jev-corpus.jsonl (regex-vs-jev divergences), orch-bench misses -> corpus-out,
+  scenario failures, client_noul edge rows. Candidates: confirm-gate successor, tool-router specialist, memory-recall
+  classifier, speaker-id student.'
 blocked_by: []
 autonomy: t1
+action:
+  type: dispatch
+  status: failed
+  runner: mn01
+  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+comms:
+- at: 2026-10-07 21:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 21:04
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:04
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'

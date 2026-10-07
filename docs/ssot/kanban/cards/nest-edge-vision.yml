@@ -1,42 +1,46 @@
 id: nest-edge-vision
-title: "Chaba Nest edge vision — browser YOLO overlay, castable, benchable"
-brief: "A page that shows a camera feed and draws object labels on it right in the browser, castable to the TV. Waiting in the backlog — no action needed."
+title: Chaba Nest edge vision — browser YOLO overlay, castable, benchable
+brief: A page that shows a camera feed and draws object labels on it right in the browser, castable to the TV. Waiting
+  in the backlog — no action needed.
 column: todo
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07
-note: >-
-  Extends the Nest to the client's eyes: a page that plays a camera feed
-  and runs detection in-browser (WASM), overlay drawn locally, and the
-  whole page castable to TV via the proven screenlive lane. Server
-  compute stays at zero — the client does vision.
-spec: >-
-  Phases:
-  1. `/apps/eye/` page (ada-pi `pwa/eye/` or apps stack) — video element
-     fed by cam HLS (xmeye channels via existing proxy) OR device cam via
-     getUserMedia. Detection model in-browser: onnxruntime-web is already
-     vendored (pwa/vendor/transformers) — pick yolov8n-int8 (~12MB) with
-     JS NMS, or MediaPipe efficientdet-lite0 (~4MB, proven WASM path from
-     gesture work). Overlay = canvas over video.
-  2. Bench mode on the same page: run N frames, report fps/inference-ms/
-     device UA to MDDB (ada-ha-scenario-reports bench/edge-*); a
-     `bench-edge` CMS page trends it — answers "can my iPhone carry it"
-     with data, per device, per model.
-  3. Cast what Ada sees: point the cast lane (screenlive/workspace cast,
-     verified 2026-10-07 on GEV) at the eye page — TV shows live YOLO
-     overlay. No server-side annotate/encode needed.
-  4. Ada hookup: latest detections land in MDDB → an ada tool
-     (`ada_look`?) answers "what do you see" from the freshest frame;
-     keeps the confirm-gate authority model for any action on detections.
+updated: 2026-10-07 21:04
+note: 'Extends the Nest to the client''s eyes: a page that plays a camera feed and runs detection in-browser (WASM),
+  overlay drawn locally, and the whole page castable to TV via the proven screenlive lane. Server compute stays
+  at zero — the client does vision.'
+spec: "Phases: 1. `/apps/eye/` page (ada-pi `pwa/eye/` or apps stack) — video element\n   fed by cam HLS (xmeye\
+  \ channels via existing proxy) OR device cam via\n   getUserMedia. Detection model in-browser: onnxruntime-web\
+  \ is already\n   vendored (pwa/vendor/transformers) — pick yolov8n-int8 (~12MB) with\n   JS NMS, or MediaPipe\
+  \ efficientdet-lite0 (~4MB, proven WASM path from\n   gesture work). Overlay = canvas over video.\n2. Bench mode\
+  \ on the same page: run N frames, report fps/inference-ms/\n   device UA to MDDB (ada-ha-scenario-reports bench/edge-*);\
+  \ a\n   `bench-edge` CMS page trends it — answers \"can my iPhone carry it\"\n   with data, per device, per model.\n\
+  3. Cast what Ada sees: point the cast lane (screenlive/workspace cast,\n   verified 2026-10-07 on GEV) at the\
+  \ eye page — TV shows live YOLO\n   overlay. No server-side annotate/encode needed.\n4. Ada hookup: latest detections\
+  \ land in MDDB → an ada tool\n   (`ada_look`?) answers \"what do you see\" from the freshest frame;\n   keeps\
+  \ the confirm-gate authority model for any action on detections."
 links:
-  - chaba-nest
-  - gesture-ui-options
-  - benchmark-casting
-  - ada-kanban-access
-help: >-
-  Reuses: vendored onnxruntime-web (pwa/vendor/transformers, committed
-  a14238f), screenlive cast path (verified), xmeye HLS shim, MDDB bench
-  doc pattern. Constraints: iOS PWA-mode mic/cam quirks (Safari vs
-  home-screen), model size one-time download, JS NMS cost on old devices.
+- chaba-nest
+- gesture-ui-options
+- benchmark-casting
+- ada-kanban-access
+help: 'Reuses: vendored onnxruntime-web (pwa/vendor/transformers, committed a14238f), screenlive cast path (verified),
+  xmeye HLS shim, MDDB bench doc pattern. Constraints: iOS PWA-mode mic/cam quirks (Safari vs home-screen), model
+  size one-time download, JS NMS cost on old devices.'
 blocked_by: []
 autonomy: t1
+action:
+  type: dispatch
+  status: failed
+  runner: mn01
+  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+comms:
+- at: 2026-10-07 21:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 21:04
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:04
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
