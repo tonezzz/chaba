@@ -92,7 +92,45 @@ empty, the rest is skim-only.
 | warn | into morning `ops-digest` (extend: merge health anomalies) |
 | action-needed | kanban card `requests:` entry (existing mechanism) |
 
-## 4. Build-out phases
+## 4. The feedback loop — CI / QA / AQ standard for every plan
+
+Every plan or card must declare its gates; the loop is what makes the
+system "ever-evolving" rather than a static list.
+
+```
+PLAN       card declares: acceptance criteria (AQ) + verification (QA)
+            + which CI gates apply
+BUILD     implementation
+CI GATE   ssot-validate, coverage lint, scenario tests — no merge on red
+QA GATE   live-state verification against real services (not logs)
+RELEASE   deploy needs same-session approval (unchanged)
+OBSERVE   the thing the change touched gets a health entry or
+          declared exemption — coverage lint enforces this
+MISS?     classify: no-check / unread-signal / no-escalation /
+          dead-monitor → the fix lands in DECLARE, not just journal
+LOOP      misses become new checks or new lint rules → next plan
+          inherits them automatically
+```
+
+- **CI gates** (per plan): `ssot-validate-all`, `monitor-coverage-lint`,
+  relevant scenario tests (`--dry-run` where needed).
+- **QA** = verify against live state, always: `systemctl is-active`,
+  `curl` real endpoints, MDDB queries — never trust the plan.
+- **AQ** = acceptance criteria declared *before* building, stated as
+  observable outcomes ("digest line shows N/102 green" not "adds
+  health section").
+- **The miss→check loop** is the core: every incident answers
+  "which layer failed?" and the fix lives in that layer. This week:
+  jev crash-loop → coverage lint exists; OR-key 401 → P2 auth probe;
+  dead health writes → staleness line in digest.
+
+### Self-check on the loop itself
+
+The digest reports: probe staleness (>30min = "monitor stale"),
+coverage-gap count, and failing services. If the digest itself
+doesn't arrive, OpenClaw cron history shows the gap — no silent death.
+
+## 5. Build-out phases
 
 - **P0 (cheap, this week)** — coverage lint script + declare
   `no_health:` on intentional gaps; extend `ops-digest.py` to merge
@@ -106,7 +144,7 @@ empty, the rest is skim-only.
   resource-burn checks (CPU-h/day, RSS ceilings) as a check type.
 - **P3** — kanban auto-request for persistent warns (≥3 days).
 
-## 5. What NOT to change
+## 6. What NOT to change
 
 - keep focus-inbox as the alert *queue* — aggregation feeds it, doesn't
   replace it
