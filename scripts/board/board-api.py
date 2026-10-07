@@ -23,6 +23,13 @@ Endpoints (after prefix strip):
       card's action.status=='running', the answer line is appended to
       $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host
       (ssh for remote runners) — TASK_RAILS tells sessions to poll it.
+      Without request_id, answers the card-level `ask:` (structured
+      responses, board-structured-responses): {id|card, option: N} picks
+      ask.options[N]; {id, text|answer} is free text that resolves to the
+      option it uniquely names (id, label, or label prefix — the voice
+      path "yes to the disk card" lands on the Yes option). Sets
+      ask.status=answered + answer + answered_at, writes the resolved
+      label to comms.
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
   POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
       raises a requests[] entry {id, ask, status: open, at, from, to?};
@@ -398,9 +405,79 @@ def do_finish(card: dict, body: dict) -> str:
     return "finished -> review" if ok else "marked failed"
 
 
+def _opt_label(o) -> str:
+    return str(o if not isinstance(o, dict)
+               else (o.get("label") or o.get("id") or ""))
+
+
+def _opt_value(o) -> str:
+    return str(o) if not isinstance(o, dict) \
+        else str(o.get("id") or o.get("label") or "")
+
+
+def do_ask_respond(card: dict, body: dict, frm: str) -> str:
+    """Answer the card-level `ask:` — one standing decision per card.
+    {option: N} picks ask.options[N]; free text is kept verbatim unless it
+    uniquely names an option (exact id/label or a unique label prefix),
+    which resolves to the canonical label — that's what makes a voice
+    answer like "yes" land on the 'Yes — …' option."""
+    ask = card.get("ask")
+    if isinstance(ask, str):
+        ask = {"question": ask}
+    if not isinstance(ask, dict) \
+            or not str(ask.get("question") or "").strip():
+        raise ValueError("no request_id and card has no ask")
+    opts = ask.get("options") or []
+    answer = ""
+    opt = body.get("option")
+    if opt is not None and str(opt).strip() != "":
+        if not opts:
+            raise ValueError("card ask has no options")
+        try:
+            idx = int(opt)
+        except (TypeError, ValueError):
+            raise ValueError("option must be an index")
+        if not 0 <= idx < len(opts):
+            raise ValueError(f"option must be 0..{len(opts) - 1}")
+        answer = _opt_label(opts[idx])
+    else:
+        answer = str(body.get("text") or body.get("answer") or "").strip()
+        if not answer:
+            raise ValueError("answer required")
+        low = answer.lower()
+        hit = [o for o in opts
+               if low in (_opt_label(o).lower(), _opt_value(o).lower())]
+        if not hit:
+            hit = [o for o in opts if _opt_label(o).lower().startswith(low)]
+        if len(hit) == 1:
+            answer = _opt_label(hit[0])
+        # ambiguous or unmatched free text stands as its own answer
+    if ask.get("status") == "answered" and not body.get("reopen"):
+        raise ValueError("ask already answered")
+    verb = "re-answered" if ask.get("status") == "answered" else "answered"
+    card["ask"] = ask  # writes back the dict when ask was a bare string
+    ask["status"] = "answered"
+    ask["answer"] = answer[:500]
+    ask["answered_at"] = now()
+    body["answer"] = answer  # resolved text feeds live-session delivery
+    comms_add(card, frm, f"{verb} ask: {answer[:200]}")
+    # answer recorded but nothing is armed to act on it — same triage
+    # nudge as the requests[] path
+    a = card.get("action") or {}
+    if (card.get("column") != "done"
+            and a.get("status") not in ("queued", "running")):
+        card["awaiting_action"] = True
+        comms_add(card, "chaba",
+                  "answer recorded but no active action — card needs "
+                  "triage (queue it, or spec+arm an action)")
+    return "answer saved"
+
+
 def do_respond(card: dict, body: dict, frm: str) -> str:
     rid = str(body.get("request_id") or "").strip()
-    answer = str(body.get("answer") or "").strip()
+    if not rid:
+        return do_ask_respond(card, body, frm)
+    answer = str(body.get("answer") or body.get("text") or "").strip()
     if not answer:
         raise ValueError("answer required")
     for r in card.get("requests") or []:
@@ -719,7 +796,7 @@ class H(BaseHTTPRequestHandler):
                          "(Tailscale-User-Login) or a local caller"})
         sys.stderr.write(
             "board-api write %s id=%s via=%s\n"
-            % (path, body.get("id"), ident))
+            % (path, body.get("id") or body.get("card"), ident))
 
         notify_req = None
         with LOCK.open("w") as lf:
@@ -743,12 +820,12 @@ class H(BaseHTTPRequestHandler):
                     save(p, card)
                 elif path == "/respond":
                     frm = actor(body)
-                    p = card_path(body.get("id", ""))
+                    p = card_path(body.get("id") or body.get("card") or "")
                     card = load(p)
                     msg = do_respond(card, body, frm)
                     note = deliver_answer(
                         card, frm,
-                        str(body.get("request_id") or "").strip(),
+                        str(body.get("request_id") or "").strip() or "ask",
                         str(body.get("answer") or "").strip())
                     if note:
                         comms_add(card, "chaba", note)
@@ -829,6 +906,59 @@ def _selftest() -> None:
     do_respond(card, {"request_id": "r1", "answer": "b", "reopen": True}, "tony")
     assert card["requests"][0]["answer"] == "b"
     assert any("re-answered r1" in m["text"] for m in card["comms"])
+
+    # card-level ask — structured responses (board-structured-responses):
+    # /respond with no request_id answers ask.options[N] or free text
+    acard = {"id": "c-ask", "column": "backlog",
+             "ask": {"question": "ship it?",
+                     "options": ["Yes — go", {"id": "n", "label": "No — hold"}]}}
+    rejects(lambda: do_respond(acard, {}, "tony"), "answer required")
+    rejects(lambda: do_respond(acard, {"option": "x"}, "tony"),
+            "option must be an index")
+    rejects(lambda: do_respond(acard, {"option": 5}, "tony"),
+            "option must be 0..1")
+    do_respond(acard, {"option": 0}, "tony")
+    assert acard["ask"]["status"] == "answered"
+    assert acard["ask"]["answer"] == "Yes — go"
+    assert acard["ask"]["answered_at"]
+    assert any(m["from"] == "tony" and "answered ask: Yes — go" in m["text"]
+               for m in acard["comms"])
+    assert acard.get("awaiting_action") is True  # same triage nudge
+    rejects(lambda: do_respond(acard, {"option": 1}, "tony"),
+            "ask already answered")
+    do_respond(acard, {"option": 1, "reopen": True}, "tony")
+    assert acard["ask"]["answer"] == "No — hold"
+    assert any("re-answered ask" in m["text"] for m in acard["comms"])
+
+    # free text resolves a unique option — voice path "yes to the disk card"
+    bcard = {"ask": {"question": "q",
+                     "options": ["Yes — full B+C", "No — keep warm-standby"]}}
+    do_respond(bcard, {"text": "yes"}, "tony")
+    assert bcard["ask"]["answer"] == "Yes — full B+C"
+    ccard = {"ask": {"question": "q",
+                     "options": [{"id": "a", "label": "A"},
+                                 {"id": "b", "label": "B"}]}}
+    do_respond(ccard, {"text": "b"}, "tony")
+    assert ccard["ask"]["answer"] == "B"
+    # unmatched / ambiguous free text stands verbatim
+    dcard = {"ask": {"question": "q", "options": ["red", "green"]}}
+    do_respond(dcard, {"text": "blue"}, "tony")
+    assert dcard["ask"]["answer"] == "blue"
+    fcard = {"ask": {"question": "q", "options": ["yes a", "yes b"]}}
+    do_respond(fcard, {"text": "yes"}, "tony")
+    assert fcard["ask"]["answer"] == "yes"
+    # no ask + no request_id -> clear error, not a silent miss
+    rejects(lambda: do_respond({}, {"answer": "x"}, "tony"),
+            "no request_id and card has no ask")
+    # bare-string ask normalizes to a dict on first answer
+    ecard = {"ask": "keep going?"}
+    do_respond(ecard, {"text": "y"}, "tony")
+    assert ecard["ask"]["status"] == "answered"
+    # option answer resolves into body['answer'] for session delivery
+    gcard = {"ask": {"question": "q", "options": ["go"]}}
+    gbody = {"option": 0}
+    do_respond(gcard, gbody, "tony")
+    assert gbody["answer"] == "go"
 
     # deliver_answer — /respond on a running card lands in the session's
     # task dir as answers.jsonl (board-answer-live-session)

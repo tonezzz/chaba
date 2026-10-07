@@ -70,7 +70,13 @@ tiers:
       exists and accepts from:ada, but the tool only wraps
       comment/respond/read/create. One-action patch in ada-pi
       tools.d/ada_board_write.py; safe to ship (endpoint + notify already
-      proven by devin/dispatch usage).
+      proven by devin/dispatch usage). Also (board-structured-responses,
+      2026-10-07): the tool's respond requires request_id client-side, so
+      Ada cannot yet answer a card-level `ask:` — the API already accepts
+      {id, text|option} with no request_id and resolves free text to a
+      unique option, so the patch is: make request_id optional + surface
+      ask.question/options in _compact_card ('yes to the disk card' then
+      lands on the Yes option).
 
   t3_queue:
     summary: >-

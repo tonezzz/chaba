@@ -141,6 +141,15 @@ def collect(cards: list[dict], now: datetime.datetime) -> dict:
                     "request": r.get("id"),
                     "ask": str(r.get("ask") or "")[:120],
                 })
+        # card-level ask counts as one open item (board-structured-responses)
+        ask = c.get("ask")
+        if isinstance(ask, dict) and ask.get("question") \
+                and ask.get("status") != "answered":
+            open_requests.append({
+                "card": c["id"],
+                "request": "ask",
+                "ask": str(ask.get("question") or "")[:120],
+            })
 
         touched = last_touched(c)
         if touched and touched >= touched_cut:
