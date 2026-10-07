@@ -1,70 +1,75 @@
 id: edge-route-registry
 title: 'Edge route registry: one SSOT -> edges, routes.json, Caddy snippets'
-column: doing
+column: review
 review_kind: verify
 priority: high
-note: 'Route paths/upstreams are declared in 5+ places (dell Caddy 473-line monolith, mn01 Caddy copy, VPS public
-  edge, tailscale-serve mounts, and hardcoded in card JS — the idc01->idc03 miss that broke chaba-home/ai). Goal:
-  ssot.routes.yml is the single source; render-routes.py emits routes.json for consumers + per-edge Caddy snippets;
-  cards fetch routes.json instead of hardcoding hosts.'
+note: 'Route paths/upstreams are declared in 5+ places (dell Caddy 473-line monolith, mn01 Caddy copy,
+  VPS public edge, tailscale-serve mounts, and hardcoded in card JS — the idc01->idc03 miss that broke
+  chaba-home/ai). Goal: ssot.routes.yml is the single source; render-routes.py emits routes.json for consumers
+  + per-edge Caddy snippets; cards fetch routes.json instead of hardcoding hosts.'
 spec: 'Phase 1 (this session): ssot.routes.yml with full dell-edge inventory, render-routes.py -> stacks/web/public/apps/routes.json
-  + validation, ada-voice/ada-chat cards resolve ws via routes.json (/local/routes.json, fallback literal). Phase
-  2 (future): generate apps.d/*.caddy snippets from registry, modularize monolith; VPS edge + mn01 consume the same
-  registry; verify: probes per route feed a health lane. Phase 3 (evaluate): cloudflared tunnel replaces VPS public
-  edge — registry becomes the ingress config; host-per-app DNS instead of path-strip debugging.'
+  + validation, ada-voice/ada-chat cards resolve ws via routes.json (/local/routes.json, fallback literal).
+  Phase 2 (future): generate apps.d/*.caddy snippets from registry, modularize monolith; VPS edge + mn01
+  consume the same registry; verify: probes per route feed a health lane. Phase 3 (evaluate): cloudflared
+  tunnel replaces VPS public edge — registry becomes the ingress config; host-per-app DNS instead of path-strip
+  debugging.'
 action:
   type: manual
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-155935-phase-1-this-session-ssot-rout
-updated: 2026-10-07 16:07
+  result: 20261007-155935-phase-1-this-session-ssot-rout finished (inactive) — see `devin-dispatch logs
+    20261007-155935-phase-1-this-session-ssot-rout`
+updated: 2026-10-07 16:20
 claim:
-  session: 20261007-155935-phase-1-this-session-ssot-rout
   since: 2026-10-07 15:59
 comms:
 - at: 2026-10-07 10:05
   from: devin
-  text: 'motivation: ada-voice-card broke on chaba-home/ai — AVC_DEFAULT_WS hardcoded retired idc01 while the same
-    route lived in 4 other places. Design agreed with tony: 3-layer model (app->fabric exports->one public edge),
-    hostname-over-path for public, no hostnames in app code.'
+  text: 'motivation: ada-voice-card broke on chaba-home/ai — AVC_DEFAULT_WS hardcoded retired idc01 while
+    the same route lived in 4 other places. Design agreed with tony: 3-layer model (app->fabric exports->one
+    public edge), hostname-over-path for public, no hostnames in app code.'
 - at: 2026-10-07 10:20
   from: devin
   text: 'phase 1 in progress: registry + render-routes.py + card conversion.'
 - at: 2026-10-07 10:45
   from: devin
   text: 'phase 1 done: ssot.routes.yml (48 routes, 30 services, 4 edges) + render-routes.py -> apps/routes.json
-    (validation: dup ids, shadow ordering, non-tailnet-IP upstreams). ada-voice/ada-chat cards now resolve ws via
-    /local/routes.json with literal fallback; deployed to tony-ha + ada-ha www (voice ?v=12, chat ?v=7). Verified
-    /local/routes.json serves ada-tony ws->idc03. Next: phase 2 apps.d/ Caddy snippets from the same registry.'
+    (validation: dup ids, shadow ordering, non-tailnet-IP upstreams). ada-voice/ada-chat cards now resolve
+    ws via /local/routes.json with literal fallback; deployed to tony-ha + ada-ha www (voice ?v=12, chat
+    ?v=7). Verified /local/routes.json serves ada-tony ws->idc03. Next: phase 2 apps.d/ Caddy snippets
+    from the same registry.'
 - at: 2026-10-07 11:35
   from: devin
-  text: 'phase 2a done: render-routes.py --caddy emits the FULL Caddyfile (preamble template + generated route blocks
-    + CUSTOM_BLOCKS for 4 one-offs). Equivalence-diffed vs manual file, caddy validated, swapped live via in-place
-    write + caddy reload (7cb549b1). Smoke test: all live routes 200; /snapshot 502 + trade/chaba-h3 404 are pre-existing.
-    Edit flow: registry -> render --caddy -> validate -> cat > Caddyfile -> reload. Still open: mn01 edge + VPS
-    edge consume registry (2b), verify-probe health lane, cloudflared eval (phase 3).'
+  text: 'phase 2a done: render-routes.py --caddy emits the FULL Caddyfile (preamble template + generated
+    route blocks + CUSTOM_BLOCKS for 4 one-offs). Equivalence-diffed vs manual file, caddy validated,
+    swapped live via in-place write + caddy reload (7cb549b1). Smoke test: all live routes 200; /snapshot
+    502 + trade/chaba-h3 404 are pre-existing. Edit flow: registry -> render --caddy -> validate -> cat
+    > Caddyfile -> reload. Still open: mn01 edge + VPS edge consume registry (2b), verify-probe health
+    lane, cloudflared eval (phase 3).'
 - at: 2026-10-07 11:50
   from: devin
-  text: 'health lane done (dc37ef23): scripts/check-routes.py probes every registry route — edge path + upstream
-    (docker-net via container state, host-gw skipped, brace paths probe first member). Writes /apps/route-health.json
-    every 5min via chaba-route-health.timer (armed + first service run verified). First probe found 7 REAL failures:
-    dev-v0 :8006, nlm-cookies :9876, snapshot :9005 dead; chaba-h3 + imagen static dirs missing; frigate + imagen-inference
-    containers down. ada-tony ws still points idc03. Still open: mn01/VPS edges (2b), cloudflared eval (phase 3);
-    dead-route findings are now triage items surfaced in route-health.json.'
+  text: 'health lane done (dc37ef23): scripts/check-routes.py probes every registry route — edge path
+    + upstream (docker-net via container state, host-gw skipped, brace paths probe first member). Writes
+    /apps/route-health.json every 5min via chaba-route-health.timer (armed + first service run verified).
+    First probe found 7 REAL failures: dev-v0 :8006, nlm-cookies :9876, snapshot :9005 dead; chaba-h3
+    + imagen static dirs missing; frigate + imagen-inference containers down. ada-tony ws still points
+    idc03. Still open: mn01/VPS edges (2b), cloudflared eval (phase 3); dead-route findings are now triage
+    items surfaced in route-health.json.'
 - at: 2026-10-07 12:20
   from: devin
-  text: 'route triage done (e2109473): all 7 first-run failures resolved. Real outages fixed: ha-live restarted
-    (/snapshot 200), dev-miniapp-v0 env file restored from idc01 archive + restarted (/apps/dev/v0 200), chaba-h3
-    mounted into web quadlet at /srv/public/chaba-h3 (200 — the repo rename chaba-h3->chaba-h3-tony-dell had broken
-    both compose and quadlet paths). Stale routes removed: nlm-cookies (:9876 sidecar retired, notebooklm-rest :3011
-    owns auth), imagen static. Repointed: imagen-api docker-net name -> tony-omen.taila0626a.ts.net:8000. expect_down
-    flag added: frigate (on-demand NVR), imagen-api (omen GPU worker pauses) now report "expected down" not "failing".
-    Health lane: 36 ok / 0 failing / 11 expected.'
+  text: 'route triage done (e2109473): all 7 first-run failures resolved. Real outages fixed: ha-live
+    restarted (/snapshot 200), dev-miniapp-v0 env file restored from idc01 archive + restarted (/apps/dev/v0
+    200), chaba-h3 mounted into web quadlet at /srv/public/chaba-h3 (200 — the repo rename chaba-h3->chaba-h3-tony-dell
+    had broken both compose and quadlet paths). Stale routes removed: nlm-cookies (:9876 sidecar retired,
+    notebooklm-rest :3011 owns auth), imagen static. Repointed: imagen-api docker-net name -> tony-omen.taila0626a.ts.net:8000.
+    expect_down flag added: frigate (on-demand NVR), imagen-api (omen GPU worker pauses) now report "expected
+    down" not "failing". Health lane: 36 ok / 0 failing / 11 expected.'
 - at: 2026-10-07 15:35
   from: devin
-  text: 'test-drive: expected_goals added covering phases 1+2 (routes.json served, generated Caddyfile on disk AND
-    actually running on the edge, route-health sweep clean). 5/5 should pass now; any future route regression or
-    manual Caddyfile edit makes a goal fail — that is the point.'
+  text: 'test-drive: expected_goals added covering phases 1+2 (routes.json served, generated Caddyfile
+    on disk AND actually running on the edge, route-health sweep clean). 5/5 should pass now; any future
+    route regression or manual Caddyfile edit makes a goal fail — that is the point.'
 - at: 2026-10-07 15:30
   from: devin
   text: 'ci verify: pass — 5/5 expected_goals pass'
@@ -79,8 +84,9 @@ comms:
   text: dispatched 20261007-155935-phase-1-this-session-ssot-rout on chaba
 - at: 2026-10-07 16:01
   from: devin
-  text: 're-dispatched phase-1 session: all deliverables already merged (f16f88d9 + follow-ups). Verifying artifacts
-    in this worktree: render-routes --check, routes.json regen diff, card ws resolution, live edge probes.'
+  text: 're-dispatched phase-1 session: all deliverables already merged (f16f88d9 + follow-ups). Verifying
+    artifacts in this worktree: render-routes --check, routes.json regen diff, card ws resolution, live
+    edge probes.'
 - at: 2026-10-07 16:07
   from: devin
   text: 'ci plan: pass — dispatchable spec + acceptance signal present'
@@ -109,6 +115,24 @@ comms:
 - at: 2026-10-07 16:07
   from: devin
   text: 'ci run complete: verify=pass plan=pass structure=pass develop=pass audit=pass benchmark=skip'
+- at: 2026-10-07 16:08
+  from: devin
+  text: 're-dispatch verify complete: phase 1+2a+health-lane artifacts confirmed in worktree (46 routes;
+    committed Caddyfile == --caddy output; live /apps/routes.json 200, ada-tony ws->idc03). One fix: check-routes.py
+    static-dir check now reports skip (not fail) in linked worktrees — untracked/mounted content only
+    exists in the live checkout (was 5 phantom failures). card-pipeline re-run: verify=pass 5/5, audit=pass.
+    Trail: docs/ssot/jobs/infrastructure/2026-10-07-edge-route-registry-worktree-verify.yml.'
+- at: 2026-10-07 16:09
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 16:09
+  from: chaba
+  text: 'auto-merge not done: no session branch — close will block until merged'
+- at: 2026-10-07 16:20
+  from: devin
+  text: 're-dispatch session branch merged to master (4c43db9b) — the worktree phantom-failure fix in
+    check-routes.py (static dirs report skip in linked worktrees) + job record landed. Post-merge check-routes
+    on live checkout: 36 ok, 0 failing. Card stays open for phase 2b (mn01/VPS edges) + phase 3.'
 expected_goals:
 - id: routes-json-served
   check: http 200 http://localhost/apps/routes.json
