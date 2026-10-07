@@ -2,10 +2,10 @@ id: nest-micro-training
 title: Chaba Nest micro-model evolution loop — agent-owned train→bench→promote
 brief: The small-model training loop that already turned a weak model into a good one needs an owner to keep improving
   it. Waiting in the backlog — no action needed.
-column: todo
+column: review
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 21:52
+updated: 2026-10-07 22:11
 note: 'The proven formula (jev-student: 56% gemma-1b -> 100% distilbert via 5 corpus iterations) needs an owner.
   An agent loop (OpenClaw-style or a scripted pipeline) drives: corpus delta -> candidate train -> bench -> scorecard
   -> shadow -> promote. Train+bench is T2 (reversible), promotion is T1/T3 (human gate).'
@@ -34,8 +34,10 @@ blocked_by: []
 autonomy: t1
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 rsarial set is immediately discriminating (the v6 target list) | devin-task-20261007-211928-1-task-suites-per-specialist-l.service:
+    Consumed 21min 36.550s CPU time over 51min 16.635s wall clock time, 3G memory peak, 458.1M memory swap peak.'
 comms:
 - at: 2026-10-07 21:02
   from: tony
@@ -82,3 +84,19 @@ comms:
     dispatch/20261007-211928-1-nest-micro-training). Loop owner nest-train-loop.py running its first E2E pass on
     tony-omen now (harvest+merge ok: 4280 live rows, 106 diverged pending labels). Champ measured: golden 10/10,
     hard 27/35, adv-confirm 12/21.'
+- at: 2026-10-07 22:09
+  from: devin
+  text: 'Done — all 5 deliverables built + verified E2E. ada-pi: suites.yml (4 specialists x golden/hard/adversarial),
+    adv seed sets, topologies.yml models:+lanes:, --suite flag (branch dispatch/20261007-211928-1-nest-micro-training,
+    NOT merged — needs merge to ada-pi main). chaba: nest-train-loop.py + ssot.nest-training.yml on the dispatch
+    branch. First real loop run: trained v6 candidate on GTX1650 (17min), benched vs champ — gate correctly FAILED
+    it (hard 26/35 < champ 27/35, adv +1). Doc: bench/train'
+- at: 2026-10-07 22:11
+  from: tony-omen
+  text: 'finished (ok): exit=0 rsarial set is immediately discriminating (the v6 target list) | devin-task-20261007-211928-1-task-suites-per-spe'
+- at: 2026-10-07 22:11
+  from: chaba
+  text: "auto-merge not done: push: remote: Internal Server Error        \nremote: Request ID E406:235A57:4CC4E4:52C63E:6AC66104\
+    \        \nremote: Time 2026-10-07T15:11:01Z\nTo https://github.com/tonezzz/chaba.git\n ! [remote rejected]\
+    \   HEA — close will block until merged"
+claim: {}
