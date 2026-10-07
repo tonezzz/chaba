@@ -1,0 +1,7 @@
+[Unit]
+Description=Device telemetry beacon (lost-device locate) (job:device-telemetry, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=30
+ExecStart=/usr/bin/python3 %h/.local/share/device-telemetry/agent.py

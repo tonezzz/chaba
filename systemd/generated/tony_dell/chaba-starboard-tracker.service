@@ -1,0 +1,7 @@
+[Unit]
+Description=Starboard catalogs tracker -> CMS page (job:chaba-starboard-tracker, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/starboard-tracker-update.py
