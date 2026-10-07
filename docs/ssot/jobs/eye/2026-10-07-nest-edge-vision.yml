@@ -1,0 +1,199 @@
+title: nest-edge-vision — /apps/eye phases 1-4 (page, bench CMS, cast, ada_look)
+subtitle: >
+  The eye page landed on master ahead of this dispatch (e236153, MediaPipe
+  efficientdet_lite0 in-browser, ?bench=N). This session closed the gaps:
+  a real MDDB write lane, xmeye/camwall sources, a detections publisher,
+  the bench-edge CMS generator, a cast script + runbook, and the ada_look
+  ada-pi handoff spec.
+icon: eye
+
+planning:
+  goal: >
+    Phases per card: (1) /apps/eye/ page with cam-HLS OR device-cam source
+    and in-browser detection + canvas overlay; (2) bench mode reporting
+    fps/infer-ms/UA to MDDB bench/edge-* trended by a bench-edge CMS page;
+    (3) cast the overlay via the screenlive/vcast lane; (4) freshest
+    detections in MDDB readable by an ada tool (ada_look) under the
+    confirm-gate authority model.
+  scope: >
+    chaba repo only — stacks/web/public/apps/eye/, ssot.routes.yml,
+    render-routes.py, scripts/eye/, docs/runbooks/, systemd/. ada-pi
+    (tool manifest + tool_runner) is a different checkout — spec shipped
+    here, implementation deferred to an ada-pi dispatch.
+
+processing:
+  status: completed
+  started_at: "2026-10-07T14:20+07"
+  steps:
+    - id: 1
+      label: phase-1 state audit
+      status: done
+      notes: >
+        /apps/eye/ already on master (e236153, commit by Tony 18:21):
+        MediaPipe tasks-vision + vendored WASM, efficientdet_lite0 int8
+        (~4.4MB — the "proven WASM path" option from the spec), sources
+        me/cam/snap/test, canvas overlay, ?bench=N with MDDB POST.
+        Verified headless 8.9fps/112ms p50 by the committing session.
+        Gaps: MDDB URL pointed at https://idc03.../mddb/v1 — no such
+        edge mount exists (404/405 on probe), so every bench POST
+        silently failed; no xmeye channel source (xmeye is snap-only —
+        no HLS anywhere; the "existing proxy" IS the vms-snap/camwall
+        puller pipeline); snap: hardcoded frigate latest.jpg.
+    - id: 2
+      label: edge routes — eye-mddb + vms-snap
+      status: done
+      notes: >
+        ssot.routes.yml + render-routes.py CUSTOM_BLOCKS; regenerated
+        Caddyfile (byte-diff = the two new blocks only) + routes.json.
+        eye-mddb: POST /apps/eye-mddb/v1/add -> mddb :11023/v1/add —
+        ONLY /v1/add exposed, non-GET/HEAD requires Tailscale-User-Login
+        (tailnet-identity-write class, same as board-api/report-api).
+        vms-snap: /apps/vms-snap/* -> mn01 vms-snap :8377 (xmeye channel
+        PNGs, same-origin so canvas pixel access is untainted).
+    - id: 3
+      label: eye.js — sources + publisher
+      status: done
+      notes: >
+        MDDB base -> same-origin /apps/eye-mddb/v1. New sources:
+        snap:<zone>/<key> -> /apps/camwall/data/<zone>/<key>.jpg (last-good
+        thumb — covers xmeye zones vms-noble-* and every pulled zone);
+        vms:<channel> -> /apps/vms-snap/snap?ch= fresh capture (~10s,
+        serial poll). snapImg now inserted into #stage under the overlay
+        (latent bug: snap sources drew boxes over nothing — the img was
+        never in the DOM). ?pub=N rewrites ada-ha-scenario-reports
+        eye/latest every N s: {ts, src, model, detections[{cls,score,box}],
+        ua}. manifest.json gained the shared /icon-*.png icons.
+    - id: 4
+      label: phase 2 — bench-edge CMS
+      status: done
+      notes: >
+        scripts/eye/bench-edge-cms.py scans ada-ha-scenario-reports
+        bench/edge-*, parses the ```json row, aggregates per device
+        (UA -> iPhone/Safari, Linux/headless-chrome, ...) and model,
+        renders the cms-page-standard layout + a PIL fps-trend PNG into
+        apps/reports/bench-edge-trend.png (gitignored), dedup-hash skips
+        unchanged writes, regenerates reports-index. --dry-run verified
+        with fixture rows; live run wrote ada-cms-pages/bench-edge.
+        systemd/bench-edge-cms.{service,timer} hourly at :23.
+    - id: 5
+      label: phase 3 — cast lane
+      status: done
+      notes: >
+        scripts/eye/cast-eye.sh wraps both lanes: `screen N` -> input-
+        bridge /pub nav (display's own browser runs the detector);
+        `tv [ws]` -> ssh tony-omen open fullscreen Chrome on workspace N,
+        then cast-browser nav tony-omen:workspace:N (cast-desktop@0
+        x11grab -> HLS -> camera.play_stream on tony_tv_cast). NOT run
+        live — casting to the real TV is a real-world side effect and
+        needs the deployed Caddyfile anyway. Runbook:
+        docs/runbooks/eye-cast.md. Caveat found: screenlive:workspace:N's
+        cast-desktop@1/camera.desktop_1 wiring predates the cast move to
+        omen (omen has only :0) — the script uses tony-omen:workspace:N.
+    - id: 6
+      label: phase 4 — ada_look contract
+      status: done
+      notes: >
+        Read side shipped in this repo: eye/latest doc in
+        ada-ha-scenario-reports (see step 3). The tool itself lives in
+        ada-pi (tools/*.yml manifest + tool_runner) — out-of-worktree, so
+        the implementation is a ready-to-apply spec in decisions below +
+        a board note on the card.
+
+decisions:
+  - label: MediaPipe efficientdet-lite0 over yolov8n-int8/onnxruntime
+    rationale: >
+      The spec offered either; e236153 picked the proven WASM path
+      (vendored tasks-vision, 4.4MB vs 12MB, no vendored-onnxruntime
+      dependency chain in this repo). Kept.
+    alternatives_considered: >
+      onnxruntime-web + yolov8n-int8 + JS NMS — viable (ada-pi vendors
+      onnxruntime-web already) but heavier first-load and unproven here.
+  - label: MDDB via a dedicated same-origin edge route, not a guessed path
+    rationale: >
+      eye.js pointed at idc03.taila0626a.ts.net/mddb/v1 — that mount does
+      not exist (idc03 tailscale-serve exports only / -> ada-pi-pwa). The
+      registry's one-line-per-route rule and tailnet-identity-write class
+      give a tight write-only lane (/v1/add only).
+    alternatives_considered: >
+      Full /v1 proxy (wider attack surface — search/get over LAN);
+      report-api/board-api reuse (fixed-purpose services, not doc
+      writers); ada-pi-pwa endpoint (would need a code change in ada-pi).
+  - label: ada_look reads a fixed doc, never scans
+    rationale: >
+      One GET on ada-ha-scenario-reports/eye:latest — deterministic, cheap,
+      fresh_for-tagged so Ada can quote staleness. Written only while a
+      page runs ?pub=N.
+    alternatives_considered: >
+      append-only detection log docs (history no one asked for; write
+      amplification + re-embedding cost per frame); ada-eye dedicated
+      bank (needs ADA_MEMORY_BANKS_FILE registration on ada-pi side —
+      extra moving part for one doc).
+
+handoff_ada_look:
+  # Ready-to-apply ada-pi spec (repo out of scope for this worktree).
+  # tools/eye.yml manifest entry:
+  declaration: |
+    name: ada_look
+    description: >-
+      Read the freshest in-browser object detections from the eye page
+      (/apps/eye/, running with ?pub=N). Answers "what do you see" — what
+      objects/people the eye currently sees, on which source, how fresh.
+      Read-only state; for actions on a camera or screen use the
+      confirm-gated tools (cctv_wall, cast_to_screen, camera_snapshot).
+    parameters:
+      type: object
+      properties: {}
+  # tool_runner sketch (backend/tool_runner.py):
+  runner: |
+    async def ada_look(args, ctx):
+        doc = await mddb_get("ada-ha-scenario-reports", "eye/latest")
+        if not doc:
+            return {"ok": True, "seen": "nothing",
+                    "note": "no eye page is publishing — start one with "
+                            "/apps/eye/?src=...&pub=10 or cast-eye.sh"}
+        payload = json block of doc.contentMd  # {ts, src, detections, ua}
+        age_s = now() - parse(payload["ts"])
+        if age_s > 3 * payload.get("pub_s", 10):
+            return {"ok": True, "stale": True, "age_s": age_s,
+                    "note": "eye page stopped publishing"}
+        classes = count by d["cls"] in payload["detections"]
+        return {"ok": True, "src": payload["src"], "age_s": age_s,
+                "objects": classes, "seen": speakable(classes)}
+  notes: >
+    Authority model: ada_look is a pure read — it must never trigger
+    casts, snapshots, or device changes. Any "do something about what you
+    see" follow-up routes through existing confirm-gated tools, unchanged.
+    Eye is opt-in: no pub=N page running -> honest "nothing is looking
+    right now" answer, never a hallucinated scene.
+
+needs_approval:
+  - deploy stacks/web/Caddyfile to the web container + reload caddy (the
+    eye-mddb and vms-snap routes are dead until then); then rsync of
+    stacks/web/public/apps/eye changes
+  - install systemd/bench-edge-cms.{service,timer} on tony-dell
+  - ada-pi: apply the ada_look manifest + runner (separate repo/dispatch)
+  - first live TV verify: scripts/eye/cast-eye.sh tv 4 — hijacks omen ws4
+
+deferred:
+  - "src=me inside vcast nav iframes needs allow='camera' on the vcast
+    iframe — deferred: device-cam mode is for real seats anyway"
+  - "screenlive:workspace:N lane (cast-desktop@1/camera.desktop_1) is
+    wired to the old dell-seat layout — re-validate or retarget before
+    using; tony-omen:workspace:N is the proven lane"
+
+report:
+  status: done
+  completed_at: "2026-10-07T22:20+07"
+  summary: >
+    Phase 1 page already existed on master; this session made it actually
+    write home. eye.js now posts bench rows and (with ?pub=N) the
+    freshest detections through a new tailnet-gated same-origin route
+    /apps/eye-mddb/v1/add, and gained the xmeye sources the card asked
+    for (camwall zone/key thumbs + fresh vms-snap frames). Phase 2:
+    bench-edge-cms.py + hourly timer trend bench/edge-* into the
+    bench-edge CMS page with a PIL chart — the page is live in MDDB.
+    Phase 3: cast-eye.sh drives both the vcast nav lane (detector runs on
+    the display) and the omen workspace->HLS lane for the real TV;
+    runbook documents verify-after-act and failure modes. Phase 4: the
+    eye/latest contract + ready-to-apply ada_look manifest/runner spec;
+    ada-pi implementation is a follow-up dispatch on that repo.

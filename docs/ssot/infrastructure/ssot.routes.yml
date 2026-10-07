@@ -99,6 +99,8 @@ routes:
   - {id: dance2energy,     kind: static, path: /apps/dance2energy/*,   owner: chaba}
   - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "host.containers.internal:6081", owner: vms}
   - {id: vnc,              kind: static, path: /apps/vnc/*,            owner: vms}
+  - {id: vms-snap,         kind: proxy,  path: /apps/vms-snap/*,       strip: /apps/vms-snap, upstream: "100.106.196.22:8377", owner: vms, note: "xmeye channel snapshots (vms-snap shim on mn01) — /apps/eye ?src=vms:<ch>"}
+  - {id: eye-mddb,         kind: proxy,  path: /apps/eye-mddb/v1/add,  upstream: "100.102.134.91:11023", owner: chaba, custom: true, note: "MDDB write lane for /apps/eye bench+detections — only /v1/add proxied, tailnet-identity-write"}
   - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "127.0.0.1:9005", owner: chaba}
   - {id: chaba-h3,         kind: static, path: /chaba-h3/*,            owner: chaba}
   - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "127.0.0.1:8092", owner: chaba, custom: true, note: "docs-site route set + / root fallthrough"}

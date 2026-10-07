@@ -1,0 +1,36 @@
+id: ada-look-tool
+title: ada_look tool — read eye/latest detections doc (ada-pi)
+brief: >-
+  Implement the ada_look voice tool in ada-pi: GET the
+  ada-ha-scenario-reports/eye:latest MDDB doc, answer "what do you see"
+  with class counts + source + freshness. Read-only; never triggers
+  actions on detections (confirm-gate model preserved).
+column: backlog
+priority: medium
+created: 2026-10-07
+updated: 2026-10-07
+note: >-
+  Phase 4 of nest-edge-vision. The write side is done in chaba:
+  /apps/eye/?pub=N rewrites ada-ha-scenario-reports eye/latest every N s
+  with {ts, src, model, detections[{cls,score,box}], ua}. Full spec
+  (declaration + tool_runner sketch) in
+  docs/ssot/jobs/eye/2026-10-07-nest-edge-vision.yml handoff_ada_look.
+spec: |
+  In ada-pi:
+  1. tools/eye.yml manifest — declaration for ada_look (no params;
+     see the job doc for the ready-to-apply snippet).
+  2. tool_runner — mddb get ada-ha-scenario-reports/eye/latest; parse the
+     ```json payload; if absent -> ok:true "no eye page is publishing";
+     if age_s > 3*pub_s -> stale:true with age; else class counts +
+     speakable summary. Read-only — no side effects, no confirm needed.
+  3. Scenario: eye-look-live (what do you see while a pub page runs ->
+     non-empty objects) + eye-look-idle (no doc -> honest empty).
+links:
+  - nest-edge-vision
+help: >-
+  Deploy order matters: eye/latest only exists while an /apps/eye/ page
+  runs with ?pub=N AND the eye-mddb edge route is live (chaba Caddyfile
+  deploy pending). Tool should return honest-empty, not error, when the
+  doc is missing.
+blocked_by: []
+autonomy: t1
