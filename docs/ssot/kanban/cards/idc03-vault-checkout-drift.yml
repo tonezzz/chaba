@@ -1,0 +1,39 @@
+id: idc03-vault-checkout-drift
+title: 'idc03 chaba-vault checkout 4217 commits behind origin + dirty'
+column: backlog
+priority: medium
+note: 'idc03 runs ada-memory services (sync, staleness, gap-report,
+  memory-standard) from ~/CascadeProjects/chaba-vault — a checkout of the
+  main chaba repo that is 4217 commits behind origin/master, 1 ahead, and
+  has uncommitted local mods (memory-distill, gap-report, health-check,
+  staleness-sweep, recall-drift-report). Root cause of the 2026-10-07
+  ada-memory-sync failure: the checkout still had stale mddb IP
+  100.74.146.0 while origin fixed it in bf67fff1. Surgically patched
+  scripts/ada/sync-ada-memory-to-mddb.py from origin/master; the other 40
+  stale-IP files and the drift itself remain. Production services run
+  from this tree — a blind pull risks breaking them.'
+spec: 'Decide the durable model: (a) full convergence — snapshot local
+  mods, review the 5 dirty files vs origin, pull to master, re-run
+  ada-memory services to verify; (b) freeze vault as a pinned deployment
+  with an explicit update procedure. Either way: sweep remaining
+  100.74.146.0 literals in live scripts (sync-docs-to-mddb, chaba-ask,
+  recall-canary, memory-gap-report, memory-staleness-sweep, reindex.py,
+  obsidian server.py), preferring hostname idc03 over IP literals. Separate
+  open item from same session: ada-memory-sync reported 5 vault-vs-voice
+  CONFLICTs (extract docs written remotely by conversation_memory, vault
+  differs) — needs --take-remote/--take-vault/manual merge decision;
+  service exits 1 on conflicts by design.'
+expected_goals:
+  - id: vault-current
+    check: "ssh idc03 'cd ~/CascadeProjects/chaba-vault && git fetch origin --quiet && test \"$(git rev-list --count HEAD..origin/master)\" -lt 100' expect exit"
+  - id: no-stale-ip-scripts
+    check: "ssh idc03 'test \"$(grep -rl 100.74.146.0 ~/CascadeProjects/chaba-vault/scripts/ ~/CascadeProjects/chaba-vault/apps/ | wc -l)\" = 0' expect exit"
+  - id: memory-sync-runs
+    check: "ssh idc03 'systemctl --user start ada-memory-sync.service' expect exit"
+comms:
+- at: 2026-10-07 16:55
+  from: devin
+  text: 'Found during idc03 service triage. Surgical fix applied for the
+    immediate outage (sync script updated from origin); full convergence
+    needs care because services run from this checkout and the tree is
+    dirty.'
