@@ -7,7 +7,7 @@ brief: Back on 2026-09-27 you asked for a new report summarizing foreign hosting
 column: doing
 priority: medium
 program: reports
-updated: 2026-10-07 21:04
+updated: 2026-10-07 21:14
 tags:
 - cms
 - report
@@ -27,10 +27,10 @@ spec: "Source request (tony-projects/hosting-provider-report-request, voice, 202
   \ via Caddy /apps/ route, links resolve both ways,\nlatency data labelled with source (measured vs published).\n"
 action:
   type: dispatch
-  status: failed
+  status: running
   repo: chaba
-  runner: mn01
-  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+  runner: tony-dell
+  task_id: 20261007-211028-source-request-tony-projects-h
 comms:
 - at: 2026-10-07 21:05
   from: devin
@@ -45,5 +45,18 @@ comms:
 - at: 2026-10-07 21:04
   from: mn01
   text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 21:09
+  from: tony
+  text: retry requested
+- at: 2026-10-07 21:10
+  from: chaba
+  text: dispatched 20261007-211028-source-request-tony-projects-h on chaba
+- at: 2026-10-07 21:14
+  from: devin
+  text: 'Started. Found existing report: ada-cms-pages/hosting-provider-assessment (Thai VPS shortlist: ReadyIDC/Contabo/Hetzner).
+    CMS = MDDB ada-cms-pages + cms viewer at /apps/ha/ada-tony/cms/. Researching latency data next.'
 ownership:
   owner: tony
+claim:
+  session: 20261007-211028-source-request-tony-projects-h
+  since: 2026-10-07 21:10

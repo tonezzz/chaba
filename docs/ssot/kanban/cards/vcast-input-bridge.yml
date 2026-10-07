@@ -2,7 +2,7 @@ id: vcast-input-bridge
 title: vcast input-bridge lane — headless/real/flip-check health
 brief: Keeps the phone-cast feature's remote-control lane healthy so casts don't fight each other. Queued — a worker
   session will pick it up.
-column: doing
+column: review
 priority: medium
 program: vcast
 area: input-bridge
@@ -17,11 +17,14 @@ spec: 'stacks/web/input-bridge/: audit vcast-flap-check cadence and the headless
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: Audit input-bridge flap-check cadence + headless/real lease handoff per card spec; cast_recast_stale_lease
     + cast_switch_flow scenarios green.
   runner: tony-omen
-updated: 2026-10-07 20:45
+  result: 'exit=0 _recast_stale_lease` + `cast_switch_flow` — they''re gated on live remediation, not code. | devin-task-20261007-204337-stacks-web-input-bridge-audit-.service:
+    Consumed 2min 25.226s CPU time over 29min 20.668s wall clock time, 1G memory peak.'
+  verified: true
+updated: 2026-10-07 21:13
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -44,3 +47,35 @@ comms:
 - at: 2026-10-07 20:45
   from: devin
   text: 'dispatch picked up: auditing flap-check cadence + headless/real lease handoff'
+- at: 2026-10-07 21:11
+  from: devin
+  text: 'audit done — found 3 live breakages: (1) vcast-auto-health.py never merged (lane dead since 10-05, kanban-sync
+    itself wedged on ff-pull divergence); (2) headless@2/@4 dead since Oct 5 — claim 409 stale ada key, no retry/persisted
+    key; (3) registry slots all drifted (screen-6 on slot1, iPad screen-1 on slot4) — {real_screen}=6 absent so
+    both verify scenarios cannot pass today. Fixed in dispatch branch: allocScreen pins screen-N on all paths, headless
+    persists api_key + force-claims on 409, real r'
+- at: 2026-10-07 21:11
+  from: devin
+  text: 'raised request approve-live-remediation-a-merge-dispatc-73bd94: Approve live remediation? (a) merge dispatch/20261007-204337
+    branch; (b) deploy server.mjs+vcast-headless.mjs+vcast-head'
+- at: 2026-10-07 21:13
+  from: tony-omen
+  text: 'finished (ok): exit=0 _recast_stale_lease` + `cast_switch_flow` — they''re gated on live remediation, not
+    code. | devin-task-20261007-20'
+- at: 2026-10-07 21:13
+  from: chaba
+  text: pushed dispatch/20261007-204337-stacks-web-input-bridge-audit- to origin
+- at: 2026-10-07 21:13
+  from: chaba
+  text: auto-merged a9741cb5 (dispatch/20261007-204337-stacks-web-input-bridge-audit-) → origin/master
+requests:
+- id: approve-live-remediation-a-merge-dispatc-73bd94
+  ask: Approve live remediation? (a) merge dispatch/20261007-204337 branch; (b) deploy server.mjs+vcast-headless.mjs+vcast-headless@.service
+    to idc03 ~/apps/input-bridge + restart input-bridge + vcast-headless@2/@4 (stale ada keys get force-claimed,
+    slots re-home on re-register); (c) deploy vcast-real.mjs to idc02 + restart @6/@7; (d) heal wedged kanban-sync
+    worktree on tony-dell (git rebase origin/master). Then cast_recast_stale_lease + cast_switch_flow can actually
+    run.
+  status: open
+  at: 2026-10-07 21:11
+  from: devin
+claim: {}

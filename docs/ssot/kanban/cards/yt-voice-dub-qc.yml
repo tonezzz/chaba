@@ -34,7 +34,7 @@ action:
   task: 'Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc scoring pass, quarantine-before-TTS
     gate, QC report artifact, seeded TH fix-map watch-list; verify on the media-corpus slices.'
   runner: tony-omen
-updated: 2026-10-07 20:51
+updated: 2026-10-07 21:09
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -58,3 +58,10 @@ comms:
   from: devin
   text: started on tony-omen — QC gate design settled (score post-dedup cues pre-TTS, flag->skip synth keep burn,
     report at <out>.qc.json). Corpus pulled from mn01; subs/th-file artifacts located on tony-dell.
+- at: 2026-10-07 21:09
+  from: devin
+  text: 'implemented: --qc/--qc-only/--qc-report gate in yt-vtt-dub.py (cps-vs-own-span, thin fill, prefix residue,
+    untranslated, markers), fix-map seed yt-dub-fixmap.th.json + merge via comma paths, wired into yt-live.sh dub
+    (qc report rides cache). Fixture+U_io EN corpus verified. Bonus fix: parse_vtt was leaking align: settings +
+    &gt;&gt; entities into EN cue text. Gemini quota-dead; building corpus TH subs via local phi3 for the TH-path
+    render check.'

@@ -2,7 +2,7 @@ id: yt-voice-dub-speakers
 title: YT voice dub — diarization-driven casting, >2 speakers
 brief: Lets the dubbing pipeline handle interviews with more than two speakers. Queued — a worker session will pick
   it up.
-column: backlog
+column: review
 program: yt-voice-dub
 area: casting
 priority: medium
@@ -32,12 +32,14 @@ spec: 'Upgrade speaker casting to diarization-driven. (1) yt-vtt-dub.py accepts 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Wire diarization into the dub render per card spec: --diarize-file input, anchor-based speaker naming,
     pitch-offset voice families for >2 speakers, host-handoff doc; verify end-to-end on the corpus.'
   runner: tony-dell
   task_id: 20261007-203823-upgrade-speaker-casting-to-dia
-updated: 2026-10-07 20:47
+  result: 20261007-203823-upgrade-speaker-casting-to-dia finished (inactive) — see `devin-dispatch logs 20261007-203823-upgrade-speaker-casting-to-dia`
+  verified: true
+updated: 2026-10-07 21:12
 comms:
 - at: 2026-10-07 20:27
   from: tony
@@ -50,6 +52,28 @@ comms:
   text: 'picked up. Plan: --diarize-file (RTTM+start-end-SPEAKER txt, <0.3s filter) -> cast-times via voice_at();
     --cast-voices voice@pitchHz families for >2 speakers; --anchors transcript-anchor naming -> --names-map JSON;
     yt-diarize.py on tony-omen + remote handoff script to mn01 corpus. Verify: full U_io render zero hand-labels.'
+- at: 2026-10-07 21:09
+  from: devin
+  text: 'implemented + verified on U_io-pqPFfQ: pyannote on tony-omen produced 394 turns/5 speakers -> 139 after
+    0.3s filter; full 360s render zero hand-labels; anchors matched all 4 active speakers (Host@0.5s, Guest@12.5s,
+    Guest2@157.9s, Guest3@279.8s); voices-per-speaker==1, 0 group-voice mismatches; names-map.json + burn.vtt name
+    tags working. Caveat: all Gemini keys on this box are 401 — render verified with --lang en (same casting path).
+    TH subs pending a valid key.'
+- at: 2026-10-07 21:11
+  from: devin
+  text: 'DONE. Deliverables: yt-vtt-dub.py --diarize-file (RTTM + start-end-SPEAKER txt, <0.3s filter) -> cast-times
+    via voice_at; --cast-voices voice@pitchHz + PITCH_LADDER families for >2 speakers (applies to --cast-detect
+    too); --anchors transcript-anchor naming -> --names-map JSON; yt-diarize.py (pyannote on tony-omen) + yt-diarize-remote.sh
+    handoff -> mn01:~/media-corpus/yt-dub-prep. Verified U_io-pqPFfQ: 394->139 turns, 5 speakers, full 360s render
+    zero hand-labels, 4/4 anchors matched, voices-per-'
+- at: 2026-10-07 21:12
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 21:12
+  from: chaba
+  text: pushed dispatch/20261007-203823-upgrade-speaker-casting-to-dia to origin
+- at: 2026-10-07 21:12
+  from: chaba
+  text: auto-merged 9e6081bd (dispatch/20261007-203823-upgrade-speaker-casting-to-dia) → origin/master
 claim:
-  session: 20261007-203823-upgrade-speaker-casting-to-dia
   since: 2026-10-07 20:38
