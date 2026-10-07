@@ -124,6 +124,16 @@ When the working tree is dirty and the user wants to test, spike, or experiment 
 - If a live checkout is dirty when you arrive, do not build on top —
   reconcile or ask first.
 
+### Service manifests (adopted 2026-10-07)
+
+Every deployed service carries `stacks/<host>/<svc>/stack.yml` (id, host,
+description, verify, secrets[], requires[], state[], ports[], restore,
+status). Deploy order: manifest first, `python3 scripts/stack-preflight.py
+<manifest>` green, then units, then `--apply-verify`. Never deploy a
+service with no manifest. Full contract + 7-gate standard:
+`docs/ssot/jobs/infrastructure/2026-10-07-service-onboarding-standard.yml`.
+Drift audit: `scripts/stack-preflight.py stacks` sweeps every manifest.
+
 ## Hostname Usage Standards
 
 - Always use `.local` hostnames instead of IP addresses: `tony-omen.local` instead of `192.168.1.48`, `tony-dell.local` instead of `192.168.1.42`
