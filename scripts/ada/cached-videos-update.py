@@ -39,6 +39,10 @@ MCACHE = Path(os.environ.get(
     "YT_MEDIA_CACHE", os.path.expanduser("~/.cache/yt-live-media")))
 SCACHE = Path(os.environ.get(
     "YT_SUBS_CACHE", os.path.expanduser("~/.cache/yt-live-subs")))
+APPDIR = Path(os.environ.get(
+    "YT_LIVE_APPDIR",
+    os.path.expanduser("~/CascadeProjects/chaba-tony-dell/"
+                       "stacks/web/public/apps/yt-live")))
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "cached-videos-report"
@@ -143,10 +147,26 @@ def scan_cache():
     return real, stray, subs
 
 
+def scan_playables():
+    """Dub/demo assets served at /apps/yt-live/ — what Ada can actually
+    play on a screen."""
+    out = []
+    try:
+        for f in sorted(APPDIR.iterdir(), key=lambda p: -p.stat().st_mtime):
+            if f.name.endswith("-dub.mp4") or f.name.startswith("dub-v"):
+                out.append({"file": f.name, "size": f.stat().st_size,
+                            "mtime": datetime.fromtimestamp(
+                                f.stat().st_mtime, ICT)})
+    except OSError:
+        pass
+    return out
+
+
 # ---------- render ----------
 
 def render_block(now, en=True):
     real, stray, subs = scan_cache()
+    playables = scan_playables()
     total = sum(e["size"] for e in real) + sum(e["size"] for e in stray)
     L = [BLOCK_BEGIN]
     if en:
@@ -173,6 +193,14 @@ def render_block(now, en=True):
                          f"{s['mtime'].strftime('%Y-%m-%d')} "
                          "(no matching info.json — probably a copied "
                          "app dir; safe to review/clean)")
+        if playables:
+            L.append(f"\n### Playable dubs ({len(playables)} — served at "
+                     "`/apps/yt-live/`)\n")
+            L.append("| File | Size | Updated |")
+            L.append("|---|---|---|")
+            for p in playables[:25]:
+                L.append(f"| `{p['file']}` | {_fmt_size(p['size'])} "
+                         f"| {p['mtime'].strftime('%Y-%m-%d %H:%M')} |")
         if subs:
             L.append(f"\n### Subtitle library ({len(subs)})\n")
             L.append("| Video id / langs | Updated |")
@@ -195,6 +223,7 @@ def render_block(now, en=True):
             L.append(f"\nมีไดเรกทอรีที่วางผิดที่ {len(stray)} รายการ")
     L.append(BLOCK_END)
     summary = {"cached": len(real), "subtitles": len(subs),
+               "playables": len(playables),
                "stray_dirs": len(stray),
                "bytes": total}
     return "\n".join(L) + "\n", summary
