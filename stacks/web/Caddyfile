@@ -361,31 +361,7 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	handle /apps/rview {
-		redir /apps/rview/ 308
-	}
-
-	handle_path /apps/rview/api/* {
-		reverse_proxy 100.68.142.13:3007
-	}
-
-	handle_path /apps/rview/* {
-		root * /srv/public/apps/rview
-		file_server
-	}
-
-	handle /apps/rview-live {
-		redir /apps/rview-live/ 308
-	}
-
-	handle_path /apps/rview-live/* {
-		root * /srv/public/apps/rview-live
-		file_server
-	}
-
-	handle_path /api/rview-live/* {
-		reverse_proxy 100.68.142.13:3008
-	}
+	# rview + rview-live removed 2026-10-07 — replaced by vcast.
 
 	handle_path /api/gemini-mic/* {
 		reverse_proxy 100.68.142.13:3009

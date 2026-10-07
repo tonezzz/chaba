@@ -88,7 +88,7 @@ BUCKET_RULES = [
         r"embed|openclaw|open-notebook|obsidian|doc-archive|google-home|"
         r"icloud|workflows|gpu-queue", re.I)),
     ("Web / apps / data", re.compile(
-        r"web$|web\.|-api|api|rview|bserver|raceman|status-data|yt-|trade|"
+        r"web$|web\.|-api|api|bserver|raceman|status-data|yt-|trade|"
         r"postgres|redis|secrets-console|dev-miniapp|dashboard|caddy|"
         r"dnsmasq|funnel|ghostroute|rika|sensor-reader|mcp-|playwright", re.I)),
     ("Cast / desktop", re.compile(

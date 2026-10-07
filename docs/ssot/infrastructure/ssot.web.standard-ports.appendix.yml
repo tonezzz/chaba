@@ -15,7 +15,7 @@ sections:
       - Current endpoints:\n  - http://tony-dell:8080/ (Caddy dashboard + apps)\n\
       \  - http://tony-dell:8081/ (chaba-h3 dev)\n  - https://tony-dell.taila0626a.ts.net:8444/\
       \ (Tailscale Funnel → ha-live)\n- Reverse-proxied apps and their upstream ports\
-      \ (rview 3007, yomi 3000, trade 9002, etc.)\n"
+      \ (yomi 3000, trade 9002, etc.)\n"
   - label: 1.2 Confirm port 80/443 are free
     text: "Run on tony-dell:\n  ss -tlnp | grep -E ':80|:443'\n  sudo ss -tlnp | grep\
       \ -E ':80|:443'\nExpected: no listeners. If systemd, docker, or another Caddy\
