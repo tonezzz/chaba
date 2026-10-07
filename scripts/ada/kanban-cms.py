@@ -165,7 +165,11 @@ def publish(md: str, title: str, lang: str = "en") -> bool:
     req = urllib.request.Request(f"{MDDB}/add", data=body,
                                  headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        # /add blocks while the mddb embed queue waits for a slot (30s cap
+        # server-side, then drops the vector). 30s client timeout raced that
+        # window during the 2026-10-07 queue backlog — publish=FAIL even though
+        # the doc saved. Give the server headroom; the write is idempotent.
+        with urllib.request.urlopen(req, timeout=120) as r:
             if r.status < 300:
                 pub[hkey] = h
                 try:
