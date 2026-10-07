@@ -11,7 +11,7 @@ services:
     volumes:
     - ./Caddyfile:/etc/caddy/Caddyfile
     - ./public:/srv/public
-    - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
+    - /home/tony/CascadeProjects/chaba-h3-tony-dell/public:/srv/public/chaba-h3
     - /home/tony/CascadeProjects/chaba-tony-dell/docs:/srv/docs
     - caddy_data:/data
     - caddy_config:/config
@@ -35,7 +35,7 @@ services:
   imagen2-inference:
     container_name: imagen2-inference
     build:
-      context: /home/tony/CascadeProjects/chaba-h3/inference2
+      context: /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
@@ -45,8 +45,8 @@ services:
     - VAE_ID=madebyollin/sdxl-vae-fp16-fix
     volumes:
     - /home/tony/.cache/huggingface:/root/.cache/huggingface
-    - /home/tony/CascadeProjects/chaba-h3/inference2/main.py:/app/main.py:ro
-    - /home/tony/CascadeProjects/chaba-h3/inference2/data:/app/data
+    - /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2/main.py:/app/main.py:ro
+    - /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2/data:/app/data
     ports:
     - 8000:8000
     deploy:

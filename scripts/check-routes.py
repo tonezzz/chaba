@@ -46,6 +46,10 @@ def check_route(r: dict) -> dict:
         base = base.strip("{}").split(",")[0].rstrip("*") or "/"
     res = {"id": rid, "kind": kind, "path": base, "owner": r.get("owner")}
 
+    if r.get("expect_down"):
+        return {**res, "ok": None,
+                "detail": "expected down — " + (r.get("note") or "off by design")}
+
     if kind == "alias":
         return {**res, "ok": None, "detail": "alias — edge redirect only"}
 

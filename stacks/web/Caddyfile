@@ -202,13 +202,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy 127.0.0.1:8006
 	}
 
-	handle /apps/notebooklm-cookies {
-		redir * /apps/notebooklm-cookies/ 308
-	}
-	handle_path /apps/notebooklm-cookies/* {
-		reverse_proxy 127.0.0.1:9876
-	}
-
 	handle /apps/yt-live {
 		redir * /apps/yt-live/ 308
 	}
@@ -412,15 +405,7 @@ http://127.0.0.1:8080 {
 		redir * /tony-omen/apps/imagen/api/ 308
 	}
 	handle_path /tony-omen/apps/imagen/api/* {
-		reverse_proxy imagen-inference:8000
-	}
-
-	handle /tony-omen/apps/imagen {
-		redir * /tony-omen/apps/imagen/ 308
-	}
-	handle_path /tony-omen/apps/imagen/* {
-		root * /srv/public/tony-omen/apps/imagen
-		file_server
+		reverse_proxy tony-omen.taila0626a.ts.net:8000
 	}
 
 

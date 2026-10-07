@@ -90,7 +90,8 @@ routes:
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
   - {id: dev-v0,           kind: proxy,  path: /apps/dev/v0/*,         strip: /apps/dev/v0, upstream: "127.0.0.1:8006", owner: chaba}
-  - {id: nlm-cookies,      kind: proxy,  path: /apps/notebooklm-cookies/*, strip: /apps/notebooklm-cookies, upstream: "127.0.0.1:9876", owner: chaba}
+  # nlm-cookies removed 2026-10-07: :9876 browser-cookie sidecar retired;
+  # notebooklm-rest :3011 owns auth (only consumer was ai-hub-extension preset)
   - {id: yt-live,          kind: static, path: /apps/yt-live/*,        hls: true, owner: chaba, note: "voice-dub media — cast fetches LAN:80 directly"}
   - {id: walldance-live,   kind: static, path: /apps/walldance-live/*, hls: true, owner: chaba}
   - {id: yolo-api,         kind: proxy,  path: /apps/yolo/api/*,       strip: /apps/yolo/api, upstream: "100.106.196.22:8780", owner: yolo}
@@ -110,9 +111,10 @@ routes:
   - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
   - {id: api-omen,         kind: proxy,  path: /api/*,                 upstream: "100.68.142.13:8000", owner: chaba, note: "catch-all — must stay last of the /api group"}
   - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "127.0.0.1:3003", upstream_host: localhost, owner: chaba, custom: true, note: "basePath-preserved multi-path matcher"}
-  - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate}
-  - {id: imagen-api,       kind: proxy,  path: /tony-omen/apps/imagen/api/*, strip: /tony-omen/apps/imagen/api, upstream: "imagen-inference:8000", owner: imagen}
-  - {id: imagen,           kind: static, path: /tony-omen/apps/imagen/*, owner: imagen}
+  - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate, expect_down: true, note: "on-demand NVR stack (frigate/) — stopped by design"}
+  - {id: imagen-api,       kind: proxy,  path: /tony-omen/apps/imagen/api/*, strip: /tony-omen/apps/imagen/api, upstream: "tony-omen.taila0626a.ts.net:8000", owner: imagen, expect_down: true, note: "GPU worker on tony-omen (ssot.services.yml) — pauses when laptop sleeps"}
+  # imagen static removed 2026-10-07: /tony-omen/apps/imagen dir never
+  # existed here; real placeholder is /apps/imagen2/ (own route needed if revived)
   - {id: trade-api,        kind: proxy,  path: "{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}", strip: /apps/trade, upstream: "100.68.142.13:9002", upstream_host: localhost, ws: true, owner: trade, custom: true, note: "three handle variants + /api/ws alias — hand block in renderer"}
   - {id: trade,            kind: static, path: /apps/trade/*,          owner: trade, headers: {Cache-Control: "public, max-age=3600"}}
   - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "127.0.0.1:1880", owner: nodered}
