@@ -1,0 +1,150 @@
+title: Nest-01 ops classifier — P0 verification + curriculum anchor
+subtitle: >
+  First cell of the Chaba Nest curriculum (card chaba-nest-models): a
+  pure-numpy dense MLP classifying Ada ops-event type. Dispatch verified the
+  claimed result reproduces (eval + full retrain), confirmed the honest-baseline
+  finding, and logged the durable record for the P1–P3 roadmap.
+icon: flask
+
+planning:
+  goal: >
+    Close out P0 of the chaba-nest-models vision card with proof, not
+    assertion: reproduce the 50.7% test-accuracy claim both zero-dependency
+    (eval.py, simulating a bare restored host) and end-to-end (train.py),
+    then leave the experiment's findings and roadmap in the SSOT trail.
+  scope: >
+    experiments/nest-01-ops-classifier/ (train.py, eval.py, model.npz,
+    ops-events.jsonl, README.md), docs/ssot/infrastructure/ssot.nest-brains.yml
+    registry entry, scripts/report-ai-edge.py feed, board card comms.
+  out_of_scope: >
+    P1 Flower local-sim federation (flwr not installed; sim backend pulls
+    ray — too heavy for an unattended verify dispatch and the card spec
+    says Flower specifically, not a stand-in), P2 architecture curriculum,
+    P3 evolution loop. These stay on the card as next actions.
+  success_criteria:
+    - eval.py --expect 0.507 exits 0 against the committed model.npz
+    - train.py re-run reproduces 0.507 test accuracy deterministically
+    - The majority-baseline gap is recorded honestly (it is the finding)
+    - Job report + card comms posted; outcome file written
+  owner: devin (dispatch)
+  related_focus:
+    - label: chaba-nest-models
+      file: docs/ssot/kanban/cards/chaba-nest-models.yml
+    - label: nest-portable-brains
+      file: docs/ssot/kanban/cards/nest-portable-brains.yml
+    - label: nest-edge-vision
+      file: docs/ssot/kanban/cards/nest-edge-vision.yml
+
+processing:
+  status: done
+  started_at: "2026-10-07 21:15 +07"
+  steps:
+    - id: 1
+      label: Zero-dependency continuity check
+      status: done
+      notes: >
+        `python3 eval.py --expect 0.507` in experiments/nest-01-ops-classifier
+        → "test_accuracy: 0.507 (203/400) classes=13 host-eval / OK: within
+        0.03 of checkpoint score". eval.py parses model.npz with stdlib only
+        (zipfile+struct) — this is the brain manifest's resume.verify command,
+        proven to work on hosts without numpy (mn01 respawn already verified
+        per ssot.nest-brains.yml status packed-verified).
+    - id: 2
+      label: Full retrain reproduction
+      status: done
+      notes: >
+        `python3 train.py` → identical result: n=2000, din=27, 13 classes,
+        temporal 80/20 split (1600/400), loss 0.635→0.066 over 60 epochs,
+        test accuracy 0.507 (203/400), 10KB weights. rng seeded (42) so the
+        run is bit-deterministic; regenerated model.npz differed only in zip
+        timestamps, restored to keep the diff clean.
+    - id: 3
+      label: Honest-baseline review
+      status: done
+      notes: >
+        Confusion matrix confirms the README's claims: model beats chance
+        (~8%) decisively but trails the test-window majority baseline (61%)
+        — the test period is dominated by a jev_advisory wave the train
+        window didn't see (139/244 jev_advisory rows misclassified as
+        confirm_strip, its nearest feature neighbor). Several rare classes
+        (smoke_test, tool_storm, voiceprint_drift) get zero test predictions.
+        The 81% tool→type lookup ceiling bounds any architecture on these
+        features.
+    - id: 4
+      label: Feed + registry check
+      status: done
+      notes: >
+        scripts/report-ai-edge.py exists per cms-reports leaf contract
+        (arXiv/HF/GitHub deterministic pulls → reports/ai-edge/ + CMS
+        ai-edge-report page); systemd/report-ai-edge.timer OnCalendar=Mon
+        06:00, installed. ssot.nest-brains.yml already carries the entity
+        with status packed-verified — no registry edit needed.
+  decisions:
+    - label: Verified rather than re-derived
+      rationale: >
+        The experiment landed in commits 95b149bf (model+feed) and 227fb606
+        (eval harness + pack/restore tooling) earlier the same day. The open
+        gap was a durable verified record, not new code — card column was
+        still `todo` with the result only in the spec field and README.
+      alternatives_considered: >
+        Starting P1 Flower sim — rejected: flwr absent, sim mode pulls ray
+        (heavy unattended install), and the spec's P1 is a distinct phase
+        that deserves its own dispatched session with a decision on sim
+        vs syft-flwr file-based transport for intermittent hosts.
+    - label: Majority-baseline gap reported as a finding, not a failure
+      rationale: >
+        50.7% < 61% baseline on the drifted test window is the point of the
+        exercise — it proves temporal split catches what IID shuffling hides.
+        The classifier's value is the pipeline + lessons, not the score.
+      alternatives_considered: >
+        Tuning to beat baseline (e.g. majority-prior blend) — would launder
+        the drift finding into a number, exactly the dishonesty the temporal
+        split exists to prevent.
+
+changes:
+  - file: docs/ssot/jobs/experiments/2026-10-07-nest-01-ops-classifier.yml
+    summary: This report — P0 verified, lessons + roadmap recorded.
+  # No code changes. model.npz retrained bit-identical (restored).
+
+followup:
+  verification:
+    - "cd experiments/nest-01-ops-classifier && python3 eval.py --expect 0.507 → OK"
+    - "cd experiments/nest-01-ops-classifier && python3 train.py → test accuracy 0.507, 10KB weights"
+    - "cat docs/ssot/infrastructure/ssot.nest-brains.yml → entity nest-01 status: packed-verified"
+  handoff:
+    - "P1 next session: install flwr in a venv (not system python), run local-sim FedAvg on the nest-01 MLP shape — split ops-events.jsonl into 2-4 client shards; decision needed: Flower sim vs syft-flwr file-based for the omen↔mn01 real 2-node step (intermittent hosts favor file-based)"
+    - "P2: curriculum cells per card spec — CNN edge vision (nest-edge-vision card), LSTM sunsynk power series (nest-02 candidate per README), autoencoder anomaly detection; log each to MDDB bench collection"
+    - "P3: NEAT/OpenEvolve population vs orch-bench as fitness; keep winners as brain versions (nest-brain-pack.sh already does the packaging)"
+  deferred:
+    - "Feature engineering to lift the 81% ceiling: event-context features (prior event type, host, session id) — belongs to nest-01b if pursued"
+    - "smoke_test/tool_storm/voiceprint_drift have zero test support — corpus growth or class merge needed before those classes are learnable"
+
+report:
+  status: done
+  completed_at: "2026-10-07 21:30 +07"
+  summary: >
+    P0 of chaba-nest-models verified end-to-end: nest-01-ops-classifier is a
+    116-line pure-numpy MLP (27→32→13, softmax+SGD, capped class weights)
+    trained on 2000 real Ada ops events; deterministic retrain reproduces
+    50.7% test accuracy vs ~8% chance on a temporal 80/20 split, and the
+    zero-dependency eval.py reproduces it from model.npz alone — the exact
+    continuity check a brain respawn needs. The score trails the drifted
+    test window's 61% majority baseline, which is the curriculum's first
+    real lesson: features bound accuracy (tool→type ceiling 81%), imbalance
+    collapses naive training, and only a time-ordered split reveals drift.
+    The 10KB artifact is the right shape for per-node micro models — the
+    vision premise holds even where this task's features cap the score.
+    Continuous-education feed (report-ai-edge.py, Mon 06:00 → CMS
+    ai-edge-report) is live. P1 (Flower federation), P2 (architecture
+    curriculum → MDDB bench), P3 (NEAT evolution loop) remain on the card.
+  metrics:
+    - {metric: test_accuracy, value: 0.507, n: "203/400", suite: orch-bench}
+    - {metric: chance_level, value: 0.08, note: "13 classes"}
+    - {metric: majority_baseline_test, value: 0.61, note: "drifted window — jev_advisory wave"}
+    - {metric: tool_to_type_ceiling, value: 0.81, note: "feature bound"}
+    - {metric: model_size_kb, value: 10, note: "npz float64 weights"}
+  artifacts:
+    - experiments/nest-01-ops-classifier/ (README, train.py, eval.py, model.npz, ops-events.jsonl)
+    - scripts/report-ai-edge.py + systemd/report-ai-edge.{service,timer}
+    - docs/ssot/infrastructure/ssot.nest-brains.yml (entity: packed-verified)
+    - docs/kb/nest-portable-brains-research.md
