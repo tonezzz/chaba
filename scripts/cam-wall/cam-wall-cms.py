@@ -998,17 +998,20 @@ def main() -> int:
                       == "archive")}
 
     for zone, m in zones.items():
+        zcls = zone_cls(zone)  # per-zone — reusing `cls` from the grouping
+        # loop above stamped every wall with the last zone's title ("Noble
+        # Club" on all 8 walls, observed 2026-10-07)
         for lang in ("en", "th"):
             ok &= mddb_add(
                 wall_key(zone),
                 wall_page(zone, m["manifest"], m["state"], lang),
-                _t(lang, f"CCTV Wall: {cls['area']}",
-                   f"กำแพงกล้อง: {cls['area_th']}"),
+                _t(lang, f"CCTV Wall: {zcls['area']}",
+                   f"กำแพงกล้อง: {zcls['area_th']}"),
                 lang=lang, summary=_t(lang, zone_info(zone, "en"),
                                       zone_info(zone, "th")),
                 sources=[f"zone:{zone}", "cam-wall-manifest",
                          "cam-wall-state", "cam-wall-detections"],
-                classification=cls,
+                classification=zcls,
                 supersedes=links.get(wall_key(zone)),
                 force=wall_key(zone) in revive)
     # multi-zone pages tag every tab/group/site they span
