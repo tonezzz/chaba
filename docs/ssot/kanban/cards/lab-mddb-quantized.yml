@@ -7,9 +7,15 @@ lab:
     the 12G idc01 leader
   metric: recall@10 >= 0.95 vs flat AND RSS reduction >= 25% on the ada-* banks
   review_by: '2026-10-18'
-note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to
-  keep leader stable.'
-updated: 2026-10-06 21:17
+note: 'BENCHED 2026-10-08 (docs/ssot/jobs/mddb/2026-10-08-mddb-flat-vs-quantized-bench.yml): hypothesis REJECTED on all
+  three metrics — recall@10 vs flat 0.62-0.94 (mean .87 prod, .87 at oversample=10; threshold .95), no measurable
+  RSS/heap reduction (1.20GB flat vs 1.23GB int8+diskOnly; vector index is a small slice vs FTS+bolt), latency
+  worse on large colls (host-logs 225 vs 111ms, devin-tony 89 vs 50ms). RECOMMENDATION: revert the 6 prod
+  int8+diskOnly colls to float32 (ada-ha-bank-devin-tony, ada-ha-events-michael, ada-ha-events-tony,
+  ada-ha-scenario-reports, host-logs, yomi-digest) — flat costs ~470MB index RAM but is faster + more accurate.
+  int4 much worse (.68 mean). Side finding: .92 flat-vs-flat noise floor from score-tie churn (unstable sort +
+  map order) — worth a deterministic tiebreak fix.'
+updated: 2026-10-08 06:55
 comms:
 - at: 2026-10-05 22:55
   from: tony

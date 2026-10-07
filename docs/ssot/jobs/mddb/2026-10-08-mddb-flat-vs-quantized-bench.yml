@@ -1,0 +1,57 @@
+title: 'Bench: mddb flat vs quantized vectors (lab-mddb-quantized)'
+subtitle: Hypothesis rejected — int8+diskOnly loses on recall, latency AND RAM; revert 6 colls to float32
+icon: flask
+
+decision:
+  summary: >
+    Benched flat vs quantized vector indexes on a scratch mddbd (image
+    localhost/mddb:2.15.4-lsn, same as prod) on idc01 over a consistent
+    /v1/backup copy of the follower DB — leader and follower untouched.
+    9 collections x 25 queries (20 stored + 5 synthetic vectors), doc-level
+    recall@10 measured against flat-served results on identical data across
+    restart-separated config states (prod, all-flat, int8-in-mem,
+    int8+diskOnly, int4+diskOnly, plus flat2 noise control and oversample=10
+    probe). VERDICT: hypothesis rejected on all three card metrics.
+  scorecard: >
+    recall@10 vs flat, quantized colls, prod path (int8+diskOnly):
+    devin-tony .720, events-tony .616, scenario-reports .940, yomi-digest
+    .932, host-logs .872 — mean .874 all / ~.82 quantized-only, vs .95
+    threshold. Raw int8 ANN (no rescore) .70; oversample=10 .87; int4 .68.
+    Latency p50: host-logs 111ms flat -> 225ms int8+diskOnly (+103%),
+    devin-tony 50 -> 89ms; small colls ~equal. Memory: heap_inuse 1.203GB
+    flat vs 1.227GB int8+diskOnly — no saving (vector index ~700->210MB
+    theoretical but dominated by FTS/bolt/Go). Storage on disk unchanged:
+    diskOnly keeps float32 vectors in bolt for rescore.
+  recommendation: >
+    Revert the 6 production int8+diskOnly collections to float32:
+    ada-ha-bank-devin-tony, ada-ha-events-michael, ada-ha-events-tony,
+    ada-ha-scenario-reports, host-logs, yomi-digest. Flat costs ~470MB more
+    index RAM — trivial on 31GB idc01 / 16GB idc03 — and is faster and more
+    accurate. Quantization only makes sense where flat genuinely cannot fit;
+    int4 is not viable (mean .68, host-logs .34).
+  method_notes: >
+    DB copy MUST come from /v1/backup (read-tx WriteTo + self-verify) —
+    plain cp of the live bolt file produced a torn copy (opens, then panics
+    walking buckets; replication writes race). Follower has no embedding
+    provider, so queries used stored vectors directly. The quantized index
+    only holds collections with quantization configured, and algorithm=flat
+    silently reroutes to quantized for them — flat baseline only reachable
+    before configuring quantization.
+  side_findings: >
+    (a) flat-vs-flat noise floor .92 mean: top-10 result sets churn across
+    restarts inside dense score-tie bands (events-tony top1-top10 span
+    .0056, snapshots .0013) — unstable sort + map order + oversample window;
+    a deterministic tiebreak (SliceStable + key) would make results
+    reproducible. (b) int8 cosine is a scalar Go loop vs flat's SIMD f32 dot
+    — quantization saves bytes, not cycles, on this hardware. (c) int4
+    collapses on large/skewed collections.
+  artifacts: >
+    reports/bench-mddb-quantized-artifacts-2026-10-08.tgz (untracked,
+    worktree-local): driver scripts, per-state served rows, truth,
+    scorecard.json. Live results JSON under /tmp/mddb-bench/results on
+    tony-omen (ephemeral).
+  verified: >
+    Bench instance verified vs follower (same image, same DB copy,
+    index_ready, self-match score 1.0 on both flat and quantized+rescore
+    paths). Follower stayed active throughout; bench container + 8GB
+    scratch data removed after.
