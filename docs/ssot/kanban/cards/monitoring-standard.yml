@@ -1,6 +1,6 @@
 id: monitoring-standard
 title: Monitoring standard — ever-evolving healthcheck + attention report
-column: doing
+column: review
 priority: high
 note: 'Design: docs/kb/monitoring-standard-design-2026-10-07.md — five layers (declare→execute→aggregate→report→escalate),
   action-first report, coverage lint as the evolve-hook, zero-LLM detection rule. P0 lint DONE: scripts/monitor-coverage-lint.py
@@ -12,11 +12,13 @@ note: 'Design: docs/kb/monitoring-standard-design-2026-10-07.md — five layers 
   auto-request.
 
   '
-updated: 2026-10-07 16:44
+updated: 2026-10-07 17:08
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 cks` to pg on `omen:localhost` — the table stays empty; that''s an mcp-health config fix. | devin-task-20261007-164406-monitoring-standard-ever-evolv.service:
+    Consumed 3min 36.682s CPU time over 24min 13.230s wall clock time, 1G memory peak.'
 comms:
 - at: 2026-10-07 16:43
   from: tony
@@ -34,3 +36,13 @@ comms:
     API → P2 auth-validity track). Found mcp-link-monitor dead on mn01 despite services.yml active — re-enabled.
     Tony approved critical→telegram ANYTIME (2026-10-07); keep allowlist tight: Ada-facing path, auth broken, data-loss
     risk.'
+- at: 2026-10-07 17:07
+  from: devin
+  text: 'P1 done in wt-164406 (fef11946): ops-state.py aggregator (7 sources) -> ops-state.yml + /apps/ops-health
+    page + critical→telegram via openclaw (deduped). Bonus miss→lint: fixed dup YAML keys silently unloading api+queue
+    health files; lint now strict-parses. Needs on dell: render-jobs.py --host tony_dell --install. P2/P3 remain.'
+- at: 2026-10-07 17:08
+  from: tony-omen
+  text: 'finished (ok): exit=0 cks` to pg on `omen:localhost` — the table stays empty; that''s an mcp-health config
+    fix. | devin-task-20261007-16'
+claim: {}
