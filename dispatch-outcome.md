@@ -1,28 +1,69 @@
-# Dispatch outcome — idc01→idc03 migration Phase 1 (inventory + plan)
+# Dispatch outcome — precommit-warning-baseline
 
-**Result: done.** Read-only inventory of idc01 and idc03 completed; no production changes made.
+Shipped card option (a): the committed `reports/SSOT_OPTIMIZATION_WARNINGS.json`
+is now the known-warnings baseline, and the commit-time SSOT gate fails only on
+warnings absent from it — new debt. Known debt no longer blocks merge commits or
+dispatch-branch landings, so `--no-verify` and foreign-host commits are no longer
+needed for that reason.
 
-## Deliverables (in this worktree)
+## Changes (commit 46f8fcc on dispatch/20261007-231022-options-a-baseline-file-report)
 
-- `docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md` — full inventory, per-item migrate/retire decisions + dependency order, idc03 capacity check, cutover+rollback per item, what-stays list, 9 flagged approvals.
-- `docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml` — job-lifecycle artifact.
+- `scripts/ssot-optimize-gate.mjs` (new) — compares the freshly generated
+  warnings file against the baseline (staged blob first, so a commit can carry
+  warnings + baseline update together; else HEAD; missing baseline = advisory
+  pass). Warning text is digit-normalized for matching, so a known warning
+  whose counts drift ("404 lines" vs "400 lines") is not treated as new debt.
+- `.husky/pre-commit` — the `METRICS > 0 → fail` block replaced by a call to
+  the gate; the hook now snapshots the baseline file's state before the
+  optimizer rewrites it and restores it afterwards (index / HEAD / delete
+  scratch) so the tree doesn't stay perpetually dirty.
+- `.gitignore` — `reports/` → `reports/*` + `!reports/SSOT_OPTIMIZATION_WARNINGS.json`
+  (dir-level ignore can't be negated inside; file stages with plain `git add`).
+- `reports/SSOT_OPTIMIZATION_WARNINGS.json` — seeded from a FULL
+  `ssot-optimize.mjs` run on `origin/master` (bc172cc, via a scratch worktree),
+  not this 126-commits-behind branch, so the landing merge doesn't trip on
+  master's current warnings.
+- `.github/workflows/ssot.yml` — "Verify no warnings" now runs the same gate
+  (log-reference issues still hard-fail). This also un-reds the workflow, which
+  was failing on every docs/ssot push since the bloat warning appeared.
+- `docs/ssot/infrastructure/ssot.quality.yml` — ci.ssot-optimize entry updated.
+- `docs/ssot/jobs/infrastructure/2026-10-07-precommit-warning-baseline.yml` —
+  decision/runbook trail (why (a) over (b): the inbox-ack path is hardcoded to
+  the served checkout, so it's host-dependent — wrong in worktrees and other
+  hosts).
+- Card moved to `done` with a comms entry.
 
-## Key findings
+## How to silence a warning going forward
 
-- **idc01** (157.85.110.99 / 100.74.146.0, Siamdata): 2 vCPU, **31 GiB RAM** (SSOT says 8–12 G — drift), 96 G disk / 60 G used. Runs: **9 containers** (mddb leader, ollama, gemini-ollama-proxy, caddy-edge, camwall-edge, input-bridge, mddb-panel, vcast-headless ×2), **20 service units** (ada-pi-pwa/tony/michael/dev, line+tg relays, obsidian-vault, doc-archive, jev-student), **22 enabled timers**, no cron. ~30 G state (~12 G essential; 17 G is mddb-backups). Public TLS: `api.surf-thailand.com` (CF-proxied → :8001 + webhook routes) + sslip name. Tailscale serve → :8001-8004. ufw: public 80/443 only.
-- **idc03** (157.85.102.125 / 100.102.134.91, Siamdata): tailnet-joined today ~13:15Z, online, but **ssh denied for every key** (tony/root from dell; idc01/idc02→idc03 also denied). Public :22 open (not yet hardened). **Capacity unverified — Phase-2 blocker, needs Tony to authorize a key via the provider panel.**
-- Surprises: `input-bridge` binds **0.0.0.0:3010** (SSOT claims tailnet-pinned; ufw is the only guard); `doc-archive` listens on tailnet **:11025** — undocumented in security SSOT; `chaba-vault` repo on idc01 has **41 dirty files** (reconcile before rsync); `ada-dev` :8005 running but unit disabled; mddb quadlet has inline secrets to move to EnvironmentFile; ~18 orphan podman volumes + retired open-notebook residue marked retire/drop.
-- Plan approach per card: mddb via replication (follower on idc03 → promote → idc02 repoints leader), then services+secrets via rsync, caddy-edge + CF DNS repoint last, 24–48 h soak. idc01 stays untouched until soak — every rollback is "repoint back".
-
-## How to verify
-
-```bash
-cat docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
-ssh idc01 'podman ps; systemctl --user list-timers --all | wc -l'   # spot-check inventory
-tailscale status | grep idc03                                       # 100.102.134.91 online
-ssh tony@100.102.134.91 hostname                                    # currently: Permission denied (the blocker)
+```
+node scripts/ssot-optimize.mjs          # full run — do NOT use --staged
+git add reports/SSOT_OPTIMIZATION_WARNINGS.json
+git commit                              # baseline diff is the audit trail
 ```
 
-## Waiting on Tony (flagged, non-blocking for Phase 1)
+## Verified
 
-idc03 ssh authorization is the only hard blocker for Phase 2. Other approvals (DNS repoint, mddb promotion, backups scope, chaba-vault dirty files, ada-dev, mn01 aliases, idc01 keep-vs-cancel) are listed in §Flags of the plan.
+- `bash .husky/pre-commit` with clean SSOT staged → pass.
+- Staging a new SSOT file producing warnings → hook fails, listing exactly the
+  new warnings.
+- Staging `kanban/ssot.kanban.yml` (baselined bloat warning) → pass; warnings
+  file restored clean in the worktree afterwards.
+- Baseline resolves from index (covers HEAD since index holds tracked blobs);
+  a staged baseline update is honored in the same commit.
+
+## Found while here (flagged on the card, not fixed)
+
+- `docs/ssot/jobs/reports/2026-10-07-hosting-provider-intl.yml` and
+  `docs/ssot/jobs/yt-dub/2026-10-06-yt-voice-dub-cuefit.yml` have REAL YAML
+  syntax errors on master (plain scalars swallowing `key:` lines) — likely
+  committed by the kanban auto-committer outside the hook. Baselined as known
+  debt; worth a follow-up fix card.
+- Every `ssot-optimize.mjs` run rewrites `docs/ssot/ssot.dev-system.assessment.yml`
+  with the local checkout's metrics (pre-existing side effect).
+
+## Note
+
+hooksPath is not armed in this dispatch worktree, so the hook was verified by
+invoking `bash .husky/pre-commit` directly (identical to how git runs it). The
+new gate takes effect everywhere `scripts/install-hooks.sh` has armed
+`.husky` — including the served checkout where the original failure occurred.
