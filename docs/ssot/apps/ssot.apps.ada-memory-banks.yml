@@ -561,10 +561,14 @@ person_policies:
 # Per-identity actuation ACL — which HA control tools a session may use.
 # Same identity resolution as person_policies. {full: true} bypasses the
 # policy layer (the global danger-pattern floor and confirmed= flow still
-# apply). Otherwise: allow_domains whitelists entity domains (absent from
-# it = denied), deny_domains/deny_entities always deny. Restricted
-# identities still can't actuate dangerous domains (lock/cover/alarm/…)
-# because the global deny floor already blocks them.
+# apply). Otherwise the check order is:
+#   deny_entities/deny_domains  — always deny (beat everything)
+#   device-grants.json overlay  — runtime admin grants (ada_device_acl
+#     tool), allow the entity even when allowlists wouldn't
+#   allow_entities (non-empty)  — exact-entity whitelist
+#   allow_domains  (non-empty)  — domain whitelist (absent = denied)
+# Restricted identities still can't actuate dangerous domains
+# (lock/cover/alarm/…) — the global deny floor already blocks them.
 control_policies:
   admin:        {full: true}
   person.tony: {full: true}
