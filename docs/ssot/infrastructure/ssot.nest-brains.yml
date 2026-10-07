@@ -1,0 +1,103 @@
+id: ssot.nest-brains
+title: Nest Portable Brains — manifest schema + entity registry
+subtitle: Versioned entity-state bundles on gdrive for respawn-anywhere
+category: infrastructure
+status: draft
+source_of_truth: true
+research_doc: docs/kb/nest-portable-brains-research.md
+card: docs/ssot/kanban/cards/nest-portable-brains.yml
+
+# Every brain bundle is gdrive:nest/brains/<entity>/<version>/ containing
+# manifest.yml + blobs. Bundles are append-only; `latest` pointer is a
+# small mutable file in <entity>/ naming the current version.
+brain_store: gdrive:nest/brains/
+
+manifest_schema:
+  required:
+    entity: 'string — stable id, e.g. nest-01-ops-classifier'
+    version: 'string — ISO ts + short sha, e.g. 20261007-1545-a1b2c3'
+    created:
+      at: 'ISO-8601 timestamp'
+      on_host: 'hostname that packed it, e.g. tony-dell'
+    blobs: 'list of {path, sha256, bytes, role}'
+    resume:
+      hydrate: 'shell command or unit name that starts the entity'
+      verify: 'command that proves continuity (bench-diff / healthcheck)'
+    bench:
+      score: 'float — metric at checkpoint time'
+      metric: 'name, e.g. test_accuracy'
+      suite: 'bench id for cross-host comparability'
+  optional:
+    parent_version: 'string — previous brain this supersedes'
+    rpo_marker: 'last-processed offset/ts — what the resume skips'
+    sensitivity: 'public | internal | sensitive (sensitive ⇒ rclone crypt remote)'
+    epoch: 'int — fencing token; higher wins on respawn conflicts'
+    notes: 'free text'
+
+  blob_roles:
+    weights: 'model weights — npz/GGUF/ONNX/safetensors'
+    memory: 'entity-local memory slice (NOT shared banks — those replicate via MDDB)'
+    config: 'unit file, flags, prompt, tool surface'
+    corpus: 'training/eval data delta since parent'
+    state: 'resume anchors — offsets, counters, rng seed'
+
+  # Drive-side discovery: pack sets appProperties on the version dir:
+  #   entity, version, epoch, sensitivity
+  # so `files.list?q=appProperties has {key='entity' and value='X'}`
+  # finds latest without path walking.
+
+entities:
+  - entity: nest-01-ops-classifier
+    tier: micro            # <50MB — 60s respawn target
+    path: experiments/nest-01-ops-classifier/   # in chaba repo
+    blobs:
+      - {path: model.npz, role: weights, bytes_approx: 10240}
+      - {path: train.py, role: config}
+      - {path: ops-events.jsonl, role: corpus, bytes_approx: 200000}
+      - {path: README.md, role: config}
+    bench: {metric: test_accuracy, suite: orch-bench, score: 0.507}
+    sensitivity: internal
+    status: candidate-mvp  # smallest real brain; pack/restore MVP subject
+
+  - entity: jev-student
+    tier: small            # ~520MB per checkpoint
+    path: idc01:~/jev-student/   # checkpoints v1/v2 already on gdrive:archive/jev-student/
+    blobs:
+      - {path: model.safetensors, role: weights, bytes_approx: 541000000}
+      - {path: tokenizer.json+config.json, role: config}
+      - {path: training-corpus, role: corpus}
+    bench: {metric: bench_score, suite: jev-decision-bench}
+    sensitivity: internal
+    status: candidate    # ckpt-v0-deployed live on idc01; v1/v2 archived = dry run
+
+  - entity: orch-bench-corpus
+    tier: micro
+    path: chaba tests/bench/ corpus-in/corpus-out
+    blobs:
+      - {path: corpus/, role: corpus}
+      - {path: topologies.yml, role: config}
+    bench: {metric: topology_score, suite: orch-bench}
+    sensitivity: internal
+    status: candidate    # corpus growth IS collective memory — high-value brain
+
+  - entity: nest-edge-vision-models
+    tier: micro
+    path: ada-pi pwa/vendor + /apps/eye/ (planned)
+    blobs:
+      - {path: yolov8n-int8.onnx, role: weights, bytes_approx: 12000000}
+    bench: {metric: fps_inference_ms, suite: bench-edge}
+    sensitivity: public   # public model weights, no memory
+    status: future        # entity doesn't exist yet — card nest-edge-vision
+
+policy_defaults:
+  checkpoint_cadence: 'on-bench-improvement + daily timer (whichever first)'
+  retention_versions: 5          # per entity, keep `latest` + 4
+  fencing: 'epoch increments on every respawn; refuse hydrate if remote epoch > local'
+  respawn_authority: manual      # until confirm-gate pattern is proven
+  memory_policy: per-entity      # sensitive ⇒ crypt remote; absent ⇒ amnesiac respawn
+
+open_questions:
+  - 'Brain boundary: which of memory/corpus deltas is "just enough"? bench-diff decides'
+  - 'Crypt remote setup for sensitive brains (rclone crypt over gdrive:)'
+  - 'Warm tier: mirror latest brains on 1-2 tailnet hosts for <5s fetch?'
+  - 'Whether MDDB-replicated memory belongs in brains at all (probably not — it already syncs)'
