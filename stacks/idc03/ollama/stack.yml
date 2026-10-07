@@ -7,8 +7,10 @@ verify: >-
   curl -sf http://100.102.134.91:11434/api/tags -o /dev/null
 requires:
   - "tool:podman"
-state:
-  - "podman volume ollama-data — model store"
+  - "vol:ollama-data — model store (podman named volume)"
+state: []
+ports:
+  - "100.102.134.91:11434 — Ollama API (tailnet)"
 restore: >-
   podman start + pull the embed models; idc01 has the same image stopped
   (warm standby).

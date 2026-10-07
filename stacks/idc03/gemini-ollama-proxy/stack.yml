@@ -12,6 +12,8 @@ requires:
   - "tcp:100.102.134.91:11434 — ollama (self)"
 state:
   - "~/.config/containers/mddb/proxy — proxy code"
+ports:
+  - "127.0.0.1:11435 — Gemini-shaped embeddings API"
 restore: "Restart on same host; standby copy installed on idc01."
 related_cards: [idc01-return-role]
 status: deployed

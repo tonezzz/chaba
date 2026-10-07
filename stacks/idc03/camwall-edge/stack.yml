@@ -12,6 +12,8 @@ requires:
 state:
   - "~/.local/share/camwall — thumbnails + feed state"
   - "~/.config/camwall-edge — edge Caddyfile"
+ports:
+  - "100.102.134.91:8380 — tailnet http"
 restore: >-
   Re-run camwall puller (camwall.service) to rebuild thumbnails; edge is
   stateless beyond the feed dir.

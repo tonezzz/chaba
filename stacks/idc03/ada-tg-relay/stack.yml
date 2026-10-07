@@ -12,6 +12,8 @@ requires:
   - "tcp:127.0.0.1:8002 — ada-ha-tony"
 state:
   - "~/CascadeProjects/ada-voice — shared app code"
+ports:
+  - "127.0.0.1:8911 — Telegram webhook relay"
 restore: "Standby unit on idc01; part of the ada-* failover bundle."
 related_cards: [idc01-return-role]
 status: deployed

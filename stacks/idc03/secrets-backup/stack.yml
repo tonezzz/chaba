@@ -21,6 +21,7 @@ requires:
   - "remote-tool:tony-dell-m2m:age — restore needs it there"
 state:
   - "~/.config/secrets — source set must exist"
+ports: []  # timer-driven oneshot; binds nothing
 restore: >-
   On a recovery host: age -d -i ~/.config/secrets/backup-age.key
   ~/secrets-backup/secrets-<stamp>.tar.age | tar xz -C ~/

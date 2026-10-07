@@ -9,6 +9,8 @@ requires:
   - "tcp:100.102.134.91:11023 — mddb leader (self)"
 state:
   - "~/mddb-panel — server.js panel config"
+ports:
+  - "100.102.134.91:3002 — panel UI (tailnet)"
 restore: "Restart on same host; trivially relocatable."
 related_cards: [idc01-return-role]
 status: deployed

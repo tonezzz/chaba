@@ -14,6 +14,8 @@ requires:
   - "tcp:100.102.134.91:11434 — ollama (self, embeddings)"
 state:
   - "~/CascadeProjects/ada-voice — app code + .venv"
+ports:
+  - "127.0.0.1:8001 — uvicorn pwa_server"
 restore: >-
   Standby on idc01: same unit installed, envs already point at idc03.
   systemctl --user start ada-pi-pwa there (~181s warm boot).

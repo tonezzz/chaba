@@ -17,6 +17,9 @@ requires:
 state:
   - "~/.config/containers/mddb-follower/data — DB lives here"
   - "~/.config/containers/mddb-follower/vaults — blob vaults"
+ports:
+  - "100.74.146.0:11123 — HTTP API"
+  - "100.74.146.0:11124 — replication gRPC"
 restore: >-
   Fresh seed: stop, wipe data/, start — the follower pulls a full snapshot
   (~4min for 6.6GB). Promote: set MDDB_REPLICATION_ROLE=leader + remove

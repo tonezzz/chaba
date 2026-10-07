@@ -14,6 +14,11 @@ state:
   - "~/.config/containers/caddy/data — ACME certs/accounts (sync to
      standby via secrets-backup)"
   - "~/.config/containers/caddy/config — caddy runtime config"
+ports:
+  - "157.85.102.125:80 — public http"
+  - "157.85.102.125:443 — public https"
+  - "100.102.134.91:80 — tailnet http"
+  - "100.102.134.91:443 — tailnet https"
 restore: >-
   Standby edge on idc01 answers already — repoint api.surf-thailand.com
   CF record to 157.85.110.99, then start backends there.

@@ -17,6 +17,10 @@ state:
   - "~/.config/containers/mddb/data — leader DB + binlog"
   - "~/.config/containers/mddb/vaults — blob vaults"
   - "~/mddb-backups — nightly .db land here (mddb-backup.timer 02:30)"
+ports:
+  - "100.102.134.91:11023 — HTTP API"
+  - "100.102.134.91:11024 — replication gRPC"
+  - "100.102.134.91:9000 — MCP"
 restore: >-
   Replica path (fast): promote a follower (see stacks/idc01/mddb-follower).
   Backup path: copy latest mddb-*.db into data/, start — cold restore is

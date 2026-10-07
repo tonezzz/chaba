@@ -14,6 +14,8 @@ requires:
   - "ssh:tony-dell-m2m — doc-mirror writes via ssh to tony-dell"
 state:
   - "~/.local/share/doc-archive — venv + archive store"
+ports:
+  - "100.102.134.91:11025 — archive API (tailnet)"
 restore: >-
   envs + venv portable; doc-mirror needs ~/.config/rclone/rclone.conf
   (covered by secrets-backup).
