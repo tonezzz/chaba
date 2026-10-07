@@ -102,6 +102,10 @@ def _data_isolation_scan(rel, content, warnings):
     # its own warnings and deadlock the auto-committer
     if 'focus-inbox' in rel:
         return
+    # jobs/ records are operational history — they quote real endpoints and
+    # IPs from the work they document (e.g. migrations naming hosts by IP)
+    if 'jobs/' in rel:
+        return
     for match in IP4_RE.finditer(content):
         # Skip loopback, Tailscale, wildcard bind, and documented home subnets
         ip = match.group(0)
