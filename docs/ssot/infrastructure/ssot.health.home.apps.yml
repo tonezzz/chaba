@@ -110,6 +110,18 @@ services:
   - mobile
   host: tony_dell
   note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-eye
+  name: Eye
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/eye/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-charts3d
   name: 3D Charts Demo
   type: http
@@ -650,32 +662,3 @@ services:
   - mobile
   host: yomi
   note: Auto-generated from stacks/web/public/apps/apps.yml
-- id: obsidian-vault
-  name: Obsidian vault web app
-  type: systemd
-  service: obsidian-vault.service
-  expected_state: active
-  timeout: 5
-  category: apps
-  profiles:
-  - home
-  - mobile
-  host: idc03
-  note: Ada Memory Vault browser at 127.0.0.1:8004 on idc03, tailnet-only via serve :8443. Canonical vault rsynced from mn01.
-  recovery_actions:
-  - 'Restart: ssh idc03 systemctl --user restart obsidian-vault.service'
-  - 'Probe: https://idc03.taila0626a.ts.net:8443/'
-- id: ada-dev
-  name: Ada dev/lab instance
-  type: systemd
-  service: ada-dev.service
-  expected_state: active
-  timeout: 5
-  category: apps
-  profiles:
-  - home
-  host: idc03
-  note: Isolated dev lane on idc03:8005 (ADA_INSTANCE_ID=dev). HA/camera tools excluded by design.
-  recovery_actions:
-  - 'Restart: ssh idc03 systemctl --user restart ada-dev.service'
-  - 'Scenario probe: memory_confirm_gate ws://127.0.0.1:8005/ws'
