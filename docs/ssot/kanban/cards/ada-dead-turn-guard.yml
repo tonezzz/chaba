@@ -29,19 +29,13 @@ action:
 expected_goals:
 - id: dead-turn-test
   label: dead-turn regression test exists and passes
-  check:
-    run: cd /home/tony/CascadeProjects/ada-pi && ./venv/bin/python -m unittest discover -s tests -k dead -v
-    expect: exit 0
+  check: command cd /home/tony/CascadeProjects/ada-pi && ./.venv/bin/python -m unittest tests.test_dead_turn expect OK
 - id: sanitizer-strip
   label: tool-call-shaped text stripped before transcript
-  check:
-    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "leak_detected\|tool_call_leak\|_sanitize" backend/realtime_provider.py
-    expect: exit 0
+  check: command grep -rn "leak_detected\|_GENERIC_TOOL_LEAK_RE" /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
 - id: hit-truncation
   label: memory search hit content capped
-  check:
-    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "truncat\|max_content\|2000\|2048" backend/tool_runner/*.py backend/mddb_client.py
-    expect: exit 0
+  check: command grep -rn "MEMORY_HIT_CONTENT_MAX\|_cap_hit_content" /home/tony/CascadeProjects/ada-pi/backend/tool_runner/memory.py
 comms:
 - at: 2026-10-07 18:05
   from: devin
