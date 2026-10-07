@@ -1,0 +1,41 @@
+id: nest-micro-training
+title: "Chaba Nest micro-model evolution loop — agent-owned train→bench→promote"
+column: todo
+priority: medium
+created: 2026-10-07
+updated: 2026-10-07
+note: >-
+  The proven formula (jev-student: 56% gemma-1b -> 100% distilbert via 5
+  corpus iterations) needs an owner. An agent loop (OpenClaw-style or a
+  scripted pipeline) drives: corpus delta -> candidate train -> bench ->
+  scorecard -> shadow -> promote. Train+bench is T2 (reversible),
+  promotion is T1/T3 (human gate).
+spec: >-
+  1. Task suites: per-specialist labeled sets — golden (frozen
+     regression), hard/OOD (rotating in from corpus), adversarial.
+     Registry: tests/bench/suites.yml in ada-pi.
+  2. Model registry: topologies.yml gains models: section — task,
+     checkpoint, corpus version, bench scores, status
+     (train|shadow|prod|retired). jev-student v5 becomes the first entry.
+  3. Training lanes: tony-omen GTX1650 (distilbert FT, 1b LoRA via 4-bit),
+     Colab burst via colab-mcp (bigger runs), idc01 for cold batch jobs.
+     jev-unsloth-finetune page has the recipe.
+  4. Loop owner: agent harness or chaba script — harvest corpus deltas
+     (jev-corpus divergences, orch misses, scenario fails), propose +
+     train candidate, run suite bench, publish bench/train-* doc, queue
+     promotion question when candidate meets gate.
+  5. Promotion gate: candidate >= champ on golden, no hard-set
+     regression -> shadow deploy -> live divergence metrics decide.
+     Same posture as CAM++ speaker shadow and client_noul edge lane.
+links:
+  - nest-collective-bench
+  - nest-edge-vision
+  - jev-unsloth-finetune
+  - chaba-nest
+help: >-
+  Corpus sources already live: jev-corpus.jsonl (regex-vs-jev
+  divergences), orch-bench misses -> corpus-out, scenario failures,
+  client_noul edge rows. Candidates: confirm-gate successor, tool-router
+  specialist, memory-recall classifier, speaker-id student.
+blocked_by: []
+autonomy: t1
