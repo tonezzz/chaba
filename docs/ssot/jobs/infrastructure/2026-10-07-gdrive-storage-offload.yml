@@ -1,0 +1,58 @@
+title: gdrive storage offload — tony-dell disk relief
+subtitle: Move cold mddb artifacts to Google Drive via rclone (Drive REST API)
+icon: safe
+
+planning:
+  goal: Reclaim tony-dell sda5 space (was 94/118G, 84%) by offloading cold
+    mddb data to gdrive, and stop nightly standby snapshots accumulating
+    locally.
+  scope: "mddb-bench artifact, mddb-standby-pull retention tier. Out of
+    scope: live DBs, active repos, container images, the follower data dir
+    (kept — standby design under review on the board)."
+  resources:
+    - ~/.config/systemd/user/mddb-standby-pull.service
+    - ~/mddb-bench/mddb-fresh.db
+    - ~/.local/share/mddb-backups/filecopy/
+    - gdrive: rclone remote (fuse mount ~/GoogleDrive, 1.8T free)
+
+processing:
+  status: completed
+  started_at: "2026-10-07T13:00:00+07:00"
+  findings:
+    - "mddb-fresh.db (3.1G) is an Oct-3 binlog bench artifact — upstream bugs
+      filed, safe to archive."
+    - "standby-pull already caps local filecopy/ at newest-2 (added same day
+      after a 22G accumulation filled disk); second copy exists only for
+      history — tiered to gdrive, newest-1 stays local for the podman cp
+      restore path."
+    - "Not moved: sessions.db (active), container images (can't run remote),
+      follower data dir 3.7G (standby redesign in flight), dispatch task
+      dirs (59M total — not worth it)."
+  changes:
+    - "rclone move ~/mddb-bench/mddb-fresh.db -> gdrive:archive/mddb-bench/
+      (3.1G)"
+    - "rclone move filecopy/mddb-20261005-0230.db -> gdrive:backups/mddb/
+      (3.8G) — seeded the remote dir so first nightly run isn't the first
+      upload"
+    - "mddb-standby-pull.service: retention tail -n +3 rm -> tail -n +2
+      rclone move to gdrive:backups/mddb/ (unit comment updated; failed
+      upload leaves file + fails unit)"
+    - "repo systemd/ copy synced to installed unit (was stale: pointed at
+      idc01, no retention)"
+  notes:
+    - "rclone move deletes source only after verified upload — safe against
+      partial transfers."
+    - "gdrive mount (fuse) not used for writes; rclone talks Drive REST
+      directly — safer against fuse stalls."
+
+followup:
+  - "Verify after next 03:30 run: filecopy/ holds exactly 1 file, gdrive
+    holds the rotated one; journal of mddb-standby-pull.service clean."
+  - "Decide follower data dir (~3.7G) once the standby-redesign cards land."
+  - "If disk still tight: mddb-bench smoke.db + mddbd binaries (~85M),
+    yt-live-media cache 1.5G (regenerable)."
+
+verification:
+  - "df -h / improved ~7G (94G -> ~86G expected once uploads finish)"
+  - "rclone lsl gdrive:backups/mddb/ shows rotated dumps"
+  - "systemctl --user status mddb-standby-pull.service after next timer"
