@@ -19,28 +19,28 @@ summary: |
   repeatable DOM-stub verification harness.
 
 fixes:
-  - scrollToCard(id): when the target is an automation card inside a
+  - "scrollToCard(id): when the target is an automation card inside a
     collapsed column group, set autoOpen[col]=true + persist + re-render
     BEFORE querying .board-card — sidebar and needs-you clicks now reach
     collapsed auto cards (scroll + flash + modal all work). Persisting is
     required: an ephemeral expand would re-collapse on the next 30s poll
-    and lose the scroll position.
-  - render(): a group also renders open when the active card filter matches
+    and lose the scroll position."
+  - "render(): a group also renders open when the active card filter matches
     any of its cards (view-only — autoOpen untouched), so a query that only
-    hits automation cards shows the matches.
-  - applyFilter(): when the query matches an auto card not in the DOM it
+    hits automation cards shows the matches."
+  - "applyFilter(): when the query matches an auto card not in the DOM it
     triggers one re-render (guarded by a .board-card[data-id] DOM check —
-    after re-render the element exists, can't loop).
+    after re-render the element exists, can't loop)."
 
 verification:
-  - scripts/test-board-dom.mjs — runs the generated page's inline script in
+  - "scripts/test-board-dom.mjs — runs the generated page's inline script in
     a node vm against a minimal DOM stub (parser + selector engine +
     localStorage + fetch stub returning the real cards.json). 31/31 checks:
     human cards always rendered, auto cards grouped under correct
-    "automation (N)" badges, toggle expand + persist, persisted state
+    'automation (N)' badges, toggle expand + persist, persisted state
     survives re-boot, sidebar click auto-expands + scrolls + opens modal,
-    filter reveals collapsed matches, no header when a column has 0 autos.
-  - Run: python3 scripts/render-board.py && node scripts/test-board-dom.mjs
+    filter reveals collapsed matches, no header when a column has 0 autos."
+  - "Run: python3 scripts/render-board.py && node scripts/test-board-dom.mjs"
 
 notes:
   - AUTO_RE is deliberately a superset of the card spec's (cms|logs)-auto-*

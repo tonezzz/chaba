@@ -138,30 +138,30 @@ services:
   - id: input-bridge-relay
     name: Input Bridge Relay (vcast)
     type: http
-    url: http://idc01:3010/health
+    url: http://idc03:3010/health
     expected_status: 200
     timeout: 5
     category: api
     profiles:
       - home
       - mobile
-    host: idc01
-    note: WS relay + vcast display registry — podman quadlet on idc01, tailnet-bound
-      (100.74.146.0:3010). If down, all vcast displays go black/reconnect-loop and
+    host: idc03
+    note: WS relay + vcast display registry — podman quadlet on idc03
+      (100.102.134.91:3010). If down, all vcast displays go black/reconnect-loop and
       cast_to_screen fails.
     verification:
-      - "Probe: curl -s http://idc01:3010/health"
-      - "Displays: curl -s http://idc01:3010/displays"
+      - "Probe: curl -s http://idc03:3010/health"
+      - "Displays: curl -s http://idc03:3010/displays"
       - "Via edge: curl -s https://tony-dell.taila0626a.ts.net/api/input-bridge/health"
     recovery_actions:
-      - "Check unit: ssh idc01 systemctl --user status input-bridge.service"
-      - "Restart: ssh idc01 systemctl --user restart input-bridge.service"
-      - "Logs: ssh idc01 journalctl --user -u input-bridge.service -n 50"
-      - "Quadlet file: stacks/idc01/input-bridge/input-bridge.container (repo) -> ~/.config/containers/systemd/ (idc01)"
+      - "Check unit: ssh idc03 systemctl --user status input-bridge.service"
+      - "Restart: ssh idc03 systemctl --user restart input-bridge.service"
+      - "Logs: ssh idc03 journalctl --user -u input-bridge.service -n 50"
+      - "Quadlet file: stacks/idc03/input-bridge/input-bridge.container (repo) -> ~/.config/containers/systemd/ (idc03)"
   - id: vcast-real-6
     name: vcast Real-Browser Display (screen 6)
     type: http
-    url: http://idc01:3010/displays
+    url: http://idc03:3010/displays
     expected_status: 200
     timeout: 5
     category: api
@@ -174,7 +174,7 @@ services:
       {real_screen} target for live scenarios; if it drops, scenario
       preflights gate to INFRA rather than producing false FAILs.
     verification:
-      - "Claimed+connected: curl -s http://idc01:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==6]; print(s[0][\"connected\"], s[0][\"state_detail\"] if s else \"screen 6 absent\")'"
+      - "Claimed+connected: curl -s http://idc03:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==6]; print(s[0][\"connected\"], s[0][\"state_detail\"] if s else \"screen 6 absent\")'"
       - "GEV remote on 6: curl -s -m 15 -X POST https://tony-dell.taila0626a.ts.net/apps/gev-cmd/command -H 'content-type: application/json' -d '{\"name\":\"get_current_view_state\",\"args\":{},\"screen\":6,\"wait\":5}'"
       - "Unit: ssh idc02 systemctl --user status vcast-real@6.service"
     recovery_actions:
@@ -184,7 +184,7 @@ services:
   - id: vcast-real-7
     name: vcast Real-Browser Display (screen 7)
     type: http
-    url: http://idc01:3010/displays
+    url: http://idc03:3010/displays
     expected_status: 200
     timeout: 5
     category: api
@@ -196,7 +196,7 @@ services:
       cast/switch between two real browsers). Screen range convention —
       6-9 are lab/automation displays; see ssot.apps.vcast.yml.
     verification:
-      - "Claimed+connected: curl -s http://idc01:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==7]; print(s[0][\"connected\"] if s else \"screen 7 absent\")'"
+      - "Claimed+connected: curl -s http://idc03:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==7]; print(s[0][\"connected\"] if s else \"screen 7 absent\")'"
       - "Unit: ssh idc02 systemctl --user status vcast-real@7.service"
     recovery_actions:
       - "Restart: ssh idc02 systemctl --user restart vcast-real@7.service"
