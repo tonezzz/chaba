@@ -44,7 +44,11 @@ decision:
     a deterministic tiebreak (SliceStable + key) would make results
     reproducible. (b) int8 cosine is a scalar Go loop vs flat's SIMD f32 dot
     — quantization saves bytes, not cycles, on this hardware. (c) int4
-    collapses on large/skewed collections.
+    collapses on large/skewed collections. (d) synthetic (out-of-corpus)
+    queries score lower than stored-vector queries almost everywhere
+    (q8disk: devin-tony .56, infrastructure-ssot .72, host-logs .70) —
+    the headline numbers are generous to quantization vs real-world
+    queries.
   artifacts: >
     reports/bench-mddb-quantized-artifacts-2026-10-08.tgz (untracked,
     worktree-local): driver scripts, per-state served rows, truth,
