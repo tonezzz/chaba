@@ -1,6 +1,6 @@
 id: expected-goals-verify
 title: 'Card acceptance: expected_goals field + verify stage'
-column: review
+column: done
 review_kind: verify
 priority: high
 note: 'Tony 2026-10-07: "each card has expected goal and when finished we measure it by these goals —
@@ -24,7 +24,7 @@ action:
   result: 'exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`.
     | devin-task-20261007-144438-deliverables-1-card-schema-exp.service: Consumed 2min 9.071s CPU time
     over 25min 58.325s wall clock time, 1G memory peak.'
-updated: 2026-10-07 15:25
+updated: 2026-10-07 16:15
 claim:
   since: 2026-10-07 14:50
 comms:
@@ -137,6 +137,12 @@ comms:
     tailscale timeout on the board-api probe — exactly the kind of flakey evidence verify is meant to
     expose honestly; re-run green. Goal chips now render on the board; report-watch re-probes done-card
     goals every 24h.'
+- at: 2026-10-07 16:15
+  from: devin
+  text: 'closed — tony approved. Close evidence: merged 2d6c80f3 + post-merge verify re-run on master
+    5/5 pass (independent of the dispatch worktree), plus test-drive on edge-route-registry card 5/5.
+    The mechanism is now standing: expected_goals declared -> verify stage measures -> goal chips render
+    -> report-watch re-probes every 24h.'
 pipeline:
   opt_in: ci
   stages:
