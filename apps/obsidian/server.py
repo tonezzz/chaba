@@ -29,7 +29,7 @@ import httpx
 import uvicorn
 import yaml
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 
 VAULT = Path(os.environ.get(
@@ -42,7 +42,6 @@ MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://idc03.taila0626a.ts.net:110
 API_KEY = os.environ.get("ADA_API_KEY") or ""
 DEPLOY = os.environ.get("ADA_DEPLOY", "tailnet").strip().lower() or "tailnet"
 INDEX_HTML = REPO / "stacks/web/public/apps/obsidian/index.html"
-GRAPH_HTML = REPO / "stacks/web/public/apps/obsidian/graph.html"
 SYNC_SCRIPT = REPO / "scripts/ada/sync-ada-memory-to-mddb.py"
 BANKS_SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
 
@@ -149,7 +148,23 @@ async def index() -> HTMLResponse:
 
 @app.get("/graph", response_class=HTMLResponse)
 async def graph_page() -> HTMLResponse:
-    return HTMLResponse(GRAPH_HTML.read_text())
+    # graph is a view of the single-shell app — serve index.html; the
+    # client-side router lands on #/graph automatically.
+    return HTMLResponse(INDEX_HTML.read_text())
+
+
+VENDOR_DIR = REPO / "stacks/web/public/apps/obsidian/vendor"
+
+
+@app.get("/vendor/{name}")
+async def vendor_file(name: str):
+    """Locally vendored JS/CSS so the app survives CDN outages."""
+    p = (VENDOR_DIR / name).resolve()
+    if not str(p).startswith(str(VENDOR_DIR.resolve()) + os.sep) or not p.is_file():
+        raise HTTPException(404)
+    ct = "application/javascript" if p.suffix == ".js" else \
+         "text/css" if p.suffix == ".css" else "application/octet-stream"
+    return FileResponse(p, media_type=ct)
 
 
 def _folder(rel: str) -> str:

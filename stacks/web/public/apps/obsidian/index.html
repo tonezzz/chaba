@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Review and edit the Ada memory vault (docs/ada-memory)">
   <title>Ada Memory Vault</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="vendor/tailwind.min.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/js-yaml.min.js"></script>
   <script>
     tailwind.config = { theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
   </script>
@@ -23,6 +23,22 @@
     .prose-dark code { background: rgba(255,255,255,.08); padding: 0 .3rem; border-radius: .25rem; font-size: .85em; }
     .meta td { padding: .15rem .75rem .15rem 0; font-size: .8rem; }
     .meta td:first-child { color: #9ca3af; }
+    .vtab { font-size: 11px; padding: .3rem .6rem; border-radius: .375rem;
+      background: transparent; border: 1px solid #374151; color: #9ca3af; cursor: pointer; }
+    .vtab.sel { border-color: #0a84ff; color: #e5e7eb; }
+    .navbtn { font-size: 11px; padding: .35rem .65rem; border-radius: .375rem;
+      background: #16213e; border: 1px solid #374151; }
+    .navbtn:hover { border-color: #0a84ff; }
+    .ctl { display: flex; align-items: center; gap: .3rem; font-size: 11px; color: #9ca3af; cursor: pointer; }
+    .graph-tooltip { background: #16213e !important; border: 1px solid #374151;
+      border-radius: 6px; padding: 6px 10px; font-size: 11px; line-height: 1.5;
+      color: #e5e7eb; max-width: 320px; }
+    .graph-tooltip .dim { color: #9ca3af; }
+    .graph-tooltip i { color: #cbd5e1; display: block; margin: 4px 0;
+      border-left: 2px solid #374151; padding-left: 6px; }
+    .bank-chip { cursor: pointer; opacity: 1; transition: opacity .15s; }
+    .bank-chip.off { opacity: .35; text-decoration: line-through; }
+    .q-row:hover { background: rgba(10,132,255,0.08); }
     /* off-canvas sidebar on small screens */
     @media (max-width: 767px) {
       #sidebar { position: fixed; top: 3rem; bottom: 0; left: 0; z-index: 40;
@@ -32,6 +48,10 @@
       #nav-backdrop.open { position: fixed; inset: 3rem 0 0 0; z-index: 35;
         background: rgba(0,0,0,.45); }
       main { padding: 1rem !important; }
+      #detail { top: auto; bottom: 0; left: 0; right: 0; width: 100%;
+        max-height: 55vh; overflow-y: auto; border-radius: .75rem .75rem 0 0; }
+      #legend { left: .5rem; right: .5rem; max-width: none; }
+      #graph-toolbar { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -40,11 +60,11 @@
     <div class="px-3 h-12 flex items-center gap-3">
       <button id="btn-nav" class="text-sm w-7 h-7 shrink-0 rounded bg-card border border-gray-700 hover:border-accent" title="Toggle note list">☰</button>
       <a href="/apps/" class="hidden md:block text-sm text-gray-400 hover:text-accent shrink-0">← Apps</a>
-      <h1 class="font-semibold truncate min-w-0">Ada Memory Vault</h1>
+      <h1 id="nav-title" class="font-semibold truncate min-w-0">Ada Memory Vault</h1>
       <span id="dirty" class="hidden md:inline text-xs text-gray-500 shrink-0"></span>
       <span id="deploy-badge" class="hidden text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-300 shrink-0"></span>
       <div class="ml-auto flex gap-2 items-center shrink-0">
-        <a id="lnk-graph" href="#" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="3D knowledge graph of all memory docs">Graph</a>
+        <button id="lnk-graph" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="3D knowledge graph of all memory docs">Graph</button>
         <button id="btn-sync" class="hidden md:inline-block text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="Push vault changes into Ada's memory (MDDB)">Push to Ada</button>
         <button id="btn-commit" class="hidden md:inline-block text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="Push to MDDB + queue the hourly git commit on tony-omen">Sync + queue commit</button>
         <button id="btn-help" class="hidden md:inline-flex text-xs w-7 h-7 rounded-full bg-card border border-gray-700 hover:border-accent items-center justify-center" title="What is this? How does it work?">?</button>
@@ -52,6 +72,7 @@
           <button id="btn-more" class="text-sm w-7 h-7 rounded bg-card border border-gray-700 hover:border-accent" title="More actions">⋯</button>
           <div id="more-menu" class="hidden absolute right-0 top-9 z-50 w-52 bg-card border border-gray-700 rounded-lg p-1.5 space-y-1">
             <a href="/apps/" class="block text-xs px-3 py-2 rounded hover:bg-white/5 text-gray-300">← Apps launcher</a>
+            <button onclick="location.hash='#/queue'" class="block w-full text-left text-xs px-3 py-2 rounded hover:bg-white/5">Review queue</button>
             <button onclick="document.getElementById('btn-sync').click()" class="block w-full text-left text-xs px-3 py-2 rounded hover:bg-white/5">Push to Ada</button>
             <button onclick="document.getElementById('btn-commit').click()" class="block w-full text-left text-xs px-3 py-2 rounded hover:bg-white/5">Sync + queue commit</button>
             <button onclick="document.getElementById('btn-help').click()" class="block w-full text-left text-xs px-3 py-2 rounded hover:bg-white/5">How does this work?</button>
@@ -71,6 +92,7 @@
         <li>Select a note → <b>Edit</b> → <b>Save</b> (writes the vault file only)</li>
         <li><b>Push to Ada</b> syncs vault → MDDB so Ada sees it</li>
         <li><b>Sync + queue commit</b> also queues the hourly git commit on tony-omen</li>
+        <li><b>Queue</b> lists MDDB-only docs not yet in the vault — export them to review</li>
       </ol>
       <div class="mt-3 text-gray-300">
         <div class="mb-1 font-medium text-gray-200">Status dots</div>
@@ -86,39 +108,129 @@
   <div class="flex" style="min-height: calc(100vh - 3rem)">
     <div id="nav-backdrop" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('open')"></div>
     <aside id="sidebar" class="w-72 shrink-0 border-r border-gray-800 overflow-y-auto p-3">
+      <div class="flex gap-1.5 mb-2">
+        <button class="vtab sel" data-view="notes">Notes</button>
+        <button class="vtab" data-view="queue">Queue</button>
+        <button class="vtab" data-view="graph">Graph</button>
+      </div>
       <input id="nav-search" placeholder="filter notes…"
              class="sticky top-0 z-10 w-full mb-2 text-xs px-2 py-1.5 rounded bg-card border border-gray-700 focus:border-accent outline-none">
       <div id="tree"></div>
+      <div id="coverage" class="text-[10px] text-gray-600 mt-3 px-1"></div>
     </aside>
-    <main class="flex-1 p-6 overflow-y-auto max-w-4xl">
-      <div id="empty" class="text-gray-500 text-sm mt-8 text-center">Select a note on the left.<br><span class="text-xs">Banks on the left map 1:1 to ada-ha-bank-* collections.</span><br><button class="mt-3 text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" onclick="document.getElementById('help').classList.remove('hidden')">How does this work?</button></div>
-      <div id="view" class="hidden">
-        <div class="flex items-center gap-3 mb-1">
-          <h2 id="n-title" class="text-lg font-semibold"></h2>
-          <span id="n-status" class="text-xs"></span>
-          <span id="n-kind" class="text-xs text-gray-500"></span>
-          <div class="ml-auto flex items-center gap-2">
-            <span id="promote-wrap" class="hidden items-center gap-1.5">
-              <span class="text-[11px] text-gray-500">promote to</span>
-              <select id="promote-bank" class="text-xs px-1.5 py-1 rounded bg-card border border-gray-700"></select>
-              <button id="btn-promote" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Promote</button>
-            </span>
-            <button id="btn-edit" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Edit</button>
-            <button id="btn-save" class="hidden text-xs px-3 py-1 rounded bg-accent text-white">Save</button>
+    <main class="flex-1 p-6 overflow-y-auto max-w-5xl" id="main">
+      <!-- ===== NOTES VIEW ===== -->
+      <div id="v-notes" class="view">
+        <div id="empty" class="text-gray-500 text-sm mt-8 text-center">Select a note on the left.<br><span class="text-xs">Banks on the left map 1:1 to ada-ha-bank-* collections.</span><br><button class="mt-3 text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" onclick="document.getElementById('help').classList.remove('hidden')">How does this work?</button></div>
+        <div id="view" class="hidden">
+          <div class="flex items-center gap-3 mb-1">
+            <h2 id="n-title" class="text-lg font-semibold break-all min-w-0"></h2>
+            <span id="n-status" class="text-xs shrink-0"></span>
+            <span id="n-kind" class="text-xs text-gray-500 shrink-0"></span>
+            <div class="ml-auto flex items-center gap-2 shrink-0">
+              <span id="promote-wrap" class="hidden items-center gap-1.5">
+                <span class="text-[11px] text-gray-500">promote to</span>
+                <select id="promote-bank" class="text-xs px-1.5 py-1 rounded bg-card border border-gray-700"></select>
+                <button id="btn-promote" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Promote</button>
+              </span>
+              <button id="btn-edit" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Edit</button>
+              <button id="btn-save" class="hidden text-xs px-3 py-1 rounded bg-accent text-white">Save</button>
+            </div>
+          </div>
+          <details id="n-meta-wrap" class="mb-4">
+            <summary class="text-xs text-gray-500 cursor-pointer select-none">metadata</summary>
+            <table id="n-meta" class="meta mt-1"></table>
+          </details>
+          <div id="n-body" class="prose-dark text-sm leading-relaxed"></div>
+          <textarea id="n-edit" class="hidden w-full h-96 mt-2 bg-card border border-gray-700 rounded p-3 font-mono text-xs"></textarea>
+          <div id="n-msg" class="text-xs text-gray-500 mt-2"></div>
+        </div>
+      </div>
+      <!-- ===== QUEUE VIEW ===== -->
+      <div id="v-queue" class="view hidden">
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+          <h2 class="text-lg font-semibold">Review queue</h2>
+          <span id="q-coverage" class="text-xs text-gray-500"></span>
+          <input id="q-filter" placeholder="filter queue…"
+                 class="ml-auto text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-40 focus:border-accent outline-none">
+        </div>
+        <p class="text-xs text-gray-500 mb-3">MDDB docs not yet exported to the vault — sorted by recall count. Export the ones worth keeping; the rest can stay MDDB-only.</p>
+        <div id="q-msg" class="text-xs text-gray-500 mb-2"></div>
+        <div id="q-list" class="space-y-1"></div>
+      </div>
+      <!-- ===== GRAPH VIEW ===== -->
+      <div id="v-graph" class="view hidden -m-6 flex flex-col" style="min-height: calc(100vh - 3rem)">
+        <div id="graph-toolbar" class="flex items-center gap-3 px-3 py-2 bg-card/60 border-b border-gray-800 relative">
+          <input id="search" list="nodes-list" placeholder="search nodes…"
+                 class="text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-28 md:w-40 focus:border-accent outline-none">
+          <datalist id="nodes-list"></datalist>
+          <button id="btn-ctl" class="navbtn md:hidden" title="Filters & actions">⚙</button>
+          <div id="ctls" class="hidden md:flex absolute md:static top-10 right-0 z-50
+               flex-col md:flex-row items-start md:items-center gap-3
+               bg-card md:bg-transparent border border-gray-700 md:border-0 rounded-lg md:rounded-none p-3 md:p-0">
+            <select id="f-depth" class="text-xs px-1.5 py-1.5 rounded bg-card border border-gray-700 text-gray-300"
+                    title="Local graph: after clicking a node, show only its neighborhood to this depth">
+              <option value="0" selected>global</option>
+              <option value="1">local·1</option>
+              <option value="2">local·2</option>
+              <option value="3">local·3</option>
+            </select>
+            <label class="ctl"><input type="checkbox" id="f-subjects" checked> subjects</label>
+            <label class="ctl"><input type="checkbox" id="f-entities" checked> entities</label>
+            <label class="ctl"><input type="checkbox" id="f-unlinked"> hide unlinked</label>
+            <label class="ctl"><input type="checkbox" id="f-retracted"> show retracted</label>
+            <label class="ctl" title="Vector-similarity edges, computed for the top-250 most-linked docs (cached 1h)"><input type="checkbox" id="f-similar"> similarity</label>
+            <button id="btn-pause" class="navbtn" title="Freeze the layout physics">Pause</button>
+            <button id="btn-fit" class="navbtn" title="Fit graph to view">Fit</button>
+            <button id="btn-reload" class="navbtn">Reload</button>
+            <button id="btn-legend" class="navbtn w-7 rounded-full" title="How to read this graph">?</button>
           </div>
         </div>
-        <details id="n-meta-wrap" class="mb-4">
-          <summary class="text-xs text-gray-500 cursor-pointer select-none">metadata</summary>
-          <table id="n-meta" class="meta mt-1"></table>
-        </details>
-        <div id="n-body" class="prose-dark text-sm leading-relaxed"></div>
-        <textarea id="n-edit" class="hidden w-full h-96 mt-2 bg-card border border-gray-700 rounded p-3 font-mono text-xs"></textarea>
-        <div id="n-msg" class="text-xs text-gray-500 mt-2"></div>
+        <div id="chart" class="flex-1 relative" style="min-height: 60vh"></div>
+        <div id="msg" class="fixed bottom-3 left-4 text-xs text-gray-500"></div>
+        <div id="chip-local" class="hidden fixed top-24 left-4 text-xs px-2.5 py-1 rounded bg-card/95 border border-accent cursor-pointer z-40"></div>
+        <div id="detail" class="hidden fixed top-24 right-4 w-72 bg-card/95 border border-gray-700 rounded-lg p-4 text-xs leading-relaxed z-40">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <b id="d-title" class="text-sm"></b>
+            <button id="d-close" class="text-gray-500 hover:text-gray-200">✕</button>
+          </div>
+          <div id="d-meta" class="text-gray-400"></div>
+          <div id="d-excerpt" class="hidden italic border-l-2 border-gray-700 pl-2 my-2 text-gray-300"></div>
+          <div id="d-status" class="mt-1.5"></div>
+          <div id="d-foot" class="mt-1.5 text-gray-500"></div>
+          <div class="mt-3 flex gap-2">
+            <button id="d-open" class="navbtn hidden">Open in vault</button>
+            <button id="d-export" class="navbtn hidden" title="Write this MDDB doc into the vault as a reviewable note">Export to vault</button>
+            <button id="d-collapse" class="navbtn hidden">Collapse members</button>
+          </div>
+          <div id="d-hint" class="mt-2 text-gray-500"></div>
+        </div>
+        <div id="legend" class="hidden fixed bottom-3 right-4 bg-card/95 border border-gray-700 rounded-lg p-4 text-xs leading-relaxed max-w-xs z-50">
+          <div class="flex items-center justify-between mb-2">
+            <b>How to read this</b>
+            <button class="text-gray-500 hover:text-gray-200" onclick="document.getElementById('legend').classList.add('hidden')">✕</button>
+          </div>
+          <div class="space-y-1.5 text-gray-300">
+            <div><span style="color:#4dd0e1">●</span> colored sphere = memory doc — <b>color is the bank</b> (click a chip below to hide/show a bank)</div>
+            <div><span style="color:#64748b">●</span> grey sphere = <b>hub</b> — a <code>subject:</code> topic or <code>entity:</code> shared by 2+ docs</div>
+            <div>bigger sphere = more links / more voice recalls</div>
+            <div>bright = MDDB (+vault) · <span class="text-gray-500">faded</span> = vault-only, retracted, or superseded</div>
+            <div><span style="color:#ef4444">●</span> red = dangling supersedes link (broken provenance)</div>
+            <div><span class="text-amber-500 font-bold">—</span> amber edge + arrow = supersedes (new → old)</div>
+            <div><span class="text-gray-500 font-bold">···</span> faint edge = semantic similarity (enable in toolbar)</div>
+            <div>oversized subjects split into sub-hubs by month/day</div>
+          </div>
+          <div id="legend-banks" class="mt-2 pt-2 border-t border-gray-700 flex flex-wrap gap-x-3 gap-y-1"></div>
+          <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">
+            drag to rotate · scroll to zoom · right-drag to pan · hover highlights the neighborhood · <b>click</b> centers the camera + shows details (with local·N set, filters to its neighborhood) · <b>double-click</b> a doc opens the vault, a hub collapses/expands it, a pinned node releases it · drag a node to pin it<br>
+            <span class="text-gray-500">keys: <code>/</code> search · <code>f</code> fit · <code>space</code> pause · <code>esc</code> clear</span>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 <script>
-const BASE = location.pathname.replace(/\/$/, '');
+const BASE = location.pathname.replace(/\/(graph\/?)?$/, '');
 let apiKey = localStorage.getItem('obsidian-key') || '';
 let cur = null, editing = false;
 
@@ -133,10 +245,55 @@ async function api(path, opts = {}) {
   return r;
 }
 
+/* ================= view router ================= */
+const VIEW_TITLES = { notes: 'Ada Memory Vault', queue: 'Review Queue', graph: 'Memory Graph' };
+
+function closeDrawer() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('nav-backdrop').classList.remove('open');
+}
+
+function showView(v) {
+  for (const el of document.querySelectorAll('.view')) el.classList.add('hidden');
+  document.getElementById('v-' + v).classList.remove('hidden');
+  for (const t of document.querySelectorAll('.vtab'))
+    t.classList.toggle('sel', t.dataset.view === v);
+  document.getElementById('nav-title').textContent = VIEW_TITLES[v] || 'Ada Memory Vault';
+  document.title = VIEW_TITLES[v] || 'Ada Memory Vault';
+  if (v === 'graph') initGraph();
+  if (v === 'queue') loadQueue();
+}
+
+function route() {
+  closeDrawer();
+  const h = location.hash.replace(/^#\/?/, '');
+  const [path, qs] = h.split('?');
+  const params = new URLSearchParams(qs || '');
+  if (path.startsWith('note/')) {
+    showView('notes');
+    openNote(decodeURIComponent(path.slice(5)));
+  } else if (path === 'queue') {
+    showView('queue');
+  } else if (path === 'graph') {
+    if (params.get('focus')) graphFocus = { id: params.get('focus'), depth: +(params.get('depth') || 0) };
+    showView('graph');
+  } else if (path.startsWith('graph-focus/')) {
+    graphFocus = { id: decodeURIComponent(path.slice(12)), depth: +(params.get('depth') || 0) };
+    showView('graph');
+  } else {
+    showView('notes');
+  }
+}
+window.addEventListener('hashchange', route);
+
+for (const t of document.querySelectorAll('.vtab'))
+  t.onclick = () => location.hash = '#/' + t.dataset.view;
+document.getElementById('lnk-graph').onclick = () => location.hash = '#/graph';
+
 document.getElementById('btn-help').onclick = () =>
   document.getElementById('help').classList.remove('hidden');
-document.getElementById('lnk-graph').href = BASE + '/graph';
 
+/* ================= sidebar ================= */
 let bankMeta = {};
 
 async function loadTree() {
@@ -156,7 +313,7 @@ async function loadTree() {
       el.innerHTML = `<span class="status-${n.status} shrink-0 leading-5">●</span><div class="min-w-0">` +
         `<div class="truncate">${n.subject || n.name}</div>` +
         (n.subject ? `<div class="truncate text-[10px] text-gray-500">${n.name}</div>` : '') + `</div>`;
-      el.onclick = () => openNote(n.path);
+      el.onclick = () => { location.hash = '#/note/' + encodeURIComponent(n.path); };
       g.appendChild(el);
     }
     s.appendChild(g);
@@ -200,10 +357,9 @@ document.getElementById('btn-nav').onclick = () => {
 if (localStorage.getItem('obsidian-nav') === '0')
   document.getElementById('sidebar').classList.add('hidden');
 
+/* ================= notes view ================= */
 async function openNote(path) {
   cur = path; editing = false;
-  document.getElementById('sidebar').classList.remove('open');  // auto-close drawer on mobile
-  document.getElementById('nav-backdrop').classList.remove('open');
   const d = await (await api('/api/note?path=' + encodeURIComponent(path))).json();
   document.getElementById('empty').classList.add('hidden');
   document.getElementById('view').classList.remove('hidden');
@@ -215,7 +371,7 @@ async function openNote(path) {
   const fm = d.frontmatter || {};
   const st = document.getElementById('n-status');
   st.textContent = fm.status || 'active';
-  st.className = 'text-xs status-' + (fm.status || 'active');
+  st.className = 'text-xs shrink-0 status-' + (fm.status || 'active');
   document.getElementById('n-kind').textContent = fm.kind ? '· ' + fm.kind : '';
   document.getElementById('n-meta').innerHTML = Object.entries(fm)
     .filter(([k]) => !['status','kind'].includes(k))
@@ -253,7 +409,7 @@ document.getElementById('btn-promote').onclick = async () => {
   const msg = document.getElementById('n-msg');
   if (r.ok) {
     msg.textContent = `promoted → ${j.path}`;
-    openNote(j.path);
+    location.hash = '#/note/' + encodeURIComponent(j.path);
   } else {
     msg.textContent = `promote failed: ${j.detail || r.status}`;
   }
@@ -302,9 +458,693 @@ async function refreshStatus() {
   }
 }
 
+/* ================= queue view ================= */
+let queueCache = null;      // {ts, data} — /api/graph?status=all response
+let graphFocus = null;      // {id, depth} consumed by initGraph/applyFocus
+
+async function queueData(force = false) {
+  if (!force && queueCache && Date.now() - queueCache.ts < 300000) return queueCache.data;
+  const r = await api('/api/graph?hubs=0&status=all');
+  if (!r.ok) throw new Error('graph fetch failed: ' + r.status);
+  queueCache = { ts: Date.now(), data: await r.json() };
+  return queueCache.data;
+}
+
+const Q_SYNC_BADGE = {
+  synced:     '<span class="text-emerald-400">synced</span>',
+  mddb_only:  '<span class="text-sky-400">MDDB only</span>',
+  vault_only: '<span class="text-gray-400">vault only</span>',
+  inbox:      '<span class="text-amber-400">inbox</span>',
+};
+
+async function loadQueue(force = false) {
+  const list = document.getElementById('q-list');
+  const msg = document.getElementById('q-msg');
+  msg.textContent = 'loading…';
+  try {
+    const g = await queueData(force);
+    const s = g.stats || {};
+    const cover = `synced ${s.synced ?? '—'} · vault-only ${s.vault_only ?? '—'} · mddb-only ${s.mddb_only ?? '—'}`;
+    document.getElementById('q-coverage').textContent = cover;
+    document.getElementById('coverage').textContent = 'coverage · ' + cover;
+    const docs = (g.nodes || []).filter(n => !n.hub && !n.missing && n.sync === 'mddb_only')
+      .sort((a, b) => (b.use_count || 0) - (a.use_count || 0) || String(b.date || '').localeCompare(String(a.date || '')));
+    renderQueue(docs);
+    msg.textContent = g.warning ? '⚠ ' + g.warning : `${docs.length} docs to review`;
+  } catch (e) {
+    msg.textContent = 'queue failed: ' + e.message;
+  }
+}
+
+function renderQueue(docs) {
+  const q = (document.getElementById('q-filter').value || '').toLowerCase();
+  const list = document.getElementById('q-list');
+  list.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  let shown = 0;
+  for (const n of docs) {
+    if (shown >= 200) break;
+    const title = n.label || n.key || n.id;
+    if (q && !(title.toLowerCase().includes(q) || (n.excerpt || '').toLowerCase().includes(q) || (n.bank || '').includes(q))) continue;
+    shown++;
+    const row = document.createElement('div');
+    row.className = 'q-row flex items-start gap-3 px-3 py-2 rounded border border-gray-800';
+    row.innerHTML =
+      `<div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 flex-wrap">
+          <b class="text-sm truncate">${esc(title)}</b>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-card border border-gray-700">${esc(n.bank || '?')}</span>
+          ${Q_SYNC_BADGE[n.sync] || ''}
+          <span class="text-[10px] text-gray-500">${n.use_count ? 'recalled ' + n.use_count + '×' : ''}${n.date ? ' · ' + esc(String(n.date)) : ''}</span>
+        </div>
+        ${n.excerpt ? `<div class="text-xs text-gray-400 mt-0.5 italic truncate">${esc(n.excerpt)}</div>` : ''}
+      </div>
+      <div class="shrink-0 flex gap-1.5 pt-0.5">
+        <button class="navbtn q-export" title="Write into the vault as a reviewable note">Export</button>
+        <button class="navbtn q-graph" title="Locate in graph">Graph</button>
+      </div>`;
+    row.querySelector('.q-export').onclick = async ev => {
+      const b = ev.target;
+      b.disabled = true; b.textContent = 'exporting…';
+      const r = await api('/api/export', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: n.id }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        b.textContent = 'exported ✓';
+        n.sync = 'synced'; n.path = j.path;
+        loadTree();
+      } else {
+        b.disabled = false; b.textContent = 'Export';
+        document.getElementById('q-msg').textContent = `export failed: ${j.detail || r.status}`;
+      }
+    };
+    row.querySelector('.q-graph').onclick = () => {
+      location.hash = '#/graph-focus/' + encodeURIComponent(n.id);
+    };
+    frag.appendChild(row);
+  }
+  list.appendChild(frag);
+  if (!shown) list.innerHTML = '<div class="text-xs text-gray-500 px-3 py-6 text-center">nothing to review 🎉</div>';
+}
+document.getElementById('q-filter').addEventListener('input', async () => {
+  if (queueCache) {
+    const docs = queueCache.data.nodes.filter(n => !n.hub && !n.missing && n.sync === 'mddb_only');
+    renderQueue(docs);
+  }
+});
+
+/* ================= graph view (lazy) ================= */
+let graphInited = false;
+
+async function initGraph() {
+  if (graphInited) {
+    const el = document.getElementById('chart');
+    if (window.Graph && el.clientWidth) Graph.width(el.clientWidth).height(el.clientHeight);
+    if (graphFocus) applyGraphFocus();
+    return;
+  }
+  graphInited = true;
+  if (window.matchMedia('(max-width: 767px)').matches)
+    document.getElementById('f-unlinked').checked = true;
+  if (typeof ForceGraph3D === 'undefined')
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'vendor/3d-force-graph.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('failed to load 3d-force-graph'));
+      document.head.appendChild(s);
+    });
+  startGraph();
+}
+
+function applyGraphFocus() {
+  if (!graphFocus) return;
+  focusNodeId = graphFocus.id;
+  if (graphFocus.depth > 0) document.getElementById('f-depth').value = String(graphFocus.depth);
+  graphFocus = null;
+  if (lastG) render(lastG);   // render() flies the camera post-layout
+}
+
+function startGraph() {
+  const qs = new URLSearchParams(location.search);
+  focusNodeId = (graphFocus && graphFocus.id) || qs.get('focus');
+  const paramDepth = (graphFocus && graphFocus.depth) || parseInt(qs.get('depth') || '0', 10);
+  if (paramDepth > 0) document.getElementById('f-depth').value = String(paramDepth);
+  graphFocus = null;
+
+  lastG = null; gdNodes = []; hiddenBanks = new Set();
+  paused = false; selNode = null; hoverNode = null; lastClick = { id: null, t: 0 };
+  neighbors.clear(); linksOf.clear(); hubOf.clear(); subParent.clear();
+  collapsed.clear(); byId.clear(); highlight.nodes.clear(); highlight.links.clear();
+
+  Graph = ForceGraph3D()(document.getElementById('chart'))
+    .backgroundColor('#0b0f14')
+    .showNavInfo(false)
+    .nodeId('id')
+    .nodeRelSize(4)
+    .linkOpacity(0.35)
+    .linkDirectionalArrowLength(l => l.type === 'supersedes' ? 5 : 0)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticles(l => highlight.links.has(l) ? 3 : 0)
+    .linkDirectionalParticleWidth(2.5)
+    .linkDirectionalParticleColor(() => '#e5e7eb')
+    .onNodeHover(n => {
+      if ((!n && !highlight.nodes.size) || (n && hoverNode === n)) return;
+      highlight.nodes.clear(); highlight.links.clear();
+      if (n) {
+        highlight.nodes.add(n.id);
+        for (const nb of neighbors.get(n.id) || []) highlight.nodes.add(nb);
+        for (const l of linksOf.get(n.id) || []) highlight.links.add(l);
+      }
+      hoverNode = n;
+      refreshHighlight();
+      document.body.style.cursor = n ? 'pointer' : 'default';
+    })
+    .onNodeDragEnd(n => { n.fx = n.x; n.fy = n.y; n.fz = n.z; })
+    .onNodeClick(n => {
+      const now = Date.now();
+      const dbl = lastClick.id === n.id && now - lastClick.t < 400;
+      lastClick = { id: n.id, t: now };
+      if (dbl) {
+        if (n.path) {
+          location.hash = '#/note/' + encodeURIComponent(n.path);
+        } else if (n.hub) {
+          toggleCollapse(n.id);
+        } else {
+          n.fx = n.fy = n.fz = undefined;
+        }
+        return;
+      }
+      focusNodeId = n.id;
+      if (depth() > 0) render(lastG);
+      else flyTo(n);
+      updateChip();
+      showDetail(n);
+    })
+    .nodeColor(n => {
+      if (highlight.nodes.size) {
+        if (n.id === (hoverNode && hoverNode.id)) return '#ffffff';
+        if (highlight.nodes.has(n.id)) return '#ffd166';
+        return 'rgba(80,95,115,0.12)';
+      }
+      return baseColor(n);
+    })
+    .linkColor(l => highlight.links.has(l) ? '#e5e7eb'
+                                         : (LINK_STYLE[l.type] || {}).color || '#3b4c63')
+    .linkWidth(l => highlight.links.has(l) ? 2.5
+                                         : (LINK_STYLE[l.type] || {}).width || 0.6)
+    .linkVisibility(l => !nodeHidden(lid(l)) && !nodeHidden(lid2(l)))
+    .nodeVisibility(n => !nodeHidden(n.id));
+
+  document.getElementById('d-collapse').onclick = () => {
+    if (selNode && selNode.hub) {
+      toggleCollapse(selNode.id);
+      document.getElementById('d-collapse').textContent =
+        collapsed.has(selNode.id) ? 'Expand members' : 'Collapse members';
+    }
+  };
+  document.getElementById('d-close').onclick = () =>
+    document.getElementById('detail').classList.add('hidden');
+  document.getElementById('d-open').onclick = () => {
+    if (selNode && selNode.path)
+      location.hash = '#/note/' + encodeURIComponent(selNode.path);
+  };
+  document.getElementById('d-export').onclick = async () => {
+    const btn = document.getElementById('d-export');
+    if (!selNode) return;
+    btn.disabled = true; btn.textContent = 'exporting…';
+    const r = await api('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: selNode.id }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      btn.textContent = 'exported ✓';
+      selNode.sync = 'synced';
+      selNode.path = j.path;
+      document.getElementById('d-open').classList.remove('hidden');
+      document.getElementById('d-status').innerHTML =
+        `<span style="color:#34d399">●</span> ${selNode.status || 'active'} · exported to ${esc(j.path)}`;
+      document.getElementById('msg').textContent = `exported → ${j.path}`;
+      loadTree(); queueCache = null;
+    } else {
+      btn.textContent = 'export failed';
+      document.getElementById('msg').textContent =
+        `export failed: ${j.detail || r.status}`;
+    }
+  };
+
+  document.getElementById('chip-local').onclick = () => {
+    focusNodeId = null;
+    document.getElementById('f-depth').value = '0';
+    updateChip();
+    render(lastG);
+  };
+
+  document.getElementById('search').addEventListener('change', e => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) return;
+    const n = gdNodes.find(x => (x.key || '') === e.target.value.trim() || x.id === e.target.value.trim())
+          || gdNodes.find(x => (x.label || '').toLowerCase() === q)
+          || gdNodes.find(x => (x.key || '').toLowerCase().includes(q)
+                            || (x.label || '').toLowerCase().includes(q));
+    if (n) {
+      focusNodeId = n.id;
+      if (depth() > 0) render(lastG);
+      else flyTo(n);
+      updateChip();
+    }
+    else document.getElementById('msg').textContent = `no node matching "${e.target.value.trim()}"`;
+  });
+
+  document.getElementById('btn-pause').onclick = () => {
+    paused = !paused;
+    paused ? Graph.pauseAnimation() : Graph.resumeAnimation();
+    document.getElementById('btn-pause').textContent = paused ? 'Resume' : 'Pause';
+  };
+  document.getElementById('btn-fit').onclick = () => Graph.zoomToFit(900, 50);
+  document.getElementById('btn-reload').onclick = () => { queueCache = null; load(); };
+  document.getElementById('btn-ctl').onclick = e => {
+    e.stopPropagation();
+    document.getElementById('ctls').classList.toggle('hidden');
+  };
+  document.addEventListener('click', e => {
+    const c = document.getElementById('ctls');
+    if (window.matchMedia('(max-width: 767px)').matches && !c.classList.contains('hidden')
+        && !e.target.closest('#ctls') && e.target.id !== 'btn-ctl')
+      c.classList.add('hidden');
+  });
+  document.getElementById('btn-legend').onclick = () =>
+    document.getElementById('legend').classList.toggle('hidden');
+  for (const id of ['f-subjects', 'f-entities', 'f-unlinked'])
+    document.getElementById(id).onchange = () => render(lastG);
+  for (const id of ['f-retracted', 'f-similar'])
+    document.getElementById(id).onchange = load;
+  document.getElementById('f-depth').onchange = () => { updateChip(); render(lastG); };
+
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input,select,textarea')) {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    if (!document.getElementById('v-graph').classList.contains('hidden')) {
+      if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
+      else if (e.key === 'f') Graph.zoomToFit(900, 50);
+      else if (e.key === ' ') { e.preventDefault(); document.getElementById('btn-pause').click(); }
+      else if (e.key === 'Escape') {
+        document.getElementById('detail').classList.add('hidden');
+        document.getElementById('legend').classList.add('hidden');
+        if (focusNodeId) {
+          focusNodeId = null;
+          document.getElementById('f-depth').value = '0';
+          updateChip();
+          render(lastG);
+        }
+      }
+    }
+  });
+  load();
+}
+
+/* ---- graph state ---- */
+const PALETTE = ['#4dd0e1','#81c784','#ffb74d','#ba68c8','#f06292','#a1887f',
+                 '#90a4ae','#fff176','#4db6ac','#e57373','#9575cd','#64b5f6',
+                 '#dce775','#ff8a65','#aed581','#4fc3f7'];
+const LINK_STYLE = {
+  supersedes:  { color: '#f59e0b', width: 2 },
+  rollup:      { color: '#34d399', width: 1.2 },
+  related:     { color: '#9575cd', width: 1 },
+  subject:     { color: '#3b4c63', width: 0.6 },
+  applies_to:  { color: '#2f4459', width: 0.6 },
+  same_subject:{ color: '#3b4c63', width: 0.4 },
+  same_entity: { color: '#2f4459', width: 0.4 },
+  similar:     { color: '#8aa0b5', width: 0.2 },
+  hub:         { color: '#4a5a74', width: 1.4 },
+};
+let Graph = null;
+let focusNodeId = null;
+let lastG = null, gdNodes = [], hiddenBanks = new Set();
+const neighbors = new Map();
+const linksOf = new Map();
+const hubOf = new Map();
+const subParent = new Map();
+const collapsed = new Set();
+const byId = new Map();
+const highlight = { nodes: new Set(), links: new Set() };
+let hoverNode = null, lastClick = { id: null, t: 0 };
+let paused = false, selNode = null;
+
+const lid = l => (typeof l.source === 'object' ? l.source.id : l.source);
+const lid2 = l => (typeof l.target === 'object' ? l.target.id : l.target);
+
+function nodeHidden(id) {
+  const n = byId.get(id);
+  if (!n) return false;
+  if (hiddenBanks.has(n.bank)) return true;
+  if (collapsed.size) {
+    if (!n.hub) {
+      const hubs = hubOf.get(id);
+      if (hubs && hubs.size && [...hubs].every(h => collapsed.has(h)))
+        return true;
+    } else if (n.subhub && collapsed.has(subParent.get(id))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function toggleCollapse(hubId) {
+  const collapsing = !collapsed.has(hubId);
+  collapsing ? collapsed.add(hubId) : collapsed.delete(hubId);
+  for (const [sid, pid] of subParent) {
+    if (pid === hubId) collapsing ? collapsed.add(sid) : collapsed.delete(sid);
+  }
+  Graph.nodeVisibility(Graph.nodeVisibility())
+       .linkVisibility(Graph.linkVisibility());
+}
+
+function refreshHighlight() {
+  Graph.nodeColor(Graph.nodeColor())
+       .linkColor(Graph.linkColor())
+       .linkWidth(Graph.linkWidth())
+       .linkDirectionalParticles(Graph.linkDirectionalParticles());
+}
+
+function baseColor(n) {
+  if (n.missing) return '#ef4444';
+  if (n.hub) return '#64748b';
+  const c = (window._catColor || {})[n.bank] || '#8aa0b5';
+  const dim = n.sync === 'vault_only' ||
+    ['retracted', 'superseded', 'expired'].includes(n.status);
+  return dim ? rgba(c, 0.35) : c;
+}
+
+function params() {
+  const p = new URLSearchParams();
+  p.set('hubs', '1');
+  if (!document.getElementById('f-retracted').checked) p.set('status', 'active');
+  if (document.getElementById('f-similar').checked) p.set('similar', '1');
+  return p.toString();
+}
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+
+function depth() { return parseInt(document.getElementById('f-depth').value, 10); }
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const SYNC_HUMAN = {
+  synced:     'in sync (vault + MDDB)',
+  mddb_only:  'in MDDB only — not yet exported to the vault',
+  vault_only: 'vault draft — not pushed to MDDB',
+  inbox:      'in inbox — awaiting review',
+};
+const STATUS_DOT = { active: '#34d399', draft: '#fbbf24', review: '#fbbf24',
+                     retracted: '#ef4444', superseded: '#9ca3af', expired: '#9ca3af' };
+
+function relDate(d) {
+  const days = Math.floor((Date.now() - new Date(d)) / 864e5);
+  if (isNaN(days)) return '';
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
+function tip(n) {
+  if (n.hub) {
+    const what = n.hub === 'subject' ? 'topic' : 'entity';
+    return `<b>${esc(n.label)}</b><br>` +
+      `<span class="dim">${what} hub${n.subhub ? ' (sub-cluster)' : ''}` +
+      `${n.members ? ` — ${n.members} docs` : ''}</span>`;
+  }
+  if (n.missing)
+    return `<b>${esc(n.key || n.id)}</b><br><span class="dim">referenced but ` +
+      `not in the graph — retracted, filtered, or in a hidden bank</span>`;
+
+  const bc = (window._catColor || {})[n.bank] || '#8aa0b5';
+  const dot = STATUS_DOT[n.status] || '#34d399';
+  let title = n.label || n.key || n.id;
+  if (n.bank === 'devin' && n.date)
+    title = `Session ${n.date} · ${String(n.key || '').split('/').pop().slice(0, 6)}`;
+
+  const lines = [
+    `<span style="color:${bc}">●</span> <b>${esc(title)}</b>`,
+    `<span class="dim">${esc(n.bank)} · ${esc((n.kind || 'note').replace(/-/g, ' '))}</span>`,
+  ];
+  if (n.excerpt) lines.push(`<i>${esc(n.excerpt)}</i>`);
+  lines.push(`<span style="color:${dot}">●</span> ${esc(n.status || 'active')} · ${esc(SYNC_HUMAN[n.sync] || n.sync || '')}`);
+
+  const foot = [];
+  if (n.subject) foot.push(`subject: ${esc(n.subject)}`);
+  if (n.written_by) foot.push(`by ${esc(n.written_by)}`);
+  if (n.use_count) foot.push(`recalled ${n.use_count}×`);
+  if (n.last_verified) foot.push(`verified ${relDate(n.last_verified)}`);
+  if (n.verdict) foot.push(`verdict: ${esc(n.verdict)}`);
+  if (foot.length) lines.push(`<span class="dim">${foot.join(' · ')}</span>`);
+  if (n.path) lines.push(`<span class="dim">double-click to open in vault</span>`);
+  return lines.join('<br>');
+}
+
+function ego(nodes, links, rootId, d) {
+  const adj = new Map();
+  for (const l of links) {
+    (adj.get(l.source) || adj.set(l.source, new Set()).get(l.source)).add(l.target);
+    (adj.get(l.target) || adj.set(l.target, new Set()).get(l.target)).add(l.source);
+  }
+  const keep = new Set([rootId]);
+  let frontier = [rootId];
+  for (let i = 0; i < d; i++) {
+    const next = [];
+    for (const id of frontier)
+      for (const nb of adj.get(id) || [])
+        if (!keep.has(nb)) { keep.add(nb); next.push(nb); }
+    frontier = next;
+    if (!frontier.length) break;
+  }
+  return {
+    nodes: nodes.filter(n => keep.has(n.id)),
+    links: links.filter(l => keep.has(l.source) && keep.has(l.target)),
+  };
+}
+
+function flyTo(n) {
+  const tryFly = () => {
+    if (n.x === undefined) { setTimeout(tryFly, 300); return; }
+    const r = 1 + 60 / Math.max(1, Math.hypot(n.x, n.y, n.z));
+    Graph.cameraPosition({ x: n.x * r, y: n.y * r, z: n.z * r }, n, 1200);
+    document.getElementById('msg').textContent =
+      `→ ${n.key || n.label} (${n.bank || n.hub || ''})`;
+  };
+  tryFly();
+}
+
+function showDetail(n) {
+  selNode = n;
+  const d = document.getElementById('detail');
+  if (n.hub) {
+    document.getElementById('d-title').textContent = n.label;
+    document.getElementById('d-meta').textContent =
+      `${n.hub === 'subject' ? 'topic' : 'entity'} hub${n.subhub ? ' · sub-cluster' : ''}`;
+    document.getElementById('d-status').innerHTML =
+      n.members ? `${n.members} docs in this ${n.hub === 'subject' ? 'topic' : 'entity'}` : '';
+    document.getElementById('d-foot').textContent = '';
+    document.getElementById('d-excerpt').classList.add('hidden');
+    document.getElementById('d-open').classList.add('hidden');
+    document.getElementById('d-export').classList.add('hidden');
+    const cb = document.getElementById('d-collapse');
+    cb.classList.remove('hidden');
+    cb.textContent = collapsed.has(n.id) ? 'Expand members' : 'Collapse members';
+    document.getElementById('d-hint').textContent =
+      'double-click a hub to collapse/expand it';
+    d.classList.remove('hidden');
+    return;
+  }
+  const bc = (window._catColor || {})[n.bank] || '#8aa0b5';
+  const dot = STATUS_DOT[n.status] || '#34d399';
+  let title = n.label || n.key || n.id;
+  if (n.bank === 'devin' && n.date)
+    title = `Session ${n.date} · ${String(n.key || '').split('/').pop().slice(0, 6)}`;
+  document.getElementById('d-title').innerHTML =
+    `<span style="color:${bc}">●</span> ${esc(title)}`;
+  document.getElementById('d-meta').textContent =
+    `${n.bank} · ${(n.kind || 'note').replace(/-/g, ' ')}`;
+  const ex = document.getElementById('d-excerpt');
+  if (n.excerpt) { ex.textContent = n.excerpt; ex.classList.remove('hidden'); }
+  else ex.classList.add('hidden');
+  document.getElementById('d-status').innerHTML =
+    `<span style="color:${dot}">●</span> ${esc(n.status || 'active')} · ` +
+    `${esc(SYNC_HUMAN[n.sync] || n.sync || '')}`;
+  const foot = [];
+  if (n.subject) foot.push(`subject: ${n.subject}`);
+  if (n.written_by) foot.push(`by ${n.written_by}`);
+  if (n.use_count) foot.push(`recalled ${n.use_count}×`);
+  if (n.last_verified) foot.push(`verified ${relDate(n.last_verified)}`);
+  if (n.verdict) foot.push(`verdict: ${n.verdict}`);
+  document.getElementById('d-foot').textContent = foot.join(' · ');
+  document.getElementById('d-open').classList.toggle('hidden', !n.path);
+  document.getElementById('d-export').classList.toggle('hidden',
+    n.sync !== 'mddb_only');
+  document.getElementById('d-collapse').classList.add('hidden');
+  const eb = document.getElementById('d-export');
+  eb.disabled = false; eb.textContent = 'Export to vault';
+  document.getElementById('d-hint').textContent =
+    n.path ? 'double-click also opens it' : '';
+  d.classList.remove('hidden');
+}
+
+function updateChip() {
+  const chip = document.getElementById('chip-local');
+  const d = depth();
+  if (focusNodeId && d > 0) {
+    const n = byId.get(focusNodeId);
+    chip.textContent = `local·${d}: ${(n && (n.label || n.key)) || focusNodeId}  ✕`;
+    chip.classList.remove('hidden');
+  } else {
+    chip.classList.add('hidden');
+  }
+}
+
+async function load() {
+  const msg = document.getElementById('msg');
+  msg.textContent = 'loading…';
+  const r = await api('/api/graph?' + params());
+  if (!r.ok) { msg.textContent = 'graph failed: ' + r.status; return; }
+  lastG = await r.json();
+  render(lastG);
+}
+
+function render(g) {
+  if (!g) return;
+  const msg = document.getElementById('msg');
+  const showSubjects = document.getElementById('f-subjects').checked;
+  const showEntities = document.getElementById('f-entities').checked;
+  const drop = new Set();
+  for (const n of g.nodes || []) {
+    if (n.hub === 'subject' && !showSubjects) drop.add(n.id);
+    if (n.hub === 'applies_to' && !showEntities) drop.add(n.id);
+  }
+  const hideUnlinked = document.getElementById('f-unlinked').checked;
+  let nodes = (g.nodes || []).filter(n => !drop.has(n.id));
+  let links = (g.links || [])
+    .filter(l => !drop.has(l.source) && !drop.has(l.target));
+  if (hideUnlinked) {
+    const linked = new Set();
+    for (const l of links) { linked.add(l.source); linked.add(l.target); }
+    nodes = nodes.filter(n => linked.has(n.id));
+  }
+
+  let egoActive = false;
+  if (focusNodeId && depth() > 0) {
+    const e = ego(nodes, links, focusNodeId, depth());
+    if (e.nodes.length > 1) { nodes = e.nodes; links = e.links; egoActive = true; }
+  }
+
+  const degree = new Map();
+  neighbors.clear(); linksOf.clear(); hubOf.clear();
+  subParent.clear(); byId.clear();
+  for (const l of links) {
+    degree.set(l.source, (degree.get(l.source) || 0) + 1);
+    degree.set(l.target, (degree.get(l.target) || 0) + 1);
+    if (l.type === 'subject' || l.type === 'applies_to') {
+      if (!hubOf.has(l.source)) hubOf.set(l.source, new Set());
+      hubOf.get(l.source).add(l.target);
+    }
+    if (l.type === 'hub') {
+      subParent.set(l.source, l.target);
+    }
+    for (const [a, b] of [[l.source, l.target], [l.target, l.source]]) {
+      if (!neighbors.has(a)) neighbors.set(a, new Set());
+      neighbors.get(a).add(b);
+      if (!linksOf.has(a)) linksOf.set(a, new Set());
+      linksOf.get(a).add(l);
+    }
+  }
+
+  const banks = [...new Set(nodes.filter(n => !n.hub).map(n => n.bank || '?'))];
+  window._catColor = Object.fromEntries(banks.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
+
+  const gd = {
+    nodes: nodes.map(n => ({ ...n, _deg: degree.get(n.id) || 0 })),
+    links,
+  };
+  gdNodes = gd.nodes;
+  for (const n of gdNodes) byId.set(n.id, n);
+
+  const dl = document.getElementById('nodes-list');
+  dl.innerHTML = '';
+  for (const n of gdNodes) {
+    if (n.hub || n.missing) continue;
+    const o = document.createElement('option');
+    o.value = n.label || n.key;
+    o.label = n.key || '';
+    dl.appendChild(o);
+  }
+
+  Graph.graphData(gd)
+    .nodeLabel(tip)
+    .nodeVal(n => n.hub ? (n.subhub ? 1.5 + Math.min(n._deg * 0.4, 6)
+                                   : 2 + Math.min((n.members || n._deg) * 0.05, 8))
+                        : 0.6 + Math.min(n._deg * 0.5, 8) + Math.min((n.use_count || 0) * 0.2, 3));
+
+  const lb = document.getElementById('legend-banks');
+  lb.innerHTML = '';
+  for (const b of banks) {
+    const s = document.createElement('span');
+    s.className = 'bank-chip' + (hiddenBanks.has(b) ? ' off' : '');
+    s.innerHTML = `<span style="color:${window._catColor[b]}">●</span> ${b}`;
+    s.title = 'click to hide/show this bank';
+    s.onclick = () => {
+      hiddenBanks.has(b) ? hiddenBanks.delete(b) : hiddenBanks.add(b);
+      s.classList.toggle('off');
+      Graph.nodeVisibility(Graph.nodeVisibility())
+           .linkVisibility(Graph.linkVisibility());
+    };
+    lb.appendChild(s);
+  }
+
+  if (g.context && g.context.deploy === 'public') {
+    const b = document.getElementById('deploy-badge');
+    b.textContent = `public view — ${g.stats.hidden_banks} banks hidden`;
+    b.classList.remove('hidden');
+  }
+  const s = g.stats || {};
+  msg.textContent = (g.warning ? g.warning + ' · ' : '') +
+    `${s.nodes} nodes · ${s.links} links · synced ${s.synced} · mddb-only ${s.mddb_only} · vault-only ${s.vault_only}` +
+    (s.dangling ? ` · ⚠ ${s.dangling} dangling` : '') +
+    (egoActive ? ' · local view' : '');
+  if (s.synced !== undefined)
+    document.getElementById('coverage').textContent =
+      `coverage · synced ${s.synced} · vault-only ${s.vault_only} · mddb-only ${s.mddb_only}`;
+
+  updateChip();
+  Graph.onEngineStop(() => {
+    Graph.zoomToFit(900, 50);
+    if (focusNodeId) {
+      const n = byId.get(focusNodeId);
+      if (n) flyTo(n);
+    }
+    Graph.onEngineStop(() => {});
+  });
+}
+
+/* ================= boot ================= */
 loadTree(); refreshStatus();
-const initNote = new URLSearchParams(location.search).get('note');
-if (initNote) openNote(initNote);
+const bootQ = new URLSearchParams(location.search);
+if (location.pathname.replace(/\/$/, '').endsWith('/graph')) {
+  history.replaceState(null, '', BASE + '/' + location.search + '#/graph' +
+    (bootQ.get('focus') ? '?focus=' + bootQ.get('focus') : '') +
+    (bootQ.get('depth') ? '&depth=' + bootQ.get('depth') : ''));
+}
+if (bootQ.get('note') && !location.hash)
+  location.hash = '#/note/' + encodeURIComponent(bootQ.get('note'));
+route();
 </script>
 </body>
 </html>
