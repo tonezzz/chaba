@@ -28,7 +28,87 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Failed-units triage sweep 2026-10-03
+    text: 'Latest audit-hosts runs (2026-10-03 20:38 UTC+7) show persistent failed-unit deltas on every host. Root causes
+      triaged from journals: (idc01) weekly scenario-bench timers collide — reports/tools refuse while casting is running,
+      bench-casting is 203/EXEC (bad ExecStart), casting hit timeout; cam-wall-pull-vps and tony-dell cam-wall-pull both SIGTERM''d
+      mid-run; mddb-memory-standard exits 1 by design on breach (last breach: Thai print job). (tony-dell) cast-browser +
+      cast-desktop@1 expected in SSOT but units deleted; overnight-assessment exits 1 after ~3min and focus-dispatcher-overnight
+      completes with errors — the pipeline that triages this very inbox is degraded. (tony-omen) focus-dispatcher x2 and chaba-audit-watchdog
+      exit 1; mcp-health-snapshot/ada-memory-pull succeed then exit nonzero (result quirk). (mn01) mn01-canary fails nightly,
+      persistent across days.'
+    status: active
+    priority: high
+    started: '2026-10-07'
+    estimated_duration: 1 session
+    tags:
+    - audit
+    - failed-units
+    - triage
+    subtasks:
+    - label: Fix overnight focus pipeline on tony-dell (overnight-assessment + focus-dispatcher-overnight errors)
+      status: completed
+      completed: '2026-10-03'
+      note: Root causes cleared — chaba-tony-dell wedged mid-rebase (camwall conflict vs upstream 7c316228; resolved + pulled
+        to tip) and the 2026-09-10 handoff sat first in Active Branch Focus with status monitoring, gating advance_focus.
+        Handoff closed honestly (barrier subtask extracted to backlog), gate returns complete. Also fixed the CMS-audit CI
+        failure that kept the 'Fix CI CMS audit' focus active — cam-wall-cms now emits sources+provenance footer and the 66
+        regenerated pages pass R1/R2.
+    - label: Fix focus-dispatcher + chaba-audit-watchdog on tony-omen
+      status: in_progress
+      note: Same two gates exist on omen — stale handoff (clears on next pull of bb1c1678/26dd1cac) + activate_inbox refusing
+        while the CMS-audit fix item is the active branch focus (correctly active — CI fix shipped, awaiting tonight's snapshot+run
+        to go green).
+    - label: Diagnose mn01-canary persistent nightly failure
+      status: completed
+      completed: '2026-10-03'
+      note: Canary correctly reported 'ada-pi behind origin' — mn01's standby checkout was stale (8dd05ea vs 79721bc). Pulled
+        ff-only, clean.
+    - label: Serialize idc01 scenario-bench weekly timers; fix ada-bench-casting 203/EXEC
+      status: completed
+      completed: '2026-10-04'
+      note: No serialization needed — timers were already day-staggered (reports Thu 03:30, tools Fri 03:30, casting Sat 04:30);
+        the refusals were a stale overlap lock, not a calendar collision. ada-bench-casting ExecStart pointed at nonexistent
+        scripts/bench-casting-when-ready.sh — renamed to scripts/preflight-bench.sh on idc01 (daemon-reload only, no restart).
+    - label: Reconcile tony-dell cast SSOT drift (cast-browser, cast-desktop@1 missing)
+      status: completed
+      completed: '2026-10-04'
+      note: Cast moved to tony-omen 2026-10 — dell now runs cast-browser-proxy.service (:8799 proxy to omen) + cast-ha-panel.timer.
+        expected_services updated accordingly; omen keeps cast-browser, cast-desktop@0 and cast-shots-http. cast-desktop@0
+        added to omen known_failed with a verify-needed action rather than silently retired.
+    - label: Investigate cam-wall-pull SIGTERM on both lanes (tony-dell + idc01-vps)
+      status: completed
+      completed: '2026-10-04'
+      note: Not a crash — units were deliberately stopped during the cam-wall pipeline rework (journal shows explicit Stopped
+        alongside go2rtc). cam-wall-pull.timer re-enabled on dell; a manual run completed cleanly after go2rtc/camera lifecycle
+        noise. pull-vps recorded in idc01 known_failed with verify-after-camwall-rework action.
+    - label: Fix ada-flood-news exit 2 INVALIDARGUMENT on tony-dell
+      status: completed
+      completed: '2026-10-04'
+      note: Page key renamed upstream — flood-report-nongdon became flood-report-nongdon-saraburi; feeds config still targeted
+        the dead key. Renamed the feed key, repaired parent/children meta on both live docs via full-doc upsert (the script's
+        unchanged-items dedup skips meta-only updates), re-ran --all clean.
+    - label: Decide mddb-memory-standard breach vs known_failed (exit 1 = alert by design)
+      status: completed
+      completed: '2026-10-04'
+      note: Exit 1 IS the alert — the sweep sends ops event + HA notification on breach (last run 11 phantom ops + speaker
+        prints). Added to idc01 known_failed with action review-breach-journal so the delta stops double-firing; the service's
+        own notification remains the breach signal.
+    - label: Suppress desktop-noise units in audits (xdg-document-portal, session scopes, autostart)
+      status: completed
+      completed: '2026-10-04'
+      note: 'dell: xdg-document-portal + app-devin\x2ddesktop@autostart added to known_failed. omen: chaba-audit-watchdog
+        (alert-by-design), mcp-health-snapshot + ada-memory-pull (succeed-then-exit-nonzero quirks) recorded. audit-cast deliberately
+        left LOUD — it is correctly alerting that go2rtc is stopped while tv_display=camera (cast shows black).'
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
 - title: Quick Wins
   icon: quick
   layout: list
