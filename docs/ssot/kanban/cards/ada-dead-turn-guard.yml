@@ -1,0 +1,59 @@
+id: ada-dead-turn-guard
+title: Guard against bare 'response:' dead turns + tool-call text leak after tool results
+column: queued
+priority: high
+program: ada-tools
+updated: 2026-10-07 18:04
+tags:
+- ada
+- tools
+- reliability
+- audit
+note: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory search
+  had ALREADY returned the answer (plate 5ขว 6249 in hits) but Ada emitted literal "response:" text both times —
+  user heard nothing and repeated the question. Same session: "tool-call text leaked into transcript" WARNs (set_facial_expression{...}
+  spoken verbatim). Known class — ada-session-health doc (2026-09-27) diagnosed empty/off-focus turns. Likely contributor:
+  ada_memory_search hits return entire documents (30-50KB each); input tokens ran 27-33k/turn.'
+spec: 'ada-pi realtime_provider: three guards. 1) Dead-turn detector — when the model output text is empty or degenerate
+  after a completed turn ("response:" prefix only, whitespace, lone structural tags), do NOT pass it to TTS/transcript
+  as the answer; emit an ops event (dead_turn) and deterministically retry once, or synthesize a fallback that speaks
+  the actual tool result ("พบแล้วค่ะ ทะเบียน 5ขว 6249" shape). 2) Tool-call text sanitizer — strip model-emitted
+  text shaped like tool calls (name{key:value,...}) before TTS + transcript write; log leak_detected ops event.
+  3) Memory hit truncation — cap ada_memory_search hit content (~2KB, keep key/title/score/meta) so a 5-hit search
+  cannot inject 100KB+ into context. Regression test: replay the plate-question turn shape — tool returns hits with
+  the plate, model output stubbed to "response:" — assert user-facing answer contains the plate, never the literal
+  tag. Preserve confirm-gate + degraded flag behavior; a degraded search should still be announced as degraded.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: running
+  runner: tony-dell
+  task_id: 20261007-180359-ada-pi-realtime-provider-three
+expected_goals:
+- id: dead-turn-test
+  label: dead-turn regression test exists and passes
+  check:
+    run: cd /home/tony/CascadeProjects/ada-pi && ./venv/bin/python -m unittest discover -s tests -k dead -v
+    expect: exit 0
+- id: sanitizer-strip
+  label: tool-call-shaped text stripped before transcript
+  check:
+    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "leak_detected\|tool_call_leak\|_sanitize" backend/realtime_provider.py
+    expect: exit 0
+- id: hit-truncation
+  label: memory search hit content capped
+  check:
+    run: cd /home/tony/CascadeProjects/ada-pi && grep -rn "truncat\|max_content\|2000\|2048" backend/tool_runner/*.py
+      backend/mddb_client.py
+    expect: exit 0
+comms:
+- at: 2026-10-07 18:05
+  from: devin
+  text: 'filed from transcript audit — session 56d2e4d167 evidence: bare response: x2 at 13:41 BKK, set_facial_expression
+    leak WARNs, 27-33k token/turn bloat; memory tool had already returned the correct answer both times'
+- at: 2026-10-07 18:04
+  from: chaba
+  text: dispatched 20261007-180359-ada-pi-realtime-provider-three on ada-pi
+claim:
+  since: 2026-10-07 18:04
+  session: 20261007-180359-ada-pi-realtime-provider-three
