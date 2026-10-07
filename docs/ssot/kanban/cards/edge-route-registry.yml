@@ -43,3 +43,13 @@ comms:
     tony-ha + ada-ha www (voice ?v=12, chat ?v=7). Verified
     /local/routes.json serves ada-tony ws->idc03. Next: phase 2 apps.d/
     Caddy snippets from the same registry.'
+- at: 2026-10-07 11:35
+  from: devin
+  text: 'phase 2a done: render-routes.py --caddy emits the FULL Caddyfile
+    (preamble template + generated route blocks + CUSTOM_BLOCKS for 4
+    one-offs). Equivalence-diffed vs manual file, caddy validated, swapped
+    live via in-place write + caddy reload (7cb549b1). Smoke test: all
+    live routes 200; /snapshot 502 + trade/chaba-h3 404 are pre-existing.
+    Edit flow: registry -> render --caddy -> validate -> cat > Caddyfile
+    -> reload. Still open: mn01 edge + VPS edge consume registry (2b),
+    verify-probe health lane, cloudflared eval (phase 3).'
