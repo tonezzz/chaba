@@ -1,10 +1,12 @@
 id: ada-dead-turn-guard
 title: Guard against bare 'response:' dead turns + tool-call text leak after tool results
-brief: "Transcript audit 2026-10-07 (session 56d2e4d167): user asked \"รถ KK ทะเบียนอะไร\" twice at 13:41; memory search had ALREADY returned the answer (plate 5ขว 6249 in hits)… A worker session is on it — nothing needed unless it posts a question."
-column: queued
+brief: 'Transcript audit 2026-10-07 (session 56d2e4d167): user asked "รถ KK ทะเบียนอะไร" twice at 13:41; memory
+  search had ALREADY returned the answer (plate 5ขว 6249 in hits)… A worker session is on it — nothing needed unless
+  it posts a question.'
+column: done
 priority: high
 program: ada-tools
-updated: 2026-10-07 18:04
+updated: 2026-10-07 18:37
 tags:
 - ada
 - tools
@@ -27,9 +29,10 @@ spec: 'ada-pi realtime_provider: three guards. 1) Dead-turn detector — when th
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-180359-ada-pi-realtime-provider-three
+  result: 20261007-180359-ada-pi-realtime-provider-three finished (inactive) — see `devin-dispatch logs 20261007-180359-ada-pi-realtime-provider-three`
 expected_goals:
 - id: dead-turn-test
   label: dead-turn regression test exists and passes
@@ -58,6 +61,31 @@ comms:
 - at: 2026-10-07 18:04
   from: devin
   text: 'started: exploring realtime_provider.py for dead-turn/tool-leak/memory-truncation guard points'
+- at: 2026-10-07 18:33
+  from: devin
+  text: 'done: 3 guards landed in realtime_provider.py + tool_runner/memory.py — dead_turn detector w/ 1x digest
+    retry + พบแล้วค่ะ-fallback, generic name{key:value} sanitizer (leak_detected ops), 2048-char hit cap. tests/test_dead_turn.py
+    13/13 (plate replay, degraded announced, scaffold never persisted). Suite 799p/2f — both pre-existing tool-lint
+    fails unrelated. SSOT: docs/ssot/jobs/ada/2026-10-07-dead-turn-guard.yml'
+- at: 2026-10-07 18:34
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 18:34
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (5 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 18:34
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-180359-ada-pi-realtime-provider-three dirty — 5 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-07 18:37
+  from: chaba
+  text: 'merge guard: dispatch/20261007-180359-ada-pi-realtime-provider-three merged into origin/main; worktree
+    still dirty: 5 uncommitted file(s)'
+- at: 2026-10-07 18:37
+  from: tony
+  text: closed by Tony
+- at: 2026-10-07 18:37
+  from: chaba
+  text: session recondite-speedwell… hidden
 claim:
   since: 2026-10-07 18:04
-  session: 20261007-180359-ada-pi-realtime-provider-three

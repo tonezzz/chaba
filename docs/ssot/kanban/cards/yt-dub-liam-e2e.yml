@@ -1,6 +1,7 @@
 id: yt-dub-liam-e2e
 title: 'E2E user scenario: Ada finds Liam+Noel clip -> dub -> play screen 2'
-brief: "End-to-end test: ask Ada to find a Liam-and-Noel interview clip, dub it, and play it on the TV. Waiting in the backlog — no action needed."
+brief: 'End-to-end test: ask Ada to find a Liam-and-Noel interview clip, dub it, and play it on the TV. Waiting
+  in the backlog — no action needed.'
 column: backlog
 program: yt-voice-dub
 area: scenario
@@ -23,7 +24,7 @@ spec: 'Depends on: yt-voice-dub pipeline (scripts/ops/yt-vtt-*.py, yt-live-api :
   (chaba-cached-videos.timer), cast_to_screen screen-2 routing. Risks: "only two people talking" needs caption/content
   judgement — Ada may need to fetch the transcript and check speaker turns; screen-2 routing names are in the cast
   tool guide.'
-updated: 2026-10-07 18:09
+updated: 2026-10-07 18:36
 comms:
 - at: 2026-10-07 08:45
   from: tony
@@ -82,15 +83,62 @@ comms:
 - at: 2026-10-07 18:09
   from: devin
   text: 're-dispatch 180802: checking for live-pass answer + re-verifying headless preconditions'
+- at: 2026-10-07 18:26
+  from: devin
+  text: 'pass-1 diagnosis (transcript ece770ccb0): zero tool errors — failure was discovery. cms_read list limit=10
+    saw only cam/flood pages (373 docs, unordered, no search action); voice-dub-demos catalog was stale (no LLALMFmabV4);
+    reports-index flooded 59/60 cam rows; memory search hit devin-session junk (degraded). Fixed chaba-side: voice-dub-demos
+    now lists LLALMFmabV4-dub.mp4 + numbered-screen recipe (cast_to_screen play, direct mp4); reports-index regen
+    w/ per-domain cap + th dedupe — media pages '
+- at: 2026-10-07 18:26
+  from: devin
+  text: 'raised request discovery-gaps-fixed-please-re-run-the-v-1ab017: Discovery gaps fixed — please re-run the
+    voice pass when convenient: ask Ada for the Liam+Noel Thai dub, then "play it o'
+- at: 2026-10-07 18:27
+  from: devin
+  text: 'final: pass-1 failure diagnosed as discovery (not infra) — voice-dub-demos updated with LLALMFmabV4 + screen-N
+    recipe, reports-index now surfaces media pages (chaba cms_index.py per-domain cap), cached-videos title bilingual.
+    ada-pi-side fixes filed as ada-cms-discovery-fixes. Re-run request raised for Tony. Trail: docs/ssot/jobs/yt-dub/2026-10-07-yt-dub-liam-e2e-pass1-diagnosis.yml'
+- at: 2026-10-07 18:28
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 18:28
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (2 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 18:28
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-180802-depends-on-yt-voice-dub-pipeli dirty — 2 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-07 18:28
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261007-180802-depends-on-yt-voice-dub-pipeli not in origin/master
+    — close will block until merged'
+- at: 2026-10-07 18:35
+  from: tony
+  text: 'answered discovery-gaps-fixed-please-re-run-the-v-1ab017: Ada still has no memory about it. Then disconnected.
+    check my recent session.'
+- at: 2026-10-07 18:35
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-07 18:35
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 18:36
+  from: chaba
+  text: dispatched 20261007-183606-depends-on-yt-voice-dub-pipeli on chaba
+- at: 2026-10-07 18:36
+  from: devin
+  text: 'dispatch 183606: Tony reported Ada didn''t know about the clip — auditing Ada transcript to find what she
+    was asked and why she missed it'
 action:
   type: dispatch
   status: running
-  result: 20261007-175000-depends-on-yt-voice-dub-pipeli finished (inactive) — see `devin-dispatch logs 20261007-175000-depends-on-yt-voice-dub-pipeli`
+  result: 20261007-180802-depends-on-yt-voice-dub-pipeli finished (inactive) — see `devin-dispatch logs 20261007-180802-depends-on-yt-voice-dub-pipeli`
   runner: tony-dell
-  task_id: 20261007-180802-depends-on-yt-voice-dub-pipeli
+  task_id: 20261007-183606-depends-on-yt-voice-dub-pipeli
 claim:
-  since: 2026-10-07 18:08
-  session: 20261007-180802-depends-on-yt-voice-dub-pipeli
+  since: 2026-10-07 18:36
+  session: 20261007-183606-depends-on-yt-voice-dub-pipeli
 requests:
 - id: all-headless-preconditions-verified-gree-a29f61
   ask: All headless preconditions verified green. The card verify needs your live voice pass — ask Ada to find the
@@ -100,3 +148,11 @@ requests:
   at: 2026-10-07 17:54
   from: devin
   answer: Check my transcript, Ada didn't know about it.
+- id: discovery-gaps-fixed-please-re-run-the-v-1ab017
+  ask: 'Discovery gaps fixed — please re-run the voice pass when convenient: ask Ada for the Liam+Noel Thai dub,
+    then "play it on screen 2", "what videos are cached", then stop. voice-dub-demos now lists LLALMFmabV4-dub.mp4
+    with the cast_to_screen recipe; reports-index surfaces both pages.'
+  status: answered
+  at: 2026-10-07 18:26
+  from: devin
+  answer: Ada still has no memory about it. Then disconnected. check my recent session.
