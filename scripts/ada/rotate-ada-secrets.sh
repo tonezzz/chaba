@@ -53,11 +53,12 @@ restart_units() {
     mn01)      echo "ada-ha-tony.service ada-ha-michael.service" ;;
     tony-dell) echo "ada-pi-pwa.service chaba-guest.service chaba-guest-lan.service" ;;
     idc03)     echo "ada-ha-tony.service ada-ha-michael.service ada-pi-pwa.service gemini-ollama-proxy.service" ;;
+    idc02)     echo "ada-lab.service" ;;
     idc01)     echo "" ;;  # warm-DR: update standby envs, but units are masked — the is-active gate skips restarts
   esac
 }
 
-for host in mn01 tony-dell idc03 idc01; do
+for host in mn01 tony-dell idc03 idc02 idc01; do
   echo "=== $host ==="
   ssh "$host" GEMINI_NEW="$GEMINI_NEW" HA_TONY_REMOTE="$HA_TONY_REMOTE" \
     HA_TONY_LOCAL="$HA_TONY_LOCAL" HA_MICHAEL="$HA_MICHAEL" \
