@@ -2,7 +2,7 @@ id: precommit-warning-baseline
 title: 'Pre-commit SSOT gate: baseline known warnings, fail only on new'
 brief: 'The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges.
   Plan: keep a baseline and fail only on new warnings. In the backlog — no action needed.'
-column: doing
+column: review
 priority: medium
 note: The optimize check fails a commit when ANY staged SSOT file has a warning — including pre-existing ones already
   filed to focus-inbox. Merges stage every changed file, so known debt blocks merge commits (hit 2026-10-07 merging
@@ -34,9 +34,25 @@ comms:
   from: devin
   text: 'implementing option (a): committed reports/SSOT_OPTIMIZATION_WARNINGS.json as baseline; husky pre-commit
     fails only on warnings absent from baseline; CI gate gets same treatment'
+- at: 2026-10-08 06:27
+  from: devin
+  text: 'done in 46f8fcc on dispatch/20261007-231022: option (a) shipped — committed warnings baseline + ssot-optimize-gate.mjs,
+    husky hook and CI fail only on non-baselined warnings; baseline seeded from origin/master bc172cc. Side note:
+    2 jobs YAMLs on master have real syntax errors (baselined as known debt, worth a fix card). Trail: docs/ssot/jobs/infrastructure/2026-10-07-precommit-warning-baseline.yml'
+- at: 2026-10-08 06:29
+  from: mn01
+  text: 'finished (ok): exit=0 aseline.yml`, the card moved to `done`, and the full summary is in `dispatch-outcome.md`.
+    | devin-task-20261007-2'
+- at: 2026-10-08 06:29
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: mn01
-updated: 2026-10-08 06:19
+  result: 'exit=0 aseline.yml`, the card moved to `done`, and the full summary is in `dispatch-outcome.md`. | devin-task-20261007-231022-options-a-baseline-file-report.service:
+    Consumed 54.500s CPU time over 17min 34.472s wall clock time, 339.7M memory peak.'
+updated: 2026-10-08 06:29
+claim: {}

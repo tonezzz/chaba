@@ -10,7 +10,7 @@ lab:
   review_by: '2026-10-18'
 note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to
   keep leader stable.'
-updated: 2026-10-08 06:21
+updated: 2026-10-08 06:46
 comms:
 - at: 2026-10-05 22:55
   from: tony
@@ -36,6 +36,18 @@ comms:
 - at: 2026-10-08 06:21
   from: chaba
   text: started devin-task-20261008-062116-bench-mddb-flat-vs-quantized-v on tony-omen (dispatch)
+- at: 2026-10-08 06:26
+  from: devin
+  text: 'Picked up. Plan: scratch mddbd on idc01 over a follower-DB copy (leader + follower untouched), flip collection
+    quantization configs across flat/int8/int8+diskOnly states on identical vectors, measure recall@10 vs exact
+    baseline + latency + RSS. Standing up the bench env now.'
+- at: 2026-10-08 06:46
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index is a small slice
+    vs FTS+bolt; FAIL >=25%). Latency: worse on big coll'
 action:
   type: dispatch
   status: running

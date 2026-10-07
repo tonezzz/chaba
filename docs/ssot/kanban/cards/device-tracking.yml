@@ -15,7 +15,7 @@ note: 'Sources already deployed — this is a read/aggregate layer, not new trac
   state changes.'
 help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo,
   line pushMessage; GEV pin: gev_command annotate'
-updated: 2026-10-08 06:21
+updated: 2026-10-08 06:28
 comms:
 - at: 2026-10-06 09:40
   from: devin
@@ -42,6 +42,12 @@ comms:
   from: devin
   text: 'starting: found existing ada_track_device (mddb beacon + tailscale); scoping HA device_tracker + LAN digest
     + logbook merge and lost-mode'
+- at: 2026-10-08 06:28
+  from: devin
+  text: 'all four sources verified live: HA device_tracker.tony_ip (GPS+battery, TONY-IP enrolled; no ipad tracker
+    yet), beacon mddb (tony-omen ~5min), tailnet fleet (iPhones DNSName iphone-15/tony-ipad — HostName=localhost
+    bug in old code), LAN scan /local/ha/network-scan-latest.json fresh 2min (network-scan-tony.timer). Building
+    merge layer.'
 action:
   type: dispatch
   status: running

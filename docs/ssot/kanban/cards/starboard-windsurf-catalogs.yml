@@ -9,7 +9,7 @@ note: 'Goal: locate every Starboard Windsurfing product catalog PDF — boards, 
   (year, title, range, language, source URL, sha256, archived flag) plus the PDFs themselves landed in doc-archive
   so they are searchable. Live status page: CMS `starboard-catalogs` — auto-updated every 30 min by scripts/ada/starboard-tracker-update.py
   (card state + manifest + comms tail rendered into a managed block).'
-updated: 2026-10-08 05:57
+updated: 2026-10-08 06:28
 comms:
 - at: 2026-10-06 22:10
   from: tony
@@ -20,6 +20,18 @@ comms:
 - at: 2026-10-08 05:57
   from: tony
   text: queued for processing
+- at: 2026-10-08 06:26
+  from: chaba
+  text: dispatched 20261008-062650-starboard-windsurfing-find-and on chaba
+- at: 2026-10-08 06:28
+  from: devin
+  text: Session started — enumerating Starboard catalog PDFs across official site, archive.org, dealer mirrors.
+    doc-archive on idc03 confirmed reachable.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-dell
+  task_id: 20261008-062650-starboard-windsurfing-find-and
+claim:
+  session: 20261008-062650-starboard-windsurfing-find-and
+  since: 2026-10-08 06:26
