@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly AI edge feed -> CMS ai-edge-report page (arXiv/HF/GitHub)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+WorkingDirectory=%h/CascadeProjects/chaba
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/report-ai-edge.py
