@@ -1,0 +1,68 @@
+id: 2026-10-07-idc03-vault-checkout-convergence
+title: Converge idc03 ~/CascadeProjects/chaba-vault checkout to origin/master
+date: "2026-10-07"
+domain: infrastructure
+card: idc03-vault-checkout-drift
+actor: devin (dispatch worktree dispatch/20261007-171350-safety-this-checkout-is-live-p)
+status: done
+
+decision: |
+  Chose card spec option (a) — full convergence. The "dirty" work turned out
+  to be a manual backport of upstream commits, not unmerged local work, so
+  take-origin was safe everywhere.
+
+snapshot:
+  - "git stash push -m 'vault-local-mods snapshot 2026-10-07' (kept as stash@{0})"
+  - "wip branch wip/vault-mods-20261007 -> stash commit (durable ref)"
+  - "~/vault-untracked-backup-20261007.tgz — tar of all 72 untracked paths"
+
+dirty_file_review:
+  take_origin:
+    - scripts/ada/memory-distill.py        # worktree == origin after backport
+    - scripts/ada/memory-health-check.py   # identical
+    - scripts/ada/recall-drift-report.py   # identical
+    - scripts/ada/memory-gap-report.py     # differed only by stale 100.74.146.0 + idc01 docstring
+    - scripts/ada/memory-staleness-sweep.py # differed only by stale 100.74.146.0
+    - scripts/ada/sync-ada-memory-to-mddb.py # staged surgical patch == origin
+    - stacks/web/public/apps/obsidian/{graph,index}.html # identical to origin
+  notes: >
+    All 5 named dirty scripts replaced the "ssh tony-dell chaba-event-log.py"
+    emit with `import chaba_event` — a hand-backport of upstream f1fa7c72
+    (chaba-event HTTP fallback). Untracked scripts/ada/chaba_event.py was
+    byte-identical to the tracked upstream file. No intentional unmerged
+    work found — nothing needed keep-local.
+
+merge:
+  - "removed ~33 untracked vault docs byte-identical to origin blobs (merge collisions)"
+  - "kept ~38 untracked local-only extract docs (new vault data, untouched by merge)"
+  - "git merge origin/master --no-edit: CLEAN, no conflicts"
+  - "result: master ahead 3 / behind 0 (local: inbox-triage commit, merge, ip-sweep commit)"
+
+ip_sweep:
+  - "apps/obsidian/server.py: MDDB default -> http://idc03.taila0626a.ts.net:11023/v1 (curl /health 200)"
+  - "scripts/mddb-binlog-canary.py: alert text -> idc02:11023 / idc01:11123 hostnames"
+  - "scripts/ada/host-services-cms.py: idc01 \"ip\" field -> \"\" (hostname in \"ts\" already; matches idc02)"
+  - "note: 100.74.146.0 is idc01's REAL current tailnet IP — the only stale
+    uses were mddb pointers; idc01's own host record/alert refs were correct
+    data, rewritten as hostnames per card directive"
+  - "committed locally on idc03 as db9af6d7; mirrored into dispatch worktree
+    (unpushed — lands upstream when this branch merges)"
+
+verify:
+  - "git rev-list HEAD..origin/master = 0  (goal: <100)"
+  - "grep -rl 100.74.146.0 scripts/ apps/ = 0  (goal)"
+  - "ada-memory-sync.service: exit 0, no CONFLICT lines (prior 5 vault-vs-voice
+    conflicts resolved — take-vault decision applied upstream)"
+  - "ada-memory-gaps.service: exit 0, '0 bank-recall misses, 0 gap drafts'"
+  - "mddb-memory-standard.service: runs full check but exits 1 — by-design
+    breach signal (return 0 if verdict==PASS else 1), NOT a crash; failing
+    since before the merge — leftover data-quality issue"
+
+leftovers:
+  - "idc03 master carries 3 local commits never pushed; vault checkout is a
+    read-replica — upstream cherry-pick optional, next pull merges cleanly"
+  - "~38 untracked local-only extract docs in docs/ada-memory/ — vault data
+    awaiting sync; not tracked anywhere"
+  - "mddb-memory-standard breach — investigate violations list (pre-existing)"
+  - "obsidian server.py change takes effect on next service restart (if the
+    app runs on idc03)"
