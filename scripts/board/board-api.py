@@ -52,6 +52,24 @@ Endpoints (after prefix strip):
       CI pipeline write path (docs/ssot/ssot.ci.yml). opt_in:true sets the
       `pipeline: ci` opt-in; pipeline:{...} merges a full status block
       (stages deep-merged); stage+status records one stage result.
+  POST /card     {id?, title, column?, note?, help?, text?, from?,
+                  spec?, report?, action?, queue?, brief?, priority?,
+                  tags?, program?, blocked_by?, on_exists?}
+      creates a card — including ARMED dispatch cards (report-session-loop
+      §1a). spec is stored verbatim; when absent and report (a cms slug
+      ^[a-z0-9-]{1,80}) is set, spec is composed from REPORT_SPAWN_TEMPLATE
+      so every spawn caller files an identical card. action {type:
+      dispatch|manual, repo?} — repo must be in the dispatch whitelist
+      (dispatch_repos.repos, $DISPATCH_DIR/repos.conf); unknown action
+      keys are dropped (a caller cannot pre-seed status/runner). queue:true
+      sets action.status=queued in the same locked write — no create+queue
+      race. priority ∈ high|medium|low; tags is a list; brief/program/
+      blocked_by are pass-throughs. on_exists: 'error' (default — 400 on a
+      duplicate id) or 'queue': an existing card that is already
+      queued/running returns its status ('already active'), otherwise it
+      is re-armed to queued + comms 're-spawned from report page' — a
+      second click on a report page's spawn button is safe. Response
+      carries id (+ status when the card is armed).
 
 Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
@@ -101,6 +119,20 @@ ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish"}
 COLUMNS = {"backlog", "doing", "review", "done"}
+
+# /card spawn fields (report-session-loop §1a)
+REPORT_SLUG_RE = r"[a-z0-9-]{1,80}"
+REPORT_SPAWN_TEMPLATE = (
+    "Work on the CMS report '{slug}' — \"{title}\".\n"
+    "Report: ada-cms-pages/{slug}\n"
+    "This card is report-linked (report: {slug}) — read the report first, "
+    "keep it updated per the report rails, and post progress to this card."
+)
+PRIORITIES = {"high", "medium", "low"}
+ACTION_TYPES = {"dispatch", "manual"}
+# action keys a caller may set — status/runner/task_id are board-owned and
+# silently dropped so a spawn can't fake a running card
+ACTION_KEYS = ("type", "repo", "host", "labels", "button")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -636,11 +668,14 @@ def do_request(card: dict, body: dict) -> str:
     return f"request {rid} raised"
 
 
-def do_create(body: dict, frm: str) -> str:
+def do_create(body: dict, frm: str) -> dict:
     """Create a new card — the capture end of the request lifecycle
-    (card request-lifecycle). Voice/Ada and local automation can drop a
-    bare ask onto the board without a repo checkout. Fails closed on a
-    duplicate id so callers can't silently shadow an existing card."""
+    (card request-lifecycle) and, with the spawn fields, the card half of
+    the report→session loop (report-session-loop §1a). Voice/Ada and
+    local automation can drop a bare ask onto the board without a repo
+    checkout. Fails closed on a duplicate id unless on_exists:'queue',
+    which re-arms the existing card — a second click on a report page's
+    spawn button re-queues instead of duplicating."""
     title = str(body.get("title") or "").strip()
     if not title:
         raise ValueError("title required")
@@ -650,11 +685,86 @@ def do_create(body: dict, frm: str) -> str:
     col = str(body.get("column") or "backlog").strip()
     if col not in COLUMNS:
         raise ValueError(f"column must be one of {sorted(COLUMNS)}")
+    report = str(body.get("report") or "").strip()
+    if report and not re.fullmatch(REPORT_SLUG_RE, report):
+        raise ValueError("report must match ^[a-z0-9-]{1,80}")
+    act = body.get("action")
+    if act is not None:
+        if not isinstance(act, dict):
+            raise ValueError("action must be an object")
+        if str(act.get("type") or "") not in ACTION_TYPES:
+            raise ValueError(
+                f"action.type must be one of {sorted(ACTION_TYPES)}")
+        repo = str(act.get("repo") or "").strip()
+        if repo and repo not in dr.repos():
+            raise ValueError(
+                f"action.repo {repo!r} is not in the dispatch whitelist")
+    on_exists = str(body.get("on_exists") or "error").strip()
+    if on_exists not in ("error", "queue"):
+        raise ValueError("on_exists must be error|queue")
+    pri = str(body.get("priority") or "").strip()
+    if pri and pri not in PRIORITIES:
+        raise ValueError(f"priority must be one of {sorted(PRIORITIES)}")
+    tags = body.get("tags")
+    if tags is not None and not isinstance(tags, list):
+        raise ValueError("tags must be a list")
+
     p = CARD_DIR / f"{cid}.yml"
     if p.exists():
-        raise ValueError(f"card {cid} already exists")
+        if on_exists == "error":
+            raise ValueError(f"card {cid} already exists")
+        card = load(p)
+        a = card.setdefault("action", {})
+        st = a.get("status", "idle")
+        if st in ("queued", "running"):
+            return {"message": f"card {cid} already active ({st})",
+                    "id": cid, "status": st}
+        a.setdefault("type", "dispatch")
+        a["status"] = "queued"
+        a.pop("runner", None)   # same re-arm semantics as /action do=queue
+        a.pop("task_id", None)
+        if card.get("column") in ("done", "review"):
+            card["column"] = "backlog"
+        comms_add(card, frm, "re-spawned from report page")
+        card["updated"] = now()
+        save(p, card)
+        return {"message": f"card {cid} re-queued",
+                "id": cid, "status": "queued"}
+
     card = {"id": cid, "title": title[:160], "column": col,
             "updated": now()}
+    brief = str(body.get("brief") or "").strip()
+    if brief:
+        card["brief"] = brief[:600]
+    if pri:
+        card["priority"] = pri
+    if report:
+        card["report"] = report
+    for key in ("program", "blocked_by"):
+        v = str(body.get(key) or "").strip()
+        if v:
+            card[key] = v[:120]
+    if tags:
+        card["tags"] = [str(t)[:40] for t in tags][:20]
+    spec = str(body.get("spec") or "").strip()
+    if not spec and report:
+        spec = REPORT_SPAWN_TEMPLATE.format(slug=report, title=title)
+    if spec:
+        card["spec"] = spec[:12000]
+    if act is not None:
+        card["action"] = {k: act[k] for k in ACTION_KEYS if k in act}
+        card["action"]["type"] = str(card["action"]["type"])
+        if "repo" in card["action"]:
+            card["action"]["repo"] = repo
+        if "labels" in card["action"]:
+            labels = card["action"]["labels"]
+            if not isinstance(labels, list):
+                raise ValueError("action.labels must be a list")
+            card["action"]["labels"] = [str(x)[:40] for x in labels][:10]
+    if body.get("queue"):
+        a = card.setdefault("action", {})
+        a.setdefault("type", "dispatch")
+        a["status"] = "queued"
     note = str(body.get("note") or "").strip()
     if note:
         card["note"] = note[:500]
@@ -665,7 +775,14 @@ def do_create(body: dict, frm: str) -> str:
                       "text": str(body.get("text") or
                                    "card captured via board-api")[:500]}]
     save(p, card)
-    return f"card {cid} created in {col}"
+    msg = f"card {cid} created in {col}"
+    res = {"message": msg, "id": cid}
+    a = card.get("action") or {}
+    if a.get("status"):
+        res["status"] = a["status"]
+        if a["status"] == "queued":
+            res["message"] = msg + " (queued)"
+    return res
 
 
 # --- request push notifications (card kanban-push-notify) ---------------
@@ -841,6 +958,7 @@ class H(BaseHTTPRequestHandler):
             % (path, body.get("id") or body.get("card"), ident))
 
         notify_req = None
+        resp_extra = {}
         with LOCK.open("w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
             try:
@@ -901,7 +1019,10 @@ class H(BaseHTTPRequestHandler):
                         msg += " — notify queued"
                 elif path == "/card":
                     frm = actor(body)
-                    msg = do_create(body, frm)
+                    res = do_create(body, frm)
+                    msg = res["message"]
+                    resp_extra = {k: v for k, v in res.items()
+                                  if k != "message"}
                 elif path == "/pipeline":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
@@ -923,7 +1044,8 @@ class H(BaseHTTPRequestHandler):
             except Exception as e:
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
         render()
-        self._send(200, {"ok": True, "message": msg, "via": ident})
+        self._send(200, {"ok": True, "message": msg, "via": ident,
+                         **resp_extra})
 
 
 def _selftest() -> None:
@@ -1140,6 +1262,99 @@ def _selftest() -> None:
     assert card["pipeline"]["benchmark"]["before"] == "2"
     do_pipeline(card, {"opt_in": False}, "devin")
     assert "pipeline" not in card
+
+    # /card spawn fields + on_exists (report-session-loop §1a). CARD_DIR
+    # is redirected to a temp dir — do_create writes real card files.
+    cdir = tmp / "cards"
+    cdir.mkdir()
+    globals()["CARD_DIR"] = cdir
+
+    def mkfile(cid):
+        return load(cdir / f"{cid}.yml")
+
+    rejects(lambda: do_create({"title": "t", "report": "Bad_Slug"}, "devin"),
+            "report must match")
+    rejects(lambda: do_create({"title": "t", "report": "x" * 81}, "devin"),
+            "report must match")
+    res = do_create({"title": "Dev kanban health", "id": "spawn-1",
+                     "report": "dev-kanban"}, "devin")
+    assert res["id"] == "spawn-1"
+    c1 = mkfile("spawn-1")
+    assert c1["report"] == "dev-kanban"
+    assert "ada-cms-pages/dev-kanban" in c1["spec"]
+    assert "report-linked (report: dev-kanban)" in c1["spec"]
+    assert '"Dev kanban health"' in c1["spec"]
+    # explicit spec wins over the template
+    do_create({"title": "t", "id": "spawn-2", "report": "dev-kanban",
+               "spec": "custom spec"}, "devin")
+    assert mkfile("spawn-2")["spec"] == "custom spec"
+    # action validation
+    rejects(lambda: do_create({"title": "t", "id": "s3",
+                               "action": {"type": "bogus"}}, "devin"),
+            "action.type must be one of")
+    rejects(lambda: do_create({"title": "t", "id": "s3",
+                               "action": {"type": "dispatch",
+                                          "repo": "no-such-repo-zz"}},
+                              "devin"),
+            "not in the dispatch whitelist")
+    rejects(lambda: do_create({"title": "t", "id": "s3",
+                               "action": "dispatch"}, "devin"),
+            "action must be an object")
+    res = do_create({"title": "t", "id": "spawn-3",
+                     "action": {"type": "dispatch", "repo": "chaba",
+                                "status": "running"},  # spoof dropped
+                     "queue": True}, "devin")
+    assert res["status"] == "queued" and "(queued)" in res["message"]
+    c3 = mkfile("spawn-3")
+    assert c3["action"] == {"type": "dispatch", "repo": "chaba",
+                            "status": "queued"}
+    # manual type accepted; queue:true with no action arms a dispatch card
+    do_create({"title": "t", "id": "spawn-man",
+               "action": {"type": "manual"}}, "devin")
+    assert mkfile("spawn-man")["action"] == {"type": "manual"}
+    do_create({"title": "t", "id": "spawn-4", "queue": True}, "devin")
+    assert mkfile("spawn-4")["action"] == {"type": "dispatch",
+                                           "status": "queued"}
+    # pass-through fields
+    rejects(lambda: do_create({"title": "t", "id": "s5",
+                               "priority": "urgent"}, "devin"),
+            "priority must be one of")
+    rejects(lambda: do_create({"title": "t", "id": "s5",
+                               "tags": "kanban"}, "devin"),
+            "tags must be a list")
+    do_create({"title": "t", "id": "spawn-5", "brief": "short brief",
+               "priority": "high", "tags": ["report-session-loop", "x"],
+               "program": "ada-tools", "blocked_by": "other-card"}, "devin")
+    c5 = mkfile("spawn-5")
+    assert c5["brief"] == "short brief" and c5["priority"] == "high"
+    assert c5["tags"] == ["report-session-loop", "x"]
+    assert c5["program"] == "ada-tools" and c5["blocked_by"] == "other-card"
+    # on_exists — default error path unchanged
+    rejects(lambda: do_create({"title": "t", "id": "spawn-5"}, "devin"),
+            "already exists")
+    rejects(lambda: do_create({"title": "t", "id": "spawn-5",
+                               "on_exists": "merge"}, "devin"),
+            "on_exists must be")
+    # on_exists=queue on an already-queued card reports status, unchanged
+    res = do_create({"title": "t", "id": "spawn-4",
+                     "on_exists": "queue"}, "devin")
+    assert res["status"] == "queued" and "already active" in res["message"]
+    c4 = mkfile("spawn-4")
+    assert not any("re-spawned" in m["text"] for m in c4["comms"])
+    # finished card re-arms: queued, column reset, runner/task_id cleared
+    c4["action"].update(status="done", runner="mn01", task_id="z" * 10)
+    c4["column"] = "done"
+    save(cdir / "spawn-4.yml", c4)
+    res = do_create({"title": "t", "id": "spawn-4",
+                     "on_exists": "queue"}, "devin")
+    assert res["status"] == "queued" and "re-queued" in res["message"]
+    c4 = mkfile("spawn-4")
+    assert c4["action"]["status"] == "queued"
+    assert "runner" not in c4["action"] and "task_id" not in c4["action"]
+    assert c4["column"] == "backlog"
+    assert any("re-spawned from report page" in m["text"]
+               for m in c4["comms"])
+    globals()["CARD_DIR"] = REPO / "docs/ssot/kanban/cards"
 
     # write gate (card board-api-auth) — caller_identity is pure: fake
     # headers dict + peer ip stand in for a request

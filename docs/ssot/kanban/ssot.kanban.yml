@@ -206,6 +206,21 @@ write_path:
       BOARD_NOTIFY_CHANNEL, default HA iPhone push -> /chaba-admin/board).
       The ONLY safe way for agents/Ada to add a request — direct card-YAML
       edits race the write flock (must hold /tmp/board-api.lock)."
+    "POST /card {id?, title, column?, note?, help?, text?, from?, spec?, report?, action?, queue?, brief?, priority?, tags?, program?, blocked_by?, on_exists?}":
+      "creates a card — including ARMED dispatch cards (report-session-loop
+      §1a). spec stored verbatim; absent + report (cms slug
+      ^[a-z0-9-]{1,80}) => spec composed from REPORT_SPAWN_TEMPLATE so
+      every spawn caller files an identical card. action {type:
+      dispatch|manual, repo?} — repo must be in the dispatch whitelist
+      (dispatch_repos.repos / repos.conf); unknown action keys are dropped
+      so a spawn can't pre-seed status/runner. queue:true sets
+      action.status=queued in the same locked write — no create+queue
+      race. priority ∈ high|medium|low; tags is a list. on_exists:
+      'error' (default — 400 on duplicate id) | 'queue': an existing card
+      already queued/running returns its status ('already active'),
+      otherwise re-arms it to queued + comms 're-spawned from report
+      page' — a second click on the report-page spawn button is safe.
+      Response carries id (+ status when armed)."
     "POST /action {id, do: claim, host}": "atomic first-wins claim under the
       write flock — for multi-host dispatchers. Sets action.runner."
     "POST /pipeline {id, opt_in?, pipeline?, stage?, status?, detail?, from?}":
