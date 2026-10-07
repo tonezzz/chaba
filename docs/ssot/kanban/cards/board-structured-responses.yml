@@ -1,0 +1,32 @@
+id: board-structured-responses
+title: 'Board: structured responses — Yes/No/Option-N buttons on card asks'
+column: backlog
+priority: high
+note: 'Most review/decide asks get a one-word Tony answer. Cards already carry
+  ask.options (edge-ha-restructure is the prototype) — render them as buttons
+  so a decision is one click, not a comment.'
+spec: 'Card schema (already prototyped): ask: {question, options: [..]}.
+  1. render-board.py: when a card has ask.options, render the question + a
+     button per option + an "Other" free-text input in the card detail/needs-you
+     band. Button click -> POST /apps/board-api/respond {card, option: N, text}.
+  2. board-api.py: accept option index — write comms entry {from: tony,
+     text: "<option label>"} + set the ask status answered; keep free-text path.
+  3. Optional: Ada voice answer — "yes to the disk card" maps to option Yes via
+     ada_board_write.
+  4. Migrate existing open-question comms to ask.options format where obvious.
+  Verify: click Yes on edge-ha-restructure -> comms entry + card unblocked;
+  board-api write gate unchanged (tailnet identity).'
+help: 'basis: edge-ha-restructure card ask.options schema; respond endpoint
+  exists in board-api (comment/respond actions); needs-you band renders open
+  asks in render-board.py'
+action:
+  type: dispatch
+  repo: chaba
+  status: idle
+updated: 2026-10-07 15:40
+comms:
+- at: 2026-10-07 15:40
+  from: devin
+  text: 'per Tony: boil review answers to Yes/No/Option-N/Open-question — he
+    mostly follows recommendation; optimize for one-click decide. Git+backup
+    makes mistakes recoverable.'
