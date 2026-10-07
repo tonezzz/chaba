@@ -1,12 +1,13 @@
 id: tony-ha-split-ada-dev
 title: 'Split tony-ha: prod HA into dedicated container; old container becomes ada-ha (dev-only)'
-column: backlog
+column: review
 priority: high
-note: 'Isolate production HA into a pristine container; repurpose the current tony-ha
-  container as ada-ha (:8125) — the lab/dev target for Ada experiments + ha-exec
-  control cards. Prod keeps name, port :8123, tailscale serve route, and config dir
-  -> zero consumer repointing (ada-ha-tony, event-log, vcast, push-dashboard.py
-  all keep their URLs).'
+note: 'PARTIALLY DONE 2026-10-06 (parallel session): ada-ha already exists on
+  tony-dell — 127.0.0.1:8125, config ~/.config/ada-ha, container healthy 14h.
+  Implemented as a FRESH lab container rather than rename+rebuild, so prod
+  tony-ha on :8123 was never touched (cleaner outcome). Remaining verify:
+  radios still prod-only; dev mocks/tony-test dashboards moved off prod;
+  ssot.home-assistant.instances.yml records the ada-ha instance.'
 review_kind: decide
 spec: 'Phase 0 - verify: inspect tony-ha .storage/core.config_entries for the
   zigbee radio path (slzb06 TCP vs zigbee-usb2 container) and any device mounts

@@ -1,0 +1,18 @@
+id: gemini-ollama-proxy
+host: idc03
+description: >-
+  Gemini→Ollama-API proxy (node:22-alpine, ~/.config/containers/mddb/proxy).
+  Lets consumers call embeddings via the Gemini-shaped API.
+verify: >-
+  systemctl --user is-active gemini-ollama-proxy | grep -q active
+secrets:
+  - "~/.config/secrets/mddb-gemini.env — GEMINI key"
+requires:
+  - "tool:podman"
+  - "tcp:100.102.134.91:11434 — ollama (self)"
+state:
+  - "~/.config/containers/mddb/proxy — proxy code"
+restore: "Restart on same host; standby copy installed on idc01."
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

@@ -47,6 +47,28 @@ instances:
     service_unit: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
     status: active
 
+  ada-ha:
+    id: ada-ha
+    base: ada
+    host: tony_dell
+    runtime: rootless podman
+    network: podman (NOT host — dev isolation)
+    container: ada-ha
+    image: docker.io/homeassistant/home-assistant:stable
+    port: 8125
+    host_port: 127.0.0.1:8125
+    config: /home/tony/.config/ada-ha
+    url:
+      local: http://127.0.0.1:8125
+      tailscale: https://tony-dell.taila0626a.ts.net:8125
+      note: 'Dev/lab tier — bottom rung of ada-ha -> michael-dev -> tony-ha
+        promotion ladder. Fresh config (not a prod clone); no radios, no prod
+        integrations, no public route. Ada experiments + ha-exec control cards
+        land here first.'
+    status: active
+    note: 'created 2026-10-06 by a parallel session — see card
+      tony-ha-split-ada-dev'
+
   michael-ha:
     id: michael-ha
     base: michael

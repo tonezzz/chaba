@@ -5,9 +5,9 @@ description: >-
   .ssh, .config/rclone, .config/camwall.env, .config/systemd/user), pushed to
   recovery hosts. Timer secrets-backup.timer fires 03:00 ICT daily.
 verify: >-
-  ls -lh ~/secrets-backup/ on each target shows a fresh secrets-*.tar.age;
-  `age -d -i ~/.config/secrets/backup-age.key <file> | tar tzf -` lists ~160
-  files on every recovery host.
+  ssh idc02 "ls ~/secrets-backup/secrets-*.tar.age" &&
+  ssh idc01 "ls ~/secrets-backup/secrets-*.tar.age" &&
+  ssh tony-dell-m2m "ls ~/secrets-backup/secrets-*.tar.age"
 secrets:
   - "~/.config/secrets/backup-age.key — age PRIVATE key; also placed at the
      same path on each recovery host (restore needs it there). NEVER in git."

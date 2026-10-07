@@ -1,0 +1,22 @@
+id: caddy-edge
+host: idc03
+description: >-
+  Public edge — api.surf-thailand.com + sslip, binds public IP
+  (157.85.102.125:80/443) and tailnet (100.102.134.91:80/443). ACME
+  manages certs. Standby twin lives on idc01 with pinned synced cert.
+verify: >-
+  curl -sf -o /dev/null https://api.surf-thailand.com/ -w '%{http_code}'
+  | grep -qE '200|502'
+requires:
+  - "tool:podman — quadlet runtime (image docker.io/library/caddy:2)"
+state:
+  - "~/.config/caddy — Caddyfile (IP-bound: rewrite binds when migrating)"
+  - "~/.config/containers/caddy/data — ACME certs/accounts (sync to
+     standby via secrets-backup)"
+  - "~/.config/containers/caddy/config — caddy runtime config"
+restore: >-
+  Standby edge on idc01 answers already — repoint api.surf-thailand.com
+  CF record to 157.85.110.99, then start backends there.
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

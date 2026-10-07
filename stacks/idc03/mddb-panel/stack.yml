@@ -1,0 +1,15 @@
+id: mddb-panel
+host: idc03
+description: >-
+  mddb admin panel (tradik/mddb:panel-latest) — UI over mddb leader.
+verify: >-
+  systemctl --user is-active mddb-panel | grep -q active
+requires:
+  - "tool:podman"
+  - "tcp:100.102.134.91:11023 — mddb leader (self)"
+state:
+  - "~/mddb-panel — server.js panel config"
+restore: "Restart on same host; trivially relocatable."
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

@@ -1,0 +1,22 @@
+id: ada-pi-pwa
+host: idc03
+description: >-
+  Ada PWA/API surface — uvicorn pwa_server on 127.0.0.1:8001, fronted by
+  caddy-edge (api.surf-thailand.com). Serves the public Ada API + PWA.
+verify: >-
+  curl -sf http://127.0.0.1:8001/api/health -o /dev/null
+secrets:
+  - "~/.config/secrets/ada-pi-pwa.env — MDDB_BASE_URL, provider keys"
+  - "~/.config/secrets/notebooklm-rest-api.env — notebooklm env"
+requires:
+  - "tool:python3 — uvicorn from ~/CascadeProjects/ada-pi/.venv"
+  - "tcp:100.102.134.91:11023 — mddb leader (self)"
+  - "tcp:100.102.134.91:11434 — ollama (self, embeddings)"
+state:
+  - "~/CascadeProjects/ada-pi — app code + .venv"
+restore: >-
+  Standby on idc01: same unit installed, envs already point at idc03.
+  systemctl --user start ada-pi-pwa there (~181s warm boot).
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

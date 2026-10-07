@@ -1,0 +1,18 @@
+id: ada-line-relay
+host: idc03
+description: >-
+  LINE webhook relay — receives POSTs from LINE platform, verifies
+  signature, forwards to Ada. caddy-edge routes /webhook/line here.
+verify: >-
+  systemctl --user is-active ada-line-relay | grep -q active
+secrets:
+  - "~/.config/secrets/line-bot.env — LINE channel secret/token"
+requires:
+  - "tool:python3"
+  - "tcp:127.0.0.1:8002 — ada-ha-tony"
+state:
+  - "~/CascadeProjects/ada-pi — shared app code"
+restore: "Standby unit on idc01; part of the ada-* failover bundle."
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

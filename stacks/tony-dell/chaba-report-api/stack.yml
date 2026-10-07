@@ -1,0 +1,19 @@
+id: chaba-report-api
+host: tony-dell
+description: >-
+  System report refresh API — POST /refresh triggers
+  chaba-system-report.service, GET /status; binds REPORT_API_BIND
+  (0.0.0.0 for tailnet peers) :8792, bearer token or tailnet identity gate.
+verify: >-
+  curl -sf http://127.0.0.1:8792/health | grep -q '"ok": *true'
+secrets:
+  - "~/.config/secrets/report-api.env — REPORT_API_TOKEN (svc callers)"
+requires:
+  - "tool:python3 — scripts/report/report-api.py"
+  - "tcp:100.102.134.91:11023 — event emit to ada ops collection"
+state:
+  - "~/CascadeProjects/chaba-tony-dell — report lib + script"
+restore: "Repo checkout + unit file; no local state."
+related_cards: [service-onboarding-standard]
+status: deployed
+deployed: 2026-10-06

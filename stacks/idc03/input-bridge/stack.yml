@@ -1,0 +1,18 @@
+id: input-bridge
+host: idc03
+description: >-
+  input-bridge container — bridges input events; node:22-alpine,
+  ~/apps/input-bridge code, state in ~/.local/share/input-bridge.
+verify: >-
+  systemctl --user is-active input-bridge | grep -q active
+secrets:
+  - "~/.config/secrets/input-bridge.env"
+requires:
+  - "tool:podman"
+state:
+  - "~/apps/input-bridge — app code"
+  - "~/.local/share/input-bridge — runtime state"
+restore: "Standby copy on idc01 (stopped)."
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

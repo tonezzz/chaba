@@ -1,0 +1,22 @@
+id: ada-ha-tony
+host: idc03
+description: >-
+  Ada voice instance for Tony — uvicorn pwa_server on 127.0.0.1:8002.
+  Bridges to tony-ha via ha-live (100.68.142.13:9005).
+verify: >-
+  curl -sf http://127.0.0.1:8002/api/health -o /dev/null
+secrets:
+  - "~/.config/secrets/ada-ha-tony.env — MDDB_BASE_URL, HA token,
+     provider keys"
+requires:
+  - "tool:python3"
+  - "tcp:100.102.134.91:11023 — mddb leader"
+  - "ha-live on tony-dell is dead (superseded by gev-gemini) — no live dep"
+state:
+  - "~/CascadeProjects/ada-pi — shared app code + .venv"
+restore: >-
+  Same code path as ada-pi-pwa; envs portable. On failover start ada-*
+  units on idc01 in dependency order after mddb promote.
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

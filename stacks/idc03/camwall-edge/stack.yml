@@ -1,0 +1,20 @@
+id: camwall-edge
+host: idc03
+description: >-
+  camwall static thumbnail edge — caddy:2-alpine serving
+  ~/.local/share/camwall on tailnet 100.102.134.91:8380.
+verify: >-
+  curl -sf -o /dev/null http://100.102.134.91:8380/
+secrets:
+  - "~/.config/camwall.env — upstream camwall credentials"
+requires:
+  - "tool:podman"
+state:
+  - "~/.local/share/camwall — thumbnails + feed state"
+  - "~/.config/camwall-edge — edge Caddyfile"
+restore: >-
+  Re-run camwall puller (camwall.service) to rebuild thumbnails; edge is
+  stateless beyond the feed dir.
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

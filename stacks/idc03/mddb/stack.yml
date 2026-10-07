@@ -1,0 +1,26 @@
+id: mddb
+host: idc03
+description: >-
+  mddb document database — PRODUCTION LEADER (tailnet :11023/:11024).
+  Every consumer points here via service name/IPs. Followers: idc02
+  (:11023), idc01 mddb-follower (:11123).
+verify: >-
+  curl -sf http://100.102.134.91:11023/v1/health | grep -q '"status":"healthy"'
+  && curl -sf http://100.102.134.91:11023/v1/replication/status | grep -q '"role": *"leader"'
+secrets:
+  - "~/.config/secrets/mddb-follower.env — MDDB_REPLICATION_SECRET +
+     follower-side envs (EnvironmentFile on the quadlet)"
+requires:
+  - "tool:podman — quadlet runtime"
+  - "tcp:100.102.134.91:11023 — self HTTP (sanity)"
+state:
+  - "~/.config/containers/mddb/data — leader DB + binlog"
+  - "~/.config/containers/mddb/vaults — blob vaults"
+  - "~/mddb-backups — nightly .db land here (mddb-backup.timer 02:30)"
+restore: >-
+  Replica path (fast): promote a follower (see stacks/idc01/mddb-follower).
+  Backup path: copy latest mddb-*.db into data/, start — cold restore is
+  slow (~30min+ vector index load). Binlog retained for incremental.
+related_cards: [idc01-return-role, mddb-follower-stall, mddb-follower-lsn-persist]
+status: deployed
+deployed: 2026-10-05

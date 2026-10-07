@@ -1,0 +1,19 @@
+id: chaba-board-api
+host: tony-dell
+description: >-
+  Kanban board write API — card actions/respond/comment → YAML + board
+  rerender. Binds 127.0.0.1:8787; /health returns {"ok": true}.
+verify: >-
+  curl -sf http://127.0.0.1:8787/health | grep -q '"ok": *true'
+requires:
+  - "tool:python3 — scripts/board/board-api.py"
+state:
+  - "~/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards — card store"
+  - "~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/board —
+     rendered artifacts (gitignored)"
+restore: >-
+  Repo checkout + unit file; board artifacts regenerate via
+  chaba-board-render.timer.
+related_cards: [service-onboarding-standard]
+status: deployed
+deployed: 2026-10-04

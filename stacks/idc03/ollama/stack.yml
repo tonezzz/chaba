@@ -1,0 +1,17 @@
+id: ollama
+host: idc03
+description: >-
+  ollama container — embedding model serving for mddb vector search
+  (:11434 tailnet bind).
+verify: >-
+  curl -sf http://100.102.134.91:11434/api/tags -o /dev/null
+requires:
+  - "tool:podman"
+state:
+  - "podman volume ollama-data — model store"
+restore: >-
+  podman start + pull the embed models; idc01 has the same image stopped
+  (warm standby).
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

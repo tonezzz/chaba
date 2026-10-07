@@ -1,0 +1,22 @@
+id: doc-archive
+host: idc03
+description: >-
+  doc-archive uvicorn service (venv under ~/.local/share/doc-archive) —
+  internal archive API; DOC_ARCHIVE_BIND/PORT via env.
+verify: >-
+  systemctl --user is-active doc-archive | grep -q active
+secrets:
+  - "~/.config/secrets/doc-archive.env — bind/port + upstream creds"
+  - "~/.config/rclone/rclone.conf — drive_client.py reads the [gdrive]
+     OAuth refresh_token from here (no rclone binary needed)"
+requires:
+  - "tool:python3"
+  - "ssh:tony-dell-m2m — doc-mirror writes via ssh to tony-dell"
+state:
+  - "~/.local/share/doc-archive — venv + archive store"
+restore: >-
+  envs + venv portable; doc-mirror needs ~/.config/rclone/rclone.conf
+  (covered by secrets-backup).
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05

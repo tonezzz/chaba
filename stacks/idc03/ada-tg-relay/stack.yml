@@ -1,0 +1,18 @@
+id: ada-tg-relay
+host: idc03
+description: >-
+  Telegram webhook relay — caddy-edge routes /webhook/tg + /relay-img/*
+  here; forwards to Ada.
+verify: >-
+  systemctl --user is-active ada-tg-relay | grep -q active
+secrets:
+  - "~/.config/secrets/telegram-bot.env — TG bot token"
+requires:
+  - "tool:python3"
+  - "tcp:127.0.0.1:8002 — ada-ha-tony"
+state:
+  - "~/CascadeProjects/ada-pi — shared app code"
+restore: "Standby unit on idc01; part of the ada-* failover bundle."
+related_cards: [idc01-return-role]
+status: deployed
+deployed: 2026-10-05
