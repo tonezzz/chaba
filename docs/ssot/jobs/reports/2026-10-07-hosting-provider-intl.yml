@@ -1,0 +1,85 @@
+title: International hosting providers report
+subtitle: CMS report page cross-linked with hosting-provider-assessment, with measured + published latency
+icon: newspaper
+id: 2026-10-07-hosting-provider-intl
+status: completed
+owner: tony
+project: chaba
+started: "2026-10-07"
+completed: "2026-10-07"
+card: hosting-provider-intl-report
+
+planning:
+  goal: |
+    Source request (voice, 2026-09-27, tony-projects/hosting-provider-report-request):
+    a new report summarizing foreign hosting providers, linked to the existing
+    provider assessment, with network latency for Philippines, Norway, Germany
+    and Thai locations (Khao Yai, Chonburi, Bangkok). Recovered via draft-age
+    breach after 10 days.
+  findings:
+    - Existing assessment located: ada-cms-pages/hosting-provider-assessment
+      (kind:page, 2026-09-27 — Thai VPS shortlist for idc02:
+      ReadyIDC/Contabo/Hetzner).
+    - CMS = MDDB collection ada-cms-pages; viewer at
+      /apps/ha/ada-tony/cms/ (proxied by tony-dell Caddy to idc03:8002),
+      page route /cms/#/<slug>.
+
+implementation:
+  steps:
+    - id: 1
+      label: Measure latency from tony-dell (Thailand uplink)
+      status: done
+      notes: |
+        ICMP echo x3 averaged, 2026-10-07 ~21:20 +07. idc01 (Siamdata TH)
+        6.9ms; AWS ap-southeast-1 29.7ms; Vultr SG 29.9ms; Linode SG 37.4ms;
+        AWS ap-east-1 (HK) 62.4ms; Dataplugs HK test IP 103.199.106.17
+        69.6ms; Linode FRA 188.6ms; Vultr FRA 194.7ms; OVH FR 216-255ms;
+        Hetzner FSN 275.8ms (jittery). ICMP-filtered: DigitalOcean
+        speedtest-*, GCP gcping (HTTP-only), Hetzner speed.hetzner.de,
+        Vultr nrt/lax.
+    - id: 2
+      label: Published latency research for target locations
+      status: done
+      notes: |
+        Dataplugs looking glass (Manila->HK-DC 21ms, Frankfurt->HK 175ms);
+        Zenlayer Manila (HK 32ms, SG 38ms); Tencent SEA matrix (Manila->HK
+        45ms, ->SG 25ms, Bangkok->SG 20ms); WonderNetwork Manila<->SG ~51ms;
+        OnionVPS Manila->FRA ~141ms estimate. Norway/Khao Yai/Chonburi
+        figures are labelled estimates.
+    - id: 3
+      label: Publish ada-cms-pages/hosting-provider-intl
+      status: done
+      notes: |
+        kind:report, domain:infra, fresh_for 30d, confidence high,
+        links=[hosting-provider-assessment]. Raw /v1/add (same pattern as
+        report-daily-brief.py); add response dropped after write landed —
+        verified via /v1/get. Source markdown kept at
+        reports/hosting-provider-intl.md.
+    - id: 4
+      label: Bidirectional links
+      status: done
+      notes: |
+        New page links to hosting-provider-assessment in Latest; old page
+        gained a "See also" line above ## Shortlist + meta.links append.
+    - id: 5
+      label: Regen reports-index
+      status: done
+      notes: |
+        scripts/lib/cms_index.py regen_reports_index; index row verified
+        (hosting-provider-intl | infra | 30d).
+
+results:
+  deliverables:
+    - ada-cms-pages/hosting-provider-intl (kind:report)
+    - ada-cms-pages/hosting-provider-assessment (backlink + meta.links)
+    - ada-cms-pages/reports-index (regenerated)
+    - reports/hosting-provider-intl.md (page source, this repo)
+  urls:
+    - https://tony-dell.taila0626a.ts.net/apps/ha/ada-tony/cms/#/hosting-provider-intl
+    - https://idc03.taila0626a.ts.net/cms/#/hosting-provider-intl
+  caveats:
+    - Single-ISP, single-evening ICMP snapshot from tony-dell; non-TH
+      figures are published tables or geography-based estimates, labelled
+      per-row on the page.
+    - CMS /api/cms/pages/* needs the cms-viewer api_key, so curl reachability
+      was verified at the viewer route (200) + MDDB doc level, not the API.
