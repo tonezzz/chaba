@@ -1,6 +1,6 @@
 id: board-automation-dimmer
 title: 'Board: collapse automation-generated cards under a toggle'
-column: doing
+column: review
 note: cms-auto-* and logs-auto-* cards are bookkeeping — the automation health loop working as designed — but they
   now dominate review/doing columns and bury human-decision cards.
 spec: 'render-board.py: cards whose id matches automation patterns (cms-auto-*, logs-auto-*, *-auto-health) render
@@ -12,9 +12,11 @@ action:
   status: done
   task: 'Add automation-card dimmer to the board per card spec: pattern-grouped, collapsed, expandable, localStorage
     toggle. Verify per spec.'
-  runner: tony-dell
   task_id: 20261005-211653-render-board-py-cards-whose-id
-updated: 2026-10-06 06:48
+  runner: tony-omen
+  result: 'exit=0  the next render on tony-dell after merge; no deploy was done. | devin-task-20261006-215500-render-board-py-cards-whose-id.service:
+    Consumed 1min 38.892s CPU time over 5min 11.537s wall clock time, 1.3G memory peak, 481.4M memory swap peak.'
+updated: 2026-10-06 22:01
 comms:
 - at: 2026-10-05 21:12
   from: devin
@@ -60,6 +62,34 @@ comms:
 - at: 2026-10-06 06:48
   from: tony
   text: Commit &push
+- at: 2026-10-06 21:54
+  from: tony
+  text: retry requested
+- at: 2026-10-06 21:54
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 21:55
+  from: chaba
+  text: started devin-task-20261006-215500-render-board-py-cards-whose-id on tony-omen (dispatch)
+- at: 2026-10-06 21:57
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-211653-render-board-py-cards-whose-id — 1 commit(s) not in
+    origin/master: Devin checkpoint for session functional-research'
+- at: 2026-10-06 21:57
+  from: tony
+  text: moved doing -> review
+- at: 2026-10-06 21:59
+  from: devin
+  text: 'audit complete: dimmer core already in master (dcffce02); found+fixed reachability gaps — sidebar/needs-you
+    click on collapsed auto card now auto-expands (persisted), filter reveals collapsed group matches. 31/31 DOM-stub
+    checks pass.'
+- at: 2026-10-06 21:59
+  from: devin
+  text: 'done: pushed 58a09ad7 on dispatch/20261006-215500-render-board-py-cards-whose-id (chaba remote). Spec verified
+    via scripts/test-board-dom.mjs — 31/31: grouped under correct automation (N) badges, toggle persists in localStorage,
+    sidebar + filter paths reach collapsed cards. Report: docs/ssot/jobs/kanban/2026-10-06-board-automation-dimmer.yml'
+- at: 2026-10-06 22:01
+  from: tony-omen
+  text: 'finished (ok): exit=0  the next render on tony-dell after merge; no deploy was done. | devin-task-20261006-215500-render-board-py-cards'
 claim:
-  session: 20261005-211653-render-board-py-cards-whose-id
   since: 2026-10-05 21:17

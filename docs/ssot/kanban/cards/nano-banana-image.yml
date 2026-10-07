@@ -1,6 +1,6 @@
 id: nano-banana-image
 title: ada render — nano-banana image gen/edit -> LINE/Telegram photo
-column: review
+column: done
 review_kind: verify
 program: media-gen
 metric: prompt (+ optional ref image) -> generated PNG arrives as photo in Tony LINE + TG chats
@@ -17,7 +17,7 @@ note: 'Thin layer — plumbing already exists, this is generator + URL hop. Scop
 help: 'gen path: tool_runner._vcast_tts REST generateContent + _gemini_model; tg send: tg_relay.send_photo (fetch
   url -> sendPhoto); LINE: line_relay._images_from (cast_url/image_url -> imageMessage, public https only); tool
   group: ada_render_* — new `render` domain for tools.d/manifests'
-updated: 2026-10-06 11:37
+updated: 2026-10-06 15:32
 comms:
 - at: 2026-10-04 19:34
   from: devin
@@ -118,6 +118,16 @@ comms:
   from: tony-omen
   text: 'finished (ok): exit=0  exercise on the billed idc03 key via the `img-render-gen` smoke scenario post-deploy.
     | devin-task-20261006-1115'
+- at: 2026-10-06 15:32
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093352-new-tool-group-render-ada-rend merged into origin/main; worktree
+    still dirty: 11 uncommitted file(s)'
+- at: 2026-10-06 15:32
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 15:32
+  from: chaba
+  text: session ripple-cent… hidden
 spec: 'New tool group render: ada_render_image(prompt, ref_url?, aspect?) -> gemini-2.5-flash-image via REST generateContent;
   save artifact, return LINE/Telegram-sendable photo URL (same hop the CMS/report path uses). Declaration slim per
   ada-tools-desc-slim conventions. Verify: unit test with stubbed REST; live scenario renders a cat picture into

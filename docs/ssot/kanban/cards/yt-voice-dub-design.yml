@@ -1,28 +1,25 @@
 id: yt-voice-dub-design
-title: "YT voice dub program — lane map, drain order, dispatch plan"
-column: doing
+title: YT voice dub program — lane map, drain order, dispatch plan
+column: done
 priority: medium
-note: >-
-  Design/tracker for the yt-voice-dub-* family (program: yt-voice-dub).
-  Repo lanes: chaba {yt-voice-dub-cast, yt-voice-dub-e2e}; ada-pi
-  {yt-voice-dub-scenarios}. The pipeline today is host-local scripts with
-  no repo home — first work item inside yt-voice-dub-cast moves
-  ~/.local/bin/{yt-vtt-dub.py, yt-live-api.py, yt-live.sh,
-  yt-vtt-translate.py} into chaba scripts/ops/ so dispatch can iterate.
-  Drain order: (1) yt-voice-dub-cast — active ask, test corpus staged at
-  ~/yt-dub-prep/; (2) yt-voice-dub-scenarios after cast lands — gate;
-  yt-voice-dub-e2e independent, low.
-  Hard constraints for any session: edge-tts exposes exactly 2 TH voices
-  (Premwadee F + Niwat M) — 2-speaker demos only; TH text runs ~1.4x
-  longer than the EN cue window so uniform-rate fit is the honest fix;
-  sNh4pVMFhvQ ships no captions — needs a Whisper transcription lane
-  first. Quality verdicts need Tony listening; scenario metrics are the
-  proxy until then.
-updated: '2026-10-05'
+note: 'Design/tracker for the yt-voice-dub-* family (program: yt-voice-dub). Repo lanes: chaba {yt-voice-dub-cast,
+  yt-voice-dub-e2e}; ada-pi {yt-voice-dub-scenarios}. The pipeline today is host-local scripts with no repo home
+  — first work item inside yt-voice-dub-cast moves ~/.local/bin/{yt-vtt-dub.py, yt-live-api.py, yt-live.sh, yt-vtt-translate.py}
+  into chaba scripts/ops/ so dispatch can iterate. Drain order: (1) yt-voice-dub-cast — active ask, test corpus
+  staged at ~/yt-dub-prep/; (2) yt-voice-dub-scenarios after cast lands — gate; yt-voice-dub-e2e independent, low.
+  Hard constraints for any session: edge-tts exposes exactly 2 TH voices (Premwadee F + Niwat M) — 2-speaker demos
+  only; TH text runs ~1.4x longer than the EN cue window so uniform-rate fit is the honest fix; sNh4pVMFhvQ ships
+  no captions — needs a Whisper transcription lane first. Quality verdicts need Tony listening; scenario metrics
+  are the proxy until then.'
+updated: 2026-10-06 21:55
 comms:
 - at: '2026-10-05'
   from: devin
-  text: >-
-    Program spec'd from backlog drain session: all 3 member cards now carry
-    spec + priority + program/area fields; all armed dispatchable.
-    yt-voice-dub-scenarios blocked_by yt-voice-dub-cast.
+  text: 'Program spec''d from backlog drain session: all 3 member cards now carry spec + priority + program/area
+    fields; all armed dispatchable. yt-voice-dub-scenarios blocked_by yt-voice-dub-cast.'
+- at: 2026-10-06 21:55
+  from: tony
+  text: moved doing -> done
+action:
+  status: done
+claim: {}

@@ -1,6 +1,6 @@
 id: ada-tools-desc-slim
 title: ada tools — slim declarations; guidance moves to the error path
-column: doing
+column: review
 program: ada-tools
 metric: total declaration text <30% of current; zero regressions in scenario-live suite
 verify: scenario-benchmark pass; token count of tool block before/after in session log
@@ -9,7 +9,7 @@ note: 'gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the
   the model at the moment it errs. Cut descriptions to 1-2 lines (what + when), move the IMPORTANT prose into result-side
   hints and a lazy ada_tool_help lookup the model can query on demand.'
 help: needs_confirm/displaced/verify_warn in tool_runner.py cast_to_screen — that pattern applied to every fat description
-updated: 2026-10-06 08:33
+updated: 2026-10-06 21:27
 spec: 'Slim tool declarations: move per-tool prose guidance out of the shipped schema description into the error
   path (the needs_confirm/displaced/verify_warn/render_warn pattern already proves this). Target: each declaration
   description <= 2 short lines; domain guidance moves into error payloads/docs the model sees only on failure. Verify:
@@ -20,9 +20,10 @@ action:
   repo: ada-pi
   status: done
   button: ▶ Start
-  runner: tony-dell
   task_id: 20261005-215023-slim-tool-declarations-move-pe
-  result: 20261005-215023-slim-tool-declarations-move-pe finished (inactive) — see `devin-dispatch logs 20261005-215023-slim-tool-declarations-move-pe`
+  runner: tony-omen
+  result: 'exit=0 on idc03 | No commit/push per dispatch rules; board updated. | devin-task-20261006-211706-slim-tool-declarations-move-pe.service:
+    Consumed 2min 7.661s CPU time over 9min 43.536s wall clock time, 1017.2M memory peak, 568.8M memory swap peak.'
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -70,5 +71,65 @@ comms:
 - at: 2026-10-06 08:33
   from: tony
   text: moved review -> doing
+- at: 2026-10-06 17:04
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in
+    origin/main: ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+- at: 2026-10-06 17:05
+  from: tony
+  text: retry requested
+- at: 2026-10-06 17:05
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 17:05
+  from: chaba
+  text: started devin-task-20261006-170523-slim-tool-declarations-move-pe on tony-omen (dispatch)
+- at: 2026-10-06 17:09
+  from: devin
+  text: 'in progress: infra from earlier dispatch already landed (tool_guide.yml + descsize lint). One regression:
+    yt desc re-fattened by d46f10f (8 lines/521c) — slimming it and moving prose to the yt guide entry.'
+- at: 2026-10-06 17:11
+  from: devin
+  text: 'done: tool-lint clean. yt re-slimmed 8->4 AST lines (521->227c) after d46f10f re-fattened it; voice-dub-demos
+    recipe + Samsung IR-toggle power model moved to yt entry in tool_guide.yml (error path). gev_command still 3
+    lines/196c. 250 tests pass (scenario engine routes tools). Job record: docs/ssot/jobs/ada/2026-10-06-tool-desc-slim-yt-regression.yml.
+    No commit/push.'
+- at: 2026-10-06 17:12
+  from: tony-omen
+  text: 'finished (ok): exit=0 NTS.md those run on idc02 staging before deploy. No commit or push, per dispatch
+    rules. | devin-task-20261006-170'
+- at: 2026-10-06 19:06
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in
+    origin/main: ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+- at: 2026-10-06 19:07
+  from: tony
+  text: please merge.
+- at: 2026-10-06 20:09
+  from: tony
+  text: merge  please
+- at: 2026-10-06 20:10
+  from: tony
+  text: moved review -> doing
+- at: 2026-10-06 21:16
+  from: tony
+  text: retry requested
+- at: 2026-10-06 21:17
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 21:17
+  from: chaba
+  text: started devin-task-20261006-211706-slim-tool-declarations-move-pe on tony-omen (dispatch)
+- at: 2026-10-06 21:21
+  from: devin
+  text: 'prior slimming already landed (22e138f); residual: new ada_track_device fails descsize+coverage in tool-lint
+    — slimming decl, adding tool_guide entry + live scenario'
+- at: 2026-10-06 21:26
+  from: devin
+  text: 'done: ada_track_device decl 5L/283c -> 2L/83c, prose -> tool_guide.yml, added scenarios-live/ada_track_device.yaml
+    (owner identity). tool-lint clean 39/39; audit+scenarios 36/36, tool_runner 201/201. trail: jobs/ada/2026-10-06-tool-desc-slim-residual.yml'
+- at: 2026-10-06 21:27
+  from: tony-omen
+  text: 'finished (ok): exit=0 on idc03 | No commit/push per dispatch rules; board updated. | devin-task-20261006-211706-slim-tool-declarations-'
 claim:
   since: 2026-10-05 21:50

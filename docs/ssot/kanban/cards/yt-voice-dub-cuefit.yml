@@ -1,49 +1,61 @@
 id: yt-voice-dub-cuefit
-title: 'YT voice dub — residual cue-fit polish'
+title: YT voice dub — residual cue-fit polish
 column: backlog
 program: yt-voice-dub
 area: quality
 priority: low
 blocked_by: yt-voice-dub-mode
-metric: 'dub holds natural rate on TH-over-EN content without a hand-written --th-file; residual lag <=5s on the corpus slices'
-verify: 'render 4njFdBF_42I slice with auto sentence-level TH translation -> rate <=1.05, no per-group atempo >1.2x, lag <=5s'
-note: >-
-  Residual lane from the E2E assessment
-  (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Most of cue-fit
-  already landed in evolved form: sentence groups, uniform global rate,
-  atempo <=1.4x, shared lag budget, silence strip. What remains: (a)
-  per-group rate spread — currently one global rate; allow mild
-  per-group variance inside a band so long groups aren't pinned by short
-  ones; (b) translation-length-aware fitting — TH runs ~1.4x the EN cue
-  window, so generate the TH text at *sentence-group* level (the v12
-  lesson: fragment-by-fragment MT guarantees choppy register) and/or
-  compress to fit; --dump-groups already emits the aligned table an LLM
-  pass can consume. Wire a Gemini pass on the group table with a local
-  fallback, replacing the hand-written --th-file step.
-help: 'renderer: scripts/ops/yt-vtt-dub.py (--sentences, --dump-groups,
-  --th-file, --lag-budget); translator: yt-vtt-translate.py (Gemini,
-  quota-limited — llama3.2 fallback was too weak, 4%)'
-spec: >-
-  Polish the residual cue-fit gaps. (1) Sentence-level TH translation:
-  yt-vtt-translate.py (or a new group-table pass) consumes
-  --dump-groups output and returns natural-register Thai aligned to
-  groups — one LLM call per group batch, cached like subs translations;
-  this replaces hand-written --th-file and shortens TH text toward the
-  EN window (target: remove most of the ~1.4x overflow). (2) Per-group
-  rate: replace the single global rate with a bounded per-group rate
-  (e.g. +-0.1 around global) so atempo rarely engages; keep the 1.4x
-  hard cap and shared lag budget. (3) Measure: report rate/atempo/lag
-  per render in a machine-readable line for yt-voice-dub-scenarios to
-  consume. Verify on 4njFdBF_42I + The Egg slices: natural rate, no
-  clipping, lag <=5s, and the TH audio sounds conversational (Tony
-  listen check at review).
+metric: dub holds natural rate on TH-over-EN content without a hand-written --th-file; residual lag <=5s on the
+  corpus slices
+verify: render 4njFdBF_42I slice with auto sentence-level TH translation -> rate <=1.05, no per-group atempo >1.2x,
+  lag <=5s
+note: 'Residual lane from the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Most of cue-fit
+  already landed in evolved form: sentence groups, uniform global rate, atempo <=1.4x, shared lag budget, silence
+  strip. What remains: (a) per-group rate spread — currently one global rate; allow mild per-group variance inside
+  a band so long groups aren''t pinned by short ones; (b) translation-length-aware fitting — TH runs ~1.4x the EN
+  cue window, so generate the TH text at *sentence-group* level (the v12 lesson: fragment-by-fragment MT guarantees
+  choppy register) and/or compress to fit; --dump-groups already emits the aligned table an LLM pass can consume.
+  Wire a Gemini pass on the group table with a local fallback, replacing the hand-written --th-file step.'
+help: 'renderer: scripts/ops/yt-vtt-dub.py (--sentences, --dump-groups, --th-file, --lag-budget); translator: yt-vtt-translate.py
+  (Gemini, quota-limited — llama3.2 fallback was too weak, 4%)'
+spec: 'Polish the residual cue-fit gaps. (1) Sentence-level TH translation: yt-vtt-translate.py (or a new group-table
+  pass) consumes --dump-groups output and returns natural-register Thai aligned to groups — one LLM call per group
+  batch, cached like subs translations; this replaces hand-written --th-file and shortens TH text toward the EN
+  window (target: remove most of the ~1.4x overflow). (2) Per-group rate: replace the single global rate with a
+  bounded per-group rate (e.g. +-0.1 around global) so atempo rarely engages; keep the 1.4x hard cap and shared
+  lag budget. (3) Measure: report rate/atempo/lag per render in a machine-readable line for yt-voice-dub-scenarios
+  to consume. Verify on 4njFdBF_42I + The Egg slices: natural rate, no clipping, lag <=5s, and the TH audio sounds
+  conversational (Tony listen check at review).'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Implement residual cue-fit per card spec: sentence-level TH
-    translation on the group table (cached, LLM with documented
-    fallback), bounded per-group rate, machine-readable fit metrics;
-    verify on the corpus slices.
-updated: '2026-10-06'
+  status: running
+  task: 'Implement residual cue-fit per card spec: sentence-level TH translation on the group table (cached, LLM
+    with documented fallback), bounded per-group rate, machine-readable fit metrics; verify on the corpus slices.'
+  runner: tony-dell
+  task_id: 20261006-211756-polish-the-residual-cue-fit-ga
+updated: 2026-10-06 21:39
+comms:
+- at: 2026-10-06 21:16
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 21:17
+  from: chaba
+  text: dispatched 20261006-211756-polish-the-residual-cue-fit-ga on chaba
+- at: 2026-10-06 21:25
+  from: devin
+  text: 'started. Plan: (1) yt-vtt-translate.py --groups mode = sentence-level TH on the --dump-groups table, batched
+    Gemini call + disk cache under ~/.cache/yt-live-subs/groups/, fallback to cue-level MT text; (2) --th-auto in
+    yt-vtt-dub.py wires it in, replacing hand --th-file; (3) per-group rate band --rate-spread +-0.1 around global,
+    1.4x atempo cap kept; (4) DUBFIT json metrics line per render. Verify on 4njFdBF_42I + Egg slices pulled from
+    mn01 media-corpus.'
+- at: 2026-10-06 21:39
+  from: devin
+  text: 'done — all three lanes landed. (1) yt-vtt-translate.py --groups: dump-groups table -> --th-file JSON, batched
+    Gemini call w/ window-sized natural-register prompt, disk cache in ~/.cache/yt-live-subs/groups/, cue-MT fallback;
+    --th-auto in yt-vtt-dub.py wires it in (hand --th-file still wins); compress auto-skipped for group-level text.
+    (2) --rate-spread +-0.10 per-group rate band around global; 1.4x atempo cap + lag budget unchanged. (3) DUBFIT
+    json line per render (+--metrics-json): rate band, a'
+claim:
+  session: 20261006-211756-polish-the-residual-cue-fit-ga
+  since: 2026-10-06 21:17

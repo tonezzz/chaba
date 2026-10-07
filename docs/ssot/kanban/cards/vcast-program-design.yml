@@ -1,24 +1,19 @@
 id: vcast-program-design
-title: "vcast program — lane map, drain order, dispatch plan"
-column: doing
+title: vcast program — lane map, drain order, dispatch plan
+column: backlog
 priority: high
-note: >-
-  Design/tracker for the vcast-* family (program: vcast). Repo lanes:
-  chaba {vcast-app, vcast-cast-lane, vcast-ha-screens, vcast-health-loop,
-  vcast-input-bridge}; ada-pi {vcast-scenarios}.
-  Drain order: (1) vcast-health-loop + vcast-cast-lane — monitoring loop
-  plus the core lane incl. documenting the tony-omen cast-browser
-  single-point; (2) vcast-input-bridge, vcast-app, vcast-ha-screens;
-  (3) vcast-scenarios LAST — regression gate.
-  Constraints: vcast-ha-screens verification touches tony-ha — promotion to
-  live hosts needs explicit Tony approval; a dispatched session must stage
-  and verify on michael-dev only. cast-browser rides the tony-omen GPU —
-  record the single-point in SSOT when auditing.
-updated: '2026-10-05'
+note: 'Design/tracker for the vcast-* family (program: vcast). Repo lanes: chaba {vcast-app, vcast-cast-lane, vcast-ha-screens,
+  vcast-health-loop, vcast-input-bridge}; ada-pi {vcast-scenarios}. Drain order: (1) vcast-health-loop + vcast-cast-lane
+  — monitoring loop plus the core lane incl. documenting the tony-omen cast-browser single-point; (2) vcast-input-bridge,
+  vcast-app, vcast-ha-screens; (3) vcast-scenarios LAST — regression gate. Constraints: vcast-ha-screens verification
+  touches tony-ha — promotion to live hosts needs explicit Tony approval; a dispatched session must stage and verify
+  on michael-dev only. cast-browser rides the tony-omen GPU — record the single-point in SSOT when auditing.'
+updated: 2026-10-06 17:05
 comms:
 - at: '2026-10-05'
   from: devin
-  text: >-
-    Program spec'd from backlog drain session: all 6 member cards now carry
-    spec + priority; 5 armed chaba, 1 ada-pi (vcast-scenarios, gate — queue
-    last).
+  text: 'Program spec''d from backlog drain session: all 6 member cards now carry spec + priority; 5 armed chaba,
+    1 ada-pi (vcast-scenarios, gate — queue last).'
+- at: 2026-10-06 17:05
+  from: tony
+  text: moved doing -> backlog

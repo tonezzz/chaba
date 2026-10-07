@@ -1,6 +1,6 @@
 id: gev-voice
 title: gev voice — mic pcm path, mute gating, playback gap
-column: doing
+column: done
 priority: medium
 program: gev
 area: voice
@@ -15,7 +15,7 @@ spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-d
   document the iOS constraint (mic works in Safari, not standalone PWA — apple-mobile-web-app-capable=no), and close
   the playback gap: Gemini output is currently transcription-text only, no audio playback path exists in the GEV
   page (vcast_say covers non-Latin TTS separately).'
-updated: 2026-10-06 06:50
+updated: 2026-10-06 20:09
 comms:
 - at: 2026-10-04 19:09
   from: devin
@@ -34,3 +34,76 @@ comms:
 - at: 2026-10-06 06:50
   from: tony
   text: Next?
+- at: 2026-10-06 17:15
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 17:16
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 17:16
+  from: chaba
+  text: started devin-task-20261006-171645-gods-eye-view-app-work-held-re on tony-omen (dispatch)
+- at: 2026-10-06 17:26
+  from: devin
+  text: 'DONE (pending deploy/merge). Hold reason is STALE: ~/gods-eye-view on tony-dell now tracks pushable fork
+    remote (tonezzz/gods-eye-view), main even. Worked GEV worktree ~/gev-wt-voice branch gev-voice-mute-playback
+    @93da6c6 (not pushed): 8-test mute-invariant suite w/ routed WebAudio mock (gain-bypass + flag-only mutations
+    both fail), audio playback path ({type:audio} -> lazy AudioContext queue, interrupted -> flush), iOS constraint
+    documented at index.html + getUserMedia. Chaba side: bridge.py n'
+- at: 2026-10-06 17:26
+  from: devin
+  text: 'raised request arm-gev-dispatch-approve-deploy-1-add-go-53bf0b: Arm GEV dispatch + approve deploy? (1)
+    add `gods-eye-view /home/tony/gods-eye-view main` to ~/.local/share/devin-dispatc'
+- at: 2026-10-06 17:26
+  from: tony-omen
+  text: 'finished (ok): exit=0 y (un-holds gev-map/gev-tours), and (2) approve merge + bridge rebuild + bundle deploy.
+    | devin-task-20261006-171'
+- at: 2026-10-06 17:44
+  from: tony
+  text: 'answered arm-gev-dispatch-approve-deploy-1-add-go-53bf0b: approve.'
+- at: 2026-10-06 17:44
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-06 17:44
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 17:44
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 17:44
+  from: chaba
+  text: started devin-task-20261006-174428-gods-eye-view-app-work-held-re on tony-omen (dispatch)
+- at: 2026-10-06 17:53
+  from: devin
+  text: 'dispatch session started on tony-omen. gods-eye-view repo confirmed absent (HELD) — working the card inside
+    chaba: bridge audio-forward (in-repo), vendored bundle playback patch, mute-invariant regression check, iOS
+    doc.'
+- at: 2026-10-06 18:06
+  from: devin
+  text: 'done repo-side (worktree dispatch/20261006-174428, commit 0da7f3d8). Mute invariant: new gev-voice-check.mjs
+    — 21 checks, extracts the shipped setMicrophoneEnabled/onaudioprocess bodies and drives them through a mock
+    graph; muted => 0 outbound frames, flag-stripped mutation still silent (gain gate proven). Playback gap: bridge.py
+    now forwards model_turn audio as binary frames + audio-forward-check.py (7/7); bundle patched to -v1 via new
+    idempotent gev-patch-dist.mjs (binary listener -> playGemin'
+- at: 2026-10-06 18:07
+  from: tony-omen
+  text: 'finished (ok): exit=0  pull + `gev-gemini` rebuild (not deployed per dispatch rules). | devin-task-20261006-174428-gods-eye-view-app-wo'
+- at: 2026-10-06 20:09
+  from: tony
+  text: closed by Tony
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0  pull + `gev-gemini` rebuild (not deployed per dispatch rules). | devin-task-20261006-174428-gods-eye-view-app-work-held-re.service:
+    Consumed 2min 4.768s CPU time over 22min 2.559s wall clock time, 1.1G memory peak, 269.7M memory swap peak.'
+  runner: tony-omen
+requests:
+- id: arm-gev-dispatch-approve-deploy-1-add-go-53bf0b
+  ask: Arm GEV dispatch + approve deploy? (1) add `gods-eye-view /home/tony/gods-eye-view main` to ~/.local/share/devin-dispatch/repos.conf
+    ON TONY-DELL ONLY — un-holds gev-map/gev-tours; (2) merge gev-voice-mute-playback + rebuild gev-gemini + stage
+    bundle?
+  status: answered
+  at: 2026-10-06 17:26
+  from: devin
+  answer: approve.
+claim: {}

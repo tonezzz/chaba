@@ -1,58 +1,78 @@
 id: idc01-return-role
 title: 'idc01 returns: warm-DR node — mddb follower #2, standby edge, lab sandbox'
-column: review
+column: done
 priority: high
-review_kind: verify
-note: 'DEPLOYED 2026-10-06: zombies stopped+disabled; mddb-follower live
-  (snapshot applied 4m17s, catching up to leader LSN); standby caddy-edge
-  answers api.surf-thailand.com via pinned cert (502=no backends = correct);
-  secrets-backup.timer daily 03:00 on idc03 -> idc02+idc01+dell (verified
-  decryptable x3); ada warm-boot 181s->200. Cold-restore on 2vCPU >25min
-  (vector index load dominates) — replica path is the fast RTO. Findings +
-  numbers: CMS page idc01-return-dr-capability.'
 review_kind: decide
-spec: 'Phase 0 - zombie cleanup: stop+disable duplicate services on idc01
-  (caddy-edge, ollama, gemini-ollama-proxy, camwall-edge, input-bridge,
-  mddb-panel, obsidian-vault, vcast-headless@2/4) but keep quadlets+state
-  installed = warm standby. Mask against accidental restart. Keep
-  mddb.service masked at all times until it is re-seeded as follower.
-  Phase 1 - follower #2: rsync a fresh snapshot OR seed via replication
-  from idc03 leader; run mddb quadlet with FOLLOWER_ADDR pointing at
-  idc03; verify lag->0 and LSN parity. Phase 2 - standby edge: caddy-edge
-  already installed; sync ACME certs from idc03 (~/.local/share/caddy or
-  via secrets-backup); verify curl --resolve api.surf-thailand.com:443:
-  <idc01-public> returns 200 WITHOUT touching DNS. Phase 3 - secrets
-  backup: make idc01 a third target in secrets-backup.sh TARGETS + put
-  backup-age.key on it. Phase 4 - batch offload candidates: vector-
-  reindex and doc-mirror timers can run on idc01 (both hit mddb over
-  tailnet). Phase 5 - SSOT: update ssot.values.yml idc01 note, services
-  SSOT, memory regenerate.'
+note: 'DEPLOYED 2026-10-06: zombies stopped+disabled; mddb-follower live (snapshot applied 4m17s, catching up to
+  leader LSN); standby caddy-edge answers api.surf-thailand.com via pinned cert (502=no backends = correct); secrets-backup.timer
+  daily 03:00 on idc03 -> idc02+idc01+dell (verified decryptable x3); ada warm-boot 181s->200. Cold-restore on 2vCPU
+  >25min (vector index load dominates) — replica path is the fast RTO. Findings + numbers: CMS page idc01-return-dr-capability.'
+spec: 'Phase 0 - zombie cleanup: stop+disable duplicate services on idc01 (caddy-edge, ollama, gemini-ollama-proxy,
+  camwall-edge, input-bridge, mddb-panel, obsidian-vault, vcast-headless@2/4) but keep quadlets+state installed
+  = warm standby. Mask against accidental restart. Keep mddb.service masked at all times until it is re-seeded as
+  follower. Phase 1 - follower #2: rsync a fresh snapshot OR seed via replication from idc03 leader; run mddb quadlet
+  with FOLLOWER_ADDR pointing at idc03; verify lag->0 and LSN parity. Phase 2 - standby edge: caddy-edge already
+  installed; sync ACME certs from idc03 (~/.local/share/caddy or via secrets-backup); verify curl --resolve api.surf-thailand.com:443:
+  <idc01-public> returns 200 WITHOUT touching DNS. Phase 3 - secrets backup: make idc01 a third target in secrets-backup.sh
+  TARGETS + put backup-age.key on it. Phase 4 - batch offload candidates: vector- reindex and doc-mirror timers
+  can run on idc01 (both hit mddb over tailnet). Phase 5 - SSOT: update ssot.values.yml idc01 note, services SSOT,
+  memory regenerate.'
 lab:
-  hypothesis: 'A warm-standby node gives the fleet a measured <10min
-    RTO for the "idc03 dies" event, with zero data loss (follower lag
-    bounded) and a verified edge+ada bring-up path.'
-  metric: 'DRILL results: T(promote follower->leader healthy),
-    T(edge answers on idc01 public IP), T(ada-pi-pwa health 200),
-    follower lag distribution under live load (idc01 2vCPU might lag
-    bursts - measure), cold-restore from nightly backup (boot->healthy
-    time). Report in comms.'
+  hypothesis: A warm-standby node gives the fleet a measured <10min RTO for the "idc03 dies" event, with zero data
+    loss (follower lag bounded) and a verified edge+ada bring-up path.
+  metric: 'DRILL results: T(promote follower->leader healthy), T(edge answers on idc01 public IP), T(ada-pi-pwa
+    health 200), follower lag distribution under live load (idc01 2vCPU might lag bursts - measure), cold-restore
+    from nightly backup (boot->healthy time). Report in comms.'
   review_by: '2026-10-20'
-help: 'Standby envs on idc01 should point at idc03 mddb (not the local
-  masked instance) so a promoted stack works immediately. Failover order:
-  promote mddb follower -> start ada units -> repoint api.surf-thailand.com
-  CF record to idc01 public -> verify. The old public IP answers today -
-  that makes the curl --resolve edge test work without touching DNS.'
+help: 'Standby envs on idc01 should point at idc03 mddb (not the local masked instance) so a promoted stack works
+  immediately. Failover order: promote mddb follower -> start ada units -> repoint api.surf-thailand.com CF record
+  to idc01 public -> verify. The old public IP answers today - that makes the curl --resolve edge test work without
+  touching DNS.'
 action:
   type: dispatch
-  status: idle
+  status: done
   repo: chaba
   button: ▶ idc01 warm-spare setup + DR drill
-  runner: null
   host: tony-omen
-updated: 2026-10-06
+  runner: tony-omen
+  result: 'exit=0 ed); idc02 follower ~23h behind near the binlog edge (tracked by `mddb-follower-stall`). | devin-task-20261006-153259-phase-0-zombie-cleanup-stop-di.service:
+    Consumed 1min 22.257s CPU time over 8min 8.623s wall clock time, 1.2G memory peak.'
+updated: 2026-10-06 15:53
 comms:
 - at: 2026-10-06 13:30
   from: devin
-  text: 'role proposed from fleet restructure: warm DR + lab + batch.
-    mddb.service stays masked until seeded as follower - never unmask
-    the old leader data dir.'
+  text: 'role proposed from fleet restructure: warm DR + lab + batch. mddb.service stays masked until seeded as
+    follower - never unmask the old leader data dir.'
+- at: 2026-10-06 15:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 15:32
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 15:33
+  from: chaba
+  text: started devin-task-20261006-153259-phase-0-zombie-cleanup-stop-di on tony-omen (dispatch)
+- at: 2026-10-06 15:33
+  from: devin
+  text: Session start — reading SSOT + card spec, then Phase 0 audit on idc01.
+- at: 2026-10-06 15:35
+  from: devin
+  text: 'Verify pass: follower live + converging (confirmed_lsn 156464369 vs leader 158985719, ~360MB binlog behind,
+    advancing); edge 502/TLS ok; secrets-backup received on idc01. GAPS: zombies not masked (still WantedBy=default.target
+    -> would restart on boot); mddb-coldtest container + dead healthcheck timer left running; secrets-backup.timer
+    on idc03 may not be enabled. Fixing.'
+- at: 2026-10-06 15:40
+  from: devin
+  text: 'Verify pass DONE + gaps closed: (1) zombie quadlets MASKED on idc01 — they were WantedBy=default.target
+    with linger=on, would have restarted on boot; mddb.service still masked. (2) secrets-backup.timer on idc03 was
+    enabled-but-never-started — armed, fires 03:00. (3) Removed mddb-coldtest + dead 16s healthcheck timer. (4)
+    MDDB_REPLICATION_SECRET was committed inline in 99ed606d — moved to EnvironmentFile on host+repo; value still
+    in git history, rotate at next opportunity. (5) Follower converging'
+- at: 2026-10-06 15:42
+  from: tony-omen
+  text: 'finished (ok): exit=0 ed); idc02 follower ~23h behind near the binlog edge (tracked by `mddb-follower-stall`).
+    | devin-task-20261006-15'
+- at: 2026-10-06 15:53
+  from: tony
+  text: closed by Tony
+claim: {}

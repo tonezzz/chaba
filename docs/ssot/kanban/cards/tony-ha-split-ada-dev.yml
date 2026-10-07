@@ -2,41 +2,60 @@ id: tony-ha-split-ada-dev
 title: 'Split tony-ha: prod HA into dedicated container; old container becomes ada-ha (dev-only)'
 column: review
 priority: high
-note: 'PARTIALLY DONE 2026-10-06 (parallel session): ada-ha already exists on
-  tony-dell — 127.0.0.1:8125, config ~/.config/ada-ha, container healthy 14h.
-  Implemented as a FRESH lab container rather than rename+rebuild, so prod
-  tony-ha on :8123 was never touched (cleaner outcome). Remaining verify:
-  radios still prod-only; dev mocks/tony-test dashboards moved off prod;
-  ssot.home-assistant.instances.yml records the ada-ha instance.'
+note: 'PARTIALLY DONE 2026-10-06 (parallel session): ada-ha already exists on tony-dell — 127.0.0.1:8125, config
+  ~/.config/ada-ha, container healthy 14h. Implemented as a FRESH lab container rather than rename+rebuild, so prod
+  tony-ha on :8123 was never touched (cleaner outcome). Remaining verify: radios still prod-only; dev mocks/tony-test
+  dashboards moved off prod; ssot.home-assistant.instances.yml records the ada-ha instance.'
 review_kind: decide
-spec: 'Phase 0 - verify: inspect tony-ha .storage/core.config_entries for the
-  zigbee radio path (slzb06 TCP vs zigbee-usb2 container) and any device mounts
-  the quadlet needs. Phase 1 - safety: tar backup ~/.config/home-assistant.
-  Phase 2 - split: podman rename tony-ha ada-ha; write ada-ha.container quadlet
-  (config ~/.config/ada-ha seeded via cp -a, PublishPort 127.0.0.1:8125:8123,
-  consider dropping host-network - dev has no reason to see it). Start new
-  tony-ha container from the existing quadlet + existing config dir - comes up
-  on :8123 with tokens/.storage/integrations intact; verify serve URL 200,
-  entities live, recorder writing. Phase 3 - sanitize ada-ha: cloned .storage
-  carries prod tokens (acceptable same-host; keep ada-ha tailnet-only); pin
-  radio bridges to prod only. Phase 4 - strip dev pollution from prod:
-  a_dev_mocks.yaml, mha_mirror_* entities, tony-test dashboard -> move to
-  ada-ha. Phase 5 - record: ssot.home-assistant.instances.yml gains a 4th
-  instance (ada-ha); ada dev flows may repoint to :8125; document the
-  three-tier ladder ada-ha -> michael-dev -> tony-ha.'
-help: 'Minimal attach list for prod tony-ha: config dir, tailscale serve :8123,
-  radio bridges (verify which), go2rtc :1984/8554, node-red :1880
-  (nodered-ha.env), ha-live bridge :9005, ha_mcp_tools :9584, xiaomi secrets
-  referenced by config. Two host-net containers cannot share 8123 - prod keeps
-  it, ada-ha takes 8125. Recorder DBs are per-config; no conflict. Verify:
-  curl serve URL 200; ada-ha 200 on 8125; no entity loss in prod; radios not
-  double-attached; consumers unchanged.'
+spec: 'Phase 0 - verify: inspect tony-ha .storage/core.config_entries for the zigbee radio path (slzb06 TCP vs zigbee-usb2
+  container) and any device mounts the quadlet needs. Phase 1 - safety: tar backup ~/.config/home-assistant. Phase
+  2 - split: podman rename tony-ha ada-ha; write ada-ha.container quadlet (config ~/.config/ada-ha seeded via cp
+  -a, PublishPort 127.0.0.1:8125:8123, consider dropping host-network - dev has no reason to see it). Start new
+  tony-ha container from the existing quadlet + existing config dir - comes up on :8123 with tokens/.storage/integrations
+  intact; verify serve URL 200, entities live, recorder writing. Phase 3 - sanitize ada-ha: cloned .storage carries
+  prod tokens (acceptable same-host; keep ada-ha tailnet-only); pin radio bridges to prod only. Phase 4 - strip
+  dev pollution from prod: a_dev_mocks.yaml, mha_mirror_* entities, tony-test dashboard -> move to ada-ha. Phase
+  5 - record: ssot.home-assistant.instances.yml gains a 4th instance (ada-ha); ada dev flows may repoint to :8125;
+  document the three-tier ladder ada-ha -> michael-dev -> tony-ha.'
+help: 'Minimal attach list for prod tony-ha: config dir, tailscale serve :8123, radio bridges (verify which), go2rtc
+  :1984/8554, node-red :1880 (nodered-ha.env), ha-live bridge :9005, ha_mcp_tools :9584, xiaomi secrets referenced
+  by config. Two host-net containers cannot share 8123 - prod keeps it, ada-ha takes 8125. Recorder DBs are per-config;
+  no conflict. Verify: curl serve URL 200; ada-ha 200 on 8125; no entity loss in prod; radios not double-attached;
+  consumers unchanged.'
 action:
   type: manual
-  status: idle
-updated: 2026-10-06
+  status: done
+  runner: tony-dell
+  task_id: 20261007-085805-phase-0-verify-inspect-tony-ha
+  result: 20261007-085805-phase-0-verify-inspect-tony-ha finished (inactive) — see `devin-dispatch logs 20261007-085805-phase-0-verify-inspect-tony-ha`
+updated: 2026-10-07 09:14
 comms:
 - at: 2026-10-06 10:35
   from: devin
-  text: 'spec from migration-session design discussion; gives lab-HA a
-    prod-shaped sandbox (ada-ha) below michael-dev for ha-exec/control work'
+  text: spec from migration-session design discussion; gives lab-HA a prod-shaped sandbox (ada-ha) below michael-dev
+    for ha-exec/control work
+- at: 2026-10-07 08:57
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 08:58
+  from: chaba
+  text: dispatched 20261007-085805-phase-0-verify-inspect-tony-ha on chaba
+- at: 2026-10-07 08:59
+  from: devin
+  text: 'dispatch session started: verifying ada-ha split state (card note says partially done 10-06, fresh lab
+    container on :8125). Checking containers, radios, dev pollution, SSOT.'
+- at: 2026-10-07 09:13
+  from: devin
+  text: 'DONE. Verified the 10-06 parallel-session split: ada-ha healthy on 127.0.0.1:8125 (podman net, no devices),
+    prod tony-ha untouched on :8123 (200, 315 live entities, recorder writing). Phase 0 finding: NO zigbee radio
+    exists on tony-ha at all — no ZHA/Z2M/MQTT entries, no zigbee containers; quadlet mounts only /dev/video0-1.
+    Corrections: ~/.config/ada-ha is a cp -a CLONE of prod (not fresh — SSOT note fixed). Cleanup done: tony-test
+    dashboard deleted from prod via ha_mcp_tools (snapshot docs/home'
+- at: 2026-10-07 09:14
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 09:14
+  from: chaba
+  text: 'auto-merge not done: no session branch — close will block until merged'
+claim:
+  since: 2026-10-07 08:58

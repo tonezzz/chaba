@@ -1,6 +1,6 @@
 id: mddb-follower-lsn-persist
 title: Persist follower lastAppliedLSN — restart shouldn't re-snapshot 4.3G
-column: doing
+column: done
 review_kind: decide
 note: 'During the idc03 cutover: every mddb follower restart pulls a FULL 4.3G snapshot (~100s stream + verify)
   because lastAppliedLSN lives only in memory — restart reports fromLSN=0, trips the new below-oldest check, re-snapshots.
@@ -12,16 +12,17 @@ help: 'Fork repo: ~/CascadeProjects/mddb-fork branch binlog-retention. Fix lives
   a few seconds of entries idempotently).'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   button: ▶ Persist follower LSN
-  result: 20261006-103003-in-the-mddb-fork-cascadeprojec finished (inactive) — see `devin-dispatch logs 20261006-103003-in-the-mddb-fork-cascadeprojec`
+  result: 'exit=0 * `ssh idc02 ''journalctl --user -u mddb.service --since "13:50" | grep "persisted LSN"''` | devin-task-20261006-143331-in-the-mddb-fork-cascadeprojec.service:
+    Consumed 1min 3.334s CPU time over 6min 40.286s wall clock time, 1.2G memory peak.'
   runner: tony-omen
 spec: 'In the mddb fork (~/CascadeProjects/mddb-fork): persist follower''s applied LSN across restarts — small meta
   key in the replicated db or a sidecar file next to mddb.db. Load on startup; flush periodically (interval or batch-count,
   not per-entry). Idempotent replay means a few-second skew is safe. Update idc02+idc03 images after (build on idc02
   via the Dockerfile; image tag bump 2.15.4-blrotate -> next).'
-updated: 2026-10-06 14:33
+updated: 2026-10-06 15:32
 comms:
 - at: 2026-10-06 06:57
   from: tony
@@ -97,6 +98,19 @@ comms:
 - at: 2026-10-06 14:33
   from: chaba
   text: started devin-task-20261006-143331-in-the-mddb-fork-cascadeprojec on tony-omen (dispatch)
+- at: 2026-10-06 14:39
+  from: devin
+  text: 're-dispatch 14:33 — card already DONE by 10:30 run; verified live again: idc02 restart 13:50 resumed from
+    persisted LSN 149571828 (now 150.04M, replaying backlog, healthy:false until caught up — expected). idc01 follower
+    also on 2.15.4-lsn since 13:40 (one last snapshot, now tailing). idc03 leader still on blrotate — image loaded+quadlet
+    pinned; restart + branch merge still await open request idc03-leader-restart-needed-to-pick-up-m-2cf496.'
+- at: 2026-10-06 14:40
+  from: tony-omen
+  text: 'finished (ok): exit=0 * `ssh idc02 ''journalctl --user -u mddb.service --since "13:50" | grep "persisted
+    LSN"''` | devin-task-20261006-14'
+- at: 2026-10-06 15:32
+  from: tony
+  text: closed by Tony
 claim:
   since: 2026-10-06 10:30
 requests:

@@ -1,6 +1,6 @@
 id: yt-voice-dub-test
 title: YT voice dub — minimal TTS audio track test (en/th)
-column: doing
+column: done
 metric: one short video plays with intelligible TH voice track over ducked original
 verify: ffprobe shows dub audio stream + Tony watches it on the TV
 note: 'Extends the yt-live subtitle pipeline. Steps: reuse cached media + VTT cues from ~/.cache/yt-live-media|subs,
@@ -9,7 +9,7 @@ note: 'Extends the yt-live subtitle pipeline. Steps: reuse cached media + VTT cu
   to scripts/ while in there.'
 help: 'pipeline: ~/.local/bin/yt-live-api.py :8791 + yt-live.sh + yt-vtt-translate.py; docs/kb/home-assistant/tv-casting-runbook.md;
   scripts/ops/yt-transcript.sh; voices th-TH-PremwadeeNeural / en-US-*'
-updated: 2026-10-04 19:50
+updated: 2026-10-06 21:17
 comms:
 - at: 2026-10-04 19:05
   from: devin
@@ -31,218 +31,149 @@ comms:
     free gap air before next cue; (3) overlapping VTT timestamps passed through unclamped. Fix (dub-v5-fit.mp4 now
     on screen 5): fit window runs to NEXT cue start, resynth capped +35%, total atempo capped 1.4x, last-resort
     atrim (clipped tail beats doubled voice), VTT overlap clamped. Deplo'
-- at: '2026-10-04 21:10'
+- at: 2026-10-04 21:10
   from: devin
-  text: >-
-    Tony feedback: voice speed uneven + overlapping speech. v6-norm:
-    two-pass global rate — measure natural speech (247s) vs window
-    (174s) -> ONE uniform rate (+45%) for all cues; overlapping VTT
-    timestamps clamped; segments atrim'd at next-cue start (no
-    bleed); loudnorm on dub track. Playing on vcast screen-5.
-    Compare page now lists v1-v6 incl. parallel session's v5-fit.
-    Constraint surfaced: TH subs run ~1.4x longer than EN timing
-    allows — uniform speed is the honest fix; shorter translations
-    would be the quality fix.
-- at: '2026-10-04 22:20'
+  text: 'Tony feedback: voice speed uneven + overlapping speech. v6-norm: two-pass global rate — measure natural
+    speech (247s) vs window (174s) -> ONE uniform rate (+45%) for all cues; overlapping VTT timestamps clamped;
+    segments atrim''d at next-cue start (no bleed); loudnorm on dub track. Playing on vcast screen-5. Compare page
+    now lists v1-v6 incl. parallel session''s v5-fit. Constraint surfaced: TH subs run ~1.4x longer than EN timing
+    allows — uniform speed is the honest fix; shorter translations would be the quality fix.'
+- at: 2026-10-04 22:20
   from: devin
-  text: >-
-    Tony: "still too fast, text still overlapping" on v6. ROOT CAUSE
-    FOUND: YouTube rolling captions — each VTT cue repeats the previous
-    cue's tail; ~40% of the Thai text was duplicated, spoken 2-3x back
-    to back = heard as overlap. Also: h6fcK_fRYaI is "The Egg" (Andy
-    Weir 2-speaker dialogue: man + God) not the elephant doc — stale
-    info.json titles. v8 (dub-v8-dedup.mp4 on screen 5): rolling-caption
-    dedup (char-level suffix-prefix strip) -> speech 176s vs 174s window
-    -> uniform rate 1.02 (+0% NATURAL) -> queue layout, zero overlap.
-    Compression lane built too (gemini 429'd -> local llama3.2 fallback
-    only managed 4% — dedup proved the real fix, LLM not needed).
-    2-speaker dialogue = ideal specimen for the voice-casting lane next.
-- at: '2026-10-05 06:15'
+  text: 'Tony: "still too fast, text still overlapping" on v6. ROOT CAUSE FOUND: YouTube rolling captions — each
+    VTT cue repeats the previous cue''s tail; ~40% of the Thai text was duplicated, spoken 2-3x back to back = heard
+    as overlap. Also: h6fcK_fRYaI is "The Egg" (Andy Weir 2-speaker dialogue: man + God) not the elephant doc —
+    stale info.json titles. v8 (dub-v8-dedup.mp4 on screen 5): rolling-caption dedup (char-level suffix-prefix strip)
+    -> speech 176s vs 174s window -> uniform rate 1.02 (+0% NATURAL) -> queue layout, zero overlap. Compression
+    lane built too (gemini 429''d -> local llama3.2 fallback only managed 4% — dedup proved the real fix, LLM not
+    needed). 2-speaker dialogue = ideal specimen for the voice-casting lane next.'
+- at: 2026-10-05 06:15
   from: devin
-  text: >-
-    v9 2-voice render live on screen 5 (dub-v9-2voice.mp4). First
-    speaker-cast demo: hand-labeled turn map on deduped cues —
-    Premwadee=God (~42 cues), Niwat=man (~16 cues). Speech 169s vs 174s
-    window -> rate 0.98 NATURAL, tail drift only 2.5s. New --cast-map
-    "voice:idx-ranges" option in yt-vtt-dub.py. Caveat: cue granularity —
-    some cues mix both speakers' words; next step auto turn detection
-    (pause+question heuristics or diarization). v7 queue-lag + v8 dedup
-    also on the compare page (v1-v9).
-- at: '2026-10-05 08:45'
+  text: 'v9 2-voice render live on screen 5 (dub-v9-2voice.mp4). First speaker-cast demo: hand-labeled turn map
+    on deduped cues — Premwadee=God (~42 cues), Niwat=man (~16 cues). Speech 169s vs 174s window -> rate 0.98 NATURAL,
+    tail drift only 2.5s. New --cast-map "voice:idx-ranges" option in yt-vtt-dub.py. Caveat: cue granularity — some
+    cues mix both speakers'' words; next step auto turn detection (pause+question heuristics or diarization). v7
+    queue-lag + v8 dedup also on the compare page (v1-v9).'
+- at: 2026-10-05 08:45
   from: devin
-  text: >-
-    Tony: "voice speed ok but Thai transcript looks gibberish" — the
-    BURNED-IN subs still carried rolling-caption fragments (audio dedup
-    only fixed TTS text). Frame check confirmed: cues like "...met me
-    what happened" — two speakers' words + repeated tails in one line.
-    v10 (dub-v10-clean.mp4 on screen 5): rebuilt from src.mp4 with a
-    DEDUPED burn — clean-vtt.py strips rolling repeats per language
-    (304->152 cues, tolerant suffix match for re-translated TH tails),
-    merges near-simultaneous starts, orders EN-top/TH-bottom. Text now
-    shows only new words per cue. Same v9 2-voice audio, natural speed.
-- at: '2026-10-05 09:30'
+  text: 'Tony: "voice speed ok but Thai transcript looks gibberish" — the BURNED-IN subs still carried rolling-caption
+    fragments (audio dedup only fixed TTS text). Frame check confirmed: cues like "...met me what happened" — two
+    speakers'' words + repeated tails in one line. v10 (dub-v10-clean.mp4 on screen 5): rebuilt from src.mp4 with
+    a DEDUPED burn — clean-vtt.py strips rolling repeats per language (304->152 cues, tolerant suffix match for
+    re-translated TH tails), merges near-simultaneous starts, orders EN-top/TH-bottom. Text now shows only new words
+    per cue. Same v9 2-voice audio, natural speed.'
+- at: 2026-10-05 09:30
   from: devin
-  text: >-
-    v11 sentence-merge (dub-v11-sent.mp4 on screen 5): karaoke <c> word
-    timestamps in src.en.vtt -> deduped word stream -> grouped at ~1s+
-    inter-word-start gaps OR speaker-turn changes -> 28 sentence groups
-    -> ONE edge-tts utterance per group (natural prosody instead of
-    per-fragment synthesis) -> 132s speech vs 174s, rate 0.95, zero
-    overlap, ends 173s. Display burn: same groups, blocks >9s re-sliced
-    at cue starts so subs stay readable (EN full-sentence, TH piece
-    per slice). TH group text re-deduped with tolerant tail match.
-    This is the architecture answer to every speed/overlap/gibberish
-    complaint so far — sentence-level units are the right primitive.
-- at: '2026-10-05 10:20'
+  text: 'v11 sentence-merge (dub-v11-sent.mp4 on screen 5): karaoke <c> word timestamps in src.en.vtt -> deduped
+    word stream -> grouped at ~1s+ inter-word-start gaps OR speaker-turn changes -> 28 sentence groups -> ONE edge-tts
+    utterance per group (natural prosody instead of per-fragment synthesis) -> 132s speech vs 174s, rate 0.95, zero
+    overlap, ends 173s. Display burn: same groups, blocks >9s re-sliced at cue starts so subs stay readable (EN
+    full-sentence, TH piece per slice). TH group text re-deduped with tolerant tail match. This is the architecture
+    answer to every speed/overlap/gibberish complaint so far — sentence-level units are the right primitive.'
+- at: 2026-10-05 10:20
   from: devin
-  text: >-
-    Tony: v11 much better, but Thai needs to sound like natural spoken
-    Thai. v12 (dub-v12-thai.mp4 on screen 5): --th-file override with
-    hand-written natural-register Thai per sentence group (28 lines —
-    conversational particles, no literal MT phrasing). Lesson learned:
-    the MT Thai was translated FRAGMENT-BY-FRAGMENT which guarantees
-    choppy output — the scalable fix is translating at sentence level
-    (the same groups the renderer already builds). --dump-groups emits
-    the group table so an override file can be written aligned to real
-    groups; wire a Gemini/LLM pass on that table when quota returns.
-    v12: 128s speech, rate 0.95, ends 173s, 5.7s total lag.
-- at: '2026-10-05 11:00'
+  text: 'Tony: v11 much better, but Thai needs to sound like natural spoken Thai. v12 (dub-v12-thai.mp4 on screen
+    5): --th-file override with hand-written natural-register Thai per sentence group (28 lines — conversational
+    particles, no literal MT phrasing). Lesson learned: the MT Thai was translated FRAGMENT-BY-FRAGMENT which guarantees
+    choppy output — the scalable fix is translating at sentence level (the same groups the renderer already builds).
+    --dump-groups emits the group table so an override file can be written aligned to real groups; wire a Gemini/LLM
+    pass on that table when quota returns. v12: 128s speech, rate 0.95, ends 173s, 5.7s total lag.'
+- at: 2026-10-05 11:00
   from: devin
-  text: >-
-    Tony: better, but sentence stops are missing — dub rushes between
-    utterances. v13 (dub-v13-pace.mp4 on screen 5): two fixes — (a)
-    queue breath gaps 0.12s -> 0.4s same-speaker, 0.65s at turn
-    changes; (b) punctuation in the Thai override lines (commas,
-    ellipses) so edge-tts itself pauses mid-sentence naturally.
-    Speech 128s -> 140s from added pauses, still 0.95 natural rate,
-    ends 175.7s inside the cut.
-- at: '2026-10-05 12:10'
+  text: 'Tony: better, but sentence stops are missing — dub rushes between utterances. v13 (dub-v13-pace.mp4 on
+    screen 5): two fixes — (a) queue breath gaps 0.12s -> 0.4s same-speaker, 0.65s at turn changes; (b) punctuation
+    in the Thai override lines (commas, ellipses) so edge-tts itself pauses mid-sentence naturally. Speech 128s
+    -> 140s from added pauses, still 0.95 natural rate, ends 175.7s inside the cut.'
+- at: 2026-10-05 12:10
   from: devin
-  text: >-
-    Tony: voice should carry over scene changes, not stop at each cut.
-    v14 (dub-v14-flow.mp4 on screen 5): sentence grouping threshold
-    raised to --sent-gap 1.4s so only real pauses split utterances —
-    26 groups, voice flows through visual cuts. Cast map replaced by
-    --cast-times (second-precise turn borders on the karaoke word
-    stream) after discovering cue-index maps drift under timestamp
-    clamping; iterated borders against dumped word times until turns
-    are ~95% clean (single-word slips only). TH file realigned to the
-    26 groups. Bug fix: voice_at() now bisects pre-clamp cue times.
-- at: '2026-10-05 12:45'
+  text: 'Tony: voice should carry over scene changes, not stop at each cut. v14 (dub-v14-flow.mp4 on screen 5):
+    sentence grouping threshold raised to --sent-gap 1.4s so only real pauses split utterances — 26 groups, voice
+    flows through visual cuts. Cast map replaced by --cast-times (second-precise turn borders on the karaoke word
+    stream) after discovering cue-index maps drift under timestamp clamping; iterated borders against dumped word
+    times until turns are ~95% clean (single-word slips only). TH file realigned to the 26 groups. Bug fix: voice_at()
+    now bisects pre-clamp cue times.'
+- at: 2026-10-05 12:45
   from: devin
-  text: >-
-    Tony: "โล่งอก" reads as "โล่-งอก" — systematic Thai TTS problem
-    (no word separators in script → segmenter mis-splits syllables).
-    v15 (dub-v15-fix.mp4): new --fix-map JSON dictionary applied to
-    SPOKEN text only (display stays correct spelling). Fix types:
-    ZWSP \u200b at the true syllable break (โล่ง​อก), hard respell
-    (โล่ง-อก) if ZWSP insufficient, full phonetic respell as last
-    resort. Dictionary lives per-video and grows as mis-reads are
-    spotted. Candidate watch-list for Thai: ambiguous consonant
-    clusters (ตากลม/ตา-กลม), loanwords, ทร-clusters, numbers.
-- at: '2026-10-05 13:30'
+  text: 'Tony: "โล่งอก" reads as "โล่-งอก" — systematic Thai TTS problem (no word separators in script → segmenter
+    mis-splits syllables). v15 (dub-v15-fix.mp4): new --fix-map JSON dictionary applied to SPOKEN text only (display
+    stays correct spelling). Fix types: ZWSP \u200b at the true syllable break (โล่ง​อก), hard respell (โล่ง-อก)
+    if ZWSP insufficient, full phonetic respell as last resort. Dictionary lives per-video and grows as mis-reads
+    are spotted. Candidate watch-list for Thai: ambiguous consonant clusters (ตากลม/ตา-กลม), loanwords, ทร-clusters,
+    numbers.'
+- at: 2026-10-05 13:30
   from: devin
-  text: >-
-    v16 — first INTERVIEW dub: Graham Norton x Noel Gallagher
-    (~/yt-dub-prep/4njFdBF_42I, slice 20-200s), on screen 5. Pipeline
-    upgrades: --offset for pre-cut slices, speaker markers (>>) and
-    [laughter]/[applause] stripped from word stream, --cast-times pitch
-    syntax (voice@NHz) — 3 male speakers differentiated: Norton=0Hz,
-    Noel=-6Hz, Leto/Freeman=-12Hz. Interviews ship no TH subs so
-    --th-file carries all Thai (23 segments). The Egg's >> markers
-    proved too noisy for auto-turns (72/240s); still hand-labeled.
-- at: '2026-10-05 14:05'
+  text: 'v16 — first INTERVIEW dub: Graham Norton x Noel Gallagher (~/yt-dub-prep/4njFdBF_42I, slice 20-200s), on
+    screen 5. Pipeline upgrades: --offset for pre-cut slices, speaker markers (>>) and [laughter]/[applause] stripped
+    from word stream, --cast-times pitch syntax (voice@NHz) — 3 male speakers differentiated: Norton=0Hz, Noel=-6Hz,
+    Leto/Freeman=-12Hz. Interviews ship no TH subs so --th-file carries all Thai (23 segments). The Egg''s >> markers
+    proved too noisy for auto-turns (72/240s); still hand-labeled.'
+- at: 2026-10-05 14:05
   from: devin
-  text: >-
-    v16b: Tony spotted multi-slice groups showing one repeated TH line
-    while EN wrapped over several lines. Fix: --th-file groups with no
-    TH pieces now time-slice at word boundaries (>9s), and the TH
-    override splits on clause punctuation (,—…!) distributed across
-    slices proportional to EN word count. Also clamps negative cue
-    starts from --offset windows.
-- at: '2026-10-05 14:40'
+  text: 'v16b: Tony spotted multi-slice groups showing one repeated TH line while EN wrapped over several lines.
+    Fix: --th-file groups with no TH pieces now time-slice at word boundaries (>9s), and the TH override splits
+    on clause punctuation (,—…!) distributed across slices proportional to EN word count. Also clamps negative cue
+    starts from --offset windows.'
+- at: 2026-10-05 14:40
   from: devin
-  text: >-
-    v16d: voice/text sync fix. Coverage-full TH (v16c) pushed total
-    queued lag to 59.8s — speech drifted off-scene. Root cause:
-    --lag allowed 3s overrun PER segment (~70s possible). Now a shared
-    --lag-budget (5s default): segments borrow drift from a pool; when
-    it runs dry, atempo pins them to cue time. Lag 59.8->39.0s, speech
-    lands inside window. Coverage still 89%.
-- at: '2026-10-05 15:15'
+  text: 'v16d: voice/text sync fix. Coverage-full TH (v16c) pushed total queued lag to 59.8s — speech drifted off-scene.
+    Root cause: --lag allowed 3s overrun PER segment (~70s possible). Now a shared --lag-budget (5s default): segments
+    borrow drift from a pool; when it runs dry, atempo pins them to cue time. Lag 59.8->39.0s, speech lands inside
+    window. Coverage still 89%.'
+- at: 2026-10-05 15:15
   from: devin
-  text: >-
-    v16e: residual lag fix — the forced 0.4/0.65s breath gap after
-    EVERY segment double-paused on top of natural caption pauses and
-    compounded into ~10s drift. New model: the caption pause IS the
-    breath — segments start at cue time (or immediately when late);
-    +0.3s only on zero-air speaker turns. Lag 39->17s (residual =
-    real speech overflow beyond 1.4x atempo cap).
-- at: '2026-10-05 15:50'
+  text: 'v16e: residual lag fix — the forced 0.4/0.65s breath gap after EVERY segment double-paused on top of natural
+    caption pauses and compounded into ~10s drift. New model: the caption pause IS the breath — segments start at
+    cue time (or immediately when late); +0.3s only on zero-air speaker turns. Lag 39->17s (residual = real speech
+    overflow beyond 1.4x atempo cap).'
+- at: 2026-10-05 15:50
   from: devin
-  text: >-
-    Tony heard "overlap" — it was not TH-over-TH (queue guarantees
-    sequential placement, impossible by construction); it was the
-    original EN bed at constant 0.22 duck — overlapping banter voices
-    bled under the Thai. v16f: constant duck replaced by
-    sidechaincompress keyed on the dub — EN drops only while Thai
-    speaks, audience laughter/ambience returns in gaps.
-- at: '2026-10-05 16:20'
+  text: 'Tony heard "overlap" — it was not TH-over-TH (queue guarantees sequential placement, impossible by construction);
+    it was the original EN bed at constant 0.22 duck — overlapping banter voices bled under the Thai. v16f: constant
+    duck replaced by sidechaincompress keyed on the dub — EN drops only while Thai speaks, audience laughter/ambience
+    returns in gaps.'
+- at: 2026-10-05 16:20
   from: devin
-  text: >-
-    v16g: multi-face timing confusion addressed — (a) pitch spread
-    widened Noel -6->-10Hz, guest -12->-18Hz (same Niwat family but
-    more separable), (b) new --names map: TH sub line prefixed with
-    speaker name on every voice change (นอร์ตัน/โนเอล/เจเร็ด), so a
-    3-shot always shows who is talking. Solo sections unaffected.
-- at: '2026-10-05 16:55'
+  text: 'v16g: multi-face timing confusion addressed — (a) pitch spread widened Noel -6->-10Hz, guest -12->-18Hz
+    (same Niwat family but more separable), (b) new --names map: TH sub line prefixed with speaker name on every
+    voice change (นอร์ตัน/โนเอล/เจเร็ด), so a 3-shot always shows who is talking. Solo sections unaffected.'
+- at: 2026-10-05 16:55
   from: devin
-  text: >-
-    v16h: start-lag root cause found — each edge-tts mp3 carries
-    ~200ms leading + ~150ms trailing silence; queue placed it as
-    content so every utterance started late. fit_wav now strips
-    onset/tail silence (areverse trick) before timing math; lag
-    17->9.2s. Negative cue starts (offset slices) clamped to 0.
-    Speaker name tags OFF this render — hand-labeled banter borders
-    land wrong without listening; wrong labels worse than none.
-    Correct naming needs real diarization (yt-voice-dub-cast card).
-- at: '2026-10-05 17:30'
+  text: 'v16h: start-lag root cause found — each edge-tts mp3 carries ~200ms leading + ~150ms trailing silence;
+    queue placed it as content so every utterance started late. fit_wav now strips onset/tail silence (areverse
+    trick) before timing math; lag 17->9.2s. Negative cue starts (offset slices) clamped to 0. Speaker name tags
+    OFF this render — hand-labeled banter borders land wrong without listening; wrong labels worse than none. Correct
+    naming needs real diarization (yt-voice-dub-cast card).'
+- at: 2026-10-05 17:30
   from: devin
-  text: >-
-    Watch-list add (Tony): "How Leonardo DiCaprio Earned Robert De
-    Niro's Respect" — next voice-over target once pipeline is ready.
-    Infra notes: ML moved to tony-omen (61G free, GTX 1650 + torch
-    2.14 cu130); tony-dell pruned back to 5.7G free (was 100% full —
-    podman prune -8.1G, caches cleared). Diarization: resemblyzer too
-    weak for similar male voices; pyannote gated (account "Chirawat"
-    still 403 — verify acceptance on that account); NeMo Sortformer
-    installing as ungated fallback. Benchmark idea (Tony): compare
-    jev/tiny/micro models — valid for the TH-rewrite step (they're
-    LLMs, not audio models — can't diarize, but can translate).
-- at: '2026-10-05 17:55'
+  text: 'Watch-list add (Tony): "How Leonardo DiCaprio Earned Robert De Niro''s Respect" — next voice-over target
+    once pipeline is ready. Infra notes: ML moved to tony-omen (61G free, GTX 1650 + torch 2.14 cu130); tony-dell
+    pruned back to 5.7G free (was 100% full — podman prune -8.1G, caches cleared). Diarization: resemblyzer too
+    weak for similar male voices; pyannote gated (account "Chirawat" still 403 — verify acceptance on that account);
+    NeMo Sortformer installing as ungated fallback. Benchmark idea (Tony): compare jev/tiny/micro models — valid
+    for the TH-rewrite step (they''re LLMs, not audio models — can''t diarize, but can translate).'
+- at: 2026-10-05 17:55
   from: devin
-  text: >-
-    Corpus moved off tony-dell: ~/.cache/yt-live-media (8.6G) +
-    ~/yt-dub-prep (462M) now at mn01:~/media-corpus (9.4G), backed up
-    to gdrive:chaba-media-corpus via rclone on mn01 (sync running).
-    Dell freed to 16G free / 87% (was 100%). Sources for future
-    renders now live on mn01 — pull via scp or run pipeline there.
-    Dell keeps only public/apps/yt-live (546M served renders).
-- at: '2026-10-05 18:15'
+  text: 'Corpus moved off tony-dell: ~/.cache/yt-live-media (8.6G) + ~/yt-dub-prep (462M) now at mn01:~/media-corpus
+    (9.4G), backed up to gdrive:chaba-media-corpus via rclone on mn01 (sync running). Dell freed to 16G free / 87%
+    (was 100%). Sources for future renders now live on mn01 — pull via scp or run pipeline there. Dell keeps only
+    public/apps/yt-live (546M served renders).'
+- at: 2026-10-05 18:15
   from: devin
-  text: >-
-    v17 REAL DIARIZATION working: pyannote speaker-diarization-3.1
-    runs on tony-omen GPU (~/.venvs/diarize, torch 2.14 cu130 — needed
-    protobuf7 + latest onnx + ml_dtypes despite nemo's 5.29 pin, plus
-    pyannote-core/database/metrics upgrades nemo downgraded).
-    gn-diarize-pyan.txt = 98 raw turns -> 62 after <0.3s filter.
-    Speaker identity verified by transcript anchors: SPEAKER_00=Norton
-    ("you're a fan of Noel's, aren't you?"), SPEAKER_01=Noel
-    ("IT'S MY SONG", congrats/album chat), SPEAKER_02=Guest
-    ("9 months for my son Dominic... finished my album" — Noel has no
-    son Dominic). Voices: Norton=Niwat, Noel=Niwat@+8Hz, Guest=-10Hz.
-    Render: 23 segs, rate 0.95 natural, lag 18.8s, subs burned ->
-    gn-v17-diar.mp4 served + playing on TONY-TV.
-    CAST FIX (last night's Ada failure): media_player.tony_tv_cast was
-    'off' — play_media on off Chromecast returns 200 but no-ops.
-    yt-live.sh cast_now() now turn_on + 5s wait when player is off.
+  text: 'v17 REAL DIARIZATION working: pyannote speaker-diarization-3.1 runs on tony-omen GPU (~/.venvs/diarize,
+    torch 2.14 cu130 — needed protobuf7 + latest onnx + ml_dtypes despite nemo''s 5.29 pin, plus pyannote-core/database/metrics
+    upgrades nemo downgraded). gn-diarize-pyan.txt = 98 raw turns -> 62 after <0.3s filter. Speaker identity verified
+    by transcript anchors: SPEAKER_00=Norton ("you''re a fan of Noel''s, aren''t you?"), SPEAKER_01=Noel ("IT''S
+    MY SONG", congrats/album chat), SPEAKER_02=Guest ("9 months for my son Dominic... finished my album" — Noel
+    has no son Dominic). Voices: Norton=Niwat, Noel=Niwat@+8Hz, Guest=-10Hz. Render: 23 segs, rate 0.95 natural,
+    lag 18.8s, subs burned -> gn-v17-diar.mp4 served + playing on TONY-TV. CAST FIX (last night''s Ada failure):
+    media_player.tony_tv_cast was ''off'' — play_media on off Chromecast returns 200 but no-ops. yt-live.sh cast_now()
+    now turn_on + 5s wait when player is off.'
+- at: 2026-10-06 21:17
+  from: tony
+  text: moved doing -> done
+- at: 2026-10-06 21:17
+  from: tony
+  text: closed by Tony
+action:
+  status: done
+claim: {}
