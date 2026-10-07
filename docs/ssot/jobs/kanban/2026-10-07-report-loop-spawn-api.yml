@@ -1,0 +1,47 @@
+id: report-loop-spawn-api
+title: 'Report loop: extend board-api /card — spec/action/report fields + queue + on_exists'
+date: 2026-10-07
+card: report-loop-spawn-api
+host: tony-omen
+status: implemented    # worktree session; deploy to chaba-tony-dell needs promotion
+
+goal: >
+  Implement report-session-loop §1a: POST /card can file an ARMED
+  dispatch card (spec/report/action/queue) plus on_exists:'queue' so a
+  second click on a report page's spawn button re-queues instead of
+  duplicating.
+
+delivered:
+  - scripts/board/board-api.py: >
+      do_create accepts spec (verbatim; absent + report => composed from
+      REPORT_SPAWN_TEMPLATE), report (^[a-z0-9-]{1,80}), action {type:
+      dispatch|manual, repo? whitelisted via dispatch_repos.repos —
+      unknown keys dropped so a spawn can't pre-seed status/runner},
+      queue:true (action.status=queued in the same locked write), and
+      brief/priority/tags/program/blocked_by pass-throughs. on_exists:
+      'error' (default, today's 400) | 'queue' — queued/running card
+      returns its status ('already active'), otherwise re-armed to queued
+      + comms 're-spawned from report page'. Response JSON now carries
+      id (+ status when armed). Endpoint documented in the module
+      docstring; _selftest covers every new field and on_exists path.
+  - docs/ssot/kanban/ssot.kanban.yml: >
+      write_path.endpoints gained the full "POST /card" entry (the
+      endpoint was previously undocumented there). card_schema already
+      declared `report:` from the design session — unchanged.
+
+verify: >
+  python3 scripts/board/board-api.py --selftest — passes. Live curl
+  against a local instance (BOARD_API_PORT=18877, worktree card dir):
+  POST /card {title, report:'dev-kanban', action:{type:dispatch,
+  repo:chaba}, queue:false, brief, priority, tags, program} wrote
+  spawn-verify-dev-kanban.yml with the REPORT_SPAWN_TEMPLATE spec;
+  repeat POST 400'd on the duplicate; on_exists:'queue' re-armed it to
+  queued with the re-spawn comms line; a third call returned
+  'already active (queued)'. Test card removed after verification.
+
+notes: >
+  The API change lives in this worktree — board-api.py on tony-dell still
+  runs the old code. Deploy = copy to the served checkout (chaba-tony-dell)
+  + restart board-api.service; needs the usual same-session approval.
+  Downstream card: report-loop-spawn-ui (ada-pi) consumes
+  {id, status} from this response.
