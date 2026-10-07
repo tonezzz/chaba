@@ -48,6 +48,9 @@ WATCHLIST = [("^SET.BK", "SET"), ("PTT.BK", "PTT"), ("AOT.BK", "AOT"),
              ("KBANK.BK", "KBANK"), ("DELTA.BK", "DELTA")]
 SOURCES = ["trade-api (exchange_rates/dollar_index/commodity_prices)",
            "yahoo-finance chart api"]
+SUMMARY = ("Daily market snapshot — USD/THB, gold, DXY, SET watchlist "
+           "(^SET, PTT, AOT, KBANK, DELTA). Morning briefing reads the "
+           "one-liner from here.")
 
 
 def _get(url, timeout=30):
@@ -283,6 +286,9 @@ def publish(lang, body, now):
         "attribute": ["report"],
         "report_role": ["rollup"],
         "generated_by": ["market-report-update.py"],
+        "summary": [SUMMARY],
+        "domain": ["finance"],
+        "fresh_for": ["1d"],
         "sources": SOURCES,
         "title": ["Market Report" if lang == "en" else "รายงานตลาด"],
         "written_by": ["market-report-update"],

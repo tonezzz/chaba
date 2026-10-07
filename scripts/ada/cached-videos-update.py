@@ -43,6 +43,7 @@ APPDIR = Path(os.environ.get(
     "YT_LIVE_APPDIR",
     os.path.expanduser("~/CascadeProjects/chaba-tony-dell/"
                        "stacks/web/public/apps/yt-live")))
+REPO_LIB = Path(__file__).resolve().parents[2] / "scripts" / "lib"
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "cached-videos-report"
@@ -50,6 +51,18 @@ BLOCK_BEGIN = "<!-- cachedvideos:auto -->"
 BLOCK_END = "<!-- /cachedvideos:auto -->"
 ICT = timezone(timedelta(hours=7))
 SOURCES = ["~/.cache/yt-live-media", "~/.cache/yt-live-subs"]
+SUMMARY = ("What videos are in the yt-live media cache + Thai-dub assets "
+           "served at /apps/yt-live/ + subtitle library — the list Ada "
+           "quotes for 'what's cached / what can you play'.")
+
+
+def _regen_index():
+    try:
+        sys.path.insert(0, str(REPO_LIB))
+        from cms_index import regen_reports_index
+        regen_reports_index(MDDB, written_by="cached-videos-update.py")
+    except Exception as e:
+        print(f"warn: reports-index regen failed ({e})", file=sys.stderr)
 VID_RE = re.compile(r"^[A-Za-z0-9_-]{6,15}\.")
 
 
@@ -254,6 +267,9 @@ def publish(lang, body, now):
         "attribute": ["report"],
         "report_role": ["rollup"],
         "generated_by": ["cached-videos-update.py"],
+        "summary": [SUMMARY],
+        "domain": ["media"],
+        "fresh_for": ["1h"],
         "sources": SOURCES,
         "title": ["Cached Videos" if lang == "en"
                   else "วิดีโอที่แคชไว้"],
@@ -346,6 +362,7 @@ def main():
 
         publish("en", en_body, now_utc)
         publish("th", th_body, now_utc)
+        _regen_index()
         print(f"published {PAGE} en+th — {summary['cached']} cached, "
               f"{summary['subtitles']} subs, {summary['stray_dirs']} stray")
 

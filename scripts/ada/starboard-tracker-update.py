@@ -46,6 +46,19 @@ BLOCK_END = "<!-- /starboard:auto -->"
 ICT = timezone(timedelta(hours=7))
 SOURCES = ["kanban card starboard-windsurf-catalogs",
            "reports/starboard-catalogs/catalogs.yml"]
+SUMMARY = ("Live tracker for the Starboard Windsurfing catalog hunt — "
+           "kanban card state, catalogs found/archived, pipeline and "
+           "latest activity.")
+REPO_LIB = Path(__file__).resolve().parents[2] / "scripts" / "lib"
+
+
+def _regen_index():
+    try:
+        sys.path.insert(0, str(REPO_LIB))
+        from cms_index import regen_reports_index
+        regen_reports_index(MDDB, written_by="starboard-tracker-update.py")
+    except Exception as e:
+        print(f"warn: reports-index regen failed ({e})", file=sys.stderr)
 
 _STAGE_ORDER = ["plan", "audit", "collect", "archive", "verify", "done"]
 
@@ -217,6 +230,9 @@ def publish(lang, body, now):
         "attribute": ["report"],
         "report_role": ["rollup"],
         "generated_by": ["starboard-tracker-update.py"],
+        "summary": [SUMMARY],
+        "domain": ["projects"],
+        "fresh_for": ["1h"],
         "sources": SOURCES,
         "title": ["Starboard Catalogs" if lang == "en"
                   else "แคตตาล็อก Starboard"],
@@ -309,6 +325,7 @@ def main():
 
         publish("en", en_body, now_utc)
         publish("th", th_body, now_utc)
+        _regen_index()
         print(f"published {PAGE} en+th — {summary['catalogs']} catalogs "
               f"({summary['archived']} archived), card={summary['column']}")
 

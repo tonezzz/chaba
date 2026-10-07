@@ -63,6 +63,11 @@ def stale(meta: dict, now: datetime.datetime) -> bool:
 def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
     rows = []
     for d in docs:
+        # index the en variant only — a th mirror row carries no extra
+        # signal and doubles the row count (cctv pages flooded past
+        # MAX_ROWS and pushed real reports out of the index)
+        if d.get("lang") == "th":
+            continue
         meta = d.get("meta") or {}
         if (meta.get("kind") or [""])[0] not in ("report", "page"):
             continue
