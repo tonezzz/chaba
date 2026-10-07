@@ -87,9 +87,26 @@ card_schema:
   # normalizes it to the status block on first run:
   pipeline: "ci   # opt-in scalar — becomes a map after a run:
     {opt_in: ci, started, updated,
-     stages: {plan|structure|develop|audit|benchmark:
+     stages: {plan|structure|develop|audit|benchmark|verify:
                {status: pass|fail|skip|delegated|blocked, at, detail}},
-     benchmark: {metric, before, after, command, measured_at}}"
+     benchmark: {metric, before, after, command, measured_at},
+     verify: {at, ok: 'n/m', goals: [{id, ok, evidence, at}]}}"
+  # optional — machine-checkable acceptance the verify stage executes.
+  # Prose is rejected at the plan gate — a goal that cannot fail carries
+  # no information. check grammar (scripts/lib/goals.py):
+  #   http <code> <url>                      GET; pass iff status == code
+  #   command <shell>                        pass iff exit 0
+  #   command <shell> expect <substr>        pass iff exit 0 AND substr in output
+  #   command <shell> expect exit [N]        pass iff exit != 0 (or == N)
+  #   file-exists <path>                     ~ or repo-relative path exists
+  #   git-ancestor <branch> <base>           merge-base --is-ancestor
+  #   ws <url>                               ws://|wss:// handshake -> 101
+  # Goals run in the session worktree; done cards get re-probed by
+  # report-watch (goals rot — a pass at close proves nothing about
+  # next month).
+  expected_goals:
+    - id: "short-slug"
+      check: "one executable check line, grammar above"
   # optional — benchmark declaration the benchmark stage consumes.
   # command is run in the worktree; last stdout line = the measured value.
   benchmark:

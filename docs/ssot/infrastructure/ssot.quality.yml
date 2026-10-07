@@ -63,8 +63,8 @@ lanes:
     outputs: ~/var/chaba/health/, HA /local/chaba-report.json, focus-inbox
   card-pipeline:
     description: >
-      Per-card CI — the five-stage standard in docs/ssot/ssot.ci.yml
-      (plan -> structure -> develop -> audit -> benchmark). A kanban card
+      Per-card CI — the six-stage standard in docs/ssot/ssot.ci.yml
+      (plan -> structure -> develop -> audit -> benchmark -> verify). A kanban card
       opts in via `pipeline: ci`; scripts/ci/card-pipeline.py executes
       the automatable gates against the session worktree diff and writes
       results to the card's pipeline: block + comms. Audit reuses the
@@ -227,6 +227,13 @@ registry:
     runner: scripts/ci/card-pipeline.py --stages benchmark
     script: "runs the card's benchmark.command; records pipeline.benchmark.before on first run, .after after develop"
     outputs: card pipeline.benchmark
+  - id: gate.card-verify
+    lane: card-pipeline
+    gate: blocking (every declared expected_goal must execute green)
+    cost: cheap
+    runner: scripts/ci/card-pipeline.py --stages verify
+    script: "executes the card's expected_goals via scripts/lib/goals.py (http/command/file-exists/git-ancestor/ws); prose goals are rejected at plan"
+    outputs: "card pipeline.verify {goals: [{id, ok, evidence, at}]} + reports/ci/<card>-*.json"
   - id: gate.card-plan-structure
     lane: card-pipeline
     gate: blocking

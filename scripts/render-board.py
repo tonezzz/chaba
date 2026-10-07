@@ -138,12 +138,20 @@ def _outcome_file_slug(idx: dict, slug: str):
 
 
 def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
-    """Per-card verification chips; only for cards that had a dispatch run."""
+    """Per-card verification chips; only for cards that had a dispatch run
+    — or that already carry pipeline.verify goal evidence."""
     a = c.get("action") or {}
     tid = str(a.get("task_id") or "")
     slug = _TASK_TS.sub("", tid) if tid else ""
     runs = runs_by_slug.get(slug, []) if slug else []
-    if not runs and a.get("status") not in ("done", "failed", "error"):
+    # pipeline.verify goal results — executable acceptance evidence beats
+    # the outcome/deploy comms heuristics (a goal that ran is real signal;
+    # a comms regex is a claim)
+    pipe = c.get("pipeline") if isinstance(c.get("pipeline"), dict) else {}
+    pv = pipe.get("verify") or {}
+    vgoals = pv.get("goals") or []
+    if not runs and a.get("status") not in ("done", "failed", "error") \
+            and not vgoals:
         return []
     checks = []
 
@@ -174,29 +182,42 @@ def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
              if b[len("dispatch/"):] != tid]
     found = next((p for t in tids if (p := _outcome_file(outcomes, t))),
                  None) or _outcome_file_slug(outcomes, slug)
-    if tid or runs:
+    if not vgoals and (tid or runs):
         checks.append({"k": "outcome", "ok": found is not None,
                        "how": found or f"no dispatch-outcome-{slug or '?'}*.md"})
 
-    # deploy + verify — comms heuristics (verify mirrors isVerified)
+    # deploy + verify — comms heuristics (verify mirrors isVerified);
+    # both give way to pipeline.verify goal chips when those exist
     comms = c.get("comms") or []
-    dep = next((m.get("text", "") for m in comms
-                if _DEPLOY_PY.search(m.get("text") or "")), None)
-    checks.append({"k": "deploy",
-                   "ok": True if dep else (None if not tid else False),
-                   "how": ("comms: " + dep[:80]) if dep
-                          else "no deploy mention in comms"})
-    v = a.get("verified")
-    if v is not None:
+    if not vgoals:
+        dep = next((m.get("text", "") for m in comms
+                    if _DEPLOY_PY.search(m.get("text") or "")), None)
+        checks.append({"k": "deploy",
+                       "ok": True if dep else (None if not tid else False),
+                       "how": ("comms: " + dep[:80]) if dep
+                              else "no deploy mention in comms"})
+    if vgoals:
+        n_ok = sum(1 for g in vgoals if g.get("ok") is True)
         checks.append({"k": "verify",
-                       "ok": v is True or v == "true",
-                       "how": f"action.verified={v} (merge-guard)"})
+                       "ok": all(g.get("ok") is True for g in vgoals),
+                       "how": f"pipeline.verify {n_ok}/{len(vgoals)} goals "
+                              f"pass — {pv.get('at', '?')}"})
+        for g in vgoals:
+            checks.append({"k": f"goal:{g.get('id', '?')}",
+                           "ok": g.get("ok"),
+                           "how": g.get("evidence") or ""})
     else:
-        hit = next((m.get("text", "") for m in comms
-                    if _TRUST_PY.search(m.get("text") or "")), None)
-        checks.append({"k": "verify", "ok": hit is not None,
-                       "how": ("comms: " + hit[:80]) if hit
-                              else "no verification entry in comms"})
+        v = a.get("verified")
+        if v is not None:
+            checks.append({"k": "verify",
+                           "ok": v is True or v == "true",
+                           "how": f"action.verified={v} (merge-guard)"})
+        else:
+            hit = next((m.get("text", "") for m in comms
+                        if _TRUST_PY.search(m.get("text") or "")), None)
+            checks.append({"k": "verify", "ok": hit is not None,
+                           "how": ("comms: " + hit[:80]) if hit
+                                  else "no verification entry in comms"})
     return checks
 
 

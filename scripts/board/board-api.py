@@ -605,7 +605,8 @@ def queue_request_notify(cid: str, req: dict) -> None:
             _notify_timer.start()
 
 
-PIPELINE_STAGES = {"plan", "structure", "develop", "audit", "benchmark"}
+PIPELINE_STAGES = {"plan", "structure", "develop", "audit", "benchmark",
+                   "verify"}
 PIPELINE_STATUSES = {"pass", "fail", "skip", "delegated", "blocked",
                      "running"}
 

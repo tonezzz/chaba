@@ -36,6 +36,16 @@ opt_in:
       measured value", before: <seeded or recorded>, after: <recorded>}.
       Cards may also carry the older bare `metric:`/`verify:` fields —
       the runner maps metric->benchmark.metric and verify->benchmark.note.
+    expected_goals: >
+      Optional list of machine-checkable acceptance goals
+      [{id, check}] the verify stage executes. check grammar
+      (scripts/lib/goals.py): "http <code> <url>", "command <shell>
+      [expect <substr|exit [N]>]", "file-exists <path>",
+      "git-ancestor <branch> <base>", "ws <url>". Prose goals are
+      rejected at the plan gate — a goal that cannot fail carries no
+      information. Results land at pipeline.verify {at, ok: "n/m",
+      goals: [{id, ok, evidence, at}]} and drive the goal chips on the
+      board (they replace the outcome/deploy comms heuristics).
 
 stages:
   - id: plan
@@ -93,6 +103,23 @@ stages:
       Two-invocation contract: run once before/around develop to pin
       `before`, run again (--stages benchmark) after the fix lands to
       pin `after`. before is never overwritten once recorded.
+  - id: verify
+    automatable: true
+    gate: "every expected_goals check executes green — the card's
+           machine-checkable acceptance. Checks run in the session
+           worktree (or the served checkout when re-probed by
+           report-watch). No expected_goals -> skip. Unparseable goals
+           -> fail (same rule as the plan gate)."
+    artifact: "pipeline.verify {at, ok: 'n/m', goals: [{id, ok,
+               evidence, at}]} on the card + goals detail in the run
+               artifact"
+    on_gate_fail: "status fail + comms naming the failed goal ids —
+                   acceptance is evidence, not narrative"
+    rot: >
+      report-watch.py re-probes expected_goals on done cards every
+      GOAL_PROBE_H (24h) — a pass at close proves nothing about next
+      month. Regressions raise a report-watch-goal-rot-<card> focus-inbox
+      item; probe timestamps persist in reports/report-watch/state.json.
 
 stage_status_enum:
   pass: "gate satisfied — artifact produced"
@@ -122,7 +149,7 @@ runner:
   script: scripts/ci/card-pipeline.py
   usage: >
     card-pipeline.py <card-id> [--repo PATH] [--cards-dir PATH | --api URL]
-    [--stages plan,structure,develop,audit,benchmark] [--force] [--dry-run]
+    [--stages plan,structure,develop,audit,benchmark,verify] [--force] [--dry-run]
   exit_codes:
     "0": all executed stages pass/skip/delegated-with-request
     "1": a stage failed (audit/plan/structure gate)
@@ -159,6 +186,8 @@ related_ssot:
 
 related_files:
   - scripts/ci/card-pipeline.py
+  - scripts/lib/goals.py             # expected_goals check grammar + executor
+  - scripts/report/report-watch.py   # done-card goal re-probe (rot detection)
   - scripts/board/board-api.py       # POST /pipeline
   - scripts/board/kanban-dispatch.py # TASK_RAILS pipeline hook
   - .githooks/pre-commit             # audit stage reuses this check set

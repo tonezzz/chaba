@@ -14,6 +14,10 @@ focus-inbox item when a node needs a human/agent:
 One inbox item per node while the bad state persists (dedupe by slug);
 state.json records when each bad state was first seen.
 
+Also re-probes `expected_goals` on done kanban cards every GOAL_PROBE_H
+hours — a pass at close proves nothing about next month; regressions
+raise a `report-watch-goal-rot-<card>` inbox item.
+
 Usage: report-watch.py [--quiet]
 """
 import json
@@ -27,11 +31,19 @@ import yaml
 REPO = Path(__file__).resolve().parents[2]
 REGISTRY = REPO / "docs/ssot/infrastructure/ssot.reports.yml"
 INBOX = REPO / "docs/ssot/focus-inbox"
+CARDS = REPO / "docs/ssot/kanban/cards"
 STATE = REPO / "reports/report-watch/state.json"
 DELTA_GRACE_H = 24
+GOAL_PROBE_H = 24  # done-card expected_goals re-probe interval
 
 BAD_NOW = {"error", "missing", "stale"}
 BAD_SUSTAINED = {"delta", "unreachable"}
+
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    import goals as goallib  # scripts/lib/goals.py — expected_goals checks
+except Exception:  # pragma: no cover - re-probe optional
+    goallib = None
 
 
 def meta_path(node: dict) -> Path | None:
@@ -100,6 +112,95 @@ def make_item(node: dict, status: str, summary: str, since: str) -> dict:
     }
 
 
+def _iso_age_h(value, now) -> float | None:
+    """Hours since an ISO/“YYYY-MM-DD HH:MM” timestamp; None if absent
+    or unparseable."""
+    if not value:
+        return None
+    try:
+        t = datetime.fromisoformat(str(value).strip().replace(" ", "T"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.astimezone()
+    return (now - t).total_seconds() / 3600
+
+
+def make_goalrot_item(cid: str, failed: list) -> dict:
+    lines = "\n".join(f"  - {r['id']}: {r.get('evidence', '')[:140]}"
+                      for r in failed[:6])
+    return {
+        "title": "Focus Inbox Item",
+        "subtitle": f"Done card {cid} has failing expected_goals",
+        "focus": {
+            "label": f"Goal rot: {cid}",
+            "text": (f"Done card `{cid}` keeps `expected_goals` and a "
+                     f"scheduled re-probe found {len(failed)} failing — "
+                     f"the work passed at close but has since rotted:\n\n"
+                     f"{lines}\n\n"
+                     "Fix the regression, update the goal (reality moved), "
+                     "or drop expected_goals from the card. The item "
+                     "clears once a probe passes."),
+            "status": "draft",
+            "priority": "medium",
+            "tags": ["report", "watch", "goal-rot"],
+            "missing_info": [
+                "Real regression, or a goal describing a world that moved on?",
+            ],
+        },
+    }
+
+
+def probe_done_goals(state: dict, now, quiet: bool) -> list[str]:
+    """Re-probe expected_goals on done cards — a pass at close proves
+    nothing about next month. Due when neither report-watch's own probe
+    nor the card's pipeline.verify result is younger than GOAL_PROBE_H.
+    Failures raise one focus-inbox item per card (slug-deduped); probe
+    results persist in state.json."""
+    if goallib is None or not CARDS.is_dir():
+        return []
+    probed = []
+    for p in sorted(CARDS.glob("*.yml")):
+        try:
+            card = yaml.safe_load(p.read_text()) or {}
+        except Exception:
+            continue
+        if card.get("column") != "done":
+            continue
+        goals, _ = goallib.validate_goals(card)
+        if not goals:
+            continue
+        cid = str(card.get("id") or p.stem)
+        key = f"goalprobe-{cid}"
+        last = (state.get(key) or {}).get("at")
+        if not last:
+            pipe = card.get("pipeline")
+            if isinstance(pipe, dict):
+                last = (pipe.get("verify") or {}).get("at")
+        age = _iso_age_h(last, now)
+        if age is not None and age < GOAL_PROBE_H:
+            continue
+        results = goallib.run_goals(goals, REPO)
+        failed = [r for r in results if r["ok"] is not True]
+        state[key] = {"at": now.isoformat(timespec="seconds"),
+                      "ok": f"{len(results) - len(failed)}/{len(results)}"}
+        probed.append(cid)
+        if not quiet:
+            print(f"goal-probe {cid}: {state[key]['ok']}"
+                  + (f" FAIL: {', '.join(r['id'] for r in failed[:4])}"
+                     if failed else ""))
+        if not failed or inbox_exists(f"goal-rot-{slug(cid)}"):
+            continue
+        fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
+                 f"report-watch-goal-rot-{slug(cid)}.yml")
+        (INBOX / fname).write_text(yaml.safe_dump(
+            make_goalrot_item(cid, failed),
+            sort_keys=False, allow_unicode=True, width=120))
+        if not quiet:
+            print(f"flagged goal-rot {cid}")
+    return probed
+
+
 def main() -> int:
     quiet = "--quiet" in sys.argv
     reg = yaml.safe_load(REGISTRY.read_text())
@@ -160,9 +261,11 @@ def main() -> int:
         if not quiet:
             print(f"flagged {nid} ({status}, since {first_seen})")
 
+    probed = probe_done_goals(state, now, quiet)
     save_state(state)
     print(f"report-watch: {len(nodes)} nodes, {len(created)} flagged"
-          + (f" ({', '.join(created)})" if created else ""))
+          + (f" ({', '.join(created)})" if created else "")
+          + f", {len(probed)} goal-probes")
     return 0
 
 
