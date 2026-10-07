@@ -97,6 +97,11 @@ def _data_isolation_scan(rel, content, warnings):
     # Skip per-host SSOTs and health/perf baseline files that legitimately contain runtime values
     if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'ssot.security.', 'performance-baselines')):
         return
+    # focus-inbox is an operational inbox — its items quote findings
+    # (including IPs) verbatim; the canonical-purity rule would re-flag
+    # its own warnings and deadlock the auto-committer
+    if 'focus-inbox' in rel:
+        return
     for match in IP4_RE.finditer(content):
         # Skip loopback, Tailscale, wildcard bind, and documented home subnets
         ip = match.group(0)
