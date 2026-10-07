@@ -20,6 +20,14 @@ Task types (card `action` block):
   container  — `podman run --rm <env> <image> <cmd...>` under
              systemd-run; card supplies action.container:
              {image, cmd (str|list), env: {K: V}, pull: missing|always}
+  script     — sync a git repo to a local scratch clone and run a shell
+             command in it under systemd-run; card supplies
+             action.script: {cmd (str|list), repo (default "chaba"),
+             repo_url (override), ref (default master), workdir,
+             env: {K: V}, timeout (RuntimeMaxSec, default 1800)}.
+             Repo lands in <state>/repos/<name> (clone --depth 50,
+             fetch+reset on each claim — always origin-fresh, host's
+             own clone so local edits there are disposable).
 
 Env:
   RUNNER_API     board api base — default the tailnet Caddy route so the
@@ -74,6 +82,32 @@ DISPATCH = os.environ.get(
 # agents to curl /comment.
 os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 
+# script-type repo name -> clone url. Extend here or pass
+# action.script.repo_url on the card for anything else.
+REPO_URLS = {"chaba": "https://github.com/tonezzz/chaba.git"}
+
+
+def sync_repo(name: str, url: str, ref: str) -> Path:
+    """Clone-or-refresh <state>/repos/<name> pinned to origin/<ref>."""
+    d = STATE_DIR / "repos" / name
+    if not (d / ".git").exists():
+        d.parent.mkdir(parents=True, exist_ok=True)
+        r = sh(["git", "clone", "--depth", "50", "--branch", ref,
+                url, str(d)], timeout=300)
+        if r.returncode != 0:
+            raise RuntimeError(
+                f"clone {name}: {(r.stderr or r.stdout).strip()[:200]}")
+        return d
+    r = sh(["git", "-C", str(d), "fetch", "--depth", "50",
+            "origin", ref], timeout=300)
+    if r.returncode == 0:
+        r = sh(["git", "-C", str(d), "reset", "--hard", "FETCH_HEAD"],
+               timeout=60)
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"sync {name}: {(r.stderr or r.stdout).strip()[:200]}")
+    return d
+
 RAILS = """
 ---
 Rails: you are processing kanban card '{id}' on runner '{host}'.
@@ -87,12 +121,8 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
       -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
 - If you raised a request and kept working, the answer may arrive while
   you run: board-api appends it to $TASK_DIR/answers.jsonl (one JSON
-  object per line: {{"at","card","from","kind","request_id","answer"}}).
-  Check that file before finishing; newest line wins per request_id.
-- answers.jsonl lines may also carry kind:"comment" — card comms pushed
-  live (Tony's notes, Ada's [opinion]-tagged report takes). Treat them
-  as review input to weigh; request_id/answer lines (kind:"answer")
-  remain the authoritative answer channel.
+  object per line: {{"at","card","from","request_id","answer"}}). Check
+  that file before finishing; newest line wins per request_id.
 """.strip()
 
 
@@ -234,6 +264,11 @@ def claimable(card: dict) -> str:
         c = a.get("container") or {}
         if not c.get("image") or not shutil_which("podman"):
             return ""
+    elif typ == "script":
+        c = a.get("script") or {}
+        url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
+        if not c.get("cmd") or not url or not shutil_which("git"):
+            return ""
     elif typ != "dispatch":
         return ""
     return typ
@@ -264,6 +299,27 @@ def start_task(card: dict, typ: str) -> tuple:
                  f"--pull={c.get('pull', 'missing')}",
                  f"--name={unit}"] + env +
                 [str(c["image"])] + cmd)
+    elif typ == "script":
+        c = a.get("script") or {}
+        url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
+        try:
+            path = sync_repo(c.get("repo", "chaba"), url,
+                             c.get("ref") or "master")
+        except RuntimeError as e:
+            return "", "", str(e)[:240]
+        workdir = str(path / (c.get("workdir") or "."))
+        cmd = c.get("cmd")
+        cmd = (["bash", "-lc", cmd] if isinstance(cmd, str)
+               else [str(x) for x in cmd])
+        env = []
+        for k, v in (c.get("env") or {}).items():
+            env += ["--setenv", f"{k}={v}"]
+        argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
+                 f"--property=RuntimeMaxSec={int(c.get('timeout', 1800))}",
+                 "--description", f"runner {cid}"] + env +
+                ["bash", "-lc",
+                 f"cd {shlex.quote(workdir)} && "
+                 f"exec {shlex.join(cmd)}"])
     else:  # dispatch
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"

@@ -74,16 +74,12 @@ card_schema:
     metric: "how we measure it — a number or observable state"
     review_by: "YYYY-MM-DD — promote/retire decision due"
     outcome: "promote | retire | extend — written when decided"
-  report: "optional ada-cms-pages slug — report-linked card; dispatched
-          sessions get REPORT_RAILS (kanban-dispatch.py) telling them to
-          read it first and mirror progress via cms-report-note.py;
-          render-board shows a 📄 badge. Design:
-          docs/design/report-session-loop.md §2"
   # optional — hands-off execution (the Start button)
   spec: "full task text — what gets dispatched; be self-contained"
   action:
-    type: "dispatch | manual | container   # dispatch => devin-dispatch
-           start; container => podman run via runner-agent"
+    type: "dispatch | manual | container | script   # dispatch => devin-dispatch
+           start; container => podman run; script => git-sync + shell cmd
+           — both via runner-agent"
     status: "idle | queued | running | done | failed"
     button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
     repo: "chaba | ada-pi | sunsynk-card | mddb-fork — devin-dispatch
@@ -94,6 +90,13 @@ card_schema:
              the card if every label is in its RUNNER_LABELS (e.g. gpu)"
     container: "type=container only: {image, cmd (str|list), env {K:V},
                 pull: missing|always} — podman run --rm under systemd-run"
+    script: "type=script only: {cmd (str|list), repo (default chaba),
+             repo_url, ref (default master), workdir, env {K:V},
+             timeout (default 1800)} — runner git-syncs the repo into
+             ~/.local/share/runner-agent/repos/<name> (origin-fresh each
+             claim) and runs cmd under systemd-run. Needs git on the
+             host; repo must be anonymously cloneable (public https) or
+             the host needs its own auth for repo_url"
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
