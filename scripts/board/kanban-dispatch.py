@@ -58,6 +58,9 @@ SESSION = f"kanban-dispatch@{HOST}"
 # tony-dell is RAM-tight (dispatch-queue.sh used CAP=3); other hosts raise it
 # via env until a per-host table lands in ssot.kanban.yml rules.
 HOST_CAP = int(os.environ.get("KANBAN_HOST_CAP", "3"))
+# Load gate: stop claiming new cards when 5-min load per core exceeds this
+# (a loaded host yields the queue to idle runners). 0 disables.
+MAX_LOAD_PC = float(os.environ.get("KANBAN_MAX_LOAD_PC", "1.0"))
 # Capability labels this host satisfies (runner-agent parity). A card with
 # action.labels only runs where every label is satisfied — e.g.
 # labels: [gpu] won't be grabbed by a label-less host.
@@ -217,6 +220,16 @@ def unit_state(task_id: str) -> str:
     return r.stdout.strip() or "unknown"
 
 
+def overloaded() -> bool:
+    """5-min load per core above MAX_LOAD_PC → don't claim new work."""
+    if MAX_LOAD_PC <= 0:
+        return False
+    try:
+        return os.getloadavg()[1] / (os.cpu_count() or 1) > MAX_LOAD_PC
+    except OSError:
+        return False
+
+
 def load_card(path: Path) -> dict:
     card = yaml.safe_load(path.read_text()) or {}
     card.setdefault("id", path.stem)
@@ -365,16 +378,21 @@ def main() -> int:
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         claimed = 0
+        can_claim = not overloaded()
+        if not can_claim:
+            print(f"load gate: load5/cpu > {MAX_LOAD_PC} — not claiming")
         for p in sorted(CARD_DIR.glob("*.yml")):
             card = load_card(p)
             a = card.get("action") or {}
             st = a.get("status")
             if st in ("queued", "starting"):  # 'starting' = crashed mid-start
+                if not can_claim:
+                    continue
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
                     continue  # pinned to another host's dispatcher
-                if a.get("type") == "container":
-                    continue  # runner-agent territory — not a devin session
+                if (a.get("type") or "dispatch") != "dispatch":
+                    continue  # container/script = runner-agent territory
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:
                     continue  # needs capabilities this host lacks

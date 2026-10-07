@@ -34,6 +34,9 @@ Env:
                  same value works on every host incl. tony-dell itself
   RUNNER_HOST    hostname claim identity (default: uname nodename)
   RUNNER_CAP     max concurrent claimed tasks (default 2)
+  RUNNER_MAX_LOAD_PC  stop claiming when 5-min load per core exceeds
+                 this (default 1.0; 0 disables — protects the host and
+                 yields the queue to idle runners)
   RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd")
   RUNNER_STATE   state dir (default ~/.local/share/runner-agent)
 
@@ -70,6 +73,7 @@ API = os.environ.get(
     "https://tony-dell.taila0626a.ts.net/apps/board-api").rstrip("/")
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
+MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
           if x.strip()}
 STATE_DIR = Path(os.environ.get(
@@ -368,8 +372,20 @@ def finish_pass(st: dict) -> bool:
     return changed
 
 
+def overloaded() -> bool:
+    """5-min load per core above MAX_LOAD_PC → don't claim new work."""
+    if MAX_LOAD_PC <= 0:
+        return False
+    try:
+        return os.getloadavg()[1] / (os.cpu_count() or 1) > MAX_LOAD_PC
+    except OSError:
+        return False
+
+
 def claim_pass(st: dict) -> bool:
     if len(st) >= CAP:
+        return False
+    if overloaded():
         return False
     cards = (api("/cards") or {}).get("cards") or []
     changed = False

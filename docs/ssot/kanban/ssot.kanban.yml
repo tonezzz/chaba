@@ -283,6 +283,10 @@ execution:
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
                works identically on every host incl. dell)"
+    load_gate: "both claim paths refuse new cards when load5/cpu >
+               KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
+               — loaded hosts yield the queue to idle runners; finishes
+               and requeues still process"
     runner_fleet: "as of 2026-10-07 — tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
                +container); idc01: cap 2 labels always-on,cold-batch,high-mem;
