@@ -1,47 +1,78 @@
 id: report-loop-comment-delivery
 title: 'Report loop: deliver card comments into running sessions (answers.jsonl)'
-brief: >-
-  Part 4 of the report→session loop (umbrella: report-session-loop). Today
-  only /respond answers reach a running session; this makes Ada's and
-  Tony's mid-run comments land in the same answers.jsonl — one thread,
-  both voices. Queued when Tony presses Start.
-column: backlog
+brief: 'Part 4 of the report→session loop (umbrella: report-session-loop). Today only /respond answers reach a running
+  session; this makes Ada''s and Tony''s mid-run comments land in the same answers.jsonl — one thread, both voices.
+  Queued when Tony presses Start.'
+column: review
 priority: high
 program: ada-tools
-updated: '2026-10-07'
-tags: [report-session-loop, kanban, board-api]
-spec: >-
-  Design: docs/design/report-session-loop.md §3a (contract). Repo: chaba,
-  file: scripts/board/board-api.py.
+updated: 2026-10-07 20:20
+tags:
+- report-session-loop
+- kanban
+- board-api
+spec: 'Design: docs/design/report-session-loop.md §3a (contract). Repo: chaba, file: scripts/board/board-api.py.
 
-  Refactor deliver_answer into a shared _deliver_to_session(card, record)
-  (same local-write / ssh-runner machinery, same never-raises contract
-  returning a short comms note or ""). /respond keeps delivering
-  {at, card, from, request_id, answer} — add kind:"answer" to the record.
+  Refactor deliver_answer into a shared _deliver_to_session(card, record) (same local-write / ssh-runner machinery,
+  same never-raises contract returning a short comms note or ""). /respond keeps delivering {at, card, from, request_id,
+  answer} — add kind:"answer" to the record.
 
-  In the /comment path: after comms_add, when card.action.status=='running'
-  AND frm in {ada, tony}, deliver {at, card, from, kind:"comment", text}.
-  devin/chaba comments are NOT delivered — a session must not get its own
-  progress posts echoed back, and chaba system notes are noise.
+  In the /comment path: after comms_add, when card.action.status==''running'' AND frm in {ada, tony}, deliver {at,
+  card, from, kind:"comment", text}. devin/chaba comments are NOT delivered — a session must not get its own progress
+  posts echoed back, and chaba system notes are noise.
 
-  kanban-dispatch.py TASK_RAILS gains one line telling sessions:
-  answers.jsonl lines may carry kind:"comment" — those are card comms
-  (Tony's notes, Ada's [opinion]-tagged report takes); treat them as
-  review input to weigh, while request_id/answer lines remain the
-  authoritative answer channel.
+  kanban-dispatch.py TASK_RAILS gains one line telling sessions: answers.jsonl lines may carry kind:"comment" —
+  those are card comms (Tony''s notes, Ada''s [opinion]-tagged report takes); treat them as review input to weigh,
+  while request_id/answer lines remain the authoritative answer channel.
 
-  Update _selftest: /comment on a running card appends a kind:comment
-  line; a devin/chaba comment does not; non-running card delivers nothing.
-  Doc: board-api.py docstring endpoint list + ssot.kanban.yml
-  write_path.endpoints /comment line.
+  Update _selftest: /comment on a running card appends a kind:comment line; a devin/chaba comment does not; non-running
+  card delivers nothing. Doc: board-api.py docstring endpoint list + ssot.kanban.yml write_path.endpoints /comment
+  line.
 
-  Verify: python3 scripts/board/board-api.py --selftest; a live check on a
-  running card can come from the next dispatched session's task dir.
+  Verify: python3 scripts/board/board-api.py --selftest; a live check on a running card can come from the next dispatched
+  session''s task dir.'
 action:
   type: dispatch
-  status: idle
+  status: done
   repo: chaba
+  runner: tony-omen
+  result: 'exit=0  will be observable from the next dispatched session''s task dir, as the card specified. | devin-task-20261007-201443-design-docs-design-report-sess.service:
+    Consumed 1min 27.321s CPU time over 5min 30.808s wall clock time, 1.2G memory peak.'
+  verified: true
 comms:
-- at: '2026-10-07 19:30'
+- at: 2026-10-07 19:30
   from: devin
   text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:13
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 20:14
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 20:14
+  from: chaba
+  text: started devin-task-20261007-201443-design-docs-design-report-sess on tony-omen (dispatch)
+- at: 2026-10-07 20:16
+  from: devin
+  text: 'working: surveyed board-api deliver_answer + rails; refactoring into _deliver_to_session with kind:answer/comment
+    records'
+- at: 2026-10-07 20:19
+  from: devin
+  text: 'done: deliver_answer refactored into _deliver_to_session(card,record); /respond lines now kind:answer;
+    /comment from ada|tony on running cards pushes kind:comment lines (devin/chaba never echoed). TASK_RAILS + runner-agent
+    + devin-dispatch rails updated; ssot.kanban endpoints doc + selftest + job trail added. selftest ok, ssot-validate
+    0 errors. Live check lands with next running session after deploy.'
+- at: 2026-10-07 20:20
+  from: tony-omen
+  text: 'finished (ok): exit=0  will be observable from the next dispatched session''s task dir, as the card specified.
+    | devin-task-20261007-201'
+- at: 2026-10-07 20:20
+  from: chaba
+  text: 'session-end checkpoint f96dde2e: 2 leftover file(s) committed'
+- at: 2026-10-07 20:20
+  from: chaba
+  text: pushed dispatch/20261007-201443-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:20
+  from: chaba
+  text: auto-merged 22cce6a4 (dispatch/20261007-201443-design-docs-design-report-sess) → origin/master
+claim: {}

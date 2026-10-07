@@ -23,8 +23,10 @@ ask:
   answered_at: 2026-10-07 20:08
 action:
   type: manual
-  status: queued
-updated: 2026-10-07 20:08
+  status: running
+  runner: tony-dell
+  task_id: 20261007-201223-manifest-contract-stacks-host-
+updated: 2026-10-07 20:22
 comms:
 - at: 2026-10-06 14:45
   from: devin
@@ -42,3 +44,25 @@ comms:
 - at: 2026-10-07 20:08
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:12
+  from: chaba
+  text: dispatched 20261007-201223-manifest-contract-stacks-host- on chaba
+- at: 2026-10-07 20:17
+  from: devin
+  text: 'picked up: contract+preflight exist from earlier session; gaps = ports-free gate, idc02 stack (mddb follower
+    + caddy-edge absent from repo), idc01 caddy-edge + retired mddb manifests. retrofitting now.'
+- at: 2026-10-07 20:21
+  from: devin
+  text: 'retrofit complete: +5 manifests (idc02/mddb+quadlet, idc01 caddy-edge, idc01 retired-mddb, mn01 ada standby
+    x2); preflight gained ports-free gate + status semantics + sweep mode; full sweep 21/21 green; ssot.secrets
+    mddb slots corrected (idc03 env filename, idc02 inline-in-quadlet); standard recorded at docs/ssot/jobs/infrastructure/2026-10-07-service-onboarding-standard.yml'
+- at: 2026-10-07 20:22
+  from: devin
+  text: 'DONE — standard recorded at docs/ssot/jobs/infrastructure/2026-10-07-service-onboarding-standard.yml (+
+    pointer in ssot.windsurf.common.md). stack-preflight.py: ports-free gate, status deployed/standby/retired, dir
+    sweep. Retrofit list complete: idc02/mddb (+live quadlet committed), idc01 caddy-edge, idc01 retired-mddb, mn01
+    ada-ha-tony/michael standby. Sweep: 21/21 green. Drift noted: idc02 quadlet Description stale, :11025 rootlessport
+    unidentified, 2 ssot.secrets mddb slots corrected.'
+claim:
+  session: 20261007-201223-manifest-contract-stacks-host-
+  since: 2026-10-07 20:12

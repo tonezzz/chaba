@@ -1,49 +1,39 @@
 id: report-loop-ada-opinion
 title: 'Report loop: Ada [opinion] path — read report, post tagged comms on the linked card'
-brief: >-
-  Part 5 of the report→session loop (umbrella: report-session-loop). Tony
-  asks Ada aloud what she thinks of a report; she reads it, forms a view,
-  and posts it to the card as a from=ada [opinion] comment a running
-  session will see. Queued when Tony presses Start.
+brief: 'Part 5 of the report→session loop (umbrella: report-session-loop). Tony asks Ada aloud what she thinks of
+  a report; she reads it, forms a view, and posts it to the card as a from=ada [opinion] comment a running session
+  will see. Queued when Tony presses Start.'
 column: backlog
 priority: medium
 program: ada-tools
-updated: '2026-10-07'
-tags: [report-session-loop, ada-pi, cms]
+updated: 2026-10-07 20:18
+tags:
+- report-session-loop
+- ada-pi
+- cms
 blocked_by: report-loop-comment-delivery
-spec: >-
-  Design: docs/design/report-session-loop.md §3b (contract). Repo: ada-pi.
-  Convention already declared in chaba
-  docs/ssot/infrastructure/ssot.ada-participation.yml (t1_comment
-  .opinion_convention) — implement to that.
-
-  1. Instructions: add an opinion stanza wherever CMS/board instructions
-     live (realtime_provider CMS_INSTRUCTIONS or the instructions file —
-     follow the existing pattern). Rule text in spirit: "When Tony asks
-     your opinion of a report/CMS page: cms_get_page it first (never
-     opine unread), find the kanban card whose report: field equals the
-     slug via ada_board_write action=read, then ada_board_write
-     action=comment with text starting '[opinion]' citing the slug +
-     updated ts you read. Also answer aloud — the comment is the durable
-     record. No linked card? Answer aloud and offer to file one
-     (action=create)."
-  2. ada_board_write (backend/tools.d/ada_board_write.py): the read
-     action must expose the card `report` field so she can match — if the
-     compact read payload doesn't carry it, add it.
-  3. Matching rules: prefer the not-done card with report==slug; none ->
-     offer to file; several open -> pick most recently updated, mention
-     the ambiguity aloud.
-  4. Do NOT build a separate kanban_opinion tool — action=comment with
-     the [opinion] prefix is the designed path (design doc §6 explains
-     why).
-
-  Unit tests for the matching/lookup helper. Deploy needs Tony's approval
-  per ada-pi AGENTS.md — do NOT deploy; finish with a note.
+spec: "Design: docs/design/report-session-loop.md §3b (contract). Repo: ada-pi. Convention already declared in chaba\
+  \ docs/ssot/infrastructure/ssot.ada-participation.yml (t1_comment .opinion_convention) — implement to that.\n\
+  1. Instructions: add an opinion stanza wherever CMS/board instructions\n   live (realtime_provider CMS_INSTRUCTIONS\
+  \ or the instructions file —\n   follow the existing pattern). Rule text in spirit: \"When Tony asks\n   your\
+  \ opinion of a report/CMS page: cms_get_page it first (never\n   opine unread), find the kanban card whose report:\
+  \ field equals the\n   slug via ada_board_write action=read, then ada_board_write\n   action=comment with text\
+  \ starting '[opinion]' citing the slug +\n   updated ts you read. Also answer aloud — the comment is the durable\n\
+  \   record. No linked card? Answer aloud and offer to file one\n   (action=create).\"\n2. ada_board_write (backend/tools.d/ada_board_write.py):\
+  \ the read\n   action must expose the card `report` field so she can match — if the\n   compact read payload doesn't\
+  \ carry it, add it.\n3. Matching rules: prefer the not-done card with report==slug; none ->\n   offer to file;\
+  \ several open -> pick most recently updated, mention\n   the ambiguity aloud.\n4. Do NOT build a separate kanban_opinion\
+  \ tool — action=comment with\n   the [opinion] prefix is the designed path (design doc §6 explains\n   why).\n\
+  \nUnit tests for the matching/lookup helper. Deploy needs Tony's approval per ada-pi AGENTS.md — do NOT deploy;\
+  \ finish with a note."
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: ada-pi
 comms:
-- at: '2026-10-07 19:30'
+- at: 2026-10-07 19:30
   from: devin
   text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:18
+  from: tony
+  text: queued for processing

@@ -1,50 +1,40 @@
 id: report-loop-bench
 title: 'Report loop: report_opinion_loop live scenario + bench corpus wiring'
-brief: >-
-  Part 6 of the report→session loop (umbrella: report-session-loop).
-  Installs the live scenario that catches regressions in Ada's
-  read-report→post-[opinion] loop, and points the nest bench domain at the
-  accruing corpus. Queued when Tony presses Start.
+brief: 'Part 6 of the report→session loop (umbrella: report-session-loop). Installs the live scenario that catches
+  regressions in Ada''s read-report→post-[opinion] loop, and points the nest bench domain at the accruing corpus.
+  Queued when Tony presses Start.'
 column: backlog
 priority: medium
 program: ada-tools
-updated: '2026-10-07'
-tags: [report-session-loop, ada-pi, bench]
+updated: 2026-10-07 20:18
+tags:
+- report-session-loop
+- ada-pi
+- bench
 blocked_by: report-loop-ada-opinion
-spec: >-
-  Design: docs/design/report-session-loop.md §4 (contract). Repo: ada-pi.
-
-  1. Install tests/scenarios-live/report_opinion_loop.yaml — a STAGED copy
-     exists in the chaba repo at
-     stacks/services/ada-scenario-runner/scenarios-staging/report_opinion_loop.yaml
-     (cms_first_answer.yaml precedent); review + copy it in, adjust
-     key_name/url conventions to match the other live scenarios. It asks
-     Ada for her opinion of the dev-kanban report and asserts she reads
-     the page (cms_get_page) and posts to the board (ada_board_write).
-     Probe card scenario-report-opinion (report: dev-kanban) already
-     exists in chaba as the comms sink — scenario opinions accumulate
-     there.
-  2. Confirm the scenario passes once live on ada-ha-tony — run it
-     manually via scripts/scenario-live.py rather than waiting for the
-     batch timer, and record the result on this card.
-  3. Bench domain report-opinion is already declared (status: spec) in
-     chaba docs/ssot/infrastructure/ssot.nest-bench.yml — corpus = real
-     [opinion] comms on report-linked cards. No scorer yet (a scorer with
-     no corpus is dead code — domain rule). If a cheap seed-miner is easy
-     (scan done cards' comms for [opinion] lines into a corpus jsonl),
-     add it under tests/bench/; otherwise leave corpus growth to live use
-     and say so in comms.
-  4. orch-bench/nest topologies for the opinion-forming step: explicitly
-     deferred until the corpus exists (card text) — do not build
-     topologies; record that decision in comms.
-
-  Deploy (scenario install lands via the normal ada-pi deploy) needs
-  Tony's approval — do NOT deploy; finish with a note.
+spec: "Design: docs/design/report-session-loop.md §4 (contract). Repo: ada-pi.\n1. Install tests/scenarios-live/report_opinion_loop.yaml\
+  \ — a STAGED copy\n   exists in the chaba repo at\n   stacks/services/ada-scenario-runner/scenarios-staging/report_opinion_loop.yaml\n\
+  \   (cms_first_answer.yaml precedent); review + copy it in, adjust\n   key_name/url conventions to match the other\
+  \ live scenarios. It asks\n   Ada for her opinion of the dev-kanban report and asserts she reads\n   the page\
+  \ (cms_get_page) and posts to the board (ada_board_write).\n   Probe card scenario-report-opinion (report: dev-kanban)\
+  \ already\n   exists in chaba as the comms sink — scenario opinions accumulate\n   there.\n2. Confirm the scenario\
+  \ passes once live on ada-ha-tony — run it\n   manually via scripts/scenario-live.py rather than waiting for the\n\
+  \   batch timer, and record the result on this card.\n3. Bench domain report-opinion is already declared (status:\
+  \ spec) in\n   chaba docs/ssot/infrastructure/ssot.nest-bench.yml — corpus = real\n   [opinion] comms on report-linked\
+  \ cards. No scorer yet (a scorer with\n   no corpus is dead code — domain rule). If a cheap seed-miner is easy\n\
+  \   (scan done cards' comms for [opinion] lines into a corpus jsonl),\n   add it under tests/bench/; otherwise\
+  \ leave corpus growth to live use\n   and say so in comms.\n4. orch-bench/nest topologies for the opinion-forming\
+  \ step: explicitly\n   deferred until the corpus exists (card text) — do not build\n   topologies; record that\
+  \ decision in comms.\n\nDeploy (scenario install lands via the normal ada-pi deploy) needs Tony's approval — do\
+  \ NOT deploy; finish with a note."
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: ada-pi
 comms:
-- at: '2026-10-07 19:30'
+- at: 2026-10-07 19:30
   from: devin
   text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:18
+  from: tony
+  text: queued for processing

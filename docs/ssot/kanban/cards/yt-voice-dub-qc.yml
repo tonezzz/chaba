@@ -1,48 +1,40 @@
 id: yt-voice-dub-qc
-title: 'YT voice dub — caption QC gate before TTS'
-brief: "The dubbing pipeline's worst defects came from bad captions, not the voices — this adds a caption quality gate first. Queued — a worker session will pick it up."
+title: YT voice dub — caption QC gate before TTS
+brief: The dubbing pipeline's worst defects came from bad captions, not the voices — this adds a caption quality
+  gate first. Queued — a worker session will pick it up.
 column: backlog
 program: yt-voice-dub
 area: quality
 priority: medium
-metric: 'QC report emitted per render; cues failing gate are quarantined (not synthesized); zero gibberish lines reach TTS on the staged corpus'
-verify: 'run yt-vtt-dub.py --qc on 4njFdBF_42I + U_io-pqPFfQ slices -> flagged-cue list matches known-bad inputs; render with gate on produces no duplicate/garbage utterances'
-note: >-
-  From the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md):
-  every major defect Tony heard traced to caption artifacts, not edge-tts.
-  Landed already: rolling-caption dedup, clean-vtt burn, <0.4s drop,
-  --fix-map for TH mis-reads. Still open: a QC *gate* — score each cue
-  (too few chars vs window, implausible chars/sec, dedup residue,
-  untranslated/mistranslated TH fragments, speaker-marker noise), emit a
-  QC report, and quarantine failures instead of synthesizing them. Second
-  half: grow the --fix-map lane — watch-list of TH mis-read classes
-  (ambiguous clusters, loanwords, ทร-clusters, numbers) with per-video
-  dictionaries.
-help: 'renderer: scripts/ops/yt-vtt-dub.py (--fix-map, --dump-groups);
-  corpus: mn01:~/media-corpus (was ~/yt-dub-prep); assessment:
-  docs/assessments/yt-voice-dub-e2e-2026-10-06.md'
-spec: >-
-  Add a caption QC gate to yt-vtt-dub.py. (1) A --qc pass that scores
-  every post-dedup cue/group before synthesis: chars-per-second bounds
-  per language, min-text-vs-window ratio, leftover rolling-caption
-  residue (high prefix overlap with previous cue after dedup), TH
-  fragments that are unchanged EN (missed translation), and any cue
-  containing raw speaker markers or bracketed stage directions that would
-  be read aloud. (2) Emit a QC report (json + printed table) listing
-  flagged cues with reasons; gate behavior: flagged cues are skipped for
-  TTS but stay in the display burn, and the report is saved next to the
-  output. (3) Start a per-video fix-map watch-list: seed the TH dictionary
-  with the known mis-read classes from the v15 note (ตากลม/ตา-กลม,
-  loanwords, ทร-clusters, numbers) and document how new entries get
-  added. Verify on the staged corpus on mn01:~/media-corpus (4njFdBF_42I,
-  U_io-pqPFfQ): flagged list should catch the known-bad patterns and a
-  gated render should contain no duplicated or untranslated utterances.
+metric: QC report emitted per render; cues failing gate are quarantined (not synthesized); zero gibberish lines
+  reach TTS on the staged corpus
+verify: run yt-vtt-dub.py --qc on 4njFdBF_42I + U_io-pqPFfQ slices -> flagged-cue list matches known-bad inputs;
+  render with gate on produces no duplicate/garbage utterances
+note: 'From the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md): every major defect Tony heard
+  traced to caption artifacts, not edge-tts. Landed already: rolling-caption dedup, clean-vtt burn, <0.4s drop,
+  --fix-map for TH mis-reads. Still open: a QC *gate* — score each cue (too few chars vs window, implausible chars/sec,
+  dedup residue, untranslated/mistranslated TH fragments, speaker-marker noise), emit a QC report, and quarantine
+  failures instead of synthesizing them. Second half: grow the --fix-map lane — watch-list of TH mis-read classes
+  (ambiguous clusters, loanwords, ทร-clusters, numbers) with per-video dictionaries.'
+help: 'renderer: scripts/ops/yt-vtt-dub.py (--fix-map, --dump-groups); corpus: mn01:~/media-corpus (was ~/yt-dub-prep);
+  assessment: docs/assessments/yt-voice-dub-e2e-2026-10-06.md'
+spec: 'Add a caption QC gate to yt-vtt-dub.py. (1) A --qc pass that scores every post-dedup cue/group before synthesis:
+  chars-per-second bounds per language, min-text-vs-window ratio, leftover rolling-caption residue (high prefix
+  overlap with previous cue after dedup), TH fragments that are unchanged EN (missed translation), and any cue containing
+  raw speaker markers or bracketed stage directions that would be read aloud. (2) Emit a QC report (json + printed
+  table) listing flagged cues with reasons; gate behavior: flagged cues are skipped for TTS but stay in the display
+  burn, and the report is saved next to the output. (3) Start a per-video fix-map watch-list: seed the TH dictionary
+  with the known mis-read classes from the v15 note (ตากลม/ตา-กลม, loanwords, ทร-clusters, numbers) and document
+  how new entries get added. Verify on the staged corpus on mn01:~/media-corpus (4njFdBF_42I, U_io-pqPFfQ): flagged
+  list should catch the known-bad patterns and a gated render should contain no duplicated or untranslated utterances.'
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  task: >-
-    Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc
-    scoring pass, quarantine-before-TTS gate, QC report artifact, seeded
-    TH fix-map watch-list; verify on the media-corpus slices.
-updated: '2026-10-06'
+  status: queued
+  task: 'Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc scoring pass, quarantine-before-TTS
+    gate, QC report artifact, seeded TH fix-map watch-list; verify on the media-corpus slices.'
+updated: 2026-10-07 20:19
+comms:
+- at: 2026-10-07 20:19
+  from: tony
+  text: queued for processing

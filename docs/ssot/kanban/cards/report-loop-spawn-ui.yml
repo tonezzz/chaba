@@ -1,52 +1,42 @@
 id: report-loop-spawn-ui
 title: 'Report loop: "Start Devin session" button on CMS pages + /api/cms/spawn route'
-brief: >-
-  Part 2 of the report→session loop (umbrella: report-session-loop). Adds
-  the visible affordance: a button on Ada's CMS report pages that files an
-  armed kanban card — same effect as asking Ada to dispatch a session.
-  Queued when Tony presses Start.
+brief: 'Part 2 of the report→session loop (umbrella: report-session-loop). Adds the visible affordance: a button
+  on Ada''s CMS report pages that files an armed kanban card — same effect as asking Ada to dispatch a session.
+  Queued when Tony presses Start.'
 column: backlog
 priority: high
 program: ada-tools
-updated: '2026-10-07'
-tags: [report-session-loop, cms, ada-pi]
+updated: 2026-10-07 20:14
+tags:
+- report-session-loop
+- cms
+- ada-pi
 blocked_by: report-loop-spawn-api
-spec: >-
-  Design: docs/design/report-session-loop.md §1b (contract). Repo: ada-pi.
-  The CMS viewer is pwa/cms/index.html served by pwa_server.py behind
-  /api/cms/* key auth; chaba-admin/chaba-cms* HA tabs iframe it.
-
-  1. pwa/cms/index.html — a "▶ Devin session" button in the report page
-     toolbar (next to Regenerate). POST {API_BASE}/api/cms/spawn {slug};
-     on ok toast "card <id> queued" linking to the board
-     (/apps/board/ on the chaba edge); on 409/already-active say so.
-  2. pwa_server.py — new route POST /api/cms/spawn {slug}: read the page
-     doc (title -> card title), then call board-api
-     POST /card {title, report: slug, action: {type: dispatch, repo: chaba},
-     queue: true, on_exists: queue, tags: [report-session-loop, cms],
-     brief: "Spawned from CMS page '<slug>' — session keeps the report
-     updated; watch card comms."} — reuse whatever client helper
-     backend/tools.d/ada_board_write.py already uses to reach
-     tony-dell:8787 / the Caddy /apps/board-api route; do NOT add a second
-     auth path.
-  3. Key capability: the shared cms-viewer key is a READ key embedded in
-     iframes — it must not gain dispatch power. Gate the route on the key's
-     `apps` metadata carrying a new `dispatch` capability (keys file
-     schema already tolerates extra apps values — auth.py); Tony's keys
-     get re-issued with [view, dispatch] via the existing pair flow.
-     Document the capability in the route docstring.
-  4. Note for the implementer: confirm the CMS page deep-link param name
-     (?page= vs ?slug=) from the viewer JS before writing card comms links.
-
-  Verify: unittest coverage for the route (key without dispatch -> 403,
-  spawn -> board-api called with right body — mock the board-api call);
-  manual smoke deferred to deploy (ada deploys need Tony's approval per
-  ada-pi AGENTS.md — do NOT deploy, leave a needs-input/done note).
+spec: "Design: docs/design/report-session-loop.md §1b (contract). Repo: ada-pi. The CMS viewer is pwa/cms/index.html\
+  \ served by pwa_server.py behind /api/cms/* key auth; chaba-admin/chaba-cms* HA tabs iframe it.\n1. pwa/cms/index.html\
+  \ — a \"▶ Devin session\" button in the report page\n   toolbar (next to Regenerate). POST {API_BASE}/api/cms/spawn\
+  \ {slug};\n   on ok toast \"card <id> queued\" linking to the board\n   (/apps/board/ on the chaba edge); on 409/already-active\
+  \ say so.\n2. pwa_server.py — new route POST /api/cms/spawn {slug}: read the page\n   doc (title -> card title),\
+  \ then call board-api\n   POST /card {title, report: slug, action: {type: dispatch, repo: chaba},\n   queue: true,\
+  \ on_exists: queue, tags: [report-session-loop, cms],\n   brief: \"Spawned from CMS page '<slug>' — session keeps\
+  \ the report\n   updated; watch card comms.\"} — reuse whatever client helper\n   backend/tools.d/ada_board_write.py\
+  \ already uses to reach\n   tony-dell:8787 / the Caddy /apps/board-api route; do NOT add a second\n   auth path.\n\
+  3. Key capability: the shared cms-viewer key is a READ key embedded in\n   iframes — it must not gain dispatch\
+  \ power. Gate the route on the key's\n   `apps` metadata carrying a new `dispatch` capability (keys file\n   schema\
+  \ already tolerates extra apps values — auth.py); Tony's keys\n   get re-issued with [view, dispatch] via the\
+  \ existing pair flow.\n   Document the capability in the route docstring.\n4. Note for the implementer: confirm\
+  \ the CMS page deep-link param name\n   (?page= vs ?slug=) from the viewer JS before writing card comms links.\n\
+  \nVerify: unittest coverage for the route (key without dispatch -> 403, spawn -> board-api called with right body\
+  \ — mock the board-api call); manual smoke deferred to deploy (ada deploys need Tony's approval per ada-pi AGENTS.md\
+  \ — do NOT deploy, leave a needs-input/done note)."
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: ada-pi
 comms:
-- at: '2026-10-07 19:30'
+- at: 2026-10-07 19:30
   from: devin
   text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:14
+  from: tony
+  text: queued for processing
