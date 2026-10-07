@@ -1,0 +1,88 @@
+title: yt-dub-liam-e2e — headless readiness verification
+subtitle: kanban card yt-dub-liam-e2e — dispatch session 2026-10-07
+icon: clipboard-check
+
+planning:
+  goal: |
+    Card is a voice-driven E2E scenario (find Liam+Noel two-person clip
+    -> Thai dub -> cached-videos-report reflects it -> cast_to_screen on
+    screen 2 -> stop). Verify spec requires Tony present for the live
+    pass, so this headless session re-verified every automatable
+    precondition rather than actuating real displays.
+  out_of_scope: |
+    The live voice pass itself (verify: "run with Tony present").
+    Running the scenario headless would blast audio on a real display —
+    deliberate no-go. SSH to idc03 for the vcast ACL registry also
+    unavailable from this session.
+
+processing:
+  status: completed
+  last_updated: "2026-10-07"
+
+report:
+  summary: |
+    All headless-checkable preconditions green.
+
+    ASK/DUB — target asset LLALMFmabV4 "Liam And Noel Gallagher First
+    interview Since 2009" (built 2026-10-07 09:51 by prior session):
+    chaba-tony-dell stacks/web/public/apps/yt-live/LLALMFmabV4-dub.mp4
+    is a valid mp4 (ffprobe: mov/mp4, duration 180s, 4.6MB) and serves
+    HTTP 200 at /apps/yt-live/LLALMFmabV4-dub.mp4.
+
+    REPORT — cached-videos-report: published MDDB page (en) updated
+    2026-10-07 17:30 ICT already lists LLALMFmabV4-dub.mp4 under
+    "Playable dubs" (29 entries). Dry-run of
+    scripts/ada/cached-videos-update.py renders the same block;
+    chaba-cached-videos.timer active, next run ~18:00. Note: the th
+    page never lists playables — the Thai block renders cached+stray
+    only (by design in render_block(en=False)).
+
+    PLAY — screen-2 routing: cast_to_screen(screen=N) pubs
+    {screen:N,msg} to input-bridge /pub -> room vcast-N. Live
+    /displays on idc03 (:3010): screen 2 = "Browser" display (ada key
+    screen-5), connected, state idle. yt-live-api :8791 /health ok,
+    /status phase=complete (last job: Rick Astley VOD, 1 cache entry
+    ~1.5G).
+
+    STOP — same cast_to_screen stop path; covered by scenario turn 4.
+
+    Scenario already encoded: ada-pi
+    tests/scenarios-live/yt_dub_liam_e2e.yaml (tier: full) — 4 turns:
+    find-clip (calls_any web_search/ada_ops/yt/yt_transcript/cms_read),
+    play-on-screen-2 (calls cast_to_screen; no_calls yt_cast/tv_action),
+    what-cached (cms_read quote), stop.
+  metrics:
+    - check: dub asset
+      result: "LLALMFmabV4-dub.mp4 4.6MB, 180s, HTTP 200"
+    - check: cached-videos-report
+      result: "published en page 17:30 ICT includes LLALMFmabV4 (29 playables, 1 cached, 22 subs)"
+    - check: yt-live-api
+      result: ":8791 /health ok, phase=complete"
+    - check: screen 2
+      result: "registered 'Browser' (key screen-5), connected, idle"
+    - check: relay
+      result: "input-bridge :3010 healthy, 4 screens / 4 rooms"
+  lessons_learned:
+    - >-
+      Relay display-number vs key-name drift — live registry shows
+      screen slots 1-4 mapped to ada keys screen-6/5/7/1 (assigned
+      2026-10-06T09:34Z). Routing is by the numeric 'screen' field —
+      the screen-N name is only the auth key. Ada's vcast_list returns
+      both fields; 'screen 2' from the user means screen=2, NOT the
+      display named screen-2. If a display claims name screen-N the
+      relay honors N when free, so fresh pairings converge again.
+    - >-
+      'screen 2' currently = a "Browser" label display. If Tony means
+      a different physical device by "screen 2", the live pass should
+      confirm via cast_to_screen(action='list') labels before pubbing.
+    - >-
+      vcast ACL registry (~/.local/share/ada-pi/cast-screens.json)
+      lives on idc03 and was unreachable this session (ssh timeout);
+      default for unlisted screens is 'shared', so no owner-block is
+      expected for Tony's cast — flag only if the live pass returns a
+      denied error.
+  next_steps:
+    - Tony runs the voice pass (board request raised 2026-10-07 ~18:00).
+    - >-
+      Evidence to land on card comms per verify: video id, sub file,
+      report meta updated, cast state=playing on screen 2.
