@@ -5,7 +5,10 @@ GH workflow results never reach reports/ or the focus inbox — CI failures
 die in the GH UI (ssot.quality.yml coverage_gaps). This polls `gh run list`
 per watched repo, writes a focus-inbox alert per NEW failed run (deduped
 via a state file), and emits an L1 meta.yml + timeline event per
-ssot.reports.yml.
+ssot.reports.yml. A failure for a (repo, workflow, branch) combo that
+already has an unresolved inbox alert is suppressed — one open alert per
+broken workflow, not one per run (lesson: 3 days of red SSOT CI wrote
+~620 draft files).
 
 Runs where `gh` is authenticated (tony-omen). With --git the alert files
 are committed and pushed so downstream checkouts see them on pull.
@@ -93,6 +96,22 @@ source:
   date: {stamp[:10]}
 """
     return fname, body
+
+
+def existing_alert(repo, run):
+    """Return an unresolved inbox alert for the same repo/workflow/branch."""
+    slug = repo.replace('/', '-')
+    wf = run.get('workflowName', '?')
+    br = run.get('headBranch', '?')
+    for f in INBOX_DIR.glob(f"*gh-run-{slug}-*.yml"):
+        try:
+            txt = f.read_text()
+        except OSError:
+            continue
+        if (f"workflow={wf}" in txt and f"branch={br}" in txt
+                and "status: draft" in txt):
+            return f
+    return None
 
 
 def emit_meta(now_iso, failures, errors):
@@ -183,8 +202,13 @@ def main():
                 run["_repo"] = repo
                 failures.append(run)
 
-    written = []
+    written, suppressed = [], 0
     for run in failures:
+        if existing_alert(run["_repo"], run):
+            suppressed += 1
+            print(f"DEDUP {run['_repo']} {run.get('workflowName')} "
+                  f"{run.get('headBranch')} — unresolved alert exists")
+            continue
         fname, body = alert_yaml(run["_repo"], run)
         print(f"FAIL {run['_repo']} {run.get('workflowName')} "
               f"{run.get('headBranch')} -> {fname}")
@@ -194,7 +218,8 @@ def main():
             f.write_text(body)
             written.append(f)
     print(f"polled {len(args.repos.split(','))} repo(s): "
-          f"{len(failures)} new failure(s), {errors} error(s)")
+          f"{len(failures)} new failure(s) ({suppressed} deduped), "
+          f"{errors} error(s)")
 
     if not args.dry_run:
         save_state(seen)
