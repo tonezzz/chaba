@@ -1,0 +1,87 @@
+title: vms-snap /composite — one-shot multi-pane native capture
+subtitle: >-
+  Bind several VMS channels to monitor panes once, then capture all panes in
+  a single cycle: per-pane context-menu Snapshot -> native BMP (native=1) or
+  one xwd split into tiles (native=0). Replaces ~18s-per-cam serial pulls on
+  the cam wall. Deployed to mn01; serial /snap remains the fallback path.
+icon: camera
+id: 2026-10-06-vms-composite-capture
+status: done
+owner: devin-dispatch
+project: chaba
+branch: dispatch/20261006-211751-vms-native-capture-one-shot-mu
+started: "2026-10-06"
+completed: "2026-10-06"
+
+context:
+  card: vms-native-composite
+  prior_runs: >-
+    Card dispatched twice before: tony-omen (071154) exited clean with no
+    output; chaba (111612) built the full implementation and deployed it to
+    mn01 but ended "inactive" without an outcome file. This session ported
+    its branch diff forward, reviewed and hardened it against live
+    failures, and re-verified.
+
+deliverables:
+  - >-
+    stacks/services/xmeye-vms/vms-snap.py — new GET /composite?chs=<csv>
+    [&native=1][&layout=4|9][&settle=<s>] -> application/zip of "<i>.png"
+    + _manifest.json (per-cam ok/err/w/h). Pane bindings persist per pane
+    index (_pane_map); warm refreshes skip attach and cost ~capture only.
+  - >-
+    scripts/cam-wall/cam-wall-pull.py — groups a zone's vms cams by DVR
+    device (vms_device), one /composite call per group within the remaining
+    VMS budget; call-level failure -> serial per-cam fallback.
+    CAMWALL_VMS_COMPOSITE=0 disables; CAMWALL_VMS_COMPOSITE_TIMEOUT=240.
+  - stacks/services/xmeye-vms/README.md — /composite contract + caveats.
+  - >-
+    Live-deployed to mn01: ~/.local/share/xmeye-vms-stack/vms-snap.py +
+    systemctl --user restart vms-snap.service.
+
+verify:
+  - "GET /composite?chs=<5 noble-a chans> -> 200 zip, pane 0 PNG 2880x1616 native (cold run, 1/5 panes)."
+  - "Serial /snap still healthy same evening: 2880x1616 PNG in ~23s."
+  - "Mechanism proven end-to-end: bind -> live verify -> ctx Snapshot -> BMP -> PNG tiles in ONE cycle."
+
+findings:  # hard-won, verified against the live Wine UI 2026-10-06
+  - >-
+    Orphaned Capture Information modal swallows EVERY later click — the bmp
+    lands seconds before the modal finishes painting, so a Cancel fired on
+    timeout lands in the not-yet-open window. One orphan cascaded into a
+    whole run of "context menu did not open" + dead rebinds. Fix:
+    _cap_dialog_open() (title bar = ~700px stripe of uniform light gray at
+    y~330) and _dismiss_modal() polls until verifiably closed; _keep_bmp
+    re-verifies Save actually closed it (Cancel fallback is safe — bytes
+    already read).
+  - >-
+    BMP-wait clock must start at the Snapshot click, not the right-click:
+    menu-open polling can eat most of an 8s window under attach churn, so
+    the file lands just after the deadline and its dialog orphans.
+  - >-
+    Cold multi-attach serializes at the DVR: first bind of N panes lands
+    streams over ~90-120s (one noble-club pane drew ~100s in). Settle
+    default raised 40 -> 90s; warm runs exit early.
+  - >-
+    Pane bindings persist per pane INDEX across layout switches AND shim
+    restarts are safe, but shrinking the grid detaches the lost panes —
+    _pane_map entries beyond the active layout capacity are dropped.
+  - >-
+    Rapid-fire binds drop most attaches (DVR-side); binds are paced ~3s.
+    Right-click menus on a live pane are reliable once the UI isn't in an
+    attach storm; detector: warm-gray menu ~132px wide, solid stripe at
+    x+8/x+122 below the cursor.
+  - >-
+    Pane context menu: right-click pane -> "Snapshot" is item 5 at
+    (+65,+95) from the click point; writes ACTIVE pane's channel BMP.
+  - >-
+    Red-X tree rows are OFFLINE cameras (e.g. noble-a '5. Road Corner') —
+    they will never attach; per-cam manifest err is the correct outcome.
+  - >-
+    Bottom-toolbar layout pill (1920x1080, maximized): 1p=526, 2x2=566,
+    focus6=606, focus7=642, 3x3=686, 4x4=715 at y~1030. Even grids split
+    MONITOR_RECT (8,68)-(1704,998) evenly — confirmed by xwd measurement.
+  - >-
+    Residual flake: concurrent P2P attaches remain a per-attach coin flip;
+    repeated test cycles can leave zombie DVR streams that starve later
+    runs until they expire. Expect partial manifests on cold starts;
+    steady-state warm refreshes are the cheap path.
