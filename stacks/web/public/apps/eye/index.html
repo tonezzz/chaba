@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eye — Chaba Nest edge vision</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0b0d10; color: #e8e9ea;
+         font: 14px/1.4 -apple-system, system-ui, sans-serif;
+         height: 100dvh; display: flex; flex-direction: column; }
+  #stage { position: relative; flex: 1; overflow: hidden;
+           background: #000; }
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%;
+                  object-fit: contain; }
+  canvas { pointer-events: none; }
+  #hud { padding: 8px 12px; display: flex; gap: 14px; align-items: center;
+         background: #13161a; flex-wrap: wrap; font-family: ui-monospace, monospace; }
+  #hud b { color: #4cd2ff; }
+  .ctl { color: #8b949e; }
+  #bench { position: absolute; right: 8px; top: 8px; background: #000c;
+           padding: 10px 12px; border-radius: 8px; font: 12px/1.5 ui-monospace,
+           monospace; white-space: pre; display: none; }
+  #bench.show { display: block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="vid" muted playsinline></video>
+  <canvas id="overlay"></canvas>
+  <div id="bench"></div>
+</div>
+<div id="hud">
+  <span>👁 <b>eye</b></span>
+  <span class="ctl" id="src">source: —</span>
+  <span class="ctl" id="stat">loading detector…</span>
+  <span class="ctl">?src=me | cam:&lt;name&gt; | snap:&lt;name&gt; · ?bench=60</span>
+</div>
+<script type="module" src="eye.js"></script>
+</body>
+</html>
