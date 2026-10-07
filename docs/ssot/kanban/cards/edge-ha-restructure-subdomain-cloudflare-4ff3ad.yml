@@ -1,0 +1,15 @@
+id: edge-ha-restructure-subdomain-cloudflare-4ff3ad
+title: Edge HA restructure — subdomain + cloudflared HA
+column: backlog
+updated: 2026-10-07 14:20
+comms:
+- at: 2026-10-07 14:18
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-07 14:20
+  from: tony
+  text: 'id: edge-ha-restructure title: Edge HA restructure — subdomain-per-service + cloudflared active-active
+    column: backlog priority: high review_kind: decide note: ''Post-migration topology works but has 3 naming planes
+    (tailnet serve   names, /apps/ha/* path prefixes, *.surf-thailand.com public) and every edge   is a SPOF. tailscale
+    serve cannot fail over — cert+name are node-bound.   Target: real failover on the public edge, fewer naming
+    bugs (ada-chat ws   error 10-07 was the path-prefix class), i'
