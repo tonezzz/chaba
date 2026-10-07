@@ -3,29 +3,45 @@ title: web_search auto-fallback to duckduckgo when Gemini quota is exhausted
 column: backlog
 priority: medium
 program: ada-tools
-updated: '2026-10-07'
-tags: [ada, tools, quota, audit]
-note: >-
-  Audit 2026-10-07 (session db02b97016): web_search hard-failed 429
-  RESOURCE_EXHAUSTED — gemini-2.5-flash free tier daily quota gone
-  (retry in 23h42m). Ada served a stale Oct-5 CMS flood page as
-  "latest" and the user had to catch the date mismatch. The tool
-  already documents provider='duckduckgo' (free, no quota) but nothing
-  switches to it on quota failure.
-spec: >-
-  ada-pi web_search: on a 429/quota-shaped error from the gemini
-  provider, retry once against provider='duckduckgo' automatically and
-  annotate the result (e.g. provider_used + quota_exhausted flag) so
-  Ada can tell the user "live search is degraded, using free fallback".
-  Never silently serve stale CMS as fresh — that's a separate answer
-  honesty point already handled by report-date citation; this card is
-  the fallback path. Also add the 429 signature to the ops event feed
-  so quota burn shows up in the digest before it reaches zero.
+updated: 2026-10-07 15:07
+tags:
+- ada
+- tools
+- quota
+- audit
+note: 'Audit 2026-10-07 (session db02b97016): web_search hard-failed 429 RESOURCE_EXHAUSTED — gemini-2.5-flash free
+  tier daily quota gone (retry in 23h42m). Ada served a stale Oct-5 CMS flood page as "latest" and the user had
+  to catch the date mismatch. The tool already documents provider=''duckduckgo'' (free, no quota) but nothing switches
+  to it on quota failure.'
+spec: 'ada-pi web_search: on a 429/quota-shaped error from the gemini provider, retry once against provider=''duckduckgo''
+  automatically and annotate the result (e.g. provider_used + quota_exhausted flag) so Ada can tell the user "live
+  search is degraded, using free fallback". Never silently serve stale CMS as fresh — that''s a separate answer
+  honesty point already handled by report-date citation; this card is the fallback path. Also add the 429 signature
+  to the ops event feed so quota burn shows up in the digest before it reaches zero.'
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
+  runner: tony-dell
+  task_id: 20261007-145921-ada-pi-web-search-on-a-429-quo
 comms:
 - at: 2026-10-07 13:55
   from: devin
   text: filed from audit — web_search 429 evidence idc01 journal 07:17 UTC
+- at: 2026-10-07 14:59
+  from: chaba
+  text: dispatched 20261007-145921-ada-pi-web-search-on-a-429-quo on ada-pi
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'in progress: annotating web_search DDG fallback (provider_used/quota_exhausted/degraded), adding web_search_quota
+    ops event to ada-ha-events feed, adding unit tests'
+- at: 2026-10-07 15:07
+  from: devin
+  text: 'done: web_search auto mode now retries duckduckgo once on 429/quota-shaped errors and annotates results
+    (provider_used, quota_exhausted, degraded, fallback_error); quota hits post a throttled web_search_quota ops
+    event to ada-ha-events-<instance> (ADA_QUOTA_EVENT_MIN_S, default 300s). Tool description + guide updated so
+    Ada says live search is degraded. 14 new tests pass, 201 tool_runner tests pass; tool-lint shows only 3 pre-existing
+    tools.d violations unrelated to this diff. Trail: docs/ssot/j'
+claim:
+  session: 20261007-145921-ada-pi-web-search-on-a-429-quo
+  since: 2026-10-07 14:59

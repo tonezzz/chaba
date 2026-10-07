@@ -3,7 +3,7 @@ title: tasks/calendar fail loudly when Google token breaks (silent-empty on idc0
 column: backlog
 priority: high
 program: ada-tools
-updated: 2026-10-07 14:45
+updated: 2026-10-07 15:07
 tags:
 - ada
 - tools
@@ -31,6 +31,18 @@ comms:
 - at: 2026-10-07 14:45
   from: chaba
   text: dispatched 20261007-144518-ada-pi-tasks-calendar-read-pla on ada-pi
+- at: 2026-10-07 14:55
+  from: devin
+  text: 'investigating: CalendarService aggregate reads swallow provider errors into errors[] -> ok:true + empty
+    list. Fix: re-raise when every provider fails (CalendarAuthError keeps its type); plan_day returns ok:false
+    when a leg dies; session agenda tail distinguishes unreachable from empty.'
+- at: 2026-10-07 15:07
+  from: devin
+  text: 'code fix done: revoked token now yields ok:false + error_type=CalendarAuthError on calendar_read/tasks/plan_day/calendar_write
+    shift (verified e2e with mocked 400 invalid_grant through real GoogleCalendarProvider + ToolRunner). OPS STEP
+    NOT DONE — needs Tony: scripts/ada/google-calendar-auth.py is an interactive OAuth flow (and is not tracked
+    in this repo; lives host-side). It cannot run from a headless dispatch worktree. Please rerun it on idc03 to
+    restore the credential.'
 claim:
   session: 20261007-144518-ada-pi-tasks-calendar-read-pla
   since: 2026-10-07 14:45

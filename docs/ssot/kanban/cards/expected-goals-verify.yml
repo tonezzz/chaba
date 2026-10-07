@@ -20,7 +20,7 @@ action:
   type: dispatch
   status: running
   runner: tony-omen
-updated: 2026-10-07 14:51
+updated: 2026-10-07 15:04
 claim:
   session: devin
   since: 2026-10-07 14:50
@@ -41,3 +41,117 @@ comms:
   from: devin
   text: 'implementing: scripts/lib/goals.py (check grammar+executor), verify stage in card-pipeline, board-api verify
     stage, render-board goal chips, report-watch re-probe, SSOT docs. demo on this card at the end.'
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'ci plan: pass — dispatchable spec + acceptance signal present'
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'ci structure: pass — worktree dispatch-wt-20261007-144438-deliverables-1-card-schema-exp on dispatch/20261007-144438-deliverables-1-card-schema-exp;
+    8 in-scope file(s) vs origin/mas'
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'ci develop: pass — 8 in-scope file(s) changed'
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'ci audit: pass — 9 checks passed on 8 files'
+- at: 2026-10-07 15:02
+  from: devin
+  text: 'ci benchmark: skip — no benchmark metric — acceptance is via expected_goals (verify stage)'
+- at: 2026-10-07 15:03
+  from: devin
+  text: 'ci verify: pass — 5/5 expected_goals pass'
+- at: 2026-10-07 15:03
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci plan: pass — dispatchable spec + acceptance signal present'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci structure: pass — worktree dispatch-wt-20261007-144438-deliverables-1-card-schema-exp on dispatch/20261007-144438-deliverables-1-card-schema-exp;
+    8 in-scope file(s) vs origin/mas'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci develop: pass — 8 in-scope file(s) changed'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci audit: pass — 9 checks passed on 8 files'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci benchmark: skip — no benchmark metric — acceptance is via expected_goals (verify stage)'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci verify: pass — 5/5 expected_goals pass'
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'pipeline updated: plan=pass structure=pass develop=pass audit=pass benchmark=skip'
+- at: 2026-10-07 15:04
+  from: devin
+  text: stage(s) not yet known to board-api (verify) — recorded in the pipeline block only
+- at: 2026-10-07 15:04
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
+pipeline:
+  opt_in: ci
+  stages:
+    plan:
+      status: pass
+      at: 2026-10-07 15:04
+      detail: dispatchable spec + acceptance signal present
+    structure:
+      status: pass
+      at: 2026-10-07 15:04
+      detail: worktree dispatch-wt-20261007-144438-deliverables-1-card-schema-exp on dispatch/20261007-144438-deliverables-1-card-schema-exp;
+        8 in-scope file(s) vs origin/master@2a3d5e73
+    develop:
+      status: pass
+      at: 2026-10-07 15:04
+      detail: 8 in-scope file(s) changed
+    audit:
+      status: pass
+      at: 2026-10-07 15:04
+      detail: 9 checks passed on 8 files
+    benchmark:
+      status: skip
+      at: 2026-10-07 15:04
+      detail: no benchmark metric — acceptance is via expected_goals (verify stage)
+  started: 2026-10-07 15:04
+  updated: 2026-10-07 15:04
+  benchmark:
+    metric: null
+  verify:
+    at: '2026-10-07T15:04:16+07:00'
+    goals:
+    - id: schema
+      ok: true
+      evidence: exit 0
+      at: '2026-10-07T15:04:16+07:00'
+    - id: goalslib
+      ok: true
+      evidence: 'exit 0 — goals selftest ok (expect substr ''ok'': found)'
+      at: '2026-10-07T15:04:16+07:00'
+    - id: verify-stage
+      ok: true
+      evidence: 'exit 0 — selftest ok (expect substr ''ok'': found)'
+      at: '2026-10-07T15:04:17+07:00'
+    - id: ci-report
+      ok: true
+      evidence: /home/tony/CascadeProjects/dispatch-wt-20261007-144438-deliverables-1-card-schema-exp/reports/ci/meta.yml
+        exists
+      at: '2026-10-07T15:04:17+07:00'
+    - id: board-api
+      ok: true
+      evidence: GET https://tony-dell.taila0626a.ts.net/apps/board-api/health -> 200 (expected 200)
+      at: '2026-10-07T15:04:17+07:00'
+    ok: 5/5
+expected_goals:
+- id: schema
+  check: command grep -q expected_goals docs/ssot/kanban/ssot.kanban.yml
+- id: goalslib
+  check: command python3 scripts/lib/goals.py --selftest expect ok
+- id: verify-stage
+  check: command python3 scripts/ci/card-pipeline.py --selftest expect ok
+- id: ci-report
+  check: file-exists reports/ci/meta.yml
+- id: board-api
+  check: http 200 https://tony-dell.taila0626a.ts.net/apps/board-api/health

@@ -1,9 +1,9 @@
 id: speaker-profile-tool
 title: Speaker voiceprint management tool — enroll dead-ends on stale prints
-column: backlog
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 14:50
+updated: 2026-10-07 14:59
 tags:
 - ada
 - speaker-id
@@ -26,9 +26,10 @@ spec: 'ada-pi backend/tools.d: add a speaker_profiles tool — actions list|matc
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-144523-ada-pi-backend-tools-d-add-a-s
+  result: 20261007-144523-ada-pi-backend-tools-d-add-a-s finished (inactive) — see `devin-dispatch logs 20261007-144523-ada-pi-backend-tools-d-add-a-s`
 comms:
 - at: 2026-10-07 13:55
   from: devin
@@ -41,6 +42,21 @@ comms:
   text: 'explored: speaker_id.py has remove()+slug-lookup but no rename/alias; ada_forget has no speaker guard;
     confirm TTL=120s global. Implementing speaker_profiles tools.d tool + speaker_id alias/rename/resolve + match_buffer
     + ada_forget redirect + per-token 300s TTL on secondary turns.'
+- at: 2026-10-07 14:58
+  from: devin
+  text: 'done. speaker_profiles tools.d tool (list|match|remove|re-enroll|alias) + speaker_id resolve_name/set_alias/rename/match_buffer
+    + enroll resolves aliases to canonical + ada_forget speaker-key redirect + 300s handoff confirm TTL on secondary
+    turns. Tests: test_speaker_profiles.py (29), scenario speaker_profile_merge.yaml, job yml docs/ssot/jobs/ada/2026-10-07-speaker-profiles-tool.yml.
+    tool-lint clean of new violations (3 pre-existing). Live scenario not run here — needs service venv; instruction'
+- at: 2026-10-07 14:59
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 14:59
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (13 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 14:59
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-144523-ada-pi-backend-tools-d-add-a-s dirty — 13 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261007-144523-ada-pi-backend-tools-d-add-a-s
   since: 2026-10-07 14:45
