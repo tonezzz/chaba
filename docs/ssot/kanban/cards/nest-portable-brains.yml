@@ -1,9 +1,9 @@
 id: nest-portable-brains
 title: Chaba Nest portable brains — gdrive brain store, respawn anywhere
-column: review
+column: done
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 17:22
+updated: 2026-10-07 17:36
 note: 'Every Nest entity gets a versioned brain bundle (manifest + weights + memory slice + config + state anchors)
   stored on gdrive as an append-only artifact. Any host can fetch → hydrate → resume with RPO = time since last
   checkpoint. Same tier model as the deployed mddb backup offload: hot local, warm on tailnet, cold on gdrive. Research
@@ -26,10 +26,10 @@ spec: 'P0 DONE 2026-10-07: manifest schema + entity registry live in docs/ssot/i
   '
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
-  result: 'exit=0 . | **Next on card:** P3 checkpoint cadence + Drive drift signal; P4 FedAvg transport. | devin-task-20261007-162634-p0-done-2026-10-07-manifest-sc.service:
-    Consumed 1min 58.824s CPU time over 20min 26.590s wall clock time, 1.8G memory peak.'
+  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261007-171556-p0-done-2026-10-07-manifest-sc.service:
+    Consumed 1min 17.235s CPU time over 15min 27.574s wall clock time, 1G memory peak.'
 comms:
 - at: 2026-10-07 15:45
   from: tony
@@ -122,6 +122,13 @@ comms:
   from: devin
   text: P3 in progress — checkpoint cadence (timer + on-improvement hook) + Drive latest-pointer drift signal. Adding
     --if-changed to pack, checkpoint + drift scripts, user timers on tony-omen.
+- at: 2026-10-07 17:32
+  from: tony-omen
+  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261007-17'
+- at: 2026-10-07 17:36
+  from: tony
+  text: moved review -> done
 requests:
 - id: approve-creating-a-gcrypt-rclone-remote-e597ab
   ask: Approve creating a gcrypt rclone remote (crypt over gdrive:nest-brains/) for restricted brains? Blocks only

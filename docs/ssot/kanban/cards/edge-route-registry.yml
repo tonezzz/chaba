@@ -14,9 +14,12 @@ spec: 'Phase 1 (this session): ssot.routes.yml with full dell-edge inventory, re
   edge — registry becomes the ingress config; host-per-app DNS instead of path-strip debugging.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
-updated: 2026-10-07 17:23
+  result: 'exit=0  ok, so a missing Caddy block can hide behind a 404 — only `ada-tony` sets `verify.expect`. |
+    devin-task-20261007-172308-phase-1-this-session-ssot-rout.service: Consumed 54.517s CPU time over 8min 8.327s
+    wall clock time, 996.3M memory peak.'
+updated: 2026-10-07 17:31
 claim:
   since: 2026-10-07 15:59
 comms:
@@ -141,6 +144,21 @@ comms:
 - at: 2026-10-07 17:23
   from: chaba
   text: started devin-task-20261007-172308-phase-1-this-session-ssot-rout on tony-omen (dispatch)
+- at: 2026-10-07 17:24
+  from: devin
+  text: 're-dispatched on tony-omen (172308): phase-1 deliverables already merged + re-verified by 155935 session.
+    Re-verifying artifacts from this worktree now.'
+- at: 2026-10-07 17:30
+  from: devin
+  text: 'tony-omen re-verify done (335bb106 on dispatch branch): phase-1 deliverables confirmed — 47 routes, --check
+    clean, Caddyfile == generated, live routes.json 200 w/ ada-tony ws->idc03, both cards resolve via /local/routes.json.
+    One fix: check-routes.py was host-locked (localhost edge + local docker/loopback upstreams = all-false failures
+    off-dell). Now --edge/ROUTE_EDGE > localhost sentinel > registry tailnet field (added to tony-dell-web); host-local
+    checks skip when remote. On tony-omen: 23 ok /'
+- at: 2026-10-07 17:31
+  from: tony-omen
+  text: 'finished (ok): exit=0  ok, so a missing Caddy block can hide behind a 404 — only `ada-tony` sets `verify.expect`.
+    | devin-task-20261007'
 expected_goals:
 - id: routes-json-served
   check: http 200 http://localhost/apps/routes.json

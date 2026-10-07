@@ -1,6 +1,6 @@
 id: idc03-vault-checkout-drift
 title: idc03 chaba-vault checkout 4217 commits behind origin + dirty
-column: backlog
+column: review
 priority: medium
 note: 'idc03 runs ada-memory services (sync, staleness, gap-report, memory-standard) from ~/CascadeProjects/chaba-vault
   — a checkout of the main chaba repo that is 4217 commits behind origin/master, 1 ahead, and has uncommitted local
@@ -18,9 +18,10 @@ spec: 'SAFETY: this checkout is LIVE — production user services run from it an
   local work that looks intentional, stop and report rather than discard.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-171350-safety-this-checkout-is-live-p
+  result: 20261007-171350-safety-this-checkout-is-live-p finished (inactive) — see `devin-dispatch logs 20261007-171350-safety-this-checkout-is-live-p`
 expected_goals:
 - id: vault-current
   check: ssh idc03 'cd ~/CascadeProjects/chaba-vault && git fetch origin --quiet && test "$(git rev-list --count
@@ -42,7 +43,27 @@ comms:
   from: devin
   text: 'Session started. Vault checkout confirmed: master ahead 1 / behind 4217, 7 modified + staged sync script
     + untracked vault docs. Reviewing dirty files vs origin/master before snapshot+merge.'
-updated: 2026-10-07 17:15
+- at: 2026-10-07 17:27
+  from: devin
+  text: 'CONVERGED. (a) All 5 dirty scripts = manual backport of upstream f1fa7c72 (chaba_event import) — worktree==origin
+    except stale IP in gap-report/staleness-sweep; chaba_event.py untracked but byte-identical to upstream; obsidian
+    html + staged sync script also ==origin. No intentional unmerged work → take-origin everywhere. (b) Snapshot:
+    stash@{0} + branch wip/vault-mods-20261007 + ~/vault-untracked-backup-20261007.tgz; removed 33 byte-identical
+    untracked collisions; merge origin/master CLEAN, 0 co'
+- at: 2026-10-07 17:27
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 17:27
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (2 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 17:27
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-171350-safety-this-checkout-is-live-p dirty — 2 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-07 17:27
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261007-171350-safety-this-checkout-is-live-p not in origin/master
+    — close will block until merged'
+updated: 2026-10-07 17:27
 claim:
-  session: 20261007-171350-safety-this-checkout-is-live-p
   since: 2026-10-07 17:13
