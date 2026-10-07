@@ -112,9 +112,24 @@ def _outcome_index() -> dict:
 
 
 def _outcome_file(idx: dict, task_id: str):
+    pref = f"dispatch-outcome-{task_id}"
     for stem, f in idx.items():
-        if stem == f"dispatch-outcome-{task_id}" or \
-                stem.startswith(f"dispatch-outcome-{task_id}"):
+        if stem == pref or stem.startswith(pref):
+            try:
+                return str(f.relative_to(REPO))
+            except ValueError:
+                return str(f)
+    return None
+
+
+def _outcome_file_slug(idx: dict, slug: str):
+    """Fallback: match the task slug inside the filename — catches the case
+    where a card's task_id is an older run but a later run wrote the
+    outcome (vms-native-composite: task_id=111612, outcome=211751)."""
+    if not slug:
+        return None
+    for stem, f in idx.items():
+        if slug in stem:
             try:
                 return str(f.relative_to(REPO))
             except ValueError:
@@ -158,7 +173,7 @@ def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
     tids += [b[len("dispatch/"):] for b in runs
              if b[len("dispatch/"):] != tid]
     found = next((p for t in tids if (p := _outcome_file(outcomes, t))),
-                 None)
+                 None) or _outcome_file_slug(outcomes, slug)
     if tid or runs:
         checks.append({"k": "outcome", "ok": found is not None,
                        "how": found or f"no dispatch-outcome-{slug or '?'}*.md"})
