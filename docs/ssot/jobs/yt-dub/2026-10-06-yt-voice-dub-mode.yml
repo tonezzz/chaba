@@ -1,0 +1,120 @@
+title: YT voice dub — voice-mode selector on the cast path
+subtitle: kanban card yt-voice-dub-mode — dispatch session 2026-10-06
+icon: microphone
+
+planning:
+  goal: |
+    Wire voice dubbing into /cast end-to-end: POST /cast takes
+    {voice: off|th|en} (default off = unchanged subs cast); yt-live.sh
+    renders a dub via yt-vtt-dub.py and muxes it into the HLS output;
+    dubbed variants cache under their own key; /status reports the dub
+    phase.
+  out_of_scope: |
+    Per-speaker voice casting on the live path (offline --cast-detect
+    stays opt-in), TV-side seek continuity on upgrade (the dubbed
+    playlist restarts at 0), install refresh of ~/.local/bin copies.
+
+processing:
+  status: completed
+  last_updated: "2026-10-06"
+
+report:
+  summary: |
+    POST /cast now accepts an optional voice field (off|th|en; anything
+    else -> HTTP 400) and passes it to yt-live.sh as positional arg 3 /
+    YT_LIVE_VOICE. When voice != off and captions exist, yt-live.sh
+    spawns a detached `__dub` worker (setsid, same pattern as
+    __finalize) that runs yt-vtt-dub.py against merged subs.vtt +
+    src.mp4 — or, on the cached-replay path, the entry's cached media —
+    producing dub.mp4 with the existing sidechain-ducked mix.
+
+    Latency decision — mid-play upgrade (chosen over gating the cast):
+    edge-tts synthesis is far slower than the transcode, so holding the
+    cast would mean minutes of dead air. The subs-only HLS casts at
+    MIN_SEGS as usual; when dub.mp4 lands the worker remuxes it (codec
+    copy, seconds) to dseg_*.ts + dub.m3u8 and re-points the TV at the
+    dubbed playlist — playback restarts at 0 dubbed. The .cast-sent
+    marker defers the upgrade until the subs cast has actually gone out,
+    and the run's .gen-<pid> token is the "still the current run" gate —
+    a newer cast or `stop` removes it via clean_dir and workers exit
+    before touching the new run's artifacts. Any TTS/mux failure writes
+    <voice>:failed to dub.state and the subs cast continues untouched.
+
+    Media cache: successful dubs finalize under
+    <vid>.<srclang>.<langs>.<voice> (dub.m3u8/dseg_*.ts included, run
+    artifacts stripped, meta.json rewritten with the real voice). A
+    voice request that only finds the subs-only entry replays it
+    instantly and renders the dub off the cached media; a failed or
+    skipped dub stores the honest subs variant under the base key.
+    voice=off is byte-identical to before — same lookup, same playlist,
+    no dub worker. /status gains a `dub` object
+    ({voice, phase}: rendering|muxing|done|failed|skipped).
+
+    Bugs found in testing, fixed before landing: (a) cache_replay's
+    `.gen-*` wipe deleted the current run's token, silently aborting
+    detached workers — now preserves GEN_TOKEN; (b) replay-path dubs
+    never saw GEMINI_API_KEY (compress_lines) — dub_job sources the
+    secrets file itself; (c) off-variant entries could carry a truncated
+    dub.m3u8 and fail validation — finalize strips dub artifacts when
+    storing the off variant.
+  metrics:
+    - variant: fresh cast CSKlIsz9SZo voice=th (94s en->th sandbox)
+      result: subs HLS cast at MIN_SEGS, dub rendered detached,
+        dub.m3u8 (22 dsegs) remuxed, TV re-pointed mid-play
+      cache: CSKlIsz9SZo.en.th.th w/ meta voice=th
+    - variant: replay voice=th
+      result: dubbed playlist served instantly, no TTS
+    - variant: replay voice=off + omitted
+      result: media.m3u8 path unchanged
+    - variant: off-cache + voice request
+      result: subs replay immediately, dub renders off cached src.mp4,
+        upgrade + new .th cache entry
+    - variant: forced TTS failure (YT_VTT_DUB=/bin/false)
+      result: dub.state=th:failed, subs cast continues, no dub.m3u8
+    - variant: API /cast voice=fr -> HTTP 400; /status exposes dub field
+  lessons_learned:
+    - Backgrounding dub_job inside the orchestrator's lifetime is
+      fragile — the run can end before the render does. Detached workers
+      (setsid) + gen-token gating decouple the upgrade from parent
+      liveness — same pattern __finalize already used.
+    - cache_replay's artifact wipe must preserve the just-created
+      .gen-<pid> token or every detached worker self-aborts.
+    - Finalize must store the honest variant — a failed dub under the
+      voice key would poison replay (lookup requires dub.m3u8 in voice
+      entries, but the meta write is the real fix).
+    - compress_lines' prompt is TH-specific — en dubs skip it
+      (--no-compress).
+
+changes:
+  - file: scripts/ops/yt-live-api.py
+    summary: '/cast accepts voice (off|th|en, default off, 400 on
+      others) -> spawn arg3; /status gains dub {voice,phase} from
+      dub.state; YT_LIVE_APP/YT_LIVE_MCACHE env overrides.'
+  - file: scripts/ops/yt-live.sh
+    summary: 'voice arg/YT_LIVE_VOICE; detached __dub worker + dub_spawn
+      (gen-token gated, .cast-sent upgrade wait, dub.m3u8 remux,
+      play_media re-point); voice-aware cache_lookup/cache_replay/
+      try_replay; cache_finalize stores <base>.<voice> variants or
+      honest subs entries; GEN_TOKEN created pre-replay; cast_now takes
+      playlist + announce flag; pgid kill; clean_dir covers dub
+      artifacts.'
+  - file: docs/kb/home-assistant/tv-casting-runbook.md
+    summary: voice-mode API, mid-play upgrade, and voice cache keys
+      documented.
+
+verification:
+  artifacts:
+    - /tmp/ylt-cache/CSKlIsz9SZo.en.th    # subs-only variant
+    - /tmp/ylt-cache/CSKlIsz9SZo.en.th.th # dubbed variant (dub.m3u8+22 segs)
+    - /tmp/ylt-app/dub.log                # detached worker + upgrade log
+  checks:
+    - 'sandbox e2e: voice=th fresh cast upgraded to dub.m3u8 mid-play'
+    - 'replay: voice=th -> dub.m3u8; voice=off -> media.m3u8'
+    - 'forced TTS failure -> th:failed, subs cast untouched'
+    - 'bash -n yt-live.sh + py_compile yt-live-api.py clean'
+    - 'live TV playback not exercised (sandbox HA endpoint 127.0.0.1:9) —
+      first real cast verifies the upgrade lands on the TV'
+  followup: |
+    ~/.local/bin copies were NOT refreshed (deploy = explicit approval).
+    Run scripts/ops/yt-pipeline-install.sh after merge to make the live
+    :8791 api serve the voice field.
