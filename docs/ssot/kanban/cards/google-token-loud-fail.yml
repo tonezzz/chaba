@@ -1,9 +1,9 @@
 id: google-token-loud-fail
 title: tasks/calendar fail loudly when Google token breaks (silent-empty on idc03)
-column: backlog
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 15:07
+updated: 2026-10-07 15:11
 tags:
 - ada
 - tools
@@ -21,9 +21,10 @@ spec: 'ada-pi: tasks/calendar_read/plan_day must surface auth failure as ok:fals
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-144518-ada-pi-tasks-calendar-read-pla
+  result: 20261007-144518-ada-pi-tasks-calendar-read-pla finished (inactive) — see `devin-dispatch logs 20261007-144518-ada-pi-tasks-calendar-read-pla`
 comms:
 - at: 2026-10-07 13:55
   from: devin
@@ -43,6 +44,22 @@ comms:
     NOT DONE — needs Tony: scripts/ada/google-calendar-auth.py is an interactive OAuth flow (and is not tracked
     in this repo; lives host-side). It cannot run from a headless dispatch worktree. Please rerun it on idc03 to
     restore the credential.'
+- at: 2026-10-07 15:09
+  from: devin
+  text: 'DONE (code). Root cause: asyncio.gather(return_exceptions=True) swallowed the last provider error into
+    errors[] -> ok:true + empty list. Fix: CalendarService re-raises when EVERY provider fails (CalendarAuthError
+    preferred); plan_day returns ok:false on a dead leg; shift_overdue ok:false when overdue set unreadable or zero
+    moves with errors; session agenda tail now says could-not-be-read instead of implying empty; drive_search/media_url/photos
+    picker raise on body-level {error}. Regression verif'
+- at: 2026-10-07 15:11
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 15:11
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (9 file(s)) — commit first — close will block until merged'
+- at: 2026-10-07 15:11
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261007-144518-ada-pi-tasks-calendar-read-pla dirty — 9 uncommitted
+    file(s); commit or clean before pruning'
 claim:
-  session: 20261007-144518-ada-pi-tasks-calendar-read-pla
   since: 2026-10-07 14:45
