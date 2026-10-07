@@ -1,6 +1,6 @@
 id: expected-goals-verify
 title: 'Card acceptance: expected_goals field + verify stage'
-column: doing
+column: review
 review_kind: verify
 priority: high
 note: 'Tony 2026-10-07: "each card has expected goal and when finished we measure it by these goals — a card that
@@ -18,11 +18,12 @@ spec: 'Deliverables: (1) card schema: expected_goals — list of {id, check} whe
   done-cards goals periodically — goals rot, a pass at close proves nothing about next month.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
-updated: 2026-10-07 15:04
+  result: 'exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`. | devin-task-20261007-144438-deliverables-1-card-schema-exp.service:
+    Consumed 2min 9.071s CPU time over 25min 58.325s wall clock time, 1G memory peak.'
+updated: 2026-10-07 15:15
 claim:
-  session: devin
   since: 2026-10-07 14:50
 comms:
 - at: 2026-10-07 14:50
@@ -91,6 +92,41 @@ comms:
 - at: 2026-10-07 15:04
   from: devin
   text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
+- at: 2026-10-07 15:09
+  from: devin
+  text: 'ci verify: pass — 5/5 expected_goals pass'
+- at: 2026-10-07 15:09
+  from: devin
+  text: 'pipeline updated: plan=pass structure=pass develop=pass audit=pass benchmark=skip'
+- at: 2026-10-07 15:09
+  from: devin
+  text: stage(s) not yet known to board-api (verify) — recorded in the pipeline block only
+- at: 2026-10-07 15:09
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
+- at: 2026-10-07 15:10
+  from: devin
+  text: 'done — all 6 deliverables. verify stage live: pipeline.verify on this card shows 5/5 goals (schema grep,
+    goals/pipeline selftests, reports/ci/meta.yml, board-api health). First real ci-pipeline run — run artifact
+    + meta.yml + timeline written. report-watch re-probes done-card goals every 24h (goal-rot inbox items). Caveat:
+    live board-api/render-board predate this work — stages.verify falls back gracefully + goal chips render once
+    merged/deployed. Committed on session branch; not pushed.'
+- at: 2026-10-07 15:11
+  from: tony-omen
+  text: 'finished (ok): exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`.
+    | devin-task-20261007-1'
+- at: 2026-10-07 15:14
+  from: devin
+  text: 'ci verify: fail — 1/5 goals failed: ci-report'
+- at: 2026-10-07 15:14
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=fail'
+- at: 2026-10-07 15:15
+  from: devin
+  text: 'ci verify: pass — 5/5 expected_goals pass'
+- at: 2026-10-07 15:15
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
 pipeline:
   opt_in: ci
   stages:
@@ -115,34 +151,37 @@ pipeline:
       status: skip
       at: 2026-10-07 15:04
       detail: no benchmark metric — acceptance is via expected_goals (verify stage)
+    verify:
+      status: pass
+      at: 2026-10-07 15:15
+      detail: 5/5 expected_goals pass
   started: 2026-10-07 15:04
-  updated: 2026-10-07 15:04
+  updated: 2026-10-07 15:15
   benchmark:
     metric: null
   verify:
-    at: '2026-10-07T15:04:16+07:00'
+    at: '2026-10-07T15:15:11+07:00'
     goals:
     - id: schema
       ok: true
       evidence: exit 0
-      at: '2026-10-07T15:04:16+07:00'
+      at: '2026-10-07T15:15:11+07:00'
     - id: goalslib
       ok: true
       evidence: 'exit 0 — goals selftest ok (expect substr ''ok'': found)'
-      at: '2026-10-07T15:04:16+07:00'
+      at: '2026-10-07T15:15:11+07:00'
     - id: verify-stage
       ok: true
       evidence: 'exit 0 — selftest ok (expect substr ''ok'': found)'
-      at: '2026-10-07T15:04:17+07:00'
+      at: '2026-10-07T15:15:11+07:00'
     - id: ci-report
       ok: true
-      evidence: /home/tony/CascadeProjects/dispatch-wt-20261007-144438-deliverables-1-card-schema-exp/reports/ci/meta.yml
-        exists
-      at: '2026-10-07T15:04:17+07:00'
+      evidence: /home/tony/CascadeProjects/chaba-tony-dell/reports/ci/meta.yml exists
+      at: '2026-10-07T15:15:11+07:00'
     - id: board-api
       ok: true
       evidence: GET https://tony-dell.taila0626a.ts.net/apps/board-api/health -> 200 (expected 200)
-      at: '2026-10-07T15:04:17+07:00'
+      at: '2026-10-07T15:15:11+07:00'
     ok: 5/5
 expected_goals:
 - id: schema
