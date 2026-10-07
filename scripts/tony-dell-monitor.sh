@@ -210,7 +210,9 @@ else
     MON_SUMMARY="${CHECKS} checks healthy"
 fi
 CHABA_REPO=""
-for d in "$HOME/CascadeProjects/chaba" "$HOME/CascadeProjects/chaba-tony-dell"; do
+# served checkout first — the report graph consumers (system-report page,
+# report-watch) read metas from chaba-tony-dell, not the edit checkout
+for d in "$HOME/CascadeProjects/chaba-tony-dell" "$HOME/CascadeProjects/chaba"; do
     if [[ -f "$d/scripts/lib/report.py" ]]; then
         CHABA_REPO="$d"
         break

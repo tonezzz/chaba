@@ -27,7 +27,7 @@ REPORTS_ROOT = Path(
 TIMELINE_PATH = REPORTS_ROOT / "timeline.jsonl"
 
 STATUSES = (
-    "ok", "delta", "stale", "error",
+    "ok", "delta", "stale", "error", "unreachable",
     "missing", "untracked", "remote", "planned",
 )
 

@@ -50,11 +50,13 @@ TIMELINE_TAIL = 20
 _LAYER_ORDER = ["L0-raw", "L1-producer", "L2-domain", "L3-overview"]
 _BADGE = {
     "ok": "OK", "delta": "DELTA", "stale": "STALE", "error": "ERROR",
+    "unreachable": "UNREACH",
     "missing": "MISSING", "untracked": "untracked", "remote": "remote",
     "planned": "planned",
 }
 _WORST = {"ok": 0, "remote": 0, "untracked": 1, "planned": 1,
-          "delta": 2, "stale": 2, "missing": 3, "error": 4}
+          "delta": 2, "stale": 2, "missing": 3, "error": 4,
+          "unreachable": 4}
 
 
 def _fmt_ts(iso: str | None) -> str:
@@ -172,7 +174,7 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
     for s in states:
         counts[s["status"]] = counts.get(s["status"], 0) + 1
     overall = "OK" if not any(
-        s["status"] in ("missing", "stale", "error", "delta") for s in states
+        s["status"] in ("missing", "stale", "error", "delta", "unreachable") for s in states
     ) else "ATTENTION"
 
     lines = [
@@ -420,7 +422,7 @@ def main() -> int:
         shutil.copyfile(args.yml_output, web_data / "system-report.yml")
 
     bad = [s["id"] for s in states
-           if s["status"] in ("missing", "stale", "error", "delta")]
+           if s["status"] in ("missing", "stale", "error", "delta", "unreachable")]
     status = "delta" if bad else "ok"
     summary = (f"{len(states)} nodes; " +
                (", ".join(f"{s['id']}={s['status']}" for s in states

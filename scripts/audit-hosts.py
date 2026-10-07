@@ -376,14 +376,14 @@ def consolidate(output_dir: Path) -> int:
             except Exception:
                 pass
         rows.append({"state": s, "res": res, "n_deltas": len(deltas)})
-        if s["status"] in ("delta", "stale", "missing", "error"):
+        if s["status"] in ("delta", "stale", "missing", "error", "unreachable"):
             attention.append(f"{s['id']}={s['status']}")
         for d in deltas:
             attention.append(f"{host}: {d}")
 
     status = "delta" if attention else "ok"
     bad = [f"{s['id']}={s['status']}" for s in states
-           if s["status"] in ("delta", "stale", "missing", "error")]
+           if s["status"] in ("delta", "stale", "missing", "error", "unreachable")]
     summary = f"{len(states)} nodes; " + (", ".join(bad) or "all clean")
 
     def fmt_ts(iso):
@@ -495,7 +495,9 @@ def emit_meta(host: str, observed: dict, deltas: list[str],
         print(f"meta emit skipped (lib.report unavailable): {e}")
         return
     if observed.get("unreachable"):
-        status, summary = "error", "unreachable — empty snapshot (ssh failed)"
+        # target-side condition, not a producer crash — nodes with
+        # offline_ok tolerate it (laptops sleep), others flag as sustained
+        status, summary = "unreachable", "unreachable — empty snapshot (ssh failed)"
     else:
         status = "delta" if deltas else "ok"
         summary = f"{len(deltas)} delta(s)" if deltas else "clean"

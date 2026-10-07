@@ -574,6 +574,31 @@ def main() -> int:
                         f"{args.host}:{REMOTE_WWW}"], check=True)
         Path(tmp).unlink()
         print(f"deployed -> {args.host}:{REMOTE_WWW}")
+
+        # report-graph meta (ssot.reports.yml node report-feed): the remote
+        # producer contract — write meta locally + scp to the served
+        # checkout so system-report / report-watch see fresh state
+        meta = yaml.safe_dump({
+            "node": "report-feed",
+            "layer": "L1-producer",
+            "purpose": "chaba-home Report tab JSON feed",
+            "generated_by": "render-report-feed.py --host tony-dell",
+            "generated_at": datetime.datetime.now(
+                datetime.timezone.utc).astimezone().isoformat(),
+            "status": "ok",
+            "summary": (f"{len(feed['layers'])} layers, "
+                        f"{len(text)} bytes -> {args.host}"),
+            "sources": [REMOTE_WWW],
+        }, sort_keys=False, allow_unicode=True)
+        with tempfile.NamedTemporaryFile("w", suffix=".yml",
+                                         delete=False) as f:
+            f.write(meta)
+            mtmp = f.name
+        subprocess.run(
+            ["scp", "-q", mtmp,
+             f"{args.host}:/home/tony/CascadeProjects/chaba-tony-dell"
+             "/reports/meta.report-feed.yml"], check=True)
+        Path(mtmp).unlink()
     return 0
 
 

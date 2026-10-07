@@ -31,7 +31,7 @@ STATE = REPO / "reports/report-watch/state.json"
 DELTA_GRACE_H = 24
 
 BAD_NOW = {"error", "missing", "stale"}
-BAD_SUSTAINED = {"delta"}
+BAD_SUSTAINED = {"delta", "unreachable"}
 
 
 def meta_path(node: dict) -> Path | None:
@@ -120,9 +120,16 @@ def main() -> int:
                 pass
         status = meta.get("status") or ("missing" if mp else None)
         summary = str(meta.get("summary") or "")
-        # "planned — ..." generators are declared intent, not failures
-        if status == "missing" and str(node.get("generator") or "") \
-                .lstrip().startswith("planned"):
+        # dormant nodes: "planned —" generators or arg-required tools
+        # (e.g. card-pipeline <card-id>) — declared intent, not failures;
+        # they produce meta on their first real run
+        gen = str(node.get("generator") or "")
+        if status == "missing" and (gen.lstrip().startswith("planned")
+                                    or "<" in gen):
+            continue
+        # offline_ok nodes tolerate unreachable (laptops sleep, travel
+        # hosts leave the tailnet); an unreachable server still flags
+        if status == "unreachable" and node.get("offline_ok"):
             continue
 
         key = slug(nid)
