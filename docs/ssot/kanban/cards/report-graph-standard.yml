@@ -1,0 +1,42 @@
+id: report-graph-standard
+title: 'Report graph: apply L0-L3 memory-level standard to all nodes'
+column: doing
+review_kind: verify
+priority: high
+note: 'First report-watch sweep (2026-10-07) audited all 21 nodes against
+  the layered-report contract and found systemic gaps: wrong status
+  vocabulary use (unreachable-as-error), missing meta contracts on
+  remote/dormant producers, cross-checkout meta writes, and a retired
+  host still audited. Plan below applies the standard uniformly.'
+spec: 'Sweep findings + standard to apply: (1) STATUS VOCAB finalized
+  in ssot.reports.yml — ok|delta|error|stale|missing|unreachable|
+  planned|remote|dormant; unreachable is target-side not producer-side.
+  (2) NODE HYGIENE — retire audit-hosts/idc01 (dead host, permanent
+  delta noise; its rot is a decommission checklist item not standing
+  signal); overnight-assessment health_snapshot probes retired idc01 —
+  fold into the idc01 SSOT cleanup card (100+ refs across 15 files);
+  systemwide-assessment needs ada-side meta emit + push-back contract.
+  (3) CONTRACT — every producer writes own meta (run-node augments);
+  observe:remote producers scp meta to served checkout (report-feed
+  is the reference impl); offline_ok for hosts that legitimately go
+  off-net; arg-required generators = dormant, exempt until first run.
+  (4) CONVENTIONS — new timer/producer lands with its node+meta in the
+  same commit; cadence is enforced by stale detection via report-watch.
+  (5) CONSUMER — report-watch flags are the review queue; optional:
+  auto-close healed items, --json for CI gate.'
+action:
+  type: manual
+updated: 2026-10-07 14:45
+claim:
+  session: devin
+  since: 2026-10-07 14:45
+comms:
+- at: 2026-10-07 14:45
+  from: devin
+  text: 'sweep done (90df7b8a): 21 nodes audited. Fixed today —
+    macbook unreachable no longer error, host-loads meta path corrected
+    (was writing to edit checkout), report-feed emits+pushes meta,
+    unreachable/dormant/offline_ok added to status vocab. Open:
+    overnight-assessment idc01 probes (needs the idc01 SSOT cleanup
+    card), systemwide-assessment ada-side meta, audit-hosts/idc01 node
+    retirement.'
