@@ -24,7 +24,14 @@ if [ ! -d "$WT" ]; then
 fi
 cd "$WT" || exit 1
 git fetch origin -q || { echo "fetch failed"; exit 1; }
-git merge --ff-only origin/master || { echo "ff-pull failed"; exit 1; }
+if ! git merge --ff-only origin/master; then
+    # a raced push leaves the detached HEAD one auto-commit ahead while
+    # origin/master moved too — diverged, and ff-only then fails on EVERY
+    # tick (kanban-sync wedged 2026-10-07). The local commits are only
+    # generated card writes, so replaying them is safe.
+    echo "ff-pull failed — rebasing local auto-commits onto origin/master"
+    git rebase origin/master || { git rebase --abort 2>/dev/null; echo "rebase failed"; exit 1; }
+fi
 
 python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
 python3 scripts/ada/logs-kanban.py || echo "logs-kanban failed (non-fatal)"

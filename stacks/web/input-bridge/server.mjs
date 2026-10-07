@@ -49,11 +49,31 @@ function saveRegistry() {
 }
 
 function allocScreen(name) {
+  // screen-N names pin their slot: a display re-registering with a
+  // persisted key takes slot N when free, and a drifted binding (name on
+  // the wrong slot) migrates home — only /claim honored N before, so a
+  // relay restart with a fresh registry scrambled every number
+  // (2026-10-06: screen-6 landed on slot 1, screen-1 on slot 4).
+  const wanted = parseInt((name.match(/^screen-(\d+)$/) || [])[1] || "0", 10);
   for (const [n, s] of Object.entries(registry.screens)) {
-    if (s.name === name) return parseInt(n, 10);
+    if (s.name !== name) continue;
+    const cur = parseInt(n, 10);
+    if (wanted && wanted !== cur && !registry.screens[wanted]) {
+      registry.screens[wanted] = s;
+      delete registry.screens[cur];
+      const ws = live.get(cur);
+      if (ws) {           // keep the live binding on the moved slot
+        live.delete(cur);
+        live.set(wanted, ws);
+        ws.screen = wanted;
+      }
+      saveRegistry();
+      return wanted;
+    }
+    return cur;
   }
   const used = new Set(Object.keys(registry.screens).map((n) => parseInt(n, 10)));
-  let n = 1;
+  let n = wanted && !used.has(wanted) ? wanted : 1;
   while (used.has(n)) n++;
   registry.screens[n] = { name, assigned_at: new Date().toISOString() };
   saveRegistry();
@@ -64,7 +84,10 @@ function releaseScreenByWs(ws) {
   if (ws.screen == null) return;
   // only the CURRENT live socket may release the slot — a stale socket
   // that kept ws.screen must not evict a display that re-registered
-  if (live.get(ws.screen) === ws) live.delete(ws.screen);
+  if (live.get(ws.screen) === ws) {
+    live.delete(ws.screen);
+    console.log(`[vcast] screen ${ws.screen} disconnected`);
+  }
   ws.screen = null;
 }
 
@@ -774,6 +797,8 @@ async function registerDisplay(ws, msg) {
   // screen was rendering the cast).
   const prev = live.get(screen);
   if (prev && prev !== ws) {
+    // flap telemetry — counted by vcast-auto-health as the 24h flap metric
+    console.log(`[vcast] screen ${screen} (${name}) superseded by new socket`);
     prev.screen = null;
     leaveRoom(prev);
     try { prev.terminate(); } catch (e) {}
