@@ -1,0 +1,66 @@
+title: Report-linked dispatch rails + cms-report-note.py + board badge
+subtitle: report-session-loop design §2 — card.report wires the session to its CMS page
+icon: file
+version: 1
+
+card: report-loop-session-rails
+date: 2026-10-07
+dispatch: 20261007-201520-design-docs-design-report-sess
+
+summary: |
+  Implements the LINK leg of the report→session loop (design doc
+  docs/design/report-session-loop.md §2, umbrella card
+  report-session-loop). A card carrying `report: <cms-slug>` gets extra
+  dispatch rails (read the report first, mirror progress into it, leave
+  it updated) plus a 📄 badge on the board linking to the CMS page.
+  The session-side write path is the new cms-report-note.py helper —
+  the chaba-repo twin of Ada's cms_note_update tool.
+
+deliverables:
+  - scripts/ada/cms-report-note.py (new) — `--read` prints title + key
+    meta + body; `--note` appends `* {ts} — {text} (session <TASK_ID>)`
+    to a managed <!-- session-log:auto --> block (created just before
+    the provenance footer when absent), appends meta.timeline (cap 40),
+    merges old meta per writer_contract (bank/scope/status/source/
+    written_by/subject/attribute/valid_from/last_verified preserved or
+    stamped — attribute via cms-normalize-meta.page_type to dodge
+    normalize churn), stamps updated, POSTs /v1/add, then regens
+    reports-index via scripts/lib/cms_index.py. Append-only by design.
+  - scripts/board/kanban-dispatch.py — task build extracted into
+    build_task(card); REPORT_RAILS (design §2b, verbatim) appended after
+    TASK_RAILS iff card.report is set.
+  - scripts/render-board.py — 📄 <slug> badge on report-linked cards,
+    linking to https://idc03.taila0626a.ts.net/cms/#/<slug>. Card clicks
+    already exclude <a> targets so the badge opens the page, not the
+    card modal.
+  - docs/ssot/kanban/ssot.kanban.yml — `report:` field documented in
+    card_schema.
+  - tests/ada/test_cms_report_note.py (new dir) — FakeMDDB transport —
+    block create-before-footer, block append, no-footer fallback,
+    meta-merge preservation, timeline cap, TASK_ID session tag,
+    reports-index regen call, missing-page exit.
+  - tests/board/test_kanban_dispatch_rails.py — REPORT_RAILS present iff
+    card.report set (incl. blank-string ignore) and ordered after
+    TASK_RAILS.
+
+decisions:
+  - CMS page URL is hash-routed — the card spec guessed `?page=<slug>`,
+    but pwa/cms/index.html routes via location.hash (`#/<slug>`), which
+    is also what cam-wall-cms.py already emits. Used `#/<slug>`.
+  - TASK_ID env is not set by devin-dispatch — falls back to
+    basename($TASK_DIR), which is the task id.
+  - written_by is stamped 'cms-report-note.py' (parity with
+    cms_note_update stamping its own name) rather than preserving the
+    previous generator's name — the timeline/`generated_by` still show
+    who owns the page's content.
+  - report-linked notes go to meta.timeline as 'session note' — the
+    note text itself lives in the body block so timeline stays a
+    one-line audit trail, matching cms_note_update's '<ts> <note>'
+    entries.
+
+verify: |
+  python3 -m unittest tests.ada.test_cms_report_note \
+      tests.board.test_kanban_dispatch_rails   # 12 tests OK
+  python3 scripts/ada/cms-report-note.py dev-kanban --read  # prints page
+  python3 scripts/ada/cms-report-note.py dev-kanban \
+      --note "…"          # session-log line + meta.timeline += 1 (done live)
