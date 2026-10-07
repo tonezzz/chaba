@@ -2,7 +2,7 @@ id: board-structured-responses
 title: 'Board: structured responses — Yes/No/Option-N buttons on card asks'
 brief: Most review/decide asks get a one-word Tony answer. Queued — a worker session will pick it up; no action
   needed.
-column: doing
+column: review
 priority: high
 note: Most review/decide asks get a one-word Tony answer. Cards already carry ask.options (edge-ha-restructure is
   the prototype) — render them as buttons so a decision is one click, not a comment.
@@ -18,9 +18,11 @@ help: 'basis: edge-ha-restructure card ask.options schema; respond endpoint exis
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-omen
-updated: 2026-10-07 18:47
+  result: 'exit=0 10-07-board-structured-responses.yml` + dispatch outcome file. | devin-task-20261007-183834-card-schema-already-prototyped.service:
+    Consumed 2min 12.114s CPU time over 9min 32.294s wall clock time, 1.2G memory peak, 561.7M memory swap peak.'
+updated: 2026-10-07 19:23
 comms:
 - at: 2026-10-07 15:40
   from: devin
@@ -46,3 +48,10 @@ comms:
     free text that resolves to a unique option (voice path). e2e verified: option click on edge-ha-restructure copy
     -> ask.status=answered + comms entry + triage flag; forged tailnet header still 403. service-onboarding-standard
     migrated to ask.options. Not deployed — merge to mast'
+- at: 2026-10-07 19:23
+  from: tony-omen
+  text: 'finished (ok): exit=0 10-07-board-structured-responses.yml` + dispatch outcome file. | devin-task-20261007-183834-card-schema-already-p'
+- at: 2026-10-07 19:23
+  from: chaba
+  text: pushed dispatch/20261007-183834-card-schema-already-prototyped to origin
+claim: {}

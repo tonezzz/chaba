@@ -1,47 +1,50 @@
 id: report-session-loop
 title: Report -> Devin session loop — CMS page spawns a card, Ada joins the thread
-brief: "From a report page you should be able to kick off a work session that tracks itself on a card and keeps the report updated. Waiting in the backlog — no action needed."
+brief: From a report page you should be able to kick off a work session that tracks itself on a card and keeps the
+  report updated. Waiting in the backlog — no action needed.
 column: backlog
 priority: high
 program: ada-tools
-updated: '2026-10-07'
-tags: [cms, kanban, ada, devin-dispatch, program]
-note: >-
-  Tony 2026-10-07: from a CMS report (e.g. /chaba-admin/chaba-cms) start
-  a Devin session on that report; a linked kanban card tracks it and
-  the report stays updated; Tony can follow up via the card AND via
-  Ada; "ask Ada's opinion" must be saved on the card for Devin to weigh
-  alongside Tony's. End-to-end loop under the board standard.
-  Building blocks that already exist: board-api /comment|/respond|
-  /request with 'ada' as a whitelisted actor; answers.jsonl injection
-  into running dispatch sessions (board-answer-live-session, done);
-  ada_board_write tool (comment|respond|read); devin_dispatch tool;
-  cms_read/cms_edit/cms_publish_page on the Ada side.
-spec: >-
-  Design the loop as four deliverables — (1) SPAWN: a "start session"
-  affordance on CMS report pages (chaba-admin/chaba-cms or a global
-  page action) that creates a kanban card {title from page, spec with
-  report key + link, action:dispatch} — same effect as Ada saying
-  "start a Devin session on this report" via devin_dispatch.
-  (2) LINK: card carries report:<cms-key>; the dispatch prompt rails
-  tell the session to refresh the report (cms_edit) and post progress
-  to comms — report and card stay in sync by convention, verified in
-  the session's task rails.
-  (3) ADA-IN-THE-LOOP: an `ada_opinion`/kanban_opinion path — Tony asks
-  Ada aloud; she cms_reads the report, forms an opinion, posts it as
-  card comms from=ada tagged [opinion]; running sessions already pick
-  it up via answers.jsonl/comms polling. Tony's replies via /respond
-  land the same way — one thread, both voices.
-  (4) TRAIN+BENCH: new live scenario report_opinion_loop in
-  ada-pi tests/scenarios-live (Ada asked for opinion on a report ->
-  must read it -> post tagged comms -> visible on card), plus
-  orch-bench/nest topologies for the opinion-forming step once the
-  corpus exists. Card is the umbrella — split implementation into
-  sub-cards as needed; keep this card for e2e tracking.
+updated: 2026-10-07 19:14
+tags:
+- cms
+- kanban
+- ada
+- devin-dispatch
+- program
+note: 'Tony 2026-10-07: from a CMS report (e.g. /chaba-admin/chaba-cms) start a Devin session on that report; a
+  linked kanban card tracks it and the report stays updated; Tony can follow up via the card AND via Ada; "ask Ada''s
+  opinion" must be saved on the card for Devin to weigh alongside Tony''s. End-to-end loop under the board standard.
+  Building blocks that already exist: board-api /comment|/respond| /request with ''ada'' as a whitelisted actor;
+  answers.jsonl injection into running dispatch sessions (board-answer-live-session, done); ada_board_write tool
+  (comment|respond|read); devin_dispatch tool; cms_read/cms_edit/cms_publish_page on the Ada side.'
+spec: 'Design the loop as four deliverables — (1) SPAWN: a "start session" affordance on CMS report pages (chaba-admin/chaba-cms
+  or a global page action) that creates a kanban card {title from page, spec with report key + link, action:dispatch}
+  — same effect as Ada saying "start a Devin session on this report" via devin_dispatch. (2) LINK: card carries
+  report:<cms-key>; the dispatch prompt rails tell the session to refresh the report (cms_edit) and post progress
+  to comms — report and card stay in sync by convention, verified in the session''s task rails. (3) ADA-IN-THE-LOOP:
+  an `ada_opinion`/kanban_opinion path — Tony asks Ada aloud; she cms_reads the report, forms an opinion, posts
+  it as card comms from=ada tagged [opinion]; running sessions already pick it up via answers.jsonl/comms polling.
+  Tony''s replies via /respond land the same way — one thread, both voices. (4) TRAIN+BENCH: new live scenario report_opinion_loop
+  in ada-pi tests/scenarios-live (Ada asked for opinion on a report -> must read it -> post tagged comms -> visible
+  on card), plus orch-bench/nest topologies for the opinion-forming step once the corpus exists. Card is the umbrella
+  — split implementation into sub-cards as needed; keep this card for e2e tracking.'
 action:
   type: program
-  status: design
+  status: running
+  runner: tony-dell
+  task_id: 20261007-191420-design-the-loop-as-four-delive
 comms:
 - at: 2026-10-07 13:55
   from: devin
-  text: filed per Tony's request — board-answer-live-session + ada-board-write + ada-kanban-access are the precedents to reuse
+  text: filed per Tony's request — board-answer-live-session + ada-board-write + ada-kanban-access are the precedents
+    to reuse
+- at: 2026-10-07 19:13
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 19:14
+  from: chaba
+  text: dispatched 20261007-191420-design-the-loop-as-four-delive on chaba
+claim:
+  session: 20261007-191420-design-the-loop-as-four-delive
+  since: 2026-10-07 19:14
