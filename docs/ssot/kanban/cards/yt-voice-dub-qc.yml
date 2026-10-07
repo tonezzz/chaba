@@ -2,7 +2,7 @@ id: yt-voice-dub-qc
 title: YT voice dub — caption QC gate before TTS
 brief: The dubbing pipeline's worst defects came from bad captions, not the voices — this adds a caption quality
   gate first. Queued — a worker session will pick it up.
-column: backlog
+column: doing
 program: yt-voice-dub
 area: quality
 priority: medium
@@ -30,11 +30,19 @@ spec: 'Add a caption QC gate to yt-vtt-dub.py. (1) A --qc pass that scores every
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: failed
   task: 'Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc scoring pass, quarantine-before-TTS
     gate, QC report artifact, seeded TH fix-map watch-list; verify on the media-corpus slices.'
-updated: 2026-10-07 20:19
+  runner: mn01
+  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+updated: 2026-10-07 20:33
 comms:
 - at: 2026-10-07 20:19
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:33
+  from: mn01
+  text: claimed
+- at: 2026-10-07 20:33
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'

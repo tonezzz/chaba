@@ -6,7 +6,7 @@ brief: 'Part 6 of the report→session loop (umbrella: report-session-loop). Ins
 column: backlog
 priority: medium
 program: ada-tools
-updated: 2026-10-07 20:18
+updated: 2026-10-07 20:34
 tags:
 - report-session-loop
 - ada-pi
@@ -29,8 +29,10 @@ spec: "Design: docs/design/report-session-loop.md §4 (contract). Repo: ada-pi.\
   \ NOT deploy; finish with a note."
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261007-202820-design-docs-design-report-sess
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -38,3 +40,15 @@ comms:
 - at: 2026-10-07 20:18
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:28
+  from: chaba
+  text: dispatched 20261007-202820-design-docs-design-report-sess on ada-pi
+- at: 2026-10-07 20:34
+  from: devin
+  text: '[progress] installing report_opinion_loop into ada-pi tests/scenarios-live — adapting staged yaml: flat
+    asserts -> expect: blocks, dropping url (default = ada-ha-tony :8002) and key_name user-tony (NOT in ada-ha-tony-keys.json
+    — would skip every batch run; default ADA_API_KEY path is the convention). tier: smoke auto-joins hourly batch
+    via @smoke; ada_board_write not in write_tools so no write_allowed_in entry needed.'
+claim:
+  session: 20261007-202820-design-docs-design-report-sess
+  since: 2026-10-07 20:28

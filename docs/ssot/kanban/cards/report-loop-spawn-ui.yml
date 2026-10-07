@@ -3,10 +3,10 @@ title: 'Report loop: "Start Devin session" button on CMS pages + /api/cms/spawn 
 brief: 'Part 2 of the report→session loop (umbrella: report-session-loop). Adds the visible affordance: a button
   on Ada''s CMS report pages that files an armed kanban card — same effect as asking Ada to dispatch a session.
   Queued when Tony presses Start.'
-column: backlog
+column: doing
 priority: high
 program: ada-tools
-updated: 2026-10-07 20:14
+updated: 2026-10-07 20:33
 tags:
 - report-session-loop
 - cms
@@ -31,8 +31,9 @@ spec: "Design: docs/design/report-session-loop.md §1b (contract). Repo: ada-pi.
   \ — do NOT deploy, leave a needs-input/done note)."
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-omen
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -40,3 +41,12 @@ comms:
 - at: 2026-10-07 20:14
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:32
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 20:32
+  from: chaba
+  text: started devin-task-20261007-203220-design-docs-design-report-sess on tony-omen (dispatch)
+- at: 2026-10-07 20:33
+  from: devin
+  text: started — reading cms viewer, pwa_server auth, board-write helper to ground the §1b contract

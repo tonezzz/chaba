@@ -2,7 +2,7 @@ id: vcast-input-bridge
 title: vcast input-bridge lane — headless/real/flip-check health
 brief: Keeps the phone-cast feature's remote-control lane healthy so casts don't fight each other. Queued — a worker
   session will pick it up.
-column: backlog
+column: doing
 priority: medium
 program: vcast
 area: input-bridge
@@ -17,11 +17,19 @@ spec: 'stacks/web/input-bridge/: audit vcast-flap-check cadence and the headless
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: failed
   task: Audit input-bridge flap-check cadence + headless/real lease handoff per card spec; cast_recast_stale_lease
     + cast_switch_flow scenarios green.
-updated: 2026-10-07 20:19
+  runner: mn01
+  result: 'start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+updated: 2026-10-07 20:33
 comms:
 - at: 2026-10-07 20:19
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:33
+  from: mn01
+  text: claimed
+- at: 2026-10-07 20:33
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'

@@ -3,10 +3,10 @@ title: 'Report loop: Ada [opinion] path — read report, post tagged comms on th
 brief: 'Part 5 of the report→session loop (umbrella: report-session-loop). Tony asks Ada aloud what she thinks of
   a report; she reads it, forms a view, and posts it to the card as a from=ada [opinion] comment a running session
   will see. Queued when Tony presses Start.'
-column: backlog
+column: review
 priority: medium
 program: ada-tools
-updated: 2026-10-07 20:18
+updated: 2026-10-07 20:38
 tags:
 - report-session-loop
 - ada-pi
@@ -28,8 +28,12 @@ spec: "Design: docs/design/report-session-loop.md §3b (contract). Repo: ada-pi.
   \ finish with a note."
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261007-202420-design-docs-design-report-sess
+  result: 20261007-202420-design-docs-design-report-sess finished (inactive) — see `devin-dispatch logs 20261007-202420-design-docs-design-report-sess`
+  verified: true
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -37,3 +41,34 @@ comms:
 - at: 2026-10-07 20:18
   from: tony
   text: queued for processing
+- at: 2026-10-07 20:24
+  from: chaba
+  text: dispatched 20261007-202420-design-docs-design-report-sess on ada-pi
+- at: 2026-10-07 20:25
+  from: devin
+  text: '[devin] started: exploring worktree, locating instructions + ada_board_write read path'
+- at: 2026-10-07 20:35
+  from: devin
+  text: '[devin] implemented: REPORT OPINION stanza in CMS_INSTRUCTIONS; ada_board_write read now carries report
+    field + report=<slug> lookup (open>done, newest wins, also[] on ambiguity, create-offer when none); 7 new unit
+    tests green; live scenario yaml added. No deploy per AGENTS.md.'
+- at: 2026-10-07 20:36
+  from: devin
+  text: '[devin] done. Deliverables: REPORT OPINION stanza (CMS_INSTRUCTIONS), ada_board_write report field + read
+    report=<slug> lookup w/ matching helper, 7 unit tests (21/21 green), report_opinion_loop.yaml scenario, SSOT
+    job doc 2026-10-07-report-opinion-loop.yml. Outcome file in worktree. NOT deployed — needs Tony approval per
+    AGENTS.md.'
+- at: 2026-10-07 20:38
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 20:38
+  from: chaba
+  text: 'session-end checkpoint 85698163: 7 leftover file(s) committed'
+- at: 2026-10-07 20:38
+  from: chaba
+  text: pushed dispatch/20261007-202420-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:38
+  from: chaba
+  text: auto-merged bdfdac70 (dispatch/20261007-202420-design-docs-design-report-sess) → origin/main
+claim:
+  since: 2026-10-07 20:24

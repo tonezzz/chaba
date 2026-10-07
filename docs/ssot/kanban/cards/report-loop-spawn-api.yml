@@ -3,10 +3,10 @@ title: 'Report loop: extend board-api /card — spec/action/report fields + queu
 brief: 'Part 1 of the report→session loop (umbrella: report-session-loop). Makes POST /card able to file an ARMED
   dispatch card — today it only takes title/note/help, so a CMS "start session" button can''t spawn work. Queued
   when Tony presses Start.'
-column: doing
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 20:21
+updated: 2026-10-07 20:32
 tags:
 - report-session-loop
 - kanban
@@ -30,9 +30,12 @@ spec: "Design: docs/design/report-session-loop.md §1a (read it first — it is 
   \ action:{type:dispatch,repo:chaba}, queue:false, brief:...} creates the YAML; on_exists:queue re-queues it."
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  result: 'exit=0 Changes are uncommitted in this worktree for the dispatch close-out to checkpoint/merge. | devin-task-20261007-202058-design-docs-design-report-sess.service:
+    Consumed 1min 44.556s CPU time over 10min 31.955s wall clock time, 1G memory peak.'
+  verified: true
 comms:
 - at: 2026-10-07 19:30
   from: devin
@@ -46,3 +49,26 @@ comms:
 - at: 2026-10-07 20:21
   from: chaba
   text: started devin-task-20261007-202058-design-docs-design-report-sess on tony-omen (dispatch)
+- at: 2026-10-07 20:25
+  from: devin
+  text: started — extending do_create per report-session-loop §1a
+- at: 2026-10-07 20:30
+  from: devin
+  text: '§1a done in worktree: do_create accepts spec/report/action{dispatch|manual, whitelisted repo}/queue/brief/priority/tags/program/blocked_by
+    + on_exists error|queue; REPORT_SPAWN_TEMPLATE composes spec from report slug; response carries id+status. selftest
+    ok; curl-verified create + re-queue + already-active. Live board-api still runs old code — deploy needs approval.
+    Trail: docs/ssot/jobs/kanban/2026-10-07-report-loop-spawn-api.yml'
+- at: 2026-10-07 20:32
+  from: tony-omen
+  text: 'finished (ok): exit=0 Changes are uncommitted in this worktree for the dispatch close-out to checkpoint/merge.
+    | devin-task-20261007-20'
+- at: 2026-10-07 20:32
+  from: chaba
+  text: 'session-end checkpoint 85ecd4b8: 1 leftover file(s) committed'
+- at: 2026-10-07 20:32
+  from: chaba
+  text: pushed dispatch/20261007-202058-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:32
+  from: chaba
+  text: auto-merged 98b5744d (dispatch/20261007-202058-design-docs-design-report-sess) → origin/master
+claim: {}

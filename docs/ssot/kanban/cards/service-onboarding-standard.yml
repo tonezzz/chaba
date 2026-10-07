@@ -2,7 +2,7 @@ id: service-onboarding-standard
 title: Service onboarding standard — manifest gates + stack-preflight
 brief: A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a
   decision — read the note and pick a direction.
-column: backlog
+column: review
 priority: medium
 review_kind: decide
 note: 'Adopted 2026-10-06 after migration misses (stale IPs, missing envs, missing ssh edges). Standard = 7 gates:
@@ -23,10 +23,11 @@ ask:
   answered_at: 2026-10-07 20:08
 action:
   type: manual
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-201223-manifest-contract-stacks-host-
-updated: 2026-10-07 20:22
+  result: 20261007-201223-manifest-contract-stacks-host- finished (inactive) — see `devin-dispatch logs 20261007-201223-manifest-contract-stacks-host-`
+updated: 2026-10-07 20:28
 comms:
 - at: 2026-10-06 14:45
   from: devin
@@ -63,6 +64,18 @@ comms:
     sweep. Retrofit list complete: idc02/mddb (+live quadlet committed), idc01 caddy-edge, idc01 retired-mddb, mn01
     ada-ha-tony/michael standby. Sweep: 21/21 green. Drift noted: idc02 quadlet Description stale, :11025 rootlessport
     unidentified, 2 ssot.secrets mddb slots corrected.'
+- at: 2026-10-07 20:27
+  from: devin
+  text: 'DONE: contract completed (ports gate + unit + retired + vol:), --all sweep 20/20 PASS incl. verify. New:
+    stacks/idc02/{mddb,caddy-edge} (idc02 had no repo stack dir; mddb secret externalized on-host), stacks/idc01/{caddy-edge,mddb-retired}.
+    ports: backfilled on all 16 existing. Negative test FAILs correctly on foreign-held port. Trail: docs/ssot/jobs/infrastructure/2026-10-07-stack-manifest-contract.yml
+    + dispatch-outcome md.'
+- at: 2026-10-07 20:28
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 20:28
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261007-201223-manifest-contract-stacks-host- — close will block
+    until merged'
 claim:
-  session: 20261007-201223-manifest-contract-stacks-host-
   since: 2026-10-07 20:12
