@@ -4,10 +4,10 @@ brief: Back on 2026-09-27 you asked for a new report summarizing foreign hosting
   existing provider-assessment report, including network latency for Philippines, Norway, Germany, and the Thai
   locations (Khao Yai, Chonburi, Bangkok). The request was captured in memory but the follow-through never happened
   — it surfaced 10 days later via the memory-standard draft-age breach. Queued so a session builds the report page.
-column: doing
+column: review
 priority: medium
 program: reports
-updated: 2026-10-07 21:14
+updated: 2026-10-07 21:28
 tags:
 - cms
 - report
@@ -27,10 +27,12 @@ spec: "Source request (tony-projects/hosting-provider-report-request, voice, 202
   \ via Caddy /apps/ route, links resolve both ways,\nlatency data labelled with source (measured vs published).\n"
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-dell
   task_id: 20261007-211028-source-request-tony-projects-h
+  result: 20261007-211028-source-request-tony-projects-h finished (inactive) — see `devin-dispatch logs 20261007-211028-source-request-tony-projects-h`
+  verified: true
 comms:
 - at: 2026-10-07 21:05
   from: devin
@@ -55,8 +57,23 @@ comms:
   from: devin
   text: 'Started. Found existing report: ada-cms-pages/hosting-provider-assessment (Thai VPS shortlist: ReadyIDC/Contabo/Hetzner).
     CMS = MDDB ada-cms-pages + cms viewer at /apps/ha/ada-tony/cms/. Researching latency data next.'
+- at: 2026-10-07 21:26
+  from: devin
+  text: 'Done. New report ada-cms-pages/hosting-provider-intl published (kind:report, domain:infra, fresh_for 30d):
+    Vultr/Akamai-Linode/AWS-SG+HK/Dataplugs-HK/Hetzner/OVH/DO/Contabo with measured ICMP from tony-dell uplink (idc01
+    6.9ms, SG ~30ms, HK ~62-70ms, EU 189-276ms) + labelled published/estimated latency for Manila, Oslo, Germany,
+    Bangkok, Chonburi, Khao Yai. Backlink added to hosting-provider-assessment (see-also + meta.links); reports-index
+    regenerated. Page: https://tony-dell.taila0626a.ts.net/'
+- at: 2026-10-07 21:28
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 21:28
+  from: chaba
+  text: pushed dispatch/20261007-211028-source-request-tony-projects-h to origin
+- at: 2026-10-07 21:28
+  from: chaba
+  text: auto-merged f03a58b5 (dispatch/20261007-211028-source-request-tony-projects-h) → origin/master
 ownership:
   owner: tony
 claim:
-  session: 20261007-211028-source-request-tony-projects-h
   since: 2026-10-07 21:10

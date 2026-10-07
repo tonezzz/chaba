@@ -2,7 +2,7 @@ id: yt-voice-dub-qc
 title: YT voice dub — caption QC gate before TTS
 brief: The dubbing pipeline's worst defects came from bad captions, not the voices — this adds a caption quality
   gate first. Queued — a worker session will pick it up.
-column: doing
+column: review
 program: yt-voice-dub
 area: quality
 priority: medium
@@ -30,11 +30,14 @@ spec: 'Add a caption QC gate to yt-vtt-dub.py. (1) A --qc pass that scores every
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task: 'Implement the caption QC gate in yt-vtt-dub.py per card spec: --qc scoring pass, quarantine-before-TTS
     gate, QC report artifact, seeded TH fix-map watch-list; verify on the media-corpus slices.'
   runner: tony-omen
-updated: 2026-10-07 21:09
+  result: 'exit=0 ee (`dispatch/20261007-204538-…`), no push, per the rails. | devin-task-20261007-204538-add-a-caption-qc-gate-to-yt-vt.service:
+    Consumed 4min 47.356s CPU time over 51min 53.103s wall clock time, 1020.5M memory peak, 459.1M memory swap peak.'
+  verified: false
+updated: 2026-10-07 21:38
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -65,3 +68,24 @@ comms:
     (qc report rides cache). Fixture+U_io EN corpus verified. Bonus fix: parse_vtt was leaking align: settings +
     &gt;&gt; entities into EN cue text. Gemini quota-dead; building corpus TH subs via local phi3 for the TH-path
     render check.'
+- at: 2026-10-07 21:37
+  from: devin
+  text: 'DONE: --qc gate in yt-vtt-dub.py (5 checks: cps vs own caption span, thin fill, residue, untranslated,
+    markers). Flagged cues skip TTS, stay in burn, land in <out>.qc.json. Seed TH fix-map + per-video ~/.cache/yt-live-subs/fixmap/<vid>.json
+    merge via --fix-map. Verified on both corpus videos: U_io EN flags real >>/[laughter] (gated render 37 segs);
+    4njF TH-path render 19/21 voiced, cast-split fragments flagged. NOTE: Gemini key is 401-dead (not quota) — translation
+    infra needs key rotation. Runb'
+- at: 2026-10-07 21:38
+  from: tony-omen
+  text: 'finished (ok): exit=0 ee (`dispatch/20261007-204538-…`), no push, per the rails. | devin-task-20261007-204538-add-a-caption-qc-gate-to-'
+- at: 2026-10-07 21:38
+  from: chaba
+  text: 'session-end checkpoint fc7e97ff: 2 leftover file(s) committed'
+- at: 2026-10-07 21:38
+  from: chaba
+  text: pushed dispatch/20261007-204538-add-a-caption-qc-gate-to-yt-vt to origin
+- at: 2026-10-07 21:38
+  from: chaba
+  text: 'auto-merge conflicts: scripts/ops/yt-pipeline-install.sh, scripts/ops/yt-vtt-dub.py — card stays in review
+    for manual resolution'
+claim: {}
