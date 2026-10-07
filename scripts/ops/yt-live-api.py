@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """yt-live-api.py — REST shim around yt-live.sh for voice/agent casting.
 
-POST /cast   {"q"|"url"|"query": "...", "lang": "th"}   -> start pipeline
-POST /stop                                             -> stop cast
-GET  /status                                           -> progress info
-GET  /health                                           -> ok
+POST /cast   {"q"|"url"|"query": "...", "lang": "th",
+              "voice": "off|th|en"}                   -> start pipeline
+POST /stop                                            -> stop cast
+GET  /status                                          -> progress + dub phase
+GET  /health                                          -> ok
 """
 import json
 import os
@@ -19,11 +20,15 @@ _HERE = os.path.dirname(os.path.realpath(__file__))
 SH = (os.path.join(_HERE, "yt-live.sh")
       if os.path.exists(os.path.join(_HERE, "yt-live.sh"))
       else os.path.expanduser("~/.local/bin/yt-live.sh"))
-APP = ("/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public"
-       "/apps/yt-live")
-MCACHE = os.path.expanduser("~/.cache/yt-live-media")
+APP = os.environ.get(
+    "YT_LIVE_APP",
+    "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public"
+    "/apps/yt-live")
+MCACHE = os.environ.get("YT_LIVE_MCACHE",
+                        os.path.expanduser("~/.cache/yt-live-media"))
 RUNLOG = os.path.expanduser("~/.cache/yt-live-api.last.log")
 PORT = int(os.environ.get("YT_LIVE_API_PORT", "8791"))
+VOICES = ("off", "th", "en")
 
 
 def spawn(args):
@@ -55,6 +60,14 @@ def status():
                 title = ln[6:].strip()
             elif ln.startswith("== "):
                 phase = ln[3:].split(" -> ")[0].strip()
+    dub = None
+    try:
+        raw = open(os.path.join(APP, "dub.state")).read().strip()
+        if raw:                      # "<voice>:<phase>" written by yt-live.sh
+            v, _, s = raw.partition(":")
+            dub = {"voice": v or None, "phase": s or None}
+    except OSError:
+        pass
     if done and not running:
         phase = "complete"
     elif running and phase not in ("transcoding + burning subs", "casting"):
@@ -73,7 +86,7 @@ def status():
         pass
     return {"transcoding": running, "segments": segs, "vod_complete": done,
             "subtitles": os.path.exists(os.path.join(APP, "subs.vtt")),
-            "phase": phase, "title": title,
+            "phase": phase, "title": title, "dub": dub,
             "media_cache_bytes": mc_bytes,
             "media_cache_entries": mc_entries,
             "log_tail": tail.strip()}
@@ -115,9 +128,13 @@ class H(BaseHTTPRequestHandler):
                 self._json(400, {"error": "need q/url/query"})
                 return
             lang = str(b.get("lang") or "th")
-            spawn([str(q), lang])
+            voice = str(b.get("voice") or "off").lower()
+            if voice not in VOICES:
+                self._json(400, {"error": "voice must be off|th|en"})
+                return
+            spawn([str(q), lang, voice])
             self._json(200, {"ok": True, "action": "cast",
-                             "query": q, "lang": lang})
+                             "query": q, "lang": lang, "voice": voice})
             return
         self._json(404, {"error": "unknown path"})
 
