@@ -1,0 +1,31 @@
+id: board-verify-checklist
+title: 'Verify: review-card verification checklist chips'
+column: review
+review_kind: verify
+priority: medium
+note: 'render-board.py now computes a `checks` array per card at render time —
+  code-merged (merge-base + git-cherry patch-equivalence), outcome artifact,
+  deploy and verify comms evidence, plus an N-runs chip when a card has >1
+  dispatch branch. Rendered as ✓/✗/· chips on cardHtml. Implemented direct
+  (not dispatched) per tony; this card is the separate verify pass.'
+spec: 'On the live board (/apps/board/): pull chaba-tony-dell (safe-pull),
+  force a re-render if the timer skips (card-dir hash unchanged — script
+  changed, not cards), then spot-check chips on vms-native-composite
+  (expect ·2 runs ✓code ✓outcome ✓deploy ✓verify) and any review card.
+  Confirm existing badges, review grouping, needs-you strip, and action
+  buttons still work. Close when live chips match computed state.'
+action:
+  type: manual
+updated: 2026-10-07 08:45
+comms:
+- at: 2026-10-07 08:40
+  from: tony
+  text: implement checklist chips directly; verification tracked on this separate card
+- at: 2026-10-07 08:45
+  from: devin
+  text: 'implemented in render-board.py (f101b5e4): checks[] computed server-side —
+    code via merge-base/git-cherry, outcome via indexed docs/ssot/jobs scan
+    (17s→1.4s render), deploy+verify via comms heuristics with action.verified
+    override. Render-tested locally: 121/177 cards got chips; vms-native-composite
+    correctly shows ·2 runs ✓code(patch-equiv) ✓outcome ✓deploy ✓verify. Pending:
+    live-board spot-check after chaba-tony-dell pulls.'
