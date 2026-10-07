@@ -1,0 +1,124 @@
+title: YT voice dub — diarization-driven casting, >2 speakers
+subtitle: kanban card yt-voice-dub-speakers — dispatch session 2026-10-07
+icon: microphone
+
+planning:
+  goal: |
+    Wire pyannote diarization output directly into yt-vtt-dub.py so a
+    render needs zero hand-labeled turn borders; give >2 speakers
+    separable voices via pitch-offset families; name SPEAKER_NN labels
+    via transcript anchors; document the omen->mn01->dell handoff.
+  out_of_scope: |
+    Voiceprint identity / cloning (boundary stays: SPEAKER_NN labels +
+    transcript anchors only). Gender-aware auto-casting — speaker->voice
+    order remains an operator choice via --cast-voices.
+
+processing:
+  status: completed
+  last_updated: "2026-10-07"
+
+pipeline:
+  handoff: |
+    tony-omen (diarize, GPU) -> mn01 (corpus) -> tony-dell (render):
+
+      # 1. diarize on omen, turn file lands in the corpus
+      scripts/ops/yt-diarize-remote.sh mn01:media-corpus/yt-dub-prep/VID.mp4
+      #   -> mn01:~/media-corpus/yt-dub-prep/VID.diarize.{txt,rttm}
+      #   + local ./VID.diarize.txt
+      # (or directly on omen: ~/.venvs/diarize/bin/python yt-diarize.py
+      #  in.mp4 out.txt [--rttm out.rttm]; models+token already cached
+      #  on omen, torch cu130 + GTX 1650)
+
+      # 2. render on tony-dell — pull media + karaoke vtt from corpus
+      yt-vtt-dub.py VID.mp4 VID.en.th.vtt out.mp4 --sentences \
+          --en-vtt VID.en.vtt --diarize-file VID.diarize.txt \
+          --cast-voices "th-TH-NiwatNeural,th-TH-PremwadeeNeural" \
+          --anchors "Host=how did you come back;Guest=i hadn't seen him" \
+          --names-map VID.names.json --burn-vtt burn.vtt \
+          --dump-turns turns.json --dump-groups groups.json
+
+    The turn file lives next to the staged mp4/vtt in
+    mn01:~/media-corpus/yt-dub-prep/ — same timebase as the media, so no
+    --offset needed. Explicit --cast-times/--cast-map still wins over
+    both --diarize-file and --cast-detect.
+
+  separability_ceiling: |
+    edge-tts ships exactly 2 TH voices (Niwat M, Premwadee F) — that is
+    the hard ceiling. --cast-voices lists base voices (families);
+    speaker i -> base[i % F] with member index i // F picking a
+    PITCH_LADDER offset: member 1 = +8Hz, 2 = -10Hz, 3 = -18Hz,
+    4 = +16Hz, 5 = -26Hz... So 3-4 speakers render separably
+    (2 base + 1-2 pitched members); ~6-8 is the practical ceiling before
+    voices sound processed (>±20Hz reads as 'different speaker' but
+    artificial). Family members are same-timbre by definition — two
+    pitched Niwats are closer than Niwat-vs-Premwadee. Gender is not
+    inferred: SPEAKER_NN->voice order is first-appearance; override
+    with an explicit --cast-voices ordering (entries may carry @pitch).
+
+report:
+  summary: |
+    --diarize-file accepts RTTM or the v17 'start end SPEAKER_NN' txt;
+    <0.3s micro-turns dropped (--min-turn), adjacent same-speaker spans
+    merge, labels index by first appearance. Turns feed the same
+    turns_to_cast_times/voice_at path as --cast-detect (which now also
+    uses pitch families via speaker_voices when --speakers > base
+    count). --anchors 'Name=phrase' matches a consecutive token run in
+    the karaoke word stream and resolves the covering turn under
+    extended coverage (turn runs to next turn start — same rule
+    voice_at uses); matched names auto-feed --names for burn-vtt tags
+    and --names-map writes the full speaker->voice->name resolution as
+    JSON for reproducible renders.
+
+    Verified on U_io-pqPFfQ (music interview, ~20min): pyannote on
+    tony-omen produced 394 raw turns / 5 speakers -> 139 after the 0.3s
+    filter. Full 360s render with ZERO hand-labeled turns: 4 anchors
+    matched (Host=SPEAKER_01 @0.5s 'how did you come back',
+    Guest=SPEAKER_00 @12.5s, Guest2=SPEAKER_04 @157.9s 'the seahorses',
+    Guest3=SPEAKER_03 @279.8s); SPEAKER_02 only speaks past 500s.
+    voices-per-speaker == 1 with 0 group-voice mismatches vs turn
+    coverage; 68 sentence groups -> 61 spoken, lag 15.6s. Unit tests:
+    tests/yt_dub/test_diarize_cast.py (7 green).
+  caveat: |
+    All GEMINI keys on tony-dell were 401 this session — the merged
+    en.th subs could not be generated, so verification rendered
+    --lang en (identical casting path; TH render needs only a valid key
+    for yt-vtt-translate.py + the compress pass). Note: karaoke vtt is
+    NOT a valid subs input for the render (align:/>> leakage into cue
+    text) — always feed a cleaned/merged vtt.
+  metrics:
+    - variant: U_io-pqPFfQ diarize (1187s media)
+      raw_turns: 394
+      filtered_turns: 139
+      speakers: 5
+    - variant: U_io 360s render
+      groups: "68 -> 61 spoken"
+      global_rate: 1.25
+      lag_s: 15.6
+      voice_mismatches: 0
+      anchors_matched: "4/4 active speakers"
+
+changes:
+  - file: scripts/ops/yt-vtt-dub.py
+    summary: "--diarize-file/--min-turn/--anchors/--names-map; parse_diarize, speaker_voices (PITCH_LADDER families), anchor_speakers; turns_to_cast_times accepts 3-tuples; --cast-detect also uses pitch families"
+  - file: scripts/ops/yt-diarize.py
+    summary: "new — pyannote speaker-diarization-3.1 -> 'start end SPEAKER_NN' (+ --rttm); runs on tony-omen ~/.venvs/diarize"
+  - file: scripts/ops/yt-diarize-remote.sh
+    summary: "new — omen diarize -> mn01 corpus handoff (scp in, ssh run, turn file to ~/media-corpus/yt-dub-prep/)"
+  - file: scripts/ops/yt-pipeline-install.sh
+    summary: FILES += yt-diarize.py, yt-diarize-remote.sh
+  - file: tests/yt_dub/test_diarize_cast.py
+    summary: "new — 7 regression tests (formats, micro-turn filter/merge, families, anchors, cast-times)"
+  - file: tests/fixtures/yt-dub/
+    summary: "U_io-pqPFfQ.diarize.txt + names-map.json + turns.json — render verification artifacts"
+
+verification:
+  artifacts:
+    - /tmp/ydub/dub-v18-diar.mp4                 # 360s EN render, 4 speaker voices
+    - /tmp/ydub/dub.wav                        # bare dub track
+    - mn01:~/media-corpus/yt-dub-prep/U_io-pqPFfQ.diarize.{txt,rttm}
+    - mn01:~/media-corpus/yt-dub-prep/dub-v18-diar.mp4 burn.vtt names-map.json
+    - tests/fixtures/yt-dub/*                  # committed copies of small JSONs
+  checks:
+    - "anchor match times land inside the matching speaker's turn (all 4)"
+    - "dump-groups voices == names-map voices; one voice per SPEAKER_NN"
+    - "pytest tests/yt_dub — 7 green"

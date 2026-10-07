@@ -8,6 +8,13 @@ on a silent timeline, mixes over the ducked original, and muxes to mp4.
 
 Usage:
   yt-vtt-dub.py <media.m3u8> <subs.vtt> <out.mp4> [--lang th] [--secs 180] [--duck 0.22]
+
+Speaker casting (needs --sentences --en-vtt): --cast-detect for the
+heuristic path, or --diarize-file for real diarization turns (RTTM or
+'start end SPEAKER_NN' from yt-diarize.py) — >2 speakers map into
+pitch-offset voice families via --cast-voices, and --anchors names
+SPEAKER_NN labels from known transcript phrases (--names-map records
+the resolution for reproducible renders).
 """
 import argparse
 import html
@@ -318,7 +325,8 @@ def turns_to_cast_times(turns, voices):
     A turn's range runs to the NEXT turn's start so voice_at() covers
     inter-turn air too (words landing mid-gap keep the last speaker)."""
     ranges = {}
-    for i, (s, e, spk, _) in enumerate(turns):
+    for i, t in enumerate(turns):
+        s, e, spk = t[0], t[1], t[2]
         e = turns[i + 1][0] if i + 1 < len(turns) else e
         ranges.setdefault(spk % len(voices), []).append((s, e))
     parts = []
@@ -338,6 +346,122 @@ def turn_summary(turns):
         st["air"] += e - s
         st["q"] += sum(1 for g in gs if _q_end(g))
     return stats
+
+
+# --- diarization-driven casting ---------------------------------------------
+# Real turn tables come from pyannote (yt-diarize.py on tony-omen GPU) as
+# either RTTM ('SPEAKER f 1 t0 dur <NA> <NA> LABEL <NA> <NA>') or the plain
+# 'start end SPEAKER_NN' text format. SPEAKER_NN labels are cluster ids, not
+# identities — name speakers via transcript anchors (--anchors), not
+# voiceprints.
+
+
+def parse_diarize(path, min_turn=0.3):
+    """Diarization turn file -> (turns, labels).
+
+    turns = [(start, end, spk_idx)] with labels mapped to indices in order
+    of first appearance (sorted time axis). Turns shorter than min_turn are
+    dropped — pyannote micro-turn noise (~0.3s floor, same filter v17 used)
+    — then adjacent same-speaker spans merge. Returns labels in index
+    order so callers can print 'SPEAKER_00 -> voice' mappings."""
+    raw = []
+    for ln in Path(path).read_text(encoding="utf-8").splitlines():
+        ln = ln.strip()
+        if not ln or ln.startswith(("#", ";")):
+            continue
+        f = ln.split()
+        try:
+            if f[0].upper() == "SPEAKER" and len(f) >= 8:
+                s, dur, lab = float(f[3]), float(f[4]), f[7]
+                raw.append((s, s + dur, lab))
+            elif len(f) >= 3:
+                raw.append((float(f[0]), float(f[1]), f[2]))
+        except ValueError:
+            continue  # header / malformed line
+    labels = {}
+    for _, _, lab in sorted(raw):
+        labels.setdefault(lab, len(labels))
+    turns = []
+    for s, e, lab in sorted(raw):
+        if e - s < min_turn:
+            continue
+        idx = labels[lab]
+        if turns and turns[-1][2] == idx:
+            turns[-1][1] = e
+        else:
+            turns.append([s, e, idx])
+    inv = [None] * len(labels)
+    for lab, i in labels.items():
+        inv[i] = lab
+    return turns, inv
+
+
+# Pitch-offset families: edge-tts ships exactly 2 TH voices, so speakers
+# beyond the base-voice count re-enter a family at a shifted pitch.
+# Ladder alternates up/down so members spread away from base timbre; the
+# separability ceiling is ~3-4 members per family (past ~±20Hz the voice
+# reads as a different speaker but sounds processed). Entries in
+# --cast-voices may already carry @pitch — member 0 keeps it verbatim.
+PITCH_LADDER = [0, 8, -10, -18, 16, -26, 24, -34]
+
+
+def speaker_voices(base_voices, n_speakers):
+    """One voice spec per speaker index via pitch-offset families.
+
+    speaker i -> base_voices[i % len(base)] family; member index
+    i // len(base) picks its PITCH_LADDER offset (member 0 = unshifted
+    base spec, @pitch preserved). Round-robins speakers beyond the base
+    count into the same voice at shifted pitch."""
+    out = []
+    for i in range(n_speakers):
+        spec = base_voices[i % len(base_voices)]
+        m = i // len(base_voices)
+        if m:
+            voice, _, _ = spec.partition("@")
+            off = (PITCH_LADDER[m] if m < len(PITCH_LADDER)
+                   else PITCH_LADDER[-1] - 8 * (m - len(PITCH_LADDER) + 1))
+            spec = f"{voice}@{off:+d}Hz"
+        out.append(spec)
+    return out
+
+
+def _norm_tok(w):
+    return re.sub(r"[^a-z0-9']", "", w.lower())
+
+
+def anchor_speakers(anchor_map, words, turns):
+    """Transcript-anchor naming: {'Name': 'known phrase'} -> spk_idx.
+
+    Finds the phrase as a consecutive token run in the karaoke word
+    stream, then resolves the diarization turn covering that time under
+    extended coverage (each turn runs to the next turn's start — same
+    rule voice_at uses). Returns {spk_idx: (name, t)} — first Name to
+    claim a speaker wins."""
+    wn = [_norm_tok(w[2]) for w in words]
+    claimed = {}
+    for name, phrase in anchor_map.items():
+        toks = [t for t in (_norm_tok(x) for x in phrase.split()) if t]
+        hit = None
+        for i in range(len(wn) - len(toks) + 1):
+            if wn[i:i + len(toks)] == toks:
+                hit = words[i][0]
+                break
+        if hit is None:
+            print(f"anchor '{name}': phrase not found in word stream",
+                  file=sys.stderr)
+            continue
+        spk = 0
+        for ti, (s, e, idx) in enumerate(turns):
+            if s <= hit:
+                spk = idx
+            else:
+                break
+        if spk not in claimed:
+            claimed[spk] = (name, hit)
+        else:
+            print(f"anchor '{name}': lands on already-claimed speaker "
+                  f"{spk} — ignored", file=sys.stderr)
+    return claimed
 
 
 def probe(p):
@@ -490,10 +614,30 @@ def main():
                          "--sentences --en-vtt; explicit --cast-times/"
                          "--cast-map wins")
     ap.add_argument("--cast-voices", default="",
-                    help="comma voices for --cast-detect in speaker order "
-                         "(default: Niwat,Premwadee — host-then-guest)")
+                    help="comma voices for --cast-detect/--diarize-file in "
+                         "speaker order (default: Niwat,Premwadee — "
+                         "host-then-guest). Entries may carry @pitch "
+                         "('voice@+8Hz'); speakers beyond the list length "
+                         "round-robin into pitch-offset families")
     ap.add_argument("--speakers", type=int, default=2,
                     help="speaker count assumption for --cast-detect")
+    ap.add_argument("--diarize-file", default="",
+                    help="diarization turn file (RTTM or 'start end "
+                         "SPEAKER_NN' text) — converts real speaker turns "
+                         "to cast-times; needs --sentences --en-vtt; "
+                         "explicit --cast-times/--cast-map wins")
+    ap.add_argument("--min-turn", type=float, default=0.3,
+                    help="drop diarization turns shorter than this (s) — "
+                         "pyannote micro-turn noise floor")
+    ap.add_argument("--anchors", default="",
+                    help="transcript-anchor speaker naming: "
+                         "'Name=phrase they say;Name2=other phrase' — "
+                         "matched against the EN word stream to name "
+                         "SPEAKER_NN labels for burn-vtt + --names-map")
+    ap.add_argument("--names-map", default="",
+                    help="write speaker->voice->name resolution as JSON "
+                         "(with anchor match times) so renders are "
+                         "reproducible")
     ap.add_argument("--detect-gap", type=float, default=0.6,
                     help="word-gap (s) for the detection pass — finer than "
                          "--sent-gap so turn candidates are not pre-merged")
@@ -528,6 +672,9 @@ def main():
     a = ap.parse_args()
     if a.cast_detect and not a.sentences:
         print("--cast-detect needs --sentences --en-vtt; ignoring",
+              file=sys.stderr)
+    if a.diarize_file and not a.sentences:
+        print("--diarize-file needs --sentences --en-vtt; ignoring",
               file=sys.stderr)
     global VOICE
     VOICE = VOICES[a.lang]
@@ -570,14 +717,86 @@ def main():
         words = parse_words(a.en_vtt, a.secs, offset=a.offset)
         cue_starts = orig_cue_starts  # clamped starts drift voice lookup
 
+        if a.diarize_file and not (a.cast_times or a.cast_map):
+            # real diarization turn file -> speaker-indexed turns ->
+            # cast-times; beats --cast-detect heuristics when both given
+            base = ([v.strip() for v in a.cast_voices.split(",")]
+                    if a.cast_voices else
+                    ["th-TH-NiwatNeural", "th-TH-PremwadeeNeural"])
+            dturns, dlabels = parse_diarize(
+                a.diarize_file, min_turn=a.min_turn)
+            spk_voices = speaker_voices(base, len(dlabels))
+            a.cast_times = turns_to_cast_times(dturns, spk_voices)
+            air = {}
+            for s, e, idx in dturns:
+                air[idx] = air.get(idx, 0.0) + e - s
+            print(f"diarize: {len(dturns)} turns, {len(dlabels)} speakers "
+                  f"from {Path(a.diarize_file).name}")
+            for idx, lab in enumerate(dlabels):
+                print(f"  {lab} -> {spk_voices[idx]}: "
+                      f"{sum(1 for t in dturns if t[2] == idx)} turns, "
+                      f"{air.get(idx, 0):.0f}s air")
+            # transcript-anchor naming: known phrase -> SPEAKER_NN -> name
+            named = {}
+            if a.anchors:
+                amap = dict(p.split("=", 1) for p in a.anchors.split(";")
+                            if "=" in p)
+                named = anchor_speakers(amap, words, dturns)
+                extra = []
+                for idx, (name, hit) in sorted(named.items()):
+                    extra.append(f"{spk_voices[idx]}={name}")
+                    print(f"  anchor: {dlabels[idx]} = {name} "
+                          f"(matched @ {hit:.1f}s)")
+                if extra:
+                    a.names = ";".join(
+                        ([a.names] if a.names else []) + extra)
+            if a.names_map:
+                import json as _jn
+                _jn.dump(
+                    {"source": str(a.diarize_file),
+                     "speakers": [
+                         {"speaker": dlabels[i], "voice": spk_voices[i],
+                          "name": named[i][0] if i in named else "",
+                          "anchor_t": round(named[i][1], 2) if i in named
+                          else None,
+                          "turns": sum(1 for t in dturns if t[2] == i),
+                          "air_s": round(air.get(i, 0), 1)}
+                         for i in range(len(dlabels))]},
+                    open(a.names_map, "w", encoding="utf-8"),
+                    ensure_ascii=False, indent=1)
+                print(f"names map -> {a.names_map}")
+            if a.dump_turns:
+                import json as _jd
+                _jd.dump(
+                    {"labels": dlabels, "voices": spk_voices,
+                     "min_turn": a.min_turn,
+                     "turns": [
+                         {"spk": idx, "label": dlabels[idx],
+                          "voice": spk_voices[idx],
+                          "s": round(s, 2), "e": round(e, 2),
+                          "text": " ".join(
+                              w[2] for w in words
+                              if s <= w[0] < e)[:160]}
+                         for s, e, idx in dturns]},
+                    open(a.dump_turns, "w", encoding="utf-8"),
+                    ensure_ascii=False, indent=1)
+                print(f"dumped turns -> {a.dump_turns}")
+            if a.dump_only:
+                sys.exit(0)
+        elif a.diarize_file:
+            print("diarize: explicit --cast-times/--cast-map wins",
+                  file=sys.stderr)
+
         if a.cast_detect:
             if a.cast_times or a.cast_map:
                 print("cast-detect: explicit --cast-times/--cast-map wins",
                       file=sys.stderr)
             else:
-                det_voices = ([v.strip() for v in a.cast_voices.split(",")]
-                              if a.cast_voices else
-                              ["th-TH-NiwatNeural", "th-TH-PremwadeeNeural"])
+                det_voices = speaker_voices(
+                    [v.strip() for v in a.cast_voices.split(",")]
+                    if a.cast_voices else
+                    ["th-TH-NiwatNeural", "th-TH-PremwadeeNeural"],
+                    a.speakers)
                 turns, dbg = detect_turns(
                     words, speakers=a.speakers, detect_gap=a.detect_gap)
                 a.cast_times = turns_to_cast_times(turns, det_voices)
