@@ -6,7 +6,7 @@ Ada-session-scoped: unit restarts, error-level lines, OOM/kill events,
 failed/inactive units and timers, disk pressure. No LLM.
 
 Usage:
-  host-report.py --hosts idc01,mn01,tony-dell --since "24 hours ago"
+  host-report.py --hosts idc03,idc01,mn01,tony-dell --since "24 hours ago"
   host-report.py                          # all default hosts
 """
 
@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
-DEFAULT_HOSTS = ["idc01", "mn01", "tony-dell", "tony-omen"]
+DEFAULT_HOSTS = ["idc03", "idc01", "mn01", "tony-dell", "tony-omen"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
 
 RX_STARTED = re.compile(r"Started ([\w@.-]+\.service)")

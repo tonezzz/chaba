@@ -10,7 +10,7 @@ with headline/summary/why-it-matters/source, ICT footer) and publishes to
 ada-cms-pages. Writes are content_md5-gated — an unchanged digest produces
 no revision. Adds the page to the news-system index if missing.
 
-Designed for a systemd timer on idc01 (hourly is plenty for news).
+Designed for a systemd timer on idc03 (hourly is plenty for news).
 
   news-flood-fetch.py            # fetch + publish
   news-flood-fetch.py --dry-run  # render, print, don't write

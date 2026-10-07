@@ -32,7 +32,7 @@ def main():
                 "name": app["title"],
                 "type": "http",
                 "url": f"{host_url}{app['href']}",
-                "expected_status": 200,
+                "expected_status": app.get("expected_status", 200),
                 "timeout": 5,
                 "category": "apps",
                 "profiles": ["home", "mobile"],

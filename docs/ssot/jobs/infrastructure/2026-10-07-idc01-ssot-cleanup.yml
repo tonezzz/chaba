@@ -1,0 +1,92 @@
+id: 2026-10-07-idc01-ssot-cleanup
+title: Sweep idc01 references in docs/ssot + audit target lists post-idc03 migration
+date: "2026-10-07"
+domain: infrastructure
+card: idc01-ssot-cleanup
+actor: devin (dispatch worktree dispatch/20261007-144442-sweep-every-idc01-reference-in)
+status: done
+
+summary:
+  Swept every idc01 reference in docs/ssot/ and audit/monitoring target lists.
+  Classified each as MIGRATE (live check moved to idc03), RETIRE (dead entry
+  removed), or HISTORICAL (job/kb/learning/focus/migration docs left intact).
+  The HTTP health audit now passes green on both home and mobile profiles.
+
+moved_to_idc03:
+  - health probes — mddb http/gRPC/MCP/stats/metrics, mddb-panel, input-bridge,
+    vcast display endpoints, ada-pi-pwa, ada-ha-tony/michael, speaker-enroll,
+    obsidian-vault (ssot.health.{yml,home.api,home.datastore,home.apps,mobile}.yml)
+  - apps index host group + per-app metadata (ssot.apps.yml idc03 group;
+    stacks/web/public/apps/apps.yml; regenerated ssot.health.home.apps.yml)
+  - services metadata — mddb leader/node_id, gemini-ollama-proxy, ollama,
+    obsidian-vault, ada-pi-pwa, ada-ha-tony/michael URLs + edges
+    (ssot.services.yml)
+  - ops tooling — tony-dell-monitor.sh (mddb-api + binlog canary URL),
+    mddb-binlog-canary.py defaults + alert text, mn01-canary.sh ada check,
+    chaba-audit.py timers/services/failed-units, audit-hosts.py + reports.yml
+    (new idc03 host node), host-services-cms.py, ci-smoke.sh, ada-key-url.sh,
+    rotate-ada-key.sh, cam-wall-cms.py + cam-wall-roster-audit.py (CMS +
+    ADA_NOTIFY_URL), yt-vtt-dub.py ollama, export-transcripts/host-report/
+    journal-report/spend-report/memory-gap-report defaults, mn01 Caddyfile
+    proxies + verify.sh
+  - scheduler/notes — ssot.automation.yml (news-flood, ada-embed-bench,
+    ada-memory-* all on idc03), ssot.jobs.yml notes, ssot.mcp{,-wrappers}.yml
+    llama_url, ssot.devin.tools.yml profiles, ssot.gpu.yml, ssot.test-manifest,
+    ssot.mysystem.home.yml host roster, ssot.runbooks.yml, ssot.windsurf.common.md
+  - secrets slots — GEMINI_API_KEY primary slots idc03, mddb-mcp-api-key,
+    mddb-replication-secret (idc03 leader + idc01/idc02 followers)
+    (ssot.secrets.yml)
+
+retired:
+  - app-imagen2 health check + apps-index entry (page 404s; :8000 unit disabled
+    since the GPU stack parked for WallDance) — removed from
+    stacks/web/public/apps/apps.yml + regenerated health file
+  - open-notebook backup/timer entries marked retired where they lingered
+    (app retired 2026-10-04, pre-dates this sweep)
+
+kept_on_idc01_warm_dr:
+  - mddb-follower-idc01 health check (http://idc01:11123/health) added to
+    ssot.health.home.datastore.yml — the one live idc01 probe
+  - ssot.idc01.yml rewritten as the warm-DR host card (masked units, follower
+    ports, standby edge)
+  - ssot.audit.hosts.yml idc01 expected_services rewritten for warm-DR
+    (ada-pi-pwa, caddy-edge, mddb-follower, tailscaled, log-shipper timers);
+    new idc03 section with primary services + resources; mn01/idc02 notes
+    repointed at the idc03 leader
+  - log-shipper job entries (timers still run hourly on idc01)
+  - secrets standby/archive slots (env copies persist for failover)
+  - rotate-ada-secrets.sh keeps idc01 in the loop (updates standby envs;
+    is-active gate skips masked-unit restarts)
+
+historical_left_alone:
+  - docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md — annotated
+    HISTORICAL at the top; body untouched
+  - docs/ssot/jobs/** (all dated job records), kanban/cards/**,
+    focus-inbox/**, ssot.learning.*.yml, CHANGELOG.md
+  - ssot.apps.ada-memory-progress.yml task log, ssot.security*.yml policy
+    examples, ssot.security.idc01.yml (host still exists, posture still true)
+
+verification:
+  - HEALTH_PROFILE=home node scripts/audits/http-health-audit.mjs ->
+    exit 0, 73 checks, 0 issues, 6 warns (host-scoped localhost skips only)
+  - HEALTH_PROFILE=mobile -> exit 0, 71 checks, 0 issues, 4 warns
+  - "node scripts/ssot-validate-all.mjs — 1556/1557 valid; sole error is
+    pre-existing YAML breakage in docs/ssot/jobs/kanban/
+    2026-10-06-board-automation-dimmer.yml (unrelated, untouched)"
+  - live probes confirmed — idc03 11023/health|stats|vector-stats|metrics 200,
+    idc03 9000/mcp 401 (auth-gated), idc03 3002, idc03 3010/health|displays 200,
+    idc01:11123/health (follower) 200, idc01 edge / + /enroll.html 200,
+    idc01 ada paths 502 by design (masked backends)
+
+followups:
+  - DEPLOY NEEDED — tony-dell runs an older tony-dell-monitor.sh that still
+    resolves idc01:11023 — it has logged an mddb-api error every 2 min since
+    the cutover. Copy scripts/tony-dell-monitor.sh to
+    ~/.local/bin/tony-dell-monitor.sh on tony-dell (repo copy is the fix).
+  - mn01 — deploy updated Caddyfile.mn01 (proxies now point at the idc03 edge)
+    + restart caddy-mn01 when convenient; until then the mn01 legacy ada
+    aliases 502 through the idc01 standby edge.
+  - audit-security.py HOSTS lacks idc03 — adding it needs a
+    docs/ssot/infrastructure/ssot.security.idc03.yml posture file first.
+  - docs/ssot/jobs/kanban/2026-10-06-board-automation-dimmer.yml has a
+    pre-existing YAML syntax error (unrelated to this sweep).

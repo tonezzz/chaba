@@ -119,7 +119,7 @@ When the working tree is dirty and the user wants to test, spike, or experiment 
   (plus container/service restarts where needed). Never edit files in the
   live checkout directly — that's how the Sept drift (593 commits behind,
   22 unmerged commits, ~180 dirty files) happened.
-- idc01 `~/apps/input-bridge` is a deploy target (files copied there, not a
+- idc03 `~/apps/input-bridge` is a deploy target (files copied there, not a
   clone) — deploys rsync from master content only.
 - If a live checkout is dirty when you arrive, do not build on top —
   reconcile or ask first.

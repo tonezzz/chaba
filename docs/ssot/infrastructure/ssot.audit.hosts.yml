@@ -289,7 +289,7 @@ hosts:
         expected_state: active
         critical: false
         note: "Hourly (:45) — pushes THIS host's devin CLI session summaries to
-          MDDB ada-ha-bank-devin-tony on idc01; closes devin-summaries-tony-dell-gap.
+          MDDB ada-ha-bank-devin-tony on idc03; closes devin-summaries-tony-dell-gap.
           Units in chaba/systemd/devin-summaries-sync.{service,timer}."
       - name: devin-dispatch-watch.timer
         type: timer
@@ -1093,15 +1093,15 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Currently disabled — standby since idc01 cutover
-          (stopped+disabled 2026-09-23); canonical instance now on idc01 :8002
+        note: Currently disabled — standby since the VPS cutover
+          (stopped+disabled 2026-09-23); canonical instance now on idc03 :8002
       - name: ada-ha-michael.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: Currently disabled — standby since idc01 cutover
-          (stopped+disabled 2026-09-23); canonical instance now on idc01 :8003
+        note: Currently disabled — standby since the VPS cutover
+          (stopped+disabled 2026-09-23); canonical instance now on idc03 :8003
       - name: tailscaled.service
         type: service
         scope: system
@@ -1121,8 +1121,9 @@ hosts:
         note: all-MiniLM-L6-v2 embeddings on :5000 — moved from tony-omen
           2026-09-27; omen keeps 127.0.0.1:5000 -> mn01 socket proxy
       # ada-memory-* timers moved to idc01 2026-09-24 (consolidation step 6,
-      # jobs/infrastructure/2026-09-24-idc01-consolidation.yml) — unit files
-      # remain on mn01 disabled as standby.
+      # jobs/infrastructure/2026-09-24-idc01-consolidation.yml), then to idc03
+      # with the 2026-10-05/06 migration — unit files remain on mn01 disabled
+      # as standby.
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -1309,113 +1310,238 @@ hosts:
     deltas: []
   idc01:
     tailscale_ip: 100.74.146.0
-    description: Public VPS — Ada deployment server; services tailnet-only
-      except the caddy-edge sslip.io canary (public IP lives in the plan doc)
-    role: public-vps
+    description: "Public VPS — warm-DR node since the 2026-10-05/06 idc03
+      migration. Runs mddb-follower (read-only replica :11123/:11124),
+      standby caddy-edge (public IP answers, ada paths 502 by design — no
+      backends until failover), warm ada-pi-pwa. All other pre-migration units
+      (mddb leader, ada-ha-*, ollama, gemini-ollama-proxy, input-bridge,
+      mddb-panel, camwall-edge, obsidian-vault, vcast-headless@*, open-notebook*)
+      are MASKED — they must not appear active; unmasking mddb.service (the
+      retired leader data dir) is a split-brain hazard."
+    role: warm-dr
     tags:
       - public
       - vps
-      - ada
+      - warm-dr
+      - mddb-follower
     expected_services:
       - name: ada-pi-pwa.service
         type: service
         scope: user
         expected_state: active
-        critical: true
-        note: Ada PWA on 127.0.0.1:8001 — primary instance (moved from
-          tony-dell); public canary via caddy-edge on sslip.io, tailnet serve root
-      - name: ada-ha-tony.service
-        type: service
-        scope: user
-        expected_state: active
         critical: false
-        note: Ada HA Tony on 127.0.0.1:8002; mn01 unit remains as standby
-      - name: ada-ha-michael.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Ada HA Michael on 127.0.0.1:8003
+        note: Warm-boot ada backend on 127.0.0.1:8001 — envs point at idc03 mddb
+          so a promoted stack works immediately (cold start ~181s)
       - name: caddy-edge.service
         type: service
         scope: user
         expected_state: active
         critical: true
-        note: Podman quadlet Network=host — TLS edge + ACME cert for sslip.io
+        note: Standby public edge — answers api.surf-thailand.com with pinned
+          synced cert; 502 on ada paths is CORRECT (backends off until failover)
+      - name: mddb-follower.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: "Read-only replication follower of idc03 leader
+          (100.74.146.0:11123 http / :11124 gRPC, quadlet
+          localhost/mddb:2.15.4-lsn, env-file ~/.config/secrets/mddb.env).
+          Data ~/.config/containers/mddb-follower/; the retired leader dir was
+          renamed data.leader-retired-20261006."
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+      - name: log-shipper.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly journald -> MDDB host-logs (leader on idc03)
+      - name: log-shipper-severe.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      # Masked warm-standby units (verified 2026-10-07): mddb.service (old
+      # leader), ada-ha-tony, ada-ha-michael, ollama, gemini-ollama-proxy,
+      # input-bridge, mddb-panel, camwall-edge, obsidian-vault,
+      # vcast-headless@2/@4, open-notebook*. Do NOT add them back as expected —
+      # masked units must stay inactive.
+      # Timers migrated to idc03: mddb-backup, obsidian-vault-backup,
+      # ada-memory-{sync,drift,gaps,distill}, ada-recall-canary,
+      # ada-scenario-*, ada-bench-casting, ada-embed-bench, cam-wall-*-vps,
+      # doc-mirror, news-flood, mddb-embed-probe, mddb-memory-standard,
+      # mddb-restart, ops-health-report, secrets-backup.
+    # Any OOM kill in the last 24h is a delta — the 2026-09-27 mddb crash
+    # loop (4 OOM kills in ~40min, resync-from-LSN0 amplification) must not
+    # pass silently. Raise only if a recurring OOM is accepted as known.
+    oom_kills_tolerance: 0
+    known_failed: []
+  idc03:
+    tailscale_ip: 100.102.134.91
+    description: Public VPS — primary since the 2026-10-05/06 migration from
+      idc01 — mddb leader + Ada backends + relays + public edge
+      (api.surf-thailand.com) + observability timers. 4 vCPU / 16 G / 290 G.
+    role: public-vps
+    tags:
+      - public
+      - vps
+      - ada
+      - mddb-leader
+    expected_services:
+      - name: sshd.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+      - name: ufw.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        note: deny-inbound + tailscale0 only
       - name: mddb.service
         type: service
         scope: user
         expected_state: active
         critical: true
-        note: MDDB replication leader on tailnet 100.74.146.0:11023 (quadlet);
-          migrated from tony-dell 2026-09-22; tony-dell runs a read-only
-          follower since 2026-09-25
+        note: "MDDB replication leader on tailnet 100.102.134.91:11023 http /
+          :11024 gRPC / :9000 MCP (quadlet, env-file ~/.config/secrets/mddb.env);
+          followers on idc02 and idc01 (mddb-follower.service :11123)"
+      - name: mddb-ops.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: No-embed ops instance on :11026 — host-logs/host-logs-state collections
       - name: mddb-panel.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: MDDB panel, tailnet-only at 100.74.146.0:3002
-      - name: gemini-ollama-proxy.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Embedding proxy :11435 -> Gemini, ollama fallback
-      - name: input-bridge.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "vcast/input-bridge WS relay + registry on :3010 (quadlet; moved
-          from tony-dell 2026-09-25 — co-located with ada auth on :8001)"
+        note: MDDB panel, tailnet-only at 100.102.134.91:3002
       - name: ollama.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: Local nomic-embed-text fallback for mddb embeddings
+        note: "Local models on tailnet :11434 (llama3.2, phi3, nomic-embed-text,
+          moondream) — mcp-llama + gemini-ollama-proxy fallback"
+      - name: gemini-ollama-proxy.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Embedding proxy 127.0.0.1:11435 -> Gemini, ollama fallback
+      - name: ada-pi-pwa.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Ada PWA on 127.0.0.1:8001 — tailnet serve root + public edge
+      - name: ada-ha-tony.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Ada HA Tony on 127.0.0.1:8002 — serve path /apps/ha/ada-tony
+      - name: ada-ha-michael.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Ada HA Michael on 127.0.0.1:8003 — serve path /apps/ha/ada-michael
+      - name: ada-line-relay.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: LINE webhook relay on 127.0.0.1:8912 — owns the chaba bot webhook slot
+      - name: ada-tg-relay.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Telegram webhook relay on 127.0.0.1:8911
+      - name: ada-dev.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Lab instance on 127.0.0.1:8005 (running but intentionally
+          not-enabled at boot — pre-migration decision carried over)
       - name: obsidian-vault.service
         type: service
         scope: user
         expected_state: active
         critical: false
         note: Ada memory vault app on 127.0.0.1:8004, tailnet serve :8443
-      - name: open-notebook.service
+      - name: caddy-edge.service
         type: service
         scope: user
-        expected_state: active
-        critical: false
-        note: OpenNotebook eval — UI :8502 + API :5055 via tailnet serve
-      - name: open-notebook-surreal.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: SurrealDB backing store for open-notebook
-      - name: tailscaled.service
-        type: service
-        scope: system
         expected_state: active
         critical: true
+        note: Public edge 80/443 on <IDC03_PUBLIC_IP> — api.surf-thailand.com
+      - name: camwall-edge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Static camwall thumbnail feed, tailnet :8380
+      - name: input-bridge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: vcast WS relay + display registry, tailnet :3010
+      - name: vcast-headless@2.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: vcast-headless@4.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: doc-archive.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Document archive API on tailnet :11025
+      - name: jev-student.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: DistilBERT confirm-gate on tailnet :8778
+      - name: openjev-student.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
       - name: mddb-backup.timer
         type: timer
         scope: user
         expected_state: active
         critical: true
-        note: Nightly /v1/backup — complements the tony-dell read-only
-          follower replica (added 2026-09-25)
+        note: Nightly /v1/backup 02:30
+      - name: secrets-backup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Daily 03:00 — encrypted secrets bundle to idc02+idc01+dell
       - name: obsidian-vault-backup.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-      - name: open-notebook-backup.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-      - name: open-notebook-restore-check.timer
         type: timer
         scope: user
         expected_state: active
@@ -1425,37 +1551,64 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Vault->MDDB sync
-      - name: ada-memory-drift.timer
+      - name: ada-scenario-smoke.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-      - name: ada-memory-gaps.timer
+        note: Hourly smoke tier of the live-scenario suite
+      - name: mddb-embed-probe.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-      - name: ada-recall-canary.timer
+      - name: ops-health-report.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Weekly known-answer recall probe
-    # Any OOM kill in the last 24h is a delta — the 2026-09-27 mddb crash
-    # loop (4 OOM kills in ~40min, resync-from-LSN0 amplification) must not
-    # pass silently. Raise only if a recurring OOM is accepted as known.
+      - name: doc-mirror.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: news-flood.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: cam-wall-pull-vps.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: log-shipper.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: log-shipper-severe.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — exit code is the review signal, not a crash"
         action: review-sync-conflicts
       - name: ada-scenario-smoke.service
-        reason: "Live-scenario smoke suite — currently failing 3/7 (kk-first-contact, michael-infra-interrogation, new-person-first-contact) since idc01 migration; failures are the test signal"
+        reason: "Live-scenario smoke suite — failures are the test signal (also exits 2 when a weekly suite holds the Ada session lock)"
+        action: review-scenario-results
+      - name: ada-scenario-memory.service
+        reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock (timer collision guard); scenario failures are the test signal"
         action: review-scenario-results
       - name: mddb-memory-standard.service
-        reason: "Exits 1 by design when the memory-standard sweep finds breaches — sends an ops event + HA notification; the exit code IS the alert (last run: 11 phantom ops, speaker print breaches)"
+        reason: "Exits 1 by design when the memory-standard sweep finds breaches — sends an ops event + HA notification; the exit code IS the alert"
         action: review-breach-journal
+      - name: mddb-vector-reindex.service
+        reason: "Exits 1 when any collection's embed pass errors (e.g. remote-closed on ada-cms-pages/host-logs) even though the bulk reindex completed"
+        action: investigate-partial-embed-failures
       - name: cam-wall-pull-vps.service
         reason: "Deliberately stopped during the 2026-10 cam-wall pipeline rework alongside go2rtc (journal shows explicit Stopped, not a crash)"
         action: verify-after-camwall-rework
@@ -1511,7 +1664,7 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Read-only replication follower of idc01 leader (quadlet,
+        note: Read-only replication follower of idc03 leader (quadlet,
           100.123.163.11:11023, localhost/mddb:2.15.4-blrotate) — migrated
           from tony-dell 2026-10-05; self-seeds via leader snapshot, SSD
           verify ~4 min vs dell HDD >6h timeout loop

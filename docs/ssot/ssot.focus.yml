@@ -56,8 +56,8 @@ sections:
       32-case failure set at the 0.75 gate, 13/13 golden, thr 0.70. Checkpoint at
       tony-omen jev-student/ckpt-v2-20261002. Benchmark + job record in
       docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml. MiniLM-45MB and
-      gemma-1b attention-head candidates trained but inferior. NOT deployed —
-      production jev-student.service on idc01:8778 unchanged.
+      gemma-1b attention-head candidates trained but inferior. ckpt-v2 deployed
+      2026-10-04; production jev-student.service now runs on idc03:8778.
     branch: chaba
     status: active
     started: "2026-10-03"
@@ -68,7 +68,7 @@ sections:
       - ml
       - deploy-pending
     subtasks:
-      - label: Deploy ckpt-v2-20261002 to idc01 (serve-jev-student.py THR=0.70, restart jev-student.service) — needs Tony approval
+      - label: Deploy ckpt-v2-20261002 to the JEV host (serve-jev-student.py THR=0.70, restart jev-student.service — was idc01, production now on idc03) — needs Tony approval
         status: completed
         completed: "2026-10-04"
       - label: Optional — gemma-3-4b QLoRA via Colab PAYG/Enterprise A100 (~$3-5/run) if a calibrated 4b Jev is wanted

@@ -406,7 +406,7 @@ def compress_lines(texts, key=None, model=None):
             + json.dumps(chunk, ensure_ascii=False))
         payload = {"model": "llama3.2:3b", "prompt": p, "stream": False}
         out = json.loads(urllib.request.urlopen(urllib.request.Request(
-            "http://idc01.taila0626a.ts.net:11434/api/generate",
+            "http://idc03.taila0626a.ts.net:11434/api/generate",
             data=json.dumps(payload).encode()), timeout=240).read())
         m = re.search(r"\[.*\]", out.get("response", ""), re.S)
         arr = json.loads(m.group(0)) if m else []

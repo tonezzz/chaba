@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mn01-canary.sh — nightly standby-verification for mn01 (Ada standby + burst lane).
 # Verifies: ada-pi checkout freshness, .venv import smoke, secrets presence,
-# mddb REST reachability, idc01 ada services (the things mn01 stands by for),
+# mddb REST reachability, idc03 ada services (the things mn01 stands by for),
 # tailscale up. Emits a chaba-admin event via EVENT_SSH (LAN ssh to dell).
 # Exit 0 on all-ok, 1 on any failure.
 set -uo pipefail
@@ -49,14 +49,14 @@ code=$(curl -s -m 15 -o /dev/null -w "%{http_code}" -X POST "$MDDB_URL/v1/search
         -H 'content-type: application/json' -d '{"collection":"ada-ha-bank-general","q":"x","top_k":1}' 2>/dev/null)
 [ "$code" = "200" ] && ok "mddb REST" || fail "mddb REST ($code)"
 
-# 6. idc01 ada services — the primary we're standing by for
-svc_out=$(ssh -o BatchMode=yes -o ConnectTimeout=8 idc01 \
+# 6. idc03 ada services — the primary we're standing by for
+svc_out=$(ssh -o BatchMode=yes -o ConnectTimeout=8 idc03 \
     'systemctl --user is-active ada-pi-pwa ada-ha-tony ada-ha-michael 2>/dev/null' || echo "ssh-fail")
 if echo "$svc_out" | grep -q "ssh-fail"; then
-    fail "idc01 ssh unreachable"
+    fail "idc03 ssh unreachable"
 else
     n=$(echo "$svc_out" | grep -c "^active$")
-    [ "$n" -eq 3 ] && ok "idc01 ada services 3/3" || fail "idc01 ada services $n/3 active"
+    [ "$n" -eq 3 ] && ok "idc03 ada services 3/3" || fail "idc03 ada services $n/3 active"
 fi
 
 # --- emit ---

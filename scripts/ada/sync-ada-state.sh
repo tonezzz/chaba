@@ -4,7 +4,7 @@
 #   ~/.config/secrets/ada-ha-<inst>-keys.json     (issued device keys)
 #
 # Usage: sync-ada-state.sh <src-host> <dst-host> [<dst-host>...]
-#   e.g. sync-ada-state.sh idc01 mn01
+#   e.g. sync-ada-state.sh idc03 mn01
 set -euo pipefail
 
 src="${1:-}"; shift || true

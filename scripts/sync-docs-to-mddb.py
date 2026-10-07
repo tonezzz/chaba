@@ -21,7 +21,7 @@ Usage:
     python3 scripts/sync-docs-to-mddb.py --source devin-kb  # one source only
 
 Env:
-    MDDB_BASE    default http://100.102.134.91:11023 (idc01, tailnet-only)
+    MDDB_BASE    default http://100.102.134.91:11023 (idc03, tailnet-only)
     DEVIN_KB_DIR default ~/devin-kb/docs
 """
 import argparse

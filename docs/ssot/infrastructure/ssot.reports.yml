@@ -160,6 +160,18 @@ nodes:
   # audit-hosts/idc01 retired 2026-10-07 — host retired; its residual rot
   # (missing timers, dead ada-* services) is a decommission checklist,
   # not standing signal. Re-add the node if idc01 returns to service.
+
+  - id: audit-hosts/idc03
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (primary VPS since 2026-10-05/06)
+    generator: scripts/audit-hosts.py --host idc03
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "idc03-*.yml"
+    meta: reports/audit-hosts/meta.idc03.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
   - id: audit-hosts/macbook
     layer: L1-producer
     purpose: Host snapshot (macOS) — services via launchctl
@@ -233,6 +245,7 @@ nodes:
       - audit-hosts/tony-omen
       - audit-hosts/mn01
       - audit-hosts/idc01
+      - audit-hosts/idc03
       - audit-hosts/macbook
       - health-monitor
       - host-loads
@@ -305,6 +318,7 @@ nodes:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
       - audit-hosts/mn01
+      - audit-hosts/idc03
       - audit-hosts/macbook
       - memory-suite
   # --- Card CI domain ---

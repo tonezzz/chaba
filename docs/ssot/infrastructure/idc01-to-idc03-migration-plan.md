@@ -1,5 +1,7 @@
 # idc01 → idc03 Migration Plan
 
+> **HISTORICAL (executed 2026-10-05/06):** the migration is complete — idc03 is the primary VPS (mddb leader, Ada stack, public edge); idc01 is now warm-DR (mddb-follower :11123, standby edge, masked former-prod units). The `idc01` references below describe the pre-migration state and are intentionally preserved — do not rewrite them to idc03. Job record: `docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml`.
+
 **Status:** Phase 1 — inventory + plan only. No production changes made.
 **Date:** 2026-10-05 · **Card:** `idc01-to-idc03-migration` · **Scope decision (Tony, 2026-10-05):** migrate *everything* off idc01 to idc03.
 **Method:** read-only SSH (`BatchMode`) on idc01/idc02; no service was stopped, moved, or modified.

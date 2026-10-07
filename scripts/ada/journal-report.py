@@ -212,7 +212,7 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    ap.add_argument("--host", default="idc01")
+    ap.add_argument("--host", default="idc03")
     ap.add_argument("--units", default=",".join(UNITS),
                     help="comma-separated journald units")
     ap.add_argument("--since", default="24 hours ago")

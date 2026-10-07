@@ -2,7 +2,7 @@
 """embed-bench.py — Gemini-direct vs OpenRouter(Vertex) embedding benchmark.
 
 Answers: is the OR Vertex route the same vector space, how's latency,
-and what does it cost? Run on idc01 where mddb-gemini.env lives:
+and what does it cost? Run on idc03 where mddb-gemini.env lives:
 
     cd ~/CascadeProjects/chaba && set -a && \
       source ~/.config/secrets/mddb-gemini.env && set +a && \

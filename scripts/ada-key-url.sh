@@ -8,9 +8,9 @@ set -euo pipefail
 
 instance="${1:-}"; want_qr="${2:-}"
 case "$instance" in
-  tony)    host=idc01;     env_name=ada-ha-tony.env;    base=https://idc01.taila0626a.ts.net/apps/ha/ada-tony/ ;;
-  michael) host=idc01;     env_name=ada-ha-michael.env; base=https://idc01.taila0626a.ts.net/apps/ha/ada-michael/ ;;
-  ada-pi)  host=idc01;     env_name=ada-pi-pwa.env;     base=https://idc01.taila0626a.ts.net/ ;;
+  tony)    host=idc03;     env_name=ada-ha-tony.env;    base=https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ ;;
+  michael) host=idc03;     env_name=ada-ha-michael.env; base=https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ ;;
+  ada-pi)  host=idc03;     env_name=ada-pi-pwa.env;     base=https://idc03.taila0626a.ts.net/ ;;
   *) echo "usage: $0 <tony|michael|ada-pi> [--qr]" >&2; exit 2 ;;
 esac
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rotate the shared GEMINI_API_KEY and HOME_ASSISTANT_TOKEN values across all
-# ada env files on mn01, tony-dell, idc01.
+# ada env files on mn01, tony-dell, idc03 (primary), idc01 (warm-DR standby envs).
 #
 # Files are matched by value fingerprint (last-4 chars), not filename —
 # tony-dell carries both ada-ha-pwa.env and ada-pi-pwa.env with different
@@ -52,11 +52,12 @@ restart_units() {
   case "$1" in
     mn01)      echo "ada-ha-tony.service ada-ha-michael.service" ;;
     tony-dell) echo "ada-pi-pwa.service chaba-guest.service chaba-guest-lan.service" ;;
-    idc01)     echo "ada-ha-tony.service ada-ha-michael.service ada-pi-pwa.service gemini-ollama-proxy.service" ;;
+    idc03)     echo "ada-ha-tony.service ada-ha-michael.service ada-pi-pwa.service gemini-ollama-proxy.service" ;;
+    idc01)     echo "" ;;  # warm-DR: update standby envs, but units are masked — the is-active gate skips restarts
   esac
 }
 
-for host in mn01 tony-dell idc01; do
+for host in mn01 tony-dell idc03 idc01; do
   echo "=== $host ==="
   ssh "$host" GEMINI_NEW="$GEMINI_NEW" HA_TONY_REMOTE="$HA_TONY_REMOTE" \
     HA_TONY_LOCAL="$HA_TONY_LOCAL" HA_MICHAEL="$HA_MICHAEL" \

@@ -79,7 +79,7 @@ sections:
       - label: Fixtures
         text: tests/fixtures/voice-guest.pcm + voice-other.pcm — deterministic synthetic 5s PCM16 (harmonic stack + syllable envelope) from gen_voice_fixture.py. ECAPA embeds them consistently enough for the enroll→re-identify roundtrip; Gemini may transcribe them as odd speech, which is harmless.
       - label: Requirement
-        text: Audio tier needs speechbrain+torch in the service venv — present on idc01, absent on mn01. Sim tier has no such requirement.
+        text: Audio tier needs speechbrain+torch in the service venv — present on idc03, absent on mn01. Sim tier has no such requirement.
   - title: Reconnect Tiers
     icon: "🔁"
     layout: list
@@ -115,11 +115,11 @@ sections:
       - label: Offline suite
         text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python -m unittest tests.test_scenarios -v"
       - label: Live suite
-        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/<name>.yaml --url ws://127.0.0.1:8003/ws --api-key \"$ADA_API_KEY\" -v (8002=tony, 8003=michael on idc01; services bind loopback — run on the host)"
+        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/<name>.yaml --url ws://127.0.0.1:8003/ws --api-key \"$ADA_API_KEY\" -v (8002=tony, 8003=michael on idc03; services bind loopback — run on the host)"
       - label: Speaker sim (text tier)
         text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment_sim.yaml — no audio needed, works anywhere"
       - label: Speaker audio tier
-        text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment.yaml — needs speechbrain in the service venv (idc01)"
+        text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment.yaml — needs speechbrain in the service venv (idc03)"
       - label: Manual simulation
         text: "Connect to /ws with api_key plus &simulate_away_s=432000 (away greeting) or &simulate_unknown_speaker=1 (enrollment offer)."
       - label: Distill benchmark

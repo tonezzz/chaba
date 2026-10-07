@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Post-migration (2026-09-24): Ada instances run on idc01. mn01 keeps
+# Post-migration (2026-10-06): Ada instances run on idc03 (was idc01 since 2026-09-24). mn01 keeps
 # ada-ha-* units stopped as standby and only proxies/serves static pages.
 set -euo pipefail
 
@@ -8,11 +8,11 @@ systemctl --user is-active caddy-mn01.service
 for u in ada-ha-tony.service ada-ha-michael.service; do
   state=$(systemctl --user is-active "$u" 2>/dev/null || true)
   enabled=$(systemctl --user is-enabled "$u" 2>/dev/null || true)
-  # standby = inactive + not enabled (idc01 is primary; enable only for fallback)
+  # standby = inactive + not enabled (idc03 is primary; enable only for fallback)
   echo "$u: $state/$enabled (standby expected: inactive/disabled)"
 done
 
-echo "== HTTP endpoints (edge 308 -> idc01 expected) =="
+echo "== HTTP endpoints (edge 308 -> idc03 expected) =="
 curl -s -o /dev/null -w "tony HTTP %{http_code}\n" --max-time 8 "https://mn01.taila0626a.ts.net/apps/ada_ha_tony/"
 curl -s -o /dev/null -w "michael HTTP %{http_code}\n" --max-time 8 "https://mn01.taila0626a.ts.net/apps/ada_ha_michael/"
 

@@ -13,7 +13,7 @@ Usage:
     python3 scripts/sync-kb-to-mddb.py --sync-deletes # also remove orphans
 
 Env:
-    MDDB_BASE   default http://100.102.134.91:11023 (idc01, tailnet-only)
+    MDDB_BASE   default http://100.102.134.91:11023 (idc03, tailnet-only)
     KB_DIR      default <repo>/docs/kb
 """
 import argparse

@@ -75,7 +75,7 @@ jobs:
   env:
     MDDB_BASE: http://100.102.134.91:11023
   note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout; MDDB_BASE
-    points at idc01 (was dell-local env)
+    points at idc03, the live leader (was dell-local env)
 - id: ha-config-backup
   name: HA Config Backup
   host: tony_dell
@@ -564,7 +564,7 @@ jobs:
     installing this unit retires the ~/CascadeProjects/ada-pi copy
     (git pull the chaba checkout first so the script exists). On idc02
     it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot
-    (03:30); the SSOT ''after ada-scenario-* timers'' note targets idc01,
+    (03:30); the SSOT ''after ada-scenario-* timers'' note targets idc03,
     whose scenario timers are weekly, not nightly.'
 related_files:
 - scripts/render-jobs.py

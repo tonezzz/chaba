@@ -632,7 +632,7 @@ def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
     state_word = {"live": _t(lang, "live", "ออนไลน์"),
                   "down": _t(lang, "down", "ขัดข้อง")}
     rows = "\n".join(
-        f"| [{_label(c, lang)}](https://idc01.taila0626a.ts.net/cms/"
+        f"| [{_label(c, lang)}](https://idc03.taila0626a.ts.net/cms/"
         f"#/{cam_slug(zone, c)}) | {c['key']} | "
         + (state_word["live"] if c.get("ok") else state_word["down"])
         + (f" · {_t(lang, 'frame', 'เฟรมล่าสุด')} {int(time.time()-c['ts'])}s"
@@ -780,7 +780,7 @@ def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
 """
 
 
-CMS = "https://idc01.taila0626a.ts.net/cms"
+CMS = "https://idc03.taila0626a.ts.net/cms"
 
 
 def dvr_wall_page(cam_groups: dict[str, list[tuple[str, dict, dict]]],
@@ -884,7 +884,7 @@ Detail pages: {', '.join(f'`{wall_key(z)}`' for z in sorted(zones))}
 
 
 NOTIFY_URL = os.environ.get(
-    "ADA_NOTIFY_URL", "https://idc01.taila0626a.ts.net/api/notify")
+    "ADA_NOTIFY_URL", "https://idc03.taila0626a.ts.net/api/notify")
 NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
     "ADA_API_KEY", "")
 NOTIFY_STATE = DATA / "_cms-notify-state.json"

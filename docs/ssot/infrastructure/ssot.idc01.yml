@@ -1,11 +1,11 @@
-title: idc01 — Siamdata VPS (offsite node)
-subtitle: Bangkok VPS hosting MDDB replica + public app edge; Cloudflare WARP egress for international
+title: idc01 — Siamdata VPS (warm-DR node)
+subtitle: Bangkok VPS — warm disaster recovery for idc03 (MDDB follower, standby edge); Cloudflare WARP egress for international
 icon: cloud
 version: 1
 
 ideas:
   - idc01 is a rented VPS at Siamdata Communication (AS56309, Bangkok) — offsite from the tony-home LAN.
-  - Its primary role is tailnet-only MDDB (second instance to tony-dell's) plus a small public Caddy edge (speaker-enroll).
+  - "Role since the 2026-10-05/06 migration — warm-DR for idc03: runs mddb-follower.service (:11123/:11124), a standby caddy-edge, warm-boot ada-pi-pwa (:8001), and log-shipper timers. Former production units (mddb leader, ada-ha-*, ollama, gemini-ollama-proxy, input-bridge, mddb-panel, camwall-edge, obsidian-vault, vcast, open-notebook) are masked — unmasking mddb.service would risk split-brain."
   - International egress is slow per-flow on Siamdata transit; Cloudflare WARP routes outbound via the BKK edge + CF backbone.
   - Link aggregation (WiFi/mobile bonding) was assessed and rejected 2026-09-22 — a VPS has no radios and inbound already hits the ~300 Mbps path cap.
 
@@ -27,14 +27,16 @@ sections:
     icon: layers
     layout: list
     items:
-      - label: MDDB 2.15.0 (Docker)
-        text: Bound tailnet-only — http 100.74.146.0:11023, gRPC 11024, MCP 9000. DB /app/data/mddb.db (~710 MB, ext4, ~93 GB free). authEnabled=false; tailnet is the security boundary — do not rebind to 0.0.0.0. Collections mirror tony-dell's (ada-ha-bank-*, kb-*, infrastructure-ssot); omen's ssot-mddb-sync targets this instance.
-      - label: Embeddings
-        text: Local Ollama at 127.0.0.1:11435, nomic-embed-text, 768 dims — no external embedding dependency.
-      - label: Caddy public edge
-        text: Ports 80/443 open on the public IP; serves /enroll.html (speaker-enroll app). TLS requires proper SNI.
-      - label: Port 8443 (tailnet)
-        text: TLS listener answering HTTP 400 to plain HTTP — unidentified service; investigate if needed.
+      - label: MDDB follower (warm-DR)
+        text: mddb-follower.service bound tailnet-only — http 100.74.146.0:11123, gRPC 11124. Read-only follower of the idc03 leader; promote-first path if idc03 dies. The old leader unit mddb.service is MASKED with data retired to data.leader-retired-20261006 — do not unmask on a live leader.
+      - label: Masked former-production units
+        text: ada-ha-tony, ada-ha-michael, ollama, gemini-ollama-proxy, input-bridge, mddb-panel, camwall-edge, obsidian-vault, vcast/open-notebook units — all masked since the idc03 cutover. Left in place as warm-standby quadlets/secrets.
+      - label: ada-pi-pwa (warm boot)
+        text: ada-pi-pwa.service runs on 127.0.0.1:8001 — keep-warm copy behind the standby edge; primary is idc03.
+      - label: Caddy standby edge
+        text: caddy-edge.service keeps 80/443 open on the public IP and answers the tailnet edge (https://idc01.taila0626a.ts.net/ — / and /enroll.html return 200; ada-ha paths return 502 by design while the backends are masked).
+      - label: Log shippers
+        text: log-shipper.timer + log-shipper-severe.timer still run hourly — host telemetry continues in DR role.
 
   - title: Network Baseline (2026-09-22)
     icon: gauge
@@ -73,7 +75,7 @@ sections:
       - label: Toggle WARP
         text: '`warp-cli disconnect` / `warp-cli connect`; status via `warp-cli status`.'
       - label: MDDB health
-        text: '`curl http://100.74.146.0:11023/health` and `/v1/stats` — both unauthenticated on tailnet.'
+        text: 'Follower: `curl http://100.74.146.0:11123/health` and `/v1/replication/status` — unauthenticated on tailnet. Leader is idc03 :11023.'
       - label: Provider console
         text: Siamdata panel holds the recovery path if tailnet+ssh both break — check for web console / firewall toggles there.
 
@@ -84,5 +86,5 @@ related_files:
   - docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
 
 metadata:
-  last_updated: "2026-09-22"
-  measured_by: devin-session (curl on host + MDDB import-url)
+  last_updated: "2026-10-07"
+  measured_by: devin-session (curl on host + MDDB import-url); role updated post-idc03-migration (card idc01-ssot-cleanup)

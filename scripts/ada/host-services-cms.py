@@ -36,7 +36,7 @@ ICT = timezone(timedelta(hours=7))
 SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]
 
 # Hosts audit-hosts.py supports (linux) — fresh snapshot per run.
-AUDIT_HOSTS = ["tony-dell", "tony-omen", "mn01", "idc01"]
+AUDIT_HOSTS = ["tony-dell", "tony-omen", "mn01", "idc01", "idc03"]
 # Probed directly (audit-hosts has no entry or ssh is one-way).
 PROBE_HOSTS = ["idc02", "michael-ha"]
 
@@ -45,8 +45,10 @@ HOST_META = {
                    "ip": "100.68.142.13"},
     "tony-omen":  {"role": "dev / GPU desktop", "ts": "tony-omen.taila0626a.ts.net",
                    "ip": "100.75.102.88"},
-    "idc01":      {"role": "public VPS · mddb leader · Ada", "ts": "idc01.taila0626a.ts.net",
-                   "ip": "100.102.134.91", "public": "157.85.110.99"},
+    "idc01":      {"role": "public VPS · warm-DR (mddb follower, standby edge)", "ts": "idc01.taila0626a.ts.net",
+                   "ip": "100.74.146.0", "public": "157.85.110.99"},
+    "idc03":      {"role": "public VPS · mddb leader · Ada", "ts": "idc03.taila0626a.ts.net",
+                   "ip": "100.102.134.91", "public": "157.85.102.125"},
     "idc02":      {"role": "offload / lab VPS", "ts": "idc02.taila0626a.ts.net",
                    "ip": ""},
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",
@@ -61,7 +63,7 @@ HOST_META = {
                        "  solar/inverter/weather integrations)\n"
                        "- Nabu Casa UI: `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs."
                        "ui.nabu.casa/`\n"
-                       "- Consumed by: `ada-ha-michael` on idc01 (:8003),\n"
+                       "- Consumed by: `ada-ha-michael` on idc03 (:8003),\n"
                        "  `mha-state-push` / `michael-ha-mcp-tunnel` on tony-dell\n"
                        "- Normally probed via the tony-omen ssh hop (jump host)\n"
                        "  — this page means even that path failed")},

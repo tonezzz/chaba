@@ -63,19 +63,19 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: http://idc01:11023/health
+    url: http://idc03:11023/health
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB on idc01 (tailnet-only). Direct port access for health check, bypasses Caddy routing
-    host: idc01
+    note: MDDB leader on idc03 (tailnet-only). Direct port access for health check, bypasses Caddy routing
+    host: idc03
   - id: mddb-mcp
     name: MDDB MCP Server
     type: http
-    url: http://idc01:9000/mcp
+    url: http://idc03:9000/mcp
     expected_status: 401
     timeout: 5
     category: datastore
@@ -85,63 +85,64 @@ services:
     note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is
       valid, so 400 is the healthy response
     recovery_actions:
-      - "Check MDDB container: ssh idc01 podman ps | grep mddb"
-      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
-      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
-      - "Verify MCP endpoint: curl -s http://idc01:9000/mcp"
+      - "Check MDDB container: ssh idc03 podman ps | grep mddb"
+      - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify MCP endpoint: curl -s http://idc03:9000/mcp"
       - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
-    host: idc01
+    host: idc03
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
-    url: http://idc01:11023/v1/stats
+    url: http://idc03:11023/v1/stats
     expected_status: 200
-    timeout: 5
+    timeout: 60
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
+    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing.
+      /v1/stats walks the full catalog and routinely takes ~30s — timeout 60 is required.
     recovery_actions:
-      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
-      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
-      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
-      - "Verify port 11023: curl -s http://idc01:11023/v1/stats"
-    host: idc01
+      - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc03:11023/v1/stats"
+    host: idc03
   - id: mddb-vector-stats
     name: MDDB Vector Stats Endpoint
     type: http
-    url: http://idc01:11023/v1/vector-stats
+    url: http://idc03:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
+    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
-      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
-      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
-      - "Verify port 11023: curl -s http://idc01:11023/v1/vector-stats"
-    host: idc01
+      - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc03:11023/v1/vector-stats"
+    host: idc03
   - id: mddb-metrics
     name: MDDB Metrics Endpoint
     type: http
-    url: http://idc01:11023/metrics
+    url: http://idc03:11023/metrics
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
+    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
-      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
-      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
-      - "Verify port 11023: curl -s http://idc01:11023/metrics"
-    host: idc01
+      - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc03:11023/metrics"
+    host: idc03
   - id: mddb-container
     name: MDDB Service
     type: systemd
@@ -152,12 +153,33 @@ services:
     profiles:
       - home
       - mobile
-    note: "MDDB runs as a podman quadlet (mddb.service, user unit) on idc01."
+    note: "MDDB leader runs as a podman quadlet (mddb.service, user unit) on idc03.
+      idc01 runs mddb-follower.service (read-only follower :11123) — its old
+      mddb.service leader unit is masked; never unmask it."
     recovery_actions:
-      - "Check service: ssh idc01 systemctl --user status mddb.service"
-      - "Restart: ssh idc01 systemctl --user restart mddb.service"
-      - "Check logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
-      - "Quadlet file: ~/.config/containers/systemd/mddb.container on idc01"
+      - "Check service: ssh idc03 systemctl --user status mddb.service"
+      - "Restart: ssh idc03 systemctl --user restart mddb.service"
+      - "Check logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
+      - "Quadlet file: ~/.config/containers/systemd/mddb.container on idc03"
+    host: idc03
+  - id: mddb-follower-idc01
+    name: MDDB Follower (idc01 warm-DR)
+    type: http
+    url: http://idc01:11123/health
+    expected_status: 200
+    timeout: 5
+    category: datastore
+    profiles:
+      - home
+      - mobile
+    note: "Read-only replication follower on idc01 (mddb-follower.service,
+      100.74.146.0:11123 http / :11124 gRPC, leader idc03:11024) — the warm-DR
+      replica; promote-first path if idc03 dies."
+    recovery_actions:
+      - "Check service: ssh idc01 systemctl --user status mddb-follower.service"
+      - "Check lag: curl -s http://idc01:11123/v1/replication/status"
+      - "Restart: ssh idc01 systemctl --user restart mddb-follower.service"
+      - "Logs: ssh idc01 journalctl --user -u mddb-follower.service --since '-1h'"
     host: idc01
   - id: gemini-ollama-proxy
     name: Gemini-Ollama Embedding Proxy
@@ -169,14 +191,14 @@ services:
     profiles:
       - home
       - mobile
-    note: "Gemini-to-Ollama embedding proxy on idc01, loopback-only
+    note: "Gemini-to-Ollama embedding proxy on idc03, loopback-only
       (127.0.0.1:11435) — only mddb needs it. MDDB embeds through this;
-      ollama.service on idc01 is the fallback."
+      ollama.service on idc03 is the fallback. (idc01 twin is masked warm-standby.)"
     verification:
-      - "Check service: ssh idc01 systemctl --user status gemini-ollama-proxy.service"
-      - "Test health: ssh idc01 curl -s http://127.0.0.1:11435/health"
-      - "Check logs: ssh idc01 journalctl --user -u gemini-ollama-proxy.service --since '-1h'"
+      - "Check service: ssh idc03 systemctl --user status gemini-ollama-proxy.service"
+      - "Test health: ssh idc03 curl -s http://127.0.0.1:11435/health"
+      - "Check logs: ssh idc03 journalctl --user -u gemini-ollama-proxy.service --since '-1h'"
     recovery_actions:
-      - "Restart: ssh idc01 systemctl --user restart gemini-ollama-proxy.service"
-      - "Verify GEMINI_API_KEY podman secret: ssh idc01 podman secret ls"
-    host: idc01
+      - "Restart: ssh idc03 systemctl --user restart gemini-ollama-proxy.service"
+      - "Verify GEMINI_API_KEY podman secret: ssh idc03 podman secret ls"
+    host: idc03
