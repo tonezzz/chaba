@@ -389,6 +389,11 @@ def do_finish(card: dict, body: dict) -> str:
     result = str(body.get("result") or "").strip()
     if result:
         a["result"] = result[:300]
+    if "verified" in body:
+        # runner close-out merge result (dispatch-auto-merge): True =
+        # session branch landed in origin/<default>; False = checked and
+        # NOT merged (conflicts / failed goals — stays for a human)
+        a["verified"] = bool(body["verified"])
     if ok:
         card["column"] = "review"
         card.setdefault("claim", {}).pop("session", None)

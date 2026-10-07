@@ -34,6 +34,16 @@ crash loses at most bookkeeping, not running work. All API calls are
 idempotent-ish: finish on a card that was moved/reset returns 400 and
 the state entry is dropped on the next pass ("not running" errors are
 treated as terminal for the entry).
+
+Close-out (card dispatch-auto-merge): a dispatch claim that finishes ok
+runs dispatch_repos.close_out locally BEFORE reporting finish — commit
+leftover worktree files as a checkpoint, push the session branch to
+origin (always — work left local-only strands), gate on the card's
+expected_goals, then merge --no-ff into origin/<default_branch>. The
+merge outcome rides the finish body (verified flag) and lands in comms;
+conflicts or failed goals leave the card in review for a human.
+KANBAN_AUTOMERGE=0 disables. dispatch_repos.py is imported from a local
+chaba checkout (this agent deploys as a single file).
 """
 
 import json
@@ -135,6 +145,71 @@ def collect(unit: str) -> tuple[bool, str]:
     return ok, f"exit={kv.get('ExecMainStatus', '?')} {tail}".strip()
 
 
+_DR = None
+_DR_TRIED = False
+
+
+def dr_module():
+    """Import dispatch_repos for the close-out merge step. The module
+    lives in the chaba repo (scripts/board); runner-agent deploys as a
+    single file, so resolve it from a local checkout. None when the host
+    has no usable copy — the merge is then reported skipped, not fatal."""
+    global _DR, _DR_TRIED
+    if _DR_TRIED:
+        return _DR
+    _DR_TRIED = True
+    cands = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        cands.append(Path(env))
+    cands += [Path(__file__).resolve().parent,
+              Path.home() / "CascadeProjects/chaba/scripts/board"]
+    for d in cands:
+        if not (d / "dispatch_repos.py").exists():
+            continue
+        sys.path.insert(0, str(d))
+        try:
+            import dispatch_repos as dr
+            _DR = dr
+            return _DR
+        except Exception:
+            continue
+    return None
+
+
+def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
+    """Local merge step for a finished dispatch claim. Returns
+    (verified: bool|None, comms notes: list[str])."""
+    if os.environ.get("KANBAN_AUTOMERGE", "1") == "0":
+        return None, []
+    tid = ent.get("tid") or ""
+    if not tid:
+        unit = ent.get("unit") or ""
+        tid = (unit[len("devin-task-"):]
+               if unit.startswith("devin-task-") else "")
+    if not tid:
+        return None, []
+    dr = dr_module()
+    if dr is None:
+        return None, ["auto-merge skipped: dispatch_repos module not "
+                      "found on this host — merge by hand"]
+    a = card.get("action") or {}
+    pseudo = {"id": cid,
+              "expected_goals": card.get("expected_goals"),
+              "action": {"type": "dispatch", "task_id": tid,
+                         "repo": a.get("repo") or "chaba"}}
+    try:
+        res = dr.close_out(pseudo)
+    except Exception as e:
+        res = {"merged": False, "error": f"{type(e).__name__}: {e}"}
+    notes = dr.close_out_notes(res)
+    if res.get("merged"):
+        return True, notes
+    if res.get("conflicts") or (res.get("gate") and not res["gate"]["ok"]):
+        return False, notes
+    return None, notes
+
+
 def claimable(card: dict) -> str:
     """task type the card wants if this host may claim it, else ""."""
     a = card.get("action") or {}
@@ -165,8 +240,8 @@ def shutil_which(name: str) -> bool:
                for p in os.environ.get("PATH", "").split(":"))
 
 
-def start_task(card: dict, typ: str) -> tuple[str, str]:
-    """Kick off the claimed card; returns (unit_name, error)."""
+def start_task(card: dict, typ: str) -> tuple:
+    """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
     a = card.get("action") or {}
     unit = re.sub(r"[^a-zA-Z0-9_-]", "-",
@@ -192,24 +267,38 @@ def start_task(card: dict, typ: str) -> tuple[str, str]:
         argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
     r = sh(argv, timeout=180)
     if r.returncode != 0:
-        return "", (r.stderr or r.stdout).strip()[:240]
+        return "", "", (r.stderr or r.stdout).strip()[:240]
+    tid = ""
     if typ == "dispatch":
         # devin-dispatch prints the task id (unit is devin-task-<id>)
         tid = r.stdout.strip().splitlines()[-1].strip()
         unit = f"devin-task-{tid}"
-    return unit, ""
+    return unit, tid, ""
 
 
 def finish_pass(st: dict) -> bool:
     """Report claimed tasks whose units exited. Returns state changed."""
     changed = False
+    cards = None  # lazy /cards fetch — only the close-out needs it
     for cid, ent in list(st.items()):
         unit = ent.get("unit") or ""
         if not unit or unit_active(unit):
             continue
         ok, result = collect(unit)
-        resp = api("/action", {"id": cid, "do": "finish", "host": HOST,
-                               "ok": ok, "result": result})
+        verified, notes = None, []
+        if ok and ent.get("type") == "dispatch":
+            if cards is None:
+                cards = {c.get("id"): c for c in
+                         (api("/cards") or {}).get("cards") or []}
+            verified, notes = close_out_merge(cid, ent,
+                                              cards.get(cid) or {})
+        body = {"id": cid, "do": "finish", "host": HOST,
+                "ok": ok, "result": result}
+        if verified is not None:
+            body["verified"] = verified
+        resp = api("/action", body)
+        for n in notes:
+            api("/comment", {"id": cid, "from": "chaba", "text": n})
         err = resp.get("error") or ""
         if not err or "not running" in err or "claimed by" in err \
                 or "no card" in err:
@@ -234,14 +323,15 @@ def claim_pass(st: dict) -> bool:
         resp = api("/action", {"id": cid, "do": "claim", "host": HOST})
         if resp.get("error"):
             continue  # lost the race or rejected — next card
-        unit, err = start_task(card, typ)
+        unit, tid, err = start_task(card, typ)
         if err:
             api("/action", {"id": cid, "do": "finish", "host": HOST,
                             "ok": False, "result": f"start failed: {err}"})
             continue
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"started {unit} on {HOST} ({typ})"})
-        st[cid] = {"unit": unit, "type": typ, "at": int(time.time())}
+        st[cid] = {"unit": unit, "type": typ, "tid": tid,
+                   "at": int(time.time())}
         changed = True
         print(f"{cid}: claimed + started {unit}")
     return changed
