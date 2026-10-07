@@ -170,6 +170,32 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
   card (docs/ssot/ssot.ci.yml).
 """.strip()
 
+# Design docs/design/report-session-loop.md §2b — appended after
+# TASK_RAILS when the card carries `report: <cms-slug>`; the session
+# keeps ada-cms-pages/<slug> updated via scripts/ada/cms-report-note.py.
+REPORT_RAILS = """
+This card is report-linked: ada-cms-pages/{slug}.
+- Read the report FIRST: python3 scripts/ada/cms-report-note.py {slug} --read
+- As you work, mirror progress into the report's session log:
+    python3 scripts/ada/cms-report-note.py {slug} --note "<what changed>"
+  (appends meta.timeline + the <!-- session-log:auto --> managed block;
+   merges meta per the writer contract — never bare-replace a page)
+- Before finishing: the report must reflect the outcome. The report is
+  the long-lived artifact; this card is the tracking surface.
+""".strip()
+
+
+def build_task(card: dict) -> str:
+    """The text handed to `devin-dispatch start` — card spec (or
+    title+note) plus TASK_RAILS, plus REPORT_RAILS when report-linked."""
+    spec = (card.get("spec") or "").strip() \
+        or f"{card.get('title','')}\n\n{card.get('note','')}"
+    task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
+    slug = str(card.get("report") or "").strip()
+    if slug:
+        task += "\n\n" + REPORT_RAILS.format(slug=slug)
+    return task
+
 
 def now() -> str:
     return datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
@@ -279,9 +305,7 @@ def start_pending(path: Path) -> str:
     card = load_card(path)  # read-only peek for spec/task build
     a = card["action"]
     repo = a.get("repo", "chaba")
-    spec = (card.get("spec") or "").strip() \
-        or f"{card.get('title','')}\n\n{card.get('note','')}"
-    task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
+    task = build_task(card)
     r = sh([DISPATCH, "start", repo, task], timeout=120)
 
     def apply():

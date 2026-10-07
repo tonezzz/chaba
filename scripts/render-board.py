@@ -507,6 +507,10 @@ function cardHtml(c) {{
   }}
   if (lab.outcome)
     badges += `<span class="text-xs bg-violet-900/60 text-violet-200 rounded px-1.5 py-0.5">🧪 ${{esc(lab.outcome)}}</span> `;
+  // report-linked card — the CMS viewer routes by hash (#/<slug>), and
+  // the stored cms-viewer api_key applies; no key in the URL
+  if (c.report)
+    badges += `<a class="text-xs bg-teal-900/60 text-teal-200 rounded px-1.5 py-0.5 hover:bg-teal-800" href="https://idc03.taila0626a.ts.net/cms/#/${{encodeURIComponent(c.report)}}" target="_blank" rel="noopener">📄 ${{esc(c.report)}}</a> `;
   const a = c.action || {{}};
   const st = a.status || 'idle';
   if (st === 'queued') badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span> ';
@@ -824,7 +828,7 @@ function scrollToCard(id) {{
 
 function wire() {{
   document.querySelectorAll('.board-card').forEach(el =>
-    el.onclick = e => {{ if (!e.target.closest('button,input')) showCard(el.dataset.id); }});
+    el.onclick = e => {{ if (!e.target.closest('button,input,a')) showCard(el.dataset.id); }});
   document.querySelectorAll('.side-card,.ny-btn').forEach(el =>
     el.onclick = e => {{ scrollToCard(el.dataset.id); showCard(el.dataset.id); }});
   document.querySelectorAll('.abtn').forEach(b =>
