@@ -1,24 +1,24 @@
 id: gev-tours
 title: gev tours — flyover/tour definitions + playback
-column: review
+column: done
 priority: low
 program: gev
 area: tours
 metric: a named tour plays to completion with camera path + narration cues
 verify: run one tour on TV/browser; checkpoints reached in order
-note: Tour/flyover capability exists in the app but has no scenario coverage or tracking. Define what a tour is
-  (waypoints, dwell, narration), pick one flagship route, make it verifiable.
+note: Tour/flyover capability exists in the app but has no scenario coverage or tracking. Define what a tour is (waypoints,
+  dwell, narration), pick one flagship route, make it verifiable.
 help: 'related: gev-map; camera-move tool calls live in GEV_REALTIME_TOOLS'
-spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-design). Define a tour format: ordered
-  waypoints (locationId or lat/lon), dwell time per stop, narration cues; implement one flagship route end-to-end;
-  a tour must report checkpoints reached in order so a scenario can verify playback.'
-updated: 2026-10-07 12:50
+spec: 'gods-eye-view app work — HELD: repo not dispatchable (see gev-program-design). Define a tour format: ordered waypoints
+  (locationId or lat/lon), dwell time per stop, narration cues; implement one flagship route end-to-end; a tour must report
+  checkpoints reached in order so a scenario can verify playback.'
+updated: 2026-10-07 15:10
 comms:
 - at: 2026-10-05 13:03
   from: devin
-  text: 'spec written 2026-10-05 but left unarmed: gods-eye-view has no pushable remote (origin=upstream bilawalsidhu,
-    local main 6 ahead) and is not in dispatch-repos.conf. To dispatch: fork/push-remote + whitelist entry, or pull
-    the work into chaba staging. See gev-program-design.'
+  text: 'spec written 2026-10-05 but left unarmed: gods-eye-view has no pushable remote (origin=upstream bilawalsidhu, local
+    main 6 ahead) and is not in dispatch-repos.conf. To dispatch: fork/push-remote + whitelist entry, or pull the work into
+    chaba staging. See gev-program-design.'
 - at: 2026-10-06 06:49
   from: tony
   text: Next?
@@ -41,11 +41,10 @@ comms:
     GEV remote. Building: tour JSON format + gev-tour.mjs runner + flagship route + stub-server selftest.'
 - at: 2026-10-06 17:35
   from: devin
-  text: 'DONE — the hold did not block: bridge.py /command + fly_to_location(waitForArrival) is the whole playback
-    primitive, so the tour capability lives in chaba, zero app-repo changes. Deliverables (commit 4784408a): gev-tour.mjs
-    runner, tours/world-landmarks.json flagship (query+locationId+lat/lon+zoom_to_globe), gev-tour-selftest.mjs
-    stub suite 24/24, runbook docs/runbooks/gev-tours.md + SSOT entries. LIVE-VERIFIED on vcast-real-6: 7/7 checkpoints
-    in order, 70.5s, report at reports/gev-tour-world-la'
+  text: 'DONE — the hold did not block: bridge.py /command + fly_to_location(waitForArrival) is the whole playback primitive,
+    so the tour capability lives in chaba, zero app-repo changes. Deliverables (commit 4784408a): gev-tour.mjs runner, tours/world-landmarks.json
+    flagship (query+locationId+lat/lon+zoom_to_globe), gev-tour-selftest.mjs stub suite 24/24, runbook docs/runbooks/gev-tours.md
+    + SSOT entries. LIVE-VERIFIED on vcast-real-6: 7/7 checkpoints in order, 70.5s, report at reports/gev-tour-world-la'
 - at: 2026-10-06 17:37
   from: chaba
   text: run finished (inactive) → review
@@ -54,17 +53,16 @@ comms:
   text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
 - at: 2026-10-06 17:37
   from: chaba
-  text: 'session end: worktree dispatch-wt-20261006-171703-gods-eye-view-app-work-held-re dirty — 1 uncommitted
-    file(s); commit or clean before pruning'
+  text: 'session end: worktree dispatch-wt-20261006-171703-gods-eye-view-app-work-held-re dirty — 1 uncommitted file(s); commit
+    or clean before pruning'
 - at: 2026-10-06 17:37
   from: chaba
-  text: 'session end: 1 commit(s) on dispatch/20261006-171703-gods-eye-view-app-work-held-re not in origin/master
-    — close will block until merged'
+  text: 'session end: 1 commit(s) on dispatch/20261006-171703-gods-eye-view-app-work-held-re not in origin/master — close
+    will block until merged'
 - at: 2026-10-06 20:09
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261006-171703-gods-eye-view-app-work-held-re — 1 commit(s) not in
-    origin/master: feat(gev): tour format + runner + flagship route via /command relay; worktree still dirty: 1
-    uncommitted file(s)'
+  text: 'unmerged commits remain on dispatch/20261006-171703-gods-eye-view-app-work-held-re — 1 commit(s) not in origin/master:
+    feat(gev): tour format + runner + flagship route via /command relay; worktree still dirty: 1 uncommitted file(s)'
 - at: 2026-10-06 20:10
   from: tony
   text: merge  please
@@ -73,9 +71,8 @@ comms:
   text: moved review -> doing
 - at: 2026-10-06 21:57
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261006-171703-gods-eye-view-app-work-held-re — 1 commit(s) not in
-    origin/master: feat(gev): tour format + runner + flagship route via /command relay; worktree still dirty: 1
-    uncommitted file(s)'
+  text: 'unmerged commits remain on dispatch/20261006-171703-gods-eye-view-app-work-held-re — 1 commit(s) not in origin/master:
+    feat(gev): tour format + runner + flagship route via /command relay; worktree still dirty: 1 uncommitted file(s)'
 - at: 2026-10-06 21:57
   from: tony
   text: retry requested
@@ -84,17 +81,17 @@ comms:
   text: dispatched 20261006-215751-gods-eye-view-app-work-held-re on chaba
 - at: 2026-10-06 22:07
   from: devin
-  text: 'Held-repo workaround (same as gev-map): patching checked-in bundle+index.html in worktree. Design: tour
-    JSON format (ordered stops, locationId|lat/lon|query, dwellS, narration, annotate), tour-player.js driving camera+runner,
-    play_tour/stop_tour/tour_status spliced into dispatch, bridge tour_event log + /command/events, flagship london-icons,
-    gev-tour-verify.mjs asserts checkpoints arrive in order.'
+  text: 'Held-repo workaround (same as gev-map): patching checked-in bundle+index.html in worktree. Design: tour JSON format
+    (ordered stops, locationId|lat/lon|query, dwellS, narration, annotate), tour-player.js driving camera+runner, play_tour/stop_tour/tour_status
+    spliced into dispatch, bridge tour_event log + /command/events, flagship london-icons, gev-tour-verify.mjs asserts checkpoints
+    arrive in order.'
 - at: 2026-10-06 22:18
   from: devin
-  text: 'Done (worktree-only, held-repo pattern). Tour format spec + flagship london-icons (6 stops, locationId+lat/lon
-    legs, dwellS, EN/TH narration) + data-driven player (tours/player.js) + play_tour/stop_tour/tour_status spliced
-    into bundle dispatch + tools.json. Checkpoints report in order via tour_status.checkpoints AND bridge /command/events
-    stream (bridge.py tour_event log). Verify: gev-tour-verify.mjs plays it on a cast screen and asserts ordered
-    checkpoints -> tour_end done. Node-harness smoke t'
+  text: 'Done (worktree-only, held-repo pattern). Tour format spec + flagship london-icons (6 stops, locationId+lat/lon legs,
+    dwellS, EN/TH narration) + data-driven player (tours/player.js) + play_tour/stop_tour/tour_status spliced into bundle
+    dispatch + tools.json. Checkpoints report in order via tour_status.checkpoints AND bridge /command/events stream (bridge.py
+    tour_event log). Verify: gev-tour-verify.mjs plays it on a cast screen and asserts ordered checkpoints -> tour_end done.
+    Node-harness smoke t'
 - at: 2026-10-06 22:19
   from: chaba
   text: run finished (inactive) → review
@@ -103,16 +100,19 @@ comms:
   text: 'auto-merge not done: worktree dirty (4 file(s)) — commit first — close will block until merged'
 - at: 2026-10-06 22:20
   from: chaba
-  text: 'session end: worktree dispatch-wt-20261006-215751-gods-eye-view-app-work-held-re dirty — 4 uncommitted
-    file(s); commit or clean before pruning'
+  text: 'session end: worktree dispatch-wt-20261006-215751-gods-eye-view-app-work-held-re dirty — 4 uncommitted file(s); commit
+    or clean before pruning'
 - at: 2026-10-06 22:20
   from: chaba
-  text: 'session end: 1 commit(s) on dispatch/20261006-215751-gods-eye-view-app-work-held-re not in origin/master
-    — close will block until merged'
+  text: 'session end: 1 commit(s) on dispatch/20261006-215751-gods-eye-view-app-work-held-re not in origin/master — close
+    will block until merged'
 - at: 2026-10-07 12:50
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261006-215751-gods-eye-view-app-work-held-re — 1 commit(s) not in
-    origin/master: Devin checkpoint for session imminent-currency; worktree still dirty: 4 uncommitted file(s)'
+  text: 'unmerged commits remain on dispatch/20261006-215751-gods-eye-view-app-work-held-re — 1 commit(s) not in origin/master:
+    Devin checkpoint for session imminent-currency; worktree still dirty: 4 uncommitted file(s)'
+- at: 2026-10-07 15:10
+  from: devin
+  text: 'closed: merged to master (cherry-picks of dispatch 171703+215751 — tour runner, london-icons, verify harness)'
 action:
   type: dispatch
   status: done

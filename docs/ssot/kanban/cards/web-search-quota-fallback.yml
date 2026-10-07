@@ -1,0 +1,31 @@
+id: web-search-quota-fallback
+title: web_search auto-fallback to duckduckgo when Gemini quota is exhausted
+column: backlog
+priority: medium
+program: ada-tools
+updated: '2026-10-07'
+tags: [ada, tools, quota, audit]
+note: >-
+  Audit 2026-10-07 (session db02b97016): web_search hard-failed 429
+  RESOURCE_EXHAUSTED — gemini-2.5-flash free tier daily quota gone
+  (retry in 23h42m). Ada served a stale Oct-5 CMS flood page as
+  "latest" and the user had to catch the date mismatch. The tool
+  already documents provider='duckduckgo' (free, no quota) but nothing
+  switches to it on quota failure.
+spec: >-
+  ada-pi web_search: on a 429/quota-shaped error from the gemini
+  provider, retry once against provider='duckduckgo' automatically and
+  annotate the result (e.g. provider_used + quota_exhausted flag) so
+  Ada can tell the user "live search is degraded, using free fallback".
+  Never silently serve stale CMS as fresh — that's a separate answer
+  honesty point already handled by report-date citation; this card is
+  the fallback path. Also add the 429 signature to the ops event feed
+  so quota burn shows up in the digest before it reaches zero.
+action:
+  type: dispatch
+  repo: ada-pi
+  status: queued
+comms:
+- at: 2026-10-07 13:55
+  from: devin
+  text: filed from audit — web_search 429 evidence idc01 journal 07:17 UTC

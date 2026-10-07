@@ -1,0 +1,39 @@
+id: speaker-profile-tool
+title: Speaker voiceprint management tool — enroll dead-ends on stale prints
+column: backlog
+priority: high
+program: ada-tools
+updated: '2026-10-07'
+tags: [ada, speaker-id, tools, audit]
+note: >-
+  Audit 2026-10-07 (session db02b97016): KK re-enroll looped 14 calls /
+  ~6 min and never resolved. Her voice scored -1%..21% vs stale 'KK'
+  print, 52% vs 'พรศิริ สุนทรประสิทธิ์' — she is ALREADY enrolled
+  under her Thai name; no tool exposes that. Worse, ada_forget
+  bank=people deleted the people/kk MEMORY doc — the model conflates
+  memory person-docs with speaker profiles, and the real voiceprint
+  stayed. Also observed: 60 self-asserted confirmed=true strips in the
+  window (model still tries to self-confirm), and confirm-token TTL
+  120s expires during two-person handoffs.
+spec: >-
+  ada-pi backend/tools.d: add a speaker_profiles tool —
+  actions list|match|remove|re-enroll|alias. 'match' returns which
+  enrolled profile the current voiceprint buffer scores against (with
+  name + score) so Ada can say "you're enrolled as พรศิริ — merge into
+  KK?" instead of looping. 'alias' maps person.kk <-> พรศิริ so both
+  names resolve to one identity. Enroll refusal text should name the
+  matching profile explicitly. Voiceprint store lives in
+  backend/speaker_id.py — confirm it exposes a delete/rename path;
+  ada_forget must refuse (or redirect) keys that look like speaker
+  profiles. Stretch: raise confirm-token TTL to 300s for handoff flows
+  (session owner differs from speaker). Verify with a live scenario:
+  'kk re-enroll under wrong-name profile' -> Ada identifies existing
+  print, offers merge, resolves in <=3 turns.
+action:
+  type: dispatch
+  repo: ada-pi
+  status: queued
+comms:
+- at: 2026-10-07 13:55
+  from: devin
+  text: filed from transcript audit db02b97016 — evidence in journals idc01 07:20-07:26 UTC, 14 enroll failures

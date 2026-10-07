@@ -1,19 +1,19 @@
 id: ada-tools-desc-slim
 title: ada tools — slim declarations; guidance moves to the error path
-column: review
+column: done
 program: ada-tools
 metric: total declaration text <30% of current; zero regressions in scenario-live suite
 verify: scenario-benchmark pass; token count of tool block before/after in session log
-note: 'gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the model every turn while most turns
-  use 2-3 tools. The working pattern is already in results: needs_confirm, displaced, verify_warn, render_warn teach
-  the model at the moment it errs. Cut descriptions to 1-2 lines (what + when), move the IMPORTANT prose into result-side
-  hints and a lazy ada_tool_help lookup the model can query on demand.'
+note: 'gev_command alone is ~40 lines of prose; 103 fat descriptions ship to the model every turn while most turns use 2-3
+  tools. The working pattern is already in results: needs_confirm, displaced, verify_warn, render_warn teach the model at
+  the moment it errs. Cut descriptions to 1-2 lines (what + when), move the IMPORTANT prose into result-side hints and a lazy
+  ada_tool_help lookup the model can query on demand.'
 help: needs_confirm/displaced/verify_warn in tool_runner.py cast_to_screen — that pattern applied to every fat description
-updated: 2026-10-07 12:50
-spec: 'Slim tool declarations: move per-tool prose guidance out of the shipped schema description into the error
-  path (the needs_confirm/displaced/verify_warn/render_warn pattern already proves this). Target: each declaration
-  description <= 2 short lines; domain guidance moves into error payloads/docs the model sees only on failure. Verify:
-  tool-lint green; spot-check a fat decl (gev_command ~40 lines) is slimmed; a smoke scenario still routes the tools.'
+updated: 2026-10-07 15:10
+spec: 'Slim tool declarations: move per-tool prose guidance out of the shipped schema description into the error path (the
+  needs_confirm/displaced/verify_warn/render_warn pattern already proves this). Target: each declaration description <= 2
+  short lines; domain guidance moves into error payloads/docs the model sees only on failure. Verify: tool-lint green; spot-check
+  a fat decl (gev_command ~40 lines) is slimmed; a smoke scenario still routes the tools.'
 priority: medium
 action:
   type: dispatch
@@ -36,25 +36,24 @@ comms:
   text: dispatched 20261005-215023-slim-tool-declarations-move-pe on ada-pi
 - at: 2026-10-05 22:02
   from: devin
-  text: 'Started. Plan: move fat per-tool prose into backend/tool_guide.yml surfaced via a usage key on failed/denied
-    results (needs_confirm pattern); slim every decl description to <=2 lines; add desc-size check to tool-lint.'
+  text: 'Started. Plan: move fat per-tool prose into backend/tool_guide.yml surfaced via a usage key on failed/denied results
+    (needs_confirm pattern); slim every decl description to <=2 lines; add desc-size check to tool-lint.'
 - at: 2026-10-05 22:23
   from: devin
   text: probe
 - at: 2026-10-05 22:24
   from: devin
-  text: '(ignore prev probe) Implementation done, verifying: all 38 decl descriptions <=4 src lines/300 chars —
-    total description text 32.9k->7.1k chars (21.6%, under 30% metric). gev_command 47->3 lines/3.6k->196 chars.
-    Prose distilled into backend/tool_guide.yml (37 entries); ToolRunner attaches it as usage key on failed/denied
-    results + appends to raised exceptions (needs_confirm pattern). tool-lint green incl. new descsize check; 155
-    tool_runner tests + 7 offline scenarios pass.'
+  text: '(ignore prev probe) Implementation done, verifying: all 38 decl descriptions <=4 src lines/300 chars — total description
+    text 32.9k->7.1k chars (21.6%, under 30% metric). gev_command 47->3 lines/3.6k->196 chars. Prose distilled into backend/tool_guide.yml
+    (37 entries); ToolRunner attaches it as usage key on failed/denied results + appends to raised exceptions (needs_confirm
+    pattern). tool-lint green incl. new descsize check; 155 tool_runner tests + 7 offline scenarios pass.'
 - at: 2026-10-05 22:25
   from: devin
-  text: 'DONE. All 38 decl descriptions <=4 lines/300 chars — total desc text 32.9k->7.1k chars (21.6% < the 30%
-    metric); gev_command 47->3 lines (3.6k->196 chars), param schemas byte-identical to HEAD (AST-verified). Prose
-    moved to backend/tool_guide.yml (37 entries) — ToolRunner attaches it as a usage key on failed/denied results
-    + appends to raised exceptions (needs_confirm pattern). Enforced: new descsize check in tool-lint.py + desc_max_lines/desc_max_chars
-    in ssot.tool-surface.yml + rule 9 in ada-t'
+  text: 'DONE. All 38 decl descriptions <=4 lines/300 chars — total desc text 32.9k->7.1k chars (21.6% < the 30% metric);
+    gev_command 47->3 lines (3.6k->196 chars), param schemas byte-identical to HEAD (AST-verified). Prose moved to backend/tool_guide.yml
+    (37 entries) — ToolRunner attaches it as a usage key on failed/denied results + appends to raised exceptions (needs_confirm
+    pattern). Enforced: new descsize check in tool-lint.py + desc_max_lines/desc_max_chars in ssot.tool-surface.yml + rule
+    9 in ada-t'
 - at: 2026-10-05 22:26
   from: chaba
   text: run finished (inactive) → review
@@ -63,8 +62,8 @@ comms:
   text: 'auto-merge not done: worktree dirty (10 file(s)) — commit first — close will block until merged'
 - at: 2026-10-05 22:26
   from: chaba
-  text: 'session end: worktree dispatch-wt-20261005-215023-slim-tool-declarations-move-pe dirty — 10 uncommitted
-    file(s); commit or clean before pruning'
+  text: 'session end: worktree dispatch-wt-20261005-215023-slim-tool-declarations-move-pe dirty — 10 uncommitted file(s);
+    commit or clean before pruning'
 - at: 2026-10-06 08:33
   from: tony
   text: commit
@@ -73,8 +72,8 @@ comms:
   text: moved review -> doing
 - at: 2026-10-06 17:04
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in
-    origin/main: ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in origin/main:
+    ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
 - at: 2026-10-06 17:05
   from: tony
   text: retry requested
@@ -86,22 +85,21 @@ comms:
   text: started devin-task-20261006-170523-slim-tool-declarations-move-pe on tony-omen (dispatch)
 - at: 2026-10-06 17:09
   from: devin
-  text: 'in progress: infra from earlier dispatch already landed (tool_guide.yml + descsize lint). One regression:
-    yt desc re-fattened by d46f10f (8 lines/521c) — slimming it and moving prose to the yt guide entry.'
+  text: 'in progress: infra from earlier dispatch already landed (tool_guide.yml + descsize lint). One regression: yt desc
+    re-fattened by d46f10f (8 lines/521c) — slimming it and moving prose to the yt guide entry.'
 - at: 2026-10-06 17:11
   from: devin
-  text: 'done: tool-lint clean. yt re-slimmed 8->4 AST lines (521->227c) after d46f10f re-fattened it; voice-dub-demos
-    recipe + Samsung IR-toggle power model moved to yt entry in tool_guide.yml (error path). gev_command still 3
-    lines/196c. 250 tests pass (scenario engine routes tools). Job record: docs/ssot/jobs/ada/2026-10-06-tool-desc-slim-yt-regression.yml.
+  text: 'done: tool-lint clean. yt re-slimmed 8->4 AST lines (521->227c) after d46f10f re-fattened it; voice-dub-demos recipe
+    + Samsung IR-toggle power model moved to yt entry in tool_guide.yml (error path). gev_command still 3 lines/196c. 250
+    tests pass (scenario engine routes tools). Job record: docs/ssot/jobs/ada/2026-10-06-tool-desc-slim-yt-regression.yml.
     No commit/push.'
 - at: 2026-10-06 17:12
   from: tony-omen
-  text: 'finished (ok): exit=0 NTS.md those run on idc02 staging before deploy. No commit or push, per dispatch
-    rules. | devin-task-20261006-170'
+  text: 'finished (ok): exit=0 NTS.md those run on idc02 staging before deploy. No commit or push, per dispatch rules. | devin-task-20261006-170'
 - at: 2026-10-06 19:06
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in
-    origin/main: ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in origin/main:
+    ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
 - at: 2026-10-06 19:07
   from: tony
   text: please merge.
@@ -122,8 +120,8 @@ comms:
   text: started devin-task-20261006-211706-slim-tool-declarations-move-pe on tony-omen (dispatch)
 - at: 2026-10-06 21:21
   from: devin
-  text: 'prior slimming already landed (22e138f); residual: new ada_track_device fails descsize+coverage in tool-lint
-    — slimming decl, adding tool_guide entry + live scenario'
+  text: 'prior slimming already landed (22e138f); residual: new ada_track_device fails descsize+coverage in tool-lint — slimming
+    decl, adding tool_guide entry + live scenario'
 - at: 2026-10-06 21:26
   from: devin
   text: 'done: ada_track_device decl 5L/283c -> 2L/83c, prose -> tool_guide.yml, added scenarios-live/ada_track_device.yaml
@@ -133,7 +131,10 @@ comms:
   text: 'finished (ok): exit=0 on idc03 | No commit/push per dispatch rules; board updated. | devin-task-20261006-211706-slim-tool-declarations-'
 - at: 2026-10-07 12:50
   from: chaba
-  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in
-    origin/main: ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+  text: 'unmerged commits remain on dispatch/20261005-215023-slim-tool-declarations-move-pe — 1 commit(s) not in origin/main:
+    ada-tools-desc-slim: decl descriptions -> 21.6% of baseline + tool_guide.yml usage hints'
+- at: 2026-10-07 15:10
+  from: devin
+  text: 'closed: merged in ada-pi origin/main (22e138f + 96e21f7)'
 claim:
   since: 2026-10-05 21:50
