@@ -2,7 +2,7 @@ id: edge-ha-restructure-subdomain-cloudflare-4ff3ad
 title: Edge HA restructure — subdomain-per-service + cloudflared active-active
 brief: The public edge works but every box is a single point of failure and names are inconsistent across three
   places. It needs a decision — read the note and pick a direction.
-column: backlog
+column: review
 priority: high
 review_kind: decide
 note: 'Post-migration topology works but has 3 naming planes (tailnet serve names, /apps/ha/* path prefixes, *.surf-thailand.com
@@ -29,10 +29,11 @@ ask:
 help: 'basis: routes.json generated 2026-10-07, ssot.routes.yml edges, stacks/idc03/caddy-edge, idc01-to-idc03-migration-plan.md'
 action:
   type: manual
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-184206-recommended-design-b-c-analysi
-updated: 2026-10-07 18:42
+  result: 20261007-184206-recommended-design-b-c-analysi finished (deactivating) — see `devin-dispatch logs 20261007-184206-recommended-design-b-c-analysi`
+updated: 2026-10-07 19:06
 comms:
 - at: 2026-10-07 14:18
   from: tony
@@ -47,6 +48,23 @@ comms:
 - at: 2026-10-07 18:42
   from: chaba
   text: dispatched 20261007-184206-recommended-design-b-c-analysi on chaba
+- at: 2026-10-07 18:55
+  from: devin
+  text: 'dispatch picked up: building repo-side B+C artifacts (routes.json failover+public map, cloudflared-edge
+    stack, card failover, runbook). Live tunnel/DNS/Access stays operator work.'
+- at: 2026-10-07 19:05
+  from: devin
+  text: 'B+C repo-side artifacts staged in worktree: routes.yml gains cf-tunnel edge + public: subdomain map + ada-*
+    failover->idc01; render-routes emits failover[] into routes.json and board.*/monitor.* vhosts into the Caddyfile
+    (validate=ok, committed Caddyfile synced); ada-voice/chat cards walk failover endpoints before key re-mint;
+    NEW stacks/services/cloudflared-edge (remotely-managed edge-ha tunnel, token env, install.sh, README runbook);
+    idc03 ada.* vhost snippet; job doc docs/ssot/jobs/infrastruc'
+- at: 2026-10-07 19:06
+  from: chaba
+  text: run finished (deactivating) → review
+- at: 2026-10-07 19:06
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261007-184206-recommended-design-b-c-analysi — close will block
+    until merged'
 claim:
-  session: 20261007-184206-recommended-design-b-c-analysi
   since: 2026-10-07 18:42
