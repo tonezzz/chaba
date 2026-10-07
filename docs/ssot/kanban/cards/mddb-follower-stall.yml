@@ -1,31 +1,35 @@
 id: mddb-follower-stall
 title: mddb follower stream stalls silently — connected but stops applying
-brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere. Waiting
-  in the backlog — no action needed yet.
+brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere.
+  Waiting in the backlog — no action needed yet.
 column: backlog
 priority: high
-note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently stalled
-  while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828 and continued applying.
-  Stream state isn''t surfaced: leader shows last_seen_at fresh but confirmed_lsn frozen = the stall signal. Same silent-stall
-  class as the original replication wedge. Likely a dropped apply goroutine or blocked binlog read.'
+note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently
+  stalled while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828
+  and continued applying. Stream state isn''t surfaced: leader shows last_seen_at fresh but confirmed_lsn frozen
+  = the stall signal. Same silent-stall class as the original replication wedge. Likely a dropped apply goroutine
+  or blocked binlog read.'
 help: 'Detect: leader /v1/replication/status shows follower confirmed_lsn frozen while current_lsn climbs and last_seen_at
-  stays fresh. Fix candidates: heartbeat/timeout on the follower receive loop, or a "applier-alive" metric the canary can
-  watch. mddb-fork repo.'
-updated: 2026-10-07 23:00
+  stays fresh. Fix candidates: heartbeat/timeout on the follower receive loop, or a "applier-alive" metric the canary
+  can watch. mddb-fork repo.'
+updated: 2026-10-08 05:53
 comms:
 - at: 2026-10-06 14:30
   from: devin
-  text: filed from idc01-return work — lsn-persist feature itself validated (resumed correctly), the stall is the upstream
-    bug.
+  text: filed from idc01-return work — lsn-persist feature itself validated (resumed correctly), the stall is the
+    upstream bug.
 - at: 2026-10-07 23:00
   from: devin
   text: 'triage: actionable engineering task — armed as dispatch (chaba), idle until started'
+- at: 2026-10-08 05:53
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
-spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader last_seen_at
-  stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state surfacing (apply-lag metric/health
-  signal so the freeze is visible without a human comparing LSNs) plus a watchdog that restarts the follower when confirmed_lsn
-  stops advancing while the stream is connected. Root-cause the dropped-apply/blocked-read if reachable; document findings
-  on the card.'
+spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader
+  last_seen_at stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state
+  surfacing (apply-lag metric/health signal so the freeze is visible without a human comparing LSNs) plus a watchdog
+  that restarts the follower when confirmed_lsn stops advancing while the stream is connected. Root-cause the dropped-apply/blocked-read
+  if reachable; document findings on the card.'

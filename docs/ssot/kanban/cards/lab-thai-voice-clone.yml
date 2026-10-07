@@ -1,36 +1,37 @@
 id: lab-thai-voice-clone
 title: 'Lab: Thai voice cloning — JaiTTS/ThonburianTTS vs VoxCPM2 ceiling'
-brief: Open-source models can now clone a Thai voice from a ~15s clip — usable for the YouTube dub pipeline and a consistent
-  Ada voice. Waiting in the backlog — no action needed.
+brief: Open-source models can now clone a Thai voice from a ~15s clip — usable for the YouTube dub pipeline and
+  a consistent Ada voice. Waiting in the backlog — no action needed.
 column: backlog
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 06:05
+updated: 2026-10-08 05:53
 lab:
-  hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650 — good
-    enough for yt-dub narration
+  hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
+    — good enough for yt-dub narration
   metric: blind listen >= 4/5 on 5 generated clips AND CER < 5% vs target text AND speaker-SIM >= 0.5 on CAM++
   review_by: '2026-10-21'
-note: 'Three lanes: (1) JaiTTS-F5TTS ~335M — Thai-native, beats ThonburianTTS on its own bench (CER 4.26 vs 6.26, SIM 0.58
-  vs 0.48), RTF<0.2, fits GTX1650; (2) ThonburianTTS megaF5 — same flowtts pipeline, the established Thai F5-TTS; (3) VoxCPM2
-  2B — 30 langs incl. Thai+EN in one checkpoint, Apache-2.0, the quality ceiling but needs Colab burst. Bench corpus: one
-  clean ~15-30s Thai reference clip + exact transcript (voice-corpus or a recorded KK/Tony read), 5 held-out Thai sentences.
-  Score generated audio CER via Thai ASR (whisper-large-v3) and SIM via our existing CAM++ speaker encoder.'
-spec: 'Procedure in help: — the deliverable if it passes is `thai-clone-tts` wrapper (ref_audio + text -> wav) callable from
-  the yt-voice-dub pipeline in place of edge-tts for Thai lanes. Consent: only clone household voices (Tony/KK) or voices
-  with explicit permission — fold synthetic-voice exposure into speaker-echo-leak threat notes (CAM++ live voiceprint verify
-  should still hold, note it).'
+note: 'Three lanes: (1) JaiTTS-F5TTS ~335M — Thai-native, beats ThonburianTTS on its own bench (CER 4.26 vs 6.26,
+  SIM 0.58 vs 0.48), RTF<0.2, fits GTX1650; (2) ThonburianTTS megaF5 — same flowtts pipeline, the established Thai
+  F5-TTS; (3) VoxCPM2 2B — 30 langs incl. Thai+EN in one checkpoint, Apache-2.0, the quality ceiling but needs Colab
+  burst. Bench corpus: one clean ~15-30s Thai reference clip + exact transcript (voice-corpus or a recorded KK/Tony
+  read), 5 held-out Thai sentences. Score generated audio CER via Thai ASR (whisper-large-v3) and SIM via our existing
+  CAM++ speaker encoder.'
+spec: 'Procedure in help: — the deliverable if it passes is `thai-clone-tts` wrapper (ref_audio + text -> wav) callable
+  from the yt-voice-dub pipeline in place of edge-tts for Thai lanes. Consent: only clone household voices (Tony/KK)
+  or voices with explicit permission — fold synthetic-voice exposure into speaker-echo-leak threat notes (CAM++
+  live voiceprint verify should still hold, note it).'
 help: 'SETUP tony-omen: python3.10+ venv, torch cu118/cu121 per GPU. THONBURIAN: pip install git+https://github.com/biodatlab/thonburian-tts
   ; FlowTTSPipeline(model_config=ModelConfig(language="th", model_type="F5", checkpoint="hf://biodatlab/ThonburianTTS/megaF5/mega_f5_last.safetensors",
   vocab_file="hf://biodatlab/ThonburianTTS/megaF5/mega_vocab.txt", vocoder="vocos"), audio_config=AudioConfig(cfg_strength=2.5))
   ; pipeline(text=<gen>, ref_voice=<clip.wav>, ref_text=<exact transcript>). JAITTS: same flowtts module, checkpoint="hf://JTS-AI/JaiTTS-F5TTS/model.pt",
   vocab_file="hf://JTS-AI/JaiTTS-F5TTS/vocab.txt". VYNCX v2 (optional IPA lane): pip install f5-tts-th; TTS(model="v2").infer(ref_audio,
   ref_text, gen_text). VOXCPM2 ceiling: colab-mcp T4 notebook; pip install voxcpm; VoxCPM.from_pretrained("openbmb/VoxCPM2-...");
-  generate with ref wav + ref transcript; download wavs for scoring. SCORING: whisper-large-v3 transcribe each output -> CER
-  vs target; CAM++ embedding cosine vs reference clip -> SIM; Tony blind-rates 1-5. PITFALLS: ref_text must match the clip
-  exactly (Thai tokenization is the usual failure); clip must be clean, single-speaker, 15-30s; GTX1650 4GB -> keep cfg_strength<=2.5,
-  batch=1; VoxCPM2 needs ~8GB+ so Colab only. If JaiTTS long-form CER spikes (paper shows 11.57 on long) chunk input at sentence
-  boundaries.'
+  generate with ref wav + ref transcript; download wavs for scoring. SCORING: whisper-large-v3 transcribe each output
+  -> CER vs target; CAM++ embedding cosine vs reference clip -> SIM; Tony blind-rates 1-5. PITFALLS: ref_text must
+  match the clip exactly (Thai tokenization is the usual failure); clip must be clean, single-speaker, 15-30s; GTX1650
+  4GB -> keep cfg_strength<=2.5, batch=1; VoxCPM2 needs ~8GB+ so Colab only. If JaiTTS long-form CER spikes (paper
+  shows 11.57 on long) chunk input at sentence boundaries.'
 links:
 - yt-voice-dub-mode
 - yt-dub-liam-e2e
@@ -45,7 +46,7 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
   host: tony-omen
   labels:
@@ -54,3 +55,6 @@ comms:
 - at: 2026-10-08 06:05
   from: devin
   text: armed as dispatch pinned to tony-omen runner (gpu label) — spec/help on card already carry the full procedure
+- at: 2026-10-08 05:53
+  from: tony
+  text: queued for processing

@@ -3,25 +3,28 @@ title: Ada kanban access — tools + authority standard
 brief: Ada should review and take action on the board. Waiting in the backlog — no action needed yet.
 column: backlog
 priority: medium
-note: 'Tony ask (2026-10-06): Ada should review and take action on the board. Design: docs/design/ada-kanban-access.md. Channel
-  already exists — board-api :8787 is the sanctioned write path with ''ada'' as an allowed comment identity; the gap is loopback-only
-  binding. Fix = BOARD_API_BIND + BOARD_API_TOKEN bearer (same pattern Tony added to report-api today), then a `kanban` tool
-  group in ada-pi tools.d (list/read/comment/move/ask/file). Standard: Ada triages and closes with mandatory evidence, never
-  decides high-priority/prod/security cards — those go to Tony via kanban_ask. Delivered 2026-10-06: kanban-brief.py (T0/T1
-  — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer) + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when
-  checks all passing get auto-closed, bounded check vocabulary, kanban_act ops events). Remaining: board-api token + kanban
-  tool group for Ada voice path.'
-updated: 2026-10-07 23:10
+note: 'Tony ask (2026-10-06): Ada should review and take action on the board. Design: docs/design/ada-kanban-access.md.
+  Channel already exists — board-api :8787 is the sanctioned write path with ''ada'' as an allowed comment identity;
+  the gap is loopback-only binding. Fix = BOARD_API_BIND + BOARD_API_TOKEN bearer (same pattern Tony added to report-api
+  today), then a `kanban` tool group in ada-pi tools.d (list/read/comment/move/ask/file). Standard: Ada triages
+  and closes with mandatory evidence, never decides high-priority/prod/security cards — those go to Tony via kanban_ask.
+  Delivered 2026-10-06: kanban-brief.py (T0/T1 — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer)
+  + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when checks all passing get auto-closed, bounded check
+  vocabulary, kanban_act ops events). Remaining: board-api token + kanban tool group for Ada voice path.'
+updated: 2026-10-08 05:53
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: ada-pi
-spec: 'Implement Ada kanban access per docs/design/ada-kanban-access.md (in the chaba checkout — read it first). Ada reviews
-  and acts on the board within the authority standard the design defines: which card fields she may write, which transitions
-  need Tony''s confirm, and how board requests reach her. Build the ada-pi side: tool(s) + instructions + confirm-gate integration;
-  the board-api endpoints already exist (chaba). Live-verify on ada-dev with a real card, then post results to this card''s
-  comms.'
+spec: 'Implement Ada kanban access per docs/design/ada-kanban-access.md (in the chaba checkout — read it first).
+  Ada reviews and acts on the board within the authority standard the design defines: which card fields she may
+  write, which transitions need Tony''s confirm, and how board requests reach her. Build the ada-pi side: tool(s)
+  + instructions + confirm-gate integration; the board-api endpoints already exist (chaba). Live-verify on ada-dev
+  with a real card, then post results to this card''s comms.'
 comms:
 - at: 2026-10-07 23:10
   from: devin
   text: 'triage: armed as dispatch (ada-pi), idle until started'
+- at: 2026-10-08 05:53
+  from: tony
+  text: queued for processing

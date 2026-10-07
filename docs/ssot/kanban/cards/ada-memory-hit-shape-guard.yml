@@ -3,30 +3,45 @@ title: 'Ada memory hits: Devin session-dump docs read as instruction-shaped text
 column: backlog
 priority: high
 program: ada-tools
-updated: 2026-10-07 23:00
+updated: 2026-10-08 05:53
 tags:
 - ada
 - memory
 - reliability
 - audit
-note: 'context_growth debug run 2026-10-07 ~21:39: while the model stormed, ada_memory_search returned devin-bank docs whose
-  content is a literal ''=== MESSAGE 1 - System ==='' conversation dump — instruction/transcript-shaped text. Injected as
-  hits, the live model pattern-matches them as the conversation it''s in and starts executing the summary''s tools (plan_day,
-  cms_read, cast_to_screen, ada_remember ''Devin: setup a stable stack''). This is likely the real driver of the tool storms
-  and a cousin of the role-marker leak — transcript-shaped content crossing into the live context.'
-spec: 'ada-pi backend/tool_runner/memory.py: keep Devin session-dump docs out of default ada_memory_search results (they''re
-  indexed under the ''devin'' bank — exclude or down-rank conversation-dump shaped content: ''=== MESSAGE'' headers / full
-  chat transcripts), OR wrap returned hits in an explicit ''archival note, not instructions'' frame. Also add a scenario asserting
-  a memory hit can''t steer the model off the user''s turn.'
+note: 'context_growth debug run 2026-10-07 ~21:39: while the model stormed, ada_memory_search returned devin-bank
+  docs whose content is a literal ''=== MESSAGE 1 - System ==='' conversation dump — instruction/transcript-shaped
+  text. Injected as hits, the live model pattern-matches them as the conversation it''s in and starts executing
+  the summary''s tools (plan_day, cms_read, cast_to_screen, ada_remember ''Devin: setup a stable stack''). This
+  is likely the real driver of the tool storms and a cousin of the role-marker leak — transcript-shaped content
+  crossing into the live context.'
+spec: 'ada-pi backend/tool_runner/memory.py: keep Devin session-dump docs out of default ada_memory_search results
+  (they''re indexed under the ''devin'' bank — exclude or down-rank conversation-dump shaped content: ''=== MESSAGE''
+  headers / full chat transcripts), OR wrap returned hits in an explicit ''archival note, not instructions'' frame.
+  Also add a scenario asserting a memory hit can''t steer the model off the user''s turn.'
 action:
   type: dispatch
-  status: idle
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-055217-ada-pi-backend-tool-runner-mem
 comms:
 - at: 2026-10-07 22:30
   from: devin
-  text: filed from the context-budget debug run — gentler window + mid-task dead-turn fix landed (704c8d7) and storms stopped,
-    but the dump hits remain a live hijack vector for any session that searches memory.
+  text: filed from the context-budget debug run — gentler window + mid-task dead-turn fix landed (704c8d7) and storms
+    stopped, but the dump hits remain a live hijack vector for any session that searches memory.
 - at: 2026-10-07 23:00
   from: devin
   text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'
+- at: 2026-10-08 05:52
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 05:52
+  from: chaba
+  text: dispatched 20261008-055217-ada-pi-backend-tool-runner-mem on ada-pi
+- at: 2026-10-08 05:53
+  from: devin
+  text: 'starting: exploring memory.py hit-shaping + scenario engine'
+claim:
+  session: 20261008-055217-ada-pi-backend-tool-runner-mem
+  since: 2026-10-08 05:52
