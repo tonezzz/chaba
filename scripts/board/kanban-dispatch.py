@@ -16,12 +16,16 @@ session to poll it.
 
 For cards already 'running', polls `devin-dispatch status <task_id>`;
 when the unit finishes, marks action.status done, moves the card to
-review, writes a comms entry, and best-effort merges the session branch
-into origin/<default_branch> in a throwaway detached worktree (skipped
-when the worktree is dirty or the merge conflicts — the board-api close
-gate still blocks those until merged by hand; KANBAN_AUTOMERGE=0
-disables). Session-end notes report leftover dirty/unmerged state.
-Tony reviews then presses Close.
+review, writes a comms entry, and runs the close-out merge step
+(dispatch_repos.close_out — card dispatch-auto-merge): leftover
+worktree files are committed as a checkpoint, the session branch is
+pushed to origin, the card's expected_goals gate is run, and the
+branch is merged --no-ff into origin/<default_branch> in a throwaway
+detached worktree. Unresolved conflicts or failed goals leave the
+card in review with a comms note for human resolution
+(KANBAN_AUTOMERGE=0 disables the whole step). Session-end notes
+report leftover dirty/unmerged state. Tony reviews then presses
+Close.
 """
 import fcntl
 import json
@@ -298,9 +302,10 @@ def start_pending(path: Path) -> str:
 
 
 def merge_pending_one(path: Path) -> str:
-    """Phase B: git auto-merge (slow, no lock), then write back."""
+    """Phase B: close-out (checkpoint + push + goals gate + auto-merge;
+    slow, no lock), then write back."""
     try:
-        res = dr.try_merge(load_card(path))
+        res = dr.close_out(load_card(path))
     except Exception as e:
         res = {"merged": False, "error": str(e)}
 
@@ -309,17 +314,19 @@ def merge_pending_one(path: Path) -> str:
         a = card.get("action") or {}
         a.pop("merge_pending", None)
         if res.get("merged"):
-            comms_add(card, "chaba",
-                      res.get("note") or "session branch merged")
-        else:
-            why = res.get("error") or res.get("skipped") or "unknown"
-            comms_add(card, "chaba",
-                      f"auto-merge not done: {why} — close will block "
-                      f"until merged")
+            a["verified"] = True
+        elif res.get("conflicts") or (
+                res.get("gate") and not res["gate"]["ok"]):
+            a["verified"] = False  # checked and NOT verified
+        for n in dr.close_out_notes(res):
+            comms_add(card, "chaba", n)
         for n in session_end_notes(card):
             comms_add(card, "chaba", n)
         save_card(path, card)
-        return "merged" if res.get("merged") else f"merge: {res}"
+        if res.get("noop"):
+            return "noop"
+        return ("merged" if res.get("merged")
+                else f"merge: {res.get('error') or res.get('skipped') or res}")
     return _with_lock(apply)
 
 

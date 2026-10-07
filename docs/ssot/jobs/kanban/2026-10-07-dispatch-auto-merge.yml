@@ -1,0 +1,110 @@
+title: "Dispatch close-out: checkpoint + push + auto-merge"
+subtitle: >-
+  Session-end merge step for dispatch cards — leftover files checkpoint,
+  branch always pushed to origin, expected_goals gate, --no-ff merge
+  into origin/<default> with safe-pull conflict conventions
+icon: 🔀
+id: 2026-10-07-dispatch-auto-merge
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-auto-merge
+branch: dispatch/20261007-181146-add-a-merge-step-to-the-dispat
+started: "2026-10-07"
+completed: "2026-10-07"
+
+context:
+  user_request: >
+    Tony 2026-10-07: dispatch sessions finish real work but never merge
+    it — 4 cards rescued in one evening (ada-remember-confirm-flake 7
+    uncommitted files, speaker-profile-tool 12 files, yt-voice-dub-mode
+    1 commit unpushed, google-token-loud-fail committed on tony-omen and
+    never pushed). The merge-guard blocks review->done correctly, but
+    nobody merges. Fix the cause: merge verified dispatch work without
+    a human.
+
+design:
+  pipeline: >-
+    dispatch_repos.close_out(card) — runs on the host that owns the
+    worktree, inside kanban-dispatch phase B for local cards and inside
+    runner-agent finish_pass for remote claims:
+      1. checkpoint(worktree) — `git add -A` + commit any uncommitted
+         leftovers on the session branch ("dispatch checkpoint: N
+         leftover file(s) at session end [task-id]"). Replaces the old
+         "worktree dirty — commit first" merge skip; the dirty-worktree
+         comms warning stays as the checkpoint-failure path.
+      2. push_branch — `git push -u origin <dispatch/…>` ALWAYS, before
+         any merge attempt, so work is never local-only.
+      3. merge_state — head already an ancestor of origin/<default> =>
+         noop (docs-only/no-commit runs skip silently).
+      4. goals_gate — card.expected_goals via scripts/lib/goals.py in
+         the session worktree. Failed, malformed, or unverifiable goals
+         hold the merge (comms lists the failing ids).
+      5. detached worktree at origin/<default>; `git merge --no-ff
+         --no-edit <branch>`; push HEAD:<base>. Push race => fetch,
+         reset --hard to the new base, re-merge, push once more.
+  conflict_policy: >-
+    safe-pull conventions (scripts/git-safe-pull.sh): paths matching
+    SAFE_PULL_GENERATED_RE (default ^docs/ssot/) resolve --ours —
+    the default branch carries the served/generated state;
+    dispatch-outcome*.md resolves --theirs (session scratch). Any other
+    conflict aborts the merge, posts the path list to comms, and the
+    card stays in review — not everything merges, and that is correct.
+  remote_claims: >-
+    runner-agent deploys as a single file (~/.local/bin/runner-agent on
+    omen); it imports dispatch_repos from DISPATCH_REPOS_DIR, its own
+    directory, or ~/CascadeProjects/chaba/scripts/board, then runs the
+    same close_out against the card's expected_goals before POSTing
+    finish. The merge's verified flag rides the finish body
+    (board-api do_finish accepts verified:bool); comms notes post after.
+    action.task_id is NOT needed on the card — the runner derives the
+    task id from the unit name it started.
+  verified_flag: >-
+    action.verified=True on merged (kanban-dispatch writes it directly;
+    remote runners send it in do=finish). False on conflicts or a held
+    goals gate — "checked and NOT verified", so stale review cards keep
+    surfacing in the needs-you band instead of looking merged.
+  disable: "KANBAN_AUTOMERGE=0 disables the whole step (both callers)."
+
+deviations:
+  merge_ff: >-
+    Spec asked for --no-ff explicitly; chaba memory says "linear history
+    on master, no merge commits". Followed the card spec — merge commits
+    mark dispatch provenance; revisit if Tony prefers squash/rebase.
+
+files:
+  - scripts/board/dispatch_repos.py   # close_out, close_out_notes,
+                                      # checkpoint, push_branch,
+                                      # goals_gate, _merge_in --no-ff +
+                                      # conflict policy
+  - scripts/board/kanban-dispatch.py  # phase B calls close_out; stamps
+                                      # action.verified
+  - scripts/board/runner-agent.py     # close_out_merge before finish;
+                                      # tid stored in state; dr_module
+                                      # loader for single-file deploys
+  - scripts/board/board-api.py        # do_finish accepts verified flag
+  - docs/ssot/kanban/ssot.kanban.yml  # execution.close_out section
+  - tests/board/test_dispatch_close_out.py  # 8 end-to-end cases
+
+verification:
+  - "python3 -m unittest tests.board.test_dispatch_close_out — 8/8 pass:
+     happy path (checkpoint+push+--no-ff merge), noop silence, real
+     conflict lists paths, generated-path auto-resolve, goals gate
+     hold/pass, malformed goals block, missing session skip."
+  - "python3 -m py_compile on all four touched scripts."
+
+deployment_notes: >-
+  kanban-dispatch.py and board-api.py run from the chaba-tony-dell
+  served checkout — they pick this up on its next pull/merge.
+  runner-agent on remote hosts is a COPY at ~/.local/bin/runner-agent
+  (tony-omen verified) — it must be re-copied from
+  scripts/board/runner-agent.py after this lands, and it needs
+  ~/CascadeProjects/chaba pulled so dispatch_repos.py has close_out.
+  Until then remote cards fall back to the old behavior + a
+  "dispatch_repos module not found" comms line.
+
+followups:
+  - "This card's own run cannot auto-merge itself — the runner-agent
+    deploying the change predates it (bootstrap). Merge by hand."
+  - "Consider a runner-agent install/update script instead of manual
+    copies — same drift class as devin-dispatch."

@@ -79,9 +79,12 @@ card_schema:
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
-    verified: "optional bool — reserved for dispatch-merge-guard's real
-              merge/push check. The review-column badge prefers it over the
-              comms heuristic (explicit false = checked and NOT verified)"
+    verified: "optional bool — written by the close-out merge step
+              (dispatch_repos.close_out via kanban-dispatch, or the
+              finish body from runner-agent). True = session branch landed
+              in origin/<default>; explicit false = checked and NOT
+              verified. The review-column badge prefers it over the comms
+              heuristic"
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
   # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
   # normalizes it to the status block on first run:
@@ -181,10 +184,35 @@ execution:
   dispatcher: "kanban-dispatch.timer (2min) -> scripts/board/kanban-dispatch.py —
                scans action.status==queued, devin-dispatch start <repo> <spec+rails>,
                writes task_id/claim/runner; polls running tasks, on finish -> status
-               done, column review + session-end comms when the worktree is
-               dirty (uncommitted file count) or the session branch has
-               commits not in origin/<default_branch>. Tony reviews and
-               presses Close."
+               done, column review + the close-out merge step (below). Tony
+               reviews and presses Close."
+  close_out: "dispatch_repos.close_out (card dispatch-auto-merge) runs at
+               session end on the host that owns the worktree —
+               kanban-dispatch for local cards, runner-agent for remote
+               claims (finish body carries the merge's verified flag):
+                 1. checkpoint — uncommitted worktree files are committed
+                    on the session branch (sessions half-did this; now
+                    enforced). The dirty-worktree comms warning stays as
+                    the failure path.
+                 2. push — the dispatch branch goes to origin ALWAYS,
+                    even when the merge can't run (work left local-only
+                    strands — google-token-loud-fail on tony-omen).
+                 3. goals gate — card expected_goals must pass in the
+                    worktree (scripts/lib/goals.py); failed/malformed
+                    goals hold the merge.
+                 4. merge --no-ff into origin/<default_branch> in a
+                    throwaway detached worktree -> push HEAD:<base>.
+                    safe-pull conflict conventions: SAFE_PULL_GENERATED_RE
+                    (default ^docs/ssot/) resolves upstream-wins,
+                    dispatch-outcome*.md resolves session-wins; other
+                    conflicts abort, post the path list to comms, and the
+                    card stays in review (correct — not everything
+                    merges). Commits-free runs skip silently.
+               action.verified is stamped True on merge, False on
+               conflicts/failed goals (the review badge prefers it).
+               KANBAN_AUTOMERGE=0 disables the whole step.
+               tests/board/test_dispatch_close_out.py covers the
+               pipeline end-to-end."
   worktree_base: "devin-dispatch cuts worktrees from origin/<default_branch>
                (repos.conf; best-effort fetch first) — never the checkout's
                current branch, so a repo parked on a stale branch can't
@@ -211,8 +239,10 @@ execution:
                for queued cards matching its host pin + RUNNER_LABELS,
                claims atomically via POST /action do=claim {host}
                (flock-serialized — no double dispatch), runs under
-               systemd-run, reports via do=finish {host, ok, result}.
-               Only the claiming host may finish a card.
+               systemd-run, reports via do=finish {host, ok, result,
+               verified?}. Only the claiming host may finish a card.
+               Dispatch-type finishes run the close_out merge step
+               locally first (above) — verified rides the finish body.
                type=container needs only podman (idc hosts); type=dispatch
                needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
