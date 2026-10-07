@@ -175,3 +175,52 @@ services:
       - 'Start container: ssh tony-omen "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
         && docker compose up -d sensor-reader"'
       - "Check main.py: ssh tony-omen ls -la /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/sensor-reader/main.py"
+  - id: open-jev-scorer
+    name: open-jev scorer (gemma-3-4b)
+    type: systemd
+    service: open-jev.service
+    expected_state: inactive
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_omen
+    note: "Dormant by design (travel-slim): ada-pi-orch-bench starts it via
+      ExecStartPre Mon 04:30, ExecStartPost stops it; open-jev-leash.timer
+      reaps it if up >2.5h. 'unknown' during bench window = expected."
+  - id: open-jev-student-scorer
+    name: open-jev student scorer (gemma-3-1b)
+    type: systemd
+    service: open-jev-student.service
+    expected_state: inactive
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_omen
+    note: Same on-demand lifecycle as open-jev-scorer.
+  - id: open-jev-leash-timer
+    name: open-jev leash timer
+    type: systemd
+    service: open-jev-leash.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_omen
+  - id: ada-pi-orch-bench-timer
+    name: Orch topology bench timer
+    type: systemd
+    service: ada-pi-orch-bench.timer
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_omen
+    note: "Weekly Mon 04:30 — spins JEV scorers up for the run then stops them."

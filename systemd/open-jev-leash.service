@@ -1,0 +1,6 @@
+[Unit]
+Description=Stop gemma JEV scorers that have been up >2.5h (bench leftovers)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for u in open-jev.service open-jev-student.service; do ts=$(systemctl --user show $u --property=ActiveEnterTimestamp --value); [ -z "$ts" ] && continue; epoch=$(date -d "$ts" +%s 2>/dev/null || echo 0); age=$(( $(date +%s) - epoch )); if [ "$age" -gt 9000 ]; then systemctl --user stop $u; logger -t open-jev-leash "stopped $u after ${age}s"; fi; done; exit 0'
