@@ -3,10 +3,14 @@
 
 Takes a kanban card id that has opted in (`pipeline: ci`), executes the
 stages it can automate — plan -> structure -> develop -> audit ->
-benchmark — and writes each stage result into the card's comms plus the
-`pipeline:` status block. Gates it can't automate (implementation in
-another repo, a missing benchmark measurement, Tony approval) become
-request entries on the card.
+benchmark -> verify — and writes each stage result into the card's
+comms plus the `pipeline:` status block. Gates it can't automate
+(implementation in another repo, a missing benchmark measurement, Tony
+approval) become request entries on the card.
+
+verify runs the card's `expected_goals` — machine-checkable acceptance
+(scripts/lib/goals.py for the check grammar). Results land in
+pipeline.verify {goals: [{id, ok, evidence, at}]}.
 
 Write paths (never touch card YAML outside these):
   --cards-dir PATH   file mode: direct YAML writes under the
@@ -50,8 +54,9 @@ try:
     import report as reportlib  # scripts/lib/report.py
 except Exception:  # pragma: no cover - meta/timeline optional
     reportlib = None
+import goals as goallib  # scripts/lib/goals.py — expected_goals checks
 
-STAGES = ["plan", "structure", "develop", "audit", "benchmark"]
+STAGES = ["plan", "structure", "develop", "audit", "benchmark", "verify"]
 GENERATED_PREFIXES = (
     "stacks/web/public/apps/board/",
     "reports/ci/",
@@ -232,6 +237,28 @@ class ApiSink(Sink):
     def set_pipeline(self, cid: str, pipeline: dict) -> None:
         r = self._post("/pipeline", {"id": cid, "pipeline": pipeline,
                                      "from": ACTOR})
+        if not r.get("ok") and "stage must be one of" in str(
+                r.get("error")):
+            # pre-upgrade board-api — drop the stage names it doesn't
+            # know and retry; non-stage keys (pipeline.verify etc.)
+            # still merge, and the dropped stage stays visible in comms
+            try:
+                allowed = set(re.search(r"\[([^]]*)\]",
+                                        r["error"]).group(1)
+                              .replace("'", "").split(", "))
+            except Exception:
+                allowed = set()
+            dropped = sorted(set(pipeline.get("stages") or {}) - allowed)
+            retry = dict(pipeline)
+            retry["stages"] = {k: v for k, v in
+                               (pipeline.get("stages") or {}).items()
+                               if k in allowed}
+            r = self._post("/pipeline", {"id": cid, "pipeline": retry,
+                                         "from": ACTOR})
+            if dropped:
+                self.comment(cid, "stage(s) not yet known to board-api "
+                                  f"({', '.join(dropped)}) — recorded in "
+                                  "the pipeline block only")
         if r.get("status") == 404:
             # pre-deploy board-api — keep the result visible in comms
             stages = pipeline.get("stages", {})
@@ -324,12 +351,21 @@ def stage_plan(card: dict) -> dict:
     note = (card.get("note") or "").strip()
     if not (spec or note):
         missing.append("spec|note")
+    goals, goal_errors = goallib.validate_goals(card)
+    if goal_errors:
+        # prose goals are rejected outright — a goal that cannot fail
+        # carries no information
+        return {"status": "fail",
+                "detail": "expected_goals rejected: "
+                          + "; ".join(goal_errors[:4]),
+                "missing": [], "goal_errors": goal_errors}
     bench = card.get("benchmark") or {}
     accept = (bench.get("metric") or card.get("metric")
-              or card.get("verify")
+              or card.get("verify") or goals
               or re.search(r"accept|verify|metric", spec, re.I))
     if not accept:
-        missing.append("acceptance (benchmark.metric|metric|verify)")
+        missing.append("acceptance (benchmark.metric|metric|verify|"
+                       "expected_goals)")
     if missing:
         return {"status": "fail",
                 "detail": "missing " + ", ".join(missing),
@@ -338,7 +374,9 @@ def stage_plan(card: dict) -> dict:
             "detail": "dispatchable spec + acceptance signal present",
             "spec_len": len(spec or note),
             "acceptance": str(bench.get("metric") or card.get("metric")
-                              or card.get("verify"))[:200],
+                              or card.get("verify")
+                              or f"{len(goals)} expected_goals")[:200],
+            "expected_goals": [g["id"] for g in goals],
             "declared_repo": (card.get("action") or {}).get("repo")}
 
 
@@ -464,6 +502,12 @@ def stage_benchmark(card: dict, pipeline: dict, root: Path,
         rec["command"] = command
 
     if not rec.get("metric"):
+        if card.get("expected_goals"):
+            # executable goals are the acceptance measurement — a
+            # before/after metric is redundant, not missing
+            return ({"status": "skip",
+                     "detail": "no benchmark metric — acceptance is via "
+                               "expected_goals (verify stage)"}, rec)
         return ({"status": "blocked",
                  "detail": "no benchmark metric declared on the card",
                  "request": "Declare benchmark.metric (+command if "
@@ -510,6 +554,44 @@ def stage_benchmark(card: dict, pipeline: dict, root: Path,
     return {"status": "pass",
             "detail": f"{rec['metric'][:80]}: "
                       f"{rec.get('before')} -> {rec.get('after')}"}, rec
+
+
+def stage_verify(card: dict, root: Path, dry_run: bool) -> tuple[dict, dict]:
+    """Execute every expected_goal -> (stage_result, verify_record).
+
+    The verify record lands at pipeline.verify: {at, ok: "n/m",
+    goals: [{id, ok, evidence, at}]}. Re-runs overwrite — goals are a
+    statement about now, and report-watch re-probes them on done cards.
+    """
+    goals, errors = goallib.validate_goals(card)
+    rec = {"at": now_iso(), "goals": []}
+    if errors:
+        return ({"status": "fail",
+                 "detail": "unparseable expected_goals: "
+                           + "; ".join(errors[:3])}, rec)
+    if not goals:
+        return ({"status": "skip",
+                 "detail": "no expected_goals declared on the card"}, rec)
+    if dry_run:
+        rec["goals"] = [{"id": g["id"], "ok": None,
+                         "evidence": "dry-run — not executed",
+                         "at": now_iso()} for g in goals]
+        return ({"status": "skip",
+                 "detail": f"dry-run — {len(goals)} goal(s) declared, "
+                           "not executed",
+                 "goals": rec["goals"]}, rec)
+    results = goallib.run_goals(goals, root)
+    rec["goals"] = results
+    bad = [r for r in results if r["ok"] is not True]
+    rec["ok"] = f"{len(results) - len(bad)}/{len(results)}"
+    if bad:
+        return ({"status": "fail",
+                 "detail": f"{len(bad)}/{len(results)} goals failed: "
+                           + "; ".join(r["id"] for r in bad[:4]),
+                 "goals": results}, rec)
+    return ({"status": "pass",
+             "detail": f"{len(results)}/{len(results)} expected_goals pass",
+             "goals": results}, rec)
 
 
 # ---------------------------------------------------------------- runner
@@ -582,6 +664,10 @@ def run(card_id: str, card: dict, sink: Sink, stages: list[str],
                                        develop_ok, dry_run)
             pipeline["benchmark"] = rec
             record("benchmark", res)
+        elif name == "verify":
+            res, rec = stage_verify(card, root or repo, dry_run)
+            pipeline["verify"] = rec
+            record("verify", res)
 
     sink.set_pipeline(card_id, pipeline)
     run_doc["finished"] = now_iso()
@@ -643,6 +729,40 @@ def _selftest() -> None:
     r = stage_plan({"id": "t", "title": "x"})
     assert r["status"] == "fail" and "spec|note" in r["detail"]
 
+    # expected_goals: valid goals are an acceptance signal; prose rejected
+    r = stage_plan({"id": "t", "title": "x", "spec": "do thing",
+                    "expected_goals": [
+                        {"id": "f", "check": "file-exists /tmp"}]})
+    assert r["status"] == "pass" and r["expected_goals"] == ["f"], r
+    r = stage_plan({"id": "t", "title": "x", "spec": "do thing",
+                    "expected_goals": ["make it work"]})
+    assert r["status"] == "fail" and "rejected" in r["detail"], r
+    r = stage_plan({"id": "t", "title": "x", "spec": "do thing",
+                    "expected_goals": [{"id": "g", "check": "be good"}]})
+    assert r["status"] == "fail" and "g" in r["detail"], r
+
+    # verify stage: no goals -> skip; failing goal -> fail; pass -> pass
+    res, rec = stage_verify({"id": "t"}, Path("."), False)
+    assert res["status"] == "skip", res
+    res, rec = stage_verify(
+        {"id": "t", "expected_goals": [
+            {"id": "ok", "check": "command exit 0"},
+            {"id": "bad", "check": "command exit 9"}]},
+        Path("."), False)
+    assert res["status"] == "fail" and rec["ok"] == "1/2", (res, rec)
+    assert rec["goals"][1]["ok"] is False and "exit 9" in \
+        rec["goals"][1]["evidence"]
+    res, rec = stage_verify(
+        {"id": "t", "expected_goals": [
+            {"id": "ok", "check": "command echo yes expect yes"}]},
+        Path("."), False)
+    assert res["status"] == "pass" and rec["ok"] == "1/1", (res, rec)
+    res, rec = stage_verify(
+        {"id": "t", "expected_goals": [
+            {"id": "x", "check": "command exit 0"}]},
+        Path("."), True)
+    assert res["status"] == "skip" and rec["goals"][0]["ok"] is None
+
     scope = in_scope(["docs/ssot/kanban/cards/t.yml",
                       "stacks/web/public/apps/board/cards.json",
                       "scripts/ci/x.py"], "t")
@@ -698,7 +818,7 @@ def main() -> int:
     ap.add_argument("--repo", type=Path, default=Path.cwd(),
                     help="worktree to audit (default: cwd)")
     ap.add_argument("--stages", default=",".join(STAGES),
-                    help="comma list — default all five")
+                    help="comma list — default all six")
     ap.add_argument("--force", action="store_true",
                     help="run even without `pipeline: ci` on the card")
     ap.add_argument("--dry-run", action="store_true")

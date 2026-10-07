@@ -1,0 +1,89 @@
+title: "Card acceptance: expected_goals field + verify stage"
+subtitle: >-
+  Machine-checkable acceptance for kanban cards — a verify stage that
+  executes declared goals, board goal chips, and done-card rot re-probes
+icon: 🎯
+id: 2026-10-07-expected-goals-verify
+status: done
+owner: devin-dispatch
+project: chaba
+card: expected-goals-verify
+branch: dispatch/20261007-144438-deliverables-1-card-schema-exp
+started: "2026-10-07"
+completed: "2026-10-07"
+
+context:
+  user_request: >
+    Tony 2026-10-07: "each card has expected goal and when finished we
+    measure it by these goals — a card that passes this audit would be
+    very confident." Generalizes benchmark (one metric) into
+    expected_goals (N machine-checkable assertions). Prose goals are
+    rejected — a goal that cannot fail carries no information.
+
+design:
+  check_grammar: >-
+    scripts/lib/goals.py parse_check — "http <code> <url>",
+    "command <shell> [expect <substr|exit [N]>]", "file-exists <path>",
+    "git-ancestor <branch> <base>", "ws <url>" (real RFC6455 handshake,
+    pass on 101). Anything else raises ValueError -> prose rejection.
+  verify_stage: >-
+    Sixth pipeline stage. Executes every goal in the session worktree,
+    writes pipeline.verify {at, ok: "n/m", goals: [{id, ok, evidence,
+    at}]}. Any failed goal -> stage fail. No expected_goals -> skip.
+    Valid expected_goals satisfy the plan-gate acceptance signal; prose
+    goals fail plan outright. Cards with expected_goals skip the
+    benchmark stage's blocked/request path (goals ARE the acceptance).
+  board_chips: >-
+    render-board.py compute_checks: when pipeline.verify.goals exist,
+    per-goal chips (goal:<id>) + a verify summary chip replace the
+    outcome/deploy comms heuristics; git-reality chips (code, N runs)
+    stay. Chips emit even on running cards once goals exist.
+  rot: >-
+    report-watch.py re-probes expected_goals on done cards every
+    GOAL_PROBE_H (24h) against the served checkout; regressions raise a
+    report-watch-goal-rot-<card> focus-inbox item, probe state persists
+    in reports/report-watch/state.json. pipeline.verify.at counts as a
+    probe.
+  api_compat: >-
+    ApiSink.set_pipeline falls back when board-api predates a stage
+    name: parses the allowed set out of the 400 and retries without the
+    unknown stages — non-stage keys (pipeline.verify) still merge.
+    Comms notes the drop. (Same spirit as the existing 404 fallback.)
+
+deliverables:
+  - scripts/lib/goals.py — shared check parser + executor + selftest
+  - scripts/ci/card-pipeline.py — verify stage, plan-gate goal validation, stage fallback
+  - scripts/board/board-api.py — "verify" in PIPELINE_STAGES
+  - scripts/render-board.py — goal chips replace outcome/deploy heuristics
+  - scripts/report/report-watch.py — done-card goal re-probe (24h)
+  - docs/ssot/kanban/ssot.kanban.yml — expected_goals + pipeline.verify schema
+  - docs/ssot/ssot.ci.yml — verify stage, companion_fields.expected_goals
+  - docs/ssot/infrastructure/ssot.quality.yml — gate.card-verify, six-stage lane
+
+demo_run:
+  card: expected-goals-verify (this card — self-demonstrating)
+  run: "api mode from the session worktree, all six stages"
+  result: "plan=pass structure=pass develop=pass audit=pass(9 checks/8 files) benchmark=skip verify=pass"
+  goals: "schema / goalslib / verify-stage / ci-report / board-api — 5/5 pass"
+  artifact: reports/ci/expected-goals-verify-<ts>.json + reports/ci/meta.yml + timeline event
+  notes: >
+    First real ci-pipeline run — reports/ci/ meta now exists. Live
+    board-api predates the verify stage name, so stages.verify was
+    dropped from the /pipeline write (graceful fallback, comms noted)
+    while pipeline.verify itself landed — the chips read the verify
+    block, not stages. stages.verify records once board-api.py merges
+    and deploys.
+
+verification:
+  selftests: "goals.py --selftest, card-pipeline.py --selftest, board-api.py --selftest -> all ok"
+  render: "worktree render with the live card shows verify 5/5 + goal:* chips; plain cards unchanged (deploy/verify heuristics)"
+  validator: "node scripts/ssot-validate-all.mjs on the 3 changed SSOT files -> 0 errors"
+  live: "card expected-goals-verify carries pipeline.verify {ok: 5/5} + per-stage comms on the board"
+
+followups:
+  - deploy updated board-api.py + render-board.py to chaba-tony-dell (served
+    checkout) so stages.verify records and goal chips render on the live
+    board — promotion needs approval, not done in this session
+  - backfill expected_goals onto templates (dispatch card-authoring) so new
+    cards arrive verifiable
+  - ws check is tailnet-reachable only from hosts on the tailnet — expected
