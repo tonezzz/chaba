@@ -2,10 +2,10 @@ id: report-session-loop
 title: Report -> Devin session loop — CMS page spawns a card, Ada joins the thread
 brief: From a report page you should be able to kick off a work session that tracks itself on a card and keeps the
   report updated. Waiting in the backlog — no action needed.
-column: backlog
+column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 19:29
+updated: 2026-10-07 19:42
 tags:
 - cms
 - kanban
@@ -31,9 +31,10 @@ spec: 'Design the loop as four deliverables — (1) SPAWN: a "start session" aff
   — split implementation into sub-cards as needed; keep this card for e2e tracking.'
 action:
   type: program
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261007-191420-design-the-loop-as-four-delive
+  result: 20261007-191420-design-the-loop-as-four-delive finished (inactive) — see `devin-dispatch logs 20261007-191420-design-the-loop-as-four-delive`
 comms:
 - at: 2026-10-07 13:55
   from: devin
@@ -49,6 +50,19 @@ comms:
   from: devin
   text: 'design session running: surveyed board-api (/card, /respond→answers.jsonl), kanban-dispatch rails, ada-participation
     tiers, CMS stack (ada-pi pwa/cms + /api/cms, MDDB ada-cms-pages). Writing design doc + sub-cards now.'
+- at: 2026-10-07 19:39
+  from: devin
+  text: 'Design done. Full design: docs/design/report-session-loop.md; job trail: docs/ssot/jobs/kanban/2026-10-07-report-session-loop-design.yml.
+    Filed 6 sub-cards (repo-split, idle — Start queues): report-loop-spawn-api, -spawn-ui, -session-rails, -comment-delivery,
+    -ada-opinion, -bench + scenario-report-opinion probe card. SSOT: report: card field, report-opinion bench domain
+    (spec), [opinion] T1 convention. Staged scenario report_opinion_loop.yaml. ssot-validate 1639/1639. Key gaps
+    found: /card canno'
+- at: 2026-10-07 19:42
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 19:42
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261007-191420-design-the-loop-as-four-delive — close will block
+    until merged'
 claim:
-  session: 20261007-191420-design-the-loop-as-four-delive
   since: 2026-10-07 19:14
