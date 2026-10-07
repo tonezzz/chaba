@@ -1,0 +1,31 @@
+id: nest-portable-brains
+title: "Chaba Nest portable brains — gdrive brain store, respawn anywhere"
+column: todo
+priority: medium
+created: 2026-10-07
+updated: '2026-10-07'
+note: >-
+  Every Nest entity gets a versioned brain bundle (manifest + weights +
+  memory slice + config + state anchors) stored on gdrive as an
+  append-only artifact. Any host can fetch → hydrate → resume with
+  RPO = time since last checkpoint. Same tier model as the deployed
+  mddb backup offload: hot local, warm on tailnet, cold on gdrive.
+  Research doc: docs/kb/nest-portable-brains-research.md
+links:
+  - docs/ssot/kanban/cards/nest-collective-bench.yml
+  - docs/ssot/kanban/cards/chaba-nest-models.yml
+  - docs/ssot/kanban/cards/nest-edge-vision.yml
+  - docs/ssot/kanban/cards/verify-gdrive-offload-tier.yml
+spec: >
+  P0 (this card): manifest.yml schema + candidate entity inventory.
+  P1: nest-brain-pack.sh / nest-brain-restore.sh — tar+sha manifest,
+  rclone copyto, verified round-trip.
+  P2: cross-host respawn proof — nest-01-ops-classifier (10KB model,
+  ideal MVP) checkpoint on tony-dell → restore on mn01 → bench-diff
+  within noise = continuity proven.
+  P3: checkpoint cadence (timer + on-improvement events) + Drive
+  Changes/latest-pointer drift signal ("newer brain available").
+  P4: brains as FedAvg transport for the models federation card.
+  Open questions: brain boundary (just-enough state), fencing/epoch
+  against split-brain respawns, rclone crypt for sensitive brains,
+  RTO targets (<60s micro, <5min jev-class).
