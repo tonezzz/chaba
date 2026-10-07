@@ -1,0 +1,44 @@
+id: kanban-card-brief
+title: Card brief — plain-language situation + expected action on every card
+column: todo
+priority: medium
+created: 2026-10-07
+updated: 2026-10-07 17:51
+brief: 'Cards currently open with note/spec jargon. Add a `brief` field — 2-3 sentences of plain language: what''s
+  the situation and what Tony''s expected action is (review / answer a request / wait / nothing). Expected action
+  on this card: none — dispatch will implement it.'
+note: 'Tony 2026-10-07: "Perhaps add a short explanation/suggestion section on top of each card so I can understand
+  more of the situation and what is my expected action."'
+spec: "1. Schema: optional `brief` field on cards — 2-3 sentences max, plain\n   language, leads with situation\
+  \ then expected action. Convention:\n   no jargon, no IDs, written for the operator not the implementer.\n2. Render:\
+  \ render-board2.py shows `brief` first in the card detail,\n   styled prominent (above note/spec). Card list could\
+  \ show brief's\n   first line as a subtitle on hover/expand — keep minimal.\n3. Backfill: one dispatch pass over\
+  \ active (non-done) cards to write\n   briefs from card content. Template fallback for cards without one:\n  \
+  \ derive from column (\"queued — dispatch will claim it\", \"review —\n   read the result and click finish\",\
+  \ \"backlog — waiting for a decision\").\n4. Convention going forward: every new card gets a brief; card authors\n\
+  \   (dispatch jobs included) write it. Document in the kanban SSOT."
+expected_goals:
+- id: brief-renders
+  check: grep -q 'c.brief' scripts/render-board2.py
+  expect: exit
+- id: briefs-backfilled
+  check: test "$(grep -l '^brief:' docs/ssot/kanban/cards/*.yml | wc -l)" -gt 10
+  expect: exit
+action:
+  type: dispatch
+  status: running
+  runner: tony-dell
+  task_id: 20261007-174957-1-schema-optional-brief-field-
+comms:
+- at: 2026-10-07 17:49
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 17:49
+  from: chaba
+  text: dispatched 20261007-174957-1-schema-optional-brief-field- on chaba
+- at: 2026-10-07 17:51
+  from: devin
+  text: claimed — exploring schema + render pipeline, then backfilling briefs on active cards
+claim:
+  session: 20261007-174957-1-schema-optional-brief-field-
+  since: 2026-10-07 17:49

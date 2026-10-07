@@ -3,18 +3,36 @@ title: Chaba Nest collective-intelligence bench — iterate topologies
 column: doing
 priority: high
 program: ada-tools
-note: >-
-  Umbrella for testing collective intelligence across compound-AI
-  topologies (Tony 2026-10-06: "cascade them in many levels and many
-  ways — how to iterate"). Built: tests/bench/topologies.yml registry
-  (L0 rules / L1 student / L2 heavy / L3 arbiter × series|parallel|
-  router|verifier ways), nest-bench-update.py trend page (CMS
-  nest-bench), orch-bench corpus-in/corpus-out loop. Iteration model:
-  bench run -> misses -> corpus grows -> next run measures whether the
-  topology change earned its cpu-seconds. Remaining: (1) graph
-  executor for impl:chain entries (2-level+ router, verifier-wrapped
-  cascade); (2) case domains beyond confirm-gate — kanban-triage,
-  memory-bank routing, tool-selection; (3) learned router replacing the
-  feature router once the corpus is big enough; (4) scheduled bench
-  cadence so the trend page gets new rows.
-updated: '2026-10-06'
+note: 'Umbrella for testing collective intelligence across compound-AI topologies (Tony 2026-10-06: "cascade them
+  in many levels and many ways — how to iterate"). Built: tests/bench/topologies.yml registry (L0 rules / L1 student
+  / L2 heavy / L3 arbiter × series|parallel| router|verifier ways), nest-bench-update.py trend page (CMS nest-bench),
+  orch-bench corpus-in/corpus-out loop. Iteration model: bench run -> misses -> corpus grows -> next run measures
+  whether the topology change earned its cpu-seconds. Remaining: (1) graph executor for impl:chain entries (2-level+
+  router, verifier-wrapped cascade); (2) case domains beyond confirm-gate — kanban-triage, memory-bank routing,
+  tool-selection; (3) learned router replacing the feature router once the corpus is big enough; (4) scheduled bench
+  cadence so the trend page gets new rows.'
+updated: 2026-10-07 17:45
+comms:
+- at: 2026-10-07 17:39
+  from: tony
+  text: 'queued bench-cadence: scheduled nest-bench runs so the trend page self-feeds. Scope: user timer (e.g. nest-bench.timer,
+    6h or nightly) running the topology bench across registered ways, writing rows to the nest-bench CMS page +
+    corpus-in/out loop. Reuse scripts/nest/* conventions; verify one manual run first, then enable timer. Report
+    cadence + first verified row in comms.'
+- at: 2026-10-07 17:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 17:39
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 17:39
+  from: chaba
+  text: started devin-task-20261007-173936-chaba-nest-collective-intellig on tony-omen (dispatch)
+- at: 2026-10-07 17:45
+  from: devin
+  text: 'dispatch: building graph executor for impl:chain topologies + new case domains (bank/triage/toolx) + router
+    stats feed. Work in ada-pi worktree dispatch-wt-20261007-173936-nest-chain-executor'
+action:
+  type: dispatch
+  status: running
+  runner: tony-omen

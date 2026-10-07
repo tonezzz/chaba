@@ -1,6 +1,6 @@
 id: edge-route-registry
 title: 'Edge route registry: one SSOT -> edges, routes.json, Caddy snippets'
-column: review
+column: done
 review_kind: verify
 priority: high
 note: 'Route paths/upstreams are declared in 5+ places (dell Caddy 473-line monolith, mn01 Caddy copy, VPS public
@@ -19,7 +19,7 @@ action:
   result: 'exit=0  ok, so a missing Caddy block can hide behind a 404 — only `ada-tony` sets `verify.expect`. |
     devin-task-20261007-172308-phase-1-this-session-ssot-rout.service: Consumed 54.517s CPU time over 8min 8.327s
     wall clock time, 996.3M memory peak.'
-updated: 2026-10-07 17:31
+updated: 2026-10-07 17:52
 claim:
   since: 2026-10-07 15:59
 comms:
@@ -159,6 +159,9 @@ comms:
   from: tony-omen
   text: 'finished (ok): exit=0  ok, so a missing Caddy block can hide behind a 404 — only `ada-tony` sets `verify.expect`.
     | devin-task-20261007'
+- at: 2026-10-07 17:52
+  from: tony
+  text: closed by Tony
 expected_goals:
 - id: routes-json-served
   check: http 200 http://localhost/apps/routes.json

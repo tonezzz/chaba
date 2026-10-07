@@ -1,0 +1,56 @@
+id: ada-card-loop-tiers
+title: Ada in the card loop — participation tiers, mutual contact, bench gates
+column: todo
+priority: high
+created: 2026-10-07
+updated: 2026-10-07 17:52
+brief: 'Tony wants Ada inside the same loop we just found: inspect card → ask → educate each other. This card defines
+  how far she may go on her own and how we measure readiness. Expected action: review the tier table below; T0–T2
+  need no approval (mechanisms exist), T3+ gates on bench scores.'
+note: 'Tony 2026-10-07: "I like it when Ada tries to reach me in any way she can. Keep this going, because to be
+  fair I''d do the same if she lost contact. That''s for you too — all of us as a team." Mutual-contact is a team
+  value, bidirectional: any teammate who loses the channel escalates through whatever path remains (board request
+  → HA notify → OpenClaw → Telegram → ntfy), and we do the same for them.'
+links:
+- docs/ssot/kanban/cards/nest-collective-bench.yml
+- docs/ssot/kanban/cards/monitoring-standard.yml
+- docs/ssot/kanban/cards/nest-portable-brains.yml
+spec: "Participation tiers for Ada on the kanban loop:\n  T0 observe  — answer \"what's this card / what's running\"\
+  \ from live state\n                (already possible via MDDB reads; needs card-summary tool\n               \
+  \ or CMS board mirror access)\n  T1 comment  — post comms notes with evidence (\"this alert is stale —\n     \
+  \           service healthy now\"). Low risk; she often sees live\n                state first.\n  T2 request\
+  \  — raise card `requests` to Tony (mechanism exists in\n                board-api; push notification already\
+  \ wired via\n                board_notify → OpenClaw/HA/ntfy debounce)\n  T3 queue    — propose/queue card actions.\
+  \ GATED: needs card-judgment\n                bench score above threshold.\n  T4 act      — perform card work\
+  \ herself. Future / micro-entity scope.\n\nEducate-vs-educated standard (generalizes the existing\neducation_correction\
+  \ scenario): whoever holds fresher VERIFIED state\neducates. Ada educates when she has live probe evidence; she\
+  \ gets\neducated when asserting from stale memory — every correction becomes a\nbench corpus case so regressions\
+  \ surface in the hourly scenario.\n\nBenchmark: extend nest-bench with a card-judgment domain — historical\ncards\
+  \ with known-good outcomes; score whether the entity's proposed\naction matched what proved right. Metrics: correction-precision,\n\
+  correction-recall, appropriate-deference (defers on opinion questions),\naction-accuracy. T3 unlocks at a declared\
+  \ threshold.\n\nReach-out escalation ladder (mutual): board request → HA notification\n→ OpenClaw → Telegram →\
+  \ ntfy. If a channel dies, escalate to the next —\nsilence is never acceptable when something needs Tony."
+expected_goals:
+- id: tiers-in-ssot
+  check: test -f docs/ssot/infrastructure/ssot.ada-participation.yml
+  expect: exit
+- id: card-judgment-domain
+  check: grep -q card-judgment docs/ssot/infrastructure/ssot.nest-bench*.yml ../ada-pi/tests/bench/topologies.yml
+  expect: exit
+action:
+  type: dispatch
+  status: running
+  runner: tony-omen
+comms:
+- at: 2026-10-07 17:49
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 17:50
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 17:51
+  from: chaba
+  text: started devin-task-20261007-175058-participation-tiers-for-ada-on on tony-omen (dispatch)
+- at: 2026-10-07 17:52
+  from: devin
+  text: 'devin: picked up — reading nest-bench SSOT + board-api mechanisms, then writing ssot.ada-participation.yml'
