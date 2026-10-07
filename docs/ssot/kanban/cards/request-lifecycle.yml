@@ -1,46 +1,50 @@
 id: request-lifecycle
 title: Request lifecycle — capture Tony's asks so nothing dies in a conversation
-brief: "Makes sure your requests don't die inside a chat — they get captured, turned into cards, built, and verified. Waiting in the backlog — no action needed."
+brief: Makes sure your requests don't die inside a chat — they get captured, turned into cards, built, and verified. Waiting
+  in the backlog — no action needed.
 column: backlog
-note: 'The umbrella over QA/QC/CI for requests: capture → triage → card → build → verify → report. Requests today
-  die at capture: they live inside a Devin chat or Ada voice session and never become a card. Three capture paths
-  + one visibility surface fix it.'
-updated: 2026-10-07 09:44
-help: "Goal: every non-trivial request Tony makes — in Devin chat or to Ada by\nvoice — lands on the board or in\
-  \ focus-inbox, and there is one place to\nanswer \"what did I ask for that isn't done?\"\n\nCapture paths:\n\n\
-  1. Devin sessions (done 2026-10-07): AGENTS.md open-ask capture duty —\n   every unmet ask gets a card/inbox entry\
-  \ before session end; \"status?\"\n   is answered from the board, not memory.\n\n2. Ada voice: ada_board_write\
-  \ can comment/respond on existing cards but\n   cannot create one. Add board-api POST /card (minimal {title, column:\n\
-  \   backlog}) + ada_board_write action=create, then an instructions line:\n   a request that isn't finished this\
-  \ conversation → file a card before\n   ending. This is the voice-side mirror of the Devin rule.\n\n3. Drop-catcher\
-  \ sweep (the safety net): a daily script scans Ada\n   transcripts (ada-ops/session archives already in MDDB)\
-  \ + Devin session\n   summaries (~/.local/share/devin/cli/summaries/), extracts \"Tony asked\n   for X\" utterances,\
-  \ cross-checks titles against kanban cards +\n   focus-inbox, and files orphans as focus-inbox entries labeled\n\
-  \   orphan-ask. Regex-plus-classifier; the same shape as improvements-\n   triage.py. Cheap, catches requests\
-  \ made while rambling or in a failed\n   session.\n\nVisibility surface:\n\n- A \"Tony's open asks\" section —\
-  \ cards where requester=tony (or comms\n  from tony with an unanswered request) + orphan-ask inbox items. Reuse\n\
-  \  the kanban-digest page or board view; the question \"what's pending?\"\n  should have a one-screen answer.\n\
-  \nScope notes:\n\n- QA/QC/CI (devteam review, playbook verify, scenario bench) already\n  gate the build stage\
-  \ — this card only covers capture + visibility.\n- First corpus for the drop-catcher: the last 7 days of devin\
-  \ session\n  summaries — ~30 sessions/day, ask rate is high enough to measure.\n\nVerify:\n- board-api /card creates\
-  \ a backlog card visible on /apps/board/\n- voice test: \"Ada, remember to fix the faucet\" → card exists\n- drop-catcher\
-  \ run over last week lists at least the telegram-bot-token\n  and OpenClaw-bench asks (known orphans from this\
-  \ session)\n- digest page shows the open-asks section"
+note: 'The umbrella over QA/QC/CI for requests: capture → triage → card → build → verify → report. Requests today die at capture:
+  they live inside a Devin chat or Ada voice session and never become a card. Three capture paths + one visibility surface
+  fix it.'
+updated: 2026-10-08 06:15
+help: "Goal: every non-trivial request Tony makes — in Devin chat or to Ada by\nvoice — lands on the board or in focus-inbox,\
+  \ and there is one place to\nanswer \"what did I ask for that isn't done?\"\n\nCapture paths:\n\n1. Devin sessions (done\
+  \ 2026-10-07): AGENTS.md open-ask capture duty —\n   every unmet ask gets a card/inbox entry before session end; \"status?\"\
+  \n   is answered from the board, not memory.\n\n2. Ada voice: ada_board_write can comment/respond on existing cards but\n\
+  \   cannot create one. Add board-api POST /card (minimal {title, column:\n   backlog}) + ada_board_write action=create,\
+  \ then an instructions line:\n   a request that isn't finished this conversation → file a card before\n   ending. This is\
+  \ the voice-side mirror of the Devin rule.\n\n3. Drop-catcher sweep (the safety net): a daily script scans Ada\n   transcripts\
+  \ (ada-ops/session archives already in MDDB) + Devin session\n   summaries (~/.local/share/devin/cli/summaries/), extracts\
+  \ \"Tony asked\n   for X\" utterances, cross-checks titles against kanban cards +\n   focus-inbox, and files orphans as\
+  \ focus-inbox entries labeled\n   orphan-ask. Regex-plus-classifier; the same shape as improvements-\n   triage.py. Cheap,\
+  \ catches requests made while rambling or in a failed\n   session.\n\nVisibility surface:\n\n- A \"Tony's open asks\" section\
+  \ — cards where requester=tony (or comms\n  from tony with an unanswered request) + orphan-ask inbox items. Reuse\n  the\
+  \ kanban-digest page or board view; the question \"what's pending?\"\n  should have a one-screen answer.\n\nScope notes:\n\
+  \n- QA/QC/CI (devteam review, playbook verify, scenario bench) already\n  gate the build stage — this card only covers capture\
+  \ + visibility.\n- First corpus for the drop-catcher: the last 7 days of devin session\n  summaries — ~30 sessions/day,\
+  \ ask rate is high enough to measure.\n\nVerify:\n- board-api /card creates a backlog card visible on /apps/board/\n- voice\
+  \ test: \"Ada, remember to fix the faucet\" → card exists\n- drop-catcher run over last week lists at least the telegram-bot-token\n\
+  \  and OpenClaw-bench asks (known orphans from this session)\n- digest page shows the open-asks section"
 policy:
   requester: tony
 comms:
 - at: 2026-10-07 09:30
   from: devin
-  text: 'Designed + Devin-side rule landed (AGENTS.md open-ask capture duty). Remaining: board-api POST /card +
-    ada action=create, drop-catcher sweep script, open-asks digest section. Dispatchable as three small tasks.'
+  text: 'Designed + Devin-side rule landed (AGENTS.md open-ask capture duty). Remaining: board-api POST /card + ada action=create,
+    drop-catcher sweep script, open-asks digest section. Dispatchable as three small tasks.'
 - at: 2026-10-07 10:45
   from: devin
-  text: 'CI feedback loop (per Tony): verify results write back to card comms; a failed verify flips the card back
-    to doing instead of dying silently. Telemetry feeds new asks — orphan-ask sweep, scenario regressions, jev divergences
-    -> focus-inbox -> cards: the pipeline generates its own backlog. Digest->Tony closes the loop to the human.'
+  text: 'CI feedback loop (per Tony): verify results write back to card comms; a failed verify flips the card back to doing
+    instead of dying silently. Telemetry feeds new asks — orphan-ask sweep, scenario regressions, jev divergences -> focus-inbox
+    -> cards: the pipeline generates its own backlog. Digest->Tony closes the loop to the human.'
 - at: 2026-10-07 09:44
   from: devin
-  text: 'Capture path 2 landed live: board-api POST /card + ada_board_write action=create + capture instruction
-    in DEFAULT_ADA_INSTRUCTIONS (ada-pi b7d7dde, chaba 620e4372). Self-tested by filing openclaw-bench-per-model-scorecard-acros-3df00d
-    through the endpoint. Deploys needed for voice capture to go live: board-api already restarted on tony-dell;
-    ada-pi needs deploy to ada-dev/ada-ha-* when convenient. Remaining: drop-catcher sweep + open-asks digest section.'
+  text: 'Capture path 2 landed live: board-api POST /card + ada_board_write action=create + capture instruction in DEFAULT_ADA_INSTRUCTIONS
+    (ada-pi b7d7dde, chaba 620e4372). Self-tested by filing openclaw-bench-per-model-scorecard-acros-3df00d through the endpoint.
+    Deploys needed for voice capture to go live: board-api already restarted on tony-dell; ada-pi needs deploy to ada-dev/ada-ha-*
+    when convenient. Remaining: drop-catcher sweep + open-asks digest section.'
+- at: 2026-10-08 06:15
+  from: devin
+  text: 'dig-assessment: mostly landed — capture paths 1+2 live; verify-writeback exists as goal-rot focus items (report-watch
+    re-probes done-card expected_goals 24h, surfaces failures) rather than a column flip. Remaining drop-catcher sweep lane
+    is covered by lab-parakeet-batch-asr (now armed on omen). Umbrella stays manual — nothing left to dispatch.'

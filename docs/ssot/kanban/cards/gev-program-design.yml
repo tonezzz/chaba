@@ -1,24 +1,23 @@
 id: gev-program-design
 title: GEV program — lane map, drain order, dispatch plan
-brief: "Tracker card that maps all the God's-Eye-View work and the order to do it in. For orientation — no action needed."
+brief: Tracker card that maps all the God's-Eye-View work and the order to do it in. For orientation — no action needed.
 column: backlog
 priority: high
-note: 'Design/tracker for the gev-* family (program: gev, plus gev-command-whitelist which carries program: ada-tools).
-  Repo lanes: chaba {gev-bridge, gev-health-loop, gev-screens}; ada-pi {gev-command-whitelist, gev-scenarios}; gods-eye-view
-  {gev-map, gev-voice, gev-tours} — spec''d but UNARMED: the repo is not in dispatch-repos.conf and its origin is
-  upstream bilawalsidhu (local main is 6 ahead, no pushable remote). Those three join the drain only after a pushable
-  fork/remote exists or the work is pulled into chaba staging. Drain order: (1) gev-health-loop + gev-bridge — monitoring
-  + core ws path; (2) gev-command-whitelist + gev-screens — the ada-pi card may run alongside the tool-merge wave
-  only if files are disjoint, else queue behind it; gev-screens needs vcast-cast-lane healthy for its verify; (3)
-  gev-scenarios LAST — regression gate for the whole program (same role as tools-regression-scenarios). App-side
-  cards do not block the gate.'
-updated: 2026-10-06 21:54
+note: 'Design/tracker for the gev-* family (program: gev, plus gev-command-whitelist which carries program: ada-tools). Repo
+  lanes: chaba {gev-bridge, gev-health-loop, gev-screens}; ada-pi {gev-command-whitelist, gev-scenarios}; gods-eye-view {gev-map,
+  gev-voice, gev-tours} — spec''d but UNARMED: the repo is not in dispatch-repos.conf and its origin is upstream bilawalsidhu
+  (local main is 6 ahead, no pushable remote). Those three join the drain only after a pushable fork/remote exists or the
+  work is pulled into chaba staging. Drain order: (1) gev-health-loop + gev-bridge — monitoring + core ws path; (2) gev-command-whitelist
+  + gev-screens — the ada-pi card may run alongside the tool-merge wave only if files are disjoint, else queue behind it;
+  gev-screens needs vcast-cast-lane healthy for its verify; (3) gev-scenarios LAST — regression gate for the whole program
+  (same role as tools-regression-scenarios). App-side cards do not block the gate.'
+updated: 2026-10-08 06:15
 comms:
 - at: '2026-10-05'
   from: devin
-  text: 'Program spec''d from backlog drain session: all 8 member cards now carry spec + priority; 5 armed dispatchable
-    (chaba 3, ada-pi 2). gev-map, gev-voice, gev-tours spec''d but held — gods-eye-view has no pushable remote and
-    isn''t in the dispatch whitelist.'
+  text: 'Program spec''d from backlog drain session: all 8 member cards now carry spec + priority; 5 armed dispatchable (chaba
+    3, ada-pi 2). gev-map, gev-voice, gev-tours spec''d but held — gods-eye-view has no pushable remote and isn''t in the
+    dispatch whitelist.'
 - at: 2026-10-05 20:37
   from: tony
   text: next?
@@ -37,3 +36,8 @@ comms:
 - at: 2026-10-06 21:54
   from: tony
   text: moved doing -> backlog
+- at: 2026-10-08 06:15
+  from: devin
+  text: 'dig-assessment: chaba + ada-pi lanes already armed/draining; the blocked piece is the gods-eye-view repo lane (gev-map/voice/tours)
+    — repo not in dispatch-repos.conf and origin is upstream bilawalsidhu with local main +6. Unblock = fork to tonezzz (or
+    register local remote) + add to dispatch-repos.conf — small manual step, then its lane can be armed.'

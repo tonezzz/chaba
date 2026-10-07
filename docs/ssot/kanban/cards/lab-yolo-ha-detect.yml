@@ -1,15 +1,14 @@
 id: lab-yolo-ha-detect
 title: 'Lab: YOLO object detect on HA cams'
-brief: "An experiment to run object detection on the home camera feeds. Sitting in the backlog — no action needed."
+brief: An experiment to run object detection on the home camera feeds. Sitting in the backlog — no action needed.
 column: backlog
 lab:
-  hypothesis: Local YOLO on camera snapshots gives useful detections (person/vehicle/package) fast enough for Ada
-    camera answers
+  hypothesis: Local YOLO on camera snapshots gives useful detections (person/vehicle/package) fast enough for Ada camera answers
   metric: p50 inference < 800ms per snapshot with >= 70% correct-class rate on a 20-image labelled set
   review_by: '2026-10-25'
-note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-*
-  cards if it promotes.'
-updated: 2026-10-06 06:45
+note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-* cards if
+  it promotes.'
+updated: 2026-10-08 06:15
 comms:
 - at: 2026-10-06 06:45
   from: tony
@@ -17,3 +16,19 @@ comms:
 - at: 2026-10-06 06:45
   from: tony
   text: Status?
+- at: 2026-10-08 06:15
+  from: devin
+  text: spec written from lab metric; armed dispatch pinned tony-omen+gpu
+spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this chaba
+  worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot endpoint
+  is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=). Label
+  each image with the true class (person/vehicle/package/none). Bench ultralytics yolov8n + yolo11n ONNX/CPU AND CUDA on the
+  GTX1650 — measure p50/p95 inference latency and correct-class rate vs labels. Metric to beat: p50 < 800ms, >=70% correct-class.
+  Post the scorecard + verdict (promote to cms-auto-cctv-* or reject) to card comms.'
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+  host: tony-omen
+  labels:
+  - gpu
