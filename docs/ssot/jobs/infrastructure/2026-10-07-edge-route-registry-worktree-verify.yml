@@ -1,0 +1,50 @@
+title: edge-route-registry — phase-1 re-verify + worktree-safe health lane
+subtitle: Confirm registry artifacts after re-dispatch; make check-routes.py
+  honest when run from a linked worktree
+icon: route
+
+planning:
+  goal: "Dispatch re-ran the phase-1 spec (registry + render-routes.py +
+    card ws resolution). Verify all deliverables in the worktree and keep
+    the route-health expected_goal runnable from dispatch worktrees."
+  scope: "docs/ssot/infrastructure/ssot.routes.yml, scripts/render-routes.py,
+    scripts/check-routes.py, stacks/web/public/apps/routes.json,
+    tony-ha www ada-*-card.js. No live deploys."
+
+processing:
+  status: completed
+  started_at: "2026-10-07T16:00:00+07:00"
+  findings:
+    - "Phase 1 + 2a + health lane were already merged (f16f88d9, 7cb549b1,
+      dc37ef23, 0dfc9c07): 46 routes / 30 services / 4 edges."
+    - "Fresh render equals committed routes.json (modulo timestamp);
+      committed stacks/web/Caddyfile is byte-identical to --caddy output."
+    - "Live edge serves /apps/routes.json (200) — ada-tony ws resolves to
+      wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws."
+    - "ada-voice-card.js / ada-chat-card.js resolve ws via
+      /local/routes.json with literal fallback — confirmed in source."
+    - "check-routes.py run from a worktree reported 5 false failures:
+      static-route dir checks looked in the worktree, but jev-bench,
+      yt-live, walldance-live, chaba-h3, board are untracked/mounted
+      content that only exists in the live checkout."
+  changes:
+    - "scripts/check-routes.py: when REPO/.git is a file (linked
+      worktree), a missing static root reports ok=None (skipped) instead
+      of failing — dir-existence semantics are only verifiable in the
+      live checkout. Live behavior unchanged: a genuinely missing dir
+      still fails."
+  verification:
+    - "python3 scripts/check-routes.py -> 31 ok / 0 failing / 15 skipped,
+      exit 0 (was 5 phantom failures)"
+    - "card-pipeline.py edge-route-registry --api :8787 -> verify=pass,
+      audit=pass (reports/ci/edge-route-registry-20261007-160710.json)"
+    - "expected_goals: 5/5 pass from a worktree — previously
+      route-health-clean could only pass on the live host"
+
+outcome:
+  result: "Phase-1 deliverables confirmed complete and self-consistent;
+    health lane now safe to run from any dispatch worktree."
+  followups:
+    - "Phase 2b: mn01-web + vps-public edges consume the registry."
+    - "Phase 3: evaluate cloudflared tunnel replacing the VPS public
+      edge."
