@@ -46,7 +46,7 @@ HOST_META = {
     "tony-omen":  {"role": "dev / GPU desktop", "ts": "tony-omen.taila0626a.ts.net",
                    "ip": "100.75.102.88"},
     "idc01":      {"role": "public VPS · warm-DR (mddb follower, standby edge)", "ts": "idc01.taila0626a.ts.net",
-                   "ip": "100.74.146.0", "public": "157.85.110.99"},
+                   "ip": "", "public": "157.85.110.99"},
     "idc03":      {"role": "public VPS · mddb leader · Ada", "ts": "idc03.taila0626a.ts.net",
                    "ip": "100.102.134.91", "public": "157.85.102.125"},
     "idc02":      {"role": "offload / lab VPS", "ts": "idc02.taila0626a.ts.net",
