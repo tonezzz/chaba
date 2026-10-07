@@ -1,6 +1,6 @@
 id: board-verify-checklist
 title: 'Verify: review-card verification checklist chips'
-column: review
+column: done
 review_kind: verify
 priority: medium
 note: 'render-board.py now computes a `checks` array per card at render time —
@@ -16,7 +16,7 @@ spec: 'On the live board (/apps/board/): pull chaba-tony-dell (safe-pull),
   buttons still work. Close when live chips match computed state.'
 action:
   type: manual
-updated: 2026-10-07 08:45
+updated: 2026-10-07 09:05
 comms:
 - at: 2026-10-07 08:40
   from: tony
@@ -29,3 +29,11 @@ comms:
     override. Render-tested locally: 121/177 cards got chips; vms-native-composite
     correctly shows ·2 runs ✓code(patch-equiv) ✓outcome ✓deploy ✓verify. Pending:
     live-board spot-check after chaba-tony-dell pulls.'
+- at: 2026-10-07 09:05
+  from: devin
+  text: 'closed: live-verified on /apps/board/ — chaba-tony-dell at bc84463a
+    rendered 180 cards; served cards.json shows vms-native-composite
+    ✓code ✓outcome ✓deploy ✓verify and nano-banana-image ✗outcome ✓deploy
+    ✓verify. Found+fixed a real gap during verify: slug-fallback outcome
+    match (bc84463a) for clones without dispatch branches. JS parses clean,
+    board HTTP 200, existing badges/grouping/buttons untouched.'
