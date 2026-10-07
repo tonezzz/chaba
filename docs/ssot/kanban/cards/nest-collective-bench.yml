@@ -11,10 +11,15 @@ note: >-
   router|verifier ways), nest-bench-update.py trend page (CMS
   nest-bench), orch-bench corpus-in/corpus-out loop. Iteration model:
   bench run -> misses -> corpus grows -> next run measures whether the
-  topology change earned its cpu-seconds. Remaining: (1) graph
-  executor for impl:chain entries (2-level+ router, verifier-wrapped
-  cascade); (2) case domains beyond confirm-gate — kanban-triage,
-  memory-bank routing, tool-selection; (3) learned router replacing the
-  feature router once the corpus is big enough; (4) scheduled bench
-  cadence so the trend page gets new rows.
-updated: '2026-10-06'
+  topology change earned its cpu-seconds. Done 2026-10-07 (ada-pi
+  branch dispatch/20261007-173936-nest-chain-executor): (1) graph
+  executor chain.py — impl:chain entries executable (nest-2l-router,
+  nest-3l-verify, nest-learned-router); (2) domains bank/triage/toolx
+  via domains.yml + orch-*-cases.jsonl; (3) learned-router mechanism —
+  per-featsig level stats from --stats-out corpus, min_n=15 then it
+  routes, cold sigs fall back to feature edges; (4) timer already
+  scheduled Mon 04:30, unit updated with corpus-out/stats-out flags
+  (repo copy — install on merge). Remaining: real L3 Gemini-backed
+  /v1/systemone lane for arbiters; trained router head once the stats
+  corpus is big enough.
+updated: '2026-10-07'
