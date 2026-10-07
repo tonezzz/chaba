@@ -1,0 +1,15 @@
+[Unit]
+Description=open-jev student scorer (gemma-3-1b) — nest distributed lane, idc03
+
+[Container]
+Image=localhost/openjev:cpu
+PublishPort=100.102.134.91:8779:8779
+Volume=/home/tony/openjev-models:/models:ro,Z
+Exec=--host 0.0.0.0 --port 8779 --model /models/gemma-3-1b-it
+
+[Service]
+Restart=always
+MemoryMax=6G
+
+[Install]
+WantedBy=default.target
