@@ -3,7 +3,7 @@ title: tasks/calendar fail loudly when Google token breaks (silent-empty on idc0
 column: review
 priority: high
 program: ada-tools
-updated: 2026-10-07 16:00
+updated: 2026-10-07 16:27
 tags:
 - ada
 - tools
@@ -21,9 +21,11 @@ spec: 'ada-pi: tasks/calendar_read/plan_day must surface auth failure as ok:fals
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   task_id: 20261007-144518-ada-pi-tasks-calendar-read-pla
   runner: tony-omen
+  result: 'exit=0 20261007-155949-ada-pi-tasks-calendar-read-pla` — not pushed. | devin-task-20261007-155949-ada-pi-tasks-calendar-read-pla.service:
+    Consumed 4min 13.608s CPU time over 27min 10.628s wall clock time, 1.2G memory peak, 123.1M memory swap peak.'
 comms:
 - at: 2026-10-07 13:55
   from: devin
@@ -72,5 +74,15 @@ comms:
 - at: 2026-10-07 16:00
   from: devin
   text: 'starting: exploring calendar_read/plan_day auth handling'
+- at: 2026-10-07 16:26
+  from: devin
+  text: 'done. CalendarService reads now raise on any CalendarAuthError or any failure+empty result → ok:false +
+    error_type at runner; prompt+tool_guide+agenda-prefetch all relay unreachable instead of implying empty. Regression:
+    live revoked-token provider → {ok:false, CalendarAuthError} on calendar_read/tasks/plan_day; tests 55+733 pass
+    (only pre-existing tool-lint failures on main). OPS DONE: tony-dell still had a live token (minted 10-02) —
+    copied to idc03 + tony-omen, refresh + calendarList verified'
+- at: 2026-10-07 16:27
+  from: tony-omen
+  text: 'finished (ok): exit=0 20261007-155949-ada-pi-tasks-calendar-read-pla` — not pushed. | devin-task-20261007-155949-ada-pi-tasks-calendar-'
 claim:
   since: 2026-10-07 14:45

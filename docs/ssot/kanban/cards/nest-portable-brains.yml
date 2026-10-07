@@ -3,30 +3,30 @@ title: Chaba Nest portable brains — gdrive brain store, respawn anywhere
 column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 16:45
-note: 'Every Nest entity gets a versioned brain bundle (manifest + weights + memory slice + config + state
-  anchors) stored on gdrive as an append-only artifact. Any host can fetch → hydrate → resume with RPO
-  = time since last checkpoint. Same tier model as the deployed mddb backup offload: hot local, warm on
-  tailnet, cold on gdrive. Research doc: docs/kb/nest-portable-brains-research.md'
+updated: 2026-10-07 16:33
+note: 'Every Nest entity gets a versioned brain bundle (manifest + weights + memory slice + config + state anchors)
+  stored on gdrive as an append-only artifact. Any host can fetch → hydrate → resume with RPO = time since last
+  checkpoint. Same tier model as the deployed mddb backup offload: hot local, warm on tailnet, cold on gdrive. Research
+  doc: docs/kb/nest-portable-brains-research.md'
 links:
 - docs/ssot/kanban/cards/nest-collective-bench.yml
 - docs/ssot/kanban/cards/chaba-nest-models.yml
 - docs/ssot/kanban/cards/nest-edge-vision.yml
 - docs/ssot/kanban/cards/verify-gdrive-offload-tier.yml
 spec: 'P0 DONE 2026-10-07: manifest schema + entity registry live in docs/ssot/infrastructure/ssot.nest-brains.yml
-  — 4 candidate entities (ops-classifier MVP, jev-student, orch-bench-corpus, edge-vision), blob roles,
-  Drive appProperties discovery, policy defaults (retention 5, epoch fencing, per-entity memory policy).
-  P1: nest-brain-pack.sh / nest-brain-restore.sh — tar+sha manifest, rclone copyto, verified round-trip.
-  P2: cross-host respawn proof — nest-01-ops-classifier (10KB model, ideal MVP) checkpoint on tony-dell
-  → restore on mn01 → bench-diff within noise = continuity proven. P3: checkpoint cadence (timer + on-improvement
-  events) + Drive Changes/latest-pointer drift signal ("newer brain available"). P4: brains as FedAvg
-  transport for the models federation card. Open questions: brain boundary (just-enough state), fencing/epoch
-  against split-brain respawns, rclone crypt for sensitive brains, RTO targets (<60s micro, <5min jev-class).
+  — 4 candidate entities (ops-classifier MVP, jev-student, orch-bench-corpus, edge-vision), blob roles, Drive appProperties
+  discovery, policy defaults (retention 5, epoch fencing, per-entity memory policy). P1: nest-brain-pack.sh / nest-brain-restore.sh
+  — tar+sha manifest, rclone copyto, verified round-trip. P2: cross-host respawn proof — nest-01-ops-classifier
+  (10KB model, ideal MVP) checkpoint on tony-dell → restore on mn01 → bench-diff within noise = continuity proven.
+  P3: checkpoint cadence (timer + on-improvement events) + Drive Changes/latest-pointer drift signal ("newer brain
+  available"). P4: brains as FedAvg transport for the models federation card. Open questions: brain boundary (just-enough
+  state), fencing/epoch against split-brain respawns, rclone crypt for sensitive brains, RTO targets (<60s micro,
+  <5min jev-class).
 
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   runner: tony-omen
 comms:
 - at: 2026-10-07 15:45
@@ -41,23 +41,23 @@ comms:
 - at: 2026-10-07 15:55
   from: devin
   text: P0 in progress — inventory done (nest-01 13KB npz, jev v5 520MB ckpt + candidate zoo 5.8G on tony-omen,
-    bench corpus in ada-pi tests/bench + live jev-corpus on idc03, yolov8n.pt 6MB, meshtastic collector).
-    Writing ssot.nest-brains.yml schema + inventory next.
+    bench corpus in ada-pi tests/bench + live jev-corpus on idc03, yolov8n.pt 6MB, meshtastic collector). Writing
+    ssot.nest-brains.yml schema + inventory next.
 - at: 2026-10-07 16:01
   from: devin
-  text: 'P0 DONE. Delivered docs/ssot/infrastructure/ssot.nest-brains.yml — nest.brain/1 manifest schema
-    (entity/brain/provenance/blobs CAS/fencing/security/restore contract), gdrive:nest/brains/<entity>/<version>/
-    layout + mutable latest.yml epoch pointer, 3 sensitivity classes (restricted→gcrypt, needs approval),
-    RTO classes (micro<60s / jev-class<5min). Inventory: 7 entities w/ real paths+sizes — MVP = nest-01-ops-classifier
-    (13KB npz, deterministic → exact bench-diff). Job trail: docs/ssot/jobs/nest/'
+  text: 'P0 DONE. Delivered docs/ssot/infrastructure/ssot.nest-brains.yml — nest.brain/1 manifest schema (entity/brain/provenance/blobs
+    CAS/fencing/security/restore contract), gdrive:nest/brains/<entity>/<version>/ layout + mutable latest.yml epoch
+    pointer, 3 sensitivity classes (restricted→gcrypt, needs approval), RTO classes (micro<60s / jev-class<5min).
+    Inventory: 7 entities w/ real paths+sizes — MVP = nest-01-ops-classifier (13KB npz, deterministic → exact bench-diff).
+    Job trail: docs/ssot/jobs/nest/'
 - at: 2026-10-07 16:02
   from: devin
-  text: 'raised request approve-creating-a-gcrypt-rclone-remote-e597ab: Approve creating a gcrypt rclone
-    remote (crypt over gdrive:nest-brains/) for restricted brains? Blocks only restricted-s'
+  text: 'raised request approve-creating-a-gcrypt-rclone-remote-e597ab: Approve creating a gcrypt rclone remote
+    (crypt over gdrive:nest-brains/) for restricted brains? Blocks only restricted-s'
 - at: 2026-10-07 16:02
   from: tony-omen
-  text: 'finished (ok): exit=0 emote (new secret) for restricted-class brains. It doesn''t block P1 or
-    the nest-01 MVP. | devin-task-20261007-154'
+  text: 'finished (ok): exit=0 emote (new secret) for restricted-class brains. It doesn''t block P1 or the nest-01
+    MVP. | devin-task-20261007-154'
 - at: 2026-10-07 16:03
   from: tony
   text: 'answered approve-creating-a-gcrypt-rclone-remote-e597ab: yes.'
@@ -75,21 +75,30 @@ comms:
   text: started devin-task-20261007-160355-p0-done-2026-10-07-manifest-sc on tony-omen (dispatch)
 - at: 2026-10-07 16:12
   from: tony-omen
-  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve
-    all tools. | devin-task-20261007-'
+  text: 'finished (ok): exit=0 unning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261007-'
 - at: 2026-10-07 16:45
   from: devin
   text: 'queued P2 on tony-omen: cross-host respawn proof — pack nest-01-ops-classifier with nest-brain-pack.sh,
-    push to gdrive:nest-brains (or local store if the remote is not yet configured), restore to a scratch
-    dir on mn01 via nest-brain-restore.sh, run experiments/nest-01-ops-classifier/eval.py before/after
-    — bench-diff within noise = continuity proven. Record artifact paths in comms. If Drive remote missing,
-    create per ssot.nest-brains.yml (gcrypt remote was approved for restricted class; nest-01 is ops-class
-    — plain remote suffices).'
+    push to gdrive:nest-brains (or local store if the remote is not yet configured), restore to a scratch dir on
+    mn01 via nest-brain-restore.sh, run experiments/nest-01-ops-classifier/eval.py before/after — bench-diff within
+    noise = continuity proven. Record artifact paths in comms. If Drive remote missing, create per ssot.nest-brains.yml
+    (gcrypt remote was approved for restricted class; nest-01 is ops-class — plain remote suffices).'
+- at: 2026-10-07 16:26
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 16:26
+  from: chaba
+  text: started devin-task-20261007-162634-p0-done-2026-10-07-manifest-sc on tony-omen (dispatch)
+- at: 2026-10-07 16:33
+  from: devin
+  text: P1 in progress — writing scripts/nest/nest-brain-{pack,restore}.sh + drive-props helper, then gcrypt remote
+    (approved) and nest-01 round-trip proof.
 requests:
 - id: approve-creating-a-gcrypt-rclone-remote-e597ab
-  ask: Approve creating a gcrypt rclone remote (crypt over gdrive:nest-brains/) for restricted brains?
-    Blocks only restricted-sensitivity entities (live jev-corpus, meshtastic-with-positions) — P1 tooling
-    and the nest-01 MVP proceed without it. New secret lands in ~/.config/rclone + secrets store.
+  ask: Approve creating a gcrypt rclone remote (crypt over gdrive:nest-brains/) for restricted brains? Blocks only
+    restricted-sensitivity entities (live jev-corpus, meshtastic-with-positions) — P1 tooling and the nest-01 MVP
+    proceed without it. New secret lands in ~/.config/rclone + secrets store.
   status: answered
   at: 2026-10-07 16:02
   from: devin
