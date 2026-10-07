@@ -15,7 +15,7 @@ note: 'Sources already deployed — this is a read/aggregate layer, not new trac
   state changes.'
 help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo,
   line pushMessage; GEV pin: gev_command annotate'
-updated: 2026-10-08 06:02
+updated: 2026-10-08 06:21
 comms:
 - at: 2026-10-06 09:40
   from: devin
@@ -35,7 +35,19 @@ comms:
 - at: 2026-10-08 06:02
   from: tony
   text: queued for processing
+- at: 2026-10-08 06:20
+  from: chaba
+  text: dispatched 20261008-062046-device-fleet-tracking-lost-dev on ada-pi
+- at: 2026-10-08 06:21
+  from: devin
+  text: 'starting: found existing ada_track_device (mddb beacon + tailscale); scoping HA device_tracker + LAN digest
+    + logbook merge and lost-mode'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-062046-device-fleet-tracking-lost-dev
+claim:
+  session: 20261008-062046-device-fleet-tracking-lost-dev
+  since: 2026-10-08 06:20

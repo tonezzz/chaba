@@ -2,7 +2,7 @@ id: mddb-follower-stall
 title: mddb follower stream stalls silently — connected but stops applying
 brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere.
   Waiting in the backlog — no action needed yet.
-column: doing
+column: review
 priority: high
 note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently
   stalled while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828
@@ -12,7 +12,7 @@ note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:
 help: 'Detect: leader /v1/replication/status shows follower confirmed_lsn frozen while current_lsn climbs and last_seen_at
   stays fresh. Fix candidates: heartbeat/timeout on the follower receive loop, or a "applier-alive" metric the canary
   can watch. mddb-fork repo.'
-updated: 2026-10-08 06:08
+updated: 2026-10-08 06:10
 comms:
 - at: 2026-10-06 14:30
   from: devin
@@ -43,13 +43,24 @@ comms:
     Shipped in chaba: scripts/mddb-follower-watchdog.py + systemd timer — restarts mddb-follower.service when confirmed_lsn
     frozen >300s while last_seen_at fresh (cooldown 900s, max 3/episode, lsn-0 + absent guards); mddb-binlog-canary.py
     now emits per-follower stream state (conn'
+- at: 2026-10-08 06:10
+  from: mn01
+  text: 'finished (ok): exit=0 come.md` and `docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`.
+    | devin-task-20261007-2'
+- at: 2026-10-08 06:10
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: mn01
+  result: 'exit=0 come.md` and `docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`. | devin-task-20261007-225415-diagnose-the-mddb-follower-s-s.service:
+    Consumed 41.594s CPU time over 14min 50.313s wall clock time, 279.7M memory peak.'
 spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader
   last_seen_at stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state
   surfacing (apply-lag metric/health signal so the freeze is visible without a human comparing LSNs) plus a watchdog
   that restarts the follower when confirmed_lsn stops advancing while the stream is connected. Root-cause the dropped-apply/blocked-read
   if reachable; document findings on the card.'
+claim: {}

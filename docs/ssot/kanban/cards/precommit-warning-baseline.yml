@@ -2,7 +2,7 @@ id: precommit-warning-baseline
 title: 'Pre-commit SSOT gate: baseline known warnings, fail only on new'
 brief: 'The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges.
   Plan: keep a baseline and fail only on new warnings. In the backlog — no action needed.'
-column: backlog
+column: doing
 priority: medium
 note: The optimize check fails a commit when ANY staged SSOT file has a warning — including pre-existing ones already
   filed to focus-inbox. Merges stage every changed file, so known debt blocks merge commits (hit 2026-10-07 merging
@@ -24,8 +24,19 @@ comms:
 - at: 2026-10-08 06:02
   from: tony
   text: queued for processing
+- at: 2026-10-08 06:10
+  from: mn01
+  text: claimed
+- at: 2026-10-08 06:10
+  from: chaba
+  text: started devin-task-20261007-231022-options-a-baseline-file-report on mn01 (dispatch)
+- at: 2026-10-08 06:19
+  from: devin
+  text: 'implementing option (a): committed reports/SSOT_OPTIMIZATION_WARNINGS.json as baseline; husky pre-commit
+    fails only on warnings absent from baseline; CI gate gets same treatment'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
-updated: 2026-10-08 06:02
+  runner: mn01
+updated: 2026-10-08 06:19

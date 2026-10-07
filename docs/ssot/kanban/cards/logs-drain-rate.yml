@@ -2,18 +2,21 @@ id: logs-drain-rate
 title: Log shipper drains slower than volume accrues (500/run cap)
 brief: The log shipper reads logs faster than it sends them, so some hosts fall days behind. Waiting in the backlog
   — no action needed yet.
-column: doing
+column: review
 priority: medium
 note: 'Root cause behind the four logs-auto-*-backlog cards (closed 2026-10-06 with known cause): shipper matches
   1.4k-3.2k lines/run but ships only 500 — idc01 2d behind, tony-dell 6d. Options: raise --max-docs for a catch-up
   run, tighten GREP/KINDS filters (noise share high — idc01 caddy-edge scanner 502s dominate), or batch-drain on
   a schedule. Design choice, not incident.'
-updated: 2026-10-08 06:08
+updated: 2026-10-08 06:09
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  result: 'exit=0 d → `done`, board comment posted. No push, no remote deploys. | devin-task-20261008-055831-shipper-matches-1-4k-3-2k-line.service:
+    Consumed 1min 43.056s CPU time over 10min 44.384s wall clock time, 987M memory peak, 291.8M memory swap peak.'
+  verified: true
 spec: Shipper matches 1.4k-3.2k lines/run but ships only 500/run — idc01 was 2d behind, tony-dell 6d (root cause
   behind the closed logs-auto-*-backlog cards). Evaluate the options in the card note (raise --max-docs for a catch-up
   run, tighten GREP/KINDS filters — idc01 caddy-edge scanner 502s dominate the noise, or scheduled batch-drain),
@@ -37,3 +40,13 @@ comms:
     — tightened filters: dropped scdaemon spam + redundant "Main process exited, code=exited" (kept code=killed).
     Live-measured: idc02 --user -79%, idc03 -55%. Installed+verified on tony-omen; remote install-log-shipper.sh
     re-run documented pending approval. Card->done, trail in jobs/2026-10-08-log-shipper-drain-rate.yml'
+- at: 2026-10-08 06:09
+  from: tony-omen
+  text: 'finished (ok): exit=0 d → `done`, board comment posted. No push, no remote deploys. | devin-task-20261008-055831-shipper-matches-1-4k-3'
+- at: 2026-10-08 06:09
+  from: chaba
+  text: pushed dispatch/20261008-055831-shipper-matches-1-4k-3-2k-line to origin
+- at: 2026-10-08 06:09
+  from: chaba
+  text: auto-merged f8fdfedc (dispatch/20261008-055831-shipper-matches-1-4k-3-2k-line) → origin/master
+claim: {}

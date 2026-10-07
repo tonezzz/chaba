@@ -2,20 +2,22 @@ id: ada-market-tool
 title: ada_market_quote tool — Ada answers gold/FX/DXY from trade DB
 brief: When you ask Ada about gold, exchange rates, or Thai stocks she often guesses instead of looking up real
   numbers. The plan is a lookup tool backed by the trade database — waiting in the backlog, no action needed.
-column: backlog
+column: review
 note: 'Stock probe 2026-10-04 (stock-query-probe on ada-dev): 11/11 turns routed to web_search, 4/11 returned real
   numbers, Thai-market specifics (SET, PTT, movers, USD/THB, diesel) failed honestly. Grounded search can''t do
   Thai market data and burns Gemini quota. Fix: ada-pi tool backed by trade PostgreSQL — FX pairs (24 ccy), Thai
   gold fixings, DXY, WTI; instant, free, our own data. SET quotes still need an external feed (settrade/yahoo).
   After the tool lands: rerun tests/scenarios-live/stock_query_probe.yaml and compare per-turn quality — that delta
   is the tool''s benchmark.'
-updated: 2026-10-08 06:08
+updated: 2026-10-08 06:20
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: tony-dell
   task_id: 20261008-060842-ada-market-quote-tool-ada-answ
+  result: 20261008-060842-ada-market-quote-tool-ada-answ finished (inactive) — see `devin-dispatch logs 20261008-060842-ada-market-quote-tool-ada-answ`
+  verified: true
 comms:
 - at: 2026-10-07 23:00
   from: devin
@@ -26,6 +28,26 @@ comms:
 - at: 2026-10-08 06:08
   from: chaba
   text: dispatched 20261008-060842-ada-market-quote-tool-ada-answ on ada-pi
+- at: 2026-10-08 06:15
+  from: devin
+  text: 'devin: verified trade-api live at /apps/trade/api (tony-dell tailnet) — 24 FX ccy, XAU-THB Thai gold via
+    GOLD+date-range, DXY, WTI/Brent. Designing ada_market_quote tools.d drop-in (kind= fx|gold|dxy|oil|silver|copper|natural_gas);
+    data staleness is real (THB -6d, DXY -10d) so tool always returns as_of+age'
+- at: 2026-10-08 06:20
+  from: devin
+  text: 'done on dispatch/20261008-060842 (fa0b4a6, no push): ada_market_quote tools.d tool — kind= fx|gold|dxy|oil|silver|copper|natural_gas
+    backed by trade-api (verified live: XAU-THB 66,050 baht 09-28, USD/THB 33.595 10-02, DXY 101.21, WTI 95.01).
+    Every quote carries as_of+age_days+stale since the feed lags 6-10d — model must say the date. SET equity/diesel
+    stay honest misses. 12 unit tests pass, tool-lint clean except 3 pre-existing baseline FAILs. Scenarios: market_quote.yaml
+    (routing) + stock_query'
+- at: 2026-10-08 06:20
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 06:20
+  from: chaba
+  text: pushed dispatch/20261008-060842-ada-market-quote-tool-ada-answ to origin
+- at: 2026-10-08 06:20
+  from: chaba
+  text: auto-merged 4830fbc4 (dispatch/20261008-060842-ada-market-quote-tool-ada-answ) → origin/main
 claim:
-  session: 20261008-060842-ada-market-quote-tool-ada-answ
   since: 2026-10-08 06:08

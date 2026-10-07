@@ -1,7 +1,7 @@
 id: ada-cms-discovery-fixes
 title: 'ada-pi: cms_read discovery + reports-index flood + memory-search pollution (liam-e2e fallout)'
 column: backlog
-updated: 2026-10-08 06:06
+updated: 2026-10-08 06:12
 note: 'From yt-dub-liam-e2e live pass 2026-10-07 (transcript ece770ccb0): Ada could not find the Liam dub though
   all infra was green. Three ada-pi fixes needed: (1) cms_read list ordering/search — action=list returns an unordered
   subset (373 docs; model passed limit=10 and wrongly concluded the page did not exist). Add action=search over
@@ -24,6 +24,10 @@ comms:
 - at: 2026-10-08 06:06
   from: chaba
   text: dispatched 20261008-060641-ada-pi-cms-read-discovery-repo on ada-pi
+- at: 2026-10-08 06:12
+  from: devin
+  text: 'picked up — implementing: cms_read search+updated-desc list, reports-index per-domain cap + lang dedupe,
+    memory all-merge devin/* demotion'
 action:
   type: dispatch
   status: running
