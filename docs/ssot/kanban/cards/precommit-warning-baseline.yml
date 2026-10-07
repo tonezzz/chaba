@@ -1,7 +1,7 @@
 id: precommit-warning-baseline
 title: 'Pre-commit SSOT gate: baseline known warnings, fail only on new'
 brief: "The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges. Plan: keep a baseline and fail only on new warnings. In the backlog — no action needed."
-column: backlog
+column: done
 priority: medium
 note: 'The optimize check fails a commit when ANY staged SSOT file has a
   warning — including pre-existing ones already filed to focus-inbox.
@@ -24,3 +24,13 @@ comms:
     pre-existing, the gate cannot tell. Result was correct-by-accident
     (merge ran on omen without husky) but that should be the exception,
     not the workflow.'
+- at: 2026-10-07 23:30
+  from: devin
+  text: 'shipped option (a): committed reports/SSOT_OPTIMIZATION_WARNINGS.json
+    is the known-warnings baseline; new scripts/ssot-optimize-gate.mjs fails
+    only on warnings absent from baseline (digit-normalized match); husky
+    pre-commit + CI ssot.yml both use it; baseline seeded from a full run on
+    origin/master bc172cc. Trail: docs/ssot/jobs/infrastructure/2026-10-07-precommit-warning-baseline.yml.
+    Also found: two jobs YAML files on master have real parse errors
+    (hosting-provider-intl, yt-voice-dub-cuefit) — baselined as known debt,
+    still worth fixing.'

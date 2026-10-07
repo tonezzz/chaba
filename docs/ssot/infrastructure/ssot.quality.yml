@@ -177,7 +177,7 @@ registry:
     gate: blocking
     cost: cheap
     runner: .github/workflows/ssot.yml
-    script: node scripts/ssot-optimize.mjs + reports/SSOT_OPTIMIZATION_METRICS.json warning check
+    script: node scripts/ssot-optimize.mjs + node scripts/ssot-optimize-gate.mjs (fails only on warnings absent from committed reports/SSOT_OPTIMIZATION_WARNINGS.json baseline)
   - id: ci.logs-check
     lane: ci-gate
     gate: blocking

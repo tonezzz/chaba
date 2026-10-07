@@ -42,14 +42,17 @@ jobs:
         run: python3 scripts/dev-system-assess.py --check
       - name: Check SSOT optimization warnings
         run: node scripts/ssot-optimize.mjs
-      - name: Verify no warnings
+      - name: Report warning metrics
         run: |
           BLOAT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).bloat)")
           DATA_ISOLATION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).data_isolation)")
           OTHER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).other)")
           LOGS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).logs.issues)")
           DEV=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).dev_system.cons)")
-          if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ] || [ "$LOGS" -gt 0 ]; then
-            echo "SSOT optimization warnings found: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER logs=$LOGS"
+          echo "SSOT optimization warnings: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER logs=$LOGS dev_cons=$DEV"
+          if [ "$LOGS" -gt 0 ]; then
+            echo "Log reference issues found (not baselined)"
             exit 1
           fi
+      - name: Fail on warnings absent from baseline
+        run: node scripts/ssot-optimize-gate.mjs

@@ -139,25 +139,43 @@ else
     echo "⚠️  scripts/ssot-validate-all.mjs not found — skipping full SSOT validation"
 fi
 
-# Preventive optimization: fail the commit if bloat/data-isolation/other warnings exist
-if [ -f scripts/ssot-optimize.mjs ]; then
+# Preventive optimization: fail only on warnings absent from the committed
+# baseline (reports/SSOT_OPTIMIZATION_WARNINGS.json) — new debt. Known debt is
+# baselined so merge commits and dispatch landings do not need --no-verify.
+# Silencing is explicit: refresh the file via a full `node
+# scripts/ssot-optimize.mjs` run and commit it (scripts/ssot-optimize-gate.mjs).
+if [ -f scripts/ssot-optimize.mjs ] && [ -f scripts/ssot-optimize-gate.mjs ]; then
     echo "🎯 Running SSOT optimization check..."
+    WARNINGS_FILE="reports/SSOT_OPTIMIZATION_WARNINGS.json"
+    # Snapshot the baseline file's state before the optimizer rewrites it, so
+    # we can restore it afterwards and keep the working tree clean.
+    warnings_existed=0; warnings_tracked=0; warnings_dirty=0; warnings_staged=0
+    [ -f "$WARNINGS_FILE" ] && warnings_existed=1
+    if git cat-file -e "HEAD:$WARNINGS_FILE" 2>/dev/null; then
+        warnings_tracked=1
+        git diff --quiet HEAD -- "$WARNINGS_FILE" 2>/dev/null || warnings_dirty=1
+    fi
+    git diff --cached --quiet -- "$WARNINGS_FILE" 2>/dev/null || warnings_staged=1
+
     if ! node scripts/ssot-optimize.mjs --staged > /tmp/ssot-optimize-precommit.log 2>&1; then
         echo -e "${RED}❌ SSOT optimization run failed. See /tmp/ssot-optimize-precommit.log.${NC}"
         tail -n 20 /tmp/ssot-optimize-precommit.log
         exit 1
     fi
 
-    METRICS_FILE="reports/SSOT_OPTIMIZATION_METRICS.json"
-    if [ -f "$METRICS_FILE" ]; then
-        BLOAT=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('bloat', 0))")
-        DATA_ISOLATION=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('data_isolation', 0))")
-        OTHER=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('other', 0))")
-        if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ]; then
-            echo -e "${RED}❌ SSOT optimization warnings found (bloat: $BLOAT, data_isolation: $DATA_ISOLATION, other: $OTHER).${NC}"
-            echo "Run 'node scripts/ssot-optimize.mjs' and fix the warnings before committing."
-            exit 1
-        fi
+    if ! node scripts/ssot-optimize-gate.mjs; then
+        exit 1
+    fi
+
+    if [ "$warnings_staged" -eq 1 ]; then
+        # Baseline update is part of this commit — align worktree to the index.
+        git show ":$WARNINGS_FILE" > "$WARNINGS_FILE" 2>/dev/null || true
+    elif [ "$warnings_tracked" -eq 1 ] && [ "$warnings_dirty" -eq 0 ]; then
+        # Untouched baseline: restore committed copy (optimizer rewrote it).
+        git show "HEAD:$WARNINGS_FILE" > "$WARNINGS_FILE" 2>/dev/null || true
+    elif [ "$warnings_tracked" -eq 0 ] && [ "$warnings_existed" -eq 0 ]; then
+        # No baseline on this branch and no prior file — drop the scratch output.
+        rm -f "$WARNINGS_FILE"
     fi
     echo -e "${GREEN}✅ SSOT optimization check passed${NC}"
 fi
