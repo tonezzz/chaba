@@ -14,10 +14,13 @@ spec: 'Phase 1 (this session): ssot.routes.yml with full dell-edge inventory, re
   edge — registry becomes the ingress config; host-per-app DNS instead of path-strip debugging.'
 action:
   type: manual
-updated: 2026-10-07 15:30
+  status: running
+  runner: tony-dell
+  task_id: 20261007-155935-phase-1-this-session-ssot-rout
+updated: 2026-10-07 16:07
 claim:
-  session: devin
-  since: 2026-10-07 11:50
+  session: 20261007-155935-phase-1-this-session-ssot-rout
+  since: 2026-10-07 15:59
 comms:
 - at: 2026-10-07 10:05
   from: devin
@@ -68,6 +71,44 @@ comms:
 - at: 2026-10-07 15:30
   from: devin
   text: 'ci run complete: verify=pass'
+- at: 2026-10-07 15:58
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 15:59
+  from: chaba
+  text: dispatched 20261007-155935-phase-1-this-session-ssot-rout on chaba
+- at: 2026-10-07 16:01
+  from: devin
+  text: 're-dispatched phase-1 session: all deliverables already merged (f16f88d9 + follow-ups). Verifying artifacts
+    in this worktree: render-routes --check, routes.json regen diff, card ws resolution, live edge probes.'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci plan: pass — dispatchable spec + acceptance signal present'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci structure: pass — worktree dispatch-wt-20261007-155935-phase-1-this-session-ssot-rout on dispatch/20261007-155935-phase-1-this-session-ssot-rout;
+    1 in-scope file(s) vs origin/mas'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci develop: pass — 1 in-scope file(s) changed'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci audit: pass — 1 checks passed on 1 files'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci benchmark: skip — no benchmark metric — acceptance is via expected_goals (verify stage)'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci verify: pass — 5/5 expected_goals pass'
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'pipeline updated: verify=pass plan=pass structure=pass develop=pass audit=pass benchmark=skip'
+- at: 2026-10-07 16:07
+  from: devin
+  text: stage(s) not yet known to board-api (verify) — recorded in the pipeline block only
+- at: 2026-10-07 16:07
+  from: devin
+  text: 'ci run complete: verify=pass plan=pass structure=pass develop=pass audit=pass benchmark=skip'
 expected_goals:
 - id: routes-json-served
   check: http 200 http://localhost/apps/routes.json
@@ -86,29 +127,53 @@ pipeline:
       status: pass
       at: 2026-10-07 15:30
       detail: 5/5 expected_goals pass
+    plan:
+      status: pass
+      at: 2026-10-07 16:07
+      detail: dispatchable spec + acceptance signal present
+    structure:
+      status: pass
+      at: 2026-10-07 16:07
+      detail: worktree dispatch-wt-20261007-155935-phase-1-this-session-ssot-rout on dispatch/20261007-155935-phase-1-this-session-ssot-rout;
+        1 in-scope file(s) vs origin/master@ce471936
+    develop:
+      status: pass
+      at: 2026-10-07 16:07
+      detail: 1 in-scope file(s) changed
+    audit:
+      status: pass
+      at: 2026-10-07 16:07
+      detail: 1 checks passed on 1 files
+    benchmark:
+      status: skip
+      at: 2026-10-07 16:07
+      detail: no benchmark metric — acceptance is via expected_goals (verify stage)
   started: 2026-10-07 15:30
-  updated: 2026-10-07 15:30
+  updated: 2026-10-07 16:07
   verify:
-    at: '2026-10-07T15:30:04+07:00'
+    at: '2026-10-07T16:07:07+07:00'
     goals:
     - id: routes-json-served
       ok: true
       evidence: GET http://localhost/apps/routes.json -> 200 (expected 200)
-      at: '2026-10-07T15:30:04+07:00'
+      at: '2026-10-07T16:07:07+07:00'
     - id: caddyfile-generated-exists
       ok: true
-      evidence: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile.generated exists
-      at: '2026-10-07T15:30:04+07:00'
+      evidence: /home/tony/CascadeProjects/dispatch-wt-20261007-155935-phase-1-this-session-ssot-rout/stacks/web/Caddyfile.generated
+        exists
+      at: '2026-10-07T16:07:07+07:00'
     - id: edge-runs-generated
       ok: true
       evidence: exit 0
-      at: '2026-10-07T15:30:04+07:00'
+      at: '2026-10-07T16:07:07+07:00'
     - id: route-health-clean
       ok: true
-      evidence: exit 0 — 36 ok, 0 failing, 10 skipped
-      at: '2026-10-07T15:30:04+07:00'
+      evidence: exit 0 — 31 ok, 0 failing, 15 skipped
+      at: '2026-10-07T16:07:07+07:00'
     - id: health-json-served
       ok: true
       evidence: GET http://localhost/apps/route-health.json -> 200 (expected 200)
-      at: '2026-10-07T15:30:05+07:00'
+      at: '2026-10-07T16:07:07+07:00'
     ok: 5/5
+  benchmark:
+    metric: null
