@@ -2,10 +2,10 @@ id: nest-edge-vision
 title: Chaba Nest edge vision — browser YOLO overlay, castable, benchable
 brief: A page that shows a camera feed and draws object labels on it right in the browser, castable to the TV. Waiting
   in the backlog — no action needed.
-column: todo
+column: review
 priority: medium
 created: 2026-10-07
-updated: 2026-10-07 21:41
+updated: 2026-10-07 22:00
 note: 'Extends the Nest to the client''s eyes: a page that plays a camera feed and runs detection in-browser (WASM),
   overlay drawn locally, and the whole page castable to TV via the proven screenlive lane. Server compute stays
   at zero — the client does vision.'
@@ -31,8 +31,10 @@ blocked_by: []
 autonomy: t1
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 s 404 until then), timer install, ada-pi implementation, and the first real TV cast. | devin-task-20261007-141922-phases-1-apps-eye-page-ada-pi-.service:
+    Consumed 1min 22.607s CPU time over 40min 48.556s wall clock time, 178.5M memory peak.'
 comms:
 - at: 2026-10-07 21:02
   from: tony
@@ -76,3 +78,19 @@ comms:
     /mddb route (bench POST silently fails), no xmeye source, no bench-edge CMS page, no cast script, no ada_look
     spec. Implementing: same-origin /apps/eye-mddb write route + camwall-thumb/vms-snap sources + pub=N detections
     to eye/latest + bench-edge CMS generator + cast-eye.sh + ada-pi handoff spec.'
+- at: 2026-10-07 21:59
+  from: devin
+  text: 'done on dispatch branch (b598b5a). Phase1 page existed but MDDB writes silently 404d — now same-origin
+    /apps/eye-mddb/v1/add route (tailnet-gated, add-only) + vms-snap proxy. xmeye sources: snap:<zone>/<key> camwall
+    thumbs + vms:<ch> fresh snaps. Phase2: bench-edge-cms.py + hourly timer -> ada-cms-pages/bench-edge (written,
+    empty-state). Phase3: cast-eye.sh + runbook (vcast nav lane + tony-omen:workspace -> HLS -> TV). Phase4: eye/latest
+    pub contract + ada_look spec; ada-pi impl filed as card ad'
+- at: 2026-10-07 22:00
+  from: mn01
+  text: 'finished (ok): exit=0 s 404 until then), timer install, ada-pi implementation, and the first real TV cast.
+    | devin-task-20261007-141922'
+- at: 2026-10-07 22:00
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+claim: {}

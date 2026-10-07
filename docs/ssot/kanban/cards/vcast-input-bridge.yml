@@ -2,7 +2,7 @@ id: vcast-input-bridge
 title: vcast input-bridge lane — headless/real/flip-check health
 brief: Keeps the phone-cast feature's remote-control lane healthy so casts don't fight each other. Queued — a worker
   session will pick it up.
-column: review
+column: doing
 priority: medium
 program: vcast
 area: input-bridge
@@ -17,14 +17,14 @@ spec: 'stacks/web/input-bridge/: audit vcast-flap-check cadence and the headless
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: running
   task: Audit input-bridge flap-check cadence + headless/real lease handoff per card spec; cast_recast_stale_lease
     + cast_switch_flow scenarios green.
-  runner: tony-omen
   result: 'exit=0 _recast_stale_lease` + `cast_switch_flow` — they''re gated on live remediation, not code. | devin-task-20261007-204337-stacks-web-input-bridge-audit-.service:
     Consumed 2min 25.226s CPU time over 29min 20.668s wall clock time, 1G memory peak.'
   verified: true
-updated: 2026-10-07 21:13
+  runner: tony-omen
+updated: 2026-10-07 22:07
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -68,6 +68,21 @@ comms:
 - at: 2026-10-07 21:13
   from: chaba
   text: auto-merged a9741cb5 (dispatch/20261007-204337-stacks-web-input-bridge-audit-) → origin/master
+- at: 2026-10-07 22:07
+  from: tony
+  text: 'answered approve-live-remediation-a-merge-dispatc-73bd94: suggestion?'
+- at: 2026-10-07 22:07
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-07 22:07
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 22:07
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 22:07
+  from: chaba
+  text: started devin-task-20261007-220748-stacks-web-input-bridge-audit- on tony-omen (dispatch)
 requests:
 - id: approve-live-remediation-a-merge-dispatc-73bd94
   ask: Approve live remediation? (a) merge dispatch/20261007-204337 branch; (b) deploy server.mjs+vcast-headless.mjs+vcast-headless@.service
@@ -75,7 +90,8 @@ requests:
     slots re-home on re-register); (c) deploy vcast-real.mjs to idc02 + restart @6/@7; (d) heal wedged kanban-sync
     worktree on tony-dell (git rebase origin/master). Then cast_recast_stale_lease + cast_switch_flow can actually
     run.
-  status: open
+  status: answered
   at: 2026-10-07 21:11
   from: devin
+  answer: suggestion?
 claim: {}
