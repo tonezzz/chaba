@@ -1,39 +1,44 @@
 id: service-onboarding-standard
 title: Service onboarding standard — manifest gates + stack-preflight
-brief: "A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a decision — read the note and pick a direction."
+brief: A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a
+  decision — read the note and pick a direction.
 column: backlog
 priority: medium
 review_kind: decide
-note: >-
-  Adopted 2026-10-06 after migration misses (stale IPs, missing envs,
-  missing ssh edges). Standard = 7 gates: manifest (stack.yml), units in
-  repo, secrets declared, health verify, SSOT row first, deploy+verify,
-  drift audit leg. stack-preflight.py skeleton shipped. Retrofit scope:
-  ~10 prod services + all new services from now on.
-spec: >-
-  Manifest contract (stacks/<host>/<svc>/stack.yml): id, host,
-  description, verify, secrets[], requires[], state[], restore.
-  stack-preflight.py walks the manifest against the live host over ssh:
-  secrets exist, requires edges connect, state dirs present, quadlet
-  ports free. Deploy = manifest first, preflight green, then units.
-  Retrofit list: mddb (idc03/idc02/idc01), caddy-edge, ada stack,
-  secrets-backup, board-api, chaba-report-api.
+note: 'Adopted 2026-10-06 after migration misses (stale IPs, missing envs, missing ssh edges). Standard = 7 gates:
+  manifest (stack.yml), units in repo, secrets declared, health verify, SSOT row first, deploy+verify, drift audit
+  leg. stack-preflight.py skeleton shipped. Retrofit scope: ~10 prod services + all new services from now on.'
+spec: 'Manifest contract (stacks/<host>/<svc>/stack.yml): id, host, description, verify, secrets[], requires[],
+  state[], restore. stack-preflight.py walks the manifest against the live host over ssh: secrets exist, requires
+  edges connect, state dirs present, quadlet ports free. Deploy = manifest first, preflight green, then units. Retrofit
+  list: mddb (idc03/idc02/idc01), caddy-edge, ada stack, secrets-backup, board-api, chaba-report-api.'
 ask:
-  question: 'Adopt the onboarding standard?'
+  question: Adopt the onboarding standard?
   options:
-  - 'Yes — adopt + start retrofit'
-  - 'Adopt standard, defer retrofit'
-  - 'No — revise the standard'
+  - Yes — adopt + start retrofit
+  - Adopt standard, defer retrofit
+  - No — revise the standard
+  status: answered
+  answer: Yes — adopt + start retrofit
+  answered_at: 2026-10-07 20:08
 action:
   type: manual
-updated: 2026-10-07 18:55
+  status: queued
+updated: 2026-10-07 20:08
 comms:
 - at: 2026-10-06 14:45
   from: devin
-  text: 'proposed standard + preflight skeleton; adoption decision is
-    Tony''s. Retrofit is cheap: secrets-backup + mddb-follower already
-    carry stack.yml as reference implementations.'
+  text: 'proposed standard + preflight skeleton; adoption decision is Tony''s. Retrofit is cheap: secrets-backup
+    + mddb-follower already carry stack.yml as reference implementations.'
 - at: 2026-10-07 18:55
   from: devin
-  text: 'migrated to ask.options (structured responses) — the adoption
-    decision is now one click on the board'
+  text: migrated to ask.options (structured responses) — the adoption decision is now one click on the board
+- at: 2026-10-07 20:08
+  from: tony
+  text: 'answered ask: Yes — adopt + start retrofit'
+- at: 2026-10-07 20:08
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-07 20:08
+  from: tony
+  text: queued for processing
