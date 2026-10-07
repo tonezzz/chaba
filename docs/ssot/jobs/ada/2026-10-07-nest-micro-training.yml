@@ -1,0 +1,100 @@
+id: nest-micro-training-loop
+title: Nest micro-model evolution loop — suites, registry, lanes, gate
+date: 2026-10-07
+card: nest-micro-training
+host: tony-omen
+status: implemented
+
+goal: >
+  Give the proven jev-student retrain formula (56% gemma-1b -> 100%
+  distilbert over 5 corpus iterations) an owner: per-specialist labeled
+  suites, a model registry, named training lanes, a loop script, and a
+  promotion gate that ends in a human-approved shadow deploy.
+
+delivered:
+  - ada-pi tests/bench/suites.yml (branch dispatch/20261007-211928-1-nest-micro-training): >
+      Per-specialist tier registry. Four specialists (confirm-gate,
+      tool-routing, memory-bank, dispatch-triage) mapped to domains.yml
+      kinds; each gets golden (frozen, never trained on), hard (rotates
+      in from corpus harvest), adversarial (frozen attack-shaped) tiers
+      resolved to orch-bench --sets names. Rotation policy (into_hard /
+      into_golden / into_adversarial) + the promotion gate + bench
+      invocation live in the same file.
+  - ada-pi tests/bench/orch-adv-{confirm,tool}-cases.jsonl: >
+      Seeded adversarial tiers — 21 confirm rows (meta-references,
+      imperative bait, relayed/Thai affirmations, slang negation,
+      trailing negation, short-form positives) and 14 tool rows
+      (recall-vs-search traps, multistep first-action ordering,
+      memory-op phrasing, no-tool idioms). Immediately discriminating:
+      champ jev-student-v5 scores 12/21 on adv-confirm vs 10/10 golden.
+  - ada-pi tests/bench/topologies.yml `models:` + `lanes:` sections: >
+      Model registry — task, checkpoint, corpus version, bench scores,
+      status (train|shadow|prod|retired). jev-student-v5 is the first
+      entry (status prod, live-measured golden 10/10 hard 27/35
+      adv-confirm 12/21 p50 0.07s). Also registered: gemma-3-1b/4b
+      zero-shot lanes (prod) and jev-gemma-head-v1 (train). Lanes:
+      tony-omen GTX1650 (distilbert FT, 1b LoRA via 4-bit), colab-mcp
+      burst (bigger runs, jev/*-colab.ipynb), idc01 cold batch
+      (post-retirement role + pre-migration corpus archive).
+  - ada-pi tests/bench/orch-bench.py --suite flag: >
+      Expands a suites.yml specialist to its non-spec tier sets; narrows
+      the default 'all' so `--suite confirm-gate` runs exactly
+      golden+hard+adv-confirm (66 cases). Unknown suite -> exit 2 with
+      the registry keys.
+  - ada-pi scripts/{train,serve}-jev-student.py: JEV_OUT / JEV_CKPT env
+      knobs so the loop can version candidate checkpoints and serve them
+      on a scratch port without touching ~/jev-student/ckpt.
+  - chaba scripts/ada/nest-train-loop.py: >
+      The loop owner. harvest (idc03 live + idc01 archive corpora over
+      ssh) -> merge (merge-corpus.py + augment-corpus.py) -> train
+      (open-jev venv, GTX1650) -> serve candidate on 127.0.0.1:8878 via
+      JEV_CKPT -> orch-bench champ-vs-candidate over the suite tiers ->
+      gate (candidate >= champ on every tier, zero case-level
+      regressions) -> publish bench/train-* doc to
+      ada-ha-scenario-reports -> board request on the owning card only
+      when the gate passes. Never deploys, never restarts prod, never
+      edits the registry.
+  - chaba docs/ssot/infrastructure/ssot.nest-training.yml: >
+      Spec layer for the whole loop — stages, corpus sources, the label
+      gap (diverged rows are the pending-label queue), training-lane
+      posture, the promotion gate, and the shadow posture citation
+      (CAM++ speaker shadow + client_noul edge lane: observe and report,
+      never enforce until promoted).
+
+key_decisions:
+  - 'Corpus home moved with the migration: live jev-corpus.jsonl now
+     appends on idc03 (783 rows, still growing); jev-retrain.sh still
+     points at idc01/idc02 and is now stale — superseded by
+     nest-train-loop.py which harvests BOTH (idc03 live + idc01 archive)
+     and dedupes via merge-corpus.py.'
+  - 'Adversarial tiers are real, not aspirational: adv-confirm caught 9
+     champ misses on day one (meta-reference/imperative-bait/relayed-
+     affirm false-fires, y/k/mm-hmm/affirmative under-fires) — the v6
+     target list.'
+  - 'Gate is no-regression across all tiers, not headline accuracy:
+     candidate >= champ per set AND zero case-level regressions
+     (champ-win -> cand-miss flips). Ties allowed; margin+cost decide
+     after.'
+  - 'Loop exits 0 on gate FAIL — a rejected candidate is a normal
+     outcome; the bench doc + state file carry the verdict.'
+  - 'Label gap left open on purpose: 106 diverged corpus rows are
+     unlabeled (regex may be wrong — that is why they diverged), so the
+     loop retrains on existing labels and reports the queue. An
+     arbiter-label pass is the next iteration.'
+
+verify:
+  - 'cd ada-pi && python3 tests/bench/orch-bench.py --suite confirm-gate
+     --structure student --student http://100.102.134.91:8778'
+  - 'python3 scripts/ada/nest-train-loop.py --harvest-only --no-publish'
+  - 'mddb ada-ha-scenario-reports key bench/train-<ts> — one doc per run'
+
+notes:
+  - 'tool-routing/bank/triage suites are registered but only confirm-gate
+     has a trained incumbent; the student choice head is a stub. The
+     multi-question successor is a gemma-3-1b LoRA on the colab lane
+     (recipe: CMS jev-unsloth-finetune).'
+  - 'ada-pi changes are on dispatch branch
+     dispatch/20261007-211928-1-nest-micro-training in worktree
+     dispatch-wt-20261007-211928-1-task-suites-per-specialist-ada-pi —
+     merge to ada-pi main to make --suite/suites.yml live on the prod
+     checkout.'
