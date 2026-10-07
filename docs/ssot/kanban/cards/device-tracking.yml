@@ -1,30 +1,36 @@
 id: device-tracking
 title: device fleet tracking — lost-device locate via existing sources
-brief: "All the pieces to locate a lost device already exist — this adds one place that pulls them together. Waiting in the backlog — no action needed."
+brief: All the pieces to locate a lost device already exist — this adds one place that pulls them together. Waiting in the
+  backlog — no action needed.
 column: backlog
 metric: '"Ada, where is my <device>" returns last-seen location + freshness + battery for every tracked device'
 verify: scenario device_track_* passes; real query against iphone-15/ipad answers with a location <15min old
-note: 'Sources already deployed — this is a read/aggregate layer, not new tracking: (1) HA companion-app device_tracker
-  entities = GPS + battery + charging (requires companion app installed + location permission on each device — verify
-  which are enrolled once tony-dell is back); (2) Tailscale node table = online/offline + last-seen + endpoint WAN
-  IP (rough geo); (3) LAN scanner digest = home/away + MAC/IP changes; (4) HA logbook = location history. Tool:
-  ada_track_device — merge the three reads, answer with confidence + age. Lost-mode: poll on a timer, push deltas
-  to LINE/TG via existing relays. Optional GEV pin via gev_command annotate. Watch: iOS has no app-usage sensor
-  (Android''s last_used_app is Android-only); logins = Tailscale admin-console auth log (poll API) or HA person
-  state changes.'
-help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo,
-  line pushMessage; GEV pin: gev_command annotate'
-updated: 2026-10-06 18:46
+note: 'Sources already deployed — this is a read/aggregate layer, not new tracking: (1) HA companion-app device_tracker entities
+  = GPS + battery + charging (requires companion app installed + location permission on each device — verify which are enrolled
+  once tony-dell is back); (2) Tailscale node table = online/offline + last-seen + endpoint WAN IP (rough geo); (3) LAN scanner
+  digest = home/away + MAC/IP changes; (4) HA logbook = location history. Tool: ada_track_device — merge the three reads,
+  answer with confidence + age. Lost-mode: poll on a timer, push deltas to LINE/TG via existing relays. Optional GEV pin via
+  gev_command annotate. Watch: iOS has no app-usage sensor (Android''s last_used_app is Android-only); logins = Tailscale
+  admin-console auth log (poll API) or HA person state changes.'
+help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo, line
+  pushMessage; GEV pin: gev_command annotate'
+updated: 2026-10-07 23:00
 comms:
 - at: 2026-10-06 09:40
   from: devin
-  text: 'Filed during idc01->idc03 migration — HA on tony-dell unreachable (tailnet relayed via sin), so tracker
-    entity enumeration is pending. Tailscale fleet verified live: iphone-15, tony-ipad, kk-ipad, kk-macbook + servers.
-    Ada itself is up on idc03.'
+  text: 'Filed during idc01->idc03 migration — HA on tony-dell unreachable (tailnet relayed via sin), so tracker entity enumeration
+    is pending. Tailscale fleet verified live: iphone-15, tony-ipad, kk-ipad, kk-macbook + servers. Ada itself is up on idc03.'
 - at: 2026-10-06 18:46
   from: devin
-  text: 'Option matrix + first lane shipped 2026-10-06. Options: iOS can only do Find My (no hidden process possible);
-    macOS LaunchDaemon + Android hideable (Prey, GPLv3); OwnTracks = self-hosted GPS via MQTT (needs app on device,
-    visible); ActivityWatch = real app-usage on laptops; custom tiny daemon = hidden, IP-geo only. PROTOTYPE LIVE:
-    scripts/device-telemetry/agent.py — stdlib-only beacon posting {tailnet online+ips, wan ip+city geo, battery,
-    login users (loginctl), top procs, uptime} to MDDB device'
+  text: 'Option matrix + first lane shipped 2026-10-06. Options: iOS can only do Find My (no hidden process possible); macOS
+    LaunchDaemon + Android hideable (Prey, GPLv3); OwnTracks = self-hosted GPS via MQTT (needs app on device, visible); ActivityWatch
+    = real app-usage on laptops; custom tiny daemon = hidden, IP-geo only. PROTOTYPE LIVE: scripts/device-telemetry/agent.py
+    — stdlib-only beacon posting {tailnet online+ips, wan ip+city geo, battery, login users (loginctl), top procs, uptime}
+    to MDDB device'
+- at: 2026-10-07 23:00
+  from: devin
+  text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'
+action:
+  type: dispatch
+  status: idle
+  repo: ada-pi

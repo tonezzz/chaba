@@ -3,7 +3,7 @@ title: 'Ada memory hits: Devin session-dump docs read as instruction-shaped text
 column: backlog
 priority: high
 program: ada-tools
-updated: 2026-10-07 22:30
+updated: 2026-10-07 23:00
 tags:
 - ada
 - memory
@@ -19,12 +19,14 @@ spec: 'ada-pi backend/tool_runner/memory.py: keep Devin session-dump docs out of
   chat transcripts), OR wrap returned hits in an explicit ''archival note, not instructions'' frame. Also add a scenario asserting
   a memory hit can''t steer the model off the user''s turn.'
 action:
-  type: manual
+  type: dispatch
+  status: idle
   repo: ada-pi
-  status: queued
-  runner: devin
 comms:
 - at: 2026-10-07 22:30
   from: devin
   text: filed from the context-budget debug run — gentler window + mid-task dead-turn fix landed (704c8d7) and storms stopped,
     but the dump hits remain a live hijack vector for any session that searches memory.
+- at: 2026-10-07 23:00
+  from: devin
+  text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'

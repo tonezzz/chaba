@@ -1,26 +1,28 @@
 id: precommit-warning-baseline
 title: 'Pre-commit SSOT gate: baseline known warnings, fail only on new'
-brief: "The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges. Plan: keep a baseline and fail only on new warnings. In the backlog — no action needed."
+brief: 'The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges. Plan: keep
+  a baseline and fail only on new warnings. In the backlog — no action needed.'
 column: backlog
 priority: medium
-note: 'The optimize check fails a commit when ANY staged SSOT file has a
-  warning — including pre-existing ones already filed to focus-inbox.
-  Merges stage every changed file, so known debt blocks merge commits
-  (hit 2026-10-07 merging idc01-ssot-cleanup; workaround was committing
-  the merge on a checkout without husky).'
-spec: 'Options: (a) baseline file — reports/SSOT_OPTIMIZATION_WARNINGS.json
-  committed as the known-warnings baseline; pre-commit fails only when a
-  warning is absent from baseline (new debt) — silencing = explicit baseline
-  update, auditable. (b) inbox-ack link — ssot-optimize drops warnings that
-  have a matching open focus-inbox item (the to-inbox bridge already
-  dedupes by stem — symmetric key exists). (a) is simpler and offline.
-  Whatever ships: merge commits and dispatch-branch landings must not
+note: The optimize check fails a commit when ANY staged SSOT file has a warning — including pre-existing ones already filed
+  to focus-inbox. Merges stage every changed file, so known debt blocks merge commits (hit 2026-10-07 merging idc01-ssot-cleanup;
+  workaround was committing the merge on a checkout without husky).
+spec: 'Options: (a) baseline file — reports/SSOT_OPTIMIZATION_WARNINGS.json committed as the known-warnings baseline; pre-commit
+  fails only when a warning is absent from baseline (new debt) — silencing = explicit baseline update, auditable. (b) inbox-ack
+  link — ssot-optimize drops warnings that have a matching open focus-inbox item (the to-inbox bridge already dedupes by stem
+  — symmetric key exists). (a) is simpler and offline. Whatever ships: merge commits and dispatch-branch landings must not
   require --no-verify or a different host.'
 comms:
 - at: 2026-10-07 16:30
   from: devin
-  text: 'carded from the idc01 merge: ssot.automation.yml bloat (554>350,
-    inbox-filed 2026-10-04) blocked `git merge --continue` — warning is
-    pre-existing, the gate cannot tell. Result was correct-by-accident
-    (merge ran on omen without husky) but that should be the exception,
-    not the workflow.'
+  text: 'carded from the idc01 merge: ssot.automation.yml bloat (554>350, inbox-filed 2026-10-04) blocked `git merge --continue`
+    — warning is pre-existing, the gate cannot tell. Result was correct-by-accident (merge ran on omen without husky) but
+    that should be the exception, not the workflow.'
+- at: 2026-10-07 23:00
+  from: devin
+  text: 'triage: actionable engineering task — armed as dispatch (chaba), idle until started'
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+updated: 2026-10-07 23:00
