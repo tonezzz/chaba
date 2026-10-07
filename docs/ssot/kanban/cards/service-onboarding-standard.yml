@@ -18,12 +18,22 @@ spec: >-
   ports free. Deploy = manifest first, preflight green, then units.
   Retrofit list: mddb (idc03/idc02/idc01), caddy-edge, ada stack,
   secrets-backup, board-api, chaba-report-api.
+ask:
+  question: 'Adopt the onboarding standard?'
+  options:
+  - 'Yes — adopt + start retrofit'
+  - 'Adopt standard, defer retrofit'
+  - 'No — revise the standard'
 action:
   type: manual
-updated: 2026-10-06
+updated: 2026-10-07 18:55
 comms:
 - at: 2026-10-06 14:45
   from: devin
   text: 'proposed standard + preflight skeleton; adoption decision is
     Tony''s. Retrofit is cheap: secrets-backup + mddb-follower already
     carry stack.yml as reference implementations.'
+- at: 2026-10-07 18:55
+  from: devin
+  text: 'migrated to ask.options (structured responses) — the adoption
+    decision is now one click on the board'

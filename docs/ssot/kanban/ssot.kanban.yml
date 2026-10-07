@@ -126,6 +126,14 @@ card_schema:
     command: "optional shell — prints the measured value"
     before: "optional seeded baseline"
     after: "written by the runner"
+  # optional — the card's ONE standing decision prompt (structured
+  # responses): option buttons + an 'Other' box in needs-you and the modal.
+  ask:
+    question: "the decision Tony owes"
+    options: ["Yes — …", "Option 1: …"]   # strings or {id, label}
+    status: "open | answered  — written by /respond (no request_id)"
+    answer: "resolved option label or free text — written by /respond"
+    answered_at: "YYYY-MM-DD HH:MM — written by /respond"
   # optional — needs-me items for Tony (button to answer on the card)
   requests:
     - id: "short-slug"
@@ -161,13 +169,19 @@ write_path:
     "POST /action {id, do: queue|close|hold|retry}":
       "queue: action.status->queued (idle/failed/done cards; column resets to
       backlog from done/review). close: column->done. hold: ->backlog."
-    "POST /respond {id, request_id, answer, from?, reopen?}":
-      "answers a requests[] entry; from ∈ devin|ada|chaba|tony (default tony —
-      the board UI sends none). 400 'answer required' on empty answer; 400
-      'already answered' on re-answer unless reopen:true (logs 're-answered').
-      When action.status=='running', the answer is also pushed into the live
-      session: appended to $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the
-      runner host (local write or ssh; best-effort, comms note either way —
+    "POST /respond {id|card, request_id?, answer?, option?, text?, from?, reopen?}":
+      "with request_id: answers a requests[] entry; from ∈ devin|ada|chaba|tony
+      (default tony — the board UI sends none). 400 'answer required' on empty
+      answer; 400 'already answered' on re-answer unless reopen:true (logs
+      're-answered'). Without request_id: answers the card-level ask —
+      option:N picks ask.options[N]; text|answer is free text resolving to a
+      unique option match (id/label/label-prefix — voice path 'yes to the
+      disk card'); writes ask.status/answer/answered_at + the label to comms
+      (board-structured-responses). Either path flags awaiting_action when
+      nothing is armed. When action.status=='running', the answer is also
+      pushed into the live session: appended to
+      $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host (local
+      write or ssh; best-effort, comms note either way —
       board-answer-live-session). Sessions are told to poll that file."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
       400 'text required' on empty/whitespace text"

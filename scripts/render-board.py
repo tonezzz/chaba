@@ -440,6 +440,41 @@ function reqList(c, inModal) {{
   return h;
 }}
 
+// card-level ask — one standing decision per card, schema
+// ask: {{question, options[]}} (board-structured-responses). Option
+// buttons post {{id, option: N}}; the Other input posts {{id, text}} —
+// both to /respond with no request_id.
+function askOf(c) {{
+  const a = c.ask;
+  if (a && typeof a === 'object') return a;
+  if (a) return {{question: String(a)}};
+  return null;
+}}
+function askOpen(c) {{
+  const a = askOf(c);
+  return !!(a && a.question && a.status !== 'answered');
+}}
+function optLabel(o) {{ return typeof o === 'string' ? o : (o.label || o.id); }}
+function askAnswerHtml(c) {{
+  const a = askOf(c) || {{}};
+  const opts = a.options || [];
+  let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
+  opts.forEach((o, i) => {{
+    h += `<button class="ask-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-id="${{esc(c.id)}}" data-opt="${{i}}">${{esc(optLabel(o))}}</button>`;
+  }});
+  h += '</div>';
+  h += `<div class="flex gap-1 mt-1"><input class="ask-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" placeholder="other — free text…">` +
+       `<button class="ask-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-id="${{esc(c.id)}}">Other</button></div>`;
+  return h;
+}}
+function askHtml(c) {{
+  const a = askOf(c);
+  if (!a) return '';
+  if (a.status === 'answered')
+    return `<div class="text-xs text-slate-400 mt-1">❓ ${{esc(a.question)}} <span class="text-emerald-300">→ ${{esc(a.answer || '')}}</span></div>`;
+  return `<div class="text-xs text-amber-300 mt-1">❓ ${{esc(a.question)}}</div>` + askAnswerHtml(c);
+}}
+
 function commsList(c) {{
   const log = c.comms || [];
   if (!log.length) return '';
@@ -457,7 +492,7 @@ function cardHtml(c) {{
     badges += `<span class="text-xs bg-sky-800/70 text-sky-200 rounded px-1.5 py-0.5">⚙ ${{esc(claim.session)}}</span> `;
   if (c.blocked_by)
     badges += `<span class="text-xs bg-red-900/60 text-red-200 rounded px-1.5 py-0.5">blocked: ${{esc(c.blocked_by)}}</span> `;
-  const openReqs = (c.requests || []).filter(r => r.status !== 'answered').length;
+  const openReqs = (c.requests || []).filter(r => r.status !== 'answered').length + (askOpen(c) ? 1 : 0);
   if (openReqs)
     badges += `<span class="text-xs bg-amber-800/80 text-amber-100 rounded px-1.5 py-0.5">needs you ×${{openReqs}}</span> `;
   const PRIO = {{high: ['bg-red-900/70 text-red-200', '▲ high'],
@@ -543,6 +578,7 @@ function needsYou() {{
   for (const c of DATA.cards) {{
     for (const r of c.requests || [])
       if (r.status !== 'answered') items.push({{kind: 'request', c, r}});
+    if (askOpen(c)) items.push({{kind: 'ask', c}});
     if ((c.column || 'backlog') === 'review') {{
       const verified = isVerified(c).ok;
       const t = reviewSince(c);
@@ -569,6 +605,9 @@ function nyItemHtml(it) {{
   if (it.kind === 'request')
     return `<div class="border border-amber-700/40 rounded p-2 bg-amber-950/30"><div class="flex items-baseline gap-2 flex-wrap">${{head}}</div>` +
       `<div class="text-xs text-amber-200 mt-1">❓ ${{esc(it.r.ask)}}</div>${{reqAnswerHtml(c, it.r)}}</div>`;
+  if (it.kind === 'ask')
+    return `<div class="border border-amber-700/40 rounded p-2 bg-amber-950/30"><div class="flex items-baseline gap-2 flex-wrap">${{head}}</div>` +
+      `<div class="text-xs text-amber-200 mt-1">❓ ${{esc(askOf(c).question)}}</div>${{askAnswerHtml(c)}}</div>`;
   if (it.kind === 'stale-review')
     return `<div class="border border-violet-700/40 rounded p-2 bg-violet-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
       `<span class="text-xs text-violet-200">in review ${{it.ageH}}h — no verification entry</span>` +
@@ -636,9 +675,10 @@ function render() {{
   // needs-you band
   const nyInVals = {{}};
   let nyFocus = null;
-  document.querySelectorAll('#needs-you .rq-in').forEach(i => {{
-    nyInVals[i.dataset.id + '|' + i.dataset.rq] = i.value;
-    if (document.activeElement === i) nyFocus = i.dataset.id + '|' + i.dataset.rq;
+  document.querySelectorAll('#needs-you .rq-in,#needs-you .ask-in').forEach(i => {{
+    const key = i.dataset.id + '|' + (i.dataset.rq || 'ask');
+    nyInVals[key] = i.value;
+    if (document.activeElement === i) nyFocus = key;
   }});
   const nyItems = needsYou();
   const nyEl = document.getElementById('needs-you');
@@ -659,8 +699,8 @@ function render() {{
       document.getElementById('ny-body').classList.toggle('hidden', nyCollapsed);
       document.getElementById('ny-caret').textContent = nyCollapsed ? '▸' : '▾';
     }};
-    document.querySelectorAll('#needs-you .rq-in').forEach(i => {{
-      const k = i.dataset.id + '|' + i.dataset.rq;
+    document.querySelectorAll('#needs-you .rq-in,#needs-you .ask-in').forEach(i => {{
+      const k = i.dataset.id + '|' + (i.dataset.rq || 'ask');
       if (k in nyInVals) {{
         i.value = nyInVals[k];
         if (nyFocus === k) {{ i.focus(); i.setSelectionRange(i.value.length, i.value.length); }}
@@ -691,16 +731,18 @@ function render() {{
   applyFilter();
   // keep the open modal fresh — but don't wipe an in-progress comment
   const ae = document.activeElement;
-  const typing = ae && (ae.classList.contains('cm-in') || ae.classList.contains('rq-in'));
+  const typing = ae && (ae.classList.contains('cm-in') || ae.classList.contains('rq-in') || ae.classList.contains('ask-in'));
   const prevCmt = document.getElementById('cm-comment');
   const cmtVal = prevCmt ? prevCmt.value : '';
   const rqVals = {{}};
-  document.querySelectorAll('#card-modal .rq-in').forEach(i => {{ if (i.value) rqVals[i.dataset.rq] = i.value; }});
+  document.querySelectorAll('#card-modal .rq-in,#card-modal .ask-in').forEach(i => {{ if (i.value) rqVals[i.dataset.rq || 'ask'] = i.value; }});
   if (openCard && !typing) {{
     showCard(openCard);
     if (cmtVal) {{ const i = document.getElementById('cm-comment'); if (i) i.value = cmtVal; }}
     for (const rq in rqVals) {{
-      const i = document.querySelector(`#card-modal .rq-in[data-rq="${{CSS.escape(rq)}}"]`);
+      const sel = rq === 'ask' ? '#card-modal .ask-in'
+        : `#card-modal .rq-in[data-rq="${{CSS.escape(rq)}}"]`;
+      const i = document.querySelector(sel);
       if (i) i.value = rqVals[rq];
     }}
   }}
@@ -726,6 +768,7 @@ function showCard(id) {{
     `<div class="flex flex-wrap gap-1.5 mb-4">${{colBtns}}</div>` +
     ((c.lab && (c.lab.hypothesis || c.lab.metric)) ? `<div class="mb-3 border-l-2 border-violet-600 pl-2"><div class="text-[10px] uppercase tracking-wide text-violet-400 mb-1">Lab</div>${{c.lab.hypothesis ? `<div class="text-xs text-slate-300">hypothesis: ${{esc(c.lab.hypothesis)}}</div>` : ''}}${{c.lab.metric ? `<div class="text-xs text-slate-400">metric: ${{esc(c.lab.metric)}}</div>` : ''}}</div>` : '') +
     (c.spec ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Spec</div><pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre></div>` : '') +
+    (askOf(c) ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Decision</div>${{askHtml(c)}}</div>` : '') +
     ((c.requests || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Requests</div>${{reqList(c, true)}}</div>` : '') +
     ((c.comms || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Comms</div>${{commsList(c)}}</div>` : '') +
     `<div class="flex gap-1.5 mt-4 border-t border-slate-700/60 pt-3">` +
@@ -813,6 +856,32 @@ function wire() {{
       e.stopPropagation();
       try {{ await api('/respond', {{id: b.dataset.id || openCard, request_id: b.dataset.rq, answer: b.dataset.val}}); toast('answer saved: ' + b.dataset.val); await load(); }}
       catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.ask-opt').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      try {{ await api('/respond', {{id: b.dataset.id || openCard, option: Number(b.dataset.opt)}}); toast('answer saved: ' + b.textContent.trim()); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.ask-btn').forEach(b =>
+    b.onclick = async e => {{
+      e.stopPropagation();
+      const cid = b.dataset.id || openCard;
+      const scope = b.closest('#needs-you') ? '#needs-you' : '#card-modal';
+      const inp = [...document.querySelectorAll(scope + ' .ask-in')]
+        .find(i => (i.dataset.id || openCard) === cid);
+      if (!inp || !inp.value.trim()) return;
+      try {{ await api('/respond', {{id: cid, text: inp.value.trim()}}); toast('answer saved'); await load(); }}
+      catch (err) {{ toast('error: ' + err.message, true); }}
+    }});
+  document.querySelectorAll('.ask-in').forEach(inp =>
+    inp.onkeydown = e => {{
+      if (e.key !== 'Enter') return;
+      e.stopPropagation();
+      const scope = inp.closest('#needs-you') ? '#needs-you' : '#card-modal';
+      const b = [...document.querySelectorAll(scope + ' .ask-btn')]
+        .find(x => x.dataset.id === inp.dataset.id);
+      if (b) b.click();
     }});
   document.querySelectorAll('.ny-verify').forEach(b =>
     b.onclick = async e => {{

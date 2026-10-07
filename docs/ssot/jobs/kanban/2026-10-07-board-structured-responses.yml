@@ -1,0 +1,81 @@
+id: board-structured-responses-impl
+title: Board structured responses — ask.options one-click answers
+date: 2026-10-07
+card: board-structured-responses
+host: tony_omen
+status: implemented
+
+goal: >
+  Make a card's standing decision answerable in one click. Schema was
+  already prototyped on edge-ha-restructure: ask: {question, options[]}.
+  Render it as buttons + an Other box; answer via /respond with no
+  request_id.
+
+delivered:
+  - scripts/board/board-api.py: >
+      POST /respond with no request_id now answers the card-level `ask:`.
+      {id|card, option: N} picks ask.options[N] (index 0-based, bounds
+      checked); {id, text|answer} is free text that resolves to a unique
+      option match (exact option id/label, else unique label prefix —
+      ambiguous or unmatched text stands verbatim). Writes
+      ask.status=answered + answer + answered_at, comms entry
+      'answered ask: <label>' (re-answer -> 're-answered ask:' via
+      reopen:true), and the same awaiting_action triage nudge as the
+      requests[] path. Resolved label lands in body['answer'] so
+      live-session delivery (answers.jsonl, request_id='ask') carries
+      the canonical option. Docstring + selftest extended.
+  - scripts/render-board.py: >
+      Open ask renders in the needs-you band (question + a button per
+      option + Other free-text input) and in the card modal as a
+      'Decision' section; answered ask shows '❓ q → answer'. Card badge
+      'needs you ×N' now counts the open ask. .ask-opt posts
+      {id, option: N}; .ask-btn/.ask-in post {id, text}. In-progress
+      Other text survives the 30s poll re-render in both scopes.
+  - scripts/board/kanban-stats.py: >
+      An open card-level ask counts as one open_requests item
+      (request='ask') so board-health reporting doesn't undercount.
+  - docs/ssot/kanban/ssot.kanban.yml: >
+      Card-fields schema gained the ask: block; the /respond endpoint
+      doc records the new signature and both code paths.
+  - docs/ssot/kanban/cards/service-onboarding-standard.yml: >
+      Migrated — the only other review_kind=decide card without an ask.
+      ask.options = adopt+retrofit / adopt defer retrofit / revise.
+  - docs/ssot/infrastructure/ssot.ada-participation.yml: >
+      T2 gap extended: ada_board_write's respond requires request_id
+      client-side so Ada cannot yet answer a card-level ask — the API
+      now accepts {id, text|option} without one, so the ada-pi patch is
+      make request_id optional + surface ask.question/options in
+      _compact_card.
+
+key_decisions:
+  - 'ask is card-level, NOT another requests[] entry: one standing
+     decision per card (edge-ha-restructure is the prototype). The two
+     coexist — request_id present -> requests path, absent -> ask path.'
+  - 'Free text resolves to a unique option match instead of storing
+     raw text: that is what makes the voice answer "yes" land on the
+     "Yes — …" option without any ada-pi change on the API side.
+     Ambiguous prefixes ("yes" vs ["yes a","yes b"]) stay verbatim.'
+  - 'Options are indexed 0-based in the POST body ({option: N}) — the
+     wire format never depends on label text, so renaming a label
+     cannot break a rendered button mid-poll.'
+  - 'Answered ask + no armed action -> awaiting_action nudge, same as
+     requests: a recorded decision still needs triage, it does not
+     silently unblock into work.'
+
+verify: |
+  python3 scripts/board/board-api.py --selftest          # ok
+  python3 scripts/render-board.py                        # 205 cards, JS node --check clean
+  node scripts/ssot-validate-all.mjs                     # 1626/1626 valid, 0 warnings
+  # e2e (temp CARD_DIR + in-process server, loopback identity):
+  #   POST {card, option:0} on edge-ha-restructure -> 200, ask.status=answered,
+  #   comms 'answered ask: Yes — full B+C', awaiting_action=true;
+  #   re-answer 400; {text:'yes'} -> 'Yes — expand' resolved;
+  #   forged Tailscale-User-Login + LAN XFF -> 403; loopback -> 200;
+  #   running card -> answers.jsonl request_id='ask' answer=resolved label
+
+open_items:
+  - 'deploy: merge to master, then board-api.service + render on the
+     served checkout (chaba-tony-dell) — promotion needs explicit approval'
+  - 'ada-pi: ada_board_write — request_id optional + ask surfaced in
+     _compact_card (voice path for card-level asks)'
+  - 'migrate further decide cards to ask.options as they appear'
