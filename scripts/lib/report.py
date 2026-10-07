@@ -81,12 +81,16 @@ def _resolve_repo_path(value: str | None) -> Path | None:
 def write_meta(meta_path, *, node: str, layer: str, generated_by: str,
                status: str, purpose: str | None = None, summary: str = "",
                sources=None, children=None, extra=None,
-               inputs_at=None) -> Path:
+               inputs_at=None, generated_at: str | None = None) -> Path:
     """Write a node's meta.yml (canonical writer per ssot.reports.yml).
 
     `pending` entries are carried forward from the existing meta —
     generators rewriting meta must never silently drop a queued refresh
-    request; the coordinator resolves them via pending_clear()."""
+    request; the coordinator resolves them via pending_clear().
+
+    `generated_at` defaults to now; reflectors that mirror an upstream
+    document pass the source's own timestamp so staleness measures
+    content freshness, not reflector run time."""
     meta_path = Path(meta_path).expanduser()
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     prior = load_meta(meta_path)
@@ -95,7 +99,7 @@ def write_meta(meta_path, *, node: str, layer: str, generated_by: str,
         "layer": layer,
         "purpose": purpose,
         "generated_by": generated_by,
-        "generated_at": now_iso(),
+        "generated_at": generated_at or now_iso(),
         "status": status,
         "summary": summary,
         "sources": list(sources or []),

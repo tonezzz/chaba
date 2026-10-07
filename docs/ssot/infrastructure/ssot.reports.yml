@@ -290,10 +290,11 @@ nodes:
     layer: L2-domain
     purpose: Joint Ada+Devin systemwide assessment — Ada's memory/tool findings + Devin's audit/registry/SSOT state merged into one shared report
     generator: >
-      ada-pi scenario-live tests/scenarios-live/chaba_systemwide_assessment.yaml
-      (Ada's half) + Devin in-session audit/registry gather (Devin's half);
-      result published as CMS page 'chaba-systemwide-assessment' in
-      ada-cms-pages and snapshotted to reports/chaba-systemwide-assessment-*.md
+      manual — Ada+Devin joint session publishes CMS page
+      'chaba-systemwide-assessment' in ada-cms-pages;
+      scripts/ada/cms-report-reflect.py --slug chaba-systemwide-assessment
+      --node systemwide-assessment mirrors page -> meta + md snapshot
+      (chaba-cms-reflect.timer)
     cadence: 7d
     output: reports
     artifact_pattern: "chaba-systemwide-assessment-*.md"
@@ -304,7 +305,6 @@ nodes:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
       - audit-hosts/mn01
-      - audit-hosts/idc01
       - audit-hosts/macbook
       - memory-suite
   # --- Card CI domain ---
