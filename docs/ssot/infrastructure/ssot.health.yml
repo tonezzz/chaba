@@ -66,6 +66,13 @@ alerts:
       - cpu-frequency-monitor
       - gdrive-backup
       - trade-automation
+coverage:
+  # monitor-coverage-lint.py: live services not health-checked must declare a reason here
+  exempt:
+    google-chrome: desktop app, not a service
+    playlive-macbook-tunnel: on-demand tunnel, not expected up
+    multi-wan: failover route config, monitored via tailscale checks
+    multi-wan-tony-omen: failover route config, monitored via tailscale checks
 groups:
   web-stack:
     - caddy

@@ -224,3 +224,29 @@ services:
       - mobile
     host: tony_omen
     note: "Weekly Mon 04:30 — spins JEV scorers up for the run then stops them."
+  - id: ghostroute-watcher
+    name: GhostRoute watcher
+    type: systemd
+    service: ghostroute-watcher.service
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_omen
+    note: "Rotates OpenClaw primary across OR :free models on throttle.
+      Down = OpenClaw pinned to a dead free model until manual pick."
+  - id: gemini-ollama-proxy
+    name: Gemini-Ollama embedding proxy
+    type: systemd
+    service: gemini-ollama-proxy.service
+    expected_state: active
+    timeout: 5
+    category: system
+    profiles:
+      - home
+      - mobile
+    host: tony_dell
+    note: "Dual-host: also runs on idc03 for mddb embeddings. Sustained
+      429s in spend-digest = Gemini quota, not this unit's health."
