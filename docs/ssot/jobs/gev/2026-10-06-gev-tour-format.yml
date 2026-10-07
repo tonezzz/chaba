@@ -1,0 +1,120 @@
+title: GEV tours — flyover format, player, checkpoint reporting
+date: '2026-10-06'
+domain: gev
+status: implemented-bundle-only
+trigger: kanban card gev-tours (dispatch)
+
+problem:
+  report: >
+    GEV had tour/flyover capability (a hardcoded SF demo in the bundle, plus
+    fly_route over annotations) but no defined tour format, no data-driven
+    player, and no way for a scenario to verify a tour actually played —
+    nothing reported which waypoints were reached.
+  resolution: >
+    Defined a tour JSON format (ordered stops, dwell, narration), shipped a
+    data-driven player at /apps/gev/tours/player.js, exposed
+    play_tour/stop_tour/tour_status through the tool dispatcher, added
+    bridge-side tour_event logging, and wrote a flagship tour
+    (london-icons) plus gev-tour-verify.mjs that proves checkpoints fire
+    in order.
+
+format:
+  file: '/apps/gev/tours/<id>.json (repo: stacks/web/public/apps/gev/tours/)'
+  manifest: '/apps/gev/tours/index.json — {tours:[{id,title,file,stops,flagship,description}]}'
+  schema: |
+    id        string (matches file name)
+    title     string
+    version   int
+    description  string
+    defaults  {dwellS: 6, durationS: 4, pitchDeg: -28}
+    stops     ordered array — the checkpoint sequence. Each stop:
+      id        required, unique — this is the checkpoint id
+      label     display name
+      targeting (exactly one):
+        lat+lon     explicit camera-position waypoint (camera sits AT
+                    lat/lon/heightM oriented headingDeg/pitchDeg — same
+                    semantics as the internal scene flyTo helper; use
+                    ~600-800m offset from the landmark to frame it)
+        locationId  city preset id (austin sf nyc tokyo london paris dubai dc)
+                    — routed through fly_to_location so app framing applies
+        query       geocoded place name — also routed through fly_to_location
+      camera    {heightM | rangeM, headingDeg, pitchDeg, durationS} — optional;
+                rangeM/viewMode apply to fly_to_location stops,
+                heightM/headingDeg/pitchDeg/durationS apply to lat/lon stops
+      viewMode  close|overview (fly_to_location stops)
+      dwellS    seconds parked at the stop after arrival
+      narration "string" or {en, th, ...} — caption + narration event;
+                play_tour lang arg picks the language
+      annotate  annotate_map annotations array (fired on arrival,
+                fire-and-forget); clearAnnotations/persist flags honored
+  contract: >
+    Stops are visited strictly in order. On arrival at each stop the player
+    appends {seq,id,label,at,arrived} to tour_status.checkpoints AND emits a
+    'checkpoint' tour_event on the remote ws. Playback ends with tour_end
+    {state: done|stopped|error}. A scenario verifies playback by asserting
+    checkpoint events/entries appear seq=0..N-1 in order, then tour_end done.
+
+implementation:
+  player: stacks/web/public/apps/gev/tours/player.js — classic script loaded by
+    index.html before the bundle; defines window.__gevTourCmd (dispatcher hook)
+    and window.__gevTour (in-page status()). play_tour loads the tour, acks
+    immediately (detached playback — callers watch tour_status/events), flies
+    each leg (camera.flyTo for lat/lon; runner('fly_to_location',
+    waitForArrival:true) for locationId/query), dwells, narrates, annotates.
+  bundle_splice: >
+    stacks/web/public/apps/gev/assets/index-D8kXv0di.js — one clause inserted
+    at the end of the bY dispatch chain, before the 'Unknown GEV tool' throw:
+    play_tour/stop_tour/tour_status delegate to window.__gevTourCmd(r,c,
+    {viewer,styleManager,dataManager,sceneDirector,annotations,run:o,opts:l}).
+    Single insertion, parses clean (node --check as .mjs).
+  index_html: >
+    loads tours/player.js in <head>; early remote channel gained
+    window.__gevTourEmit — wraps player events as {type:'tour_event',
+    screen,pane,...} ws frames.
+  bridge: >
+    stacks/tony-dell/gev-gemini/bridge.py — remote handler now records
+    tour_event frames into a 2000-deep ring buffer; GET
+    /apps/gev-cmd/command/events?since=N&limit=M returns them with a
+    monotonic n (ordered stream for live scenario verification).
+  tools: >
+    stacks/tony-dell/gev-gemini/tools.json += play_tour, stop_tour,
+    tour_status — voice path works too ('play the London tour').
+  flagship: stacks/web/public/apps/gev/tours/london-icons.json — 6 stops,
+    city-overview (locationId leg) then 5 lat/lon legs along the Thames
+    (Tower Bridge -> Shard -> Gherkin -> St Paul's -> Big Ben), EN+TH
+    narration, ~62s.
+  verify_script: stacks/web/input-bridge/gev-tour-verify.mjs — casts GEV to a
+    screen (or --no-cast), plays the tour via /command, polls tour_status
+    asserting checkpoints extend append-only and end == expected ids in
+    order, cross-checks the bridge event stream when present (WARN if the
+    deployed bridge predates it).
+
+verification:
+  - 'player smoke-tested in node harness (stubbed Cesium/document/ws): 6
+    checkpoints in order, locationId leg through fly_to_location, detached
+    ack, stop_tour -> state stopped, bad tour id -> ok:false.'
+  - 'bundle + player parse clean (node --check); bridge.py ast-parses;
+    tools.json + tour JSONs load.'
+  - 'live run pending deploy approval: node stacks/web/input-bridge/gev-tour-verify.mjs --screen 6'
+
+deploy_note: >
+  Not deployed (dispatch mode, no deploy without approval). The bundle/index.html
+  edits are checked-in statics — live only after a stacks/web deploy; the bridge
+  events endpoint needs the gev-gemini image rebuilt. tour_status polling works
+  without the bridge change; the event stream does not.
+
+source_port:
+  note: >
+    The gods-eye-view source repo is outside this dispatch worktree and has no
+    pushable remote (see gev-program-design) — changes here are bundle/index.html/
+    bridge/tools.json only. Port before the next source rebuild or the bundle
+    splice will be lost.
+  likely_locations:
+    - tool dispatch (the big if-chain ending in 'Unknown GEV tool') — add the
+      three tour names delegating to the player
+    - vite.config.js GEV_REALTIME_TOOLS — add play_tour/stop_tour/tour_status
+      decls (tools.json is generated from it)
+    - tours/player.js + tours/*.json can move into source verbatim (plain script)
+    - 'index.html: <script src tours/player.js> + the __gevTourEmit hook in the
+      early remote channel'
+    - bridge.py is already source-of-truth in this repo (stacks/tony-dell/gev-gemini)
