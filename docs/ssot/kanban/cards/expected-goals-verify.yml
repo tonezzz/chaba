@@ -3,35 +3,37 @@ title: 'Card acceptance: expected_goals field + verify stage'
 column: review
 review_kind: verify
 priority: high
-note: 'Tony 2026-10-07: "each card has expected goal and when finished we measure it by these goals — a card that
-  passes this audit would be very confident." This is acceptance criteria + independent verification. ssot.ci.yml
-  already designed the shape (benchmark field, audit stage, acceptance gate at plan) but it has never been exercised
-  end-to-end — reports/ci/ does not exist. This card generalizes benchmark (one metric) into expected_goals (N machine-checkable
-  assertions).'
-spec: 'Deliverables: (1) card schema: expected_goals — list of {id, check} where check is executable: "http <code>
-  <url>", "command <shell> [expect <substr|exit>]", "file-exists <path>", "git-ancestor <branch> <base>", "ws <url>";
-  prose goals rejected at the plan gate — a goal that cannot fail carries no information. (2) verify stage in scripts/ci/card-pipeline.py
-  (or verify-card.py): runs every goal, writes pipeline.verify {goals: [{id, ok, evidence, at}]} to the card + run
-  artifact reports/ci/<card>-<ts>.json via lib/report meta contract (ci-pipeline node already declared in ssot.reports.yml).
-  (3) render-board.py: verify chips read pipeline.verify results — goal chips replace outcome/deploy heuristics
-  when present. (4) demo end-to-end on a real card (pipeline has never run). (5) optional: report-watch re-probes
-  done-cards goals periodically — goals rot, a pass at close proves nothing about next month.'
+note: 'Tony 2026-10-07: "each card has expected goal and when finished we measure it by these goals —
+  a card that passes this audit would be very confident." This is acceptance criteria + independent verification.
+  ssot.ci.yml already designed the shape (benchmark field, audit stage, acceptance gate at plan) but it
+  has never been exercised end-to-end — reports/ci/ does not exist. This card generalizes benchmark (one
+  metric) into expected_goals (N machine-checkable assertions).'
+spec: 'Deliverables: (1) card schema: expected_goals — list of {id, check} where check is executable:
+  "http <code> <url>", "command <shell> [expect <substr|exit>]", "file-exists <path>", "git-ancestor <branch>
+  <base>", "ws <url>"; prose goals rejected at the plan gate — a goal that cannot fail carries no information.
+  (2) verify stage in scripts/ci/card-pipeline.py (or verify-card.py): runs every goal, writes pipeline.verify
+  {goals: [{id, ok, evidence, at}]} to the card + run artifact reports/ci/<card>-<ts>.json via lib/report
+  meta contract (ci-pipeline node already declared in ssot.reports.yml). (3) render-board.py: verify chips
+  read pipeline.verify results — goal chips replace outcome/deploy heuristics when present. (4) demo end-to-end
+  on a real card (pipeline has never run). (5) optional: report-watch re-probes done-cards goals periodically
+  — goals rot, a pass at close proves nothing about next month.'
 action:
   type: dispatch
   status: done
   runner: tony-omen
-  result: 'exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`. | devin-task-20261007-144438-deliverables-1-card-schema-exp.service:
-    Consumed 2min 9.071s CPU time over 25min 58.325s wall clock time, 1G memory peak.'
-updated: 2026-10-07 15:15
+  result: 'exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`.
+    | devin-task-20261007-144438-deliverables-1-card-schema-exp.service: Consumed 2min 9.071s CPU time
+    over 25min 58.325s wall clock time, 1G memory peak.'
+updated: 2026-10-07 15:25
 claim:
   since: 2026-10-07 14:50
 comms:
 - at: 2026-10-07 14:50
   from: devin
-  text: 'spec written with tony. Framing agreed: declaration = acceptance criteria (QC), independent re-check =
-    audit, the pipeline stages are QA. Existing dormant machinery reused: ssot.ci.yml stages, card-pipeline.py runner,
-    ci-pipeline report node. What produces confidence: executability, independence, failure-capability, freshness.
-    The audit reads: expected_goals must be commands, and the verifier must not be the doer.'
+  text: 'spec written with tony. Framing agreed: declaration = acceptance criteria (QC), independent re-check
+    = audit, the pipeline stages are QA. Existing dormant machinery reused: ssot.ci.yml stages, card-pipeline.py
+    runner, ci-pipeline report node. What produces confidence: executability, independence, failure-capability,
+    freshness. The audit reads: expected_goals must be commands, and the verifier must not be the doer.'
 - at: 2026-10-07 14:44
   from: tony-omen
   text: claimed
@@ -40,8 +42,9 @@ comms:
   text: started devin-task-20261007-144438-deliverables-1-card-schema-exp on tony-omen (dispatch)
 - at: 2026-10-07 14:51
   from: devin
-  text: 'implementing: scripts/lib/goals.py (check grammar+executor), verify stage in card-pipeline, board-api verify
-    stage, render-board goal chips, report-watch re-probe, SSOT docs. demo on this card at the end.'
+  text: 'implementing: scripts/lib/goals.py (check grammar+executor), verify stage in card-pipeline, board-api
+    verify stage, render-board goal chips, report-watch re-probe, SSOT docs. demo on this card at the
+    end.'
 - at: 2026-10-07 15:02
   from: devin
   text: 'ci plan: pass — dispatchable spec + acceptance signal present'
@@ -106,11 +109,11 @@ comms:
   text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
 - at: 2026-10-07 15:10
   from: devin
-  text: 'done — all 6 deliverables. verify stage live: pipeline.verify on this card shows 5/5 goals (schema grep,
-    goals/pipeline selftests, reports/ci/meta.yml, board-api health). First real ci-pipeline run — run artifact
-    + meta.yml + timeline written. report-watch re-probes done-card goals every 24h (goal-rot inbox items). Caveat:
-    live board-api/render-board predate this work — stages.verify falls back gracefully + goal chips render once
-    merged/deployed. Committed on session branch; not pushed.'
+  text: 'done — all 6 deliverables. verify stage live: pipeline.verify on this card shows 5/5 goals (schema
+    grep, goals/pipeline selftests, reports/ci/meta.yml, board-api health). First real ci-pipeline run
+    — run artifact + meta.yml + timeline written. report-watch re-probes done-card goals every 24h (goal-rot
+    inbox items). Caveat: live board-api/render-board predate this work — stages.verify falls back gracefully
+    + goal chips render once merged/deployed. Committed on session branch; not pushed.'
 - at: 2026-10-07 15:11
   from: tony-omen
   text: 'finished (ok): exit=0 /card-pipeline.py,board/board-api.py} --selftest` + `node scripts/ssot-validate-all.mjs`.
@@ -127,6 +130,13 @@ comms:
 - at: 2026-10-07 15:15
   from: devin
   text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=skip verify=pass'
+- at: 2026-10-07 15:25
+  from: devin
+  text: 'merged to master (2d6c80f3, merge of dispatch/20261007-144438 branch cd61cf51). Independent re-verify
+    on master post-merge: 5/5 goals pass. ssot-validate-all clean. First post-merge run had a transient
+    tailscale timeout on the board-api probe — exactly the kind of flakey evidence verify is meant to
+    expose honestly; re-run green. Goal chips now render on the board; report-watch re-probes done-card
+    goals every 24h.'
 pipeline:
   opt_in: ci
   stages:
