@@ -1,13 +1,24 @@
 id: logs-drain-rate
 title: Log shipper drains slower than volume accrues (500/run cap)
 brief: "The log shipper reads logs faster than it sends them, so some hosts fall days behind. Waiting in the backlog — no action needed yet."
-column: backlog
+column: done
 priority: medium
 note: >-
-  Root cause behind the four logs-auto-*-backlog cards (closed
-  2026-10-06 with known cause): shipper matches 1.4k-3.2k lines/run but
-  ships only 500 — idc01 2d behind, tony-dell 6d. Options: raise
-  --max-docs for a catch-up run, tighten GREP/KINDS filters (noise
-  share high — idc01 caddy-edge scanner 502s dominate), or batch-drain
-  on a schedule. Design choice, not incident.
-updated: '2026-10-06'
+  Resolved 2026-10-08 (option B — tighten filters; trail:
+  docs/ssot/jobs/infrastructure/2026-10-08-log-shipper-drain-rate.yml).
+  The premise was stale: --max-docs 2000 was already live fleet-wide and
+  every ship/<host> state shows shipped == scanned — no backlog remains.
+  Catch-up (A) was moot and batch-drain (C) would drain a backlog that
+  no longer exists; `tail -6000`, not --max-docs, is the real per-run
+  ceiling — it resolved the old backlog by skip-to-live, not shipping.
+  Shipped change: GREP_DROP + DROP gained "scdaemon" (gpg-agent
+  smartcard spam, ~7-12% of the whole host-logs collection) and "Main
+  process exited, code=exited" (redundant with the paired Failed-with-
+  result / Failed-to-start records; code=killed kept for OOM). Measured
+  live: idc02 --user -79%, idc03 --user -55% matched volume. Verified
+  installed on tony-omen; remote hosts need one
+  `install-log-shipper.sh <host>` re-run (idc03 via `idc03 --via
+  tony-omen`) — left for approval per deploy policy. Kept on purpose:
+  caddy-edge 502s, ssh brute-force, go2rtc, mddb embed failures —
+  real signal already bounded by REPEAT_CAP.
+updated: '2026-10-08'

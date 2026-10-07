@@ -1,0 +1,109 @@
+title: Log shipper drain rate — evaluated options, tightened filters
+subtitle: >-
+  The card's premise (matches 1.4k-3.2k/run but ships only 500) was
+  already stale: --max-docs 2000 has been live on all six journald hosts
+  since the local-timer install, and every ship/<host> state now shows
+  shipped == scanned — the backlog is drained. A catch-up run (option A)
+  had nothing to catch up and a batch-drain lane (option C) would drain
+  a backlog that no longer exists, so the real work was option B:
+  cutting steady-state bookkeeping noise out of the matched set.
+icon: filter
+id: 2026-10-08-log-shipper-drain-rate
+status: done
+owner: devin-dispatch
+project: chaba
+card: logs-drain-rate
+started: "2026-10-08"
+completed: "2026-10-08"
+
+context:
+  user_request: >
+    Card logs-drain-rate: shipper matches 1.4k-3.2k lines/run but ships
+    only 500/run — idc01 was 2d behind, tony-dell 6d (root cause behind
+    the closed logs-auto-*-backlog cards). Evaluate the options in the
+    card note (raise --max-docs for a catch-up run, tighten GREP/KINDS
+    filters — idc01 caddy-edge scanner 502s dominate the noise, or
+    scheduled batch-drain), pick one, implement, and document why.
+
+findings:
+  live_state: >-
+    host-logs-state ship/<host> shows shipped == scanned on all 7 hosts
+    (idc01 4, idc02 62, idc03 58, michael-ha 2, mn01 173, tony-dell 777,
+    tony-omen 580). tony-dell's 777 > 500 proves the installed units
+    already run --max-docs 2000 — the card's "500/run" figure predates
+    the bump. The old backlog did not "ship late": the remote
+    `tail -6000` window fast-forwards the cursor past lines that fall
+    outside it, so the 6d dell backlog was skipped-to-live, not
+    drained — acceptable, it was mostly capped noise anyway, but worth
+    knowing: tail -6000, not --max-docs, is the real per-run ceiling.
+  collection_audit: >-
+    host-logs holds ~50.4k docs covering 2026-10-06/07 only (~25k/day).
+    Top stored signatures: gpg-agent scdaemon connect-fail ~3.7k (~7%,
+    the single biggest cross-fleet signature), mddb.service embedding
+    failures ~2.7k (a real incident — kept), tony-dell init.scope
+    post-mortems ~5.4k (Started/Failed/Main-process-exited), go2rtc
+    camera-stream errors ~2.3k, mcp-link-monitor crash loop ~2.7k,
+    ssh brute-force ~0.5k, vms-snap ~0.5k. idc01's caddy-edge scanner
+    502s the note mentions are quiet now (4 error lines/24h live).
+  crash_loops: >-
+    Remaining saturation (tony-dell --user ~19k matched/3h, tony-omen
+    window full every run) is crash-loop churn — cast-desktop@1
+    (~4k/hr), yomi-process start-limit, mcp-link-monitor. REPEAT_CAP=25
+    bounds what ships (suppressed counts keep digest xN truthful); the
+    loops themselves need fixing at source, not filtering here.
+
+design:
+  choice: option B — tighten GREP/DROP filters.
+  why_not_a: >-
+    Catch-up --max-docs is moot: cap already 2000 live, cursors caught
+    up, and raising --max-docs doesn't lift the tail -6000 window that
+    is the actual per-run ceiling.
+  why_not_c: >-
+    Scheduled batch-drain adds a second lane to drain a backlog that no
+    longer exists; the tail window would skip those old lines anyway.
+  drop_additions: >-
+    DROP += "scdaemon" (gpg-agent smartcard-daemon connect failure —
+    cosmetic on headless hosts, ~7-12% of the whole collection) and
+    "Main process exited, code=exited" (systemd post-mortem that
+    restates what the paired "Failed with result" / "Failed to start"
+    lines already record; "code=killed" deliberately kept — it's the
+    unit-level OOM/signal record). Mirrored into GREP_DROP so the lines
+    never cross the wire; GREP_DROP stays a strict subset of DROP per
+    the in-file rule.
+  kept_on_purpose: >-
+    caddy-edge http.log.error dial-tcp 502s, ssh "Failed password",
+    go2rtc stream errors, mddb embedding failures, and per-cycle
+    init.scope "Failed with result"/"Failed to start" — real signal
+    already bounded by REPEAT_CAP; dropping them would hide the
+    incidents they report.
+
+code_changes:
+  - scripts/ada/log-shipper.py — GREP_DROP and DROP += scdaemon +
+    "Main process exited, code=exited".
+
+verification:
+  done:
+    - "remote grep -avE A/B over live journals: idc02 --user 1538->323
+      (-79%), idc03 --user 1707->760 (-55%), tony-dell --user
+      19015->17971 (-5%), tony-omen --user 15409->15398; --system legs
+      ~unchanged (the noise is user-journal)"
+    - "installed on tony-omen via install-log-shipper.sh; first run:
+      348 shipped full lane + 83 severe, 0 failed"
+    - "ship-state after install: shipped == scanned on all hosts"
+  pending:
+    - "install-log-shipper.sh re-run on remote hosts to propagate the
+      new filters: `bash scripts/ada/install-log-shipper.sh tony-dell
+      mn01 idc01 idc02` and `bash scripts/ada/install-log-shipper.sh
+      idc03 --via tony-omen` (idc03's key lives on omen; remote installs
+      left for approval per deploy policy — tony-omen verified live)"
+
+known_limits:
+  - "tail -6000 silently skips backlog outside the window — by design
+    (deliberate drop), but 'days behind' is resolved by skipping, not
+    shipping; a host that must not lose lines needs a bigger window or
+    a real journald forwarder, not a bigger --max-docs"
+  - "old noise already in host-logs stays until prune/14d ages it out"
+  - "tony-dell --user still exceeds the window (~18k/3h post-filter) —
+    crash loops (cast-desktop@1, yomi-process start-limit) are the
+    bulk; cap keeps shipped signal, source fixes belong to their own
+    cards"

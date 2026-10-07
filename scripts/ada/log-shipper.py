@@ -107,7 +107,9 @@ GREP_DROP = ("Started session-[0-9]+\\.scope|Stopped session-[0-9]+\\.scope|"
              "Stopping session-[0-9]+\\.scope|"
              "Started server process|Stopped server process|"
              "Finished server process|"
-             "Scheduled restart job, restart counter is at")
+             "Scheduled restart job, restart counter is at|"
+             "scdaemon|"
+             "Main process exited, code=exited")
 # client-side classifier — ordered, first match wins
 KINDS = [
     ("oom",    re.compile(r"oom[-_ ]?kill|Out of memory|Killed process",
@@ -140,6 +142,17 @@ DROP += [
     "Started server process", "Stopped server process",
     "Finished server process",
     "Scheduled restart job, restart counter is at",
+]
+# card logs-drain-rate (2026-10-08): two more bookkeeping classes with no
+# independent signal, identified from the stored-collection facet audit —
+# gpg-agent's smartcard-daemon connect failure is cosmetic on headless
+# hosts (biggest single cross-fleet signature, ~12% of host-logs), and
+# systemd's "code=exited" post-mortem restates what the paired
+# "Failed with result" / "Failed to start" lines already record.
+# "code=killed" stays — it's the unit-level OOM/signal record.
+DROP += [
+    "scdaemon",                          # gpg-agent smartcard spam
+    "Main process exited, code=exited",  # redundant exit-status line
 ]
 # repeat-cap: normalize a line the same way logs-report's RX_VOLATILE
 # does so a crash loop shipping the same error N times only sends the

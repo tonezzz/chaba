@@ -1,0 +1,7 @@
+[Unit]
+Description=Nest topology bench + nest-bench CMS trend refresh (job:ada-pi-orch-bench, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=5400
+ExecStart=tests/bench/orch-bench.py --student 100.75.102.88:8778 --heavy 100.75.102.88:8777 --mddb + --report-cms, then nest-bench-update.py --force
