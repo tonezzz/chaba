@@ -31,6 +31,17 @@ Applies to Devin AND Ada (parity — Ada's copy lives in `DEFAULT_ADA_INSTRUCTIO
 - Verify before correcting: check SSOT/code/tools for the real state — the duty is to be right, not to be contrarian.
 - Tested continuously by the `education_correction` live scenario (ada-pi `tools` suite, smoke tier) — regressions show up in the hourly benchmark and the `auto-report` page.
 
+## Open-ask capture duty (added 2026-10-07)
+
+Tony's requests die when they stay inside a conversation. Before ending any session — and whenever a request arrives that will not be finished in this session — the agent MUST make it durable:
+
+- Actionable work → a kanban card (`docs/ssot/kanban/cards/<id>.yml`, `column: backlog`) or a comment on the card it belongs to.
+- Waiting on Tony/external input → the card records exactly what is needed (`requests:` block or comms line) so the follow-up question is never lost.
+- Loose ideas worth keeping → a focus-inbox entry or card note, not "I'll remember".
+- When Tony asks "status?" / "what's pending?", answer from the board + focus-inbox + this session's open asks — not from memory.
+
+The board is the only trustworthy list of pending work; a request with no card does not exist.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points
