@@ -114,8 +114,8 @@ def main():
     for r in results:
         mark = "✓" if r["ok"] is True else ("✗" if r["ok"] is False else "·")
         print(f"{mark} {r['id']:24} {r['detail']}")
-    print(f"\n{sum(r['ok'] is True for r in results)} ok, "
-          f"{len(bad)} failing, {len(unk)} skipped")
+    counts = (f"{sum(r['ok'] is True for r in results)} ok, "
+              f"{len(bad)} failing, {len(unk)} skipped")
 
     payload = {
         "generated": datetime.now(timezone(timedelta(hours=7)))
@@ -125,8 +125,22 @@ def main():
     }
     if "--write" in sys.argv:
         OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+        # report-graph meta (run-node.py augments inputs_at/pending)
+        import yaml as _yaml
+        meta = REPO / "reports/route-health/meta.tony-dell-web.yml"
+        meta.parent.mkdir(parents=True, exist_ok=True)
+        meta.write_text(_yaml.safe_dump({
+            "node": "route-health/tony-dell-web",
+            "layer": "L1-producer",
+            "generated_by": "scripts/check-routes.py --write",
+            "generated_at": payload["generated"],
+            "status": "ok" if not bad else "delta",
+            "summary": counts,
+        }, sort_keys=False, allow_unicode=True))
         print(f"wrote {OUT}")
-        return 0   # dead routes are data, not a probe failure
+        print(counts)   # last line becomes meta.summary in the report graph
+        return 0        # dead routes are data, not a probe failure
+    print(f"\n{counts}")
     return 1 if bad else 0
 
 

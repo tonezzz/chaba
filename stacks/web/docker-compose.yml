@@ -32,36 +32,6 @@ services:
     - frigate_default
     profiles:
     - production
-  imagen2-inference:
-    container_name: imagen2-inference
-    build:
-      context: /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file:
-    - /home/tony/CascadeProjects/helm/.env.local
-    environment:
-    - MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
-    - VAE_ID=madebyollin/sdxl-vae-fp16-fix
-    volumes:
-    - /home/tony/.cache/huggingface:/root/.cache/huggingface
-    - /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2/main.py:/app/main.py:ro
-    - /home/tony/CascadeProjects/chaba-h3-tony-dell/inference2/data:/app/data
-    ports:
-    - 8000:8000
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            count: 1
-            capabilities:
-            - gpu
-        limits:
-          cpus: '4'
-          memory: 8G
-    networks:
-    - default
   netdata:
     container_name: netdata
     image: netdata/netdata:stable

@@ -1,0 +1,54 @@
+id: mddb-replication-heartbeat
+title: 'mddb replication: leader heartbeat + follower Recv deadline'
+column: done
+priority: high
+repo: mddb-fork
+program: mddb
+updated: 2026-10-06 19:06
+action:
+  status: done
+  type: dispatch
+  runner: tony-omen
+  result: 'exit=0 heartbeat.yml` + outcome md committed on the dispatch branch (not master, not pushed) | devin-task-20261006-174837-in-services-mddbd-1-leader-emi.service:
+    Consumed 20min 59.074s CPU time over 29min 42.272s wall clock time, 3.1G memory peak.'
+note: 'Root fix for mddb-follower-stall. Diagnosed 2026-10-06: follower''s replicate() loop calls stream.Recv()
+  with no deadline and the stream has no heartbeat — a silently-dead stream (leader send goroutine blocked, DERP
+  half-open, TCP blackhole) blocks Recv forever with connected=true and zero log output. Only a restart recovers.
+  Self-heal watchdog (mddb-watchdog.timer on idc02) mitigates in the meantime.'
+spec: 'In services/mddbd: (1) LEADER — emit a lightweight heartbeat entry on StreamBinlog every ~15s when no real
+  entries flow (new msg field or periodic empty commit marker; must not advance LSN). (2) FOLLOWER — wrap stream.Recv()
+  in replicate() with a waitable deadline ~3x heartbeat interval (e.g. context.WithTimeout per Recv, or grpc WaitOnReady
+  + deadline on the stream ctx): on timeout, log ''replication heartbeat timeout'' and return the error so loop()
+  reconnects. (3) Expose heartbeat/last-recv state in /v1/replication/status so a frozen-but-connected stream is
+  distinguishable. (4) Add a regression test: fake stream that goes silent must trigger reconnect within the deadline.
+  Constraints: no LSN pollution from heartbeats; idc02 follower (image 2.15.4-lsn) must keep applying against the
+  current leader without a snapshot reset.'
+comms:
+- at: 2026-10-06 17:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 17:48
+  from: tony-omen
+  text: claimed
+- at: 2026-10-06 17:48
+  from: chaba
+  text: started devin-task-20261006-174837-in-services-mddbd-1-leader-emi on tony-omen (dispatch)
+- at: 2026-10-06 17:55
+  from: devin
+  text: 'in progress: worktree mddb-wt-repl-heartbeat on tony-dell (branch repl-heartbeat, based on follower-lsn-persist).
+    Scoping proto heartbeat field + recv deadline + status fields + test.'
+- at: 2026-10-06 18:17
+  from: devin
+  text: 'done: repl-heartbeat @ 498cdc3 on mddb-fork (tony-dell, wt mddb-wt-repl-heartbeat). Leader emits 15s idle
+    heartbeat (proto field 8, lsn=0 — old followers fail-apply before LSN write, no pollution); follower Recv gets
+    45s deadline armed on first heartbeat (old leader never flaps); status JSON exposes connected/last_recv_at/heartbeat_capable
+    + per-follower last_sent_at; 5 regression tests, full mddbd suite green (97s), buf lint/breaking clean. No image
+    built/deployed — merge both repl-* branches i'
+- at: 2026-10-06 18:18
+  from: tony-omen
+  text: 'finished (ok): exit=0 heartbeat.yml` + outcome md committed on the dispatch branch (not master, not pushed)
+    | devin-task-20261006-17483'
+- at: 2026-10-06 19:06
+  from: tony
+  text: closed by Tony
+claim: {}

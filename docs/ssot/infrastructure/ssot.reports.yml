@@ -190,6 +190,17 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
     children: []
+  - id: route-health/tony-dell-web
+    layer: L1-producer
+    purpose: Edge route probes from ssot.routes.yml — dead-upstream tripwire
+    generator: scripts/check-routes.py --write
+    cadence: 5m
+    output: stacks/web/public/apps
+    artifact_pattern: route-health.json
+    meta: reports/route-health/meta.tony-dell-web.yml
+    references:
+      - docs/ssot/infrastructure/ssot.routes.yml
+    children: []
   - id: host-loads
     layer: L1-producer
     purpose: Lightweight fleet load/mem/disk sampler (one SSH probe per host,

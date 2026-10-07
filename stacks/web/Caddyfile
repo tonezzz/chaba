@@ -401,13 +401,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy frigate:5000
 	}
 
-	handle /tony-omen/apps/imagen/api {
-		redir * /tony-omen/apps/imagen/api/ 308
-	}
-	handle_path /tony-omen/apps/imagen/api/* {
-		reverse_proxy tony-omen.taila0626a.ts.net:8000
-	}
-
 
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade
