@@ -51,6 +51,15 @@ card_schema:
              absent); decide = a judgment call for Tony; triage = sweep-
              generated cleanup. Renders as sub-groups in the column."
   claim: {session: "worker session/task id", since: "datetime"}
+  brief: "2-3 sentences max, plain language for the OPERATOR — situation
+         first, then the expected action (review it / answer on the card
+         / wait / nothing). No jargon, no IDs, no file paths. Convention
+         (kanban-card-brief, 2026-10-07): every NEW card gets a brief —
+         whoever writes the card writes the brief, dispatch jobs and
+         health-lane generators included. board2 renders it as a
+         prominent callout atop the detail pane + a one-line subtitle in
+         the card list. Catch-up pass for old cards:
+         scripts/board/backfill-briefs.py (column-derived fallback)."
   note: "current status line shown on the card"
   updated: "YYYY-MM-DD or YYYY-MM-DD HH:MM"
   blocked_by: "card id or free text"

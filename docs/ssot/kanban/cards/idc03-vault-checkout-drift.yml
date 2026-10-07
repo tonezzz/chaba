@@ -1,6 +1,7 @@
 id: idc03-vault-checkout-drift
 title: idc03 chaba-vault checkout 4217 commits behind origin + dirty
-column: done
+brief: "One server's copy of this repo was thousands of commits behind, so the memory services on it were running stale code. Fixed — check the result and close the card."
+column: review
 priority: medium
 note: 'idc03 runs ada-memory services (sync, staleness, gap-report, memory-standard) from ~/CascadeProjects/chaba-vault
   — a checkout of the main chaba repo that is 4217 commits behind origin/master, 1 ahead, and has uncommitted local
@@ -64,20 +65,6 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261007-171350-safety-this-checkout-is-live-p not in origin/master
     — close will block until merged'
-- at: 2026-10-07 17:41
-  from: devin
-  text: 'merged f3d2530c. Goals verified live: vault 12 behind (<100), 0 stale IPs under scripts/+apps/, ada-memory-sync
-    ran clean. Worktree pruned.'
-- at: 2026-10-07 17:42
-  from: chaba
-  text: 'merge guard: no session branch/worktree for 20261007-171350-safety-this-checkout-is-live-p — nothing to
-    verify'
-- at: 2026-10-07 17:42
-  from: tony
-  text: closed by Tony
-- at: 2026-10-07 17:42
-  from: chaba
-  text: session concise-park… hidden
-updated: 2026-10-07 17:42
+updated: 2026-10-07 17:27
 claim:
   since: 2026-10-07 17:13
