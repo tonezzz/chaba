@@ -157,17 +157,9 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
-  - id: audit-hosts/idc01
-    layer: L1-producer
-    purpose: Host snapshot + delta vs expected services/resources
-    generator: scripts/audit-hosts.py --host idc01
-    cadence: 24h
-    output: reports/audit-hosts
-    artifact_pattern: "idc01-*.yml"
-    meta: reports/audit-hosts/meta.idc01.yml
-    references:
-      - docs/ssot/infrastructure/ssot.audit.hosts.yml
-    children: []
+  # audit-hosts/idc01 retired 2026-10-07 — host retired; its residual rot
+  # (missing timers, dead ada-* services) is a decommission checklist,
+  # not standing signal. Re-add the node if idc01 returns to service.
   - id: audit-hosts/macbook
     layer: L1-producer
     purpose: Host snapshot (macOS) — services via launchctl
