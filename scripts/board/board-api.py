@@ -517,6 +517,38 @@ def do_request(card: dict, body: dict) -> str:
     return f"request {rid} raised"
 
 
+def do_create(body: dict, frm: str) -> str:
+    """Create a new card — the capture end of the request lifecycle
+    (card request-lifecycle). Voice/Ada and local automation can drop a
+    bare ask onto the board without a repo checkout. Fails closed on a
+    duplicate id so callers can't silently shadow an existing card."""
+    title = str(body.get("title") or "").strip()
+    if not title:
+        raise ValueError("title required")
+    cid = str(body.get("id") or "").strip() or slugify(title)
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,60}", cid):
+        raise ValueError("id must match [a-z0-9-] (got " + cid + ")")
+    col = str(body.get("column") or "backlog").strip()
+    if col not in COLUMNS:
+        raise ValueError(f"column must be one of {sorted(COLUMNS)}")
+    p = CARD_DIR / f"{cid}.yml"
+    if p.exists():
+        raise ValueError(f"card {cid} already exists")
+    card = {"id": cid, "title": title[:160], "column": col,
+            "updated": now()}
+    note = str(body.get("note") or "").strip()
+    if note:
+        card["note"] = note[:500]
+    help_txt = str(body.get("help") or "").strip()
+    if help_txt:
+        card["help"] = help_txt[:4000]
+    card["comms"] = [{"at": now(), "from": frm,
+                      "text": str(body.get("text") or
+                                   "card captured via board-api")[:500]}]
+    save(p, card)
+    return f"card {cid} created in {col}"
+
+
 # --- request push notifications (card kanban-push-notify) ---------------
 # New requests fire a push after a short debounce so a burst of /request
 # POSTs arrives as ONE batched summary, not a ping storm. Pending items
@@ -743,6 +775,9 @@ class H(BaseHTTPRequestHandler):
                     if request_needs_notify(req):
                         notify_req = (card.get("id") or body.get("id"), req)
                         msg += " — notify queued"
+                elif path == "/card":
+                    frm = actor(body)
+                    msg = do_create(body, frm)
                 elif path == "/pipeline":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
