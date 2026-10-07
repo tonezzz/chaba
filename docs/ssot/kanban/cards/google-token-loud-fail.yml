@@ -3,30 +3,34 @@ title: tasks/calendar fail loudly when Google token breaks (silent-empty on idc0
 column: backlog
 priority: high
 program: ada-tools
-updated: '2026-10-07'
-tags: [ada, tools, migration, audit]
-note: >-
-  Audit 2026-10-07 (session 817862db42, first idc03 session): every
-  calendar_read/tasks call returns ok:true with errors:[google token
-  refresh failed (400)] and EMPTY results — post-migration the Google
-  credential never moved. Ada can truthfully-but-wrongly report "no
-  events, no tasks" while auth is broken. Immediate ops fix is
-  re-running scripts/ada/google-calendar-auth.py on idc03; the card is
-  for the failure-mode bug.
-spec: >-
-  ada-pi: tasks/calendar_read/plan_day must surface auth failure as
-  ok:false (or a top-level error Ada is instructed to relay) instead of
-  ok:true + empty list. Distinguish "genuinely empty" from
-  "unreachable/unauthenticated". Same pattern for any other Google-back
-  ed tool. Then rerun google-calendar-auth.py on idc03 to restore the
-  credential (ops step — note in comms when done). Regression check:
-  revoke the token in dev, assert the tool returns auth-broken not
-  empty.
+updated: 2026-10-07 14:45
+tags:
+- ada
+- tools
+- migration
+- audit
+note: 'Audit 2026-10-07 (session 817862db42, first idc03 session): every calendar_read/tasks call returns ok:true
+  with errors:[google token refresh failed (400)] and EMPTY results — post-migration the Google credential never
+  moved. Ada can truthfully-but-wrongly report "no events, no tasks" while auth is broken. Immediate ops fix is
+  re-running scripts/ada/google-calendar-auth.py on idc03; the card is for the failure-mode bug.'
+spec: 'ada-pi: tasks/calendar_read/plan_day must surface auth failure as ok:false (or a top-level error Ada is instructed
+  to relay) instead of ok:true + empty list. Distinguish "genuinely empty" from "unreachable/unauthenticated". Same
+  pattern for any other Google-back ed tool. Then rerun google-calendar-auth.py on idc03 to restore the credential
+  (ops step — note in comms when done). Regression check: revoke the token in dev, assert the tool returns auth-broken
+  not empty.'
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
+  runner: tony-dell
+  task_id: 20261007-144518-ada-pi-tasks-calendar-read-pla
 comms:
 - at: 2026-10-07 13:55
   from: devin
   text: 'filed from audit — evidence: idc03 journal 11:51 UTC, token refresh failed (400) on every google call'
+- at: 2026-10-07 14:45
+  from: chaba
+  text: dispatched 20261007-144518-ada-pi-tasks-calendar-read-pla on ada-pi
+claim:
+  session: 20261007-144518-ada-pi-tasks-calendar-read-pla
+  since: 2026-10-07 14:45

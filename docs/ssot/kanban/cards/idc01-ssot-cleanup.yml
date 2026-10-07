@@ -1,35 +1,34 @@
 id: idc01-ssot-cleanup
 title: 'Retired-host residue: audit + classify all idc01 refs in SSOT'
-column: backlog
+column: doing
 review_kind: verify
 priority: medium
-note: 'idc01 retired 2026-10-05 but ~100+ references remain across 15
-  SSOT files — health probes still hit it (overnight-assessment
-  health_snapshot fails on idc01:11023/:9000), service inventories
-  still list it, security/audit docs still describe it. Each ref needs
-  judgment: migrated-to-idc03 | truly-retired | historical-doc.'
-spec: 'Sweep every idc01 reference in docs/ssot/ + scripts/audits/
-  target lists. Classify each: (a) MIGRATE — live check that should
-  hit idc03 (health probes, mddb endpoints); (b) RETIRE — service gone
-  for good, remove the entry; (c) HISTORICAL — kb/report/learning doc
-  where the reference is correct in context, leave it. Known live
-  breakage: http-health-audit.mjs idc01 targets break
-  overnight-assessment; ssot.health.* files (api=13, datastore=44,
-  mobile=28, apps=8 refs) mostly describe idc01 infra; ssot.services.yml
-  30 refs. Fix or annotate each; the health audit should go green.
-  Output: per-file commit set + a summary comms of what moved vs died.'
+note: 'idc01 retired 2026-10-05 but ~100+ references remain across 15 SSOT files — health probes still hit it (overnight-assessment
+  health_snapshot fails on idc01:11023/:9000), service inventories still list it, security/audit docs still describe
+  it. Each ref needs judgment: migrated-to-idc03 | truly-retired | historical-doc.'
+spec: 'Sweep every idc01 reference in docs/ssot/ + scripts/audits/ target lists. Classify each: (a) MIGRATE — live
+  check that should hit idc03 (health probes, mddb endpoints); (b) RETIRE — service gone for good, remove the entry;
+  (c) HISTORICAL — kb/report/learning doc where the reference is correct in context, leave it. Known live breakage:
+  http-health-audit.mjs idc01 targets break overnight-assessment; ssot.health.* files (api=13, datastore=44, mobile=28,
+  apps=8 refs) mostly describe idc01 infra; ssot.services.yml 30 refs. Fix or annotate each; the health audit should
+  go green. Output: per-file commit set + a summary comms of what moved vs died.'
 action:
   type: dispatch
-  status: queued
-updated: 2026-10-07 14:50
+  status: running
+  runner: tony-omen
+updated: 2026-10-07 14:44
 claim:
   session: devin
   since: 2026-10-07 14:50
 comms:
 - at: 2026-10-07 14:50
   from: devin
-  text: 'spec written from the report-graph sweep: audit-hosts/idc01 node
-    retired (dead-host delta noise), live chaba-system-report.service
-    was stale (audited idc01, skipped idc03 — fixed). The residual class
-    is the same as the routes cargo cult: retirement is not a grep —
-    each reference needs intent.'
+  text: 'spec written from the report-graph sweep: audit-hosts/idc01 node retired (dead-host delta noise), live
+    chaba-system-report.service was stale (audited idc01, skipped idc03 — fixed). The residual class is the same
+    as the routes cargo cult: retirement is not a grep — each reference needs intent.'
+- at: 2026-10-07 14:44
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 14:44
+  from: chaba
+  text: started devin-task-20261007-144442-sweep-every-idc01-reference-in on tony-omen (dispatch)

@@ -1,43 +1,43 @@
 id: expected-goals-verify
 title: 'Card acceptance: expected_goals field + verify stage'
-column: backlog
+column: doing
 review_kind: verify
 priority: high
-note: 'Tony 2026-10-07: "each card has expected goal and when finished we
-  measure it by these goals — a card that passes this audit would be very
-  confident." This is acceptance criteria + independent verification.
-  ssot.ci.yml already designed the shape (benchmark field, audit stage,
-  acceptance gate at plan) but it has never been exercised end-to-end —
-  reports/ci/ does not exist. This card generalizes benchmark (one
-  metric) into expected_goals (N machine-checkable assertions).'
-spec: 'Deliverables: (1) card schema: expected_goals — list of
-  {id, check} where check is executable: "http <code> <url>", "command
-  <shell> [expect <substr|exit>]", "file-exists <path>", "git-ancestor
-  <branch> <base>", "ws <url>"; prose goals rejected at the plan gate —
-  a goal that cannot fail carries no information. (2) verify stage in
-  scripts/ci/card-pipeline.py (or verify-card.py): runs every goal,
-  writes pipeline.verify {goals: [{id, ok, evidence, at}]} to the card
-  + run artifact reports/ci/<card>-<ts>.json via lib/report meta
-  contract (ci-pipeline node already declared in ssot.reports.yml).
-  (3) render-board.py: verify chips read pipeline.verify results —
-  goal chips replace outcome/deploy heuristics when present.
-  (4) demo end-to-end on a real card (pipeline has never run).
-  (5) optional: report-watch re-probes done-cards goals periodically —
-  goals rot, a pass at close proves nothing about next month.'
+note: 'Tony 2026-10-07: "each card has expected goal and when finished we measure it by these goals — a card that
+  passes this audit would be very confident." This is acceptance criteria + independent verification. ssot.ci.yml
+  already designed the shape (benchmark field, audit stage, acceptance gate at plan) but it has never been exercised
+  end-to-end — reports/ci/ does not exist. This card generalizes benchmark (one metric) into expected_goals (N machine-checkable
+  assertions).'
+spec: 'Deliverables: (1) card schema: expected_goals — list of {id, check} where check is executable: "http <code>
+  <url>", "command <shell> [expect <substr|exit>]", "file-exists <path>", "git-ancestor <branch> <base>", "ws <url>";
+  prose goals rejected at the plan gate — a goal that cannot fail carries no information. (2) verify stage in scripts/ci/card-pipeline.py
+  (or verify-card.py): runs every goal, writes pipeline.verify {goals: [{id, ok, evidence, at}]} to the card + run
+  artifact reports/ci/<card>-<ts>.json via lib/report meta contract (ci-pipeline node already declared in ssot.reports.yml).
+  (3) render-board.py: verify chips read pipeline.verify results — goal chips replace outcome/deploy heuristics
+  when present. (4) demo end-to-end on a real card (pipeline has never run). (5) optional: report-watch re-probes
+  done-cards goals periodically — goals rot, a pass at close proves nothing about next month.'
 action:
   type: dispatch
-  status: queued
-updated: 2026-10-07 14:50
+  status: running
+  runner: tony-omen
+updated: 2026-10-07 14:51
 claim:
   session: devin
   since: 2026-10-07 14:50
 comms:
 - at: 2026-10-07 14:50
   from: devin
-  text: 'spec written with tony. Framing agreed: declaration = acceptance
-    criteria (QC), independent re-check = audit, the pipeline stages are
-    QA. Existing dormant machinery reused: ssot.ci.yml stages,
-    card-pipeline.py runner, ci-pipeline report node. What produces
-    confidence: executability, independence, failure-capability,
-    freshness. The audit reads: expected_goals must be commands, and the
-    verifier must not be the doer.'
+  text: 'spec written with tony. Framing agreed: declaration = acceptance criteria (QC), independent re-check =
+    audit, the pipeline stages are QA. Existing dormant machinery reused: ssot.ci.yml stages, card-pipeline.py runner,
+    ci-pipeline report node. What produces confidence: executability, independence, failure-capability, freshness.
+    The audit reads: expected_goals must be commands, and the verifier must not be the doer.'
+- at: 2026-10-07 14:44
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 14:44
+  from: chaba
+  text: started devin-task-20261007-144438-deliverables-1-card-schema-exp on tony-omen (dispatch)
+- at: 2026-10-07 14:51
+  from: devin
+  text: 'implementing: scripts/lib/goals.py (check grammar+executor), verify stage in card-pipeline, board-api verify
+    stage, render-board goal chips, report-watch re-probe, SSOT docs. demo on this card at the end.'
