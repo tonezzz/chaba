@@ -1,0 +1,44 @@
+id: ada-context-budget
+title: Ada context budget — cap per-turn token growth, catch role-token runaway
+column: doing
+priority: high
+program: ada-tools
+updated: 2026-10-07 21:20
+tags:
+- ada
+- context
+- reliability
+- audit
+note: 'Transcript audit 2026-10-07 (session d6cbf6e6e7, 19:52-20:04 BKK): a 12-minute session accumulated 1.5M input tokens, ~78k per turn by the end. At that size the model degenerated into continuation
+  behavior — emitted "ยืนยัน—user\nบันทึกเลยmodel" (fabricating the user reply inside Ada''s own turn). The confirm gate caught the resulting self-asserted publish (denied), and the dead-turn guard only
+  sees degenerate output — this was fluent, wrong-actor output. Guards are downstream band-aids; the fix is upstream: bound the context.'
+spec: 'ada-pi realtime_provider.py: bound per-turn input tokens. 1) Count/context: log and gate on usage turn in= (already emitted) — when a session exceeds a threshold (default ~40k/turn or ~500k cumulative),
+  trigger context hygiene: drop oldest assistant turns from the replayed history, summarize long tool results, or rotate the session transparently. 2) Role-token leak: extend the sanitizer to catch emitted
+  role markers (`—user`, `—model`, `\nuser:` `\nmodel:` at line boundaries) — these are never legitimate speech. 3) Verify: replay a long session transcript, assert per-turn input tokens stay under threshold
+  and that role-marker text is stripped before transcript write.'
+action:
+  type: manual
+  repo: ada-pi
+  status: in_progress
+  runner: devin
+expected_goals:
+- id: context-cap
+  label: per-turn input tokens bounded (session rotation or history trim)
+  check: command grep -c "_context_rotate_when_idle\|ADA_CONTEXT_TURN_BUDGET" /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+- id: role-token-strip
+  label: role markers stripped before transcript
+  check: command grep -c "_ROLE_LEAK_RE" /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+- id: regression-test
+  label: context-budget regression test passes
+  check: command cd /home/tony/CascadeProjects/ada-pi && ./.venv/bin/python -m unittest tests.test_context_budget expect OK
+comms:
+- at: 2026-10-07 21:00
+  from: devin
+  text: 'filed from transcript audit — session d6cbf6e6e7: 78k tok/turn, 1.5M cumulative in 12min; model emitted fabricated user turn (—user บันทึกเลยmodel); confirm gate held but transcript records fabricated
+    speech. Guards downstream — fix is bounding context growth.'
+- at: 2026-10-07 21:20
+  from: devin
+  text: 'landed directly (not dispatched): d614648 pushed + deployed to idc03, all 4 services active. _ROLE_LEAK_RE strips boundary role tags; ADA_CONTEXT_TURN_BUDGET=45000 default rotates the session via
+    the set_voice reconnect seam. tests/test_context_budget.py 7/7, suite 794 (2 pre-existing tool-lint fails). Goal checks corrected to match shipped identifiers.'
+claim:
+  since: 2026-10-07 21:00
