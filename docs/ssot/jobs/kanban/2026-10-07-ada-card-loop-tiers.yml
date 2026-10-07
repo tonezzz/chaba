@@ -1,0 +1,62 @@
+id: ada-card-loop-tiers-ssot
+title: Ada card-loop participation tiers — SSOT + card-judgment bench domain
+date: 2026-10-07
+card: ada-card-loop-tiers
+host: tony_omen
+status: implemented
+
+goal: >
+  Write down how far Ada may act on the kanban loop on her own (T0–T4),
+  the educate-vs-educated standard for corrections, the mutual reach-out
+  escalation ladder, and the bench domain that gates T3.
+
+delivered:
+  - docs/ssot/infrastructure/ssot.ada-participation.yml: >
+      The tier ladder. T0 observe / T1 comment / T2 request are marked
+      live — every mechanism already exists (GET /cards, POST /comment as
+      from:ada via ada_board_write, POST /request with board_notify push
+      + request-sweep 12h re-ping). T3 queue is GATED on the
+      card-judgment bench; T4 act is future/micro-entity scope. Also
+      records: the educate_standard (fresher VERIFIED state educates —
+      generalizes education_correction), the evidence_rule (a correction
+      without a check is an opinion), the mutual escalation ladder
+      (board_request → ha_notification → openclaw → telegram → ntfy,
+      mutual per Tony's team-value note), hard boundaries synced with
+      docs/design/ada-kanban-access.md, and audit via from:ada comms +
+      kanban_act ops events.
+  - docs/ssot/infrastructure/ssot.nest-bench.yml: >
+      New bench-domain registry for the nest collective bench. Existing
+      domains (confirm-gate, voice-utterance) plus the new
+      card-judgment domain: corpus = historical cards with known-good
+      outcomes frozen as cases (card_snapshot + evidence + proven_right
+      + category), metrics = correction_precision, correction_recall,
+      appropriate_deference, action_accuracy. Declared T3 unlock
+      threshold: action_accuracy ≥0.85, appropriate_deference ≥0.90,
+      correction_precision ≥0.80, ≥50 corpus cases, held for 3
+      consecutive runs. Shadow mode before unlock — proposals scored
+      against the corpus, never executed.
+
+key_decisions:
+  - 'Two autonomy axes kept separate: card-side `autonomy:` field
+     (kanban-act.py contract) caps what any automation may do to that
+     card; Ada-side tier caps what the entity may do at all. A card with
+     autonomy:t1 refuses T2+ actions even after T3 unlocks.'
+  - 'Gap found and recorded, not fixed here: ada_board_write wraps
+     comment/respond/read/create but NOT the /request endpoint — Ada can
+     answer requests yet cannot raise them via the tool. One-action patch
+     in ada-pi; endpoint + notify path already proven.'
+  - 'Ladder order is durability-then-reach: board_request first (persistent,
+     quiet), ntfy last (external SaaS, works off-tailnet). yomi/LINE parked
+     — session invalid since 2026-10-05.'
+
+verify: |
+  test -f docs/ssot/infrastructure/ssot.ada-participation.yml
+  grep -q card-judgment docs/ssot/infrastructure/ssot.nest-bench*.yml \
+      ../ada-pi/tests/bench/topologies.yml
+  node scripts/ssot-validate-all.mjs   # 1617/1617 valid this run
+
+open_items:
+  - 'ada-pi: ada_board_write action=request -> POST /request (T2 gap)'
+  - 'card-judgment corpus: mine done cards'' comms for decided cases —
+     first batch ≥50; until then the domain stays status: spec'
+  - 'T3 shadow mode runner — score Ada''s would-be actions, execute none'
