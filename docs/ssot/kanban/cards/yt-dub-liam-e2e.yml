@@ -1,0 +1,42 @@
+id: yt-dub-liam-e2e
+title: 'E2E user scenario: Ada finds Liam+Noel clip -> dub -> play screen 2'
+column: backlog
+program: yt-voice-dub
+area: scenario
+priority: medium
+metric: all 5 steps verified end-to-end; cached-videos-report shows the
+  new entry automatically; Ada plays the dubbed clip on screen 2 on
+  voice request
+verify: run with Tony present — he asks Ada by voice, each step's
+  evidence lands on the card comms (video id, sub file, report meta
+  updated, cast state=playing on screen 2)
+note: >-
+  Step-by-step live scenario, driven by Tony's voice:
+  1. ASK — "Ada, find a recent clip with only Liam and his brother
+     talking to each other" (Oasis/Gallagher interview). Ada must search
+     YouTube (yt search / web_search), pick a two-person dialogue clip,
+     state her choice + why before acting.
+  2. DUB — run the yt-vtt-dub pipeline on the chosen video (fetch VTT,
+     translate/th dub via the established tools); produce the dubbed
+     media in the yt-live cache/app dir.
+  3. REPORT — verify cached-videos-report (CMS) reflects the new entry
+     within one tracker cycle (30m timer or run_now=true); Ada should
+     then quote it correctly when asked "what videos are cached".
+  4. PLAY — "Ada, play it on screen 2" — cast_to_screen / vcast must
+     land the dubbed video on screen 2 (not the TV); verify
+     media_player/cast state = playing.
+  5. STOP — "stop" cleans up. Encode as a scenarios-live YAML after the
+     first manual pass so it becomes repeatable benchmark material.
+spec: >-
+  Depends on: yt-voice-dub pipeline (scripts/ops/yt-vtt-*.py,
+  yt-live-api :8791), cached-videos-report tracker
+  (chaba-cached-videos.timer), cast_to_screen screen-2 routing. Risks:
+  "only two people talking" needs caption/content judgement — Ada may
+  need to fetch the transcript and check speaker turns; screen-2
+  routing names are in the cast tool guide.
+updated: '2026-10-07'
+comms:
+- at: 2026-10-07 08:45
+  from: tony
+  text: 'queued: find Liam+brother two-person clip -> dub with our tools
+    -> verify cached-videos-report updates -> Ada plays on screen 2'
