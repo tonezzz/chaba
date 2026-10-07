@@ -463,15 +463,23 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
     for nid, n in nodes.items():
         stem_idx.setdefault(n["collection"], {})[n["label"]] = nid
 
+    dangling: list[dict] = []   # refs to absent targets (repairable via /api/unlink)
+
     for nid, rm in raw.items():
         coll = nodes[nid]["collection"]
         for k in rm.get("supersedes", []):
             t = resolve(coll, k, "supersedes")
             if t:
+                if nodes.get(t, {}).get("missing"):
+                    dangling.append({"source": nid, "field": "supersedes",
+                                     "target": k})
                 add_edge(t, nid, "supersedes")  # old -> new
         for k in rm.get("superseded_by", []):
             t = resolve(coll, k, "superseded_by")
             if t:
+                if nodes.get(t, {}).get("missing"):
+                    dangling.append({"source": nid, "field": "superseded_by",
+                                     "target": k})
                 add_edge(nid, t, "supersedes")
         for k in rm.get("source_keys", []):
             t = resolve(coll, k, "rollup")
@@ -485,6 +493,9 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
                 if len(matches) == 1:
                     del nodes[t]
                     t = matches[0]
+                else:
+                    dangling.append({"source": nid, "field": "source_keys",
+                                     "target": k})
             add_edge(nid, t, "rollup")
         for relname in rm.get("related", []):
             stem = relname.rsplit("/", 1)[-1].removesuffix(".md")
@@ -613,6 +624,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
         },
         "nodes": list(nodes.values()),
         "links": links,
+        "dangling": dangling[:500],
         "stats": {
             "nodes": len(nodes), "links": len(links), **counts,
             "dangling": sum(1 for n in nodes.values() if n.get("missing")),
@@ -736,6 +748,97 @@ async def export_to_vault(req: ExportRequest, request: Request) -> dict:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text("\n".join(lines))
     return {"ok": True, "path": rel}
+
+
+class UnlinkRequest(BaseModel):
+    id: str      # source node id "collection:key"
+    field: str   # supersedes | superseded_by | source_keys | related
+    target: str  # the referenced key to remove
+
+
+def _strip_fm_val(fm: dict, field: str, target: str) -> bool:
+    """Remove `target` from fm[field] (list or scalar). True if changed."""
+    vals = _ml(fm, field)
+    new = [v for v in vals if v != target]
+    if not vals or len(new) == len(vals):
+        return False
+    if new:
+        fm[field] = new if len(new) > 1 else new[0]
+    else:
+        fm.pop(field, None)
+    return True
+
+
+def _dump_md(fm: dict, body: str) -> str:
+    return "---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) \
+        + "---\n\n" + body.strip() + "\n"
+
+
+@app.post("/api/unlink")
+async def unlink(req: UnlinkRequest, request: Request) -> dict:
+    """Remove a dangling reference (supersedes / superseded_by /
+    source_keys / related) from the SOURCE doc — vault frontmatter if a
+    vault copy exists, else the MDDB doc's meta + embedded frontmatter."""
+    _check_write_auth(request)
+    if req.field not in ("supersedes", "superseded_by", "source_keys", "related"):
+        raise HTTPException(400, f"unsupported field: {req.field}")
+    coll, _, key = req.id.partition(":")
+    if not coll or not key:
+        raise HTTPException(400, "id must be 'collection:key'")
+    entry = next((b for b in _bank_map()
+                  if coll in (b["collection"], b["dir"], b["bank"])), None)
+    if not entry:
+        raise HTTPException(404, f"no bank maps to collection {coll}")
+    visible = _visible_dirs()
+    if visible and entry["dir"] not in visible:
+        raise HTTPException(404, "no such document")
+
+    # vault copy? find the .md whose frontmatter key matches
+    bank_dir = VAULT / entry["dir"]
+    if bank_dir.is_dir():
+        for md in sorted(bank_dir.rglob("*.md")):
+            if md.name.startswith(("_", ".")):
+                continue
+            fm, body = _split(md.read_text())
+            if str(fm.get("key") or "") != key:
+                continue
+            if not _strip_fm_val(fm, req.field, req.target):
+                raise HTTPException(404, f"{req.field}={req.target} not in vault note")
+            md.write_text(_dump_md(fm, body))
+            return {"ok": True, "where": "vault", "path":
+                    md.relative_to(VAULT).as_posix()}
+
+    # MDDB-only doc
+    if not entry["collection"]:
+        raise HTTPException(404, "doc not found in vault or MDDB")
+    async with httpx.AsyncClient(timeout=15) as cli:
+        try:
+            r = await cli.post(f"{MDDB}/get",
+                               json={"collection": coll, "key": key, "lang": "en"})
+            r.raise_for_status()
+            doc = r.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(404 if e.response.status_code == 404 else 502,
+                                f"mddb get failed: {e.response.status_code}")
+        except Exception as e:
+            raise HTTPException(502, f"mddb get failed: {e}")
+        meta = doc.get("meta") or {}
+        content = str(doc.get("contentMd") or "")
+        doc_fm, body = _split(content)
+        changed = _strip_fm_val(meta, req.field, req.target)
+        changed |= _strip_fm_val(doc_fm, req.field, req.target)
+        if not changed:
+            raise HTTPException(404, f"{req.field}={req.target} not on doc")
+        if doc_fm:
+            content = _dump_md(doc_fm, body)
+        try:
+            r = await cli.post(f"{MDDB}/add", json={
+                "collection": coll, "key": key, "lang": "en",
+                "contentMd": content, "meta": meta})
+            r.raise_for_status()
+        except Exception as e:
+            raise HTTPException(502, f"mddb add failed: {e}")
+    return {"ok": True, "where": "mddb"}
 
 
 class CommitRequest(BaseModel):

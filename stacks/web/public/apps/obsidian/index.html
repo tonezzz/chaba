@@ -157,6 +157,10 @@
         </div>
         <p class="text-xs text-gray-500 mb-3">MDDB docs not yet exported to the vault — sorted by recall count. Export the ones worth keeping; the rest can stay MDDB-only.</p>
         <div id="q-msg" class="text-xs text-gray-500 mb-2"></div>
+        <details id="q-dangling" class="hidden mb-4 rounded border border-red-900/50 bg-red-950/20">
+          <summary class="cursor-pointer px-3 py-2 text-xs text-red-300 select-none"></summary>
+          <div id="q-dangling-list" class="px-3 pb-3 space-y-1"></div>
+        </details>
         <div id="q-list" class="space-y-1"></div>
       </div>
       <!-- ===== GRAPH VIEW ===== -->
@@ -490,12 +494,59 @@ async function loadQueue(force = false) {
     const cover = `synced ${s.synced ?? '—'} · vault-only ${s.vault_only ?? '—'} · mddb-only ${s.mddb_only ?? '—'}`;
     document.getElementById('q-coverage').textContent = cover;
     document.getElementById('coverage').textContent = 'coverage · ' + cover;
+    renderDangling(g);
     const docs = (g.nodes || []).filter(n => !n.hub && !n.missing && n.sync === 'mddb_only')
       .sort((a, b) => (b.use_count || 0) - (a.use_count || 0) || String(b.date || '').localeCompare(String(a.date || '')));
     renderQueue(docs);
     msg.textContent = g.warning ? '⚠ ' + g.warning : `${docs.length} docs to review`;
   } catch (e) {
     msg.textContent = 'queue failed: ' + e.message;
+  }
+}
+
+const D_FIELD_LABEL = { supersedes: 'supersedes', superseded_by: 'superseded_by',
+                        source_keys: 'rollup source', related: 'related' };
+
+function renderDangling(g) {
+  const wrap = document.getElementById('q-dangling');
+  const dl = document.getElementById('q-dangling-list');
+  const items = g.dangling || [];
+  if (!items.length) { wrap.classList.add('hidden'); return; }
+  const byIdQ = new Map((g.nodes || []).map(n => [n.id, n]));
+  wrap.querySelector('summary').textContent =
+    `⚠ ${items.length} dangling link${items.length > 1 ? 's' : ''} — docs pointing at keys that no longer exist`;
+  wrap.classList.remove('hidden');
+  dl.innerHTML = '';
+  for (const d of items.slice(0, 100)) {
+    const src = byIdQ.get(d.source) || {};
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 text-xs py-1 border-b border-red-900/30 last:border-0';
+    row.innerHTML =
+      `<div class="min-w-0 flex-1">
+        <b class="truncate">${esc(src.label || src.key || d.source)}</b>
+        <span class="text-gray-500">· ${esc(src.bank || '')} · ${esc(D_FIELD_LABEL[d.field] || d.field)} →</span>
+        <code class="text-red-300">${esc(d.target)}</code>
+      </div>
+      <button class="navbtn shrink-0 d-fix" title="Remove this reference from the source doc">Fix</button>
+      <button class="navbtn shrink-0 d-graph" title="Locate source in graph">Graph</button>`;
+    row.querySelector('.d-fix').onclick = async ev => {
+      const b = ev.target;
+      b.disabled = true; b.textContent = 'fixing…';
+      const r = await api('/api/unlink', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: d.source, field: d.field, target: d.target }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        b.textContent = 'fixed ✓'; row.style.opacity = '0.4';
+      } else {
+        b.disabled = false; b.textContent = 'Fix';
+        document.getElementById('q-msg').textContent = `unlink failed: ${j.detail || r.status}`;
+      }
+    };
+    row.querySelector('.d-graph').onclick = () => {
+      location.hash = '#/graph-focus/' + encodeURIComponent(d.source);
+    };
+    dl.appendChild(row);
   }
 }
 

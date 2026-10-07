@@ -321,5 +321,66 @@ class TestPublic(unittest.TestCase):
         self.assertGreater(g["stats"]["hidden_banks"], 0)
 
 
+class TestDanglingUnlink(unittest.TestCase):
+    """Vault note with a supersedes ref to a nonexistent key shows up in
+    /api/graph dangling list and /api/unlink strips it."""
+
+    def test_dangling_reported_and_unlinkable(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            (v / "note/d.md").write_text(
+                "---\nkey: note/d\nkind: note\nstatus: active\n"
+                "supersedes: note/ghost\nrelated: [r.md]\n---\npoints nowhere\n")
+            mod = load_server(v, deploy="tailnet")
+            from fastapi.testclient import TestClient
+            cli = TestClient(mod.app)
+            g = cli.get("/api/graph").json()
+            dang = [d for d in g["dangling"]
+                    if d["source"].endswith(":note/d")]
+            self.assertEqual(len(dang), 1)
+            self.assertEqual(dang[0]["field"], "supersedes")
+            self.assertEqual(dang[0]["target"], "note/ghost")
+
+            r = cli.post("/api/unlink", json={
+                "id": dang[0]["source"], "field": "supersedes",
+                "target": "note/ghost"})
+            self.assertEqual(r.status_code, 200, r.text)
+            self.assertEqual(r.json()["where"], "vault")
+            txt = (v / "note/d.md").read_text()
+            self.assertNotIn("supersedes", txt)
+            self.assertIn("related", txt)   # other fields survive
+            # after fix, no dangling for that doc
+            g2 = cli.get("/api/graph").json()
+            self.assertFalse(
+                any(d["source"].endswith(":note/d") for d in g2["dangling"]))
+
+    def test_unlink_missing_ref_is_404(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            mod = load_server(v, deploy="tailnet")
+            from fastapi.testclient import TestClient
+            cli = TestClient(mod.app)
+            g = cli.get("/api/graph").json()
+            nid = next(n["id"] for n in g["nodes"]
+                       if n["id"].endswith(":note/c"))
+            r = cli.post("/api/unlink", json={
+                "id": nid, "field": "supersedes",
+                "target": "note/never"})
+            self.assertEqual(r.status_code, 404)
+
+    def test_unlink_bad_field_is_400(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            mod = load_server(v, deploy="tailnet")
+            from fastapi.testclient import TestClient
+            cli = TestClient(mod.app)
+            g = cli.get("/api/graph").json()
+            nid = next(n["id"] for n in g["nodes"]
+                       if n["id"].endswith(":note/c"))
+            r = cli.post("/api/unlink", json={
+                "id": nid, "field": "status", "target": "x"})
+            self.assertEqual(r.status_code, 400)
+
+
 if __name__ == "__main__":
     unittest.main()
