@@ -1,0 +1,6 @@
+[Unit]
+Description=Chaba edge route health probe — writes /apps/route-health.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/check-routes.py --write

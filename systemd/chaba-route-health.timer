@@ -1,0 +1,10 @@
+[Unit]
+Description=Chaba edge route health probe (every 5 min — dead-upstream tripwire)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
