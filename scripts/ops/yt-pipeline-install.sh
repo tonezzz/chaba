@@ -11,7 +11,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 BIN="$HOME/.local/bin"
-FILES="yt-live.sh yt-live-api.py yt-vtt-dub.py yt-vtt-translate.py yt-cast-detect.py yt-whisper-vtt.py"
+FILES="yt-live.sh yt-live-api.py yt-vtt-dub.py yt-vtt-translate.py yt-cast-detect.py yt-whisper-vtt.py yt-diarize.py yt-diarize-remote.sh"
 LINK=0; SRC="$HERE"
 if [ "${1:-}" = "--link" ]; then LINK=1; SRC="${2:-$HERE}"; fi
 mkdir -p "$BIN"
