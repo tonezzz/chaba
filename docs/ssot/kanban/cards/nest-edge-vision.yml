@@ -1,0 +1,41 @@
+id: nest-edge-vision
+title: "Chaba Nest edge vision — browser YOLO overlay, castable, benchable"
+column: todo
+priority: medium
+created: 2026-10-07
+updated: 2026-10-07
+note: >-
+  Extends the Nest to the client's eyes: a page that plays a camera feed
+  and runs detection in-browser (WASM), overlay drawn locally, and the
+  whole page castable to TV via the proven screenlive lane. Server
+  compute stays at zero — the client does vision.
+spec: >-
+  Phases:
+  1. `/apps/eye/` page (ada-pi `pwa/eye/` or apps stack) — video element
+     fed by cam HLS (xmeye channels via existing proxy) OR device cam via
+     getUserMedia. Detection model in-browser: onnxruntime-web is already
+     vendored (pwa/vendor/transformers) — pick yolov8n-int8 (~12MB) with
+     JS NMS, or MediaPipe efficientdet-lite0 (~4MB, proven WASM path from
+     gesture work). Overlay = canvas over video.
+  2. Bench mode on the same page: run N frames, report fps/inference-ms/
+     device UA to MDDB (ada-ha-scenario-reports bench/edge-*); a
+     `bench-edge` CMS page trends it — answers "can my iPhone carry it"
+     with data, per device, per model.
+  3. Cast what Ada sees: point the cast lane (screenlive/workspace cast,
+     verified 2026-10-07 on GEV) at the eye page — TV shows live YOLO
+     overlay. No server-side annotate/encode needed.
+  4. Ada hookup: latest detections land in MDDB → an ada tool
+     (`ada_look`?) answers "what do you see" from the freshest frame;
+     keeps the confirm-gate authority model for any action on detections.
+links:
+  - chaba-nest
+  - gesture-ui-options
+  - benchmark-casting
+  - ada-kanban-access
+help: >-
+  Reuses: vendored onnxruntime-web (pwa/vendor/transformers, committed
+  a14238f), screenlive cast path (verified), xmeye HLS shim, MDDB bench
+  doc pattern. Constraints: iOS PWA-mode mic/cam quirks (Safari vs
+  home-screen), model size one-time download, JS NMS cost on old devices.
+blocked_by: []
+autonomy: t1
