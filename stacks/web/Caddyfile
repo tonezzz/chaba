@@ -3,6 +3,9 @@
 	auto_https off
 }
 
+# GENERATED FILE — do not edit by hand.
+# Source: docs/ssot/infrastructure/ssot.routes.yml + scripts/render-routes.py
+
 http://:80 {
 	log {
 		output file /data/access.log {
@@ -37,67 +40,73 @@ http://127.0.0.1:8080 {
 		header Cache-Control "no-cache, no-store, must-revalidate"
 	}
 
-	# Kanban board write API — card actions/respond/comment on tony-dell.
-	# Writes require a tailnet identity: tailscale serve injects
-	# Tailscale-User-Login on tailnet-authed requests, so a POST without it
-	# (LAN, or any future funnel mount) gets 403 at the edge. Reads stay
-	# open. board-api re-verifies server-side (rejects forged headers —
-	# a LAN client can't keep its IP out of X-Forwarded-For).
-	handle /apps/board-api/* {
-		uri strip_prefix /apps/board-api
-		@anon_write {
+	handle /apps/board-api {
+		redir * /apps/board-api/ 308
+	}
+	handle_path /apps/board-api/* {
+		@anon_write_board-api {
 			not method GET HEAD
 			not header Tailscale-User-Login *
 		}
-		respond @anon_write "forbidden: board-api writes need a tailnet identity" 403
+		respond @anon_write_board-api "forbidden: board-api writes need a tailnet identity" 403
 		reverse_proxy 127.0.0.1:8787
 	}
 
-	# System report — on-demand refresh of the L1->L3 report chain
-	# (report-api on tony-dell starts chaba-system-report.service).
-	# Same write gate as board-api: non-GET needs a tailnet identity.
+	handle /apps/system-report/api {
+		redir * /apps/system-report/api/ 308
+	}
 	handle_path /apps/system-report/api/* {
-		@anon_write {
+		@anon_write_report-api {
 			not method GET HEAD
 			not header Tailscale-User-Login *
 		}
-		respond @anon_write "forbidden: report-api writes need a tailnet identity" 403
+		respond @anon_write_report-api "forbidden: report-api writes need a tailnet identity" 403
 		reverse_proxy 127.0.0.1:8792
 	}
 
+	handle /apps/system-report {
+		redir * /apps/system-report/ 308
+	}
+	handle_path /apps/system-report/* {
+		root * /srv/public/apps/system-report
+		file_server
+	}
+
 	handle /apps/jev-bench {
-		redir /apps/jev-bench/ 308
+		redir * /apps/jev-bench/ 308
 	}
 	handle_path /apps/jev-bench/* {
 		root * /srv/public/apps/jev-bench
-		file_server
 		header Cross-Origin-Opener-Policy "same-origin"
 		header Cross-Origin-Embedder-Policy "require-corp"
 		header Cross-Origin-Resource-Policy "cross-origin"
 		header Cache-Control "public, max-age=86400"
+		file_server
 	}
 
-	handle /apps/gev {
-		redir /apps/gev/ 308
+	handle /apps/gev-cmd {
+		redir * /apps/gev-cmd/ 308
 	}
-
-	# GEV command relay — Ada/tooling drives connected GEV clients
-	# (POST /command {name,args} -> function_call frame to browser clients)
 	handle /apps/gev-cmd/* {
-		uri strip_prefix /apps/gev-cmd
 		reverse_proxy 127.0.0.1:8790
 	}
 
-	# GEV API proxy - must come before static files
+	handle /apps/gev/api {
+		redir * /apps/gev/api/ 308
+	}
 	handle /apps/gev/api/* {
-		uri strip_prefix /apps/gev
 		reverse_proxy 127.0.0.1:4173
 	}
 
+	handle /apps/gev {
+		redir * /apps/gev/ 308
+	}
 	handle_path /apps/gev/* {
 		root * /srv/public/apps/gev
 		file_server
 	}
+
+
 	handle /apps/gev-live {
 		redir /apps/gev-live/ 308
 	}
@@ -111,9 +120,12 @@ http://127.0.0.1:8080 {
 			file_server
 		}
 	}
-	# --- routes ported from the retired :8085 edge (caddy-tony-dell) 2026-09-25 ---
 
-	# Ada HA PWAs — canonical on idc03 tailscale serve (idc01 retired 2026-10-05)
+	handle_path /apps/gev/token {
+		uri strip_prefix /apps/gev/token
+		reverse_proxy 127.0.0.1:8790
+	}
+
 	handle /apps/ha/ada-tony {
 		redir * /apps/ha/ada-tony/ 308
 	}
@@ -122,6 +134,7 @@ http://127.0.0.1:8080 {
 			header_up Host idc03.taila0626a.ts.net
 		}
 	}
+
 	handle /apps/ha/ada-michael {
 		redir * /apps/ha/ada-michael/ 308
 	}
@@ -131,150 +144,139 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	# Legacy Ada HA paths → /apps/ha/ada-*
 	handle /apps/ada_ha_tony {
-		redir * /apps/ha/ada-tony/ 308
+		redir * /apps/ha/ada-tony 308
 	}
 	handle_path /apps/ada_ha_tony/* {
 		redir * /apps/ha/ada-tony{uri} 308
 	}
+
 	handle /apps/ada_ha_michael {
-		redir * /apps/ha/ada-michael/ 308
+		redir * /apps/ha/ada-michael 308
 	}
 	handle_path /apps/ada_ha_michael/* {
 		redir * /apps/ha/ada-michael{uri} 308
 	}
+
 	handle /apps/ada_ha {
-		redir * /apps/ha/ada/ 308
+		redir * /apps/ha/ada 308
 	}
 	handle_path /apps/ada_ha/* {
 		redir * /apps/ha/ada{uri} 308
 	}
 
-	# ada-pi PWA retired on tony-dell — canonical instance is idc03 serve root
 	handle /apps/ada_pi {
-		redir * /apps/ada_pi/ 308
+		redir * https://idc03.taila0626a.ts.net 308
 	}
 	handle_path /apps/ada_pi/* {
 		redir * https://idc03.taila0626a.ts.net{uri} 308
 	}
 
-	# HA convenience redirects
-	handle /apps/ha/tony-ha {
-		redir * /apps/ha/tony-ha/ 308
-	}
-	handle_path /apps/ha/tony-ha/* {
-		redir * https://tony-dell.taila0626a.ts.net:8123/ 308
-	}
-	handle /apps/ha/michael-dev {
-		redir * /apps/ha/michael-dev/ 308
-	}
-	handle_path /apps/ha/michael-dev/* {
-		redir * https://tony-dell.taila0626a.ts.net:8124/ 308
-	}
-	handle /apps/ha/michael-ha {
-		redir * /apps/ha/michael-ha/ 308
-	}
-	handle_path /apps/ha/michael-ha/* {
-		redir * https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/ 308
-	}
-	handle /apps/tony-ha {
-		redir * /apps/ha/tony-ha/ 308
-	}
-	handle_path /apps/tony-ha/* {
-		redir * /apps/ha/tony-ha{uri} 308
-	}
 	handle /apps/ha {
 		redir * /apps/ha/ 308
 	}
 
-	# GEV token endpoint (separate from gev api/live)
-	handle_path /apps/gev/token {
-		reverse_proxy 127.0.0.1:8790 {
-			header_up Host 127.0.0.1:8790
-		}
+	handle /apps/ha/tony-ha* {
+		redir * https://tony-dell.taila0626a.ts.net:8123/ 308
 	}
 
-	# dev playground backend
+	handle /apps/ha/michael-dev* {
+		redir * https://tony-dell.taila0626a.ts.net:8124/ 308
+	}
+
+	handle /apps/ha/michael-ha* {
+		redir * https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/ 308
+	}
+
+	handle /apps/tony-ha {
+		redir * /apps/ha/tony-ha 308
+	}
+	handle_path /apps/tony-ha/* {
+		redir * /apps/ha/tony-ha{uri} 308
+	}
+
 	handle /apps/dev/v0 {
 		redir * /apps/dev/v0/ 308
 	}
 	handle_path /apps/dev/v0/* {
-		reverse_proxy 127.0.0.1:8006 {
-			header_up Host 127.0.0.1:8006
-		}
+		reverse_proxy 127.0.0.1:8006
 	}
 
-	# NotebookLM cookie bridge (ai-hub extension)
 	handle /apps/notebooklm-cookies {
 		redir * /apps/notebooklm-cookies/ 308
 	}
 	handle_path /apps/notebooklm-cookies/* {
-		reverse_proxy 127.0.0.1:9876 {
-			header_up Host 127.0.0.1:9876
-		}
+		reverse_proxy 127.0.0.1:9876
 	}
 
-	# HLS static roots with CORS + segment mimetypes
+	handle /apps/yt-live {
+		redir * /apps/yt-live/ 308
+	}
 	handle_path /apps/yt-live/* {
 		root * /srv/public/apps/yt-live
-		header Access-Control-Allow-Origin "*"
-		header Access-Control-Allow-Headers "Origin, Range"
-		header Access-Control-Expose-Headers "Content-Length, Content-Range"
-		header Cache-Control "no-cache, no-store"
-		@m3u8 path *.m3u8
-		header @m3u8 Content-Type "application/vnd.apple.mpegurl"
-		@ts path *.ts
-		header @ts Content-Type "video/mp2t"
-		@vtt path *.vtt
-		header @vtt Content-Type "text/vtt"
+
+	header Access-Control-Allow-Origin "*"
+	header Access-Control-Allow-Headers "Origin, Range"
+	header Access-Control-Expose-Headers "Content-Length, Content-Range"
+	header Cache-Control "no-cache, no-store"
+	@m3u8yt_live path *.m3u8
+	header @m3u8yt_live Content-Type "application/vnd.apple.mpegurl"
+	@tsyt_live path *.ts
+	header @tsyt_live Content-Type "video/mp2t"
+	@vttyt_live path *.vtt
+	header @vttyt_live Content-Type "text/vtt"
 		file_server
+	}
+
+	handle /apps/walldance-live {
+		redir * /apps/walldance-live/ 308
 	}
 	handle_path /apps/walldance-live/* {
 		root * /srv/public/apps/walldance-live
-		header Access-Control-Allow-Origin "*"
-		header Access-Control-Allow-Headers "Origin, Range"
-		header Access-Control-Expose-Headers "Content-Length, Content-Range"
-		header Cache-Control "no-cache, no-store"
-		@m3u8w path *.m3u8
-		header @m3u8w Content-Type "application/vnd.apple.mpegurl"
-		@tsw path *.ts
-		header @tsw Content-Type "video/mp2t"
+
+	header Access-Control-Allow-Origin "*"
+	header Access-Control-Allow-Headers "Origin, Range"
+	header Access-Control-Expose-Headers "Content-Length, Content-Range"
+	header Cache-Control "no-cache, no-store"
+	@m3u8walldance_live path *.m3u8
+	header @m3u8walldance_live Content-Type "application/vnd.apple.mpegurl"
+	@tswalldance_live path *.ts
+	header @tswalldance_live Content-Type "video/mp2t"
+	@vttwalldance_live path *.vtt
+	header @vttwalldance_live Content-Type "text/vtt"
 		file_server
 	}
-	# --- end ported :8085 routes ---
 
-	handle /apps/yolo {
-		redir /apps/yolo/ 308
+	handle /apps/yolo/api {
+		redir * /apps/yolo/api/ 308
 	}
-
-	# yolo detector backend on mn01 (detection + cast endpoints)
 	handle_path /apps/yolo/api/* {
 		reverse_proxy 100.106.196.22:8780
 	}
 
+	handle /apps/yolo {
+		redir * /apps/yolo/ 308
+	}
 	handle_path /apps/yolo/* {
 		root * /srv/public/apps/yolo
 		file_server
 	}
 
 	handle /apps/dance2energy {
-		redir /apps/dance2energy/ 308
+		redir * /apps/dance2energy/ 308
 	}
-
 	handle_path /apps/dance2energy/* {
 		root * /srv/public/apps/dance2energy
 		file_server
-	}
-
-	handle /apps/vnc {
-		redir /apps/vnc/ 308
 	}
 
 	handle /apps/vnc/ws {
 		reverse_proxy host.containers.internal:6081
 	}
 
+	handle /apps/vnc {
+		redir * /apps/vnc/ 308
+	}
 	handle_path /apps/vnc/* {
 		root * /srv/public/apps/vnc
 		file_server
@@ -284,19 +286,14 @@ http://127.0.0.1:8080 {
 		reverse_proxy 127.0.0.1:9005
 	}
 
-	file_server
-
-	# Pretty URLs: /cameras → /cameras.json
-	rewrite /cameras /cameras.json
-
 	handle /chaba-h3 {
-		redir /chaba-h3/ 308
+		redir * /chaba-h3/ 308
 	}
-
 	handle_path /chaba-h3/* {
 		root * /srv/public/chaba-h3
 		file_server
 	}
+
 
 	@root path /
 	handle @root {
@@ -308,7 +305,6 @@ http://127.0.0.1:8080 {
 	handle /new {
 		redir /new/ 308
 	}
-
 	handle_path /new/* {
 		reverse_proxy 127.0.0.1:8092 {
 			header_up Host 127.0.0.1:8092
@@ -320,19 +316,16 @@ http://127.0.0.1:8080 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
-
 	handle /decisions/* {
 		reverse_proxy 127.0.0.1:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
-
 	handle /infrastructure {
 		reverse_proxy 127.0.0.1:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
-
 	handle /infrastructure/* {
 		reverse_proxy 127.0.0.1:8092 {
 			header_up Host 127.0.0.1:8092
@@ -340,18 +333,15 @@ http://127.0.0.1:8080 {
 	}
 
 	handle /apps/map {
-		redir /apps/map/ 308
+		redir * /apps/map/ 308
 	}
-
-	handle /apps/map/* {
+	handle_path /apps/map/* {
+		root * /srv/public/apps/map
 		file_server
 	}
 
-	# camwall — thumbs are pulled on idc01/idc02 (heavy ffmpeg/yt-dlp work
-	# off this saturated box) and served from their static edges; this host
-	# only load-balances. Tailnet-only upstreams.
 	handle /apps/camwall {
-		redir /apps/camwall/ 308
+		redir * /apps/camwall/ 308
 	}
 	handle_path /apps/camwall/* {
 		reverse_proxy http://100.102.134.91:8380 http://100.123.163.11:8380 {
@@ -361,37 +351,49 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	# rview + rview-live removed 2026-10-07 — replaced by vcast.
-
+	handle /api/gemini-mic {
+		redir * /api/gemini-mic/ 308
+	}
 	handle_path /api/gemini-mic/* {
 		reverse_proxy 100.68.142.13:3009
 	}
 
+	handle /api/yomi {
+		redir * /api/yomi/ 308
+	}
 	handle /api/yomi/* {
 		reverse_proxy 100.68.142.13:3000
 	}
 
+	handle /api/weaviate {
+		redir * /api/weaviate/ 308
+	}
 	handle_path /api/weaviate/* {
 		reverse_proxy 100.68.142.13:8084
 	}
 
-	handle /api/gpu-queue/* {
+	handle /api/gpu-queue {
+		redir * /api/gpu-queue/ 308
+	}
+	handle_path /api/gpu-queue/* {
 		reverse_proxy 100.68.142.13:3001
 	}
 
-	# NotebookLM REST moved off the public edge 2026-09-25 — consumers use the
-	# tailnet address http://100.68.142.13:3011/v1 directly (API-key gated there).
-
-	# input-bridge relay: idc01 -> idc03 2026-10-05 (idc01 migration)
+	handle /api/input-bridge {
+		redir * /api/input-bridge/ 308
+	}
 	handle_path /api/input-bridge/* {
 		reverse_proxy 100.102.134.91:3010
 	}
 
+	handle /api {
+		redir * /api/ 308
+	}
 	handle /api/* {
 		reverse_proxy 100.68.142.13:8000
 	}
 
-	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
+
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
 		reverse_proxy 127.0.0.1:3003 {
@@ -399,25 +401,29 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	handle /frigate/* {
-		uri strip_prefix /frigate
+	handle /frigate {
+		redir * /frigate/ 308
+	}
+	handle_path /frigate/* {
 		reverse_proxy frigate:5000
 	}
 
-	handle /tony-omen/apps/imagen/api/* {
-		uri strip_prefix /tony-omen/apps/imagen/api
+	handle /tony-omen/apps/imagen/api {
+		redir * /tony-omen/apps/imagen/api/ 308
+	}
+	handle_path /tony-omen/apps/imagen/api/* {
 		reverse_proxy imagen-inference:8000
 	}
 
 	handle /tony-omen/apps/imagen {
-		redir /tony-omen/apps/imagen/ 308
+		redir * /tony-omen/apps/imagen/ 308
 	}
-
-	handle /tony-omen/apps/imagen/* {
+	handle_path /tony-omen/apps/imagen/* {
+		root * /srv/public/tony-omen/apps/imagen
 		file_server
 	}
 
-	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
+
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade
 		reverse_proxy 100.68.142.13:9002 {
@@ -426,7 +432,6 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	# Trade WebSocket proxy - /apps/trade/api/ws/* to trade-api (must come before UI files)
 	handle /apps/trade/api/ws/* {
 		uri strip_prefix /apps/trade
 		reverse_proxy 100.68.142.13:9002 {
@@ -437,14 +442,6 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	# Trade UI files (must come after API routes)
-	handle_path /apps/trade/* {
-		root * /srv/public/apps/trade
-		file_server
-		header Cache-Control "public, max-age=3600"
-	}
-
-	# Trade WebSocket proxy - direct /api/ws/* to trade-api
 	handle /api/ws/* {
 		reverse_proxy 100.68.142.13:9002 {
 			header_up Host localhost
@@ -452,11 +449,40 @@ http://127.0.0.1:8080 {
 			header_up Upgrade {>Upgrade}
 		}
 	}
-	redir /apps/node-red /apps/node-red/ 308
 
+	handle /apps/trade {
+		redir * /apps/trade/ 308
+	}
+	handle_path /apps/trade/* {
+		root * /srv/public/apps/trade
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+
+	handle /apps/node-red {
+		redir * /apps/node-red/ 308
+	}
 	handle /apps/node-red/* {
 		reverse_proxy 127.0.0.1:1880
 	}
+
+	handle /apps/board {
+		redir * /apps/board/ 308
+	}
+	handle_path /apps/board/* {
+		root * /srv/public/apps/board
+		file_server
+	}
+
+	handle /apps/sw.js {
+		root * /srv/public/apps/sw.js
+		file_server
+	}
+
+
+	# Pretty URLs: /cameras -> /cameras.json
+	rewrite /cameras /cameras.json
+	file_server
 }
 
 # chaba.h3 local dev root
