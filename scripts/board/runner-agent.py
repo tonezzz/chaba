@@ -87,8 +87,12 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
       -d '{{"id":"{id}","from":"devin","ask":"<question>"}}'
 - If you raised a request and kept working, the answer may arrive while
   you run: board-api appends it to $TASK_DIR/answers.jsonl (one JSON
-  object per line: {{"at","card","from","request_id","answer"}}). Check
-  that file before finishing; newest line wins per request_id.
+  object per line: {{"at","card","from","kind","request_id","answer"}}).
+  Check that file before finishing; newest line wins per request_id.
+- answers.jsonl lines may also carry kind:"comment" — card comms pushed
+  live (Tony's notes, Ada's [opinion]-tagged report takes). Treat them
+  as review input to weigh; request_id/answer lines (kind:"answer")
+  remain the authoritative answer channel.
 """.strip()
 
 

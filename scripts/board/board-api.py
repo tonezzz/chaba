@@ -20,8 +20,8 @@ Endpoints (after prefix strip):
       moves the card to review, ok:false marks it failed in place.
   POST /respond  {id, request_id, answer, from?, reopen?}
       also pushes the answer into a running dispatch session: when the
-      card's action.status=='running', the answer line is appended to
-      $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host
+      card's action.status=='running', a kind:"answer" line is appended
+      to $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host
       (ssh for remote runners) — TASK_RAILS tells sessions to poll it.
       Without request_id, answers the card-level `ask:` (structured
       responses, board-structured-responses): {id|card, option: N} picks
@@ -31,6 +31,13 @@ Endpoints (after prefix strip):
       ask.status=answered + answer + answered_at, writes the resolved
       label to comms.
   POST /comment  {id, from, text}    from: devin|ada|chaba|tony
+      when the card's action.status=='running', comments from ada|tony
+      are also pushed into the live session as kind:"comment" lines in
+      answers.jsonl — card comms the session weighs as review input
+      (Tony's notes, Ada's [opinion]-tagged takes;
+      report-loop-comment-delivery). devin|chaba comments are never
+      echoed back: a session must not get its own progress posts, and
+      chaba system notes are noise.
   POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
       raises a requests[] entry {id, ask, status: open, at, from, to?};
       `to` defaults to tony (absent = tony). A request targeting tony
@@ -508,23 +515,26 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
     raise ValueError(f"no request {rid}")
 
 
-def deliver_answer(card: dict, frm: str, rid: str, answer: str) -> str:
-    """Best-effort push of a /respond answer into a still-running dispatch
-    session (card board-answer-live-session). TASK_RAILS tells sessions to
-    check $TASK_DIR/answers.jsonl; this is what makes that file exist —
-    appended directly for a local runner, over ssh for a remote one (same
-    pattern as hide_dispatch_session). Never raises: returns a short note
-    for comms, or "" when the card has no running dispatch to feed."""
+def _deliver_to_session(card: dict, record: dict) -> str:
+    """Best-effort push of one JSON line into a still-running dispatch
+    session's $TASK_DIR/answers.jsonl (card board-answer-live-session +
+    report-loop-comment-delivery). TASK_RAILS tells sessions to poll that
+    file; this is what makes it exist — appended directly for a local
+    runner, over ssh for a remote one (same pattern as
+    hide_dispatch_session). `at`/`card` are stamped here; callers supply
+    the rest ({from, kind, ...}). The record's kind names the line in
+    comms notes ('answer delivered…', 'comment saved but…'). Never
+    raises: returns a short note for comms, or "" when the card has no
+    running dispatch to feed."""
     a = card.get("action") or {}
     if a.get("status") != "running":
         return ""
+    kind = str(record.get("kind") or "answer")
     tid = str(a.get("task_id") or "")
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,120}", tid):
-        return "answer saved but session delivery skipped (bad task_id)"
+        return f"{kind} saved but session delivery skipped (bad task_id)"
     line = json.dumps({"at": datetime.now(timezone.utc).isoformat(),
-                       "card": str(card.get("id") or ""),
-                       "from": frm, "request_id": rid,
-                       "answer": answer[:500]},
+                       "card": str(card.get("id") or ""), **record},
                       ensure_ascii=False) + "\n"
     runner = str(a.get("runner") or "").strip()
     if not runner or runner == HOST:
@@ -533,18 +543,18 @@ def deliver_answer(card: dict, frm: str, rid: str, answer: str) -> str:
             if d.is_dir():
                 with (d / "answers.jsonl").open("a") as f:
                     f.write(line)
-                return f"answer delivered to running session {tid}"
+                return f"{kind} delivered to running session {tid}"
             if runner:
-                return ("answer saved but task dir missing on runner "
+                return (f"{kind} saved but task dir missing on runner "
                         f"({tid})")
         except OSError as e:
-            return f"answer saved but session delivery failed: {e}"
+            return f"{kind} saved but session delivery failed: {e}"
     hosts = []
     if runner and runner != HOST:
         if re.fullmatch(r"[A-Za-z0-9_.-]+", runner):
             hosts.append(runner)
         else:
-            return f"answer saved but bad runner name {runner!r}"
+            return f"{kind} saved but bad runner name {runner!r}"
     hosts += [h for h in REMOTE_DISPATCH_HOSTS if h not in hosts]
     for host in hosts:
         try:
@@ -556,10 +566,37 @@ def deliver_answer(card: dict, frm: str, rid: str, answer: str) -> str:
                  host, f"test -d {d} && cat >> {d}/answers.jsonl"],
                 input=line, capture_output=True, text=True, timeout=15)
             if r.returncode == 0:
-                return f"answer delivered to running session {tid} on {host}"
+                return (f"{kind} delivered to running session {tid} "
+                        f"on {host}")
         except Exception:
             continue
-    return "answer saved but session delivery failed (runner unreachable)"
+    return f"{kind} saved but session delivery failed (runner unreachable)"
+
+
+def deliver_answer(card: dict, frm: str, rid: str, answer: str) -> str:
+    """/respond path — the answer lands in answers.jsonl as a
+    kind:"answer" line, the channel the rails mark authoritative."""
+    return _deliver_to_session(
+        card, {"from": frm, "kind": "answer",
+               "request_id": rid, "answer": answer[:500]})
+
+
+# Only voices a running session should hear mid-run: Tony's notes and
+# Ada's [opinion]-tagged takes. A session's own devin progress posts must
+# not echo back into its input, and chaba system notes are noise.
+COMMENT_DELIVER_FROM = {"ada", "tony"}
+
+
+def deliver_comment(card: dict, frm: str, text: str) -> str:
+    """/comment path (report-session-loop §3a): while the card's dispatch
+    session runs, ada|tony comms land in answers.jsonl as kind:"comment"
+    lines — review input to weigh, not answers. Other actors' comments
+    are never pushed. Same never-raises contract as _deliver_to_session.
+    """
+    if frm not in COMMENT_DELIVER_FROM:
+        return ""
+    return _deliver_to_session(
+        card, {"from": frm, "kind": "comment", "text": text[:500]})
 
 
 def do_request(card: dict, body: dict) -> str:
@@ -845,9 +882,13 @@ class H(BaseHTTPRequestHandler):
                     p = card_path(body.get("id", ""))
                     card = load(p)
                     comms_add(card, frm, text)
+                    msg = "comment added"
+                    note = deliver_comment(card, frm, text)
+                    if note:
+                        comms_add(card, "chaba", note)
+                        msg += f" — {note}"
                     card["updated"] = now()
                     save(p, card)
-                    msg = "comment added"
                 elif path == "/request":
                     p = card_path(body.get("id", ""))
                     card = load(p)
@@ -965,8 +1006,10 @@ def _selftest() -> None:
     do_respond(gcard, gbody, "tony")
     assert gbody["answer"] == "go"
 
-    # deliver_answer — /respond on a running card lands in the session's
-    # task dir as answers.jsonl (board-answer-live-session)
+    # _deliver_to_session — /respond on a running card lands in the
+    # session's task dir as answers.jsonl (board-answer-live-session);
+    # /comment from ada|tony lands as kind:"comment" lines
+    # (report-loop-comment-delivery)
     import tempfile
     tmp = Path(tempfile.mkdtemp())
     globals()["DISPATCH_TASKS"] = tmp / "tasks"
@@ -983,6 +1026,7 @@ def _selftest() -> None:
     rec = json.loads(lines[0])
     assert rec["request_id"] == "r1" and rec["answer"] == "go left"
     assert rec["from"] == "tony" and rec["at"] and rec["card"] == "zz-test"
+    assert rec["kind"] == "answer"
     note = deliver_answer(run, "tony", "r1", "again")     # appends
     assert len((sess / "answers.jsonl").read_text().splitlines()) == 2
     # bad ids / missing dirs degrade to a note, never raise
@@ -997,6 +1041,29 @@ def _selftest() -> None:
         {"action": {"status": "running", "task_id": "t",
                     "runner": "-oProxyCommand=evil"}},
         "tony", "r", "a")
+
+    # kind:"comment" — tony/ada comments reach the live session as review
+    # input; devin/chaba comments never echo back; a non-running card
+    # delivers nothing
+    def n_lines():
+        return len((sess / "answers.jsonl").read_text().splitlines())
+
+    note = deliver_comment(run, "tony", "looks right so far")
+    assert "delivered" in note, note
+    rec = json.loads((sess / "answers.jsonl").read_text().splitlines()[-1])
+    assert rec["kind"] == "comment" and rec["from"] == "tony"
+    assert rec["text"] == "looks right so far" and "request_id" not in rec
+    assert rec["at"] and rec["card"] == "zz-test"
+    note = deliver_comment(run, "ada", "[opinion] ship it")
+    assert "delivered" in note, note
+    rec = json.loads((sess / "answers.jsonl").read_text().splitlines()[-1])
+    assert rec["kind"] == "comment" and rec["from"] == "ada"
+    n = n_lines()
+    assert deliver_comment(run, "devin", "progress post") == ""
+    assert deliver_comment(run, "chaba", "system note") == ""
+    assert n_lines() == n
+    assert deliver_comment({"action": {"status": "done"}},
+                           "tony", "late note") == ""
 
     rejects(lambda: do_request(card, {"ask": "  "}), "ask required")
     rejects(lambda: do_request(card, {"ask": "q", "from": "nobody"}),

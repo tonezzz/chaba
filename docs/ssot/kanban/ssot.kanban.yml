@@ -186,9 +186,16 @@ write_path:
       pushed into the live session: appended to
       $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host (local
       write or ssh; best-effort, comms note either way —
-      board-answer-live-session). Sessions are told to poll that file."
+      board-answer-live-session) as a kind:\"answer\" line. Sessions are
+      told to poll that file."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
-      400 'text required' on empty/whitespace text"
+      400 'text required' on empty/whitespace text. When
+      action.status=='running', comments from ada|tony are also pushed
+      into the live session's answers.jsonl as kind:\"comment\" lines —
+      card comms the session weighs as review input (Tony's notes, Ada's
+      [opinion]-tagged takes; report-loop-comment-delivery). devin|chaba
+      comments are never echoed back: a session must not get its own
+      progress posts, and chaba system notes are noise."
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
       "raises a requests[] entry {id, ask, status: open, at, from, to?,
       options?, suggested?}; id is request_id or a slugged ask. 400 on
@@ -289,7 +296,10 @@ execution:
                Answers arrive out-of-band: /respond appends to
                $TASK_DIR/answers.jsonl while the card is running — rails tell
                sessions to check it before finishing (newest line wins per
-               request_id)."
+               request_id). The same file carries kind:'comment' lines —
+               ada|tony card comms pushed live; sessions weigh them as
+               review input while request_id/answer lines (kind:'answer')
+               stay the authoritative answer channel."
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
            via the API; the API renders synchronously on every write"
   persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/

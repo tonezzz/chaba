@@ -1,0 +1,80 @@
+id: report-loop-comment-delivery-impl
+title: Board comments reach running dispatch sessions — kind:"comment" lines
+date: 2026-10-07
+card: report-loop-comment-delivery
+host: tony_omen
+status: implemented
+
+goal: >
+  Implement report-session-loop §3a (contract): card comms become a live
+  input channel to a running session. /respond keeps its authoritative
+  answer channel (now tagged kind:"answer"); /comment from ada|tony on a
+  running card is pushed into the session's answers.jsonl as
+  kind:"comment" lines for the session to weigh — Tony's notes and
+  Ada's [opinion]-tagged report takes. devin|chaba comments are never
+  echoed (a session must not read its own progress posts; chaba notes
+  are noise).
+
+delivered:
+  - scripts/board/board-api.py: >
+      deliver_answer() refactored into _deliver_to_session(card, record)
+      — same local-write/ssh-runner machinery, same never-raises contract
+      returning a comms note or ''. `at`/`card` are stamped inside; the
+      record's `kind` names the line in notes ('answer delivered…',
+      'comment saved but…'). deliver_answer stays as the /respond
+      wrapper emitting {from, kind:"answer", request_id, answer}.
+      New deliver_comment(card, frm, text) gated on
+      COMMENT_DELIVER_FROM={ada,tony} emits {from, kind:"comment", text}.
+      POST /comment calls it after comms_add — delivery note rides the
+      same save + message, exactly like the /respond path. Docstring
+      endpoint list updated; _selftest extended.
+  - scripts/board/kanban-dispatch.py: >
+      TASK_RAILS gains the kind:"comment" contract line — card comms
+      pushed live are review input to weigh; request_id/answer lines
+      (kind:"answer") remain the authoritative answer channel.
+  - scripts/board/runner-agent.py: >
+      Same rails paragraph updated — remote-runner card sessions see the
+      identical answers.jsonl contract.
+  - scripts/devin/devin-dispatch.sh: >
+      start + resume prompt preambles updated — record format now lists
+      `kind`, and kind:"comment" lines are described as review input.
+  - docs/ssot/kanban/ssot.kanban.yml: >
+      /respond endpoint doc records the kind:"answer" line; /comment doc
+      records the ada|tony delivery rule + the never-echo rule;
+      task_rails description updated to match.
+
+key_decisions:
+  - 'kind is stamped per record by the caller, not inferred downstream:
+    answer lines carry request_id+answer; comment lines carry text.
+    Consumers branch on kind — answers stay authoritative, comments are
+    advisory review input.'
+  - 'The comment gate lives in deliver_comment (actor allowlist), not in
+    do_POST: keeps the "whose voice reaches a session" policy in one
+    place and directly selftestable without HTTP.'
+  - 'Delivery notes use the record kind as the noun ("comment delivered
+    to running session …") so comms lines stay truthful for both paths
+    without duplicating the machinery.'
+  - 'Failure semantics unchanged: best-effort, never raises; a failed
+    push still lands as a chaba comms note so the missed delivery is
+    visible on the card.'
+
+verify: |
+  python3 scripts/board/board-api.py --selftest   # ok — answer kind,
+                                                  # tony/ada comment lines,
+                                                  # devin/chaba not echoed,
+                                                  # non-running delivers ""
+  node scripts/ssot-validate-all.mjs              # 0 errors, 1 warning
+                                                  # (ssot.kanban.yml bloat
+                                                  # 391/350 — doc growth)
+  python3 -c "import yaml; yaml.safe_load(...)"   # ssot.kanban.yml parses
+  bash -n scripts/devin/devin-dispatch.sh         # ok
+  # live check: next dispatched session's $TASK_DIR/answers.jsonl — a
+  # tony/ada /comment on a running card lands as kind:"comment" once this
+  # merges and board-api.service restarts on chaba-tony-dell.
+
+open_items:
+  - 'deploy: merge to master, then restart board-api.service on the
+     served checkout (chaba-tony-dell) so the new code path is live —
+     promotion needs explicit approval'
+  - 'live e2e: tony/ada /comment on a running card -> kind:"comment"
+     line in that session''s answers.jsonl'

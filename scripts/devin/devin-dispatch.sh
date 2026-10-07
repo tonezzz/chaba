@@ -192,7 +192,10 @@ If you are blocked and need a decision from the user, write your question to
 stop — the operator is notified and can resume you with an answer.
 If you raised a question and kept working, the reply may arrive while you
 run: answers are appended to \$TASK_DIR/answers.jsonl (one JSON object per
-line: {at, card, from, request_id, answer}). Check it before finishing.
+line: {at, card, from, kind, request_id, answer}). Check it before finishing.
+Lines may also carry kind:"comment" (card comms — Tony's notes, Ada's
+[opinion] takes); weigh them as review input — request_id/answer lines
+stay the authoritative answer channel.
 If the work produces a decision, runbook, or new infra, write it to
 docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
 leave a trail.
@@ -272,7 +275,10 @@ If you are blocked and need a decision from the user, write your question to
 stop — the operator is notified and can resume you with an answer.
 If you raised a question and kept working, the reply may arrive while you
 run: answers are appended to \$TASK_DIR/answers.jsonl (one JSON object per
-line: {at, card, from, request_id, answer}). Check it before finishing.
+line: {at, card, from, kind, request_id, answer}). Check it before finishing.
+Lines may also carry kind:"comment" (card comms — Tony's notes, Ada's
+[opinion] takes); weigh them as review input — request_id/answer lines
+stay the authoritative answer channel.
 If the work produces a decision, runbook, or new infra, write it to
 docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
 leave a trail.
