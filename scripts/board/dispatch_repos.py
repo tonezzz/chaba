@@ -30,6 +30,7 @@ BUILTIN_REPOS = {
     "ada-pi": ("~/CascadeProjects/ada-pi", "main"),
     "sunsynk-card": ("~/CascadeProjects/sunsynk-power-flow-card", "main"),
     "mddb-fork": ("~/CascadeProjects/mddb-fork", "main"),
+    "gods-eye-view": ("~/gods-eye-view", "main"),
 }
 
 
