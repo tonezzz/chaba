@@ -30,7 +30,7 @@ scope:
       role: Ada HA backend host
       cleanup_profile: service-host
     idc01:
-      role: public/VPS host for Ada PWA, MDDB, open-notebook, and tailnet apps
+      role: warm-DR VPS (mddb-follower, standby edge, masked former-prod units); idc03 is the primary Ada/MDDB host
       cleanup_profile: vps-service-host
     michael-ha:
       role: Michael Home Assistant host
@@ -126,11 +126,12 @@ targets:
       - open-notebook uses podman volumes open-notebook-data and open-notebook-surreal-data
 
   mddb_backups:
-    hosts: [idc01]
+    hosts: [idc03, idc01]
     automatic_ok: true
     cleanup:
-      - prune old local backup archives only after the nightly backup timer and tony-omen pull mirror are healthy
+      - prune old local backup archives only after the nightly backup timer (idc03) and tony-omen pull mirror are healthy
       - keep at least one verified recent backup before removing older archives
+      - idc01 retains pre-migration archives only — no new backups land there
     protected:
       - ~/.config/containers/mddb/data
 

@@ -53,7 +53,7 @@ runbooks:
     purpose: Capture a decision or Q&A outcome so ada, Devin, and the vault can all recall it later.
     steps:
       - "By voice: tell ada 'remember that <fact>' — she calls ada_remember (confirmed banks ask first)"
-      - "From scripts/devin: POST /api/tools/call {tool: ada_remember, args: {bank, subject, attribute, kind, text, confirmed: true}} on any running service (mn01:8002, tony-dell:8001, idc01:8001/8002)"
+      - "From scripts/devin: POST /api/tools/call {tool: ada_remember, args: {bank, subject, attribute, kind, text, confirmed: true}} on any running service (idc03:8001/8002/8003, mn01:8002 standby)"
       - "Recall: ada_memory_search by voice, MDDB semantic_search for Devin, vault note after the next sync-ada-memory-to-mddb run"
       - "For superseding facts pass key or subject+attribute — remember() does find-then-update; use ada_forget to retract, ada_outcome to record how it turned out"
     note: |

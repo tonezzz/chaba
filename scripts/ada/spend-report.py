@@ -6,7 +6,7 @@ embedding/LLM call volumes per host+unit. A 429 storm or silent quota
 exhaustion shows up here. Personal-tier data.
 
 Usage:
-  spend-report.py [--hosts idc01,tony-omen] [--since "24 hours ago"]
+  spend-report.py [--hosts idc03,tony-omen] [--since "24 hours ago"]
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
-DEFAULT_HOSTS = ["idc01", "tony-omen"]
+DEFAULT_HOSTS = ["idc03", "tony-omen"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
 
 # journald grep filter — rate limits, quota, billing-ish errors

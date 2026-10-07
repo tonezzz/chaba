@@ -2,7 +2,7 @@
 """cam-wall puller — periodic CCTV thumbnails for enabled zones.
 
 Runs on tony-dell (systemd timer every 30s). Each run:
-  1. GET input-bridge /camwall on idc01 -> which zones are enabled
+  1. GET input-bridge /camwall (via the tony-dell edge -> idc03 relay) -> which zones are enabled
   2. For each enabled zone whose thumbs are older than its interval:
        house cams  -> go2rtc frame.jpeg on 127.0.0.1:1984 (parallel, ~4s)
        VMS cams    -> mn01 vms-snap shim 8377 (serial — one Wine UI, ~12s each)

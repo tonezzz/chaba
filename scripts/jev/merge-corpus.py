@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Merge the Jev confirm-gate corpora into one training set.
 
-Sources (fetched from idc01:~/.local/share/ada/):
+Sources (fetched from idc03:~/.local/share/ada/):
   jev-corpus.jsonl          live probe rows  {text, regex, jev, diverged, ts}
   jev-corpus-mined.jsonl    transcript-mined {text, regex, src, ask}
   jev-corpus-reviewed.jsonl hand/auto-reviewed diverged rows

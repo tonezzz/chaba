@@ -145,7 +145,7 @@ def write_card(path: Path, card: dict) -> None:
 def main() -> int:
     now = time.time()
     today = time.strftime("%Y-%m-%d")
-    cms = "https://idc01.taila0626a.ts.net/cms"
+    cms = "https://idc03.taila0626a.ts.net/cms"
     n_bad = n_ok = n_recovered = 0
     freshness = page_freshness()
     for cfg in list_automations():

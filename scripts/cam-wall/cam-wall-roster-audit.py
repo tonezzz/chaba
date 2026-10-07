@@ -52,7 +52,7 @@ REG_KEY = "cctv-roster"
 AUDIT_KEY = "cctv-roster-audit"
 STATE = DATA / "_roster-audit-state.json"
 NOTIFY_URL = os.environ.get(
-    "ADA_NOTIFY_URL", "https://idc01.taila0626a.ts.net/api/notify")
+    "ADA_NOTIFY_URL", "https://idc03.taila0626a.ts.net/api/notify")
 NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
     "ADA_API_KEY", "")
 PROBEABLE = {"hls", "jpeg"}

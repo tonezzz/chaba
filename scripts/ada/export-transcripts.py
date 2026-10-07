@@ -16,7 +16,7 @@ text. The output directory is intentionally outside the repo and must
 never be committed. Keep it that way.
 
 Usage:
-  export-transcripts.py                    # pull idc01 (live host), rollup
+  export-transcripts.py                    # pull idc03 (live host), rollup
   export-transcripts.py --host mn01        # standby host (transcripts only)
   export-transcripts.py --since 2026-09-20 --limit 20
   export-transcripts.py --backfill         # stage-2 LLM reports for
@@ -92,8 +92,8 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    ap.add_argument("--host", default="idc01",
-                    help="ada runtime host to pull from (idc01|mn01|tony-dell)")
+    ap.add_argument("--host", default="idc03",
+                    help="ada runtime host to pull from (idc03|idc01|mn01|tony-dell)")
     ap.add_argument("--local", type=Path, default=None,
                     help="read transcripts from a local dir instead of ssh")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -117,7 +117,7 @@ def main() -> int:
     ap.add_argument("--keep-days", type=int, default=30,
                     help="prune mirrored transcripts/reports older than this "
                          "(local mirror only; remote untouched)")
-    ap.add_argument("--hosts", default="idc01,mn01,tony-dell,tony-omen",
+    ap.add_argument("--hosts", default="idc03,idc01,mn01,tony-dell,tony-omen",
                     help="comma-separated hosts for the health sweep")
     ap.add_argument("--backfill", action="store_true",
                     help="generate stage-2 reports for transcripts missing one "

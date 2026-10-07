@@ -269,7 +269,7 @@ automation:
           spam the board.
       news-flood-fetch.py:
         status: scheduled
-        scheduler: news-flood.timer — hourly, idc01
+        scheduler: news-flood.timer — hourly, idc03
         outputs: ada-cms-pages news-flood (md5-gated)
         on_failure: ada-report-fail@news-flood.service
       kanban-cms.py:
@@ -287,7 +287,7 @@ automation:
         on_failure: ada-report-fail@weekly-digest.service
       embed-bench.py:
         status: scheduled
-        scheduler: ada-embed-bench.timer — Sat 06:00, idc01 (runs --publish)
+        scheduler: ada-embed-bench.timer — Sat 06:00, idc03 (runs --publish)
         outputs: ada-cms-pages embed-route benchmark page
       cms-audit.py:
         status: scheduled
@@ -395,11 +395,11 @@ automation:
       # none — every enumerated generator is either scheduled or a live tool
     out_of_scope_scheduled: >-
       scripts/ada bank/memory pipeline (not cms/report generators, all already
-      scheduled): sync-ada-memory-to-mddb (ada-memory-sync, idc01 hourly),
+      scheduled): sync-ada-memory-to-mddb (ada-memory-sync, idc03 hourly),
       rollup-summaries (ada-memory-rollup, omen), memory-distill
-      (ada-memory-distill, idc01), memory-gap-report (ada-memory-gaps, idc01),
-      recall-drift-report (ada-memory-drift, idc01), recall-canary
-      (ada-recall-canary, idc01), memory-health-check (ada-memory-health,
+      (ada-memory-distill, idc03), memory-gap-report (ada-memory-gaps, idc03),
+      recall-drift-report (ada-memory-drift, idc03), recall-canary
+      (ada-recall-canary, idc03), memory-health-check (ada-memory-health,
       omen), memory-staleness-sweep (ada-memory-staleness, omen),
       backup-mddb-banks (ada-memory-backup, omen), distill-devin-bank
       (devin-bank-distill, idc02 — STALE DUPLICATE still firing on omen),
