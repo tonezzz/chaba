@@ -381,23 +381,28 @@ class AdaChatCard extends HTMLElement {
       const wsUrl = `${this._wsBase}`
         + `?device_id=${encodeURIComponent(this._deviceId())}`
         + `&api_key=${encodeURIComponent(this._apiKey())}`;
+      let opened = false;
       this._socket = new WebSocket(wsUrl);
       this._socket.binaryType = "arraybuffer";
+      this._socket.onopen = () => { opened = true; };
       this._socket.onmessage = (m) => {
         if (typeof m.data === "string") this._handleControl(JSON.parse(m.data));
         // binary PCM audio frames: dropped — this card is text-only
       };
       this._socket.onerror = () => this._system("WebSocket error");
       this._socket.onclose = async (e) => {
-        if (e.code === 4401 && !this._mintRetried) {
-          // Key revoked or bound to another device — re-mint and retry once.
+        // A handshake rejection (HTTP 403 — stale/foreign key) surfaces as
+        // 1006, not 4401 — the server never accepted the socket. Treat both
+        // as key rejection: drop the cached key, re-mint, retry once.
+        const rejected = e.code === 4401 || (!opened && e.code !== 1000);
+        if (rejected && !this._mintRetried) {
           this._mintRetried = true;
           localStorage.removeItem(ACC_KEY_STORAGE);
           await this._teardown(false);
           this._connect(true);
           return;
         }
-        if (e.code === 4401) {
+        if (rejected) {
           localStorage.removeItem(ACC_KEY_STORAGE);
           this._state = "locked";
           this._setStatus("Key rejected — paste a key below");
