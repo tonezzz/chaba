@@ -57,6 +57,12 @@ def check_route(r: dict) -> dict:
         root = REPO / "stacks/web/public" / base.lstrip("/")
         if root.exists():
             return {**res, "ok": True, "detail": "static root exists"}
+        if (REPO / ".git").is_file():
+            # linked worktree: untracked/mounted content (HLS dirs, quadlet
+            # mounts, built output) never materializes here — only the live
+            # checkout can say whether the dir is really gone
+            return {**res, "ok": None,
+                    "detail": "untracked/mounted — check runs on live checkout"}
         return {**res, "ok": False, "detail": f"missing {root}"}
 
     # proxy — edge check
