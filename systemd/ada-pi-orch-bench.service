@@ -3,11 +3,15 @@ Description=Orch topology bench (gemma-1b/4b structures) + nest-bench page refre
 
 [Service]
 Type=oneshot
-TimeoutStartSec=5400
+TimeoutStartSec=7200
 WorkingDirectory=%h/CascadeProjects/ada-pi
 # Travel-slim: gemma JEV scorers stay disabled; the weekly bench starts
 # them on demand and stops them after (model load ~80s on CPU).
+# Budget: gemma-3-4b is ~30-140s/call on this CPU — a full all-sets run
+# (~150 L2 calls) would take hours. --limit 30 on golden,hard keeps a
+# comparable weekly row inside the timeout; widen when a GPU lane or
+# real L3 endpoint exists.
 ExecStartPre=/bin/sh -c 'systemctl --user start open-jev open-jev-student; for i in $(seq 1 72); do curl -sf -m 3 http://100.75.102.88:8777/health >/dev/null && curl -sf -m 3 http://100.75.102.88:8778/health >/dev/null && exit 0; sleep 5; done; echo "open-jev endpoints did not become healthy"; exit 1'
 ExecStartPost=/bin/sh -c 'systemctl --user stop open-jev open-jev-student; exit 0'
-ExecStart=%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778 --heavy http://100.75.102.88:8777 --mddb http://100.102.134.91:11023/v1 --report-cms
+ExecStart=%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778 --heavy http://100.75.102.88:8777 --sets golden,hard --limit 30 --timeout 240 --mddb http://100.102.134.91:11023/v1 --report-cms --corpus-out %h/.local/share/ada/orch-corpus.jsonl --stats-out %h/.local/share/ada/orch-router-stats.jsonl
 ExecStart=/usr/bin/python3 scripts/nest-bench-update.py --force
