@@ -1,28 +1,84 @@
-# Dispatch outcome — idc01→idc03 migration Phase 1 (inventory + plan)
+# Dispatch outcome — mddb-follower-stall
 
-**Result: done.** Read-only inventory of idc01 and idc03 completed; no production changes made.
+Card: `mddb-follower-stall` · Runner: mn01 · Branch: `dispatch/20261007-225415-diagnose-the-mddb-follower-s-s` (committed, not pushed)
 
-## Deliverables (in this worktree)
+## Root cause
 
-- `docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md` — full inventory, per-item migrate/retire decisions + dependency order, idc03 capacity check, cutover+rollback per item, what-stays list, 9 flagged approvals.
-- `docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml` — job-lifecycle artifact.
+Confirmed the diagnosis from `mddb-replication-heartbeat` (done 2026-10-06):
+the follower's `replicate()` loop calls `stream.Recv()` with **no deadline**
+and the protocol has **no application-level heartbeat**. A silently-dead
+stream (leader send goroutine blocked, tailnet/DERP half-open, TCP
+blackhole) leaves `Recv` blocked forever → `connected=true`, leader-side
+`last_seen_at` keeps updating on stream activity, `confirmed_lsn` frozen,
+zero log lines. Only a restart re-dials. Since 2.15.4-lsn the restart
+resumes from the persisted LSN marker — no snapshot re-pull.
 
-## Key findings
+The permanent fix already exists **undeployed** on mddb-fork branch
+`repl-heartbeat` @ `498cdc3` (leader 15s idle heartbeat, follower 45s Recv
+deadline, `connected`/`last_recv_at`/`heartbeat_capable` status fields).
+No image built — needs merge + rebuild off `feat/vector-algorithms`.
+mddb-fork source is unreachable from mn01 (no checkout, ssh to tony-dell
+denied), so no code changes there this session.
 
-- **idc01** (157.85.110.99 / 100.74.146.0, Siamdata): 2 vCPU, **31 GiB RAM** (SSOT says 8–12 G — drift), 96 G disk / 60 G used. Runs: **9 containers** (mddb leader, ollama, gemini-ollama-proxy, caddy-edge, camwall-edge, input-bridge, mddb-panel, vcast-headless ×2), **20 service units** (ada-pi-pwa/tony/michael/dev, line+tg relays, obsidian-vault, doc-archive, jev-student), **22 enabled timers**, no cron. ~30 G state (~12 G essential; 17 G is mddb-backups). Public TLS: `api.surf-thailand.com` (CF-proxied → :8001 + webhook routes) + sslip name. Tailscale serve → :8001-8004. ufw: public 80/443 only.
-- **idc03** (157.85.102.125 / 100.102.134.91, Siamdata): tailnet-joined today ~13:15Z, online, but **ssh denied for every key** (tony/root from dell; idc01/idc02→idc03 also denied). Public :22 open (not yet hardened). **Capacity unverified — Phase-2 blocker, needs Tony to authorize a key via the provider panel.**
-- Surprises: `input-bridge` binds **0.0.0.0:3010** (SSOT claims tailnet-pinned; ufw is the only guard); `doc-archive` listens on tailnet **:11025** — undocumented in security SSOT; `chaba-vault` repo on idc01 has **41 dirty files** (reconcile before rsync); `ada-dev` :8005 running but unit disabled; mddb quadlet has inline secrets to move to EnvironmentFile; ~18 orphan podman volumes + retired open-notebook residue marked retire/drop.
-- Plan approach per card: mddb via replication (follower on idc03 → promote → idc02 repoints leader), then services+secrets via rsync, caddy-edge + CF DNS repoint last, 24–48 h soak. idc01 stays untouched until soak — every rollback is "repoint back".
+## What changed (this worktree)
 
-## How to verify
+- **`scripts/mddb-follower-watchdog.py`** (new) — runs on each follower
+  host via user timer. Each tick polls the leader's
+  `/v1/replication/status`; the stall signature is `last_seen_at` fresh
+  (≤120s = stream connected) + `confirmed_lsn` frozen ≥300s +
+  `confirmed_lsn < current_lsn`. On detection:
+  `systemctl --user restart mddb-follower.service`. Guards: 900s restart
+  cooldown, 3 restarts/episode then gives up, `confirmed_lsn==0` skipped
+  (snapshot-in-flight protection), follower absent from `followers[]` not
+  restarted (different failure class; `--restart-if-absent` opt-in).
+  `--dry-run` + `file://` test mode; one JSON line per tick to journald.
+- **`systemd/mddb-follower-watchdog.{service,timer}`** (new) — user units,
+  every 2min. Install instructions in the service comment; set
+  `Environment=MDDB_NODE_ID` per host.
+- **`scripts/mddb-binlog-canary.py`** (extended) — stream-state surfacing:
+  every tick now emits `metrics.followers_stream[]` with
+  `confirmed_lsn`, `apply_lag_lsn`, `last_seen_age_s`, `connected`,
+  `frozen_seconds` per follower; a frozen-while-connected follower past
+  `--stall-seconds` (default 600) adds an explicit `apply-stalled` breach
+  reason naming the remediation — the freeze is now a first-class alert,
+  not something a human has to infer by comparing LSNs. `write_inbox`
+  mkdirs the inbox dir.
+- **`docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`**
+  — full job record (signature, root cause, verification, deploy steps).
+- **`docs/ssot/kanban/cards/mddb-follower-stall.yml`** — findings + help
+  text updated.
 
-```bash
-cat docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
-ssh idc01 'podman ps; systemctl --user list-timers --all | wc -l'   # spot-check inventory
-tailscale status | grep idc03                                       # 100.102.134.91 online
-ssh tony@100.102.134.91 hostname                                    # currently: Permission denied (the blocker)
-```
+## Verification
 
-## Waiting on Tony (flagged, non-blocking for Phase 1)
+- Watchdog: 10 canned scenarios (file:// payloads + stubbed `systemctl`):
+  watching → stalled → would-restart (dry-run) → restart → cooldown →
+  gave-up → disconnected (stale `last_seen_at`) → snapshotting
+  (confirmed_lsn=0) → absent → fetch-error. All pass; exactly one stub
+  restart fired.
+- Canary: stalled payload produces the `apply-stalled` reason only after
+  the freeze window; advancing payloads never do.
+- **Live against idc03 leader (~23:05Z):** idc02 `caught-up` (lag 0);
+  idc01 `watching` — 13.2M behind but `confirmed_lsn` advancing
+  ~100 LSN/s (slow catch-up after its restart, **not** the stall
+  signature) — correctly not flagged/restarted.
+- `ssot-validate-all.mjs`: 1684 files, 0 errors. `py_compile` clean.
 
-idc03 ssh authorization is the only hard blocker for Phase 2. Other approvals (DNS repoint, mddb promotion, backups scope, chaba-vault dirty files, ada-dev, mn01 aliases, idc01 keep-vs-cancel) are listed in §Flags of the plan.
+## Deploy status
+
+Not deployed (dispatch scope: diagnose + build). To activate:
+
+- idc02/idc01: `cp scripts/mddb-follower-watchdog.py ~/.local/bin/`;
+  `cp systemd/mddb-follower-watchdog.{service,timer}
+  ~/.config/systemd/user/` (set `MDDB_NODE_ID`); `systemctl --user
+  daemon-reload && systemctl --user enable --now
+  mddb-follower-watchdog.timer`.
+- tony-dell: canary picks up on next merge to the served checkout.
+
+## Open items
+
+- Install watchdog on idc02 + idc01 (needs approval / another dispatch).
+- Merge `repl-heartbeat` + `follower-lsn-persist` into
+  `feat/vector-algorithms`, rebuild image, deploy — removes the bug class;
+  watchdog stays as safety net.
+- idc01 follower still ~13M LSN behind at ~100 LSN/s — draining, will take
+  many hours; watchdog will not touch it (it keeps advancing).

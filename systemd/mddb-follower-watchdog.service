@@ -1,0 +1,25 @@
+[Unit]
+Description=mddb follower apply-stall watchdog (restart on connected-but-frozen confirmed_lsn)
+# Detects the silent apply stall (kanban mddb-follower-stall): the leader's
+# /v1/replication/status shows this follower's last_seen_at fresh (stream
+# connected) while confirmed_lsn stops advancing behind current_lsn — the
+# follower replicate() loop is blocked in stream.Recv() with no deadline.
+# Restart resumes from the persisted LSN marker (>=2.15.4-lsn), no snapshot.
+#
+# Install on EACH follower host (idc02, idc01):
+#   cp scripts/mddb-follower-watchdog.py ~/.local/bin/
+#   cp systemd/mddb-follower-watchdog.{service,timer} ~/.config/systemd/user/
+#   # set Environment=MDDB_NODE_ID below to this host's follower_id
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now mddb-follower-watchdog.timer
+# Watch: journalctl --user -u mddb-follower-watchdog.service -f
+#   (one JSON line per tick; status=stalled + action=restart on detection)
+# Manual check: python3 ~/.local/bin/mddb-follower-watchdog.py \
+#   --follower-id <id> --dry-run
+# Installed copy is authoritative — this file is the SSOT mirror.
+
+[Service]
+Type=oneshot
+Environment=MDDB_NODE_ID=idc02
+Environment=MDDB_FOLLOWER_UNIT=mddb-follower.service
+ExecStart=/usr/bin/python3 %h/.local/bin/mddb-follower-watchdog.py --follower-id %E{MDDB_NODE_ID} --unit %E{MDDB_FOLLOWER_UNIT}

@@ -1,0 +1,108 @@
+title: mddb follower silent apply-stall — diagnosis, stream-state surfacing, watchdog
+subtitle: >
+  Dispatch of kanban card mddb-follower-stall. The follower's gRPC apply
+  stream can die silently (connected=true, last_seen_at fresh, zero log
+  errors) while confirmed_lsn freezes; only a restart recovers. This job
+  ships the detection + self-heal layer in chaba: a per-host watchdog
+  timer and a stall-specific alert reason in the binlog canary.
+icon: radar
+
+planning:
+  goal: >
+    Make the silent apply stall visible without a human comparing LSNs, and
+    restart the follower automatically when confirmed_lsn stops advancing
+    while the stream is still connected.
+  signature: >
+    leader /v1/replication/status shows followers[] entry with
+    last_seen_at FRESH (<120s = stream connected) AND confirmed_lsn FROZEN
+    across polls AND confirmed_lsn < current_lsn (backlog exists to apply).
+    Each leg is required: fresh last_seen excludes a dropped stream;
+    lag>0 excludes an idle leader; the freeze timer excludes a follower
+    that is merely catching up slowly.
+  scope: chaba repo only — mddb-fork source unreachable from mn01 runner.
+
+root_cause:
+  diagnosis: >
+    Confirmed by mddb-replication-heartbeat (done 2026-10-06): the
+    follower's replicate() loop calls stream.Recv() with no deadline and
+    the protocol has no application-level heartbeat. A stream that dies
+    silently — leader send goroutine blocked, DERP/tailnet half-open, TCP
+    blackhole — leaves Recv() blocked forever with connected=true and no
+    log output. Only a restart re-dials and resumes (now from the
+    persisted LSN marker, >=2.15.4-lsn, so no snapshot re-pull).
+  evidence:
+    - "2026-10-06 idc02 2.15.4-lsn: resumed 11:34, applied to 149.57M, froze
+       while 'connected'; restart 13:50 resumed from persisted LSN 149571828
+       and continued — zero journal errors across the freeze."
+    - "2026-10-07 ~23:05Z live contrast: idc01 follower 13.2M behind but
+       confirmed_lsn advancing ~100 LSN/s = slow catch-up, NOT the stall —
+       validates that freeze-detection must key on confirmed_lsn deltas,
+       not on lag magnitude or status!=healthy alone."
+  code_fix: >
+    Exists but undeployed: mddb-fork branch repl-heartbeat @498cdc3 (tony-
+    dell worktree mddb-wt-repl-heartbeat) adds a 15s idle heartbeat on the
+    leader, a 45s Recv deadline on the follower, and
+    connected/last_recv_at/heartbeat_capable fields in the status JSON.
+    No image built; needs merge + rebuild off feat/vector-algorithms.
+    The watchdog below is the mitigation until then — and the safety net
+    after (covers any future silent-block class, not just missing
+    heartbeats).
+
+deliverables:
+  - >-
+    scripts/mddb-follower-watchdog.py — per-follower-host stall detector +
+    restarter. Polls leader /v1/replication/status each tick; on the
+    connected+behind+frozen signature runs `systemctl --user restart
+    mddb-follower.service`. Guards: --stall-seconds 300 freeze window,
+    900s restart cooldown, 3 restarts/episode then gives up and reports,
+    confirmed_lsn==0 skipped (snapshot-in-flight protection), follower
+    absent from followers[] not restarted unless --restart-if-absent.
+    --dry-run + file:// URLs for testing; one JSON line per tick to the
+    journal; state in ~/var/chaba/health/mddb-follower-watchdog.json.
+  - >-
+    systemd/mddb-follower-watchdog.{service,timer} — user units, every
+    2min (OnUnitActiveSec). Install block in the service comment; set
+    Environment=MDDB_NODE_ID per host.
+  - >-
+    scripts/mddb-binlog-canary.py — new per-follower stream-state
+    surfacing: metrics.followers_stream[] carries confirmed_lsn,
+    apply_lag_lsn, last_seen_age_s, connected, frozen_seconds every tick;
+    a frozen-while-connected follower past --stall-seconds (default 600)
+    adds an explicit 'apply-stalled' breach reason with the remediation
+    (restart mddb-follower.service) instead of a bare 'unhealthy'.
+    write_inbox now mkdirs the inbox dir.
+
+verification:
+  canned: >
+    10-scenario matrix against file:// payloads + stubbed systemctl:
+    watching -> stalled -> would-restart(dry-run) -> restart(stub fired
+    once) -> cooldown -> gave-up(3 restarts) -> disconnected(stale
+    last_seen) -> snapshotting(lsn 0) -> absent -> error(fetch fail). All
+    pass; exactly one restart issued.
+  live: >
+    watchdog --dry-run vs idc03 leader: idc02 'caught-up' (lag 0), idc01
+    'watching' (frozen 0s — applying). Canary vs live: no apply-stalled
+    reason for the lagging-but-advancing idc01; followers_stream metrics
+    populated correctly.
+
+deploy:
+  status: pending-approval (task scope was diagnose+build; no deploys)
+  steps:
+    - "idc02: cp scripts/mddb-follower-watchdog.py ~/.local/bin/;
+       cp systemd/mddb-follower-watchdog.{service,timer}
+       ~/.config/systemd/user/ (MDDB_NODE_ID=idc02 already set);
+       systemctl --user daemon-reload; enable --now
+       mddb-follower-watchdog.timer"
+    - "idc01: same, with Environment=MDDB_NODE_ID=idc01 in the unit"
+    - "tony-dell: canary upgrade takes effect when the chaba checkout that
+       tony-dell-monitor.sh sources is updated (served checkout); state
+       file is compatible (new followers_prev key added on first run)"
+  note: >
+    Once the repl-heartbeat image ships the stall should self-heal via the
+    45s Recv deadline; keep the watchdog anyway as the outer safety net.
+
+related:
+  cards: [mddb-follower-stall, mddb-replication-heartbeat, mddb-binlog-canary]
+  records:
+    - docs/ssot/jobs/infrastructure/2026-10-06-mddb-follower-lsn-persist.yml
+    - docs/ssot/jobs/infrastructure/2026-10-04-mddb-binlog-canary.yml

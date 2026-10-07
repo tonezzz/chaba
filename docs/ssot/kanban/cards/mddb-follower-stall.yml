@@ -11,12 +11,30 @@ note: >-
   shows last_seen_at fresh but confirmed_lsn frozen = the stall signal.
   Same silent-stall class as the original replication wedge. Likely a
   dropped apply goroutine or blocked binlog read.
+
+  2026-10-07 dispatch (mn01): root cause = follower replicate() blocks in
+  stream.Recv() with no deadline and no app-level heartbeat (diagnosed by
+  mddb-replication-heartbeat; a silently-dead stream = blocked Recv
+  forever, connected=true, silent). Code fix exists undeployed on
+  mddb-fork repl-heartbeat @498cdc3 (15s heartbeat + 45s Recv deadline +
+  connected/last_recv_at status fields). Mitigation shipped in chaba:
+  scripts/mddb-follower-watchdog.py + systemd/mddb-follower-watchdog
+  .{service,timer} restart the follower when confirmed_lsn is frozen
+  >300s while last_seen_at stays fresh; mddb-binlog-canary.py now
+  surfaces per-follower stream state (connected/apply_lag_lsn/
+  frozen_seconds) and an explicit 'apply-stalled' alert reason. Live
+  23:05Z: idc01 follower 13.2M behind but confirmed_lsn advancing — slow
+  catch-up, correctly NOT flagged as stalled. Watchdog install on
+  idc02/idc01 pending approval.
 help: >-
   Detect: leader /v1/replication/status shows follower confirmed_lsn
-  frozen while current_lsn climbs and last_seen_at stays fresh. Fix
-  candidates: heartbeat/timeout on the follower receive loop, or a
-  "applier-alive" metric the canary can watch. mddb-fork repo.
-updated: 2026-10-06
+  frozen while current_lsn climbs and last_seen_at stays fresh; the
+  canary now reports this as 'apply-stalled' with frozen_seconds, and
+  mddb-follower-watchdog.timer (once installed on the follower host)
+  restarts mddb-follower.service automatically. Permanent fix: merge
+  + deploy mddb-fork repl-heartbeat (Recv deadline); watchdog remains as
+  safety net. See docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml.
+updated: 2026-10-07
 comms:
 - at: 2026-10-06 14:30
   from: devin
