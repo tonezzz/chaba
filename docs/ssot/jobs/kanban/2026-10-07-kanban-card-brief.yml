@@ -1,0 +1,50 @@
+title: Card brief — plain-language situation + expected action
+subtitle: Optional `brief` field on kanban cards, rendered prominent on board2
+icon: layout
+version: 1
+
+card: kanban-card-brief
+date: 2026-10-07
+dispatch: 20261007-174957-1-schema-optional-brief-field-
+
+summary: |
+  Tony asked for a short explanation on top of each card — what's the
+  situation and what's expected of him — so the board reads without
+  decoding note/spec jargon. This job adds an optional `brief` card
+  field (2-3 plain-language sentences: situation first, then expected
+  action), renders it on board2, and backfills all 43 non-done cards.
+
+deliverables:
+  - docs/ssot/kanban/ssot.kanban.yml — `brief` documented in card_schema
+    with the convention — every new card gets one; whoever writes the
+    card writes the brief (dispatch jobs + health-lane generators too)
+  - scripts/render-board2.py — brief renders as a sky callout ("In
+    plain terms") atop the detail pane above note/spec; card-list rows
+    show the brief's first line as a truncated subtitle with the full
+    text on hover (title attr); filter search includes brief text
+  - scripts/board/backfill-briefs.py — rerunnable catch-up pass;
+    inserts a one-line `brief:` before `column:` (minimal diffs),
+    derives situation from note/title and expected action from
+    column/requests/blocked_by/review_kind, with hand-written OVERRIDES
+    for cards whose own text can't yield plain language
+  - 43 active cards backfilled (all non-done columns)
+  - scripts/ada/{gev-auto-health,logs-kanban,disk-trend-watch,
+    cms-auto-health}.py — auto-generated review cards now emit briefs
+
+decisions:
+  - text insertion not YAML re-dump — cards are flock-managed and merge
+    across parallel sessions; a one-line diff per card keeps merges clean
+    (board-api/kanban-dispatch still rewrite whole files when they
+    touch them — that's existing behavior)
+  - board2 only, per card spec — the classic view (render-board.py) is
+    unchanged; add there later if the subtitle proves useful
+  - subtitle is the first line, CSS-truncated; full brief rides the
+    row's title= tooltip — no expand interaction needed
+  - review_kind=decide forces a "needs a decision" action line even
+    outside the review column (edge-ha-restructure sits in backlog)
+
+verify: |
+  grep -q 'c.brief' scripts/render-board2.py            # renders
+  grep -l '^brief:' docs/ssot/kanban/cards/*.yml | wc -l # 43 > 10
+  python3 scripts/render-board2.py                       # regen OK
+  python3 scripts/board/backfill-briefs.py --dry-run     # idempotent
