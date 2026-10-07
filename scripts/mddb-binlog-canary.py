@@ -9,10 +9,13 @@ GETs {url} (default http://<idc03>:11023/v1/replication/status) and flags when:
   - any followers[].status != "healthy"
 
 A breach must persist for more than --breach-seconds (default 600 = 10 min)
-before a focus-inbox item is written, and only one item is written per breach
-episode (tracked in --state-file). Prints one JSON check-result line on stdout
-in the same shape as the other tony-dell-monitor checks; the caller folds it
-into the monitor log. file:// URLs are accepted for testing.
+before a focus-inbox item is written. Alerts re-fire while a breach persists:
+every --realert-seconds (default 43200 = 12 h) and immediately when the breach
+set escalates (e.g. a second follower joins the unhealthy list — the reason set
+changed since the last alert). Episode state lives in --state-file; a return to
+healthy resets it. Prints one JSON check-result line on stdout in the same
+shape as the other tony-dell-monitor checks; the caller folds it into the
+monitor log. file:// URLs are accepted for testing.
 """
 import argparse
 import json
@@ -88,7 +91,8 @@ def evaluate(data):
         if not isinstance(f, dict):
             continue
         if f.get("status") != "healthy":
-            name = f.get("node_id") or f.get("id") or f.get("name") or f"index {i}"
+            name = (f.get("node_id") or f.get("follower_id") or f.get("id")
+                    or f.get("name") or f"index {i}")
             unhealthy.append(name)
             reasons.append(f"follower {name} status={f.get('status')!r}")
     metrics["followers_seen"] = len(followers)
@@ -121,15 +125,6 @@ def find_inbox_dir(explicit):
     return None
 
 
-def existing_inbox(inbox_dir):
-    for p in inbox_dir.glob("*.yml"):
-        if p.name.startswith("TEMPLATE"):
-            continue
-        if p.name.endswith("-health.yml") and INBOX_STEM in p.name:
-            return p
-    return None
-
-
 def dump_yaml(item):
     try:
         import yaml
@@ -139,16 +134,25 @@ def dump_yaml(item):
         return json.dumps(item, indent=2, ensure_ascii=False) + "\n"
 
 
-def make_inbox_item(reasons, metrics, breach_secs, now):
+def make_inbox_item(reasons, metrics, breach_secs, now, escalation=None):
     ts = ts_iso(now)
+    lead = "mddb binlog canary on tony-dell"
+    if escalation == "recurring":
+        lead += (f"re-alerted an ONGOING breach (open {int(breach_secs)}s; "
+                 "re-alert cadence while unresolved)")
+    elif escalation == "escalated":
+        lead += ("flagged an ESCALATION — the breach set changed since the "
+                 "last alert")
+    else:
+        lead += "flagged a sustained breach"
     return {
         "title": "Focus Inbox Item",
         "subtitle": "Health alert for mddb binlog (replication canary)",
         "focus": {
             "label": "mddb-binlog health",
             "text": (
-                f"mddb binlog canary on tony-dell flagged a sustained breach "
-                f"({int(breach_secs)}s > 600s) at {ts}. Reasons: {'; '.join(reasons)}. "
+                f"{lead} ({int(breach_secs)}s > 600s) at {ts}. "
+                f"Reasons: {'; '.join(reasons)}. "
                 f"binlog_size_bytes={metrics.get('binlog_size_bytes')}, "
                 f"lsn_gap={metrics.get('lsn_gap')} "
                 f"(current_lsn={metrics.get('current_lsn')} - "
@@ -168,9 +172,10 @@ def make_inbox_item(reasons, metrics, breach_secs, now):
     }
 
 
-def write_inbox(inbox_dir, reasons, metrics, breach_secs, now):
+def write_inbox(inbox_dir, reasons, metrics, breach_secs, now, escalation=None):
     path = inbox_dir / f"{now.strftime('%Y-%m-%d-%H%M%S')}-{INBOX_STEM}-health.yml"
-    path.write_text(dump_yaml(make_inbox_item(reasons, metrics, breach_secs, now)))
+    path.write_text(dump_yaml(make_inbox_item(reasons, metrics, breach_secs,
+                                              now, escalation)))
     return path
 
 
@@ -182,6 +187,8 @@ def main():
                         help="focus-inbox dir; autodetected from ~/CascadeProjects/chaba* if omitted")
     parser.add_argument("--breach-seconds", type=float, default=600,
                         help="sustained-breach duration before alerting (default 600s)")
+    parser.add_argument("--realert-seconds", type=float, default=43200,
+                        help="re-alert cadence while a breach stays open (default 12h)")
     args = parser.parse_args()
 
     now = utcnow()
@@ -226,28 +233,47 @@ def main():
         result["breach_reasons"] = reasons
         result["detail"] = f"breach {int(breach_secs)}s: {'; '.join(reasons)}"
 
-        if breach_secs > args.breach_seconds and not state.get("alerted"):
-            inbox_dir = find_inbox_dir(args.inbox_dir)
-            existing = existing_inbox(inbox_dir) if inbox_dir else None
-            if existing:
-                result["detail"] += f" | inbox already open: {existing.name}"
-                state["alerted"] = True
-            elif inbox_dir:
-                try:
-                    path = write_inbox(inbox_dir, reasons, metrics, breach_secs, now)
-                    result["detail"] += f" | inbox written: {path.name}"
-                    result["alerted"] = True
-                    state["alerted"] = True
-                    state["alerted_at"] = ts_iso(now)
-                    state["alerted_file"] = path.name
-                except Exception as e:
-                    result["detail"] += f" | inbox write failed: {e}"
-            else:
-                result["detail"] += " | no focus-inbox dir found"
+        if breach_secs > args.breach_seconds:
+            # Alert policy (2026-10-07): the old one-shot latch swallowed real
+            # episodes — a stale *-health.yml left in the inbox suppressed every
+            # later write, so the idc03-migration follower outage never paged.
+            # Now: page on first breach, re-page every --realert-seconds while
+            # it stays open, and page immediately when the reason set changes
+            # (escalation — e.g. a second follower goes unhealthy).
+            alerted_reasons = state.get("alerted_reasons") or []
+            first = not state.get("alerted")
+            escalated = (not first
+                         and sorted(reasons) != sorted(alerted_reasons))
+            due = (not first
+                   and now.timestamp() - (state.get("alerted_epoch") or 0)
+                   > args.realert_seconds)
+            if first or escalated or due:
+                escalation = "new" if first else ("escalated" if escalated
+                                                  else "recurring")
+                inbox_dir = find_inbox_dir(args.inbox_dir)
+                if inbox_dir:
+                    try:
+                        path = write_inbox(inbox_dir, reasons, metrics,
+                                           breach_secs, now,
+                                           None if first else escalation)
+                        result["detail"] += (f" | inbox written ({escalation}): "
+                                             f"{path.name}")
+                        result["alerted"] = True
+                        state["alerted"] = True
+                        state["alerted_epoch"] = now.timestamp()
+                        state["alerted_at"] = ts_iso(now)
+                        state["alerted_file"] = path.name
+                        state["alerted_reasons"] = list(reasons)
+                    except Exception as e:
+                        result["detail"] += f" | inbox write failed: {e}"
+                else:
+                    result["detail"] += " | no focus-inbox dir found"
     else:
         state["breach_since_epoch"] = None
         state["breach_since"] = None
         state["alerted"] = False
+        state["alerted_reasons"] = []
+        state.pop("alerted_epoch", None)
         result["status"] = "healthy"
         result["detail"] = (
             f"binlog_size_bytes={metrics.get('binlog_size_bytes')} "
