@@ -1,0 +1,129 @@
+id: ssot.nest-training
+title: Nest micro-model training loop — lanes, loop owner, promotion gate
+subtitle: >-
+  The agent-owned train→bench→promote cycle for the Nest specialists:
+  corpus deltas become candidates, candidates face the per-specialist
+  suites, and only a gated board request can move one toward prod.
+category: infrastructure
+status: active
+source_of_truth: true
+card: docs/ssot/kanban/cards/nest-micro-training.yml
+created: 2026-10-07
+related:
+  - docs/ssot/infrastructure/ssot.nest-bench.yml          # bench domains
+  - docs/ssot/infrastructure/ssot.nest-brains.yml         # brain bundles
+  - ../ada-pi/tests/bench/suites.yml                      # tier registry
+  - ../ada-pi/tests/bench/topologies.yml                  # models: + lanes:
+  - scripts/ada/nest-train-loop.py                        # loop owner
+
+# ---------------------------------------------------------------------------
+# Model: each specialist owns a decision surface (domains.yml kind) and a
+# three-tier suite (suites.yml): golden (frozen regression), hard
+# (rotates in from corpus), adversarial (frozen attack-shaped). The loop
+# harvests corpus deltas, trains a candidate on the smallest adequate
+# lane, benches candidate vs champ across the suite, publishes a
+# bench/train-* doc, and — only when the gate passes — queues a board
+# request for a human-approved shadow deploy.
+# ---------------------------------------------------------------------------
+
+loop_owner:
+  script: scripts/ada/nest-train-loop.py
+  runs_on: any host with ssh to corpus hosts + a lane endpoint
+           (designed for tony-omen, the GTX1650 lane)
+  stages: 'harvest -> merge -> train -> serve -> bench -> gate -> publish -> queue'
+  state: ~/.local/share/nest/train-loop-state.json
+  candidates: ~/jev-student-candidates/jev-student-v<N>-cand-<ts>
+  never_does: >-
+    deploy, restart a prod unit, edit topologies.yml, or flip
+    ADA_JEV_URL. The promotion gate output is a board request, not an
+    action.
+  corpus_sources:
+    live: idc03:~/.local/share/ada/jev-corpus.jsonl
+          # post-2026-10-05 migration home of the confirm-gate probe rows
+    archive: idc01:~/.local/share/ada/jev-corpus{,-mined,-reviewed}.jsonl
+          # pre-migration archive; merge-corpus dedupes across hosts
+    bench_misses: >-
+      orch-bench --corpus-out rows (diverged -> dropped from training
+      until labeled — that IS the labeling queue)
+    scenario_fails: >-
+      TODO — scenario-report fail docs into labeled cases is not
+      implemented; the loop reports corpus deltas it can train on today.
+  label_gap: >-
+    Diverged corpus rows carry no trustworthy label (regex may be wrong —
+    that's why they diverged). merge-corpus.py drops them from training;
+    reviewed rows become eval-only. The loop reports the pending-label
+    count in every bench doc; closing that gap (hand label or
+    arbiter-assisted review) is what actually grows the corpus.
+
+training_lanes:
+  # registry detail lives in ada-pi tests/bench/topologies.yml `lanes:` —
+  # this is the posture summary.
+  tony-omen-gtx1650: >-
+    default lane. distilbert seq-cls FT ~11 min; gemma-3-1b/270m LoRA via
+    4-bit. Shared GPU — keep runs short, no 4b QLoRA here.
+  colab-burst: >-
+    colab-mcp notebooks (scripts/jev/*-colab.ipynb) for anything over
+    ~3 GB VRAM or multi-epoch distill. Corpus in via jev-corpus-export.py.
+  idc01-cold: >-
+    retired-from-ada VPS stays as cold batch lane: corpus mining, eval
+    sweeps, embedding jobs. Never ada services or mddb writes from idc01.
+    Also holds the pre-migration corpus archive the loop merges from.
+  tony-dell-cpu: >-
+    bench/inference lane, not training (card nest-lane-tony-dell):
+    onnxruntime CPU serve of seq-cls specialists via
+    serve-jev-student-onnx.py (`nest-train-loop.py --lane tony-dell-cpu`
+    or `lane-bench`). Phase-0 2026-10-08 on i7-6700: jev-student-v5
+    fp32 ONNX p50 10.7ms / p95 16.4ms / ~88 rps, accuracy identical to
+    the prod champ — CPU covers distilbert-class serving. Shared busiest
+    box: off-peak only, <10min runs; publishes bench/lane-<ts> docs.
+  tony-dell-igpu: >-
+    parked — HD530 OpenVINO/Vulkan lane is registered in ada-pi
+    topologies.yml `lanes:` but phase-0 CPU numbers already beat the
+    ~50ms p50 bar, so provisioning it adds nothing for seq-cls. Revisit
+    for the gemma-270m specialist via llama.cpp-server (Vulkan), or if
+    dell CPU benches regress.
+
+promotion_gate:
+  rule: >-
+    candidate >= champ on EVERY non-spec tier (golden, hard,
+    adversarial) with zero case-level regressions (no case the champ
+    wins may flip to a miss).
+  on_pass: >-
+    publish bench/train-* doc -> post board request on the owning card
+    -> human approves shadow deploy. Shadow = parallel advisory endpoint
+    (ADA_JEV_URL-style probe), divergence rows accumulate in jev-corpus,
+    jev_advisory ops events + client_noul agreement decide promotion.
+  on_fail: candidate archived under ~/jev-student-candidates, loop exits clean.
+  posture: >-
+    Same as CAM++ speaker shadow (backend/speaker_id.py — parallel
+    encoder, agree/disagree stats, primary untouched) and the
+    client_noul edge lane (pwa/jev-client.js — browser student scores
+    and reports p, the regex still enforces). A new scorer observes and
+    reports; it never enforces until promoted.
+
+registries:
+  suites: >-
+    ada-pi tests/bench/suites.yml — specialist -> tier sets -> sources +
+    rotation + gate policy. `orch-bench.py --suite <name>` consumes it.
+  models: >-
+    ada-pi tests/bench/topologies.yml `models:` — task, checkpoint,
+    corpus version, bench scores, status (train|shadow|prod|retired).
+    jev-student-v5 is the first entry and the current champ.
+  docs: >-
+    mddb ada-ha-scenario-reports key bench/train-<ts> — every loop run
+    publishes one, pass or fail.
+
+open_questions:
+  - >-
+    Who labels the diverged queue? Today: nobody — it accrues. An
+    arbiter-label pass (L2/L3 adjudicate, human spot-check) is the
+    natural next iteration and would turn the loop from retrain-same-
+    labels into learn-from-divergence.
+  - >-
+    Multi-specialist generalization: tool-routing/bank/triage suites are
+    registered but only confirm-gate has a trained incumbent. The next
+    student (gemma-3-1b LoRA, full /v1/systemone) is a colab-lane job.
+  - >-
+    Loop scheduling: manual/dispatch-triggered for now; a weekly timer
+    is fine once the labeling question is answered — otherwise it just
+    re-benches the same labels.
