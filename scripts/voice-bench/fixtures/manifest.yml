@@ -1,0 +1,99 @@
+# Bench fixtures. wav: relative path under fixtures/ (16kHz mono wav).
+# expected_transcript: string the STT should recover (normalized before WER).
+# expected_tool: {tool, args} the LLM stage should emit (null for chitchat/answer judged leniently).
+# lang: en | th. status: active | skipped (+skip_reason).
+fixtures:
+  # --- English: HA device commands ---
+  - id: en-cmd-01
+    lang: en
+    wav: en-cmd-01.wav
+    text: Turn on the living room lights.
+    expected_transcript: turn on the living room lights
+    expected_tool: {tool: ha_service_call, args: {domain: light, service: turn_on, entity_id: light.living_room}}
+  - id: en-cmd-02
+    lang: en
+    wav: en-cmd-02.wav
+    text: Turn off the bedroom fan.
+    expected_transcript: turn off the bedroom fan
+    expected_tool: {tool: ha_service_call, args: {domain: fan, service: turn_off, entity_id: fan.bedroom}}
+  - id: en-cmd-03
+    lang: en
+    wav: en-cmd-03.wav
+    text: Set the thermostat to twenty two degrees.
+    expected_transcript: set the thermostat to twenty two degrees
+    expected_tool: {tool: ha_service_call, args: {domain: climate, service: set_temperature}}
+  - id: en-cmd-04
+    lang: en
+    wav: en-cmd-04.wav
+    text: Open the garage door.
+    expected_transcript: open the garage door
+    expected_tool: {tool: ha_service_call, args: {domain: cover, service: open_cover, entity_id: cover.garage_door}}
+  # --- English: questions needing tool calls / answers ---
+  - id: en-q-01
+    lang: en
+    wav: en-q-01.wav
+    text: What is the temperature in the kitchen?
+    expected_transcript: what is the temperature in the kitchen
+    expected_tool: {tool: answer, args: {}}
+  - id: en-q-02
+    lang: en
+    wav: en-q-02.wav
+    text: Is the front door locked?
+    expected_transcript: is the front door locked
+    expected_tool: {tool: answer, args: {}}
+  - id: en-q-03
+    lang: en
+    wav: en-q-03.wav
+    text: How much power is the washer using right now?
+    expected_transcript: how much power is the washer using right now
+    expected_tool: {tool: answer, args: {}}
+  # --- English: chit-chat ---
+  - id: en-chat-01
+    lang: en
+    wav: en-chat-01.wav
+    text: Good morning, how are you today?
+    expected_transcript: good morning how are you today
+    expected_tool: {tool: chitchat, args: {}}
+  - id: en-chat-02
+    lang: en
+    wav: en-chat-02.wav
+    text: Thank you, that is all for now.
+    expected_transcript: thank you that is all for now
+    expected_tool: {tool: chitchat, args: {}}
+  - id: en-chat-03
+    lang: en
+    wav: en-chat-03.wav
+    text: What is the weather going to be like this afternoon?
+    expected_transcript: what is the weather going to be like this afternoon
+    expected_tool: {tool: answer, args: {}}
+  # --- Thai: STT+LLM only, TTS skipped (no Thai piper voice) ---
+  - id: th-cmd-01
+    lang: th
+    wav: th-cmd-01.wav
+    text: เปิดไฟห้องนั่งเล่น
+    expected_transcript: เปิดไฟห้องนั่งเล่น
+    expected_tool: {tool: ha_service_call, args: {domain: light, service: turn_on}}
+  - id: th-cmd-02
+    lang: th
+    wav: th-cmd-02.wav
+    text: ปิดพัดลมในห้องนอน
+    expected_transcript: ปิดพัดลมในห้องนอน
+    expected_tool: {tool: ha_service_call, args: {domain: fan, service: turn_off}}
+  - id: th-q-01
+    lang: th
+    wav: th-q-01.wav
+    text: อุณหภูมิในห้องครัวตอนนี้เท่าไหร่
+    expected_transcript: อุณหภูมิในห้องครัวตอนนี้เท่าไหร่
+    expected_tool: {tool: answer, args: {}}
+  - id: th-q-02
+    lang: th
+    wav: th-q-02.wav
+    text: ประตูหน้าบ้านล็อกอยู่ไหม
+    expected_transcript: ประตูหน้าบ้านล็อกอยู่ไหม
+    expected_tool: {tool: answer, args: {}}
+  - id: th-chat-01
+    lang: th
+    wav: th-chat-01.wav
+    text: สวัสดีตอนเช้า สบายดีไหม
+    expected_transcript: สวัสดีตอนเช้า สบายดีไหม
+    expected_tool: {tool: chitchat, args: {}}

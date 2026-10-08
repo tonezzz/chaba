@@ -1,0 +1,31 @@
+# Declarative voice-fallback combo definitions.
+# bench.py --combo <id> validates the entry against this schema:
+#   id, stt {engine, model, device, compute_type}, llm {engine, base_url, model},
+#   tts {engine, voice, binary}, orchestrator, host_labels, notes
+combos:
+  cascade-whisper-piper:
+    stt:
+      engine: faster-whisper
+      models: [small, medium]      # both variants benched; OOM falls back to CPU
+      device: cuda
+      compute_type: int8_float16   # GTX 1650 / 4GB — fp16 medium will not fit beside phi3
+    llm:
+      engine: ollama
+      base_url: http://100.75.102.88:11434
+      model: phi3-gguf:latest
+      prompt_template: |
+        You are a Home Assistant voice backend. Reply with a single line of JSON only:
+        {{"tool": "<ha_service_call|answer|chitchat>", "args": {{...}}, "say": "<short spoken reply>"}}
+        For device commands use ha_service_call with args {{domain, service, entity_id}}.
+        For questions use answer with args {{answer}}. For chit-chat use chitchat.
+        User said: {text}
+    tts:
+      engine: piper
+      binary: .bench-tools/piper/piper
+      voice: .bench-tools/voices/en_US-lessac-medium.onnx
+      thai_gap: true               # no Thai piper voice exists — TH output falls back to EN voice (unintelligible) or skip
+    orchestrator: python-async
+    host_labels: [gpu]
+    notes: >
+      Fully-local cascade. Thai STT works (whisper is multilingual) but Thai TTS has
+      no piper voice — th fixtures are scored STT+LLM only, tts marked skipped.
