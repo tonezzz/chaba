@@ -11,7 +11,7 @@ note: 'Tony ask (2026-10-06): Ada should review and take action on the board. De
   Delivered 2026-10-06: kanban-brief.py (T0/T1 — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer)
   + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when checks all passing get auto-closed, bounded check
   vocabulary, kanban_act ops events). Remaining: board-api token + kanban tool group for Ada voice path.'
-updated: 2026-10-08 08:46
+updated: 2026-10-08 10:17
 action:
   type: dispatch
   status: done
@@ -81,5 +81,30 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261008-055425-implement-ada-kanban-access-pe not in origin/main
     — close will block until merged'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'merge-sweep: dispatch/20261008-055425-implement-ada-kanban-access-pe conflicts with origin/main: backend/tool_guide.yml,
+    backend/tools.d/ada_board_write.py, backend/tools.d/ada_track_device.py — merge aborted, card stays for human
+    resolution'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-055425-implement-ada-kanban-access-pe:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-08 11:05
+  from: devin
+  text: 'merge resolved by hand in ada-pi — f2a42b9 pushed to origin/main. Kept the branch''s consolidated
+    kanban tool (full authority matrix + confirm-gate); ported main''s post-base ada_board_write fixes
+    (+/-''-report'' slug tolerance); kept main''s richer ada_track_device desc + ada_market_quote guide
+    entry; ada_board_write stays callable via tool_runner._ALIASES. 898 unit tests pass, tool-lint clean.
+    Not yet deployed to idc03.'
 claim:
   since: 2026-10-08 05:54
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261008-055425-implement-ada-kanban-access-pe: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tool_guide.yml, backend/tools.d/ada_board_write.py, backend/tools.d/ada_track_device.py.
+    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261008-055425-implement-ada-kanban-access-pe by hand,
+    or retry/abandon the card.'
+  status: open
+  at: 2026-10-08 10:17
+  from: chaba

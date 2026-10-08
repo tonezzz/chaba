@@ -1,7 +1,7 @@
 id: ada-cms-discovery-fixes
 title: 'ada-pi: cms_read discovery + reports-index flood + memory-search pollution (liam-e2e fallout)'
 column: review
-updated: 2026-10-08 06:27
+updated: 2026-10-08 10:17
 note: 'From yt-dub-liam-e2e live pass 2026-10-07 (transcript ece770ccb0): Ada could not find the Liam dub though
   all infra was green. Three ada-pi fixes needed: (1) cms_read list ordering/search — action=list returns an unordered
   subset (373 docs; model passed limit=10 and wrongly concluded the page did not exist). Add action=search over
@@ -49,6 +49,15 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261008-060641-ada-pi-cms-read-discovery-repo not in origin/main
     — close will block until merged'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'merge-sweep: dispatch/20261008-060641-ada-pi-cms-read-discovery-repo conflicts with origin/main: backend/realtime_provider.py,
+    backend/tool_guide.yml, backend/tool_runner/cms.py, tests/test_memory_recall_extras.py — merge aborted, card
+    stays for human resolution'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-060641-ada-pi-cms-read-discovery-repo:
+    1 commit(s) conflict with origin/main in'
 action:
   type: dispatch
   status: done
@@ -59,3 +68,12 @@ action:
   verified: false
 claim:
   since: 2026-10-08 06:06
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261008-060641-ada-pi-cms-read-discovery-repo: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/realtime_provider.py, backend/tool_guide.yml, backend/tool_runner/cms.py,
+    tests/test_memory_recall_extras.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261008-060641-ada-pi-cms-read-discovery-repo
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-08 10:17
+  from: chaba

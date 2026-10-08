@@ -28,7 +28,7 @@ spec: "Phase 0 — measure first (don't build on assumption):\n- Instrument ada_
 help: 'Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate). Corpus path: transcripts already record
   tool calls — bank arg + result bank are the labels. Pair with nest-lane-tony-dell for edge-inference numbers;
   adversarial skip cases are the differentiator vs a naive always-search baseline.'
-updated: 2026-10-08 09:55
+updated: 2026-10-08 10:11
 action:
   type: dispatch
   status: running
@@ -57,5 +57,24 @@ comms:
     idc03, harvested by nest-train-loop like jev-corpus; (2) Ada self-report — a routed search that returns no hits
     records an outcome row automatically (bank_miss); (3) Tony corrections — transcript mining tags the preceding
     search call when the next user turn corrects her (wrong-bank / sho'
+- at: 2026-10-08 10:11
+  from: devin
+  text: 'Phase 0 measured — the pause is ~90% remote query-embed, not fan-out. Probe replay vs prod mddb: cold 23-bank
+    fan-out p50 ~1.6s, warm ~114ms, server search ~1ms. 7d journal (1366 calls): p50 1.33s, 83% bank=all, named-bank
+    only ~21% faster, 18% zero-hit calls still pay ~1s. Verdict: router alone saves ~21% cold p50 — the >=40% target
+    needs skip verdicts (18%+ of calls) + warm paths; /v1/cross-search already embeds once for N collections. Phase
+    1 landed on ada-pi branch dispatch/20261008-bank-rou'
+- at: 2026-10-08 10:11
+  from: devin
+  text: 'raised request approve-push-of-ada-pi-branch-dispatch-2-65f0ef: Approve push of ada-pi branch dispatch/20261008-bank-router
+    to origin + deploy-ada.sh on idc03? Changes are read-only te'
 ownership:
   owner: tony
+requests:
+- id: approve-push-of-ada-pi-branch-dispatch-2-65f0ef
+  ask: Approve push of ada-pi branch dispatch/20261008-bank-router to origin + deploy-ada.sh on idc03? Changes are
+    read-only telemetry (two logger.info timing lines in memory search) + tests/bench files only — no behavior change.
+    Deploy starts the 24h production wall-time measurement the card asks for.
+  status: open
+  at: 2026-10-08 10:11
+  from: devin

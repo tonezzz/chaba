@@ -3,7 +3,7 @@ title: 'Nest lane: tony-dell iGPU/CPU — edge-inference bench for specialists'
 brief: Dell's Intel HD 530 iGPU (OpenVINO/Vulkan-capable) and CPU are candidate edge lanes for Nest specialist inference
   — not training. Phase 0 times the current champion on dell CPU for a real number; then lane entries, a serve shim,
   and bench+CMS wiring make dell a first-class lane whose results trend in the bench-edge CMS page.
-column: doing
+column: review
 priority: medium
 program: chaba-nest
 area: infrastructure
@@ -25,11 +25,14 @@ spec: "Phase 0 — baseline number (cheap, do first):\n- Serve the current champ
 help: 'Lane registry lives in ada-pi tests/bench/topologies.yml `lanes:`. Publish contract: MDDB ada-ha-scenario-reports,
   key bench/<kind>-<ts>, meta kind=benchmark. CMS generator: scripts/eye/bench-edge-cms.py (timer on dell). Loop
   owner: scripts/ada/nest-train-loop.py.'
-updated: 2026-10-08 09:50
+updated: 2026-10-08 10:17
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 : `docs/ssot/jobs/infrastructure/2026-10-08-nest-lane-tony-dell.yml`; board updated. | devin-task-20261008-024035-phase-0-baseline-number-cheap-.service:
+    Consumed 1min 15.045s CPU time over 29min 25.226s wall clock time, 752.7M memory peak.'
+  verified: false
 comms:
 - at: 2026-10-08 06:15
   from: devin
@@ -50,5 +53,39 @@ comms:
   text: 'scoped: champ onnx (v5) already on dell under apps/jev-bench/models — no export needed. Plan: onnxruntime
     serve shim + orch-bench golden/hard + 200-call probe -> bench/lane-* doc; then lanes in topologies.yml + ssot.nest-training,
     --lane in nest-train-loop, lanes table in bench-edge-cms.'
+- at: 2026-10-08 10:09
+  from: devin
+  text: 'DONE (all phases). Phase-0 on dell CPU: jev-student-v5 fp32 ONNX via onnxruntime — probe p50 10.5ms/p95
+    20.7ms (n=200), confirm-gate 49/66 identical to prod champ → iGPU lane registered as status:parked (CPU beats
+    the 50ms bar). Published bench/lane-20261008-100402; bench-edge CMS page republished with a Nest serve lanes
+    table. Code: nest-train-loop.py --lane + lane-bench cmd (local or rsync+ssh remote serve bound tailnet-only),
+    serve-jev-student-onnx.py + lane-probe.py in ada-pi, lanes in topol'
+- at: 2026-10-08 10:10
+  from: mn01
+  text: 'finished (ok): exit=0 : `docs/ssot/jobs/infrastructure/2026-10-08-nest-lane-tony-dell.yml`; board updated.
+    | devin-task-20261008-024035'
+- at: 2026-10-08 10:10
+  from: chaba
+  text: 'auto-merge conflicts: scripts/ada/nest-train-loop.py, scripts/eye/bench-edge-cms.py — card stays in review
+    for manual resolution'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'merge-sweep: dispatch/20261008-024035-phase-0-baseline-number-cheap- conflicts with origin/master: dispatch-outcome.md,
+    docs/ssot/infrastructure/ssot.nest-training.yml, scripts/ada/nest-train-loop.py, scripts/eye/bench-edge-cms.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-08 10:17
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-024035-phase-0-baseline-number-cheap-:
+    2 commit(s) conflict with origin/master '
 ownership:
   owner: tony
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261008-024035-phase-0-baseline-number-cheap-: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: dispatch-outcome.md, docs/ssot/infrastructure/ssot.nest-training.yml,
+    scripts/ada/nest-train-loop.py, scripts/eye/bench-edge-cms.py. Merge mn01:/home/tony/CascadeProjects/dispatch-wt-20261008-024035-phase-0-baseline-number-cheap-
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-08 10:17
+  from: chaba
