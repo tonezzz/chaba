@@ -1,0 +1,54 @@
+id: ada-memory-write-caps
+title: 'Ada memory: hard size caps with loud rejection'
+brief: >-
+  Memory writes currently succeed silently regardless of size — oversized
+  entries and unbounded bank growth degrade recall quality. This gives
+  every write a hard character cap that fails loudly (structured error
+  telling the model to shorten or split), like Hermes' 2,200-char limit
+  that rejects instead of truncating.
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+pipeline: ci
+autonomy: t2
+metric: >-
+  A write over the cap returns ok:false with the measured size, the cap,
+  and an actionable hint (split into N entries / shorten by K chars);
+  writes at/under the cap pass unchanged. Bank-level doc count growth
+  rate measurable before/after.
+verify: >-
+  On ada-dev: ada_remember with a 5,000-char payload -> refused with
+  size/cap/hint fields; a 1,000-char payload -> lands normally; a
+  boundary write at exactly the cap -> lands.
+spec: |
+  Where: ada-pi repo — extend backend/memory_write_guard.py (from
+  ada-memory-injection-scan; if that card isn't done, create the module
+  with caps only and let the scan card merge in later).
+
+  Caps (config in the module header; per-bank override map allowed):
+    - entry body: 2,000 chars default (Hermes uses ~2,200 for a whole store;
+      ours is per-entry)
+    - key/title fields: 160 chars
+    - bank doc count: warn threshold logged as event, not a hard stop
+      (banks legitimately grow; the sweep jobs handle decay)
+
+  Refusal contract — make the error USEFUL, not just a stop:
+    {ok: false, error: "memory_cap", size: N, cap: M,
+     hint: "shorten by K chars or split into N entries"}
+  so the model can self-correct in the same turn instead of giving up.
+
+  Edge cases: supersede/append paths (vocab_note) must count the FINAL
+  merged size, not the delta. guest_remember inherits the same caps.
+
+  Ship with --selftest covering over/at/under boundary and merged-append.
+expected_goals:
+  - id: selftest-passes
+    check: "command python3 backend/memory_write_guard.py --selftest expect SELFTEST-OK"
+  - id: guard-wired
+    check: "command grep -l memory_write_guard backend/tool_runner/memory.py expect memory.py"
+links:
+  - ada-memory-injection-scan
+  - ada-memory-staged-writes
+  - ada-context-budget
+blocked_by: []

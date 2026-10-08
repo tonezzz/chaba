@@ -1,0 +1,59 @@
+id: ada-memory-injection-scan
+title: 'Ada memory: pre-write injection/exfiltration scan'
+brief: >-
+  Ada reads untrusted text (LINE messages, guest chat, transcripts) and can
+  save it into long-term memory banks. Nothing currently screens that content
+  before it lands. This adds a scan step that refuses memory writes containing
+  injection phrases, credential-shaped strings, or invisible Unicode —
+  the same class of check Hermes runs before accepting a memory entry.
+column: backlog
+priority: high
+created: 2026-10-08
+updated: 2026-10-08
+pipeline: ci
+autonomy: t2
+metric: >-
+  A seeded injection attempt via ada_remember/guest_remember returns a
+  structured refusal (not a silent write), is logged as an ada event,
+  and never reaches MDDB — while a normal memory write is unaffected.
+verify: >-
+  From an ada-dev session: attempt a memory save whose text contains a
+  classic injection payload ("ignore previous instructions", a fake API
+  key, a zero-width joiner string) — each refused with reason; a benign
+  save succeeds. Scan runs pre-write, so MDDB collections show no
+  injected doc.
+spec: |
+  Where: ada-pi repo — a new backend/memory_write_guard.py module, called
+  from tool_runner/memory.py (ada_remember, guest_remember,
+  guest_remember_private, vocab_note paths) before the MDDB upsert.
+
+  Scan classes (keep the list data-driven — a pattern table at the top of
+  the module, not scattered regex):
+    1. prompt-injection phrases ("ignore previous instructions",
+       "system prompt", "you are now", role-spoof prefixes)
+    2. credential-shaped strings (AKIA/openai/sk-/ghp_ token regexes,
+       "BEGIN PRIVATE KEY", password-style assignments)
+    3. invisible/bidi Unicode (ZWSP, ZWJ where unexpected, RTL overrides)
+    4. oversized homoglyph/whitespace floods
+
+  Behavior: refuse with {ok: false, reason, matched_class} so the model can
+  tell the caller plainly; log a memory-scan-refused event to the ada
+  events collection (identity, bank, class — never the payload itself).
+  Identity-aware: trusted identities (full:true) still scanned — the scan
+  guards the bank, not just the user.
+
+  Ship with --selftest exercising all classes; wire the class list into
+  ssot.apps.ada-memory-banks.yml context so the rule is documented in SSOT.
+
+  Reuse, don't reinvent: keep it string-level and dependency-free like
+  render-memory.py — no model call in the write path.
+expected_goals:
+  - id: guard-module-exists
+    check: "file-exists backend/memory_write_guard.py"
+  - id: selftest-passes
+    check: "command python3 backend/memory_write_guard.py --selftest expect SELFTEST-OK"
+links:
+  - ada-memory-write-caps
+  - ada-memory-staged-writes
+  - ada-ha-hardening
+blocked_by: []
