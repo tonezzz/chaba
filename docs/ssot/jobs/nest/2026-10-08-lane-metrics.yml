@@ -1,0 +1,40 @@
+title: 'Nest lanes: wire /metrics into openjev + jev-student servers'
+subtitle: All 5 systemone lanes now expose monotonic counters — hub decisions-Δ and esc% columns live
+icon: radio
+
+decision:
+  summary: >
+    Vendored chaba's scripts/jev/lane_metrics.py (stdlib-only, verbatim)
+    into openjev/lane_metrics.py and wired LaneMetrics.observe() into the
+    /v1/systemone handler (elapsed_s, questions=len(answers),
+    escalations=stub-answer count) plus attach(app) at create_app().
+    Applied to all three checkouts (tony-omen, idc02, idc03 — editable
+    installs, so checkout = served code) and rebuilt the
+    localhost/openjev:cpu container image on idc03.
+    ~/jev-student/serve.py on idc03 (the distilbert confirm gate — a
+    snowflake outside any repo) got the same wiring with escalations =
+    non-noul questions, matching serve-seqcls.py semantics.
+  verified: >
+    GET /metrics returns the documented shape on every lane;
+    /v1/systemone roundtrips increment requests/questions/escalations
+    correctly (stub choice answer on the distilbert gate counted as
+    escalation). nest-overview.py --dry-run shows real counters with ↻
+    reset marks on all jev lanes; only ollama keeps "no metrics"
+    (third-party, expected).
+
+lanes:
+  - {id: heavy-b,     host: tony-omen, port: 8777, unit: open-jev.service,         code: '~/CascadeProjects/open-jev checkout (uv run openjev serve)'}
+  - {id: student-a,   host: tony-omen, port: 8778, unit: open-jev-student.service, code: '~/CascadeProjects/open-jev checkout'}
+  - {id: heavy-a,     host: idc02,     port: 8777, unit: open-jev.service,         code: '~/CascadeProjects/open-jev checkout (.venv editable)'}
+  - {id: jev-student, host: idc03,     port: 8778, unit: jev-student.service,      code: '~/jev-student/serve.py — NOT in the open-jev repo, snowflake'}
+  - {id: student-b,   host: idc03,     port: 8779, unit: openjev-student.service,  code: 'quadlet, image localhost/openjev:cpu — rebuilt 2026-10-08'}
+
+notes: >
+  open-jev changes are UNCOMMITTED in all three checkouts
+  (github.com/daseinlabs/open-jev is upstream; no push per dispatch
+  policy). idc02 also carries a pre-existing uncommitted bf16-on-cpu RAM
+  patch in openjev/torch_backend.py — left untouched. The idc03 checkout
+  now has an (untracked) Containerfile copied from tony-omen so the
+  image rebuild is reproducible. Omen units were started for
+  verification and left running; open-jev-leash.timer re-parks them
+  hourly past 2.5h uptime.
