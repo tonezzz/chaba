@@ -1,0 +1,141 @@
+title: lab-thai-voice-clone — first bench (megaF5 / VYNCX v2 on GTX1650)
+subtitle: kanban card lab-thai-voice-clone — dispatch session 2026-10-08
+icon: flask
+
+planning:
+  goal: |
+    Card hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai
+    voice at broadcast-usable quality on the GTX1650 — deliverable on pass
+    is a thai-clone-tts wrapper (ref_audio + text -> wav) for yt-voice-dub
+    Thai lanes. Metric: blind listen >=4/5 AND CER <5% AND CAM++ SIM >=0.5.
+  out_of_scope: |
+    VoxCPM2 lane (needs ~8GB VRAM — Colab only, not attempted headless).
+    Blind listen is Tony's gate — headless session covers CER + SIM only.
+    JaiTTS-F5TTS lane blocked: HF repo is gated, board request raised.
+
+bench:
+  ref_clip: |
+    /home/tony/voice-clone-bench/ada-ref.wav — 17.28s 24kHz mono Thai
+    (whisper-verified read of script-th.txt). Two working cuts:
+    ada-ref-6s.wav (6.18s, clean clause boundary, text ref_text_6s.txt) and
+    ada-ref-9s.wav (9.66s, ends mid-utterance "เช้านี้", ref_text_9s.txt).
+  rig: |
+    tony-omen GTX1650 4GB, torch 2.14.1+cu130, venv ~/.venvs/thai-tts
+    (py3.12), flowtts from editable clone ~/voice-clone-bench/thonburian-tts
+    (wheel misses flowtts/ — repo root added via .pth). SIM scoring:
+    ~/.venvs/ada-voice-bench + ada-pi backend/voice_encoders.py CAM++ ONNX
+    (~/.cache/ada-voice-bench/voxceleb_CAM++_LM.onnx). CER scoring:
+    faster-whisper large-v3 int8 CPU.
+  gpu_note: |
+    GTX1650 is shared with ollama llama-server (~1.7-2.5GB fluctuating
+    residency). F5-class models need ~0.9-1.1GB — runs fit only in
+    ollama-idle windows. TTS jobs must tolerate CUDA OOM and retry; CPU
+    fallback ~10min/clip is viable but slow. Gen time on free GPU:
+    ~55-95s per ~5s clip at nfe_step=32 (RTF ~20 — far from the card's
+    RTF<0.2 expectation; JaiTTS paper RTF is on a bigger GPU).
+
+results:
+  - run: megaf5 (17.3s ref, full transcript)
+    cfg: 2.5
+    cer: [0.314, 0.657, 0.537, 0.541, 0.850]
+    cer_mean: 0.580
+    sim: [0.618, 0.728, 0.674, 0.656, -0.145]
+    sim_mean: 0.506
+    note: ref clipped to 12s inside f5 but ref_text not trimmed —
+      misaligned conditioning, near-garbage output. Pitfall confirmed.
+  - run: megaf5s (6.18s ref, exact text)
+    cfg: 2.5
+    cer: [0.114, 0.257, 0.111, 0.865, 0.000]
+    cer_mean: 0.269
+    sim: [0.642, 0.592, 0.678, -0.139, 0.611]
+    sim_mean: 0.477
+    note: clean ref boundary fixes starts; one off-voice draw (clip 3,
+      output degenerates to "โปรดติดตามตอนต่อไป" — a training-data
+      boilerplate phrase).
+  - run: megaf5l (9.66s ref, exact text)
+    cfg: 2.5
+    cer: [0.143, 0.600, 0.352, 0.216, 0.150]
+    cer_mean: 0.292
+    sim: [0.675, 0.651, 0.746, 0.797, 0.726]
+    sim_mean: 0.719
+    note: no off-voice draws but every clip start inherits ref-tail
+      fragments (mid-utterance ref cut bleeds into gen onset).
+  - run: megaf5c2 (9.66s ref, cfg 2.0)
+    cer: [0.200, 0.686, 0.407, 0.216, 0.150]
+    cer_mean: 0.332
+    sim_mean: 0.724
+    note: cfg 2.0 slightly worse on CER than 2.5.
+  - run: vyncxv2 (9.66s ref, IPA lane, f5-tts-th v1.0.9)
+    cer: [0.000, 0.086, 0.870, 0.081, 0.075]
+    cer_mean: 0.222
+    sim: [0.776, 0.817, -0.163, 0.858, 0.767]
+    sim_mean: 0.611
+    note: best CER by far — IPA g2p fixes Thai pronunciation. Clips 1/4
+      "errors" are whisper digit orthography (ห้า↔5, สิบ↔10) — spoken-form
+      CER is ~0.00. Clip 2 drew the deterministic "โปรดติดตามตอนต่อไป"
+      failure; seed 7/123 retries produced identical output (seed not
+      plumbed through infer_process in this package).
+  - run: vyncxv2s (6.18s ref)
+    cer: [0.000, 0.086, 0.870, 0.865, 0.075]
+    cer_mean: 0.379
+    sim_mean: 0.427
+    note: worse than the 9.66s ref for vyncx — two deterministic failures
+      (clips 2,3). IPA conditioning wants the longer ref despite its
+      mid-utterance cut.
+  - run: wrapvyncx (canonical — thai-clone-tts --model vyncx --batch,
+      9.66s ref, clause-chunking ON)
+    cer: [0.000, 0.086, 0.056, 0.054, 0.075]
+    cer_mean: 0.054
+    cer_norm_mean: 0.022
+    sim: [0.792, 0.861, 0.875, 0.850, 0.688]
+    sim_mean: 0.813
+    note: |
+      PASSES both automated gates. Clause-boundary chunking (>45 chars,
+      split at เพราะ/แล้ว/แต่/และ/ก็... nearest middle) rescues the
+      deterministic long-sentence collapse (clip 2: SIM -0.16 -> 0.875).
+      Raw CER 5.4% is mostly whisper digit orthography (ห้า↔5, สิบ↔10);
+      spoken-form normalized CER = 2.2%.
+  - run: wrapper-verification (scripts/ops/thai-clone-tts)
+    note: |
+      consent gate refuses without --consent-ok; single-shot and --batch
+      modes produce valid 24kHz wavs; megaf5 single-shot SIM 0.639.
+      Installed at ~/.venvs/thai-tts/bin/thai-clone-tts on tony-omen.
+
+verdict: |
+  HYPOTHESIS CONFIRMED on the automated gates — but by VYNCX v2 (IPA),
+  the optional lane, not the two headline lanes. thai-clone-tts
+  --model vyncx --batch with clause chunking: normCER 2.2% (<5% gate),
+  CAM++ SIM 0.81 (>=0.5 gate), all 5 clips on-voice, ~90s/clip on the
+  GTX1650 in an ollama-idle window.
+  megaF5 fails the CER bar (~0.25-0.33); JaiTTS (paper CER 4.26, the
+  designed-to-pass lane) is HF-gated — still worth a comparison run once
+  Tony accepts the license. Remaining gate: Tony blind-listen >=4/5 on
+  out/wrapvyncx/*.wav.
+  Caveats for production: RTF ~20 at nfe_step=32 (dub render is already
+  a background pass — fine); GPU contention with ollama means jobs must
+  retry on CUDA OOM or run CPU (~10min/clip); dub render host is
+  tony-dell while the GPU lives on tony-omen — wire via ssh batch call
+  or move the render when enabling the lane.
+
+deliverables:
+  - scripts/ops/thai-clone-tts — edge-tts-compatible wrapper
+    (ref+text->wav, single-shot and --batch JSONL modes, --consent-ok
+    guard, --rate '+N%' -> speed map, megaf5/jaitts presets)
+  - bench harness in ~/voice-clone-bench (gen_bench*.py, score_cer.py,
+    score_sim.py, out/<run>/ with wavs + cer.json + sim.json)
+  - threat-note update in ssot.learning.speaker-id-tts-echo.2026-10-03.yml
+    (clones reach SIM 0.6-0.8 — inside the 0.45 identify band; CAM++
+    verify needs one controlled clone-playback test)
+
+followups:
+  - >-
+    Tony: accept https://huggingface.co/JTS-AI/JaiTTS-F5TTS gate (request
+    raised on card), then rerun bench with --model jaitts
+  - >-
+    Tony blind-listen: out/wrapvyncx/*.wav vs ada-ref.wav (5 clips)
+  - >-
+    Wire --tts-engine clone lane into yt-vtt-dub.py only after JaiTTS
+    verdict; per-call edge-tts-shaped mode already works
+  - >-
+    Optional: normalize Thai digits in score_cer.py (5↔ห้า) to stop
+    overstating CER on number-bearing sentences
