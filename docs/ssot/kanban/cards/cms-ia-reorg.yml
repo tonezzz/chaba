@@ -1,0 +1,56 @@
+id: cms-ia-reorg
+title: 'CMS information architecture — group ada-cms-pages by real use, fix dup keys'
+brief: >-
+  ada-cms-pages has grown flat: ~100+ pages mixing reports, bench trends,
+  camera pages, research notes, and one-offs — several keys duplicated.
+  Assess the real navigation Tony and Ada use, group pages into sections,
+  fix duplicate keys, and set a naming/grouping standard so new pages land
+  in the right place.
+column: backlog
+priority: medium
+program: reports
+area: cms
+note: >-
+  Observed 2026-10-08: search of ada-cms-pages shows dup keys
+  (ada-dev-lab-plan, bloat-report, cam-* doubled), and one flat namespace
+  spanning ada-*, bench-*, *-report, cam-*, plus singletons. The CMS viewer
+  (/apps/ha/ada-tony/cms/) has no sectioning. The query-cache experiment's
+  results land here as bench/cache-* docs — structure should be fixed
+  before more generated families arrive.
+spec: |
+  1. Inventory: dump all ada-cms-pages keys + meta.kind/domain, cluster by
+     use (reports, bench/metrics, ops status/monitors, camera pages,
+     research notes, one-offs). Report the real groups, not aspirational
+     ones — base it on what actually exists.
+  2. Dedup: resolve duplicate keys (keep newest by updated, verify content
+     diff first — if identical, delete the dup; if diverged, merge and
+     redirect).
+  3. Naming/grouping standard in ssot (docs/ssot/infrastructure/ssot.cms.yml
+     or extend an existing node): page-kind prefixes (report-, bench-,
+     cam-, status-, note-), meta.kind/domain values enumerated, and which
+     nav section each maps to.
+  4. Viewer: add sectioned nav (tabs or grouped sidebar) to the cms app —
+     groups derived from meta.kind/domain, not hardcoded.
+  5. reports-index regenerates grouped; producers writing new page families
+     get the standard in their help/spec.
+  Acceptance:
+  - zero duplicate keys; every page tagged kind+domain; viewer shows
+    sections; reports-index grouped; standard committed to ssot so the
+    next generated page family lands sorted.
+help: >-
+  CMS = MDDB ada-cms-pages collection + viewer at /apps/ha/ada-tony/cms/
+  (Caddy /apps/ route). Generator examples: scripts/eye/bench-edge-cms.py,
+  kanban-cms.py, scripts/lib/cms_index.py. Check how reports-index is
+  generated before adding grouping.
+updated: 2026-10-08
+action:
+  type: dispatch
+  status: idle
+comms:
+- at: 2026-10-08 10:05
+  from: devin
+  text: 'filed from Tony — CMS group/tab reorg per real use. Dup keys already
+    visible in ada-cms-pages. Not queued: better run after tonight''s
+    dispatch wave drains (same-repo serialization).'
+ownership:
+  owner: tony

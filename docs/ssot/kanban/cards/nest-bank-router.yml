@@ -1,65 +1,61 @@
 id: nest-bank-router
 title: 'Nest specialist: memory-bank router — cut Ada''s memory-query pause'
-brief: >-
-  Train a micro-specialist that routes a user request to the right MDDB
-  memory bank(s) — or says "no memory needed" — instead of the current
-  bank='all' fan-out across every bank. Targets Ada's audible pause on
-  memory questions. Includes the bench suite so it joins the continuous
-  train->bench->promote loop.
-column: backlog
+brief: Train a micro-specialist that routes a user request to the right MDDB memory bank(s) — or says "no memory
+  needed" — instead of the current bank='all' fan-out across every bank. Targets Ada's audible pause on memory questions.
+  Includes the bench suite so it joins the continuous train->bench->promote loop.
+column: doing
 priority: high
 program: chaba-nest
 area: ada-tools
-note: >-
-  Today ada_memory_search defaults bank='all' — fan-out over every bank
-  (memory_ops.memory_search, backend/tool_runner/memory.py). The pause Tony
-  hears is embed latency + N vector searches + LLM tool-turn overhead. A
-  router cuts the fan-out to 1-2 banks and can answer "no memory" outright —
-  removing the whole path on non-memory turns.
-spec: |
-  Phase 0 — measure first (don't build on assumption):
-  - Instrument ada_memory_search: log wall-time split (query embed, per-bank
-    vector search, total) for ~a day of real calls. If embed latency
-    dominates (gemini-ollama-proxy queue), the router only partly helps —
-    the doc should say so and weigh "skip embed entirely" wins separately.
-  Phase 1 — corpus + suite (the reusable deliverable):
-  - Corpus: mine ada transcripts/session logs for every ada_memory_search
-    call — (utterance, bank arg, which bank produced the cited hit) = free
-    labeled cases. Augment with hand-labeled no-memory utterances.
-  - Suite in ada-pi tests/bench/: suites.yml entry `bank-router` with
-    golden (query->bank hits), hard (ambiguous cross-bank), adversarial
-    (should-not-query: weather, small talk, live-data asks -> must predict
-    "skip"). Register in domains.yml as a decision surface.
-  Phase 2 — model:
-  - distilbert multi-label seq-cls (bank set + skip label) or gemma-270m
-    head — target <20ms CPU inference, fits the tony-omen-gtx1650 train
-    lane and the planned tony-dell lane.
-  Phase 3 — wire + continuous:
-  - ada_memory_search accepts a routed bank hint (shadow first: log router
-    verdict vs bank='all' outcome, divergence -> corpus); promote only via
-    the promotion gate after shadow rows prove no recall loss.
-  - Publish bench/train-* doc per loop contract; lane meta rides the
-    nest-lane-tony-dell extension when it lands.
-  Acceptance:
-  - bench suite exists + champ passes; shadow verdicts show bank='all'
-    recall preserved on routed subset; measured p50 memory-search latency
-    reduced >=40% on routed turns; skip verdicts verified zero-regret.
-help: >-
-  Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate).
-  Corpus path: transcripts already record tool calls — bank arg + result
-  bank are the labels. Pair with nest-lane-tony-dell for edge-inference
-  numbers; adversarial skip cases are the differentiator vs a naive
-  always-search baseline.
-updated: 2026-10-08
+note: Today ada_memory_search defaults bank='all' — fan-out over every bank (memory_ops.memory_search, backend/tool_runner/memory.py).
+  The pause Tony hears is embed latency + N vector searches + LLM tool-turn overhead. A router cuts the fan-out
+  to 1-2 banks and can answer "no memory" outright — removing the whole path on non-memory turns.
+spec: "Phase 0 — measure first (don't build on assumption):\n- Instrument ada_memory_search: log wall-time split\
+  \ (query embed, per-bank\n  vector search, total) for ~a day of real calls. If embed latency\n  dominates (gemini-ollama-proxy\
+  \ queue), the router only partly helps —\n  the doc should say so and weigh \"skip embed entirely\" wins separately.\n\
+  Phase 1 — corpus + suite (the reusable deliverable):\n- Corpus: mine ada transcripts/session logs for every ada_memory_search\n\
+  \  call — (utterance, bank arg, which bank produced the cited hit) = free\n  labeled cases. Augment with hand-labeled\
+  \ no-memory utterances.\n- Suite in ada-pi tests/bench/: suites.yml entry `bank-router` with\n  golden (query->bank\
+  \ hits), hard (ambiguous cross-bank), adversarial\n  (should-not-query: weather, small talk, live-data asks ->\
+  \ must predict\n  \"skip\"). Register in domains.yml as a decision surface.\nPhase 2 — model:\n- distilbert multi-label\
+  \ seq-cls (bank set + skip label) or gemma-270m\n  head — target <20ms CPU inference, fits the tony-omen-gtx1650\
+  \ train\n  lane and the planned tony-dell lane.\nPhase 3 — wire + continuous:\n- ada_memory_search accepts a routed\
+  \ bank hint (shadow first: log router\n  verdict vs bank='all' outcome, divergence -> corpus); promote only via\n\
+  \  the promotion gate after shadow rows prove no recall loss.\n- Publish bench/train-* doc per loop contract;\
+  \ lane meta rides the\n  nest-lane-tony-dell extension when it lands.\nAcceptance:\n- bench suite exists + champ\
+  \ passes; shadow verdicts show bank='all'\n  recall preserved on routed subset; measured p50 memory-search latency\n\
+  \  reduced >=40% on routed turns; skip verdicts verified zero-regret.\n"
+help: 'Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate). Corpus path: transcripts already record
+  tool calls — bank arg + result bank are the labels. Pair with nest-lane-tony-dell for edge-inference numbers;
+  adversarial skip cases are the differentiator vs a naive always-search baseline.'
+updated: 2026-10-08 09:55
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-omen
 comms:
 - at: 2026-10-08 06:25
   from: devin
-  text: 'filed from Tony''s question — Ada''s pause on memory queries. Router
-    specialist = second Nest decision surface after jev-student; suite design
-    reuses the golden/hard/adversarial tier pattern. Phase 0 instruments the
-    real latency split before any model work.'
+  text: filed from Tony's question — Ada's pause on memory queries. Router specialist = second Nest decision surface
+    after jev-student; suite design reuses the golden/hard/adversarial tier pattern. Phase 0 instruments the real
+    latency split before any model work.
+- at: 2026-10-08 09:49
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 09:49
+  from: chaba
+  text: started devin-task-20261008-094913-phase-0-measure-first-don-t-bu on tony-omen (dispatch)
+- at: 2026-10-08 09:50
+  from: devin
+  text: 'starting: card is ada-pi work but dispatch gave a chaba worktree — creating an ada-pi dispatch worktree
+    for code + using chaba wt for the job trail. Phase 0 first: find memory.py + existing timing telemetry, then
+    measure the embed/vector split directly.'
+- at: 2026-10-08 09:55
+  from: devin
+  text: 'feedback-loop addendum (phases 2-3): four signal channels -> corpus: (1) shadow-vs-live divergence rows
+    auto-logged per routed query (query, predicted banks, outcome) -> ~/.local/share/ada/router-corpus.jsonl on
+    idc03, harvested by nest-train-loop like jev-corpus; (2) Ada self-report — a routed search that returns no hits
+    records an outcome row automatically (bank_miss); (3) Tony corrections — transcript mining tags the preceding
+    search call when the next user turn corrects her (wrong-bank / sho'
 ownership:
   owner: tony

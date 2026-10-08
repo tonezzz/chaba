@@ -1,0 +1,70 @@
+id: nest-query-cache
+title: 'Semantic query cache — Weaviate (or MDDB) layer for repeat memory queries'
+brief: >-
+  Add a semantic cache in front of ada_memory_search: store {query embedding
+  -> result} so a repeated or paraphrased question returns instantly instead
+  of re-running embed + multi-bank vector search. Includes the cache-policy
+  standard (what may be cached, TTLs, invalidation) and a bench suite so hit
+  quality is measured continuously in the Nest loop.
+column: backlog
+priority: medium
+program: chaba-nest
+area: ada-tools
+note: >-
+  Weaviate has no native query cache — implement it as a collection
+  (query_embedding + bank scope + payload + TTL). Alternative: same pattern
+  inside MDDB as a query-cache collection — one less moving part, but
+  Weaviate keeps the experiment isolated from the memory store. Decide in
+  phase 0 from the latency data — whichever hosts it, the contract is the
+  same. Sibling card: nest-bank-router (router covers fresh queries; cache
+  covers repeats — the instrumentation shows the split).
+spec: |
+  Phase 0 — prove the case first:
+  - From the nest-bank-router instrumentation: what fraction of real memory
+    queries are near-repeats of earlier queries? If <~15%, the cache is a
+    niche win — scope it accordingly. Publish the distribution in the doc.
+  Phase 1 — cache-policy standard (the durable artifact):
+  - Cacheable: curated memory banks (read-heavy, write-light), CMS page
+    lookups, report summaries.
+  - Never cache: live state (sensors/entities, "is X on"), time-sensitive
+    asks ("today/latest/now"), per-turn session state.
+  - Key = normalized query embedding + bank scope + speaker scope.
+    Hit threshold tunable (start cosine >=0.92). TTL per bank class;
+    curated banks additionally invalidate on ada_remember writes to that
+    bank (version-stamp per bank, bump on write — no per-entry eviction
+    needed).
+  Phase 2 — implementation:
+  - query-cache collection in Weaviate (or MDDB per phase-0 call):
+    {query_vec, bank_scope, payload, bank_version, ts, ttl}.
+  - ada_memory_search: check cache first (single embed + one lookup);
+    hit -> return; miss -> real path -> store result.
+  Phase 3 — bench suite `query-cache` in ada-pi tests/bench/:
+  - golden: exact repeats + obvious paraphrases -> must hit (and return
+    the same result).
+  - hard-negative: similar-but-different queries ("what did I ask Ada
+    yesterday" vs "what did Ada promise yesterday") -> must NOT hit.
+  - freshness: query issued after a bank write -> must not serve stale.
+  - report: hit-rate, false-hit rate, latency saved p50, staleness events.
+  Acceptance:
+  - policy doc in ssot; suite exists and champ config passes all tiers;
+    measured p50 on repeat queries reduced >=80%; zero stale answers in
+    freshness tier; results publish bench/cache-* docs to
+    ada-ha-scenario-reports (CMS rides the bench-edge extension).
+help: >-
+  Reuses the bank-router corpus (same transcripts). Threshold is a tunable
+  the Nest loop can bench per candidate config — hit-rate vs false-hit is
+  the classic cache tradeoff curve; plot it. Weaviate MCP server
+  (mcp-weaviate) already exists for experimentation.
+updated: 2026-10-08
+action:
+  type: dispatch
+  status: idle
+comms:
+- at: 2026-10-08 09:55
+  from: devin
+  text: 'filed from Tony''s question — can Weaviate cache similar queries.
+    Answer: not natively, but it hosts the standard semantic-cache pattern
+    well. Held at idle — depends on nest-bank-router phase-0 data to know
+    if repeats dominate. Queue manually when that lands.'
+ownership:
+  owner: tony
