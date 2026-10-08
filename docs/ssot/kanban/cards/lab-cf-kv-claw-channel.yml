@@ -1,0 +1,50 @@
+id: lab-cf-kv-claw-channel
+title: 'Lab: Cloudflare Workers KV — public-edge claw command/report channel'
+brief: 'Prove a credential-free edge channel: one KV namespace + one Worker serving
+  claw commands (GET) and ingesting reports (POST w/ thin ingest secret). First real
+  content: a sanitized public board digest readable off-tailnet. Lab — no standard
+  adoption until proven.'
+column: backlog
+priority: medium
+created: 2026-10-08
+lab:
+  hypothesis: A ~40-line Worker + Workers KV on our existing surf-thailand.com zone
+    gives claws credential-free command reads (GET edge URL) and thin-credential
+    report ingest (POST + shared secret) — a real off-tailnet channel for <1h of work
+  metric: (1) curl from a host with no creds returns the command JSON; (2) POST with
+    the ingest secret lands a report readable by GET; (3) wrong secret 403s; (4)
+    sanitized board digest visible on phone off-tailnet
+  review_by: '2026-10-21'
+note: 'Tony idea thread (2026-10-08): claws should run independently and report via a
+  channel nobody can locate — assessed gdrive (report outbox only), public GitHub
+  (secretless inbound but world-readable), CF KV (private-capable secretless reads +
+  edge latency + R2 for artifacts). Verdict: lab first, standard only if a real
+  off-tailnet claw appears. CF account + token already exist
+  (~/.config/secrets/cloudflare.env on dell/omen/idc01/idc02).'
+spec: 'Pre-req (Tony, dashboard-only): add Workers KV + Workers Scripts Edit scope to
+  the cfut_ token — then this card is fully dispatchable. Build: (1) KV namespace
+  claw-channel via wrangler; (2) Worker at edge/claw-channel/ in this repo +
+  stacks/edge/ — GET /<agent> reads KV[cmd:<agent>] (unlisted path, no auth),
+  POST /report/<agent> with X-Ingest-Key writes KV/R2 and returns 200, wrong key
+  403; (3) a tiny publisher script scripts/claw-publish.py — reads board cards.json,
+  strips internals (no hosts, no paths, no secrets — id/title/column only), writes
+  KV[digest:board] via CF API; (4) deploy worker to surf-thailand.com zone route
+  e.g. edge.surf-thailand.com/claw/*; (5) verify: anonymous curl GET, POST round-trip,
+  403 on bad key, phone-read digest off-tailnet. NOT in scope: live memory (stays
+  MDDB/sqlite), credentials of any kind in KV, or migrating any existing channel.'
+links:
+- cloudflare-setup
+- cf-access-gate
+- edge-route-registry
+blocked_by: []
+autonomy: t2
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+comms:
+- at: 2026-10-08 12:05
+  from: devin
+  text: 'filed + queued — design settled in thread: lab-prove the CF edge channel,
+    first job = sanitized board digest readable on phone off-tailnet. Standard
+    adoption deferred until an off-tailnet claw actually exists.'
