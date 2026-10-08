@@ -25,14 +25,14 @@ spec: "Phase 0 — baseline number (cheap, do first):\n- Serve the current champ
 help: 'Lane registry lives in ada-pi tests/bench/topologies.yml `lanes:`. Publish contract: MDDB ada-ha-scenario-reports,
   key bench/<kind>-<ts>, meta kind=benchmark. CMS generator: scripts/eye/bench-edge-cms.py (timer on dell). Loop
   owner: scripts/ada/nest-train-loop.py.'
-updated: 2026-10-08 10:17
+updated: 2026-10-08 13:17
 action:
   type: dispatch
   status: done
   runner: mn01
   result: 'exit=0 : `docs/ssot/jobs/infrastructure/2026-10-08-nest-lane-tony-dell.yml`; board updated. | devin-task-20261008-024035-phase-0-baseline-number-cheap-.service:
     Consumed 1min 15.045s CPU time over 29min 25.226s wall clock time, 752.7M memory peak.'
-  verified: false
+  verified: true
 comms:
 - at: 2026-10-08 06:15
   from: devin
@@ -77,6 +77,16 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-024035-phase-0-baseline-number-cheap-:
     2 commit(s) conflict with origin/master '
+- at: 2026-10-08 13:10
+  from: devin
+  text: 'rescued via git bundle from mn01 (HTTPS remote has no creds there). Branch was a strict superset: --lane
+    serve/bench machinery + bench-edge lanes table taken wholesale; ssot.nest-training.yml gained tony-dell-cpu/-igpu
+    lane entries; dispatch-outcome.md kept at HEAD (per-dispatch scratch — outcome preserved in commit 1cc35a378
+    + job trail). Merged c3e141254 to origin/master.'
+- at: 2026-10-08 13:17
+  from: chaba
+  text: 'merge-sweep: dispatch/20261008-024035-phase-0-baseline-number-cheap- already in origin/master — marked
+    verified'
 ownership:
   owner: tony
 claim: {}
@@ -86,6 +96,9 @@ requests:
     origin/master in chaba — conflicted paths: dispatch-outcome.md, docs/ssot/infrastructure/ssot.nest-training.yml,
     scripts/ada/nest-train-loop.py, scripts/eye/bench-edge-cms.py. Merge mn01:/home/tony/CascadeProjects/dispatch-wt-20261008-024035-phase-0-baseline-number-cheap-
     by hand, or retry/abandon the card.'
-  status: open
+  status: resolved
   at: 2026-10-08 10:17
   from: chaba
+  resolved_at: 2026-10-08 13:10
+  resolved_by: devin
+  resolution: bundled from mn01, merged c3e141254 to origin/master — see comms
