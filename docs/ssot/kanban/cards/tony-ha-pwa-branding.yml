@@ -1,0 +1,53 @@
+id: tony-ha-pwa-branding
+title: 'tony-ha PWA branding — saved app reads TONY-HA (prod change, approval-gated)'
+brief: "Apply the ada-ha PWA override to production: /local/tony-ha-pwa.js via extra_module_url rewrites manifest + apple-mobile-web-app-title so the household app saves as TONY-HA. Requires prod config edit + restart — needs explicit approval."
+column: done
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+comms:
+  - at: '2026-10-08 12:30'
+    from: devin
+    text: >-
+      [exp][alpha][beta] mechanism proven on ada-ha (private lane stands in
+      as the dev twin until tony-dev :8127 exists): /local/ada-ha-pwa.js
+      loaded via extra_module_url, injected script tag verified in served
+      index, file serves 200, container healthy post-restart. Commit
+      44bb185f. First lifecycle pilot — running S4 parity + S5 approval gate
+      on tony-ha.
+  - at: '2026-10-08 12:35'
+    from: devin
+    text: >-
+      [rc] change-set for prod: 1) new www/tony-ha-pwa.js (NAME=TONY-HA,
+      same mechanism), 2) configuration.yaml frontend: +extra_module_url
+      /local/tony-ha-pwa.js, 3) container restart. Parity: tony-ha
+      frontend: block is byte-identical pre-state to ada-ha's pre-change
+      state (themes-only); location_name already TONY-HA. Rollback:
+      remove extra_module_url lines + www file, restart. Scope = PWA
+      name only; per-user sidebar order left out of this release.
+  - at: '2026-10-08 12:45'
+    from: devin
+    text: >-
+      [prod] approved in-session by tony, deployed: config backup
+      .bak-pwa-20261008 taken, tony-ha restarted, healthy in ~60s. Smoke:
+      index serves module tag, /local/tony-ha-pwa.js 200, tailnet :8123
+      200. Users must hard-refresh + re-save the home-screen icon to pick
+      up the TONY-HA name.
+metric: >-
+  Saving tony-ha to home screen produces an icon named TONY-HA (iOS uses the
+  apple meta, Android uses the manifest); prod restart is the only downtime.
+verify: >-
+  After restart, curl / shows the extra module tag and /local/tony-ha-pwa.js
+  serves; re-saved PWA on a real device shows TONY-HA.
+spec: >-
+  Same mechanism deployed on ada-ha 2026-10-08 (commit 44bb185f): tiny JS in
+  config/www + frontend.extra_module_url. On tony-ha the change is
+  configuration.yaml + www file + restart. Optional add-on: set per-user
+  sidebar order (chaba-home first) for household users — decide per user, Tony
+  first. Note: verify location_name is still "TONY-HA" before writing JS NAME.
+links:
+  - ha-lanes-program
+  - ada-ha-hardening
+blocked_by: []
+autonomy: t2

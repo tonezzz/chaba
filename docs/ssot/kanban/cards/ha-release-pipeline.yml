@@ -1,0 +1,28 @@
+id: ha-release-pipeline
+title: 'Lane release pipeline — scripted dev→prod promote with approval gate + parity check'
+brief: "Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the card. Extends the existing deploy-card/promote-* pattern to the two-lane topology."
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+metric: >-
+  promote-<lane>.sh moves a verified change dev->prod, requires explicit
+  --confirm (same-session human approval), prints parity diff before and after;
+  every release lands with card comms evidence.
+verify: >-
+  Dry-run promote of a harmless dashboard tweak tony-dev->tony-ha shows exact
+  diff; post-promote parity check green; rollback step documented.
+spec: >-
+  Generalize frontend-parity-check.sh (currently tony-ha<->michael-ha) into a
+  per-lane twin diff: Lovelace dashboards, resources, card bundles (md5),
+  helpers/automations relevant to the feature. Promote scripts per lane:
+  promote-ada.sh (ada-dev->ada-ha), extend promote-tony.sh to source from
+  tony-dev instead of michael-dev. Release scope selector: dashboards / card
+  bundle / automations+scripts / helpers / users. Prod promotion keeps the
+  existing policy — explicit same-session approval, never automatic.
+links:
+  - ha-lanes-program
+  - ha-dev-instances
+blocked_by: [ha-dev-instances]
+autonomy: t2

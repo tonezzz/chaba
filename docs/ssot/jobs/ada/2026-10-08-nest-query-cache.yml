@@ -1,0 +1,83 @@
+id: nest-query-cache
+title: Ada memory query cache — phase 0 measurement, policy, implementation, bench
+date: 2026-10-08
+card: nest-query-cache
+host: tony-omen
+status: implemented   # ada-pi branch dispatch/20261008-152527-nest-query-cache, not deployed
+
+goal: >
+  Prove the case first (what fraction of real memory queries are
+  near-repeats), then land a cache-policy standard, an implementation,
+  and a bench suite that holds it honest.
+
+phase0_verdict: >
+  52% of 1366 real memory_search calls are near-repeats of an earlier
+  same-scope query at cosine >=0.92 — far above the ~15% niche bar.
+  Full distribution in docs/ssot/apps/ssot.apps.ada-memory.query-cache.yml
+  (phase0_measurement) and experiments/query-cache-phase0/results.json.
+
+delivered:
+  - chaba experiments/query-cache-phase0/: >
+      analyze.py (chronological replay, MiniLM space — production
+      gemini-embedding-2 was quota-dead), bankq corpus copy,
+      results.json. 52% >=0.92 same-partition, 34.2% exact repeats,
+      788 cross-session vs 61 within-session repeats; real-path p50
+      1.334s.
+  - chaba docs/ssot/apps/ssot.apps.ada-memory.query-cache.yml: >
+      The durable policy artifact — cacheable/never-cache classes,
+      key = normalized embedding + bank scope + speaker scope, hit
+      validation (threshold + TTL + limit + version-stamps), TTL per
+      bank class, Thai exact-only rule, deploy gate.
+  - ada-pi backend/query_cache.py (commit 1d6a750): >
+      Policy layer + CacheStore contract. WeaviateCacheStore
+      (AdaQueryCache + AdaBankVersion on tony-dell:8084, BYO vector,
+      deterministic-id upserts, blind-bump versions, lazy schema) and
+      MemoryCacheStore for tests/bench.
+  - ada-pi backend/tool_runner/memory.py + memory_ops.py: >
+      Cache check/store around the curated-bank branch of
+      ada_memory_search (shadow/enforce modes, sessions+guest stay
+      fresh, cache_hit marker); bank version-stamps bumped on every
+      curated-bank write (remember/forget/persona).
+  - ada-pi tests/bench/query-cache-bench.py + qc-*-cases.jsonl + suites.yml entry: >
+      Three tiers — golden 14/14 hit + same payload, hardneg 0/10
+      false-hit, freshness 3 stale caught / 0 served. Champ cosine-0.92.
+      Hit lookup p50 ~110ms vs 1330ms real (~92% saved).
+  - ada-pi tests/test_query_cache.py: 17 unit tests; full suite 938 pass.
+
+decisions:
+  - weaviate_not_mddb: >
+      The card offered MDDB per the phase-0 call — rejected: MDDB's
+      server-side embed is the ~1.3s cost being bypassed and was
+      quota-dead on measurement day (OR 403 total-limit + Gemini 429).
+      The cache embeds via mn01's all-MiniLM-L6-v2 (the weaviate stack's
+      own embedder) — self-consistent space.
+  - thai_exact_only: >
+      MiniLM collapses Thai semantics — a real prod pair scored 0.949
+      while being unrelated ('ทะเบียนรถ kk' vs 'คุณ kk คือใคร'). Non-Latin
+      queries take the exact-normalized path only; upgrade path is a
+      multilingual embedder in the weaviate-embed service.
+  - precision_first_threshold: >
+      0.90-0.92 is a dead zone holding both paraphrases and hard-negs.
+      0.92 keeps false-hits at zero at the cost of a little paraphrase
+      recall; tunable via ADA_QCACHE_THRESHOLD.
+  - shared_version_store: >
+      Version stamps live in Weaviate (shared across all ada instances
+      on idc03) — a write on ada-ha-tony invalidates ada-ha-michael's
+      entries too.
+
+not_done:
+  - >
+    No deploy: shadow mode is the intended first posture
+    (ADA_QCACHE_URL/EMBED_URL env + mode=shadow on idc03) — needs the
+    branch merged to ada-pi main and a normal deploy; approval required.
+  - >
+    Bench report published: ada-ha-scenario-reports
+    bench/cache-20261008-085015 + ada-cms-pages bench-query-cache.
+  - >
+    Re-measure repeat rate on a longer (7-14d), less dev-heavy window
+    before enforce ships.
+
+verify:
+  - cd ada-wt-query-cache && .venv python -m pytest tests/test_query_cache.py (17 pass)
+  - python tests/bench/query-cache-bench.py --memory (offline) or without flag (weaviate)
+  - chaba worktree: python3 experiments/query-cache-phase0/analyze.py

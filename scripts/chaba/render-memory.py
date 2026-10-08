@@ -198,6 +198,20 @@ def run_source(src, render_dir, repo_root, errors):
             if not e or len(e) < min_chars:
                 continue
             entries.append(e)
+        # collapse consecutive entries that differ only in the heading line
+        # (e.g. repeated scenario-run failures) into one entry marked "×N"
+        deduped = []
+        for e in entries:
+            lines = e.splitlines()
+            body = "\n".join(lines[1:]).strip() if lines and lines[0].startswith("#") else e
+            if deduped and deduped[-1][1] == body:
+                deduped[-1][2] += 1
+            else:
+                deduped.append([e, body, 1])
+        entries = [
+            e if n == 1 else re.sub(r"^(#+.*)$", rf"\g<1> ×{n}", e, count=1)
+            for e, _body, n in deduped
+        ]
         keep = src.get("max_entries", 3)
         # demote every heading in each entry so they nest under '## <section>'
         return [re.sub(r"^(#+)", r"#\1", e, flags=re.M) for e in entries[-keep:]]
@@ -247,6 +261,8 @@ def run_source(src, render_dir, repo_root, errors):
                     continue  # expired — "immediate" means immediate
             except ValueError:
                 continue  # unparseable ts — drop
+            if not e.get("task") and not e.get("next") and not e.get("open") and not e.get("pointer"):
+                continue  # "(no task)" stub with no resume info — noise
             lines.append(f"- {e['session']} ({str(e.get('ts',''))[:16]}): {e.get('task','(no task)')}")
             detail = ", ".join(
                 p for p in (
@@ -338,8 +354,12 @@ def render_profile(cfg, profile_name, profile, repo_root, render_dir, report):
         lim = s.get("limits", {})
         kept, truncated = apply_budget(lines, lim.get("soft"), lim.get("hard"))
         sizes[sname] = {"chars": sum(len(l) + 1 for l in kept), "truncated": truncated}
+        if truncated:
+            report["warnings"].append(f"{profile_name}.{sname}: dropped {truncated} line(s) over budget")
         if not kept and s.get("required"):
             report["errors"].append(f"{profile_name}: required section '{sname}' produced no content")
+        if not kept and s.get("hide_empty"):
+            continue  # empty optional section — skip the header entirely
         desc = (s.get("description") or "").strip().splitlines()
         head = f"## {sname}\n" + (f"_{desc[0]}_\n\n" if desc else "\n")
         body = "\n".join(kept) if kept else "_(empty)_"
@@ -448,7 +468,12 @@ def main():
         report["dropped"].extend(dropped)
         if over_hard:
             report["over_hard"].append(pname)
+        soft_cap = profile.get("limits", {}).get("soft")
         header = (f"# Chaba context — {pname}\n"
+                  f"_Rendered {report['generated']} from {args.config}. "
+                  f"Do not edit — regenerate with render-memory.py._\n"
+                  f"_Budget: {len(text):,}/{soft_cap:,} chars_" if soft_cap else
+                  f"# Chaba context — {pname}\n"
                   f"_Rendered {report['generated']} from {args.config}. "
                   f"Do not edit — regenerate with render-memory.py._\n")
         if not args.check:

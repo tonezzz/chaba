@@ -1,0 +1,65 @@
+id: kk-macbook-ubuntu
+title: 'kk-macbook: wipe macOS, install Ubuntu as main OS'
+brief: "KK's old Intel MacBook Pro becomes a Linux machine — macOS gets wiped entirely. Needs a wake-up to confirm the model, then a guided install. Waiting on Tony to power it on."
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+ask:
+  question: Which install path — depends on whether this Mac has the T2 chip?
+  options:
+  - T2 (2018+) — t2linux-patched Ubuntu ISO + firmware extract first
+  - pre-T2 (2017) — standard Ubuntu ISO, much simpler
+  - Fedora t2linux spin instead of Ubuntu
+  - Defer — keep macOS for now
+note: >-
+  Machine (SSOT ssot.mysystem.macbook.yml): MacBook Pro quad-core
+  i7 2.6GHz, 16GB, 233GB SSD, macOS Ventura 13.7.8, serial
+  C02T902XH03M, user kkkakk, tailnet 100.124.59.112. Currently OFFLINE
+  (last seen 5d ago — lid closed/asleep). Serial + 2.6GHz base clock
+  strongly suggest 2018 15" MacBookPro15,1 (i7-8850H) = T2 chip —
+  CONFIRM before anything: `sysctl hw.model`.
+spec: >-
+  T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple
+  T2 security chip blocks stock Linux. REQUIRED PATH:
+  1. WAKE MACBOOK FIRST — cannot do anything while offline.
+  2. BEFORE wiping macOS (irreversible): extract Broadcom Wi-Fi +
+     Bluetooth firmware — T2 Macs source it from the macOS install
+     (t2linux guide, firmware.sh pulls /usr/share/firmware into a
+     tarball). Skip this and the Mac has NO wifi under Linux.
+  3. Backup KK's data: user files; podman redis-macbook container data
+     (redis-data volume, port 16379); ~/chaba-health script; Chrome
+     Remote Desktop config; SSH authorized_keys (will re-seed).
+  4. Install media: t2linux Ubuntu ISO (mbp-ubuntu / t2-ubuntu-repo
+     community images ship the t2 kernel) — plain Ubuntu ISO will boot
+     but lack kb/trackpad/ssd-touch drivers. Fedora-t2 spin is the
+     alternative (better-maintained kernels, ask option 3).
+  5. Install: recovery -> Security Utility: allow external boot, no
+     secure boot; erase APFS entirely; install to whole disk.
+  6. Post-install: applespi (keyboard/trackpad), wifi firmware from
+     step-2 tarball, audio fix, suspend quirks.
+  7. Rejoin infra: tailscale (new machine name or reuse kk-macbook —
+     revoke old key), SSH host 'macbook' in ssh-config on tony-dell/
+     tony-omen, restore redis container if wanted, update SSOT
+     (ssot.mysystem.macbook.yml -> Linux, drop macbook-appdev.yml).
+  PRE-T2 PATH (if model is 14,3): vanilla Ubuntu 24.04 USB, standard
+  install, broadcom-sta for wifi — skip all T2 steps.
+help: >-
+  What lives on it today (from SSOT): Chrome Remote Desktop, PlayLive/
+  CDP offload (ports 9222/9231), podman + redis-macbook container,
+  com.chaba.macbook-health launchd job, ssh host 'macbook'. All
+  replaceable on Linux — podman/redis are native, CRD has a Linux
+  client, tailscale native. Chirawat's-task / iOS-dev goals in
+  ssot.mysystem.macbook-appdev.yml become moot — archive it.
+  VERIFY hardware first (macbook offline, can't check remotely):
+  sysctl -n hw.model; system_profiler SPHardwareDataType.
+  Firmware extract command lives in t2linux.org guide — run it in
+  macOS before any erase. USB creation: balenaEtcher or dd from
+  tony-omen/tony-dell; >=8GB stick.
+links:
+  - ssot.mysystem.macbook.yml
+  - ssot.mysystem.macbook-appdev.yml
+  - t2linux.org (t2 kernel + firmware guide)
+  - github:marcosfad/mbp-ubuntu (t2linux Ubuntu ISOs)
+blocked_by: []
+autonomy: t3

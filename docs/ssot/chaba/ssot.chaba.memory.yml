@@ -29,7 +29,7 @@ render:
       output: context.md
       report: report.yml
       limits: {soft: 12000, hard: 20000}
-      overflow_order: [ada-focus, ada-sessions, sessions, personal-digest, infra-digest, focus, recent-events, project, home]   # dropped first → last
+      overflow_order: [events, timeline, ada-events, personal-digest, access, infra-digest, ada-focus, ada-sessions, sessions, focus, recent-events, project, home]   # dropped first → last; noise before signal
       sections: [agent, user, immediate, recent-events, home, project, focus, access, sessions, ada-sessions, ada-focus, personal-digest, infra-digest, timeline, events, ada-events]
     guest:
       output: context-guest.md
@@ -68,6 +68,7 @@ sections:
       entries expire via ttl_hours. Only file this section may read.
     priority: 85
     limits: {soft: 800, hard: 1500}
+    hide_empty: true
     source:
       kind: immediate
       file: ~/.local/share/chaba/immediate.yml
@@ -128,23 +129,32 @@ sections:
 
   access:
     description: |
-      Identity access posture for Ada — who can read which memory banks
-      (person_policies) and actuate which HA domains (control_policies).
-      Dynamic: rendered from the registry SSOT; restricted-by-default.
+      Identity access posture for Ada — summary inline, full maps pull-only.
+      The person_policies/control_policies dumps (~30 lines) were noise in
+      every session; they now live behind report keys.
     priority: 30
-    limits: {soft: 800, hard: 1200}
-    include:
-      - file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml
-        key: person_policies
-        format: "- {_key}: {allow}"
-      - file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml
-        key: control_policies
-        format: "- {_key}: {allow_domains}"
+    limits: {soft: 500, hard: 700}
+    source:
+      kind: inline
+      text: |
+        - Full access (banks + control): admin, person.tony, tony-ip, user-tonezzzz, user-tony2, user-ha-mcp-server, ha-* (all mapped to Tony)
+        - Restricted: kk/user-kk → banks [general, home, people, purchase, personal-kk], domains [light, switch, input_boolean, script, media_player]
+        - Restricted: testo*/person.testo_2 → banks [general, home, people, purchase, personal-testo]; default/unknown → [general, home]
+    more:
+      - label: Bank read policies (person_policies)
+        key: access.person_policies
+        source: {file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml, key: person_policies}
+      - label: HA actuation policies (control_policies)
+        key: access.control_policies
+        source: {file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml, key: control_policies}
 
   sessions:
-    description: Recent session outcomes, fed by compaction/session-end hooks.
+    description: |
+      Recent session outcomes, fed by compaction/session-end hooks.
+      Budget sized so this fits instead of being dropped by global
+      overflow — it is the primary "what happened recently" content.
     priority: 40
-    limits: {soft: 5000, hard: 8000}
+    limits: {soft: 2600, hard: 4000}
     source:
       kind: rolling-log
       file: ~/.local/share/devin/notebook-summaries/session-memory.md
@@ -159,6 +169,7 @@ sections:
       backend/auth.py create_key) — outside chaba's trust boundary.
     priority: 40
     limits: {soft: 800, hard: 1200}
+    hide_empty: true
     source:
       kind: dir
       file:
@@ -173,6 +184,7 @@ sections:
       Rolling markdown log, newest last.
     priority: 35
     limits: {soft: 800, hard: 1200}
+    hide_empty: true
     source:
       kind: rolling-log
       file: ~/.local/share/chaba/events.md
@@ -226,11 +238,11 @@ sections:
       guest profile). Rendered by scripts/ada/personal-rollup.py —
       ## devin: per-session timeline of recent Devin sessions.
     priority: 44
-    limits: {soft: 2200, hard: 3800}
+    limits: {soft: 1200, hard: 1800}
     source:
       kind: rolling-log
       file: ~/.local/share/ada-review/personal-digest.md
-      max_entries: 6
+      max_entries: 4
       min_chars: 60
 
   infra-digest:
@@ -240,11 +252,11 @@ sections:
       ## ada-ops (Ada containment events), plus future ## apps / ## spend /
       ## tasks / ## ha-events blocks.
     priority: 43
-    limits: {soft: 2400, hard: 4200}
+    limits: {soft: 1800, hard: 3000}
     source:
       kind: rolling-log
       file: ~/.local/share/ada-review/infra-digest.md
-      max_entries: 6
+      max_entries: 4
       min_chars: 60
 
   # ---- guest-only sections ----
@@ -277,6 +289,7 @@ sections:
       at session end, injected at next connect so the assistant can refer
       to earlier conversations.
     limits: {soft: 1200, hard: 2000}
+    hide_empty: true
     source:
       kind: rolling-log
       file: ~/.local/share/chaba/session-memory.md

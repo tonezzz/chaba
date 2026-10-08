@@ -1,0 +1,47 @@
+id: lab-ada-session-boundaries
+title: 'Lab: Ada session boundaries — does forced context reset improve memory recall?'
+brief: >-
+  Ada's messaging chats run as one long continuous session, so her memory
+  snapshot never refreshes and compaction keeps re-processing an ever-longer
+  history (Hermes calls this out explicitly — memory only pays off at
+  session end). This experiment tests whether periodic boundaries improve
+  recall quality and cut token spend.
+column: lab
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+autonomy: t2
+lab:
+  hypothesis: >-
+    Introducing a session boundary (context reset + memory re-snapshot) at
+    natural break points improves recall accuracy on past-session facts
+    AND reduces compaction cost, vs. today's never-ending sessions.
+  metric: >-
+    Scenario suite recall-lane score before/after; compaction tokens per
+    24h from journal metrics; count of "forgot something it was told"
+    failures in transcript audit during the window.
+  review_by: '2026-10-25'
+note: >-
+  Experiment, not a commitment. First deliverable is a measurement: how
+  long are Ada's live sessions actually running and what does compaction
+  cost today? Design options on the card before touching runtime.
+spec: |
+  Spike questions (answer these first, in comms):
+    1. What IS a session boundary for ada-pi today — per message? per
+       websocket connect? Does conversation_memory already re-snapshot
+       between turns, or does context grow unbounded within a chat?
+    2. What does compaction cost now — tokens/day from journal-report?
+    3. Where would a boundary even be inserted (relay layer? provider
+       session TTL? a daily "new day" reset at quiet-hours edge)?
+
+  If measurement shows sessions already reset per connect and memory
+  re-injects — the hypothesis is dead, retire the card with the finding.
+
+  If genuinely continuous: prototype a boundary on ada-dev ONLY
+  (quiet-hours daily reset, or topic-change detection) — measure recall
+  scenario pass rate and compaction tokens for the soak window vs the
+  prior week. Promote only if both improve.
+links:
+  - ada-context-budget
+  - ada-memory-hit-shape-guard
+blocked_by: []

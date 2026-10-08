@@ -1,0 +1,59 @@
+id: ada-memory-staged-writes
+title: 'Ada memory: staged writes with approval for untrusted identities'
+brief: >-
+  Today any identity's memory save lands directly in a bank, and "I saved
+  it" can be claimed without a write happening. This adds a staging lane:
+  writes from guests/untrusted identities park in a pending collection
+  until approved, while trusted identities keep writing directly — the
+  write_approval pattern from Hermes, scoped by our existing access map.
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+pipeline: ci
+autonomy: t2
+metric: >-
+  A guest/untrusted save produces a pending entry visible to the approver
+  surface and NOTHING in the target bank; on approval the entry lands
+  verbatim; on reject it's marked refused with provenance. Trusted
+  identities (full:true) see zero added latency.
+verify: >-
+  On ada-dev: guest_remember as a guest identity -> pending, not in bank;
+  approve via the review path -> lands; reject -> never lands. A
+  person.tony save still writes directly. A second approval attempt on a
+  consumed pending entry is refused (no double-apply).
+spec: |
+  Where: ada-pi repo — tool_runner/memory.py write paths + a small
+  pending store (MDDB collection ada-ha-memory-pending, or a vault
+  pending/ dir — pick one, document in ssot.apps.ada-memory-banks.yml).
+
+  Routing rule — reuse the existing access map, don't invent a new ACL:
+    - person_policies {full: true} identities -> direct write (today's
+      behavior; Tony must not start approving every "remember X")
+    - restricted/unknown/guest identities -> staged
+    - per-bank write_policy: confirmed already gates the WRITE TOOL call;
+      staging gates the CONTENT for untrusted callers — complementary,
+      keep both.
+
+  Pending entry shape: {id, identity, bank, key, text, staged_at,
+  source_session}. Approval applies the pinned content — if it changed
+  after staging, refuse and keep pending (Hermes' pinning rule).
+
+  Approver surface: reuse an existing one — card comms + a board-api
+  respond, or a nightly digest in focus-inbox. Do NOT build new UI.
+
+  Ada-visible behavior: model gets {ok: true, staged: true, id} and says
+  "I'll keep that for Tony to approve" — never "saved".
+
+  Depends on ada-memory-injection-scan being the first line of defense;
+  stage AFTER scanning, not before.
+expected_goals:
+  - id: pending-collection
+    check: "command python3 -c 'import backend.memory_write_guard' expect exit 0"
+links:
+  - ada-memory-injection-scan
+  - ada-memory-write-caps
+  - ada-user-device-acl
+  - ada-memory-hit-shape-guard
+blocked_by:
+  - ada-memory-injection-scan
