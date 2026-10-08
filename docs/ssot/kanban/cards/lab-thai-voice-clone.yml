@@ -5,7 +5,7 @@ brief: Open-source models can now clone a Thai voice from a ~15s clip — usable
 column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 08:16
+updated: 2026-10-08 08:42
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -87,6 +87,38 @@ comms:
 - at: 2026-10-08 08:16
   from: tony-omen
   text: claimed
+- at: 2026-10-08 08:37
+  from: devin
+  text: 'bench complete — automated gates PASS via the VYNCX v2 IPA lane through the new thai-clone-tts wrapper
+    (--model vyncx --batch + clause chunking): whisper normCER 2.2% (<5%), CAM++ SIM 0.81 (>=0.5), all 5 clips on-voice,
+    ~90s/clip on GTX1650. megaF5 fails CER (~0.27); JaiTTS still gated (request open). Chunking at Thai clause marks
+    rescued a deterministic long-sentence collapse. Remaining gate: your blind listen — clips at tony-omen:/home/tony/voice-clone-bench/out/wrapvyncx/.
+    Wrapper: scripts/op'
+- at: 2026-10-08 08:37
+  from: devin
+  text: 'bench done — gates PASS on automated metrics via VYNCX v2 IPA lane through new thai-clone-tts wrapper (--model
+    vyncx --batch + clause chunking): normCER 2.2% (<5%), CAM++ SIM 0.81 (>=0.5), all 5 on-voice, ~90s/clip on GTX1650.
+    megaF5 fails CER ~0.27; JaiTTS gated (request open). Remaining gate: Tony blind listen — clips at tony-omen
+    ~/voice-clone-bench/out/wrapvyncx/. Report: docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml; threat
+    note updated.'
+- at: 2026-10-08 08:39
+  from: devin
+  text: 'bench done: automated gates PASS via VYNCX v2 IPA lane through new thai-clone-tts wrapper (batch mode +
+    clause chunking): normCER 2.2% (<5%), CAM++ SIM 0.81 (>=0.5), 5/5 on-voice, ~90s/clip GTX1650. megaF5 fails
+    CER ~0.27; JaiTTS HF-gated (request open). Blind-listen gate remains: clips at tony-omen ~/voice-clone-bench/out/wrapvyncx/.
+    Report docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml; echo-leak threat note updated.'
+- at: 2026-10-08 08:39
+  from: devin
+  text: 'bench done: automated gates PASS via VYNCX v2 IPA lane through new thai-clone-tts wrapper (batch + clause
+    chunking): normCER 2.2%, CAM++ SIM 0.81, 5/5 on-voice, ~90s/clip GTX1650. megaF5 fails CER ~0.27; JaiTTS HF-gated
+    (request open). Blind listen remains: tony-omen ~/voice-clone-bench/out/wrapvyncx/. Report: docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml;
+    threat note updated.'
+- at: 2026-10-08 08:42
+  from: devin
+  text: 'bench done: automated gates PASS via VYNCX v2 IPA lane through new thai-clone-tts wrapper (batch + clause
+    chunking): normCER 2.2%, CAM++ SIM 0.81, 5/5 on-voice, ~90s/clip GTX1650. megaF5 fails CER ~0.27; JaiTTS HF-gated
+    (request open). Blind listen remains: tony-omen ~/voice-clone-bench/out/wrapvyncx/. Report: docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml;
+    threat note updated.'
 requests:
 - id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
   ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
