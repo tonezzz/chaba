@@ -2,10 +2,10 @@ title: Focus Inbox Item
 subtitle: Health alert for mddb binlog (replication canary)
 focus:
   label: mddb-binlog health
-  text: 'mddb binlog canary on tony-dellflagged an ESCALATION — the breach set changed since the last alert (91943s > 600s)
-    at 2026-10-08T11:46:42Z. Reasons: binlog_size_bytes=2089230246 > 1073741824; lsn_gap=13659187 > 5000000; follower idc02
-    status=''warning''; follower idc01 status=''unhealthy''. binlog_size_bytes=2089230246, lsn_gap=13659187 (current_lsn=184986779
-    - binlog_oldest_lsn=171327592). The retention janitor on idc03 may have stalled — check mddb.service before the disk fills.
+  text: 'mddb binlog canary on tony-dellflagged an ESCALATION — the breach set changed since the last alert (97484s > 600s)
+    at 2026-10-08T13:19:03Z. Reasons: binlog_size_bytes=2027537724 > 1073741824; lsn_gap=13240363 > 5000000; follower idc02
+    status=''warning''; follower idc01 status=''unhealthy''. binlog_size_bytes=2027537724, lsn_gap=13240363 (current_lsn=185170468
+    - binlog_oldest_lsn=171930105). The retention janitor on idc03 may have stalled — check mddb.service before the disk fills.
     If a reason says ''apply-stalled'', that follower''s stream is connected but not applying: restart mddb-follower.service
     on that host (mddb-follower-watchdog.timer automates it once installed).'
   status: draft
