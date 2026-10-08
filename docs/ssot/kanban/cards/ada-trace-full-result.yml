@@ -1,0 +1,22 @@
+id: ada-trace-full-result
+title: tool_result trace fidelity — result_hash + full payload in ops log
+brief: ws tool_result events run through _safe_args — nested values truncated to
+  300 chars — so the trace shows a stump while the model saw the full result.
+  A track_device scenario failed on assertions against names that were genuinely
+  in the result (2026-10-07). Waiting in backlog.
+column: backlog
+metric: scenario/debug tooling can fetch the full result for any call id; ws event stays compact
+verify: replay a >300-char result -> hash in event matches full payload in ops log
+note: 'Keep the ws event as-is (scalars + truncated strings) but add result_hash
+  (sha of canonical json) and emit the full result as a fire-and-forget ops
+  event or trace doc keyed by session+call id. scenario-live.py and the audit
+  skill can then assert on ground truth instead of the stump. Alternative: a
+  ADA_TRACE_FULL=1 env flag emitting tool_result_full events for debug runs.'
+help: realtime_provider.py _safe_args (~line 684), ProviderEvent tool_result
+  emission (~line 4747), conversation.log_event; _emit_ops_event pattern
+updated: 2026-10-08 16:00
+comms:
+- at: 2026-10-08 16:00
+  from: devin
+  text: Assessment finding — verification looks at a different payload than Ada
+    consumes; debugging and scenarios both pay for it.

@@ -1,0 +1,21 @@
+id: ada-track-lost-persist
+title: lost-mode durability — persist armed watches across restarts
+brief: ada_track_device action='lost' arms an in-process watcher that dies with
+  the backend (volatile by design for v1). A lost-device watch should survive
+  deploys and restarts — that is exactly when it matters. Waiting in backlog.
+column: backlog
+metric: armed watch survives ada-ha-tony restart; resumes polling within one interval
+verify: arm lost-mode on a test device -> restart service -> deltas still push to LINE/TG
+note: 'Persist armed watches to MDDB device-telemetry as _watch/<device> docs
+  (armed_at, channel prefs, last-pushed-sighting). On service start, resume
+  watchers whose docs exist; ''found''/stale cleanup deletes them. ~40 lines in
+  the tool + a resume hook. Watch push path already exists (relay /send,
+  ADA_TRACK_PUSH_DRYRUN for tests).'
+help: backend/tools.d/ada_track_device.py (lost-mode watcher ~action=lost);
+  device-telemetry collection conventions (<dev>/latest pattern)
+updated: 2026-10-08 16:00
+comms:
+- at: 2026-10-08 16:00
+  from: devin
+  text: Next step for the flagship track feature — volatile watcher is honest
+    v1, durability is what makes it trustworthy during a real loss.

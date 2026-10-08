@@ -1,0 +1,22 @@
+id: ada-deploy-gate-tests
+title: deploy-ada.sh pre-flight — run tests before restarting services
+brief: Deploy gate should refuse to restart on a broken tree. Today deploy-ada.sh
+  ff-merges and restarts blind — a rebase resolution that silently dropped a
+  958-line tools.d rewrite only surfaced because its unit test happened to fail
+  locally afterward (2026-10-08 incident). Waiting in backlog.
+column: backlog
+metric: deploy-ada.sh exits non-zero before any restart when tool-lint or pytest fails
+verify: break a tool deliberately on a branch -> deploy-ada.sh refuses; clean tree deploys normally
+note: 'Add to deploy-ada.sh between merge and restart: (1) python3 scripts/tool-lint.py
+  (contract check, already exists), (2) .venv/bin/python -m pytest tests/ -x -q
+  (unit tests — test_track_device.py exists, more expected). Also add a mass-delete
+  warn: when the merged diff drops >50%% of lines in backend/tools.d/ or
+  backend/tool_runner/ file without touching its scenario, pause and require
+  DEPLOY_FORCE=1 — catches inverted rebase resolutions.'
+help: ~/.local/bin/deploy-ada.sh on idc03; scripts/tool-lint.py; tests/test_track_device.py
+updated: 2026-10-08 16:00
+comms:
+- at: 2026-10-08 16:00
+  from: devin
+  text: Filed after nearly discarding the ada_track_device 5-source rewrite in a
+    rebase — deploy gate is the last line of defense when merges go wrong.

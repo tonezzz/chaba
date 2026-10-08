@@ -1,0 +1,20 @@
+id: ada-dead-surface-metric
+title: dead-surface metric — per-tool call counts from transcripts
+brief: Shape is lint-verified (42 declared), usage is not. Some census names
+  had zero calls in 7d — the surface may carry dead weight the merge program
+  cannot see. Waiting in backlog.
+column: backlog
+metric: 'weekly report: calls-per-declared-tool over trailing 7d + 30d, zero-call list flagged'
+verify: report matches a manual count of one week''s tool_call events
+note: 'Same transcript pass as ada-alias-telemetry but counts canonical calls.
+  Zero-call tools for 30d become merge/exclusion candidates (review, not
+  auto-delete — some tools are rare-but-critical like lost-mode). Output
+  belongs in the existing ops digest or a cms report row on ada-tools-report.'
+help: transcript tool_call events; ada_alias-telemetry card (shared rollup);
+  ada-tools-report CMS page as the publishing target
+updated: 2026-10-08 16:00
+comms:
+- at: 2026-10-08 16:00
+  from: devin
+  text: Assessment finding — the surface is machine-verified for shape, blind
+    for usage; this closes that loop.
