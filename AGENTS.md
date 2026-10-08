@@ -125,6 +125,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - History/accumulating charts share the localStorage incremental cache policy (`data_cache_policy` in `ssot.home-assistant.design.yml`).
 - michael-ha credentials: API/websocket token = `~/.config/secrets/ha-michael-live.env` (the `ha-token` file was refreshed to the same value 2026-09-08); UI login = `~/.local/share/home-assistant-michael/credentials.json` (`nakva`).
 - michael-ha sidebar verified visually: Overview, Dossier, Map, Tony test + built-ins (Energy/Activity/History/File editor/HA-MCP/HACS/Matter Server/Settings/Notifications).
+- Sidebar ordering/embeds (2026-10-08, verified on ada-ha via playlive): pin order via user-data key `sidebar` → `{panelOrder: [...], hiddenPanels: [...]}` (`frontend/set_user_data`); embed external pages with an `iframe` card in a `type: panel` view — NOT `webpage` (removed). Legacy `sidebar.order`/`core.sidebarPanelOrder` keys are silently ignored → alphabetical fallback. Always verify the rendered DOM, not storage. Full runbook: `sidebar_order_and_embeds` in `ssot.home-assistant.howto.yml`.
 - michael-ha tony-test tabs: `V0 (p0) → V1 (p0-2) → G1 → SK → TPL → juWorkshop → Solar Assistant → glass → Weather`.
 - New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
 - `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).

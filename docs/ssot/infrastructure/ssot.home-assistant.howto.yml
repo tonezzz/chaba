@@ -629,6 +629,29 @@ runbooks:
 
       '
     last_updated: '2026-09-23'
+  sidebar_order_and_embeds:
+    purpose: Order/pin sidebar panels and embed external pages (e.g. CMS reports)
+      as dashboard panels — verified on ada-ha (HA 2026.8) via playlive.
+    steps:
+    - Sidebar order is per-user frontend user-data key "sidebar" as an object {"panelOrder":
+        [...], "hiddenPanels": [...]}, written via websocket frontend/set_user_data
+    - Do NOT use legacy formats ("sidebar.order" key or "sidebarPanelOrder" inside
+        "core") — modern frontends read only sidebar.panelOrder/sidebar.hiddenPanels;
+        wrong keys are silently ignored and the sidebar falls back to alphabetical
+        order
+    - Panel IDs: built-ins use their own ids (home=Overview, energy, logbook=Activity,
+        history, media-browser, todo, hacs, ha-mcp); storage dashboards use their
+        url_path
+    - To embed an external page: create a storage dashboard (lovelace/dashboards/create),
+        single view type: panel, one card type: iframe with url: — do NOT use type:
+        webpage (removed card type; renders "Configuration error" on modern HA)
+    - CMS embeds need the viewer api_key in the URL (per chaba_admin convention)
+    - ALWAYS verify the result in the live UI with playlive (DOM order read +
+        screenshot of the panel) — never assert sidebar order from storage contents
+        alone; the frontend silently ignores malformed prefs
+    note: Ordering pins are per-user (owner by default) — other users see panels
+      at default registration order. UI drag-edit overwrites the pin.
+    last_updated: '2026-10-08'
 status:
   last_updated: '2026-09-26'
   last_verified: '2026-09-18'
