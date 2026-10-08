@@ -1,0 +1,92 @@
+title: Remote runner script drift — stale copies fail silently on fleet hosts
+subtitle: dispatch_repos.py / devin-dispatch installed copies diverge from repo; failures surface only via card state, not health checks
+icon: warning
+
+context:
+  trigger: "Voice-fallback bench rollout 2026-10-08→09 — first real
+    multi-host dispatch workload after the fleet went live."
+  units:
+    - "per-host: ~/.local/bin/runner-agent (scp'd copy of
+      scripts/board/runner-agent.py)"
+    - "per-host: ~/.local/bin/devin-dispatch (scp'd copy of
+      scripts/devin/devin-dispatch.sh)"
+    - "per-host: ~/CascadeProjects/chaba checkout (import source for
+      dispatch_repos.py close-out merge)"
+    - "tony-dell: kanban-dispatch.service + merge-sweep"
+
+finding_a_dispatch_repos_stale:
+  symptom: "idc03 runner-agent.service crash-looped with
+    'AttributeError: module dispatch_repos has no attribute
+    close_out_notes'. The finished harness session's card sat
+    action.status=running with a dead unit until the module was fixed."
+  cause: "runner-agent imports dispatch_repos.py from
+    ~/CascadeProjects/chaba/scripts/board on the runner host; idc03's
+    checkout predated close_out_notes(). Nothing refreshes that checkout
+    — no timer, no version check."
+  fix: "git pull --ff-only on all runner checkouts (2026-10-09); idc03
+    agent then reported 'finish ok' immediately."
+
+finding_b_dispatch_script_stale:
+  symptom: "mn01 ran a card with action.model=swe-2-max as SWE-2 High —
+    silent fallback, invisible without reading the transcript's
+    agent.model_name."
+  cause: "~/.local/bin/devin-dispatch on mn01 predated the DEVIN_MODEL
+    passthrough (mn01 was skipped in that deploy wave on a stale 'no
+    Devin CLI' note — it is in fact dispatch-capable)."
+  fix: "redeployed; re-run transcript confirmed SWE-2 Max. ssot.kanban
+    fleet table corrected to 6 dispatch-capable hosts."
+
+finding_c_blocked_by_was_unenforced:
+  symptom: "Cards carrying blocked_by were claimable immediately —
+    dependency ordering was metadata-only."
+  cause: "No code path read the field."
+  fix: "f1b2c404 — _blocker_released() in kanban-dispatch + claim_pass
+    gate in runner-agent. Released = blocker column=done, or
+    status=done AND verified!=false (dependents need merged code)."
+
+finding_d_remote_push_gap:
+  symptom: "Harness branch (2 commits incl. all of scripts/voice-bench/)
+    never reached origin — 'could not read Username for github.com'."
+  cause: "Runner hosts have read-only clones; no push creds by design.
+    Remote dispatch merges rely on dell's merge-sweep fetching the branch
+    over ssh. A transient 'Committer identity unknown' also hit during
+    the first sweep attempt (cause unresolved — identity resolves fine
+    now; possibly HOME unset in that context)."
+  note: "Constraint, not a bug — but merges are async + best-effort.
+    If the sweep misses a strand, work is lost until someone fetches it."
+
+verification_result:
+  checks:
+    - "PASS: blocked_by gate held all 5 voice-combo cards queued with no
+      runner while harness ran (observed 2+ poll cycles)."
+    - "PASS: post-merge release — harness done → omen claimed both gpu
+      combos, mn01 ran openai-realtime (skipped: no-key)."
+    - "PASS: all hosts' dispatch_repos.py now carry close_out_notes."
+
+recommendation:
+  decision_needed: true
+  options:
+    - id: a
+      desc: "Deploy-sync script: one command pushes runner-agent +
+        devin-dispatch + dispatch_repos checkout refresh to every fleet
+        host, prints a drift table. Run it after any board/dispatch
+        script change. Cheap, kills the whole class."
+    - id: b
+      desc: "Agent self-check: runner-agent refuses dispatch claims when
+        its local dispatch_repos/devin-dispatch is older than a marker
+        (e.g. embedded sha); posts a comms note when it self-detects
+        drift. Prevents silent misbehavior, adds complexity."
+    - id: c
+      desc: "Card-side freshness rail: dispatch sessions record the
+        script versions that ran them into meta.json so post-hoc audits
+        (devin-usage or a sweep) can flag stale-runner results."
+  suggested: a
+
+evidence:
+  - "idc03 journal 06:31:42: AttributeError close_out_notes ->
+    runner-agent.service status=1/FAILURE (4 restarts)."
+  - "mn01 transcript 20261008-095915: agent.model_name='SWE-2 High' for a
+    card requesting swe-2-max; re-run 20261008-100215 = 'SWE-2 Max' after
+    redeploy."
+  - "git ls-remote origin: no dispatch/voice-bench-* branch until dell
+    fetched idc03's worktree over ssh (commit 10e89e9c salvage merge)."
