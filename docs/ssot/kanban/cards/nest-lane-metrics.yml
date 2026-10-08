@@ -1,0 +1,41 @@
+id: nest-lane-metrics
+title: Nest lanes — wire /metrics so the hub shows decisions + esc%
+brief: >-
+  The chaba-nest hub page shows "no metrics" on every lane, so the
+  decisions-Δ and escalation-% columns are dead. The metrics module is
+  already written (scripts/jev/lane_metrics.py) — the openjev lane
+  servers just haven't adopted it. Expected action: dispatch it; nothing
+  needed from you.
+column: backlog
+priority: medium
+created: 2026-10-08
+
+autonomy: t2
+auto_done_when:
+  - verified_true
+done_note: lanes report /metrics and the hub page shows real numbers
+
+spec: >-
+  Give the openjev lane servers the /metrics endpoint defined by
+  scripts/jev/lane_metrics.py (chaba repo — vendor the file; it is
+  stdlib-only on purpose). The servers live in the open-jev repo
+  (~/CascadeProjects/open-jev on tony-omen/idc02/idc03; check `git
+  remote` for the canonical remote). Wire LaneMetrics.observe() into
+  the /v1/systemone handler — one call per served request, passing
+  elapsed seconds, questions answered, and escalations (answers that
+  fell back to stub/heavier-tier routing) — and call attach(app) at
+  startup. Then: (1) verify GET /metrics returns the documented JSON
+  shape on a running instance; (2) restart the units and confirm
+  scripts/ada/nest-overview.py --dry-run no longer prints "no metrics"
+  for the jev lanes (ollama at tony-omen:11434 is third-party and stays
+  "no metrics" — expected). Lanes: open-jev.service tony-omen:8777
+  (gemma-3-4b), open-jev-student.service tony-omen:8778 (gemma-3-1b),
+  idc02:8777, idc03:8778 (distilbert prod gate), idc03:8779 (container).
+  Coordinate restarts with the weekly bench (Mon 04:30) — the omen
+  units are parked between runs, so deploying to the repo checkout and
+  letting the bench pick it up is acceptable; units on idc02/idc03 run
+  always-on and can restart immediately.
+
+action:
+  type: dispatch
+  status: queued
