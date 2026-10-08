@@ -1,0 +1,36 @@
+id: ha-lanes-program
+title: 'Program: two-lane HA structure — household prod + private prod, each with a dev twin'
+brief: "TONY-HA is the stable household instance for every member; ADA-HA (Tony) is the stable private-project instance; each gets a -dev twin for final testing before release. Umbrella card for the lane build-out."
+column: doing
+priority: high
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+metric: >-
+  A change travels ada-dev -> ada-ha (private lane) or ada-dev/tony-dev -> tony-ha
+  (household lane) via a scripted promote step with recorded verify evidence; parity
+  check shows zero unexplained drift between each prod/dev twin; no staging instance
+  actuates a real device.
+note: >-
+  Naming disambiguation — the HA instance "ada-ha" (tony-dell :8125) is NOT the Ada
+  voice backends ada-ha-tony/ada-ha-michael (idc03 :8002/:8003). The voice backends
+  name their Ada persona instance (ADA_INSTANCE_ID=tony/michael); the HA instance is
+  the Home Assistant lab-turned-private-prod. New instance IDs avoid the ada-*
+  prefix for HA boxes to reduce the collision (ada-dev is the HA staging twin, not
+  an Ada backend).
+  Decisions taken 2026-10-08: two-lane model (prod+dev twin per lane), dev instances
+  get public URLs behind Cloudflare Access (iPad-off-tailnet testing), cloned
+  household users are kept on ada-ha (privacy enforced by CF Access + logins).
+  ada-ha is already renamed "ADA-HA (Tony)" with PWA branding and chaba-home-first
+  sidebar (commit 44bb185f).
+spec: >-
+  Lane A (household): tony-dev :8127 -> tony-ha :8123 — members Tony/KK/Guest/Testo,
+  shared dashboards + household automations, ada-ha-tony voice backend points here.
+  Lane B (private): ada-dev :8128 -> ada-ha :8125 — Tony-only projects, same shape.
+  Existing michael-dev :8124 -> michael-ha lane stays untouched.
+links:
+  - tony-ha-split-ada-dev
+  - ha-public-urls-cf-access
+  - request-lifecycle
+blocked_by: []
+autonomy: t2

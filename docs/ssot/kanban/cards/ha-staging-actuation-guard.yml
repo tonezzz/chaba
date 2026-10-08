@@ -1,0 +1,35 @@
+id: ha-staging-actuation-guard
+title: 'Staging actuation guard — dev clones must never double-fire household automations'
+brief: "A cloned tony-ha/ada-ha config carries real automations, scripts, shell_commands and cloud integrations. If a dev twin boots as-is it will actuate real devices twice. Define the strip list before ha-dev-instances boots anything."
+column: backlog
+priority: high
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+metric: >-
+  Booting tony-dev/ada-dev produces zero outbound actuation: no Tuya/local
+  switch toggles, no cast commands, no notifications, no shell_command effects;
+  read-only sensors and dashboards stay functional for UI testing.
+verify: >-
+  Boot ada-dev with cloned config, watch 24h of its logbook + tony-ha state for
+  duplicate actions (e.g. switch.plug_tv, cast targets); checklist in SSOT marks
+  each dangerous integration disabled or stubbed.
+spec: >-
+  Strategy: keep config byte-identical where possible; neutralize only the
+  write paths. Strip/stub on the staging copy: automation + script
+  automations that actuate (or set `initial_state: 'off'` via a staging
+  overlay), shell_command entries (point at a no-op script that logs),
+  rest_command targets (rewrite to a local echo endpoint or drop),
+  Tuya/cloud integrations that can write (keep entities readable where safe),
+  cast/notify services, webhooks outbound (board-api, recent-event posts).
+  Read-keep: sensors, history, dashboards, Lovelace resources, themes.
+  Deliverable: scripts/home-assistant/stage-clone.sh — copies prod config and
+  applies the overlay; overlay list lives in SSOT so it stays reviewable.
+  Open question to decide in-card: test automations on staging should run
+  against mha_mirror_*/dev_* mock entities (michael-dev already proves this
+  pattern) rather than real entities.
+links:
+  - ha-lanes-program
+  - ha-dev-instances
+blocked_by: []
+autonomy: t2

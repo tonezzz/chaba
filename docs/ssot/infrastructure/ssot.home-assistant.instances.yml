@@ -13,6 +13,8 @@ instances:
     port: 8123
     host_port: 127.0.0.1:8123
     config: /home/tony/.config/home-assistant
+    lane: household (Tony, KK, Guest, Testo) — prod twin of tony-dev :8127
+    location_name: TONY-HA
     url:
       local: http://127.0.0.1:8123
       tailscale: https://tony-dell.taila0626a.ts.net:8123
@@ -53,12 +55,14 @@ instances:
     base: ada
     host: tony_dell
     runtime: rootless podman
-    network: podman (NOT host — dev isolation)
+    network: podman (NOT host — isolation)
     container: ada-ha
     image: docker.io/homeassistant/home-assistant:stable
     port: 8125
     host_port: 127.0.0.1:8125
     config: /home/tony/.config/ada-ha
+    lane: private (Tony) — prod twin of ada-dev :8128
+    location_name: ADA-HA (Tony)
     url:
       local: http://127.0.0.1:8125
       tailscale: https://tony-dell.taila0626a.ts.net:8125
@@ -87,6 +91,45 @@ instances:
       instead. `profiler:` in configuration.yaml fails YAML validation
       (pre-existing clone artifact; harmless).'
 
+  tony-dev:
+    id: tony-dev
+    base: ha
+    host: tony_dell
+    runtime: rootless podman
+    network: podman (NOT host — staging isolation)
+    container: tony-dev
+    port: 8127
+    host_port: 127.0.0.1:8127
+    config: /home/tony/.config/tony-dev
+    lane: household staging — dev twin of tony-ha :8123
+    url:
+      local: http://127.0.0.1:8127
+      tailscale: https://tony-dell.taila0626a.ts.net:8127
+      public: https://tony-dev.surf-thailand.com
+    status: planned
+    note: 'Lane program card: ha-lanes-program. Staging config must pass
+      ha-staging-actuation-guard before first boot (cloned automations would
+      double-fire real devices). Port 8126 taken by a socat forward.'
+
+  ada-dev:
+    id: ada-dev
+    base: ada
+    host: tony_dell
+    runtime: rootless podman
+    network: podman (NOT host — staging isolation)
+    container: ada-dev
+    port: 8128
+    host_port: 127.0.0.1:8128
+    config: /home/tony/.config/ada-dev
+    lane: private staging — dev twin of ada-ha :8125
+    url:
+      local: http://127.0.0.1:8128
+      tailscale: https://tony-dell.taila0626a.ts.net:8128
+      public: https://ada-dev.surf-thailand.com
+    status: planned
+    note: 'Lane program card: ha-lanes-program. Same actuation-guard rule —
+      neutralize write paths on the clone before boot.'
+
   michael-ha:
     id: michael-ha
     base: michael
@@ -114,11 +157,15 @@ instances:
     status: active
 
 status:
-  last_updated: "2026-10-07"
-  last_verified: "2026-10-07"
+  last_updated: "2026-10-08"
+  last_verified: "2026-10-08"
   health: active
   notes: |
     tony-ha HA core container is healthy on port 8123, now bound to 127.0.0.1:8123
     and exposed via Tailscale HTTPS at https://tony-dell.taila0626a.ts.net:8123.
     michael-dev HA core container is healthy on port 8124 and exposed via
     Tailscale HTTPS at https://tony-dell.taila0626a.ts.net:8124.
+    Two-lane model (2026-10-08, program card ha-lanes-program): tony-ha=household
+    prod, ada-ha=private prod ("ADA-HA (Tony)"), tony-dev :8127 + ada-dev :8128
+    = staging twins (planned). Naming: HA instance "ada-ha" != Ada voice backends
+    ada-ha-tony/ada-ha-michael on idc03 (those are ADA_INSTANCE_ID values).

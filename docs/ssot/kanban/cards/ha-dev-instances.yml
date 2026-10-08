@@ -1,0 +1,33 @@
+id: ha-dev-instances
+title: 'Provision tony-dev :8127 + ada-dev :8128 staging twins'
+brief: "Each lane gets a dev twin for release-candidate testing: tony-dev mirrors tony-ha (household shape), ada-dev mirrors ada-ha (private shape)."
+column: backlog
+priority: high
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+metric: >-
+  Both containers healthy on 127.0.0.1:8127/:8128, reachable on tailnet HTTPS and
+  public CF-Access-gated URLs, registered in instances/services/audit SSOT.
+verify: >-
+  curl https://tony-dell.taila0626a.ts.net:8127/ and :8128 -> 200; public
+  tony-dev/ada-dev.surf-thailand.com -> 302 CF Access; both listed in
+  ssot.home-assistant.instances.yml with twin field.
+spec: >-
+  Per instance: quadlet (podman network, NOT host-net), publish
+  127.0.0.1:<port>:8123, volume ~/.config/<name>:/config:Z, TZ=Asia/Bangkok,
+  health-cmd curl :8123. Config seed = cp -a of the prod twin's config, then apply
+  the staging actuation guard (card ha-staging-actuation-guard) BEFORE first boot.
+  tailscale serve --bg on each port. Public: DNS CNAME *.surf-thailand.com -> edge
+  (DNS-capable token lives on idc02), Caddy edge block with `tls internal`
+  (proxied DNS = no origin ACME — see docs/kb/edge-add-public-host.md), dedicated
+  CF Access app on the email allowlist. PWA branding per instance via
+  /local/<name>-pwa.js (NAME=TONY-DEV / ADA-DEV) + location_name set.
+  Ports: 8126 is occupied by a socat forward — do not use.
+  Register: ssot.home-assistant.instances.yml, ssot.services.yml, audit
+  expected_services, health checks.
+links:
+  - ha-lanes-program
+  - ha-staging-actuation-guard
+blocked_by: [ha-staging-actuation-guard]
+autonomy: t2

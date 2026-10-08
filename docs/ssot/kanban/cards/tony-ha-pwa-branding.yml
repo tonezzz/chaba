@@ -1,0 +1,25 @@
+id: tony-ha-pwa-branding
+title: 'tony-ha PWA branding — saved app reads TONY-HA (prod change, approval-gated)'
+brief: "Apply the ada-ha PWA override to production: /local/tony-ha-pwa.js via extra_module_url rewrites manifest + apple-mobile-web-app-title so the household app saves as TONY-HA. Requires prod config edit + restart — needs explicit approval."
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+program: ha-lanes
+metric: >-
+  Saving tony-ha to home screen produces an icon named TONY-HA (iOS uses the
+  apple meta, Android uses the manifest); prod restart is the only downtime.
+verify: >-
+  After restart, curl / shows the extra module tag and /local/tony-ha-pwa.js
+  serves; re-saved PWA on a real device shows TONY-HA.
+spec: >-
+  Same mechanism deployed on ada-ha 2026-10-08 (commit 44bb185f): tiny JS in
+  config/www + frontend.extra_module_url. On tony-ha the change is
+  configuration.yaml + www file + restart. Optional add-on: set per-user
+  sidebar order (chaba-home first) for household users — decide per user, Tony
+  first. Note: verify location_name is still "TONY-HA" before writing JS NAME.
+links:
+  - ha-lanes-program
+  - ada-ha-hardening
+blocked_by: []
+autonomy: t2
