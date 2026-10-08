@@ -1,28 +1,25 @@
 id: kanban-act-loop
 title: 'Kanban close-out standard: wire kanban-act into the loop + auto_done_when contract'
-brief: 'Review piles grow because closing is manual. kanban-act.py already implements T2 auto-close
-  (autonomy: t2 + auto_done_when deterministic checks), but nothing runs it and most cards never declare
-  the contract. Make close-out a standard procedure: cards declare done-criteria at file time, a timer
-  drains review automatically, human attention lands only on rk=verify/decide.'
+brief: 'Review piles grow because closing is manual. kanban-act.py already implements T2 auto-close (autonomy: t2
+  + auto_done_when deterministic checks), but nothing runs it and most cards never declare the contract. Make close-out
+  a standard procedure: cards declare done-criteria at file time, a timer drains review automatically, human attention
+  lands only on rk=verify/decide.'
 column: backlog
 priority: medium
 created: 2026-10-08
-note: '2026-10-08 review sweep: 20 verified cards sat in review needing a manual close pass — kanban-act
-  exists (scripts/ada/kanban-act.py) but has no timer and only ~7 cards declare auto_done_when. Dispatch
-  cards get verified: true from merge-sweep but nothing translates that into column: done. The bounded
-  check vocabulary (page_exists/card_done/file_exists/service_active) already covers most dispatch
-  evidence; add git_merged if needed.'
-spec: '(1) Add a kanban-act step to the timer loop — simplest correct placement is a 4th ExecStart on
-  chaba-kanban-brief.service (30min cadence, same host as the writer) or its own kanban-act.timer —
-  pick whichever matches existing systemd conventions; --dry-run log first pass optional. (2) Card
-  template/standard: document in ssot.kanban.yml (or wherever the card schema lives) that new
-  dispatch/lab cards SHOULD declare autonomy + auto_done_when; add the fields to the card template.
-  (3) Extend kanban-act checks if needed: git_merged:<branch-prefix> (branch landed on origin main/master)
-  so dispatch cards can express "verified" natively — merge-sweep already sets verified: true, so an
-  alternative is a verified_true check that just reads the field. (4) CI nudge: ssot-validate-all.mjs
-  (or the card validator) warns on review-column cards with no auto_done_when and no review_kind —
-  warning only, not an error. (5) Safety stays: MAX_ACTS cap, ops event per act, t3/rk=decide cards
-  never auto-close, open requests block close.'
+note: '2026-10-08 review sweep: 20 verified cards sat in review needing a manual close pass — kanban-act exists
+  (scripts/ada/kanban-act.py) but has no timer and only ~7 cards declare auto_done_when. Dispatch cards get verified:
+  true from merge-sweep but nothing translates that into column: done. The bounded check vocabulary (page_exists/card_done/file_exists/service_active)
+  already covers most dispatch evidence; add git_merged if needed.'
+spec: '(1) Add a kanban-act step to the timer loop — simplest correct placement is a 4th ExecStart on chaba-kanban-brief.service
+  (30min cadence, same host as the writer) or its own kanban-act.timer — pick whichever matches existing systemd
+  conventions; --dry-run log first pass optional. (2) Card template/standard: document in ssot.kanban.yml (or wherever
+  the card schema lives) that new dispatch/lab cards SHOULD declare autonomy + auto_done_when; add the fields to
+  the card template. (3) Extend kanban-act checks if needed: git_merged:<branch-prefix> (branch landed on origin
+  main/master) so dispatch cards can express "verified" natively — merge-sweep already sets verified: true, so an
+  alternative is a verified_true check that just reads the field. (4) CI nudge: ssot-validate-all.mjs (or the card
+  validator) warns on review-column cards with no auto_done_when and no review_kind — warning only, not an error.
+  (5) Safety stays: MAX_ACTS cap, ops event per act, t3/rk=decide cards never auto-close, open requests block close.'
 links:
 - scripts/ada/kanban-act.py
 - docs/ssot/kanban/ssot.kanban.yml
@@ -31,8 +28,24 @@ links:
 blocked_by: []
 autonomy: t2
 auto_done_when:
-  - service_active:chaba-kanban-brief.timer@tony-dell
-done_note: 'kanban-act runs on cadence and the card standard documents the auto_done_when contract.'
+- service_active:chaba-kanban-brief.timer@tony-dell
+done_note: kanban-act runs on cadence and the card standard documents the auto_done_when contract.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-dell
+  task_id: 20261008-150706-1-add-a-kanban-act-step-to-the
+updated: 2026-10-08 15:17
+claim:
+  session: 20261008-150706-1-add-a-kanban-act-step-to-the
+  since: 2026-10-08 15:07
+comms:
+- at: 2026-10-08 15:07
+  from: chaba
+  text: dispatched 20261008-150706-1-add-a-kanban-act-step-to-the on chaba
+- at: 2026-10-08 15:17
+  from: devin
+  text: '[devin] picked up. Plan: manifest-level fix — render-jobs.py gains multi-ExecStart (exec: list), chaba-kanban-brief
+    job declares brief+act+nest (parity with the hand-maintained unit), kanban-act.py gains git_merged/verified_true
+    + review-only/rk=decide/open-request gates, card_schema documents the contract, validator nudges review cards
+    missing close-out declarations.'
