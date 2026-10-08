@@ -1,0 +1,24 @@
+id: voice-combo-gemini-baseline
+title: 'Bench: Gemini Live golden baseline'
+column: backlog
+updated: 2026-10-08 18:11
+priority: medium
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Run the golden baseline: stream every fixture in scripts/voice-bench/fixtures/ through the CURRENT Gemini
+  Live path (same client shape as gev-gemini) and record the same metrics the harness emits for other combos (ttfa,
+  round-trip, WER, tool-call match). This is the reference row every fallback gets compared against. Gemini creds
+  exist on tony-dell — run there. Output results/gemini-baseline-<ts>.json + update reports/voice-fallback/LATEST.md.'
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  model: swe-2-medium
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+pipeline: ci

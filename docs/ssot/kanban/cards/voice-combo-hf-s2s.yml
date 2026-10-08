@@ -1,0 +1,25 @@
+id: voice-combo-hf-s2s
+title: 'Bench: huggingface/speech-to-speech serve mode'
+column: backlog
+updated: 2026-10-08 18:11
+priority: medium
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Bench combo `hf-s2s` via scripts/voice-bench/bench.py: run github.com/huggingface/speech-to-speech in serve
+  mode (ws://127.0.0.1:8765/v1/realtime) with STT=faster-whisper (Thai-capable), LLM=OpenAI-compatible local endpoint
+  (ollama/vLLM on GPU), TTS=repo default. Stream all fixtures, record metrics JSON + report. Key result to capture:
+  does the OpenAI-Realtime-compatible event set adapt cleanly to our gemini-protocol client shape? labels gpu required.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - gpu
+  model: swe-2-medium
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+pipeline: ci

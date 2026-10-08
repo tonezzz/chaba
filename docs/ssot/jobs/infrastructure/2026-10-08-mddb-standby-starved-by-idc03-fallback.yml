@@ -1,0 +1,77 @@
+title: mddb standby pull starved — idc03 native backup silently falling back to filecopy
+subtitle: Verification of gdrive offload tier passed, but the pull pipeline gets no new input
+icon: warning
+
+context:
+  trigger: Post-run verification for card 'verify-gdrive-offload-tier'
+    (docs/ssot/jobs/infrastructure/2026-10-07-gdrive-storage-offload.yml),
+    first 03:30 run after the retention change.
+  units:
+    - "tony-dell: mddb-standby-pull.timer/service (pulls idc03:mddb-backups/,
+      include 'mddb-2*.db', keeps newest-1 local, rclone-moves rest to
+      gdrive:backups/mddb/)"
+    - "idc03: mddb-backup.timer/service (~/mddb-backup.sh — native /v1/backup
+      primary, filecopy+open-verify fallback)"
+
+verification_result:
+  run: "2026-10-08 03:30:00 +07 -> 03:41:40, 11m40s wall"
+  checks:
+    - "journalctl --user -u mddb-standby-pull.service: clean —
+      Started 03:30:00, Finished 03:41:40, Result=success, ExecMainStatus=0. PASS"
+    - "~/.local/share/mddb-backups/filecopy/: exactly 1 file —
+      mddb-20261006-0230.db (4,812,496,896 B, matches idc03 source size). PASS"
+    - "rclone lsl gdrive:backups/mddb/: 3 dumps — mddb-202610{03,04,05}.
+      PASS (nothing rotated this run — only 1 local file, correct)."
+    - "~/.config/containers/mddb/data/mddb.db: mtime refreshed
+      2026-10-08 03:36:56 +07 (podman unshare cp re-copied the Oct-6 file). PASS"
+  rclone: "No failure — rclone move was not needed this run; not an
+    auth/network issue."
+
+finding_a_starved_pipeline:
+  symptom: "Standby db is 2 days stale; newest local dump stays
+    mddb-20261006-0230.db and will not advance."
+  cause: "idc03 mddb-backup.sh curls /v1/backup with --max-time 300, then
+    podman-cp's the file exactly once. The mddb.db grew to ~7.8G and
+    backupTo now exceeds 300s; curl aborts, cp finds nothing, script logs
+    'WARNING: native backup produced no file — falling back to filecopy'
+    (seen Oct 7 + Oct 8). Fallback output is named mddb-filecopy-mddb-*.db,
+    which the pull unit's include 'mddb-2*.db' does not match."
+  note: "Fallback dumps ARE integrity-checked — the script boots a throwaway
+    mddb container against the copy and only keeps it on healthy
+    (verified=1 both nights, attempt 1). Failures get renamed
+    *.db.UNVERIFIED, which no 'mddb-*.db' include pattern would match —
+    so widening the pull include to mddb-filecopy-*.db only ever pulls
+    verified files."
+
+finding_b_container_leak:
+  symptom: "idc03 mddb container /app/backups/ holds orphaned native dumps:
+    mddb-20261007-0230 (7.57G) + mddb-20261008-0230 (7.85G) = ~15.4G,
+    growing ~7.8G/day while the fallback keeps firing."
+  cause: "backupTo completes server-side after curl's 300s abort; the
+    script's 'podman exec mddb rm /app/backups/$NAME' only runs when the
+    cp succeeds, so completed dumps are never cleaned."
+
+recommendation:
+  decision_needed: true
+  options:
+    - id: a
+      desc: "Widen pull include on mddb-standby-pull.service to also match
+        mddb-filecopy-*.db (verified-only by construction). Restores
+        freshness now; keep as safety net even after fixing idc03."
+    - id: b
+      desc: "Fix idc03 mddb-backup.sh tier-1: raise --max-time (e.g. 1200s)
+        and/or poll 'podman exec mddb ls /app/backups/$NAME' after curl
+        returns instead of a single immediate cp. Also rm any file found
+        in /app/backups/ regardless of cp outcome."
+    - id: c
+      desc: "Both — (b) fixes the leak and restores compacted native dumps;
+        (a) keeps the standby fed whenever filecopy is the surviving tier."
+  suggested: c
+
+evidence:
+  - "idc03 ~/mddb-backups/: native mddb-2*.db last produced Oct 6;
+    filecopy dumps Oct 7 (7.58G) + Oct 8 (7.85G), both verified=1."
+  - "journalctl -u mddb-backup.service Oct 7 02:35: 'WARNING: native
+    backup produced no file — falling back to filecopy' (300s after start)."
+  - "podman exec mddb ls /app/backups/: mddb-20261007-0230 (7,566,147,584),
+    mddb-20261008-0230 (7,852,212,224) — full-size, orphaned."

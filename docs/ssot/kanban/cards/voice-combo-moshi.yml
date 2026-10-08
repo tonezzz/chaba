@@ -1,0 +1,25 @@
+id: voice-combo-moshi
+title: 'Bench: kyutai moshi full-duplex baseline'
+column: backlog
+updated: 2026-10-08 18:11
+priority: low
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Bench combo `moshi` via scripts/voice-bench/bench.py: run kyutai-labs/moshi (rust or pytorch server) on GPU,
+  stream English fixtures only (Moshi is English-only — record Thai fixtures as n/a). Capture latency/ttfa (expect
+  best-in-class ~200ms) and record tool-call=none (Moshi has no tool plumbing — that IS the finding). Document how
+  far a full-duplex model is from our needs.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - gpu
+  model: swe-2-medium
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+pipeline: ci

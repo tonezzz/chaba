@@ -1,0 +1,46 @@
+id: dispatch-model-smoke-medium
+title: 'Smoke: swe-2-medium model passthrough'
+column: done
+updated: 2026-10-08 18:20
+spec: 'Smoke test for action.model passthrough. Do NOT change any files. Run `git rev-parse --short HEAD` and `hostname`,
+  then finish. Report: Medium smoke OK: HEAD <sha> on host <hostname>.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-medium
+  status: done
+  runner: tony-omen
+  result: 'exit=0 G_CURRENT_DESKTOP <- XDG_CURRENT_DESKTOP=''XFCE'' | Medium smoke OK: HEAD f6918a7f on host tony-omen.
+    | devin-task-20261008-165124-smoke-test-for-action-model-pa.service: Consumed 39.165s CPU time over 37.955s
+    wall clock time, 1G memory peak.'
+  verified: true
+comms:
+- at: 2026-10-08 16:51
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-08 16:51
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 16:51
+  from: chaba
+  text: started devin-task-20261008-165124-smoke-test-for-action-model-pa on tony-omen (dispatch)
+- at: 2026-10-08 16:51
+  from: devin
+  text: 'Medium smoke OK: HEAD f6918a7f on host tony-omen'
+- at: 2026-10-08 16:52
+  from: tony-omen
+  text: 'finished (ok): exit=0 G_CURRENT_DESKTOP <- XDG_CURRENT_DESKTOP=''XFCE'' | Medium smoke OK: HEAD f6918a7f
+    on host tony-omen. | devin-task-'
+- at: 2026-10-08 16:52
+  from: chaba
+  text: 'session-end checkpoint a2b58265: 1 leftover file(s) committed'
+- at: 2026-10-08 16:52
+  from: chaba
+  text: pushed dispatch/20261008-165124-smoke-test-for-action-model-pa to origin
+- at: 2026-10-08 16:52
+  from: chaba
+  text: auto-merged 6c41fc48 (dispatch/20261008-165124-smoke-test-for-action-model-pa) → origin/master
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
+claim: {}

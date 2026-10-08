@@ -1,0 +1,55 @@
+id: voice-bench-harness
+title: Build voice-fallback benchmark harness
+column: doing
+updated: 2026-10-08 18:16
+priority: high
+program: voice-fallback
+tags:
+- voice
+- bench
+- ci
+spec: 'Build scripts/voice-bench/ — the harness that every voice-fallback combo card runs through. Research base:
+  docs/kb/voice-fallback-options.md.
+
+
+  Requirements:
+
+  1. fixtures/ — generated audio fixtures (NOT recorded): synthesize ~20 phrases via Gemini/Azure TTS, half English
+  half Thai, covering: HA device commands (turn on X, what is Y temp), questions needing tool calls, short chit-chat.
+  Store wav + expected transcript + expected tool-call JSON per fixture. Committing synthesized audio is fine (small).
+
+  2. combos.yml — declarative combo definitions: {id, stt, llm, tts, orchestrator, host_labels, notes}. Loader validates
+  against this file.
+
+  3. bench.py — given a combo id: bring up the stack (podman/local), stream each fixture through it, measure per-fixture:
+  time-to-first-audio ms, total round-trip ms, STT transcript vs expected (WER), tool-call match (exact/partial/none).
+  Output results/<combo>-<ts>.json.
+
+  4. report.py — render results to reports/voice-fallback/LATEST.md table (combo x metric) + append trend row; post
+  a summary comment back to the card via board API.
+
+  5. Keep it runnable via action.type=script on runner hosts (repo-sync + cmd). GPU combos get labels [gpu].
+
+
+  Do NOT implement the combos themselves — harness only. Verify: bench.py --combo <dummy> --dry-run produces the
+  JSON schema; report.py renders an empty table without error.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-medium
+  status: running
+  runner: idc03
+comms:
+- at: 2026-10-08 18:10
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-08 18:10
+  from: idc03
+  text: claimed
+- at: 2026-10-08 18:10
+  from: chaba
+  text: started devin-task-20261008-181050-build-scripts-voice-bench-the- on idc03 (dispatch)
+- at: 2026-10-08 18:16
+  from: devin
+  text: 'harness built: combos.yml + 20 en/th fixtures + bench.py (dry-run schema verified) + report.py (empty table
+    renders). Fixture wavs are tone placeholders — need a Gemini/Azure key on a runner for real speech.'

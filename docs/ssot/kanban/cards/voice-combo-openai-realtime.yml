@@ -1,0 +1,22 @@
+id: voice-combo-openai-realtime
+title: 'Bench: OpenAI Realtime hosted baseline (needs key)'
+column: backlog
+updated: 2026-10-08 18:11
+priority: low
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Bench combo `openai-realtime` via scripts/voice-bench/bench.py IF OPENAI_API_KEY is available in ~/.config/secrets/
+  — stream all fixtures through OpenAI Realtime (speech-to-speech, tool calling). This is the paid reference ceiling.
+  If no key exists, mark result skipped: no-key and note in comms — do not fail the card.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-medium
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+pipeline: ci

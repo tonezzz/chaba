@@ -1,0 +1,23 @@
+id: voice-rainy-day
+title: 'Rainy-day voice fallback: insurance adapter + local cascade'
+column: backlog
+updated: 2026-10-08 17:27
+priority: medium
+tags:
+- voice
+- resilience
+- nest
+spec: 'Prepare for Gemini Live unavailability. Research: docs/kb/voice-fallback-options.md. Phases: (1) protocol
+  adapter — Gemini-protocol -> OpenAI-Realtime event set in gev-gemini, plus a second RealtimeProvider impl in ada-pi/backend/realtime_provider.py
+  (ABC exists at line ~874). (2) Hosted fallback: OpenAI Realtime through the adapter (paid). (3) Offline fallback:
+  huggingface/speech-to-speech serve-mode on idc02 or omen (VAD+faster-whisper+OpenAI-compatible LLM+TTS, ws://127.0.0.1:8765/v1/realtime)
+  — same adapter path. Known gap: Thai TTS is weak locally; local fallback is English degraded mode. Nest angle:
+  a distilled domain model could fill the cascade LLM slot later; full-duplex S2S (Moshi-class) is research-scale,
+  not near-term.'
+action:
+  type: manual
+note: 'Filed from session research 2026-10-08. Trigger event: any Gemini Live outage/quota change.'
+comms:
+- at: 2026-10-08 17:27
+  from: tony
+  text: card captured via board-api

@@ -1,0 +1,43 @@
+id: dispatch-remote-smoke
+title: dispatch on remote runner smoke (idc01)
+column: doing
+priority: low
+created: '2026-10-08'
+updated: 2026-10-08 16:32
+brief: First remote-host devin dispatch — prove devin-dispatch works off dell/omen.
+action:
+  type: dispatch
+  status: running
+  host: idc01
+  runner: idc01
+  sweep:
+    stale_running: 2026-10-08 16:32
+    dirty: 1
+spec: 'You are running on the remote runner host idc01 in a worktree of the chaba repo.
+
+  1. Run: git log --oneline -1 && hostname
+
+  2. Post one /comment to this card with the HEAD sha and hostname.
+
+  3. Do not commit, push, or modify files. Then finish.'
+comms:
+- at: 2026-10-08 16:22
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 16:23
+  from: idc01
+  text: claimed
+- at: 2026-10-08 16:23
+  from: chaba
+  text: started devin-task-20261008-162315-you-are-running-on-the-remote- on idc01 (dispatch)
+- at: 2026-10-08 16:23
+  from: devin
+  text: 'Remote smoke OK: HEAD 5fb26906ca86bb3f7ef542052719453121b2a9ce on host idc01'
+- at: 2026-10-08 16:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261008-162315-you-are-running-on-the-remote- no longer active on idc01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-08 16:32
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261008-162315-you-are-running-on-the-remote- on idc01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'

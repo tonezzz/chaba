@@ -1,0 +1,25 @@
+id: voice-combo-cascade-whisper-piper
+title: 'Bench: faster-whisper + ollama LLM + piper cascade'
+column: backlog
+updated: 2026-10-08 18:11
+priority: medium
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Bench combo `cascade-whisper-piper` via scripts/voice-bench/bench.py: faster-whisper (small/medium) STT ->
+  local LLM via ollama or llama.cpp server on the host GPU -> piper TTS (English) + note Thai TTS gap. Stand up
+  required services for the bench duration, stream all fixtures, record metrics JSON + report. labels gpu required
+  (local LLM inference).'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - gpu
+  model: swe-2-medium
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+pipeline: ci
