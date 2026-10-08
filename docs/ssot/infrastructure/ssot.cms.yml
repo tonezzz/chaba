@@ -1,0 +1,249 @@
+title: CMS Information Architecture — ada-cms-pages
+subtitle: Naming, tagging, nav-grouping and lifecycle standard for the CMS page collection
+icon: 🗂️
+version: 1
+
+overview:
+  purpose: >
+    ada-cms-pages grew flat (~280 keys): reports, benchmarks, camera
+    dossiers, digests, research notes and one-offs in one namespace, with
+    duplicate keys and no nav structure. This file is the standard the
+    collection, its viewers, and every producer must follow so new page
+    families land sorted instead of sprawling.
+  boundary: >
+    Governs the MDDB ada-cms-pages collection and everything that reads
+    or writes it: ada-pi cms tools + pwa/cms viewer, scripts/ada/*.py
+    producers, scripts/cam-wall/cam-wall-cms.py, scripts/lib/cms_index.py.
+    Report-page meta fields (summary/fresh_for/confidence/…) live in
+    docs/ssot/apps/ssot.apps.cms-reports.yml — this file owns identity
+    and grouping only.
+  observed_state: >
+    Baseline measured 2026-10-08: 388 docs / 280 keys / 110 th variants.
+    Real clusters: cctv ~98 keys (cam-*, camwall-*, cctv-*),
+    domain digests ~24 (*-digest via report-distill), bench ~21,
+    ops/infra ~22, news/flood/media ~18, research/notes ~47,
+    personal ~18, meta/test ~6. Full dump: reports/cms-ia-inventory-2026-10-08.md.
+
+meta:
+
+  kind:
+    description: >
+      Coarse doc class. Determines list/index eligibility — the cms_read
+      list gate and reports-index accept only page|report.
+    values:
+      page: >
+        Hand/tool-authored content page (default). Includes digests —
+        they carry report_role=digest.
+      report: >
+        Machine-refreshed report artifact carrying the full
+        meta_contract (summary, domain, fresh_for, confidence,
+        timeline). Ada answers from reports first.
+      archive: >
+        Retired doc kept for history (superseded older than the
+        retention window flips here). Never listed or indexed.
+    retired_values:
+      benchmark: use kind=report + domain=bench — kind=benchmark was
+                 invisible to list/search/index (orphaned docs).
+    rule: every doc MUST have kind; missing is a normalize warning.
+
+  status:
+    description: lifecycle state.
+    values:
+      active:     live page (default when absent).
+      stub:       placeholder — thin page awaiting real content.
+      superseded: replaced by another key; meta.superseded_by is the
+                  redirect target. History, never deleted.
+      archived:   past retention; out of every live surface.
+      retracted:  withdrawn as wrong/unsafe.
+      expired:    point-in-time doc past its validity.
+    retired_values:
+      published:  alias of active (normalize on next touch).
+
+  domain:
+    description: >
+      The grouping tag — one canonical value per page. Authoritative:
+      slug prefixes are hints, meta.domain is what nav/digests group on.
+      report-distill generates <domain>-digest nightly for every domain
+      it finds, so a new domain costs a new digest page — pick an
+      existing one when it fits.
+    canonical:
+      cctv:        camera pages, walls, roster/tool docs
+      flood:       flood watches, reports, flood-hub data
+      news:        news feeds and source assessments
+      media:       cached videos, voice-dub, TTS catalogs
+      weather:     weather station, rain radar
+      finance:     market/gold price reports
+      bench:       benchmarks, measurements, scenario suites
+      lab:         dev-lab experiments (voice clone, colab runs)
+      ops:         incidents, transcript/system audits, self-reports
+      infra:       hosts, services, migrations, capacity, routes
+      monitoring:  watchtowers, trends, standing monitors
+      health:      health digest + health-domain members
+      security:    security posture, hardening
+      dev:         devin/dev-tooling work reports
+      test:        probes, demos, test pages
+      research:    external assessments, explorations, comparisons
+      architecture: system design docs (non-Ada/Chaba)
+      ada:         Ada's own system — voice, tools, sessions, plans
+      chaba-core:  chaba system design/plans
+      memory:      memory-layer docs and audits
+      docs:        manuals, explainers, how-it-works
+      policy:      rules/standards enforced on agents
+      projects:    project trackers
+      purchase:    shopping/procurement research
+      direction:   Tony's direction lines and standing decisions
+      personal:    personal notes (vocab books, household, plans)
+      car-activity: car/family logistics timelines
+      meta:        the cms system itself (indexes, audit reports)
+    aliases_folded:
+      infrastructure:  infra
+      ada-architecture: ada
+      uncategorized:   (retired — every page gets a real domain)
+    rule: empty domain is a defect — report-distill fabricates an
+          'uncategorized' domain for untagged pages and digests it.
+
+nav:
+
+  description: >
+    Section structure for the CMS viewer (ada-pi pwa/cms) and the grouped
+    reports-index. Sections are DERIVED from meta — viewers must not
+    match on slug prefixes. Derivation order: report_role=digest →
+    digests; else kind=report → reports; else domain → section via
+    domain_map; unknown domain → its own auto section; no domain →
+    pages.
+  order: [digests, reports, cameras, flood, news, bench, ops, research,
+          projects, personal, docs, meta, pages]
+  domain_map:
+    cctv: cameras
+    flood: flood
+    news: news
+    media: news
+    weather: news
+    finance: news
+    bench: bench
+    lab: bench
+    ops: ops
+    infra: ops
+    monitoring: ops
+    health: ops
+    security: ops
+    dev: ops
+    test: ops
+    research: research
+    architecture: research
+    ada: research
+    chaba-core: research
+    memory: research
+    direction: research
+    projects: projects
+    purchase: projects
+    personal: personal
+    car-activity: personal
+    docs: docs
+    policy: docs
+    meta: meta
+  titles:
+    digests: "Digests"
+    reports: "Reports"
+    cameras: "Cameras"
+    flood: "Flood"
+    news: "News & media"
+    bench: "Bench"
+    ops: "Ops & infra"
+    research: "Research & notes"
+    projects: "Projects"
+    personal: "Personal"
+    docs: "Docs & policy"
+    meta: "Meta"
+    pages: "Pages"
+  camera_subgroups: >
+    Inside 'cameras' the sub-group is meta.zone_tab (Security|Traffic)
+    then meta.zone_site — cam-wall-cms writes those fields. Wall/index
+    pages (camwall-*, cctv-walls, dvr-wall) sub-group as 'Walls' first.
+    Legacy tab deep-links ?tab=security|traffic map to cameras filtered
+    by zone_tab; ?tab=flood → flood; ?tab=pages → all.
+  auto_sections: >
+    A domain not in domain_map renders as its own section (title-cased
+    domain) after the known order — new families surface without a code
+    change. Adding the domain to domain_map folds it in.
+
+slugs:
+
+  rules:
+    - ascii kebab-case, 1-64 chars of [a-z0-9-_] — Thai/other scripts in
+      the KEY have caused dead twins; put the Thai in the title.
+    - one key per subject — language variants share the key (lang field),
+      never '-th' suffixes.
+    - dated snapshots only for frozen point-in-time artifacts
+      (transcript-audit-YYYY-MM-DD); living pages stay undated and get
+      superseded in place.
+  prefix_families:
+    "cam-*":      per-camera dossier (cam-wall-cms) — domain cctv
+    "camwall-*":  wall index page per zone — domain cctv
+    "cctv-*":     camera tooling/indexes (cctv-walls, audits) — domain cctv
+    "flood-*":    flood pages — domain flood
+    "news-*":     news pages — domain news
+    "bench-*":    benchmark pages — domain bench
+    "status-*":   standing status/monitor pages — domain ops|monitoring
+    "note-*":     research/working notes — domain research
+    "services-*": per-host service inventory — domain infra
+    "*-digest":   nightly domain rollup (report-distill) —
+                  report_role=digest, domain=<that domain>
+    "*-report":   one-off reports — any domain
+  hint_only: >
+    Prefixes help humans guess; nav/digests group on meta.domain alone.
+    A page family that wants its own section gets a new domain value
+    (list it under meta.domain.canonical + nav.domain_map).
+
+dedup:
+
+  rule: >
+    Two live keys must never cover the same subject. On collision keep
+    the canonical key (prefer registry/manifest-generated over hand-made,
+    undated over dated, richer content); the loser gets status=superseded
+    + superseded_by=<winner> + timeline line — content kept as history.
+    If the winner lacks the loser's unique content (e.g. a th variant),
+    copy it into the winner's lang variant first.
+  source_of_truth: >
+    For generated pages dedup at the PRODUCER, not just the collection:
+    a superseded key a generator still publishes comes right back
+    (2026-10-08: cam-dohweb-* ~ cam-traffic-doh-* — same PER_* DOH
+    streams in both zones.yml dohweb.cams and the Traffic registry group;
+    fixed by trimming dohweb.cams to the non-overlapping upcountry set).
+  audit: >
+    cms-audit.py C1 is token-overlap on slugs — it misses cross-scheme
+    twins (cam-dohweb-x ~ cam-traffic-doh-y). Real dup signal: same
+    stream/source or same title across different keys. Check
+    meta.sources + page content, not just the slug.
+
+lifecycle:
+
+  supersede: >
+    status=superseded, superseded_by=<canonical key>, timeline note.
+    Never delete — pages are operational history.
+  archive: >
+    Superseded generated docs older than ARCHIVE_DAYS (cam-wall-cms: 7d)
+    or digest snapshots older than KEEP_DAYS (report-distill: 14d) flip
+    to kind=archive.
+  reports_index: >
+    ada-cms-pages/reports-index regenerates grouped by nav section
+    (section heading + table per section). Producers that write pages
+    via raw /v1/add call scripts/lib/cms_index.py regen_reports_index;
+    ada-pi's cms tools call the same-shape render inside tool_runner.
+
+producers:
+  registry: >
+    Pages generated on a schedule SHOULD carry meta.generated_by +
+    ada-cms-automation/<slug> registry doc (enables the viewer's
+    Regenerate button and cms-auto-health watches).
+  required_meta: [kind, domain, status, slug, title, format, updated]
+  recommended_meta: [summary, fresh_for, report_role, zone_tab,
+                     zone_site, sources, links]
+  list:
+    cam-wall-cms:      cctv domain + zone_tab/zone_group/zone_site meta
+    report-distill:    "'-digest' pages, report_role=digest"
+    bench-edge-cms:    bench domain
+    kanban-cms:        dev-kanban page
+    host-services-cms: "'services-*' pages, infra domain"
+    cms_publish_page:  ada-pi tool — domain arg, see ssot.cms.yml
+    cms-audit.py:      cms-audit-report, meta domain

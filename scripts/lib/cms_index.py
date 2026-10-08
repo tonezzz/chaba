@@ -23,6 +23,37 @@ import urllib.request
 EXCLUDED_STATUS = {"superseded", "archived", "retracted", "expired"}
 MAX_ROWS = 60
 
+# Nav-section derivation — canonical definition lives in
+# docs/ssot/infrastructure/ssot.cms.yml (nav block); keep this map in
+# sync. Domains not listed get their own auto-section after PAGE_ORDER.
+PAGE_ORDER = ["digests", "reports", "cameras", "flood", "news", "bench",
+              "ops", "research", "projects", "personal", "docs", "meta",
+              "pages"]
+DOMAIN_SECTION = {
+    "cctv": "cameras",
+    "flood": "flood",
+    "news": "news", "media": "news", "weather": "news",
+    "finance": "news",
+    "bench": "bench", "lab": "bench",
+    "ops": "ops", "infra": "ops", "monitoring": "ops",
+    "health": "ops", "security": "ops", "dev": "ops", "test": "ops",
+    "research": "research", "architecture": "research", "ada": "research",
+    "chaba-core": "research", "memory": "research",
+    "direction": "research",
+    "projects": "projects", "purchase": "projects",
+    "personal": "personal", "car-activity": "personal",
+    "docs": "docs", "policy": "docs",
+    "meta": "meta",
+}
+SECTION_TITLES = {
+    "digests": "Digests", "reports": "Reports", "cameras": "Cameras",
+    "flood": "Flood", "news": "News & media", "bench": "Bench",
+    "ops": "Ops & infra", "research": "Research & notes",
+    "projects": "Projects", "personal": "Personal",
+    "docs": "Docs & policy", "meta": "Meta", "pages": "Pages",
+}
+SECTION_CAP = 30  # per-section row cap; cameras alone is ~60 keys
+
 
 def _post(mddb: str, path: str, payload: dict, timeout: float = 60):
     req = urllib.request.Request(
@@ -79,6 +110,8 @@ def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
         rows.append({
             "slug": slug,
             "title": (meta.get("title") or [slug])[0],
+            "kind": (meta.get("kind") or [""])[0],
+            "report_role": (meta.get("report_role") or [""])[0],
             "domain": (meta.get("domain") or ["-"])[0],
             "summary": (meta.get("summary") or [""])[0],
             "updated": (meta.get("updated") or ["-"])[0][:16],
@@ -89,17 +122,52 @@ def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
     return rows
 
 
+def row_section(row: dict) -> str:
+    """Nav section for one index row — pure meta, no slug matching."""
+    if row["report_role"] == "digest":
+        return "digests"
+    if row["kind"] == "report":
+        return "reports"
+    dom = row["domain"]
+    if dom in DOMAIN_SECTION:
+        return DOMAIN_SECTION[dom]
+    if dom == "-":
+        return "pages"
+    return dom  # auto-section for a domain not yet in the map
+
+
+def group_rows(rows: list[dict]) -> list[tuple[str, str, list[dict]]]:
+    """-> ordered [(section_id, title, rows)] per ssot.cms.yml nav."""
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        groups.setdefault(row_section(r), []).append(r)
+    out = []
+    for sec in PAGE_ORDER:
+        if sec in groups:
+            out.append((sec, SECTION_TITLES[sec], groups.pop(sec)))
+    for sec in sorted(groups):  # auto-sections for unmapped domains
+        out.append((sec, sec.replace("-", " ").title(), groups[sec]))
+    return out
+
+
 def render(rows: list[dict], now: datetime.datetime) -> str:
     lines = [f"# Reports index — {now:%Y-%m-%d %H:%M}Z\n",
-             "Brief summaries of every report page — read the linked page",
-             "only when the summary isn't enough.\n",
-             "| slug | domain | updated | fresh | summary |",
-             "|---|---|---|---|---|"]
-    for r in rows[:MAX_ROWS]:
-        flag = " ⚠STALE" if r["stale"] else ""
-        summ = (r["summary"] or r["title"])[:80]
-        lines.append(f"| {r['slug']} | {r['domain']} | {r['updated']}"
-                     f"{flag} | {r['fresh']} | {summ} |")
+             "Every live CMS page, grouped by nav section"
+             " (meta kind/domain — ssot.cms.yml). Read the linked page",
+             "only when the summary isn't enough.\n"]
+    for _sec, title, srows in group_rows(rows):
+        shown = srows[:SECTION_CAP]
+        lines.append(f"\n## {title} ({len(srows)})\n")
+        lines += ["| slug | domain | updated | fresh | summary |",
+                  "|---|---|---|---|---|"]
+        for r in shown:
+            flag = " ⚠STALE" if r["stale"] else ""
+            summ = (r["summary"] or r["title"])[:80]
+            lines.append(f"| {r['slug']} | {r['domain']} | {r['updated']}"
+                         f"{flag} | {r['fresh']} | {summ} |")
+        if len(srows) > len(shown):
+            lines.append(f"\n_…{len(srows) - len(shown)} more in this"
+                         " section — see the CMS app._")
     return "\n".join(lines)
 
 
@@ -112,6 +180,7 @@ def regen_reports_index(mddb_base: str, written_by: str,
     md = render(index_rows(list_docs(mddb_base, collection), now), now)
     meta = {
         "kind": ["page"], "slug": ["reports-index"],
+        "status": ["active"], "page_role": ["index"],
         "title": [f"Reports index — {now:%Y-%m-%d %H:%M}Z"],
         "format": ["markdown"], "domain": ["meta"],
         "summary": ["Auto-generated index of report pages — "
