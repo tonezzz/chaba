@@ -1,0 +1,30 @@
+id: omen-gpu-display-wedge
+title: tony-omen display engine wedges under GPU-bench dispatch load (nvidia presentation hang)
+column: backlog
+priority: high
+program: chaba-ops
+updated: 2026-10-08 09:45
+tags:
+- omen
+- gpu
+- dispatch
+- reliability
+note: '2026-10-08 ~06:32: during lab-thai-voice-clone dispatch on tony-omen (F5-TTS + whisper-large-v3 + CAM++ hammering the
+  GTX1650 4GB with CPU spillover), the display presentation engine wedged: physical monitor + AnyDesk capture froze on a stale
+  frame while X, x11grab, and all session processes stayed healthy. Signature: GetVSyncParametersIfAvailable failed 3.3M times
+  (no vblank). Unwedged via chvt 3->2 modeset reset. Host is an interactive desktop — a hung display = unusable machine.'
+spec: 'Make omen GPU dispatches safe on an interactive host: 1) nice/ionice + systemd-run CPUQuota/MemoryMax on runner-agent
+  task units so benches can''t starve the desktop; 2) pre-flight VRAM check — refuse/defer a gpu-labeled card when free VRAM
+  < spec need (GTX1650 is 4GB; whisper-large-v3 alone exceeds it and spills to CPU); 3) watchdog: if vblank/presentation stalls
+  during a gpu task (detect via xrandr --verbose or logwatch on GetVSyncParametersIfAvailable flood), nice the task or pause
+  it; 4) document the chvt 3->2 manual unstick in the card comms/runbook. runner-agent.py is the right seam — it already builds
+  the systemd-run invocation.'
+action:
+  type: dispatch
+  status: idle
+  repo: chaba
+comms:
+- at: 2026-10-08 09:45
+  from: devin
+  text: 'filed from live incident — manual unstick recorded: ssh in, `chvt 3; sleep 2; chvt 2` forces modeset reset without
+    killing the session'

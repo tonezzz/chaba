@@ -1,0 +1,49 @@
+id: nest-lane-tony-dell
+title: 'Nest lane: tony-dell iGPU/CPU — edge-inference bench for specialists'
+brief: Dell's Intel HD 530 iGPU (OpenVINO/Vulkan-capable) and CPU are candidate edge lanes for Nest specialist inference
+  — not training. Phase 0 times the current champion on dell CPU for a real number; then lane entries, a serve shim,
+  and bench+CMS wiring make dell a first-class lane whose results trend in the bench-edge CMS page.
+column: doing
+priority: medium
+program: chaba-nest
+area: infrastructure
+note: 'Hardware reality: Radeon R5 340X (GCN 1.0) is unusable for ML — ignore it. Intel HD 530 supports OpenVINO
+  INT8/FP16 inference and llama.cpp Vulkan — marginal but real for distilbert-class seq-cls and quantized gemma-270m.
+  Dell is the busiest host: keep runs short or off-peak.'
+spec: "Phase 0 — baseline number (cheap, do first):\n- Serve the current champion specialist on dell via plain CPU\
+  \ (onnxruntime\n  or torch-cpu; distilbert seq-cls), run the golden suite + a latency\n  probe (p50/p95 over ~200\
+  \ calls), publish bench/lane-<ts> doc to\n  ada-ha-scenario-reports. If CPU p50 is already <~50ms the iGPU lane\
+  \ is\n  optional — record that finding honestly in the doc.\nPhase 1 — lane registry:\n- ada-pi tests/bench/topologies.yml\
+  \ lanes: add `tony-dell-cpu` and\n  (if phase 0 shows headroom) `tony-dell-igpu` — host, good_for, watch\n  (shared\
+  \ box: off-peak only, <10min runs), cadence.\n- ssot.nest-training.yml training_lanes posture: same additions.\n\
+  Phase 2 — serve shim:\n- nest-train-loop.py serve stage: add --lane support for CPU (onnxruntime)\n  and iGPU\
+  \ (openvino or llama.cpp-server for the 270m). Keep the gtx1650\n  torch path untouched.\nPhase 3 — bench + CMS:\n\
+  - Bench stage accepts a lane endpoint; bench doc meta gains `lane:` tag\n  and a per-lane latency block.\n- bench-edge-cms.py:\
+  \ extend doc filter to also consume bench/lane-* docs\n  and render a lanes comparison table (accuracy + p50 per\
+  \ lane).\nAcceptance:\n- bench/lane-<ts> doc published with real numbers for dell;\n  bench-edge page shows the\
+  \ lanes table; topologies.yml lists the\n  dell lane(s); the loop can serve+bench a candidate on dell end-to-end.\n"
+help: 'Lane registry lives in ada-pi tests/bench/topologies.yml `lanes:`. Publish contract: MDDB ada-ha-scenario-reports,
+  key bench/<kind>-<ts>, meta kind=benchmark. CMS generator: scripts/eye/bench-edge-cms.py (timer on dell). Loop
+  owner: scripts/ada/nest-train-loop.py.'
+updated: 2026-10-08 09:40
+action:
+  type: dispatch
+  status: running
+  runner: mn01
+comms:
+- at: 2026-10-08 06:15
+  from: devin
+  text: 'filed from Tony''s GPU question — assessed live: HD530 iGPU = OpenVINO/Vulkan inference lane candidate;
+    R5 340X GCN1.0 = dead for ML (no ROCm, no Vulkan without experimental amdgpu SI). No training on either. Phase
+    0 gets a real CPU number before building the lane.'
+- at: 2026-10-08 09:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 09:40
+  from: mn01
+  text: claimed
+- at: 2026-10-08 09:40
+  from: chaba
+  text: started devin-task-20261008-024035-phase-0-baseline-number-cheap- on mn01 (dispatch)
+ownership:
+  owner: tony
