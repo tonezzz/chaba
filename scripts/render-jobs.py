@@ -43,6 +43,13 @@ def load_manifest():
     return yaml.safe_load(MANIFEST.read_text())
 
 
+def job_execs(j):
+    """exec: may be a string or a list of strings (one ExecStart each,
+    run in order). Returns the normalized list."""
+    e = j.get("exec")
+    return e if isinstance(e, list) else [e]
+
+
 def validate(man):
     errs = []
     cfg = man.get("config", {})
@@ -53,6 +60,10 @@ def validate(man):
         for f in ("id", "name", "host", "dispatch", "exec"):
             if f not in j:
                 errs.append(f"{jid}: missing {f}")
+        if "exec" in j and not all(
+            isinstance(e, str) and e.strip() for e in job_execs(j)
+        ):
+            errs.append(f"{jid}: exec must be a non-empty string or list of strings")
         if j.get("host") not in hosts:
             errs.append(f"{jid}: host {j.get('host')!r} not in config.repo")
         if j.get("dispatch") not in ("systemd", "dispatcher"):
@@ -87,8 +98,10 @@ def render_service(j, man):
         "[Service]",
         "Type=oneshot",
         f"TimeoutStartSec={dur_s(j.get('timeout', '5m'))}",
-        f"ExecStart={esc(j['exec'])}",
     ]
+    # Later ExecStart lines run only if the previous ones succeeded —
+    # chain steps in dependency order.
+    lines += [f"ExecStart={esc(e)}" for e in job_execs(j)]
     cwd = j.get("cwd")
     if cwd:
         lines.append(f"WorkingDirectory={cwd}")

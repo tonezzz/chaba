@@ -68,6 +68,37 @@ card_schema:
            session to keep that report updated, Ada posts [opinion]
            comms against it. Design: docs/design/report-session-loop.md"
   help: "runbook markdown — shown via the ? help button"
+  # optional — autonomous close-out contract (kanban-act-loop, 2026-10-08).
+  # New dispatch/lab cards SHOULD declare autonomy + auto_done_when at file
+  # time — done-criteria are cheapest to write while the work is being
+  # specified, and they turn the review column into a self-draining queue.
+  # kanban-act.py (rides chaba-kanban-brief.timer, 30min) evaluates them.
+  autonomy: "t1 | t2 | t3 — absent = t1 (suggest-only, never auto-closed);
+             t2 = kanban-act may close the card when every auto_done_when
+             check passes; t3 = human-only, always."
+  auto_done_when: "ordered list of deterministic checks — ALL must pass.
+             Bounded vocabulary only, no shell (kanban-act CHECKS map):
+               page_exists:<slug>            CMS page exists
+               card_done:<id>                named card is column:done
+               file_exists:<repo-path>       path exists under the checkout
+               service_active:<unit>@<host>  ssh systemctl --user is-active
+               git_merged:<branch-prefix>    every origin/<prefix>* head is
+                                           an ancestor of origin/master|main
+               verified_true[:<id>]          the card's verified flag is set
+                                           (action.verified from merge-sweep
+                                           /close_out, or top-level
+                                           verified); no arg = this card —
+                                           the dispatch-card idiom
+             Eligibility gates: only column:review cards are considered;
+             review_kind:decide and cards with open requests or an
+             unanswered ask are held. Cap: KANBAN_ACT_MAX per run
+             (default 5); every close emits a kanban_act ops event."
+  done_note: "one line — written into the card on auto-close explaining why
+             the checks count as done"
+  verified: "top-level stamp — kanban-act writes 'verified: auto <ts>' on
+             close; merge-sweep/close_out write action.verified instead"
+  auto_close: "block written by kanban-act on close — {by, at, note,
+             checks: ['<expr> -> pass|fail']}"
   # optional — lab cards only (column: lab). Continuous-improvement contract:
   lab:
     hypothesis: "what we expect to learn or prove"
@@ -380,6 +411,7 @@ ops:
     - {id: chaba-board-render, interval: "60s", role: "cards.yml -> cards.json + board page (--if-changed)"}
     - {id: kanban-sync, interval: "15min", role: "health lanes (cms-auto-*, logs-auto-*, gev-auto-*, vcast-auto-*) -> cards -> push + dev-kanban CMS render"}
     - {id: kanban-stats, interval: "15min", role: "rides kanban-sync.timer — board stats -> reports/kanban meta.yml + apps/system-report/data/kanban.md (L2 'kanban' node, ssot.reports.yml)"}
+    - {id: kanban-act, interval: "30min", role: "rides chaba-kanban-brief.timer — T2 auto-close: review cards with autonomy:t2 whose auto_done_when checks all pass -> done (gates: rk=decide + open requests hold; kanban_act ops event per close; KANBAN_ACT_MAX cap)"}
     - {id: kanban-commit, interval: "15min", role: "scoped commit+push of cards/ from the served checkout"}
     - {id: devin-dispatch-watch, interval: "15min", role: "watch local devin-task-* units, notify"}
     - {id: lab-review-sweep, interval: "weekly", role: "lab cards past review_by must promote or retire"}

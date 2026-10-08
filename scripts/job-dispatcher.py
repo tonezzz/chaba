@@ -72,7 +72,10 @@ def main():
             last = state.get(jid, {}).get("last_run", 0)
             if now - last < interval:
                 continue
-            cmd = expand(j["exec"])
+            # exec may be a list (same multi-step convention as rendered
+            # systemd ExecStart chains) — later steps run only on success.
+            e = j["exec"]
+            cmd = " && ".join(expand(x) for x in e) if isinstance(e, list) else expand(e)
             timeout = dur_s(j.get("timeout", "5m"))
             if args.dry_run:
                 print(f"due {jid} (every {interval}s, last {int(now-last)}s ago)")
