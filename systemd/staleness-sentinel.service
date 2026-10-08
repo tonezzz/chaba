@@ -1,0 +1,7 @@
+[Unit]
+Description=Flag services running older code than what's on disk
+
+[Service]
+Type=oneshot
+ExecStart=%h/CascadeProjects/chaba/scripts/ops/staleness-sentinel.sh
+TimeoutStartSec=120
