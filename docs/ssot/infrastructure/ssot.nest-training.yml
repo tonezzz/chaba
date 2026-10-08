@@ -68,6 +68,20 @@ training_lanes:
     retired-from-ada VPS stays as cold batch lane: corpus mining, eval
     sweeps, embedding jobs. Never ada services or mddb writes from idc01.
     Also holds the pre-migration corpus archive the loop merges from.
+  tony-dell-cpu: >-
+    bench/inference lane, not training (card nest-lane-tony-dell):
+    onnxruntime CPU serve of seq-cls specialists via
+    serve-jev-student-onnx.py (`nest-train-loop.py --lane tony-dell-cpu`
+    or `lane-bench`). Phase-0 2026-10-08 on i7-6700: jev-student-v5
+    fp32 ONNX p50 10.7ms / p95 16.4ms / ~88 rps, accuracy identical to
+    the prod champ — CPU covers distilbert-class serving. Shared busiest
+    box: off-peak only, <10min runs; publishes bench/lane-<ts> docs.
+  tony-dell-igpu: >-
+    parked — HD530 OpenVINO/Vulkan lane is registered in ada-pi
+    topologies.yml `lanes:` but phase-0 CPU numbers already beat the
+    ~50ms p50 bar, so provisioning it adds nothing for seq-cls. Revisit
+    for the gemma-270m specialist via llama.cpp-server (Vulkan), or if
+    dell CPU benches regress.
 
 promotion_gate:
   rule: >-

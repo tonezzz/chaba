@@ -1,0 +1,101 @@
+id: jobs/infrastructure/2026-10-08-nest-lane-tony-dell
+title: Nest lane tony-dell — phase-0 baseline + lane registry + serve shim
+card: nest-lane-tony-dell
+date: 2026-10-08
+runner: mn01
+executed_on: tony-dell
+status: done
+
+# ---------------------------------------------------------------------------
+# Result: tony-dell is a first-class Nest serve+bench lane.
+#   loop:  nest-train-loop.py lane-bench --lane tony-dell-cpu --model DIR
+#   doc:   bench/lane-20261008-100402 in ada-ha-scenario-reports
+#   page:  ada-cms-pages/bench-edge renders a "Nest serve lanes" table
+# ---------------------------------------------------------------------------
+
+phase0_baseline:
+  model: >-
+    jev-student-v5 (distilbert-base-multilingual seq-cls, fp32 ONNX —
+    the existing web export at stacks/web/public/apps/jev-bench/models/v5,
+    same weights as prod ckpt on idc03)
+  runtime: >-
+    onnxruntime 1.30.0 CPUExecutionProvider + tokenizers 0.23.2,
+    python 3.14 venv at dell:~/nest-lane/venv
+  host: tony-dell i7-6700 (4c/8t Skylake, HD530 iGPU), shared busiest box
+  accuracy: >-
+    confirm-gate suite 49/66 — golden 10/10, hard 27/35,
+    adv-confirm 12/21 — identical to the prod champ's recorded profile
+  latency_200_calls:
+    p50_ms: 10.5
+    p95_ms: 20.7
+    mean_ms: 12.0
+    errors: 0
+    rps_sequential: 82.8
+  verdict: >-
+    CPU p50 ~11ms is far under the ~50ms bar — the iGPU lane is OPTIONAL
+    for distilbert-class seq-cls. Registered tony-dell-igpu as
+    status parked rather than building out OpenVINO/llama.cpp; revisit
+    only for the gemma-270m specialist (llama.cpp-server Vulkan) or if
+    dell CPU benches regress.
+
+what_landed:
+  ada_pi:
+    repo: >-
+      ~/CascadeProjects/ada-pi-wt-nest-lane
+      (branch dispatch/nest-lane-tony-dell, on tony-dell)
+    changes:
+      - >-
+        tests/bench/topologies.yml — lanes registry gains tony-dell-cpu
+        (runtime onnx-cpu, ssh/tailnet/serve_port/python/models_dir) and
+        tony-dell-igpu (runtime openvino:GPU, status parked)
+      - >-
+        scripts/serve-jev-student-onnx.py — /health + /v1/systemone
+        contract twin of serve-jev-student.py; stdlib http.server +
+        onnxruntime + tokenizers; --provider cpu or openvino:GPU
+      - >-
+        tests/bench/lane-probe.py — N-call latency probe (p50/p95 wall +
+        server cpu_s), stdlib only
+  chaba:
+    repo: >-
+      this worktree + mirror branch on tony-dell
+      (~/CascadeProjects/chaba-tony-dell-worktrees/nest-lane)
+    changes:
+      - >-
+        scripts/ada/nest-train-loop.py — lanes registry loader,
+        serve_onnx_lane() (local subprocess or rsync+ssh spawn bound to
+        the lane tailnet IP), export_onnx() via the torch venv, probe(),
+        publish_lane() writing bench/lane-<ts> docs, lane-bench and
+        lanes commands, --lane/--model/--probe flags; train docs gain a
+        lane meta tag + probe latency block when --lane is used. The
+        GTX1650 torch serve path is untouched.
+      - >-
+        scripts/eye/bench-edge-cms.py — lane_rows() consumes
+        bench/lane-* docs, renders a Nest serve lanes comparison table
+        (lane | host | runtime | model | acc | p50 | p95 | runs | last)
+      - >-
+        docs/ssot/infrastructure/ssot.nest-training.yml —
+        training_lanes gains tony-dell-cpu + tony-dell-igpu (parked)
+
+evidence:
+  - mddb ada-ha-scenario-reports key bench/lane-20261008-100402
+  - mddb ada-cms-pages key bench-edge (republished with lanes table)
+
+unmerged:
+  - >-
+    ada-pi branch dispatch/nest-lane-tony-dell on tony-dell — merge to
+    main + push when reviewed; until then run the loop on dell with
+    ADA_PI=~/CascadeProjects/ada-pi-wt-nest-lane
+  - >-
+    chaba branch dispatch/nest-lane-tony-dell on tony-dell worktree —
+    mirrors this dispatch branch
+
+notes:
+  - >-
+    the phase-0 probe ran twice (manual 10.7/16.4ms + loop
+    10.5/20.7ms) — consistent; p95 spread reflects the shared box
+  - >-
+    lane serve binds 127.0.0.1 when the loop runs on the lane host,
+    tailnet IP when remote — never LAN
+  - >-
+    Radeon R5 340X on dell is unusable for ML (GCN 1.0) — deliberately
+    ignored per the card
