@@ -28,8 +28,14 @@ spec: Full self-contained task text — what gets dispatched
 action:
   type: dispatch              # dispatch | manual | container | script
   status: queued
+# max_attempts: 3             # total dispatches incl. auto-retries (default 2)
+                              # raise for cards touching generated files —
+                              # ^docs/ssot/ outputs are the recurring merge-
+                              # conflict source (ssot.kanban.yml merge_safety)
 
 # --- review behavior ---
 # review_kind: verify | decide | triage  — set when filing to review;
 #   decide cards are NEVER auto-closed even with autonomy: t2
 # requests: blocks close while any entry is status != answered
+# on_goal_rot: requeue        # done-card goal probe requeues this card with
+                              # the failing goal ids instead of an inbox item

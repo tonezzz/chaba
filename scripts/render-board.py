@@ -516,6 +516,8 @@ function cardHtml(c) {{
   if (st === 'queued') badges += '<span class="text-xs bg-amber-800/70 text-amber-200 rounded px-1.5 py-0.5">⏳ queued</span> ';
   else if (st === 'running') badges += '<span class="text-xs bg-sky-700/80 text-sky-100 rounded px-1.5 py-0.5">⚙ running</span> ';
   else if (st === 'failed') badges += '<span class="text-xs bg-red-800/70 text-red-100 rounded px-1.5 py-0.5">✖ failed</span> ';
+  if (a.attempts)
+    badges += `<span class="text-xs bg-orange-900/70 text-orange-200 rounded px-1.5 py-0.5" title="${{esc(a.last_failure || '')}}">↻ attempt ${{a.attempts + 1}}</span> `;
   if ((c.column || 'backlog') === 'review') {{
     const v = isVerified(c);
     badges += v.ok

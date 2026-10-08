@@ -32,6 +32,7 @@ import json
 import os
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -223,6 +224,31 @@ def now() -> str:
     return datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 
 
+MDDB = os.environ.get(
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+
+
+def ops_event(detail: str) -> None:
+    """kanban_retry audit line — lands in the ada ops digest, same
+    collection/shape kanban-act uses (ops-event kind)."""
+    try:
+        now = datetime.now(timezone.utc)
+        req = urllib.request.Request(
+            f"{MDDB}/add",
+            data=json.dumps({
+                "collection": "ada-ha-events-tony",
+                "key": f"ops-kanban-retry-{now:%Y%m%d%H%M%S%f}",
+                "lang": "en", "contentMd": detail,
+                "meta": {"kind": ["ops-event"], "type": ["kanban_retry"],
+                         "instance": ["tony"],
+                         "ts": [now.isoformat(timespec="seconds")],
+                         "written_by": ["kanban-dispatch"]}}).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as e:
+        print(f"warn: ops event failed: {e}", file=sys.stderr)
+
+
 def comms_add(card: dict, frm: str, text: str) -> None:
     card.setdefault("comms", []).append(
         {"at": now(), "from": frm, "text": text[:500]}
@@ -396,6 +422,9 @@ def merge_pending_one(path: Path) -> str:
                 comms_add(card, "chaba",
                           f"auto-retry queued (attempt {att + 1}/"
                           f"{max_att}): {why}")
+                ops_event(
+                    f"kanban-dispatch auto-retry `{card.get('id') or path.stem}` "
+                    f"(attempt {att + 1}/{max_att}) on {HOST}: {why}")
         for n in dr.close_out_notes(res):
             comms_add(card, "chaba", n)
         for n in session_end_notes(card):
