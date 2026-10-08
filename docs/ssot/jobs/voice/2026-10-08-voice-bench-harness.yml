@@ -1,0 +1,32 @@
+# Job: voice-fallback benchmark harness (kanban: voice-bench-harness)
+date: 2026-10-08
+domain: voice
+status: harness-built
+summary: >-
+  scripts/voice-bench/ is the shared harness every voice-fallback combo
+  card runs through. Research base: docs/kb/voice-fallback-options.md
+  (Gemini Live rainy-day plan; consumers = gev-gemini + ada-pi).
+layout:
+  combos_yml: "scripts/voice-bench/combos.yml — declarative
+    {id, stt, llm, tts, orchestrator, host_labels, runtime, endpoint, notes};
+    loader in lib.py validates ids/fields; gpu combos carry labels [gpu]"
+  fixtures: "fixtures/manifest.yml + 20 wavs (10 en / 10 th): HA commands,
+    tool-call questions, chit-chat; each has expected_transcript +
+    expected_tool_call. generate.py --engine gemini|azure|tone —
+    committed wavs are TONE PLACEHOLDERS (no TTS key on this host);
+    re-run generate.py with a real engine before trusting WER"
+  bench: "bench.py --combo <id> [--dry-run] — Stack lifecycle
+    (podman|local|none) + POST <endpoint>/bench transport contract
+    {transcript, tool_call, first_audio_ms}; metrics ttfa_ms, total_ms,
+    WER (word-level en, char-level th), tool exact/partial/none;
+    output results/<combo>-<ts>.json schema voice-bench-result v1"
+  report: "report.py [--card <id>] — reports/voice-fallback/LATEST.md
+    (newest run per combo) + trend.md append + optional board-api comment"
+runner_usage: >-
+  action.type=script, repo chaba, cmd runs bench.py then
+  report.py --card <id>; pin gpu combos via labels [gpu]
+next: >-
+  Implementing a combo = its stack + a /bench adapter + a combos.yml
+  entry. First candidates: openai-realtime-hosted (gev-gemini adapter),
+  hf-s2s-vllm-local on a gpu host. Re-synthesize fixtures with
+  --engine gemini or azure once a key is available on a runner.
