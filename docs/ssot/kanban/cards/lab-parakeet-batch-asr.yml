@@ -32,10 +32,14 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
   host: tony-omen
 comms:
 - at: 2026-10-08 06:05
   from: devin
   text: armed as dispatch pinned to tony-omen runner (cpu) — spec/help on card already carry the full procedure
+- at: 2026-10-08 11:15
+  from: devin
+  text: 'queued directly (status idle->queued) — armed but never drained because Start was never pressed; idle cards
+    wait forever. CPU-only lane, safe alongside omen GPU work.'
