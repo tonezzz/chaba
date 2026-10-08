@@ -1,11 +1,11 @@
 id: gev-auto-bridge
 title: gev-gemini service not active
-column: review
+column: done
 generated: gev-auto-health
 program: gev
 area: monitoring
 priority: medium
-note: systemctl --user is-active gev-gemini -> activating
+note: 'Auto-recovered 2026-10-08: `bridge` check passing again.'
 help: 'Quadlet ~/.config/containers/systemd/gev-gemini.container runs the Gemini Live
   bridge (image localhost/gev-gemini, Network=host, :8789 ws + :8790 cmd). Fix: systemctl
   --user start gev-gemini. If the image is stale: podman build -t localhost/gev-gemini:latest
