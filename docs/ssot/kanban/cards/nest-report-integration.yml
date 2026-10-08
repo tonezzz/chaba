@@ -1,33 +1,26 @@
 id: nest-report-integration
 title: Wire the Nest into the layered reporting standard (L0–L3)
-brief: 'The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to
-  the report node registry — no meta.yml, no staleness, no SYSTEM-REPORT presence,
-  no runtime telemetry. Register the nodes and close the telemetry gap.'
-column: backlog
+brief: The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to the report node registry — no
+  meta.yml, no staleness, no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes and close the telemetry
+  gap.
+column: doing
 priority: medium
 created: 2026-10-08
-note: 'Assessment 2026-10-08: nest-overview.py (30min, 3rd ExecStart of
-  chaba-kanban-brief.service) probes only /health — up/down+latency+model, no
-  decisions/escalations/cpu counters. Bench results flow MDDB bench/* docs ->
-  hub scorecard (that part works). ssot.reports.yml nodes list has NO nest entry
-  so SYSTEM-REPORT.md cannot see the domain and staleness goes unreported (the
-  cms-auto-chaba-nest stale card was an ad-hoc patch for exactly this).'
-spec: 'Per the Layered Reporting Standard (ssot.reports.yml). (1) L2: declare a
-  `chaba-nest` node in ssot.reports.yml nodes (layer L2-domain, generator
-  scripts/ada/nest-overview.py, children = the lane + brain + bench nodes), plus
-  L1 entries: nest-lanes/<lane> for each of the 5 systemone lanes + ollama, and
-  nest-brains/<entity> per entity in ssot.nest-brains.yml. (2) Telemetry: each
-  systemone lane server gets a /metrics endpoint (monotonic counters — requests,
-  escalations-to-heavier-tier, latency buckets, cpu_seconds, uptime_s; find the
-  server code wherever the lanes are defined and keep it cheap); nest-overview.py
-  probes /metrics alongside /health and renders an activity column/table
-  (decisions last interval + escalation %), falling back to "no metrics" for
-  lanes not yet upgraded. (3) Brains table: render the ssot.nest-brains.yml
-  entities (entity/tier/status/bench score+metric) as a page block so respawn
-  state is visible. (4) nest-overview.py writes meta.yml via
-  scripts/lib/report.py::write_meta + appends timeline.jsonl so L3 picks it up
-  and staleness becomes observable. Verify: node appears in report-system dry
-  run, meta validates against meta_schema, page renders new sections.'
+note: 'Assessment 2026-10-08: nest-overview.py (30min, 3rd ExecStart of chaba-kanban-brief.service) probes only
+  /health — up/down+latency+model, no decisions/escalations/cpu counters. Bench results flow MDDB bench/* docs ->
+  hub scorecard (that part works). ssot.reports.yml nodes list has NO nest entry so SYSTEM-REPORT.md cannot see
+  the domain and staleness goes unreported (the cms-auto-chaba-nest stale card was an ad-hoc patch for exactly this).'
+spec: 'Per the Layered Reporting Standard (ssot.reports.yml). (1) L2: declare a `chaba-nest` node in ssot.reports.yml
+  nodes (layer L2-domain, generator scripts/ada/nest-overview.py, children = the lane + brain + bench nodes), plus
+  L1 entries: nest-lanes/<lane> for each of the 5 systemone lanes + ollama, and nest-brains/<entity> per entity
+  in ssot.nest-brains.yml. (2) Telemetry: each systemone lane server gets a /metrics endpoint (monotonic counters
+  — requests, escalations-to-heavier-tier, latency buckets, cpu_seconds, uptime_s; find the server code wherever
+  the lanes are defined and keep it cheap); nest-overview.py probes /metrics alongside /health and renders an activity
+  column/table (decisions last interval + escalation %), falling back to "no metrics" for lanes not yet upgraded.
+  (3) Brains table: render the ssot.nest-brains.yml entities (entity/tier/status/bench score+metric) as a page block
+  so respawn state is visible. (4) nest-overview.py writes meta.yml via scripts/lib/report.py::write_meta + appends
+  timeline.jsonl so L3 picks it up and staleness becomes observable. Verify: node appears in report-system dry run,
+  meta validates against meta_schema, page renders new sections.'
 links:
 - ssot.nest-brains.yml
 - ssot.nest-bench.yml
@@ -37,11 +30,18 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: mn01
 comms:
 - at: 2026-10-08 12:25
   from: devin
-  text: 'filed + queued after reporting-structure assessment: hub exists and is
-    healthy, gap is registry presence + runtime counters + brains render.
-    Lane-server changes should stay minimal (counters only, no behavior change).'
+  text: 'filed + queued after reporting-structure assessment: hub exists and is healthy, gap is registry presence
+    + runtime counters + brains render. Lane-server changes should stay minimal (counters only, no behavior change).'
+- at: 2026-10-08 12:25
+  from: mn01
+  text: claimed
+- at: 2026-10-08 12:25
+  from: chaba
+  text: started devin-task-20261008-052550-per-the-layered-reporting-stan on mn01 (dispatch)
+updated: 2026-10-08 12:25

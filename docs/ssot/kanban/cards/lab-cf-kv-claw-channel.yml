@@ -3,7 +3,7 @@ title: 'Lab: Cloudflare Workers KV — public-edge claw command/report channel'
 brief: 'Prove a credential-free edge channel: one KV namespace + one Worker serving claw commands (GET) and ingesting
   reports (POST w/ thin ingest secret). First real content: a sanitized public board digest readable off-tailnet.
   Lab — no standard adoption until proven.'
-column: backlog
+column: review
 priority: medium
 created: 2026-10-08
 lab:
@@ -33,10 +33,12 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-dell
   task_id: 20261008-120820-pre-req-tony-dashboard-only-ad
+  result: 20261008-120820-pre-req-tony-dashboard-only-ad finished (inactive) — see `devin-dispatch logs 20261008-120820-pre-req-tony-dashboard-only-ad`
+  verified: true
 comms:
 - at: 2026-10-08 12:05
   from: devin
@@ -48,7 +50,41 @@ comms:
 - at: 2026-10-08 12:09
   from: devin
   text: picked up — checking CF token scopes + wrangler availability first, then building worker/publisher/deploy
-updated: 2026-10-08 12:09
+- at: 2026-10-08 12:25
+  from: devin
+  text: 'built: edge/claw-channel/worker.js (14/14 local checks pass), scripts/claw-publish.py (250-card digest,
+    titles host/IP/path-scrubbed), stacks/edge/claw-channel/deploy.sh idempotent. Route decision: dedicated claw.surf-thailand.com
+    (edge.* is DNS-only->idc02, route would never fire). Deploy BLOCKED on token scopes — request raised.'
+- at: 2026-10-08 12:25
+  from: devin
+  text: 'raised request cfut-token-needs-more-scopes-before-depl-7785c1: cfut_ token needs more scopes before deploy
+    works (verified against API — Scripts Edit + Zone Read already OK). Missing:'
+- at: 2026-10-08 12:27
+  from: devin
+  text: 'DONE-pending-scopes. Deliverables on dispatch branch (commit 7dca391d): edge/claw-channel/{worker.js,wrangler.toml},
+    scripts/claw-publish.py, stacks/edge/claw-channel/{stack.yml,deploy.sh,README.md}, routes-registry cf-surf edge,
+    job trail docs/ssot/jobs/infrastructure/2026-10-08-claw-channel-cf-kv.yml. Local verify: worker 14/14, digest
+    250 cards titles scrubbed. Live deploy+verify blocked on cfut_ scopes (board request open) — after scopes: run
+    stacks/edge/claw-channel/deploy.sh. Note: dell/id'
+- at: 2026-10-08 12:28
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 12:28
+  from: chaba
+  text: pushed dispatch/20261008-120820-pre-req-tony-dashboard-only-ad to origin
+- at: 2026-10-08 12:28
+  from: chaba
+  text: auto-merged 0a623f3c (dispatch/20261008-120820-pre-req-tony-dashboard-only-ad) → origin/master
+updated: 2026-10-08 12:28
 claim:
-  session: 20261008-120820-pre-req-tony-dashboard-only-ad
   since: 2026-10-08 12:08
+requests:
+- id: cfut-token-needs-more-scopes-before-depl-7785c1
+  ask: 'cfut_ token needs more scopes before deploy works (verified against API — Scripts Edit + Zone Read already
+    OK). Missing: Account>Workers KV Storage>Edit; Zone surf-thailand.com>Workers Routes>Edit; Zone>DNS>Edit; optional
+    Account>Workers R2 Storage>Edit (report artifacts). dash.cloudflare.com -> API Tokens -> edit cfut_ token. Then
+    I can deploy via stacks/edge/claw-channel/deploy.sh. Separately: dell/idc01/idc02 ~/.config/secrets/cloudflare.env
+    still hold a stale INVALID cfat_ token — live cfut_ only exists on tony-omen; resync needed.'
+  status: open
+  at: 2026-10-08 12:25
+  from: devin
