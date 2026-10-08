@@ -44,6 +44,121 @@ RE_TOOL = re.compile(
     r".*" + TS + r".*tools: tool ada_memory_search args=(?P<args>\{.*)$")
 
 
+RE_BANK_TIMING = re.compile(
+    r".*" + TS + r".*memory_search timing bank=(?P<bank>\S+) "
+    r"banks=(?P<nb>\d+) total_ms=(?P<tot>[\d.]+) "
+    r"per_bank_ms=(?P<pbm>\{.*?\}) hits=(?P<hits>\d+) "
+    r"top_bank=(?P<top>\S+) degraded=(?P<deg>\S+)")
+RE_TOOL_TIMING = re.compile(
+    r".*" + TS + r".*memory_search tool timing scope=(?P<scope>\S+) "
+    r"bank=(?P<bank>\S+) total_ms=(?P<tot>\d+) banks_ms=(?P<bms>-?\d+) "
+    r"sessions_ms=(?P<sms>-?\d+) guest_ms=(?P<gms>-?\d+) "
+    r"hits_pre_cap=(?P<hits>\d+)")
+RE_VERDICT = re.compile(
+    r".*" + TS + r".*memory_search router verdict mode=(?P<mode>\S+) "
+    r"predicted=(?P<pred>\S+) conf=(?P<conf>[\d.]+) set=(?P<set>\S+) "
+    r"actual_top=(?P<top>\S+) hits=(?P<hits>\d+) "
+    r"captured=(?P<cap>\S+) skip_regret=(?P<reg>\S+) "
+    r"router_ms=(?P<rms>-?\d+)")
+
+
+def telemetry_rows(lines):
+    """Parse the Phase-0/Phase-3 instrumented lines (deployed
+    2026-10-08, commits d74675c + bankq-student branch):
+      'memory_search timing'        — per-bank wall split (memory_ops)
+      'memory_search tool timing'   — per-scope wall split (tool layer)
+      'memory_search router verdict'— shadow router vs actual outcome
+    Yields dicts with kind: bank_timing|tool_timing|verdict."""
+    for line in lines:
+        if "memory_search" not in line:
+            continue
+        m = RE_VERDICT.match(line)
+        if m:
+            yield {
+                "kind": "verdict", "ts": m.group("ts"),
+                "mode": m.group("mode"), "predicted": m.group("pred"),
+                "confidence": float(m.group("conf")),
+                "bank_set": [] if m.group("set") == "-"
+                else m.group("set").split(","),
+                "actual_top": None if m.group("top") == "None"
+                else m.group("top"),
+                "hits": int(m.group("hits")),
+                "captured": m.group("cap") == "True",
+                "skip_regret": m.group("reg") == "True",
+                "router_ms": int(m.group("rms")),
+            }
+            continue
+        m = RE_BANK_TIMING.match(line)
+        if m:
+            yield {
+                "kind": "bank_timing", "ts": m.group("ts"),
+                "bank_arg": m.group("bank"), "n_banks": int(m.group("nb")),
+                "total_ms": float(m.group("tot")),
+                "per_bank_ms": json.loads(m.group("pbm")),
+                "hits": int(m.group("hits")),
+                "top_bank": None if m.group("top") == "None"
+                else m.group("top"),
+                "degraded": m.group("deg") == "True",
+            }
+            continue
+        m = RE_TOOL_TIMING.match(line)
+        if m:
+            yield {
+                "kind": "tool_timing", "ts": m.group("ts"),
+                "scope": m.group("scope"), "bank_arg": m.group("bank"),
+                "total_ms": int(m.group("tot")),
+                "banks_ms": int(m.group("bms")),
+                "sessions_ms": int(m.group("sms")),
+                "guest_ms": int(m.group("gms")),
+                "hits": int(m.group("hits")),
+            }
+
+
+def _pct(vals, x):
+    vals = sorted(vals)
+    return vals[min(int(len(vals) * x), len(vals) - 1)] if vals \
+        else float("nan")
+
+
+def telemetry_stats(data: list[dict]) -> None:
+    bt = [r for r in data if r["kind"] == "bank_timing"]
+    tt = [r for r in data if r["kind"] == "tool_timing"]
+    vd = [r for r in data if r["kind"] == "verdict"]
+    e = sys.stderr
+    print(f"\ntelemetry: bank_timing={len(bt)} tool_timing={len(tt)} "
+          f"verdicts={len(vd)}", file=e)
+    for name, rows_ in (("bank_timing", bt), ("tool_timing", tt)):
+        tot = [r["total_ms"] for r in rows_]
+        print(f"{name}: total_ms p50={_pct(tot,.5):.0f} "
+              f"p90={_pct(tot,.9):.0f} p95={_pct(tot,.95):.0f} "
+              f"p99={_pct(tot,.99):.0f}", file=e)
+    if bt:
+        # Per-bank ms that saturates near total_ms means the wall is the
+        # remote embed inside mddb (parallel calls share the proxy).
+        sat = [r for r in bt if r["per_bank_ms"] and
+               max(r["per_bank_ms"].values()) >= 0.8 * r["total_ms"]]
+        print(f"bank_timing: {len(sat)}/{len(bt)} calls have a bank "
+              f"within 20% of total_ms (embed-bound marker)", file=e)
+        all_b = [r for r in bt if r["n_banks"] > 1]
+        one_b = [r for r in bt if r["n_banks"] == 1]
+        print(f"fan-out p50={_pct([r['total_ms'] for r in all_b],.5):.0f} "
+              f"vs single-bank p50="
+              f"{_pct([r['total_ms'] for r in one_b],.5):.0f}", file=e)
+    if tt:
+        banks = [r["banks_ms"] for r in tt if r["banks_ms"] >= 0]
+        sess = [r["sessions_ms"] for r in tt if r["sessions_ms"] >= 0]
+        print(f"tool_timing split p50: banks={_pct(banks,.5):.0f} "
+              f"sessions={_pct(sess,.5):.0f}", file=e)
+    if vd:
+        routed = [r for r in vd if r["predicted"] != "skip"]
+        cap = sum(r["captured"] for r in routed)
+        regret = sum(r["skip_regret"] for r in vd)
+        n_sk = sum(1 for r in vd if r["predicted"] == "skip")
+        print(f"verdicts: routed={len(routed)} captured={cap} "
+              f"({cap/max(1,len(routed)):.0%}) skip={n_sk} "
+              f"skip_regret={regret}", file=e)
+
+
 def _parse_ts(s: str) -> datetime:
     # ada-pi log timestamp inside the journal line: "2026-10-06 10:00:06,779"
     return datetime.strptime(s, "%Y-%m-%d %H:%M:%S,%f")
@@ -195,9 +310,24 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", help="write JSONL corpus rows here")
     ap.add_argument("--stats", action="store_true")
+    ap.add_argument("--telemetry", action="store_true",
+                    help="ingest 'memory_search timing/tool timing/"
+                         "router verdict' lines instead of "
+                         "function_call pairing")
     ap.add_argument("--transcripts", nargs="*", default=[],
                     help="dirs of ada transcript .md files for utterance join")
     args = ap.parse_args()
+
+    if args.telemetry:
+        data = list(telemetry_rows(sys.stdin))
+        f = open(args.corpus, "w") if args.corpus else sys.stdout
+        for r in data:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        if args.corpus:
+            f.close()
+        if args.stats or True:
+            telemetry_stats(data)
+        return
 
     data = list(rows(sys.stdin))
     if args.transcripts:
