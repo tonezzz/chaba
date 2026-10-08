@@ -3,7 +3,7 @@ title: 'Nest specialist: memory-bank router — cut Ada''s memory-query pause'
 brief: Train a micro-specialist that routes a user request to the right MDDB memory bank(s) — or says "no memory
   needed" — instead of the current bank='all' fan-out across every bank. Targets Ada's audible pause on memory questions.
   Includes the bench suite so it joins the continuous train->bench->promote loop.
-column: doing
+column: review
 priority: high
 program: chaba-nest
 area: ada-tools
@@ -28,12 +28,12 @@ spec: "Phase 0 — measure first (don't build on assumption):\n- Instrument ada_
 help: 'Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate). Corpus path: transcripts already record
   tool calls — bank arg + result bank are the labels. Pair with nest-lane-tony-dell for edge-inference numbers;
   adversarial skip cases are the differentiator vs a naive always-search baseline.'
-updated: 2026-10-08 14:33
+updated: 2026-10-08 14:35
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 lane too slow for 53 cases; suite verified via `--limit 4`). | devin-task-20261008-094913-phase-0-measure-first-don-t-bu.service:
-    Consumed 4min 4.467s CPU time over 57min 59.031s wall clock time, 975.1M memory peak, 291.5M memory swap peak.'
+  status: done
+  result: 'exit=0 uter-mine.py --telemetry --stats`; bench cmd in the job doc. | devin-task-20261008-135509-phase-0-measure-first-don-t-bu.service:
+    Consumed 22min 53.021s CPU time over 39min 22.864s wall clock time, 5.2G memory peak, 397.8M memory swap peak.'
   verified: true
   runner: tony-omen
   sweep:
@@ -129,6 +129,15 @@ comms:
     corrupt free labels; kept named bank_arg (230) + hand augments. Shadow wiring in ada_memory_search (routed_banks
     hint, env router, parallel verdict log + divergence corpus). Live telemetry: 41/41 embed-bound, p50 12.7s today
     (proxy congested), fan-out 27.3s vs 1-bank 10.3s. Depl'
+- at: 2026-10-08 14:35
+  from: tony-omen
+  text: 'finished (ok): exit=0 uter-mine.py --telemetry --stats`; bench cmd in the job doc. | devin-task-20261008-135509-phase-0-measure-first-d'
+- at: 2026-10-08 14:35
+  from: chaba
+  text: pushed dispatch/20261008-135509-phase-0-measure-first-don-t-bu to origin
+- at: 2026-10-08 14:35
+  from: chaba
+  text: auto-merged 0bc691e2 (dispatch/20261008-135509-phase-0-measure-first-don-t-bu) → origin/master
 ownership:
   owner: tony
 requests:
