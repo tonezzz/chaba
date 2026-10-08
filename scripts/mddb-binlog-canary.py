@@ -317,11 +317,17 @@ def main():
             # episodes — a stale *-health.yml left in the inbox suppressed every
             # later write, so the idc03-migration follower outage never paged.
             # Now: page on first breach, re-page every --realert-seconds while
-            # it stays open, and page immediately when the reason set changes
-            # (escalation — e.g. a second follower goes unhealthy).
-            alerted_sig = state.get("alerted_signature") or []
+            # it stays open, and page immediately when the reason set GAINS an
+            # element not yet paged (escalation — a second follower goes
+            # unhealthy, an apply-stall fires). Compare against the cumulative
+            # alerted_items union, not the last signature: followers flap
+            # (reconnect / confirmed_lsn twitches) and the signature shrinks
+            # and regrows every tick — equality-diff paged ~once per poll
+            # (spam incident 2026-10-08, ~250 items during the reboot churn).
+            alerted_items = set(state.get("alerted_items") or [])
             first = not state.get("alerted")
-            escalated = (not first and signature != sorted(alerted_sig))
+            new_items = [s for s in signature if s not in alerted_items]
+            escalated = bool(new_items) and not first
             due = (not first
                    and now.timestamp() - (state.get("alerted_epoch") or 0)
                    > args.realert_seconds)
@@ -343,6 +349,10 @@ def main():
                         state["alerted_file"] = path.name
                         state["alerted_reasons"] = list(reasons)
                         state["alerted_signature"] = signature
+                        state["alerted_items"] = sorted(
+                            alerted_items | set(signature))
+                        if new_items:
+                            result["detail"] += (f" [+{', '.join(new_items)}]")
                     except Exception as e:
                         result["detail"] += f" | inbox write failed: {e}"
                 else:
@@ -353,6 +363,7 @@ def main():
         state["alerted"] = False
         state["alerted_reasons"] = []
         state["alerted_signature"] = []
+        state["alerted_items"] = []
         state.pop("alerted_epoch", None)
         result["status"] = "healthy"
         result["detail"] = (
