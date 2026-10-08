@@ -15,8 +15,10 @@ priority: low
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-dell
+  task_id: 20261008-152454-add-michael-dev-tony-dev-to-th
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -24,4 +26,15 @@ comms:
 - at: 2026-10-08 15:30
   from: devin
   text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
-updated: 2026-10-05 21:15
+- at: 2026-10-08 15:24
+  from: chaba
+  text: dispatched 20261008-152454-add-michael-dev-tony-dev-to-th on chaba
+- at: 2026-10-08 15:28
+  from: devin
+  text: 'picked up. Plan: michael-dev only (tony-dev does not exist). Order per card caution: CF Access app for
+    michael-dev.surf-thailand.com FIRST, then CNAME -> edge, Caddy block on idc02, .storage/http trusted_proxies
+    + michael-dev restart, verify.'
+updated: 2026-10-08 15:28
+claim:
+  session: 20261008-152454-add-michael-dev-tony-dev-to-th
+  since: 2026-10-08 15:24

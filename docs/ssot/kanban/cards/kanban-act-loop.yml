@@ -4,7 +4,7 @@ brief: 'Review piles grow because closing is manual. kanban-act.py already imple
   + auto_done_when deterministic checks), but nothing runs it and most cards never declare the contract. Make close-out
   a standard procedure: cards declare done-criteria at file time, a timer drains review automatically, human attention
   lands only on rk=verify/decide.'
-column: backlog
+column: done
 priority: medium
 created: 2026-10-08
 note: '2026-10-08 review sweep: 20 verified cards sat in review needing a manual close pass — kanban-act exists
@@ -32,12 +32,13 @@ auto_done_when:
 done_note: kanban-act runs on cadence and the card standard documents the auto_done_when contract.
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261008-150706-1-add-a-kanban-act-step-to-the
-updated: 2026-10-08 15:17
+  result: 20261008-150706-1-add-a-kanban-act-step-to-the finished (inactive) — see `devin-dispatch logs 20261008-150706-1-add-a-kanban-act-step-to-the`
+  verified: true
+updated: 2026-10-08 15:27
 claim:
-  session: 20261008-150706-1-add-a-kanban-act-step-to-the
   since: 2026-10-08 15:07
 comms:
 - at: 2026-10-08 15:07
@@ -49,3 +50,30 @@ comms:
     job declares brief+act+nest (parity with the hand-maintained unit), kanban-act.py gains git_merged/verified_true
     + review-only/rk=decide/open-request gates, card_schema documents the contract, validator nudges review cards
     missing close-out declarations.'
+- at: 2026-10-08 15:25
+  from: devin
+  text: '[devin] done — all 5 spec items landed. (1) Manifest fix: exec: list support in render-jobs.py (+job-dispatcher
+    && chain); chaba-kanban-brief now declares brief→act→nest + env/cwd, generated unit re-rendered. (2) card_schema
+    documents autonomy/auto_done_when/done_note/verified/auto_close + ops lane; new docs/ssot/templates/card.yml.
+    (3) kanban-act gains git_merged:<prefix> + verified_true[:<id>] checks — verified_true is the dispatch idiom
+    (merge-sweep stamps, act closes). (4) validator warns on'
+- at: 2026-10-08 15:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 15:27
+  from: chaba
+  text: 'session-end checkpoint d9ceedfb: 12 leftover file(s) committed'
+- at: 2026-10-08 15:27
+  from: chaba
+  text: pushed dispatch/20261008-150706-1-add-a-kanban-act-step-to-the to origin
+- at: 2026-10-08 15:27
+  from: chaba
+  text: auto-merged fbae76b0 (dispatch/20261008-150706-1-add-a-kanban-act-step-to-the) → origin/master
+verified: 'auto 2026-10-08T08:30+00:00'
+auto_close:
+  by: kanban-act
+  at: '2026-10-08T08:30+00:00'
+  note: >-
+    kanban-act runs on cadence and the card standard documents the auto_done_when contract.
+  checks:
+    - 'service_active:chaba-kanban-brief.timer@tony-dell -> pass'

@@ -24,10 +24,12 @@ spec: "1. Inventory: dump all ada-cms-pages keys + meta.kind/domain, cluster by\
 help: 'CMS = MDDB ada-cms-pages collection + viewer at /apps/ha/ada-tony/cms/ (Caddy /apps/ route). Generator examples:
   scripts/eye/bench-edge-cms.py, kanban-cms.py, scripts/lib/cms_index.py. Check how reports-index is generated before
   adding grouping.'
-updated: 2026-10-08
+updated: 2026-10-08 15:26
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-dell
+  task_id: 20261008-152449-1-inventory-dump-all-ada-cms-p
 comms:
 - at: 2026-10-08 10:05
   from: devin
@@ -36,5 +38,14 @@ comms:
 - at: 2026-10-08 15:30
   from: devin
   text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
+- at: 2026-10-08 15:24
+  from: chaba
+  text: dispatched 20261008-152449-1-inventory-dump-all-ada-cms-p on chaba
+- at: 2026-10-08 15:26
+  from: devin
+  text: 'started: dumping live ada-cms-pages, locating viewer app + ssot targets'
 ownership:
   owner: tony
+claim:
+  session: 20261008-152449-1-inventory-dump-all-ada-cms-p
+  since: 2026-10-08 15:24

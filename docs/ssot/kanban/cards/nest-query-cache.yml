@@ -4,7 +4,7 @@ brief: 'Add a semantic cache in front of ada_memory_search: store {query embeddi
   question returns instantly instead of re-running embed + multi-bank vector search. Includes the cache-policy standard
   (what may be cached, TTLs, invalidation) and a bench suite so hit quality is measured continuously in the Nest
   loop.'
-column: backlog
+column: doing
 priority: medium
 program: chaba-nest
 area: ada-tools
@@ -33,10 +33,11 @@ spec: "Phase 0 — prove the case first:\n- From the nest-bank-router instrument
 help: Reuses the bank-router corpus (same transcripts). Threshold is a tunable the Nest loop can bench per candidate
   config — hit-rate vs false-hit is the classic cache tradeoff curve; plot it. Weaviate MCP server (mcp-weaviate)
   already exists for experimentation.
-updated: 2026-10-08
+updated: 2026-10-08 15:25
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-omen
 comms:
 - at: 2026-10-08 09:55
   from: devin
@@ -46,5 +47,14 @@ comms:
 - at: 2026-10-08 15:30
   from: devin
   text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
+- at: 2026-10-08 15:25
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 15:25
+  from: chaba
+  text: started devin-task-20261008-152527-phase-0-prove-the-case-first-f on tony-omen (dispatch)
+- at: 2026-10-08 15:25
+  from: devin
+  text: 'Session started: reading card + locating nest-bank-router instrumentation for Phase 0 analysis'
 ownership:
   owner: tony

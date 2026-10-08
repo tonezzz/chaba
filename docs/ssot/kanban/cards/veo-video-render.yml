@@ -2,7 +2,7 @@ id: veo-video-render
 title: ada render — veo video gen -> LINE/TG/screens
 brief: Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued
   — a worker session will pick it up.
-column: backlog
+column: doing
 program: media-gen
 metric: prompt (+ optional ref frame) -> short clip plays on a cast screen AND arrives as video in TG/LINE
 verify: scenario vid_render_basic passes; tg chat prompt -> video arrives <3min
@@ -13,7 +13,7 @@ note: 'Veo (predictLongRunning on generativelanguage) for short clips. Same rend
   spend log + owner_only policy.'
 help: 'gen: longRunningPredict on generativelanguage.googleapis.com; send: same /frame URL + tg sendVideo/line videoMessage
   (both relays handle images today — video message types may need a small extension)'
-updated: 2026-10-05 21:15
+updated: 2026-10-08 15:25
 spec: 'ada_render_video(prompt, ref_url?, secs, aspect) via Veo predictLongRunning on generativelanguage — async
   op, poll until done (the long-poll shape needs a background task or bounded wait ~60-120s), then same artifact->URL
   hop as ada_render_image. Same render tool group. Verify: stubbed unit test; live scenario produces a playable
@@ -22,8 +22,9 @@ priority: low
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
+  status: running
   button: ▶ Start
+  runner: tony-omen
 comms:
 - at: 2026-10-05 21:15
   from: devin
@@ -31,3 +32,9 @@ comms:
 - at: 2026-10-08 15:30
   from: devin
   text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
+- at: 2026-10-08 15:25
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 15:25
+  from: chaba
+  text: started devin-task-20261008-152538-ada-render-video-prompt-ref-ur on tony-omen (dispatch)
