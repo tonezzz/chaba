@@ -58,6 +58,12 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-060641-ada-pi-cms-read-discovery-repo:
     1 commit(s) conflict with origin/main in'
+- at: 2026-10-08 12:05
+  from: devin
+  text: 'merge resolved by hand: kept branch''s cms_read search action + shared _cms_pages
+    helper + cms_index_rows (lang-dedupe + per-domain cap + overflow note); preserved main''s
+    report-visibility fix (kind=[page,report]) and reports-first index ordering. 915 tests
+    pass, tool-lint clean, merged cabbc82, deployed to idc03 — all 4 services active.'
 action:
   type: dispatch
   status: done
@@ -74,6 +80,9 @@ requests:
     origin/main in ada-pi — conflicted paths: backend/realtime_provider.py, backend/tool_guide.yml, backend/tool_runner/cms.py,
     tests/test_memory_recall_extras.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261008-060641-ada-pi-cms-read-discovery-repo
     by hand, or retry/abandon the card.'
-  status: open
+  status: resolved
   at: 2026-10-08 10:17
   from: chaba
+  resolved_at: 2026-10-08 12:05
+  resolved_by: devin
+  resolution: 'merged to ada-pi origin/main as cabbc82 + deployed idc03 — see comms'
