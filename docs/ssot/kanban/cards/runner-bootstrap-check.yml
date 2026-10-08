@@ -1,0 +1,21 @@
+id: runner-bootstrap-check
+title: Runner-host bootstrap checklist — git identity, creds, clone freshness, agent versions
+brief: 'Three provisioning gaps in two days stranded work: mn01 ghost checkout (no .git), idc01 chaba clone 860 commits
+  stale, idc03 missing git identity + https-only remote (cant push). A periodic audit card that checks every
+  dispatch-capable host for the known failure modes before a dispatch discovers them.'
+column: backlog
+priority: medium
+program: chaba-ci
+area: dispatch
+note: 'Evidence: mn01 chaba dir without .git (worktree failures, recloned); idc01 clone 860 behind
+  (runner-agent AttributeError close_out_notes); idc03 git user.name/email unset (checkpoint+auto-merge failed on
+  voice-bench-harness — salvaged by hand). Fixed by hand each time: git config set on idc01+idc03 2026-10-09.'
+spec: "Extend an existing health lane (or a small script) to check each dispatch host\nin ssot.kanban.yml runner_fleet:\n1. git identity set (user.name + user.email — dispatch commits need it)\n2. canonical clone exists, has .git, is not >N commits behind origin/master\n   (stale clones crash runner-agent on missing helpers — idc01)\n3. dispatch-relevant checkouts' remotes support the needed flow\n   (fetch over tailscale is enough if merge-sweep salvages, but note it)\n4. runner-agent + dispatch_repos versions resolve (import smoke test)\n5. devin CLI present where dispatch cards may land\nEmit a cms-auto-style health card only on violation — green fleet stays silent.\nAcceptance: any of the three historical failures would have been caught by\nthe check before a dispatch tripped on them.\n"
+help: 'Hosts to cover: tony-dell, tony-omen, idc01, idc02, idc03, mn01 (runner_fleet in ssot.kanban.yml). The
+  mddb-follower-stall card is the model for "service looks alive but silently broken" checks.'
+updated: 2026-10-09 06:45
+action:
+  type: dispatch
+  status: idle
+  button: "▶ Build the bootstrap check"
+  repo: chaba

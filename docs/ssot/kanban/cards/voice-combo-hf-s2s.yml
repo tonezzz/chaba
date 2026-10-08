@@ -1,7 +1,7 @@
 id: voice-combo-hf-s2s
 title: 'Bench: huggingface/speech-to-speech serve mode'
-column: backlog
-updated: 2026-10-08 18:30
+column: doing
+updated: 2026-10-09 06:48
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -18,7 +18,8 @@ action:
   labels:
   - gpu
   model: swe-2-medium
-  status: queued
+  status: running
+  runner: tony-omen
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -26,4 +27,19 @@ comms:
 - at: 2026-10-08 18:30
   from: tony
   text: queued for processing
+- at: 2026-10-09 06:35
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 06:36
+  from: chaba
+  text: started devin-task-20261009-063601-bench-combo-hf-s2s-via-scripts on tony-omen (dispatch)
+- at: 2026-10-09 06:37
+  from: devin
+  text: picked up on tony-omen. harness merge never landed scripts/voice-bench (checkpoint failed on idc03) — recovering
+    harness from idc03 worktree first, then hf-s2s bench.
+- at: 2026-10-09 06:48
+  from: devin
+  text: harness recovered from idc03 worktree + extended (adapter field, openai_realtime adapter, ws readiness probe).
+    Fixtures regenerated with real edge-tts speech (en+th). hf speech-to-speech serve coming up on :8765 — faster-whisper
+    small + ollama phi3 + qwen3-tts ggml; downloading TTS gguf now.
 pipeline: ci

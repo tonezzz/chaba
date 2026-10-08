@@ -1,0 +1,25 @@
+id: voice-bench-real-fixtures
+title: Regenerate voice-bench fixtures with real TTS audio
+column: backlog
+updated: 2026-10-09 06:39
+priority: high
+program: voice-fallback
+tags:
+- voice
+- bench
+spec: 'The harness landed (scripts/voice-bench/) but fixtures/*.wav are placeholder tones — all 70444 bytes, generated
+  on idc03 which had no TTS creds. Regenerate with a real engine so WER/transcript scores mean something: run `python3
+  scripts/voice-bench/fixtures/generate.py --engine gemini` on tony-dell (Gemini creds exist here — check ~/.config/secrets/).
+  Thai fixtures must be actual Thai speech. Verify: file sizes differ per fixture, audio duration matches phrase
+  length, a spot-check STT pass on one en + one th fixture produces the expected transcript. Commit the regenerated
+  wavs.'
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  model: swe-2-medium
+  status: queued
+comms:
+- at: 2026-10-09 06:39
+  from: tony
+  text: card captured via board-api

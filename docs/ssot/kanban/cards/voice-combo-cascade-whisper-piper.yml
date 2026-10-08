@@ -1,7 +1,7 @@
 id: voice-combo-cascade-whisper-piper
 title: 'Bench: faster-whisper + ollama LLM + piper cascade'
-column: backlog
-updated: 2026-10-08 18:30
+column: doing
+updated: 2026-10-09 06:40
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -18,7 +18,8 @@ action:
   labels:
   - gpu
   model: swe-2-medium
-  status: queued
+  status: running
+  runner: tony-omen
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -26,4 +27,14 @@ comms:
 - at: 2026-10-08 18:30
   from: tony
   text: queued for processing
+- at: 2026-10-09 06:35
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 06:35
+  from: chaba
+  text: started devin-task-20261009-063553-bench-combo-cascade-whisper-pi on tony-omen (dispatch)
+- at: 2026-10-09 06:40
+  from: devin
+  text: harness scripts/voice-bench/ never landed (idc03 worktree swept dirty) — rebuilding harness in this worktree,
+    then running combo. ollama+phi3 up on GPU host, piper en_US-lessac installed, faster-whisper venv ready.
 pipeline: ci

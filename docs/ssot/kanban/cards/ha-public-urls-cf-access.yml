@@ -2,19 +2,26 @@ id: ha-public-urls-cf-access
 title: 'Public HA URLs: CF Access parity + ada-ha.surf-thailand.com DNS'
 column: done
 priority: high
-note: 'DONE 2026-10-07: all three public HA URLs live and CF-Access gated. michael-ha
-  Access app created (was public 200); ada-ha Access app created (775374be-bd6c-443d-8cac-9597e3a40e66)
-  + idc02 caddy-edge block proxies to tailscale serve :8125; DNS CNAME ada-ha -> edge.surf-thailand.com
-  created from idc02 (its cloudflare.env token HAS Zone.DNS — tony-dell copy does
-  NOT; drift in ~/.config/secrets/cloudflare.env across hosts worth fixing). Prod
-  tony-ha config stripped of backup/junk files after cp -a backup to ~/.config/home-assistant.bak-20261007;
-  rebooted clean 135s. CMS reports: host-services-cms.py now renders a Public URLs
-  section per host — regenerated all 7 pages; weekly regen keeps them fresh.'
+note: 'DONE 2026-10-07: all three public HA URLs live and CF-Access gated. michael-ha Access app created (was public
+  200); ada-ha Access app created (775374be-bd6c-443d-8cac-9597e3a40e66) + idc02 caddy-edge block proxies to tailscale
+  serve :8125; DNS CNAME ada-ha -> edge.surf-thailand.com created from idc02 (its cloudflare.env token HAS Zone.DNS
+  — tony-dell copy does NOT; drift in ~/.config/secrets/cloudflare.env across hosts worth fixing). Prod tony-ha
+  config stripped of backup/junk files after cp -a backup to ~/.config/home-assistant.bak-20261007; rebooted clean
+  135s. CMS reports: host-services-cms.py now renders a Public URLs section per host — regenerated all 7 pages;
+  weekly regen keeps them fresh.'
 requests:
-- from: tony
-  needed: Decide if michael-dev.surf-thailand.com should exist publicly (currently
-    tailnet-only on :8124 — recommend keeping it tailnet-only).
+- id: michael-dev-public-url
+  ask: Decide if michael-dev.surf-thailand.com should exist publicly (currently tailnet-only on :8124 — recommend
+    keeping it tailnet-only).
   status: open
+  at: 2026-10-07 20:40
+  from: tony
+  options:
+  - id: tailnet-only
+    label: Keep tailnet-only — dev instance stays off the public edge
+  - id: make-public
+    label: Make public — CF Access app + idc02 edge block + CNAME
+  suggested: tailnet-only
 action:
   type: manual
   status: done
@@ -23,33 +30,28 @@ updated: 2026-10-08 20:40
 comms:
 - at: 2026-10-07 19:40
   from: devin
-  text: 'tony-ha role split completed data-level: rich config lives on at ada-ha (clone,
-    isolated podman net), prod config at ~/.config/home-assistant stripped to production-only
-    files. All URLs verified: tony-ha 302->Access, michael-ha 302->Access, ada-ha
-    pending DNS.'
+  text: 'tony-ha role split completed data-level: rich config lives on at ada-ha (clone, isolated podman net), prod
+    config at ~/.config/home-assistant stripped to production-only files. All URLs verified: tony-ha 302->Access,
+    michael-ha 302->Access, ada-ha pending DNS.'
 - at: 2026-10-07 20:05
   from: devin
-  text: DNS resolved — idc02 has a different cloudflare.env whose token includes Zone.DNS.
-    Created CNAME ada-ha -> edge.surf-thailand.com (proxied); verified https://ada-ha.surf-thailand.com
-    302->CF Access. All 3 HA URLs live + gated. host-services-cms.py patched with
-    Public URLs section, all 7 pages regened.
+  text: DNS resolved — idc02 has a different cloudflare.env whose token includes Zone.DNS. Created CNAME ada-ha
+    -> edge.surf-thailand.com (proxied); verified https://ada-ha.surf-thailand.com 302->CF Access. All 3 HA URLs
+    live + gated. host-services-cms.py patched with Public URLs section, all 7 pages regened.
 - at: 2026-10-08 06:05
   from: devin
-  text: 'SSL handshake failure reported + fixed: proxied CNAME means CF terminates
-    TLS and ACME http-01/tls-alpn-01 never reach idc02 Caddy — ada-ha cert obtain
-    failed 22x. Fix: "tls internal" (self-signed origin, valid under CF SSL=Full).
-    Verified: edge-direct SNI 200, public 302->Access. LATENT RISK: tony-ha/michael-ha/monitor
-    LE certs expire ~Jan 2027 and CANNOT renew while their records stay proxied —
-    either pre-empt with tls internal on all blocks, build caddy with dns-cloudflare
-    plugin for DNS-01 (idc02''s token has Zone.DNS), or unproxy briefly at renewal.
-    Recommend a card for this before the Jan expiry window.'
+  text: 'SSL handshake failure reported + fixed: proxied CNAME means CF terminates TLS and ACME http-01/tls-alpn-01
+    never reach idc02 Caddy — ada-ha cert obtain failed 22x. Fix: "tls internal" (self-signed origin, valid under
+    CF SSL=Full). Verified: edge-direct SNI 200, public 302->Access. LATENT RISK: tony-ha/michael-ha/monitor LE
+    certs expire ~Jan 2027 and CANNOT renew while their records stay proxied — either pre-empt with tls internal
+    on all blocks, build caddy with dns-cloudflare plugin for DNS-01 (idc02''s token has Zone.DNS), or unproxy briefly
+    at renewal. Recommend a card for this before the Jan expiry window.'
 - at: 2026-10-08 06:15
   from: devin
-  text: 'Renewal cliff eliminated: switched ALL proxied edge blocks (tony-ha, michael-ha,
-    monitor, ada-ha) to "tls internal" — no more origin ACME dependency. All 4 verified
-    302->Access post-restart. Recipe for future public hosts captured in docs/kb/edge-add-public-host.md.
-    Option kept open: caddy+cloudflare-dns build for DNS-01 if zone ever goes Full-strict.'
+  text: 'Renewal cliff eliminated: switched ALL proxied edge blocks (tony-ha, michael-ha, monitor, ada-ha) to "tls
+    internal" — no more origin ACME dependency. All 4 verified 302->Access post-restart. Recipe for future public
+    hosts captured in docs/kb/edge-add-public-host.md. Option kept open: caddy+cloudflare-dns build for DNS-01 if
+    zone ever goes Full-strict.'
 - at: 2026-10-08 20:40
   from: devin
-  text: closing — note records all 3 public HA URLs live + CF-Access gated 2026-10-07;
-    no open asks
+  text: closing — note records all 3 public HA URLs live + CF-Access gated 2026-10-07; no open asks

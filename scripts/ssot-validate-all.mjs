@@ -209,6 +209,23 @@ def validate_one(file_path):
                     and not data.get('review_kind'):
                 warnings.append('Kanban: review card declares no auto_done_when '
                                 'and no review_kind — add one (ssot.kanban.yml card_schema)')
+            # Request-shape nudge: an open request that is a bare string or
+            # lacks id/ask can't be answered via /respond (falls through to
+            # a missing card ask → "no request_id and card has no ask"), and
+            # without options+suggested it renders free-text-only — buttons
+            # are the standard.
+            for r in data.get('requests') or []:
+                if not isinstance(r, dict):
+                    warnings.append('Kanban: request is a bare string — needs '
+                                    '{id, ask, status, options, suggested}')
+                    continue
+                if r.get('status') == 'open':
+                    if not r.get('id') or not r.get('ask'):
+                        warnings.append('Kanban: open request missing id/ask — '
+                                        'unanswerable via board (needs {id, ask})')
+                    if not r.get('options'):
+                        warnings.append(f"Kanban: open request '{r.get('id') or r.get('ask', '?')[:40]}' "
+                                        'has no options — add options+suggested for click-to-answer')
 
         if 'ideas' in data and isinstance(data['ideas'], list):
             for idx, idea in enumerate(data['ideas']):
