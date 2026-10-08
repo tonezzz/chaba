@@ -1,7 +1,7 @@
 id: ada-cms-discovery-fixes
 title: 'ada-pi: cms_read discovery + reports-index flood + memory-search pollution (liam-e2e fallout)'
 column: review
-updated: 2026-10-08 10:17
+updated: 2026-10-08 13:02
 note: 'From yt-dub-liam-e2e live pass 2026-10-07 (transcript ece770ccb0): Ada could not find the Liam dub though
   all infra was green. Three ada-pi fixes needed: (1) cms_read list ordering/search — action=list returns an unordered
   subset (373 docs; model passed limit=10 and wrongly concluded the page did not exist). Add action=search over
@@ -60,10 +60,13 @@ comms:
     1 commit(s) conflict with origin/main in'
 - at: 2026-10-08 12:05
   from: devin
-  text: 'merge resolved by hand: kept branch''s cms_read search action + shared _cms_pages
-    helper + cms_index_rows (lang-dedupe + per-domain cap + overflow note); preserved main''s
-    report-visibility fix (kind=[page,report]) and reports-first index ordering. 915 tests
-    pass, tool-lint clean, merged cabbc82, deployed to idc03 — all 4 services active.'
+  text: 'merge resolved by hand: kept branch''s cms_read search action + shared _cms_pages helper + cms_index_rows
+    (lang-dedupe + per-domain cap + overflow note); preserved main''s report-visibility fix (kind=[page,report])
+    and reports-first index ordering. 915 tests pass, tool-lint clean, merged cabbc82, deployed to idc03 — all 4
+    services active.'
+- at: 2026-10-08 13:02
+  from: chaba
+  text: 'merge-sweep: dispatch/20261008-060641-ada-pi-cms-read-discovery-repo already in origin/main — marked verified'
 action:
   type: dispatch
   status: done
@@ -71,7 +74,7 @@ action:
   runner: tony-dell
   task_id: 20261008-060641-ada-pi-cms-read-discovery-repo
   result: 20261008-060641-ada-pi-cms-read-discovery-repo finished (inactive) — see `devin-dispatch logs 20261008-060641-ada-pi-cms-read-discovery-repo`
-  verified: false
+  verified: true
 claim:
   since: 2026-10-08 06:06
 requests:
@@ -85,4 +88,4 @@ requests:
   from: chaba
   resolved_at: 2026-10-08 12:05
   resolved_by: devin
-  resolution: 'merged to ada-pi origin/main as cabbc82 + deployed idc03 — see comms'
+  resolution: merged to ada-pi origin/main as cabbc82 + deployed idc03 — see comms
