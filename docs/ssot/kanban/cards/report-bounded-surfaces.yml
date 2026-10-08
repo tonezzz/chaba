@@ -1,0 +1,56 @@
+id: report-bounded-surfaces
+title: 'Bounded surfaces — shared budget/noise machinery for the report pipeline'
+brief: >-
+  The report registry now declares the standard (bounded_surfaces in
+  ssot.reports.yml): every rendered surface gets limits, suppression,
+  explicit empties, and ordered overflow — the same knobs the memory
+  render just gained. This card implements it: extract the shared
+  helpers, wire the L3 system report as pilot, and teach report-watch
+  to flag surfaces that breach their declared budget.
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+pipeline: ci
+autonomy: t2
+metric: >-
+  SYSTEM-REPORT.md renders with a declared budget: over-budget sections
+  shed in declared order (not arbitrary crop), an empty section shows
+  '_(empty — ran clean)_', and meta.extra.chars is recorded per rendered
+  node. Memory render and report render share the same helper code —
+  no duplicate truncation logic.
+verify: >-
+  Render SYSTEM-REPORT with an artificially tiny limit -> sections shed
+  in overflow_order with markers; a clean-run section renders the empty
+  marker; meta records chars. render-memory.py keeps passing its render
+  unchanged after the lib extraction (diff before/after context.md).
+spec: |
+  1. scripts/lib/bounded.py (new): extract from render-memory.py —
+     apply_budget(lines, soft, hard), dedupe_consecutive (×N),
+     drop_patterns, skip_status filter, entry cap. render-memory.py
+     imports from it (behavior must not change — diff a render).
+  2. scripts/report-system.py (pilot L3): read limits/overflow_order/
+     empty/suppress from the node's registry entry; render through
+     bounded.py; write extra.chars via lib/report.py::write_meta.
+  3. ssot.reports.yml: add limits/overflow_order to the system-report
+     node only — other nodes opt in as their producers get wired
+     (follow-on work, not this card).
+  4. report-watch.py: flag nodes whose meta.extra.chars > declared hard
+     limit (new BAD-class: 'overrun' is informational — report via a
+     focus-inbox note, don't page).
+  5. Do NOT add budgets to L0 artifact writers — bounded_surfaces is
+     rendered-surface only (the registry section says why).
+
+  After the pilot proves out, rolling the fields onto other rendered
+  nodes is a per-node follow-up — this card is the machinery + one
+  working example, per the usual demo pattern.
+expected_goals:
+  - id: shared-lib
+    check: "file-exists scripts/lib/bounded.py"
+  - id: memory-render-uses-lib
+    check: "command grep -l 'lib.bounded\\|from lib import bounded\\|bounded' scripts/chaba/render-memory.py expect render-memory.py"
+links:
+  - chaba-ci-standard
+  - chaba-memory-producer-hygiene
+  - release-lifecycle-standard
+blocked_by: []

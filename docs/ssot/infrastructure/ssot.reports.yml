@@ -122,6 +122,57 @@ timeline:
     ref: path to the primary artifact produced (optional)
   example: '{"ts":"2026-09-26T18:45:00+07:00","node":"fleet","layer":"L2","status":"delta","summary":"idc01: 2 missing critical","ref":"reports/fleet/FLEET-REPORT.md"}'
 
+bounded_surfaces:
+  description: >
+    Rendered-surface discipline shared with the Chaba memory render
+    (ssot.chaba.memory.yml). Added 2026-10-08 after the memory-side
+    declutter: the same clutter patterns exist in reports, so both
+    pipelines declare the same knobs with the same semantics, and both
+    render through the same helpers (scripts/lib/bounded.py — extracted
+    from render-memory.py). Applies to RENDERED surfaces only (L1/L2/L3
+    .md digests and the overview). L0 raw artifacts are evidence — they
+    never get budgets, suppression, or truncation.
+  rule: >
+    Every generated human-facing surface declares its budget; noise is
+    suppressed by registry-declared patterns (auditable), not hidden in
+    generator code; empties are explicit; overflow is deliberate and
+    ordered — never a silent crop.
+  node_fields:
+    limits: "{soft: chars, hard: chars} — soft truncates with a
+      '…(truncated)' marker; hard cuts the surface. Shared semantics with
+      memory section limits."
+    suppress: "list of regexes — matching finding lines are suppressed
+      and counted; the marker line '…(N routine findings suppressed)'
+      preserves awareness. Known-noise lives HERE, not in generators."
+    empty: "marker | hide — reports default to 'marker': render
+      '_(empty — ran clean)_' because absence of findings IS the audit
+      evidence. Context renders use 'hide'. Never leave an empty surface
+      indistinguishable from one that never ran."
+    dedupe: "consecutive identical findings collapse with a ×N marker —
+      same rule as memory rolling-logs (a failing check that fires 8
+      times is one finding, eight times)."
+    finding_max_chars: "per-finding head cap — like memory entry_max_chars;
+      a finding longer than this is truncated with a source pointer, not
+      allowed to eat the surface."
+    overflow_order: "L3/rollup surfaces only — section ids in shed order
+      (noise first, signal last) when the whole surface exceeds limits."
+  meta_fields:
+    extra.chars: "rendered surface char count — write_meta records it so
+      report-watch can flag nodes that exceed their declared hard limit"
+  watch_rule: >
+    report-watch raises a focus item when a rendered node exceeds its
+    declared hard limit, and when a suppressed-finding count grows
+    monotonically over consecutive runs (suppression masking a real
+    regression).
+  standard_procedure: |
+    1. Register the node with limits + (optionally) suppress/dedupe.
+    2. Producer renders via scripts/lib/bounded.py helpers — no
+       hand-rolled truncation or ad-hoc filtering.
+    3. meta.yml records extra.chars; overflow/shed decisions are visible
+       in the artifact, not just the logs.
+    4. If a surface routinely exceeds soft, fix the budget or the
+       findings — don't live in permanent truncation.
+
 nodes:
   # --- Fleet domain ---
   - id: audit-hosts/tony-dell
