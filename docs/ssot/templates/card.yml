@@ -1,0 +1,35 @@
+# Kanban Card Template
+# Copy to docs/ssot/kanban/cards/<id>.yml (filename = id).
+# Full field reference: docs/ssot/kanban/ssot.kanban.yml -> card_schema.
+# Dispatch/lab cards SHOULD declare autonomy + auto_done_when so
+# kanban-act can close them without a manual review pass.
+
+id: my-card-id                # slug — matches the filename
+title: Short human title
+brief: 2-3 plain sentences for the operator — situation first, then the
+       expected action (review it / answer on the card / wait / nothing)
+column: backlog               # backlog | doing | review | done  (lab for labs)
+priority: medium              # high | medium | low — sorts within the column
+created: 2026-01-01
+
+# --- close-out contract (kanban-act-loop standard, 2026-10-08) ---
+autonomy: t2                  # t1 suggest-only (default) | t2 auto-close | t3 human-only
+auto_done_when:               # ALL must pass; bounded vocabulary, no shell
+  - verified_true:            # this card — the dispatch-card idiom
+# - file_exists:scripts/path/in/repo.py
+# - service_active:some.timer@tony-dell
+# - page_exists:cms-page-slug
+# - card_done:other-card-id
+# - git_merged:dispatch/20261008-branch-prefix
+done_note: why these checks count as done   # written into the card on close
+
+# --- dispatch (the Start button) ---
+spec: Full self-contained task text — what gets dispatched
+action:
+  type: dispatch              # dispatch | manual | container | script
+  status: queued
+
+# --- review behavior ---
+# review_kind: verify | decide | triage  — set when filing to review;
+#   decide cards are NEVER auto-closed even with autonomy: t2
+# requests: blocks close while any entry is status != answered

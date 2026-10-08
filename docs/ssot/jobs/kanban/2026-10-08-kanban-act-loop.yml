@@ -1,0 +1,99 @@
+title: "kanban-act wired into the timer loop + the auto_done_when card contract"
+subtitle: >-
+  chaba-kanban-brief gains a manifest-declared ExecStart chain so kanban-act
+  actually runs on the 30min cadence; card schema documents the autonomy +
+  auto_done_when standard; two new check kinds (git_merged, verified_true)
+  let dispatch cards express "verified" natively
+icon: ⚙️
+id: 2026-10-08-kanban-act-loop
+status: done
+owner: devin-dispatch
+project: chaba
+card: kanban-act-loop
+branch: dispatch/20261008-150706-1-add-a-kanban-act-step-to-the
+started: "2026-10-08"
+completed: "2026-10-08"
+
+context:
+  user_request: >
+    Review piles grow because closing is manual. kanban-act.py implemented
+    T2 auto-close (autonomy:t2 + auto_done_when checks) but nothing ran it —
+    the hand-maintained systemd/chaba-kanban-brief.service listed it as an
+    ExecStart, while the authoritative manifest (ssot.jobs.yml) renders a
+    single-exec unit, so kanban-act + nest-overview silently dropped from
+    the generated unit. Card asks: wire kanban-act into the timer loop,
+    document the close-out contract as the card standard, extend the check
+    vocabulary (git_merged / verified_true), add a CI nudge, keep the
+    safety rails.
+
+design:
+  placement: >-
+    Manifest fix, not a new timer. render-jobs.py now accepts exec: as a
+    string OR list — a list renders one ExecStart per entry (oneshot chain,
+    later steps run only when earlier succeed; job-dispatcher joins with
+    &&). chaba-kanban-brief declares all three steps the deployed unit
+    actually ran — kanban-brief.py -> kanban-act.py -> nest-overview.py —
+    plus the env/cwd the rendered unit was missing (KANBAN_BRIEF_LLM_*,
+    WorkingDirectory). timeout 2m -> 5m for the extra steps.
+  check_vocabulary: >-
+    git_merged:<branch-prefix> — every origin/<prefix>* head is an ancestor
+    of origin/master|main (local remote refs; the writer host's fetch
+    cadence keeps them fresh). verified_true[:<id>] — reads action.verified
+    (merge-sweep/close_out stamp) or top-level verified; no arg = this card
+    — the dispatch-card idiom: merge-sweep sets verified, kanban-act turns
+    it into column:done.
+  safety_gates: >-
+    gate_hold_reason() — only column:review cards are evaluated (checks
+    passing early on a backlog/doing card is not proof the work ran);
+    review_kind:decide always holds; open requests[] or an unanswered ask
+    block the close. MAX_ACTS cap + kanban_act ops event per close
+    unchanged.
+  card_standard: >-
+    card_schema in ssot.kanban.yml documents autonomy/auto_done_when/
+    done_note/verified/auto_close; new dispatch/lab cards SHOULD declare
+    the contract at file time. docs/ssot/templates/card.yml is the
+    copy-paste starter. ssot-validate-all.mjs warns (never errors) on
+    review-column cards with neither auto_done_when nor review_kind.
+
+files:
+  - scripts/render-jobs.py                    # exec: str|list -> ExecStart chain
+  - scripts/job-dispatcher.py                 # list exec -> && chain (same convention)
+  - scripts/ada/kanban-act.py                 # git_merged + verified_true checks,
+                                             # gate_hold_reason() safety gates
+  - docs/ssot/infrastructure/ssot.jobs.yml    # chaba-kanban-brief: exec list + env/cwd
+  - systemd/generated/tony_dell/chaba-kanban-brief.service  # re-rendered, 3 ExecStarts
+  - systemd/chaba-kanban-brief.service        # legacy copy — TimeoutStartSec parity
+  - docs/ssot/kanban/ssot.kanban.yml          # card_schema contract + ops lane
+  - docs/ssot/templates/card.yml              # new-card starter template
+  - scripts/ssot-validate-all.mjs             # review-card close-out warning
+  - tests/board/test_kanban_act.py            # 18 tests: gates + both new checks
+
+verification:
+  - "python3 -m unittest tests.board.test_kanban_act — 18/18 pass
+     (gate holds for non-review/decide/open-request/open-ask, passes for
+     verify/answered; verified_true action+top-level variants; git_merged
+     against a real bare-origin fixture — merged/unmerged/prefix/injection)"
+  - "python3 scripts/render-jobs.py --check — OK 42 jobs, 7 hosts; re-render
+     wrote the 3-ExecStart generated unit"
+  - "python3 scripts/ada/kanban-act.py --dry-run — clean; synthetic review
+     card would-act, held on rk=decide and open request, released when
+     answered"
+  - "node scripts/ssot-validate-all.mjs <files> — fires on the 2 live
+     review cards missing both fields (lab-cf-kv-claw-channel,
+     nest-bank-router), quiet on rk=verify and on t2 cards"
+
+deployment_notes: >-
+  The rendered unit only reaches tony-dell on render-jobs.py --install
+  (or the next manual unit sync); until then the live service keeps
+  whatever unit is installed — the hand-maintained copy already ran
+  kanban-act, so behavior is continuous either way. After install,
+  kanban-act begins draining t2 review cards on the *:0/30 tick and this
+  card's own auto_done_when (service_active:chaba-kanban-brief.timer)
+  becomes self-fulfilling.
+
+followups:
+  - "Backfill: only 2 cards declare auto_done_when — a sweep could add the
+     contract to standing review/backlog cards (validator warning now
+     covers review-column drift going forward)."
+  - "kanban-act's own check page_exists hits MDDB every evaluation —
+     fine at current card counts; revisit if t2 adoption grows."

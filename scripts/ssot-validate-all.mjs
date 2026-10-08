@@ -200,6 +200,16 @@ def validate_one(file_path):
 
         _data_isolation_scan(rel, content, warnings)
 
+        # Kanban review-lane nudge (kanban-act-loop, 2026-10-08): a review
+        # card with no close-out contract and no review_kind has no declared
+        # way out of Tony's queue. Warning only — never blocks.
+        if rel.startswith('kanban/cards/') and isinstance(data, dict):
+            if data.get('column') == 'review' \
+                    and not data.get('auto_done_when') \
+                    and not data.get('review_kind'):
+                warnings.append('Kanban: review card declares no auto_done_when '
+                                'and no review_kind — add one (ssot.kanban.yml card_schema)')
+
         if 'ideas' in data and isinstance(data['ideas'], list):
             for idx, idea in enumerate(data['ideas']):
                 if isinstance(idea, str):

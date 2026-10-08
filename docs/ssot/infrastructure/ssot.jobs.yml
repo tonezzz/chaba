@@ -35,6 +35,11 @@ conventions:
     Dispatcher jobs MUST use every:.
 
     '
+  exec: 'string or list of strings — a list renders one ExecStart per entry
+    (oneshot chain: later steps run only when earlier ones succeed); for
+    dispatcher jobs the entries are joined with &&.
+
+    '
   persistent: catch up runs missed while the unit was down.
   timeout: per-job hard cap (e.g. 30s, 20m, 1h).
   env: inline KEY=value map -> Environment= lines (units) / process env (dispatcher).
@@ -156,14 +161,27 @@ jobs:
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
-  timeout: 2m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
-  note: 'ranks open cards do-first/delegate/schedule/park by deterministic
-    rules -> managed block on CMS kanban-brief (en+th), 30m registry gate.
-    Then kanban-act.py auto-closes cards carrying autonomy:t2 whose
-    auto_done_when checks all pass (card_done/page_exists/file_exists/
-    service_active — bounded vocabulary, no shell); every close emits a
-    kanban_act ops event. Deployed 2026-10-06.'
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  env:
+    KANBAN_BRIEF_LLM_URL: http://100.75.102.88:11434/v1
+    KANBAN_BRIEF_LLM_MODEL: phi3-gguf:latest
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
+    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
+    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/nest-overview.py
+  note: 'three-step ExecStart chain (exec: list renders one ExecStart per
+    line, in order — a failed step skips the rest). kanban-brief.py ranks
+    open cards do-first/delegate/schedule/park by deterministic rules ->
+    managed block on CMS kanban-brief (en+th), 30m registry gate. Then
+    kanban-act.py auto-closes column:review cards carrying autonomy:t2
+    whose auto_done_when checks all pass (card_done/page_exists/
+    file_exists/service_active/git_merged/verified_true — bounded
+    vocabulary, no shell); rk=decide and open-request cards are held;
+    every close emits a kanban_act ops event. Then nest-overview.py.
+    Deployed 2026-10-06; exec/env/cwd captured into this manifest
+    2026-10-08 (kanban-act-loop) — the rendered unit previously dropped
+    kanban-act + nest-overview.'
 - id: ada-pi-orch-bench
   name: Nest topology bench + nest-bench CMS trend refresh
   host: tony_omen
