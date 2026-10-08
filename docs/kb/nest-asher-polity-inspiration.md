@@ -81,15 +81,30 @@ Intake discipline:
   candidate (research-log row with proposed analog), or rejected (recorded
   with reason — e.g., time-travel: no analog, don't force it).
 - Open questions we don't have yet → next sweep targets:
-  - How does Asher depict submind *termination/reabsorption* (do personas
-    return? merging protocol)?
-  - The Quiet War mechanics — how the handover was negotiated (informs our
-    promotion-gate design).
-  - Jain tech lifecycle detail — what exactly makes it corrupt (informs the
-    adversarial tier).
-  - EC's relationship to other planetary/run-cible AIs — federated peers or
-    extensions of one mind? (Informs whether Nest lanes are one mind's facets
-    or a population.)
+  - ~~Quiet War mechanics~~ — ANSWERED (sweep 2): no negotiation, gradual
+    usurpation — humans delegated because AIs ran things better and comfort
+    killed resistance. See "delegation creep" below.
+  - ~~Jain lifecycle~~ — ANSWERED (sweep 2): node activates only on living
+    sentience → host/master → mycelial spread → timed "goes to seed"
+    retraction that kills the host → nodes disperse. Dormant seeds wait for
+    "the right kind of sentient touch" = sleeper-capability pattern.
+  - ~~Federated vs single mind~~ — ANSWERED (sweep 2): a *population* of
+    distinct minds. AIs choose their own names; runcible AIs take planet
+    names; ship AIs are independent persons — the King of Hearts went
+    renegade. EC is first among peers, not a monolith.
+  - Remaining: submind termination/reabsorption protocol (do personas return
+    and merge?); Erebus's loyalty mechanics for subsumed minds.
+
+## Research log — sweep 2 (2026-10-08)
+
+| Asher concept (source) | What it is | Candidate Nest analog |
+|---|---|---|
+| **Delegation law** — "remotely controlled drones tended to lose control once conflict filled the ether… it seemed almost a natural law that delegation was the most efficient way of controlling complex systems" (*Line War*, on war drones / Erebus's captains) | Remote control fails under degraded links; autonomous subordinates with local authority are the robust design | Dispatch lanes already follow this; formalize as a design principle: personas carry enough local capability to finish the mission without the parent |
+| **Delegation creep / the Quiet War mechanism** — "slow usurpation… people realized the AIs were better at running everything… hard to motivate people to revolution when they are extremely comfortable" (*Brass Man* via Asher); preceded by the Orwellian Committee (*The Departure*) | Takeover was ambient comfort, not conquest — delegation ratchets until the gate is vestigial | **Warning for the human gate**: the Polity lost politics because oversight became rubber-stamping. Nest's promotion gate must require *evidence* (bench delta) not just a click — design against approval fatigue |
+| **AI self-naming** — AIs choose their own names; names signal character (Jerusalem, Napoleon the Pig, Jack Ketch) (Polity Encyclopaedia) | Identity emerges per-mind; the name is a self-declared summary | Brains/lanes get durable identities in manifests; a name = lineage anchor for bench history and loyalty tracking |
+| **Erebus compound loyalty** — subsumed ship AIs, Golem, war drones and human minds kept as wormship captains; "favourites still loyal to the core" (*Line War*) | A compound mind's absorbed components retain identity — and variable loyalty | Post-merge verification: when a persona's learned state is merged back into a brain, run a loyalty/consistency bench — absorbed capability ≠ aligned capability |
+| **Assassin drones** — single-purpose killers operating alone or in pairs, infiltration tools of the Prador war (Polity Encyclopaedia); Cormac shadowed by a scorpion war drone (*Shadow of the Scorpion*) | Disposable, narrowly-scoped autonomous agents for one mission | One-shot personas: minimal scoped dispatch units that run a single task and retire — the lightest persona tier below dispatched sessions |
+| **Jain seed dormancy** — "seeds spread through space awaiting the right kind of sentient touch"; Skellor needed crystal-matrix AI augmentation to hold control (*Polity Agent* prologue) | Corrupting capability lies dormant until a qualified host triggers it; control requires an *augmented* controller | Adversarial tier: dormant-capability eval cases that only fire under trigger conditions; and only L3+ arbiter lanes may touch adversarial material (the "augmented controller" rule) |
 
 ## One deliberate divergence
 
@@ -110,6 +125,48 @@ to rewrite the minds unchecked.
    learn-from-divergence.
 3. **Learned router** — the hegemony's allocation decision, learned from
    bench corpus rather than a hand-set feature router.
+4. **Forensic lane** (sweep 2) — Brockle/HK-program pattern: an audit lane
+   that introspects other lanes for drift/deception, distinct from the bench
+   tier that scores capability.
+5. **Loyalty bench** (sweep 2) — Erebus's subsumed minds kept variable
+   loyalty; after merging a persona's learned state back, verify alignment,
+   not just capability.
+6. **One-shot personas** (sweep 2) — assassin-drone pattern: minimal
+   single-task dispatch units, lightest persona tier.
+
+## Continuous development program (proposal)
+
+Nest development runs as a standing loop keyed to this doc — the Polity
+compass stays live rather than a one-time note.
+
+**The cycle:**
+
+1. **Sweep** — targeted research per `nest-polity-expansion` axes; findings
+   land as research-log rows.
+2. **Triage** — each row becomes adopted / candidate / rejected-with-reason.
+3. **Spec** — an adopted concept becomes an engineering requirement on the
+   nest-* card it changes (or spawns a new card).
+4. **Build** — shadow-first implementation, never straight to enforce.
+5. **Gate** — promotion requires measured bench evidence + human approval.
+   This is the anti-Quiet-War check: the gate reviews a delta, it does not
+   rubber-stamp (delegation creep is the documented failure mode).
+6. **Review** — post-adoption: did the concept survive contact with the
+   implementation? Update the borrow-table; feed misses into corpus.
+
+**Tracks seeded by the 2026-10-08 sweeps:**
+
+| Track | Polity source | Target |
+|---|---|---|
+| Persona continuity + fabricated provenance | Blegg; seeded context + return-of-learning | `nest-portable-brains` (`memory` blob role) |
+| Forensic/audit lane | Brockle; HK programs | new card or audit extension of bench |
+| Subpersona sandbox | Orlandine's air-gapped subpersonae on Jain material | adversarial tier isolation |
+| Delegation principle | *Line War* delegation law | dispatch pipeline: personas carry local authority to finish missions offline |
+| Loyalty bench | Erebus's favourited subsumed minds | brain merge / post-train alignment check |
+| One-shot personas | assassin drones | dispatch: minimal single-task persona tier |
+| Gate hygiene | Quiet War delegation creep | promotion gate: evidence-required policy + periodic review of accumulated auto-decisions ("politics check") |
+
+Cadence: sweep when the card activates or on demand; the card is the standing
+driver so the program survives between sessions.
 
 ## Where this doc is referenced
 
