@@ -38,6 +38,10 @@ CUE_RE = re.compile(r"(\d+):(\d+):(\d+\.\d+)\s*-->\s*(\d+):(\d+):(\d+\.\d+)")
 THAI = re.compile(r"[฀-๿]")
 TAGS = re.compile(r"<[^>]+>")
 SKIP = re.compile(r"^[\s♪()\-–—.]*$")
+# Operator redaction: text inside [***] ... [***] is NOT spoken — the dub
+# leaves the original audio under it. Unclosed marker mutes to cue end.
+# (Same contract as the QC gate: skipped for TTS, kept in display burn.)
+MUTE = re.compile(r"\[\*\*\*\].*?(?:\[\*\*\*\]|$)")
 
 
 def ts(h, m, s):
@@ -66,7 +70,7 @@ def parse_vtt(path, lang, limit):
                 for l in lines
                 if not THAI.search(l) and not SKIP.match(l) and not l.startswith("(")
             )
-        text = text.strip()
+        text = MUTE.sub("", text).strip()
         if not text or start >= limit:
             continue
         end = min(end, limit)
@@ -125,7 +129,7 @@ def parse_words(path, limit, offset=0.0):
                 r"^\s*(align|position|line|vertical|size|region):.*", "", ln)
             if not ln.strip() or "-->" in ln:
                 continue
-            ln = html.unescape(ln)
+            ln = MUTE.sub("", html.unescape(ln))
             parts = WORD_TAG.split(ln)
             # lead text precedes the first tag -> starts at cue start;
             # text after a tag starts at that tag's time
@@ -1086,7 +1090,7 @@ def main():
         # too-short group must not shift the voice map onto the wrong cue
         voice_of, cues, qc_spans = {}, [], []
         for gi, g in enumerate(groups):
-            t = _fix(g[4], fm)
+            t = _fix(MUTE.sub("", g[4]), fm)
             if len(t) < 3:
                 continue
             if g[3]:
