@@ -1,28 +1,61 @@
-# Dispatch outcome — idc01→idc03 migration Phase 1 (inventory + plan)
+# nest-lane-tony-dell — dispatch outcome
 
-**Result: done.** Read-only inventory of idc01 and idc03 completed; no production changes made.
+**Result: tony-dell is now a live Nest serve+bench lane (onnxruntime CPU).
+Phase-0 baseline: p50 ~11ms / p95 ~21ms for jev-student-v5 (200 calls,
+0 errors) — far under the ~50ms bar, so the iGPU lane was registered as
+`status: parked` rather than built out. Accuracy on the confirm-gate
+suite is identical to the prod champ (49/66: golden 10/10, hard 27/35,
+adv-confirm 12/21).**
 
-## Deliverables (in this worktree)
+## What happened
 
-- `docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md` — full inventory, per-item migrate/retire decisions + dependency order, idc03 capacity check, cutover+rollback per item, what-stays list, 9 flagged approvals.
-- `docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml` — job-lifecycle artifact.
+- **Phase 0 (baseline):** the champion's fp32 ONNX export already existed
+  on dell (`stacks/web/public/apps/jev-bench/models/v5` — same weights as
+  idc03's prod ckpt), so no re-export was needed. Provisioned
+  `~/nest-lane/{venv,models,bin}` on dell (onnxruntime 1.30.0 +
+  tokenizers, py3.14 — no torch). Published
+  `bench/lane-20261008-100402` to ada-ha-scenario-reports with the real
+  numbers.
+- **Phase 1 (registry):** `tony-dell-cpu` + `tony-dell-igpu` (parked)
+  added to `lanes:` in ada-pi `tests/bench/topologies.yml`, with
+  host/ssh/tailnet/serve_port/python/models_dir fields the loop consumes;
+  same pair added to `training_lanes` posture in
+  `docs/ssot/infrastructure/ssot.nest-training.yml`.
+- **Phase 2 (serve shim):** new `ada-pi/scripts/serve-jev-student-onnx.py`
+  — stdlib http.server + onnxruntime twin of serve-jev-student.py
+  (/health + /v1/systemone, `--provider cpu|openvino:GPU`).
+  `nest-train-loop.py` gained `--lane`, `serve_onnx_lane()` (local
+  subprocess, or rsync+ssh spawn bound to the lane's tailnet IP when
+  remote), `export_onnx()` for torch ckpts, a `lane-probe.py` latency
+  probe, and `lane-bench`/`lanes` commands. GTX1650 torch path untouched.
+- **Phase 3 (bench + CMS):** lane docs carry `lane:`/`host:`/`runtime:`/
+  `p50_ms`/`p95_ms` meta + a latency table + a parseable json fence;
+  train docs gain `lane` meta + probe latency block when `--lane` is
+  used. `bench-edge-cms.py` now also consumes `bench/lane-*` docs and
+  renders a "Nest serve lanes" comparison table — republished the
+  `bench-edge` CMS page (1 lane row live).
 
-## Key findings
+## Verified
 
-- **idc01** (157.85.110.99 / 100.74.146.0, Siamdata): 2 vCPU, **31 GiB RAM** (SSOT says 8–12 G — drift), 96 G disk / 60 G used. Runs: **9 containers** (mddb leader, ollama, gemini-ollama-proxy, caddy-edge, camwall-edge, input-bridge, mddb-panel, vcast-headless ×2), **20 service units** (ada-pi-pwa/tony/michael/dev, line+tg relays, obsidian-vault, doc-archive, jev-student), **22 enabled timers**, no cron. ~30 G state (~12 G essential; 17 G is mddb-backups). Public TLS: `api.surf-thailand.com` (CF-proxied → :8001 + webhook routes) + sslip name. Tailscale serve → :8001-8004. ufw: public 80/443 only.
-- **idc03** (157.85.102.125 / 100.102.134.91, Siamdata): tailnet-joined today ~13:15Z, online, but **ssh denied for every key** (tony/root from dell; idc01/idc02→idc03 also denied). Public :22 open (not yet hardened). **Capacity unverified — Phase-2 blocker, needs Tony to authorize a key via the provider panel.**
-- Surprises: `input-bridge` binds **0.0.0.0:3010** (SSOT claims tailnet-pinned; ufw is the only guard); `doc-archive` listens on tailnet **:11025** — undocumented in security SSOT; `chaba-vault` repo on idc01 has **41 dirty files** (reconcile before rsync); `ada-dev` :8005 running but unit disabled; mddb quadlet has inline secrets to move to EnvironmentFile; ~18 orphan podman volumes + retired open-notebook residue marked retire/drop.
-- Plan approach per card: mddb via replication (follower on idc03 → promote → idc02 repoints leader), then services+secrets via rsync, caddy-edge + CF DNS repoint last, 24–48 h soak. idc01 stays untouched until soak — every rollback is "repoint back".
+- `nest-train-loop.py lane-bench --lane tony-dell-cpu --model
+  ~/nest-lane/models/jev-student-v5` ran end-to-end **on dell** →
+  published `bench/lane-20261008-100402`.
+- The same command ran end-to-end **from mn01** (remote path:
+  rsync + ssh + tailnet bind, bench over tailnet, `--no-publish`) —
+  49/66 acc, p50 14.8ms remote. Server teardown verified clean.
+- `node scripts/ssot-validate-all.mjs` — 1685 files, 0 errors.
 
-## How to verify
+## To merge / follow up
 
-```bash
-cat docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
-ssh idc01 'podman ps; systemctl --user list-timers --all | wc -l'   # spot-check inventory
-tailscale status | grep idc03                                       # 100.102.134.91 online
-ssh tony@100.102.134.91 hostname                                    # currently: Permission denied (the blocker)
-```
-
-## Waiting on Tony (flagged, non-blocking for Phase 1)
-
-idc03 ssh authorization is the only hard blocker for Phase 2. Other approvals (DNS repoint, mddb promotion, backups scope, chaba-vault dirty files, ada-dev, mn01 aliases, idc01 keep-vs-cancel) are listed in §Flags of the plan.
+- ada-pi: branch `dispatch/nest-lane-tony-dell` in worktree
+  `~/CascadeProjects/ada-pi-wt-nest-lane` **on tony-dell** — merge to
+  main + push per normal ada-pi flow. Until merged, run the loop on dell
+  with `ADA_PI=~/CascadeProjects/ada-pi-wt-nest-lane`.
+- chaba: this dispatch branch; mirror commit on dell worktree
+  `~/CascadeProjects/chaba-tony-dell-worktrees/nest-lane` (branch
+  `dispatch/nest-lane-tony-dell`).
+- iGPU stays parked: revisit only for gemma-270m (llama.cpp-server
+  Vulkan) or if dell CPU p50 regresses past ~50ms.
+- Full `loop --lane` (train → serve on lane) shares the same code path
+  but wasn't run — it needs a trained ckpt + VENV_PY for export.
+- Trail doc: `docs/ssot/jobs/infrastructure/2026-10-08-nest-lane-tony-dell.yml`.
