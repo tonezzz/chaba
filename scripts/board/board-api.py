@@ -354,8 +354,11 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
         a["status"] = "queued"
-        a.pop("result", None)
+        prev = a.pop("result", None)
+        if prev:
+            a["last_failure"] = str(prev)[:300]
         a.pop("runner", None)  # free for any host to re-claim
+        a["attempts"] = int(a.get("attempts") or 0) + 1
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":
@@ -364,7 +367,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             return blocked
         card["column"] = "done"
         a["status"] = "done"
-        comms_add(card, frm, "closed by Tony")
+        comms_add(card, frm, f"closed by {frm}")
         hide_dispatch_session(card)
         return "moved to done"
     if verb == "hold":
@@ -375,7 +378,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     raise ValueError(f"unknown verb {verb}")
 
 
-def do_move(card: dict, body: dict) -> str:
+def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     col = (body.get("column") or "").strip()
     if col not in COLUMNS:
         raise ValueError(f"column must be one of {sorted(COLUMNS)}")
@@ -392,7 +395,7 @@ def do_move(card: dict, body: dict) -> str:
         card.setdefault("action", {})["status"] = "done"
         card.setdefault("claim", {}).pop("session", None)
         hide_dispatch_session(card)
-    comms_add(card, "tony", f"moved {old} -> {col}")
+    comms_add(card, frm, f"moved {old} -> {col}")
     return f"moved to {col}"
 
 
@@ -977,11 +980,11 @@ class H(BaseHTTPRequestHandler):
                     if verb == "claim":
                         msg = do_claim(card, body)
                     elif verb == "move":
-                        msg = do_move(card, body)
+                        msg = do_move(card, body, actor(body))
                     elif verb == "finish":
                         msg = do_finish(card, body)
                     else:
-                        msg = do_action(card, verb, "tony")
+                        msg = do_action(card, verb, actor(body))
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/respond":
