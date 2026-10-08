@@ -20,9 +20,12 @@ raise a `report-watch-goal-rot-<card>` inbox item.
 
 Usage: report-watch.py [--quiet]
 """
+import fcntl
 import json
+import os
 import re
 import sys
+import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -151,6 +154,41 @@ def make_goalrot_item(cid: str, failed: list) -> dict:
     }
 
 
+BOARD_LOCK = Path(os.environ.get("BOARD_LOCK", "/tmp/board-api.lock"))
+BOARD_API = os.environ.get("BOARD_API", "http://127.0.0.1:8787").rstrip("/")
+
+
+def rot_requeue(card_path: Path, cid: str, failed: list) -> bool:
+    """on_goal_rot:requeue — stamp the rot evidence on the card under the
+    shared flock, then do=queue via board-api (status queued, column ->
+    backlog, comms line). Returns True when the requeue was accepted."""
+    detail = ("goal rot — expected_goals failing on done card: "
+              + ", ".join(r["id"] for r in failed[:5]))[:280]
+    try:
+        with BOARD_LOCK.open("w") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
+            card = yaml.safe_load(card_path.read_text()) or {}
+            a = card.setdefault("action", {})
+            if a.get("status") == "queued":
+                return True  # already looped back
+            a["last_failure"] = detail
+            card_path.write_text(yaml.safe_dump(
+                card, sort_keys=False, allow_unicode=True, width=120))
+    except Exception:
+        return False
+    try:
+        req = urllib.request.Request(
+            BOARD_API + "/action",
+            data=json.dumps({"id": cid, "do": "queue",
+                             "from": "chaba"}).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            resp = json.loads(r.read())
+        return not resp.get("error")
+    except Exception:
+        return False
+
+
 def probe_done_goals(state: dict, now, quiet: bool) -> list[str]:
     """Re-probe expected_goals on done cards — a pass at close proves
     nothing about next month. Due when neither report-watch's own probe
@@ -189,7 +227,18 @@ def probe_done_goals(state: dict, now, quiet: bool) -> list[str]:
             print(f"goal-probe {cid}: {state[key]['ok']}"
                   + (f" FAIL: {', '.join(r['id'] for r in failed[:4])}"
                      if failed else ""))
-        if not failed or inbox_exists(f"goal-rot-{slug(cid)}"):
+        if not failed:
+            continue
+        # on_goal_rot: requeue — loop the regression back into the board
+        # instead of an inbox item: stamp the failure evidence on the
+        # card (flock protocol, same as kanban-dispatch) then requeue via
+        # the API so comms + column transition stay consistent.
+        if card.get("on_goal_rot") == "requeue" and rot_requeue(
+                p, cid, failed):
+            if not quiet:
+                print(f"goal-rot {cid}: requeued")
+            continue
+        if inbox_exists(f"goal-rot-{slug(cid)}"):
             continue
         fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
                  f"report-watch-goal-rot-{slug(cid)}.yml")

@@ -99,6 +99,11 @@ card_schema:
              close; merge-sweep/close_out write action.verified instead"
   auto_close: "block written by kanban-act on close — {by, at, note,
              checks: ['<expr> -> pass|fail']}"
+  # optional — goal-rot handling on done cards (report-watch.py, 24h probe).
+  # Absent = focus-inbox item only (default). requeue = stamp
+  # action.last_failure with the failed goal ids and do=queue the card —
+  # the regression loops back into the board instead of an inbox note.
+  on_goal_rot: "requeue   # opt-in per card"
   # optional — lab cards only (column: lab). Continuous-improvement contract:
   lab:
     hypothesis: "what we expect to learn or prove"
@@ -128,6 +133,14 @@ card_schema:
              claim) and runs cmd under systemd-run. Needs git on the
              host; repo must be anonymously cloneable (public https) or
              the host needs its own auth for repo_url"
+    attempts: "count of completed-but-unsuccessful dispatches — bumped by
+               close_out failure (auto-retry) and do=retry"
+    max_attempts: "cap on dispatches incl. auto-retries (default
+               KANBAN_MAX_ATTEMPTS=2) — exhausted retries park the card
+               in review for a human; KANBAN_AUTORETRY=0 disables"
+    last_failure: "short evidence line written by retry/auto-retry/
+               goal-rot-requeue — RETRY_RAILS injects it into the next
+               dispatch so the session starts informed"
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
@@ -277,6 +290,18 @@ execution:
                action.verified is stamped True on merge, False on
                conflicts/failed goals (the review badge prefers it).
                KANBAN_AUTOMERGE=0 disables the whole step.
+               AUTO-RETRY (2026-10-08, review feedback loop): on
+               conflicts/goal-failure the dispatcher requeues the card
+               itself — status->queued with action.attempts++ and
+               action.last_failure set — while attempts <
+               action.max_attempts (default KANBAN_MAX_ATTEMPTS=2);
+               RETRY_RAILS carries the failure evidence into the next
+               session's task text so retries start informed, not
+               blind. Manual do=retry also bumps attempts. Exhausted
+               retries stay in review for Tony. KANBAN_AUTORETRY=0
+               disables. Report-watch's done-card goal probe requeues
+               instead of filing an inbox item when the card sets
+               on_goal_rot: requeue.
                tests/board/test_dispatch_close_out.py covers the
                pipeline end-to-end."
   worktree_base: "devin-dispatch cuts worktrees from origin/<default_branch>

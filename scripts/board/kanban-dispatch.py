@@ -173,6 +173,18 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
   card (docs/ssot/ssot.ci.yml).
 """.strip()
 
+# Appended after TASK_RAILS when the card was requeued after a failed
+# attempt (action.attempts > 0 or action.last_failure set) — the next
+# session gets the failure evidence instead of a blind re-run.
+RETRY_RAILS = """
+---
+This is attempt {n} for this card — the previous run did NOT merge/verify
+cleanly. Prior failure: {failure}
+- Read the card's comms for the full trail before starting:
+    curl -s {api}/cards | python3 -c "import sys,json; print(json.dumps([c.get('comms') for c in json.load(sys.stdin).get('cards',[]) if c.get('id')=='{id}'], indent=1))"
+- Fix the reported failure FIRST; do not repeat the failed approach.
+""".strip()
+
 # Design docs/design/report-session-loop.md §2b — appended after
 # TASK_RAILS when the card carries `report: <cms-slug>`; the session
 # keeps ada-cms-pages/<slug> updated via scripts/ada/cms-report-note.py.
@@ -194,6 +206,13 @@ def build_task(card: dict) -> str:
     spec = (card.get("spec") or "").strip() \
         or f"{card.get('title','')}\n\n{card.get('note','')}"
     task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
+    a = card.get("action") or {}
+    attempts = int(a.get("attempts") or 0)
+    if attempts > 0 or a.get("last_failure"):
+        task += "\n\n" + RETRY_RAILS.format(
+            id=card["id"], api=API, n=attempts + 1,
+            failure=str(a.get("last_failure")
+                        or "(no detail — inspect the card comms)")[:400])
     slug = str(card.get("report") or "").strip()
     if slug:
         task += "\n\n" + REPORT_RAILS.format(slug=slug)
@@ -359,6 +378,24 @@ def merge_pending_one(path: Path) -> str:
         elif res.get("conflicts") or (
                 res.get("gate") and not res["gate"]["ok"]):
             a["verified"] = False  # checked and NOT verified
+            # Review feedback loop: conflicts/goal-failures requeue the
+            # card with the failure evidence (RETRY_RAILS carries it into
+            # the next session) until action.max_attempts is reached.
+            att = int(a.get("attempts") or 0) + 1
+            max_att = int(a.get("max_attempts")
+                          or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+            if (os.environ.get("KANBAN_AUTORETRY", "1") != "0"
+                    and att < max_att):
+                why = ("; ".join(dr.close_out_notes(res)) or
+                       "merge/goals failed")[:280]
+                a["attempts"] = att
+                a["last_failure"] = why
+                a["status"] = "queued"
+                a.pop("runner", None)
+                a.pop("task_id", None)
+                comms_add(card, "chaba",
+                          f"auto-retry queued (attempt {att + 1}/"
+                          f"{max_att}): {why}")
         for n in dr.close_out_notes(res):
             comms_add(card, "chaba", n)
         for n in session_end_notes(card):

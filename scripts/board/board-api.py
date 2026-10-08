@@ -354,8 +354,11 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
         a["status"] = "queued"
-        a.pop("result", None)
+        prev = a.pop("result", None)
+        if prev:
+            a["last_failure"] = str(prev)[:300]
         a.pop("runner", None)  # free for any host to re-claim
+        a["attempts"] = int(a.get("attempts") or 0) + 1
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":
