@@ -1,0 +1,76 @@
+title: 'Lab bench: parakeet-redux batch ASR on tony-omen (lab-parakeet-batch-asr)'
+subtitle: Partial pass — WER metric beat (4.7% corpus), throughput metric missed (6.9x RT on AVX2 vs 30x target)
+icon: flask
+
+decision:
+  summary: >
+    Benched moondream/parakeet-redux (1.58-bit ternary parakeet-tdt-0.6b-v3,
+    178MB, Photon/kestrel engine, moondream 2.6.1) on tony-omen CPU-only.
+    Corpus: 29 labeled clips = 20 LibriSpeech test-clean (EN) + 9 FLEURS
+    (fr_fr/de_de/es_419 x3), 291.8s audio total. tests/voice-corpus could NOT
+    be used: all 17 speakers are lang:th and registry.yaml carries no
+    reference transcripts (it is a speaker-id corpus, not an ASR corpus).
+    Result: WER excellent, speed far below the published 113x — that number
+    assumes AVX-512 VNNI; i7-9750H is AVX2-only with 6 physical cores.
+  scorecard: >
+    metric 1 WER<=10%: PASS — corpus WER 4.66% (mean-per-clip 5.77%);
+    librispeech-test-clean 2.49%, fleurs-de 9.68%, fleurs-es419 2.94%,
+    fleurs-fr 12.62% (one outlier clip at 0.31 drives fr above 10 —
+    number/formatting normalization, not recognition failure).
+    metric 2 >=30x RT on 8 cores: FAIL — 6.9x @ cpu_threads=8, 6.3x @ 12,
+    ~6.3x at the 4-thread ternary-GEMM default. 3 parallel workers x4
+    threads REGRESSED to 2.2x aggregate (per-worker engine init ~2s each +
+    memory-bandwidth bound). Published 113x is AVX-512 VNNI silicon.
+  recommendation: >
+    Ship it for the batch lanes anyway — 7x RT covers all planned volume
+    trivially (a full day of Ada session audio transcribes in ~3 min) and it
+    is free and fully local. Viable now: (1) drop-catcher/transcript
+    archive, (3) yt-dub source-language prep, (4) privacy-sensitive audio.
+    Lane (2) voice-corpus labeling is BLOCKED BY DESIGN: corpus is 100%
+    Thai and parakeet-redux is hard-limited to 25 European languages — Thai
+    input silently produces European-looking garbage (no language guard in
+    the contract; request.language rejected). If Thai batch ASR is ever
+    wanted, that is a different model (e.g. whisper large-v3 on GPU) and a
+    different card. Do NOT wire this into the hot ear path.
+  method_notes: >
+    Install: uv venv + 'moondream>=2.4.1' soundfile (moondream 2.6.1 pulled
+    torch 2.14.1 cu13 + kestrel 0.9.1 + kestrel-kernels bundles; ~1.5GB
+    venv, model weights 178MB in HF cache on first run, load ~4-19s).
+    Usage: md.photon("moondream/parakeet-redux", device="cpu",
+    cpu_threads=N). transcribe(audio=<path|bytes|file-like|ndarray>,
+    timestamps="word") -> {text, segments[{text,start,end,words[]}],
+    duration_seconds, language:null}. timestamps="character" also exists.
+    Kestrel picks threads itself: ternary models default to
+    min(physical_cores, 4) for the native GEMM pool — pass cpu_threads=8 to
+    use more; >8 hurt on this box. No Thai in the 25-lang set; no language
+    forcing (Parakeet contract rejects request.language).
+  side_findings: >
+    tests/voice-corpus/registry.yaml has zero transcript fields — it was
+    built for speaker-id benches; every speaker entry is lang:th (17
+    speakers, 108 clips, incl. pending mic enrollments). If we want an EN
+    labeled corpus for ASR benches, add refs to LibriSpeech-derived clips
+    or drop bench/clips+refs.json under ~/.local/share/batch-transcribe/
+    (kept on host, not committed). Parakeet Ultra (full-precision GPU
+    sibling) needs CUDA+bf16 for its generated decoder — GTX 1650 (Turing,
+    no bf16) is a poor fit and is Nest's GPU anyway; treat Ultra as not
+    available on this host.
+
+artifacts:
+  - path: stacks/tony-omen/batch-transcribe/batch-transcribe.py
+    note: stdin/file -> JSON {text, word_ts[], segments[], rt_factor}; per-file error entries, multi-file = array
+  - path: stacks/tony-omen/batch-transcribe/install.sh
+    note: venv at ~/.local/share/batch-transcribe/venv, launcher ~/.local/bin/batch-transcribe
+  - path: ~/.local/share/batch-transcribe/bench/
+    note: 29-clip bench corpus (clips/, refs.json, results.json, par_bench.py) — host-local, not committed
+
+bench:
+  host: tony-omen (i7-9750H, 6c/12t AVX2, 30G RAM)
+  audio_seconds: 291.8
+  infer_seconds: 42.3
+  rt_factor: 6.9
+  corpus_wer: 0.0466
+  by_set:
+    librispeech-test-clean: {n: 20, rt: 5.8, wer: 0.0249}
+    fleurs-de_de: {n: 3, rt: 7.7, wer: 0.0968}
+    fleurs-es_419: {n: 3, rt: 6.5, wer: 0.0294}
+    fleurs-fr_fr: {n: 3, rt: 6.8, wer: 0.1262}
