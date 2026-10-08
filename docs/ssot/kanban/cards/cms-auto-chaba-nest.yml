@@ -10,4 +10,13 @@ note: 'last_run 179m overdue (interval 30m). last_run=2026-10-08T10:00:30+00:00 
 help: 'Trigger a manual regen: cms_automation run_now for ''chaba-nest'' (or POST
   /api/cms/pages/chaba-nest/regenerate). If it repeats, check the page''s generator
   command in the registry doc.'
-updated: '2026-10-08'
+updated: 2026-10-08 20:50
+comms:
+- at: 2026-10-08 20:50
+  from: devin
+  text: 'root cause 2026-10-08 ~20:40: generator IS running — writes fail on embedding.
+    gemini-ollama-proxy on idc03 reports "all same-space providers down": OpenRouter
+    403 "Key limit exceeded (total limit)" + direct Gemini 429 quota. Ollama nomic-embed-text
+    exists on idc03 but OLLAMA_FALLBACK_BASE is unset — deliberately refused (different
+    vector space would silently poison the index). Card stays open until quota/limits
+    recover or a same-space provider is added.'

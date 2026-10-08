@@ -8,7 +8,7 @@ note: 'Auto-recovered 2026-10-08: flood-report-nongdon-saraburi healthy again (s
 help: 'Trigger a manual regen: cms_automation run_now for ''flood-report-nongdon-saraburi''
   (or POST /api/cms/pages/flood-report-nongdon-saraburi/regenerate). If it repeats,
   check the page''s generator command in the registry doc.'
-updated: '2026-10-08'
+updated: 2026-10-08 20:50
 comms:
 - at: 2026-10-05 09:26
   from: tony
@@ -20,5 +20,9 @@ comms:
     writers are healthy again — news-flood.service succeeded 12:00 + 13:00 on idc01.
     This auto-card should self-close on the next clean interval run; leaving it for
     the checker to confirm.'
+- at: 2026-10-08 20:50
+  from: devin
+  text: likely same root cause — last error 11:19Z "remote end closed" overlaps the
+    embedding outage window; expect recovery when providers return
 brief: A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run
   it or check the generator — details in the note.
