@@ -2,14 +2,14 @@ id: ada-market-tool
 title: ada_market_quote tool — Ada answers gold/FX/DXY from trade DB
 brief: When you ask Ada about gold, exchange rates, or Thai stocks she often guesses instead of looking up real
   numbers. The plan is a lookup tool backed by the trade database — waiting in the backlog, no action needed.
-column: review
+column: done
 note: 'Stock probe 2026-10-04 (stock-query-probe on ada-dev): 11/11 turns routed to web_search, 4/11 returned real
   numbers, Thai-market specifics (SET, PTT, movers, USD/THB, diesel) failed honestly. Grounded search can''t do
   Thai market data and burns Gemini quota. Fix: ada-pi tool backed by trade PostgreSQL — FX pairs (24 ccy), Thai
   gold fixings, DXY, WTI; instant, free, our own data. SET quotes still need an external feed (settrade/yahoo).
   After the tool lands: rerun tests/scenarios-live/stock_query_probe.yaml and compare per-turn quality — that delta
   is the tool''s benchmark.'
-updated: 2026-10-08 06:20
+updated: 2026-10-08 14:35
 action:
   type: dispatch
   status: done
@@ -49,5 +49,8 @@ comms:
 - at: 2026-10-08 06:20
   from: chaba
   text: auto-merged 4830fbc4 (dispatch/20261008-060842-ada-market-quote-tool-ada-answ) → origin/main
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 claim:
   since: 2026-10-08 06:08

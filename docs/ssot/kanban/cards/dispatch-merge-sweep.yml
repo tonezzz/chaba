@@ -4,7 +4,7 @@ brief: 'Recurring failure pattern: runners complete work but can''t push to GitH
   key via core.sshCommand, runners lack creds), so dispatch branches strand on remote hosts and cards can''t close.
   A periodic dell-side sweep can fetch branches over tailscale ssh, merge into the canonical branch, and unblock
   card closes — the exact salvage Devin did by hand six times on 2026-10-08.'
-column: review
+column: done
 priority: high
 program: board
 area: dispatch
@@ -25,7 +25,7 @@ spec: "- Sweep script (scripts/board/merge-sweep.py): enumerate cards in\n  doin
 help: 'Runner worktrees: <host>:~/CascadeProjects/dispatch-wt-<task-id>-<desc>. Fetch must override the repo''s
   pinned GitHub key: `git -c core.sshCommand=ssh fetch`. Merge guard already in scripts/board/dispatch_repos.py
   — this service is its remedy path.'
-updated: 2026-10-08 10:21
+updated: 2026-10-08 14:35
 action:
   type: dispatch
   status: done
@@ -62,6 +62,9 @@ comms:
 - at: 2026-10-08 10:21
   from: chaba
   text: auto-merged be8715e8 (dispatch/20261008-094909-sweep-script-scripts-board-mer) → origin/master
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 ownership:
   owner: tony
 claim: {}

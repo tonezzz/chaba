@@ -2,7 +2,7 @@ id: mddb-follower-stall
 title: mddb follower stream stalls silently — connected but stops applying
 brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere.
   Waiting in the backlog — no action needed yet.
-column: review
+column: done
 priority: high
 note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently
   stalled while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828
@@ -22,7 +22,7 @@ help: 'Detect: leader /v1/replication/status shows follower confirmed_lsn frozen
   stays fresh; the canary now reports this as ''apply-stalled'' with frozen_seconds, and mddb-follower-watchdog.timer
   (once installed on the follower host) restarts mddb-follower.service automatically. Permanent fix: merge + deploy
   mddb-fork repl-heartbeat (Recv deadline); watchdog remains as safety net. See docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml.'
-updated: 2026-10-08 10:17
+updated: 2026-10-08 14:35
 comms:
 - at: 2026-10-06 14:30
   from: devin
@@ -65,6 +65,9 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261007-225415-diagnose-the-mddb-follower-s-s already in origin/master — marked
     verified'
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 action:
   type: dispatch
   status: done

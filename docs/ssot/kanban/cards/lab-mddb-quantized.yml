@@ -2,7 +2,7 @@ id: lab-mddb-quantized
 title: 'Lab: mddb quantized vs flat vectors'
 brief: An experiment to shrink the memory database's vectors so lookups get cheaper; it's now testable on the spare
   node. Sitting in the backlog — no action needed.
-column: review
+column: done
 lab:
   hypothesis: The quantized in-memory index is close enough in recall to flat to run as default — saving RAM on
     the 12G idc01 leader
@@ -10,7 +10,7 @@ lab:
   review_by: '2026-10-18'
 note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to
   keep leader stable.'
-updated: 2026-10-08 07:06
+updated: 2026-10-08 14:35
 comms:
 - at: 2026-10-05 22:55
   from: tony
@@ -99,6 +99,9 @@ comms:
 - at: 2026-10-08 07:06
   from: chaba
   text: auto-merged b1256627 (dispatch/20261008-062116-bench-mddb-flat-vs-quantized-v) → origin/master
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 action:
   type: dispatch
   status: done

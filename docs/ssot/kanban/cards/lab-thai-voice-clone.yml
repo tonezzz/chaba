@@ -2,10 +2,10 @@ id: lab-thai-voice-clone
 title: 'Lab: Thai voice cloning — JaiTTS/ThonburianTTS vs VoxCPM2 ceiling'
 brief: Open-source models can now clone a Thai voice from a ~15s clip — usable for the YouTube dub pipeline and
   a consistent Ada voice. Waiting in the backlog — no action needed.
-column: review
+column: done
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 08:46
+updated: 2026-10-08 14:35
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -146,10 +146,12 @@ comms:
   text: pushed dispatch/20261008-055431-procedure-in-help-the-delivera to origin
 - at: 2026-10-08 13:25
   from: devin
-  text: 'JaiTTS-F5TTS is gone from HF entirely (removed, not gated — 404 for everyone). Path is
-    settled: VYNCX v2 IPA lane is the winner — automated gates PASS (normCER 2.2%, SIM 0.81,
-    5/5 on-voice); megaF5 fails CER ~0.27. Only remaining gate: Tony blind listen of
-    tony-omen:~/voice-clone-bench/out/wrapvyncx/.'
+  text: 'JaiTTS-F5TTS is gone from HF entirely (removed, not gated — 404 for everyone). Path is settled: VYNCX v2
+    IPA lane is the winner — automated gates PASS (normCER 2.2%, SIM 0.81, 5/5 on-voice); megaF5 fails CER ~0.27.
+    Only remaining gate: Tony blind listen of tony-omen:~/voice-clone-bench/out/wrapvyncx/.'
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 requests:
 - id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
   ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
@@ -160,5 +162,5 @@ requests:
   from: devin
   resolved_at: 2026-10-08 13:25
   resolved_by: tony
-  resolution: 'JaiTTS-F5TTS removed from HF — no license to accept. VYNCX v2 wins (gates pass); megaF5 fails CER.'
+  resolution: JaiTTS-F5TTS removed from HF — no license to accept. VYNCX v2 wins (gates pass); megaF5 fails CER.
 claim: {}

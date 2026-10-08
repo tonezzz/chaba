@@ -3,7 +3,7 @@ title: 'Nest lane: tony-dell iGPU/CPU — edge-inference bench for specialists'
 brief: Dell's Intel HD 530 iGPU (OpenVINO/Vulkan-capable) and CPU are candidate edge lanes for Nest specialist inference
   — not training. Phase 0 times the current champion on dell CPU for a real number; then lane entries, a serve shim,
   and bench+CMS wiring make dell a first-class lane whose results trend in the bench-edge CMS page.
-column: review
+column: done
 priority: medium
 program: chaba-nest
 area: infrastructure
@@ -25,7 +25,7 @@ spec: "Phase 0 — baseline number (cheap, do first):\n- Serve the current champ
 help: 'Lane registry lives in ada-pi tests/bench/topologies.yml `lanes:`. Publish contract: MDDB ada-ha-scenario-reports,
   key bench/<kind>-<ts>, meta kind=benchmark. CMS generator: scripts/eye/bench-edge-cms.py (timer on dell). Loop
   owner: scripts/ada/nest-train-loop.py.'
-updated: 2026-10-08 13:17
+updated: 2026-10-08 14:35
 action:
   type: dispatch
   status: done
@@ -87,6 +87,9 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261008-024035-phase-0-baseline-number-cheap- already in origin/master — marked
     verified'
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 ownership:
   owner: tony
 claim: {}

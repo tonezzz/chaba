@@ -2,7 +2,7 @@ id: device-tracking
 title: device fleet tracking — lost-device locate via existing sources
 brief: All the pieces to locate a lost device already exist — this adds one place that pulls them together. Waiting
   in the backlog — no action needed.
-column: review
+column: done
 metric: '"Ada, where is my <device>" returns last-seen location + freshness + battery for every tracked device'
 verify: scenario device_track_* passes; real query against iphone-15/ipad answers with a location <15min old
 note: 'Sources already deployed — this is a read/aggregate layer, not new tracking: (1) HA companion-app device_tracker
@@ -15,7 +15,7 @@ note: 'Sources already deployed — this is a read/aggregate layer, not new trac
   state changes.'
 help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo,
   line pushMessage; GEV pin: gev_command annotate'
-updated: 2026-10-08 07:25
+updated: 2026-10-08 14:35
 comms:
 - at: 2026-10-06 09:40
   from: devin
@@ -73,6 +73,9 @@ comms:
 - at: 2026-10-08 07:08
   from: chaba
   text: auto-merged 1c611afc (dispatch/20261008-062046-device-fleet-tracking-lost-dev) → origin/main
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
 action:
   type: dispatch
   status: done
