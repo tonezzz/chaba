@@ -2,12 +2,12 @@ id: vcast-auto-relay
 title: input-bridge relay not healthy
 brief: 'An automated health check flagged: input-bridge relay not healthy. Read the
   note, fix it, then close the card.'
-column: review
+column: done
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: medium
-note: GET http://127.0.0.1/api/input-bridge/health -> HTTP 502 (want 200)
+note: 'Auto-recovered 2026-10-08: `relay` check passing again.'
 help: 'Relay is a podman quadlet on idc03 (100.102.134.91:3010, tailnet-bound). Check:
   ssh idc03 systemctl --user status input-bridge; logs: journalctl --user -u input-bridge
   -n 50; edge route is /api/input-bridge/* in stacks/web/Caddyfile'
