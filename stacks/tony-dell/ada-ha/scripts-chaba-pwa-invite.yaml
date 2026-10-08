@@ -1,0 +1,75 @@
+chaba_pwa_invite:
+  alias: 'Chaba: mint PWA invite'
+  description: >-
+    Issue a named device key + one-time QR/redeem link for the calling user.
+    Used by the Chaba profile panel (/profile) — returns qr_svg + redeem_url
+    so the frontend can render the QR directly.
+  icon: mdi:qrcode-plus
+  mode: single
+  fields:
+    name:
+      required: true
+      selector: { text: {} }
+    instance:
+      required: false
+      selector: { text: {} }
+    apps:
+      required: false
+      selector:
+        select:
+          multiple: true
+          options: [voice, chat, view]
+    ha_person:
+      required: false
+      selector: { text: {} }
+  sequence:
+    - action: rest_command.ada_issue_key
+      data:
+        instance: '{{ instance | default("tony") }}'
+        origin: '{{ origin | default("https://api.surf-thailand.com") }}'
+        redirect: '{{ redirect | default("https://ada-ha.surf-thailand.com/chaba-ai") }}'
+        name: '{{ name }}'
+        ha_person: '{{ ha_person | default("") }}'
+        apps: '{{ apps | default([]) | to_json }}'
+      response_variable: resp
+    - stop: issued
+      response_variable: resp
+
+chaba_pwa_repair:
+  alias: 'Chaba: re-pair PWA key'
+  description: >-
+    Mint a fresh one-time redeem link for an already-issued key
+    (409 fallback of chaba_pwa_invite). Resets the device binding.
+  icon: mdi:qrcode-refresh
+  mode: single
+  fields:
+    name:
+      required: true
+      selector: { text: {} }
+    instance:
+      required: false
+      selector: { text: {} }
+  sequence:
+    - action: rest_command.ada_repair_key
+      data:
+        instance: '{{ instance | default("tony") }}'
+        origin: '{{ origin | default("https://api.surf-thailand.com") }}'
+        name: '{{ name }}'
+        redirect: '{{ redirect | default("https://ada-ha.surf-thailand.com/chaba-ai") }}'
+      response_variable: resp
+    - stop: issued
+      response_variable: resp
+chaba_cast_media:
+  alias: Chaba Cast Media
+  icon: mdi:cast
+  description: Cast a yt-cache/yt-corpus file to a media_player over LAN URL.
+  fields:
+    player: { selector: { entity: { domain: media_player } } }
+    path: { selector: { text: {} } }
+    collection: { selector: { text: {} }, default: yt-cache }
+  sequence:
+    - action: media_player.play_media
+      target: { entity_id: "{{ player }}" }
+      data:
+        media_content_id: "http://192.168.2.67/apps/{{ collection }}/{{ path }}"
+        media_content_type: video/mp4

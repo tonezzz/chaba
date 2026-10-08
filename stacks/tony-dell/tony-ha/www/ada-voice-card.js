@@ -65,7 +65,11 @@ function avcLog(kind, text) {
 
 class AdaVoiceCard extends HTMLElement {
   setConfig(config) {
-    this._config = config || {};
+    this._config = config;
+    const kid = config.key_id ? "_" + String(config.key_id) : "";
+    this._ksKey = AVC_KEY_STORAGE + kid;
+    this._ksDev = AVC_DEVICE_STORAGE + kid;
+    this._ksAuto = AVC_AUTO_STORAGE + kid;
     this._socket = null;
     this._stream = null;
     this._captureContext = null;
@@ -83,7 +87,7 @@ class AdaVoiceCard extends HTMLElement {
     this._speechBelow = 0;
     this._noiseFloor = 0.004;
     this._micMuted = false;
-    this._auto = localStorage.getItem(AVC_AUTO_STORAGE) === "1";
+    this._auto = localStorage.getItem(this._ksAuto) === "1";
     this._autoMuted = false;
     this._mintRetried = false;
     this._state = "idle"; // idle | locked | connecting | listening | speaking | reconnecting | error
@@ -95,6 +99,9 @@ class AdaVoiceCard extends HTMLElement {
   set hass(hass) { this._hass = hass; }
 
   _build() {
+    const fs = Number(this._config.font_scale) || 1;      // font-size multiplier
+    const bs = Number(this._config.button_size) || 56;    // mic button px
+    const bic = Math.round(bs * 24 / 56);                 // mic icon px
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Ada";
     const body = document.createElement("div");
@@ -105,9 +112,9 @@ class AdaVoiceCard extends HTMLElement {
 
     this._micBtn = document.createElement("button");
     this._micBtn.style.cssText =
-      "width:56px;height:56px;border-radius:50%;border:2px solid var(--divider-color,#444);" +
+      "width:" + bs + "px;height:" + bs + "px;border-radius:50%;border:2px solid var(--divider-color,#444);" +
       "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);" +
-      "cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;flex:none";
+      "cursor:pointer;font-size:" + bic + "px;display:flex;align-items:center;justify-content:center;flex:none";
     this._micBtn.title = "Tap to talk to Ada";
     this._micBtn.onclick = () => this._toggle();
     this._micIcon = document.createElement("ha-icon");
@@ -117,7 +124,7 @@ class AdaVoiceCard extends HTMLElement {
     const mid = document.createElement("div");
     mid.style.cssText = "flex:1;display:flex;flex-direction:column;gap:4px;min-width:0";
     this._status = document.createElement("div");
-    this._status.style.cssText = "font-size:.9rem";
+    this._status.style.cssText = "font-size:" + 0.9 * fs + "rem";
     this._status.textContent = "Tap the mic to talk";
     this._level = document.createElement("div");
     this._level.style.cssText =
@@ -131,7 +138,7 @@ class AdaVoiceCard extends HTMLElement {
     this._muteBtn = document.createElement("button");
     this._muteBtn.style.cssText =
       "padding:4px 10px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.75rem;white-space:nowrap";
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:" + 0.75 * fs + "rem;white-space:nowrap";
     this._muteBtn.onclick = () => this._toggleMute();
 
     this._autoChk = document.createElement("input");
@@ -139,7 +146,7 @@ class AdaVoiceCard extends HTMLElement {
     this._autoChk.checked = this._auto;
     this._autoChk.onchange = () => {
       this._auto = this._autoChk.checked;
-      localStorage.setItem(AVC_AUTO_STORAGE, this._auto ? "1" : "0");
+      localStorage.setItem(this._ksAuto, this._auto ? "1" : "0");
       if (!this._auto && this._autoMuted) {
         this._autoMuted = false;
         this._setStatus("Listening");
@@ -148,7 +155,7 @@ class AdaVoiceCard extends HTMLElement {
     };
     const autoLabel = document.createElement("label");
     autoLabel.style.cssText =
-      "display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer;white-space:nowrap;" +
+      "display:flex;align-items:center;gap:4px;font-size:" + 0.75 * fs + "rem;cursor:pointer;white-space:nowrap;" +
       "color:var(--secondary-text-color)";
     autoLabel.title = "Auto-mute the mic when you stop speaking — speak again to resume";
     autoLabel.append(this._autoChk, document.createTextNode("Auto"));
@@ -181,7 +188,7 @@ class AdaVoiceCard extends HTMLElement {
 
     this._line = document.createElement("div");
     this._line.style.cssText =
-      "font-size:.85rem;color:var(--secondary-text-color);min-height:1.1em;overflow:hidden;" +
+      "font-size:" + 0.85 * fs + "rem;color:var(--secondary-text-color);min-height:1.1em;overflow:hidden;" +
       "text-overflow:ellipsis;white-space:nowrap";
     body.appendChild(this._line);
 
@@ -193,18 +200,18 @@ class AdaVoiceCard extends HTMLElement {
     this._unlockInput.placeholder = "Ada device key (or ?api_key= link)";
     this._unlockInput.style.cssText =
       "flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:.85rem";
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:" + 0.85 * fs + "rem";
     const save = document.createElement("button");
     save.textContent = "Save";
     save.style.cssText =
       "padding:6px 12px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--primary-color,#03a9f4);color:#fff;cursor:pointer;font-size:.8rem";
+      "background:var(--primary-color,#03a9f4);color:#fff;cursor:pointer;font-size:" + 0.8 * fs + "rem";
     const apply = () => {
       let v = (this._unlockInput.value || "").trim();
       if (!v) return;
       const m = v.match(/[?&]api_key=([^&#]+)/);       // accept a full unlock link too
       if (m) v = decodeURIComponent(m[1]);
-      localStorage.setItem(AVC_KEY_STORAGE, v);
+      localStorage.setItem(this._ksKey, v);
       this._unlockInput.value = "";
       this._unlockRow.style.display = "none";
       this._setStatus("Key saved — tap the mic");
@@ -283,7 +290,7 @@ class AdaVoiceCard extends HTMLElement {
         // 401 = stored key is stale/revoked — re-mint once and retry
         // (ws layer already does this on a 4401 close; intake needs its own).
         if (resp.status === 401 && !this._config.api_key) {
-          localStorage.removeItem(AVC_KEY_STORAGE);
+          localStorage.removeItem(this._ksKey);
           if (await this._mintKey()) resp = await post();
         }
         out = await resp.json().catch(() => ({}));
@@ -345,10 +352,10 @@ class AdaVoiceCard extends HTMLElement {
   // ---------- auth ----------
 
   _deviceId() {
-    let id = localStorage.getItem(AVC_DEVICE_STORAGE);
+    let id = localStorage.getItem(this._ksDev);
     if (!id) {
       id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).replace(/-/g, "");
-      localStorage.setItem(AVC_DEVICE_STORAGE, id);
+      localStorage.setItem(this._ksDev, id);
     }
     return id;
   }
@@ -357,8 +364,8 @@ class AdaVoiceCard extends HTMLElement {
     if (this._config.api_key) return this._config.api_key;
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get("api_key");
-    if (fromUrl) localStorage.setItem(AVC_KEY_STORAGE, fromUrl);
-    return localStorage.getItem(AVC_KEY_STORAGE) || "";
+    if (fromUrl) localStorage.setItem(this._ksKey, fromUrl);
+    return localStorage.getItem(this._ksKey) || "";
   }
 
   // The HA session user's person.* entity (via user_id) — minted keys bind
@@ -390,7 +397,7 @@ class AdaVoiceCard extends HTMLElement {
         return_response: true,
       });
       const key = res?.response?.content?.api_key || null;
-      if (key) localStorage.setItem(AVC_KEY_STORAGE, key);
+      if (key) localStorage.setItem(this._ksKey, key);
       else avcLog("error", `key mint returned no key: ${JSON.stringify(res?.response || {}).slice(0, 200)}`);
       return key;
     } catch (e) {
@@ -667,29 +674,25 @@ class AdaVoiceCard extends HTMLElement {
       const wsUrl = `${this._wsBase}`
         + `?device_id=${encodeURIComponent(this._deviceId())}`
         + `&api_key=${encodeURIComponent(this._apiKey())}`;
-      let opened = false;
       this._socket = new WebSocket(wsUrl);
       this._socket.binaryType = "arraybuffer";
-      this._socket.onopen = () => { opened = true; this._setStatus("Connecting to Ada…"); };
+      this._socket.onopen = () => this._setStatus("Connecting to Ada…");
       this._socket.onmessage = (m) => {
         if (typeof m.data === "string") this._handleControl(JSON.parse(m.data));
         else this._playbackNode?.port.postMessage(m.data, [m.data]);
       };
       this._socket.onerror = () => { this._line.textContent = "WebSocket error"; };
       this._socket.onclose = async (e) => {
-        // A handshake rejection (HTTP 403 — stale/foreign key) surfaces as
-        // 1006, not 4401 — the server never accepted the socket. Treat both
-        // as key rejection: drop the cached key, re-mint, retry once.
-        const rejected = e.code === 4401 || (!opened && e.code !== 1000);
-        if (rejected && !this._mintRetried) {
+        if (e.code === 4401 && !this._mintRetried) {
+          // Key revoked or bound to another device — re-mint and retry once.
           this._mintRetried = true;
-          localStorage.removeItem(AVC_KEY_STORAGE);
+          localStorage.removeItem(this._ksKey);
           await this._teardown(false);
           this._connect(true);
           return;
         }
-        if (rejected) {
-          localStorage.removeItem(AVC_KEY_STORAGE);
+        if (e.code === 4401) {
+          localStorage.removeItem(this._ksKey);
           this._state = "locked";
           this._setStatus("Key rejected — paste a key below");
         }
