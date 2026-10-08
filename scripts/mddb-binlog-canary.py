@@ -97,7 +97,16 @@ def evaluate(data):
             reasons.append(f"follower {name} status={f.get('status')!r}")
     metrics["followers_seen"] = len(followers)
     metrics["followers_unhealthy"] = len(unhealthy)
-    return reasons, metrics
+    # Escalation signature: reason KINDS + unhealthy follower names — never
+    # the metric values, which drift every tick and would re-alert constantly
+    # (spam incident 2026-10-07: ~330 items overnight from value-in-string
+    # comparison).
+    signature = sorted(
+        (["binlog_size"] if isinstance(size, (int, float))
+         and size > LIMIT_BINLOG_BYTES else [])
+        + (["lsn_gap"] if gap is not None and gap > LIMIT_LSN_GAP else [])
+        + [f"follower:{n}" for n in unhealthy])
+    return reasons, metrics, signature
 
 
 def load_state(path):
@@ -219,7 +228,7 @@ def main():
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
 
-    reasons, metrics = evaluate(data)
+    reasons, metrics, signature = evaluate(data)
     result["metrics"] = metrics
 
     if reasons:
@@ -240,10 +249,9 @@ def main():
             # Now: page on first breach, re-page every --realert-seconds while
             # it stays open, and page immediately when the reason set changes
             # (escalation — e.g. a second follower goes unhealthy).
-            alerted_reasons = state.get("alerted_reasons") or []
+            alerted_sig = state.get("alerted_signature") or []
             first = not state.get("alerted")
-            escalated = (not first
-                         and sorted(reasons) != sorted(alerted_reasons))
+            escalated = (not first and signature != sorted(alerted_sig))
             due = (not first
                    and now.timestamp() - (state.get("alerted_epoch") or 0)
                    > args.realert_seconds)
@@ -264,6 +272,7 @@ def main():
                         state["alerted_at"] = ts_iso(now)
                         state["alerted_file"] = path.name
                         state["alerted_reasons"] = list(reasons)
+                        state["alerted_signature"] = signature
                     except Exception as e:
                         result["detail"] += f" | inbox write failed: {e}"
                 else:
@@ -273,6 +282,7 @@ def main():
         state["breach_since"] = None
         state["alerted"] = False
         state["alerted_reasons"] = []
+        state["alerted_signature"] = []
         state.pop("alerted_epoch", None)
         result["status"] = "healthy"
         result["detail"] = (
