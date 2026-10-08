@@ -4,12 +4,21 @@
 The umbrella page for the compound-AI fleet. Managed block renders:
 
   - live lane health — every known /v1/systemone endpoint probed
+    (/health + /metrics; lanes without /metrics render "no metrics")
+  - lane activity — decisions + escalation % since the previous run
+  - portable brains — entity/tier/status/bench from ssot.nest-brains.yml
   - latest topology scorecard (newest bench/orch-* doc)
   - kanban-brief headline counts (do-first quadrant size)
   - corpus counters (jev-corpus rows, voice-corpus clips)
 
 Registry-gated like the other updaters; runs as the third ExecStart of
 chaba-kanban-brief.service (30 min cadence).
+
+Layered reporting (ssot.reports.yml): this generator owns the
+`chaba-nest` L2 node plus its L1 children — nest-lanes/*, nest-brains/*,
+nest-bench/orch. Each run writes reports/nest/nest-overview.yml
+(rolling artifact), meta.<child>.yml per child, meta.chaba-nest.yml, and
+appends one timeline event — staleness is observable by L3.
 
 Env:
     MDDB_BASE_URL   default http://100.102.134.91:11023/v1
@@ -26,6 +35,15 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import yaml
+
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "scripts"))
+
+from lib.report import (  # noqa: E402
+    append_timeline, now_iso, write_meta,
+)
+
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
@@ -38,18 +56,39 @@ BLOCK_RE = re.compile(re.escape(BLOCK_BEGIN) + r".*?" +
                       re.escape(BLOCK_END), re.S)
 ICT = timezone(timedelta(hours=7))
 
-# The fleet — keep in sync with topologies.yml. Lanes get probed
-# live; a lane being down is information, not an error.
+NODE = "chaba-nest"
+LAYER = "L2-domain"
+GENERATED_BY = ("scripts/ada/nest-overview.py "
+                "via chaba-kanban-brief.service (30 min)")
+NEST_OUT = REPO / "reports" / "nest"
+NEST_ARTIFACT = NEST_OUT / "nest-overview.yml"
+NEST_META = NEST_OUT / "meta.chaba-nest.yml"
+BRAINS_SSOT = (REPO / "docs" / "ssot" / "infrastructure"
+               / "ssot.nest-brains.yml")
+# brain entity.status -> report status (status_enum): packed-verified =
+# respawn coverage in place; candidate = declared but never packed (a
+# standing finding); future = entity does not exist yet.
+BRAIN_STATUS = {"packed-verified": "ok", "candidate": "delta",
+                "future": "planned"}
+
+# The fleet — keep in sync with topologies.yml. First element is the
+# L1 node slug (nest-lanes/<slug>). Lanes get probed live; a lane being
+# down is information, not an error.
 LANES = [
-    ("jev-student (prod gate)", "idc03",  8778, "distilbert confirm"),
-    ("student-a",               "tony-omen", 8778, "gemma-3-1b systemd"),
-    ("student-b",               "idc03",  8779, "gemma-3-1b container"),
-    ("heavy-a",                 "idc02",  8777, "gemma-3-4b (prod advisory)"),
-    ("heavy-b",                 "tony-omen", 8777, "gemma-3-4b systemd"),
+    ("jev-student", "jev-student (prod gate)", "idc03", 8778,
+     "distilbert confirm"),
+    ("student-a",   "student-a",               "tony-omen", 8778,
+     "gemma-3-1b systemd"),
+    ("student-b",   "student-b",               "idc03", 8779,
+     "gemma-3-1b container"),
+    ("heavy-a",     "heavy-a",                 "idc02", 8777,
+     "gemma-3-4b (prod advisory)"),
+    ("heavy-b",     "heavy-b",                 "tony-omen", 8777,
+     "gemma-3-4b systemd"),
 ]
 LANE_IP = {"idc02": "100.123.163.11", "idc03": "100.102.134.91",
            "tony-omen": "100.75.102.88"}
-OLLAMA = ("tony-omen", "100.75.102.88:11434")
+OLLAMA = ("ollama", "tony-omen", "100.75.102.88:11434")
 
 CHILD_PAGES = [
     ("chaba-compound-ai-system", "the architecture doc (compound AI = the Berkeley term)"),
@@ -93,33 +132,98 @@ def get_page(lang):
 
 # ---------- probes ----------
 
+def _get_json(url, timeout=5):
+    t0 = datetime.now()
+    data = json.load(urllib.request.urlopen(url, timeout=timeout))
+    return data, int((datetime.now() - t0).total_seconds() * 1000)
+
+
 def probe_lanes():
+    """Probe /health (+ /metrics when the lane exposes it) for every
+    systemone lane, then ollama. Returns a list of row dicts."""
     out = []
-    for name, host, port, model in LANES:
+    for slug, name, host, port, model in LANES:
         ip = LANE_IP[host]
+        row = {"id": slug, "name": name, "host": host, "port": port,
+               "model": model, "status": "DOWN", "probe_ms": None,
+               "seen": "-", "metrics": None}
         try:
-            t0 = datetime.now()
-            h = json.load(urllib.request.urlopen(
-                f"http://{ip}:{port}/health", timeout=5))
-            ms = int((datetime.now() - t0).total_seconds() * 1000)
-            out.append((name, host, port, model, "up",
-                        f"{ms}ms", h.get("model", "-").split("/")[-1]))
+            h, ms = _get_json(f"http://{ip}:{port}/health")
+            row.update(status="up", probe_ms=ms,
+                       seen=(h.get("model") or "-").split("/")[-1])
         except Exception:
-            out.append((name, host, port, model, "DOWN", "-", "-"))
-    # ollama is /api/tags not /health
+            out.append(row)
+            continue
+        try:
+            row["metrics"], _ = _get_json(f"http://{ip}:{port}/metrics",
+                                          timeout=3)
+        except Exception:
+            pass  # lane predates /metrics — renders "no metrics"
+        out.append(row)
+    # ollama is /api/tags not /health — not our server, no /metrics
+    slug, host, base = OLLAMA
+    row = {"id": slug, "name": "ollama", "host": host, "port": 11434,
+           "model": "phi3/moondream/nomic", "status": "DOWN",
+           "probe_ms": None, "seen": "-", "metrics": None}
     try:
-        t0 = datetime.now()
-        tags = json.load(urllib.request.urlopen(
-            f"http://{OLLAMA[1]}/api/tags", timeout=5))
-        ms = int((datetime.now() - t0).total_seconds() * 1000)
-        names = ",".join(m["name"].split(":")[0]
-                         for m in tags.get("models", [])[:4])
-        out.append(("ollama", "tony-omen", 11434, "phi3/moondream/nomic",
-                    "up", f"{ms}ms", names))
+        tags, ms = _get_json(f"http://{base}/api/tags")
+        row.update(
+            status="up", probe_ms=ms,
+            seen=",".join(m["name"].split(":")[0]
+                          for m in tags.get("models", [])[:4]))
     except Exception:
-        out.append(("ollama", "tony-omen", 11434, "phi3/moondream/nomic",
-                    "DOWN", "-", "-"))
+        pass
+    out.append(row)
     return out
+
+
+def load_prev_artifact():
+    """Previous rolling artifact — source of last interval's counters."""
+    try:
+        return yaml.safe_load(NEST_ARTIFACT.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def lane_delta(prev: dict, row: dict) -> dict | None:
+    """Decisions + escalations since the previous run for one lane.
+
+    None when the lane has no /metrics (either run). A counter reset
+    (lane restart — current < previous, or uptime went backwards)
+    reports the current counters as the interval's totals."""
+    cur = row.get("metrics")
+    if not cur:
+        return None
+    prev_m = ((prev.get("lanes") or {}).get(row["id"]) or {}).get(
+        "metrics") or {}
+    req = (cur.get("requests_total") or 0) - (prev_m.get(
+        "requests_total") or 0)
+    esc = (cur.get("escalations_total") or 0) - (prev_m.get(
+        "escalations_total") or 0)
+    reset = (not prev_m) or req < 0 or esc < 0 or (
+        (cur.get("uptime_s") or 0) < (prev_m.get("uptime_s") or 0))
+    if reset:
+        # no baseline (first run after upgrade) or lane restart —
+        # the counters are since-process-start, not interval-scoped
+        req = cur.get("requests_total") or 0
+        esc = cur.get("escalations_total") or 0
+    interval_s = None
+    try:
+        prev_ts = datetime.fromisoformat(str(prev.get("generated_at")))
+        interval_s = max(0, int(
+            (datetime.now(timezone.utc) - prev_ts).total_seconds()))
+    except Exception:
+        pass
+    return {"requests": max(0, req), "escalations": max(0, esc),
+            "reset": reset, "interval_s": interval_s}
+
+
+def load_brains() -> list:
+    try:
+        doc = yaml.safe_load(BRAINS_SSOT.read_text()) or {}
+    except Exception:
+        return []
+    return doc.get("entities") or []
 
 
 def latest_orch(docs):
@@ -143,16 +247,56 @@ def latest_orch(docs):
 
 # ---------- render ----------
 
-def render(lanes, orch_key, orch_rows, now):
+def _fmt_interval(interval_s):
+    if interval_s is None:
+        return "?"
+    if interval_s < 3600:
+        return f"{interval_s // 60}m"
+    return f"{interval_s // 3600}h{(interval_s % 3600) // 60}m"
+
+
+def render(lanes, deltas, brains, orch_key, orch_rows, now):
     lines = [BLOCK_BEGIN, "",
              f"_updated {now.astimezone(ICT):%Y-%m-%d %H:%M} ICT_", "",
              "### Lanes (live)", "",
-             "| lane | host:port | model | health | probe |",
-             "|---|---|---|---|---|"]
-    for name, host, port, model, st, ms, seen in lanes:
-        mark = "✅" if st == "up" else "❌"
-        lines.append(f"| {name} | {host}:{port} | {model} | "
-                     f"{mark} {st} | {ms} |")
+             "| lane | host:port | model | health | probe | decisions Δ "
+             "| esc % |",
+             "|---|---|---|---|---|---|---|"]
+    for row in lanes:
+        mark = "✅" if row["status"] == "up" else "❌"
+        ms = f"{row['probe_ms']}ms" if row["probe_ms"] is not None else "-"
+        d = deltas.get(row["id"])
+        if row["metrics"] is None:
+            decisions, esc = "no metrics", "-"
+        elif d is None:
+            decisions, esc = "-", "-"
+        else:
+            decisions = str(d["requests"]) + (" ↻" if d["reset"] else "")
+            esc = (f"{100.0 * d['escalations'] / d['requests']:.0f}%"
+                   if d["requests"] else "-")
+        lines.append(f"| {row['name']} | {row['host']}:{row['port']} | "
+                     f"{row['model']} | {mark} {row['status']} | {ms} | "
+                     f"{decisions} | {esc} |")
+    interval = next((d["interval_s"] for d in deltas.values()
+                     if d and d.get("interval_s")), None)
+    span = (f" ({_fmt_interval(interval)} ago)" if interval is not None
+            else "")
+    lines += ["",
+              f"_Δ = decisions since the previous run{span}; ↻ marks "
+              "no baseline (lane restart or first /metrics probe) — the "
+              "count is since process start. `no metrics` = lane server "
+              "not yet upgraded to /metrics._"]
+    if brains:
+        lines += ["", "### Portable brains — `ssot.nest-brains.yml`", "",
+                  "| entity | tier | status | bench |",
+                  "|---|---|---|---|"]
+        for e in brains:
+            b = e.get("bench") or {}
+            bench = (f"{b['score']} {b['metric']}"
+                     if b.get("score") is not None
+                     else (b.get("metric") or "-"))
+            lines.append(f"| `{e.get('entity')}` | {e.get('tier', '-')} | "
+                         f"{e.get('status', '-')} | {bench} |")
     if orch_rows:
         lines += ["", f"### Latest topology run — `{orch_key}`", "",
                   "| structure | acc | cpu/call | heavy% |",
@@ -279,6 +423,121 @@ def gated(cfg, now, force):
     return None
 
 
+# ---------- layered reporting ----------
+
+def write_report_outputs(lanes, deltas, brains, orch_key, orch_rows,
+                         run_ts):
+    """Rolling artifact + per-child metas + the chaba-nest L2 meta +
+    one timeline event (ssot.reports.yml). Meta status follows the fleet
+    convention: a child in delta/stale/missing/error/unreachable makes
+    the parent delta."""
+    NEST_OUT.mkdir(parents=True, exist_ok=True)
+    artifact = {
+        "generated_at": run_ts,
+        "node": NODE,
+        "lanes": {r["id"]: {"status": r["status"],
+                            "probe_ms": r["probe_ms"],
+                            "model_seen": r["seen"],
+                            "metrics": r["metrics"]}
+                  for r in lanes},
+        "brains": [{"entity": e.get("entity"), "tier": e.get("tier"),
+                    "status": e.get("status"), "bench": e.get("bench")}
+                   for e in brains],
+        "bench": {"latest_doc": orch_key or None,
+                  "structures": len(orch_rows)},
+    }
+    NEST_ARTIFACT.write_text(yaml.safe_dump(
+        artifact, sort_keys=False, allow_unicode=True))
+
+    child_ids, inputs_at, child_states = [], {}, []
+
+    def child(cid, meta_file, status, **kw):
+        child_ids.append(cid)
+        inputs_at[cid] = run_ts
+        child_states.append(status)
+        write_meta(NEST_OUT / meta_file, node=cid, layer="L1-producer",
+                   generated_by=GENERATED_BY, generated_at=run_ts,
+                   status=status, children=[], **kw)
+
+    for row in lanes:
+        cid = f"nest-lanes/{row['id']}"
+        up = row["status"] == "up"
+        d = deltas.get(row["id"])
+        summary = (f"up — {row['probe_ms']}ms, model {row['seen']}"
+                   if up else "DOWN — probe failed")
+        if up and row["metrics"] is None:
+            summary += "; no /metrics"
+        elif up and d:
+            summary += (f"; {d['requests']} req/"
+                        f"{_fmt_interval(d['interval_s'])}")
+        child(cid, f"meta.lane-{row['id']}.yml",
+              status="ok" if up else "delta",
+              purpose=(f"systemone lane {row['name']} "
+                       f"({row['host']}:{row['port']})"),
+              summary=summary,
+              sources=[f"probe {LANE_IP.get(row['host'], row['host'])}:"
+                       f"{row['port']}"],
+              extra={"probe_ms": row["probe_ms"],
+                     "model_seen": row["seen"],
+                     "metrics": row["metrics"],
+                     "interval": d})
+
+    for e in brains:
+        ent = e.get("entity")
+        est = str(e.get("status") or "unknown")
+        b = e.get("bench") or {}
+        child(f"nest-brains/{ent}", f"meta.brain-{ent}.yml",
+              status=BRAIN_STATUS.get(est, "delta"),
+              purpose=f"portable brain {ent} — respawn state",
+              summary=(f"{e.get('tier', '-')} brain: {est}"
+                       + (f" — {b['metric']}={b['score']}"
+                          if b.get("score") is not None else "")),
+              sources=["docs/ssot/infrastructure/ssot.nest-brains.yml"],
+              extra={"tier": e.get("tier"), "entity_status": est,
+                     "bench": b or None, "path": e.get("path"),
+                     "sensitivity": e.get("sensitivity")})
+
+    child("nest-bench/orch", "meta.bench-orch.yml",
+          status="ok" if orch_key else "delta",
+          purpose="Topology scorecards — orch-bench -> MDDB bench/orch-*",
+          summary=(f"{orch_key}: {len(orch_rows)} structures"
+                   if orch_key else "no bench/orch-* docs found"),
+          sources=[f"{REPORTS}:bench/orch-*"],
+          extra={"latest_doc": orch_key or None,
+                 "structures": len(orch_rows)})
+
+    n_up = sum(1 for r in lanes if r["status"] == "up")
+    brain_counts = {}
+    for e in brains:
+        s = str(e.get("status") or "unknown")
+        brain_counts[s] = brain_counts.get(s, 0) + 1
+    brain_str = ", ".join(f"{n} {s}" for s, n in sorted(brain_counts.items()))
+    status = ("delta" if any(
+        s in ("delta", "stale", "missing", "error", "unreachable")
+        for s in child_states) else "ok")
+    n_metrics = sum(1 for r in lanes if r["metrics"] is not None)
+    summary = (f"{n_up}/{len(lanes)} lanes up ({n_metrics} with metrics); "
+               f"{len(brains)} brains ({brain_str or 'none'}); "
+               f"bench {orch_key or 'none'}")
+    write_meta(
+        NEST_META, node=NODE, layer=LAYER, generated_by=GENERATED_BY,
+        status=status,
+        purpose=("Nest compound-AI domain — lane health+activity, "
+                 "portable-brain respawn state, bench scorecards"),
+        summary=summary,
+        sources=[str(NEST_ARTIFACT.relative_to(REPO)),
+                 "docs/ssot/infrastructure/ssot.nest-brains.yml",
+                 f"{REPORTS}:bench/orch-*", "CMS:ada-cms-pages/chaba-nest"],
+        children=child_ids, inputs_at=inputs_at,
+        extra={"lanes_up": n_up, "lanes_total": len(lanes),
+               "lanes_with_metrics": n_metrics,
+               "brain_status": brain_counts,
+               "bench_doc": orch_key or None,
+               "page": PAGE})
+    append_timeline(NODE, LAYER, status, summary, ref=NEST_ARTIFACT)
+    return status, summary
+
+
 def main():
     import argparse
     ap = argparse.ArgumentParser()
@@ -293,20 +552,33 @@ def main():
         if why:
             print(f"nest-overview: skipped ({why})")
             return 0
+    prev = load_prev_artifact()
     lanes = probe_lanes()
-    docs = _search_all(REPORTS)
+    deltas = {r["id"]: lane_delta(prev, r) for r in lanes}
+    brains = load_brains()
+    try:
+        docs = _search_all(REPORTS)
+    except Exception as e:
+        print(f"warn: MDDB unreachable ({e}) — bench section skipped",
+              file=sys.stderr)
+        docs = []
     key, rows = latest_orch(docs)
-    block = render(lanes, key, rows, now)
+    block = render(lanes, deltas, brains, key, rows, now)
     if args.dry_run:
         print(block)
         return 0
+    # Local reporting outputs first — a CMS/MDDB outage must not leave
+    # the node without fresh meta (staleness is the L3 signal).
+    rstatus, rsummary = write_report_outputs(
+        lanes, deltas, brains, key, rows, now_iso())
     publish(page_body(block), now)
     cfg = dict(cfg)
     cfg.update({"last_run": now.isoformat(timespec="seconds"),
                 "run_now": False})
     save_registry(cfg, now)
-    print(f"nest-overview: published ({sum(1 for l in lanes if l[4]=='up')}"
-          f"/{len(lanes)} lanes up)")
+    print(f"nest-overview: published "
+          f"({sum(1 for r in lanes if r['status'] == 'up')}"
+          f"/{len(lanes)} lanes up) — report {rstatus}: {rsummary}")
     return 0
 
 

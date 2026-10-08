@@ -1,0 +1,72 @@
+title: nest-report-integration — wire the Nest into the layered reporting standard
+subtitle: chaba-nest L2 node + lane/brain/bench L1 children, lane /metrics telemetry
+icon: dispatch
+
+card: nest-report-integration
+runner: mn01
+
+processing:
+  status: completed
+  started_at: "2026-10-08T12:25:00+07:00"
+  goal: >
+    The chaba-nest CMS hub rendered lanes + bench scorecards but was
+    invisible to the report node registry — no meta.yml, no staleness,
+    no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes
+    and close the telemetry gap.
+  changes:
+    - "ssot.reports.yml: new Nest domain — chaba-nest (L2-domain,
+      generator scripts/ada/nest-overview.py --force via
+      chaba-kanban-brief.service, cadence 1h) with 11 L1 children:
+      nest-lanes/{jev-student,student-a,student-b,heavy-a,heavy-b,ollama},
+      nest-brains/{nest-01-ops-classifier,jev-student,orch-bench-corpus,
+      nest-edge-vision-models}, nest-bench/orch. Also added to
+      system-report children."
+    - "scripts/jev/lane_metrics.py (new): stdlib-only monotonic counters
+      for /v1/systemone lane servers — requests/questions/escalations
+      totals, cumulative latency buckets, cpu_seconds (process_time),
+      uptime_s. attach(app) registers GET /metrics on a FastAPI app."
+    - "scripts/jev/serve-seqcls.py + serve-gemma-head.py: lane_metrics
+      attach + per-request observe(). An 'escalation' = a question the
+      lane answered with a stub/fallback (non-noul question type) — the
+      caller must route those to a heavier tier."
+    - "scripts/ada/nest-overview.py: probes /metrics alongside /health;
+      renders 'decisions Δ' + 'esc %' columns in the Lanes table (Δ =
+      since previous run, baseline kept in the rolling artifact; ↻ marks
+      counter reset/first probe); renders the Portable brains table from
+      ssot.nest-brains.yml; writes reports/nest/nest-overview.yml
+      artifact + meta.<child>.yml per L1 child + meta.chaba-nest.yml
+      via lib/report.py::write_meta + appends timeline.jsonl."
+  decisions:
+    - "Brain entity.status -> meta status mapping: packed-verified=ok,
+      candidate=delta (declared but never packed = standing respawn-gap
+      finding), future=planned. Parent follows the fleet convention: any
+      child delta/stale/missing/error/unreachable -> L2 delta."
+    - "Child L1 generators are declared 'manual — meta written by
+      nest-overview.py' so run-node.py exits 3 (not runnable) instead of
+      exec'ing a leaf only the parent produces."
+  limits:
+    - "openjev lanes (student-a/b, heavy-a/b — the 4 gemma lanes) run the
+      openjev package from ~/CascadeProjects/open-jev, a separate repo
+      outside this worktree. They have no /metrics until
+      scripts/jev/lane_metrics.py is vendored there (recorded as a
+      next_step in ssot.reports.yml). Until then they render 'no
+      metrics' — the documented fallback."
+    - "ollama is not our server — health via /api/tags, never /metrics."
+
+verification:
+  - "nest-overview.py --dry-run renders the block live: 4/6 lanes up
+    (omen lanes leashed down), all 'no metrics', brains table +
+    bench/orch-20261007-112115 scorecard."
+  - "report-system.py --print: '### chaba-nest' domain section resolves
+    the L2 + all 11 children from generated metas."
+  - "All 12 meta.*.yml conform to meta_schema (node/layer/purpose/
+    generated_by/generated_at/status/summary/sources/children/inputs_at/
+    extra; statuses within status_enum)."
+  - "node scripts/ssot-validate-all.mjs: 1683 files, 0 errors."
+  - "lane_metrics.py self-test: cumulative buckets + monotonic counters
+    correct."
+
+artifacts:
+  - reports/nest/nest-overview.yml      # rolling artifact (gitignored)
+  - reports/nest/meta.*.yml             # node metas (gitignored)
+  - ~/var/chaba/reports/timeline.jsonl  # one event per run
