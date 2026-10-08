@@ -5,7 +5,7 @@ brief: Open-source models can now clone a Thai voice from a ~15s clip — usable
 column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 08:07
+updated: 2026-10-08 08:16
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -46,11 +46,12 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   host: tony-omen
   labels:
   - gpu
+  runner: tony-omen
 comms:
 - at: 2026-10-08 06:05
   from: devin
@@ -83,6 +84,9 @@ comms:
 - at: 2026-10-08 08:07
   from: chaba
   text: runner tony-omen unreachable 3 passes — requeued
+- at: 2026-10-08 08:16
+  from: tony-omen
+  text: claimed
 requests:
 - id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
   ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
