@@ -68,42 +68,6 @@ card_schema:
            session to keep that report updated, Ada posts [opinion]
            comms against it. Design: docs/design/report-session-loop.md"
   help: "runbook markdown — shown via the ? help button"
-  # optional — autonomous close-out contract (kanban-act-loop, 2026-10-08).
-  # New dispatch/lab cards SHOULD declare autonomy + auto_done_when at file
-  # time — done-criteria are cheapest to write while the work is being
-  # specified, and they turn the review column into a self-draining queue.
-  # kanban-act.py (rides chaba-kanban-brief.timer, 30min) evaluates them.
-  autonomy: "t1 | t2 | t3 — absent = t1 (suggest-only, never auto-closed);
-             t2 = kanban-act may close the card when every auto_done_when
-             check passes; t3 = human-only, always."
-  auto_done_when: "ordered list of deterministic checks — ALL must pass.
-             Bounded vocabulary only, no shell (kanban-act CHECKS map):
-               page_exists:<slug>            CMS page exists
-               card_done:<id>                named card is column:done
-               file_exists:<repo-path>       path exists under the checkout
-               service_active:<unit>@<host>  ssh systemctl --user is-active
-               git_merged:<branch-prefix>    every origin/<prefix>* head is
-                                           an ancestor of origin/master|main
-               verified_true[:<id>]          the card's verified flag is set
-                                           (action.verified from merge-sweep
-                                           /close_out, or top-level
-                                           verified); no arg = this card —
-                                           the dispatch-card idiom
-             Eligibility gates: only column:review cards are considered;
-             review_kind:decide and cards with open requests or an
-             unanswered ask are held. Cap: KANBAN_ACT_MAX per run
-             (default 5); every close emits a kanban_act ops event."
-  done_note: "one line — written into the card on auto-close explaining why
-             the checks count as done"
-  verified: "top-level stamp — kanban-act writes 'verified: auto <ts>' on
-             close; merge-sweep/close_out write action.verified instead"
-  auto_close: "block written by kanban-act on close — {by, at, note,
-             checks: ['<expr> -> pass|fail']}"
-  # optional — goal-rot handling on done cards (report-watch.py, 24h probe).
-  # Absent = focus-inbox item only (default). requeue = stamp
-  # action.last_failure with the failed goal ids and do=queue the card —
-  # the regression loops back into the board instead of an inbox note.
-  on_goal_rot: "requeue   # opt-in per card"
   # optional — lab cards only (column: lab). Continuous-improvement contract:
   lab:
     hypothesis: "what we expect to learn or prove"
@@ -133,14 +97,6 @@ card_schema:
              claim) and runs cmd under systemd-run. Needs git on the
              host; repo must be anonymously cloneable (public https) or
              the host needs its own auth for repo_url"
-    attempts: "count of completed-but-unsuccessful dispatches — bumped by
-               close_out failure (auto-retry) and do=retry"
-    max_attempts: "cap on dispatches incl. auto-retries (default
-               KANBAN_MAX_ATTEMPTS=2) — exhausted retries park the card
-               in review for a human; KANBAN_AUTORETRY=0 disables"
-    last_failure: "short evidence line written by retry/auto-retry/
-               goal-rot-requeue — RETRY_RAILS injects it into the next
-               dispatch so the session starts informed"
     runner: "hostname that claimed/executed — written by the dispatcher"
     task_id: "devin-task-* id — written by kanban-dispatch"
     result: "outcome text — written when the run finishes"
@@ -290,18 +246,6 @@ execution:
                action.verified is stamped True on merge, False on
                conflicts/failed goals (the review badge prefers it).
                KANBAN_AUTOMERGE=0 disables the whole step.
-               AUTO-RETRY (2026-10-08, review feedback loop): on
-               conflicts/goal-failure the dispatcher requeues the card
-               itself — status->queued with action.attempts++ and
-               action.last_failure set — while attempts <
-               action.max_attempts (default KANBAN_MAX_ATTEMPTS=2);
-               RETRY_RAILS carries the failure evidence into the next
-               session's task text so retries start informed, not
-               blind. Manual do=retry also bumps attempts. Exhausted
-               retries stay in review for Tony. KANBAN_AUTORETRY=0
-               disables. Report-watch's done-card goal probe requeues
-               instead of filing an inbox item when the card sets
-               on_goal_rot: requeue.
                tests/board/test_dispatch_close_out.py covers the
                pipeline end-to-end."
   worktree_base: "devin-dispatch cuts worktrees from origin/<default_branch>
@@ -321,31 +265,6 @@ execution:
                allow — the guard never wedges the board. Dirty worktrees
                never block; the leftover file count rides along in the
                comms line."
-  merge_sweep: "merge-sweep.timer (15min, tony-dell) -> scripts/board/
-               merge-sweep.py — closes the loop merge_guard only detects.
-               Remote runners without the repo's GitHub key can't push,
-               so close_out's step-2 strands branches on the runner
-               worktree; the sweep enumerates doing/review dispatch
-               cards, resolves task_id (action/claim/comms/runner-agent
-               state.json), probes the runner's worktree over tailscale
-               ssh (meta.json pattern), verifies clean + ahead of
-               origin/<default>, then `git -c core.sshCommand=ssh fetch
-               <runner>:<worktree> HEAD` into the SERVED checkout (chaba
-               -> chaba-tony-dell, ada-pi -> ada-pi, MERGE_SWEEP_TARGETS
-               for others) and merges --no-ff in a throwaway detached
-               worktree -> push HEAD:<base>. CONFLICT POLICY =
-               stop-and-report — unlike close_out's safe-pull
-               conventions it never auto-resolves either side; any
-               conflicted path aborts, names the files in comms, and
-               raises a merge-conflict request for human resolution.
-               Clean merge -> action.verified + comms; already-ancestor
-               heads stamp verified silently. Dirty/failed/gone
-               sessions get one-shot comms flags (action.sweep.*). In
-               the same pass: zombie lane — devin-task-* units on dell +
-               card runners + MERGE_SWEEP_HOSTS running >6h with no
-               activity >60min (devin acp log mtimes; transcript.json
-               only exists at exit) get one card comms flag — never
-               auto-killed. tests/board/test_merge_sweep.py."
   concurrency:
     # today's model — one dispatcher per host, caps local:
     host_cap: "KANBAN_HOST_CAP env on the dispatcher (default 3; tony-dell is
@@ -360,10 +279,7 @@ execution:
                Dispatch-type finishes run the close_out merge step
                locally first (above) — verified rides the finish body.
                type=container needs only podman (idc hosts); type=dispatch
-               needs devin-dispatch + devin CLI + repos.conf (dell, omen,
-               idc02 since 2026-10-08 — devin 3000.10.35 at ~/.local/bin,
-               push via per-repo deploy keys: github.com for chaba,
-               github-ada-pi + github-sunsynk ssh aliases)."
+               needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
                works identically on every host incl. dell)"
@@ -371,12 +287,17 @@ execution:
                KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
                — loaded hosts yield the queue to idle runners; finishes
                and requeues still process"
-    runner_fleet: "as of 2026-10-07 — tony-dell: kanban-dispatch local cap 3
+    runner_fleet: "as of 2026-10-08 — tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
-               +container); idc01: cap 2 labels always-on,cold-batch,high-mem;
-               idc02: cap 3 labels ssd,always-on (dispatch+container+script);
-               idc03: cap 2 labels
-               ssd,always-on; mn01: cap 1 labels low-mem,edge. Nest lanes:
+               +container+script); idc01: cap 2 labels
+               always-on,cold-batch,high-mem (dispatch+container+script —
+               devin CLI + credentials.toml + devin-dispatch installed
+               2026-10-08); idc02: cap 3 labels ssd,always-on (dispatch
+               +container+script); idc03: cap 2 labels ssd,always-on
+               (dispatch+container+script); mn01: cap 1 labels
+               low-mem,edge (container+script only — no devin CLI by
+               design, RAM-tight). Unpinned dispatch cards now land on any
+               of the 5 dispatch-capable hosts. Nest lanes:
                micro-training cold batch -> idc01, bench cadence/corpus ->
                idc02/idc03, GPU FT/LoRA -> omen (labels)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
@@ -440,7 +361,6 @@ ops:
     - {id: chaba-board-render, interval: "60s", role: "cards.yml -> cards.json + board page (--if-changed)"}
     - {id: kanban-sync, interval: "15min", role: "health lanes (cms-auto-*, logs-auto-*, gev-auto-*, vcast-auto-*) -> cards -> push + dev-kanban CMS render"}
     - {id: kanban-stats, interval: "15min", role: "rides kanban-sync.timer — board stats -> reports/kanban meta.yml + apps/system-report/data/kanban.md (L2 'kanban' node, ssot.reports.yml)"}
-    - {id: kanban-act, interval: "30min", role: "rides chaba-kanban-brief.timer — T2 auto-close: review cards with autonomy:t2 whose auto_done_when checks all pass -> done (gates: rk=decide + open requests hold; kanban_act ops event per close; KANBAN_ACT_MAX cap)"}
     - {id: kanban-commit, interval: "15min", role: "scoped commit+push of cards/ from the served checkout"}
     - {id: devin-dispatch-watch, interval: "15min", role: "watch local devin-task-* units, notify"}
     - {id: lab-review-sweep, interval: "weekly", role: "lab cards past review_by must promote or retire"}
