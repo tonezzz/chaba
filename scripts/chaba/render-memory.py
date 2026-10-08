@@ -174,6 +174,10 @@ def run_query(q, repo_root, errors, warnings):
     if not vals:
         warnings.append(f"{file}: key '{q.get('key')}' produced no matches")
         return []
+    skip = set(q.get("skip_status", []))
+    if skip:
+        vals = [v for v in vals
+                if not (isinstance(v, dict) and v.get("status") in skip)]
     lines = []
     for v in vals:
         lines.extend(flatten_lines(v, q.get("format"), q.get("max_items")))
@@ -191,13 +195,25 @@ def run_source(src, render_dir, repo_root, errors):
         except OSError as e:
             errors.append(f"rolling-log {src.get('file')}: {e}")
             return []
+        entries = [e.strip() for e in re.split(r"\n(?=## )", text) if e.strip()]
+        # entry_match: a ## heading matching this regex STARTS a real entry;
+        # non-matching blocks are fragments appended to the current entry
+        # (session-memory.md splits compaction summaries into ## N. sections).
+        # Must run before min_chars — entry headers alone may be too small.
+        entry_re = src.get("entry_match")
+        if entry_re:
+            merged = []
+            for e in entries:
+                first = e.splitlines()[0]
+                if re.match(entry_re, first):
+                    merged.append(e)
+                elif merged:
+                    merged[-1] += "\n\n" + e
+                # else: orphan preamble before the first real entry — drop
+            entries = merged
         min_chars = src.get("min_chars", 0)
-        entries = []
-        for e in re.split(r"\n(?=## )", text):
-            e = e.strip()
-            if not e or len(e) < min_chars:
-                continue
-            entries.append(e)
+        if min_chars:
+            entries = [e for e in entries if len(e) >= min_chars]
         # collapse consecutive entries that differ only in the heading line
         # (e.g. repeated scenario-run failures) into one entry marked "×N"
         deduped = []
@@ -209,9 +225,18 @@ def run_source(src, render_dir, repo_root, errors):
             else:
                 deduped.append([e, body, 1])
         entries = [
-            e if n == 1 else re.sub(r"^(#+.*)$", rf"\g<1> ×{n}", e, count=1)
+            e if n == 1 else re.sub(r"^(#+.*)$", rf"\g<1> ×{n}", e, count=1, flags=re.M)
             for e, _body, n in deduped
         ]
+        # entry_max_chars: cap each entry's length (merged entries can be
+        # whole documents — a section budget is not a per-entry budget)
+        emax = src.get("entry_max_chars")
+        if emax:
+            entries = [
+                e if len(e) <= emax
+                else e[: emax - 40].rstrip() + f"\n…({len(e) - emax + 40:,} more chars in source)"
+                for e in entries
+            ]
         keep = src.get("max_entries", 3)
         # demote every heading in each entry so they nest under '## <section>'
         return [re.sub(r"^(#+)", r"#\1", e, flags=re.M) for e in entries[-keep:]]
@@ -292,9 +317,14 @@ def run_source(src, render_dir, repo_root, errors):
         import datetime
         now = datetime.datetime.now().astimezone()
         default_ttl = src.get("ttl_hours", 72)
+        drop = [re.compile(p) for p in src.get("drop", [])]
+        dropped = 0
         lines = []
         for e in doc.get("entries", []) or []:
             if not isinstance(e, dict) or not e.get("text"):
+                continue
+            if drop and any(p.search(e["text"]) for p in drop):
+                dropped += 1
                 continue
             try:
                 ts = datetime.datetime.fromisoformat(str(e.get("ts", "")))
@@ -309,6 +339,8 @@ def run_source(src, render_dir, repo_root, errors):
             lines.append(line)
             if len(lines) >= src.get("max_entries", 10):
                 break
+        if dropped:
+            lines.append(f"…({dropped} routine events hidden)")
         return lines
     errors.append(f"unknown source kind: {kind}")
     return []

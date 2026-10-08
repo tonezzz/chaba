@@ -89,6 +89,7 @@ sections:
       file: ~/.local/share/chaba/recent-events.yml
       max_entries: 10
       ttl_hours: 72
+      drop: ["^session ended"]   # lifecycle noise — a count line is shown instead
 
   home:
     description: Host inventory, canonical addresses, service topology.
@@ -125,6 +126,7 @@ sections:
       - file: docs/ssot/ssot.focus.current.active.yml
         key: sections.*.items.*
         max_items: 5
+        skip_status: [completed, done]
         format: "- {label} [{status}]"
 
   access:
@@ -160,6 +162,8 @@ sections:
       file: ~/.local/share/devin/notebook-summaries/session-memory.md
       max_entries: 3
       min_chars: 200        # skip "Session end"/checkpoint stubs
+      entry_match: "^## (Compaction|Session end)"   # '## N. Section' blocks are fragments — merge into the entry above
+      entry_max_chars: 1200  # merged compaction summaries are ~25K — keep the head, note the tail
 
   timeline:
     description: |
