@@ -1,0 +1,122 @@
+title: "Merge-sweep: fetch stranded dispatch branches off runners, strict-merge into the served checkout"
+subtitle: >-
+  15min timer on tony-dell — the remedy half of the merge guard: runners
+  that can't reach GitHub strand finished branches; the sweep fetches
+  them over tailscale ssh and lands them, or stops and asks
+icon: 🧹
+id: 2026-10-08-dispatch-merge-sweep
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-merge-sweep
+branch: dispatch/20261008-094909-sweep-script-scripts-board-mer
+started: "2026-10-08"
+completed: "2026-10-08"
+
+context:
+  user_request: >
+    Tony 2026-10-08: repos pin a GitHub-only SSH key (core.sshCommand),
+    so dispatch runners without that credential can't push — close_out's
+    push step dies and finished branches strand on the runner worktree
+    (six manual fetch-over-ssh salvages in one night; the 32h
+    yt-dub-cuefit zombie nearly lost finished work). The merge guard
+    correctly detects unmerged work but nothing lands it. Build a dell-
+    side sweep that fetches the branch straight off the runner over
+    tailscale ssh and merges it, strict stop-and-report on conflicts;
+    plus a zombie lane for devin-task-* units running >6h with no
+    activity — flag, never kill.
+
+design:
+  pipeline: >-
+    scripts/board/merge-sweep.py (merge-sweep.timer, 15min, tony-dell):
+      1. enumerate cards in doing/review with action.type=dispatch
+      2. resolve task_id — action.task_id, claim.session, the comms
+         'started devin-task-<id>' line, or the runner's
+         ~/.local/share/runner-agent/state.json
+      3. probe the recorded runner over `ssh <host> python3 -` —
+         meta.json pattern ($DISPATCH_DIR/tasks/<id>/meta.json),
+         worktree presence, `git status --porcelain` dirtiness, HEAD,
+         repo root; falls back to the runner's own repos.conf branch
+         scan when the worktree was pruned
+      4. skip in-flight sessions (task still active on a probed host);
+         flag stale-running, failed, dirty, and gone sessions once via
+         action.sweep.* stamps
+      5. `git -c core.sshCommand=ssh fetch <runner>:<worktree> HEAD` in
+         the SERVED checkout — the -c override is the point: the repo's
+         configured sshCommand is a GitHub-only key that cannot reach
+         tailnet hosts; plain ssh uses ~/.ssh/config (tailscale)
+      6. dispatch_repos.merge_state vs origin/<default> — already an
+         ancestor => stamp action.verified, silent otherwise
+      7. merge --no-ff in a throwaway detached worktree of the served
+         repo -> push HEAD:<base> (close_out's shape — the live working
+         tree is never touched; one resync+retry on push race)
+  conflict_policy: >-
+    STOP-AND-REPORT, strictly: any conflicted path aborts the merge,
+    names the files in comms, and raises a merge-conflict<N> request on
+    the card naming the paths for human resolution. Unlike close_out's
+    safe-pull conventions (generated paths auto-resolve upstream-wins,
+    dispatch-outcome*.md session-wins) the sweep never silently takes
+    either side — the branch may carry state a human already reviewed.
+    One open request per conflict event; a re-conflict after an answer
+    gets a new request id.
+  served_checkouts: >-
+    MERGE_SWEEP_TARGETS map — chaba -> ~/CascadeProjects/chaba-tony-dell,
+    ada-pi -> ~/CascadeProjects/ada-pi; anything else falls back to its
+    repos.conf path. Single-writer: merges happen in detached worktrees
+    + push, so the served working tree converges through kanban-commit's
+    existing safe-pull; card comms/requests go through board-api when
+    reachable, else direct YAML under the shared /tmp/board-api.lock.
+  zombie_lane: >-
+    devin-task-*.service units on dell + every runner recorded on a
+    card + MERGE_SWEEP_HOSTS (tony-omen,mn01) — probed in the same pass
+    via `systemctl --user list-units` on each host. 'Activity' = newest
+    mtime among the unit's cgroup processes' devin_<ts>_<pid>.log files
+    (the `devin acp` child logs continuously) and the task dir —
+    transcript.json only exists at session exit, so log mtimes are the
+    only liveness signal. age>6h AND idle>60min => one card comms flag
+    (or journal line when no card resolves). Never kills.
+
+files:
+  - scripts/board/merge-sweep.py      # the sweep — session probe,
+                                      # fetch-over-ssh, strict merge,
+                                      # zombie lane, card comms/requests
+  - systemd/merge-sweep.service       # oneshot -> served-checkout script
+  - systemd/merge-sweep.timer         # 15min cadence, Persistent
+  - tests/board/test_merge_sweep.py   # 12 end-to-end cases
+  - docs/ssot/kanban/ssot.kanban.yml  # execution.merge_sweep lane
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml  # timer registered
+
+verification:
+  - "python3 -m unittest tests.board.test_merge_sweep — 12/12 pass:
+     stranded branch merges --no-ff + verified stamp, conflict posts a
+     merge-conflict request naming files and leaves upstream untouched,
+     dirty worktree flagged not fetched, failed run flagged not merged,
+     active running skipped, stale-running rescued, verified cards skip,
+     comms-derived task_id resolves, zombie flagged once, under-threshold
+     ignored, probe-scripts-on-stdin regression."
+  - "python3 -m py_compile scripts/board/merge-sweep.py"
+  - "--dry-run on tony-dell, live board: correctly skipped in-flight
+     sessions once the probe fix landed (2 active units detected on
+     omen), surfaced 3 stranded branches + 2 already-merged cards."
+  - "FIRST LIVE RUN (2026-10-08 10:17 +07, 33s): mddb-follower-stall and
+     precommit-warning-baseline stamped verified; nest-lane-tony-dell
+     (fetched off mn01 over ssh), ada-cms-discovery-fixes and
+     ada-kanban-access all hit REAL conflicts with origin — every merge
+     aborted, comms named the paths, merge-conflict requests raised.
+     Strict stop-and-report proven on live data; nothing wrongly merged."
+
+deployment_notes: >-
+  Timer install on tony-dell: copy systemd/merge-sweep.{service,timer}
+  to ~/.config/systemd/user/, daemon-reload, enable --now. The service
+  runs the script from the chaba-tony-dell served checkout — it picks
+  this code up on kanban-commit's next pull; until this branch merges,
+  install runs the worktree copy or waits for the merge. Env knobs:
+  MERGE_SWEEP_TARGETS, MERGE_SWEEP_HOSTS, BOARD_API, ZOMBIE_AGE_H,
+  ZOMBIE_IDLE_MIN, CHABA_REPO.
+
+followups:
+  - "Runner unreachable at sweep time is reported once via
+     action.sweep.fetch_failed — it clears only when the probe succeeds
+     (per-condition stamps don't auto-unflag)."
+  - "Consider installing runner-agent + merge-sweep updates through one
+     deploy script — same drift class as devin-dispatch."

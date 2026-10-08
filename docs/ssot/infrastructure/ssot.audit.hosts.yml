@@ -218,6 +218,12 @@ hosts:
         expected_state: active
         critical: false
         note: "weekly Mon 09:00 — flags lab cards past lab.review_by with no outcome (comms nudge + lab-review request), executes answered promote/retire/extend decisions"
+      - name: merge-sweep.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "15min — merge-sweep.py: fetches stranded dispatch branches off runners over tailscale ssh (git -c core.sshCommand=ssh fetch <runner>:<worktree> HEAD), merges into the served checkout (stop-and-report conflicts -> card request), flags zombie devin-task-* units >6h idle"
       - name: chaba-services-regen.timer
         type: timer
         scope: user

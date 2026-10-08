@@ -265,6 +265,31 @@ execution:
                allow — the guard never wedges the board. Dirty worktrees
                never block; the leftover file count rides along in the
                comms line."
+  merge_sweep: "merge-sweep.timer (15min, tony-dell) -> scripts/board/
+               merge-sweep.py — closes the loop merge_guard only detects.
+               Remote runners without the repo's GitHub key can't push,
+               so close_out's step-2 strands branches on the runner
+               worktree; the sweep enumerates doing/review dispatch
+               cards, resolves task_id (action/claim/comms/runner-agent
+               state.json), probes the runner's worktree over tailscale
+               ssh (meta.json pattern), verifies clean + ahead of
+               origin/<default>, then `git -c core.sshCommand=ssh fetch
+               <runner>:<worktree> HEAD` into the SERVED checkout (chaba
+               -> chaba-tony-dell, ada-pi -> ada-pi, MERGE_SWEEP_TARGETS
+               for others) and merges --no-ff in a throwaway detached
+               worktree -> push HEAD:<base>. CONFLICT POLICY =
+               stop-and-report — unlike close_out's safe-pull
+               conventions it never auto-resolves either side; any
+               conflicted path aborts, names the files in comms, and
+               raises a merge-conflict request for human resolution.
+               Clean merge -> action.verified + comms; already-ancestor
+               heads stamp verified silently. Dirty/failed/gone
+               sessions get one-shot comms flags (action.sweep.*). In
+               the same pass: zombie lane — devin-task-* units on dell +
+               card runners + MERGE_SWEEP_HOSTS running >6h with no
+               activity >60min (devin acp log mtimes; transcript.json
+               only exists at exit) get one card comms flag — never
+               auto-killed. tests/board/test_merge_sweep.py."
   concurrency:
     # today's model — one dispatcher per host, caps local:
     host_cap: "KANBAN_HOST_CAP env on the dispatcher (default 3; tony-dell is
