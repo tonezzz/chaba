@@ -132,7 +132,7 @@ PRIORITIES = {"high", "medium", "low"}
 ACTION_TYPES = {"dispatch", "manual"}
 # action keys a caller may set — status/runner/task_id are board-owned and
 # silently dropped so a spawn can't fake a running card
-ACTION_KEYS = ("type", "repo", "host", "labels", "button")
+ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -354,11 +354,8 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
         a["status"] = "queued"
-        prev = a.pop("result", None)
-        if prev:
-            a["last_failure"] = str(prev)[:300]
+        a.pop("result", None)
         a.pop("runner", None)  # free for any host to re-claim
-        a["attempts"] = int(a.get("attempts") or 0) + 1
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":
@@ -367,7 +364,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             return blocked
         card["column"] = "done"
         a["status"] = "done"
-        comms_add(card, frm, f"closed by {frm}")
+        comms_add(card, frm, "closed by Tony")
         hide_dispatch_session(card)
         return "moved to done"
     if verb == "hold":
@@ -378,7 +375,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     raise ValueError(f"unknown verb {verb}")
 
 
-def do_move(card: dict, body: dict, frm: str = "tony") -> str:
+def do_move(card: dict, body: dict) -> str:
     col = (body.get("column") or "").strip()
     if col not in COLUMNS:
         raise ValueError(f"column must be one of {sorted(COLUMNS)}")
@@ -395,7 +392,7 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
         card.setdefault("action", {})["status"] = "done"
         card.setdefault("claim", {}).pop("session", None)
         hide_dispatch_session(card)
-    comms_add(card, frm, f"moved {old} -> {col}")
+    comms_add(card, "tony", f"moved {old} -> {col}")
     return f"moved to {col}"
 
 
@@ -764,6 +761,12 @@ def do_create(body: dict, frm: str) -> dict:
             if not isinstance(labels, list):
                 raise ValueError("action.labels must be a list")
             card["action"]["labels"] = [str(x)[:40] for x in labels][:10]
+        if "model" in card["action"]:
+            model = str(card["action"]["model"]).strip()
+            if not re.fullmatch(r"[a-zA-Z0-9._-]{1,40}", model):
+                raise ValueError("action.model must be a model id "
+                                 "([a-zA-Z0-9._-], max 40)")
+            card["action"]["model"] = model
     if body.get("queue"):
         a = card.setdefault("action", {})
         a.setdefault("type", "dispatch")
@@ -974,11 +977,11 @@ class H(BaseHTTPRequestHandler):
                     if verb == "claim":
                         msg = do_claim(card, body)
                     elif verb == "move":
-                        msg = do_move(card, body, actor(body))
+                        msg = do_move(card, body)
                     elif verb == "finish":
                         msg = do_finish(card, body)
                     else:
-                        msg = do_action(card, verb, actor(body))
+                        msg = do_action(card, verb, "tony")
                     card["updated"] = now()
                     save(p, card)
                 elif path == "/respond":
