@@ -335,7 +335,10 @@ execution:
                Dispatch-type finishes run the close_out merge step
                locally first (above) — verified rides the finish body.
                type=container needs only podman (idc hosts); type=dispatch
-               needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
+               needs devin-dispatch + devin CLI + repos.conf (dell, omen,
+               idc02 since 2026-10-08 — devin 3000.10.35 at ~/.local/bin,
+               push via per-repo deploy keys: github.com for chaba,
+               github-ada-pi + github-sunsynk ssh aliases)."
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
                works identically on every host incl. dell)"
@@ -346,7 +349,8 @@ execution:
     runner_fleet: "as of 2026-10-07 — tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
                +container); idc01: cap 2 labels always-on,cold-batch,high-mem;
-               idc02: cap 3 labels ssd,always-on; idc03: cap 2 labels
+               idc02: cap 3 labels ssd,always-on (dispatch+container+script);
+               idc03: cap 2 labels
                ssd,always-on; mn01: cap 1 labels low-mem,edge. Nest lanes:
                micro-training cold batch -> idc01, bench cadence/corpus ->
                idc02/idc03, GPU FT/LoRA -> omen (labels)."
