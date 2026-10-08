@@ -1,0 +1,166 @@
+# Voice-fallback benchmark fixtures.
+# ~20 synthesized phrases, half English / half Thai, covering:
+#   - HA device commands (expected_tool_call set, kind: ha_command)
+#   - questions needing tool calls (expected_tool_call set, kind: ha_query)
+#   - short chit-chat (expected_tool_call: null)
+#
+# Audio lives next to this file as <id>.wav (16 kHz mono PCM).
+# Regenerate with: python3 fixtures/generate.py --engine gemini|azure|tone
+# `expected_tool_call` is the semantic call the combo's orchestrator is
+# expected to emit — bench.py scores exact/partial/none by comparing the
+# `name` and the `args` subset.
+fixtures:
+  # --- English: HA device commands ---
+  - id: en-cmd-light-kitchen
+    lang: en
+    category: ha_command
+    phrase: Turn on the kitchen lights.
+    expected_transcript: turn on the kitchen lights
+    expected_tool_call:
+      name: hass_turn_on
+      args: {domain: light, area: kitchen}
+  - id: en-cmd-ac-bedroom
+    lang: en
+    category: ha_command
+    phrase: Set the bedroom air conditioner to twenty four degrees.
+    expected_transcript: set the bedroom air conditioner to 24 degrees
+    expected_tool_call:
+      name: hass_set_temperature
+      args: {area: bedroom, temperature: 24}
+  - id: en-cmd-fan-off
+    lang: en
+    category: ha_command
+    phrase: Turn off the living room fan.
+    expected_transcript: turn off the living room fan
+    expected_tool_call:
+      name: hass_turn_off
+      args: {domain: fan, area: living_room}
+  - id: en-cmd-lock-door
+    lang: en
+    category: ha_command
+    phrase: Lock the front door.
+    expected_transcript: lock the front door
+    expected_tool_call:
+      name: hass_lock
+      args: {entity: front_door}
+  # --- English: questions needing tool calls ---
+  - id: en-qry-temp-outside
+    lang: en
+    category: ha_query
+    phrase: What is the temperature outside right now?
+    expected_transcript: what is the temperature outside right now
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: sensor.outside_temperature}
+  - id: en-qry-washer
+    lang: en
+    category: ha_query
+    phrase: Is the washing machine still running?
+    expected_transcript: is the washing machine still running
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: sensor.washer_power}
+  - id: en-qry-solar
+    lang: en
+    category: ha_query
+    phrase: How much solar power are we generating?
+    expected_transcript: how much solar power are we generating
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: sensor.solar_power}
+  # --- English: chit-chat ---
+  - id: en-chat-hello
+    lang: en
+    category: chit_chat
+    phrase: Hey, how are you doing today?
+    expected_transcript: hey how are you doing today
+    expected_tool_call: null
+  - id: en-chat-thanks
+    lang: en
+    category: chit_chat
+    phrase: Thanks, that is exactly what I needed.
+    expected_transcript: thanks that is exactly what i needed
+    expected_tool_call: null
+  - id: en-chat-joke
+    lang: en
+    category: chit_chat
+    phrase: Tell me something funny.
+    expected_transcript: tell me something funny
+    expected_tool_call: null
+  # --- Thai: HA device commands ---
+  - id: th-cmd-light-kitchen
+    lang: th
+    category: ha_command
+    phrase: เปิดไฟครัวหน่อย
+    expected_transcript: เปิดไฟครัวหน่อย
+    expected_tool_call:
+      name: hass_turn_on
+      args: {domain: light, area: kitchen}
+  - id: th-cmd-ac-off
+    lang: th
+    category: ha_command
+    phrase: ปิดแอร์ห้องนอน
+    expected_transcript: ปิดแอร์ห้องนอน
+    expected_tool_call:
+      name: hass_turn_off
+      args: {domain: climate, area: bedroom}
+  - id: th-cmd-tv-on
+    lang: th
+    category: ha_command
+    phrase: เปิดทีวีห้องนั่งเล่น
+    expected_transcript: เปิดทีวีห้องนั่งเล่น
+    expected_tool_call:
+      name: hass_turn_on
+      args: {domain: media_player, area: living_room}
+  - id: th-cmd-fan-on
+    lang: th
+    category: ha_command
+    phrase: เปิดพัดลมหน่อยครับ
+    expected_transcript: เปิดพัดลมหน่อยครับ
+    expected_tool_call:
+      name: hass_turn_on
+      args: {domain: fan}
+  # --- Thai: questions needing tool calls ---
+  - id: th-qry-temp
+    lang: th
+    category: ha_query
+    phrase: ตอนนี้อุณหภูมิข้างนอกเท่าไหร่
+    expected_transcript: ตอนนี้อุณหภูมิข้างนอกเท่าไหร่
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: sensor.outside_temperature}
+  - id: th-qry-door
+    lang: th
+    category: ha_query
+    phrase: ประตูหน้าล็อกอยู่ไหม
+    expected_transcript: ประตูหน้าล็อกอยู่ไหม
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: lock.front_door}
+  - id: th-qry-light
+    lang: th
+    category: ha_query
+    phrase: ไฟในครัวเปิดอยู่ไหม
+    expected_transcript: ไฟในครัวเปิดอยู่ไหม
+    expected_tool_call:
+      name: hass_get_state
+      args: {entity: light.kitchen}
+  # --- Thai: chit-chat ---
+  - id: th-chat-hello
+    lang: th
+    category: chit_chat
+    phrase: สวัสดีครับ วันนี้เป็นไงบ้าง
+    expected_transcript: สวัสดีครับ วันนี้เป็นไงบ้าง
+    expected_tool_call: null
+  - id: th-chat-thanks
+    lang: th
+    category: chit_chat
+    phrase: ขอบคุณมากครับ
+    expected_transcript: ขอบคุณมากครับ
+    expected_tool_call: null
+  - id: th-chat-weather
+    lang: th
+    category: chit_chat
+    phrase: วันนี้อากาศดีจังเลย
+    expected_transcript: วันนี้อากาศดีจังเลย
+    expected_tool_call: null
