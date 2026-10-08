@@ -1,0 +1,35 @@
+id: claw-channel
+host: cloudflare
+description: >-
+  Credential-free edge channel for claws (lab): one Workers KV namespace
+  + one Worker on the surf-thailand.com zone. GET reads are unauthenticated
+  on an unlisted hostname/path; POST ingest requires X-Ingest-Key (wrangler
+  secret). First real content: sanitized board digest (id/title/column
+  only) readable off-tailnet — scripts/claw-publish.py.
+verify: >-
+  curl -sf https://claw.surf-thailand.com/digest/board | python3 -c
+  'import sys,json; json.load(sys.stdin)'
+requires:
+  - "secret:~/.config/secrets/cloudflare.env — cfut_ token with Workers
+    KV Storage Edit + Workers Scripts Edit + Workers Routes Edit +
+    Zone DNS Edit on surf-thailand.com (account + zone id inside)"
+  - "secret:~/.config/secrets/claw-channel.env — CLAW_INGEST_KEY
+    (deploy.sh generates on first run)"
+  - "tool:npx wrangler@4 — no global install"
+state:
+  - "Cloudflare account: KV namespace claw-channel, worker claw-channel,
+    route claw.surf-thailand.com/*, DNS AAAA claw -> 100:: (proxied)"
+  - "edge/claw-channel/ — worker.js + wrangler.toml (template)"
+restore: >-
+  Re-run deploy.sh from any host with the CF env file — namespace,
+  worker, secret, DNS and route are all idempotent creates. KV content
+  is ephemeral channel state, not data.
+related_cards: [lab-cf-kv-claw-channel]
+status: blocked-prereq
+notes: >-
+  2026-10-08: built but NOT deployed — cfut_ token lacks Workers KV
+  Storage, Workers Routes and DNS scopes (board request raised).
+  edge.surf-thailand.com rejected as route host: it is DNS-only pointing
+  at idc02's real IP, so a worker route never fires, and proxying it
+  would reroute the whole *-ha CNAME family through CF. Dedicated
+  workers-only hostname claw.surf-thailand.com used instead.

@@ -1,0 +1,162 @@
+title: "claw-channel — CF Workers KV edge channel (lab)"
+subtitle: "Built worker + publisher + deploy tooling; deploy blocked on cfut_ token scopes"
+icon: cloud
+
+planning:
+  goal: >-
+    Lab-prove a credential-free edge channel: KV namespace claw-channel +
+    Worker serving claw command reads (GET, no auth, unlisted path) and
+    report ingest (POST + X-Ingest-Key), plus a sanitized public board
+    digest readable off-tailnet.
+  scope: >-
+    In: worker code, KV namespace, publisher script, zone route, verify
+    curls. Out: live memory (stays MDDB/sqlite), credentials in KV,
+    migrating existing channels.
+  success_criteria:
+    - "anonymous curl GET /<agent> returns command JSON"
+    - "POST /report/<agent> with ingest key lands report readable by GET"
+    - "wrong key returns 403"
+    - "sanitized digest readable on phone off-tailnet"
+  risks:
+    - "cfut_ token scope gap — confirmed: Workers KV Storage, Workers
+      Routes, and Zone DNS Edit all missing; only Workers Scripts Edit
+      + Zone Read present"
+    - "edge.surf-thailand.com is DNS-only (grey cloud -> idc02 real IP):
+      a Workers route there can never fire; mitigated by dedicated
+      workers-only hostname claw.surf-thailand.com (AAAA 100:: proxied)"
+  resources:
+    - "~/.config/secrets/cloudflare.env (cfut_ token — valid copy on tony-omen; dell/idc01/idc02 stale cfat_)"
+    - "surf-thailand.com zone 4feb4a3682e44e38cce3feed65dba7f3"
+    - "board-api http://127.0.0.1:8787/cards as digest source"
+  owner: tony
+  estimated_duration: "build done; deploy <30min once scopes land"
+  related_focus: []
+
+processing:
+  status: blocked-on-prereq
+  started_at: "2026-10-08T05:15:00Z"
+  steps:
+    - id: 1
+      label: Probe token scopes + inventory CF state
+      status: done
+      notes: >-
+        cfut_ token (omen copy) verified active. Scripts list OK, zone
+        read OK. KV namespaces -> Authentication error; R2 -> auth error;
+        workers/routes on zone -> No access; dns_records -> auth error.
+    - id: 2
+      label: Worker edge/claw-channel/worker.js + wrangler.toml
+      status: done
+      notes: >-
+        GET /<agent> -> cmd:<agent>; GET /digest/<n>, /report/<a>; POST
+        report/cmd/digest gated by X-Ingest-Key (wrangler secret
+        INGEST_KEY); JSON-only bodies <=1MiB; constant-time key compare;
+        x-robots-tag noindex; R2 binding optional (CLAW_R2).
+    - id: 3
+      label: scripts/claw-publish.py sanitized board digest
+      status: done
+      notes: >-
+        Reads board-api /cards (fallback: repo cards.json), emits
+        id/title/column only; titles scrubbed of hostnames
+        (ssot.values.yml hosts + statics), IPv4, ts.net/.local domains,
+        paths. ids verbatim (join key — scrubbing collides). Writes
+        digest:board via CF API or --via-ingest through the worker.
+    - id: 4
+      label: stacks/edge/claw-channel/ (stack.yml, deploy.sh, README)
+      status: done
+      notes: >-
+        deploy.sh idempotent: preflight scope check -> wrangler kv
+        namespace create -> render wrangler.deploy.toml -> wrangler
+        secret put INGEST_KEY -> AAAA claw->100:: proxied -> wrangler
+        deploy (route claw.surf-thailand.com/*) -> seed cmd:demo ->
+        verify curls.
+    - id: 5
+      label: Local verification
+      status: done
+      notes: >-
+        node harness: 14/14 pass (cmd round-trip, report round-trip,
+        digest, 403 wrong/missing key, 400 bad JSON, 404 unknown paths,
+        prefixed + bare paths). claw-publish --dry-run: 250 cards,
+        ~29KB, leak scan clean on titles.
+    - id: 6
+      label: Deploy to Cloudflare + live verify
+      status: blocked
+      notes: "needs cfut_ scope additions — board request raised on card"
+  decisions:
+    - label: "Hostname claw.surf-thailand.com, not edge.surf-thailand.com/claw/*"
+      rationale: >-
+        edge.surf-thailand.com resolves to idc02's real public IP —
+        DNS-only, so a worker route can never fire, and flipping it to
+        proxied would drag the whole *-ha CNAME family through CF.
+        Dedicated AAAA-100:: workers hostname is zero-interference.
+      alternatives_considered: >-
+        proxy edge.surf-thailand.com (rejected: changes existing edge
+        behaviour); workers.dev (rejected: needs workers domain perm +
+        uglier URL)
+    - label: "Card ids stay verbatim in digest"
+      rationale: >-
+        ids are the join key; slug-level host tokens (logs-auto-idc01-*)
+        accepted as lab-scope leak since scrubbing collides
+        (idc01/idc02 -> same slug).
+    - label: "Ingest key as wrangler secret, never in KV"
+      rationale: card forbids credentials in KV; secret lives at
+        ~/.config/secrets/claw-channel.env (deploy.sh generates).
+  changes:
+    - { file: edge/claw-channel/worker.js, summary: "channel worker (~90 lines)" }
+    - { file: edge/claw-channel/wrangler.toml, summary: "deploy template" }
+    - { file: scripts/claw-publish.py, summary: "sanitized digest -> KV" }
+    - {
+        file: "stacks/edge/claw-channel/stack.yml,deploy.sh,README.md",
+        summary: "stack + idempotent deploy",
+      }
+    - { file: docs/ssot/infrastructure/ssot.routes.yml, summary: "cf-surf edge entry" }
+    - { file: .gitignore, summary: "ignore wrangler.deploy.toml" }
+
+followup:
+  verification:
+    - "post-deploy: curl -sf https://claw.surf-thailand.com/demo"
+    - "curl -s -o /dev/null -w 403 -X POST -H 'X-Ingest-Key: x' https://claw.surf-thailand.com/report/x"
+    - "python3 scripts/claw-publish.py && curl https://claw.surf-thailand.com/digest/board (phone, off-tailnet)"
+  rollback_plan:
+    - "wrangler delete + kv namespace delete + DNS/route delete; nothing persistent"
+  handoff:
+    - "tony adds 3-4 scopes to cfut_ token, then ./stacks/edge/claw-channel/deploy.sh"
+  deferred:
+    - "R2 artifact binding (optional, commented in wrangler.toml)"
+    - "hourly digest timer — schedule only if lab graduates"
+    - "dell/idc01/idc02 cloudflare.env still hold stale cfat_ token — sync from omen"
+
+report:
+  status: partial
+  completed_at: "2026-10-08T05:30:00Z"
+  summary: >-
+    All code + tooling built and locally verified (14/14 worker checks,
+    digest dry-run clean). Deploy+live verify blocked: cfut_ token lacks
+    Workers KV Storage, Workers Routes, and DNS scopes (pre-req only
+    partially done — Scripts Edit present). Board request raised.
+  metrics:
+    worker_local_tests: "14/14 pass"
+    digest_cards: 250
+    digest_bytes: "~29KB"
+    scopes_missing: "Workers KV Storage Edit, Workers Routes Edit, Zone DNS Edit (+ R2 optional)"
+  links:
+    - { title: "worker", url: "edge/claw-channel/" }
+    - { title: "stack", url: "stacks/edge/claw-channel/" }
+  kb_review:
+    - "Workers routes only fire on proxied DNS records — grey-cloud hosts
+      need a dedicated AAAA-100:: workers hostname"
+    - "cfut_ token inventory per host drifts: dell/idc01/idc02 stale"
+  lessons_learned:
+    - "probe scopes before building deploy path — auth-error code 10000
+      on KV/R2/domains vs 'No access' on routes maps cleanly to missing
+      permission groups"
+
+config:
+  version: 1
+  created_at: 2026-10-08
+  last_updated: 2026-10-08
+  maintainer: tony
+  related_files:
+    - edge/claw-channel/worker.js
+    - edge/claw-channel/wrangler.toml
+    - stacks/edge/claw-channel/deploy.sh
+    - scripts/claw-publish.py
