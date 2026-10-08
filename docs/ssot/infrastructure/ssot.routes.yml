@@ -38,12 +38,17 @@ edges:
       /: http://127.0.0.1:8001                    # ada-pi-pwa
       /apps/ha/ada-tony: http://127.0.0.1:8002    # ada-ha-tony backend
       /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
+      /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
+  # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
+  #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
+  #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
   # noted); `tailnet` = canonical address other edges proxy to.
   ada-ha-tony:    {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony"}
   ada-ha-michael: {host: idc03, listen: "127.0.0.1:8003", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"}
+  ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
   tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
   michael-dev:    {host: tony-dell, listen: "127.0.0.1:8124", tailnet: "https://tony-dell.taila0626a.ts.net:8124"}

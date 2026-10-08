@@ -27,6 +27,10 @@ spec: >-
      enforces 72h/3-session bar before pre-prod.
   5. Post-deploy smoke hook inside promote-*.sh — health + one scenario
      within 30min, result appended to comms.
+  6. Playlive browser smoke on the *-dev version as a required alpha->preprod
+     gate (Tony 2026-10-08): scripted browser pass on the dev twin's public
+     URL, evidence ref appended to comms — no dev-twin playlive evidence, no
+     promotion.
 links:
   - ha-lanes-program
   - ha-release-pipeline

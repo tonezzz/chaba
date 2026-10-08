@@ -1,6 +1,6 @@
 {
  "collection": "kb-operations",
- "exported_at": "2026-10-07T09:09:29.399207+00:00",
+ "exported_at": "2026-10-07T21:30:10.141955+00:00",
  "doc_count": 147,
  "docs": [
   {
@@ -222,7 +222,7 @@
      "2026-09-25T17:32:15.671938"
     ],
     "last_used": [
-     "2026-10-05"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/app-ssot-standards-structure.md"
@@ -234,12 +234,12 @@
      "Standard Structure"
     ],
     "use_count": [
-     "306"
+     "307"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Standard Structure\n\nAll application SSOT files should follow this structure:\n\n### Required Sections\n\n1. **Core Features** (✅ icon)\n   - Main functionality and user-facing features\n   - Key capabilities and value propositions\n\n2. **Technical Architecture** (⚙️ icon)\n   - Technical components and their relationships\n   - Architecture patterns and design decisions\n\n3. **Files & Modules** (📁 icon)\n   - Key files and their purposes\n   - Module organization and responsibilities\n\n4. **Deployment** (🚀 icon)\n   - File locations and deployment targets\n   - URLs, registry entries, and branch information\n\n### Optional Sections (include as needed)\n\n5. **Testing** (🧪 icon)\n   - Testing approaches and coverage\n   - Test suites and validation methods\n\n6. **Integration** (🔗 icon)\n   - Integration points with other systems\n   - APIs, data flows, and dependencies\n\n7. **Known Issues** (⚠️ icon)\n   - Current limitations and known problems\n   - Workarounds and future improvements\n\n## File Template\n\nUse `docs/ssot/apps/template.app.yml` as the starting point for new app SSOT files:\n\n```yaml\ntitle: [App Name]\nsubtitle: [1-2 sentence description]\nicon: [emoji]\nsections:\n  - title: Core Features\n    icon: ✅\n    layout: list\n    items:\n      - label: [Feature name]\n        text: \"[Detailed description]\"\n  # ... other sections\nconfig:\n  version: 1\n  created: YYYY-MM-DD\n  maintainer: [name]\n  status: [active|deprecated|experimental]\n  deployment: [target(s)]\n```\n\n## Naming Conventions\n\n### File Naming\n\n- Pattern: `ssot.apps.[app-name].yml`\n- Use lowercase, hyphen-separated app names\n- Examples: `ssot.apps.track4.yml`, `ssot.apps.wind.yml`, `ssot.apps.test-pwa.yml`\n\n### Section Icons\n\nUse consistent emoji icons for sections:\n\n- ✅ Core Features\n- ⚙️ Technical Architecture\n- 📁 Files & Modules\n- 🚀 Deployment\n- 🧪 Testing\n- 🔗 Integration\n- ⚠️ Known Issues\n\n### App Icons\n\nUse descriptive emoji for app identification:\n\n- 🏁 Race management apps\n- 💨 Weather/environmental apps\n- 🗺️ Mapping/visualization apps\n- 📱 Mobile/PWA apps\n- 🎨 Creative/design apps\n- 🔧 Utility/tool apps\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791158935
+   "updatedAt": 1791367628
   },
   {
    "id": "kb-operations|app-ssot-standards.md|en",
@@ -358,7 +358,7 @@
      "2026-09-25T17:32:16.813750"
     ],
     "last_used": [
-     "2026-10-01"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/architecture-background-task-caching-usage.md"
@@ -370,12 +370,12 @@
      "Implementation"
     ],
     "use_count": [
-     "392"
+     "393"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Implementation\n\n### Default Task Setup\n\n```python\ndef setup_default_tasks(scheduler: TaskScheduler):\n    \"\"\"Configure default background tasks.\"\"\"\n\n    # File index generation (every 60s)\n    scheduler.register_task(\n        task_id=\"file_index_generator\",\n        interval_seconds=60,\n        function=generate_file_index_task\n    )\n\n    # Search index generation (every 300s)\n    scheduler.register_task(\n        task_id=\"search_index_generator\",\n        interval_seconds=300,\n        function=generate_search_index_task\n    )\n\n    # Cache cleanup (every 3600s)\n    scheduler.register_task(\n        task_id=\"cache_cleanup\",\n        interval_seconds=3600,\n        function=cache_cleanup_task\n    )\n```\n\n### Cache Storage Structure\n\n```\n/home/tony/.cache/mcp-kbman/pre_generated/\n├── file_index_index.json           # File listing cache\n├── search_index_index.json         # Search index cache\n├── document_summaries_index.json   # Document summaries cache\n└── metadata.json                   # Cache metadata\n```\n\n### Performance Measurements\n\n#### File Index Generation\n\n- **Uncached**: ~0.042s (direct filesystem scan)\n- **Cached**: ~0.004s (JSON cache read)\n- **Improvement**: 90% faster\n\n#### Search Index Generation\n\n- **Uncached**: ~0.15s (Whoosh indexing)\n- **Cached**: ~0.004s (JSON cache read)\n- **Improvement**: 97% faster\n\n#### Search Query Performance\n\n- **Uncached**: ~0.1-0.3s (Whoosh search)\n- **Cached**: ~0.004s (result cache)\n- **Improvement**: 98% faster\n\n## Usage/Commands\n\n### MCP Tool Integration\n\n```python\n# Get scheduler status\nmcp_call_tool(\"mcp-kbman\", \"get_scheduler_status\", {})\n\n# Trigger specific task manually\nmcp_call_tool(\"mcp-kbman\", \"trigger_task\", {\"task_id\": \"file_index_generator\"})\n\n# Get task results\nmcp_call_tool(\"mcp-kbman\", \"get_task_results\", {\"task_id\": \"file_index_generator\"})\n\n# Get pre-generated cache statistics\nmcp_call_tool(\"mcp-kbman\", \"get_pre_generated_stats\", {})\n\n# Clear specific cache\nmcp_call_tool(\"mcp-kbman\", \"clear_pre_generated_cache\", {\"data_type\": \"file_index\"})\n```\n\n### Direct Python Usage\n\n```python\nfrom tasks.pre_generator import DocumentPreGenerator\nfrom tasks.scheduler import TaskScheduler\n\n# Generate file index\ngenerator = DocumentPreGenerator()\nfile_index = generator.generate_file_index()\n\n# Setup scheduler\nscheduler = TaskScheduler()\nsetup_default_tasks(scheduler)\nscheduler.start()\n\n# Trigger task manually\nscheduler.trigger_task(\"file_index_generator\")\n```\n\n## Troubleshooting\n\n### Tasks Not Running\n\n**Issue**: Background tasks not executing\n**Solution**:\n\n- Check scheduler status: `get_scheduler_status()`\n- Verify scheduler is enabled: `SCHEDULER_ENABLED=True`\n- Check task intervals are configured correctly\n- Review task error counts in status\n\n### Cache Not Updating\n\n**Issue**: Cached data not refreshing\n**Solution**:\n\n- Check task execution frequency\n- Verify TTL settings are appropriate\n- Manually trigger task: `trigger_task(task_id)`\n- Check cache expiration times\n\n### High Memory Usage\n\n**Issue**: Cache consuming too much memory\n**Solution**:\n\n- Reduce cache size limit: `MAX_CACHE_SIZE_MB`\n- Increase cache cleanup frequency\n- Reduce TTL for pre-generated data\n- Monitor cache statistics regularly\n\n### Cache Corruption\n\n**Issue**: Cache files corrupted or invalid\n**Solution**:\n\n- Clear specific cache: `clear_pre_generated_cache(data_type)`\n- Clear all caches: `clear_pre_generated_cache()`\n- Regenerate caches by triggering tasks\n- Check cache file permissions\n\n### Performance Degradation\n\n**Issue**: System performance degraded with background tasks\n**Solution**:\n\n- Increase task intervals (reduce frequency)\n- Disable unnecessary tasks\n- Monitor CPU/memory usage during task execution\n- Consider offloading to separate process\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790825492
+   "updatedAt": 1791364380
   },
   {
    "id": "kb-operations|architecture-background-task-caching.md|en",
@@ -732,7 +732,7 @@
      "2026-09-25T17:32:24.334504"
     ],
     "last_used": [
-     "2026-10-06"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/auto-chaba-1787273973554.md"
@@ -744,12 +744,12 @@
      "Made the 12 GiB zram swap persistent on tony-omen"
     ],
     "use_count": [
-     "229"
+     "230"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Made the 12 GiB zram swap persistent on tony-omen\n\n## What it is\n\nMade the 12 GiB zram swap persistent on tony-omen\n\n## Context/Background\n\nCreated 2026-08-21 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-21\n- **Source**: Automated KB creation skill\n- **Category**: operations\n\n### Implementation\n\nMade the 12 GiB zram swap persistent on tony-omen. Created /usr/local/bin/zram-swap-setup.sh, /usr/local/bin/zram-swap-teardown.sh, and a systemd unit /etc/systemd/system/zram-swap.service that initializes /dev/zram0 (12 GiB, priority 100) at boot. Stopped the SDXL Uvicorn process on port 8000 (pt_main_thread, pid 3974) which was consuming 8.3 GiB of swap. Swap usage dropped from 46 GiB to 35 GiB and free swap increased from ~1 GiB to 24 GiB after adding zram and killing SDXL.\n\n## Related Documentation\n\n- **[auto-chaba-creation.md](../../.windsurf/workflows/auto-chaba-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791314323
+   "updatedAt": 1791364380
   },
   {
    "id": "kb-operations|auto-kb-1786855350745.md|en",
@@ -2296,7 +2296,7 @@
      "2026-09-25T17:32:52.242320"
     ],
     "last_used": [
-     "2026-10-05"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/google-drive-backup-troubleshooting.md"
@@ -2308,12 +2308,12 @@
      "Troubleshooting"
     ],
     "use_count": [
-     "2"
+     "3"
     ]
    },
    "contentMd": "---\ncategory: operations\ntype: troubleshooting\n---\n\n# Troubleshooting\n\n### Google Drive Mount Issues\n\n**Problem:** Google Drive not mounted\n\n```bash\n# Check mount status\nmount | grep gdrive\n\n# Remount Google Drive\nrclone mount gdrive: /home/tony/GoogleDrive --daemon\n\n# Check rclone status\nrclone status gdrive\n```\n\n### Backup Permission Issues\n\n**Problem:** Permission denied writing to Google Drive\n\n```bash\n# Fix log file ownership\nsudo chown tony:tony /var/log/chaba-backup.log\nsudo chown tony:tony /var/log/chaba-backup-monitor.log\nsudo chown tony:tony /var/log/chaba-backup-alerts.log\n```\n\n### Docker Volume Backup Failures\n\n**Problem:** Docker cannot create mount source path\n**Solution:** Ensure FUSE compatibility layer is working (local temp directory → Google Drive copy)\n\n### Backup Monitoring Issues\n\n**Problem:** Monitoring script fails with integer comparison errors\n**Solution:** Ensure proper date filtering and arithmetic operations in backup-monitor.sh\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791195699
+   "updatedAt": 1791397859
   },
   {
    "id": "kb-operations|gpu-embedding-service-architecture.md|en",
@@ -2704,7 +2704,7 @@
      "2026-09-25T17:33:02.506476"
     ],
     "last_used": [
-     "2026-10-06"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/headroom-integration-monitoring-parts.md"
@@ -2716,12 +2716,12 @@
      "Part 1: Headroom Proxy Integration ✅"
     ],
     "use_count": [
-     "4"
+     "5"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Part 1: Headroom Proxy Integration ✅\n\n### Configuration Scripts Created\n\n1. **Configuration Script**: `.windsurf/configure-devin-headroom.sh`\n   - Provides 3 methods for Devin Desktop integration\n   - Includes verification procedures\n   - Documents environment variable setup\n\n2. **Status Check Script**: `.windsurf/check-headroom-stats.sh`\n   - Real-time monitoring of Headroom proxy performance\n   - Displays compression ratios and cost savings\n   - Shows detailed statistics and health status\n\n### Integration Methods\n\n**Method 1: Environment Variable (Recommended)**\n\n```bash\nexport ANTHROPIC_BASE_URL=http://127.0.0.1:8787\n```\n\nAdd to `~/.bashrc` or `~/.zshrc` for persistence.\n\n**Method 2: Devin Desktop Settings**\n\n- Configure custom API endpoint in Devin Desktop settings\n- Set Base URL to: `http://127.0.0.1:8787`\n\n**Method 3: Session-Specific**\n\n```bash\nANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop\n```\n\n### Current Status\n\n- ✅ Headroom proxy running on port 8787\n- ✅ Health check: All systems healthy\n- ✅ Uptime: ~15 minutes (since start)\n- ✅ Configuration scripts operational\n- ⏳ Awaiting Devin Desktop integration by user\n\n## Part 2: Monitoring Procedures ✅\n\n### Monitoring Scripts Created\n\n1. **Comprehensive Monitoring**: `.windsurf/monitor-token-usage.sh`\n   - Complete overview of optimization infrastructure\n   - MCP filtering effectiveness\n   - Headroom performance metrics\n   - Summary and recommendations\n\n2. **Monitoring Guide**: `docs/kb/token-optimization-monitoring-guide.md`\n   - Detailed monitoring procedures\n   - Performance benchmarks\n   - Troubleshooting procedures\n   - Reporting templates\n\n### Monitoring Schedule\n\n**Daily**:\n\n- Check Headroom proxy status\n- Verify no errors in logs\n- Quick stats check\n\n**Weekly**:\n\n- Run comprehensive monitoring script\n- Verify MCP tool counts\n- Check MCP server health\n- Review token usage trends\n\n**Monthly**:\n\n- Detailed performance analysis\n- Cost savings calculation\n- Review filter effectiveness\n- Check for software updates\n\n### Current Monitoring Results\n\n**Headroom Proxy Status**:\n\n- Status: ✅ Running\n- Uptime: ~15 minutes\n- API requests: 0 (awaiting Devin integration)\n- Compression: 0% (no traffic yet)\n- Cost savings: $0.00 (no traffic yet)\n\n**MCP Filtering Status**:\n\n- Total tools: 22 (from 65+ original)\n- Tool reduction: 66%\n- All servers healthy\n- All filters operational\n\n## Usage Instructions\n\n### Start Using Headroom Proxy\n\n1. **Choose Integration Method**:\n\n   ```bash\n   # Run configuration script for options\n   .windsurf/configure-devin-headroom.sh\n   ```\n\n2. **Apply Configuration**:\n   - Add environment variable to shell profile (recommended)\n   - Or configure in Devin Desktop settings\n   - Restart Devin Desktop\n\n3. **Verify Integration**:\n   ```bash\n   # Check proxy is receiving traffic\n   .windsurf/check-headroom-stats.sh\n   ```\n\n### Monitor Performance\n\n**Real-time Monitoring**:\n\n```bash\n\n```\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791307150
+   "updatedAt": 1791380635
   },
   {
    "id": "kb-operations|headroom-integration-monitoring-summary.md|en",
@@ -3242,7 +3242,7 @@
      "2026-09-25T17:33:08.655801"
     ],
     "last_used": [
-     "2026-10-03"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/impact-scoring-calculation.md"
@@ -3254,12 +3254,12 @@
      "Priority Calculation"
     ],
     "use_count": [
-     "2"
+     "3"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Priority Calculation\n\n### Weighted Average Formula\n\n```\nOverall Impact = (business_impact × 0.3) + (technical_impact × 0.3) +\n                 (user_experience_impact × 0.2) + (cost_savings_impact × 0.2)\n```\n\n### Priority Mapping\n\n- Overall Impact ≥ 8: HIGH priority\n- Overall Impact 5-7: MEDIUM priority\n- Overall Impact < 5: LOW priority\n\n## Impact Scoring Script\n\n### Script Location\n\n`scripts/impact-scoring.mjs`\n\n### Usage Modes\n\n#### Analyze Mode\n\n```bash\nnode scripts/impact-scoring.mjs analyze\n```\n\n- Shows impact distribution by category\n- Displays category impact averages\n- Lists impact summaries for each improvement\n\n#### Score Mode\n\n```bash\nnode scripts/impact-scoring.mjs score\n```\n\n- Calculates overall impact scores for all improvements\n- Suggests priority based on impact\n- Identifies priority mismatches (manual vs impact-based)\n- Sorts improvements by overall impact score\n\n#### Prioritize Mode\n\n```bash\nnode scripts/impact-scoring.mjs prioritize\n```\n\n- Shows top 10 highest impact improvements\n- Displays priority mismatches with status and effort\n- Provides effort vs impact analysis\n- Identifies quick wins and low-impact/high-effort items\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791046686
+   "updatedAt": 1791400578
   },
   {
    "id": "kb-operations|impact-scoring-categories.md|en",
@@ -4290,7 +4290,7 @@
      "2026-09-25T17:33:25.656123"
     ],
     "last_used": [
-     "2026-10-06"
+     "2026-10-07"
     ],
     "rel_path": [
      "docs/kb/mddb-future-priority-3.md"
@@ -4302,12 +4302,12 @@
      "Priority 3: Integration and Expansion"
     ],
     "use_count": [
-     "2"
+     "3"
     ]
    },
    "contentMd": "---\ncategory: operations\n---\n\n# Priority 3: Integration and Expansion\n\n### 3.1 Additional Project Documentation\n\n**Current State**: Chaba and Trade project documentation in MDDB, but other projects not integrated.\n\n**Proposed Enhancement**: Extend MDDB to include other project documentation\n\n**Potential Projects**:\n\n- chaba-h3 project documentation\n- chaba-raceman project documentation\n- Personal KB (Google Drive) integration\n- External documentation sources\n\n**Implementation Approach**:\n\n- Assess other project documentation structures\n- Create project-specific collections\n- Implement migration scripts for each project\n- Configure project-specific metadata\n- Update search interface for multi-project support\n\n**Benefits**:\n\n- Unified search across all projects\n- Consistent search experience\n- Reduced documentation fragmentation\n- Enhanced cross-project discovery\n\n**Estimated Effort**: 4-8 hours per project\n\n### 3.2 External Documentation Sources\n\n**Current State**: Only local documentation sources integrated.\n\n**Proposed Enhancement**: Integrate external documentation sources\n\n**Potential Sources**:\n\n- GitHub repositories (README files, documentation)\n- Confluence or other wiki systems\n- External APIs and documentation sites\n- Cloud storage (Google Drive, Dropbox)\n\n**Implementation Approach**:\n\n- Implement source connectors for each external source\n- Configure sync schedules and update mechanisms\n- Handle authentication and access control\n- Implement change detection and incremental updates\n- Add source metadata to documents\n\n**Benefits**:\n\n- Comprehensive search across all documentation\n- Reduced need to check multiple sources\n- Unified documentation access\n- Enhanced content discovery\n\n**Estimated Effort**: 8-16 hours per source type\n\n### 3.3 Collaborative Features\n\n**Current State**: Single-user system without collaboration features.\n\n**Proposed Enhancement**: Add collaborative editing and commenting features\n\n**Functionality**:\n\n- Document commenting and discussion\n- Collaborative editing with conflict resolution\n- User authentication and access control\n- Document versioning and change history\n- User activity tracking and notifications\n\n**Implementation Approach**:\n\n- Implement user authentication system\n- Add commenting and discussion threads\n- Implement collaborative editing with operational transformation\n- Add document versioning and history\n- Create notification system\n\n**Benefits**:\n\n- Enhanced team collaboration\n- Better documentation quality through feedback\n- Improved documentation maintenance\n- Enhanced team communication\n\n**Estimated Effort**: 20-30 hours implementation + testing\n",
    "addedAt": 1790677649,
-   "updatedAt": 1791246930
+   "updatedAt": 1791383638
   },
   {
    "id": "kb-operations|mddb-future-priority-4.md|en",

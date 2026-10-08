@@ -42,19 +42,34 @@ PROBE_HOSTS = ["idc02", "michael-ha"]
 
 HOST_META = {
     "tony-dell":  {"role": "HA + apps workstation", "ts": "tony-dell.taila0626a.ts.net",
-                   "ip": "100.68.142.13"},
+                   "ip": "100.68.142.13",
+                   "urls": [
+                       ("tony-ha (prod HA)", "https://tony-ha.surf-thailand.com",
+                        "CF Access"),
+                       ("ada-ha (lab HA)", "https://ada-ha.surf-thailand.com",
+                        "CF Access"),
+                       ("system report", "https://monitor.surf-thailand.com",
+                        "CF Access"),
+                   ]},
     "tony-omen":  {"role": "dev / GPU desktop", "ts": "tony-omen.taila0626a.ts.net",
                    "ip": "100.75.102.88"},
     "idc01":      {"role": "public VPS · warm-DR (mddb follower, standby edge)", "ts": "idc01.taila0626a.ts.net",
-                   "ip": "", "public": "157.85.110.99"},
+                   "ip": "", "public": "157.85.110.99",
+                   "urls": [("standby edge", "https://idc01.surf-thailand.com",
+                             "warm-DR only")]},
     "idc03":      {"role": "public VPS · mddb leader · Ada", "ts": "idc03.taila0626a.ts.net",
-                   "ip": "100.102.134.91", "public": "157.85.102.125"},
-    "idc02":      {"role": "offload / lab VPS", "ts": "idc02.taila0626a.ts.net",
-                   "ip": ""},
+                   "ip": "100.102.134.91", "public": "157.85.102.125",
+                   "urls": [("Ada API", "https://api.surf-thailand.com", "")]},
+    "idc02":      {"role": "public edge / offload VPS", "ts": "idc02.taila0626a.ts.net",
+                   "ip": "", "public": "45.136.236.190",
+                   "urls": [("public edge origin", "https://edge.surf-thailand.com",
+                             "CNAME target for *-ha/monitor")]},
     "mn01":       {"role": "home node · XMEye VMS", "ts": "mn01.taila0626a.ts.net",
                    "ip": "100.106.196.22"},
     "michael-ha": {"role": "HAOS appliance", "ts": "michael-ha.taila0626a.ts.net",
                    "ip": "100.80.105.88", "jump": "tony-omen",
+                   "urls": [("michael-ha", "https://michael-ha.surf-thailand.com",
+                             "CF Access")],
                    "unreachable_body": (
                        "## Last known layout\n\n"
                        "- Home Assistant OS — services are HA core + supervisor-\n"
@@ -63,6 +78,8 @@ HOST_META = {
                        "  solar/inverter/weather integrations)\n"
                        "- Nabu Casa UI: `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs."
                        "ui.nabu.casa/`\n"
+                       "- Public: [michael-ha.surf-thailand.com]"
+                       "(https://michael-ha.surf-thailand.com) (CF Access)\n"
                        "- Consumed by: `ada-ha-michael` on idc03 (:8003),\n"
                        "  `mha-state-push` / `michael-ha-mcp-tunnel` on tony-dell\n"
                        "- Normally probed via the tony-omen ssh hop (jump host)\n"
@@ -261,6 +278,10 @@ def page_for(host, d, now_07):
                     f"- Uptime {up.strip()} · load {load} · mem {mem} · disk {disk}\n"
                     f"- Tailscale: `{meta['ts']}` ({meta['ip']})"
                     + (f" · public {meta['public']}" if meta.get("public") else ""))
+        if meta.get("urls"):
+            lines = [f"- [{label}]({url})" + (f" — {note}" if note else "")
+                     for label, url, note in meta["urls"]]
+            secs.append("## Public URLs\n\n" + "\n".join(lines))
         if conts:
             secs.append(f"## Containers ({len(conts)})\n\n" + ", ".join(conts))
         if groups:

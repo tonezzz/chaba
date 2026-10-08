@@ -75,4 +75,14 @@ comms:
 - at: 2026-10-06 15:53
   from: tony
   text: closed by Tony
+- at: 2026-10-08 06:30
+  from: devin
+  text: 'standby-edge gap closed: the "cert sync" referenced in Caddyfile
+    comments never existed — added ~/scripts/cert-sync.sh + cert-sync.timer
+    (weekly Sun 04:30) on idc03, pushes renewed api.surf-thailand.com cert to
+    idc01 + reloads edge. Verified: curl --resolve api.surf-thailand.com ->
+    157.85.110.99 returns 200 (warm ada-pi-pwa live, not 502 anymore).
+    Failover = flip the A record. Also note: idc02 edge moved all proxied
+    blocks to tls internal (see ha-public-urls-cf-access) — ACME-at-origin is
+    gone for proxied names.'
 claim: {}

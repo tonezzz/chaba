@@ -30,6 +30,7 @@ Close.
 import fcntl
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.request
@@ -73,6 +74,64 @@ MY_LABELS = {x.strip() for x in
 # (~2min cadence — 3 misses ≈ 6min down before requeue).
 REQUEUE_AFTER = int(os.environ.get("KANBAN_REQUEUE_MISSES", "3"))
 MISS_FILE = Path("/tmp/kanban-runner-misses.json")
+
+# Autonomy contract (docs/ssot/infrastructure/ssot.devin-autonomy.yml) —
+# declarative envelope around claims: kill switch, quiet hours, daily
+# budget, retry cap, autonomy ceiling. Tony owns this file; the
+# dispatcher may read it, never edit it.
+POLICY_FILE = REPO / "docs/ssot/infrastructure/ssot.devin-autonomy.yml"
+TIER_ORDER = {"t0": 0, "t1": 1, "t2": 2, "t3": 3, "t4": 4}
+
+
+def load_policy() -> dict:
+    try:
+        p = yaml.safe_load(POLICY_FILE.read_text()) or {}
+        return p.get("dispatch") or {}
+    except Exception:
+        return {}
+
+
+def _hm(s: str) -> int:
+    h, m = s.split(":")
+    return int(h) * 60 + int(m)
+
+
+def in_quiet_hours(win: str) -> bool:
+    m = re.match(r"^\s*(\d\d:\d\d)\s*-\s*(\d\d:\d\d)\s*$", win or "")
+    if not m:
+        return False
+    lo, hi = _hm(m.group(1)), _hm(m.group(2))
+    cur = datetime.now(timezone(timedelta(hours=7)))
+    t = cur.hour * 60 + cur.minute
+    return lo <= t < hi if lo < hi else (t >= lo or t < hi)
+
+
+def claims_today(state_file: Path) -> int:
+    try:
+        st = json.loads(state_file.read_text())
+    except Exception:
+        return 0
+    today = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d")
+    return int(st.get(today, 0))
+
+
+def bump_claims(state_file: Path) -> None:
+    try:
+        st = json.loads(state_file.read_text())
+    except Exception:
+        st = {}
+    today = datetime.now(timezone(timedelta(hours=7)).date())
+    key = today.strftime("%Y-%m-%d")
+    st[key] = int(st.get(key, 0)) + 1
+    # prune old dates
+    for k in list(st):
+        if k != key:
+            try:
+                if (today - datetime.strptime(k, "%Y-%m-%d").date()).days > 7:
+                    st.pop(k)
+            except ValueError:
+                st.pop(k)
+    state_file.write_text(json.dumps(st))
 
 
 def _blocker_released(blocker_id: str) -> bool:
@@ -309,6 +368,7 @@ def mark_start(path: Path, card: dict) -> None:
     card.pop("awaiting_action", None)  # being dispatched = triaged
     a["status"] = "starting"
     a["runner"] = HOST
+    a["attempts"] = int(a.get("attempts") or 0) + 1
 
 
 def finish_one(path: Path, card: dict) -> str:
@@ -462,15 +522,46 @@ def main() -> int:
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         claimed = 0
+        pol = load_policy()
+        kill = Path(pol.get("kill_switch") or "/tmp/no-kanban-dispatch")
+        budget = int(pol.get("sessions_per_day") or 0)
+        state_file = Path(pol.get("state_file")
+                          or "/tmp/kanban-dispatch-state.json")
+        max_tier = TIER_ORDER.get(str(pol.get("max_autonomy") or "t3"), 3)
+        retry_cap = int(pol.get("retries_per_card") or 2)
         can_claim = not overloaded()
         if not can_claim:
             print(f"load gate: load5/cpu > {MAX_LOAD_PC} — not claiming")
+        if kill.exists():
+            can_claim = False
+            print(f"kill switch {kill} present — not claiming")
+        if in_quiet_hours(pol.get("quiet_hours") or ""):
+            can_claim = False
+            print(f"quiet hours {pol['quiet_hours']} — not claiming")
         for p in sorted(CARD_DIR.glob("*.yml")):
             card = load_card(p)
             a = card.get("action") or {}
             st = a.get("status")
             if st in ("queued", "starting"):  # 'starting' = crashed mid-start
                 if not can_claim:
+                    continue
+                ctier = TIER_ORDER.get(str(card.get("autonomy") or ""), -1)
+                if ctier > max_tier:
+                    print(f"{card['id']}: autonomy t{ctier} > policy max "
+                          f"t{max_tier} — never claimed")
+                    continue
+                if budget and claims_today(state_file) + claimed >= budget:
+                    print(f"{card['id']}: daily session budget {budget} hit")
+                    continue
+                if int(a.get("attempts") or 0) >= retry_cap:
+                    a["status"] = "held"
+                    comms_add(card, "chaba",
+                              f"dispatch parked after {a['attempts']} attempts "
+                              f"(policy retries_per_card={retry_cap}) — "
+                              "re-queue to retry")
+                    save_card(p, card)
+                    changed = True
+                    print(f"{card['id']}: parked (retry cap)")
                     continue
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
@@ -489,6 +580,7 @@ def main() -> int:
                     print(f"{card['id']}: skipped — host cap {HOST_CAP}")
                     continue
                 mark_start(p, card)
+                bump_claims(state_file)
                 save_card(p, card)
                 starts.append(p)
                 claimed += 1
