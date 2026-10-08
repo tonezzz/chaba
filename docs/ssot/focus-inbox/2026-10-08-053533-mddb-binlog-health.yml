@@ -1,0 +1,21 @@
+title: Focus Inbox Item
+subtitle: Health alert for mddb binlog (replication canary)
+focus:
+  label: mddb-binlog health
+  text: 'mddb binlog canary on tony-dellflagged an ESCALATION — the breach set changed since the last alert (69674s > 600s)
+    at 2026-10-08T05:35:33Z. Reasons: binlog_size_bytes=2119572205 > 1073741824; lsn_gap=13826994 > 5000000; follower idc01
+    status=''unhealthy''. binlog_size_bytes=2119572205, lsn_gap=13826994 (current_lsn=183186755 - binlog_oldest_lsn=169359761).
+    The retention janitor on idc03 may have stalled — check mddb.service before the disk fills.'
+  status: draft
+  priority: high
+  tags:
+  - health
+  - inbox
+  - mddb
+  - binlog
+  missing_info:
+  - Is the retention janitor still running on idc03 (journalctl --user -u mddb.service)?
+  - Are the idc02 (idc02:11023) and idc01 (idc01:11123) followers still connected and caught up?
+source:
+  session: mddb-binlog-canary
+  date: '2026-10-08'

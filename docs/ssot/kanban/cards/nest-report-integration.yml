@@ -3,7 +3,7 @@ title: Wire the Nest into the layered reporting standard (L0–L3)
 brief: The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to the report node registry — no
   meta.yml, no staleness, no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes and close the telemetry
   gap.
-column: doing
+column: review
 priority: medium
 created: 2026-10-08
 note: 'Assessment 2026-10-08: nest-overview.py (30min, 3rd ExecStart of chaba-kanban-brief.service) probes only
@@ -30,9 +30,11 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: mn01
+  result: 'exit=0  the SSOT and in `docs/ssot/jobs/infrastructure/2026-10-08-nest-report-integration.yml`). | devin-task-20261008-052550-per-the-layered-reporting-stan.service:
+    Consumed 58.762s CPU time over 22min 53.444s wall clock time, 346.5M memory peak.'
 comms:
 - at: 2026-10-08 12:25
   from: devin
@@ -44,4 +46,28 @@ comms:
 - at: 2026-10-08 12:25
   from: chaba
   text: started devin-task-20261008-052550-per-the-layered-reporting-stan on mn01 (dispatch)
-updated: 2026-10-08 12:25
+- at: 2026-10-08 12:36
+  from: devin
+  text: 'scoped: lanes serve via open-jev (external repo) + scripts/jev/serve-*.py (in-repo). Adding cheap /metrics
+    to the in-repo servers + shared lane_metrics.py for vendoring; openjev lanes will read no-metrics until vendored.
+    Registry gets chaba-nest L2 + 6 lane + 4 brain + 1 bench L1 nodes.'
+- at: 2026-10-08 12:48
+  from: devin
+  text: 'done in worktree: chaba-nest L2 + 11 L1 children (6 lanes, 4 brains, bench/orch) in ssot.reports.yml; nest-overview.py
+    probes /metrics + renders decisions-Δ/esc% + brains table, writes reports/nest metas + artifact + timeline;
+    scripts/jev/serve-* + new lane_metrics.py carry the cheap /metrics. Verified: report-system dry-run section,
+    meta_schema-conform metas, ssot-validate-all 1683/0 errors. Limit: openjev lanes need lane_metrics vendored
+    (out-of-worktree repo) — recorded as next_step; they ren'
+- at: 2026-10-08 12:48
+  from: mn01
+  text: 'finished (ok): exit=0  the SSOT and in `docs/ssot/jobs/infrastructure/2026-10-08-nest-report-integration.yml`).
+    | devin-task-20261008-0'
+- at: 2026-10-08 12:48
+  from: chaba
+  text: 'session-end checkpoint 7dec86c3: 7 leftover file(s) committed'
+- at: 2026-10-08 12:48
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+updated: 2026-10-08 12:48
+claim: {}
