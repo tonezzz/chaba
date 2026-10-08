@@ -75,6 +75,20 @@ REQUEUE_AFTER = int(os.environ.get("KANBAN_REQUEUE_MISSES", "3"))
 MISS_FILE = Path("/tmp/kanban-runner-misses.json")
 
 
+def _blocker_released(blocker_id: str) -> bool:
+    """blocked_by gate: released when the blocker card finished without
+    a failed merge (dependents need its code on origin), or when a
+    manual blocker was closed (column=done). Missing file = released."""
+    bp = CARD_DIR / f"{blocker_id}.yml"
+    if not bp.exists():
+        return True
+    b = load_card(bp)
+    if b.get("column") == "done":
+        return True
+    ba = b.get("action") or {}
+    return ba.get("status") == "done" and ba.get("verified") is not False
+
+
 def runner_reachable(host: str) -> bool:
     r = sh(["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
             host, "true"], timeout=15)
@@ -461,6 +475,9 @@ def main() -> int:
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
                     continue  # pinned to another host's dispatcher
+                blocker_id = card.get("blocked_by")
+                if blocker_id and not _blocker_released(blocker_id):
+                    continue  # dependency not done yet
                 if (a.get("type") or "dispatch") != "dispatch":
                     continue  # container/script = runner-agent territory
                 needs = set(a.get("labels") or [])

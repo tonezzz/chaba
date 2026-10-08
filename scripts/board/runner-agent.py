@@ -385,18 +385,33 @@ def overloaded() -> bool:
         return False
 
 
+def blocker_released(blocker: dict) -> bool:
+    """blocked_by releases when the blocker finished AND its merge
+    didn't fail verification (dependents need its code on origin).
+    Manual blockers release on column=done (closed by a human)."""
+    ba = blocker.get("action") or {}
+    if blocker.get("column") == "done":
+        return True
+    return ba.get("status") == "done" and ba.get("verified") is not False
+
+
 def claim_pass(st: dict) -> bool:
     if len(st) >= CAP:
         return False
     if overloaded():
         return False
     cards = (api("/cards") or {}).get("cards") or []
+    by_id = {c.get("id"): c for c in cards}
     changed = False
     for card in cards:
         if len(st) >= CAP:
             break
         cid = card.get("id") or ""
         typ = claimable(card)
+        if typ and card.get("blocked_by"):
+            blocker = by_id.get(card["blocked_by"]) or {}
+            if not blocker_released(blocker):
+                continue  # gate holds — try again next pass
         if not cid or not typ:
             continue
         resp = api("/action", {"id": cid, "do": "claim", "host": HOST})
