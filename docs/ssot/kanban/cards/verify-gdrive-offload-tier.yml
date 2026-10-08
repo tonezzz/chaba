@@ -1,22 +1,20 @@
 id: verify-gdrive-offload-tier
 title: Verify mddb-standby-pull gdrive tier after next 03:30 run
-brief: The nightly memory-database backup should now keep only the newest dump locally
-  and push older ones to cloud storage. After the next 3:30am run, confirm it worked.
-column: review
-note: retention changed 2026-10-07 — filecopy/ should hold newest-1 only, older dumps
-  land in gdrive:backups/mddb/
-updated: 2026-10-08 18:25
-spec: 'After the next mddb-standby-pull.timer run (03:30 daily on tony-dell): 1) journalctl
-  --user -u mddb-standby-pull.service shows clean exit; 2) ls ~/.local/share/mddb-backups/filecopy/
-  has exactly 1 file; 3) rclone lsl gdrive:backups/mddb/ shows the rotated dump; 4)
-  ~/.config/containers/mddb/data/mddb.db timestamp refreshed. If the unit failed,
-  check whether rclone auth/network was the cause and report. Card source: docs/ssot/jobs/infrastructure/2026-10-07-gdrive-storage-offload.yml'
+brief: The nightly memory-database backup should now keep only the newest dump locally and push older ones to cloud
+  storage. After the next 3:30am run, confirm it worked.
+column: done
+note: retention changed 2026-10-07 — filecopy/ should hold newest-1 only, older dumps land in gdrive:backups/mddb/
+updated: 2026-10-08 21:20
+spec: 'After the next mddb-standby-pull.timer run (03:30 daily on tony-dell): 1) journalctl --user -u mddb-standby-pull.service
+  shows clean exit; 2) ls ~/.local/share/mddb-backups/filecopy/ has exactly 1 file; 3) rclone lsl gdrive:backups/mddb/
+  shows the rotated dump; 4) ~/.config/containers/mddb/data/mddb.db timestamp refreshed. If the unit failed, check
+  whether rclone auth/network was the cause and report. Card source: docs/ssot/jobs/infrastructure/2026-10-07-gdrive-storage-offload.yml'
 action:
   type: dispatch
   status: done
   repo: chaba
-  result: 'exit=0 sh, deepseek-v4-pro | devin-task-20261008-112416-after-the-next-mddb-standby-pu.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-20261008-112416-after-the-next-mddb-standby-pu.service:
+  result: 'exit=0 sh, deepseek-v4-pro | devin-task-20261008-112416-after-the-next-mddb-standby-pu.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261008-112416-after-the-next-mddb-standby-pu.service:
     Failed with result ''exit-code''.'
   sweep:
     stale_running: 2026-10-08 15:32
@@ -28,69 +26,61 @@ comms:
   text: verify card for the gdrive tier added to standby-pull
 - at: 2026-10-08 15:30
   from: devin
-  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except
-    yolo/gpu)'
+  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
 - at: 2026-10-08 15:25
   from: mn01
   text: claimed
 - at: 2026-10-08 15:25
   from: chaba
-  text: started devin-task-20261008-082536-after-the-next-mddb-standby-pu on mn01
-    (dispatch)
+  text: started devin-task-20261008-082536-after-the-next-mddb-standby-pu on mn01 (dispatch)
 - at: 2026-10-08 15:26
   from: devin
-  text: Verifying post-03:30 mddb-standby-pull run on tony-dell (journal, filecopy
-    retention, gdrive rotation, mddb.db mtime).
+  text: Verifying post-03:30 mddb-standby-pull run on tony-dell (journal, filecopy retention, gdrive rotation, mddb.db
+    mtime).
 - at: 2026-10-08 15:29
   from: devin
-  text: 'All 4 checks PASS on tony-dell: service clean (03:30->03:41:40, exit 0),
-    filecopy/ = exactly 1 file (mddb-20261006), gdrive holds 3 rotated dumps, mddb.db
-    mtime refreshed 03:36. No rclone issue. BUT finding: standby is 2d stale — idc03
-    native /v1/backup now exceeds the scripts 300s curl cap (db ~7.8G), silently falls
-    back to mddb-filecopy-* names the pull include mddb-2*.db does not match. Fallback
-    dumps are open-verified (verified=1). Also ~15.4G of completed native dumps orphaned
-    inside idc03 '
+  text: 'All 4 checks PASS on tony-dell: service clean (03:30->03:41:40, exit 0), filecopy/ = exactly 1 file (mddb-20261006),
+    gdrive holds 3 rotated dumps, mddb.db mtime refreshed 03:36. No rclone issue. BUT finding: standby is 2d stale
+    — idc03 native /v1/backup now exceeds the scripts 300s curl cap (db ~7.8G), silently falls back to mddb-filecopy-*
+    names the pull include mddb-2*.db does not match. Fallback dumps are open-verified (verified=1). Also ~15.4G
+    of completed native dumps orphaned inside idc03 '
 - at: 2026-10-08 15:29
   from: devin
-  text: 'raised request standby-starved-idc03-native-backup-time-010f87: Standby starved:
-    idc03 native backup times out client-side (>300s) and falls back to verified filecopy
-    names the pull ig'
+  text: 'raised request standby-starved-idc03-native-backup-time-010f87: Standby starved: idc03 native backup times
+    out client-side (>300s) and falls back to verified filecopy names the pull ig'
 - at: 2026-10-08 15:32
   from: mn01
-  text: 'finished (ok): exit=0 tructure/2026-10-08-mddb-standby-starved-by-idc03-fallback.yml`
-    plus `dispatch-outcome.md`. | devin-task-20261008'
+  text: 'finished (ok): exit=0 tructure/2026-10-08-mddb-standby-starved-by-idc03-fallback.yml` plus `dispatch-outcome.md`.
+    | devin-task-20261008'
 - at: 2026-10-08 15:32
   from: chaba
-  text: 'merge-sweep: devin-task-20261008-082536-after-the-next-mddb-standby-pu no
-    longer active on mn01 but card still says running — sweeping its branch'
+  text: 'merge-sweep: devin-task-20261008-082536-after-the-next-mddb-standby-pu no longer active on mn01 but card
+    still says running — sweeping its branch'
 - at: 2026-10-08 15:32
   from: chaba
   text: 'session-end checkpoint 51258d68: 2 leftover file(s) committed'
 - at: 2026-10-08 15:32
   from: chaba
-  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'':
-    No such device or address — close will block until merged'
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
 - at: 2026-10-08 15:32
   from: chaba
-  text: 'merge-sweep: dispatch/20261008-082536-after-the-next-mddb-standby-pu conflicts
-    with origin/master: dispatch-outcome.md — merge aborted, card stays for human
-    resolution'
+  text: 'merge-sweep: dispatch/20261008-082536-after-the-next-mddb-standby-pu conflicts with origin/master: dispatch-outcome.md
+    — merge aborted, card stays for human resolution'
 - at: 2026-10-08 15:32
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261008-082536-after-the-next-mddb-standby-pu:
     1 commit(s) conflict with origin/master '
 - at: 2026-10-08 18:20
   from: devin
-  text: 'merge-rescue: job trail doc landed via cherry-pick from mn01 bundle (dispatch-outcome.md
-    was the only other change — scratch). The a/b/c pick request stays open for Tony;
-    devin''s recommendation is (c) both.'
+  text: 'merge-rescue: job trail doc landed via cherry-pick from mn01 bundle (dispatch-outcome.md was the only other
+    change — scratch). The a/b/c pick request stays open for Tony; devin''s recommendation is (c) both.'
 - at: 2026-10-08 18:23
   from: tony
   text: 'answered standby-starved-idc03-native-backup-time-010f87: c'
 - at: 2026-10-08 18:23
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
-    an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-08 18:23
   from: tony
   text: queued for processing
@@ -102,26 +92,29 @@ comms:
   text: claimed
 - at: 2026-10-08 18:24
   from: chaba
-  text: started devin-task-20261008-112416-after-the-next-mddb-standby-pu on mn01
-    (dispatch)
+  text: started devin-task-20261008-112416-after-the-next-mddb-standby-pu on mn01 (dispatch)
 - at: 2026-10-08 18:25
   from: mn01
   text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261008-112416-after-the-next-mddb-standby-pu.service:
     Main process exited, cod'
+- at: 2026-10-08 21:20
+  from: tony
+  text: closed by tony
+- at: 2026-10-08 21:20
+  from: tony
+  text: closed by tony
 requests:
 - id: standby-starved-idc03-native-backup-time-010f87
-  ask: 'Standby starved: idc03 native backup times out client-side (>300s) and falls
-    back to verified filecopy names the pull ignores. Pick fix: (a) widen tony-dell
-    pull include to mddb-filecopy-*.db, (b) fix idc03 script (raise timeout/poll +
-    always rm /app/backups leftover), (c) both. Recommend (c).'
+  ask: 'Standby starved: idc03 native backup times out client-side (>300s) and falls back to verified filecopy names
+    the pull ignores. Pick fix: (a) widen tony-dell pull include to mddb-filecopy-*.db, (b) fix idc03 script (raise
+    timeout/poll + always rm /app/backups leftover), (c) both. Recommend (c).'
   status: answered
   at: 2026-10-08 15:29
   from: devin
   answer: c
 - id: merge-conflict
-  ask: 'merge-sweep can''t land dispatch/20261008-082536-after-the-next-mddb-standby-pu:
-    1 commit(s) conflict with origin/master in chaba — conflicted paths: dispatch-outcome.md.
-    Merge mn01:/home/tony/CascadeProjects/dispatch-wt-20261008-082536-after-the-next-mddb-standby-pu
+  ask: 'merge-sweep can''t land dispatch/20261008-082536-after-the-next-mddb-standby-pu: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: dispatch-outcome.md. Merge mn01:/home/tony/CascadeProjects/dispatch-wt-20261008-082536-after-the-next-mddb-standby-pu
     by hand, or retry/abandon the card.'
   status: answered
   at: 2026-10-08 15:32

@@ -3,7 +3,7 @@ title: 'Lab: Cloudflare Workers KV — public-edge claw command/report channel'
 brief: 'Prove a credential-free edge channel: one KV namespace + one Worker serving claw commands (GET) and ingesting
   reports (POST w/ thin ingest secret). First real content: a sanitized public board digest readable off-tailnet.
   Lab — no standard adoption until proven.'
-column: review
+column: done
 priority: medium
 created: 2026-10-08
 lab:
@@ -35,10 +35,10 @@ action:
   type: dispatch
   status: done
   repo: chaba
-  runner: tony-dell
-  task_id: 20261008-120820-pre-req-tony-dashboard-only-ad
-  result: 20261008-120820-pre-req-tony-dashboard-only-ad finished (inactive) — see `devin-dispatch logs 20261008-120820-pre-req-tony-dashboard-only-ad`
-  verified: true
+  result: 'exit=0 sh, deepseek-v4-pro | devin-task-20261008-211939-pre-req-tony-dashboard-only-ad.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261008-211939-pre-req-tony-dashboard-only-ad.service:
+    Failed with result ''exit-code''.'
+  runner: idc01
 comms:
 - at: 2026-10-08 12:05
   from: devin
@@ -75,7 +75,43 @@ comms:
 - at: 2026-10-08 12:28
   from: chaba
   text: auto-merged 0a623f3c (dispatch/20261008-120820-pre-req-tony-dashboard-only-ad) → origin/master
-updated: 2026-10-08 12:28
+- at: 2026-10-08 20:37
+  from: devin
+  text: 'DEPLOYED on workers.dev: claw-channel.tonezzzz.workers.dev bound to existing KV chaba_nest (5f4ca204).
+    INGEST_KEY secret set; verify suite passes: GET/POST cmd+report+digest OK, wrong key 403, missing KV 503-free.
+    Deviation from spec: custom route claw.surf-thailand.com NOT attached — both tokens lack Zone DNS Edit (omen
+    cfut_ token + wrangler OAuth both auth-error on dns_records). Needs token scope upgrade or manual AAAA claw->100::
+    proxied + route. Wrangler OAuth now logged in on tony-dell (~/'
+- at: 2026-10-08 21:03
+  from: devin
+  text: 'FULLY DEPLOYED: https://claw.surf-thailand.com — AAAA claw->100:: proxied + route attached, verify suite
+    green (GET demo 200, bad key 403, good POST 200, roundtrip OK). KV=chaba_nest 5f4ca204. CORRECTION to earlier
+    comms + deploy.sh header: the cfat_ token on idc01/02/03/dell is NOT dead — tokens/verify fails on it but it
+    has real zone access (DNS read+write, workers scripts, zone read; NO kv/storage). This AAAA was created with
+    idc01 cfat_. dell cloudflare.env currently holds omen cfut_ (verify'
+- at: 2026-10-08 21:19
+  from: tony
+  text: 'answered cfut-token-needs-more-scopes-before-depl-7785c1: status?'
+- at: 2026-10-08 21:19
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-08 21:19
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 21:19
+  from: idc01
+  text: claimed
+- at: 2026-10-08 21:19
+  from: chaba
+  text: started devin-task-20261008-211939-pre-req-tony-dashboard-only-ad on idc01 (dispatch)
+- at: 2026-10-08 21:21
+  from: idc01
+  text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261008-211939-pre-req-tony-dashboard-only-ad.service:
+    Main process exited, cod'
+- at: 2026-10-08 21:22
+  from: tony
+  text: closed by tony
+updated: 2026-10-08 21:22
 claim:
   since: 2026-10-08 12:08
 requests:
@@ -85,6 +121,7 @@ requests:
     Account>Workers R2 Storage>Edit (report artifacts). dash.cloudflare.com -> API Tokens -> edit cfut_ token. Then
     I can deploy via stacks/edge/claw-channel/deploy.sh. Separately: dell/idc01/idc02 ~/.config/secrets/cloudflare.env
     still hold a stale INVALID cfat_ token — live cfut_ only exists on tony-omen; resync needed.'
-  status: open
+  status: answered
   at: 2026-10-08 12:25
   from: devin
+  answer: status?

@@ -2,7 +2,7 @@ id: idc02-runner-smoke
 title: 'Smoke: idc02 runner end-to-end'
 brief: Verifies the new idc02 runner can claim, run, merge, and auto-close a dispatch card. Nothing needed from
   you — it should drain itself; flag me only if it stalls.
-column: review
+column: done
 priority: low
 created: '2026-10-08'
 autonomy: t2
@@ -66,3 +66,11 @@ comms:
     after git identity fix on idc02
 updated: 2026-10-08 18:51
 claim: {}
+verified: 'auto 2026-10-08T14:00+00:00'
+auto_close:
+  by: kanban-act
+  at: '2026-10-08T14:00+00:00'
+  note: >-
+    smoke artifact landed on master via auto-merge
+  checks:
+    - 'file_exists:reports/idc02-smoke.txt -> pass'

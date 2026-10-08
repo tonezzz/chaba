@@ -1,18 +1,22 @@
 id: dispatch-remote-smoke
 title: dispatch on remote runner smoke (idc01)
-column: doing
+column: done
 priority: low
 created: '2026-10-08'
-updated: 2026-10-08 16:32
+updated: 2026-10-08 21:20
 brief: First remote-host devin dispatch — prove devin-dispatch works off dell/omen.
 action:
   type: dispatch
-  status: running
+  status: done
   host: idc01
   runner: idc01
   sweep:
     stale_running: 2026-10-08 16:32
     dirty: 1
+  result: 'exit=0 smoke` card (board-api confirmed `ok: true`). No files were modified, no commits or pushes — only
+    the required dispatch-outcome file was written. | devin-task-20261008-162315-you-are-running-on-the-remote-.service:
+    Consumed 2.257s CPU time.'
+  verified: true
 spec: 'You are running on the remote runner host idc01 in a worktree of the chaba repo.
 
   1. Run: git log --oneline -1 && hostname
@@ -41,3 +45,15 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261008-162315-you-are-running-on-the-remote- on idc01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-08 21:19
+  from: idc01
+  text: 'finished (ok): exit=0 smoke` card (board-api confirmed `ok: true`). No files were modified, no commits
+    or pushes — only the required di'
+- at: 2026-10-08 21:19
+  from: chaba
+  text: "checkpoint failed: commit: Author identity unknown\n\n*** Please tell me who you are.\n\nRun\n\n  git config\
+    \ --global user.email \"you@example.com\"\n  git config --global user.name \"Your Name\"\n\nt"
+- at: 2026-10-08 21:20
+  from: tony
+  text: closed by tony
+claim: {}
