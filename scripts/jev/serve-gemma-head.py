@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 sys.path.insert(0, str(__file__ and __import__("pathlib").Path(__file__).parent))
+import lane_metrics  # noqa: E402
 from importlib.machinery import SourceFileLoader
 _mod = SourceFileLoader("tgh", str(__import__("pathlib").Path(__file__).with_name("train-gemma-head.py"))).load_module()
 AttentionHead = _mod.AttentionHead
@@ -48,6 +49,7 @@ with torch.inference_mode():
     opt_vecs = torch.stack(opt_vecs)
 
 app = FastAPI()
+lane_metrics.attach(app)
 
 
 def turn_from_state(state) -> str:
@@ -88,14 +90,21 @@ def systemone(body: dict):
     turn = turn_from_state(body.get("state", ""))
     p = noul_prob(turn)
     answers = {}
-    for qid, q in (body.get("questions") or {}).items():
+    escalations = 0
+    questions = body.get("questions") or {}
+    for qid, q in questions.items():
         qtype = (q or {}).get("type")
         if qtype == "noul":
             answers[qid] = {"type": "noul", "noul": p}
         elif qtype == "choice":
             answers[qid] = {"type": "choice", "choice": "answer", "confidence": 0.0}
+            escalations += 1  # stub answer — caller escalates heavier
         else:
             answers[qid] = {"type": qtype or "unknown", "score": p}
+            escalations += 1  # unsupported type — caller escalates heavier
+    lane_metrics.METRICS.observe(
+        time.time() - t0, questions=len(questions),
+        escalations=escalations)
     return {"model": "gemma-1b-head", "answers": answers,
             "usage": {"input_tokens": 0, "output_tokens": 0,
                       "elapsed_s": round(time.time() - t0, 3)}}

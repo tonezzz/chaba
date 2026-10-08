@@ -2,11 +2,15 @@
 
   serve-seqcls.py --ckpt g270m-clf --port 8781
 """
-import argparse, json, re, time
+import argparse, json, re, sys, time
+from pathlib import Path
 
 import torch
 from fastapi import FastAPI
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import lane_metrics  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--ckpt", required=True)
@@ -20,6 +24,7 @@ THR = float((getattr(model.config, "custom_params", None) or {})
             .get("noul_threshold", 0.5))
 NAME = f"seqcls:{args.ckpt}"
 app = FastAPI()
+lane_metrics.attach(app)
 
 
 def turn_from_state(state) -> str:
@@ -51,12 +56,17 @@ def systemone(body: dict):
     with torch.no_grad():
         p = torch.softmax(model(**enc).logits, -1)[0, 1].item()
     answers = {}
+    escalations = 0
     for qid, q in questions.items():
         qtype = (q or {}).get("type")
         if qtype == "noul":
             answers[qid] = {"type": "noul", "noul": p}
         else:
             answers[qid] = {"type": qtype or "unknown", "score": p}
+            escalations += 1  # not a noul lane — caller escalates heavier
+    lane_metrics.METRICS.observe(
+        time.time() - t0, questions=len(questions),
+        escalations=escalations)
     return {"model": NAME, "answers": answers,
             "usage": {"input_tokens": int(enc["input_ids"].shape[1]),
                       "output_tokens": 0,

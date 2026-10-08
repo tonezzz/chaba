@@ -394,6 +394,129 @@ nodes:
     children:
       - health-monitor
       - focus-inbox
+  # --- Nest domain ---
+  # Lane/brain/bench L1 metas are all written by the chaba-nest
+  # generator (scripts/ada/nest-overview.py) each run — `generator:
+  # manual` keeps run-node.py from trying to exec a leaf that only the
+  # parent produces.
+  - id: nest-lanes/jev-student
+    layer: L1-producer
+    purpose: Prod confirm-gate lane — distilbert seq-cls on idc03:8778
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-jev-student.yml
+    children: []
+  - id: nest-lanes/student-a
+    layer: L1-producer
+    purpose: Student lane — gemma-3-1b systemd on tony-omen:8778
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-student-a.yml
+    children: []
+  - id: nest-lanes/student-b
+    layer: L1-producer
+    purpose: Student lane — gemma-3-1b container on idc03:8779
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-student-b.yml
+    children: []
+  - id: nest-lanes/heavy-a
+    layer: L1-producer
+    purpose: Heavy lane — gemma-3-4b prod advisory on idc02:8777
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-heavy-a.yml
+    children: []
+  - id: nest-lanes/heavy-b
+    layer: L1-producer
+    purpose: Heavy lane — gemma-3-4b systemd on tony-omen:8777
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-heavy-b.yml
+    children: []
+  - id: nest-lanes/ollama
+    layer: L1-producer
+    purpose: Ollama lane — phi3/moondream/nomic on tony-omen:11434
+      (no /metrics — not our server)
+    generator: manual — probed + meta written by scripts/ada/nest-overview.py
+    cadence: 1h
+    meta: reports/nest/meta.lane-ollama.yml
+    children: []
+  - id: nest-brains/nest-01-ops-classifier
+    layer: L1-producer
+    purpose: Portable brain respawn state — nest-01-ops-classifier (micro)
+    generator: manual — meta written by scripts/ada/nest-overview.py
+      from ssot.nest-brains.yml
+    cadence: 1h
+    meta: reports/nest/meta.brain-nest-01-ops-classifier.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-brains.yml
+    children: []
+  - id: nest-brains/jev-student
+    layer: L1-producer
+    purpose: Portable brain respawn state — jev-student (small)
+    generator: manual — meta written by scripts/ada/nest-overview.py
+      from ssot.nest-brains.yml
+    cadence: 1h
+    meta: reports/nest/meta.brain-jev-student.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-brains.yml
+    children: []
+  - id: nest-brains/orch-bench-corpus
+    layer: L1-producer
+    purpose: Portable brain respawn state — orch-bench-corpus (micro)
+    generator: manual — meta written by scripts/ada/nest-overview.py
+      from ssot.nest-brains.yml
+    cadence: 1h
+    meta: reports/nest/meta.brain-orch-bench-corpus.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-brains.yml
+    children: []
+  - id: nest-brains/nest-edge-vision-models
+    layer: L1-producer
+    purpose: Portable brain respawn state — nest-edge-vision-models (future)
+    generator: manual — meta written by scripts/ada/nest-overview.py
+      from ssot.nest-brains.yml
+    cadence: 1h
+    meta: reports/nest/meta.brain-nest-edge-vision-models.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-brains.yml
+    children: []
+  - id: nest-bench/orch
+    layer: L1-producer
+    purpose: Topology scorecards — orch-bench runs land as MDDB
+      bench/orch-* docs; nest-overview snapshots the latest
+    generator: manual — meta written by scripts/ada/nest-overview.py
+      (upstream producer = ada-pi tests/bench/orch-bench.py)
+    cadence: 24h
+    meta: reports/nest/meta.bench-orch.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-bench.yml
+    children: []
+  - id: chaba-nest
+    layer: L2-domain
+    purpose: Nest compound-AI domain — live lane health + decision/escalation
+      activity, portable-brain respawn state, topology bench scorecard
+    generator: scripts/ada/nest-overview.py --force via chaba-kanban-brief.service (30 min)
+    cadence: 1h
+    output: reports/nest
+    artifact_pattern: "nest-overview.yml"
+    meta: reports/nest/meta.chaba-nest.yml
+    references:
+      - docs/ssot/infrastructure/ssot.nest-brains.yml
+      - docs/ssot/infrastructure/ssot.nest-bench.yml
+    children:
+      - nest-lanes/jev-student
+      - nest-lanes/student-a
+      - nest-lanes/student-b
+      - nest-lanes/heavy-a
+      - nest-lanes/heavy-b
+      - nest-lanes/ollama
+      - nest-brains/nest-01-ops-classifier
+      - nest-brains/jev-student
+      - nest-brains/orch-bench-corpus
+      - nest-brains/nest-edge-vision-models
+      - nest-bench/orch
   # --- Overview ---
   - id: system-report
     layer: L3-overview
@@ -410,6 +533,7 @@ nodes:
       - kanban
       - focus-inbox
       - daily-brief
+      - chaba-nest
 
 schedule:
   system_report:
@@ -438,17 +562,21 @@ plan:
     - staleness-audit.mjs reads per-host cadences from this registry (meta.generated_at preferred over SSOT last_observed; fallback 14d)
     - chaba-system-report.service/.timer installed on tony-dell — daily chain: audit-hosts x5 -> --consolidate -> report-system.py
     - kanban L2 node (2026-10-05): scripts/board/kanban-stats.py rides kanban-sync.timer, writes reports/kanban/{meta.yml,kanban-stats.yml} + apps/system-report/data/kanban.md, mirrored to the served checkout
+    - chaba-nest L2 node (2026-10-08): scripts/ada/nest-overview.py (3rd ExecStart of chaba-kanban-brief.service, 30 min) probes lane /health+/metrics, writes reports/nest/{nest-overview.yml,meta.*.yml} — lane, brain, bench child metas + the domain meta + timeline event
   next_steps:
     - ada-memory-report L2 renderer (memory-suite + recall-canary)
     - migrate tony-dell production units off the chaba-tony-dell checkout onto chaba (audit suite still writes reports/audits under the old checkout, so the audit-suite node reports missing here until then)
     - mcp-health-snapshot.timer repointed in repo (systemd/) but not installed; install on tony-dell if the snapshot feed is still wanted
     - ssot.audit.hosts.yml last_observed only refreshes via manual --save-to-ssot (rewrites YAML) — decide whether a lighter-weight scheduled refresh is wanted
+    - vendor scripts/jev/lane_metrics.py into the open-jev repo so the 4 gemma lanes (openjev serve) expose the same /metrics — until then they render "no metrics" on chaba-nest
 related_files:
   - scripts/report-system.py
   - scripts/report-daily-brief.py
   - scripts/lib/report.py
   - scripts/audit-hosts.py
   - scripts/audits/run.mjs
+  - scripts/ada/nest-overview.py
+  - scripts/jev/lane_metrics.py
   - systemd/chaba-system-report.service
   - systemd/chaba-system-report.timer
 related_ssot:
