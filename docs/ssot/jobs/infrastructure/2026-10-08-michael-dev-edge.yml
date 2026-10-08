@@ -1,0 +1,112 @@
+title: "michael-dev public edge — michael-dev.surf-thailand.com"
+subtitle: "dev HA instance added to idc02 *-ha edge pattern, CF Access gated before publish"
+icon: shield
+
+planning:
+  goal: >-
+    Add michael-dev to the idc02 public-edge pattern used by
+    tony-ha/michael-ha/ada-ha: CNAME <name>.surf-thailand.com -> edge
+    (proxied), one Caddy site block on idc02, trusted_proxies on the HA
+    side — with CF Access gate in place BEFORE the name resolves.
+  scope: >-
+    In: michael-dev only. Card title says michael-dev/tony-dev but the
+    note confirms tony-dev does not exist — skipped.
+  success_criteria:
+    - "https://michael-dev.surf-thailand.com/ serves the dev HA instance"
+    - "all paths intercepted by CF Access before origin (302 to
+      chaba-team.cloudflareaccess.com)"
+  risks:
+    - "dev instance publicly exposed — mitigated by creating the CF
+      Access app BEFORE the DNS record (card caution honored)"
+  resources:
+    - "~/.config/secrets/cloudflare.env — cfut_ token valid on tony-omen
+      ONLY (dell/idc01/idc02 carry stale cfat_ that can do zone DNS but
+      NOT Access apps — auth.forbidden)"
+    - "idc02 ~/.config/caddy/Caddyfile (caddy-edge quadlet, host-net,
+      ro-mounted at /etc/caddy/Caddyfile)"
+    - "surf-thailand.com zone 4feb4a3682e44e38cce3feed65dba7f3"
+  owner: devin (dispatch)
+  related_focus: [dev-ha-edge, cf-access-gate]
+
+processing:
+  status: done
+  started_at: "2026-10-08T15:40:00Z"
+  steps:
+    - id: 1
+      label: CF Access app BEFORE publish
+      detail: >-
+        Created app michael-dev (63a98e86-8c33-4f70-89d3-8b32e1c19cef,
+        aud c405be42…) on domain michael-dev.surf-thailand.com via
+        tony-omen cfut_ token. Inline policies replicated from tony-ha
+        app: "tony" allow tonezzz@hotmail.com (prec 1) + "tony-gmail"
+        allow tonezzzz@gmail.com (prec 2); session 720h,
+        service_auth_401_redirect + options_preflight_bypass on.
+    - id: 2
+      label: Caddy block on idc02
+      detail: >-
+        Appended `michael-dev.surf-thailand.com { tls internal;
+        reverse_proxy https://tony-dell.taila0626a.ts.net:8124 }` —
+        same shape as ada-ha (:8125) block. Backup at
+        ~/.config/caddy/Caddyfile.bak-20261008-dev. caddy validate +
+        caddy reload inside container — no restart.
+    - id: 3
+      label: DNS record
+      detail: >-
+        CNAME michael-dev.surf-thailand.com -> edge.surf-thailand.com,
+        proxied:true (zone 4feb4a36…) via dell cfat_ token — DNS write
+        works on the cfat_ token, Access does not.
+    - id: 4
+      label: trusted_proxies — already sufficient, no restart
+      detail: >-
+        michael-dev .storage/http already had use_x_forwarded_for:true
+        + trusted_proxies:["127.0.0.1"]. Correct and complete: the only
+        ingress path is idc02 -> tailscale serve on tony-dell ->
+        127.0.0.1:8124, so HA's TCP peer is always loopback. Verified
+        empirically — origin curl returns HA HTML 200, not the 400
+        "untrusted proxy" rejection. No .storage edit, no restart.
+      alternatives_considered: >-
+        adding 100.64.0.0/10 like tony-ha's file — unnecessary (tony-ha
+        also binds loopback only; that entry is belt-and-suspenders for
+        paths that can't exist on this bind).
+  blockers: []
+
+review:
+  decision: shipped
+  learnings:
+    - label: "Gate-before-publish is cheap when ordering is right"
+      detail: >-
+        CF Access app is account-level and does not need DNS to exist —
+        create app first, then CNAME. michael-dev.surf-thailand.com was
+        never reachable ungated: 302 to CF login on the very first
+        public curl.
+    - label: "cfat_ vs cfut_ token split"
+      detail: >-
+        Dell/idc01/idc02 cloudflare.env hold cfat_ (zone DNS R/W works,
+        /accounts + verify misleading: accounts lists but tokens/verify
+        1000-invalid and Access writes auth.forbidden). tony-omen holds
+        cfut_ with Access Apps+Policies Edit — run Access ops over ssh
+        tony-omen.
+    - label: "idc02 edge uses tls internal"
+      detail: >-
+        All *-ha blocks use `tls internal` (Caddy internal CA) — valid
+        because CF proxy terminates client TLS and talks Full to the
+        origin. ssot.security.idc02.yml note saying "Let's Encrypt
+        per-name certs" is stale.
+    - label: "Caddyfile lives host-side only"
+      detail: >-
+        ~/.config/caddy/Caddyfile on idc02 is not synced into chaba
+        repo — per-host .bak-* rotation is the history mechanism.
+  verify:
+    - "curl -s -o /dev/null -w '%{http_code}' https://michael-dev.surf-thailand.com/  # 302 -> cloudflareaccess (kid c405be42)"
+    - "ssh idc02 curl -sk --resolve michael-dev.surf-thailand.com:443:127.0.0.1 https://michael-dev.surf-thailand.com/  # 200 HA HTML"
+
+artifacts:
+  - "idc02:~/.config/caddy/Caddyfile (+ .bak-20261008-dev)"
+  - "CF Access app 63a98e86-8c33-4f70-89d3-8b32e1c19cef"
+  - "CF DNS CNAME michael-dev.surf-thailand.com -> edge (proxied)"
+  - "docs/ssot/infrastructure/ssot.home-assistant.instances.yml (public url)"
+
+notes: >-
+  Public URL: https://michael-dev.surf-thailand.com — CF Access OTP
+  (tonezzz@hotmail.com / tonezzzz@gmail.com, 720h) then HA login.
+  tony-dev intentionally not created (instance does not exist).
