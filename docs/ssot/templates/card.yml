@@ -28,6 +28,10 @@ spec: Full self-contained task text — what gets dispatched
 action:
   type: dispatch              # dispatch | manual | container | script
   status: queued
+# model: swe-2-medium         # dispatch only — `devin models list` ids;
+                              # omit = host default (swe-2-high).
+                              # free tiers: swe-2-medium|high|max
+                              # (plan-allowance, not unlimited)
 # max_attempts: 3             # total dispatches incl. auto-retries (default 2)
                               # raise for cards touching generated files —
                               # ^docs/ssot/ outputs are the recurring merge-
