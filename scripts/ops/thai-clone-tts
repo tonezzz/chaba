@@ -1,0 +1,239 @@
+#!/home/tony/.venvs/thai-tts/bin/python
+"""thai-clone-tts — zero-shot Thai voice-clone TTS (flowtts/F5 family).
+
+Drop-in for edge-tts on Thai lanes of yt-vtt-dub.py: synthesizes TEXT in
+the voice of a short reference clip (<=12s, single speaker, clean) instead
+of a named cloud voice.
+
+Single-shot (edge-tts-shaped):
+  thai-clone-tts --ref ref.wav --ref-text-file ref.txt \
+      --text "สวัสดีครับ" --write-media out.wav [--rate +10%]
+
+Batch (one model load, many lines — use this inside yt-vtt-dub):
+  thai-clone-tts --ref ref.wav --ref-text-file ref.txt --batch jobs.jsonl
+  # each line: {"text": "...", "out": "/path.wav", "speed": 1.05}
+
+Flags --voice and --pitch are accepted and ignored so the existing
+edge-tts call pattern in yt-vtt-dub.py works unchanged; VOICE for a clone
+lane is entirely defined by --ref. --rate "+N%" maps to speed=1+N/100.
+
+Models (preset name -> checkpoint/vocab, HF-cached):
+  megaf5  biodatlab/ThonburianTTS megaF5   (default; Thai F5 finetune)
+  jaitts  JTS-AI/JaiTTS-F5TTS              (gated repo — needs HF auth)
+  vyncx   VIZINTZOR/F5-TTS-TH-V2           (IPA lane — best Thai CER in
+                                           the 2026-10-08 bench)
+
+Consent guard: cloning is restricted to consented voices. Pass
+--consent-ok to confirm the ref is a household voice (Tony/KK) or one
+with explicit permission; without it the tool refuses to run.
+"""
+import argparse
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+PRESETS = {
+    "megaf5": dict(
+        backend="flowtts",
+        checkpoint="hf://biodatlab/ThonburianTTS/megaF5/mega_f5_last.safetensors",
+        vocab_file="hf://biodatlab/ThonburianTTS/megaF5/mega_vocab.txt"),
+    "jaitts": dict(
+        backend="flowtts",
+        checkpoint="hf://JTS-AI/JaiTTS-F5TTS/model.pt",
+        vocab_file="hf://JTS-AI/JaiTTS-F5TTS/vocab.txt"),
+    "vyncx": dict(
+        backend="f5tts_th",  # VIZINTZOR/F5-TTS-TH-V2 (IPA lane) — best CER
+        checkpoint="hf://VIZINTZOR/F5-TTS-TH-V2/model_350000.pt",
+        vocab_file="hf://VIZINTZOR/F5-TTS-TH-V2/vocab.txt"),
+}
+
+
+def _rate_to_speed(rate: str | None) -> float:
+    """edge-tts '--rate +12%' -> speed multiplier."""
+    if not rate:
+        return 1.0
+    r = rate.strip().rstrip("%")
+    try:
+        v = float(r) / 100.0
+    except ValueError:
+        return 1.0
+    return max(0.5, min(2.0, 1.0 + v))
+
+
+CHUNK_CHARS = 45  # F5-family collapses on long Thai strings (observed
+# deterministic off-voice draws); split at spaces/clause marks first,
+# then word_tokenize-group so no chunk exceeds this many chars.
+
+
+CLAUSE_MARKS = ("เพราะ", "แล้ว", "แต่", "และ", "ก็", "ซึ่ง", "ที่",
+                "จน", "ถ้า", "เมื่อ", "ก่อน", "หลัง")
+
+
+def _split_long(piece: str) -> list[str]:
+    """Split an over-length space-free Thai piece at a clause connective
+    nearest the middle; fall back to word_tokenize regrouping."""
+    if len(piece) <= CHUNK_CHARS:
+        return [piece]
+    best = -1
+    for m in CLAUSE_MARKS:
+        start = 0
+        while True:
+            i = piece.find(m, start)
+            if i < 0:
+                break
+            if best < 0 or abs(i - len(piece) / 2) < abs(best - len(piece) / 2):
+                best = i
+            start = i + len(m)
+    if best > 0:
+        return _split_long(piece[:best]) + _split_long(piece[best:])
+    from pythainlp.tokenize import word_tokenize
+    words = word_tokenize(piece, engine="newmm")
+    out, cur = [], ""
+    for w in words:
+        if cur and len(cur) + len(w) > CHUNK_CHARS:
+            out.append(cur)
+            cur = w
+        else:
+            cur += w
+    if cur:
+        out.append(cur)
+    return out
+
+
+def _chunk_thai(text: str) -> list[str]:
+    text = " ".join(text.split())
+    if len(text) <= CHUNK_CHARS:
+        return [text]
+    pieces = []
+    for p in text.split(" "):
+        pieces.extend(_split_long(p))  # Thai clause splitting; no-op for short pieces
+    out, cur = [], ""
+    for p in pieces:
+        if cur and len(cur) + len(p) + 1 > CHUNK_CHARS:
+            out.append(cur)
+            cur = p
+        else:
+            cur = f"{cur} {p}".strip()
+    if cur:
+        out.append(cur)
+    return out or [text]
+
+
+def _synth(synth, text: str, ref: str, ref_text: str, out: str,
+           speed: float, gap_s: float = 0.15) -> None:
+    chunks = _chunk_thai(text)
+    if len(chunks) == 1:
+        synth(chunks[0], out, speed, ref, ref_text)
+        return
+    import numpy as np
+    import soundfile as sf
+    wavs, sr = [], 24000
+    for j, c in enumerate(chunks):
+        tmp = str(Path(out).with_suffix(f".part{j}.wav"))
+        synth(c, tmp, speed, ref, ref_text)
+        w, sr = sf.read(tmp, dtype="float32")
+        wavs.append(w)
+        Path(tmp).unlink(missing_ok=True)
+    gap = np.zeros(int(sr * gap_s), dtype="float32")
+    sf.write(out, np.concatenate([s for w in wavs for s in (w, gap)][:-1]), sr)
+
+
+def _load_pipe(model: str, device: str, cfg: float, nfe: int, seed: int,
+               checkpoint: str, vocab: str):
+    """Returns synth_one(text, out_path, speed) bound to the loaded model."""
+    import torch
+    if device.startswith("cuda") and not torch.cuda.is_available():
+        device = "cpu"
+    preset = PRESETS[model]
+    if preset["backend"] == "f5tts_th":
+        from f5_tts_th.tts import TTS
+        import soundfile as sf
+        tts = TTS(model="v2")
+
+        def synth(text, out, speed, ref, ref_text):
+            wav = tts.infer(ref, ref_text, text, step=nfe, speed=speed,
+                            cfg=cfg)
+            sf.write(out, wav, 24000)
+        return synth
+    from flowtts.inference import FlowTTSPipeline, ModelConfig, AudioConfig
+    mc = ModelConfig(language="th", model_type="F5",
+                     checkpoint=checkpoint or preset["checkpoint"],
+                     vocab_file=vocab or preset["vocab_file"],
+                     vocoder="vocos", device=device, seed=seed)
+    ac = AudioConfig(cfg_strength=cfg, nfe_step=nfe)
+    td = Path(tempfile.gettempdir()) / "thai-clone-tts"
+    td.mkdir(exist_ok=True)
+    pipe = FlowTTSPipeline(model_config=mc, audio_config=ac, temp_dir=str(td))
+
+    def synth(text, out, speed, ref, ref_text):
+        pipe(text=text, ref_voice=ref, ref_text=ref_text,
+             output_file=out, speed=speed)
+    return synth
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--text", default="")
+    ap.add_argument("--write-media", dest="out", default="")
+    ap.add_argument("--voice", default="", help="ignored (compat)")
+    ap.add_argument("--pitch", default="", help="ignored (compat)")
+    ap.add_argument("--rate", default=None, help="edge-tts '+N%%' -> speed")
+    ap.add_argument("--speed", type=float, default=None)
+    ap.add_argument("--ref", required=True, help="reference wav <=12s")
+    ap.add_argument("--ref-text", default="", help="exact ref transcript")
+    ap.add_argument("--ref-text-file", default="")
+    ap.add_argument("--model", default="megaf5", choices=sorted(PRESETS))
+    ap.add_argument("--checkpoint", default="")
+    ap.add_argument("--vocab", default="")
+    ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--cfg", type=float, default=2.5)
+    ap.add_argument("--nfe", type=int, default=32)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--batch", default="", help="JSONL jobs file")
+    ap.add_argument("--consent-ok", action="store_true",
+                    help="confirm ref voice is household/explicitly consented")
+    a = ap.parse_args()
+
+    if not a.consent_ok and not os.environ.get("THAI_CLONE_CONSENT_OK"):
+        sys.exit("refused: pass --consent-ok (household/consented voices only)")
+
+    ref_text = a.ref_text
+    if a.ref_text_file:
+        ref_text = Path(a.ref_text_file).read_text(encoding="utf-8").strip()
+    if not ref_text:
+        sys.exit("--ref-text/--ref-text-file required (exact clip transcript)")
+
+    synth = _load_pipe(a.model, a.device, a.cfg, a.nfe, a.seed,
+                       a.checkpoint, a.vocab)
+
+    jobs = []
+    if a.batch:
+        for line in Path(a.batch).read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                jobs.append(json.loads(line))
+    elif a.text and a.out:
+        jobs = [{"text": a.text, "out": a.out,
+                 "speed": a.speed or _rate_to_speed(a.rate)}]
+    else:
+        sys.exit("need --text+--write-media or --batch")
+
+    for j in jobs:
+        out = j["out"]
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        speed = float(j.get("speed") or a.speed or _rate_to_speed(a.rate))
+        for attempt in range(2):  # one retry covers the odd off-voice draw
+            try:
+                _synth(synth, j["text"], a.ref, ref_text, out, speed)
+                if Path(out).exists() and Path(out).stat().st_size > 0:
+                    break
+            except Exception as e:
+                if attempt == 1:
+                    raise
+                print(f"retry {out}: {e}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

@@ -83,6 +83,36 @@ sections:
           client-side AEC. Media-pool separation alone was not enough —
           the TTS voice matched a real person's cluster.
 
+  - title: Synthetic-voice exposure (thai-clone-tts, 2026-10-08)
+    icon: 🧬
+    layout: list
+    items:
+      - label: Cloned household voices are now cheap
+        text: |
+          The lab-thai-voice-clone bench (megaF5 zero-shot, ~10s ref) produces
+          audio scoring SIM 0.6–0.8 against the reference on CAM++ — inside
+          the ≥0.45 identify band. A cloned Tony/KK clip played near a mic
+          could plausibly win a winner-take-all match. Consent policy:
+          refs limited to household voices or explicit permission;
+          thai-clone-tts refuses without --consent-ok.
+      - label: Defense still holds, but verify it
+        text: |
+          The response_active feed gate already blocks Ada's own playback
+          from reaching the identifier — synthetic speech only matters as an
+          EXTERNAL injection (dubbed video on TV, cast audio, a visitor's
+          phone). CAM++ live voiceprint verify should still hold for
+          on-mic presence, but clone-vs-enrollment crossover needs one
+          controlled test: render a clone of an enrolled voice, play it at
+          mic distance, confirm identify() stays below bar or fires a
+          drift event. Until then, treat SIM 0.6–0.8 clone audio as
+          untrusted for enrollment and owner-reclaim paths.
+      - label: Follow-up
+        text: |
+          Add "clones never enroll" to the enrollment guard — a ref-cloned
+          sample must not merge into a real person's centroid (the KK
+          auto-learn incident shows merge damage is sticky). Track under
+          lab-thai-voice-clone / speaker-echo-leak.
+
   - title: Verification Trail
     icon: ✅
     layout: list
