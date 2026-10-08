@@ -1,0 +1,15 @@
+id: vcast-auto-lease
+title: stale vcast capture lease / camwall binding
+brief: 'An automated health check flagged: stale vcast capture lease / camwall binding.
+  Read the note, fix it, then close the card.'
+column: review
+generated: vcast-auto-health
+program: vcast
+area: monitoring
+priority: medium
+note: 'GET http://127.0.0.1/api/input-bridge/capture failed: <urlopen error [Errno
+  111] Connection refused>'
+help: Active /capture lease >6h or enabled camwall zone bound to an offline screen.
+  This is the cast_recast_stale_lease regression surface — clear with POST /api/input-bridge/capture
+  {screen:N,active:false} or /camwall {zone:Z,enabled:false}.
+updated: '2026-10-08'

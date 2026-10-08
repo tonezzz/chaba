@@ -1,13 +1,16 @@
 id: gev-auto-ws
 title: GEV ws /apps/gev-live/ws upgrade fails
-column: done
+column: review
 generated: gev-auto-health
 program: gev
 area: monitoring
-priority: high
-note: 'Auto-recovered 2026-10-05: `ws` check passing again.'
+priority: medium
+note: 'ws connect ws://127.0.0.1/apps/gev-live/ws?remote=1 failed: [Errno 111] Connection
+  refused'
 help: 'Caddy proxies /apps/gev-live/ws -> 127.0.0.1:8789 (gev-gemini bridge). Page
   ok + ws fail usually means the bridge is down or stuck (unit can read ''active''
   while the process hangs — check the port): systemctl --user status gev-gemini; ss
   -tln | grep 8789; systemctl --user restart gev-gemini'
-updated: '2026-10-05'
+updated: '2026-10-08'
+brief: 'An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails.
+  Read the note, fix it, then close the card.'
