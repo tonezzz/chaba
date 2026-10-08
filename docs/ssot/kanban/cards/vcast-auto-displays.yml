@@ -1,17 +1,18 @@
 id: vcast-auto-displays
 title: vcast display fleet unhealthy (dead/drifted screens)
-brief: 'An automated health check flagged: vcast display fleet unhealthy (dead/drifted screens). Read the note,
-  fix it, then close the card.'
-column: done
+brief: 'An automated health check flagged: vcast display fleet unhealthy (dead/drifted
+  screens). Read the note, fix it, then close the card.'
+column: review
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: high
 note: 'vcast-real-* disconnected: screens [6]'
-help: Expects headless-* (vcast-headless@N on idc03) and vcast-real-* (vcast-real@N on idc02) connected, and screen-N
-  names on slot N. Dead headless usually = a 409-stuck claim (fixed 2026-10-07 by force-reclaim + persisted keys);
-  drift = pre-fix registry, repair with POST /release + re-claim or let registerDisplay re-home it.
-updated: 2026-10-08 14:35
+help: Expects headless-* (vcast-headless@N on idc03) and vcast-real-* (vcast-real@N
+  on idc02) connected, and screen-N names on slot N. Dead headless usually = a 409-stuck
+  claim (fixed 2026-10-07 by force-reclaim + persisted keys); drift = pre-fix registry,
+  repair with POST /release + re-claim or let registerDisplay re-home it.
+updated: '2026-10-08'
 action:
   status: done
 claim: {}
