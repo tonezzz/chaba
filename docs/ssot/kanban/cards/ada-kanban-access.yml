@@ -1,7 +1,7 @@
 id: ada-kanban-access
 title: Ada kanban access — tools + authority standard
 brief: Ada should review and take action on the board. Waiting in the backlog — no action needed yet.
-column: doing
+column: review
 priority: medium
 note: 'Tony ask (2026-10-06): Ada should review and take action on the board. Design: docs/design/ada-kanban-access.md.
   Channel already exists — board-api :8787 is the sanctioned write path with ''ada'' as an allowed comment identity;
@@ -11,12 +11,13 @@ note: 'Tony ask (2026-10-06): Ada should review and take action on the board. De
   Delivered 2026-10-06: kanban-brief.py (T0/T1 — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer)
   + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when checks all passing get auto-closed, bounded check
   vocabulary, kanban_act ops events). Remaining: board-api token + kanban tool group for Ada voice path.'
-updated: 2026-10-08 14:03
+updated: 2026-10-08 14:16
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
-  result: 20261008-055425-implement-ada-kanban-access-pe finished (inactive) — see `devin-dispatch logs 20261008-055425-implement-ada-kanban-access-pe`
+  result: 'exit=0 that''s the design''s intended escalation path, demonstrated. | devin-task-20261008-135610-implement-ada-kanban-access-pe.service:
+    Consumed 1min 39.432s CPU time over 20min 12.152s wall clock time, 987.2M memory peak, 340.2M memory swap peak.'
   verified: true
   runner: tony-omen
 spec: 'Implement Ada kanban access per docs/design/ada-kanban-access.md (in the chaba checkout — read it first).
@@ -129,6 +130,22 @@ comms:
   from: ada
   text: 'raised request kanban-tool-verified-live-on-ada-dev-lis-550bf3: Kanban tool verified live on ada-dev (list/read/comment/gates).
     OK for me to move this card review->done when it reaches'
+- at: 2026-10-08 14:15
+  from: devin
+  text: 'DONE (resume dispatch): implementation was already merged to main by prior dispatch (f2a42b9) — kanban
+    tool consolidates ada_board_write w/ full authority matrix + confirm-gate. Verified live on ada-dev idc03:8005:
+    51/51 unit tests, tool-lint clean; list/read/comment(landed from:ada)/ask(request raised) all work via /api/tools/call;
+    evidence-less review->done hard-refused; priority:high close -> needs_confirm+token; ada_board_write alias live.
+    kanban_review live scenario PASS 0-fail: doing-cap +'
+- at: 2026-10-08 14:16
+  from: tony-omen
+  text: 'finished (ok): exit=0 that''s the design''s intended escalation path, demonstrated. | devin-task-20261008-135610-implement-ada-kanban-acc'
+- at: 2026-10-08 14:16
+  from: chaba
+  text: pushed dispatch/20261008-135610-implement-ada-kanban-access-pe to origin
+- at: 2026-10-08 14:16
+  from: chaba
+  text: auto-merged 058d5fee (dispatch/20261008-135610-implement-ada-kanban-access-pe) → origin/main
 claim:
   since: 2026-10-08 05:54
 requests:
