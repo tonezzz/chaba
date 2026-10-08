@@ -1,0 +1,18 @@
+id: kanban-local-conflict-reconciler
+title: "Auto-reconcile .local-conflict card files"
+column: backlog
+priority: medium
+autonomy: t2
+kind: ops
+description: >-
+  git-safe-pull.sh renames colliding card files to <name>.yml.local-conflict-<ts>
+  but nothing reconciles them — they pile up (4 stale ones removed by hand
+  2026-10-09). The conflict copy usually holds the board-api write that raced
+  the pull (newer column/action/request answers).
+acceptance:
+  - "git-safe-pull (or a post-pull step) diffs each .local-conflict file against
+    its canonical card: merges board-mutated fields (column, action.status,
+    request answers, ask status) newer than HEAD, then deletes the conflict file"
+  - cards/* .local-conflict-* count stays 0 across a week of normal churn
+  - "no card write is silently dropped: if merge fails, conflict file stays
+    and the card is flagged in review"

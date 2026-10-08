@@ -15,6 +15,20 @@ http://:80 {
 		format json
 	}
 	@root80 path /
+	handle /apps/yt-cache {
+		redir * /apps/yt-cache/ 308
+	}
+	handle_path /apps/yt-cache/* {
+		root * /srv/media/yt-cache
+		file_server browse
+	}
+	handle /apps/yt-corpus {
+		redir * /apps/yt-corpus/ 308
+	}
+	handle_path /apps/yt-corpus/* {
+		root * /srv/media/yt-corpus
+		file_server browse
+	}
 	handle @root80 {
 		reverse_proxy 127.0.0.1:8092 {
 			header_up Host 127.0.0.1:8092

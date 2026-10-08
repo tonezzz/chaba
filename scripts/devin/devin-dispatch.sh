@@ -142,7 +142,7 @@ _devin_run() { # unit worktree prompt_file extra-args...
     ${DISPATCH_UNIT_PROPS:-} \
     --setenv=HOME="$HOME" --setenv=PATH="$PATH" \
     --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
-    --setenv=DEVIN_MODEL="$MODEL" \
+    ${MODEL:+--setenv=DEVIN_MODEL="$MODEL"} \
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
     /bin/bash -c 'rc=0; "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
       ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \

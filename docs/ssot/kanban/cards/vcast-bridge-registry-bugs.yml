@@ -1,0 +1,24 @@
+id: vcast-bridge-registry-bugs
+title: input-bridge registry bugs — stale entries hold names, releases resurrect, real-6 ws drops
+brief: 'The display fleet works but slot-pinning keeps breaking: vcast-real-6''s websocket drops every 1-3min, each dead
+  socket leaves a registry entry that blocks the screen-N name, and /release''d entries get resurrected by the dead
+  socket''s state writes. Needs code fixes in server.mjs, not manual reclaim loops.'
+column: backlog
+priority: high
+program: vcast
+area: monitoring
+note: 'Evidence 2026-10-08/09 (multi-hour live debugging): vcast-real-6 ws to bridge dropped at 06:23, 06:24, 06:28
+  (~1-3min cycle) — reclaim lands on lowest-FREE slot (8,9,10) because stale screen-N entries hold their names.
+  /release{screen:6} deleted the entry but it reappeared — a still-connected socket''s state write re-upserts
+  registry.screens[n] (displays.json mtime proves rewrite seconds after release). displays.json accumulated 4 dead
+  vcast-real-6 entries (screens 1,6,8,9). Server: stacks/web/input-bridge/server.mjs /release + claim + state paths.'
+spec: "1. WHY does real-6's ws drop every 1-3min? Check the client nav path — state shows\n   'nav | 0:/apps/gev/ | p0:frame-ok': does a page navigation/reload kill the ws?\n   Or a ws idle-timeout on the dell Caddy proxy hop? Add server-side ping/\n   disconnect-reason logging if needed.\n2. Dead-entry reclaim: on socket disconnect, release the slot's NAME claim (or\n   add a short grace/rebind window keyed by client label — vcast-real-N should\n   re-take screen-N within ~60s before the name frees).\n3. Release resurrection: /release must tombstone the name so late state writes\n   from the detached socket cannot re-create registry.screens[n] (check the\n   state-handler upsert path — it should only update existing entries, never\n   create).\n4. Claim honoring: if the client sends VCAST_NAME/want_screen and it's free,\n   prefer it over lowest-free.\nAcceptance: kill real-6's socket -> it re-claims screen-6 within one reconnect;\n/release followed by dead-socket state writes stays deleted; no dead entries\naccumulate over 24h; vcast-auto-displays health card stays green.\n"
+help: 'Manual reclaim runbook (what Devin did): POST idc03:3010/release {screen:N} frees a stale entry, then restart
+  vcast-real@N on idc02 — BUT do not restart while the client is self-healing (~90s); the supervisor relaunches and
+  re-claims on its own after unpair. displays.json labels show which client owns each entry.'
+updated: 2026-10-09 06:40
+action:
+  type: dispatch
+  status: idle
+  button: "▶ Fix the registry bugs"
+  repo: chaba

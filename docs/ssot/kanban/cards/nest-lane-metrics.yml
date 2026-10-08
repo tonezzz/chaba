@@ -1,41 +1,65 @@
 id: nest-lane-metrics
 title: Nest lanes — wire /metrics so the hub shows decisions + esc%
-brief: >-
-  The chaba-nest hub page shows "no metrics" on every lane, so the
-  decisions-Δ and escalation-% columns are dead. The metrics module is
-  already written (scripts/jev/lane_metrics.py) — the openjev lane
-  servers just haven't adopted it. Expected action: dispatch it; nothing
-  needed from you.
-column: backlog
+brief: 'The chaba-nest hub page shows "no metrics" on every lane, so the decisions-Δ and escalation-% columns are
+  dead. The metrics module is already written (scripts/jev/lane_metrics.py) — the openjev lane servers just haven''t
+  adopted it. Expected action: dispatch it; nothing needed from you.'
+column: done
 priority: medium
 created: 2026-10-08
-
 autonomy: t2
 auto_done_when:
-  - verified_true
+- verified_true
 done_note: lanes report /metrics and the hub page shows real numbers
-
-spec: >-
-  Give the openjev lane servers the /metrics endpoint defined by
-  scripts/jev/lane_metrics.py (chaba repo — vendor the file; it is
-  stdlib-only on purpose). The servers live in the open-jev repo
-  (~/CascadeProjects/open-jev on tony-omen/idc02/idc03; check `git
-  remote` for the canonical remote). Wire LaneMetrics.observe() into
-  the /v1/systemone handler — one call per served request, passing
-  elapsed seconds, questions answered, and escalations (answers that
-  fell back to stub/heavier-tier routing) — and call attach(app) at
-  startup. Then: (1) verify GET /metrics returns the documented JSON
-  shape on a running instance; (2) restart the units and confirm
-  scripts/ada/nest-overview.py --dry-run no longer prints "no metrics"
-  for the jev lanes (ollama at tony-omen:11434 is third-party and stays
-  "no metrics" — expected). Lanes: open-jev.service tony-omen:8777
-  (gemma-3-4b), open-jev-student.service tony-omen:8778 (gemma-3-1b),
-  idc02:8777, idc03:8778 (distilbert prod gate), idc03:8779 (container).
-  Coordinate restarts with the weekly bench (Mon 04:30) — the omen
-  units are parked between runs, so deploying to the repo checkout and
-  letting the bench pick it up is acceptable; units on idc02/idc03 run
-  always-on and can restart immediately.
-
+spec: 'Give the openjev lane servers the /metrics endpoint defined by scripts/jev/lane_metrics.py (chaba repo —
+  vendor the file; it is stdlib-only on purpose). The servers live in the open-jev repo (~/CascadeProjects/open-jev
+  on tony-omen/idc02/idc03; check `git remote` for the canonical remote). Wire LaneMetrics.observe() into the /v1/systemone
+  handler — one call per served request, passing elapsed seconds, questions answered, and escalations (answers that
+  fell back to stub/heavier-tier routing) — and call attach(app) at startup. Then: (1) verify GET /metrics returns
+  the documented JSON shape on a running instance; (2) restart the units and confirm scripts/ada/nest-overview.py
+  --dry-run no longer prints "no metrics" for the jev lanes (ollama at tony-omen:11434 is third-party and stays
+  "no metrics" — expected). Lanes: open-jev.service tony-omen:8777 (gemma-3-4b), open-jev-student.service tony-omen:8778
+  (gemma-3-1b), idc02:8777, idc03:8778 (distilbert prod gate), idc03:8779 (container). Coordinate restarts with
+  the weekly bench (Mon 04:30) — the omen units are parked between runs, so deploying to the repo checkout and letting
+  the bench pick it up is acceptable; units on idc02/idc03 run always-on and can restart immediately.'
 action:
   type: dispatch
-  status: queued
+  status: done
+  runner: tony-omen
+  result: 'exit=0 e dispatch-outcome file, and the board got start/finish comments. | devin-task-20261008-213531-give-the-openjev-lane-servers-.service:
+    Consumed 4min 14.703s CPU time over 31min 57.365s wall clock time, 7.2G memory peak, 5G memory swap peak.'
+  verified: true
+comms:
+- at: 2026-10-08 21:35
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 21:35
+  from: chaba
+  text: started devin-task-20261008-213531-give-the-openjev-lane-servers- on tony-omen (dispatch)
+- at: 2026-10-08 21:36
+  from: devin
+  text: Session started — vendoring lane_metrics.py into open-jev, then wiring /v1/systemone + restarting lanes.
+- at: 2026-10-08 22:06
+  from: devin
+  text: Done. lane_metrics.py vendored into open-jev (openjev/lane_metrics.py + observe() in /v1/systemone) on omen/idc02/idc03
+    checkouts; idc03 jev-student serve.py wired too; openjev:cpu image rebuilt. All 5 lanes serve /metrics — nest-overview
+    --dry-run shows counters+esc% everywhere except ollama (expected). Omen units left running; leash re-parks >2.5h.
+    open-jev changes uncommitted upstream repo.
+- at: 2026-10-08 22:08
+  from: tony-omen
+  text: 'finished (ok): exit=0 e dispatch-outcome file, and the board got start/finish comments. | devin-task-20261008-213531-give-the-openjev-l'
+- at: 2026-10-08 22:08
+  from: chaba
+  text: pushed dispatch/20261008-213531-give-the-openjev-lane-servers- to origin
+- at: 2026-10-08 22:08
+  from: chaba
+  text: auto-merged 1d7a6702 (dispatch/20261008-213531-give-the-openjev-lane-servers-) → origin/master
+updated: 2026-10-08 22:08
+claim: {}
+verified: 'auto 2026-10-08T15:30+00:00'
+auto_close:
+  by: kanban-act
+  at: '2026-10-08T15:30+00:00'
+  note: >-
+    lanes report /metrics and the hub page shows real numbers
+  checks:
+    - 'verified_true -> pass'
