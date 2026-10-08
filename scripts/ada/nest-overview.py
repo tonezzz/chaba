@@ -62,6 +62,7 @@ CHILD_PAGES = [
     ("tiny-models-research", "on-device preprocessor research"),
     ("kanban-brief", "T0/T1 card briefing — the assistant layer"),
     ("nest-oss-landscape", "vocab→repos map — RouteLLM, semantic-router, cascade"),
+    ("agent-harness-landscape", "OpenClaw vs Hermes + claw family, mapped to the Nest"),
     ("ai-edge-report", "weekly paper feed filtered on Nest keywords"),
     ("orchestration-conflicts", "conflict rules when lanes share resources"),
 ]
