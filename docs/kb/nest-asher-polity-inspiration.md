@@ -134,6 +134,39 @@ to rewrite the minds unchecked.
 6. **One-shot personas** (sweep 2) — assassin-drone pattern: minimal
    single-task dispatch units, lightest persona tier.
 
+## Governance map — who holds what authority (2026-10-08)
+
+Tony's operating model, mapped onto the Polity frame:
+
+| Role | Polity analog | Holds |
+|---|---|---|
+| **Tony** | the politics the Polity abolished | Direction, resources, the promotion gate. One line of direction steers sweeps; approval is required and *evidence-backed* |
+| **Devin (sessions)** | EC persona / arbiter | Manages tools, writes specs, dispatches work, assesses evidence, proposes promotions |
+| **Ada** | citizen-facing persona | Report triage, discussion endpoint, routine delegation to lesser components (report-watch → brief → dispatch already wired) |
+| **Lesser minds** | lesser AIs / drones | L0 rules, L1 lanes, dispatched sessions, one-shot personas — under leash: telemetry + epoch fencing |
+| **CMS pages** | memcording / shared telemetry | The shared evidence layer every mind reads — reports, benches, research log, decision queue |
+
+**The evidence loop** (card `nest-evidence-loop` implements the gaps):
+
+Every answer/finding/bench lands as a CMS page per `cms-page-standard`
+(status line → Latest → sections → provenance + full meta). Pages are the
+shared memcord: Tony discusses them with Ada, Devin assesses them, corpus
+ingests them. The loop: producer → page → report-watch flag → Ada triage
+brief → Tony direction → card/dispatch → work → bench → page.
+
+Gaps to close:
+
+- **Research findings → CMS.** Polity sweep results currently live only in
+  git docs — invisible to Ada. Needs a `polity-research` page writer
+  (seeded manually 2026-10-08; automation pending).
+- **Decision surface.** A `nest-gate` page: pending promotions each with
+  the bench delta attached — Tony approves with numbers in view, never on
+  trust. This is the anti-rubber-stamp mechanism.
+- **Politics check.** A periodic audit page of accumulated auto-decisions —
+  what got delegated, what drifted. The Quiet-War countermeasure.
+- **Benchmarks need graphs.** Standard rule 4 — trend charts in
+  `stacks/web/public/apps/reports/`, not tables only.
+
 ## Continuous development program (proposal)
 
 Nest development runs as a standing loop keyed to this doc — the Polity
