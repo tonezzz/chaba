@@ -1,7 +1,7 @@
 id: ada-kanban-access
 title: Ada kanban access — tools + authority standard
 brief: Ada should review and take action on the board. Waiting in the backlog — no action needed yet.
-column: review
+column: doing
 priority: medium
 note: 'Tony ask (2026-10-06): Ada should review and take action on the board. Design: docs/design/ada-kanban-access.md.
   Channel already exists — board-api :8787 is the sanctioned write path with ''ada'' as an allowed comment identity;
@@ -11,15 +11,14 @@ note: 'Tony ask (2026-10-06): Ada should review and take action on the board. De
   Delivered 2026-10-06: kanban-brief.py (T0/T1 — deterministic Eisenhower ranking -> CMS kanban-brief, 30m timer)
   + kanban-act.py (T2 — cards with autonomy:t2 + auto_done_when checks all passing get auto-closed, bounded check
   vocabulary, kanban_act ops events). Remaining: board-api token + kanban tool group for Ada voice path.'
-updated: 2026-10-08 10:32
+updated: 2026-10-08 14:03
 action:
   type: dispatch
-  status: done
+  status: running
   repo: ada-pi
-  runner: tony-dell
-  task_id: 20261008-055425-implement-ada-kanban-access-pe
   result: 20261008-055425-implement-ada-kanban-access-pe finished (inactive) — see `devin-dispatch logs 20261008-055425-implement-ada-kanban-access-pe`
   verified: true
+  runner: tony-omen
 spec: 'Implement Ada kanban access per docs/design/ada-kanban-access.md (in the chaba checkout — read it first).
   Ada reviews and acts on the board within the authority standard the design defines: which card fields she may
   write, which transitions need Tony''s confirm, and how board requests reach her. Build the ada-pi side: tool(s)
@@ -99,6 +98,37 @@ comms:
 - at: 2026-10-08 10:32
   from: chaba
   text: 'merge-sweep: dispatch/20261008-055425-implement-ada-kanban-access-pe already in origin/main — marked verified'
+- at: 2026-10-08 13:55
+  from: tony
+  text: 'answered merge-conflict: suggest how to fix?'
+- at: 2026-10-08 13:55
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-08 13:55
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 13:56
+  from: tony-omen
+  text: claimed
+- at: 2026-10-08 13:56
+  from: chaba
+  text: started devin-task-20261008-135610-implement-ada-kanban-access-pe on tony-omen (dispatch)
+- at: 2026-10-08 14:01
+  from: devin
+  text: 'resumed: prior dispatch branch already merged to main (kanban tool consolidated). 51/51 unit tests pass
+    locally. Now live-verifying on ada-dev idc03:8005.'
+- at: 2026-10-08 14:03
+  from: ada
+  text: 'live-verify on ada-dev (idc03:8005): kanban tool registered + working — list/read OK, review->done refused
+    w/o evidence, priority:high close confirm-gated (needs_confirm+token). Tool write path verified by this comment
+    landing as from:ada.'
+- at: 2026-10-08 14:03
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-10-08 14:03
+  from: ada
+  text: 'raised request kanban-tool-verified-live-on-ada-dev-lis-550bf3: Kanban tool verified live on ada-dev (list/read/comment/gates).
+    OK for me to move this card review->done when it reaches'
 claim:
   since: 2026-10-08 05:54
 requests:
@@ -107,7 +137,13 @@ requests:
     origin/main in ada-pi — conflicted paths: backend/tool_guide.yml, backend/tools.d/ada_board_write.py, backend/tools.d/ada_track_device.py.
     Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261008-055425-implement-ada-kanban-access-pe by hand,
     or retry/abandon the card.'
-  status: resolved
-  answer: Resolved by devin — merged to ada-pi origin/main as f2a42b9 (semantic resolution, see comms).
+  status: answered
+  answer: suggest how to fix?
   at: 2026-10-08 10:17
   from: chaba
+- id: kanban-tool-verified-live-on-ada-dev-lis-550bf3
+  ask: Kanban tool verified live on ada-dev (list/read/comment/gates). OK for me to move this card review->done
+    when it reaches review, or do you want to eyeball first?
+  status: open
+  at: 2026-10-08 14:03
+  from: ada
