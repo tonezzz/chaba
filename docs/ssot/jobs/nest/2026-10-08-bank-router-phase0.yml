@@ -1,0 +1,158 @@
+title: Bank-router Phase 0 — memory-search pause is embed-bound, not fan-out-bound
+subtitle: Measured ada_memory_search wall-time split before building the router
+icon: ruler
+version: 1
+
+card: nest-bank-router
+date: 2026-10-08
+dispatch: 20261008-094913-phase-0-measure-first-don-t-bu
+
+question: |
+  Phase 0 of card nest-bank-router: instrument ada_memory_search and
+  measure the wall-time split (query embed vs per-bank vector search vs
+  total) BEFORE training a router — the card's own caveat: "If embed
+  latency dominates (gemini-ollama-proxy queue), the router only partly
+  helps."
+
+measured: |
+  Two independent measurements, both 2026-10-08 on production idc03:
+
+  A) Direct replay probe (scripts/ada/bank-router-probe.py):
+     replays memory_ops.memory_search's exact fan-out — parallel
+     /v1/vector-search per bank collection (23 banks, instance tony).
+     - text arm (query embeds remotely):  fan-out p50 ~1.6s, p95 ~2.5s
+     - vector arm (pre-embedded 768-d):   fan-out p50 ~140ms total
+     - per-bank server searchStats.durationMs: ~1ms warm
+     - remote embed per unique text:      ~1.2–1.7s
+       (mddb ollama provider -> gemini-ollama-proxy :11435 ->
+        OpenRouter google/gemini-embedding-2, direct-Gemini fallback)
+     - one cold fan-out => ~7–12 real remote embed calls server-side
+       (in-flight dedup + text-keyed embed cache absorb the rest)
+     - embed cache observed persistent >=13min: repeat text ~15–21ms
+       cross-collection; warm full fan-out measured 114ms.
+
+  B) 7-day production journal mining (scripts/ada/bank-router-mine.py,
+     pairs function_call received/result for ada_memory_search):
+     - 1366 completed calls, 2026-10-06..10-08 (~28/day)
+     - latency p50=1.333s  p90=2.636s  p95=3.107s  p99=15.3s  mean=1.674s
+     - bank_arg: 'all' 1136 (83%), named bank 230
+     - bank='all'  p50=1.394s p95=3.161s
+     - named-bank  p50=1.095s p95=1.797s   <- only ~21% faster
+     - warm calls (<300ms): 26% at p50 ~21ms; cold 74% p50 1.501s
+     - zero-hit calls: 247 (18%) — still paid ~0.8-1.4s each
+     - top hit by bank: devin 309, sessions 283, (none) 247,
+       ops-scenarios 247, general 52, personal 45, ideas 45, cms 42,
+       people 23, infrastructure-ssot 21, personal-kk 17, github 17
+     - top=sessions calls p50 0.023s — sessions scope is ops-routed
+       (keyword listing, no remote embed) => already fast today
+
+mechanism: |
+  The pause is ~90% remote query-embedding, NOT the N-bank fan-out.
+  - Embedding is server-side inside mddb handleVectorSearch
+    (services/mddbd/vector_handlers.go: s.Embedding.Embed per request).
+  - Every text-query vector-search call embeds; ada-pi fires one per
+    bank in parallel => up to 23 remote calls/fan-out; dedup+cache
+    bring it to ~7–12 actual proxy calls.
+  - mddb has a text-keyed query-embed cache (persistent, observed
+    >=13min TTL, cross-collection) — repeat phrasings are ~20ms.
+  - Novel phrasings are the norm (821 distinct queries / 1366 calls)
+    => 74% of calls pay the cold ~1.3-1.7s embed.
+  - A per-collection fast path exists for ~7 banks on cold parallel
+    fan-outs (returned ~20ms with real scored hits) — most likely a
+    per-(collection,query) result cache from earlier identical queries;
+    not fully explained, see open_items.
+
+  ALSO found: /v1/cross-search embeds ONCE for N targetCollections
+  (services/mddbd/cross_search.go) — an existing endpoint that turns a
+  fan-out into a guaranteed single-embed, single-request search.
+
+implications_for_router: |
+  Phase-0 verdict — the card's worry is confirmed, with numbers:
+  - Routing alone (all -> 1-2 banks) saves ~21% p50 cold (1.394->1.095s
+    measured on named-bank calls). It does NOT reach the card's >=40%
+    p50 reduction on routed COLD turns — the residual is the shared
+    ~1.3s embed every routed call still pays.
+  - The real wins, ranked:
+    1. skip verdicts — kill the whole call on no-memory turns.
+       18% of prod calls return zero hits (proxy for skippable); each
+       saves ~0.8-1.4s AND the downstream hit-injection/noise.
+       Zero-regret requirement stands (adversarial suite covers it).
+    2. cross-search for the routed set — 1 request, 1 guaranteed embed,
+       no cache dependence; warm ~30-50ms. Removes the 7-12 stray
+       proxy calls per fan-out (API load ~12x lower) — worth wiring
+       for bank='all' too, independent of the router.
+    3. Same-space LOCAL embedder — the only way to make cold routed
+       calls fast (~140ms). Needs a gemini-embedding-2-compatible local
+       model (doesn't exist) OR a dual-space re-index of the banks —
+       bigger infra decision, weigh separately per the card.
+    4. Semantic embed cache (embed query with a tiny local model,
+       reuse cached gemini vector when cosine>=~0.98) — would turn most
+       paraphrase misses into warm hits; novel but unproven.
+  - Router still earns its keep: fewer banks = tighter hit set (recall
+    quality: today 23 banks' hits crowd out the right one — mined rows
+    show junk top-banks on non-memory turns), ~12x less proxy load, and
+    it is the gate that enables skip at all.
+  - Recommended acceptance reframe for the card: report the p50 on
+    routed MEMORY turns AND overall (skip turns at ~0ms pull the mix
+    well past 40%: modeled mix ~74%*(1.1..1.4s) + 18-26%*~0s +
+    repeats ~0.02s => overall p50 lands ~0.5-0.7s vs today's 1.33s).
+
+phase_1_delivered: |
+  ada-pi worktree ada-wt-bank-router, branch dispatch/20261008-bank-router
+  (commit 3a29d78, NOT pushed):
+  - instrumentation: memory_ops._timed_bank_docs + 'memory_search
+    timing' / 'memory_search tool timing' greppable log lines
+    (per-bank ms, per-scope split banks/sessions/guest, hits, top_bank).
+    Deploy = push + deploy-ada.sh on idc03 — needs approval; see
+    blocked_on.
+  - bench: tests/bench/domains.yml `bankq` domain (23 banks + sessions +
+    skip criteria); suites.yml `bank-router` suite — golden 14 /
+    hard 25 / adversarial 14; labels verified inside criteria;
+    suite loads+runs via `orch-bench.py --suite bank-router`
+    (stub student 0/4 as expected — no specialist yet).
+  - corpus: tests/bench/bankq-corpus-20261008.jsonl — 1366 mined prod
+    rows (query, utterance(687), bank_arg, hit_banks, top_bank,
+    latency_s) — the free labeled training feed. Caveat: free labels
+    are 'which bank produced the top hit', not intent — noise visible
+    (e.g. 'what is two plus two' -> devin); hard-set rows were
+    label-corrected by hand.
+  - chaba worktree: scripts/ada/bank-router-probe.py (replay probe),
+    scripts/ada/bank-router-mine.py (journal miner, utterance join via
+    'INFO tools:' context lines + transcripts).
+
+open_items: |
+  - ~7 banks returned ~20ms with real hits on cold parallel fan-outs —
+    suspected per-(collection,query) result cache or a fast path in the
+    deployed 2.15.4-lsn build (image built on idc03; this checkout
+    shows none). Worth one look in the deployed build when convenient.
+  - Zero-hit != skippable is NOT auto-labeled — mined skip labels need
+    the utterance audit; current skip cases are hand-labeled.
+  - bank='all' quality issue surfaced by mining: non-memory turns still
+    return scored hits (garbage-in) — the router's 'skip' also improves
+    answer quality, not just latency.
+
+blocked_on: |
+  Deploy of the instrumentation (push ada-pi branch + deploy-ada.sh on
+  idc03) needs Tony's approval — then ~24h of 'memory_search timing'
+  rows lands the production split per the card. Meanwhile the 7-day
+  journal numbers above already answer the phase-0 question.
+
+next_steps: |
+  - Deploy instrumentation (approval) -> 24h timing rows via miner.
+  - Phase 2: distilbert multi-label seq-cls on bankq-corpus (bank set +
+    skip), tony-omen GTX1650 lane; target <20ms CPU.
+  - Phase 3: routed bank hint on ada_memory_search via shadow verdict
+    log; consider /v1/cross-search for the routed set (single embed).
+  - Extend miner to ingest the new 'memory_search timing' lines for the
+    embed-vs-search split once deployed.
+
+verify: |
+  - probe: python3 scripts/ada/bank-router-probe.py --iters 6
+  - mine:  ssh idc03 'journalctl --user -u ada-ha-tony --since "-7 days"
+    --no-pager' | python3 scripts/ada/bank-router-mine.py --stats
+  - suite: cd ada-wt-bank-router/tests/bench &&
+    python3 orch-bench.py --suite bank-router --structure cascade \
+      --heavy http://idc02:8777 --arbiter http://idc02:8777
+  - unit:  pytest tests/test_memory_banks.py
+    tests/test_memory_recall_extras.py tests/test_dead_turn.py
+    (110 passed on the dispatch branch)
