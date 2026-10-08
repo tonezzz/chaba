@@ -1,6 +1,7 @@
 # Chaba Nest — Portable Brains (research program)
 
 Status: draft, 2026-10-07. Anchor card: `docs/ssot/kanban/cards/nest-portable-brains.yml`.
+Concept source: `docs/kb/nest-asher-polity-inspiration.md` (Neal Asher Polity persona model).
 
 ## Idea
 
