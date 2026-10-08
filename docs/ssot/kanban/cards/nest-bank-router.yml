@@ -28,7 +28,7 @@ spec: "Phase 0 — measure first (don't build on assumption):\n- Instrument ada_
 help: 'Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate). Corpus path: transcripts already record
   tool calls — bank arg + result bank are the labels. Pair with nest-lane-tony-dell for edge-inference numbers;
   adversarial skip cases are the differentiator vs a naive always-search baseline.'
-updated: 2026-10-08 14:02
+updated: 2026-10-08 14:33
 action:
   type: dispatch
   status: running
@@ -118,6 +118,17 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261008-094913-phase-0-measure-first-don-t-bu no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-10-08 14:33
+  from: devin
+  text: 'raised request approve-phase-3-shadow-deploy-push-ada-p-f0f723: Approve Phase-3 shadow deploy? Push ada-pi
+    branch dispatch/20261008-135509-bankq-student (f249d5f) + copy ~/bankq-studen'
+- at: 2026-10-08 14:33
+  from: devin
+  text: 'phase2+3 code done: bankq student (distilbert-m multi-label, 24 labels) trained+benched 20-23/53 vs stub
+    0/4, ~40ms CPU. KEY FINDING: mined top_bank agrees with hand labels only 2/22 — junk-hit banks (sessions/devin/cms)
+    corrupt free labels; kept named bank_arg (230) + hand augments. Shadow wiring in ada_memory_search (routed_banks
+    hint, env router, parallel verdict log + divergence corpus). Live telemetry: 41/41 embed-bound, p50 12.7s today
+    (proxy congested), fan-out 27.3s vs 1-bank 10.3s. Depl'
 ownership:
   owner: tony
 requests:
@@ -129,4 +140,12 @@ requests:
   at: 2026-10-08 10:11
   from: devin
   answer: approve.
+- id: approve-phase-3-shadow-deploy-push-ada-p-f0f723
+  ask: Approve Phase-3 shadow deploy? Push ada-pi branch dispatch/20261008-135509-bankq-student (f249d5f) + copy
+    ~/bankq-student/ckpt to idc03, run scripts/bankq/serve-student.py as a small :8791 service, set ADA_BANKQ_ROUTER_URL=http://127.0.0.1:8791
+    MODE=shadow on ada-ha-tony. Shadow mode changes NOTHING user-visible — verdicts log + divergences to router
+    corpus only.
+  status: open
+  at: 2026-10-08 14:33
+  from: devin
 claim: {}
