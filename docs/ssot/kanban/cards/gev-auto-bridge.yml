@@ -4,11 +4,13 @@ column: done
 generated: gev-auto-health
 program: gev
 area: monitoring
-priority: high
-note: 'Auto-recovered 2026-10-05: `bridge` check passing again.'
+priority: medium
+note: 'Auto-recovered 2026-10-08: `bridge` check passing again.'
 help: 'Quadlet ~/.config/containers/systemd/gev-gemini.container runs the Gemini Live
   bridge (image localhost/gev-gemini, Network=host, :8789 ws + :8790 cmd). Fix: systemctl
   --user start gev-gemini. If the image is stale: podman build -t localhost/gev-gemini:latest
   ~/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini && systemctl --user
   restart gev-gemini'
-updated: '2026-10-05'
+updated: '2026-10-08'
+brief: 'An automated health check flagged: gev-gemini service not active. Read the
+  note, fix it, then close the card.'
