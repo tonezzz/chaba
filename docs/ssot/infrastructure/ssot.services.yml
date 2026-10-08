@@ -695,8 +695,8 @@ tony-omen:
     host: tony_omen
     port: "127.0.0.1:18789 (loopback, token auth)"
     config: ~/.openclaw/openclaw.json
-    models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
-    auth_profile: "openrouter:manual — key shared with idc03 mddb-gemini.env OPENROUTER_API_KEY"
+    models: "primary openrouter/free (OR auto-router — resilient to free-model retirements) + ranked :free fallbacks (GhostRoute-managed); qwen/qwen3.8-27b:free retired 2026-10 (paid-only now)"
+    auth_profile: "openrouter:manual — key shared with idc03 mddb-gemini.env OPENROUTER_API_KEY; the live credential is the `authProfiles.store` row in ~/.openclaw/state/openclaw.sqlite (config_machine_state table) — re-paste goes THERE, not openclaw.json; source copy also kept at ~/.config/secrets/openrouter.env"
     channels:
       telegram:
         bot: "@myChabaBot (polling mode; NOT the ada-tg-relay bot — different token, no update-stealing)"
@@ -715,7 +715,9 @@ tony-omen:
       nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
     known_issues:
       - "ghostroute writes OR model ids unprefixed — FIXED via fork tonezzz/GhostRoute c6ca06d (cli.py + watcher.py). Standard: fork patched deps to tonezzz, keep fixes quiet — no upstream PR unless explicitly decided. Local install at ~/.openclaw/workspace/skills/ghost-route now tracks origin=tonezzz/GhostRoute (upstream=kittimasak for pulls)"
-      - "OR key in auth profile openrouter:manual must be re-pasted whenever idc03 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
+      - "OR key in auth profile openrouter:manual must be re-pasted whenever idc03 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s; again 2026-10-08 — fix = update authProfiles.store in openclaw.sqlite + ~/.config/secrets/openrouter.env)"
+      - "unprefixed model ids in agents.defaults.models / model.fallbacks cause 'Unknown model' cascades that starve every turn (found 2026-10-08 — pre-c6ca06d ghostroute residue, cleaned; fix now writes prefixed ids)"
+      - "the main TG session hit 654 messages → every turn pays a preflight compaction summarization on the primary model; a dead primary = total channel outage, a slow one = minutes-per-reply. Compact/reset the session if it feels sluggish"
       - "opennb MCP removed 2026-10-04 (ONB retired); if revived, first fix upstream quota — gemini flash key saturates under ada/yomi load, OR-provider inside ONB was the planned dodge"
     status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29, paired 2026-10-02
     risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
