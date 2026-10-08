@@ -1,0 +1,160 @@
+title: Release Lifecycle Standard
+subtitle: Idea -> experiment -> alpha -> beta -> pre-prod -> production, with a feedback loop at every stage — the rules a change must satisfy to be called "released"
+icon: rocket
+version: 1
+last_updated: "2026-10-08"
+
+overview:
+  purpose: |
+    Every feature/fix travels the same six-stage path and leaves evidence
+    at each gate. The stages are orthogonal to the two HA lanes
+    (household tony-dev->tony-ha, private ada-dev->ada-ha) and apply to
+    HA config, card bundles, ada-pi backend, and scripts equally.
+    The point is the feedback loops: every stage writes back to the
+    kanban card — capture acks, experiment results, scenario scores,
+    soak findings, parity diffs, post-deploy health — so a stalled or
+    regressed change is visible on the board, not lost in a chat.
+  rule_zero: |
+    A request with no card does not exist (AGENTS.md open-ask duty). A
+    card without verify evidence does not promote. A production change
+    without explicit same-session approval does not ship.
+
+stages:
+  s0_idea:
+    label: Idea / capture
+    where: "ada voice (ada_board_write create), Devin open-ask duty, focus-inbox, manual card"
+    entry: any request or fragment worth keeping
+    exit_gate: >-
+      kanban card exists in column backlog with title + metric + verify;
+      half-formed bursts may park in ada-ha-bank-ideas until elaborated.
+    evidence: card comms "captured-by" stamp (board-api already records `from`)
+    feedback_loop: >-
+      capture actor posts card id back to the requester immediately;
+      request-sweep re-pings unactioned backlog items so nothing rots.
+    authority: autonomous (t0)
+
+  s1_experiment:
+    label: Experiment / spike
+    where: "ada-dev (ada-ha private for quick hacks), worktrees, experiments/, dispatch lanes"
+    entry: card exists; hypothesis written (card lab.hypothesis)
+    exit_gate: >-
+      hypothesis answered pass/fail with evidence in card comms; any
+      code lives on a branch/worktree, not the live checkout.
+    evidence: card comms [exp] note + committed experiment artifact
+    feedback_loop: >-
+      result is written as card comms the same session; abandoned
+      experiments leave a 'parked because' note — never silent.
+    authority: autonomous (t0-t2)
+
+  s2_alpha:
+    label: Alpha / self-verify
+    where: "dev twin of the target lane (ada-dev :8128 or tony-dev :8127); ada-dev lane for ada-pi"
+    entry: experiment passed; change deployed to the dev twin
+    exit_gate: >-
+      relevant live scenario(s) pass 2 consecutive runs; tool-lint /
+      typecheck / ssot-validate clean; no errors in the dev twin's log
+      during the test window.
+    evidence: scenario result docs in ada-ha-scenario-reports + card comms link
+    feedback_loop: >-
+      scenario failures bounce the card back to doing with the failing
+      turn cited in comms; hourly smoke suite re-runs detect drift.
+    authority: autonomous (t2 — dev twins only, no prod writes)
+
+  s3_beta:
+    label: Beta / real-use soak
+    where: "dev twin public URL (CF Access) for household features; ada-ha private prod for private features"
+    entry: alpha gate green; card moved to review
+    exit_gate: >-
+      72h soak OR >=3 real sessions, zero auto-opened incident cards
+      attributable to the change, user feedback captured (transcript or
+      explicit verdict).
+    evidence: card comms beta-soak note + ada-transcript-audit extract
+    feedback_loop: >-
+      report-watch / logs-kanban / transcript audit findings link back
+      to the card; a regression during soak reverts to alpha stage.
+    authority: t2 — bounded; user-facing rollout stays reversible
+
+  s4_preprod:
+    label: Pre-production / release candidate
+    where: "tony-dev with prod-parity config + actuation guard (ha-staging-actuation-guard)"
+    entry: beta gate green
+    exit_gate: >-
+      parity diff between dev twin and prod shows exactly the declared
+      scope (nothing extra, nothing missing); promote dry-run output
+      attached to comms; rollback step written.
+    evidence: parity diff + rollback plan in card comms
+    feedback_loop: >-
+      unexplained drift in the parity diff blocks promotion — drift
+      means the two instances diverged and the release would be
+      untestable.
+    authority: gate — explicit same-session human approval required (t3)
+
+  s5_production:
+    label: Production
+    where: "tony-ha :8123 (household) or ada-ha :8125 (private); ada-pi prod on idc03"
+    entry: s4 approval granted in-session
+    exit_gate: >-
+      promote script ran with --confirm; post-deploy smoke within 30min;
+      sync-ssot-from-live + commit + push; SSOT/AGENTS updated;
+      dashboard mutations synced immediately (parallel-session rule).
+    evidence: deploy log + smoke result + commit hash in card comms; card -> done
+    feedback_loop: >-
+      staleness-sentinel confirms the running process matches the new
+      files (<10min sweep); health checks go green; hourly smoke suite
+      re-verifies the scenario.
+    authority: t3 — approval gate; promote scripts enforce --confirm
+
+  s6_feedback:
+    label: Feedback loop (continuous, every stage)
+    where: "whole fleet — this stage never ends"
+    exit_gate: n/a — runs forever
+    feedback_loop: >-
+      regressions auto-open cards via report-watch (staleness),
+      logs-kanban (severe spikes), mddb-binlog-canary, ssh-canary,
+      transcript audit flags, scenario-suite flakes — all converge to
+      focus-inbox -> kanban card -> s0 again. Postmortem entries append
+      to the release card and can mint ssot.learning.* records.
+
+bars:
+  alpha:
+    consecutive_scenario_passes: 2     # flaky-then-green is not green
+    lint_and_validate: clean
+  beta:
+    soak_hours: 72                    # or sessions_min, whichever first
+    sessions_min: 3
+    attributable_incident_cards_max: 0
+  preprod:
+    parity_unexplained_drift_max: 0   # any unexplained diff blocks
+    rollback_plan_required: true
+  production:
+    post_deploy_smoke_within_min: 30
+    sync_ssot_required: true          # sync-ssot-from-live.sh after any
+      # push-dashboard mutation — unsynced live state is the main
+      # cross-session drift source
+    approval: same-session-explicit   # never automatic, never implied
+  feedback:
+    regression_to_card_min: 15        # kanban-sync cadence bound
+    release_review_by_days: 30        # card review_by = postmortem window
+
+deployment:
+  gates_existing:
+    capture: "board-api POST /card; Ada ada_board_write action=create; Devin open-ask duty"
+    alpha_scenarios: "tests/scenarios-live/* via scenario-live.py; hourly smoke timer on idc03"
+    parity: "scripts/home-assistant/frontend-parity-check.sh (tony-ha<->michael-ha today; generalize per-lane)"
+    promote: "deploy-card.sh (dev), promote-michael.sh, promote-tony.sh"
+    feedback: "report-watch.timer, logs-kanban, staleness-sentinel, mddb-binlog-canary, ada-transcript-audit skill"
+  gaps:
+    - "per-lane parity checker (tony-dev<->tony-ha, ada-dev<->ada-ha) — card ha-release-pipeline"
+    - "stage-transition evidence convention ([exp]/[alpha]/[beta]/[rc] comms tags) not yet enforced by a checker"
+    - "beta soak tracking — no timer measures soak windows; card owner decides for now"
+    - "post-deploy smoke hook — today manual; belongs inside promote-*.sh"
+
+reads:
+  standard_file: this file — promote scripts and scenario gates should
+    read bars from here so threshold changes are config, not code.
+  related:
+    - docs/ssot/kanban/cards/ha-lanes-program.yml
+    - docs/ssot/kanban/cards/request-lifecycle.yml
+    - docs/ssot/kanban/cards/ops-incident-ladder.yml
+    - docs/ssot/infrastructure/ssot.log-digest-standard.yml (same
+      measurable-bars + checker pattern)
