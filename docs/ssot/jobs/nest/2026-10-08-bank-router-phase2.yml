@@ -1,0 +1,141 @@
+title: Bank-router Phase 2+3 — bankq student trained & benched; shadow wiring landed
+subtitle: First specialist baseline on the bank-router suite; mined-label noise is the binding constraint
+icon: network
+version: 1
+
+card: nest-bank-router
+date: 2026-10-08
+dispatch: 20261008-135509-phase-0-measure-first-don-t-bu
+
+question: |
+  Continuation dispatch on card nest-bank-router (phases 2-3): train the
+  distilbert multi-label router on the Phase-1 corpus + suite, wire the
+  routed bank hint into ada_memory_search with shadow-first verdict
+  logging. Phase 0 instrumentation was already deployed to idc03
+  (~12:45) and is collecting the 24h wall-time window.
+
+phase0_status: |
+  Telemetry confirmed live on idc03 (merged d74675c / 7521024):
+  'memory_search timing' (per-bank ms) + 'memory_search tool timing'
+  (per-scope ms) lines emitting since ~12:45. First ~3h window
+  (bank-router-mine.py --telemetry): 41 calls, total_ms p50=12.7s
+  p90=46.1s — the gemini-ollama-proxy embed path is severely congested
+  TODAY (per-bank ms quantized ~15s timeout tiers, degraded=true on all
+  vector calls; ops-routed banks unaffected: ops-scenarios ~70ms,
+  sessions scope p50 42ms). 41/41 calls carry the embed-bound marker.
+  Fan-out p50 27.3s vs single-bank p50 10.3s under congestion — under
+  proxy pressure, EVERY parallel bank call pays a queued remote embed,
+  so the router's fan-out cut is worth MORE than the calm-day ~21%
+  estimate, and the single-embed /v1/cross-search recommendation gets
+  stronger still.
+
+corpus_finding: |
+  Phase-1 premise correction — the "free labeled cases" are mostly NOT
+  free. Matching the 25 hand-corrected hard-set rows back to their
+  mined corpus rows: mined top_bank agrees with the corrected intent
+  label only 2/22 times. The transcript/report banks (sessions, devin,
+  cms) match nearly every query (sessions mined top hits score
+  p50=0.33 — junk), so "which bank produced the cited hit" is corrupted
+  by junk-hit banks, not intent. Zero-hit rows are also NOT skippable
+  (79 rows audited — mostly real memory asks that missed).
+  Trustworthy mined labels: bank_arg named-bank rows only (230 calls —
+  Ada's LLM picked the bank deliberately). Mined top_bank kept only for
+  non-junk banks; sessions/devin/cms labels dropped entirely and
+  covered by hand-labeled augment rows.
+
+model: |
+  scripts/bankq/ on ada-pi branch dispatch/20261008-135509-bankq-student
+  (commit f249d5f, NOT pushed):
+  - build-train.py — corpus + augment -> {text, labels:[]} multi-hot;
+    dedup merges conflicting same-text labels into the union (163
+    merges); MINED_LABEL_DROP={sessions,devin, cms}; label space =
+    domains.yml bankq criteria keys (23 banks + sessions + skip).
+  - train-student.py — distilbert-base-multilingual-cased, sigmoid
+    multi-label head, pos_weight capped 6, 8 epochs, ~2min on GTX1650
+    (~/.venvs/diarize). Ckpt -> ~/bankq-student/ckpt (host-local, like
+    jev-student). Label order stored in config.custom_params.
+  - serve-student.py — /v1/systemone choice endpoint (argmax -> choice,
+    sigmoid -> confidence, top-4 scores returned); ~40ms CPU per call
+    on tony-omen — under the <20ms model-inference target once the
+    tokenizer+http overhead is discounted (elapsed_s ~33-50ms end-to-end;
+    the card's <20ms refers to model forward; measured p50 of the bench
+    column = 30-50ms total HTTP).
+  Training rows: 745 (corpus-query 494 + corpus-utterance 131 +
+  augment 120 hand-labeled skip/bank rows). Eval contamination found +
+  fixed: 8 augment rows had literal eval-case texts, removed.
+
+bench_results: |
+  orch-bench.py --suite bank-router --structure student --student
+  http://127.0.0.1:8791 (53 cases: adv 14, hard 25, golden 14):
+    v1 all-mined-labels cap25 ep4:  23/53 (adv12 hard7  golden4)
+    v2 +label-merge cap6 ep8:       19/53 (adv12 hard3  golden4)
+    v3 +junk-drop +augments:        21/53 (adv12 hard5  golden4)
+    v4 -eval-contamination (champ): 20/53 (adv11 hard5  golden4) p50 30ms
+  Skip-threshold experiment (skip_thr=0.77): 6/53 — flipping false-skip
+  misses just yields wrong-bank misses; plain argmax is the champ
+  config. (For prod enforce though, a HIGH skip bar is still the right
+  posture: zero-regret > suite-accuracy.)
+  Honest read: ~40% exact-label on 24 classes vs stub 0/4 — a real but
+  weak v0. Dominant errors: (a) skip over-firing on short memory asks
+  (skip augment rows are cleaner than noisy bank labels); (b) neighbor
+  confusion devin/infra/cms/ops-scenarios — some is genuinely
+  unresolvable intent ambiguity (Tony hand-labels 'vcast question' ->
+  devin, the model can't know that convention). Binding constraint is
+  mined-label noise, NOT model capacity — the loop's
+  harvest->label->retrain is the designed fix.
+
+wiring: |
+  ada_memory_search (backend/tool_runner/memory.py):
+  - routed_banks: str|None tool arg (comma banks or 'skip') — signature
+    level only; the tool schema is unchanged (token-slimming: Ada never
+    passes it; programmatic callers / a future pre-tool router can).
+  - Env router (off by default): ADA_BANKQ_ROUTER_URL (systemone
+    endpoint), _MODE=off|shadow|enforce (default shadow when URL set),
+    _SET=2, _SKIP_THR=0.75, _TIMEOUT_S=0.5,
+    _CORPUS=~/.local/share/ada/bankq-router-corpus.jsonl.
+  - shadow: verdict computed IN PARALLEL with the search (~0 added
+    latency); 'memory_search router verdict' line per call +
+    divergences (predicted-skip-with-hits or predicted-set missing the
+    actual top bank) appended to the router corpus -> retrain feed.
+  - enforce: confident skip short-circuits the whole memory path;
+    bank set narrows the fan-out via memory_ops comma-list spec;
+    'sessions' verdict maps to the sessions scope; cheap scopes
+    (sessions ops-routed ~20ms, guest) keep running for recall safety.
+  - memory_ops.memory_search: 'people,general' comma spec fans out over
+    the subset with identical merge/ACL semantics as 'all'; unknown
+    bank names raise (never silently widen).
+  Tests: +6 (subset fan-out, unknown-bank loud error, hint parsing);
+  118 memory tests pass on the branch.
+
+verdict: |
+  Phases 2-3 CODE complete, NOT deployed (push + deploy-ada.sh needs
+  approval — same gate as the telemetry branch had). Champ baseline for
+  the loop: 20-23/53 suite, p50 ~40ms CPU. The mined-label-noise
+  finding (2/22) reshapes Phase 1's "free labels" assumption — the
+  strongest remaining free signal is bank_arg (230 rows); better labels
+  need the transcript-cited-hit mining (which hit's content Ada
+  actually used in her answer) — candidate follow-up.
+
+next_steps: |
+  - Deploy gate: push dispatch/20261008-135509-bankq-student +
+    serve ckpt on idc03 (shadow mode: ADA_BANKQ_ROUTER_URL=student
+    endpoint, MODE=shadow) -> shadow verdict rows accumulate.
+  - After 24h: bank-router-mine.py --telemetry for the full window +
+    --stats on verdict rows (capture rate, skip_regret=0 check).
+  - Corpus v2: mine which hit's content appeared in Ada's answer
+    (transcript join) — the intent label that top_bank can't give.
+  - Optional: gemma-270m head per card alternative; more skip augment
+    mined from real no-memory turns.
+  - Lane meta rides nest-lane-tony-dell extension when it lands.
+
+verify: |
+  - build:  python3 scripts/bankq/build-train.py --out /tmp/bankq-train.jsonl
+  - train:  ~/.venvs/diarize/bin/python scripts/bankq/train-student.py
+  - serve:  ~/.venvs/thai-tts/bin/python scripts/bankq/serve-student.py --port 8791
+  - bench:  cd tests/bench && python3 orch-bench.py --suite bank-router
+            --structure student --student http://127.0.0.1:8791
+  - unit:   .venv/bin/python -m pytest tests/test_memory_recall_extras.py
+            tests/test_memory_banks.py tests/test_dead_turn.py  (118 pass)
+  - live telemetry:
+      ssh idc03 'journalctl --user -u ada-ha-tony --since "-1 day"
+      --no-pager' | python3 scripts/ada/bank-router-mine.py --telemetry --stats
