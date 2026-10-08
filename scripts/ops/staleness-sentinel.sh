@@ -152,4 +152,17 @@ for f in "$STATE_DIR"/*.stale; do
         emit_event info "$u is fresh again (restarted or reloaded)"
     fi
 done
+
+# compact status file — consumers (Node-RED flows, dashboards) read this
+# instead of parsing the JSONL log
+python3 - "$LOG_DIR/staleness-latest.json" "$now_stale" <<'PY'
+import json, sys
+stale = sys.argv[2].split()
+stale = [u for u in stale if u]
+out = {"ts": __import__("datetime").datetime.now().astimezone().isoformat(timespec="seconds"),
+       "host": __import__("socket").gethostname(),
+       "stale_units": stale, "stale_count": len(stale)}
+with open(sys.argv[1], "w") as f:
+    json.dump(out, f)
+PY
 exit 0
