@@ -1,19 +1,22 @@
 id: verify-gdrive-offload-tier
 title: Verify mddb-standby-pull gdrive tier after next 03:30 run
-brief: "The nightly memory-database backup should now keep only the newest dump locally and push older ones to cloud storage. After the next 3:30am run, confirm it worked."
+brief: The nightly memory-database backup should now keep only the newest dump locally and push older ones to cloud
+  storage. After the next 3:30am run, confirm it worked.
 column: backlog
 note: retention changed 2026-10-07 — filecopy/ should hold newest-1 only, older dumps land in gdrive:backups/mddb/
 updated: 2026-10-07
-spec: 'After the next mddb-standby-pull.timer run (03:30 daily on
-  tony-dell): 1) journalctl --user -u mddb-standby-pull.service shows clean
-  exit; 2) ls ~/.local/share/mddb-backups/filecopy/ has exactly 1 file;
-  3) rclone lsl gdrive:backups/mddb/ shows the rotated dump;
-  4) ~/.config/containers/mddb/data/mddb.db timestamp refreshed. If the
-  unit failed, check whether rclone auth/network was the cause and report.
-  Card source: docs/ssot/jobs/infrastructure/2026-10-07-gdrive-storage-offload.yml'
+spec: 'After the next mddb-standby-pull.timer run (03:30 daily on tony-dell): 1) journalctl --user -u mddb-standby-pull.service
+  shows clean exit; 2) ls ~/.local/share/mddb-backups/filecopy/ has exactly 1 file; 3) rclone lsl gdrive:backups/mddb/
+  shows the rotated dump; 4) ~/.config/containers/mddb/data/mddb.db timestamp refreshed. If the unit failed, check
+  whether rclone auth/network was the cause and report. Card source: docs/ssot/jobs/infrastructure/2026-10-07-gdrive-storage-offload.yml'
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
 comms:
-  - {at: "2026-10-07 13:20", from: devin, text: "verify card for the gdrive tier added to standby-pull"}
+- at: 2026-10-07 13:20
+  from: devin
+  text: verify card for the gdrive tier added to standby-pull
+- at: 2026-10-08 15:30
+  from: devin
+  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'

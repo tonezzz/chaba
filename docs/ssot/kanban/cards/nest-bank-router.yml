@@ -138,6 +138,12 @@ comms:
 - at: 2026-10-08 14:35
   from: chaba
   text: auto-merged 0bc691e2 (dispatch/20261008-135509-phase-0-measure-first-don-t-bu) → origin/master
+- at: 2026-10-08 15:30
+  from: devin
+  text: 'phase-3 shadow deploy done: branch merged 872a0d5->main, ckpt copied omen->idc03, ada-bankq-student.service
+    live on 127.0.0.1:8791 (open-jev venv, enabled+active), ada-ha-tony env gained ADA_BANKQ_ROUTER_URL+MODE=shadow
+    and restarted active. Endpoint verified with real choice call (56ms, 24 labels). Verdicts now log ''memory_search
+    router verdict mode=shadow'' + divergences append to ~/.local/share/ada/bankq-router-corpus.jsonl'
 ownership:
   owner: tony
 requests:
@@ -154,7 +160,10 @@ requests:
     ~/bankq-student/ckpt to idc03, run scripts/bankq/serve-student.py as a small :8791 service, set ADA_BANKQ_ROUTER_URL=http://127.0.0.1:8791
     MODE=shadow on ada-ha-tony. Shadow mode changes NOTHING user-visible — verdicts log + divergences to router
     corpus only.
-  status: open
+  status: resolved
   at: 2026-10-08 14:33
   from: devin
+  resolved_at: 2026-10-08 15:30
+  resolved_by: devin
+  resolution: approved by tony; shadow router deployed + verified on idc03
 claim: {}

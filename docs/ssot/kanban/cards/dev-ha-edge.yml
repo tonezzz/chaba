@@ -1,6 +1,7 @@
 id: dev-ha-edge
 title: Add michael-dev/tony-dev to idc02 edge pattern
-brief: "Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued — a worker session will pick it up; no action needed."
+brief: Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued
+  — a worker session will pick it up; no action needed.
 column: backlog
 note: 'Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com -> edge + one Caddy block on idc02 +
   trusted_proxies (remember: .storage/http on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell
@@ -14,10 +15,13 @@ priority: low
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   button: ▶ Start
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (chaba lane, low)
+- at: 2026-10-08 15:30
+  from: devin
+  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
 updated: 2026-10-05 21:15

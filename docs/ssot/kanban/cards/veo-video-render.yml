@@ -1,6 +1,7 @@
 id: veo-video-render
 title: ada render — veo video gen -> LINE/TG/screens
-brief: "Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued — a worker session will pick it up."
+brief: Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued
+  — a worker session will pick it up.
 column: backlog
 program: media-gen
 metric: prompt (+ optional ref frame) -> short clip plays on a cast screen AND arrives as video in TG/LINE
@@ -21,9 +22,12 @@ priority: low
 action:
   type: dispatch
   repo: ada-pi
-  status: idle
+  status: queued
   button: ▶ Start
 comms:
 - at: 2026-10-05 21:15
   from: devin
   text: spec'd in batch (ada-pi lane, low)
+- at: 2026-10-08 15:30
+  from: devin
+  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
