@@ -38,6 +38,8 @@ sections:
         text: playlive-hosts-loader.py checks daemon health on startup and, if unhealthy, runs the host-specific systemd restart command from playlive-hosts.yml. playlive_self_heal provides the same on demand.
       - label: Focus escalation
         text: If both the primary and the failover are unreachable after self-heal and focus is enabled in playlive-hosts.yml, a focus-inbox item is written so the outage is triaged manually.
+      - label: Target preference (2026-10-08)
+        text: Tony prefers idc01–idc03 as playlive targets once a playlived/Chrome lane is provisioned there (target_preference block in playlive-hosts.yml; card playlive-idc-targets). As of 2026-10-08 no idc host runs playlived — tony-dell is the only live daemon, so the preference is pending provisioning.
 
   - title: Hosts & endpoints
     icon: 🌐

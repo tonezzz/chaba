@@ -6,6 +6,17 @@ subtitle: Chrome CDP host registry for the PlayLive MCP client
 # client can attach to.  The playlive-hosts-loader.py wrapper reads it, sets
 # PLAYLIVE_HOSTS as JSON, and then execs playlive-server.py.
 playlive_url: http://tony-dell.taila0626a.ts.net:9230
+
+# Target preference (Tony, 2026-10-08): prefer idc01–idc03 for playlive
+# sessions once a playlived/Chrome lane exists on them. Order below is
+# provisional (idc02 first — least loaded; idc01 last — retired/cold-batch
+# role). TODAY no idc host runs playlived, so nothing here changes until
+# card playlive-idc-targets provisions one. Loader ignores this key.
+target_preference:
+  order: [idc02, idc03, idc01, tony-dell, tony-omen, kk-macbook]
+  status: pending-provisioning
+  card: docs/ssot/kanban/cards/playlive-idc-targets.yml
+
 hosts:
   tony-dell:
     cdp: http://127.0.0.1:9222
