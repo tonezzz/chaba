@@ -61,3 +61,19 @@ links:
   - github:OpenMOSS/MOSS-TTS (Nano ~100M CPU-streaming — future Ada-voice candidate)
 blocked_by: []
 autonomy: t2
+comms:
+  - at: 2026-10-08 08:40
+    from: devin
+    text: >-
+      bench done (board-api hung at post time — trail here + report).
+      Automated gates PASS via VYNCX v2 (F5-TTS-TH-V2 IPA lane) through
+      new thai-clone-tts wrapper --batch + clause chunking: whisper
+      normCER 2.2% (<5%), CAM++ SIM 0.81 (>=0.5), 5/5 clips on-voice,
+      ~90s/clip on GTX1650 in ollama-idle windows. megaF5 fails CER
+      (~0.27-0.33); JaiTTS still HF-gated (open request). Remaining gate:
+      Tony blind listen >=4/5 — clips at tony-omen
+      ~/voice-clone-bench/out/wrapvyncx/. Report:
+      docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml; wrapper
+      scripts/ops/thai-clone-tts (installed ~/.venvs/thai-tts/bin);
+      speaker-id-tts-echo threat notes updated with clone-exposure
+      section.
