@@ -3,7 +3,7 @@ title: Semantic query cache — Weaviate (or MDDB) layer for repeat memory queri
 brief: 'Add a semantic cache in front of ada_memory_search: store {query embedding -> result} so a repeated or paraphrased
   question returns instantly instead of re-running embed + multi-bank vector search. Includes the cache-policy standard (what
   may be cached, TTLs, invalidation) and a bench suite so hit quality is measured continuously in the Nest loop.'
-column: review
+column: done
 priority: medium
 program: chaba-nest
 area: ada-tools
@@ -29,7 +29,7 @@ spec: "Phase 0 — prove the case first:\n- From the nest-bank-router instrument
 help: Reuses the bank-router corpus (same transcripts). Threshold is a tunable the Nest loop can bench per candidate config
   — hit-rate vs false-hit is the classic cache tradeoff curve; plot it. Weaviate MCP server (mcp-weaviate) already exists
   for experimentation.
-updated: 2026-10-08 15:54
+updated: 2026-10-08 18:20
 action:
   type: dispatch
   status: done
@@ -75,9 +75,13 @@ comms:
 - at: 2026-10-08 15:54
   from: chaba
   text: auto-merged a288a2a4 (dispatch/20261008-152527-phase-0-prove-the-case-first-f) → origin/master
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
 ownership:
   owner: tony
 claim: {}
 review_kind: verify
 auto_done_when:
 - verified_true
+autonomy: t2

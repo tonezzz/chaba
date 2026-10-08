@@ -1,0 +1,64 @@
+id: idc02-runner-smoke
+title: 'Smoke: idc02 runner end-to-end'
+brief: Verifies the new idc02 runner can claim, run, merge, and auto-close a dispatch card. Nothing needed from
+  you — it should drain itself; flag me only if it stalls.
+column: review
+priority: low
+created: '2026-10-08'
+autonomy: t2
+auto_done_when:
+- file_exists:reports/idc02-smoke.txt
+done_note: smoke artifact landed on master via auto-merge
+spec: 'Create the file reports/idc02-smoke.txt in this worktree containing exactly two lines: the output of `hostname`
+  and the output of `date -Iseconds`. Commit it on the session branch. That is the whole task — do not touch anything
+  else.'
+expected_goals:
+- id: artifact-exists
+  check: file-exists reports/idc02-smoke.txt
+action:
+  type: dispatch
+  status: done
+  host: idc02
+  verified: true
+  last_failure: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261008-183100-create-the-file-reports-idc02-.service:
+    Failed with result ''exit-code''. | devin-task-20261008-183100-create-the-file-reports-idc02-.service: Consumed
+    1.018s CPU time.'
+  attempts: 1
+  runner: idc02
+  result: 'exit=0 file was written and committed as `23f48276`, a status comment was posted to card `idc02-runner-smoke`,
+    and no pushes or other changes were made. | devin-task-20261008-183457-create-the-file-reports-idc02-.service:
+    Consumed 7.411s CPU time.'
+comms:
+- at: 2026-10-08 18:30
+  from: idc02
+  text: claimed
+- at: 2026-10-08 18:31
+  from: chaba
+  text: started devin-task-20261008-183100-create-the-file-reports-idc02- on idc02 (dispatch)
+- at: 2026-10-08 18:32
+  from: idc02
+  text: 'finished (ok): exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261008-183100-create-the-file-reports-idc02-.service:'
+- at: 2026-10-08 18:32
+  from: chaba
+  text: pushed dispatch/20261008-183100-create-the-file-reports-idc02- to origin
+- at: 2026-10-08 18:34
+  from: tony
+  text: retry requested
+- at: 2026-10-08 18:34
+  from: idc02
+  text: claimed
+- at: 2026-10-08 18:35
+  from: chaba
+  text: started devin-task-20261008-183457-create-the-file-reports-idc02- on idc02 (dispatch)
+- at: 2026-10-08 18:35
+  from: devin
+  text: 'smoke OK: reports/idc02-smoke.txt committed on session branch (467b159c)'
+- at: 2026-10-08 18:37
+  from: idc02
+  text: 'finished (ok): exit=0 file was written and committed as `23f48276`, a status comment was posted to card
+    `idc02-runner-smoke`, and no pu'
+- at: 2026-10-08 18:37
+  from: chaba
+  text: pushed dispatch/20261008-183457-create-the-file-reports-idc02- to origin
+updated: 2026-10-08 18:37
+claim: {}

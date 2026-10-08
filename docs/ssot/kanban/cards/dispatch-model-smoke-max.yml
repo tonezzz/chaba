@@ -1,7 +1,7 @@
 id: dispatch-model-smoke-max
 title: 'Smoke: swe-2-max model passthrough'
 column: done
-updated: 2026-10-08 18:20
+updated: 2026-10-08 18:24
 spec: 'Smoke test for action.model passthrough. Do NOT change any files. Run `git rev-parse --short HEAD` and `hostname`,
   then finish. Report: Max smoke OK: HEAD <sha> on host <hostname>.'
 action:
@@ -88,15 +88,19 @@ comms:
   from: devin
   text: 'merge-rescue: branch contained only dispatch-outcome.md scratch (smoke results already in comms/job trail)
     — nothing substantive to land, conflict resolved by taking HEAD'
+- at: 2026-10-08 18:24
+  from: tony
+  text: 'answered merge-conflict: next?'
 claim: {}
 requests:
 - id: merge-conflict
   ask: 'merge-sweep can''t land dispatch/20261008-095915-smoke-test-for-action-model-pa: 1 commit(s) conflict with
     origin/master in chaba — conflicted paths: dispatch-outcome.md. Merge mn01:/home/tony/CascadeProjects/dispatch-wt-20261008-095915-smoke-test-for-action-model-pa
     by hand, or retry/abandon the card.'
-  status: resolved
+  status: answered
   at: 2026-10-08 17:02
   from: chaba
   resolved_at: 2026-10-08 18:20
   resolved_by: devin
   resolution: branch was scratch-only — nothing to merge
+  answer: next?

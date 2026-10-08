@@ -3,7 +3,7 @@ title: CMS information architecture — group ada-cms-pages by real use, fix dup
 brief: 'ada-cms-pages has grown flat: ~100+ pages mixing reports, bench trends, camera pages, research notes, and
   one-offs — several keys duplicated. Assess the real navigation Tony and Ada use, group pages into sections, fix
   duplicate keys, and set a naming/grouping standard so new pages land in the right place.'
-column: backlog
+column: done
 priority: medium
 program: reports
 area: cms
@@ -24,12 +24,14 @@ spec: "1. Inventory: dump all ada-cms-pages keys + meta.kind/domain, cluster by\
 help: 'CMS = MDDB ada-cms-pages collection + viewer at /apps/ha/ada-tony/cms/ (Caddy /apps/ route). Generator examples:
   scripts/eye/bench-edge-cms.py, kanban-cms.py, scripts/lib/cms_index.py. Check how reports-index is generated before
   adding grouping.'
-updated: 2026-10-08 15:26
+updated: 2026-10-08 18:20
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-dell
   task_id: 20261008-152449-1-inventory-dump-all-ada-cms-p
+  result: 20261008-152449-1-inventory-dump-all-ada-cms-p finished (inactive) — see `devin-dispatch logs 20261008-152449-1-inventory-dump-all-ada-cms-p`
+  verified: true
 comms:
 - at: 2026-10-08 10:05
   from: devin
@@ -44,8 +46,29 @@ comms:
 - at: 2026-10-08 15:26
   from: devin
   text: 'started: dumping live ada-cms-pages, locating viewer app + ssot targets'
+- at: 2026-10-08 16:16
+  from: devin
+  text: 'done. Inventory: reports/cms-ia-inventory-2026-10-08.md (worktree, untracked — reports/ is gitignored).
+    Live collection: 389 docs, every doc has kind+domain+status, 0 exact dup keys, all superseded_by targets live.
+    Dedup: 4 cam-dohweb-* twins superseded to cam-traffic-doh-* (same PER_* streams; zones.yml trimmed so cam-wall-cms
+    stops reviving them); infrastructure/uncategorized-digest, services-by-host snapshot, gold-report redirected;
+    diverged pairs (nut-*, transcript-audit-*) kept. Standard: d'
+- at: 2026-10-08 16:18
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 16:19
+  from: chaba
+  text: 'session-end checkpoint 42493088: 1 leftover file(s) committed'
+- at: 2026-10-08 16:19
+  from: chaba
+  text: pushed dispatch/20261008-152449-1-inventory-dump-all-ada-cms-p to origin
+- at: 2026-10-08 16:19
+  from: chaba
+  text: auto-merged 5fb26906 (dispatch/20261008-152449-1-inventory-dump-all-ada-cms-p) → origin/master
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
 ownership:
   owner: tony
 claim:
-  session: 20261008-152449-1-inventory-dump-all-ada-cms-p
   since: 2026-10-08 15:24

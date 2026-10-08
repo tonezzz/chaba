@@ -2,7 +2,7 @@ id: veo-video-render
 title: ada render — veo video gen -> LINE/TG/screens
 brief: Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued — a worker
   session will pick it up.
-column: review
+column: done
 program: media-gen
 metric: prompt (+ optional ref frame) -> short clip plays on a cast screen AND arrives as video in TG/LINE
 verify: scenario vid_render_basic passes; tg chat prompt -> video arrives <3min
@@ -12,7 +12,7 @@ note: 'Veo (predictLongRunning on generativelanguage) for short clips. Same rend
   confirm at impl time (veo-3.x-generate-preview lineage); cost/quotas higher — add a per-call spend log + owner_only policy.'
 help: 'gen: longRunningPredict on generativelanguage.googleapis.com; send: same /frame URL + tg sendVideo/line videoMessage
   (both relays handle images today — video message types may need a small extension)'
-updated: 2026-10-08 15:41
+updated: 2026-10-08 18:20
 spec: 'ada_render_video(prompt, ref_url?, secs, aspect) via Veo predictLongRunning on generativelanguage — async op, poll
   until done (the long-poll shape needs a background task or bounded wait ~60-120s), then same artifact->URL hop as ada_render_image.
   Same render tool group. Verify: stubbed unit test; live scenario produces a playable clip URL.'
@@ -60,7 +60,11 @@ comms:
 - at: 2026-10-08 15:41
   from: chaba
   text: auto-merged 2aca049e (dispatch/20261008-152538-ada-render-video-prompt-ref-ur) → origin/main
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
 claim: {}
 review_kind: verify
 auto_done_when:
 - verified_true
+autonomy: t2

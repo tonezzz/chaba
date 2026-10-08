@@ -1,5 +1,6 @@
 id: mddb-binlog-canary
 title: mddb binlog size canary
+program: chaba-ci
 column: done
 note: Retention janitor is live, but a silent stall grows the file again — alert on /v1/replication/status binlog_size_bytes
   > 1G or oldest_lsn gap > 5M so we see it before the disk does.

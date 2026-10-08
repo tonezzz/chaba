@@ -348,6 +348,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a["status"] = "queued"
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
+        a.pop("verified", None)  # stale stamp must not survive a re-queue
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
@@ -359,6 +360,7 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             a["last_failure"] = str(prev)[:300]
         a.pop("runner", None)  # free for any host to re-claim
         a["attempts"] = int(a.get("attempts") or 0) + 1
+        a.pop("verified", None)  # a retried card is unverified until it lands
         comms_add(card, frm, "retry requested")
         return "re-queued"
     if verb == "close":

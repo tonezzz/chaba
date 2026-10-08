@@ -315,17 +315,24 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 
 
 def _merge_in(wt: Path, ref: str) -> tuple:
-    """merge --no-ff ref inside wt -> (ok, unresolved_conflict_paths).
+    """merge --no-ff ref inside wt -> (ok, unresolved_conflict_paths, err).
 
     Generated paths resolve --ours (default branch = served state, the
     safe-pull upstream-wins convention); dispatch-outcome*.md resolves
-    --theirs (session scratch). Any other conflict aborts."""
+    --theirs (session scratch). Any other conflict aborts. A merge that
+    fails without conflicted paths (e.g. missing git identity) surfaces
+    as err, not an empty conflict list."""
     r = sh(["git", "-C", str(wt), "merge", "--no-ff", "--no-edit", ref],
            timeout=90)
     if r.returncode == 0:
-        return True, []
+        return True, [], ""
     conflicted = sh(["git", "-C", str(wt), "diff", "--name-only",
                      "--diff-filter=U"]).stdout.split()
+    if not conflicted:
+        # merge died before conflict stage (missing ident, bad ref, ...)
+        err = (r.stderr or r.stdout).strip()[:200] or "merge failed"
+        sh(["git", "-C", str(wt), "merge", "--abort"], timeout=30)
+        return False, [], err
     unresolved = []
     for p in conflicted:
         if SESSION_SCRATCH_RE.match(p):
@@ -336,12 +343,12 @@ def _merge_in(wt: Path, ref: str) -> tuple:
             unresolved.append(p)
     if unresolved:
         sh(["git", "-C", str(wt), "merge", "--abort"], timeout=30)
-        return False, unresolved
+        return False, unresolved, ""
     if sh(["git", "-C", str(wt), "commit", "--no-edit"],
           timeout=30).returncode == 0:
-        return True, []
+        return True, [], ""
     sh(["git", "-C", str(wt), "merge", "--abort"], timeout=30)
-    return False, conflicted
+    return False, [], "commit after conflict resolution failed"
 
 
 def close_out(card: dict) -> dict:
@@ -381,6 +388,12 @@ def close_out(card: dict) -> dict:
         out.update(skipped=m["error"])
         return out
     if m["ancestor"]:
+        if s["head"] == _rev_parse(repo, s["base_ref"]):
+            # head == base tip: the session produced no commits — that is
+            # NOT merged work; verify would stamp a false positive.
+            out.update(noop=True,
+                       skipped="session produced no commits")
+            return out
         out.update(merged=True, noop=True,
                    note=f"{branch} already in {s['base_ref']}")
         return out
@@ -400,9 +413,12 @@ def close_out(card: dict) -> dict:
             return out
         mref = branch if _rev_parse(repo, f"refs/heads/{branch}") \
             else s["head"]
-        ok, conflicts = _merge_in(mwt, mref)
+        ok, conflicts, merr = _merge_in(mwt, mref)
         if not ok:
-            out["conflicts"] = conflicts
+            if merr:
+                out["error"] = f"merge: {merr}"
+            else:
+                out["conflicts"] = conflicts
             return out
         out["merged_sha"] = _rev_parse(mwt, "HEAD")
         r = sh(["git", "-C", str(mwt), "push", "-q", "origin",
@@ -413,9 +429,12 @@ def close_out(card: dict) -> dict:
                timeout=45)
             sh(["git", "-C", str(mwt), "reset", "-q", "--hard",
                 s["base_ref"]], timeout=30)
-            ok, conflicts = _merge_in(mwt, mref)
+            ok, conflicts, merr = _merge_in(mwt, mref)
             if not ok:
-                out["conflicts"] = conflicts or ["<post-push resync>"]
+                if merr:
+                    out["error"] = f"merge: {merr}"
+                else:
+                    out["conflicts"] = conflicts or ["<post-push resync>"]
                 return out
             out["merged_sha"] = _rev_parse(mwt, "HEAD")
             r = sh(["git", "-C", str(mwt), "push", "-q", "origin",

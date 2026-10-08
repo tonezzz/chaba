@@ -1,7 +1,7 @@
 id: voice-bench-harness
 title: Build voice-fallback benchmark harness
 column: doing
-updated: 2026-10-08 18:16
+updated: 2026-10-08 18:32
 priority: high
 program: voice-fallback
 tags:
@@ -39,6 +39,9 @@ action:
   model: swe-2-medium
   status: running
   runner: idc03
+  sweep:
+    stale_running: 2026-10-08 18:32
+    dirty: 1
 comms:
 - at: 2026-10-08 18:10
   from: tony
@@ -53,3 +56,11 @@ comms:
   from: devin
   text: 'harness built: combos.yml + 20 en/th fixtures + bench.py (dry-run schema verified) + report.py (empty table
     renders). Fixture wavs are tone placeholders — need a Gemini/Azure key on a runner for real speech.'
+- at: 2026-10-08 18:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261008-181050-build-scripts-voice-bench-the- no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-08 18:32
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261008-181050-build-scripts-voice-bench-the- on idc03 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'

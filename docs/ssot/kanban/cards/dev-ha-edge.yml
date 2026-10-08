@@ -2,7 +2,7 @@ id: dev-ha-edge
 title: Add michael-dev/tony-dev to idc02 edge pattern
 brief: Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued — a worker
   session will pick it up; no action needed.
-column: review
+column: done
 note: 'Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com -> edge + one Caddy block on idc02 + trusted_proxies
   (remember: .storage/http on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell port 8124 (http://127.0.0.1:8124
   on dell; tailnet HTTPS via tony-dell.taila0626a.ts.net:8124). tony-dev does not exist. Caution: dev instance — exposing
@@ -51,9 +51,13 @@ comms:
 - at: 2026-10-08 15:39
   from: chaba
   text: auto-merged c39be7d7 (dispatch/20261008-152454-add-michael-dev-tony-dev-to-th) → origin/master
-updated: 2026-10-08 15:39
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
+updated: 2026-10-08 18:20
 claim:
   since: 2026-10-08 15:24
 review_kind: verify
 auto_done_when:
 - verified_true
+autonomy: t2
