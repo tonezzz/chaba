@@ -1,23 +1,32 @@
 id: mddb-follower-stall
 title: mddb follower stream stalls silently — connected but stops applying
-brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere.
-  Waiting in the backlog — no action needed yet.
+brief: One memory-database replica quietly stops copying new data while still looking connected — no errors anywhere. Waiting
+  in the backlog — no action needed yet.
 column: review
 priority: high
-note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently
-  stalled while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828
-  and continued applying. Stream state isn''t surfaced: leader shows last_seen_at fresh but confirmed_lsn frozen
-  = the stall signal. Same silent-stall class as the original replication wedge. Likely a dropped apply goroutine
-  or blocked binlog read.'
+note: '2026-10-06: idc02 follower (2.15.4-lsn) resumed from persisted LSN at 11:34, applied to 149.57M, then silently stalled
+  while still "connected" — no errors in journal. Restart at 13:50 resumed from persisted LSN 149571828 and continued applying.
+  Stream state isn''t surfaced: leader shows last_seen_at fresh but confirmed_lsn frozen = the stall signal. Same silent-stall
+  class as the original replication wedge. Likely a dropped apply goroutine or blocked binlog read.
+
+  2026-10-07 dispatch (mn01): root cause = follower replicate() blocks in stream.Recv() with no deadline and no app-level
+  heartbeat (diagnosed by mddb-replication-heartbeat; a silently-dead stream = blocked Recv forever, connected=true, silent).
+  Code fix exists undeployed on mddb-fork repl-heartbeat @498cdc3 (15s heartbeat + 45s Recv deadline + connected/last_recv_at
+  status fields). Mitigation shipped in chaba: scripts/mddb-follower-watchdog.py + systemd/mddb-follower-watchdog .{service,timer}
+  restart the follower when confirmed_lsn is frozen >300s while last_seen_at stays fresh; mddb-binlog-canary.py now surfaces
+  per-follower stream state (connected/apply_lag_lsn/ frozen_seconds) and an explicit ''apply-stalled'' alert reason. Live
+  23:05Z: idc01 follower 13.2M behind but confirmed_lsn advancing — slow catch-up, correctly NOT flagged as stalled. Watchdog
+  install on idc02/idc01 pending approval.'
 help: 'Detect: leader /v1/replication/status shows follower confirmed_lsn frozen while current_lsn climbs and last_seen_at
-  stays fresh. Fix candidates: heartbeat/timeout on the follower receive loop, or a "applier-alive" metric the canary
-  can watch. mddb-fork repo.'
+  stays fresh; the canary now reports this as ''apply-stalled'' with frozen_seconds, and mddb-follower-watchdog.timer (once
+  installed on the follower host) restarts mddb-follower.service automatically. Permanent fix: merge + deploy mddb-fork repl-heartbeat
+  (Recv deadline); watchdog remains as safety net. See docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml.'
 updated: 2026-10-08 06:10
 comms:
 - at: 2026-10-06 14:30
   from: devin
-  text: filed from idc01-return work — lsn-persist feature itself validated (resumed correctly), the stall is the
-    upstream bug.
+  text: filed from idc01-return work — lsn-persist feature itself validated (resumed correctly), the stall is the upstream
+    bug.
 - at: 2026-10-07 23:00
   from: devin
   text: 'triage: actionable engineering task — armed as dispatch (chaba), idle until started'
@@ -32,25 +41,25 @@ comms:
   text: started devin-task-20261007-225415-diagnose-the-mddb-follower-s-s on mn01 (dispatch)
 - at: 2026-10-08 06:00
   from: devin
-  text: 'picked up on mn01. Live check: idc02 follower caught up (lsn 180.26M); idc01 follower lagging 13.2M but
-    CONFIRMED applying (+9k/90s) — not the stall signature. Root cause already diagnosed in mddb-replication-heartbeat
-    (Recv no deadline, no heartbeat). Building: follower-watchdog script+timer (restart on connected-but-frozen
-    confirmed_lsn) + canary apply-stall surfacing. mddb-fork unreachable from mn01 — no code changes there.'
+  text: 'picked up on mn01. Live check: idc02 follower caught up (lsn 180.26M); idc01 follower lagging 13.2M but CONFIRMED
+    applying (+9k/90s) — not the stall signature. Root cause already diagnosed in mddb-replication-heartbeat (Recv no deadline,
+    no heartbeat). Building: follower-watchdog script+timer (restart on connected-but-frozen confirmed_lsn) + canary apply-stall
+    surfacing. mddb-fork unreachable from mn01 — no code changes there.'
 - at: 2026-10-08 06:08
   from: devin
-  text: 'done on dispatch branch ff740f2. Root cause confirmed: follower Recv() has no deadline + no heartbeat ->
-    silently-dead stream blocks apply forever while connected (fix exists undeployed on mddb-fork repl-heartbeat@498cdc3).
-    Shipped in chaba: scripts/mddb-follower-watchdog.py + systemd timer — restarts mddb-follower.service when confirmed_lsn
-    frozen >300s while last_seen_at fresh (cooldown 900s, max 3/episode, lsn-0 + absent guards); mddb-binlog-canary.py
-    now emits per-follower stream state (conn'
+  text: 'done on dispatch branch ff740f2. Root cause confirmed: follower Recv() has no deadline + no heartbeat -> silently-dead
+    stream blocks apply forever while connected (fix exists undeployed on mddb-fork repl-heartbeat@498cdc3). Shipped in chaba:
+    scripts/mddb-follower-watchdog.py + systemd timer — restarts mddb-follower.service when confirmed_lsn frozen >300s while
+    last_seen_at fresh (cooldown 900s, max 3/episode, lsn-0 + absent guards); mddb-binlog-canary.py now emits per-follower
+    stream state (conn'
 - at: 2026-10-08 06:10
   from: mn01
-  text: 'finished (ok): exit=0 come.md` and `docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`.
-    | devin-task-20261007-2'
+  text: 'finished (ok): exit=0 come.md` and `docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`. |
+    devin-task-20261007-2'
 - at: 2026-10-08 06:10
   from: chaba
-  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
-    address — close will block until merged'
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or address —
+    close will block until merged'
 action:
   type: dispatch
   status: done
@@ -58,9 +67,9 @@ action:
   runner: mn01
   result: 'exit=0 come.md` and `docs/ssot/jobs/infrastructure/2026-10-07-mddb-follower-stall-watchdog.yml`. | devin-task-20261007-225415-diagnose-the-mddb-follower-s-s.service:
     Consumed 41.594s CPU time over 14min 50.313s wall clock time, 279.7M memory peak.'
-spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader
-  last_seen_at stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state
-  surfacing (apply-lag metric/health signal so the freeze is visible without a human comparing LSNs) plus a watchdog
-  that restarts the follower when confirmed_lsn stops advancing while the stream is connected. Root-cause the dropped-apply/blocked-read
-  if reachable; document findings on the card.'
+spec: 'Diagnose the mddb follower''s silent apply stall (idc02, v2.15.4-lsn): stream stays ''connected'', leader last_seen_at
+  stays fresh, confirmed_lsn freezes, no journal errors; restart resumes cleanly. Add stream-state surfacing (apply-lag metric/health
+  signal so the freeze is visible without a human comparing LSNs) plus a watchdog that restarts the follower when confirmed_lsn
+  stops advancing while the stream is connected. Root-cause the dropped-apply/blocked-read if reachable; document findings
+  on the card.'
 claim: {}

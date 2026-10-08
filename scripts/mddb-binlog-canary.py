@@ -27,6 +27,7 @@ from pathlib import Path
 
 LIMIT_BINLOG_BYTES = 1_073_741_824  # 1 GiB
 LIMIT_LSN_GAP = 5_000_000
+SEEN_FRESH_SECONDS = 120   # leader last_seen_at younger than this = stream connected
 DEFAULT_URL = "http://100.102.134.91:11023/v1/replication/status"
 DEFAULT_STATE = Path.home() / "var/chaba/health/mddb-binlog-state.json"
 INBOX_CANDIDATES = [
@@ -63,8 +64,22 @@ def fetch(url, timeout=6):
         return code, None, elapsed, f"invalid json: {e}"
 
 
-def evaluate(data):
-    """Return (reasons, metrics). reasons is empty when healthy."""
+def follower_key(f, i):
+    return (f.get("follower_id") or f.get("node_id") or f.get("id")
+            or f.get("name") or f"index {i}")
+
+
+def evaluate(data, prev_followers, now_epoch, stall_seconds):
+    """Return (reasons, metrics, followers_cur). reasons is empty when healthy.
+
+    Beyond the static thresholds this surfaces the silent apply-stall
+    signature per follower: confirmed_lsn unchanged across checks while the
+    leader still sees the stream connected (last_seen_at fresh) and the
+    follower is behind current_lsn. That is the freeze a human used to spot
+    by comparing LSNs by hand; here it becomes an explicit reason +
+    per-follower stream metrics. followers_cur is the per-follower snapshot
+    the caller stores for the next run.
+    """
     reasons = []
     metrics = {}
     size = data.get("binlog_size_bytes")
@@ -87,26 +102,71 @@ def evaluate(data):
     if isinstance(followers, dict):
         followers = list(followers.values())
     unhealthy = []
+    stalled = []
+    followers_cur = {}
+    stream_state = {}
+    prev_followers = prev_followers or {}
     for i, f in enumerate(followers):
         if not isinstance(f, dict):
             continue
+        name = follower_key(f, i)
         if f.get("status") != "healthy":
-            name = (f.get("node_id") or f.get("follower_id") or f.get("id")
-                    or f.get("name") or f"index {i}")
             unhealthy.append(name)
             reasons.append(f"follower {name} status={f.get('status')!r}")
+
+        # Stream-state surfacing: track confirmed_lsn movement per follower.
+        confirmed = f.get("confirmed_lsn")
+        seen_at = f.get("last_seen_at")
+        seen_age = (now_epoch - seen_at
+                    if isinstance(seen_at, (int, float)) else None)
+        connected = (seen_age is not None
+                     and seen_age <= SEEN_FRESH_SECONDS)
+        apply_lag = (cur - confirmed
+                     if isinstance(cur, (int, float))
+                     and isinstance(confirmed, (int, float)) else None)
+        prev = prev_followers.get(name) or {}
+        if (isinstance(confirmed, (int, float))
+                and confirmed == prev.get("confirmed_lsn")
+                and prev.get("frozen_since_epoch")):
+            frozen_secs = now_epoch - prev["frozen_since_epoch"]
+        else:
+            frozen_secs = 0
+        followers_cur[name] = {
+            "confirmed_lsn": confirmed,
+            "frozen_since_epoch": (prev.get("frozen_since_epoch")
+                                   if frozen_secs else now_epoch),
+        }
+        stream_state[name] = {
+            "confirmed_lsn": confirmed,
+            "apply_lag_lsn": apply_lag,
+            "last_seen_age_s": (round(seen_age, 1)
+                                if seen_age is not None else None),
+            "connected": connected,
+            "frozen_seconds": int(frozen_secs),
+        }
+        if (connected and apply_lag is not None and apply_lag > 0
+                and confirmed and frozen_secs > stall_seconds):
+            stalled.append(name)
+            reasons.append(
+                f"follower {name} apply-stalled: confirmed_lsn={confirmed} "
+                f"frozen {int(frozen_secs)}s while stream connected "
+                f"(last_seen {round(seen_age, 1)}s ago), "
+                f"lag={apply_lag} LSN — restart mddb-follower.service on "
+                f"{name} (or let mddb-follower-watchdog.timer do it)")
     metrics["followers_seen"] = len(followers)
     metrics["followers_unhealthy"] = len(unhealthy)
+    metrics["followers_stream"] = stream_state
     # Escalation signature: reason KINDS + unhealthy follower names — never
     # the metric values, which drift every tick and would re-alert constantly
     # (spam incident 2026-10-07: ~330 items overnight from value-in-string
-    # comparison).
+    # comparison). A follower entering apply-stall escalates too.
     signature = sorted(
         (["binlog_size"] if isinstance(size, (int, float))
          and size > LIMIT_BINLOG_BYTES else [])
         + (["lsn_gap"] if gap is not None and gap > LIMIT_LSN_GAP else [])
-        + [f"follower:{n}" for n in unhealthy])
-    return reasons, metrics, signature
+        + [f"follower:{n}" for n in unhealthy]
+        + [f"stall:{n}" for n in stalled])
+    return reasons, metrics, signature, followers_cur
 
 
 def load_state(path):
@@ -167,7 +227,10 @@ def make_inbox_item(reasons, metrics, breach_secs, now, escalation=None):
                 f"(current_lsn={metrics.get('current_lsn')} - "
                 f"binlog_oldest_lsn={metrics.get('binlog_oldest_lsn')}). "
                 "The retention janitor on idc03 may have stalled — check "
-                "mddb.service before the disk fills."
+                "mddb.service before the disk fills. If a reason says "
+                "'apply-stalled', that follower's stream is connected but "
+                "not applying: restart mddb-follower.service on that host "
+                "(mddb-follower-watchdog.timer automates it once installed)."
             ),
             "status": "draft",
             "priority": "high",
@@ -175,6 +238,7 @@ def make_inbox_item(reasons, metrics, breach_secs, now, escalation=None):
             "missing_info": [
                 "Is the retention janitor still running on idc03 (journalctl --user -u mddb.service)?",
                 "Are the idc02 (idc02:11023) and idc01 (idc01:11123) followers still connected and caught up?",
+                "If apply-stalled: is confirmed_lsn advancing after a follower restart (watchdog logs/journal)?",
             ],
         },
         "source": {"session": "mddb-binlog-canary", "date": ts[:10]},
@@ -182,6 +246,7 @@ def make_inbox_item(reasons, metrics, breach_secs, now, escalation=None):
 
 
 def write_inbox(inbox_dir, reasons, metrics, breach_secs, now, escalation=None):
+    inbox_dir.mkdir(parents=True, exist_ok=True)
     path = inbox_dir / f"{now.strftime('%Y-%m-%d-%H%M%S')}-{INBOX_STEM}-health.yml"
     path.write_text(dump_yaml(make_inbox_item(reasons, metrics, breach_secs,
                                               now, escalation)))
@@ -198,6 +263,9 @@ def main():
                         help="sustained-breach duration before alerting (default 600s)")
     parser.add_argument("--realert-seconds", type=float, default=43200,
                         help="re-alert cadence while a breach stays open (default 12h)")
+    parser.add_argument("--stall-seconds", type=float, default=600,
+                        help="confirmed_lsn frozen this long while connected "
+                             "= apply-stalled reason (default 600s)")
     args = parser.parse_args()
 
     now = utcnow()
@@ -228,8 +296,10 @@ def main():
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         return 0
 
-    reasons, metrics, signature = evaluate(data)
+    reasons, metrics, signature, followers_cur = evaluate(
+        data, state.get("followers_prev"), now.timestamp(), args.stall_seconds)
     result["metrics"] = metrics
+    state["followers_prev"] = followers_cur
 
     if reasons:
         if not state.get("breach_since_epoch"):
