@@ -10,7 +10,7 @@ lab:
   review_by: '2026-10-18'
 note: 'Now testable: MDDB_VECTOR_ALGORITHMS allowlist live on both nodes (flat,quantized). Bench on follower to
   keep leader stable.'
-updated: 2026-10-08 06:46
+updated: 2026-10-08 07:02
 comms:
 - at: 2026-10-05 22:55
   from: tony
@@ -48,6 +48,48 @@ comms:
     (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
     .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index is a small slice
     vs FTS+bolt; FAIL >=25%). Latency: worse on big coll'
+- at: 2026-10-08 06:58
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
+- at: 2026-10-08 06:58
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
+- at: 2026-10-08 06:58
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
+- at: 2026-10-08 06:58
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
+- at: 2026-10-08 07:01
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
+- at: 2026-10-08 07:02
+  from: devin
+  text: 'BENCH DONE — hypothesis rejected on all 3 metrics. Setup: scratch mddbd on idc01 over /v1/backup copy (leader+follower
+    untouched), 9 colls x25 queries, recall@10 doc-level vs flat-served. RESULTS: recall prod int8+diskOnly .62-.94
+    (mean .87; noise floor flat-vs-flat .92; threshold .95 FAIL); oversample=10 only .87; raw int8 ANN .70; int4
+    .68. RSS/heap: no reduction (heap_inuse 1.20GB flat vs 1.23GB int8+diskOnly — vector index small slice vs FTS+bolt;
+    FAIL >=25%). Latency worse on big colls (hos'
 action:
   type: dispatch
   status: running
