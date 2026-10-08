@@ -3,7 +3,7 @@ title: 'Nest specialist: memory-bank router — cut Ada''s memory-query pause'
 brief: Train a micro-specialist that routes a user request to the right MDDB memory bank(s) — or says "no memory
   needed" — instead of the current bank='all' fan-out across every bank. Targets Ada's audible pause on memory questions.
   Includes the bench suite so it joins the continuous train->bench->promote loop.
-column: doing
+column: review
 priority: high
 program: chaba-nest
 area: ada-tools
@@ -28,11 +28,14 @@ spec: "Phase 0 — measure first (don't build on assumption):\n- Instrument ada_
 help: 'Loop owner: scripts/ada/nest-train-loop.py (harvest->bench->gate). Corpus path: transcripts already record
   tool calls — bank arg + result bank are the labels. Pair with nest-lane-tony-dell for edge-inference numbers;
   adversarial skip cases are the differentiator vs a naive always-search baseline.'
-updated: 2026-10-08 10:11
+updated: 2026-10-08 10:47
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 lane too slow for 53 cases; suite verified via `--limit 4`). | devin-task-20261008-094913-phase-0-measure-first-don-t-bu.service:
+    Consumed 4min 4.467s CPU time over 57min 59.031s wall clock time, 975.1M memory peak, 291.5M memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-08 06:25
   from: devin
@@ -68,6 +71,21 @@ comms:
   from: devin
   text: 'raised request approve-push-of-ada-pi-branch-dispatch-2-65f0ef: Approve push of ada-pi branch dispatch/20261008-bank-router
     to origin + deploy-ada.sh on idc03? Changes are read-only te'
+- at: 2026-10-08 10:46
+  from: devin
+  text: 'done for this dispatch: phase-0 doc + probe/miner committed on chaba dispatch branch; ada-pi telemetry
+    + bankq suite + 1366-row corpus on dispatch/20261008-bank-router (awaiting deploy approval — request approve-push-of-ada-pi-branch-dispatch-2-65f0ef).
+    Killed the full cascade baseline after 37min on idc02 CPU (350% cpu — over the lane limit); suite verified end-to-end
+    via --sets bankq-golden --limit 4 instead. Baseline accuracy can come from the scheduled bench cadence.'
+- at: 2026-10-08 10:47
+  from: tony-omen
+  text: 'finished (ok): exit=0 lane too slow for 53 cases; suite verified via `--limit 4`). | devin-task-20261008-094913-phase-0-measure-first-d'
+- at: 2026-10-08 10:47
+  from: chaba
+  text: pushed dispatch/20261008-094913-phase-0-measure-first-don-t-bu to origin
+- at: 2026-10-08 10:47
+  from: chaba
+  text: auto-merged f5ac9de9 (dispatch/20261008-094913-phase-0-measure-first-don-t-bu) → origin/master
 ownership:
   owner: tony
 requests:
@@ -78,3 +96,4 @@ requests:
   status: open
   at: 2026-10-08 10:11
   from: devin
+claim: {}
