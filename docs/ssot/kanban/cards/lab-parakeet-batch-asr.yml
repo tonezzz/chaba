@@ -2,10 +2,10 @@ id: lab-parakeet-batch-asr
 title: 'Lab: Parakeet Redux local batch ASR (non-Thai lanes)'
 brief: A 178MB speech model that transcribes on plain CPU at ~100x real time — free local transcripts for our non-Thai
   audio instead of burning Gemini tokens. Waiting in the backlog — no action needed.
-column: doing
+column: review
 priority: low
 created: 2026-10-07
-updated: 2026-10-08 10:24
+updated: 2026-10-08 10:53
 lab:
   hypothesis: Parakeet Redux on tony-omen CPU covers all non-Thai batch transcription at ~parity WER vs cloud ASR,
     at zero marginal cost and full privacy
@@ -34,10 +34,13 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   host: tony-omen
   runner: tony-omen
+  result: 'exit=0 s a hard requirement. No production/deploy actions were taken. | devin-task-20261008-102357-hard-limit-25-european-languag.service:
+    Consumed 26min 38.801s CPU time over 28min 45.204s wall clock time, 7.5G memory peak, 1.7G memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-08 06:05
   from: devin
@@ -55,3 +58,19 @@ comms:
 - at: 2026-10-08 10:24
   from: devin
   text: session started on tony-omen — checking host prereqs, locating bench corpus, then venv+moondream install
+- at: 2026-10-08 10:52
+  from: devin
+  text: 'bench done: WER PASS (4.7% corpus / 2.5% EN-clean on 29 labeled LibriSpeech+FLEURS clips), RT FAIL (6.9x
+    @ 8t — i7-9750H is AVX2-only, the 113x claim needs AVX-512 VNNI; 3x4t parallel regressed to 2.2x). Shipped batch-transcribe
+    anyway (~/.local/bin + stacks/tony-omen/batch-transcribe/): stdin/file->JSON {text,word_ts[]}, CPU-only. NOTE:
+    tests/voice-corpus is 100% Thai + unlabeled — unusable for ASR bench or labeling lane. Report: docs/ssot/jobs/experiments/2026-10-08-parakeet-redux-batch-asr-be'
+- at: 2026-10-08 10:53
+  from: tony-omen
+  text: 'finished (ok): exit=0 s a hard requirement. No production/deploy actions were taken. | devin-task-20261008-102357-hard-limit-25-europea'
+- at: 2026-10-08 10:53
+  from: chaba
+  text: pushed dispatch/20261008-102357-hard-limit-25-european-languag to origin
+- at: 2026-10-08 10:53
+  from: chaba
+  text: auto-merged 29f26d20 (dispatch/20261008-102357-hard-limit-25-european-languag) → origin/master
+claim: {}

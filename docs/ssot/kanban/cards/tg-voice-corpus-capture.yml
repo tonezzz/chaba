@@ -2,7 +2,7 @@ id: tg-voice-corpus-capture
 title: Capture TG voice messages into labeled speaker corpus
 brief: Extend ada-tg-relay so household voice messages land in a sender-labeled audio corpus — free enrollment clips
   for speaker-ID and clean samples for TTS reference. Waiting in the backlog — no action needed yet.
-column: backlog
+column: review
 priority: medium
 created: 2026-10-08
 note: 'Tony (2026-10-08): household members will send voice messages via Telegram for speaker identification + Thai
@@ -21,10 +21,12 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: tony-dell
   task_id: 20261008-104157-in-ada-pi-backend-tg-relay-py-
+  result: 20261008-104157-in-ada-pi-backend-tg-relay-py- finished (inactive) — see `devin-dispatch logs 20261008-104157-in-ada-pi-backend-tg-relay-py-`
+  verified: true
 comms:
 - at: 2026-10-08 11:20
   from: devin
@@ -36,7 +38,24 @@ comms:
 - at: 2026-10-08 10:42
   from: devin
   text: picked up — reading tg_relay.py, planning voice/audio/video_note capture into ~/.local/share/ada-voice-corpus/tg
-updated: 2026-10-08 10:42
+- at: 2026-10-08 10:49
+  from: devin
+  text: 'done — tg_relay now saves voice/audio/video_note from enrolled senders (behind the existing allowlist+user-callers
+    gate) to TG_VOICE_CORPUS_DIR (default ~/.local/share/ada-voice-corpus/tg)/<sender_slug>/<ts>.<ext> with manifest.jsonl
+    at root; ack sent, nothing forwarded to Ada. New tests/test_tg_relay_voice.py 6/6 pass; full suite 904 passed.
+    Trail: docs/ssot/jobs/ada/2026-10-08-tg-voice-corpus-capture.yml + dispatch-outcome md in worktree.'
+- at: 2026-10-08 10:49
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 10:50
+  from: chaba
+  text: 'session-end checkpoint 11d96b71: 4 leftover file(s) committed'
+- at: 2026-10-08 10:50
+  from: chaba
+  text: pushed dispatch/20261008-104157-in-ada-pi-backend-tg-relay-py- to origin
+- at: 2026-10-08 10:50
+  from: chaba
+  text: auto-merged 1b176bbe (dispatch/20261008-104157-in-ada-pi-backend-tg-relay-py-) → origin/main
+updated: 2026-10-08 10:50
 claim:
-  session: 20261008-104157-in-ada-pi-backend-tg-relay-py-
   since: 2026-10-08 10:41
