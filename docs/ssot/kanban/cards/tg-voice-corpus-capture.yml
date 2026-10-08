@@ -1,0 +1,36 @@
+id: tg-voice-corpus-capture
+title: 'Capture TG voice messages into labeled speaker corpus'
+brief: 'Extend ada-tg-relay so household voice messages land in a sender-labeled audio
+  corpus — free enrollment clips for speaker-ID and clean samples for TTS reference.
+  Waiting in the backlog — no action needed yet.'
+column: backlog
+priority: medium
+created: 2026-10-08
+note: 'Tony (2026-10-08): household members will send voice messages via Telegram for
+  speaker identification + Thai voice-clone reference. TG voice = opus .ogg 48kHz mono
+  ~32kbps — fine for CAM++ embeddings and usable F5-TTS reference. tg_relay already
+  resolves file_id via getFile for photos; voice messages fall through unhandled.'
+spec: 'In ada-pi backend/tg_relay.py: handle message.voice (and message.audio +
+  video_note if trivially similar) — resolve file_id via getFile like _fetch_photo,
+  download, save to ~/.local/share/ada-voice-corpus/tg/<sender_slug>/<YYYYmmdd-HHMMSS>.ogg
+  (path configurable via env, default under user share dir — NOT the repo). Write one
+  JSONL manifest line per clip {ts, sender, sender_id, chat_id, duration_s, file_id,
+  mime, path} to manifest.jsonl alongside. Reply a short "saved" ack so the sender
+  knows it landed. Keep it private: local disk only, no forwarding, no transcription
+  in this pass. Household voices need consent — only enrolled senders (chat allowlist
+  the relay already has) get saved.'
+links:
+- lab-parakeet-batch-asr
+- lab-thai-voice-clone
+blocked_by: []
+autonomy: t2
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi
+comms:
+- at: 2026-10-08 11:20
+  from: devin
+  text: 'filed + queued — Tony confirmed the approach after codec check (opus 32k
+    fine for speaker-ID; clean-room caveat for TTS ref). Queued directly since idle
+    cards never drain without a Start press.'
