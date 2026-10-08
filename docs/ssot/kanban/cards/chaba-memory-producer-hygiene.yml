@@ -1,0 +1,56 @@
+id: chaba-memory-producer-hygiene
+title: 'Chaba memory: stop generating noise at the producers'
+brief: >-
+  The context render now filters noise, but the upstream scripts still
+  *generate* it: session-end stubs written as events, raw journal lines in
+  the infra digest, "(no task)" immediate pins. Fixing the producers cleans
+  the data for every consumer — context render, reports, and Ada — instead
+  of patching each reader.
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+pipeline: ci
+autonomy: t2
+metric: >-
+  recent-events.yml gains no new "session ended (other)" rows; personal/
+  infra digests contain no raw `x2 [timestamp]` journal fragments;
+  immediate.yml gets no "(no task)" entries. Renderer's drop/filter counts
+  trend to zero over a week.
+verify: >-
+  Run each producer on test input: session-end hook on a stub session ->
+  nothing appended (or kind:lifecycle, invisible to the feed);
+  personal-rollup on a journal with rate-limit spam -> header counts kept,
+  no sample lines; immediate-pin with no task -> entry skipped.
+spec: |
+  Three producers, all in this repo (scripts/):
+
+  1. recent-event.py / devin-session-end.sh — "session ended (other)"
+     is lifecycle ceremony, not an event. Either stop appending it, or
+     tag it `kind: lifecycle` so readers can filter structurally instead
+     of by regex (render-memory currently drops by "^session ended").
+     Prefer the tag — keeps the audit trail, hides it from the feed.
+
+  2. personal-rollup.py — the ## spend / ## apps blocks embed raw
+     `xN [timestamp] unit: <truncated log line>` samples. The header line
+     (count + ⚠) is the signal; the samples are noise that truncates
+     mid-sentence in context. Keep at most 1 representative line per
+     bucket, or drop samples entirely — the journal is always queryable.
+
+  3. immediate-pin.py — don't write entries with no task/next/open;
+     a session that did nothing leaves nothing to resume.
+
+  Also document the session-memory.md entry convention (## Compaction
+  <id> / ## Session end <id> are entry headers; '## N. Section' blocks
+  belong to the entry above) in ssot.chaba.memory.yml — render-memory's
+  entry_match depends on it staying stable.
+
+  Context: renderer-side filters shipped 2026-10-08 (drop/entry_match/
+  skip_status/hide_empty). This card is the upstream half — after it
+  lands, the renderer rules stay as defense-in-depth, not the fix.
+expected_goals:
+  - id: no-stub-events
+    check: "command grep -c 'kind: lifecycle\\|session ended' scripts/chaba/recent-event.py expect exit 0"
+links:
+  - ada-memory-hit-shape-guard
+blocked_by: []
