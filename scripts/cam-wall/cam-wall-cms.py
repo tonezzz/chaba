@@ -20,6 +20,12 @@ from the manifests) gets status:superseded + superseded_by, never deleted
 back to the keys they replace. A retention pass then flips generated
 docs that are both superseded AND older than ARCHIVE_DAYS to
 kind:archive — queryable, but out of reports-index weight.
+
+Page contract: chaba docs/ssot/infrastructure/ssot.cms.yml — cam-*/camwall-*
+keys are domain=cctv, which lands in the 'Cameras' nav section; the CMS
+viewer splits Security/Traffic on meta.zone_tab and walls-vs-cams on
+meta.page_role. Keep those fields populated — never hand a page a zone
+the manifests no longer own (dedup fights, cms-ia-reorg).
 """
 
 from __future__ import annotations
@@ -286,6 +292,7 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
              sources: list[str] | None = None,
              classification: dict | None = None,
              supersedes: list[str] | None = None,
+             page_role: str = "",
              force: bool = False) -> bool:
     import hashlib
     # cms-audit R2: every generated page needs a provenance footer.
@@ -308,6 +315,8 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         h = h + ":" + hashlib.sha256(
             json.dumps(classification, sort_keys=True).encode()
         ).hexdigest()[:8]
+    if page_role:
+        h = h + ":" + page_role
     hkey = f"{key}:{lang}"
     if not force and _pub_hash.get(hkey) == h:
         return True  # unchanged — skip write + re-embedding
@@ -339,6 +348,10 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
                        ("zone_site", classification.get("site"))):
             if cv:
                 meta[mk] = cv if isinstance(cv, list) else [cv]
+    # cms-ia (ssot.cms.yml): wall/cam/index role lets the CMS viewer
+    # sub-group cameras purely from meta — no slug matching.
+    if page_role:
+        meta["page_role"] = [page_role]
     # A page being (re)published is canonically live: strip the lifecycle
     # markers a supersede/archive pass may have stamped — this is how a
     # cam returning to the roster revives cleanly.
@@ -1012,6 +1025,7 @@ def main() -> int:
                 sources=[f"zone:{zone}", "cam-wall-manifest",
                          "cam-wall-state", "cam-wall-detections"],
                 classification=zcls,
+                page_role="wall",
                 supersedes=links.get(wall_key(zone)),
                 force=wall_key(zone) in revive)
     # multi-zone pages tag every tab/group/site they span
@@ -1030,6 +1044,7 @@ def main() -> int:
                            "ทุกช่อง DVR เป็นช่องภาพกดได้"),
                 sources=["cam-wall-manifest", "vms-snap"],
                 classification=dvr_cls,
+                page_role="wall",
                 supersedes=links.get("dvr-wall"),
                 force="dvr-wall" in revive)
     for slug_key, entries in sorted(cam_groups.items()):
@@ -1053,6 +1068,7 @@ def main() -> int:
                 sources=sorted({f"zone:{z}" for z, _, _ in entries})
                 + ["cam-wall-detections"],
                 classification=cam_cls,
+                page_role="cam",
                 supersedes=links.get(slug_key),
                 force=slug_key in revive)
     if zones:
@@ -1069,6 +1085,7 @@ def main() -> int:
                 parent="",
                 sources=[f"zone:{z}" for z in sorted(zones)],
                 classification=_cls_union([zone_cls(z) for z in zones]),
+                page_role="index",
                 supersedes=links.get("cctv-walls"),
                 force="cctv-walls" in revive)
         notify_transitions(zones)

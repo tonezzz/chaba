@@ -6,6 +6,10 @@ Sections: Automation health (cms-auto-* cards first — they are failures
 asking for work), then Review, Backlog, Done grouped by column. Runs on
 any host with a chaba checkout + MDDB access; a --check mode prints the
 markdown without publishing.
+
+Page contract: docs/ssot/infrastructure/ssot.cms.yml — dev-kanban is
+kind=page domain=dev status=active, landing in the 'Ops & infra' nav
+section; kind/domain/status/summary/fresh_for are required meta.
 """
 
 from __future__ import annotations

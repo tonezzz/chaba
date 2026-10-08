@@ -11,6 +11,10 @@ Runs on tony-dell (systemd timer, hourly) or on demand. Writes:
   - apps/reports/bench-edge-trend.png  fps-over-time chart (PIL)
   - ada-cms-pages/reports-index        regenerated via scripts/lib/cms_index
 
+Page contract: docs/ssot/infrastructure/ssot.cms.yml — bench-* keys are
+domain=bench, which lands in the 'Bench' nav section; the page carries
+kind/domain/status/summary/fresh_for and this script's generated_by.
+
 Env:
   MDDB_BASE_URL   default http://100.102.134.91:11023/v1
   EYE_PUBLIC      reports dir root — default the live checkout's

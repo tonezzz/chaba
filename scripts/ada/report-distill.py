@@ -483,63 +483,12 @@ def validate_contract(meta: dict) -> list[str]:
 # ---------------------------------------------------------------- index
 
 def regen_reports_index() -> bool:
-    """Refresh ada-cms-pages/reports-index — same table as
-    report-daily-brief.py, plus a status filter so superseded/archived
-    snapshots don't crowd live pages."""
-    docs = _search_all(COLLECTION)
-    now = datetime.now(timezone.utc)
-    rows = []
-    for d in docs:
-        meta = d.get("meta") or {}
-        kind = _meta(d, "kind")
-        if kind not in ("report", "page"):
-            continue
-        if _meta(d, "status") in DEAD_STATUS:
-            continue
-        slug = _meta(d, "slug") or d.get("key") or "?"
-        if slug in SKIP_KEYS or _ARCHIVE_KEY_RX.match(slug):
-            continue
-        ff = _meta(d, "fresh_for")
-        upd = _meta(d, "updated")
-        stale = False
-        ttl = fresh_for_seconds(ff)
-        if ttl and upd:
-            try:
-                dt = datetime.fromisoformat(upd.replace("Z", "+00:00"))
-                stale = (now - dt).total_seconds() > ttl
-            except ValueError:
-                pass
-        rows.append({"slug": slug,
-                     "title": _meta(d, "title") or slug,
-                     "domain": _meta(d, "domain") or "-",
-                     "summary": _meta(d, "summary"),
-                     "updated": upd[:16] or "-",
-                     "fresh": ff or "-", "stale": stale})
-    rows.sort(key=lambda r: r["updated"], reverse=True)
-    lines = [f"# Reports index — {now:%Y-%m-%d %H:%M}Z\n",
-             "Brief summaries of every report page — read the linked page",
-             "only when the summary isn't enough.\n",
-             "| slug | domain | updated | fresh | summary |",
-             "|---|---|---|---|---|"]
-    for r in rows[:60]:
-        flag = " ⚠STALE" if r["stale"] else ""
-        summ = (r["summary"] or r["title"])[:80]
-        lines.append(f"| {r['slug']} | {r['domain']} | {r['updated']}"
-                     f"{flag} | {r['fresh']} | {summ} |")
-    _post("add", {
-        "collection": COLLECTION, "key": "reports-index", "lang": "en",
-        "contentMd": "\n".join(lines),
-        "meta": {
-            "kind": ["page"], "slug": ["reports-index"],
-            "title": [f"Reports index — {now:%Y-%m-%d %H:%M}Z"],
-            "format": ["markdown"], "domain": ["meta"],
-            "summary": ["Auto-generated index of report pages — "
-                        "slug, domain, staleness, one-line brief."],
-            "fresh_for": ["6h"],
-            "updated": [now.isoformat(timespec="seconds")],
-            "written_by": ["report-distill.py"],
-        }}, timeout=60)
-    return True
+    """Refresh ada-cms-pages/reports-index — delegates to the shared
+    grouped render in scripts/lib/cms_index.py (nav sections per
+    docs/ssot/infrastructure/ssot.cms.yml)."""
+    sys.path.insert(0, str(REPO / "scripts"))
+    from lib.cms_index import regen_reports_index as _regen
+    return _regen(MDDB, "report-distill.py", collection=COLLECTION)
 
 
 # ----------------------------------------------------------------- main
