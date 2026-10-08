@@ -299,9 +299,9 @@ execution:
                2026-10-08); idc02: cap 3 labels ssd,always-on (dispatch
                +container+script); idc03: cap 2 labels ssd,always-on
                (dispatch+container+script); mn01: cap 1 labels
-               low-mem,edge (container+script only — no devin CLI by
-               design, RAM-tight). Unpinned dispatch cards now land on any
-               of the 5 dispatch-capable hosts. Nest lanes:
+               low-mem,edge (dispatch+container+script — devin CLI IS
+               present; RAM-tight so cap stays 1). Unpinned dispatch cards
+               now land on any of the 6 dispatch-capable hosts. Nest lanes:
                micro-training cold batch -> idc01, bench cadence/corpus ->
                idc02/idc03, GPU FT/LoRA -> omen (labels)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —

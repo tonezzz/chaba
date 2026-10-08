@@ -23,8 +23,8 @@ from datetime import datetime, timedelta, timezone
 
 TASKS_DIR = os.path.expanduser("~/.local/share/devin-dispatch/tasks")
 
-# Dispatch-capable runner hosts (ssh names). mn01 excluded — no Devin CLI.
-FLEET = ["tony-dell", "tony-omen", "idc01", "idc02", "idc03"]
+# Dispatch-capable runner hosts (ssh names).
+FLEET = ["tony-dell", "tony-omen", "idc01", "idc02", "idc03", "mn01"]
 
 # Pricing per 1M tokens: (input, cached_input, output) USD.
 # From `devin models list` 2026-10-08. Free-tier models -> None (report
