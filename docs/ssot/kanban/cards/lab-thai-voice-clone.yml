@@ -2,10 +2,10 @@ id: lab-thai-voice-clone
 title: 'Lab: Thai voice cloning — JaiTTS/ThonburianTTS vs VoxCPM2 ceiling'
 brief: Open-source models can now clone a Thai voice from a ~15s clip — usable for the YouTube dub pipeline and
   a consistent Ada voice. Waiting in the backlog — no action needed.
-column: doing
+column: review
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 08:42
+updated: 2026-10-08 08:46
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -46,12 +46,16 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   host: tony-omen
   labels:
   - gpu
   runner: tony-omen
+  result: 'exit=0 so times out) — worth a look when Tony''s at the machine. | devin-task-20261008-055431-procedure-in-help-the-delivera.service:
+    Consumed 4h 32min 37.518s CPU time over 2h 50min 17.349s wall clock time, 8.4G memory peak, 1.7G memory swap
+    peak.'
+  verified: true
 comms:
 - at: 2026-10-08 06:05
   from: devin
@@ -119,6 +123,27 @@ comms:
     chunking): normCER 2.2%, CAM++ SIM 0.81, 5/5 on-voice, ~90s/clip GTX1650. megaF5 fails CER ~0.27; JaiTTS HF-gated
     (request open). Blind listen remains: tony-omen ~/voice-clone-bench/out/wrapvyncx/. Report: docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml;
     threat note updated.'
+- at: 2026-10-08 08:43
+  from: devin
+  text: 'bench done: automated gates PASS via VYNCX v2 IPA through thai-clone-tts wrapper (batch + clause chunking)
+    — normCER 2.2%, SIM 0.81, 5/5 on-voice ~90s/clip GTX1650. megaF5 fails CER ~0.27, JaiTTS HF-gated (request open).
+    Blind listen left: ~/voice-clone-bench/out/wrapvyncx/ on tony-omen. Report: docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml'
+- at: 2026-10-08 08:43
+  from: devin
+  text: 'bench done — see card comms + docs/ssot/jobs/yt-dub/2026-10-08-thai-voice-clone-lab.yml (board-api was
+    unreachable earlier). Automated gates PASS via vyncx IPA lane: normCER 2.2%, SIM 0.81.'
+- at: 2026-10-08 08:45
+  from: tony-omen
+  text: 'finished (ok): exit=0 so times out) — worth a look when Tony''s at the machine. | devin-task-20261008-055431-procedure-in-help-the-deliv'
+- at: 2026-10-08 08:46
+  from: chaba
+  text: pushed dispatch/20261008-055431-procedure-in-help-the-delivera to origin
+- at: 2026-10-08 08:46
+  from: chaba
+  text: auto-merged 1a8581db (dispatch/20261008-055431-procedure-in-help-the-delivera) → origin/master
+- at: 2026-10-08 08:46
+  from: chaba
+  text: pushed dispatch/20261008-055431-procedure-in-help-the-delivera to origin
 requests:
 - id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
   ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
