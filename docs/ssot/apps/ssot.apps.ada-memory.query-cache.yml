@@ -1,0 +1,188 @@
+title: Ada memory query cache — policy standard
+subtitle: What ada_memory_search may cache, keyed how, invalidated when — plus the phase-0 measurement that scoped it
+icon: lightning-bolt
+version: 1
+last_updated: "2026-10-08"
+
+overview:
+  purpose: |
+    The durable artifact for card nest-query-cache: a single policy for
+    caching ada_memory_search results. The real path's p50 is ~1.33s and
+    ~90% of it is the remote query-embed inside MDDB (gemini-embedding-2
+    via the proxy) — the cache exists to skip that whole round trip for
+    repeat queries.
+  phase0_verdict: |
+    NOT niche. 52% of real queries are near-repeats of an earlier
+    same-scope query at cosine >=0.92, and 34% are exact repeats even
+    after normalization. The cache is the primary p50 win for the memory
+    path — bigger than bank-routing, which cannot beat the embed cost on
+    cold queries.
+
+phase0_measurement:
+  # experiments/query-cache-phase0 in this repo — analyze.py replays the
+  # corpus chronologically; results.json has the full distribution.
+  corpus:
+    source: ada-pi tests/bench/bankq-corpus-20261008.jsonl
+    rows: 1366
+    window: "2026-10-06 .. 2026-10-08 (~48h, 684 sessions, all Tony-owned)"
+    mined_from: "'memory_search tool timing' journal lines (card nest-bank-router)"
+  method: >
+    Normalize (lowercase, punct->space, collapse), embed once with the
+    Weaviate embed service (all-MiniLM-L6-v2, 384d — the same space a
+    Weaviate-resident cache uses), then for each row take max cosine vs
+    every EARLIER row in the same (scope, bank_arg) partition — the
+    cache-key partition minus speaker (all rows are Tony traffic).
+  distribution_same_partition:
+    # fraction of rows whose best earlier same-scope cosine clears t
+    ">=0.80": 0.7006
+    ">=0.85": 0.6413
+    ">=0.88": 0.5966
+    ">=0.90": 0.5637
+    ">=0.92": 0.5205
+    ">=0.94": 0.4832
+    ">=0.96": 0.4341
+    ">=0.98": 0.3851
+  exact_normalized_repeats: {any_partition: 0.418, same_partition: 0.342}
+  unique_normalized_queries: "795 / 1366"
+  repeats_at_0.92: {within_session: 61, cross_session: 788}
+  cacheable_subset_at_0.92: 0.5305   # excluding time-sensitive queries
+  caveats:
+    - >
+      Window is ~48h and overlaps bankq bench/dev traffic — the
+      steady-state repeat rate is likely lower than 52% but is bounded
+      below by the 34% exact-repeat floor; either way it clears the ~15%
+      niche bar by a wide margin. Re-measure on a 7-14d window before
+      enforce mode ships.
+    - >
+      Embedding space is MiniLM, not production gemini-embedding-2
+      (quota-dead 2026-10-08: OR total-limit 403 + Gemini 429). The cache
+      uses the MiniLM space anyway — the threshold band is reported so
+      the call doesn't hinge on one space's calibration.
+    - >
+      MiniLM collapses Thai semantics: real unrelated Thai pairs scored
+      0.86-0.95 ('ทะเบียนรถ kk' vs 'คุณ kk คือใคร' = 0.949). Non-Latin
+      queries therefore take the exact-normalized path only — most real
+      Thai repeats were exact duplicates anyway.
+    - >
+      A 0.90-0.92 dead zone holds BOTH obvious paraphrases and genuine
+      hard-negatives in the MiniLM space — the 0.92 operating point is
+      precision-first: it forfeits a little paraphrase recall to keep
+      the false-hit rate at zero.
+
+policy:
+  cacheable:
+    - curated memory banks (read-heavy, write-light) — the banks branch
+      of ada_memory_search, i.e. the memory_ops.memory_search result for
+      bank='all', routed subsets, or a named bank
+    - CMS page lookups / report summaries that arrive through the cms and
+      ops-scenarios banks (same code path, cms-class TTL)
+    - note: >
+        scope='all' calls still run sessions+guest scopes fresh on a
+        cache hit — only the bank fan-out is cached
+  never_cache:
+    - live state (sensors/entities, "is X on") — different tool surface,
+      never reaches this cache
+    - time-sensitive asks: >
+        queries matching today|latest|now|yesterday|recent|current|
+        this morning|tonight|this week|last night|just now (Latin
+        word-boundary) plus Thai markers
+        วันนี้|เมื่อวาน|ตอนนี้|ล่าสุด|เดี๋ยวนี้|เมื่อคืน (substring —
+        Thai has no word boundaries)
+    - per-turn session state: >
+        scope='sessions' and scope='guest' are never cached at all
+    - empty/'*' queries and include_inactive audits
+    - degraded results (embed-down listing fallback) — caching them would
+      poison future lookups
+    - non-Latin queries: exact-normalized match only, no fuzzy hit
+  key:
+    formula: normalized query embedding + bank scope + speaker scope
+    fields:
+      nq: normalized query text (lowercase, punct->space, collapse)
+      bank_scope: >
+        the resolved bank spec as searched ('all' literal, named bank,
+        or routed comma-subset)
+      speaker_scope: memory identity (person_entity or '-')
+      covers: >
+        bank names the search actually fanned out over (per-person
+        'all' resolution included)
+  hit_validation:
+    - cosine >= hit_threshold (default 0.92, env ADA_QCACHE_THRESHOLD)
+    - TTL unexpired (stored_at + ttl_s > now)
+    - stored hits satisfy the requested limit, OR the store call had
+      already exhausted the bank (exhaustive flag)
+    - for every covered bank: >
+        current bank_version <= entry's bank_versions[bank]
+  invalidation:
+    mechanism: >
+      Version-stamp per bank (last-write epoch ms, one AdaBankVersion
+      object per bank, deterministic id, blind upsert — no
+      read-modify-write). Every curated-bank write bumps it:
+      ada_remember create/correct/supersede, ada_forget, persona
+      set/reset — the bump lives in backend/memory_ops.py so every
+      caller inherits it. Stale entries fail validation at lookup; no
+      per-entry eviction needed.
+    external_writers: >
+      Pipelines that write bank collections WITHOUT going through
+      ada-pi (CMS regen, SSOT sync) cannot bump the stamp — TTL is the
+      only guard there. That is why cms/kb classes get hours-scale TTLs
+      while curated banks (always bumped via ada-pi) get days.
+  ttl_per_bank_class:
+    curated: 604800    # 7d — writable memory banks; version-stamp guarded
+    cms: 21600         # 6h — cms + ops-scenarios; regen churns, external writes
+    kb: 86400          # 24h — read-only KB/ssot banks; external writers
+    default: 3600
+    override_env: ADA_QCACHE_TTLS (JSON map)
+
+implementation:
+  module: backend/query_cache.py (ada-pi, branch dispatch/20261008-152527-nest-query-cache)
+  store:
+    class: AdaQueryCache
+    fields: "{nq, bank_scope, speaker_scope, covers[], bank_versions(json), payload(json), bank_class, stored_at, ttl_s, hits_count, exhaustive} + query_vec (BYO vector)"
+    versions_class: AdaBankVersion "{bank, version, updated}"
+    host: weaviate on tony-dell:8084 — shared across ALL ada instances
+      (ada-ha-tony/michael/dev) so version bumps cross instance boundaries
+  embed: weaviate-embed service, all-MiniLM-L6-v2 — mn01:5000
+    (tony-omen:5000 is a systemd forward to it)
+  why_not_mddb: >
+    MDDB's server-side embed IS the ~1.3s cost being bypassed (and was
+    quota-dead on phase-0 day). A cache that embeds through MDDB cannot
+    beat the path it caches.
+  modes:
+    off: no cache calls (default when ADA_QCACHE_URL unset)
+    shadow: >
+      lookup in parallel with the real fan-out, verdict logged as
+      'memory_search cache verdict', real result stored — evidence
+      collection, zero added latency. Default when configured.
+    enforce: lookup first; validated hit short-circuits the fan-out
+      (out.cache_hit=true), miss falls through and stores.
+  env:
+    ADA_QCACHE_URL: weaviate base (http://tony-dell.taila0626a.ts.net:8084)
+    ADA_QCACHE_EMBED_URL: embed service (http://mn01.taila0626a.ts.net:5000
+      from idc03; http://127.0.0.1:5000 on tony-omen via the forward)
+    ADA_QCACHE_MODE: off|shadow|enforce
+    ADA_QCACHE_THRESHOLD: "0.92"
+    ADA_QCACHE_TIMEOUT_S: "1.5"
+    ADA_QCACHE_TTLS: JSON override map
+  deploy_gate: >
+    shadow first (collect 'memory_search cache verdict' hit-rate +
+    staleness on live traffic for >=7d), then enforce behind the
+    query-cache bench staying green — same evidence-first posture as
+    the bankq router.
+
+bench:
+  suite: query-cache (tests/bench/suites.yml — behavioral, own runner)
+  runner: tests/bench/query-cache-bench.py
+  tiers:
+    golden: qc-golden-cases.jsonl — 14 real-corpus exact+paraphrase
+      pairs; must hit AND return the identical payload
+    hard_negative: qc-hardneg-cases.jsonl — 10 similar-but-different
+      pairs (incl. the real 0.949 Thai false-positive); must not hit
+    freshness: qc-freshness-cases.jsonl — post-write lookups must not
+      serve stale; includes one uncovered-bank must-still-hit case
+  champ: cosine-0.92 — 14/14 hit, 0/10 false-hit, 3 stale caught /
+    0 served, hit lookup p50 ~110ms vs 1330ms real path (~92% saved)
+  results: bench/cache-20261008-085015 in ada-ha-scenario-reports
+    (+ ada-cms-pages bench-query-cache)
+  margin: >
+    Weaviate certainty band — golden min 0.966, hard-neg max 0.889.
+    Re-bench after any threshold/embedder change.
