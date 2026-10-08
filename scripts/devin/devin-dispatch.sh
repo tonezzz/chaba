@@ -48,6 +48,9 @@ DEVIN_BIN="${DEVIN_BIN:-$(command -v devin 2>/dev/null \
   || echo /usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin)}"
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 PERMISSION_MODE="${DISPATCH_PERMISSION_MODE:-smart}"
+# Optional model override — kanban action.model / $DISPATCH_MODEL ->
+# `devin -p --model <id>` (e.g. swe-2-medium; see `devin models list`).
+MODEL="${DISPATCH_MODEL:-}"
 
 # Fallback whitelist — canonical table is $DISPATCH_DIR/repos.conf
 # (name path default_branch). Keep both in sync.
@@ -139,8 +142,10 @@ _devin_run() { # unit worktree prompt_file extra-args...
     ${DISPATCH_UNIT_PROPS:-} \
     --setenv=HOME="$HOME" --setenv=PATH="$PATH" \
     --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
+    --setenv=DEVIN_MODEL="$MODEL" \
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
     /bin/bash -c 'rc=0; "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
+      ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
       --respect-workspace-trust false --prompt-file "$PROMPT" "$@" || rc=$?; \
       echo "$rc" > "$TASK_DIR/exit_code"; exit "$rc"' _ "$@"
 }

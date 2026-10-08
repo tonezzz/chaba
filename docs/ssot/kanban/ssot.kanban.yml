@@ -86,6 +86,10 @@ card_schema:
            whitelist ($DISPATCH_DIR/repos.conf: name path default_branch)"
     host: "optional — pin the card to one host's dispatcher (e.g. idc01
            for mddb work). Unpinned = first eligible host under cap."
+    model: "type=dispatch only — devin model id (e.g. swe-2-medium,
+            swe-2-high, swe-2-max; `devin models list`). Passed as
+            --model via DISPATCH_MODEL. Omit = host default
+            (~/.config/devin/config.json, currently swe-2-high)."
     labels: "optional list — capability requirements; a runner only claims
              the card if every label is in its RUNNER_LABELS (e.g. gpu)"
     container: "type=container only: {image, cmd (str|list), env {K:V},

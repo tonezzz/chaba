@@ -329,7 +329,10 @@ def start_task(card: dict, typ: str) -> tuple:
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
         argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
-    r = sh(argv, timeout=180)
+    r = sh(argv, timeout=180,
+           env={**os.environ,
+                **({"DISPATCH_MODEL": str(a["model"])}
+                   if a.get("model") else {})})
     if r.returncode != 0:
         return "", "", (r.stderr or r.stdout).strip()[:240]
     tid = ""
