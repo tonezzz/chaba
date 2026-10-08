@@ -1,0 +1,20 @@
+id: device-telemetry-prune
+title: device-telemetry retention — prune beacon history
+brief: The beacon posts ~300 docs/day/device to MDDB device-telemetry with no
+  retention — unbounded growth on a production collection. Waiting in backlog.
+column: backlog
+metric: collection holds <=7d of history per device; latest keys never pruned
+verify: run prune -> old <dev>/<ts> keys gone, <dev>/latest + newest 7d intact
+note: 'Nightly timer on idc03 (or the beacon host): delete device-telemetry
+  keys where the <ts> segment is older than the retention window; skip
+  /latest and _watch/ keys. ~20-line script; register in ssot.jobs.yml like
+  the beacon timer. Decide 7d vs 30d — logbook already covers long-range
+  history on HA side.'
+help: chaba scripts/device-telemetry/agent.py (post format); docs/ssot/
+  infrastructure/ssot.jobs.yml (job registration); mddb delete path
+updated: 2026-10-08 16:00
+comms:
+- at: 2026-10-08 16:00
+  from: devin
+  text: Open item since the beacon shipped — cheap fix before the collection
+    becomes heavy to window-search.

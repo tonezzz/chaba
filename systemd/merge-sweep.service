@@ -1,0 +1,9 @@
+[Unit]
+Description=Kanban merge-sweep — land stranded dispatch branches over tailscale ssh, flag zombie devin-task-* units
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/merge-sweep.py
+Nice=10
+# merges run in detached worktrees of the served checkout; card writes
+# go through board-api or the shared /tmp/board-api.lock

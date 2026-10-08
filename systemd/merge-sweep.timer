@@ -1,0 +1,11 @@
+[Unit]
+Description=Kanban merge-sweep (every ~15min — fetch dispatch branches off runners that can't reach GitHub)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
