@@ -1,30 +1,43 @@
 id: ada-transcript-leak-storm
-title: "Ada: tool-result text leaks into speech + get_home_state call storm (suspect leak-sanitizer/dead-turn merge)"
+title: 'Ada: tool-result text leaks into speech + get_home_state call storm (suspect
+  leak-sanitizer/dead-turn merge)'
 column: backlog
 program: ada
 area: reliability
 priority: high
-metric: live scenario runs show zero tool-result text in assistant transcripts and no >10-call loops of the same tool
-verify: yt_dub_liam_e2e (or any 4-turn live scenario) run on ada-ha-tony shows clean transcripts and bounded tool counts
-note: >-
-  Observed 2026-10-07 ~21:30 on ada-ha-tony (idc03 :8002) during yt_dub_liam_e2e reruns, on deploy 6b99bb2:
-  (1) transcript repeatedly contained literal tool-result text 'Ada is now neutral' — the set_facial_expression
-  result string — suggesting the new role-marker/tool-call leak sanitizer is leaking instead of stripping;
-  (2) after a live_reconnecting mid-turn the session spiraled into a storm — 156 tool calls on turn 2 and a
-  39-call get_home_state{domain:'memory'} + set_facial_expression loop on turn 4, with transcripts reduced to
-  repeated filler. Suspect commits: 50c3abc (dead-turn guard + tool-call leak sanitizer + memory hit cap),
-  d614648 (context budget rotation + role-marker leak sanitizer), bbe1ad9 (sliding-window compression params).
-  Confound: Gemini free-tier generate_content quota was exhausted (429s) at the same time — web_search fell
-  back to duckduckgo which returned no results; storms may partly be quota-retry behavior. Repro: rerun the
-  scenario when quota resets; if transcripts still carry 'Ada is now neutral' or same-tool loops recur, bisect
-  the two sanitizer commits. Related focus item: 'Ada memory-recall misrouting + tool-call storm'.
-spec: >-
-  Investigate whether 50c3abc/d614648 leak sanitizer writes sanitized text back into the transcript stream;
-  check dead-turn guard / memory-hit-cap interplay after live_reconnecting (storm trigger); add a scenario or
-  unit test asserting tool-result text never appears in assistant_transcript_delta.
+metric: live scenario runs show zero tool-result text in assistant transcripts and
+  no >10-call loops of the same tool
+verify: yt_dub_liam_e2e (or any 4-turn live scenario) run on ada-ha-tony shows clean
+  transcripts and bounded tool counts
+note: 'Observed 2026-10-07 ~21:30 on ada-ha-tony (idc03 :8002) during yt_dub_liam_e2e
+  reruns, on deploy 6b99bb2: (1) transcript repeatedly contained literal tool-result
+  text ''Ada is now neutral'' — the set_facial_expression result string — suggesting
+  the new role-marker/tool-call leak sanitizer is leaking instead of stripping; (2)
+  after a live_reconnecting mid-turn the session spiraled into a storm — 156 tool
+  calls on turn 2 and a 39-call get_home_state{domain:''memory''} + set_facial_expression
+  loop on turn 4, with transcripts reduced to repeated filler. Suspect commits: 50c3abc
+  (dead-turn guard + tool-call leak sanitizer + memory hit cap), d614648 (context
+  budget rotation + role-marker leak sanitizer), bbe1ad9 (sliding-window compression
+  params). Confound: Gemini free-tier generate_content quota was exhausted (429s)
+  at the same time — web_search fell back to duckduckgo which returned no results;
+  storms may partly be quota-retry behavior. Repro: rerun the scenario when quota
+  resets; if transcripts still carry ''Ada is now neutral'' or same-tool loops recur,
+  bisect the two sanitizer commits. Related focus item: ''Ada memory-recall misrouting
+  + tool-call storm''.'
+spec: Investigate whether 50c3abc/d614648 leak sanitizer writes sanitized text back
+  into the transcript stream; check dead-turn guard / memory-hit-cap interplay after
+  live_reconnecting (storm trigger); add a scenario or unit test asserting tool-result
+  text never appears in assistant_transcript_delta.
 updated: 2026-10-08 09:00
 comms:
 - at: 2026-10-08 09:00
   from: devin
-  text: 'filed from yt_dub_liam_e2e rerun analysis — leaked set_facial_expression result text + post-reconnect
-    tool storm; suspect leak-sanitizer/dead-turn commits from the 2026-10-07 evening merges'
+  text: filed from yt_dub_liam_e2e rerun analysis — leaked set_facial_expression result
+    text + post-reconnect tool storm; suspect leak-sanitizer/dead-turn commits from
+    the 2026-10-07 evening merges
+- at: 2026-10-08 20:35
+  from: devin
+  text: 'audit corroboration — leak happens in real voice sessions too, not just scenario
+    reruns: session 7d21066a27 (Oct 7) transcript was 13x "Ada is now neutral" in
+    ~20s spoken to Tony; also seen in 3117139945, 6477cce71c, 38b18589b0. Companion
+    fix filed: rk600-empty-sensors-ok (empty-ok results feed the same retry-storm).'

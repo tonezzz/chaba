@@ -1,0 +1,20 @@
+id: devin-dispatch-lan-ip
+title: devin dispatch SSHes to LAN IP 192.168.2.67 — dead when host off-LAN or wedged
+brief: 'Session 38b18589b0 (2026-10-07): devin dispatch failed twice with
+  "ssh: connect to host 192.168.2.67 port 22: Connection timed out" during the tony-dell
+  outage. The dispatch target should be the tailnet hostname
+  (tony-dell.taila0626a.ts.net), not the LAN address — tailnet survives LAN
+  partitioning and is the canonical path per ssot home inventory.'
+column: backlog
+priority: medium
+program: ada-tools
+updated: 2026-10-08 20:35
+tags:
+- devin-dispatch
+- network
+- audit-2026-10-08
+comms:
+- at: 2026-10-08 20:35
+  from: devin
+  text: 'filed from transcript audit — devin dispatch error output shows bare LAN IP;
+    check devin-dispatch target resolution in tools.d/devin.py'

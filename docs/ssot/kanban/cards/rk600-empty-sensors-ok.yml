@@ -1,0 +1,20 @@
+id: rk600-empty-sensors-ok
+title: get_rk600_weather returns ok:true with empty sensors — retry storm bait
+brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned
+  {sensors: {}, ok: True} ~10x in a row. Model retried indefinitely because the result
+  looked successful. Same silent-miss class as the cms_read None→ok:true bug fixed
+  2026-10-08.'
+column: backlog
+priority: medium
+program: ada-tools
+updated: 2026-10-08 20:35
+tags:
+- tool-contract
+- audit-2026-10-08
+note: Return ok:false + "station offline/unreachable" when sensors dict is empty.
+  Same fix pattern as backend/tool_runner/cms.py get on miss.
+comms:
+- at: 2026-10-08 20:35
+  from: devin
+  text: 'filed from transcript audit — 10x get_rk600_weather calls, all empty ok:true,
+    session 7d21066a27'

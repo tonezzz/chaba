@@ -1,0 +1,59 @@
+id: ada-member-pwa-invite
+title: 'Member PWA invite flow — shareable link → install as "ADA-{inst}({person})" → pending → approve'
+brief: >-
+  Tony wants to send an ada-ha link via LINE/TG; member opens on iPhone/iPad,
+  saves as PWA titled "ADA-TONY(Tony)", key lands pending until Tony/Ada
+  approves. Restructures the current key page (ada-keys-card) around this
+  invite → redeem → approve lifecycle.
+column: backlog
+priority: medium
+created: 2026-10-08
+updated: 2026-10-08
+spec: >-
+  Standard first, then build end-to-end:
+  1. Standard doc (docs/kb/ada-member-invite.md): invite token format, PWA
+     manifest naming pattern "ADA-{INSTANCE}({Person})", pending/approved key
+     states, approval surface (Ada voice + keys card), revocation.
+  2. ada-pi-pwa (idc03, public — no CF Access so members never hit a login):
+     per-invite dynamic manifest.json so iOS "Add to Home Screen" shows the
+     per-member name; invite landing page (install prompt + redeem).
+  3. Ada API: invite endpoint mints pending key bound to person label;
+     approved=false until gate clears.
+  4. Approval gate: Ada command ("approve <name>") and/or button on the
+     restructured keys page; pending keys listed with approve/reject.
+  5. Keys page restructure: Issued | Pending | Revoked sections on
+     ada-keys-card (or a dedicated admin view on the AI tab).
+  6. Nest component standard: member-facing UI stays vanilla web-component
+     (ada-*-card pattern) — works in HA sidebar, ada-pi-pwa, and CMS embeds
+     unchanged. iPhone 15 Safari + Add-to-Home-Screen is the target matrix.
+verify: >-
+  On iPhone: open invite link → Add to Home Screen → icon reads
+  "ADA-TONY(<person>)" → open → shows pending state → Tony approves →
+  voice/chat works; reject path revokes.
+links:
+- ha-guest-lan
+- ada-user-device-acl
+- release-lifecycle-standard
+autonomy: t2
+requests:
+- who approves by default: Tony only, or any admin key?
+- should invite links expire (e.g. 24h) and be single-use?
+comms_tail:
+- at: 2026-10-08
+  from: devin
+  text: 'Requested inline with ada-ha AI tab work. Existing pieces to build on:
+    ada_issue_key rest_command (keys/{name}/redeem via mn01), ada-keys-card
+    (issued/bindings/apps attrs, QR re-pair, revoke), guest redeem at
+    /api/auth/keys/guest/redeem. New: pending state + dynamic manifest naming.'
+- at: 2026-10-08
+  from: devin
+  text: 'Multi-assistant roster (Tony): Ada=dev assistant (ada-dev backend
+    :8005, mounted /apps/ha/ada-dev), Chaba=home assistant (ada-ha-tony :8002),
+    แก้วตา=KK''s assistant (new persona/instance — backend wiring needed).
+    Built as separate ada-voice-card instances with key_id namespacing
+    (isolated localStorage key/device/auto state) on ada-ha /chaba-ai tab.
+    Per-user sidebar visibility: HA core only has require_admin; enforced
+    per-user show/hide needs browser_mod or per-member key ACL on the page
+    itself. roster/instance registry should live in ssot before more
+    assistants are added.'
+claim: {}

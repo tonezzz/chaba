@@ -1,0 +1,45 @@
+id: devin-autonomy-contract
+title: 'Devin autonomy contract — ssot.devin-autonomy.yml wired into kanban-dispatch'
+brief: >-
+  Tony asked for hands-off kanban processing where he stays in control.
+  Policy file ssot.devin-autonomy.yml is now the single lever: kill switch,
+  quiet hours, daily session budget, per-card retry cap, autonomy ceiling.
+  kanban-dispatch reads it every pass.
+column: review
+priority: high
+created: 2026-10-08
+updated: 2026-10-08
+verify: >-
+  touch /tmp/no-kanban-dispatch -> dispatcher logs "not claiming", running
+  cards still finish; quiet_hours window blocks claims; sessions_per_day cap
+  hit -> skip with log line; card with autonomy:t4 never claimed; card
+  exceeding retries_per_card -> status held + comms note.
+metric: >-
+  A full day of queued cards drains within policy: no claim outside hours,
+  none past budget, none past retry cap — and zero manual interventions
+  needed.
+spec: |
+  DONE 2026-10-08 (P0): policy file + dispatcher wiring live.
+  P1 (this card, in review): watch one full day — confirm quiet-hours,
+  budget, retry-park behave; then move to done.
+  P2 (gaps -> other cards):
+    - immutable_fields [autonomy, verify] enforcement -> release-lifecycle-
+      standard's lifecycle-check.py (diff-audit, not dispatch-time)
+    - weekly review auto-card (audit.weekly_review_card) -> not yet wired
+    - approve: manual|evidence per-card flag -> review-column contract
+    - t3 auto-promotion path -> after release-lifecycle checker exists
+links:
+- release-lifecycle-standard
+- ada-card-loop-tiers
+- dispatch-queue
+autonomy: t2
+comms_tail:
+- at: 2026-10-08
+  from: devin
+  text: 'P0 live: docs/ssot/infrastructure/ssot.devin-autonomy.yml +
+    kanban-dispatch gates (kill switch /tmp/no-kanban-dispatch, quiet hours
+    00:00-06:00 ICT, 12 sessions/day/host, retries_per_card=2 -> held,
+    autonomy:t4 never claimed). Verified: kill switch blocks claims on a
+    live pass while running cards still finish. Defaults keep today''s
+    behavior except the new caps — tighten by editing the SSOT file only.'
+claim: {}

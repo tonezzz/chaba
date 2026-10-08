@@ -1,0 +1,21 @@
+id: gev-relay-frame-loading-404
+title: gev_command 404s when GEV client still in frame-loading — should be retryable
+brief: 'Session e05cdaa7ab (2026-10-08): cast_to_screen nav to /apps/gev/ succeeded
+  (screen_state nav, detail p0:frame-loading), then gev_command flyTo immediately
+  returned "gev command relay: HTTP Error 404: Not Found". The client hadn''t
+  finished connecting. The tool usage hint says "wait ~10s" but Ada can''t measure
+  that — the relay should queue the command, or return a retryable error that says
+  "client still loading, retry in N s".'
+column: backlog
+priority: medium
+program: gev
+updated: 2026-10-08 20:35
+tags:
+- gev
+- relay
+- audit-2026-10-08
+comms:
+- at: 2026-10-08 20:35
+  from: devin
+  text: 'filed from transcript audit — gev_command call_937298 result HTTP 404 right
+    after successful nav; user had to abandon the flyTo'
