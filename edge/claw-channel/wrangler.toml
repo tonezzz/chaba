@@ -1,0 +1,26 @@
+# claw-channel worker — lab card lab-cf-kv-claw-channel.
+# Deploy via stacks/edge/claw-channel/deploy.sh — it renders
+# wrangler.deploy.toml (real KV id + route) and calls wrangler.
+name = "claw-channel"
+main = "worker.js"
+compatibility_date = "2026-10-08"
+workers_dev = false
+
+# Unlisted path on the existing public edge host. REQUIREMENT:
+# edge.surf-thailand.com must be a proxied (orange-cloud) DNS record —
+# the worker intercepts /claw/* only; every other path still flows to
+# the idc02 caddy-edge origin.
+routes = [
+  { pattern = "edge.surf-thailand.com/claw/*", zone_name = "surf-thailand.com" },
+]
+
+# deploy.sh substitutes the real namespace id.
+[[kv_namespaces]]
+binding = "CLAW_KV"
+id = "REPLACE_WITH_CLAW_KV_NAMESPACE_ID"
+
+# Optional R2 artifact store — uncomment after
+# `wrangler r2 bucket create claw-channel` (needs Workers R2 Storage).
+# [[r2_buckets]]
+# binding = "CLAW_R2"
+# bucket_name = "claw-channel"

@@ -24,6 +24,14 @@ edges:
     kind: caddy-edge               # quadlet on idc02/idc03 public IP
     listen: "https://*-ha.surf-thailand.com behind Cloudflare Access"
     serves: [public]
+  cf-surf:
+    kind: cf-worker                # Cloudflare Workers on surf-thailand.com zone
+    listen: "https://claw.surf-thailand.com/* — KV-backed, no origin"
+    serves: [public]
+    note: "claw-channel lab (card lab-cf-kv-claw-channel): GET unlisted
+      paths unauthenticated, POST needs X-Ingest-Key; stack +
+      worker in stacks/edge/claw-channel/ + edge/claw-channel/; not a
+      routes[] entry — render-routes.py kinds are proxy/static/alias only"
   idc03-serve:
     kind: tailscale-serve          # host fabric exports
     mounts:
