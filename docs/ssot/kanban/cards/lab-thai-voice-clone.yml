@@ -5,7 +5,7 @@ brief: Open-source models can now clone a Thai voice from a ~15s clip — usable
 column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-08 06:05
+updated: 2026-10-08 07:29
 lab:
   hypothesis: JaiTTS-F5TTS or ThonburianTTS clones a reference Thai voice at broadcast-usable quality on the GTX1650
     — good enough for yt-dub narration
@@ -74,6 +74,13 @@ comms:
   from: devin
   text: 'raised request jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc: JaiTTS-F5TTS on HF is gated — our token
     gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS and accept the '
+- at: 2026-10-08 07:29
+  from: devin
+  text: 'mid-bench: ref=ada-ref.wav (17s TH clip in ~/voice-clone-bench). Pitfall confirmed — f5 clips ref >12s
+    but ref_text is not trimmed, so I cut 6.18s/9.66s variants. megaF5+9.66s ref: SIM mean 0.72 (pass), CER mean
+    0.29 (fail <5% gate). megaF5+6.18s: SIM 0.48, CER 0.27 — best clips hit 0.00/0.11 but one off-voice draw per
+    run. VYNCX v2 (IPA) running now; JaiTTS gated on HF (request raised). Note: megaF5 paper CER is 6.26 — only
+    JaiTTS (4.26) is built to pass <5%.'
 requests:
 - id: jaitts-f5tts-on-hf-is-gated-our-token-ge-a74cbc
   ask: JaiTTS-F5TTS on HF is gated — our token gets 404. Please open https://huggingface.co/JTS-AI/JaiTTS-F5TTS
