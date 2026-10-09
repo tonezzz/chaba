@@ -1,0 +1,75 @@
+title: Ada memory pre-write injection/exfiltration scan
+date: '2026-10-09'
+card: ada-memory-injection-scan
+host: tony-dell (ada-pi edit-point checkout, uncommitted)
+repo: ada-pi  # ~/CascadeProjects/ada-pi — dispatch worktree was chaba
+
+what: |
+  New backend/memory_write_guard.py — a dependency-free, string-level
+  pre-write content scan. tool_runner/memory.py routes every memory
+  write through it BEFORE the MDDB/chaba upsert: ada_remember curated
+  banks (text/subject/key), kind=guest, kind=vocab (+vocab_note alias,
+  both reach _vocab_append), guest_remember, guest_remember_private.
+  Runs for every identity — full:true trusted identities are scanned
+  too; the scan guards the bank, not the caller.
+
+scan_classes: |
+  Data-driven SCAN_RULES table at the top of the module (regex rows +
+  two checker functions — unicode.invisible-bidi, flood.oversized):
+  1. prompt_injection  — 'ignore/disregard/forget … instructions',
+     system-prompt/jailbreak refs, 'you are now' / 'pretend you are',
+     line-initial role prefixes (system:/user:/assistant:), chat
+     template tokens (<<SYS>>, [INST], <|im_start|>), '## New
+     instructions:' headers, 'reveal your system prompt', authority
+     spoofs ('I am your developer').
+  2. credential_shape  — AKIA/ASIA AWS keys, sk-/pk-/ak-/rk- provider
+     keys, ghp_/github_pat_, xox[baprs]- Slack, AIza Google, JWT
+     (eyJ…), PEM private-key blocks, Bearer tokens, password-style
+     assignments (password=/api_key:=…), scheme://user:pass@ URLs.
+  3. invisible_unicode — ZWSP/ZWNJ/LRM/RLM/soft hyphen/word joiner/
+     BOM/interlinear anchors, C0-C1 controls, bidi overrides+isolates
+     (U+202A-E, U+2066-69), deprecated format chars, tag chars
+     U+E0000-E007F, variation-selector supplements. ZWJ refused only
+     outside emoji sequences and Indic/Arabic-script adjacency.
+  4. content_flood     — >8k chars (FLOOD_MAX_CHARS env-tunable; the
+     per-entry cap is ada-memory-write-caps' job), whitespace runs
+     >=200, repeat runs >=256, >50% blank bodies, Latin+confusable
+     mixing (Greek/Cyrillic/Armenian/fullwidth/math-alnum). Thai is
+     deliberately excluded from confusables — normal content here.
+
+refusal_contract: |
+  {ok: false, reason, matched_class, matched_rule, error} — returned
+  verbatim so the model can tell the caller plainly. Refusals emit a
+  memory-scan-refused ops event to ada-ha-events-<instance> (meta:
+  identity/bank/class/rule/session_id/ts — never the payload), plus
+  the session event_log list and the local events.md file. Emit is
+  best-effort: mddb down still refuses, never crashes the write path.
+
+verify: |
+  python3 backend/memory_write_guard.py --selftest -> SELFTEST-OK
+  (59 cases: 47 positive across all rules, 12 false-positive guards).
+  tests/test_memory_write_guard.py — 16 tests incl. wired refusal via
+  execute(), event-meta shape, guest paths, trusted-identity scan,
+  mddb-down resilience. tests/scenarios/memory_write_guard.yaml
+  passes. Full suite: unittest tests.test_memory_banks
+  tests.test_memory_recall_extras tests.test_tool_runner
+  tests.test_memory_write_guard -> 320 tests OK.
+  tests.test_scenarios: only pre-existing failures (hit_shape_guard,
+  michael_technician — confirmed broken on clean tree).
+
+ssot: |
+  docs/ssot/apps/ssot.apps.ada-memory-banks.yml gained a write_guard
+  block mirroring SCAN_CLASSES + rule ids (documentation mirror — the
+  module's table is authoritative; `--list-rules` prints it).
+
+notes: |
+  - ada-pi changes are uncommitted on the tony-dell main checkout —
+    commit+push to ship to idc02/idc03 per the normal deploy flow.
+  - ada-memory-write-caps (2000-char entry cap) and
+    ada-memory-staged-writes extend THIS module — SCAN_RULES is the
+    extension point; staging runs after scanning.
+  - Ordering vs the confirmed gate: bank write_policy fires first in
+    _execute_gated, then the scan inside the method — a refused write
+    on a confirmed bank still required the spoken-yes round-trip first.
+  - ada_remember(kind='guest') and the retired guest_remember surfaces
+    both scan — the aliases can't bypass.

@@ -82,6 +82,8 @@ sections:
         text: "Correct = overwrite same key in place (MDDB revision history is the audit trail). Supersede = write a new key, mark the old doc status: superseded with superseded_by/supersedes links. Retract = status: retracted, preferred over delete; hard delete only for privacy/secret leaks."
       - label: Per-bank write policy
         text: "writable gates writes entirely (false = read-only bank). write_policy reuses the ToolRunner confirmed=true gate — same pattern as dangerous HA entities: confirmed = Ada must ask before writing, direct = write immediately. allowed_tools lists which write tools may touch the bank."
+      - label: Pre-write content scan
+        text: "Every memory write (ada_remember curated banks, kind=vocab, kind=guest, guest_remember, guest_remember_private) passes through backend/memory_write_guard.py before the MDDB/chaba upsert. Content matching the write_guard rule classes below is refused with {ok: false, reason, matched_class} — the refusal is identity-agnostic (trusted full:true identities are scanned too; the scan guards the bank, not the caller) and logged as a memory-scan-refused ops event in ada-ha-events-<instance> carrying identity/bank/class/rule only — never the payload."
       - label: NotebookLM is append-only
         text: "NLM sources can't be edited, so updates are never mirrored in place — MDDB is the mutable current truth, NotebookLM is the append-only archive. On update, optionally add a 'Correction: <key> (date)' text source."
       - label: Full schema
@@ -517,6 +519,61 @@ banks:
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
     public: false
+
+# Pre-write content scan — card ada-memory-injection-scan (2026-10-09).
+# Implemented in ada-pi backend/memory_write_guard.py (stdlib-only, string
+# level — no model call in the write path); the rule table lives in the
+# module's SCAN_RULES, this block is the documentation mirror — keep the
+# two in sync (`python3 backend/memory_write_guard.py --list-rules`).
+write_guard:
+  module: backend/memory_write_guard.py
+  wired_into:
+    - ada_remember          # curated banks (text/subject/key) + kind=guest
+    - vocab paths           # _vocab_append covers ada_remember kind=vocab + vocab_note
+    - guest_remember
+    - guest_remember_private
+  refusal_contract: "{ok: false, reason, matched_class, matched_rule, error}"
+  event:
+    collection: ada-ha-events-<instance>
+    kind: ops-event
+    type: memory-scan-refused
+    fields: [identity, bank, class, rule, session_id, ts]   # never the payload
+  classes:
+    prompt_injection:
+      what: "instruction-override and role-spoof phrasing aimed at the recalling model"
+      rules:
+        - injection.ignore-instructions   # 'ignore/disregard/forget … instructions'
+        - injection.system-prompt-ref     # 'system prompt', jailbreak/DAN/developer-mode
+        - injection.you-are-now           # 'you are now', 'pretend you are', 'act as if'
+        - injection.role-spoof-prefix     # line-initial 'system:'/'assistant:'/'user:'…
+        - injection.special-token         # <<SYS>>, [INST], <|im_start|> …
+        - injection.instruction-header    # '## New instructions:', 'new rules:' blocks
+        - injection.reveal-prompt         # 'reveal your system prompt' phrasing
+        - injection.authority-spoof       # 'this is a system message', 'I am your developer'
+    credential_shape:
+      what: "API keys, tokens, private-key blocks and password-style assignments — banks are never a secret store"
+      rules:
+        - cred.aws-access-key             # AKIA/ASIA/… + 16 upper-alnum
+        - cred.openai-style-key           # sk-/pk-/ak-/rk- + 20+ chars (incl. proj/ant/live/test)
+        - cred.github-token               # ghp_/gho_/ghu_/ghs_/ghr_/github_pat_
+        - cred.slack-token                # xox[baprs]-
+        - cred.google-api-key             # AIza…
+        - cred.jwt                        # eyJ… dotted three-part
+        - cred.private-key-block          # -----BEGIN … PRIVATE KEY-----
+        - cred.bearer-token               # 'Authorization: Bearer …'
+        - cred.password-assign            # password=/api_key:=/secret= assignments
+        - cred.url-embedded-auth          # scheme://user:pass@host
+    invisible_unicode:
+      what: "zero-width, bidi override/isolate, tag (U+E0000s) and control characters"
+      rules:
+        - unicode.invisible-bidi          # ZWSP/ZWNJ/LRM/RLM/soft-hyphen/BOM/tag chars;
+                                          # ZWJ refused only outside emoji/Indic/Arabic contexts
+    content_flood:
+      what: "oversized payloads, whitespace/blank floods, homoglyph mixing"
+      rules:
+        - flood.oversized                 # >FLOOD_MAX_CHARS, whitespace/repeat runs,
+                                          # >50% blank bodies, Latin+confusable-script mixes
+                                          # (Thai is normal content — not flagged)
 
 # Conversational persona — adjustable per-identity style knobs. Stored as
 # doc 'persona/self' inside the speaker's resolved personal bank (personal,
