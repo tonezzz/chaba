@@ -1,0 +1,23 @@
+id: ada-speech-capture-degraded
+title: 'Speech capture degraded — "ฟังไม่ชัด" ×8, enroll_speaker got 0.0s audio'
+brief: 'Audit 2026-10-09: ~8 "didn''t catch that" turns across sessions; speaker_profiles
+  returned "not enough speech captured in the buffer" ×3; ada_enroll_speaker for KK
+  failed with "0.0s captured — capture bridge may be dead". Tony noted the line drops
+  ("AI หลุดบ่อย") — related to the kanban card Ada filed herself.'
+column: backlog
+review_kind: verify
+priority: high
+kind: bugfix
+created: '2026-10-09'
+tags:
+- ada
+- voice
+- stt
+- audit-2026-10-09
+spec: "Check the mic/capture bridge feeding speaker_profiles and enrollment (the\n0.0s-capture\
+  \ error says the bridge may be dead). Also the session-rotation\namnesia: within one transcript\
+  \ Ada lost the Lisa-clip context minutes after\ndiscussing it — check whether provider session\
+  \ rotation drops the rolling\nsummary. Evidence: journal speaker_profiles results 16:3x ICT,\
+  \ ada_enroll_speaker\nerror ~16:02; transcripts b0698a4e9a, e47b155e99, 73d7713ce8.\nVERIFY:\
+  \ enroll_speaker captures >0s on a live session; consecutive related\nquestions recall prior\
+  \ context.\n"

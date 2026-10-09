@@ -1,0 +1,25 @@
+id: ada-tv-action-hallucinated-input
+title: 'tv_action typed literal placeholder credentials into TrueID sign-in'
+brief: 'Transcript audit 2026-10-09 (16:21 ICT, session cfed319d22): TV booted to TrueID
+  sign-in; Ada issued tv_action cmd=type text=''your-username'' then text=''your-password''
+  — literally typing placeholder strings into a live login form. She also claimed TV was
+  "playing Dancing In The Street" at 17:00 while yt status said translating-subs and the
+  screen was dark.'
+column: backlog
+review_kind: verify
+priority: high
+kind: bugfix
+created: '2026-10-09'
+tags:
+- ada
+- tv_action
+- hallucination
+- audit-2026-10-09
+spec: "In ada-pi tv_action: (1) refuse cmd=type when text is absent or looks like a\nplaceholder\
+  \ ('your-*', '<...>', 'xxx'); typing must only carry text the user just\nsaid. (2) Narration\
+  \ guard: never claim a specific title/playing-state unless a\ntool result in the same turn\
+  \ contains it — the 'Dancing In The Street' claim\nhad no supporting result. Evidence: journal\
+  \ ada-ha-tony 16:21:50-16:22:03 ICT\n(tv_action type your-username/your-password, cast_verify\
+  \ paused), transcript\n2026-10-09-cfed319d22.md + 73d7713ce8.md 10:00:54Z.\nVERIFY: scenario\
+  \ or unit test — tv_action with placeholder text returns a\nrefusal; a 'what is playing' answer\
+  \ cites an actual yt/status result.\n"

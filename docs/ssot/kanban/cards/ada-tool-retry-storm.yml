@@ -1,0 +1,20 @@
+id: ada-tool-retry-storm
+title: 'Retry storms on failing tools — tasks ×11 and calendar_read ×5 in seconds'
+brief: 'Audit 2026-10-09: on CalendarAuthError the model re-issued tasks action=list
+  ~11 times in 9s (16:31:03–16:31:12 ICT) and calendar_read 5 times in 9s
+  (16:32:09–16:32:18). Burns quota, adds dead air, never succeeds.'
+column: backlog
+review_kind: verify
+priority: medium
+kind: bugfix
+created: '2026-10-09'
+tags:
+- ada
+- tools
+- quota
+- audit-2026-10-09
+spec: "Add a per-session circuit breaker in ada-pi's tool runner: if the same tool\nfails\
+  \ twice with the same error_class within N seconds, return a synthesized\n'do not retry —\
+  \ tell the user it is broken' result instead of executing.\nCovers CalendarAuthError, ReadTimeout,\
+  \ ACL denials. Evidence: journal\n16:31:03-16:32:18 ICT. VERIFY: scenario — forced-failing\
+  \ tool stops after 2\ncalls; Ada narrates the outage once.\n"

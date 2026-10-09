@@ -1,0 +1,17 @@
+id: chat-send-photos-picker
+title: 'chat_send photo picking unconfigured — GPHOTO_REFRESH_TOKEN missing'
+brief: 'Audit found chat_send failing with "photos picker failed: photos picker not
+  configured — set GPHOTO_REFRESH_TOKEN (run gphoto-auth.py)" when asked to send
+  a photo. Text sends work; photo sends die.'
+column: backlog
+review_kind: verify
+priority: low
+kind: bugfix
+created: '2026-10-09'
+tags:
+- ada
+- chat_send
+- gphoto
+spec: "Either configure Google Photos auth (run gphoto-auth.py, set\nGPHOTO_REFRESH_TOKEN)\
+  \ or make chat_send degrade honestly — 'photo sending\nis not configured' instead of an opaque\
+  \ 501. Evidence: journal chat_send\nerrors (earlier window).\n"
