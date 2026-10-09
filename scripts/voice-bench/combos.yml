@@ -64,6 +64,25 @@ combos:
     notes: "CPU-only baseline combo sketch. Registered for schema/loader
       coverage; stack is not implemented yet."
 
+  - id: moshi
+    stt: moshi-full-duplex
+    llm: kyutai-moshiko-7b
+    tts: moshi-full-duplex
+    orchestrator: moshi-adapter
+    host_labels: [gpu]
+    runtime:
+      kind: local
+      cmd: >-
+        MOSHI_DEVICE="${MOSHI_DEVICE:-cuda}"
+        ${MOSHI_PYTHON:-python3} scripts/voice-bench/moshi_adapter.py
+        --port 8999 --moshi-port 8998
+    endpoint: http://127.0.0.1:8999
+    notes: "kyutai-labs/moshi speech-to-speech. English-only; no tool-call
+      plumbing (tool_call=none by design — that IS the finding). Needs a
+      moshi-enabled python env via MOSHI_PYTHON (moshi + sphn + aiohttp).
+      bf16 wants ~16GB VRAM (cuda) or ~15GB RAM (MOSHI_DEVICE=cpu); candle
+      q4 (~4.5GB) still exceeds a 4GB GPU. Adapter: moshi_adapter.py."
+
   - id: dry-run-dummy
     stt: none
     llm: none

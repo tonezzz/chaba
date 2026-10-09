@@ -1,0 +1,85 @@
+# Job: voice-fallback combo bench — kyutai-labs/moshi (kanban: voice-combo-moshi)
+title: 'Bench: moshi full-duplex speech-to-speech'
+subtitle: >-
+  Runs on CPU only on tony-omen (4GB GPU too small); latency numbers are
+  floor-bound by hardware, not by the model. tool_call=none BY DESIGN —
+  moshi has no tool plumbing. English-only; Thai fixtures recorded n/a.
+icon: flask
+date: 2026-10-09
+domain: voice
+status: benched-cpu-only
+
+result:
+  results_file: scripts/voice-bench/results/moshi-20261009T004739Z.json
+  combo_id: moshi
+  model: kyutai/moshiko-pytorch-bf16 (moshi 0.2.13, torch 2.9.1+cu128)
+  device: cpu (i7-9750H) — see hardware_notes
+  fixtures: 10 en streamed, 10 th recorded n/a (moshi is English-only)
+  scorecard:
+    n_ok: 10
+    mean_ttfa_ms: 50564   # range 10.4s .. 113.6s — CPU-bound, see notes
+    mean_total_ms: 218074 # includes up-to-90s reply window; moshi keeps talking
+    tool_call: {exact: 0, partial: 0, none: 7, n/a: 13}
+    wer: 'n/a — s2s model replies speech; there is no input transcript to
+      score. transcript field holds moshi reply text (tokens kind=\x02).'
+  reply_text_observed: >-
+    Moshi did engage: 'Hey,', 'Hi there', 'Hi, how', 'Hello,' on the
+    chit-chat/qry fixtures — greeting-style replies streamed back
+    incrementally. Command/query fixtures produced reply audio but few/no
+    committed text tokens inside the 90s window.
+
+hardware_notes: >-
+  tony-omen GPU is GTX 1650 4GB (~2.5GB free). Moshi PyTorch bf16 needs
+  ~15GB — impossible on GPU and tight on RAM (loaded via swap, RSS
+  peaked ~15GB, available RAM was ~12GB). Candle/moshi-server q4 (~4.5GB
+  weights + mimi + KV) also exceeds 4GB VRAM. Rust server additionally
+  needs rust+cuda toolchain — not installed. Verdict: any realistic moshi
+  run needs a bigger GPU (>=8GB VRAM for q4/q8, ~16GB+ for bf16) or a
+  dedicated host; on this box CPU-only is the ceiling and CPU moshi is
+  far off realtime (~1-3s per 80ms frame at ~140% CPU).
+
+fit_assessment: >-
+  How far is a full-duplex s2s model from our needs? Far for the Ada/GEV
+  use case: (1) NO TOOL PLUMBING — moshi emits only audio+text tokens;
+  there is no function-calling surface, so every ha_command/ha_query
+  fixture scores tool_call=none. Ada's primary job is HA control +
+  memory/MDDB tools; a moshi-style model would need a sidecar
+  text-channel -> tool dispatcher on its reply transcript, losing the
+  latency advantage. (2) English-only — fails the bilingual en/th
+  household requirement outright. (3) Persona/prompting is limited to a
+  text preamble baked into conditioning; no system prompt / instruction
+  hierarchy. (4) On the plus side: true full-duplex (barge-in native),
+  single-model latency path; on suitable hardware published TTFA is
+  ~200ms. Fits only as a conversational frontend behind a real
+  orchestrator — i.e. it cannot replace the pipeline, at most it could
+  sit in front of one.
+
+pipeline_changes:
+  combos_yml: added 'moshi' entry (runtime kind local, gpu label,
+    endpoint http://127.0.0.1:8999, env MOSHI_DEVICE/MOSHI_PYTHON/MOSHI_CMD)
+  adapter: scripts/voice-bench/moshi_adapter.py — owns the moshi server
+    subprocess, exposes GET / + POST /bench, translates to moshi's ws
+    protocol (\x01 opus in/out, \x02 text tokens, \x00 handshake on
+    /api/chat). Streams fixtures realtime-paced, waits WAIT_FIRST_S=300
+    for first audio (CPU lag), collects up to REPLY_WINDOW_S=90 after
+    first audio, QUIET_S=20 early-out. Skips spawn if a moshi server is
+    already listening.
+  harness: none — bench.py drove it unmodified via the /bench contract.
+
+reproduce: >-
+  uv venv .tmp-moshi/venv --python 3.12 && uv pip install
+  --python .tmp-moshi/venv/bin/python moshi   # pulls torch cu128, sphn,
+  aiohttp, bitsandbytes. HF repo kyutai/moshiko-pytorch-bf16 is gated —
+  ~/.cache/huggingface/token already has access. Then:
+  MOSHI_DEVICE=cpu MOSHI_PYTHON=.tmp-moshi/venv/bin/python \
+    python3 scripts/voice-bench/bench.py --combo moshi \
+    --fixtures <en ids> --timeout 700
+  (~15GB weight download, ~10min CPU load+warmup, ~2-5min per fixture).
+
+open_questions: >-
+  - moshi-server (rust/candle q4) on a >=8GB GPU host would give real
+    ttfa numbers — worth one rerun if a suitable runner appears; the
+    combos.yml entry is already wired.
+  - MLX q4 builds exist but are Apple-only.
+  - No GPU/host on the current fleet fits moshi (tony-omen 4GB is the
+    only CUDA box listed for this lane).
