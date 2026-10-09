@@ -76,3 +76,16 @@ combos:
     notes: "Harness self-test entry — exists so bench.py --combo
       dry-run-dummy --dry-run exercises the full result schema without
       any services."
+
+  - id: cascade-whisper-piper
+    stt: faster-whisper           # models small+medium benched; int8_float16 fits GTX 1650 4GB
+    llm: ollama-phi3              # http://100.75.102.88:11434 phi3-gguf — JSON tool-call prompt
+    tts: piper                    # .bench-tools/voices/en_US-lessac-medium.onnx
+    orchestrator: voice-bench-pipeline
+    host_labels: [gpu]
+    runtime:
+      kind: none
+    endpoint: ""
+    notes: "Fully-local cascade. Thai STT works (whisper multilingual) but
+      no Thai piper voice exists — TH output falls back to EN voice or skips
+      (thai_gap). Result: results/cascade-whisper-piper-20261009-065457.json"
