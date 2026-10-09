@@ -5,7 +5,7 @@ brief: We detect failures well but respond ad-hoc — every alert should know it
 column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-09 07:08
+updated: 2026-10-09 07:18
 lab:
   hypothesis: A 4-level incident ladder + quarterly fault drills keeps home-ops failures bounded — detection under
     2 min, auto-fix for routine staleness, humans only paged for real decisions
@@ -49,6 +49,7 @@ action:
   result: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-070741-ladder-ssot-incident-response-.service:
     Failed with result ''exit-code''. | devin-task-20261009-070741-ladder-ssot-incident-response-.service: Consumed
     1.074s CPU time.'
+  verified: true
 comms:
 - at: 2026-10-09 07:07
   from: idc03
@@ -59,4 +60,8 @@ comms:
 - at: 2026-10-09 07:08
   from: idc03
   text: 'finished (ok): exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-070741-ladder-ssot-incident-response-.service:'
+- at: 2026-10-09 07:18
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-070741-ladder-ssot-incident-response- already in origin/master — marked
+    verified'
 claim: {}
