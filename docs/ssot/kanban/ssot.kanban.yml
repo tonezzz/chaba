@@ -364,7 +364,20 @@ execution:
                Answers arrive out-of-band: /respond appends to
                $TASK_DIR/answers.jsonl while the card is running — rails tell
                sessions to check it before finishing (newest line wins per
-               request_id)."
+               request_id). Outcome docs must end with a `lessons:` list
+               (0-5 gotcha lines) — the primer harvests them next run."
+  lesson_primer: "card dispatch-lesson-primer — build_task injects a
+               KNOWN_PITFALLS block after TASK_RAILS: top ~8 lesson lines
+               (<=~1.5k tokens) matched on host+repo+task keywords by
+               scripts/board/lesson_primer.py. Sources, rank order:
+               dispatch-outcome-*.md `lessons:` lists (self-seeded),
+               docs/ssot/jobs/** fields (method_notes/side_findings/
+               gotchas/lessons — signal-word lines only), card comms
+               matching gotcha|failed|lesson|do NOT|never, docs/kb/**
+               runbook title+abstract matches (pointer lines). A line
+               needs >=2 distinct keyword hits. Injected lines are logged
+               to card comms on dispatch. KANBAN_PRIMER=0 disables;
+               primer failure never blocks a run (warn-only)."
   render: "chaba-board-render.timer (60s, --if-changed) catches edits not made
            via the API; the API renders synchronously on every write"
   persistence: "kanban-commit.timer (15min) — scoped git add of docs/ssot/kanban/
