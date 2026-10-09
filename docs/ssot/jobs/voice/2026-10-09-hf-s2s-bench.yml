@@ -1,0 +1,89 @@
+id: 2026-10-09-hf-s2s-bench
+card: voice-combo-hf-s2s
+date: 2026-10-09
+runner: tony-omen
+kind: bench-result
+
+summary: >
+  Benched huggingface/speech-to-speech in serve mode
+  (ws://127.0.0.1:8765/v1/realtime) via scripts/voice-bench on tony-omen.
+  20/20 fixtures completed. English STT perfect (WER 0.0 x10); Thai uneven
+  (4/10 imperfect, worst: "ปิดแอร์ห้องนอน" misdetected as Hindi). Tool
+  calling works end-to-end over native OpenAI tool_calls but qwen2.5:1.5b
+  only chose to call on 1/14 applicable fixtures (partial arg match).
+
+stack:
+  orchestrator: huggingface/speech-to-speech @ 1.0.0 (serve subcommand)
+  stt: faster-whisper small, multilingual, auto language, CPU int8
+  llm: ollama qwen2.5:1.5b @ http://100.75.102.88:11434/v1 (chat-completions)
+  tts: repo default qwen3-tts 1.7B CustomVoice, ggml backend, Q4_K_M, CPU
+  vad: silero + smart-turn-v3.2 (cpu onnx)
+  gpu_note: >
+    GTX1650 4GB could NOT host the stack — ollama llama-server already owns
+    ~2.2GB; qwen3-ggml OOM'd even at Q4_K_M. Ran CPU-only via
+    CUDA_VISIBLE_DEVICES="". The "gpu" label only bought us the ollama-hosted
+    LLM on-GPU. TTS on CPU: RTF ~0.02-0.17 (warmup 1.6s audio in 68s).
+
+results:
+  file: scripts/voice-bench/results/hf-s2s-20261009T012606Z.json
+  n: 20
+  ok: 20
+  mean_ttfa_ms: 75828      # dominated by CPU qwen3-tts first-token latency
+  mean_total_ms: 132645
+  mean_wer: 0.11           # en 0.00, th ~0.21 avg
+  tool_calls: {exact: 0, partial: 1, none: 13, n/a: 6}
+  per_stage_medians: {stt_s: "~9-13", llm_s: "~1-5 (ollama GPU)", tts: "dominant"}
+
+key_question: >
+  Does the OpenAI-Realtime-compatible event set adapt cleanly to our
+  gemini-protocol client shape?
+answer: yes-with-caveats
+adaptation_findings:
+  - "Near-1:1 mapping: session.update~setup, input_audio_buffer.append~
+    realtimeInput.audio, response.output_audio.delta~serverContent.audio,
+    response.function_call_arguments.done~toolCall, response.done~
+    turnComplete, server_vad~automaticActivityDetection. Adapter is ~140
+    lines (scripts/voice-bench/adapters.py)."
+  - "GA naming: this server uses output_audio.* / output_audio_transcript.*
+    (not the beta response.audio.* names) — clients written against the
+    beta event names need renamed handlers."
+  - "Sessions are exclusive: pool=1 rejects a second ws with close 1008 /
+    session_limit_reached, and the slot stays unavailable ~10s after
+    disconnect while handlers drain. Client must serialize sessions and
+    retry connects."
+  - "Tool follow-up needs two steps client-side: send
+    conversation.item.create(function_call_output) then an explicit
+    response.create — matches the OpenAI pattern, maps to Gemini's
+    toolResponse + next-turn send."
+  - "Tools reach the LLM natively via chat-completions tools= — so the LLM
+    endpoint MUST support tools. ollama phi3-gguf 400s; qwen2.5 works.
+    With transformers-LLM backend instead, tools are prompt-injected as
+    <code> blocks (no endpoint capability needed)."
+  - "Extension event speech_to_speech.input_audio_transcription.snapshot
+    is opt-in; standard transcription.completed events work as expected."
+
+blockers_and_fixes:
+  - "qwentts-cpp wheel is built vs CUDA 12; torch 2.14 pulls cu13 pip libs —
+    needed nvidia-*-cu12 packages + LD_LIBRARY_PATH (in hf-s2s-serve.sh)."
+  - "phi3-gguf:latest does not support tools -> swapped to qwen2.5:1.5b
+    (pulled to ollama on tony-omen)."
+  - "Fixture wavs were tone placeholders (voice-bench-harness checkpoint
+    never committed on idc03); regenerated real speech with a new `edge`
+    engine (edge-tts, no key needed)."
+
+recommendations:
+  - "For Thai coverage prefer whisper medium/large-v3 or Qwen3-ASR over
+    'small' — th WER 0.21 avg is too weak for commands."
+  - "Pick a tool-reliable LLM (qwen2.5:7b/qwen3:4b on idc02-class GPU) —
+    1.5b called tools on only 1/14 command fixtures."
+  - "TTS is the latency bottleneck on CPU; on a bigger GPU qwen3-ggml
+    should be realtime-ish. Keep Thai-TTS caveat from
+    voice-fallback-options.md — qwen3 'auto' did speak Thai but quality
+    not evaluated here."
+
+artifacts:
+  - scripts/voice-bench/ (harness: combos.yml, adapters.py, bench.py, report.py)
+  - scripts/voice-bench/hf-s2s-serve.sh (launcher, env-overridable)
+  - scripts/voice-bench/results/hf-s2s-*.json
+  - reports/voice-fallback/LATEST.md + trend.md
+  - experiments/hf-speech-to-speech/ (vendored clone, untracked)

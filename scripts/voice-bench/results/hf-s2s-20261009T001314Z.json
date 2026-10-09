@@ -1,0 +1,667 @@
+{
+  "schema": "voice-bench-result",
+  "schema_version": 1,
+  "combo": {
+    "id": "hf-s2s",
+    "stt": "faster-whisper-small",
+    "llm": "ollama-phi3",
+    "tts": "qwen3-ggml",
+    "orchestrator": "hf-speech2speech",
+    "host_labels": [
+      "gpu"
+    ],
+    "notes": "huggingface/speech-to-speech serve mode; STT faster-whisper small (multilingual, Thai-capable), LLM = ollama chat-completions on the local tailnet address, TTS = repo default (qwen3 ggml). Streams fixtures over the OpenAI Realtime event set via adapters.openai_realtime."
+  },
+  "dry_run": false,
+  "meta": {
+    "at": "20261009T001314Z",
+    "host": "tony-omen"
+  },
+  "summary": {
+    "n": 20,
+    "ok": 12,
+    "mean_ttfa_ms": 88076.58,
+    "mean_total_ms": 150581.2,
+    "mean_wer": 0.09,
+    "tool_call": {
+      "exact": 0,
+      "partial": 1,
+      "none": 13,
+      "n/a": 6
+    }
+  },
+  "fixtures": [
+    {
+      "id": "en-cmd-light-kitchen",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 23020,
+      "total_ms": 36970,
+      "transcript": "Turn on the kitchen lights.",
+      "expected_transcript": "turn on the kitchen lights",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "OK, turning on kitchen lights.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-cmd-ac-bedroom",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 240107,
+      "transcript": null,
+      "expected_transcript": "set the bedroom air conditioner to 24 degrees",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_set_temperature",
+        "args": {
+          "area": "bedroom",
+          "temperature": 24
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-cmd-fan-off",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 245014,
+      "transcript": "Turn off the living room fan.",
+      "expected_transcript": "turn off the living room fan",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "area": "living room",
+          "domain": "fan",
+          "entity": "Device class fan:light"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "fan",
+          "area": "living_room"
+        }
+      },
+      "tool_call_match": "partial",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.created",
+        "response.done",
+        "response.function_call_arguments.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-cmd-lock-door",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 240121,
+      "transcript": null,
+      "expected_transcript": "lock the front door",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "front_door"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-qry-temp-outside",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 93520,
+      "total_ms": 158382,
+      "transcript": "What is the temperature outside right now?",
+      "expected_transcript": "what is the temperature outside right now",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outside_temperature"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "Sure, here's my best attempt to respond: \"Sure, let me check.\"",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-qry-washer",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 65605,
+      "total_ms": 107625,
+      "transcript": "Is the washing machine still running?",
+      "expected_transcript": "is the washing machine still running",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.washer_power"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "No, the washing machine is not running.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-qry-solar",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 229621,
+      "total_ms": 245229,
+      "transcript": "How much solar power are we generating?",
+      "expected_transcript": "how much solar power are we generating",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.solar_power"
+        }
+      },
+      "tool_call_match": "none",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.created",
+        "response.output_audio.delta",
+        "response.output_audio_transcript.delta",
+        "response.output_item.added",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-chat-hello",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 5109,
+      "transcript": null,
+      "expected_transcript": "hey how are you doing today",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    },
+    {
+      "id": "en-chat-thanks",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 1749,
+      "transcript": null,
+      "expected_transcript": "thanks that is exactly what i needed",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    },
+    {
+      "id": "en-chat-joke",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 240236,
+      "transcript": null,
+      "expected_transcript": "tell me something funny",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    },
+    {
+      "id": "th-cmd-light-kitchen",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 33341,
+      "total_ms": 48757,
+      "transcript": "เปิดไฟครัวหน้อย",
+      "expected_transcript": "เปิดไฟครัวหน่อย",
+      "wer": 0.0667,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "Sure, I'll turn off the lights in the kitchen area.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-cmd-ac-off",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 240107,
+      "transcript": null,
+      "expected_transcript": "ปิดแอร์ห้องนอน",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "climate",
+          "area": "bedroom"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "th-cmd-tv-on",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 13593,
+      "total_ms": 24646,
+      "transcript": "เปิด TV ห้องนั่งเล่น",
+      "expected_transcript": "เปิดทีวีห้องนั่งเล่น",
+      "wer": 0.2,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "media_player",
+          "area": "living_room"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "Turning on TV in Living Room.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-cmd-fan-on",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "error",
+      "error": "received 1008 (policy violation) All session slots are in use; then sent 1008 (policy violation) All session slots are in use",
+      "ttfa_ms": null,
+      "total_ms": 240666,
+      "transcript": null,
+      "expected_transcript": "เปิดพัดลมหน่อยครับ",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "fan"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "th-qry-temp",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 78351,
+      "total_ms": 207186,
+      "transcript": "ตอนนี้อุ่นหัพุ่มข้างนอกเท่าไร",
+      "expected_transcript": "ตอนนี้อุณหภูมิข้างนอกเท่าไหร่",
+      "wer": 0.3103,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outside_temperature"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "죄หหหหหหหา, คณยงไมไดชแจงอนหมหรออนในหองไหนนะครบ.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-qry-door",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 79434,
+      "total_ms": 93663,
+      "transcript": "ประตูนาลกยุมาย",
+      "expected_transcript": "ประตูหน้าล็อกอยู่ไหม",
+      "wer": 0.5,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "lock.front_door"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "ประตเปด",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-qry-light",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 118877,
+      "total_ms": 176663,
+      "transcript": "ไฟนิคลัวเปิดอยู่ไหม",
+      "expected_transcript": "ไฟในครัวเปิดอยู่ไหม",
+      "wer": 0.1579,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "light.kitchen"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "ยงเปดอยหรอยง",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-chat-hello",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 62712,
+      "total_ms": 145310,
+      "transcript": "สวัสดีครับ วันนี้เป็นไงบ้าง",
+      "expected_transcript": "สวัสดีครับ วันนี้เป็นไงบ้าง",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "สบายดคะ วนนดฉนกไดทำงานอยครบ.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-chat-thanks",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 55477,
+      "total_ms": 73092,
+      "transcript": "ขอบคุณมากครับ",
+      "expected_transcript": "ขอบคุณมากครับ",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "ขอบคณ你哦",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-chat-weather",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "error",
+      "error": "{\"error\": {\"message\": \"Language model generation failed: Request timed out.\", \"type\": \"response_failed\", \"code\": null, \"event_id\": null, \"param\": null}, \"event_id\": \"event_91f4ff6cef134f3fba1959172b2adf8c\", \"type\": \"error\"}",
+      "ttfa_ms": 203368,
+      "total_ms": 240992,
+      "transcript": "วันนี้อากาศดีจังเลย",
+      "expected_transcript": "วันนี้อากาศดีจังเลย",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "I'm having trouble responding right now. Please try again.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "error",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,312 @@
+{
+  "schema": "voice-bench-result",
+  "schema_version": 1,
+  "combo": {
+    "id": "hf-s2s",
+    "stt": "faster-whisper-small",
+    "llm": "ollama-phi3",
+    "tts": "qwen3-ggml",
+    "orchestrator": "hf-speech2speech",
+    "host_labels": [
+      "gpu"
+    ],
+    "notes": "huggingface/speech-to-speech serve mode; STT faster-whisper small (multilingual, Thai-capable), LLM = ollama chat-completions on the local tailnet address, TTS = repo default (qwen3 ggml). Streams fixtures over the OpenAI Realtime event set via adapters.openai_realtime."
+  },
+  "dry_run": false,
+  "meta": {
+    "at": "20261009T010405Z",
+    "host": "tony-omen"
+  },
+  "summary": {
+    "n": 8,
+    "ok": 6,
+    "mean_ttfa_ms": 74975.57,
+    "mean_total_ms": 128252.38,
+    "mean_wer": 0.14,
+    "tool_call": {
+      "exact": 0,
+      "partial": 0,
+      "none": 4,
+      "n/a": 4
+    }
+  },
+  "fixtures": [
+    {
+      "id": "en-cmd-ac-bedroom",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 109115,
+      "total_ms": 245039,
+      "transcript": "Set the bedroom air conditioner to 24 degrees.",
+      "expected_transcript": "set the bedroom air conditioner to 24 degrees",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_set_temperature",
+        "args": {
+          "area": "bedroom",
+          "temperature": 24
+        }
+      },
+      "tool_call_match": "none",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.created",
+        "response.output_audio.delta",
+        "response.output_audio_transcript.delta",
+        "response.output_item.added",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-cmd-lock-door",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "error",
+      "error": "session rejected: {'error': {'message': 'All 1 session slots are in use. Disconnect an existing client first.', 'type': 'session_limit_reached', 'code': None, 'event_id': None, 'param': None}, 'event_id': 'event_dcf855f5073f4447bbee6a48b0048fc7', 'type': 'error'}",
+      "ttfa_ms": null,
+      "total_ms": 10304,
+      "transcript": null,
+      "expected_transcript": "lock the front door",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "front_door"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-chat-hello",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "error",
+      "error": "{\"error\": {\"message\": \"All 1 session slots are in use. Disconnect an existing client first.\", \"type\": \"session_limit_reached\", \"code\": null, \"event_id\": null, \"param\": null}, \"event_id\": \"event_f9a8bc08d26849eda24ac8d6162e7d02\", \"type\": \"error\"}",
+      "ttfa_ms": 48925,
+      "total_ms": 116899,
+      "transcript": "Hey, how are you doing today?",
+      "expected_transcript": "hey how are you doing today",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "I'm fine, thank you! How can I help you today?",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "error",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-chat-thanks",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 85185,
+      "total_ms": 107490,
+      "transcript": "Thanks, that is exactly what I needed.",
+      "expected_transcript": "thanks that is exactly what i needed",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "You're welcome!",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-chat-joke",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 56542,
+      "total_ms": 116747,
+      "transcript": "Tell me something funny.",
+      "expected_transcript": "tell me something funny",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "Sure, here's my best laugh.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-cmd-ac-off",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 64340,
+      "total_ms": 202108,
+      "transcript": "भित ए फोंण नोन",
+      "expected_transcript": "ปิดแอร์ห้องนอน",
+      "wer": 1.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "climate",
+          "area": "bedroom"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "ชวยเหลอคณควบคมอปกรณในหองคะ? บดนมรายการน: [รายการอปกรณ]",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-cmd-fan-on",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 88188,
+      "total_ms": 142229,
+      "transcript": "เปิดพัดลมหน่อยครับ",
+      "expected_transcript": "เปิดพัดลมหน่อยครับ",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "fan"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "好的，我去開窗機。",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "th-chat-weather",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 72534,
+      "total_ms": 85203,
+      "transcript": "วันนี้อากาศดีจังเลย",
+      "expected_transcript": "วันนี้อากาศดีจังเลย",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "เขาใจคะ",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    }
+  ]
+}
