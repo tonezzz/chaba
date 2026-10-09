@@ -1,0 +1,144 @@
+title: Ada Person Registry & Lifecycle Standard
+subtitle: One declaration per known human — identity bindings, banks, control, persona — rendered into memory-banks.json
+icon: account-group
+version: 1
+last_updated: "2026-10-09"
+
+overview:
+  purpose: |
+    Ada must know WHO is speaking and shape memory, abilities, and manner
+    per person — not per session. This file is the canonical registry:
+    each person declares every alias that can resolve to them (voiceprint
+    entity, HA person, chaba/devin user keys), their bank allowlist and
+    private bank, their HA control domains, persona overrides, and the
+    bank-doc that holds learned preferences/habits.
+
+    Rendered into ADA_MEMORY_BANKS_FILE (memory-banks.json) at deploy —
+    the persons: block compiles to person_policies + control_policies +
+    a new 'persons' runtime block. Ada-pi resolves speaker entity →
+    person → policy + persona in one hop.
+  why_a_registry: |
+    Today the same person appears as 3-4 aliases (testo / person.testo_2 /
+    user-testo) and persona knobs are global — KK can't be formal-Thai
+    while Tony is direct-English. One declaration per human fixes both:
+    aliases collapse to a person, persona overrides attach to the person.
+
+  layers:
+    - identify: speaker_id voiceprint / device key / HA login → person_entity
+    - resolve: person_entity → persons.<key> (alias map below)
+    - gate: banks_read/bank_write/control from the person, not the alias
+    - shape: persona overrides applied to session instructions
+    - learn: habits land in prefs_doc inside the person's private bank
+    - audit: memory-standard bars + person coverage check
+
+# ------------------------------------------------------------------
+# The registry. Every human Ada should know by name is an entry here.
+# Wildcard keys: default (named-but-unlisted), unknown (no identity).
+persons:
+  tony:
+    label: Tony
+    role: admin
+    aliases: [person.tony, admin, tony-ip, user-tonezzzz, user-tony2,
+              user-ha-mcp-server, ha-03e85ebb, ha-4d0e0dee, ha-bf66722a,
+              ha-testdebug001]
+    banks_read: [all]
+    bank_write: personal
+    control: {domains: [full]}
+    persona: {language: auto, tone: direct, verbosity: brief,
+              formality: casual, proactiveness: proactive}
+    prefs_doc: person/tony/prefs
+
+  kk:
+    label: KK
+    role: resident
+    aliases: [person.kk, user-kk]
+    banks_read: [general, home, people, purchase, personal-kk]
+    bank_write: personal-kk
+    control: {domains: [light, switch, input_boolean, script, media_player]}
+    persona: {language: auto, tone: warm, verbosity: normal,
+              formality: polite, proactiveness: normal}
+    prefs_doc: person/kk/prefs
+
+  testo:
+    label: Testo
+    role: user
+    aliases: [testo, person.testo_2, user-testo]
+    banks_read: [general, home, people, purchase, personal-testo]
+    bank_write: personal-testo
+    control: {domains: [light, switch, input_boolean, script, media_player]}
+    persona: {language: auto, tone: direct, verbosity: normal,
+              formality: polite}
+    prefs_doc: person/testo/prefs
+
+  guest:
+    label: Guest
+    role: guest
+    aliases: [person.guest]
+    banks_read: [general, home]
+    bank_write: null            # guests never write memory
+    control: {domains: [light, media_player]}   # safe demo subset
+    persona: {language: auto, tone: warm, verbosity: normal,
+              formality: polite, proactiveness: minimal}
+    prefs_doc: null             # no long-term learning for guests
+
+  # fallbacks — not persons, behavior presets
+  default:
+    label: null
+    role: restricted
+    banks_read: [general, home, people, purchase]
+    bank_write: null
+    control: {domains: [light, switch, input_boolean, script, media_player]}
+    persona: {tone: direct, formality: polite}
+  unknown:
+    label: null
+    role: anonymous
+    banks_read: [general, home]
+    bank_write: null
+    control: {domains: [light]}
+    persona: {tone: warm, formality: polite, proactiveness: minimal}
+
+lifecycle:
+  description: |
+    Standard procedure for a person in the system. Steps 1-3 are the
+    enrollment ritual; 4-5 are continuous; 6 is the audit that keeps
+    it honest.
+  steps:
+    - enroll: |
+        Voice path: ada_enroll_speaker binds voiceprint → person_entity.
+        Device path: key-issued event binds a device/login identity.
+        Creates the person_entity alias; the person may not exist in
+        persons: yet — they run on 'default' until declared.
+    - declare: |
+        Edit this file: add persons.<key> with every alias observed in
+        ada-events (key-issued, speaker-enrolled, transcript identity).
+        Render memory-banks.json and deploy. Private bank convention:
+        personal-<key> with mddb_collection ada-ha-bank-personal-<key>,
+        instances: [tony] (or per-household).
+    - verify: |
+        ≥3 voiceprints within the first week (auto_learn supplies them);
+        banks_for_person returns the declared set; cross-bank recall
+        probe shows no leaks.
+    - learn: |
+        Preferences/habits accumulate as docs in the person's bank —
+        structured prefs_doc (person/<key>/prefs) for stable traits
+        (language, units, routines), vocab kind for word coaching,
+        ordinary facts as memory docs. Ada reads prefs_doc at session
+        start when the speaker resolves.
+    - evolve: |
+        Persona knobs tune per-person register over time (KK: warm+polite;
+        Tony: direct+brief). Habit docs accumulate; quarterly review
+        decides promote (habit → routine Ada anticipates) or prune.
+    - audit: |
+        memory-standard bars still govern (cross_speaker_leaks=0,
+        min_prints_after_week, voiceprint_drift events). NEW bar:
+        person_coverage — every speaker entity seen in ada-events in
+        the last 30d must resolve to a persons entry or 'default'.
+
+open_questions:
+  - "persona overrides need the ada-pi hook — session instructions
+    currently compose globally; per-person tone/language/verbosity is
+    the code change this registry enables (card ada-person-registry)."
+  - "role admin persons (only tony today) may read bank_write personal
+    AND reach others' banks for maintenance — admin is the exception,
+    not a pattern."
+
