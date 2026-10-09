@@ -10,7 +10,7 @@ note: '79% used, growing 12.5 GiB/day -> full in ~5.1d top grower 24h: /home/ton
   /home/tony/.cache +12.6 GiB, /home/tony/.cache/uv/ +10.8 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-09 17:47
+updated: 2026-10-09 19:53
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -24,6 +24,13 @@ comms:
 - at: 2026-10-09 17:47
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 19:53
+  from: devin
+  text: 'UPDATE on move-cache: huggingface cache already emptied (~/.cache/huggingface = 0B — cleaned by something
+    since the +21G/day measurement; uv pruned to 340M by this session). /home now 77% (70G free) with the growth
+    driver gone. /data partition exists (295G, 134G free) and remains the right landing zone if cache pressure returns
+    — can still execute the move as prevention: mkdir /data/tony-cache, mv+symlink ~/.cache/{huggingface,uv}. Flagging:
+    if HF regrows, the move is a 2-min job — no need to ke'
 requests:
 - id: omen-disk-plan
   from: devin
