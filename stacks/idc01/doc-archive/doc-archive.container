@@ -6,8 +6,9 @@ Wants=network-online.target
 [Container]
 Image=localhost/doc-archive
 ContainerName=doc-archive
-# Host network so the container can reach MDDB on idc01's own tailnet IP
-# (100.74.146.0:11023 — MDDB binds tailscale0 only, not loopback) and so
+# Host network so the container can reach the MDDB leader on idc03's
+# tailnet IP (100.102.134.91:11023 — MDDB binds tailscale0 only, not
+# loopback) and so
 # uvicorn can bind the tailnet IP directly via DOC_ARCHIVE_BIND.
 Network=host
 EnvironmentFile=/home/tony/.config/secrets/doc-archive.env

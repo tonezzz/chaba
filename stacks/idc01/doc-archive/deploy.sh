@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Deploy doc-archive to idc01: copy source, build a venv, install the systemd
+# Deploy doc-archive to idc03: copy source, build a venv, install the systemd
 # USER unit. Idempotent. Does NOT touch master, git, or Drive content.
 #
-# Prereqs on idc01:
+# Prereqs on idc03:
 #   - ~/.config/secrets/doc-archive.env  (see doc-archive.env.example; 0600)
 #   - ~/.config/rclone/rclone.conf with a [gdrive] section holding
 #     client_id/client_secret/token (copied from tony-dell per the design doc)
@@ -13,13 +13,14 @@ set -euo pipefail
 # ~/.config/containers/systemd/ and `podman build -t localhost/doc-archive`
 # from APP_DIR instead of the venv+service steps below.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-HOST="${1:-idc01}"
+HOST="${1:-idc03}"
 APP_DIR='.local/share/doc-archive'
 
 ssh "$HOST" "mkdir -p $APP_DIR .config/systemd/user .config/secrets"
 
 scp "$SCRIPT_DIR/drive_client.py" "$SCRIPT_DIR/doc_archive.py" \
-    "$SCRIPT_DIR/requirements.txt" "$HOST:$APP_DIR/"
+    "$SCRIPT_DIR/mirror-to-ha-www.sh" "$SCRIPT_DIR/requirements.txt" \
+    "$HOST:$APP_DIR/"
 scp "$SCRIPT_DIR/doc-archive.service" \
     "$HOST:.config/systemd/user/doc-archive.service"
 
@@ -37,7 +38,7 @@ ssh "$HOST" "set -e
     systemctl --user is-active doc-archive.service
     BIND=\$(grep -E '^DOC_ARCHIVE_BIND=' .config/secrets/doc-archive.env | cut -d= -f2)
     PORT=\$(grep -E '^DOC_ARCHIVE_PORT=' .config/secrets/doc-archive.env | cut -d= -f2)
-    curl -sf \"http://\${BIND:-100.74.146.0}:\${PORT:-11025}/health\""
+    curl -sf \"http://\${BIND:-100.102.134.91}:\${PORT:-11025}/health\""
 
 echo
 echo "doc-archive deployed on $HOST"

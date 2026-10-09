@@ -135,8 +135,8 @@ python3 scripts/scenario-live.py tests/scenarios-live/tv_power.yaml \
     --events-json /tmp/tvpower-prime.json -v
 ```
 
-First job doc (write to `ada-eval-jobs` on idc01 MDDB,
-`http://100.74.146.0:11023/v1`) — intentionally **not** written by the resume
+First job doc (write to `ada-eval-jobs` on idc03 MDDB,
+`http://100.102.134.91:11023/v1`) — intentionally **not** written by the resume
 session: a `queued` doc becomes a live trigger the moment `ada-evald` ships,
 and `tv_power` actuates the real TV plug. Write it as part of the run that
 deploys phase 1:

@@ -5,7 +5,7 @@ brief: 'Tony (2026-10-09): use the iPhone camera for hand-gesture control of wha
   (READ THIS FIRST — no re-digging the archive). Supersedes rebuild-gesture-system-using-yolo-for-cu-94356f and
   rebuild-gesture-control-using-yolo-1d906b (YOLO boxes are wrong primitive — landmark pipeline stays, per the KB
   recommendation).'
-column: review
+column: done
 review_kind: verify
 priority: high
 created: 2026-10-09
@@ -103,4 +103,8 @@ comms:
     file-bind-mount inode was stale — podman restart web needed, not caddy reload). All 5 expected_goals verified
     LIVE: /apps/gesture/ 200, /apps/gesture/screen 200, vendored model, /apps/gesture-live/health 200, ws handshake
     ok. chaba-home Gesture tab live. Remaining: real iPhone+TV E2E.'
-updated: 2026-10-09 14:17
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'VERIFIED: deployed on tony-dell — gesture-relay quadlet active on tailnet :8794, web container recreated
+    with file-based Caddyfile. Comm evidence stands.'
+updated: 2026-10-09 17:44

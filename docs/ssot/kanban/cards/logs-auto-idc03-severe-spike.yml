@@ -1,13 +1,19 @@
 id: logs-auto-idc03-severe-spike
 title: logs `idc03` 16602 severe/24h
-brief: 'The log digest flagged something worth a look: logs `idc03` 16602 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `idc03` 16602 severe/24h. Read the note, then fix it
+  or close the card.'
 column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 16602 severe lines (oom/panic/failed) in the last 24h (limit 40)
-help: Read the digest's repeat-offender lines for idc03; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-10-09'
+help: Read the digest's repeat-offender lines for idc03; this is a real incident signal, not pipeline breakage.
+updated: 2026-10-09 17:44
+comms:
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'DIAGNOSED (25.5k severe/24h): (a) 21k = mddb writing INFO logs to stderr → journald maps stderr=err — artifact,
+    needs mddb log-target or digest fix; (b) 728 = runner-agent.service crash-loop from stale binary — FIXED this
+    session (sha synced); (c) 1.5k = michael-dev REST sensors timing out on http://michael-ha:8123 — real: LAN hostname
+    unreachable from VPS post-migration, mirrors need the nabu-casa URL or disabling. Keeping open for (a)+(c).'

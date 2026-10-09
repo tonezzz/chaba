@@ -23,8 +23,8 @@ discovery, with user confirmation for new topics.
    `category`, `status` (default `draft`), `created`, `source: auto-kb`.
 5. Indexes the file by running `scripts/sync-kb-to-mddb.py --missing-only`
    itself — no separate assistant MCP step required. A fast `/health`
-   precheck (3s) on `MDDB_BASE` (default `http://100.74.146.0:11023`,
-   idc01) reports `pending_index` immediately when MDDB is down instead
+   precheck (3s) on `MDDB_BASE` (default `http://100.102.134.91:11023`,
+   idc03) reports `pending_index` immediately when MDDB is down instead
    of waiting through sync's retry cycle.
 6. Prints `AUTO_KB_RESULT {...}` as its last line. `"indexed": false`
    means created-but-pending; the `retry` field holds the command to

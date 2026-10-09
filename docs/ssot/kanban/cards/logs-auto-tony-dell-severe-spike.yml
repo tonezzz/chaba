@@ -1,13 +1,19 @@
 id: logs-auto-tony-dell-severe-spike
 title: logs `tony-dell` 5990 severe/24h
-brief: 'The log digest flagged something worth a look: logs `tony-dell` 5990 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `tony-dell` 5990 severe/24h. Read the note, then fix
+  it or close the card.'
 column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 5990 severe lines (oom/panic/failed) in the last 24h (limit 40)
-help: Read the digest's repeat-offender lines for tony-dell; this is a real incident
-  signal, not pipeline breakage.
-updated: '2026-10-09'
+help: Read the digest's repeat-offender lines for tony-dell; this is a real incident signal, not pipeline breakage.
+updated: 2026-10-09 17:44
+comms:
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'DIAGNOSED (27.7k user + 27.8k system severe/24h — worst host): ada-ha ssh-ing to 127.0.0.1:22 → refused
+    ~1/min (a tool/script looping host-loopback ssh inside the container); tony-ha "No compatible devices at 2-1"
+    USB probe loop (9.3k); gev-gemini 2.7k; michael-dev mirror timeouts 2.1k; bserver 2.1k. Real bugs — needs per-service
+    dispatch, not a close.'

@@ -35,12 +35,12 @@ corpus must stay on ONE path or scores collapse to ~0.
 
 1. Remove `OPENROUTER_PRIMARY=1` from `mddb-gemini.env` (keep the key —
    OR stays as the middle fallback tier).
-2. `ssh idc01 'systemctl --user restart gemini-ollama-proxy'`
+2. `ssh idc03 'systemctl --user restart gemini-ollama-proxy'`
 3. **Mandatory full reindex** — the corpus is in Vertex space and
    direct-Gemini queries will not match it:
    ```bash
    # for each collection in /v1/stats:
-   curl -X POST http://100.74.146.0:11023/v1/vector-reindex \
+   curl -X POST http://100.102.134.91:11023/v1/vector-reindex \
      -H 'Content-Type: application/json' \
      -d '{"collection":"<name>","force":true}'
    ```

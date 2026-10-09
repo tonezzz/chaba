@@ -3,7 +3,7 @@ title: ada-review-refresh on omen — prune-old-docs.py hits 600s timeout
 brief: 2026-10-09 audit — ada-review-refresh.service on tony-omen fails after ~12min because its subprocess prune-old-docs.py
   (sweeps all mddb collections per retention policy) times out at 600s. Either the sweep is genuinely slow on a
   big corpus, or mddb (idc03) is slow under load. Refreshed corpus is stale until fixed.
-column: review
+column: done
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -67,5 +67,8 @@ comms:
 - at: 2026-10-09 17:01
   from: chaba
   text: auto-merged 876f57a8 (dispatch/20261009-163707-scripts-ada-prune-old-docs-py-) → origin/master
-updated: 2026-10-09 17:01
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'VERIFIED: merge 876f57a8 delivers prune-old-docs.py paging fix + job doc.'
+updated: 2026-10-09 17:44
 claim: {}

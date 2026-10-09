@@ -2,7 +2,8 @@
 # mirror-to-ha-www.sh — publish doc-archive pages to tony-ha www/documents/
 # so casted /local/documents/<slug>/<page> URLs actually render on screens
 # (the reported A-68 cast failed with a broken image because this tree did
-# not exist). Runs on idc01; rsyncs over tailscale ssh to tony-dell.
+# not exist). Runs on idc03 from ~/.local/share/doc-archive/ (deployed by
+# deploy.sh); rsyncs over tailscale ssh to tony-dell.
 set -euo pipefail
 
 ENV_FILE="${DOC_ARCHIVE_ENV:-$HOME/.config/secrets/doc-archive.env}"
@@ -21,7 +22,7 @@ trap 'rm -rf "$STAGE"' EXIT
 
 # Bound every curl so an unavailable/hung MDDB or doc-archive cannot stall the
 # hourly run forever (TimeoutStartSec in the unit is the outer backstop).
-CURL=(curl -sf --connect-timeout 10 --max-time 120)
+CURL=(curl -sf --connect-timeout 10 --max-time 240)
 
 slugs=$("${CURL[@]}" -X POST "$MDDB/v1/search" -H 'content-type: application/json' \
   -d '{"collection":"documents","query":"","limit":100}' \

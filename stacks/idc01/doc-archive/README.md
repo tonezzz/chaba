@@ -1,9 +1,9 @@
-# doc-archive (idc01)
+# doc-archive (idc03)
 
 Document archiving API per `docs/kb/document-archive-service.md`: page images
 in (base64, RAM-only) → sha256 + dhash → dedup against MDDB → resumable
 upload to `gdrive:ada-documents/<YYYY>/<slug>/` → one metadata doc in the
-MDDB `documents` collection. No page bytes ever hit idc01's disk or MDDB.
+MDDB `documents` collection. No page bytes ever hit idc03's disk or MDDB.
 
 Transport is direct Drive REST (resumable PUT + `alt=media` GET) with the
 OAuth refresh_token taken from the `[gdrive]` section of `rclone.conf` —
@@ -18,7 +18,7 @@ see `drive_client.py` (factored from `scripts/gdrive-archive.py`).
 | `doc-archive.service` | systemd **user** unit (venv + uvicorn) |
 | `doc-archive.container` | rootless-podman quadlet alternative (host net) |
 | `Dockerfile` | image for the quadlet (`localhost/doc-archive`) |
-| `deploy.sh` | copies source + unit to idc01, builds venv, enables service |
+| `deploy.sh` | copies source + unit to idc03, builds venv, enables service |
 | `doc-archive.env.example` | env template → `~/.config/secrets/doc-archive.env` |
 | `tests/` | pytest suite; Drive + MDDB fully mocked |
 
@@ -75,7 +75,7 @@ the picker endpoints return 501 while Drive keeps working.
 Example:
 
 ```bash
-curl -s http://100.74.146.0:11025/v1/archive \
+curl -s http://100.102.134.91:11025/v1/archive \
   -H "X-API-Key: $KEY" -H 'Content-Type: application/json' \
   -d '{"slug":"a-68-sale","doc_type":"condo-sale","files":[
         {"name":"p1.jpg","data_b64":"'"$(base64 -w0 p1.jpg)"'"}]}'
@@ -86,10 +86,10 @@ curl -s http://100.74.146.0:11025/v1/archive \
 | var | default | notes |
 |---|---|---|
 | `DOC_ARCHIVE_API_KEY` | — | required; or `DOC_ARCHIVE_API_KEYS=k1,k2` |
-| `DOC_ARCHIVE_BIND` | — | `100.74.146.0` (idc01 tailnet IP) |
+| `DOC_ARCHIVE_BIND` | — | `100.102.134.91` (idc03 tailnet IP) |
 | `DOC_ARCHIVE_PORT` | — | `11025` |
 | `RCLONE_CONF` | `~/.config/rclone/rclone.conf` | needs `[gdrive]` client_id/secret/token |
-| `MDDB_BASE` | `http://100.74.146.0:11023` | |
+| `MDDB_BASE` | `http://100.102.134.91:11023` | |
 | `MDDB_COLLECTION` | `documents` | |
 | `DRIVE_ROOT` | `ada-documents` | |
 | `DHASH_MAX_HAMMING` | `6` | near-dup threshold |
@@ -97,9 +97,9 @@ curl -s http://100.74.146.0:11025/v1/archive \
 
 ## Deploy (review first — not yet run)
 
-1. Copy `[gdrive]` rclone.conf creds to idc01 (design doc §4, option a).
+1. Copy `[gdrive]` rclone.conf creds to idc03 (design doc §4, option a).
 2. `install -m600 doc-archive.env.example ~/.config/secrets/doc-archive.env`
-   on idc01, edit in a real `DOC_ARCHIVE_API_KEY`.
+   on idc03, edit in a real `DOC_ARCHIVE_API_KEY`.
 3. `./deploy.sh` — copies source to `~/.local/share/doc-archive`, builds
    `venv`, installs/enables `doc-archive.service`, curls `/health`.
    Quadlet instead: scp `doc-archive.container` + `Dockerfile`, `podman

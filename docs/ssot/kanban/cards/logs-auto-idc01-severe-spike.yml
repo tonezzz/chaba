@@ -1,21 +1,19 @@
 id: logs-auto-idc01-severe-spike
 title: logs `idc01` 512 severe/24h
-column: review
+column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 512 severe lines (oom/panic/failed) in the last 24h (limit 40)
-help: Read the digest's repeat-offender lines for idc01; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-10-09'
+help: Read the digest's repeat-offender lines for idc01; this is a real incident signal, not pipeline breakage.
+updated: 2026-10-09 17:44
 comms:
 - at: 2026-10-04 14:16
   from: devin
-  text: 'Triaged 2026-10-04: 190 severe lines = mostly benign service-restart churn
-    (ada-ha-* TERM on restarts). Real signal: mddb.service SIGKILLed 2x (21:50, 05:00)
-    — podman process killed, not an OOM loop; mddb healthy now (487MB/33GB, active).
-    Round-hour timing suggests a scheduled job killed it (backup/compaction window?).
+  text: 'Triaged 2026-10-04: 190 severe lines = mostly benign service-restart churn (ada-ha-* TERM on restarts).
+    Real signal: mddb.service SIGKILLed 2x (21:50, 05:00) — podman process killed, not an OOM loop; mddb healthy
+    now (487MB/33GB, active). Round-hour timing suggests a scheduled job killed it (backup/compaction window?).
     Also noted: 6 failed units on idc01 (ada-bench-casting, ada-recall-canary, ada-scenario-{casting,reports,tools},
     cam-wall-pull-vps) — weekly scenario suite + canary failing, worth'
 - at: 2026-10-04 17:58
@@ -36,7 +34,11 @@ comms:
 - at: 2026-10-05 21:16
   from: tony
   text: closed by Tony
+- at: 2026-10-09 17:44
+  from: devin
+  text: Column normalized — Tony closed this on-board already.
 action:
   status: done
-brief: 'The log digest flagged something worth a look: logs `idc01` 512 severe/24h.
-  Read the note, then fix it or close the card.'
+  verified: true
+brief: 'The log digest flagged something worth a look: logs `idc01` 512 severe/24h. Read the note, then fix it or
+  close the card.'

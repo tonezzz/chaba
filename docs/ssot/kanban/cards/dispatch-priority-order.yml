@@ -1,37 +1,37 @@
 id: dispatch-priority-order
 title: Priority-aware dispatch — queued cards claim high → medium → oldest, not unordered
-brief: 'Cards carry priority: but nothing enforces it at claim time — runners drain
-  the queue in whatever order /cards returns. An urgent card can sit behind parked
-  work. Make claim order priority-aware.'
-column: review
+brief: 'Cards carry priority: but nothing enforces it at claim time — runners drain the queue in whatever order
+  /cards returns. An urgent card can sit behind parked work. Make claim order priority-aware.'
+column: doing
 priority: medium
 program: chaba-ci
 area: dispatch
-note: 'Found 2026-10-09: grep shows no priority handling in kanban-dispatch.py or
-  runner-agent.py — the field is display-only. priority semantics defined in ssot.operating-model.yml
-  (priority never overrides host labels/caps/ merge_guard — it orders within eligibility).'
-spec: "1. runner-agent claim loop: sort claimable queued cards by\n   priority rank\
-  \ (high > medium > low > absent) then card updated\n   (oldest first) before claiming.\
-  \ Same ordering in kanban-dispatch's\n   local drain.\n2. Starvation guard: a low/normal\
-  \ card older than N hours (suggest 12h,\n   env-tunable) claims ahead of fresh high\
-  \ cards — priority is a bias,\n   not a ban.\n3. tests/board/ coverage: ordering\
-  \ unit test with mixed-priority queue.\n4. Document in ssot.kanban.yml concurrency\
-  \ section.\nAcceptance: queue with [low old, high new, normal oldest] drains\nhigh->oldest-normal->low;\
-  \ labels/caps still gate eligibility; a 13h-old\nlow card beats a fresh high.\n"
-help: Keep it a pure sort — do not add preemption (running cards never get interrupted).
-  Same ordering must be shared between the two claim paths (kanban-dispatch local
-  drain + runner-agent remote claim) — extract a helper if needed.
-updated: 2026-10-09 07:47
+note: 'Found 2026-10-09: grep shows no priority handling in kanban-dispatch.py or runner-agent.py — the field is
+  display-only. priority semantics defined in ssot.operating-model.yml (priority never overrides host labels/caps/
+  merge_guard — it orders within eligibility).'
+spec: "1. runner-agent claim loop: sort claimable queued cards by\n   priority rank (high > medium > low > absent)\
+  \ then card updated\n   (oldest first) before claiming. Same ordering in kanban-dispatch's\n   local drain.\n\
+  2. Starvation guard: a low/normal card older than N hours (suggest 12h,\n   env-tunable) claims ahead of fresh\
+  \ high cards — priority is a bias,\n   not a ban.\n3. tests/board/ coverage: ordering unit test with mixed-priority\
+  \ queue.\n4. Document in ssot.kanban.yml concurrency section.\nAcceptance: queue with [low old, high new, normal\
+  \ oldest] drains\nhigh->oldest-normal->low; labels/caps still gate eligibility; a 13h-old\nlow card beats a fresh\
+  \ high.\n"
+help: Keep it a pure sort — do not add preemption (running cards never get interrupted). Same ordering must be shared
+  between the two claim paths (kanban-dispatch local drain + runner-agent remote claim) — extract a helper if needed.
+updated: 2026-10-09 17:49
 action:
   type: dispatch
-  status: done
+  status: running
   button: ▶ Wire priority ordering
   repo: chaba
   runner: idc03
   result: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service:
-    Failed with result ''exit-code''. | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service:
-    Consumed 1.317s CPU time.'
-  verified: true
+    Failed with result ''exit-code''. | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service: Consumed
+    1.317s CPU time.'
+  verified: false
+  sweep:
+    stale_running: 2026-10-09 17:48
+    empty_session: 2026-10-09 17:48
 comms:
 - at: 2026-10-09 07:40
   from: tony
@@ -41,14 +41,36 @@ comms:
   text: claimed
 - at: 2026-10-09 07:41
   from: chaba
-  text: started devin-task-20261009-074045-1-runner-agent-claim-loop-sort on idc03
-    (dispatch)
+  text: started devin-task-20261009-074045-1-runner-agent-claim-loop-sort on idc03 (dispatch)
 - at: 2026-10-09 07:41
   from: idc03
   text: 'finished (ok): exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service:'
 - at: 2026-10-09 07:47
   from: chaba
-  text: 'merge-sweep: dispatch/20261009-074045-1-runner-agent-claim-loop-sort already
-    in origin/master — marked verified'
+  text: 'merge-sweep: dispatch/20261009-074045-1-runner-agent-claim-loop-sort already in origin/master — marked
+    verified'
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'FALSE-VERIFIED by merge-sweep: branch "already in origin/master" but neither runner-agent.py nor kanban-dispatch.py
+    at origin/master contains any priority handling — the claim-sort deliverable never landed in code. Requeued.
+    (Live instance of the merge-sweep-verified-gate bug.)'
+- at: 2026-10-09 17:44
+  from: idc03
+  text: claimed
+- at: 2026-10-09 17:44
+  from: chaba
+  text: started devin-task-20261009-174453-1-runner-agent-claim-loop-sort on idc03 (dispatch)
+- at: 2026-10-09 17:48
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-074045-1-runner-agent-claim-loop-sort no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-09 17:48
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-074045-1-runner-agent-claim-loop-sort head is an old master commit — the
+    session produced no work (died before committing, e.g. broken runner); NOT verified'
+- at: 2026-10-09 17:49
+  from: devin
+  text: session up — implementing priority-ranked claim order + starvation guard in runner-agent.py and kanban-dispatch.py,
+    plus tests + SSOT docs
 claim: {}
 review_kind: verify

@@ -1,15 +1,40 @@
 id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
-brief: Disk space on tony-omen (/home) is running low — check the note for the rate
-  and top growers, then free space or close the card.
+brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
+  or close the card.
 column: review
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: '77% used, growing 12.5 GiB/day -> full in ~5.6d top grower 24h: /home/tony/.cache/huggingface/
-  +21.4 GiB, /home/tony/.cache/pip/ +1.4 GiB, /var/log +0.3 GiB'
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
-  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
-  ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-10-09'
+note: '79% used, growing 12.5 GiB/day -> full in ~5.1d top grower 24h: /home/tony/.cache/huggingface/ +21.4 GiB,
+  /home/tony/.cache +12.6 GiB, /home/tony/.cache/uv/ +10.8 GiB'
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
+  (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
+updated: 2026-10-09 17:47
 review_kind: triage
+comms:
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'PARTIAL: pruned uv cache on omen (was 38G under ~/.cache/uv; freed ~5-6G usable — uv hardlinks keep some
+    space held). /home now 77% (was 79%). Real grower remains ~/.cache/huggingface +21.4G/day — purging models is
+    a judgment call: needs Tony to pick purge-hf-old vs move-cache vs accept+tidy.'
+- at: 2026-10-09 17:47
+  from: tony
+  text: 'answered omen-disk-plan: move-cache — Move caches to data disk'
+- at: 2026-10-09 17:47
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: omen-disk-plan
+  from: devin
+  status: answered
+  ask: '/home is 77% growing ~12G/day (huggingface cache +21G/day is the driver). Pick the disk plan:'
+  options:
+  - id: purge-hf-old
+    label: Purge old HF models
+  - id: move-cache
+    label: Move caches to data disk
+  - id: accept-tidy
+    label: Accept, tidy only
+  answer: move-cache — Move caches to data disk
+awaiting_action: true

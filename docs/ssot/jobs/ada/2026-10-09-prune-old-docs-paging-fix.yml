@@ -17,7 +17,7 @@ root_cause: |
   ~2650 requests ≈ 30min > 600s. The delete phase (one POST per doc)
   would have been worse still had any docs been expired.
 
-corpus_at_fix:
+corpus_at_fix: |
   ops:11026 host-logs: 120530 docs, 0 expired (ops DB only ~5d old)
   leader:11023 host-logs: 140956 docs, 70 expired (stale copy aging out)
   ada-ha-events-tony: 4187 · events-michael: 750
@@ -34,7 +34,7 @@ fix: |
 measured:
   dry_run: 82s total (host-logs 40s + 40s, others <1s)
   real_run: 62s total, deleted 70 leader docs, exit 0
-  before: >600s (killed mid-list of first collection)
+  before: ">600s (killed mid-list of first collection)"
 
 verify: |
   Manual `systemctl --user start ada-review-refresh.service` on

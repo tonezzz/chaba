@@ -107,7 +107,7 @@ def log(msg):
 TURN_TOOL_BUDGET = int(os.environ.get('GEV_TURN_TOOL_BUDGET', '12'))
 CONFIRM_TOOLS = set(filter(None, os.environ.get(
     'GEV_CONFIRM_TOOLS', 'clear_annotations,control_cctv').split(',')))
-MDDB_URL = os.environ.get('GEV_MDDB_URL', 'http://100.74.146.0:11023/v1')
+MDDB_URL = os.environ.get('GEV_MDDB_URL', 'http://100.102.134.91:11023/v1')
 OPS_COLLECTION = os.environ.get('GEV_OPS_COLLECTION', 'gev-ops-events')
 
 # Compact copy of Ada's _CONFIRM_RE + negation veto (keep in sync —

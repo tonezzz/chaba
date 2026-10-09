@@ -3,11 +3,11 @@ title: Member PWA invite flow — shareable link → install as "ADA-{inst}({per
 brief: Tony wants to send an ada-ha link via LINE/TG; member opens on iPhone/iPad, saves as PWA titled "ADA-TONY(Tony)",
   key lands pending until Tony/Ada approves. Restructures the current key page (ada-keys-card) around this invite
   → redeem → approve lifecycle.
-column: review
+column: done
 review_kind: verify
 priority: medium
 created: 2026-10-08
-updated: 2026-10-09 13:13
+updated: 2026-10-09 17:44
 spec: "Standard first, then build end-to-end: 1. Standard doc (docs/kb/ada-member-invite.md): invite token format,\
   \ PWA\n   manifest naming pattern \"ADA-{INSTANCE}({Person})\", pending/approved key\n   states, approval surface\
   \ (Ada voice + keys card), revocation.\n2. ada-pi-pwa (idc03, public — no CF Access so members never hit a login):\n\
@@ -122,6 +122,10 @@ comms:
 - at: 2026-10-09 13:13
   from: chaba
   text: auto-merged ac0a1a0a (dispatch/20261009-123934-standard-first-then-build-end-) → origin/main
+- at: 2026-10-09 17:44
+  from: devin
+  text: 'VERIFIED: /api/auth/invites + /i/<tok> landing flow live in ada-pi pwa_server.py (merged ac0a1a0a, deployed).
+    Approval gate + per-member install name per spec.'
 action:
   type: dispatch
   status: done

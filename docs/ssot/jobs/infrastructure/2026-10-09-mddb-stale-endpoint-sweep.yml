@@ -1,0 +1,94 @@
+id: 2026-10-09-mddb-stale-endpoint-sweep
+title: Sweep stale MDDB endpoint 100.74.146.0 -> idc03 leader
+date: "2026-10-09"
+domain: infrastructure
+card: sweep-stale-mddb-endpoint
+actor: devin (dispatch worktree dispatch/20261009-164335-replace-all-live-references-to)
+status: done
+
+finding: |
+  The card premise was partially off: 100.74.146.0 is NOT dead — idc01 is
+  alive as warm-DR mddb-follower (verified 200 on :11123/v1/health). Only
+  :11023 (the old leader endpoint) is dead. So ssot.values.yml:43
+  (idc01.tailscale_ip) and ssot.services.yml:160 (follower_idc01.host_port)
+  were CORRECT records and were deliberately left unchanged — the card's
+  "check consumers" caveat applied (audit-hosts.py, health-snapshot.sh et
+  al. read tailscale_ip and get the right value).
+  Equally, --add-host idc01...:100.74.146.0 lines in quadlets (ada-ha,
+  kk-ha, michael-dev) are correct hostname->IP maps and were left.
+
+repo_fixes: |
+  All edits follow the repo's canonical pattern (leader IP literal +
+  env-var override). Hostname indirection is a separate card
+  (service-name-indirection); every consumer already has an env knob.
+  - stacks/tony-dell/gev-gemini/bridge.py    GEV_MDDB_URL default -> leader
+  - stacks/idc01/doc-archive/doc_archive.py  MDDB_BASE default -> leader
+  - stacks/idc01/doc-archive/deploy.sh       HOST default idc01->idc03,
+      health-check bind default -> idc03, also scp mirror-to-ha-www.sh
+  - stacks/idc01/doc-archive/{env.example,README,doc-archive.container}
+      bind/MDDB examples + comments -> idc03/leader
+  - stacks/idc01/doc-archive/doc-mirror.service
+      TimeoutStartSec 600->1800; ExecStart -> %h/.local/share/doc-archive/
+      mirror-to-ha-www.sh (deployed copy — see on_host)
+  - stacks/idc01/doc-archive/mirror-to-ha-www.sh  curl --max-time 120->240
+  - stacks/services/ada-scenario-runner/{casting.service,full.container,
+      research.service,smoke.container x2}  MDDB_BASE_URL -> leader
+  - systemd/ada-flood-news.service           comment -> leader
+  - .devin/skills/info-find/{info-find.mjs,SKILL.md}  mddb health URL
+  - .agents/skills/auto-kb/{auto-kb.mjs,SKILL.md}     MDDB_BASE default
+  - experiments/ultralytics-yolo-ha/server.py  comment example -> idc03:3010
+  - docs/kb/mddb-embedding-providers.md  ssh idc01->idc03 + reindex curl
+  - docs/kb/ada-eval-jobs.md             idc01 MDDB -> idc03
+
+on_host:
+  idc03: |
+    doc-mirror root cause was NOT the stale IP: deployed
+    ~/.local/share/doc-archive/doc_archive.py, the mirror script, and
+    ~/.config/secrets/doc-archive.env all already point at the leader.
+    Real cause: a full mirror (30+ archives over slow Drive fetches)
+    legitimately takes ~12-15 min vs TimeoutStartSec=600, and individual
+    page fetches intermittently exceed curl --max-time 120 (exit 28).
+    Fix without touching the live checkout (drift rule):
+    - installed fixed script to ~/.local/share/doc-archive/mirror-to-ha-www.sh
+    - installed unit ExecStart repointed to the deployed copy
+    - drop-in ~/.config/systemd/user/doc-mirror.service.d/10-timeout.conf
+      TimeoutStartSec=1800
+    Installed units on idc03 were otherwise IP-clean already.
+  tony-dell: |
+    gev-gemini quadlet (~/.config/containers/systemd/gev-gemini.container)
+    set no GEV_MDDB_URL -> running image used the stale baked default.
+    Added Environment=GEV_MDDB_URL=http://100.102.134.91:11023/v1,
+    daemon-reload, restart -> active. Repo default fix covers the next
+    image rebuild. (Checkout file stacks/tony-dell/gev-gemini/bridge.py on
+    tony-dell is still stale until pull+rebuild — flagged, not edited,
+    single-writer rule.)
+  idc01: |
+    ~/.config/systemd/user/ada-scenario-smoke.service.disabled had the
+    stale URL — sed'd to leader (file is disabled; hygiene only).
+  idc02: |
+    ~/CascadeProjects/chaba checkout is behind master — still carries
+    ~20 files with the old IP that are already fixed upstream (scripts,
+    Caddyfile, audit data). Self-heals on next pull; no action needed.
+  mn01: |
+    ssh publickey denied from idc03 — not swept. No evidence of MDDB
+    consumers there beyond the canary already fixed 2026-10-09.
+  ada-ha: hostname does not resolve from idc03 — not swept.
+
+doc_mirror_verify: |
+  run started via systemctl --user start doc-mirror.service at 17:01 local.
+  Expected ~12-15 min for the full archive set.
+
+left_alone:
+  - dated jobs/reports/cards/focus-inbox/backups/.triage/dispatch-outcomes
+    (historical record)
+  - stacks/idc01/{mddb,mddb-follower,mddb-panel,ollama,open-notebook,
+    camwall-edge,input-bridge} — retired-host stack defs; IPs still correct
+    for idc01 where the service lives (follower verified alive)
+  - ssot.idc01.yml, ssot.security.idc01.yml, ssot.audit.hosts.yml,
+    ssot.health.home.datastore.yml — host records; IPs correct for idc01
+  - ssot.jobs.yml:427 — already documents the staleness accurately
+  - stacks/web/input-bridge/server.mjs comment (card-exempt)
+  - ~/.config/secrets/ada-ha-{tony,michael}.env — only commented-out
+    retired MDDB_READ_URL lines (documented history)
+  - mddb-binlog-canary card spec still instructs curling the dead leader
+    URL — cards are out of scope; flagged via board comment

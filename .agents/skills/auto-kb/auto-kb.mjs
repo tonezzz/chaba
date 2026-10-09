@@ -34,7 +34,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(SCRIPT_DIR, "..", "..", "..");
 const KB_DIR = process.env.KB_DIR || join(REPO_ROOT, "docs", "kb");
 const SYNC_SCRIPT = join(REPO_ROOT, "scripts", "sync-kb-to-mddb.py");
-const MDDB_BASE = process.env.MDDB_BASE || "http://100.74.146.0:11023";
+const MDDB_BASE = process.env.MDDB_BASE || "http://100.102.134.91:11023";
 const LOCK_FILE = process.env.AUTO_KB_LOCK_FILE || "/home/tony/.cache/auto-kb.lock";
 
 const VALID_STATUSES = ["draft", "verified", "superseded", "archived"];

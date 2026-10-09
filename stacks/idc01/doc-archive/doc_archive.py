@@ -40,7 +40,7 @@ _API_KEYS = {k.strip() for k in
 
 RCLONE_CONF = os.environ.get("RCLONE_CONF",
                              os.path.expanduser("~/.config/rclone/rclone.conf"))
-MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.74.146.0:11023").rstrip("/")
+MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.102.134.91:11023").rstrip("/")
 MDDB_COLLECTION = os.environ.get("MDDB_COLLECTION", "documents")
 DRIVE_ROOT = os.environ.get("DRIVE_ROOT", "ada-documents")
 DHASH_MAX_HAMMING = int(os.environ.get("DHASH_MAX_HAMMING", "6"))
