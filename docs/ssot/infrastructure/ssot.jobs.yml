@@ -357,8 +357,13 @@ jobs:
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-news-update.py
     --all
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
   note: migrated tony_dell -> idc02 2026-10-03 (phase-1 pilot); exits 2 on all-skipped
-    tick — pre-existing wart, see mha-log-noise-style fixup
+    tick — pre-existing wart, see mha-log-noise-style fixup. MDDB_BASE_URL pinned
+    2026-10-09 — the stale idc02 checkout's script still defaults to idc01:11023
+    (dead since the leader moved to idc03), which made the CMS publish step
+    ECONNREFUSED -> exit 2; env wins regardless of checkout drift.
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
   host: idc02
