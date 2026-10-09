@@ -22,13 +22,16 @@ spec: "1. In scripts/board/kanban-dispatch.py close_out: after a clean merge in 
   \ before;\ntests/board gains coverage for both paths.\n"
 help: Merge worktree already exists (close_out step). Guard against slow/hanging suites with a per-repo timeout;
   never block merges on test-infra errors (pytest missing = warn+pass, same fail-open convention as merge_guard).
-updated: 2026-10-09 07:07
+updated: 2026-10-09 12:17
 action:
   type: dispatch
   status: running
   button: ▶ Wire the test gate
   repo: chaba
   runner: idc02
+  sweep:
+    stale_running: 2026-10-09 12:17
+  verified: true
 comms:
 - at: 2026-10-09 07:07
   from: tony
@@ -42,3 +45,11 @@ comms:
 - at: 2026-10-09 07:07
   from: devin
   text: 'Starting: exploring kanban-dispatch close_out, dispatch_repos, and hook chain'
+- at: 2026-10-09 12:17
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-070722-1-in-scripts-board-kanban-disp no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-09 12:17
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-070722-1-in-scripts-board-kanban-disp already in origin/master — marked
+    verified'

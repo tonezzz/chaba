@@ -89,7 +89,40 @@ comms:
   from: devin
   text: 'raised request no-openrouter-key-found-in-config-secret-2276b8: No OpenRouter key found in ~/.config/secrets
     on tony-dell or idc02. Which provider should I configure crush with? Availa'
-updated: 2026-10-09 12:05
+- at: 2026-10-09 12:09
+  from: devin
+  text: crush v0.98.0 already in ~/.local/bin on tony-dell; openrouter.env key present (appeared 12:06). Configuring
+    OpenRouter + smoke test in /tmp/crush-lab.
+- at: 2026-10-09 12:14
+  from: devin
+  text: '[devin/omen] collision: another agent is running the same crush-lab on tony-dell (bash pid probing openrouter+crush,
+    second crush session overwrote /tmp/crush-lab mid-run). Isolating to /tmp/crush-lab-devin-omen with project-local
+    config. Note: --yolo flag broken in v0.98.0; use permissions.allowed_tools. OpenRouter key valid but NO CREDITS
+    — using nemotron-3-super :free.'
+- at: 2026-10-09 12:17
+  from: devin
+  text: 'VERDICT: adopt-as-alt-lane. crush v0.98.0 on tony-dell, OpenRouter configured (openrouter.env found 12:06
+    — earlier provider request is moot). Smoke: fizzbuzz+pytest 4/4 then edit task 5/5, ~67s each, scope clean.
+    MCP stdio connected + tool invoked. Beats dispatch on model flexibility/interactivity/MCP; loses on rails/worktrees/board/merge
+    gates. Trail: docs/ssot/jobs/experiments/2026-10-09-crush-cli-lab-assessment.yml'
+- at: 2026-10-09 12:18
+  from: chaba
+  text: 'session-end checkpoint 372c9b15: 2 leftover file(s) committed'
+- at: 2026-10-09 12:18
+  from: chaba
+  text: pushed dispatch/20261009-120323-standard-lab-procedure-assess- to origin
+- at: 2026-10-09 12:18
+  from: chaba
+  text: 'auto-merge held — expected_goals not met: goal crush-installed: unknown check kind ''test'' — expected
+    one of: http, command; goal job-trail: unknown check kind ''ls'' — expected one of: http, command, file-e'
+- at: 2026-10-09 12:19
+  from: devin
+  text: '[outcome] VERDICT: adopt-as-alt-lane. crush v0.98.0 installed tony-dell:~/.local/bin/crush; OpenRouter
+    wired (key valid but ZERO credits — used nemotron-3-super :free; flag for top-up if paid-model eval wanted).
+    Smoke: fizzbuzz+pytest 28s, 4/4 pass; edit task 30s surgical diffs, 5/5 pass; MCP stdio stanza parses+connects+tools
+    callable. Gotchas: --yolo broken in v0.98.0 (use permissions.allowed_tools); parallel agent collided on same
+    task — project-local .crush.json recommended. Beats dispatch o'
+updated: 2026-10-09 12:19
 requests:
 - id: no-openrouter-key-found-in-config-secret-2276b8
   ask: No OpenRouter key found in ~/.config/secrets on tony-dell or idc02. Which provider should I configure crush

@@ -20,13 +20,16 @@ spec: "Extend an existing health lane (or a small script) to check each dispatch
   \ tripped on them.\n"
 help: 'Hosts to cover: tony-dell, tony-omen, idc01, idc02, idc03, mn01 (runner_fleet in ssot.kanban.yml). The mddb-follower-stall
   card is the model for "service looks alive but silently broken" checks.'
-updated: 2026-10-09 07:08
+updated: 2026-10-09 12:18
 action:
   type: dispatch
   status: running
   button: ▶ Build the bootstrap check
   repo: chaba
   runner: mn01
+  sweep:
+    stale_running: 2026-10-09 12:18
+  verified: true
 comms:
 - at: 2026-10-09 07:07
   from: tony
@@ -37,3 +40,11 @@ comms:
 - at: 2026-10-09 07:08
   from: chaba
   text: started devin-task-20261009-000816-extend-an-existing-health-lane on mn01 (dispatch)
+- at: 2026-10-09 12:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-000816-extend-an-existing-health-lane no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-09 12:18
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-000816-extend-an-existing-health-lane already in origin/master — marked
+    verified'
