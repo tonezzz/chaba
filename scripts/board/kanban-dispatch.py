@@ -427,6 +427,7 @@ def finish_one(path: Path, card: dict) -> str:
     a["status"] = "done"
     a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
     card["column"] = "review"
+    card.setdefault("review_kind", "verify")  # close-out contract — without it the ssot-optimize gate fails commits repo-wide
     card.setdefault("claim", {}).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
     if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":

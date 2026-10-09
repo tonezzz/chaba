@@ -447,6 +447,10 @@ def do_finish(card: dict, body: dict) -> str:
         a["verified"] = bool(body["verified"])
     if ok:
         card["column"] = "review"
+        # every review card needs a close-out contract or the ssot-optimize
+        # gate fails commits repo-wide (recurring kanban-commit breakage —
+        # verify = the human confirms the work, the safe default)
+        card.setdefault("review_kind", "verify")
         card.setdefault("claim", {}).pop("session", None)
     comms_add(card, host,
               f"finished ({'ok' if ok else 'failed'})"

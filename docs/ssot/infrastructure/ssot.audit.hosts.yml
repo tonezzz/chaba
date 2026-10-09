@@ -95,8 +95,11 @@ hosts:
       - name: michael-dev.service
         type: service
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
+        note: Currently disabled — migrated to idc03 2026-10-09 (verified
+          active there, :8124 serving 200). Dell quadlet kept for manual
+          fallback only.
       - name: tony-ha.service
         type: service
         scope: user
@@ -178,7 +181,7 @@ hosts:
         scope: user
         expected_state: inactive
         critical: false
-        note: Stopped standby since 2026-10-05 — follower migrated to idc02
+        note: Currently disabled — stopped standby since 2026-10-05; follower migrated to idc02
           (100.123.163.11:11023). Verify-timeout loop on contended HDD could
           never converge; quadlet + seeded data kept for manual fallback —
           reseed before any restart, its LSN is stale
@@ -1631,11 +1634,14 @@ hosts:
       - vps
       - onboarding
     expected_services:
-      - name: sshd.service
+      - name: ssh.service
         type: service
         scope: system
         expected_state: active
         critical: true
+        note: Debian names the OpenSSH unit ssh.service; sshd.service is only
+          an alias the audit's enumeration misses (flagged missing 2026-10-09
+          while ssh.service was active).
       - name: tailscaled.service
         type: service
         scope: system
