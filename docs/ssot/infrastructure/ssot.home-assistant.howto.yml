@@ -666,27 +666,28 @@ runbooks:
     - '3b. Verify on the user lane: public edge is CF-Access gated (headless
         cannot auth) — use loopback (127.0.0.1:8125) or tailscale URL, same
         backend. Stale after verified change = browser cache, Ctrl+Shift+R'
-    - '4. Update runbook + instances.yml note, commit ONLY your files (the
-        auto-committer stages others with schema debt), push +
-        sync-ssot-to-mddb.py — a UI change with no SSOT update is drift'
+    - '4. Update runbook + instances.yml note, commit ONLY your files
+        (auto-committer stages others), push + sync-ssot-to-mddb.py'
     note: 'Auth: refresh_token tony-devin in ~/.config/ada-ha/.storage/auth →
       POST /auth/token → websocket. Playlive: seed localStorage hassTokens
-      on the base URL before navigating.'
+      on the base URL first.'
     last_updated: '2026-10-09'
   chaba_nest_dashboard:
     purpose: 'chaba-nest dashboard on ada-ha: top tabs (Nest | Polity |
       Security | Traffic | Flood) + per-topic Reports subviews. HA has no
-      nested tabs — native subview + masonry pattern, no custom cards.
-      Verified via playlive 2026-10-09.'
+      nested tabs — subview + masonry pattern, no custom cards. Verified
+      via playlive 2026-10-09.'
     steps:
     - 'Nest tab: type=panel, iframe ?embed=1#/chaba-nest'
     - 'Topic tabs: type=masonry, card-per-report — card 1 = markdown nav pill
         ("<Topic> · All reports →" to the subview = live filter box), then
-        one iframe card per page (?embed=1#/<slug>, doc-only, no CMS chrome);
-        top doc at aspect_ratio 140%, rest 80%'
+        one iframe SUMMARY-TILE card per page (?card=1&zoom=1.15#/<slug>,
+        aspect ~40%; "Read full →" swaps the iframe into ?embed=1 doc mode).
+        Tony rejected scrollable doc cards 2026-10-09 — tiles stay compact'
     - 'Reports subviews: <topic>-reports, subview:true + back_path to the
-        topic tab, type=panel iframe to the full CMS browser pre-filtered'
-    - 'CMS params (ada-pi 29c738e): ?embed=1 doc-only; ?tab=pages|security|
+        topic tab, panel iframe to the pre-filtered CMS browser'
+    - 'CMS params (ada-pi 29c738e + 5ccfe86): ?embed=1 doc-only; ?card=1
+        summary tile (implies embed); ?zoom=N CSS zoom; ?tab=pages|security|
         traffic|flood tab deep-link; ?q=<regex|substring> seeds the filter
         (q=polity%7Cnest). Security/Traffic/Flood subviews use ?tab=; Polity
         uses ?tab=pages&q=polity%7Cnest'
@@ -695,11 +696,10 @@ runbooks:
         cctv-walls, dvr-wall; traffic = camwall-traffic; flood =
         flood-overview, flood-digest, flood-report(-pattaya-rayong,
         -nongdon-saraburi), flood-hub-assessment, flood-coordinates-rayong'
-    - 'CAUTION: card lists are static YAML — new CMS pages do NOT auto-appear
-        as cards; the <topic>-reports subview is the dynamic catch-all'
-    note: 'Subviews are drill-down (back arrow), not persistent panes. Real
-      nested tabs would need a HACS tab-card (simple-tabs et al) — rejected
-      2026-10-08 as too much maintenance.'
+    - 'CAUTION: card lists are static YAML — new CMS pages do NOT auto-appear;
+        the <topic>-reports subview is the dynamic catch-all'
+    note: 'Subviews are drill-down, not panes. Real nested tabs would need a
+      HACS tab-card — rejected 2026-10-08.'
     last_updated: '2026-10-09'
   staging_actuation_guard:
     purpose: Clone a prod HA config into a staging twin (tony-dev/ada-dev) with
