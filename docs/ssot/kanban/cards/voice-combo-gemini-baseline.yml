@@ -1,7 +1,7 @@
 id: voice-combo-gemini-baseline
 title: 'Bench: Gemini Live golden baseline'
-column: backlog
-updated: 2026-10-09 14:18
+column: review
+updated: 2026-10-09 14:33
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -17,10 +17,12 @@ action:
   repo: chaba
   host: tony-dell
   model: swe-2-medium
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   task_id: 20261009-133139-run-the-golden-baseline-stream
+  result: 20261009-133139-run-the-golden-baseline-stream finished (inactive) — see `devin-dispatch logs 20261009-133139-run-the-golden-baseline-stream`
+  verified: true
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -43,7 +45,92 @@ comms:
     on generativelanguage AND aiplatform); used the live key from ada-pi-pwa.env/chaba-guest.env - gev-gemini pod
     runs the dead key. (2) google-genai SDK silently dropped audio turns (2.29.0 AND ada''s 2.23.0); bench adapter
     uses raw BidiGenerateContent ws like gemini-mic-test - gev-gemini '
-pipeline: ci
+- at: 2026-10-09 14:19
+  from: devin
+  text: 'ci plan: pass — dispatchable spec + acceptance signal present'
+- at: 2026-10-09 14:19
+  from: devin
+  text: 'ci structure: pass — worktree dispatch-wt-20261009-133139-run-the-golden-baseline-stream on dispatch/20261009-133139-run-the-golden-baseline-stream;
+    31 in-scope file(s) vs origin/ma'
+- at: 2026-10-09 14:19
+  from: devin
+  text: 'ci develop: pass — 31 in-scope file(s) changed'
+- at: 2026-10-09 14:19
+  from: devin
+  text: 'ci audit: pass — 8 checks passed on 31 files'
+- at: 2026-10-09 14:19
+  from: devin
+  text: 'ci benchmark: blocked — no benchmark metric declared on the card'
+- at: 2026-10-09 14:20
+  from: devin
+  text: 'raised request ci-benchmark-voice-combo-gemini-baseline-b37490: Declare benchmark.metric (+command if measurable)
+    so the pipeline can record before/after.'
+- at: 2026-10-09 14:20
+  from: devin
+  text: 'ci verify: skip — no expected_goals declared on the card'
+- at: 2026-10-09 14:20
+  from: devin
+  text: 'pipeline updated: plan=pass structure=pass develop=pass audit=pass benchmark=blocked verify=skip'
+- at: 2026-10-09 14:20
+  from: devin
+  text: 'ci run complete: plan=pass structure=pass develop=pass audit=pass benchmark=blocked verify=skip'
+- at: 2026-10-09 14:21
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-09 14:21
+  from: chaba
+  text: pushed dispatch/20261009-133139-run-the-golden-baseline-stream to origin
+- at: 2026-10-09 14:21
+  from: chaba
+  text: 'test gate failed — merge held: tests/board/test_merge_sweep.py::Case::test_conflict_posts_request_not_wrong_merge'
+- at: 2026-10-09 14:21
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261009-133139-run-the-golden-baseline-stream not in origin/master
+    — close will block until merged'
+- at: 2026-10-09 14:33
+  from: chaba
+  text: 'merge-sweep: merged ab770469 (dispatch/20261009-133139-run-the-golden-baseline-stream from tony-dell) ->
+    origin/master'
+pipeline:
+  opt_in: ci
+  stages:
+    plan:
+      status: pass
+      at: 2026-10-09 14:19
+      detail: dispatchable spec + acceptance signal present
+    structure:
+      status: pass
+      at: 2026-10-09 14:19
+      detail: worktree dispatch-wt-20261009-133139-run-the-golden-baseline-stream on dispatch/20261009-133139-run-the-golden-baseline-stream;
+        31 in-scope file(s) vs origin/master@1e12ceb1
+    develop:
+      status: pass
+      at: 2026-10-09 14:19
+      detail: 31 in-scope file(s) changed
+    audit:
+      status: pass
+      at: 2026-10-09 14:19
+      detail: 8 checks passed on 31 files
+    benchmark:
+      status: blocked
+      at: 2026-10-09 14:19
+      detail: no benchmark metric declared on the card
+    verify:
+      status: skip
+      at: 2026-10-09 14:20
+      detail: no expected_goals declared on the card
+  started: 2026-10-09 14:19
+  updated: 2026-10-09 14:19
+  benchmark:
+    metric: null
+  verify:
+    at: '2026-10-09T14:20:01+07:00'
+    goals: []
 claim:
-  session: 20261009-133139-run-the-golden-baseline-stream
   since: 2026-10-09 13:31
+requests:
+- id: ci-benchmark-voice-combo-gemini-baseline-b37490
+  ask: Declare benchmark.metric (+command if measurable) so the pipeline can record before/after.
+  status: open
+  at: 2026-10-09 14:20
+  from: devin

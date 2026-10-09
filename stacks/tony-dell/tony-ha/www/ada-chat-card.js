@@ -91,7 +91,7 @@ class AdaChatCard extends HTMLElement {
     // transcript log — bubble layout; bubbles handle their own wrapping
     this._log = document.createElement("div");
     this._log.style.cssText =
-      `height:${this._config.height || "260px"};overflow-y:auto;font-size:.85rem;line-height:1.45;` +
+      `height:${this._config.height || "260px"};overflow-y:auto;font-size:.95rem;line-height:1.5;` +
       "padding:10px 10px 6px;border-radius:10px;background:var(--secondary-background-color,#1c2128);" +
       "display:flex;flex-direction:column;gap:6px";
     body.appendChild(this._log);
@@ -128,8 +128,8 @@ class AdaChatCard extends HTMLElement {
     this._input.placeholder = "Message Ada…";
     this._input.disabled = true;
     this._input.style.cssText =
-      "flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:.85rem";
+      "flex:1;padding:8px 10px;min-height:36px;border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:.95rem";
     this._input.addEventListener("keydown", (e) => { if (e.key === "Enter") this._send(); });
     this._sendBtn = this._btn("Send");
     this._sendBtn.className = "acc-send";
@@ -155,7 +155,21 @@ class AdaChatCard extends HTMLElement {
       this._fileInput.value = "";
       if (f) this._uploadDoc(f);
     };
-    inRow.append(this._input, this._attachBtn, this._sendBtn);
+    // Mic button — browser SpeechRecognition dictation into the input
+    // (Tony ask 2026-10-09: "add mic to the input use browser stt").
+    // Needs a secure context; unsupported browsers get a disabled button.
+    this._micBtn = this._btn("🎤");
+    this._micBtn.className = "acc-mic";
+    this._micBtn.title = "Dictate (browser speech-to-text)";
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      this._micBtn.disabled = true;
+      this._micBtn.title = "Speech recognition not supported in this browser";
+      this._micBtn.style.opacity = ".45";
+    } else {
+      this._micBtn.onclick = () => this._toggleMic(SR);
+    }
+    inRow.append(this._input, this._attachBtn, this._micBtn, this._sendBtn);
     body.appendChild(inRow);
     body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
 
@@ -165,6 +179,13 @@ class AdaChatCard extends HTMLElement {
     this._unlockInput = document.createElement("input");
     this._unlockInput.type = "password";
     this._unlockInput.placeholder = "Ada device key (or ?api_key= link)";
+    // device key is NOT a credential — stop Chrome/Google password-save
+    // popup (reported 2026-10-09). new-password + 1p/lp ignore hints.
+    this._unlockInput.autocomplete = "new-password";
+    this._unlockInput.setAttribute("data-1p-ignore", "true");
+    this._unlockInput.setAttribute("data-lpignore", "true");
+    this._unlockInput.setAttribute("data-form-type", "other");
+    this._unlockInput.setAttribute("spellcheck", "false");
     this._unlockInput.style.cssText = this._input.style.cssText;
     const save = this._btn("Save");
     const apply = () => {
@@ -651,12 +672,58 @@ class AdaChatCard extends HTMLElement {
     if (this._yoloOverlay) { this._yoloOverlay.remove(); this._yoloOverlay = null; }
   }
 
+  _toggleMic(SR) {
+    if (this._rec) {
+      this._rec.stop();
+      return;
+    }
+    const rec = new SR();
+    rec.lang = this._config.mic_lang || "th-TH";
+    rec.interimResults = true;
+    rec.continuous = false;
+    const base = this._input.value;
+    rec.onresult = (e) => {
+      let interim = "";
+      for (const r of e.results) {
+        if (r.isFinal) {
+          const t = r[0].transcript.trim();
+          if (t) this._input.value = (this._input.value + " " + t).trim();
+        } else {
+          interim += r[0].transcript;
+        }
+      }
+      // show interim inline so the user sees live dictation
+      this._input.placeholder = interim
+        ? interim.trim()
+        : "Message Ada…";
+    };
+    rec.onend = () => {
+      this._rec = null;
+      this._micBtn.style.background = "";
+      this._micBtn.style.color = "";
+      this._input.placeholder = "Message Ada…";
+      if (this._input.value !== base) this._input.focus();
+    };
+    rec.onerror = (e) => {
+      this._rec = null;
+      this._micBtn.style.background = "";
+      this._input.placeholder = "Message Ada…";
+      if (e.error && e.error !== "aborted") {
+        this._system(`mic: ${e.error}`);
+      }
+    };
+    this._rec = rec;
+    this._micBtn.style.background = "var(--error-color,#db4437)";
+    this._micBtn.style.color = "#fff";
+    try { rec.start(); } catch (_) {}
+  }
+
   _btn(label) {
     const b = document.createElement("button");
     b.textContent = label;
     b.style.cssText =
-      "padding:2px 10px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.75rem;white-space:nowrap";
+      "padding:8px 14px;min-height:36px;border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.9rem;white-space:nowrap";
     return b;
   }
 
