@@ -1089,6 +1089,10 @@ def main() -> int:
                 supersedes=links.get("cctv-walls"),
                 force="cctv-walls" in revive)
         notify_transitions(zones)
+    if not DRY:
+        # lifecycle marks + this run's pages changed the corpus — the
+        # index only stays honest if it regenerates in the same cycle
+        regen_reports_index()
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
           f"{'ok' if ok else 'ERR'} · superseded {n_sup} "
           f"archived {n_arch}")

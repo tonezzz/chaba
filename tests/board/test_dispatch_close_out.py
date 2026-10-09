@@ -11,13 +11,17 @@ No network, no systemd — all git ops stay inside the tmpdir.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
+
+import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts" / "board"))
@@ -61,6 +65,9 @@ class Case(unittest.TestCase):
                         str(seed)], capture_output=True)
         commit(seed, "file.txt", "base\n", "base")
         commit(seed, "docs/ssot/gen.yml", "v: 0\n", "gen0")
+        # a tests/ dir so the merged tree engages the test gate
+        commit(seed, "tests/test_smoke.py",
+               "def test_ok():\n    assert True\n", "tests")
         r = git(seed, "push", "-q", "-u", "origin", "master")
         assert r.returncode == 0, r.stderr
 
@@ -128,9 +135,10 @@ class Case(unittest.TestCase):
         self.assertTrue(any("checkpoint" in n for n in notes), notes)
 
     def test_noop_run_skips_silently(self):
-        # branch exists but produced nothing — no commits above base
+        # branch exists but produced nothing — head == base tip is NOT
+        # merged work (a 'merged' stamp would false-positive verified)
         res = dr.close_out(self.card)
-        self.assertTrue(res["merged"])
+        self.assertFalse(res["merged"])
         self.assertTrue(res["noop"])
         self.assertEqual(dr.close_out_notes(res),
                          [n for n in dr.close_out_notes(res)
@@ -206,6 +214,161 @@ class Case(unittest.TestCase):
         res = dr.close_out(card)
         self.assertFalse(res["merged"])
         self.assertTrue(res.get("skipped"))
+
+    # ------------------------------------------------------ test gate
+    # The merged tree always has tests/ (seeded above); REPO_TESTS["chaba"]
+    # is pointed at fake commands so the suite doesn't depend on a real
+    # pytest install.
+
+    def _with_test_gate(self, cfg: dict) -> None:
+        old = dr.REPO_TESTS.get("chaba")
+        dr.REPO_TESTS["chaba"] = cfg
+
+        def restore():
+            if old is None:
+                dr.REPO_TESTS.pop("chaba", None)
+            else:
+                dr.REPO_TESTS["chaba"] = old
+        self.addCleanup(restore)
+
+    def test_gate_red_suite_holds_merge(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_test_gate({
+            "command": "echo 'FAILED tests/test_x.py::test_broke - assert "
+                       "False' >&2; exit 1",
+            "timeout": 30})
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(res["tests"]["ran"])
+        self.assertFalse(res["tests"]["ok"])
+        self.assertEqual(res["test_failures"],
+                         ["tests/test_x.py::test_broke"])
+        # the merged tree must NOT be on origin — but the branch pushed,
+        # so the work isn't stranded for the retry
+        self.assertFalse(self.remote_has("master", "feature.py"))
+        r = git(self.main, "ls-remote", "--heads", "origin",
+                f"dispatch/{TID}")
+        self.assertIn(f"dispatch/{TID}", r.stdout)
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("test gate" in n and "test_broke" in n
+                            for n in notes), notes)
+
+    def test_gate_green_merges_and_notes(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_test_gate({"command": "exit 0", "timeout": 30})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"])
+        self.assertTrue(self.remote_has("master", "feature.py"))
+        self.assertTrue(any("test gate passed" in n
+                            for n in dr.close_out_notes(res)))
+
+    def test_gate_off_switch_merges(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        os.environ["KANBAN_TESTGATE"] = "0"
+        self.addCleanup(os.environ.pop, "KANBAN_TESTGATE")
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertFalse(res["tests"]["ran"])
+        self.assertEqual(res["tests"]["skipped"], "KANBAN_TESTGATE=0")
+
+    def test_gate_timeout_holds_merge(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_test_gate({"command": "sleep 5", "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(any("timeout" in f
+                            for f in res.get("test_failures") or []),
+                        res)
+        self.assertIn("timed out", res["tests"]["error"])
+
+    def test_gate_missing_runner_fails_open(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._with_test_gate(
+            {"command": "no-such-pytest-bin-ci-test-gate", "timeout": 10})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertIn("fail-open", res["tests"]["skipped"])
+
+    def test_gate_no_tests_dir_skips(self):
+        bare = self.tmp / "no-tests"
+        bare.mkdir()
+        r = dr.run_test_gate(bare, "chaba")
+        self.assertTrue(r["ok"])
+        self.assertFalse(r["ran"])
+        self.assertIn("no tests", r["skipped"])
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_gate_real_pytest_names_failure(self):
+        commit(self.wt, "tests/test_gate_target.py",
+               "def test_broke():\n    assert False\n", "red test")
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(res.get("test_failures"), res)
+        self.assertTrue(any("test_broke" in f
+                            for f in res["test_failures"]),
+                        res["test_failures"])
+
+
+class MergeRetryTest(unittest.TestCase):
+    """kanban-dispatch merge_pending_one: a close_out test-gate failure
+    rides the same rails as conflicts — verified=False plus an informed
+    auto-retry requeue (action.last_failure carries the test names)."""
+
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "kanban_dispatch",
+            REPO / "scripts" / "board" / "kanban-dispatch.py")
+        cls.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.mod)
+
+    def test_testgate_failure_requeues_with_last_failure(self):
+        mod = self.mod
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        path = Path(td.name) / "gate-card.yml"
+        path.write_text(
+            "id: gate-card\ncolumn: review\n"
+            "action: {type: dispatch, status: done, task_id: t-gate}\n")
+        res = {"merged": False,
+               "tests": {"ran": True, "ok": False,
+                         "command": "pytest tests",
+                         "failed": ["tests/test_x.py::test_broke"]},
+               "test_failures": ["tests/test_x.py::test_broke"]}
+        with mock.patch.object(dr, "close_out", return_value=res), \
+                mock.patch.object(mod, "ops_event"), \
+                mock.patch.object(mod, "session_end_notes",
+                                  return_value=[]):
+            out = mod.merge_pending_one(path)
+        self.assertIn("merge", out)
+        card = yaml.safe_load(path.read_text())
+        a = card["action"]
+        self.assertEqual(a["status"], "queued")
+        self.assertIs(a["verified"], False)
+        self.assertEqual(a["attempts"], 1)
+        self.assertIn("test_broke", a["last_failure"])
+
+    def test_clean_merge_stamps_verified(self):
+        mod = self.mod
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        path = Path(td.name) / "ok-card.yml"
+        path.write_text(
+            "id: ok-card\ncolumn: review\n"
+            "action: {type: dispatch, status: done, task_id: t-ok}\n")
+        res = {"merged": True, "noop": True,
+               "note": "dispatch/t-ok already in origin/master"}
+        with mock.patch.object(dr, "close_out", return_value=res), \
+                mock.patch.object(mod, "session_end_notes",
+                                  return_value=[]):
+            out = mod.merge_pending_one(path)
+        self.assertEqual(out, "noop")
+        card = yaml.safe_load(path.read_text())
+        self.assertIs(card["action"]["verified"], True)
 
 
 if __name__ == "__main__":

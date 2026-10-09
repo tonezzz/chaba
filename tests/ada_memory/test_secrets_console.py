@@ -41,9 +41,20 @@ def run_script(script: str, args: list[str], stdin: str = "") -> dict:
     return json.loads(r.stdout)
 
 
-mod = load_server()
+# Deps live in the ada-pi/secrets venv; a bare repo python (e.g. the
+# dispatch close_out test gate) skips instead of erroring at collection.
+_SERVER_DEPS = {"httpx", "uvicorn", "fastapi", "pydantic", "cryptography"}
+try:
+    mod = load_server()
+    _DEP_MISSING = ""
+except ModuleNotFoundError as e:
+    if (e.name or "").split(".")[0] not in _SERVER_DEPS:
+        raise
+    mod = None
+    _DEP_MISSING = e.name or ""
 
 
+@unittest.skipUnless(mod, f"needs secrets venv: {_DEP_MISSING}")
 class TestSlotRead(unittest.TestCase):
     def test_var_read(self):
         with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
@@ -81,6 +92,7 @@ class TestSlotRead(unittest.TestCase):
             self.assertEqual(r["len"], len("unit-secret-9"))
 
 
+@unittest.skipUnless(mod, f"needs secrets venv: {_DEP_MISSING}")
 class TestSlotWrite(unittest.TestCase):
     def test_var_write_replaces_and_keeps_bak(self):
         with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
@@ -116,6 +128,7 @@ class TestSlotWrite(unittest.TestCase):
             self.assertEqual(open(f.name).read(), '{"new": 1}')
 
 
+@unittest.skipUnless(mod, f"needs secrets venv: {_DEP_MISSING}")
 class TestParity(unittest.TestCase):
     def test_parity_states(self):
         s = lambda fp=None, p=True, e=None: {"present": p, "fingerprint": fp, "error": e}
@@ -124,6 +137,7 @@ class TestParity(unittest.TestCase):
         self.assertEqual(mod._parity([s(p=False), s(p=False)]), "empty")
 
 
+@unittest.skipUnless(mod, f"needs secrets venv: {_DEP_MISSING}")
 class TestVault(unittest.TestCase):
     def test_vault_roundtrip_and_no_secret_in_list(self):
         with tempfile.TemporaryDirectory() as td:
@@ -169,6 +183,7 @@ class TestVault(unittest.TestCase):
         self.assertEqual(r.status_code, 503)
 
 
+@unittest.skipUnless(mod, f"needs secrets venv: {_DEP_MISSING}")
 class TestDeployGuard(unittest.TestCase):
     def test_public_refuses(self):
         with self.assertRaises(SystemExit):

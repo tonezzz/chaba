@@ -45,6 +45,53 @@ if [ -n "$SW_TOP" ] \
     fi
 fi
 
+# --- Fast pytest gate (card ci-test-gate) ----------------------------------
+# Staged changes under tests/ or scripts/<dir>/ run the matching
+# tests/<dir> suite, capped at ~15s. The real enforcement is close_out's
+# merged-tree gate (dispatch_repos.run_test_gate); this is the early
+# smoke — pytest missing or a timeout only warns, real failures block.
+# CHABA_PRECOMMIT_TESTS=0 opts out per-commit.
+if [ "${CHABA_PRECOMMIT_TESTS:-1}" != "0" ]; then
+    test_dirs=()
+    while IFS= read -r f; do
+        d=""
+        case "$f" in
+            tests/*/*)     d="tests/$(echo "$f" | cut -d/ -f2)" ;;
+            tests/*)       d="tests" ;;
+            scripts/lib/*) d="tests/board" ;;  # goals.py coverage lives there
+            scripts/*/*)   d="tests/$(echo "$f" | cut -d/ -f2)" ;;
+        esac
+        if [ -n "$d" ] && [ -d "$d" ] \
+           && [[ " ${test_dirs[*]-} " != *" $d "* ]]; then
+            test_dirs+=("$d")
+        fi
+    done < <(git diff --cached --name-only --diff-filter=ACM)
+    if [ "${#test_dirs[@]}" -gt 0 ]; then
+        if ! python3 -c 'import pytest' >/dev/null 2>&1; then
+            echo "⚠️  pytest not installed — fast test gate skipped" \
+                 "(close_out still gates the merge)"
+        else
+            echo "🧪 Fast test gate: pytest ${test_dirs[*]} (≤15s)"
+            rc=0
+            timeout 15 python3 -m pytest "${test_dirs[@]}" -x -q \
+                >/tmp/chaba-precommit-pytest.log 2>&1 || rc=$?
+            if [ "$rc" -eq 0 ]; then
+                echo "✅ fast test gate passed"
+            elif [ "$rc" -eq 5 ]; then
+                echo "⚠️  no tests collected in ${test_dirs[*]} — skipping"
+            elif [ "$rc" -eq 124 ]; then
+                echo "⚠️  test gate hit the 15s budget — not blocking;" \
+                     "run pytest manually before pushing"
+            else
+                echo "❌ fast test gate failed:"
+                tail -n 15 /tmp/chaba-precommit-pytest.log | sed 's/^/  /'
+                echo "Fix the failure or commit with --no-verify."
+                exit 1
+            fi
+        fi
+    fi
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

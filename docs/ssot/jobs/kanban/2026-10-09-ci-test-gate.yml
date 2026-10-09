@@ -1,0 +1,60 @@
+title: CI test gate — pytest runs in the merged worktree before auto-merge pushes
+subtitle: chaba-ci per-change floor — red suite or timeout holds the merge and requeues informed
+icon: flask
+date: 2026-10-09
+card: ci-test-gate
+status: done
+project: chaba
+program: chaba-ci
+
+summary:
+  - |
+    dispatch_repos.close_out now runs a per-repo test gate inside the
+    throwaway merge worktree after a clean merge and BEFORE
+    `push HEAD:<base>` — run_test_gate(mwt, repo_name). A red suite or a
+    per-repo timeout returns `test_failures` (no push); kanban-dispatch
+    merge_pending_one and runner-agent close_out_merge treat it exactly
+    like conflicts/goal-failures: verified=False plus auto-retry requeue
+    with action.last_failure carrying the failing test names (RETRY_RAILS
+    delivers them to the next session). KANBAN_TESTGATE=0 disables just
+    this step (KANBAN_AUTOMERGE=0 still disables the whole pipeline).
+  - |
+    Per-repo config is the REPO_TESTS table in dispatch_repos.py
+    ({command, timeout}; command: null opts out). chaba runs
+    `python3 -m pytest tests -x -q` (240s), ada-pi adds -k 'not slow'
+    (300s); unlisted repos fall back to the default command but only when
+    the merged tree has a tests/ dir — "others: none" in practice.
+    Fail-open (merge_guard convention) on: missing pytest, no tests/ dir,
+    pytest rc 5 (nothing collected). Failure names parse `FAILED/ERROR`
+    summary lines, else `____ test_x ____` traceback headers.
+  - |
+    Served-checkout pre-commit (.husky/pre-commit) gained a scoped fast
+    step before the SSOT early-exit: staged tests/<d>/ or scripts/<d>/
+    changes run `pytest tests/<d>` under `timeout 15` (scripts/lib maps to
+    tests/board). Real failures block; missing pytest, rc 5, and the 15s
+    budget warn only — the merge gate is the enforcement layer.
+    CHABA_PRECOMMIT_TESTS=0 opts out per-commit.
+  - |
+    Suite-rot fixes that made `pytest tests` runnable on a bare python:
+    camwall test gained the scripts/cam-wall sys.path insert (missing it
+    errored at collection); the masked real bug underneath — cam-wall-cms
+    defined regen_reports_index() but never called it — is now wired into
+    main() (not DRY). ada_memory obsidian/secrets tests skip on missing
+    venv deps (httpx/fastapi/uvicorn/cryptography) instead of erroring.
+    Pre-existing test_noop_run_skips_silently assertion corrected to the
+    head==base contract (noop, not merged).
+
+operator_notes:
+  - "Runners without pytest fail OPEN — install python3-pytest on
+    dispatch-capable hosts (tony-dell, omen, idc01-03, mn01) or the gate
+    is a no-op there. idc02 lacked pytest+pip at build time."
+  - "Suite budget: chaba tests/ ~8s bare unittest; pytest adds startup —
+    the 240s cap is generous; raise REPO_TESTS timeouts if legit suites
+    grow."
+
+verify: |
+  python3 -m unittest discover -s tests  (109 tests: all pass/skip)
+  tests/board/test_dispatch_close_out.py covers: red suite holds merge +
+  names in test_failures, green merges, KANBAN_TESTGATE=0, timeout,
+  missing-runner fail-open, no-tests-dir skip, merge_pending_one requeue
+  with last_failure, real pytest failure naming (skips w/o pytest).

@@ -243,7 +243,8 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     notes = dr.close_out_notes(res)
     if res.get("merged"):
         return True, notes
-    if res.get("conflicts") or (res.get("gate") and not res["gate"]["ok"]):
+    if res.get("conflicts") or res.get("test_failures") or (
+            res.get("gate") and not res["gate"]["ok"]):
         return False, notes
     return None, notes
 
