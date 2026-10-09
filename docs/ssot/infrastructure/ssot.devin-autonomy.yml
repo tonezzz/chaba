@@ -1,0 +1,60 @@
+id: ssot.devin-autonomy
+title: Devin autonomy contract — hands-off control, Tony stays in charge
+subtitle: >-
+  The single file that caps what unattended Devin dispatch may do. Distinct
+  axes: card-side `autonomy:` (what ANY automation may do to that card) and
+  Ada's tiers (ssot.ada-participation.yml) still apply — this file gates the
+  DISPATCHER itself.
+category: infrastructure
+status: active
+source_of_truth: true
+card: docs/ssot/kanban/cards/devin-autonomy-contract.yml
+related:
+  - docs/ssot/infrastructure/ssot.ada-participation.yml   # Ada tier ladder (parallel contract)
+  - docs/ssot/infrastructure/ssot.release-lifecycle.yml   # stage gates before production
+  - docs/ssot/kanban/cards/release-lifecycle-standard.yml # evidence checker that enforces gates
+  - scripts/board/kanban-dispatch.py                      # reads `dispatch:` below
+notes: >-
+  Queueing is already human-gated (action.status: queued is set via board API
+  by Tony or an approved actor). This file adds the safety envelope around
+  that approval: when, how much, and never-what.
+
+dispatch:
+  kill_switch: /tmp/no-kanban-dispatch   # touch to freeze new claims instantly
+  quiet_hours: "00:00-06:00"             # ICT — no new claims inside window
+  sessions_per_day: 12                   # claimed-session budget per host per day
+  retries_per_card: 2                    # action.attempts > this -> parked + comms
+  max_autonomy: t3                       # cards carrying autonomy:t4 are never claimed
+  state_file: /tmp/kanban-dispatch-state.json
+
+tiers:
+  # mirrors the card-side autonomy: field; the dispatcher intersects card tier
+  # with dispatch.max_autonomy — a card may always LOWER its own ceiling
+  t0: observe only
+  t1: propose (comments/specs on cards, no state change)
+  t2: execute in lab/dev twin (worktrees, ada-ha, idc02) — no prod writes
+  t3: may promote to prod IF all lifecycle gates pass with evidence attached
+  t4: never autonomous — prod secrets, destructive ops, DNS, money, keys
+
+guards:
+  immutable_fields: [autonomy, verify]   # agent sessions may never edit these;
+                                         # a dispatch diff touching them fails review
+  never_without_approval:
+    - prod writes without t3 + passed gates
+    - secrets/credentials/DNS changes
+    - deleting files outside the session worktree
+    - editing autonomy/verify/card schema on any card
+  failure_rule: >-
+    any dispatch failure -> card stays/goes back with a comms note; no silent
+    retry beyond retries_per_card; exhausted cards park, they don't loop
+
+control:
+  # Tony's levers — the only knobs, everything else is mechanical
+  levers:
+    - 'card autonomy: tier (per card)'
+    - 'action.status: queued (per card — the go signal)'
+    - 'this file: kill_switch, quiet_hours, budgets, max_autonomy'
+    - 'review column + Ada "what''s pending" digest'
+  audit:
+    every_claim_appends: comms_tail         # already true via comms_add
+    weekly_review_card: true                # auto-card listing autonomous changes (gap: not yet wired)

@@ -318,3 +318,65 @@ A critical job is any non-quick-win task that touches infrastructure, security, 
 2. **Keep it live as you work.** Update `processing` with steps, decisions, and changes. Append `followup` with verification, rollback, and handoff notes.
 3. **Close with `report`.** The `report` section must be non-empty before the job is marked complete and before `auto-kb` is invoked.
 4. **Pilot on `ssot-optimization-snapshot`.** The `ssot-optimization-snapshot` night job must emit the four lifecycle sections (`planning`, `processing`, `followup`, `report`) in its output once `scripts/ssot-optimize.mjs` is implemented.
+
+## Interrupt Handling & Finish Duty (added 2026-10-09)
+
+Tony often interrupts with a new idea mid-task. The standing rule:
+
+1. **Finish the current task.** Rule 6 of Request-to-Focus already forbids
+   starting a new activated task while one is unfinished — that applies to
+   conversational interrupts too, not just queued work.
+2. **Capture every interrupt immediately.** A new idea, request, or "can we
+   also…" goes to a kanban card (`column: backlog`) or a focus-inbox entry
+   via `save-to-focus` BEFORE the assistant continues — not at session end.
+   If it is a genuine quick win (<5 min, no deploy), it may be done inline.
+3. **Push back politely.** If the interrupt looks unrelated to the active
+   task, say so in one line ("parking X on the board; finishing Y first")
+   rather than silently switching. If Tony insists, the explicit instruction
+   wins — but the interrupted task must leave a `comms:` note or card
+   update recording where it stopped.
+4. **Session is not memory.** Nothing survives except the board, the inbox,
+   SSOT, and card `comms:`. If a fact/request/decision isn't written down,
+   it is lost — write it the moment it happens.
+
+## Cross-Session Awareness
+
+To keep Tony informed across parallel sessions without him re-reading
+everything:
+
+- **One dashboard, not N chats**: the kanban board (`docs/ssot/kanban/cards/`)
+  is the single trustworthy list of pending work. Status questions get
+  answered from the board + focus-inbox, not from memory.
+- **Use `status` / `mcp_focus` at session start** — every session should
+  open by telling Tony in one line what is active and what is open on him.
+- **Session-end duty**: finish-and-close writes outcomes to card `comms:` —
+  that log IS the cross-session awareness mechanism. Keep entries dated and
+  factual.
+- **Open asks live in `requests:`** on the card — anything waiting on Tony
+  must be recorded there so a later session re-surfaces it without him
+  having to remember.
+
+## Operator Guidance (for Tony)
+
+- New idea mid-task → say "park it" or just say it; the assistant captures
+  it and continues. You do not need a new session for an idea.
+- "status?" → one report from the board.
+- One thread per decision is enough; side ideas are cheaper as interrupts
+  than as new sessions because the context is already loaded.
+
+## Procedure Quick Map
+
+The canonical index is `docs/ssot/ssot.procedures.yml` — consult it before
+improvising; add a 4-line entry there after doing something repeatable.
+Frequent ones:
+
+- **New idea / feature / "what if we…"** → capture to a kanban card
+  (`column: backlog`) or focus-inbox entry immediately, then triage with
+  `mcp_focus`. The board owns all pending work.
+- **Deploy or place a service** → `ssot.host-capacity.yml` (placement_policy
+  + live `free`/`df`), record the host decision on the card.
+- **New vocabulary** → `ssot.terminology.yml`; MDDB picks it up on sync.
+- **New member/user/node** → `member-user-onboarding` / `member-node-kk-ha`
+  / `kk-ha-tg-relay` cards.
+- **Migration/ops gotchas** (bind-mount inode, serve reset, HA 2026.8 http
+  storage, quadlet AddHost) → see `member-nodes-to-vps-ha` comms.

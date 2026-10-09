@@ -1,0 +1,41 @@
+# kk-ha — KK member node. Minimal: Kaewta (Ada) voice + memory only.
+# No cameras/ESPHome/hardware integrations — this is a personal assistant node.
+default_config:
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - "::1"
+    - 10.88.0.0/16   # podman bridge gw — tailscale serve enters here
+
+rest_command:
+  ada_issue_key:
+    url: "https://idc03.taila0626a.ts.net/apps/ha/ada-{{ instance }}/api/auth/keys"
+    method: post
+    content_type: application/json
+    headers:
+      X-Api-Key: !secret ada_admin_key
+    payload: '{"name": {{ name | to_json }}, "ha_person": {{ (ha_person | default("")) | to_json }}, "path": {{ ("/apps/ha/ada-" ~ instance) | to_json }}, "qr": true, "redirect": {{ (redirect | default("")) | to_json }}, "apps": {{ apps | default("[]") }}}'
+    timeout: 20
+  ada_repair_key:
+    url: "https://idc03.taila0626a.ts.net/apps/ha/ada-{{ instance }}/api/auth/keys/{{ name }}/redeem"
+    method: post
+    content_type: application/json
+    headers:
+      X-Api-Key: !secret ada_admin_key
+    payload: '{"path": {{ ("/apps/ha/ada-" ~ instance) | to_json }}, "qr": true, "redirect": {{ redirect | default("") | to_json }}}'
+    timeout: 20
+  ada_voice_redeem:
+    url: "https://idc03.taila0626a.ts.net/apps/ha/ada-{{ instance }}/api/auth/redeem"
+    method: post
+    content_type: application/json
+    payload: '{"token": {{ token | to_json }}, "expect_name": {{ name | to_json }}, "device_id": {{ device_id | to_json }}}'
+    timeout: 20

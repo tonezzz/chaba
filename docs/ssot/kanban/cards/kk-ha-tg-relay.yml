@@ -1,0 +1,39 @@
+id: kk-ha-tg-relay
+title: 'TG group kk-ha + Kaewta relay (ada-tg-relay-kk)'
+column: backlog
+priority: medium
+note: >-
+  Tony asked for a TG group "kk-ha" for member communication with Kaewta
+  inside (2026-10-09). Pattern: one TG bot per Ada instance — a second
+  relay service on idc03 bound to ada-kk (:8007) with its own keys file.
+action:
+  type: manual
+  status: waiting_on_tony
+  runner: devin
+updated: 2026-10-09 13:00
+comms:
+- at: 2026-10-09 13:00
+  from: devin
+  text: >-
+    Tony's manual steps: (1) @BotFather /newbot — name แก้วตา, username
+    e.g. kaewta_kk_bot, copy token; (2) /mybots -> Bot Settings -> Group
+    Privacy -> Disable (else it only sees /commands); (3) create TG group
+    "kk-ha", add the bot + KK + Nhong + Tony; (4) write token to idc03
+    ~/.config/secrets/telegram-kk-bot.env (TELEGRAM_BOT_TOKEN=...).
+- at: 2026-10-09 13:00
+  from: devin
+  text: >-
+    My steps once token lands: (1) hit getUpdates to read group chat_id +
+    member tg user_ids; (2) issue ada-kk keys tg-kk/tg-nhong/tg-tony ->
+    ada-ha-kk-keys.json; (3) write telegram-kk-bot.env +
+    ada-tg-relay-kk.service (TELEGRAM_MODE=webhook, TG_WEBHOOK_LISTEN
+    127.0.0.1:8912, ADA_KEYS_FILE=ada-ha-kk-keys.json,
+    TELEGRAM_CHAT_CALLERS=<chat>:tg-kk? NO — group uses
+    TELEGRAM_USER_CALLERS uid->key per sender, allowed chat id);
+    (4) caddy /webhook/tg-kk -> 127.0.0.1:8912 on idc03;
+    (5) setWebhook on the bot token; (6) test: member message -> Kaewta
+    answers with that person's bank policy.
+requests:
+- from: tony
+  needed: Bot token from @BotFather + the group created with bot added.
+  status: open

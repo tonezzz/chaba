@@ -110,7 +110,7 @@ banks:
     title: General knowledge
     description: Free-form facts, preferences, and "remember that…" notes
     scope: shared
-    instances: [tony, michael]
+    instances: [tony, michael, kk]
     mddb_collection: ada-ha-bank-general
     notebooklm_group: memory
     notebooklm_id: null
@@ -124,7 +124,7 @@ banks:
     title: Household knowledge
     description: Home topology, device aliases, procedures, status notices (the planned shared 'home' group)
     scope: shared
-    instances: [tony, michael]
+    instances: [tony, michael, kk]
     mddb_collection: ada-ha-bank-home
     notebooklm_group: null
     notebooklm_id: null
@@ -138,7 +138,7 @@ banks:
     title: People and relationships
     description: Who is who, relationships, individual preferences
     scope: shared
-    instances: [tony, michael]
+    instances: [tony, michael, kk]
     mddb_collection: ada-ha-bank-people
     notebooklm_group: null
     notebooklm_id: null
@@ -165,9 +165,9 @@ banks:
     person_scope: default
   personal-kk:
     title: KK private memory
-    description: Person-scoped private memory for KK. Assigned to the tony instance (KK uses Tony's Ada instance) but isolated from Tony's personal bank. Routed by speaker identity — only used when the current speaker is identified as KK.
+    description: Person-scoped private memory for KK. Assigned to the kk instance (moved to kk-ha member node 2026-10-09 — ada-kk serves it; Tony's instance no longer does) but isolated from Tony's personal bank. Routed by speaker identity — only used when the current speaker is identified as KK.
     scope: person
-    instances: [tony]
+    instances: [kk]
     mddb_collection: ada-ha-bank-personal-kk
     notebooklm_group: null
     notebooklm_id: null
@@ -179,6 +179,22 @@ banks:
     public: false
     person_scope: person.kk
     key_scope: [user-kk]   # her issued key routes here even without voice ID
+  personal-nhong:
+    title: Nhong private memory
+    description: Person-scoped private memory for Mr. Nhong (kk-ha member). Served by the kk instance; isolated from KK's and Tony's banks — routed by speaker identity (person.nhong).
+    scope: person
+    instances: [kk]
+    mddb_collection: ada-ha-bank-personal-nhong
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
+    person_scope: person.nhong
+    key_scope: [user-nhong]
   personal-testo:
     title: Testo private memory
     description: Person-scoped private memory for Testo (HA user). Assigned to the tony instance but isolated from Tony's personal bank — routed by speaker identity (person.testo_2). Testo also gets a restricted person_policies allowlist so his sessions cannot reach Tony's banks.
@@ -362,7 +378,7 @@ banks:
     title: Purchase decision checks
     description: "Pre-purchase criteria + check history for POST /api/decision/check. Criteria docs (kind fact/preference) teach Ada the rules — 'remember that I don't trust shops under 4.7'. Check docs (kind=check) are the audit log written by the endpoint itself, recallable via ada_memory_search('didn't I check this before?')."
     scope: shared
-    instances: [tony]
+    instances: [tony, kk]
     mddb_collection: ada-ha-bank-purchase
     notebooklm_group: null
     notebooklm_id: null
@@ -536,6 +552,12 @@ person_policies:
   user-kk:
     label: KK
     allow: [general, home, people, purchase, personal-kk]
+  person.nhong:
+    label: Nhong
+    allow: [general, home, people, personal-nhong]
+  user-nhong:
+    label: Nhong
+    allow: [general, home, people, personal-nhong]
   tony-ip:     {full: true, label: Tony}
   user-tonezzzz: {full: true, label: Tony}
   user-tony2:    {full: true, label: Tony}
@@ -575,6 +597,10 @@ control_policies:
   person.kk:
     allow_domains: [light, switch, input_boolean, script, media_player]
   user-kk:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  person.nhong:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  user-nhong:
     allow_domains: [light, switch, input_boolean, script, media_player]
   tony-ip:     {full: true}
   user-tonezzzz: {full: true}

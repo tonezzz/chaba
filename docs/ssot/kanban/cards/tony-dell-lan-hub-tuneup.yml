@@ -1,0 +1,49 @@
+id: tony-dell-lan-hub-tuneup
+title: 'tony-dell: tune up the LAN hub — now / intermediate / long-term'
+column: backlog
+priority: high
+note: >-
+  After the 2026-10-09 node evacuation, tony-dell is the LAN tier: tony-ha
+  (household hardware) + ada-ha (media/cast) + web/caddy :80 + websockify
+  bridges + desktop apps. Measured: 118G disk / 19-20G free, 14G RAM /
+  ~10G used, 8 cores. It is also Tony's desktop — devin-desktop + chrome
+  compete with services.
+action:
+  type: manual
+  status: backlog
+  runner: devin
+updated: 2026-10-09 13:00
+comms:
+- at: 2026-10-09 13:00
+  from: devin
+  text: >-
+    NOW (free wins, done): pruned podman images (+~1G), removed migration
+    tars from /tmp. Next cheap: journal vacuum needs sudo (1.5G journals ->
+    cap 400M); audit ~/.config/michael-dev (999M rollback copy — keep or
+    move off-host to idc03 cold storage); unused container images still
+    ~3G reclaimable after review.
+- at: 2026-10-09 13:00
+  from: devin
+  text: >-
+    INTERMEDIATE (days-weeks): (1) move the yt media corpus + GoogleDrive
+    cache off root disk to an external/NAS mount — it's the largest growth
+    path on this box; (2) journald SystemMaxUse cap in config; (3) prune
+    dead services (helm? node-red? old proxies) per ssot.services.yml
+    inventory; (4) hardware: SSD swap to 500G+ and/or RAM to 32G if slots
+    allow — cheap, removes the real bottleneck; (5) watchdog: systemd
+    watchdog or a cron'd health-check so instability auto-recovers.
+- at: 2026-10-09 13:00
+  from: devin
+  text: >-
+    LONG-TERM (build a better host): the LAN tier wants a small dedicated
+    always-on box (mini-PC/NUC) — tony-ha + ada-ha + radios + web edge,
+    nothing else. tony-dell reverts to pure desktop, OR mn01 takes the LAN
+    hub role if it proves reliable. Decision gate: measure tony-dell
+    stability over 2-4 weeks after evacuation — if crashes were load-
+    related, tuneup suffices; if hardware/OS-level, plan the replacement.
+requests:
+- from: tony
+  needed: Decision — is ada-ha's media corpus moving off the root disk
+    (or off tony-dell entirely)? And does he want the hardware path
+    (bigger SSD/RAM vs dedicated LAN-hub box)?
+  status: open

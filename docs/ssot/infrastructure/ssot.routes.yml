@@ -39,9 +39,19 @@ edges:
       /apps/ha/ada-tony: http://127.0.0.1:8002    # ada-ha-tony backend
       /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
+      /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
+  # ada-ha.surf-thailand.com edge (idc02 caddy) also serves — same-origin Ada
+  # lane so voice cards dial THIS host/path and the network can move underneath:
+  #   /ada-ws/tony/*    -> rewrite /apps/ha/ada-tony{uri}    -> https://idc03.taila0626a.ts.net
+  #   /ada-ws/michael/* -> rewrite /apps/ha/ada-michael{uri} -> https://idc03.taila0626a.ts.net
+  #   /ada-ws/dev/*     -> rewrite /apps/ha/ada-dev{uri}     -> https://idc03.taila0626a.ts.net
+  # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
+  # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
+  #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
+  # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
@@ -49,9 +59,10 @@ services:
   ada-ha-tony:    {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony"}
   ada-ha-michael: {host: idc03, listen: "127.0.0.1:8003", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"}
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
+  ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
   tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
-  michael-dev:    {host: tony-dell, listen: "127.0.0.1:8124", tailnet: "https://tony-dell.taila0626a.ts.net:8124"}
+  michael-dev:    {host: idc03,     listen: "127.0.0.1:8124", tailnet: "https://idc03.taila0626a.ts.net:8124"}     # migrated 2026-10-09
   board-api:      {host: tony-dell, listen: "127.0.0.1:8787"}
   report-api:     {host: tony-dell, listen: "127.0.0.1:8792"}
   gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
@@ -99,7 +110,7 @@ routes:
   - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-pi}
   - {id: ha-index,         kind: alias,  path: /apps/ha,            target: "/apps/ha/", owner: chaba}
   - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-dell.taila0626a.ts.net:8123/", owner: tony-ha}
-  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://tony-dell.taila0626a.ts.net:8124/", owner: michael-ha}
+  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc03.taila0626a.ts.net:8124/", owner: michael-ha}
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
   - {id: dev-v0,           kind: proxy,  path: /apps/dev/v0/*,         strip: /apps/dev/v0, upstream: "127.0.0.1:8006", owner: chaba}

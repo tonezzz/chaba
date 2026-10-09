@@ -1,0 +1,37 @@
+# ada-ha — dev/lab HA instance, clone of tony-ha config.
+# Prod stays tony-ha (:8123 host-net). This instance is the Ada
+# experiment target (ada-ha-tony lane, ha-exec cards) — loopback only.
+[Unit]
+Description=Home Assistant dev (ada-ha) — isolated lab instance
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/homeassistant/home-assistant:stable
+ContainerName=ada-ha
+PodmanArgs=--group-add keep-groups
+# tailnet DNS is unreachable inside the podman netns — pin tailnet names
+AddHost=idc03.taila0626a.ts.net:100.102.134.91
+AddHost=idc01.taila0626a.ts.net:100.74.146.0
+AddHost=mn01.taila0626a.ts.net:100.106.196.22
+AddHost=tony-dell.taila0626a.ts.net:100.68.142.13
+Network=podman
+PublishPort=127.0.0.1:8125:8123
+Volume=/home/tony/.config/ada-ha:/config:Z
+Volume=/home/tony/.cache/yt-live-media:/media/yt-cache:ro
+Volume=/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yt-live:/media/yt-live:ro
+Volume=/home/tony/GoogleDrive/chaba-media-corpus/yt-live-media:/media/yt-corpus:ro
+Environment=TZ=Asia/Bangkok
+HealthCmd=/bin/sh -c 'curl -sf http://127.0.0.1:8123 >/dev/null'
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

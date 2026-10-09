@@ -1,0 +1,28 @@
+# kk-ha — KK member node (migrated tony-dell -> idc03, 2026-10-09).
+# Minimal HA: Kaewta voice + memory. Loopback only -> tailscale serve :8126.
+[Unit]
+Description=Home Assistant member node (kk-ha — KK)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/homeassistant/home-assistant:stable
+ContainerName=kk-ha
+PodmanArgs=--group-add keep-groups --add-host=idc03.taila0626a.ts.net:100.102.134.91 --add-host=idc02.taila0626a.ts.net:100.123.163.11 --add-host=idc01.taila0626a.ts.net:100.74.146.0 --add-host=mn01.taila0626a.ts.net:100.106.196.22 --add-host=tony-dell.taila0626a.ts.net:100.68.142.13
+Network=podman
+PublishPort=127.0.0.1:8126:8123
+Volume=/home/tony/.config/kk-ha:/config:Z
+Environment=TZ=Asia/Bangkok
+HealthCmd=/bin/sh -c "curl -sf http://127.0.0.1:8123 >/dev/null"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
