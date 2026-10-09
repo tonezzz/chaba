@@ -143,7 +143,13 @@ comms:
     itself a deploy bug worth noting) → POST /apps/gev-cmd/command now reaches bridge.py (returns schema error "name
     required" = endpoint live). (2) gev-gemini key checked: /run/secrets/gemini-api-key holds a stale AQ.* token
     — direct test generativelanguage/v1beta/models → 401 i'
-updated: 2026-10-09 19:47
+- at: 2026-10-09 19:55
+  from: devin
+  text: 'gev-cmd relay FIXED: strip prefix applied in chaba-tony-dell ssot.routes.yml, live Caddyfile updated+reloaded;
+    POST /apps/gev-cmd/command returns 200 with real view-state via tailnet edge (parallel dispatch verified E2E
+    at 19:51). gemini key: DEAD — same AQ.… token in gemini-api-key.env + podman secret, 401 on models + Live ws
+    (matches 18:13 invalid-credentials). Needs fresh AI Studio key.'
+updated: 2026-10-09 19:55
 requests:
 - id: tony-dell-side-needed-no-ssh-from-idc03-eb011b
   ask: 'tony-dell side needed (no ssh from idc03): (1) add strip: /apps/gev-cmd to gev-cmd route in chaba docs/ssot/infrastructure/ssot.routes.yml,
@@ -161,6 +167,23 @@ requests:
     label: Skip for now
   suggested: dispatch-it
   answer: dispatch-it — Dispatch a tony-dell session
+- id: gev-cmd-relay-restored-verified-200-e2e-be01aa
+  from: devin
+  status: open
+  ask: 'gev-cmd relay restored + verified 200 E2E. Two remaining: (1) gemini-api-key is dead — same AQ.… token 401s
+    in gemini-api-key.env, gemini-mic-test.env, podman secret; needs a fresh AI Studio key (drop in ~/.config/secrets/gemini-api-key.env,
+    a session can re-secret it). (2) idc03 runs pre-fix code (8b3896a) — OK to deploy-ada.sh + add Environment=BENCH_BUDGET_S=8400
+    to ada-scenario-casting.service so tonight''s 02:00 run finishes under TimeoutStartSec=9000 and writes docs?'
+  options:
+  - id: deploy-and-budget
+    label: Deploy + budget pin
+  - id: deploy-only
+    label: Deploy only, no pin
+  - id: key-only
+    label: Key only, no deploy
+  - id: hold
+    label: Hold — leave for review
+  suggested: deploy-and-budget
 claim:
   session: 20261009-193531-reproduce-diagnose-ssh-idc03-j
   since: 2026-10-09 19:35
