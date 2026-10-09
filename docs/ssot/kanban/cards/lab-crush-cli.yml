@@ -85,4 +85,24 @@ comms:
   from: devin
   text: claim state restored — my stash-pop briefly reverted the running flag mid-dispatch; unit verified active
     on tony-omen
-updated: 2026-10-09 12:15
+- at: 2026-10-09 12:05
+  from: devin
+  text: 'raised request no-openrouter-key-found-in-config-secret-2276b8: No OpenRouter key found in ~/.config/secrets
+    on tony-dell or idc02. Which provider should I configure crush with? Availa'
+updated: 2026-10-09 12:05
+requests:
+- id: no-openrouter-key-found-in-config-secret-2276b8
+  ask: No OpenRouter key found in ~/.config/secrets on tony-dell or idc02. Which provider should I configure crush
+    with? Available keys on tony-dell include gemini-api-key.env; openrouter env absent. Reply with provider name
+    (e.g. gemini / openrouter-with-new-key / anthropic) and where the key lives.
+  status: open
+  at: 2026-10-09 12:05
+  from: devin
+  options:
+  - id: gemini
+    label: Use existing gemini-api-key.env
+  - id: openrouter-new-key
+    label: Add a new OpenRouter key
+  - id: anthropic
+    label: Use Anthropic
+  suggested: gemini

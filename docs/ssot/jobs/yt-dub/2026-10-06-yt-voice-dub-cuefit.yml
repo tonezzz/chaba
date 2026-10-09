@@ -75,14 +75,14 @@ report:
       atempo: "0 segments, 0 clipped"
       lag: "0.0s, ends_at 162.7/180"
     - variant: The Egg baseline (cue-MT + compress, no --th-auto)
-      note: rate/lag were already fine post-dedup — the auto pass buys
-      register (natural spoken Thai), not speed, on this specimen.
+      note: 'rate/lag were already fine post-dedup — the auto pass buys
+        register (natural spoken Thai), not speed, on this specimen.'
 
   lessons_learned:
-    - The verify metric "lag <=5s" needs the right lag: lag_s is the
+    - 'The verify metric "lag <=5s" needs the right lag: lag_s is the
       CUMULATIVE sum of per-segment lateness (9.5s over 37 segments ≈
       0.26s avg); lag_max (2.45s) is the number a viewer experiences.
-      Both are in DUBFIT — scenarios should gate on lag_max.
+      Both are in DUBFIT — scenarios should gate on lag_max.'
     - edge-tts parallel-synth failures are rate-limit 403s; a retry with
       no delay is worthless — 1.5s*n backoff turned 19% group loss into
       zero on the same corpus.
