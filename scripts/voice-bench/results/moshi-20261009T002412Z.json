@@ -1,0 +1,223 @@
+{
+  "schema": "voice-bench-result",
+  "schema_version": 1,
+  "combo": {
+    "id": "moshi",
+    "stt": "moshi-full-duplex",
+    "llm": "kyutai-moshiko-7b",
+    "tts": "moshi-full-duplex",
+    "orchestrator": "moshi-adapter",
+    "host_labels": [
+      "gpu"
+    ],
+    "notes": "kyutai-labs/moshi speech-to-speech. English-only; no tool-call plumbing (tool_call=none by design — that IS the finding). Needs a moshi-enabled python env via MOSHI_PYTHON (moshi + sphn + aiohttp). bf16 wants ~16GB VRAM (cuda) or ~15GB RAM (MOSHI_DEVICE=cpu); candle q4 (~4.5GB) still exceeds a 4GB GPU. Adapter: moshi_adapter.py."
+  },
+  "dry_run": false,
+  "meta": {
+    "at": "20261009T002412Z",
+    "host": "tony-omen"
+  },
+  "summary": {
+    "n": 10,
+    "ok": 10,
+    "mean_ttfa_ms": null,
+    "mean_total_ms": 76694.0,
+    "mean_wer": null,
+    "tool_call": {
+      "exact": 0,
+      "partial": 0,
+      "none": 7,
+      "n/a": 3
+    }
+  },
+  "fixtures": [
+    {
+      "id": "en-cmd-light-kitchen",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 232284,
+      "transcript": null,
+      "expected_transcript": "turn on the kitchen lights",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-cmd-ac-bedroom",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 225497,
+      "transcript": null,
+      "expected_transcript": "set the bedroom air conditioner to 24 degrees",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_set_temperature",
+        "args": {
+          "area": "bedroom",
+          "temperature": 24
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-cmd-fan-off",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 195699,
+      "transcript": null,
+      "expected_transcript": "turn off the living room fan",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "fan",
+          "area": "living_room"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-cmd-lock-door",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 14849,
+      "transcript": null,
+      "expected_transcript": "lock the front door",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "front_door"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-qry-temp-outside",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 15525,
+      "transcript": null,
+      "expected_transcript": "what is the temperature outside right now",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outside_temperature"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-qry-washer",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 13956,
+      "transcript": null,
+      "expected_transcript": "is the washing machine still running",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.washer_power"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-qry-solar",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 18738,
+      "transcript": null,
+      "expected_transcript": "how much solar power are we generating",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.solar_power"
+        }
+      },
+      "tool_call_match": "none"
+    },
+    {
+      "id": "en-chat-hello",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 17972,
+      "transcript": null,
+      "expected_transcript": "hey how are you doing today",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    },
+    {
+      "id": "en-chat-thanks",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 14690,
+      "transcript": null,
+      "expected_transcript": "thanks that is exactly what i needed",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    },
+    {
+      "id": "en-chat-joke",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": null,
+      "total_ms": 17730,
+      "transcript": null,
+      "expected_transcript": "tell me something funny",
+      "wer": null,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a"
+    }
+  ]
+}
