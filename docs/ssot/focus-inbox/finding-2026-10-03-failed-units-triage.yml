@@ -19,7 +19,14 @@ focus:
     persistent across days.
   branch: chaba
   priority: high
-  status: open
+  status: processed
+  processed_reason: '2026-10-09 sweep: all subtasks completed; the one
+    in_progress item (omen focus-dispatcher + watchdog) resolved —
+    watchdog is alert-by-design (recorded known_failed), dispatcher
+    failed at 03:00 on SSOT validation of files fixed that morning;
+    omen checkout is ~3 behind and self-pulls. Follow-up found and fixed:
+    mirror-sweep DEV_URL still pointed at tony-dell:8124 after the
+    michael-dev→idc03 migration (9b7b95e68).'
   tags:
   - audit
   - failed-units
@@ -40,7 +47,8 @@ focus:
       cam-wall-cms now emits sources+provenance footer and the 66
       regenerated pages pass R1/R2.
   - label: Fix focus-dispatcher + chaba-audit-watchdog on tony-omen
-    status: in_progress
+    status: completed
+    completed: '2026-10-09'
     note: Same two gates exist on omen — stale handoff (clears on next
       pull of bb1c1678/26dd1cac) + activate_inbox refusing while the
       CMS-audit fix item is the active branch focus (correctly active —
