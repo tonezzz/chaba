@@ -1,0 +1,62 @@
+title: GitHub Process Standard
+subtitle: Repo settings, CI gates, and PR/merge conventions across the ecosystem
+icon: "\U0001f419"
+version: 1
+
+meta:
+  status: active
+  created: 2026-10-09
+  author: "devin (requested: tony)"
+  scope: tonezzz/chaba + tonezzz/ada-pi — the two GitHub repos
+  intent: >
+    Hands-off: trunk-based flow stays (maintainer + dispatch sessions push
+    directly to the default branch). GitHub-side settings only guard
+    against irreversible loss; CI observes and alerts, does not gate.
+
+policy:
+  default_branch:
+    chaba: master
+    ada-pi: main
+    model: >
+      Trunk-based. Direct pushes are allowed — dispatch checkpoints and
+      merge-into-HEAD commits are the normal flow.
+  protection:
+    applies_to: [chaba/master, ada-pi/main]
+    force_push: blocked
+    branch_deletion: blocked
+    required_checks: none  # CI is observational; gating would stall dispatch
+    enforce_admins: false  # Tony is never locked out of his own repos
+  merge_methods:
+    allowed: [squash, rebase]   # repo-level: merge commits disabled
+    delete_branch_on_merge: true
+  pull_requests:
+    when: >
+      External contributors, multi-commit feature work, or changes where a
+      review checkpoint is valuable. Routine solo/dispatch pushes do not
+      need a PR.
+    title: "conventional-commit style — feat|fix|chore|docs|scenario|kanban: <what>"
+    body: ".github/PULL_REQUEST_TEMPLATE.md (Summary + Test plan; chaba also carries Card:)"
+  known_drift:
+    - >
+      ada-pi dispatch merges produce 'Merge branch dispatch/...' commits on
+      main — tolerated until dispatch learns rebase+ff. chaba/master keeps
+      its local pre-push ff-only gate as the enforcement layer.
+
+ci_gates:
+  chaba:
+    - {workflow: "SSOT CI",                 on: "push + PR", checks: "SSOT validity, ref validation, secrets scan, dev-system assess"}
+    - {workflow: "Repo lint",               on: "push + PR"}
+    - {workflow: "MCP Smoke Test",          on: "push"}
+    - {workflow: "MCP Server Verification", on: "manual + schedule"}
+    - {workflow: "Camwall smoke",           on: "push + PR"}
+    - {workflow: "Logs Check",              on: "push + PR + schedule"}
+    - {workflow: "CMS audit",               on: "push/PR touching ada-cms-pages snapshot or audit scripts", mode: "ratchet — new failures fail, baseline only shrinks"}
+  ada_pi:
+    - {workflow: "CI", on: "push + PR (main)", checks: "pytest tests/ + tool-lint advisory (heavy lazy deps skipped: torch/speechbrain/ai-edge-litert)"}
+    - note: "live scenario timers on idc03 remain the integration layer; GH CI is the fast unit/static gate"
+
+operations:
+  change_settings: "gh api repos/tonezzz/<repo> -X PATCH -f <field>=<value>"
+  protection_check: "gh api repos/tonezzz/<repo>/branches/<br>/protection"
+  watch_failures: "gh-runs-watch alerts + 'gh run list' per repo"
+  evolving_this_file: "Changes to the standard land via this SSOT doc first, then settings — not the other way around"
