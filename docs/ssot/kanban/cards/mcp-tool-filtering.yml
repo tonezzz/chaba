@@ -59,5 +59,6 @@ expected_goals:
   check: "bash -c 'echo {\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":1,\\\"method\\\":\\\"tools/list\\\"} | MCP_ALLOWFILE=/home/tony/.config/devin/mcp-scripts/allowlist.github.json timeout 30 python3 /home/tony/.config/devin/mcp-scripts/mcp-allowlist.py --list-only | python3 -c \"import json,sys; assert len(json.load(sys.stdin)[\\\"result\\\"][\\\"tools\\\"]) <= 18\"'"
 action:
   type: dispatch
+  status: queued
   repo: chaba
 review_kind: verify
