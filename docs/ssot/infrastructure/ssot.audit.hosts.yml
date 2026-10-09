@@ -1389,6 +1389,13 @@ hosts:
         scope: user
         expected_state: active
         critical: false
+      - name: chaba-repo-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
+          2026-10-09 after checkout drifted 544 commits behind (audit finding)
       # Masked warm-standby units (verified 2026-10-07): mddb.service (old
       # leader), ada-ha-tony, ada-ha-michael, ollama, gemini-ollama-proxy,
       # input-bridge, mddb-panel, camwall-edge, obsidian-vault,
@@ -1618,6 +1625,13 @@ hosts:
         scope: user
         expected_state: active
         critical: false
+      - name: chaba-repo-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
+          2026-10-09 after checkout drifted 190 commits behind (audit finding)
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
@@ -1715,13 +1729,15 @@ hosts:
           100.123.163.11:11023, localhost/mddb:2.15.4-blrotate) — migrated
           from tony-dell 2026-10-05; self-seeds via leader snapshot, SSD
           verify ~4 min vs dell HDD >6h timeout loop
+      - name: chaba-repo-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
+          2026-10-09 after checkout drifted 1389 commits behind, breaking
+          every repo-exec job on the host (audit finding)
     known_failed:
-      - name: jev-bench.service
-        reason: "Hourly decision bench targets retired idc01 — connection refused until repointed; card fix-jev-bench-target"
-        action: card-fix-jev-bench-target
-      - name: ada-flood-news.service
-        reason: "Exits 2 after successful news fetch — publish-step bug; card fix-ada-flood-news-exit"
-        action: card-fix-ada-flood-news-exit
       - name: chaba-audit.service
         reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
         action: card-fix-idc02-audit-suite
