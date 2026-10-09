@@ -1,0 +1,65 @@
+id: vcast-ux-flow
+title: VCast UX/UI flow improvement — explicit lifecycle, no phantom states, operator-friendly recovery
+brief: >-
+  Assess and redesign the VCast user/operator flow end-to-end per Chaba standard
+  (plan→structure→develop→audit→benchmark). Today's flow hides connection state,
+  lets stale entries masquerade as screens, burns names on release, and leaves
+  operators doing manual registry surgery. The UI should show real lifecycle
+  state, stable display identity, and one-click recovery.
+column: backlog
+priority: medium
+program: vcast
+area: ux
+note: >-
+  Assessment basis: 2 days of live debugging 2026-10-08/09. Observed UX failures:
+  (a) the same display appeared as 4 different screens (1,6,8,9) — operator
+  cannot tell which entry is real; (b) /release'd screens resurrected minutes
+  later — operator action had no lasting effect, no feedback why; (c) a screen
+  could be "registered" while its display sat on a pairing QR — UI state
+  diverged from physical reality; (d) claim 409s surfaced only in podman
+  journal — zero visibility in any UI; (e) recovery required ssh + registry
+  JSON reading + ada-auth key surgery — far beyond operator UX. Fixed in
+  92dd81681: rebind grace, tombstones, preferred-slot honoring, persisted keys.
+  Still missing: tombstoned-name resurrect (vcast-claim-tombstone), UI surface.
+spec: >-
+  User journey stages to redesign, with acceptance per stage:
+  1. PAIRING — a new/released display should show a clear "waiting to pair"
+     state with the claim code, expiry, and who can approve it. Pending rows
+     dedupe by device_id (done) — UI must also show "this screen's name is
+     held by a dead socket, reclaiming in Ns" during grace.
+  2. IDENTITY — show stable display label (vcast-real-6) as primary identity,
+     with preferred screen + assigned screen as separate fields when they
+     differ. Never show two live screens with the same label.
+  3. LIFECYCLE — explicit states: pairing / connected / idle / playing /
+     reconnecting(age) / stale(age) / released. "stale" auto-derives from
+     last_seen + socket state, not just registry presence.
+  4. CASTING — every cast result must confirm actual delivery (the Ada rule:
+     never claim displayed unless the cast tool returned success). Show
+     last-cast target + timestamp + per-pane state on the displays view.
+  5. RECOVERY — one-click "reclaim"/"release" per screen with a visible
+     result (and tombstone note: "released — name reserved 30d for reclaim").
+     Stale entries get a "sweep now" affordance. Errors say the reason AND
+     the next action ("name held by dead socket — retry in ~60s or force").
+  6. OPERATOR VIEW — /displays gets a fleet health line: connected/stale/
+     pending counts + last flap + 24h flap metric (vcast-auto-health exists;
+     surface it).
+  Audit: ws close codes already logged; add claim/release/resurrect events to
+  a timeline visible in UI or card comms. Benchmark: measure time-to-recover
+  from disconnect before/after (was: manual ~30min ops surgery; target:
+  self-heal <60s or one click). Evidence: CMS report page
+  (kind:report domain:vcast) with before/after registry states + flap metric.
+help: >-
+  Related: vcast-bridge-registry-bugs (done — deployed 2026-10-09),
+  vcast-claim-tombstone (queued — resurrect chain). Frontend surface is
+  stacks/web/public/apps/vcast/index.html + the /displays JSON on
+  idc03:3010. Ada's realtime_provider rules apply: no phantom success claims.
+updated: 2026-10-09 18:05
+action:
+  type: dispatch
+  status: backlog
+  button: ▶ Assess + redesign vcast UX flow
+  repo: chaba
+comms:
+- at: 2026-10-09 18:05
+  from: devin
+  text: filed from Tony's request — "assess the flow of vcast at work and suggest ux/ui flow improvement per our default standard"; assessment basis documented in note

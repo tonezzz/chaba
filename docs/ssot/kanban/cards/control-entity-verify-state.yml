@@ -1,22 +1,27 @@
 id: control-entity-verify-state
 title: 'control_entity: verify state delta after actuation'
-column: backlog
+column: doing
 priority: high
-note: '2026-10-08 transcript 9e96b5a5bc: Ada called volume_down on media_player.tony_tv_cast
-  4x — every call returned ok:true, she said "done" each time, but the volume never
-  changed (user: "เสียงมันยัง ไม่เปลี่ยนเลย"). HA accepts service calls on cast players
-  that no-op silently while paused/off. Fix: for adjustable actions (volume_down/up/mute,
-  brightness, position), read the relevant attr before+after and return ok:false with
-  the delta when it didn''t move — mirrors tv_action''s cast_verify pattern which
-  already checks state.'
+note: '2026-10-08 transcript 9e96b5a5bc: Ada called volume_down on media_player.tony_tv_cast 4x — every call returned
+  ok:true, she said "done" each time, but the volume never changed (user: "เสียงมันยัง ไม่เปลี่ยนเลย"). HA accepts
+  service calls on cast players that no-op silently while paused/off. Fix: for adjustable actions (volume_down/up/mute,
+  brightness, position), read the relevant attr before+after and return ok:false with the delta when it didn''t
+  move — mirrors tv_action''s cast_verify pattern which already checks state.'
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
-updated: 2026-10-09 17:00
+  status: running
+  runner: tony-omen
+updated: 2026-10-09 17:59
 comms:
 - at: 2026-10-09 17:00
   from: devin
-  text: 'queued for dispatch — Tony approved. Spec in note is complete: read attr
-    before+after for adjustable actions, ok:false + delta when no move, mirror cast_verify.'
+  text: 'queued for dispatch — Tony approved. Spec in note is complete: read attr before+after for adjustable actions,
+    ok:false + delta when no move, mirror cast_verify.'
+- at: 2026-10-09 17:59
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 17:59
+  from: chaba
+  text: started devin-task-20261009-175933-control-entity-verify-state-de on tony-omen (dispatch)
 requests: []

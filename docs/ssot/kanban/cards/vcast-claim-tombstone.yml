@@ -1,0 +1,48 @@
+id: vcast-claim-tombstone
+title: input-bridge /claim cannot re-issue ada-auth tombstoned names — force-claim is self-defeating
+brief: 'Every /release or force-revoke writes an ada-auth tombstone that POST /api/auth/keys refuses to re-issue,
+  so a released screen-N name is burned forever and force-claim can never succeed (revoke→tombstone→create→409 loop).
+  Fix: on 409 conflict the bridge should run the resurrect chain — POST /api/auth/invites (reinvite→pending), POST
+  /api/auth/keys/{name}/approve, POST /api/auth/invites/{name} for a fresh redeem_url — instead of revoke+create.'
+column: doing
+priority: high
+program: vcast
+area: monitoring
+note: 'Found 2026-10-09 during vcast screen cleanup (post-92dd81681 deploy). Evidence: ada-auth /api/auth/keys listed
+  screen-1,2,3,4,6,8,9 as revoked tombstones; every headless/real claim on those names 409''d in a loop — force-claim''s
+  adaRevokeKey→adaCreateScreenKey sequence revokes into a tombstone then create_key refuses tombstoned names (auth.py:166
+  `if name in data` counts revoked entries). Manual recovery proved the chain: POST /api/auth/invites {name} → pending,
+  POST /api/auth/keys/{name}/approve → issued (same api_key reactivated — reinvite keeps the `key` field), then
+  POST /api/auth/invites/{name} mints a redeem_url. Also seen live: racing clients re-tombstoned names between resurrect
+  and client restart — recovery needs claimants stopped or tombstone-resurrect done atomically server-side.'
+spec: "1. In server.mjs, replace the force path: on created.conflict call a new\n   adaResurrectScreenKey(admin_key,\
+  \ name) = POST /api/auth/invites {name} then\n   POST /api/auth/keys/{name}/approve then POST /api/auth/invites/{name}\n\
+  \   {path:\"/\",redirect:\"/apps/vcast\"} → use returned redeem_url.\n2. Auto-fallback: claim with a wanted name\
+  \ that conflicts should try resurrect\n   once before returning 409 — operators should never need the manual chain.\n\
+  3. Guard: resurrect only names matching /^screen-\\d+$/ — member keys keep\n   tombstone semantics (their resurrect\
+  \ path is the deliberate invite flow).\n4. Rival-claimant race: resurrect is per-claim atomic server-side — two\n\
+  \   clients racing the same name must not both succeed; second gets 409/next slot.\nAcceptance: tombstone a name\
+  \ via /release, then /claim {name} → display pairs on that name without manual ada-auth calls; force loop cannot\
+  \ re-tombstone a name a live display is using; unit/integration test covers tombstone→resurrect→redeem."
+help: 'Manual recovery runbook (proven 2026-10-09): stop the claiming client first (its force loop re-tombstones),
+  then on idc03 with input-bridge.env sourced: POST 127.0.0.1:8001/api/auth/invites {name} → POST /api/auth/keys/{name}/approve
+  → POST /api/auth/invites/{name} {path:"/",redirect:"/apps/vcast"} → burn the returned redeem_url and read api_key
+  from the 302 Location → write to the client''s VCAST_KEY_FILE → start client. It registers directly, no claim.'
+updated: 2026-10-09 17:58
+action:
+  type: dispatch
+  status: running
+  button: ▶ Fix tombstoned-name claims
+  repo: chaba
+  runner: idc02
+comms:
+- at: 2026-10-09 18:05
+  from: devin
+  text: filed from live vcast cleanup — tombstone semantics in ada-auth make revoke→create unusable for screen names;
+    resurrect chain proven manually end-to-end (fleet now green on preferred names)
+- at: 2026-10-09 17:57
+  from: idc02
+  text: claimed
+- at: 2026-10-09 17:58
+  from: chaba
+  text: started devin-task-20261009-175800-1-in-server-mjs-replace-the-fo on idc02 (dispatch)
