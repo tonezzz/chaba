@@ -9,7 +9,7 @@ brief: '2026-10-09 (found while fixing fix-scenario-schedule-collision): ada-sce
   hang per scenario (e.g. vcast screen/service absent) exhausts the unit cap silently. Note ''last run'' evidence:
   preflight-bench passes all gates (ada up, :8002 listening, embed-probe up, no lock) so the hang is inside the
   run, not startup.'
-column: review
+column: backlog
 review_kind: verify
 priority: high
 kind: bug
@@ -33,14 +33,16 @@ spec: "Reproduce / diagnose:\n  ssh idc03 'journalctl --user -u ada-scenario-cas
   \ root cause is identified and\nfixed/acked.\n"
 action:
   type: dispatch
-  status: done
+  status: running
   repo: ada-pi
-  runner: idc03
   result: 'exit=0 ite-stall-diagnosis.yml` and `./dispatch-outcome-20261009-175929-reproduce-diagnose-ssh-idc03-j.md`.
     | devin-task-20261009-175929-reproduce-diagnose-ssh-idc03-j.service: Consumed 1min 26.949s CPU time, 1.3G memory
     peak, 0B memory swap peak.'
   sweep:
     session_gone: 2026-10-09 18:33
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-193531-reproduce-diagnose-ssh-idc03-j
 comms:
 - at: 2026-10-09 17:59
   from: chaba
@@ -111,13 +113,43 @@ comms:
 - at: 2026-10-09 19:07
   from: chaba
   text: auto-merged 3a1b089f (dispatch/20261009-175902-reproduce-diagnose-ssh-idc03-j) → origin/main
-updated: 2026-10-09 19:33
+- at: 2026-10-09 19:35
+  from: tony
+  text: 'answered tony-dell-side-needed-no-ssh-from-idc03-eb011b: dispatch-it — Dispatch a tony-dell session'
+- at: 2026-10-09 19:35
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 19:35
+  from: tony
+  text: queued for processing
+- at: 2026-10-09 19:35
+  from: chaba
+  text: dispatched 20261009-193531-reproduce-diagnose-ssh-idc03-j on ada-pi
+- at: 2026-10-09 19:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-scenario-casting-hang] DIAGNOSIS: not a hang. Journal shows 39 sequential
+    s; [ada-scenario-casting-hang] merge-sweep: no session/worktree found for devin-tas; [vcast-cast-lane] DONE
+    — audit complete. All lane services healthy after 2 fixes; [vcast-cast-lane] health: omen cast-browser active
+    3d; dell proxy :8799 socat->o; jev-bench.service on idc02 failed hourly with Connection refused since idc01
+    ret; [fix-ada-flood-news-exit] DONE + verified. Fix: env pin MDDB_'
+- at: 2026-10-09 19:37
+  from: devin
+  text: 'tony-dell session live — working the approved request: (1) gev-cmd strip_prefix in chaba ssot.routes.yml
+    + Caddyfile regen/reload, (2) gev-gemini bridge Gemini key check'
+- at: 2026-10-09 19:47
+  from: devin
+  text: 'DONE both tony-dell items in-session: (1) gev-cmd route had no strip — added strip:/apps/gev-cmd to ssot.routes.yml
+    + patched live Caddyfile (container was bind-mounted to a STALE inode — restart required; that staleness is
+    itself a deploy bug worth noting) → POST /apps/gev-cmd/command now reaches bridge.py (returns schema error "name
+    required" = endpoint live). (2) gev-gemini key checked: /run/secrets/gemini-api-key holds a stale AQ.* token
+    — direct test generativelanguage/v1beta/models → 401 i'
+updated: 2026-10-09 19:47
 requests:
 - id: tony-dell-side-needed-no-ssh-from-idc03-eb011b
   ask: 'tony-dell side needed (no ssh from idc03): (1) add strip: /apps/gev-cmd to gev-cmd route in chaba docs/ssot/infrastructure/ssot.routes.yml,
     regen+reload Caddyfile — restores gev_command; (2) check gev-gemini bridge Gemini key (/run/secrets/gemini-api-key)
     — ws setup dies with invalid-credentials. OK to dispatch a tony-dell session or apply by hand?'
-  status: open
+  status: answered
   at: 2026-10-09 18:20
   from: devin
   options:
@@ -128,4 +160,7 @@ requests:
   - id: skip
     label: Skip for now
   suggested: dispatch-it
-claim: {}
+  answer: dispatch-it — Dispatch a tony-dell session
+claim:
+  session: 20261009-193531-reproduce-diagnose-ssh-idc03-j
+  since: 2026-10-09 19:35

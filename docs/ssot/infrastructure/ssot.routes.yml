@@ -98,7 +98,7 @@ routes:
   - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: /apps/system-report/api, upstream: "127.0.0.1:8792", auth: tailnet-identity-write, owner: chaba}
   - {id: system-report,    kind: static, path: /apps/system-report/*,  owner: chaba, public_host: monitor.surf-thailand.com}
   - {id: jev-bench,        kind: static, path: /apps/jev-bench/*,      owner: chaba, headers: {Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Embedder-Policy: require-corp, Cross-Origin-Resource-Policy: cross-origin, Cache-Control: "public, max-age=86400"}}
-  - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        upstream: "127.0.0.1:8790", owner: gev}
+  - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        strip: /apps/gev-cmd, upstream: "127.0.0.1:8790", owner: gev}
   - {id: gev-api,          kind: proxy,  path: /apps/gev/api/*,        upstream: "127.0.0.1:4173", owner: gev}
   - {id: gev,              kind: static, path: /apps/gev/*,            owner: gev}
   - {id: gev-live,         kind: proxy,  path: /apps/gev-live/*,       ws: true, upstream: "127.0.0.1:8789", owner: gev, custom: true, note: "mixed ws-proxy + static sub-handles — hand block in renderer"}
