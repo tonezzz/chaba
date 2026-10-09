@@ -1,0 +1,77 @@
+id: session-audit-daily
+title: Daily automated Ada session audit — transcripts -> friction -> CMS evidence
+date: 2026-10-09
+card: ada-session-audit-daily
+host: tony-dell
+status: implemented   # install pending Tony's ok — deploys were out of scope for the card
+
+goal: >
+  Automate the ada-transcript-audit skill so voice-session quality is
+  checked every morning instead of only when Tony asks. Every transcript
+  newer than the marker is joined with the ada-ha-tony journal; findings
+  are published as discussable evidence and friction is never silently
+  dropped.
+
+delivered:
+  - chaba scripts/ada/session-audit.py: >
+      The audit. Marker window (~/.local/share/devin/ada-audit-marker,
+      mtime, 24h default; bumps only after a clean run), ssh fetches of
+      transcripts + journalctl function_call pairs from AUDIT_HOSTS
+      (default idc03,idc01 — idc03 is the post-migration live host, idc01
+      keeps the archive), per-session detectors (fail / confirm / acl /
+      degraded / phantom claim / repeat-ask / latency / no_result), and
+      the output contract: ada-ha-scenario-reports audit/session-<date>
+      (kind session-audit), CMS page ada-session-audit (cms-page-standard
+      layout, pub_hash skip), focus-inbox entries for surfaced friction,
+      board-api /card for recurring sigs (dedup on audit-<sig> id),
+      labeled JSONL to idc03 ~/.local/share/ada/session-audit-corpus.jsonl.
+      --selftest covers all six detector kinds; fixture mode
+      (--transcripts-dir/--journal-file) never touches live sinks without
+      --publish.
+  - chaba docs/ssot/infrastructure/ssot.jobs.yml session-audit job: >
+      tony_dell, on_calendar '*-*-* 05:30:00', persistent, 15m timeout —
+      before the 07:05 daily-brief. Renders to
+      systemd/generated/tony_dell/session-audit.{service,timer}.
+  - chaba scripts/ada/install-session-audit.sh: >
+      Log-shipper-style installer — pushes script + units to
+      ~/.local/share/session-audit/ + ~/.config/systemd/user/, enables the
+      timer, runs --selftest. Supports --via jump host and --no-run.
+
+surfacing_policy: >
+  The false-positive flood gate. Everything is a finding on the page/doc;
+  a signature surfaces to the inbox only when severity=high, or >=3
+  occurrences in the window, or seen on another day (14d sig history in
+  ~/.local/share/ada-audit/friction-history.jsonl). Hard cap 15 inbox
+  entries per run — overflow stays on the page plus one cap-note entry.
+  Cards file only for a high-sev storm (>=3 in one window) or a medium+
+  signature recurring >=2 days; info/low recurrence (confirm gates, slow
+  turns) stays inbox-only. Inbox dedups on the sig slug across
+  inbox+processed; cards dedup on card id audit-<sig>.
+
+classification_notes: >
+  Result classification prefers the parsed dict (ok is False / error /
+  err -> fail; needs_confirm|would_interrupt keys or NOT EXECUTED ->
+  confirm; degraded/quota_exhausted/delivered:0 -> degraded). Truncated
+  lines fall back to head-region regexes — nested 'error' strings inside
+  payload text (e.g. web_search fallback_error tracebacks) and
+  needs_confirm words inside tool usage docstrings do NOT misclassify.
+  If a host's journal fetch fails, phantom detection is disabled for
+  that host's sessions (claim-without-call is unprovable).
+
+install_runbook: >
+  python3 scripts/render-jobs.py &&
+  scripts/ada/install-session-audit.sh tony-dell
+  (add --via tony-omen if mn01->dell ssh is down). Verify:
+  systemctl --user list-timers session-audit.timer on dell; the first
+  real run consumes the existing marker (2026-10-07T13:52Z at card time)
+  so the first window may span days — expect a fuller page, then steady
+  state. Manual one-off: ssh tony-dell 'python3
+  ~/.local/share/session-audit/session-audit.py --dry-run'.
+
+acceptance_status: >
+  [x] deterministic selftest (all 6 kinds, flood gate). [x] real-data dry
+  run vs idc01 archive: 7 sessions / 235 findings / 26->15 surfaced
+  (capped), all verified real failures (Unknown tool, unknown bank, 429,
+  invalid lang). [x] seeded fixture: friction surfaces, inbox yml written,
+  marker bumps, corpus rows append, day-2 dedup confirmed. [ ] 3-day
+  unattended soak — starts at install.

@@ -231,6 +231,29 @@ jobs:
   persistent: true
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py
+- id: session-audit
+  name: Ada session audit (transcripts -> friction -> CMS/focus/corpus)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 05:30:00'
+  persistent: true
+  timeout: 15m
+  exec: /usr/bin/python3 %h/.local/share/session-audit/session-audit.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    AUDIT_HOSTS: idc03,idc01
+  note: 'card ada-session-audit-daily. Window = transcripts newer than
+    ~/.local/share/devin/ada-audit-marker (mtime; marker bumps after a
+    clean run). Publishes ada-ha-scenario-reports/audit/session-<date>
+    (kind session-audit), refreshes CMS page ada-session-audit, files
+    focus-inbox entries for surfaced friction only (high-sev or repeated —
+    capped at 15/run), cards recurring sigs via board-api /card deduped
+    on audit-<sig>, and appends labeled rows to idc03
+    ~/.local/share/ada/session-audit-corpus.jsonl for the nest loop.
+    Self-contained install: scripts/ada/install-session-audit.sh tony-dell —
+    the unit runs the ~/.local/share copy, never the repo checkout. idc03
+    journal+transcripts come over dell''s ssh key. 05:30 lands before the
+    07:05 daily-brief.'
 - id: devin-session-prune
   name: Devin Dispatch Session Prune
   host: tony_dell
