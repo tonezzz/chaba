@@ -1,0 +1,99 @@
+title: "runner-fleet-health: dispatch-host bootstrap audit -> runner-auto-* cards"
+subtitle: >-
+  New kanban-sync health lane — probes every runner_fleet host each tick
+  and cards only violations, so provisioning gaps strand audits instead
+  of dispatch sessions
+icon: 🩺
+id: 2026-10-09-runner-fleet-health
+status: done
+owner: devin-dispatch
+project: chaba
+card: runner-bootstrap-check
+branch: dispatch/20261009-000816-extend-an-existing-health-lane
+started: "2026-10-09"
+completed: "2026-10-09"
+
+context:
+  user_request: >
+    Card runner-bootstrap-check: three provisioning gaps in two days
+    stranded dispatch work — mn01 ghost checkout (chaba dir with no
+    .git), idc01 chaba clone 860 commits stale (runner-agent
+    AttributeError close_out_notes crash-loop), idc03 missing git
+    identity + https-only remote. Audit every dispatch host in
+    ssot.kanban.yml runner_fleet for the known failure modes before a
+    dispatch trips on them; cms-auto-style cards on violation only.
+
+design:
+  lane: >-
+    scripts/board/runner-fleet-health.py, run from
+    scripts/ada/kanban-sync.sh after vcast-auto-health (every 15min on
+    tony-dell inside the chaba-kanban-sync detached worktree; the
+    wrapper commits+pushes docs/ssot/kanban/cards/ like the other lanes).
+  fleet_source: >-
+    Hostnames are parsed out of the runner_fleet prose in
+    ssot.kanban.yml (execution.concurrency.runner_fleet — '<host>:'
+    labels, regex tony-*|idcN|mnN). RUNNER_FLEET_HOSTS env overrides;
+    hardcoded 6-host list is the parse-failure fallback.
+  probe: >-
+    One `ssh <host> python3 -` per host (stdlib only — runner hosts
+    lack PyYAML), same shape as merge-sweep's REMOTE_*_PROBE. Local
+    host (os.uname().nodename match) runs the probe in-process.
+    Collects: git committer-ident resolvability + global user.name /
+    user.email; per-repos.conf-entry (host's own file, else the
+    devin-dispatch builtin table) exists/.git/remote/ssh_cmd/shallow/
+    behind — with a real `git fetch origin <branch>` only for the
+    canonical chaba clone; installed ~/.local/bin/runner-agent +
+    devin-dispatch presence/exec/syntax/sha256; dispatch_repos
+    resolution replaying runner-agent.dr_module()'s candidate order
+    ($DISPATCH_REPOS_DIR -> dir of installed runner-agent ->
+    ~/CascadeProjects/chaba/scripts/board) + import smoke +
+    close_out/close_out_notes attrs; devin binary via
+    devin-dispatch.sh's order (PATH -> ~/.local/bin -> bundled desktop).
+  judge: >-
+    violations vs notes, per host:
+      * unreachable probe -> unreachable
+      * GIT_COMMITTER_IDENT unresolvable -> git-identity
+      * chaba missing / no .git -> clone-missing / clone-no-git
+        (the mn01 ghost)
+      * fetch ok && behind > MAX_BEHIND (200, env) -> clone-stale;
+        fetch fail && behind > 0 -> clone-fetch (can't refresh);
+        fetch fail && behind == 0 -> note only (transient-tolerant)
+      * chaba remote fetch-only AND `git ls-remote <host>:<path>` from
+        the checker fails -> remote-push; fetch-only + salvage working
+        -> note only ("by design — merge-sweep salvages", card spec)
+      * other declared repos: missing dir -> note (can't take
+        action.repo=<name> cards); exists-but-no-.git / no remote /
+        >MAX_BEHIND (last-fetched basis, no fetch) -> repo-checkout
+      * installed copies missing/non-exec/bad syntax/sha != repo ->
+        runner-agent / devin-dispatch (the mn01 silent-stale class)
+      * dispatch_repos unresolvable / import fails / missing
+        close_out|close_out_notes -> dispatch-repos (the idc01 crash);
+        hash drift with attrs present -> note only
+      * no devin binary resolvable -> devin-cli; bundled-desktop-only
+        resolution -> note
+  cards: >-
+    runner-auto-<host>.yml, generated: runner-fleet-health — review on
+    violation, done on recovery, 12h -> high priority (same escalation
+    as cms-auto-health/gev-auto-health), retired-host ghost sweep.
+    Green fleet stays silent.
+
+verification:
+  - "synthetic judge(): mn01 ghost -> clone-no-git; idc01 860-behind +
+    missing close_out_notes -> clone-stale + dispatch-repos; idc03 no
+    ident -> git-identity; fetch-only remote + dead salvage ->
+    remote-push; fetch-only + working salvage -> note only; all-green
+    -> silent. PASS."
+  - "live from mn01 (this session's host): mn01 flagged clone-stale
+    (372 behind — real, unfixed); idc01 flagged devin-dispatch drift
+    (installed 1dd91c1f vs repo ea6eeaca — predates the
+    ${MODEL:+--setenv} guard). Both are true current findings."
+  - "tony-omen/idc02/idc03 unreachable from this session's ssh
+    identity (keys live in the tony-dell user context where
+    kanban-sync.timer runs) — they produce 'unreachable' cards only if
+    still unreachable there."
+
+followups:
+  - "idc01 devin-dispatch redeploy + mn01 chaba pull are real pending
+    fixes — the runner-auto-* cards track them."
+  - "If the fleet grows a deploy-sync script (drift doc option a), this
+    lane is its verifier."
