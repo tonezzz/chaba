@@ -9,9 +9,15 @@ program: logs-digest
 priority: high
 note: 4082 severe lines (oom/panic/failed) in the last 24h (limit 40)
 help: Read the digest's repeat-offender lines for tony-omen; this is a real incident signal, not pipeline breakage.
-updated: 2026-10-09 17:44
+updated: 2026-10-09 18:09
 comms:
 - at: 2026-10-09 17:44
   from: devin
   text: 'RE-MEASURED: 2168 severe/24h — real volume, source not yet drilled. Needs a top-unit breakdown like idc03/dell
     got.'
+- at: 2026-10-09 18:09
+  from: devin
+  text: 'DRILLED: 2088 of 2168 severe = michael-dev instance on omen — REST mirror sensors timing out on http://michael-ha:8123
+    + resulting UndefinedError template spam. Same class as idc03 (michael-dev replicas on hosts that cant cleanly
+    reach the LAN mirrors). Fires in bursts; last batch 17:13. Action: decide whether omen keeps a michael-dev replica
+    at all; if yes, point mirrors at reachable URL or disable mirror package there.'

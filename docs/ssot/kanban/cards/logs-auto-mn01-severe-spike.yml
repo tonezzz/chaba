@@ -9,8 +9,13 @@ program: logs-digest
 priority: high
 note: 185 severe lines (oom/panic/failed) in the last 24h (limit 40)
 help: Read the digest's repeat-offender lines for mn01; this is a real incident signal, not pipeline breakage.
-updated: 2026-10-09 17:44
+updated: 2026-10-09 18:09
 comms:
 - at: 2026-10-09 17:44
   from: devin
   text: 'RE-MEASURED: 60 severe/24h (limit 40) — marginal, just over threshold. Worth one look; not a fire.'
+- at: 2026-10-09 18:09
+  from: devin
+  text: 'DRILLED: 57 of 60 = xmeye-vms-vnc container (wine/x11vnc noise — VNC session churn). Marginal over threshold,
+    quiet last 2h. Not a fire; note for the next digest tuning — container stderr noise counts as severe same as
+    mddb on idc03.'

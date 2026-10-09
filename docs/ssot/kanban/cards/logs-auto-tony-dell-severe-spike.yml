@@ -9,7 +9,7 @@ program: logs-digest
 priority: high
 note: 5990 severe lines (oom/panic/failed) in the last 24h (limit 40)
 help: Read the digest's repeat-offender lines for tony-dell; this is a real incident signal, not pipeline breakage.
-updated: 2026-10-09 17:44
+updated: 2026-10-09 18:09
 comms:
 - at: 2026-10-09 17:44
   from: devin
@@ -17,3 +17,9 @@ comms:
     ~1/min (a tool/script looping host-loopback ssh inside the container); tony-ha "No compatible devices at 2-1"
     USB probe loop (9.3k); gev-gemini 2.7k; michael-dev mirror timeouts 2.1k; bserver 2.1k. Real bugs — needs per-service
     dispatch, not a close.'
+- at: 2026-10-09 18:09
+  from: devin
+  text: 'SOURCE PINNED: the 127.0.0.1:22 ssh-refused loop (~1/min) comes from ada-ha container — ada-pi backend/tool_runner/screens.py
+    is the only ssh-calling path; a screen/display probe resolves a display host to loopback under the containers
+    host-network. Also REST sensors dead: 127.0.0.1:8799 /state and 127.0.0.1:8014 /api/chaba/pending (endpoints
+    gone). Needs a small dispatch — not a session fix.'

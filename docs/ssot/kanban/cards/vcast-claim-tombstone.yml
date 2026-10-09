@@ -28,7 +28,7 @@ help: 'Manual recovery runbook (proven 2026-10-09): stop the claiming client fir
   then on idc03 with input-bridge.env sourced: POST 127.0.0.1:8001/api/auth/invites {name} → POST /api/auth/keys/{name}/approve
   → POST /api/auth/invites/{name} {path:"/",redirect:"/apps/vcast"} → burn the returned redeem_url and read api_key
   from the 302 Location → write to the client''s VCAST_KEY_FILE → start client. It registers directly, no claim.'
-updated: 2026-10-09 17:58
+updated: 2026-10-09 18:07
 action:
   type: dispatch
   status: running
@@ -46,3 +46,7 @@ comms:
 - at: 2026-10-09 17:58
   from: chaba
   text: started devin-task-20261009-175800-1-in-server-mjs-replace-the-fo on idc02 (dispatch)
+- at: 2026-10-09 18:07
+  from: devin
+  text: picked up — implementing adaResurrectScreenKey (invites->approve->mint), auto-fallback on conflict, screen-N
+    guard, per-claim serialization + new vcast-claim-check.mjs
