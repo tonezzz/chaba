@@ -1,0 +1,20 @@
+id: runner-auto-idc01
+title: Runner host `idc01` fails 1 dispatch bootstrap check(s)
+brief: Automated fleet audit found provisioning gaps on idc01 that will strand dispatch
+  cards. Read the note, fix on the host, close the card.
+column: review
+generated: runner-fleet-health
+program: chaba-ci
+area: dispatch
+priority: medium
+note: 'Failing: ~/.local/bin/devin-dispatch sha 1dd91c1f9b25922a != repo ea6eeacada0ae660
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; no sunsynk-card checkout —
+  host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout — host can''t
+  take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view
+  cards; devin: /home/tony/.local/bin/devin (devin 3000.11.3 (9c803229faa4)).'
+help: 'Per-check fixes:
+
+  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
+  && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
+updated: '2026-10-09'
