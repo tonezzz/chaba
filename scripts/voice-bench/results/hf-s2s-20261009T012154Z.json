@@ -1,0 +1,110 @@
+{
+  "schema": "voice-bench-result",
+  "schema_version": 1,
+  "combo": {
+    "id": "hf-s2s",
+    "stt": "faster-whisper-small",
+    "llm": "ollama-phi3",
+    "tts": "qwen3-ggml",
+    "orchestrator": "hf-speech2speech",
+    "host_labels": [
+      "gpu"
+    ],
+    "notes": "huggingface/speech-to-speech serve mode; STT faster-whisper small (multilingual, Thai-capable), LLM = ollama chat-completions on the local tailnet address, TTS = repo default (qwen3 ggml). Streams fixtures over the OpenAI Realtime event set via adapters.openai_realtime."
+  },
+  "dry_run": false,
+  "meta": {
+    "at": "20261009T012154Z",
+    "host": "tony-omen"
+  },
+  "summary": {
+    "n": 2,
+    "ok": 2,
+    "mean_ttfa_ms": 55634.0,
+    "mean_total_ms": 95775.5,
+    "mean_wer": 0.0,
+    "tool_call": {
+      "exact": 0,
+      "partial": 0,
+      "none": 1,
+      "n/a": 1
+    }
+  },
+  "fixtures": [
+    {
+      "id": "en-cmd-lock-door",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 72886,
+      "total_ms": 116377,
+      "transcript": "Lock the front door.",
+      "expected_transcript": "lock the front door",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "front_door"
+        }
+      },
+      "tool_call_match": "none",
+      "assistant_text": "Sure, I will lock the front door.",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    },
+    {
+      "id": "en-chat-hello",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 38382,
+      "total_ms": 75174,
+      "transcript": "Hey, how are you doing today?",
+      "expected_transcript": "hey how are you doing today",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "I'm good, and you? How can I assist you today?",
+      "events_seen": [
+        "conversation.item.created",
+        "conversation.item.input_audio_transcription.completed",
+        "input_audio_buffer.committed",
+        "input_audio_buffer.speech_started",
+        "input_audio_buffer.speech_stopped",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.done",
+        "response.output_audio.delta",
+        "response.output_audio.done",
+        "response.output_audio_transcript.delta",
+        "response.output_audio_transcript.done",
+        "response.output_item.added",
+        "response.output_item.done",
+        "session.created",
+        "session.updated"
+      ]
+    }
+  ]
+}
