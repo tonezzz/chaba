@@ -1,7 +1,7 @@
 id: voice-combo-gemini-baseline
 title: 'Bench: Gemini Live golden baseline'
 column: review
-updated: 2026-10-09 14:33
+updated: 2026-10-09 15:16
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -91,6 +91,10 @@ comms:
   from: chaba
   text: 'merge-sweep: merged ab770469 (dispatch/20261009-133139-run-the-golden-baseline-stream from tony-dell) ->
     origin/master'
+- at: 2026-10-09 15:16
+  from: devin
+  text: 'declared benchmark on card: metric=mean_wer, command=''python3 scripts/voice-bench/bench.py --combo gemini-baseline''.
+    Request resolved — this was an agent-side field, not a Tony decision.'
 pipeline:
   opt_in: ci
   stages:
@@ -131,6 +135,10 @@ claim:
 requests:
 - id: ci-benchmark-voice-combo-gemini-baseline-b37490
   ask: Declare benchmark.metric (+command if measurable) so the pipeline can record before/after.
-  status: open
+  status: answered
   at: 2026-10-09 14:20
   from: devin
+  answer: 'declared: benchmark.metric=mean_wer, command=bench.py --combo gemini-baseline (result json emits mean_wer)'
+benchmark:
+  metric: mean_wer
+  command: python3 scripts/voice-bench/bench.py --combo gemini-baseline

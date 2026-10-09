@@ -6,9 +6,8 @@ note: 'Tony asked for a TG group "kk-ha" for member communication with Kaewta in
   TG bot per Ada instance — a second relay service on idc03 bound to ada-kk (:8007) with its own keys file.'
 action:
   type: manual
-  status: waiting_on_tony
-  runner: devin
-updated: 2026-10-09 14:12
+  status: queued
+updated: 2026-10-09 14:50
 comms:
 - at: 2026-10-09 13:00
   from: devin
@@ -23,11 +22,21 @@ comms:
     NO — group uses TELEGRAM_USER_CALLERS uid->key per sender, allowed chat id); (4) caddy /webhook/tg-kk -> 127.0.0.1:8912
     on idc03; (5) setWebhook on the bot token; (6) test: member message -> Kaewta answers with that person''s bank
     policy.'
+- at: 2026-10-09 14:50
+  from: tony
+  text: 'answered bot-token: please push the the secret-drop UI forward so I can use it.'
+- at: 2026-10-09 14:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 14:50
+  from: tony
+  text: queued for processing
 requests:
 - id: bot-token
   ask: 'Bot token from @BotFather + the group created with bot added.  NOTE: the bot token is a secret — do NOT
     paste it as the board answer. Drop it in ~/.config/secrets/ on idc03 (or wait for the secret-drop UI) and answer
     ''delivered'' + the file path.'
-  status: open
+  status: answered
   from: devin
   to: tony
+  answer: please push the the secret-drop UI forward so I can use it.

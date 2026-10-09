@@ -5,7 +5,7 @@ kind: feature
 priority: high
 autonomy: t2
 created: '2026-10-09'
-updated: 2026-10-09 14:55
+updated: 2026-10-09 15:16
 tags:
 - nest
 - polity
@@ -47,7 +47,42 @@ comms:
   text: 'spec written from Tony''s polity-manager idea. v1 = observer-governor: discovers nest nodes on its host,
     adopts ownerless ones, publishes a live nest-<host> CMS page that auto-surfaces on /chaba-nest via the existing
     discover flow. Control actions stay human-gated per promotion_gate.'
+- at: 2026-10-09 14:47
+  from: idc03
+  text: claimed
+- at: 2026-10-09 14:47
+  from: chaba
+  text: started devin-task-20261009-144740-nest-mgr-service-one-per-host- on idc03 (dispatch)
+- at: 2026-10-09 14:47
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-144740-nest-mgr-service-one-per-host- no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-09 14:48
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-144740-nest-mgr-service-one-per-host- already in origin/master — marked
+    verified'
+- at: 2026-10-09 14:48
+  from: idc03
+  text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261009-144740-nest-mgr-service-one-per-host-.service:
+    Main process exited, cod'
+- at: 2026-10-09 15:15
+  from: devin
+  text: false-verified by merge-sweep — the dispatch died in 1s (empty DEVIN_MODEL env — stale devin-dispatch on
+    idc03; repo fix never synced). Runner synced now; re-queued.
+- at: 2026-10-09 15:15
+  from: chaba
+  text: dispatched 20261009-151553-nest-mgr-service-one-per-host- on chaba
+- at: 2026-10-09 15:16
+  from: devin
+  text: attempt 2 started on tony-dell worktree. Prior run never executed (runner env bug). Scoping discovery +
+    CMS write path now.
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-151553-nest-mgr-service-one-per-host-
+claim:
+  session: 20261009-151553-nest-mgr-service-one-per-host-
+  since: 2026-10-09 15:15
