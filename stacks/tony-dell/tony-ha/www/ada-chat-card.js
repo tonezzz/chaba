@@ -169,8 +169,31 @@ class AdaChatCard extends HTMLElement {
     } else {
       this._micBtn.onclick = () => this._toggleMic(SR);
     }
-    inRow.append(this._input, this._attachBtn, this._micBtn, this._sendBtn);
+    // 🖥 virtual screen — one vcast display per chat. The iframe IS the
+    // display endpoint: it registers to input-bridge as a vcast screen
+    // (label ada-chat-<chat id>), pairs once via its own claim QR, then
+    // Ada can /pub content (page/image/video) straight into this pane.
+    this._screenBtn = this._btn("🖥");
+    this._screenBtn.className = "acc-screen";
+    this._screenBtn.title = "Virtual screen for this chat (vcast) — Ada shows pages/images here";
+    this._screenBtn.onclick = () => this._toggleScreen();
+    inRow.append(this._input, this._attachBtn, this._micBtn, this._screenBtn, this._sendBtn);
     body.appendChild(inRow);
+
+    // screen pane — lazy: iframe only connects when first opened
+    this._screenPane = document.createElement("div");
+    this._screenPane.className = "acc-screen-pane";
+    this._screenPane.style.cssText =
+      "display:none;position:relative;height:260px;border-radius:10px;overflow:hidden;" +
+      "border:1px solid color-mix(in srgb,var(--primary-color,#03a9f4) 40%,transparent)";
+    const hint = document.createElement("div");
+    hint.className = "acc-screen-hint";
+    hint.style.cssText =
+      "position:absolute;left:6px;bottom:4px;font-size:.65rem;opacity:.6;" +
+      "color:var(--secondary-text-color);pointer-events:none;z-index:2";
+    hint.textContent = "virtual screen — pair once via its QR, then Ada can push content here";
+    this._screenPane.appendChild(hint);
+    body.appendChild(this._screenPane);
     body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
 
     // unlock row — shown when minting fails twice / no key available
@@ -287,7 +310,7 @@ class AdaChatCard extends HTMLElement {
     // agent-inspectable-dom: stable hooks for playlive/Playwright assertions
     d.className = `acc-bubble acc-bubble-${kind}`;
     d.style.cssText =
-      `align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;` +
+      `position:relative;align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;` +
       `padding:6px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word;` +
       (mine
         ? "border-bottom-right-radius:4px;background:color-mix(in srgb,var(--primary-color,#03a9f4) 22%,transparent);" +
@@ -301,13 +324,69 @@ class AdaChatCard extends HTMLElement {
       d.appendChild(tag);
     }
     const body = document.createElement("span");
-    body.textContent = text;
+    this._fillBubble(body, text);
     d.appendChild(body);
+    // quote/reference — tap ↩ to cite this message in your next input
+    const q = document.createElement("button");
+    q.className = "acc-quote";
+    q.textContent = "↩";
+    q.title = "Quote this message in your reply";
+    q.style.cssText =
+      "position:absolute;top:2px;right:2px;opacity:0;border:none;background:none;" +
+      "color:var(--secondary-text-color);cursor:pointer;font-size:.8rem;padding:2px 5px";
+    d.addEventListener("mouseenter", () => q.style.opacity = ".8");
+    d.addEventListener("mouseleave", () => q.style.opacity = "0");
+    q.onclick = (e) => {
+      e.stopPropagation();
+      const t = (body.textContent || "").replace(/\s+/g, " ").trim();
+      const cited = t.length > 140 ? t.slice(0, 140) + "…" : t;
+      const who = kind === "user" || kind === "voice" ? "me" : "Ada";
+      this._input.value = `[re ${who}: "${cited}"] ` + this._input.value;
+      this._input.focus();
+    };
+    d.appendChild(q);
     const ts = document.createElement("span");
     ts.style.cssText = "display:block;font-size:.65rem;opacity:.45;margin-top:2px;text-align:right";
     ts.textContent = this._stamp();
     d.appendChild(ts);
     return { el: d, body };
+  }
+
+  // Fill a bubble body: plain text, plus inline media/link rendering —
+  // image URLs become <img>, http(s) links become anchors. Ada can drop
+  // an image/page URL in a reply and it renders in-chat.
+  _fillBubble(body, text) {
+    body.textContent = "";
+    const urlRe = /(https?:\/\/[^\s<>"']+)/g;
+    const parts = String(text || "").split(urlRe);
+    for (const p of parts) {
+      if (!p) continue;
+      if (!/^https?:\/\//.test(p)) {
+        body.appendChild(document.createTextNode(p));
+        continue;
+      }
+      if (/\.(png|jpe?g|gif|webp|avif|svg)(\?[^\s]*)?$/i.test(p)
+          || /\/(snap|frame|thumb|image)[/?]/.test(p)) {
+        const img = document.createElement("img");
+        img.className = "acc-media";
+        img.src = p;
+        img.alt = "media";
+        img.loading = "lazy";
+        img.style.cssText =
+          "display:block;max-width:100%;max-height:260px;border-radius:8px;margin:4px 0;cursor:pointer";
+        img.onclick = () => window.open(p, "_blank");
+        body.appendChild(img);
+      } else {
+        const a = document.createElement("a");
+        a.className = "acc-link";
+        a.href = p;
+        a.textContent = p;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.style.cssText = "color:var(--primary-color,#03a9f4);word-break:break-all";
+        body.appendChild(a);
+      }
+    }
   }
 
   _showTyping() {
@@ -341,6 +420,11 @@ class AdaChatCard extends HTMLElement {
   }
 
   _flushAssistant() {
+    // streamed deltas append raw textContent — re-render at turn end so
+    // image URLs become <img> and links become anchors (acc-media/acc-link)
+    if (this._assistantEntry && /https?:\/\//.test(this._assistantEntry.textContent || "")) {
+      this._fillBubble(this._assistantEntry, this._assistantEntry.textContent);
+    }
     this._assistantEntry = null;
   }
 
@@ -716,6 +800,45 @@ class AdaChatCard extends HTMLElement {
     this._micBtn.style.background = "var(--error-color,#db4437)";
     this._micBtn.style.color = "#fff";
     try { rec.start(); } catch (_) {}
+  }
+
+  _chatId() {
+    let id = localStorage.getItem("acc.chat_id");
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : "c" + Math.random().toString(36).slice(2)).slice(0, 8);
+      localStorage.setItem("acc.chat_id", id);
+    }
+    return id;
+  }
+
+  _screenUrl() {
+    if (this._config.screen_url) return this._config.screen_url;
+    // vcast display page on the tony-dell web edge (ssot.routes.yml:
+    // /apps/vcast/* is tailnet/LAN only). Reached via the public ada-ha
+    // edge, the iframe needs the browser on the tailnet — or set
+    // screen_url in card config to a reachable route.
+    const base = "https://tony-dell.taila0626a.ts.net/apps/vcast/";
+    return `${base}?label=${encodeURIComponent("ada-chat-" + this._chatId())}`;
+  }
+
+  _toggleScreen() {
+    const p = this._screenPane;
+    if (p.style.display === "none") {
+      if (!this._screenFrame) {
+        this._screenFrame = document.createElement("iframe");
+        this._screenFrame.className = "acc-screen-frame";
+        this._screenFrame.src = this._screenUrl();
+        this._screenFrame.style.cssText = "width:100%;height:100%;border:0;display:block";
+        this._screenFrame.setAttribute("allow", "autoplay; fullscreen");
+        p.insertBefore(this._screenFrame, p.firstChild);
+      }
+      p.style.display = "block";
+      this._screenBtn.style.background = "color-mix(in srgb,var(--primary-color,#03a9f4) 25%,transparent)";
+      this._system(`virtual screen ada-chat-${this._chatId()} open`);
+    } else {
+      p.style.display = "none";
+      this._screenBtn.style.background = "";
+    }
   }
 
   _btn(label) {
