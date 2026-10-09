@@ -133,6 +133,7 @@ class CamWallCmsTest(unittest.TestCase):
         os.environ["MDDB_BASE_URL"] = "http://fake-mddb/v1"
         os.environ.pop("ADA_NOTIFY_KEY", None)
 
+        sys.path.insert(0, str(SCRIPT.parent))  # script's zone_meta import
         spec = importlib.util.spec_from_file_location("cam_wall_cms", SCRIPT)
         self.mod = importlib.util.module_from_spec(spec)
         sys.modules["cam_wall_cms"] = self.mod

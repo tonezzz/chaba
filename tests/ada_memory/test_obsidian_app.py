@@ -19,6 +19,10 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[2]
 SERVER = REPO / "apps/obsidian/server.py"
 
+# Deps live in the ada-pi venv; a bare repo python (e.g. the dispatch
+# close_out test gate) skips instead of erroring at collection.
+_SERVER_DEPS = {"httpx", "uvicorn", "fastapi", "pydantic"}
+
 
 def load_server(vault: Path, deploy: str = "tailnet", api_key: str = ""):
     """Import server.py fresh with a patched env (module constants are
@@ -35,7 +39,13 @@ def load_server(vault: Path, deploy: str = "tailnet", api_key: str = ""):
         spec = importlib.util.spec_from_file_location(name, SERVER)
         mod = importlib.util.module_from_spec(spec)
         sys.modules[name] = mod
-        spec.loader.exec_module(mod)
+        try:
+            spec.loader.exec_module(mod)
+        except ModuleNotFoundError as e:
+            if (e.name or "").split(".")[0] in _SERVER_DEPS:
+                raise unittest.SkipTest(
+                    f"needs ada-pi venv: {e.name}") from e
+            raise
     return mod
 
 

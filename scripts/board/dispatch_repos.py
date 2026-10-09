@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
@@ -314,6 +315,88 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
               timeout=30).returncode == 0
 
 
+# ---------------------------------------------------------- test gate
+#
+# Per-repo fast test gate (card ci-test-gate): after a clean merge in the
+# throwaway worktree the repo's test command runs there BEFORE the result
+# pushes to origin — a red suite holds the merge exactly like a conflict
+# (close_out returns test_failures; kanban-dispatch requeues with
+# action.last_failure carrying the failing test names). Fail-open on
+# missing pytest (same convention as the merge guard); a suite timeout
+# counts as a failure — the alternative is merging a tree the suite can't
+# even finish on. KANBAN_TESTGATE=0 disables the gate entirely.
+DEFAULT_TEST_CMD = "python3 -m pytest tests -x -q"
+DEFAULT_TEST_TIMEOUT = 240
+REPO_TESTS = {
+    "chaba": {"command": DEFAULT_TEST_CMD, "timeout": 240},
+    "ada-pi": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
+               "timeout": 300},
+    # Unlisted repos get the default command — but only when the merged
+    # tree actually carries a tests/ dir (run_test_gate skips otherwise),
+    # so "others: none" holds in practice. {"command": None} opts a repo
+    # out explicitly.
+}
+
+# pytest failure names: `FAILED tests/x.py::test_y - ...` (-r summary) or
+# the `____ test_y ____` traceback headers a plain -x -q run prints.
+_FAILED_SUMMARY_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)", re.M)
+_FAILED_HEADER_RE = re.compile(r"^_{3,}\s+(.+?)\s+_{3,}\s*$", re.M)
+
+
+def test_gate_config(repo_name: str) -> dict:
+    """Resolved {command, timeout} for a repo's merge test gate; {} when
+    the repo is opted out (command: None)."""
+    ent = REPO_TESTS.get(repo_name or "")
+    if ent is None:
+        ent = {"command": DEFAULT_TEST_CMD,
+               "timeout": DEFAULT_TEST_TIMEOUT}
+    if not ent.get("command"):
+        return {}
+    return {"command": ent["command"],
+            "timeout": int(ent.get("timeout") or DEFAULT_TEST_TIMEOUT)}
+
+
+def run_test_gate(wt: Path, repo_name: str) -> dict:
+    """Run the repo's fast test step inside the merged worktree.
+
+    {ran, ok, failed?, skipped?, command?, elapsed?, error?} —
+    ok=False only for red tests / suite timeout; missing pytest or a
+    tree without tests/ skips fail-open (merge_guard convention)."""
+    if os.environ.get("KANBAN_TESTGATE", "1") == "0":
+        return {"ran": False, "ok": True, "skipped": "KANBAN_TESTGATE=0"}
+    cfg = test_gate_config(repo_name)
+    cmd = cfg.get("command")
+    if not cmd or not wt or not Path(wt).is_dir():
+        return {"ran": False, "ok": True, "skipped": "no test config"}
+    if not (Path(wt) / "tests").is_dir():
+        return {"ran": False, "ok": True,
+                "skipped": "no tests/ dir in merged tree"}
+    timeout = int(cfg["timeout"])
+    t0 = time.time()
+    try:
+        r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
+                           capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return {"ran": True, "ok": False, "command": cmd,
+                "failed": [f"suite timeout ({timeout}s)"],
+                "error": f"test gate timed out after {timeout}s"}
+    out = f"{r.stdout or ''}\n{r.stderr or ''}"
+    if r.returncode != 0 and re.search(
+            r"No module named .?pytest|command not found", out):
+        return {"ran": False, "ok": True, "command": cmd,
+                "skipped": "pytest unavailable — fail-open"}
+    if r.returncode == 5:
+        return {"ran": False, "ok": True, "command": cmd,
+                "skipped": "no tests collected"}
+    if r.returncode == 0:
+        return {"ran": True, "ok": True, "command": cmd,
+                "elapsed": round(time.time() - t0, 1)}
+    failed = _FAILED_SUMMARY_RE.findall(out) or _FAILED_HEADER_RE.findall(out)
+    tail = [ln for ln in out.splitlines() if ln.strip()][-2:]
+    return {"ran": True, "ok": False, "command": cmd,
+            "failed": failed[:8] or tail or ["pytest exited nonzero"]}
+
+
 def _merge_in(wt: Path, ref: str) -> tuple:
     """merge --no-ff ref inside wt -> (ok, unresolved_conflict_paths, err).
 
@@ -351,12 +434,27 @@ def _merge_in(wt: Path, ref: str) -> tuple:
     return False, [], "commit after conflict resolution failed"
 
 
+def _merge_and_gate(mwt: Path, mref: str, repo_name: str) -> tuple:
+    """_merge_in + the post-merge test gate -> (ok, conflicts, err, tests).
+
+    tests is the run_test_gate() result ({} when the merge never got
+    that far). ok=False means do NOT push the merged tree."""
+    ok, conflicts, merr = _merge_in(mwt, mref)
+    if not ok:
+        return False, conflicts, merr, {}
+    tests = run_test_gate(mwt, repo_name)
+    if not tests.get("ok"):
+        return False, [], "", tests
+    return True, [], "", tests
+
+
 def close_out(card: dict) -> dict:
     """Dispatch close-out merge step. Consumed by close_out_notes().
 
     Result keys: merged, noop (silent skip — no commits produced),
     checkpoint, pushed/push_error, gate, conflicts, merged_sha,
-    skipped|error, note, session."""
+    tests/test_failures (post-merge test gate), skipped|error, note,
+    session."""
     out: dict = {"merged": False}
     s = session(card)
     out["session"] = s
@@ -402,7 +500,8 @@ def close_out(card: dict) -> dict:
     out["gate"] = gate
     if not gate["ok"]:
         return out
-    # 5. merge into origin/<default> in a throwaway detached worktree
+    # 5. merge into origin/<default> in a throwaway detached worktree,
+    #    then the fast test gate runs on the merged tree before it pushes
     sh(["git", "-C", str(repo), "fetch", "-q", "origin", base], timeout=45)
     mwt = Path(tempfile.mkdtemp(prefix="dispatch-merge-"))
     try:
@@ -413,10 +512,15 @@ def close_out(card: dict) -> dict:
             return out
         mref = branch if _rev_parse(repo, f"refs/heads/{branch}") \
             else s["head"]
-        ok, conflicts, merr = _merge_in(mwt, mref)
+        ok, conflicts, merr, tests = _merge_and_gate(
+            mwt, mref, s.get("repo_name") or "")
+        if tests:
+            out["tests"] = tests
         if not ok:
             if merr:
                 out["error"] = f"merge: {merr}"
+            elif tests and not tests.get("ok"):
+                out["test_failures"] = tests.get("failed") or ["?"]
             else:
                 out["conflicts"] = conflicts
             return out
@@ -429,10 +533,15 @@ def close_out(card: dict) -> dict:
                timeout=45)
             sh(["git", "-C", str(mwt), "reset", "-q", "--hard",
                 s["base_ref"]], timeout=30)
-            ok, conflicts, merr = _merge_in(mwt, mref)
+            ok, conflicts, merr, tests = _merge_and_gate(
+                mwt, mref, s.get("repo_name") or "")
+            if tests:
+                out["tests"] = tests
             if not ok:
                 if merr:
                     out["error"] = f"merge: {merr}"
+                elif tests and not tests.get("ok"):
+                    out["test_failures"] = tests.get("failed") or ["?"]
                 else:
                     out["conflicts"] = conflicts or ["<post-push resync>"]
                 return out
@@ -479,7 +588,19 @@ def close_out_notes(res: dict) -> list:
                      + ", ".join(res["conflicts"][:8])
                      + " — card stays in review for manual resolution")
         return notes
+    if res.get("test_failures"):
+        # names ride this note into action.last_failure via the caller —
+        # the retry session starts knowing exactly what broke
+        names = ", ".join(str(f) for f in res["test_failures"][:6])
+        notes.append(f"test gate failed — merge held: {names}")
+        return notes
+    tests = res.get("tests") or {}
+    if tests.get("skipped"):
+        notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
+        if tests.get("ran"):
+            notes.append(f"test gate passed ({tests['command']}, "
+                         f"{tests.get('elapsed', '?')}s)")
         notes.append(res.get("note") or "auto-merged")
     elif res.get("error") or res.get("skipped"):
         why = res.get("error") or res.get("skipped")

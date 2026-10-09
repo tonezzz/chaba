@@ -21,11 +21,14 @@ review, writes a comms entry, and runs the close-out merge step
 worktree files are committed as a checkpoint, the session branch is
 pushed to origin, the card's expected_goals gate is run, and the
 branch is merged --no-ff into origin/<default_branch> in a throwaway
-detached worktree. Unresolved conflicts or failed goals leave the
-card in review with a comms note for human resolution
-(KANBAN_AUTOMERGE=0 disables the whole step). Session-end notes
-report leftover dirty/unmerged state. Tony reviews then presses
-Close.
+detached worktree — where the repo's fast test step then runs before
+the merge pushes (dispatch_repos.REPO_TESTS; KANBAN_TESTGATE=0
+disables). Unresolved conflicts, failed goals, or a red test suite
+leave the card in review with a comms note for human resolution —
+conflicts and test failures also requeue via auto-retry with the
+evidence in action.last_failure (KANBAN_AUTOMERGE=0 disables the
+whole step). Session-end notes report leftover dirty/unmerged state.
+Tony reviews then presses Close.
 """
 import fcntl
 import json
@@ -493,7 +496,7 @@ def merge_pending_one(path: Path) -> str:
         a.pop("merge_pending", None)
         if res.get("merged"):
             a["verified"] = True
-        elif res.get("conflicts") or (
+        elif res.get("conflicts") or res.get("test_failures") or (
                 res.get("gate") and not res["gate"]["ok"]):
             a["verified"] = False  # checked and NOT verified
             # Review feedback loop: conflicts/goal-failures requeue the

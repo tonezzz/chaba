@@ -38,7 +38,13 @@ programs:
   # bench infrastructure, standards. A card may sit in a domain program
   # and still be CI-shaped; tag by what the work IS, not who it serves.
   chaba-ci: "advancement machinery — guards, watchers, canaries, bench
-             infra, standards, dispatch/board plumbing"
+             infra, standards, dispatch/board plumbing. Per-change floor
+             (ci-test-gate, 2026-10-09): close_out runs the repo's pytest
+             suite in the merged worktree before auto-merge pushes —
+             red suite or timeout holds the merge and requeues with the
+             failing names in action.last_failure (REPO_TESTS per-repo
+             config, KANBAN_TESTGATE=0 off-switch); served checkouts get
+             a ~15s scoped pytest step in .husky/pre-commit"
 
 card_dir: docs/ssot/kanban/cards
 board_output: stacks/web/public/apps/board/index.html   # GENERATED — gitignored
@@ -253,18 +259,37 @@ execution:
                     worktree (scripts/lib/goals.py); failed/malformed
                     goals hold the merge.
                  4. merge --no-ff into origin/<default_branch> in a
-                    throwaway detached worktree -> push HEAD:<base>.
+                    throwaway detached worktree.
                     safe-pull conflict conventions: SAFE_PULL_GENERATED_RE
                     (default ^docs/ssot/) resolves upstream-wins,
                     dispatch-outcome*.md resolves session-wins; other
                     conflicts abort, post the path list to comms, and the
                     card stays in review (correct — not everything
                     merges). Commits-free runs skip silently.
+                 5. test gate (card ci-test-gate) — the repo's fast suite
+                    runs INSIDE the merged worktree before anything
+                    pushes (dispatch_repos.run_test_gate; per-repo
+                    REPO_TESTS table: chaba `pytest tests`, ada-pi
+                    `pytest tests -k 'not slow'`, others default to
+                    `python3 -m pytest tests -x -q` but only when the
+                    merged tree has a tests/ dir). A red suite or a
+                    per-repo timeout holds the merge: close_out returns
+                    test_failures, the card requeues via auto-retry with
+                    action.last_failure carrying the failing test names
+                    — same rails as merge conflicts. Missing pytest /
+                    no tests dir / pytest rc 5 skip fail-open (the
+                    merge_guard convention — infra gaps never wedge the
+                    board). KANBAN_TESTGATE=0 disables just this step.
+                 6. push HEAD:<base> — only reached with a green gate.
                action.verified is stamped True on merge, False on
-               conflicts/failed goals (the review badge prefers it).
-               KANBAN_AUTOMERGE=0 disables the whole step.
-               tests/board/test_dispatch_close_out.py covers the
-               pipeline end-to-end."
+               conflicts/failed goals/test-gate failures (the review
+               badge prefers it). KANBAN_AUTOMERGE=0 disables the whole
+               step. Served checkouts also run a scoped variant
+               pre-commit: staged tests/<d>/ or scripts/<d>/ changes run
+               pytest tests/<d> capped ~15s (.husky/pre-commit,
+               CHABA_PRECOMMIT_TESTS=0 opts out; timeout/missing pytest
+               warn-only there). tests/board/test_dispatch_close_out.py
+               covers the pipeline end-to-end incl. the gate."
   worktree_base: "devin-dispatch cuts worktrees from origin/<default_branch>
                (repos.conf; best-effort fetch first) — never the checkout's
                current branch, so a repo parked on a stale branch can't
