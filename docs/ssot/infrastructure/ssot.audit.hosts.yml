@@ -1682,6 +1682,19 @@ hosts:
           100.123.163.11:11023, localhost/mddb:2.15.4-blrotate) — migrated
           from tony-dell 2026-10-05; self-seeds via leader snapshot, SSD
           verify ~4 min vs dell HDD >6h timeout loop
+      - name: chaba-audit.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Sun 02:00 — audit suite default runs (scripts/audits/run.mjs);
+          suite moved here from tony-dell 2026-10-04
+      - name: chaba-audit-full.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Monthly — audit suite --full (adds security-suite)
     known_failed: []
 related_files:
   - scripts/audit-hosts.py

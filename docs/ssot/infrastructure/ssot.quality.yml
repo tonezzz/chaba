@@ -211,6 +211,12 @@ registry:
     cost: cheap
     runner: .github/workflows/repo-lint.yml
     script: "python3 -m compileall -q -x node_modules scripts/ + node --check per *.mjs (excluding vendored node_modules)"
+  - id: ci.camwall-smoke
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/camwall-smoke.yml (paths-filtered on the scripts/cam-wall dir)
+    script: "working-directory scripts/cam-wall: python3 cam-wall-cms.py --dry-run against a fixture zone manifest with dead network endpoints (catches NameError/broken refs, not MDDB correctness)"
 
   # --- lane: card-pipeline (per-card, docs/ssot/ssot.ci.yml) ---
   - id: gate.card-audit
