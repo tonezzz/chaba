@@ -3,7 +3,7 @@ title: Wire pytest into the merge gate — close_out runs the suite before auto-
 brief: Tests exist (tests/board, ada_memory, camwall, yt_dub) but nothing runs them automatically — a dispatch branch
   can auto-merge green without ever executing a test. Run the repo suite in the merge worktree before auto-merge
   and add a fast pre-commit check on served checkouts.
-column: doing
+column: done
 priority: high
 program: chaba-ci
 area: board
@@ -25,7 +25,8 @@ help: Merge worktree already exists (close_out step). Guard against slow/hanging
 updated: 2026-10-09 12:17
 action:
   type: dispatch
-  status: running
+  status: done
+  verified: true
   button: ▶ Wire the test gate
   repo: chaba
   runner: idc02
@@ -53,3 +54,6 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261009-070722-1-in-scripts-board-kanban-disp already in origin/master — marked
     verified'
+- at: 2026-10-09 19:30
+  from: devin
+  text: 'closed: merge 9d723feb8 verified with real content — card was stuck running on a stale claim after sweep marked verified at 12:1x.'

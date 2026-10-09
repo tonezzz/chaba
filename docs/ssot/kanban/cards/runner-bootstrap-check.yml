@@ -3,7 +3,7 @@ title: Runner-host bootstrap checklist — git identity, creds, clone freshness,
 brief: 'Three provisioning gaps in two days stranded work: mn01 ghost checkout (no .git), idc01 chaba clone 860
   commits stale, idc03 missing git identity + https-only remote (cant push). A periodic audit card that checks every
   dispatch-capable host for the known failure modes before a dispatch discovers them.'
-column: doing
+column: done
 priority: medium
 program: chaba-ci
 area: dispatch
@@ -23,7 +23,8 @@ help: 'Hosts to cover: tony-dell, tony-omen, idc01, idc02, idc03, mn01 (runner_f
 updated: 2026-10-09 12:18
 action:
   type: dispatch
-  status: running
+  status: done
+  verified: true
   button: ▶ Build the bootstrap check
   repo: chaba
   runner: mn01
@@ -48,3 +49,6 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261009-000816-extend-an-existing-health-lane already in origin/master — marked
     verified'
+- at: 2026-10-09 19:30
+  from: devin
+  text: 'closed: merge 7730687db verified with real content — card was stuck running on a stale claim after sweep marked verified at 12:1x.'
