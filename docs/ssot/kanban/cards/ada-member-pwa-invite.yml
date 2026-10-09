@@ -6,7 +6,7 @@ brief: Tony wants to send an ada-ha link via LINE/TG; member opens on iPhone/iPa
 column: backlog
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09 07:15
 spec: "Standard first, then build end-to-end: 1. Standard doc (docs/kb/ada-member-invite.md): invite token format,\
   \ PWA\n   manifest naming pattern \"ADA-{INSTANCE}({Person})\", pending/approved key\n   states, approval surface\
   \ (Ada voice + keys card), revocation.\n2. ada-pi-pwa (idc03, public — no CF Access so members never hit a login):\n\
@@ -36,6 +36,7 @@ requests:
   - id: any-admin
     label: Any admin key holder
   suggested: tony-only
+  escalated_at: 2026-10-09 07:15
 - id: invite-expiry
   ask: Should invite links expire (e.g. 24h) and be single-use?
   status: open
@@ -47,6 +48,7 @@ requests:
   - id: persistent
     label: Persistent link — simpler, less safe
   suggested: expire-single-use
+  escalated_at: 2026-10-09 07:15
 comms_tail:
 - at: 2026-10-08
   from: devin
@@ -67,3 +69,7 @@ advice:
   at: 2026-10-09 07:20
   text: Recommend Tony-only approver + expiring single-use links — approval friction is one notification tap, and
     a persistent multi-use guest link is the exact thing that leaks into a shared device.
+comms:
+- at: 2026-10-09 07:15
+  from: chaba
+  text: 'request-sweep: 2 request(s) unanswered >12h — escalation pushed'
