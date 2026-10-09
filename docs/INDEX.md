@@ -116,7 +116,7 @@ Single Source of Truth configurations — see **[ssot.index.yml](ssot/ssot.index
 - **[ssot.improvements.yml](ssot/ssot.improvements.yml)** - Active system improvements tracking (pending/in-progress only)
 - **[ssot.improvements.archive.yml](ssot/ssot.improvements.archive.yml)** - Completed improvements archive
 - **[ssot.focus.yml](ssot/ssot.focus.yml)** - Strategic focus areas and history
-- **[ssot.token-optimization.yml](ssot/ssot.token-optimization.yml)** - Token optimization strategy and implementation
+- **[ssot.token-tools.yml](ssot/ssot.token-tools.yml)** - Token optimization strategy and implementation
 - **[apps/](ssot/apps/)** - Application-specific SSOT files (ssot.apps.yml + per-app files)
 - **[infrastructure/](ssot/infrastructure/)** - Infrastructure configurations
   - ssot.health.yml, ssot.health.home.yml, ssot.health.mobile.yml
@@ -150,7 +150,7 @@ Project-specific configurations (not moved during restructuring):
 - lab.plan-brief.yml - Lab planning brief
 - sso.apps.dev.yml - SSO configuration
 - ssot.kb.yml - Knowledge base SSOT
-- ssot.token-optimization.yml - Token optimization strategy (served copy)
+- ssot.token-tools.yml - Token optimization strategy (served copy)
 - system-overview.md - System overview
 - ssot-config-manager-implementation.md - SSOT configuration manager implementation report
 

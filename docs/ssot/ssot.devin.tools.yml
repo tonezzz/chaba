@@ -9,8 +9,9 @@ subtitle: MCP server definitions, tool inventory, and launch configuration
 # - Devin config: ~/.config/devin/mcp_config.json (generated from SSOT)
 # - Windsurf config: ~/.config/windsurf/mcp_config.json (can be generated from SSOT)
 # - Wrapper scripts: Centralized in ~/.config/devin/mcp-scripts/
-# - Filtering: mcp-filter for token optimization (Yomi, GitHub, PostgreSQL)
-# - Virtual environment: /tmp/mcp-filter-venv/ for mcp-filter dependencies
+# - Filtering: NONE live as of 2026-10-09 audit — the mcp-filter setup
+#   claimed below was never deployed persistently (scripts gone, /tmp
+#   venv wiped). Re-implementation carded: kanban/cards/mcp-tool-filtering.yml
 # - Profile switching: home (tony-omen) vs mobile (dynamic IP)
 
 # Configuration Generation
@@ -28,13 +29,13 @@ subtitle: MCP server definitions, tool inventory, and launch configuration
 # - ✅ Testing completed (GitHub, docs MCP servers verified)
 
 mcp:
-  github: GitHub integration (filtered via mcp-filter for token optimization).
+  github: GitHub integration (unfiltered — 48 tools measured 2026-10-09; filtering carded).
   mcp-gpu: Local GPU control (imagen2, llama queue).
   mcp-llama: Local Llama.cpp server.
   mcp-weaviate: Weaviate vector database integration.
   playlive: Playlive browser automation (consolidated local & remote).
-  postgres: PostgreSQL database operations (filtered via mcp-filter for CRUD only).
-  yomi: LINE conversation viewer (filtered via mcp-filter for essential tools).
+  postgres: PostgreSQL database operations (unfiltered; filtering carded).
+  yomi: LINE conversation viewer (unfiltered — 41 tools measured 2026-10-09; filtering carded).
   alphavantage: Alpha Vantage financial data API.
   docs: Documentation search server (chaba project docs).
   docs-trade: Documentation search server (trade project docs).
@@ -54,11 +55,11 @@ wrappers:
   base_dir: ~/.config/devin/mcp-scripts/
   scripts:
     - mcp-single-instance.sh (single-instance manager)
-    - run-github-filtered-mcp.sh (GitHub with filtering)
+    - run-github-filtered-mcp.sh (planned — does not exist yet, see mcp-tool-filtering card)
     - run-github-mcp.sh (GitHub base wrapper)
-    - run-postgres-filtered-mcp.sh (PostgreSQL with filtering)
+    - run-postgres-filtered-mcp.sh (planned — does not exist yet)
     - run-postgres-crud-mcp.sh (PostgreSQL CRUD wrapper)
-    - run-yomi-filtered-mcp.sh (Yomi with filtering)
+    - run-yomi-filtered-mcp.sh (planned — does not exist yet)
     - run-llama-mcp.sh (Llama server wrapper)
 
 # Profile Configuration
@@ -91,4 +92,4 @@ related_files:
   - ssot.mysystem.mobile.yml (mobile environment profile)
   - infrastructure/ssot.health.home.yml (home health checks)
   - infrastructure/ssot.health.mobile.yml (mobile health checks)
-  - ssot.token-optimization.yml (token optimization strategy)
+  - ssot.token-tools.yml (token optimization strategy)

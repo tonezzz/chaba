@@ -5,23 +5,35 @@ type: runbook
 
 # Maintenance
 
-### Weekly
+> **Honest state (audited 2026-10-09):** the Aug test results below were
+> real at the time but the deployment rotted — both venvs lived in /tmp
+> (wiped), the filter scripts vanished, and nothing was wired into
+> mcp_config. Measured now: github=48 tools, yomi=41, all unfiltered.
+> Headroom was never in the request path and its port is now board-api's.
+> The living rules are in `docs/ssot/ssot.tokens.policy.yml`; the tool
+> catalog is `docs/ssot/ssot.token-tools.yml`; the re-implementation is
+> carded at `docs/ssot/kanban/cards/mcp-tool-filtering.yml`.
+>
+> **Review cadence:** `chaba-nag` nags when `maintenance.last_reviewed`
+> in ssot.token-tools.yml lapses `cadence_days` (30). Do this checklist,
+> bump the date — that's the whole loop.
 
-- Review token usage statistics
-- Check proxy performance
-- Verify MCP server health
+### Monthly (the nag enforces this)
 
-### Monthly
-
-- Check for mcp-filter updates
-- Check for Headroom proxy updates
-- Review and optimize filter configurations
+- Re-measure tool counts per MCP server (mcp_list_tools per server or a
+  probe script) — compare against ssot.token-tools.yml `current_state`
+- If `mcp-tool-filtering` is deployed: verify allowlists still match
+  real usage (tools the agent needed but couldn't call = allowlist bug)
+- Check `ssot.tokens.policy.yml` numbers still match ada-pi code
+  (trigger 32k / target 24k / rotation 45k / decl cap)
+- Update `maintenance.last_reviewed` in ssot.token-tools.yml
 
 ### Quarterly
 
-- Evaluate overall token optimization effectiveness
-- Review cost savings achieved
-- Plan future improvements
+- Re-evaluate the filtering allowlist against actual tool-call frequency
+- Review cost/token trend if telemetry exists
+- Re-consider rejected tools (TokenShift) only if the setup changes
+  (e.g. a second operator)
 
 ## Configuration Reference
 

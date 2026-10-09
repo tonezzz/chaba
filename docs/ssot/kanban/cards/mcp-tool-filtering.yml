@@ -1,0 +1,63 @@
+id: mcp-tool-filtering
+title: 'MCP tool filtering: actually implement the stale "operational" claim'
+brief: 'ssot.token-tools.yml claimed MCP filters were operational since Aug —
+  2026-10-09 audit proved that was aspirational: no filter scripts exist,
+  /tmp venvs wiped, and every server serves its full tool surface.
+  Measured: github=48 tools, yomi=41, postgres=~11. Tool schemas are paid
+  EVERY turn of EVERY session — this is the largest controllable token
+  overhead. Implement for real this time, in the stable path.'
+column: backlog
+priority: high
+created: 2026-10-09
+tags:
+- token-optimization
+- mcp
+- cost
+spec: |
+  Implement MCP tool-surface filtering for the top-3 servers (github 48,
+  yomi 41, postgres ~11 tools) — targeting the tool-lint-style reduction
+  the Aug doc claimed (github→~15 core, yomi→~8, postgres→~6).
+
+  CONSTRAINTS (learned from the dead attempt):
+  - NO /tmp venvs — install under ~/.local/share/ (survives reboot)
+  - Prefer extending the EXISTING proxy pattern: mcp-github-proxy.py is
+    already in the github path — adding an allowlist there costs no new
+    layer. For yomi/postgres, a small generic stdio allowlist wrapper
+    (~80 lines, tools/list filtered by MF_ALLOW_TOOLS env or a per-server
+    config file) is fine.
+  - mcp_config.json changes apply to NEW sessions only — safe to edit
+    mid-session; the running session keeps its tools.
+  - Keep an escape hatch: filtering must be trivially reversible (env var
+    or comment-out in mcp_config), because removing a tool an agent later
+    needs is a capability regression.
+
+  ALLOWLIST PROPOSAL (verify against real usage before locking):
+  - github: list_*, search_*, get_me, get_file_contents,
+    create_or_update_file, create_pull_request, add_issue_comment,
+    pull_request_review_write, add_comment_to_pending_review,
+    create_branch, list_branches, list_commits, list_issues,
+    list_pull_requests (~15)
+  - yomi: list_conversations, get_chat_messages, get_unread_digest,
+    get_insight, send_message, collect_messages, search_messages,
+    get_scope_policy (~8)
+  - postgres: query, execute, list_schemas/tables equivalents (~6)
+
+  DELIVERABLES:
+  1. Generic allowlist wrapper + per-server config under
+     ~/.config/devin/mcp-scripts/ (or extend mcp-github-proxy.py)
+  2. mcp_config.json updated for github/yomi/postgres
+  3. Measured before/after tool counts recorded in the card comms
+  4. Rollback note: how to restore full surface in one edit
+  5. Update ssot.token-tools.yml current_state with REAL numbers
+
+  VERIFY: spawn a probe listing tools via each wrapper and assert the
+  allowlist is served; confirm no unfiltered passthrough.
+expected_goals:
+- id: filter-wrapper
+  check: file-exists ~/.config/devin/mcp-scripts/mcp-allowlist.py
+- id: github-filtered
+  check: "bash -c 'echo {\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":1,\\\"method\\\":\\\"tools/list\\\"} | MCP_ALLOWFILE=/home/tony/.config/devin/mcp-scripts/allowlist.github.json timeout 30 python3 /home/tony/.config/devin/mcp-scripts/mcp-allowlist.py --list-only | python3 -c \"import json,sys; assert len(json.load(sys.stdin)[\\\"result\\\"][\\\"tools\\\"]) <= 18\"'"
+action:
+  type: dispatch
+  repo: chaba
+review_kind: verify

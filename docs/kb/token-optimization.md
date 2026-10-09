@@ -6,7 +6,15 @@ category: operations
 
 ## What it is
 
-Successfully implemented comprehensive token optimization strategy achieving 60-80% expected token reduction through MCP filtering, server cleanup, and compression layer. All implementations tested and operational.
+Comprehensive token optimization strategy for 60-80% expected token reduction through MCP filtering, server cleanup, and compression layer.
+
+> **⚠️ Corrected status (audited 2026-10-09):** the implementation below
+> was tested on 2026-08-05 but rotted — venvs were in /tmp (wiped), filter
+> scripts never persisted, Headroom was never in the request path.
+> Measured now: github=48 tools, yomi=41, ALL unfiltered. See
+> `docs/ssot/ssot.token-tools.yml` for the honest catalog,
+> `docs/ssot/ssot.tokens.policy.yml` for the enforced budget rules, and
+> kanban card `mcp-tool-filtering` for the re-implementation.
 
 ## Context/Background
 
@@ -19,7 +27,7 @@ Successfully implemented comprehensive token optimization strategy achieving 60-
 **Implementation Date**: 2026-08-05  
 **Status**: ✅ COMPLETE
 
-**Note**: Archived implementation plans, monitoring guides, and runbooks have been consolidated into this operational guide. See SSOT `ssot.token-optimization.yml` for detailed configuration.
+**Note**: Archived implementation plans, monitoring guides, and runbooks have been consolidated into this operational guide. See SSOT `ssot.token-tools.yml` for detailed configuration.
 
 ## Current Status
 
@@ -89,7 +97,7 @@ watch -n 5 '.windsurf/check-headroom-stats.sh'
 
 ## Related Documentation
 
-**SSOT**: `docs/ssot/infrastructure/ssot.token-optimization.yml`  
+**SSOT**: `docs/ssot/infrastructure/ssot.token-tools.yml`  
 **Archived Implementation Plan**: `docs/kb/archived/token-optimization-implementation-plan.md`  
 **MCP Server Audit**: `docs/kb/mcp-server-audit.md`
 

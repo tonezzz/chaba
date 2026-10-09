@@ -77,7 +77,7 @@ This ensures only one instance runs and it restarts cleanly across sessions.
 ## Related
 
 - `ssot.devin.tools.yml` — MCP server configuration
-- `ssot.token-optimization.yml` — MCP server overhead reduction
+- `ssot.token-tools.yml` — MCP server overhead reduction
 
 ## Tags
 

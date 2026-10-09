@@ -59,7 +59,7 @@ Derived metrics:
 
 ## Findings
 
-1. **GLM-5.2 supports prompt caching** through Cognition's proxy — resolves pending test in `ssot.token-optimization.yml`.
+1. **GLM-5.2 supports prompt caching** through Cognition's proxy — resolves pending test in `ssot.token-tools.yml`.
 2. **GLM-5.2 has shorter internal thinking** — 11-30% fewer output tokens per message vs SWE-1.7 Medium.
 3. **GLM-5.2 has lower context overhead** — 7-33% fewer input tokens per message.
 4. **Caveat**: GLM-5.2 sample is only 20 messages; need re-measurement after 100+ messages to confirm output/msg stays low.
@@ -76,5 +76,5 @@ Compare against this baseline. If `output_tokens/msg` stays below 560, GLM-5.2 c
 
 ## Related
 
-- SSOT: `docs/ssot/ssot.token-optimization.yml` — `Prompt Caching Model Selection` item
+- SSOT: `docs/ssot/ssot.token-tools.yml` — `Prompt Caching Model Selection` item
 - Config: `~/.config/devin/config.json` — `agent.model: "glm-5-2"`

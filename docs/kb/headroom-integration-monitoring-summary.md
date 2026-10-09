@@ -30,7 +30,7 @@ Successfully configured Headroom proxy integration with Devin Desktop and establ
 - `token-optimization-summary.md` - Implementation summary
 - `token-optimization-testing.md` - Testing results
 - `token-optimization-runbook.md` - Operational procedures
-- `ssot.token-optimization.yml` - SSOT documentation
+- `ssot.token-tools.yml` - SSOT documentation
 
 ## Conclusion
 

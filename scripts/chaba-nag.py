@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SPEC = os.path.join(ROOT, "docs/ssot/infrastructure/ssot.chaba-nest-dashboard.yml")
 CARDS = os.path.join(ROOT, "docs/ssot/kanban/cards")
 INBOX = os.path.join(ROOT, "docs/ssot/focus-inbox")
+SSOT = os.path.join(ROOT, "docs/ssot")
 STATE = os.path.expanduser("~/.local/state/chaba-nag.json")
 
 RESEND_MIN = 120          # re-push the unchanged pending set every 2h
@@ -86,6 +87,28 @@ def stale_inbox():
     return out
 
 
+def overdue_reviews():
+    """SSOT docs carrying a maintenance: {last_reviewed, cadence_days} block
+    are self-scheduling reviews — when the review lapses, the doc itself
+    reports pending. Doing the review = updating last_reviewed (a status
+    write, same drain pattern as the inbox)."""
+    out = []
+    today = datetime.date.today()
+    for f in glob.glob(os.path.join(SSOT, "**/*.yml"), recursive=True):
+        try:
+            m = (yaml.safe_load(open(f)) or {}).get("maintenance") or {}
+            lr, cd = m.get("last_reviewed"), int(m.get("cadence_days") or 30)
+            if not lr:
+                continue
+            d = lr if isinstance(lr, datetime.date) else datetime.date.fromisoformat(str(lr)[:10])
+            if (today - d).days > cd:
+                out.append(f"{os.path.basename(f)} review overdue "
+                           f"{(today - d).days - cd}d")
+        except Exception:
+            continue
+    return out
+
+
 def send_line(text):
     p = subprocess.run(RELAY, input=json.dumps({"text": text}),
                        capture_output=True, text=True, timeout=30)
@@ -105,13 +128,14 @@ def main():
         return
 
     tiles, reqs, inbox = proposed_tiles(), open_requests(), stale_inbox()
-    n = len(tiles) + len(reqs) + len(inbox)
+    maint = overdue_reviews()
+    n = len(tiles) + len(reqs) + len(inbox) + len(maint)
     if n == 0:
         print("nothing pending — silence is the goal state")
         return
 
     h = hashlib.sha1(
-        json.dumps([tiles, reqs, inbox], sort_keys=True).encode()).hexdigest()
+        json.dumps([tiles, reqs, inbox, maint], sort_keys=True).encode()).hexdigest()
     st = {}
     if os.path.exists(STATE):
         st = json.load(open(STATE))
@@ -138,6 +162,10 @@ def main():
     if inbox:
         lines += ["", f"▸ Focus-inbox ({len(inbox)} stale >{STALE_DAYS}d):"] + \
                  [f"  · {x[:60]}" for x in inbox[:MAX_ITEMS]]
+    if maint:
+        lines += ["", f"▸ Overdue reviews ({len(maint)}):"] + \
+                 [f"  · {x[:60]}" for x in maint[:MAX_ITEMS]] + \
+                 ["  act: run the checklist, bump maintenance.last_reviewed"]
     lines += ["", "I'll keep reminding you until these clear — "
                   "that's the deal we made. 🙂"]
 

@@ -85,7 +85,7 @@ All optimization recommendations from this audit have been successfully implemen
 ### Related Documentation
 
 - **Current Operations**: `docs/kb/token-optimization.md`
-- **SSOT Configuration**: `docs/ssot/infrastructure/ssot.token-optimization.yml`
+- **SSOT Configuration**: `docs/ssot/infrastructure/ssot.token-tools.yml`
 
 ## Tags
 

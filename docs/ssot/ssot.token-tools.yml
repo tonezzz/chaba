@@ -1,9 +1,17 @@
-title: Token Optimization Strategy
-subtitle: Comprehensive approach to reducing AI token costs across Devin and MCP infrastructure
+title: Token Tools — optimization layer status
+subtitle: Tool-level approaches to reducing AI token costs (MCP filters, proxies, commercial options). The enforced budget rules live in ssot.tokens.policy.yml — this file is the tool catalog.
 icon: 💰
 
 # Ideas and notes about token optimization
 # This SSOT file serves as the central repository for token optimization strategies
+
+# Monthly maintenance review — chaba-nag reminds when last_reviewed is
+# older than MAINTENANCE_DAYS. Update last_reviewed after running the
+# checklist in docs/kb/token-optimization-maintenance.md.
+maintenance:
+  last_reviewed: 2026-10-09
+  cadence_days: 30
+
 ideas:
   - Reduce token consumption through multi-layered optimization approach
   - Implement filtering at MCP server level to reduce tool schema overhead
@@ -32,7 +40,10 @@ sections:
         savings: 10-20%
         installation: Single binary via MDM or manual
         best_for: Teams using multiple coding agents needing governance
-        status: evaluated
+        status: rejected
+        rejected_reason: "Tony 2026-10-09: commercial product needing per-endpoint
+          install; overkill for a single-user setup. Revisit if a second agent
+          operator joins."
         priority: medium
         implementation_effort: medium
         pros:
@@ -51,7 +62,13 @@ sections:
         savings: 15-95% (varies by content type)
         installation: uv tool install --python 3.13 "headroom-ai[all]"
         best_for: Data-heavy workflows, maximum compression
-        status: operational
+        status: decommissioned
+        decommissioned_reason: "2026-10-09 audit: venv lived in /tmp/headroom-venv
+          (wiped), it was never actually wired into the request path — no
+          ANTHROPIC_BASE_URL in shell profiles or Devin config — and port
+          8787 is now permanently owned by board-api.py. The 'operational'
+          status was aspirational. Resurrecting would need a new port AND
+          a real injection point."
         priority: high
         implementation_effort: low
         pros:
@@ -71,7 +88,12 @@ sections:
         savings: 72-91%
         installation: pip install mcp-filter
         best_for: Environments with many MCP servers/tools
-        status: operational
+        status: stale-claim
+        stale_reason: "2026-10-09 audit: claimed 'operational' but never
+          deployed — no run-*-filtered-mcp.sh exists, no MF_ALLOW_TOOLS in
+          ~/.config/devin, /tmp/mcp-filter-venv wiped. Measured reality:
+          github=48 tools, yomi=41 tools, all unfiltered. Real work carded:
+          kanban/cards/mcp-tool-filtering.yml"
         priority: high
         implementation_effort: low
         pros:
@@ -88,14 +110,14 @@ sections:
     layout: list
     items:
       - label: Yomi MCP Server
-        text: LINE messaging integration with 15+ tools for conversations, messages, media, and insights
-        tool_count: 15+
-        estimated_token_overhead: 8-12k tokens
+        text: LINE messaging integration — measured 2026-10-09 at 41 tools (mcp_list_tools), for conversations, messages, media, and insights
+        tool_count: 41
+        estimated_token_overhead: 15-25k tokens
         usage_pattern: High - frequently used for communication analysis
         optimization_priority: high
-        recommended_action: Filter to essential tools (list_conversations, get_chat_messages, get_insight)
-        status: operational
-        current_state: Filtered to 4 tools (73% reduction)
+        recommended_action: Filter to essential tools (list_conversations, get_chat_messages, get_insight, send_message, get_scope_policy)
+        status: stale-claim
+        current_state: UNFILTERED — 41 tools served (claimed 4 was aspirational)
 
       - label: PostgreSQL MCP Server
         text: Database operations with 11 tools for query, execute, DDL operations, and schema management
@@ -104,18 +126,18 @@ sections:
         usage_pattern: Medium - used for GPU queue and application data
         optimization_priority: medium
         recommended_action: Filter to CRUD operations only (query, execute, insert, update, delete)
-        status: operational
-        current_state: Filtered to 6 tools (45% reduction)
+        status: stale-claim
+        current_state: UNFILTERED — claimed 6 was aspirational
 
       - label: GitHub MCP Server
-        text: GitHub integration with 20+ tools for issues, PRs, commits, files, and repository management
-        tool_count: 20+
-        estimated_token_overhead: 10-15k tokens
+        text: GitHub integration — measured 2026-10-09 at 48 tools (mcp_list_tools) for issues, PRs, commits, files, and repository management
+        tool_count: 48
+        estimated_token_overhead: 20-30k tokens
         usage_pattern: Medium - used for git workflow automation
-        optimization_priority: medium
-        recommended_action: Filter to core workflow tools (issues, PRs, commits)
-        status: operational
-        current_state: Filtered to 8 tools (60% reduction)
+        optimization_priority: high
+        recommended_action: Filter to core workflow tools (list_*, search_*, create_pull_request, create_or_update_file, add_issue_comment, get_file_contents, pull_request_review_write)
+        status: stale-claim
+        current_state: UNFILTERED — 48 tools served (claimed 8 was aspirational)
 
       - label: GPU MCP Server
         text: GPU management with 4 tools for status, llama control, and image generation

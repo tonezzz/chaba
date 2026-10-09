@@ -46,7 +46,7 @@
 
 ## Token Optimization
 
-**File**: `docs/ssot/ssot.token-optimization.yml`
+**File**: `docs/ssot/ssot.token-tools.yml`
 **Purpose**: MCP filter config, Headroom proxy, Devin usage patterns for token cost reduction
 **Features**:
 
