@@ -19,10 +19,12 @@
 //
 // Claim retry contract (added 2026-10-07 — headless@2/@4 sat dead for two
 // days after the idc01->idc03 relay move because the pre-migration ada
-// keys still pinned screen-2/screen-4): a 409 answer means a stale key
-// holds the name, so retry once with force=true (revoke+re-mint). Other
-// failures retry on a 30s-capped backoff forever — a dead display that
-// goes quiet is the failure mode this file exists to prevent.
+// keys still pinned screen-2/screen-4): since 2026-10-09 the relay
+// auto-resurrects a tombstoned/stale screen-N key on 409 (invite chain —
+// no revoke, so force=true is a no-op server-side); a surviving 409 means
+// the name is live-held. Other failures retry on a 30s-capped backoff
+// forever — a dead display that goes quiet is the failure mode this file
+// exists to prevent.
 
 const WS_URL = process.argv[2] || "ws://127.0.0.1:3010/ws";
 const API = (process.argv[3] || "http://127.0.0.1:3010").replace(/\/+$/, "");
@@ -55,7 +57,8 @@ function saveKey() {
 }
 
 // Re-register drives the pending->claim cycle; claim retries the same sid
-// on transient failures and force-claims once on a 409 name-pin.
+// on transient failures and once on a 409 name-pin (resurrect is
+// automatic server-side; the retry only covers relay-side races).
 async function claim(sid, force = false, attempt = 1) {
   let status = 0, txt = "";
   try {

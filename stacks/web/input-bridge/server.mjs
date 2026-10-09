@@ -151,6 +151,31 @@ function pendingCleanup() {
   }
 }
 
+// A name is held while a live display owns it or a rival /claim already
+// minted a key that hasn't registered yet (claimed_at marks the
+// claim->register gap). A dead entry past the rebind grace is NOT held —
+// it frees on the next sweep anyway.
+function nameHeld(name) {
+  const ent = Object.entries(registry.screens)
+    .find(([, s]) => s.name === name);
+  if (!ent) return false;
+  const num = parseInt(ent[0], 10);
+  return slotLive(num) || (!!ent[1].claimed_at && !reclaimable(num));
+}
+
+// /claim serialization: name resolution -> ada mint/resurrect -> redeem ->
+// slot alloc -> pair is one atomic unit. Two clients racing the same
+// tombstoned name can't both resurrect+pair — the loser runs after the
+// winner commits and sees the name held (409 for an explicit name, next
+// free slot for want_screen). Claims are rare and ada hops are ~ms, so a
+// single tail is enough.
+let claimTail = Promise.resolve();
+function withClaimLock(fn) {
+  const p = claimTail.then(() => fn());
+  claimTail = p.catch(() => {});
+  return p;
+}
+
 // ---------------------------------------------------------------------------
 // Ada backend helpers (server-side: no browser CORS issues)
 // ---------------------------------------------------------------------------
@@ -191,6 +216,34 @@ async function adaRevokeKey(adminKey, name) {
     headers: { "x-api-key": adminKey },
   });
   return !!(res && res.ok);
+}
+
+async function adaResurrectScreenKey(adminKey, name) {
+  // Revoked/released screen names keep their ada key (DELETE = revoke,
+  // the name stays taken) so a plain keys POST 409s. Resurrection runs
+  // the member-invite chain instead of revoke+re-mint — the existing key
+  // is re-approved, never destroyed, so a display still holding it is
+  // unaffected. The invite+approve steps are best-effort (they 409/404
+  // when the name is already approved or an invite exists); the mint is
+  // authoritative — it only returns a redeem_url for an approved key.
+  await adaFetch("/api/auth/invites", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": adminKey },
+    body: JSON.stringify({ name }),
+  });
+  await adaFetch(`/api/auth/keys/${encodeURIComponent(name)}/approve`, {
+    method: "POST",
+    headers: { "x-api-key": adminKey },
+  });
+  const mint = await adaFetch(`/api/auth/invites/${encodeURIComponent(name)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": adminKey },
+    body: JSON.stringify({ path: "/", redirect: "/apps/vcast" }),
+  });
+  if (mint && mint.status === 409) return { conflict: true };
+  if (!mint || !mint.ok)
+    return { error: `ada invite mint -> ${mint ? mint.status : "unreachable"}` };
+  return await mint.json().catch(() => ({ error: "bad ada invite response" }));
 }
 
 async function redeemKey(redeemUrl) {
@@ -574,7 +627,7 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return json(res, 400, { error: e.message });
     }
-    const { sid, force } = body;
+    const { sid } = body;
     if (!sid || !pending.has(sid)) {
       return json(res, 404, { error: "unknown or expired sid" });
     }
@@ -586,85 +639,122 @@ const server = http.createServer(async (req, res) => {
     const adminName = await adaKeyName(admin_key).catch(() => null);
     if (!adminName) return json(res, 403, { error: "admin key not accepted" });
 
-    let name = String(body.name || "").trim();
-    let wanted = parseInt((name.match(/^screen-(\d+)$/) || [])[1] || "0", 10);
-    // alternates: {want_screen: N} or {screen: N} — same honoring rule
-    const altWant = parseInt(body.want_screen ?? body.screen ?? "0", 10);
-    if (!wanted && altWant > 0) {
-      wanted = altWant;
-      if (!name) name = `screen-${wanted}`;
-    }
-    if (!name || wanted) {
-      // allocate: reuse the requested number when free, else lowest free.
-      // A DEAD holder does not keep the slot — the 2026-10-09 drift bug:
-      // every reclaim of screen-6 while its stale entry lingered got
-      // renamed to lowest-free (screen-8/9/10), stacking dead entries.
-      const used = usedSlots();
-      let n = wanted;
-      if (n && used.has(n)) {
-        const occ = registry.screens[n];
-        if (occ.name !== name && slotLive(n)) {
-          n = 0;                       // a different LIVE display owns it
-        } else if (occ.name !== name) {
-          // dead holder with a different name — reclaim the slot
-          console.log(`[vcast] claim evicts dead ${occ.name} from slot ${n}`);
-          const deadWs = live.get(n);
-          if (deadWs) { deadWs.screen = null; live.delete(n); leaveRoom(deadWs); }
-          delete registry.screens[n];
-          used.delete(n);
+    // body.force is accepted-but-ignored: a name conflict no longer
+    // revoke+re-mints (that killed live displays' keys) — resurrection
+    // via the ada invite chain is automatic once per claim.
+    const explicitName = !!String(body.name || "").trim();
+    return withClaimLock(async () => {
+      // re-check inside the lock — a queued claim's display may have
+      // been claimed/dismissed while a rival claim held the tail
+      if (!pending.has(sid))
+        return json(res, 404, { error: "unknown or expired sid" });
+
+      let name = String(body.name || "").trim();
+      let wanted = parseInt(
+        (name.match(/^screen-(\d+)$/) || [])[1] || "0", 10);
+      // alternates: {want_screen: N} or {screen: N} — same honoring rule
+      const altWant = parseInt(body.want_screen ?? body.screen ?? "0", 10);
+      if (!wanted && altWant > 0) {
+        wanted = altWant;
+        if (!name) name = `screen-${wanted}`;
+      }
+      if (!name || wanted) {
+        // allocate: reuse the requested number when free, else lowest free.
+        // A DEAD holder does not keep the slot — the 2026-10-09 drift bug:
+        // every reclaim of screen-6 while its stale entry lingered got
+        // renamed to lowest-free (screen-8/9/10), stacking dead entries.
+        const used = usedSlots();
+        let n = wanted;
+        if (n && used.has(n)) {
+          const occ = registry.screens[n];
+          if (occ.name !== name && slotLive(n)) {
+            n = 0;                       // a different LIVE display owns it
+          } else if (occ.name !== name) {
+            // dead holder with a different name — reclaim the slot
+            console.log(`[vcast] claim evicts dead ${occ.name} from slot ${n}`);
+            const deadWs = live.get(n);
+            if (deadWs) { deadWs.screen = null; live.delete(n); leaveRoom(deadWs); }
+            delete registry.screens[n];
+            used.delete(n);
+          }
+          // same-name dead entry: keep n — allocScreen() rebinds in place
         }
-        // same-name dead entry: keep n — allocScreen() rebinds it in place
+        if (!n) {
+          n = 1;
+          while (used.has(n)) n++;
+        }
+        name = `screen-${n}`;
       }
-      if (!n) {
-        n = 1;
+
+      // A held name is untouchable: resurrecting/minting it would pair a
+      // second display that supersedes the live one on register (the
+      // force-loop re-tombstone bug — a retry loop on a live name killed
+      // its key). Explicit-name claims conflict; number-derived claims
+      // take the next free slot.
+      if (nameHeld(name)) {
+        if (explicitName) {
+          return json(res, 409, { error: `name ${name} is in use`, name });
+        }
+        const used = usedSlots();
+        let n = 1;
         while (used.has(n)) n++;
+        name = `screen-${n}`;
+        wanted = n;
       }
-      name = `screen-${n}`;
-    }
 
-    if (force) await adaRevokeKey(admin_key, name);
-    const created = await adaCreateScreenKey(admin_key, name);
-    if (created.conflict) {
-      return json(res, 409, { error: `name ${name} already issued`, name });
-    }
-    if (created.error) return json(res, 502, { error: created.error });
+      let created = await adaCreateScreenKey(admin_key, name);
+      if (created.conflict && /^screen-\d+$/.test(name)) {
+        // released/stale screen-N names keep their ada key — resurrect
+        // once via the invite chain. Non-screen names are member keys:
+        // they keep tombstone semantics and stay a hard 409.
+        created = await adaResurrectScreenKey(admin_key, name);
+      }
+      if (created.conflict) {
+        return json(res, 409, { error: `name ${name} already issued`, name });
+      }
+      if (created.error) return json(res, 502, { error: created.error });
 
-    const redeemed = await redeemKey(created.redeem_url);
-    if (redeemed.error) return json(res, 502, { error: redeemed.error });
+      const redeemed = await redeemKey(created.redeem_url);
+      if (redeemed.error) return json(res, 502, { error: redeemed.error });
 
-    let screen = allocScreen(name);
-    // honor an explicit screen-N request: allocScreen() picks the lowest
-    // free slot which may differ from the wanted number — move the entry
-    // so "claim screen-4" actually lands on 4 (2026-09-30: headless test
-    // displays kept drifting to whatever slot freed first)
-    if (wanted && wanted !== screen && !registry.screens[wanted]) {
-      registry.screens[wanted] = registry.screens[screen];
-      delete registry.screens[screen];
-      screen = wanted;
-    }
-    registry.screens[screen].label = pending.get(sid)?.label || name;
-    // re-proof a rebound dead entry: restart the rebind window from the
-    // claim — the minted key's register lands well inside it, and a
-    // claim that never attaches is swept like any dead entry
-    registry.screens[screen].disconnected_at = new Date().toISOString();
-    // a successful (re-)mint lifts the tombstone — /release only bars the
-    // name until someone deliberately claims it again
-    delete registry.tombstones[name];
-    saveRegistry();
+      let screen = allocScreen(name);
+      // honor an explicit screen-N request: allocScreen() picks the lowest
+      // free slot which may differ from the wanted number — move the entry
+      // so "claim screen-4" actually lands on 4 (2026-09-30: headless test
+      // displays kept drifting to whatever slot freed first)
+      if (wanted && wanted !== screen && !registry.screens[wanted]) {
+        registry.screens[wanted] = registry.screens[screen];
+        delete registry.screens[screen];
+        screen = wanted;
+      }
+      registry.screens[screen].label = pending.get(sid)?.label || name;
+      // re-proof a rebound dead entry: restart the rebind window from the
+      // claim — the minted key's register lands well inside it, and a
+      // claim that never attaches is swept like any dead entry
+      registry.screens[screen].disconnected_at = new Date().toISOString();
+      // claim-in-flight marker: rival claims for this name see it held
+      // until the minted key registers (cleared in registerDisplay)
+      registry.screens[screen].claimed_at = new Date().toISOString();
+      // a successful (re-)mint lifts the tombstone — /release only bars
+      // the name until someone deliberately claims it again
+      delete registry.tombstones[name];
+      saveRegistry();
 
-    const p = pending.get(sid);
-    if (p && p.ws && p.ws.readyState === 1) {
-      p.ws.send(
-        JSON.stringify({
-          type: "paired",
-          api_key: redeemed.api_key,
-          name,
-          screen,
-        })
-      );
-    }
-    pending.delete(sid);
-    return json(res, 200, { ok: true, screen, name });
+      const p = pending.get(sid);
+      if (p && p.ws && p.ws.readyState === 1) {
+        p.ws.send(
+          JSON.stringify({
+            type: "paired",
+            api_key: redeemed.api_key,
+            name,
+            screen,
+          })
+        );
+      }
+      pending.delete(sid);
+      return json(res, 200, { ok: true, screen, name });
+    // ada hops abort on timeout — a throw must answer, not hang
+    }).catch((e) => json(res, 502, { error: `claim failed: ${e.message}` }));
   }
 
   if (req.method === "POST" && url.pathname === "/release") {
@@ -900,6 +990,7 @@ async function registerDisplay(ws, msg) {
   const entry = registry.screens[screen];
   if (label) entry.label = label;
   delete entry.disconnected_at;
+  delete entry.claimed_at;   // claim->register gap closed — name is live-held
   entry.last_seen = new Date().toISOString();
   saveRegistry();
 

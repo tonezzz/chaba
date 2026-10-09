@@ -6,8 +6,9 @@
 // vcast-headless.mjs is driven against a loopback server.mjs with a
 // stubbed ada that mimics the key-pin:
 //
-//   boot 1: register -> pending -> claim 409 (key exists) -> force claim
-//           -> paired -> registered, key persisted to VCAST_KEY_FILE
+//   boot 1: register -> pending -> claim -> ada keys 409 -> relay
+//           auto-resurrects via the invite chain -> paired -> registered,
+//           key persisted to VCAST_KEY_FILE (no client force retry)
 //   boot 2: new process, persisted key -> registered WITHOUT /claim
 //           (the fast reattach path — metric: attach <5s)
 //
@@ -33,9 +34,12 @@ function check(name, cond, detail = "") {
   if (!cond) failures.push(name);
 }
 
-// --- stub ada auth: keys persist; POST on an existing name -> 409 -------
+// --- stub ada auth: keys persist; POST on an existing name -> 409; the
+//     resurrect chain (invites -> approve -> invites/{name}) mints a
+//     redeem link for the pinned name -----------------------------------
 const adaKeys = new Map();         // name -> {api_key}
 let mintCounter = 0;
+const resurrected = [];
 adaKeys.set(SCREEN_NAME, { api_key: `key-old-${SCREEN_NAME}` }); // stale pin
 const auth = http.createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -61,10 +65,35 @@ const auth = http.createServer((req, res) => {
       return res.end(JSON.stringify({
         name, redeem_url: `http://127.0.0.1:${AUTH_PORT}/redeem/${tok}` }));
     }
+    if (u.pathname.startsWith("/api/auth/keys/") &&
+        u.pathname.endsWith("/approve") && req.method === "POST") {
+      resurrected.push(
+        `approve:${decodeURIComponent(u.pathname.split("/")[4])}`);
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end("{}");
+    }
     if (u.pathname.startsWith("/api/auth/keys/") && req.method === "DELETE") {
       adaKeys.delete(decodeURIComponent(u.pathname.split("/").pop()));
       res.writeHead(200, { "content-type": "application/json" });
       return res.end("{}");
+    }
+    if (u.pathname === "/api/auth/invites" && req.method === "POST") {
+      resurrected.push(`invite:${JSON.parse(body || "{}").name}`);
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ invite_url: "http://x/i/t" }));
+    }
+    if (u.pathname.startsWith("/api/auth/invites/") && req.method === "POST") {
+      const name = decodeURIComponent(u.pathname.split("/").pop());
+      resurrected.push(`mint:${name}`);
+      if (!adaKeys.has(name)) {
+        res.writeHead(409, { "content-type": "application/json" });
+        return res.end(JSON.stringify({ error: "not approved" }));
+      }
+      const tok = `tok${++mintCounter}`;
+      adaKeys.set(name, { api_key: `key-${tok}` });
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({
+        name, redeem_url: `http://127.0.0.1:${AUTH_PORT}/redeem/${tok}` }));
     }
     if (u.pathname.startsWith("/redeem/")) {
       const tok = u.pathname.split("/").pop();
@@ -132,15 +161,18 @@ const waitFor = (p, re, ms = 15000) => new Promise((res, rej) => {
 
 let h1;
 try {
-  // --- boot 1: 409 stale-key pin -> force claim -> registered ----------
+  // --- boot 1: stale-key pin -> auto-resurrect -> registered ----------
   const t0 = Date.now();
   h1 = runHeadless();
   const reg = await waitFor(h1, /\[registered\] Screen #(\d+)/);
   const regScreen = parseInt(reg.line.match(/#(\d+)/)[1], 10);
   check("headless registered through stale-key pin", regScreen === 5,
     `screen=${regScreen} attach=${Date.now() - t0}ms`);
-  const saw409 = h1.lines.some((l) => /\[claim\] 409/.test(l));
-  check("claim hit 409 before force succeeded", saw409);
+  const claimLines = h1.lines.filter((l) => /\[claim\]/.test(l));
+  check("claim auto-resurrected the pinned key (one shot, no force retry)",
+    claimLines.length === 1 && /\[claim\] 200/.test(claimLines[0]) &&
+    resurrected.includes(`mint:${SCREEN_NAME}`),
+    `claims=${JSON.stringify(claimLines)} ada=${resurrected.join(",")}`);
   check("api_key persisted to key file", fs.existsSync(keyFile),
     keyFile);
   h1.kill("SIGKILL");                 // unclean kill — the migration case
