@@ -1,0 +1,78 @@
+# Declarative voice-fallback combo definitions.
+# Every card that benches a fallback stack adds one entry here; bench.py's
+# loader validates combo ids against this file.
+#
+# Fields:
+#   id           unique combo slug (used as `bench.py --combo <id>`)
+#   stt          speech-to-text component slug
+#   llm          brain component slug (any OpenAI-compatible endpoint counts)
+#   tts          text-to-speech component slug
+#   orchestrator glue that wires VAD->STT->LLM->TTS and exposes the stream
+#                endpoint bench.py drives (e.g. hf-speech2speech, openai-realtime,
+#                pipecat, gev-gemini-adapter)
+#   host_labels  runner capability labels (a runner claims the card only if
+#                every label is in its RUNNER_LABELS; GPU combos use [gpu])
+#   runtime      how bench.py brings the stack up:
+#                  {kind: none}            — already-running external service; set endpoint
+#                  {kind: local, cmd}      — shell command; wait for endpoint
+#                  {kind: podman, image, cmd?, env?, ports?} — podman run --rm
+#   endpoint     ws/http URL the orchestrator listens on once up (may be
+#                templated as {port}; bench.py health-checks it)
+#   notes        free text
+#
+# These are HARNESS descriptors only — shipping a real combo means adding
+# its stack implementation elsewhere and registering it here.
+
+combos:
+  - id: openai-realtime-hosted
+    stt: openai-realtime
+    llm: gpt-realtime
+    tts: openai-realtime
+    orchestrator: gev-gemini-adapter
+    host_labels: []
+    runtime:
+      kind: none
+    endpoint: wss://api.openai.com/v1/realtime
+    notes: "Hosted drop-in fallback. Speech-to-speech, no separate stt/tts
+      processes; adapter translates Gemini->Realtime events."
+
+  - id: hf-s2s-vllm-local
+    stt: faster-whisper
+    llm: vllm-qwen-local
+    tts: kokoro
+    orchestrator: hf-speech2speech
+    host_labels: [gpu]
+    runtime:
+      kind: podman
+      image: localhost/hf-speech2speech:latest
+      ports: ["8765:8765"]
+      env: {}
+    endpoint: ws://127.0.0.1:8765/v1/realtime
+    notes: "Self-hosted insurance per voice-fallback-options.md #2. Thai TTS
+      weak — English degraded mode until Thai TTS is solved."
+
+  - id: whisper-llamacpp-piper
+    stt: faster-whisper
+    llm: llamacpp-local
+    tts: piper
+    orchestrator: voice-bench-pipeline
+    host_labels: []
+    runtime:
+      kind: local
+      cmd: echo TODO implement pipeline orchestrator
+    endpoint: ws://127.0.0.1:8790/v1/realtime
+    notes: "CPU-only baseline combo sketch. Registered for schema/loader
+      coverage; stack is not implemented yet."
+
+  - id: dry-run-dummy
+    stt: none
+    llm: none
+    tts: none
+    orchestrator: none
+    host_labels: []
+    runtime:
+      kind: none
+    endpoint: ""
+    notes: "Harness self-test entry — exists so bench.py --combo
+      dry-run-dummy --dry-run exercises the full result schema without
+      any services."

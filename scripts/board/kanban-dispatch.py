@@ -148,6 +148,20 @@ def _blocker_released(blocker_id: str) -> bool:
     return ba.get("status") == "done" and ba.get("verified") is not False
 
 
+def _blocker_released(blocker_id: str) -> bool:
+    """blocked_by gate: released when the blocker card finished without
+    a failed merge (dependents need its code on origin), or when a
+    manual blocker was closed (column=done). Missing file = released."""
+    bp = CARD_DIR / f"{blocker_id}.yml"
+    if not bp.exists():
+        return True
+    b = load_card(bp)
+    if b.get("column") == "done":
+        return True
+    ba = b.get("action") or {}
+    return ba.get("status") == "done" and ba.get("verified") is not False
+
+
 def runner_reachable(host: str) -> bool:
     r = sh(["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
             host, "true"], timeout=15)
