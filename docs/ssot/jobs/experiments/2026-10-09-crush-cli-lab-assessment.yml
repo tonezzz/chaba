@@ -1,0 +1,68 @@
+title: 'Lab bench: crush CLI (charmbracelet/crush) on tony-dell (lab-crush-cli)'
+subtitle: 'Adopt-as-alt-lane — OpenRouter smoke passes, MCP connects, but no rails/board/merge gates: complement to dispatch, not a replacement'
+icon: flask
+
+decision:
+  summary: >
+    Assessed charmbracelet/crush v0.98.0 on tony-dell as a possible alt lane
+    beside devin-dispatch. Binary + OpenRouter key were already staged on the
+    host at 12:06 (~/.local/bin/crush 90MB, ~/.config/secrets/openrouter.env);
+    this session wrote ~/.config/crush/crush.json (openrouter provider,
+    api_key "$OPENROUTER_API_KEY" env-expanded — no key in the file),
+    models large=qwen/qwen3-coder, small=google/gemini-2.5-flash-lite, an
+    mcp stdio stanza, and permissions.allowed_tools for non-interactive runs.
+    Two smoke tasks in /tmp/crush-lab both completed in ~67s each and the
+    MCP server connected and served a real tool call.
+  scorecard: >
+    install: PASS (pre-staged; go1.26.0 present so `go install` was the
+    fallback path). provider: PASS — OpenRouter requests to
+    api/v1/chat/completions succeeded on first attempt. task1 fizzbuzz+pytest:
+    PASS 1m7s, 4 tests green (verified independently). task2 edit existing
+    file: PASS 1m7s — surgical `edit` calls, argparse --limit added, tests
+    stayed green, model verified its own CLI output. MCP: PASS — lab-ro stdio
+    server initialized in 25ms and `mcp_lab-ro_lab_list` was invoked and
+    returned real dir contents. scope: PASS — all writes under /tmp/crush-lab,
+    nothing touched outside.
+  recommendation: >
+    adopt-as-alt-lane. Keep crush installed at ~/.local/bin/crush with the
+    OpenRouter config. Best fit: interactive/single-shot agent work on
+    tony-dell where model choice matters (any OpenRouter model, incl. cheap
+    coding models), where MCP tools help, or where a human wants a TUI.
+    `crush run "..."` is a viable cheap one-shot prompt lane. Do NOT treat it
+    as a dispatch replacement: it has no kanban integration, no worktree-per-
+    run isolation, no TASK_RAILS, no merge gates, no needs-input/answers
+    flow — dispatch remains the CI lane. Crush permissions are interactive
+    by default; unattended runs require permissions.allowed_tools in config
+    (there is no --yolo on `crush run`, only the interactive root command).
+  method_notes: >
+    Config format verified against https://charm.land/crush.json (draft
+    2020-12 schema). providers.<name>: {type, base_url, api_key("$ENV" ok),
+    models[], discover_models}. models.<large|small>: {model, provider}.
+    mcp.<name>: {type: stdio|sse|http, command, args, env, timeout}.
+    permissions.allowed_tools: [view,ls,grep,glob,write,edit,bash] for
+    non-interactive runs. Session/tool-call forensics live in
+    <cwd>/.crush/crush.db (sqlite, messages.parts JSON) and
+    .crush/logs/crush.log (JSONL, needs --debug for MCP init lines).
+  side_findings: >
+    Friction notes: (1) `crush run` has no --yolo flag — help text mentions
+    it only for interactive mode; unattended runs depend on
+    permissions.allowed_tools. (2) Host env issue, not crush: `python` is
+    absent on tony-dell (only python3); the model hit exit 127 twice across
+    runs before self-correcting. (3) Run 1 showed weak exact-match edits
+    from qwen3-coder — two `edit` calls failed "old_string not found" and
+    it recovered via full `write` rewrite; run 2 edits were clean. Model
+    quality is a free dial here, not a crush limitation. (4) MCP tools are
+    exposed to the main agent only — log shows "No MCPs allowed" for the
+    Task subagent type. (5) board request for provider choice was raised
+    before the key was discovered; openrouter.env appeared at 12:06 making
+    it moot — left as informational.
+
+artifacts:
+  - path: /home/tony/.local/bin/crush
+    note: crush v0.98.0 binary on tony-dell, left installed per verdict
+  - path: /home/tony/.config/crush/crush.json
+    note: openrouter provider (env-expanded key), large=qwen/qwen3-coder, small=gemini-2.5-flash-lite, mcp lab-ro, allowed_tools
+  - path: /tmp/crush-lab/lab_mcp.py
+    note: minimal read-only stdio MCP server (lab_list/lab_read, scoped to /tmp/crush-lab) — scratch artifact, not persistent
+  - path: /tmp/crush-lab/
+    note: scratch dir with fizzbuzz.py, test_fizzbuzz.py (5 tests green), run1.log, .crush/ session db + debug log
