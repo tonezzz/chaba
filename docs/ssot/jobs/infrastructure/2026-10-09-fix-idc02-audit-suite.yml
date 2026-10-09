@@ -1,0 +1,73 @@
+title: idc02 chaba-audit suite — clear the Oct-04 error findings
+subtitle: security-audit runtime detection, caddy podman fallback verify, cms-pages dup, plus two new findings surfaced while re-running
+icon: shield
+
+context:
+  trigger: "kanban card fix-idc02-audit-suite — reports/audits/summary.json
+    on idc02 (run 2026-10-04, chaba-audit-full) showed 3 error-severity
+    failures; suite exits nonzero by design on any of them."
+  runner: idc02 (dispatch worktree dispatch/20261009-164359)
+  prior_state: "chaba-audit.service + chaba-audit-full.service sat in
+    `systemctl --user list-units --failed` since the Oct-04 run."
+
+finding_a_oct04_errors_already_partially_fixed:
+  detail: "Commit 35c0cb1a (same day, 10:41 — after the 10:20 run) had
+    already: renamed the second cms-pages audit to cms-pages-live (the
+    'duplicate audit name' standardization failure), added the podman
+    caddy:2 fallback in caddy-audit.mjs (the 'Caddy format failed' was a
+    missing caddy binary — spawnSync status=null, not a fmt error), and
+    swapped docker->docker|podman in check_database_security (the line
+    ~263 call the card cited). Verified each still passes on idc02
+    2026-10-09."
+
+finding_b_check_docker_security_was_docker_only:
+  symptom: "check_docker_security() called `docker info|ps|inspect`
+    unguarded; on podman-only hosts (idc01/idc02/mn01/tony-dell are all
+    rootless podman) it silently skipped — container posture was never
+    audited anywhere."
+  fix: "security-audit.sh: runtime pick docker -> podman -> podman-remote,
+    skip-with-log when none. Under rootless podman, image-default
+    User:'' is namespaced (not host root) so the check flags
+    --privileged containers instead (none fleet-wide today); the
+    empty-User medium check is kept for rootful runtimes
+    (dockerd/podman system socket). /var/run/docker.sock perms check
+    stays docker-specific."
+  why_not_flag_hostnet: "net=host is the deliberate quadlet pattern
+    fleet-wide (~20 containers: caddy-edge, mddb, tony-ha, weaviate…)
+    and zero containers run --privileged — flagging it would be
+    baseline-maintenance noise."
+
+finding_c_caddyfile_fmt_drift:
+  symptom: "stacks/web/Caddyfile was not caddy-fmt clean (double blank
+    lines after the gesture-live merge + misindented header blocks in
+    yt-live/walldance-live handle_path)."
+  fix: "committed the canonical `caddy fmt` output so the audit's
+    fmt --overwrite step is idempotent and stops dirtying whichever
+    checkout it runs in."
+
+finding_d_new_since_oct04_fixed_here:
+  standardization: "camwall-smoke.yml workflow referenced
+    scripts/cam-wall (working-directory) but no quality-registry entry
+    -> added ci.camwall-smoke to ssot.quality.yml."
+  doc_links: "commit 7cc7f18f retired stacks/tony-dell/rview-* but the
+    migration runbook + ssot.runbooks.yml registry still listed them in
+    related: -> dropped dead paths, doc kept (marked historical)."
+
+dependency:
+  cms-pages_mddb_ip: "scripts/audits/cms-pages-audit.mjs still probes the
+    dead mddb IP (warn-severity, does not gate) — owned by card
+    sweep-stale-mddb-endpoint. Default MDDB_BASE in the script is
+    100.102.134.91; the Oct-04 run used 100.74.146.0 via env."
+  known_failed: "no chaba-audit.service/chaba-audit-full.service entries
+    exist in ssot.audit.hosts.yml known_failed (idc02 list was already
+    []) — nothing to remove. Added both audit timers to idc02
+    expected_services so audit-hosts verifies them."
+
+verify:
+  command: "node scripts/audits/run.mjs (and --full) in the checkout"
+  result: "default set exits 0 — all error-severity audits PASS;
+    7 warn-level findings (mddb, cms-pages, code-quality, dev-system,
+    http-health, staleness, memory-banks) — warnings do not gate."
+  caveat: "live ~/CascadeProjects/chaba still fails doc-links until this
+    branch merges; the systemd units clear their failed mark on the next
+    green scheduled run (weekly Sun 02:00, monthly Nov 1)."
