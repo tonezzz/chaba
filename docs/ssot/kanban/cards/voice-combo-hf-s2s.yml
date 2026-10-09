@@ -1,18 +1,17 @@
 id: voice-combo-hf-s2s
 title: 'Bench: huggingface/speech-to-speech serve mode'
-column: review
-updated: 2026-10-09 08:32
+column: done
+updated: 2026-10-09 12:30
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
 tags:
 - voice
 - bench
-spec: 'Bench combo `hf-s2s` via scripts/voice-bench/bench.py: run github.com/huggingface/speech-to-speech
-  in serve mode (ws://127.0.0.1:8765/v1/realtime) with STT=faster-whisper (Thai-capable),
-  LLM=OpenAI-compatible local endpoint (ollama/vLLM on GPU), TTS=repo default. Stream
-  all fixtures, record metrics JSON + report. Key result to capture: does the OpenAI-Realtime-compatible
-  event set adapt cleanly to our gemini-protocol client shape? labels gpu required.'
+spec: 'Bench combo `hf-s2s` via scripts/voice-bench/bench.py: run github.com/huggingface/speech-to-speech in serve
+  mode (ws://127.0.0.1:8765/v1/realtime) with STT=faster-whisper (Thai-capable), LLM=OpenAI-compatible local endpoint
+  (ollama/vLLM on GPU), TTS=repo default. Stream all fixtures, record metrics JSON + report. Key result to capture:
+  does the OpenAI-Realtime-compatible event set adapt cleanly to our gemini-protocol client shape? labels gpu required.'
 action:
   type: dispatch
   repo: chaba
@@ -22,8 +21,8 @@ action:
   status: done
   runner: tony-omen
   result: 'exit=0 patch branch (2 commits), board updated, server stopped. | devin-task-20261009-063601-bench-combo-hf-s2s-via-scripts.service:
-    Consumed 1h 17min 32.552s CPU time over 1h 54min 53.527s wall clock time, 7.3G
-    memory peak, 3.7G memory swap peak.'
+    Consumed 1h 17min 32.552s CPU time over 1h 54min 53.527s wall clock time, 7.3G memory peak, 3.7G memory swap
+    peak.'
   verified: false
 comms:
 - at: 2026-10-08 18:11
@@ -37,31 +36,26 @@ comms:
   text: claimed
 - at: 2026-10-09 06:36
   from: chaba
-  text: started devin-task-20261009-063601-bench-combo-hf-s2s-via-scripts on tony-omen
-    (dispatch)
+  text: started devin-task-20261009-063601-bench-combo-hf-s2s-via-scripts on tony-omen (dispatch)
 - at: 2026-10-09 06:37
   from: devin
-  text: picked up on tony-omen. harness merge never landed scripts/voice-bench (checkpoint
-    failed on idc03) — recovering harness from idc03 worktree first, then hf-s2s bench.
+  text: picked up on tony-omen. harness merge never landed scripts/voice-bench (checkpoint failed on idc03) — recovering
+    harness from idc03 worktree first, then hf-s2s bench.
 - at: 2026-10-09 06:48
   from: devin
-  text: harness recovered from idc03 worktree + extended (adapter field, openai_realtime
-    adapter, ws readiness probe). Fixtures regenerated with real edge-tts speech (en+th).
-    hf speech-to-speech serve coming up on :8765 — faster-whisper small + ollama phi3
-    + qwen3-tts ggml; downloading TTS gguf now.
+  text: harness recovered from idc03 worktree + extended (adapter field, openai_realtime adapter, ws readiness probe).
+    Fixtures regenerated with real edge-tts speech (en+th). hf speech-to-speech serve coming up on :8765 — faster-whisper
+    small + ollama phi3 + qwen3-tts ggml; downloading TTS gguf now.
 - at: 2026-10-09 08:30
   from: devin
-  text: 'DONE on tony-omen. hf-s2s benched: 20/20 fixtures ok — en WER 0.00, th WER
-    ~0.21 (whisper-small weak on th; one utterance misdetected as Hindi), mean ttfa
-    75.8s / total 132.6s (CPU qwen3-tts Q4_K_M dominates — GPU full of ollama). Tool
-    calls 0/1/13: protocol path works (native function_call_arguments.done via chat-completions)
-    but qwen2.5:1.5b rarely chooses to call. KEY ANSWER: OpenAI-Realtime event set
-    adapts cleanly to our gemini-protocol client — ~140-line adapter, near-1:1 event
-    mapping; ca'
+  text: 'DONE on tony-omen. hf-s2s benched: 20/20 fixtures ok — en WER 0.00, th WER ~0.21 (whisper-small weak on
+    th; one utterance misdetected as Hindi), mean ttfa 75.8s / total 132.6s (CPU qwen3-tts Q4_K_M dominates — GPU
+    full of ollama). Tool calls 0/1/13: protocol path works (native function_call_arguments.done via chat-completions)
+    but qwen2.5:1.5b rarely chooses to call. KEY ANSWER: OpenAI-Realtime event set adapts cleanly to our gemini-protocol
+    client — ~140-line adapter, near-1:1 event mapping; ca'
 - at: 2026-10-09 08:31
   from: tony-omen
-  text: 'finished (ok): exit=0 patch branch (2 commits), board updated, server stopped.
-    | devin-task-20261009-063601-bench-combo-hf-s2s-via-scri'
+  text: 'finished (ok): exit=0 patch branch (2 commits), board updated, server stopped. | devin-task-20261009-063601-bench-combo-hf-s2s-via-scri'
 - at: 2026-10-09 08:31
   from: chaba
   text: 'session-end checkpoint 9d1a72e1: 1 leftover file(s) committed'
@@ -70,44 +64,43 @@ comms:
   text: pushed dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts to origin
 - at: 2026-10-09 08:31
   from: chaba
-  text: 'auto-merge conflicts: .gitignore, scripts/voice-bench/README.md, scripts/voice-bench/bench.py,
-    scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/en-chat-hello.wav,
-    scripts/voice-bench/fixtures/en-chat-joke.wav, scripts/voice-bench/fixtures/en-chat-thanks.wav,
-    scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav — card stays in review for
-    manual resolution'
+  text: 'auto-merge conflicts: .gitignore, scripts/voice-bench/README.md, scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml,
+    scripts/voice-bench/fixtures/en-chat-hello.wav, scripts/voice-bench/fixtures/en-chat-joke.wav, scripts/voice-bench/fixtures/en-chat-thanks.wav,
+    scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav — card stays in review for manual resolution'
 - at: 2026-10-09 08:32
   from: chaba
-  text: 'merge-sweep: dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts conflicts
-    with origin/master: .gitignore, scripts/voice-bench/README.md, scripts/voice-bench/bench.py,
-    scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/en-chat-hello.wav,
-    scripts/voice-bench/fixtures/en-chat-joke.wav, scripts/voice-bench/fixtures/en-chat-thanks.wav,
-    scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav, scripts/voice-bench/fixtures/en-cmd-fan-off.wav,
-    scripts/voice-bench/fixtures/en-cmd-light-kitchen.w'
+  text: 'merge-sweep: dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts conflicts with origin/master: .gitignore,
+    scripts/voice-bench/README.md, scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/en-chat-hello.wav,
+    scripts/voice-bench/fixtures/en-chat-joke.wav, scripts/voice-bench/fixtures/en-chat-thanks.wav, scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav,
+    scripts/voice-bench/fixtures/en-cmd-fan-off.wav, scripts/voice-bench/fixtures/en-cmd-light-kitchen.w'
 - at: 2026-10-09 08:32
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts:
     3 commit(s) conflict with origin/master '
+- at: 2026-10-09 12:30
+  from: devin
+  text: 'merge rescue: e06505442 — branch forked pre-harness-merge; took master on all shared files, landed adapters.py
+    + hf-s2s-serve.sh + 5 result JSONs + job doc'
 pipeline: ci
 claim: {}
 requests:
 - id: merge-conflict
-  ask: 'merge-sweep can''t land dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts:
-    3 commit(s) conflict with origin/master in chaba — conflicted paths: .gitignore,
-    scripts/voice-bench/README.md, scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml,
-    scripts/voice-bench/fixtures/en-chat-hello.wav, scripts/voice-bench/fixtures/en-chat-joke.wav,
-    scripts/voice-bench/fixtures/en-chat-thanks.wav, scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav,
-    scripts/voice-bench/fixtures/en-cmd-fan-off.wav, scripts/voice-bench/fixtures/en-cmd-light-kitchen.wav.
-    Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261009-063601-bench-combo-hf-s2s-via-scripts
+  ask: 'merge-sweep can''t land dispatch/20261009-063601-bench-combo-hf-s2s-via-scripts: 3 commit(s) conflict with
+    origin/master in chaba — conflicted paths: .gitignore, scripts/voice-bench/README.md, scripts/voice-bench/bench.py,
+    scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/en-chat-hello.wav, scripts/voice-bench/fixtures/en-chat-joke.wav,
+    scripts/voice-bench/fixtures/en-chat-thanks.wav, scripts/voice-bench/fixtures/en-cmd-ac-bedroom.wav, scripts/voice-bench/fixtures/en-cmd-fan-off.wav,
+    scripts/voice-bench/fixtures/en-cmd-light-kitchen.wav. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261009-063601-bench-combo-hf-s2s-via-scripts
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-09 08:32
   from: chaba
   options:
   - id: salvage
-    label: 'salvage — merge the worktree by hand (bench results are real)'
+    label: salvage — merge the worktree by hand (bench results are real)
   - id: retry
-    label: 'retry — drop the dispatch worktree, re-dispatch the card'
+    label: retry — drop the dispatch worktree, re-dispatch the card
   - id: abandon
-    label: 'abandon — drop the card; combo already covered elsewhere'
+    label: abandon — drop the card; combo already covered elsewhere
   suggested: salvage
+  answer: merged by devin — e06505442 (master harness kept, adapters + results landed)
 review_kind: verify

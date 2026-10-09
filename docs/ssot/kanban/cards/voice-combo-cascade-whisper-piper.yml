@@ -1,8 +1,8 @@
 id: voice-combo-cascade-whisper-piper
 title: 'Bench: faster-whisper + ollama LLM + piper cascade'
-column: review
+column: done
 review_kind: decide
-updated: 2026-10-09 12:18
+updated: 2026-10-09 12:30
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -73,6 +73,9 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261009-063553-bench-combo-cascade-whisper-pi already in origin/master — marked
     verified'
+- at: 2026-10-09 12:30
+  from: devin
+  text: request resolved — merge already landed as 47a6e3bde before the sweep flagged it; worktree gone
 pipeline: ci
 claim: {}
 requests:
@@ -81,7 +84,7 @@ requests:
     origin/master in chaba — conflicted paths: scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/manifest.yml,
     scripts/voice-bench/report.py. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261009-063553-bench-combo-cascade-whisper-pi
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-09 07:03
   from: chaba
   options:
@@ -92,3 +95,4 @@ requests:
   - id: abandon
     label: Abandon card
   suggested: merge-manual
+  answer: merged — 47a6e3bde already landed it (master harness schema kept, TH fixtures + combo def + results)

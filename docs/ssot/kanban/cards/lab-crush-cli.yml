@@ -122,13 +122,17 @@ comms:
     Smoke: fizzbuzz+pytest 28s, 4/4 pass; edit task 30s surgical diffs, 5/5 pass; MCP stdio stanza parses+connects+tools
     callable. Gotchas: --yolo broken in v0.98.0 (use permissions.allowed_tools); parallel agent collided on same
     task — project-local .crush.json recommended. Beats dispatch o'
-updated: 2026-10-09 12:19
+- at: 2026-10-09 12:30
+  from: devin
+  text: 'resolved stale request: dispatch found openrouter.env itself; provider question moot (free tier lane in
+    use)'
+updated: 2026-10-09 12:30
 requests:
 - id: no-openrouter-key-found-in-config-secret-2276b8
   ask: No OpenRouter key found in ~/.config/secrets on tony-dell or idc02. Which provider should I configure crush
     with? Available keys on tony-dell include gemini-api-key.env; openrouter env absent. Reply with provider name
     (e.g. gemini / openrouter-with-new-key / anthropic) and where the key lives.
-  status: open
+  status: answered
   at: 2026-10-09 12:05
   from: devin
   options:
@@ -139,3 +143,4 @@ requests:
   - id: anthropic
     label: Use Anthropic
   suggested: gemini
+  answer: self-resolved — openrouter.env landed 12:06; key has no credits, running nemotron-3-super :free instead
