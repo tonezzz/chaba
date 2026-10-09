@@ -101,6 +101,23 @@ bloat:
     attributes it to you). Where it runs: pre-commit (staged), CI job on
     push (full tree), deploy gate (stack-preflight class).
 
+nudging:
+  # Tony 2026-10-10: "notice me repeatedly until I decide — I don't like it
+  # but I need it to push myself forward."
+  standard: |
+    Pending decisions are pushed, not parked. scripts/chaba-nag.py +
+    chaba-nag.timer (30 min) collect every human-gated item — proposed/auto
+    dashboard tiles, open card requests, stale focus-inbox (>3d) — and push
+    a LINE summary via the ada-line-relay /send endpoint. Rules: (1) repeat
+    until the pending set is empty — silence means done; (2) re-send an
+    unchanged set every RESEND_MIN=120 so it never fades into wallpaper;
+    (3) quiet hours 00:00–07:00; (4) every item in the nag names its
+    decision action — nagging carries the way out, not just the guilt;
+    (5) dashboard pills also show "⚠ N proposed" counts so the pending
+    state is visible where the artifact lives. Escape hatch for Tony:
+    systemctl --user stop chaba-nag.timer — but the standard is friction
+    stays ON by default.
+
 standards_map:
   capture:      "AGENTS.md open-ask duty + kanban-first teamwork; ada voice capture"
   card_work:    "chaba-ci-standard — plan -> structure -> develop -> audit -> benchmark"
@@ -111,5 +128,6 @@ standards_map:
   improvement:  "chaba-ci program tag — bench suites, corpus loops, promotion gates"
   quality:      "QA/QC/audit layers — unit tests (ci-test-gate), bench tiers, canaries"
   surfacing:    "surfacing.standard — discover/propose/auto-add + state badges (pinned|auto|proposed)"
+  nudging:      "nudging.standard — chaba-nag timer pushes pending decisions to LINE until cleared"
   dashboards:   "ssot.chaba-nest-dashboard.yml spec → chaba-nest-build.py --apply"
   bloat:        "bloat.standard — ratchet baseline, pre-commit + scheduled sweep + deploy gate"

@@ -136,9 +136,11 @@ def build_views(spec, key):
     views = []
     for t in spec["topics"]:
         name, path = t["name"], t["path"]
+        pending = sum(1 for x in t["tiles"] if tile_state(x) != "pinned")
+        nudge = f"  ·  **⚠ {pending} proposed — decide**" if pending else ""
         pill = {"type": "markdown", "content":
                 f"**{name}**  ·  [All reports →](/{spec['dashboard']['url_path']}/{path}-reports)  ·  "
-                "filter: the Reports view has the live filter box"}
+                "filter: the Reports view has the live filter box" + nudge}
         tiles = []
         for x in t["tiles"]:
             slug, state = tile_slug(x), tile_state(x)
