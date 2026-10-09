@@ -36,10 +36,6 @@
 
   <div class="card">
     <div class="muted">Confirm on the display before tapping — anyone on the tailnet who can see this display's QR can claim it.</div>
-    <div class="row" style="margin-top:0.5rem">
-      <input type="checkbox" id="force">
-      <label for="force" style="margin:0">Re-issue if the screen name is already taken</label>
-    </div>
     <button id="pairBtn">Add as cast target</button>
     <div id="result"></div>
   </div>
@@ -97,14 +93,14 @@
     const { status, data } = await api("/claim", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sid, force: document.getElementById("force").checked }),
+      body: JSON.stringify({ sid }),
     });
     btn.disabled = false;
     if (status === 200) {
       out.innerHTML = `<span class="ok">Paired — Screen #${data.screen} (${data.name})</span>`;
       loadScreens();
     } else if (status === 409) {
-      out.innerHTML = `<span class="err">${data.error}</span><br>tick “Re-issue” and try again, or revoke the key from the admin page.`;
+      out.innerHTML = `<span class="err">${data.error}</span><br>the name is held by a live display — release it from the admin page first.`;
     } else {
       out.innerHTML = `<span class="err">${data.error || status}</span>`;
     }

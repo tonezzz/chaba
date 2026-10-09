@@ -1,0 +1,51 @@
+title: vcast claim resurrect — invite-chain revival of tombstoned screen keys
+subtitle: "Kanban card vcast-claim-tombstone — replace force revoke+re-mint with the member-invite chain; serialize claims; guard member names"
+icon: key
+
+planning:
+  goal: A /claim on a tombstoned/stale screen-N name must pair the display without manual ada-auth steps and without ever revoking a key a live display holds.
+  scope: "stacks/web/input-bridge/server.mjs, new vcast-claim-check.mjs, stub updates in vcast-registry-check.mjs + vcast-handoff-check.mjs, pair.html force checkbox removal, vcast-headless.mjs comments, ssot.apps.vcast.yml. Out of scope: deploy to idc03."
+  success_criteria:
+    - /release -> /claim {name} pairs on the same name via invites -> approve -> mint -> redeem, no force flag
+    - two racing claims for one name: exactly one pairs (409 for explicit name, next slot for want_screen)
+    - claiming a live-held name 409s and issues zero ada mutations (force-loop re-tombstone impossible)
+    - non-screen names stay hard-409 on conflict (member tombstone semantics)
+  resources:
+    - ada-pi member-invite API (merged ac0a1a0a): POST /api/auth/invites, POST /api/auth/keys/{name}/approve, POST /api/auth/invites/{name}
+  owner: devin (dispatch)
+
+processing:
+  status: completed
+  steps:
+    - id: 1
+      label: server.mjs resurrect path
+      status: completed
+      notes: "adaResurrectScreenKey(adminKey,name) runs POST invites {name} -> POST keys/{name}/approve -> POST invites/{name} {path:'/',redirect:'/apps/vcast'} and returns the minted redeem_url. invite+approve are best-effort (idempotent 409/404 tolerated); the mint is authoritative. Called once when adaCreateScreenKey 409s and the name matches /^screen-\\d+$/ — other names keep the hard 409. The force:true revoke path is deleted; the field is accepted-but-ignored."
+    - id: 2
+      label: claim atomicity + held-name guard
+      status: completed
+      notes: "withClaimLock serializes resolution->mint->redeem->alloc->pair per claim (single promise tail — claims are rare). Entry marker claimed_at holds a name through the claim->register gap (cleared in registerDisplay; dead-past-grace still frees). nameHeld() = live socket OR fresh claimed_at. Held names: explicit-name claim -> 409 {name is in use}; want_screen-derived -> deflect to next free slot. Live-held names are checked before any ada call so a claim can never revoke/resurrect a name in use."
+    - id: 3
+      label: tests
+      status: completed
+      notes: "New vcast-claim-check.mjs (16 checks): tombstone->resurrect->redeem ordering asserted against the stub ada audit log, member-name guard, rival race (exactly one winner), live-held protection incl. force:true no-op. registry-check + handoff-check stubs updated to the member-invite lifecycle (DELETE revokes, name stays taken; invites/approve/mint endpoints). All 4 check files + cast-check pass under podman node:22-alpine (runner has no node)."
+
+results:
+  outcome: implemented + verified on loopback; NOT deployed (dispatch mode)
+  checks: "vcast-claim-check 16/16, vcast-registry-check 19/19, vcast-handoff-check 6/6, vcast-cast-check 17/17, vcast-flap-check 7/7"
+  files_changed:
+    - stacks/web/input-bridge/server.mjs
+    - stacks/web/input-bridge/vcast-claim-check.mjs (new)
+    - stacks/web/input-bridge/vcast-registry-check.mjs
+    - stacks/web/input-bridge/vcast-handoff-check.mjs
+    - stacks/web/input-bridge/vcast-headless.mjs
+    - stacks/web/public/apps/vcast/pair.html
+    - stacks/web/public/apps/vcast/sw.js
+    - docs/ssot/apps/ssot.apps.vcast.yml
+  deploy_notes: "Restart input-bridge.service on idc03 to pick up server.mjs; pair.html/sw.js land via the web public rsync (vcast-v5 cache bump included)."
+
+related_focus:
+  - label: vcast-claim-tombstone
+    file: docs/ssot/kanban/cards/vcast-claim-tombstone.yml
+  - label: ada-member-pwa-invite
+    file: docs/ssot/kanban/cards/ada-member-pwa-invite.yml

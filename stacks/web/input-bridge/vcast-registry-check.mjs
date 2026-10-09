@@ -10,7 +10,8 @@
 //   3. release tombstone: /release deletes the entry AND blocks
 //      resurrection — a zombie's late state write can't recreate it and
 //      its re-register gets "unpaired"; a fresh /claim lifts the
-//      tombstone.
+//      tombstone via the resurrect chain (revoked ada keys keep their
+//      name, so plain re-mint 409s).
 //
 //   node vcast-registry-check.mjs [path/to/server.mjs]
 //
@@ -34,43 +35,71 @@ function check(name, cond, detail = "") {
   if (!cond) failures.push(name);
 }
 
-// --- stub ada auth: admin key "adm"; key-name map; keys POST/DELETE -----
+// --- stub ada auth: admin key "adm"; key-name map; member-invite lifecycle
 const keyNames = { adm: "admin", "key-s7": "screen-7", "key-custom": "loft-tv" };
-const issued = new Set();
+const issued = new Set(["screen-7"]);  // revoked names stay taken (DELETE!=delete)
+const resurrected = [];
 let mintCounter = 0;
-const auth = http.createServer((req, res) => {
+const auth = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
+  const readReq = () => new Promise((r) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => r(JSON.parse(b || "{}")));
+  });
   if (u.pathname === "/api/auth/status") {
     const name = keyNames[u.searchParams.get("api_key")] || null;
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ authenticated: !!name, name }));
   }
   if (u.pathname === "/api/auth/keys" && req.method === "POST") {
-    let body = "";
-    req.on("data", (c) => (body += c));
-    req.on("end", () => {
-      const name = JSON.parse(body || "{}").name;
-      if (issued.has(name)) {            // stale key pins the name
-        res.writeHead(409, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ error: "conflict" }));
-      }
-      issued.add(name);
-      const tok = `tok${++mintCounter}`;
-      keyNames[`key-${tok}`] = name;
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({
-        name, redeem_url: `http://127.0.0.1:${AUTH_PORT}/redeem/${tok}`,
-      }));
-    });
-    return;
+    const name = (await readReq()).name;
+    if (issued.has(name)) {            // stale/revoked key pins the name
+      res.writeHead(409, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ error: "conflict" }));
+    }
+    issued.add(name);
+    const tok = `tok${++mintCounter}`;
+    keyNames[`key-${tok}`] = name;
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({
+      name, redeem_url: `http://127.0.0.1:${AUTH_PORT}/redeem/${tok}`,
+    }));
   }
   if (u.pathname.startsWith("/api/auth/keys/") && req.method === "DELETE") {
-    // frees the name for re-mint, but the OLD key keeps resolving — a
-    // revoke that lagged downstream; the tombstone is what must block
-    // resurrection, not the ada delete
-    issued.delete(decodeURIComponent(u.pathname.split("/").pop()));
+    // revoke keeps the name taken — the member-invite model; the OLD key
+    // keeps resolving (revoke lagging downstream). The relay tombstone,
+    // not the ada delete, is what blocks re-register; the resurrect chain
+    // is what re-pairs the name.
     res.writeHead(200, { "content-type": "application/json" });
     return res.end(JSON.stringify({ ok: true }));
+  }
+  // resurrect chain: invite -> approve -> mint redeem for an existing name
+  if (u.pathname === "/api/auth/invites" && req.method === "POST") {
+    resurrected.push(`invite:${(await readReq()).name}`);
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({ invite_url: "http://x/i/t" }));
+  }
+  const apM = u.pathname.match(/^\/api\/auth\/keys\/([^/]+)\/approve$/);
+  if (apM && req.method === "POST") {
+    resurrected.push(`approve:${decodeURIComponent(apM[1])}`);
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+  const invM = u.pathname.match(/^\/api\/auth\/invites\/([^/]+)$/);
+  if (invM && req.method === "POST") {
+    const name = decodeURIComponent(invM[1]);
+    resurrected.push(`mint:${name}`);
+    if (!issued.has(name)) {
+      res.writeHead(409, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ error: "not approved" }));
+    }
+    const tok = `tok${++mintCounter}`;
+    keyNames[`key-${tok}`] = name;
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify({
+      name, redeem_url: `http://127.0.0.1:${AUTH_PORT}/redeem/${tok}`,
+    }));
   }
   if (u.pathname.startsWith("/redeem/")) {
     const tok = u.pathname.split("/").pop();
@@ -179,12 +208,11 @@ try {
   const dX = display("dev-x");            // new pending display
   const pendX = await dX.waitFor("pending");
   let claimX = await post("/claim", { sid: pendX.sid, name: "screen-6" });
-  if (claimX.status === 409)              // ada key still pins the name —
-    claimX = await post("/claim",         // force re-mint (client contract)
-      { sid: pendX.sid, name: "screen-6", force: true });
   check("claim screen-6 over dead holder stays on 6 (no drift)",
     claimX.status === 200 && claimX.data.screen === 6,
     `status=${claimX.status} screen=${claimX.data.screen}`);
+  check("stale-key conflict auto-resurrected (no force needed)",
+    resurrected.includes("mint:screen-6"), resurrected.join(","));
   dX.terminate();
 
   // --- 5. a LIVE different-name holder deflects to lowest-free ----------
@@ -241,10 +269,15 @@ try {
   // --- 8. a fresh /claim lifts the tombstone ------------------------------
   const d7b = display("dev-7b");
   const pend7b = await d7b.waitFor("pending");
+  resurrected.length = 0;
   const claim7b = await post("/claim", { sid: pend7b.sid, name: "screen-7" });
   check("re-claim of tombstoned name ok",
     claim7b.status === 200 && claim7b.data.screen === 7,
     `status=${claim7b.status} screen=${claim7b.data.screen}`);
+  check("tombstoned name resurrected via invite chain",
+    JSON.stringify(resurrected) ===
+      JSON.stringify(["invite:screen-7", "approve:screen-7", "mint:screen-7"]),
+    resurrected.join(","));
   const paired7b = await d7b.waitFor("paired");
   d7b.send(JSON.stringify({
     type: "register-display", api_key: paired7b.api_key, label: "dev7b" }));
