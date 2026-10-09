@@ -1,0 +1,27 @@
+# michael-dev — Michael HA dev instance (migrated tony-dell -> idc03, 2026-10-09).
+[Unit]
+Description=Michael Home Assistant dev instance (rootless podman)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/homeassistant/home-assistant:2026.9.0
+ContainerName=michael-dev
+PodmanArgs=--add-host=idc03.taila0626a.ts.net:100.102.134.91 --add-host=idc02.taila0626a.ts.net:100.123.163.11 --add-host=idc01.taila0626a.ts.net:100.74.146.0 --add-host=mn01.taila0626a.ts.net:100.106.196.22 --add-host=tony-dell.taila0626a.ts.net:100.68.142.13 --add-host=michael-ha:100.80.105.88 --add-host=michael-ha.taila0626a.ts.net:100.80.105.88
+Network=podman
+PublishPort=127.0.0.1:8124:8124
+Volume=/home/tony/.config/michael-dev:/config:Z
+Volume=/etc/localtime:/etc/localtime:ro
+HealthCmd=/bin/sh -c "curl -sf http://127.0.0.1:8124 >/dev/null"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

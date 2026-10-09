@@ -14,9 +14,8 @@ hosts:
     disk_gb: {total: 118, free: 19}   # DISK TIGHT — do not land new stateful services
     gpu: none
     note: >-
-      Household LAN hub — HA prod (tony-ha) must stay here (ESPHome, cameras,
-      plugs). Member/dev nodes may evacuate to VPS. Unstable + low free disk:
-      keep only what requires LAN adjacency.
+      Household LAN hub — tony-ha (LAN-bound) + ada-ha (media/cast mounts).
+      kk-ha and michael-dev evacuated to idc03 2026-10-09.
   tony_omen:
     role: gpu-dev
     cpu_cores: 12
@@ -41,7 +40,8 @@ hosts:
     gpu: none
     note: >-
       Ada backends, MDDB leader, secondary edge (api.surf-thailand.com).
-      Natural home for member-node backends + their HA containers if moved.
+      Now also hosts kk-ha (:8126) and michael-dev (:8124) HA nodes —
+      migrated from tony-dell 2026-10-09.
   mn01:
     role: legacy-home
     cpu_cores: 4

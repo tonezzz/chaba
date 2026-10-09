@@ -51,7 +51,7 @@ edges:
   # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
   # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
   #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
-  # then proxy -> https://tony-dell.taila0626a.ts.net:8126 (member node kk-ha)
+  # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
@@ -62,7 +62,7 @@ services:
   ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
   tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
-  michael-dev:    {host: tony-dell, listen: "127.0.0.1:8124", tailnet: "https://tony-dell.taila0626a.ts.net:8124"}
+  michael-dev:    {host: idc03,     listen: "127.0.0.1:8124", tailnet: "https://idc03.taila0626a.ts.net:8124"}     # migrated 2026-10-09
   board-api:      {host: tony-dell, listen: "127.0.0.1:8787"}
   report-api:     {host: tony-dell, listen: "127.0.0.1:8792"}
   gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
@@ -110,7 +110,7 @@ routes:
   - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-pi}
   - {id: ha-index,         kind: alias,  path: /apps/ha,            target: "/apps/ha/", owner: chaba}
   - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-dell.taila0626a.ts.net:8123/", owner: tony-ha}
-  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://tony-dell.taila0626a.ts.net:8124/", owner: michael-ha}
+  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc03.taila0626a.ts.net:8124/", owner: michael-ha}
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
   - {id: dev-v0,           kind: proxy,  path: /apps/dev/v0/*,         strip: /apps/dev/v0, upstream: "127.0.0.1:8006", owner: chaba}

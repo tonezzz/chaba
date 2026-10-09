@@ -38,6 +38,21 @@ comms:
     standby member-node container on idc01 with config sync, promoted on
     failure. Recommend (a)+(d): tunnel multi-connector for the path, standby
     replica for the node.
+comms_tail:
+- at: 2026-10-09 10:55
+  from: devin
+  text: >-
+    EXECUTED (approved by Tony): kk-ha and michael-dev migrated to idc03
+    — config tar -> quadlet (podman net, loopback publish, --add-host pins;
+    NOTE quadlet AddHost unsupported on podman 4.9 — use PodmanArgs
+    --add-host) -> tailscale serve -> idc02 edge repoint (Caddyfile is a
+    single-file bind mount: NEVER sed -i, it breaks the inode — write via
+    cat > then restart caddy-edge). ada-ha HELD on tony-dell: its media/cast
+    lane (yt-live mounts -> Chromecast fetch) is LAN-adjacent and would
+    break on a VPS. tony-ha stays (LAN hardware). CAUTION: `tailscale serve
+    reset` wiped ALL tony-dell routes incl. :443 /apps/* — restored with
+    --bg --https=443 http://127.0.0.1:80; use per-port 'off' only.
+  status: done
 requests:
 - from: tony
   needed: Decide (a) move kk-ha/ada-ha/michael-dev containers to idc01 or

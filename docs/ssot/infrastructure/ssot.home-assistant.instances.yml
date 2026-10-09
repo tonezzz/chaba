@@ -27,18 +27,23 @@ instances:
   michael-dev:
     id: michael-dev
     base: michael
-    host: tony_dell
+    host: idc03     # migrated tony-dell -> idc03 2026-10-09
     runtime: rootless podman
-    network: host
+    network: podman (was host-net on tony-dell)
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     port: 8124
     host_port: 127.0.0.1:8124
-    config: /home/tony/.config/michael-dev
+    config: /home/tony/.config/michael-dev    # now on idc03
     url:
       local: http://127.0.0.1:8124
-      tailscale: https://tony-dell.taila0626a.ts.net:8124
-      public: https://michael-dev.surf-thailand.com   # idc02 edge + CF Access gate (job 2026-10-08-michael-dev-edge)
+      tailscale: https://idc03.taila0626a.ts.net:8124
+      public: https://michael-dev.surf-thailand.com   # idc02 edge -> idc03:8124 + CF Access gate
+    migration_notes: >-
+      .storage/http had server_port 8124 (host-net legacy) — quadlet maps
+      8124->8124 (not :8123). server_host was 127.0.0.1 — removed so the
+      container binds all ifaces. trusted_proxies needed the podman bridge
+      subnet (values::paths.podman_bridge_subnet).
     ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml
     mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.michael_dev
     dashboards:
@@ -101,7 +106,7 @@ instances:
   kk-ha:
     id: kk-ha
     base: kk
-    host: tony_dell
+    host: idc03     # migrated tony-dell -> idc03 2026-10-09 (capacity + stability)
     runtime: rootless podman
     network: podman (NOT host — member isolation)
     container: kk-ha
@@ -112,8 +117,8 @@ instances:
     stack: stacks/tony-dell/kk-ha/   # quadlet + minimal configuration.yaml + scripts.yaml
     url:
       local: http://127.0.0.1:8126
-      tailscale: https://tony-dell.taila0626a.ts.net:8126
-      public: https://kk-ha.surf-thailand.com   # idc02 edge + CF Access (kk-ha app)
+      tailscale: https://idc03.taila0626a.ts.net:8126
+      public: https://kk-ha.surf-thailand.com   # idc02 edge -> idc03:8126 + CF Access (kk-ha app)
     note: >-
       KK member node (created 2026-10-09) — minimal HA: Kaewta voice + memory
       only, no hardware integrations. Ada backend ada-kk on idc03 :8007
