@@ -14,6 +14,19 @@ const PORT = parseInt(process.env.INPUT_BRIDGE_PORT || "3010", 10);
 const BIND = process.env.INPUT_BRIDGE_BIND || "0.0.0.0";
 const PING_INTERVAL_MS = 30000;
 const PENDING_TTL_MS = parseInt(process.env.VCAST_PENDING_TTL_MS || "300000", 10);
+// Rebind grace: a disconnected display's registry entry holds its name+slot
+// for this long so a ws flap rebinds in place; past it the name frees and
+// the entry is swept (the 2026-10-09 dead-entry pileup: every stale socket
+// left a screen-N entry that pinned the name forever — vcast-real-6
+// accumulated slots 1,6,8,9 while drifting onto lowest-free).
+const GRACE_MS = parseInt(process.env.VCAST_GRACE_MS || "60000", 10);
+// /release tombstones live this long — bounded purely so the registry file
+// can't grow without limit on churned names.
+const TOMBSTONE_TTL_MS = parseInt(process.env.VCAST_TOMBSTONE_TTL_MS
+  || String(30 * 24 * 3600e3), 10);
+// sweep cadence — tests shrink this alongside GRACE_MS
+const SWEEP_MS = parseInt(process.env.VCAST_SWEEP_MS
+  || String(PING_INTERVAL_MS), 10);
 const ADA_AUTH_URL = (process.env.ADA_AUTH_URL || "").replace(/\/+$/, "");
 const ADA_ADMIN_KEY = process.env.ADA_ADMIN_KEY || "";
 const REGISTRY_FILE =
@@ -28,14 +41,17 @@ const REDEEM_HOSTS = new Set(
 // ---------------------------------------------------------------------------
 // Screen registry (vcast virtual displays) — name -> screen number, persisted.
 // ---------------------------------------------------------------------------
-const registry = { screens: {} };
+const registry = { screens: {}, tombstones: {} };
 const live = new Map(); // screen number -> ws
 const pending = new Map(); // sid -> {ws, label, ts}
+const sockets = new Set(); // every ws the server accepted (for ping sweeps)
 
 function loadRegistry() {
   try {
     const data = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf8"));
     if (data && typeof data.screens === "object") registry.screens = data.screens;
+    if (data && typeof data.tombstones === "object")
+      registry.tombstones = data.tombstones;
   } catch (e) { /* fresh registry */ }
 }
 
@@ -48,6 +64,31 @@ function saveRegistry() {
   }
 }
 
+function slotLive(n) {
+  const w = live.get(n);
+  return !!(w && w.readyState === 1);
+}
+
+// Dead entries hold their name+slot for the rebind grace; past it the slot
+// is fair game (the sweep deletes the entry outright).
+function deadStamp(s) {
+  return Date.parse(s.disconnected_at || s.last_seen || s.assigned_at || 0);
+}
+function reclaimable(n) {
+  const s = registry.screens[n];
+  if (!s || slotLive(n)) return false;
+  const t = deadStamp(s);
+  return !t || Date.now() - t > GRACE_MS;   // unknown age = stale
+}
+function usedSlots() {
+  const used = new Set();
+  for (const [n] of Object.entries(registry.screens)) {
+    const num = parseInt(n, 10);
+    if (!reclaimable(num)) used.add(num);
+  }
+  return used;
+}
+
 function allocScreen(name) {
   // screen-N names pin their slot: a display re-registering with a
   // persisted key takes slot N when free, and a drifted binding (name on
@@ -58,6 +99,7 @@ function allocScreen(name) {
   for (const [n, s] of Object.entries(registry.screens)) {
     if (s.name !== name) continue;
     const cur = parseInt(n, 10);
+    delete s.disconnected_at;              // rebind clears the grace stamp
     if (wanted && wanted !== cur && !registry.screens[wanted]) {
       registry.screens[wanted] = s;
       delete registry.screens[cur];
@@ -72,7 +114,9 @@ function allocScreen(name) {
     }
     return cur;
   }
-  const used = new Set(Object.keys(registry.screens).map((n) => parseInt(n, 10)));
+  // reclaimable (dead past grace) slots don't block allocation — the sweep
+  // is about to delete them anyway
+  const used = usedSlots();
   let n = wanted && !used.has(wanted) ? wanted : 1;
   while (used.has(n)) n++;
   registry.screens[n] = { name, assigned_at: new Date().toISOString() };
@@ -86,6 +130,13 @@ function releaseScreenByWs(ws) {
   // that kept ws.screen must not evict a display that re-registered
   if (live.get(ws.screen) === ws) {
     live.delete(ws.screen);
+    // keep the entry for the rebind grace — stamp it so the sweep frees
+    // the name+slot once the window lapses without a re-register
+    const s = registry.screens[ws.screen];
+    if (s) {
+      s.disconnected_at = new Date().toISOString();
+      saveRegistry();
+    }
     console.log(`[vcast] screen ${ws.screen} disconnected`);
   }
   ws.screen = null;
@@ -248,6 +299,7 @@ function displaysSnapshot() {
       label: s.label || s.name,
       assigned_at: s.assigned_at,
       connected: !!(ws && ws.readyState === 1),
+      disconnected_at: s.disconnected_at || null,
       last_seen: s.last_seen || null,
       state: s.state || "idle",
       state_detail: s.state_detail || null,
@@ -277,6 +329,7 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       rooms: rooms.size,
       screens: Object.keys(registry.screens).length,
+      tombstones: Object.keys(registry.tombstones).length,
       ada_auth: !!ADA_AUTH_URL,
     });
   }
@@ -534,12 +587,35 @@ const server = http.createServer(async (req, res) => {
     if (!adminName) return json(res, 403, { error: "admin key not accepted" });
 
     let name = String(body.name || "").trim();
-    const wanted = parseInt((name.match(/^screen-(\d+)$/) || [])[1] || "0", 10);
+    let wanted = parseInt((name.match(/^screen-(\d+)$/) || [])[1] || "0", 10);
+    // alternates: {want_screen: N} or {screen: N} — same honoring rule
+    const altWant = parseInt(body.want_screen ?? body.screen ?? "0", 10);
+    if (!wanted && altWant > 0) {
+      wanted = altWant;
+      if (!name) name = `screen-${wanted}`;
+    }
     if (!name || wanted) {
-      // allocate: reuse the requested number when free, else lowest free
-      const used = new Set(Object.keys(registry.screens).map((n) => parseInt(n, 10)));
+      // allocate: reuse the requested number when free, else lowest free.
+      // A DEAD holder does not keep the slot — the 2026-10-09 drift bug:
+      // every reclaim of screen-6 while its stale entry lingered got
+      // renamed to lowest-free (screen-8/9/10), stacking dead entries.
+      const used = usedSlots();
       let n = wanted;
-      if (!n || used.has(n)) {
+      if (n && used.has(n)) {
+        const occ = registry.screens[n];
+        if (occ.name !== name && slotLive(n)) {
+          n = 0;                       // a different LIVE display owns it
+        } else if (occ.name !== name) {
+          // dead holder with a different name — reclaim the slot
+          console.log(`[vcast] claim evicts dead ${occ.name} from slot ${n}`);
+          const deadWs = live.get(n);
+          if (deadWs) { deadWs.screen = null; live.delete(n); leaveRoom(deadWs); }
+          delete registry.screens[n];
+          used.delete(n);
+        }
+        // same-name dead entry: keep n — allocScreen() rebinds it in place
+      }
+      if (!n) {
         n = 1;
         while (used.has(n)) n++;
       }
@@ -567,6 +643,13 @@ const server = http.createServer(async (req, res) => {
       screen = wanted;
     }
     registry.screens[screen].label = pending.get(sid)?.label || name;
+    // re-proof a rebound dead entry: restart the rebind window from the
+    // claim — the minted key's register lands well inside it, and a
+    // claim that never attaches is swept like any dead entry
+    registry.screens[screen].disconnected_at = new Date().toISOString();
+    // a successful (re-)mint lifts the tombstone — /release only bars the
+    // name until someone deliberately claims it again
+    delete registry.tombstones[name];
     saveRegistry();
 
     const p = pending.get(sid);
@@ -608,6 +691,12 @@ const server = http.createServer(async (req, res) => {
     if (!name) return json(res, 404, { error: "unknown screen" });
 
     const revoked = await adaRevokeKey(admin_key, name);
+    // Tombstone the released name: the detached socket's late state writes
+    // are already gated by live[], but a still-valid key (revoke lagging
+    // or failed) let a zombie re-register and RE-CREATE the entry — the
+    // 2026-10-09 resurrection. The tombstone blocks registerDisplay until
+    // a fresh /claim re-mints the name.
+    registry.tombstones[name] = new Date().toISOString();
     const entry = Object.entries(registry.screens).find(([, s]) => s.name === name);
     if (entry) {
       const num = parseInt(entry[0], 10);
@@ -618,10 +707,17 @@ const server = http.createServer(async (req, res) => {
         // evict a re-registered display from live[]
         ws.screen = null;
         live.delete(num);
+        // close politely after the unpaired frame — keeps the zombie
+        // from lingering in the room while its page settles on the QR
+        try { ws.close(1000, "released"); } catch (e) {}
       }
+      // stale casts for the released room must not replay onto the next
+      // display to claim this slot
+      for (const k of [...lastCast.keys()])
+        if (k.startsWith(`vcast-${num}|`)) lastCast.delete(k);
       delete registry.screens[entry[0]];
-      saveRegistry();
     }
+    saveRegistry();
     return json(res, 200, { ok: true, name, revoked });
   }
 
@@ -782,9 +878,28 @@ async function registerDisplay(ws, msg) {
     return;
   }
 
-  const screen = allocScreen(name);
+  // released names are tombstoned — a stale socket whose key still
+  // resolves (revoke lagging/failed) must not resurrect the entry.
+  // The client drops the key and returns to the pairing QR; a fresh
+  // /claim lifts the tombstone.
+  if (registry.tombstones[name]) {
+    console.log(`[vcast] register refused: ${name} is released (tombstoned)`);
+    ws.send(JSON.stringify({ type: "unpaired" }));
+    return;
+  }
+
+  let screen = allocScreen(name);
+  // a display may ask for a specific slot (want_screen/screen) — honor it
+  // when free instead of settling for the name-default pin
+  const wantScreen = parseInt(msg.want_screen ?? "0", 10);
+  if (wantScreen > 0 && wantScreen !== screen && !registry.screens[wantScreen]) {
+    registry.screens[wantScreen] = registry.screens[screen];
+    delete registry.screens[screen];
+    screen = wantScreen;
+  }
   const entry = registry.screens[screen];
   if (label) entry.label = label;
+  delete entry.disconnected_at;
   entry.last_seen = new Date().toISOString();
   saveRegistry();
 
@@ -822,7 +937,12 @@ async function registerDisplay(ws, msg) {
 
 const wss = new WebSocketServer({ noServer: true });
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
+  sockets.add(ws);
+  ws.isAlive = true;
+  ws.connectedAt = Date.now();
+  ws.remote = req && req.socket ? req.socket.remoteAddress : "";
+  ws.on("pong", () => { ws.isAlive = true; });
   joinRoom(ws, "default");
 
   ws.on("message", (raw) => {
@@ -849,7 +969,9 @@ wss.on("connection", (ws) => {
 
     // state reports from the live display socket update the registry —
     // a superseded socket keeps no ground truth (its ws.screen is
-    // detached on re-register; the live check is belt-and-braces)
+    // detached on re-register; the live check is belt-and-braces).
+    // NOTE: this path only ever UPDATES an existing entry — never create
+    // here, or a zombie socket resurrects a /release'd screen.
     if (msg && msg.type === "state" && ws.screen != null
         && live.get(ws.screen) === ws) {
       const entry = registry.screens[ws.screen];
@@ -875,7 +997,17 @@ wss.on("connection", (ws) => {
     broadcast(ws, msg);
   });
 
-  ws.on("close", () => {
+  ws.on("close", (code, reason) => {
+    sockets.delete(ws);
+    // close-code forensics for the real-6 flap question: 1001 = client
+    // going away (page nav/reload — proves the nav path), 1006 = abnormal
+    // (no close frame — proxy/network drop), 1000 clean, ping-timeout
+    // kills arrive as 1006 with no peer frame.
+    const ageS = ws.connectedAt
+      ? Math.round((Date.now() - ws.connectedAt) / 1000) : -1;
+    console.log(`[vcast] ws closed code=${code} ` +
+      `reason="${String(reason || "")}" screen=${ws.screen ?? "-"} ` +
+      `remote=${ws.remote} alive=${ageS}s`);
     releaseScreenByWs(ws);
     leaveRoom(ws);
     if (ws.pendingSid) pending.delete(ws.pendingSid);
@@ -903,27 +1035,41 @@ server.listen(PORT, BIND, () => {
 });
 
 setInterval(() => {
-  for (const [, clients] of rooms) {
-    for (const ws of clients) {
-      if (ws.readyState === 1) {
-        ws.send(JSON.stringify({ type: "ping" }));
+  for (const ws of sockets) {
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: "ping" }));
+      // protocol-level liveness: the JSON ping proves the app loop runs,
+      // but only a pong proves the PEER is still there — a half-open
+      // socket (proxy silently dropped it) otherwise holds its screen
+      // registration forever
+      if (!ws.isAlive) {
+        console.log(`[vcast] ws ping timeout — terminating ` +
+          `screen=${ws.screen ?? "-"} remote=${ws.remote}`);
+        try { ws.terminate(); } catch (e) {}
+        continue;
       }
+      ws.isAlive = false;
+      try { ws.ping(); } catch (e) {}
     }
   }
   pendingCleanup();
-  // prune display registrations untouched for 72h — stale test devices
-  // otherwise pile up in /displays forever (iPad sleeping overnight is safe:
-  // it re-registers and re-renders via lastCast replay)
-  const cutoff = Date.now() - 72 * 3600e3;
-  let pruned = false;
+  // grace sweep: a disconnected entry holds its name+slot for GRACE_MS so
+  // a flapping display rebinds in place; past the window the name frees —
+  // dead entries must not accumulate (the pre-fix behavior pinned screen-N
+  // names on dead sockets until the 72h prune)
+  let changed = false;
   for (const [n, s] of Object.entries(registry.screens)) {
-    if (live.has(Number(n))) continue;
-    const seen = Date.parse(s.last_seen || s.assigned_at || 0);
-    if (seen && seen < cutoff) {
-      console.log(`[vcast] pruning stale screen ${n} (${s.name || s.label})`);
-      delete registry.screens[n];
-      pruned = true;
+    if (!reclaimable(parseInt(n, 10))) continue;
+    console.log(`[vcast] freeing dead screen ${n} ` +
+      `(${s.name || s.label}) — rebind grace expired`);
+    delete registry.screens[n];
+    changed = true;
+  }
+  for (const [nm, ts] of Object.entries(registry.tombstones)) {
+    if (Date.now() - Date.parse(ts) > TOMBSTONE_TTL_MS) {
+      delete registry.tombstones[nm];
+      changed = true;
     }
   }
-  if (pruned) saveRegistry();
-}, PING_INTERVAL_MS);
+  if (changed) saveRegistry();
+}, SWEEP_MS);
