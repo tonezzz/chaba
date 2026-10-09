@@ -1,0 +1,112 @@
+title: Staging actuation guard — neutralize write paths on cloned HA configs
+subtitle: stage-clone.sh + SSOT-driven overlay so tony-dev/ada-dev twins can
+  never double-fire household actuation
+icon: 🛡️
+id: 2026-10-09-staging-actuation-guard
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-09"
+card: ha-staging-actuation-guard
+unblocks: ha-dev-instances
+
+planning:
+  goal: |
+    A cloned tony-ha/ada-ha config carries real automations, scripts,
+    shell_commands, rest_commands and cloud/local integrations. Booting a
+    dev twin as-is would actuate real devices twice. Deliverable per the
+    card: scripts/home-assistant/stage-clone.sh which copies the prod config
+    and applies an overlay whose strip/stub list lives in reviewable SSOT.
+  decisions:
+    - id: staging-test-entities
+      decided: "2026-10-09"
+      choice: >
+        The card's open question is resolved FOR mirrors/mocks: staging test
+        automations run against mha_mirror_* REST mirrors + dev_* input_*
+        helpers (the michael-dev pattern), never real device entities.
+        Write-capable config entries are disabled outright; entities needed
+        by dashboards return read-only via mirrors. Mirror template-switches
+        that write through rest_command are safe automatically because the
+        overlay rewrites every rest_command URL to a loopback sink.
+    - id: surgical-text-edits-not-yaml-rewrite
+      decided: "2026-10-09"
+      choice: >
+        "Byte-identical where possible" is implemented literally: PyYAML
+        compose() gives node marks and the engine splices raw text spans —
+        untouched regions (sensors, dashboards-adjacent helpers, secrets,
+        comments, ordering) stay byte-for-byte identical; only write-path
+        lines change.
+    - id: layered-automation-off
+      decided: "2026-10-09"
+      choice: >
+        Automations get TWO independent off-switches: `initial_state: false`
+        injected into every automation item (covers YAML + package + UI
+        automations, survives restore-state), AND `disabled_by: "user"` on
+        automation.* in .storage/core.entity_registry (entity never
+        constructed even if a yaml edit is missed). Re-enabling one
+        automation against mirrors stays a deliberate two-step act.
+    - id: default-deny-config-entries
+      decided: "2026-10-09"
+      choice: >
+        .storage/core.config_entries gets disabled_by="user" for a broad
+        deny list (tuya, cast, androidtv, esphome, mqtt, mobile_app, cloud,
+        hue/shelly/tplink/zha..., alexa/google_assistant/homekit exposures,
+        PTZ cameras, alarm systems, media sinks). This is the primary defence
+        for UI-configured integrations — nothing is kept "readable but
+        writable". A review tier (frigate, adguard, hacs, google*, ...)
+        surfaces in the report without being disabled.
+    - id: http-bind-fix
+      decided: "2026-10-09"
+      choice: >
+        Prod tony-ha binds loopback via http.server_host — inside a
+        podman-network staging container that binds the CONTAINER's loopback
+        and the published port blackholes. The overlay drops server_host and
+        ensures use_x_forwarded_for + podman trusted_proxies (10.0.2.0/24,
+        10.88.0.0/16) so tailscale-serve/Caddy proxying still works.
+    - id: rest-command-sink
+      decided: "2026-10-09"
+      choice: >
+        rest_command URLs are rewritten to http://127.0.0.1:9/staging-sink —
+        RFC 863 discard port, guaranteed no listener, fails fast and logs.
+        Chosen over "drop the key" because keeping the command keeps the
+        entity/service surface identical for dashboard testing.
+    - id: scripts-stubbed-not-disabled
+      decided: "2026-10-09"
+      choice: >
+        Script bodies become `- stop: staging-noop` instead of registry-
+        disabling script.* entities — script entities still exist so
+        dashboards and buttons render, but invoking them is a logged no-op.
+
+deliverables:
+  - scripts/home-assistant/stage-clone.sh       # copy + guard + verify orchestrator
+  - scripts/home-assistant/staging-overlay.py   # apply/verify/audit engine, SSOT-driven
+  - docs/ssot/infrastructure/ssot.home-assistant.staging-overlay.yml  # THE reviewable strip list
+  - tests/ha/test_staging_overlay.py            # 13 tests, fixture end-to-end
+  - runbook: staging_actuation_guard in ssot.home-assistant.howto.yml
+  - index entry in ssot.index.yml (both sections)
+
+execution:
+  verify: |
+    13/13 unittest pass; end-to-end fixture run applies 26 surgical changes
+    and `verify` exits 0 with only intentional review warnings
+    (command_line sensor kept, frigate review-domain enabled).
+    Guards verified: refuses prod config dirs as target, refuses non-marker
+    target dirs, requires --force to refresh an existing staging clone,
+    source==target refused, --dry-run audits without writes.
+  not_done: |
+    Live 24h logbook watch on a booted tony-dev/ada-dev belongs to card
+    ha-dev-instances (it does the quadlet + first boot). The overlay's verify
+    pass is the pre-boot gate; the logbook watch is the post-boot backstop.
+
+residual_risks:
+  - "secrets.yaml/.storage carry prod credentials — same-host trust boundary
+     is the assumption; never ship a staging clone off tony-dell"
+  - "host-side units (cast-browser, audit-cast, node-red, ha-live/bridge.py)
+     are outside the config dir — the clone cannot start them; don't wire
+     them into staging quadlets"
+  - "unknown yaml write paths beyond the deny lists are reported as
+     WARN/review items rather than hard-failed — first real run should
+     eyeball the report"
+  - "custom_components python services are code, not yaml — if a custom
+     integration self-schedules outbound calls it is a config-entry disable
+     away; the deny list covers the common ones"

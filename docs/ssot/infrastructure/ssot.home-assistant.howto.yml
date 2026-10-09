@@ -685,6 +685,39 @@ runbooks:
       tab-cards (simple-tabs, tabbed-stack-card) — rejected 2026-10-08 as
       too much maintenance for the benefit.
     last_updated: '2026-10-08'
+  staging_actuation_guard:
+    purpose: Clone a prod HA config into a staging twin (tony-dev/ada-dev) with
+      every write path neutralized — run before first boot (card
+      ha-staging-actuation-guard).
+    steps:
+      - "Clone + guard: `scripts/home-assistant/stage-clone.sh --source tony-ha
+        --target tony-dev --name 'Tony DEV' [--package mirrors.yaml]` — rsyncs
+        the prod config to ~/.config/<name>, then applies the overlay"
+      - "The strip/stub list is reviewable policy:
+        docs/ssot/infrastructure/ssot.home-assistant.staging-overlay.yml —
+        automations get initial_state:false + registry-disabled, scripts/
+        intent_script sequences become `stop: staging-noop`, scenes are
+        emptied, shell_command becomes a logged echo, rest_command URLs go to
+        the 127.0.0.1:9 sink, outbound notify/influxdb/statestream/cloud blocks
+        are dropped, mqtt/modbus/knx actuating subkeys are removed, and
+        write-capable .storage config entries (tuya/cast/mobile_app/mqtt/...)
+        are disabled_by=user"
+      - "http.server_host is dropped and trusted_proxies gains the podman
+        subnets — staging twins run podman-networked (never host-net) so
+        loopback binding would blackhole the published port"
+      - "Verify: `python3 scripts/home-assistant/staging-overlay.py verify
+        --config ~/.config/tony-dev` — exit 0 = no residual write paths;
+        WARN lines are the review tier (kept command_line sensors, review
+        domains, cloned secrets)"
+      - "Re-clone/refresh: stage-clone.sh --force; the .staging-guard marker
+        dir protects prod configs from being targeted"
+      - "Report: every apply writes .staging-guard/report.json inside the
+        clone with per-file changes"
+    note: Read-keep surface (sensors/history/dashboards/themes/www) is
+      byte-identical. Test automations on staging run against mha_mirror_*/
+      dev_* mock entities — never real ones (decision in card).
+    last_updated: '2026-10-09'
+
 status:
   last_updated: '2026-09-26'
   last_verified: '2026-09-18'
