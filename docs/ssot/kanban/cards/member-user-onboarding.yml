@@ -1,0 +1,51 @@
+id: member-user-onboarding
+title: 'Standard procedure: adding a user to a member node (memory isolation model)'
+column: done
+priority: high
+note: >-
+  DONE 2026-10-09: Mr. Nhong added to kk-ha as member (system-users), login
+  `nhong` works, person.nhong entity bound to his user. Memory model:
+  isolation is by POLICY, not storage — banks are MDDB collections on idc03;
+  each ada-<instance> backend serves only banks whose `instances:` list
+  contains its instance id; within a session, person_policies/control_policies
+  whitelist which banks/tools the identity may touch. Cross-store query = the
+  identity's `allow` list fans over multiple banks. Unlisted identities fall
+  to `default` ([general, home]) — restricted by default.
+action:
+  type: manual
+  status: done
+  runner: devin
+updated: 2026-10-09 09:45
+comms:
+- at: 2026-10-09 09:45
+  from: devin
+  text: >-
+    STANDARD PROCEDURE — add user <name> to member node <node>: (1) HA user:
+    ws as node admin -> config/auth/create {name, group_ids:[system-users]}
+    then config/auth_provider/homeassistant/create {user_id, username,
+    password} — do NOT use `hass --script auth add` alone (creates orphan
+    credential, login fails); (2) person entity: person/create {name,
+    user_id} -> ada-voice-card _myPerson() resolves person.<id> for mint;
+    (3) Ada identity: add person.<id>/user-<id> entries to person_policies +
+    control_policies in ssot.apps.ada-memory-banks.yml with the intended bank
+    allowlist; (4) private memory: optional personal-<id> bank
+    (scope: person, instances:[<member backend>], person_scope) — only needed
+    if the member gets their own store; (5) render + deploy:
+    scripts/ada/render-memory-banks.py --host idc03, restart the member's
+    ada-<instance>; (6) access: add member email to the node's CF Access app;
+    (7) store bootstrap creds in ~/.config/secrets/<node>-bootstrap.env.
+    Cross-store memory query needs NO extra plumbing — widen the person's
+    `allow` list and recall fans across all allowed banks.
+- at: 2026-10-09 09:45
+  from: devin
+  text: >-
+    kk store move: personal-kk bank instances flipped [tony] -> [kk] —
+    ada-kk now owns her private memory; ada-ha-tony no longer serves it
+    (she uses Kaewta/kk-ha for personal items). Registry rendered to idc03
+    and both backends restarted; ada-kk serves 6 banks. NOTE from ada-pi
+    AGENTS.md: idc01 is RETIRED (mddb masked, never unmask) — the
+    member-nodes-to-vps-ha card's idc01 option should read idc02/idc03 only.
+requests:
+- from: tony
+  needed: Nhong's email for the kk-ha CF Access policy (same open ask as KK's).
+  status: open

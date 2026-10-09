@@ -70,6 +70,18 @@ persons:
               formality: polite}
     prefs_doc: person/testo/prefs
 
+  nhong:
+    label: Mr. Nhong
+    role: resident
+    aliases: [person.nhong, user-nhong]
+    banks_read: [general, home, people, personal-nhong]
+    bank_write: personal-nhong
+    control: {domains: [light, switch, input_boolean, script, media_player]}
+    persona: {language: auto, tone: warm, verbosity: normal,
+              formality: polite, proactiveness: minimal}
+    prefs_doc: person/nhong/prefs
+    node: kk-ha          # member user (system-users) on kk-ha; created 2026-10-09
+
   guest:
     label: Guest
     role: guest
