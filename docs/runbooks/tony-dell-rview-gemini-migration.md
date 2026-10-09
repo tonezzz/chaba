@@ -6,10 +6,6 @@ created: 2026-08-20
 updated: 2026-08-20
 category: operations
 related:
-  - stacks/tony-dell/rview-api/rview-api.container
-  - stacks/tony-dell/rview-api/rview-api-image.build
-  - stacks/tony-dell/rview-live/rview-live.container
-  - stacks/tony-dell/rview-live/rview-live-image.build
   - stacks/web/Caddyfile
   - chaba-h3/proxy-server.mjs # on the chaba-h3 host, not in this repo
 status: completed

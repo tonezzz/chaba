@@ -166,32 +166,69 @@ check_git_credentials() {
     fi
 }
 
-# Check Docker security
+# Check container runtime security (docker or podman, whichever exists)
 check_docker_security() {
-    log "INFO" "Checking Docker security..."
-    
-    # Check if Docker is running as root
-    if docker info 2>/dev/null | grep -q "Server Version:"; then
-        # Check for containers running as root
-        local root_containers=$(docker ps --format "{{.Names}}" | while read container; do
-            if docker inspect "$container" 2>/dev/null | grep -q '"User": ""'; then
-                echo "$container"
-            fi
-        done)
-        
-        if [ -n "$root_containers" ]; then
-            # Filter out accepted baseline root containers
-            local unexpected_root_containers=$(echo "$root_containers" | while IFS= read -r c; do
-                if [ -n "$c" ] && ! echo "$ACCEPTED_ROOT_CONTAINERS" | grep -qx "$c"; then
-                    echo "$c"
+    log "INFO" "Checking container runtime security..."
+
+    # Pick an available runtime: docker first, then podman/podman-remote
+    # (quadlet hosts like idc01/idc02/mn01/tony-dell run podman, not docker).
+    local rt=""
+    if command -v docker >/dev/null 2>&1; then rt="docker"
+    elif command -v podman >/dev/null 2>&1; then rt="podman"
+    elif command -v podman-remote >/dev/null 2>&1; then rt="podman-remote"; fi
+
+    if [ -z "$rt" ]; then
+        log "INFO" "No container runtime (docker/podman) on this host - skipping container checks"
+    elif ! $rt ps >/dev/null 2>&1; then
+        log "INFO" "$rt is installed but not reachable - skipping container checks"
+    else
+        # Under rootless podman, container "root" is namespaced to the calling
+        # uid - an empty image User there is the norm, not host-root exposure.
+        # Flag privileged containers instead; keep the empty-User check for
+        # rootful runtimes (dockerd, or podman running against the system socket).
+        local rootless=""
+        if [[ "$rt" == podman* ]] && $rt info 2>/dev/null | grep -q "rootless: true"; then
+            rootless=1
+        fi
+
+        if [ -n "$rootless" ]; then
+            local priv_containers=$($rt ps --format "{{.Names}}" | while read -r container; do
+                if [ -n "$container" ] && [ "$($rt inspect "$container" --format '{{.HostConfig.Privileged}}' 2>/dev/null)" = "true" ]; then
+                    echo "$container"
                 fi
             done)
-            if [ -n "$unexpected_root_containers" ]; then
-                report_issue "medium" "docker-security" "Containers running as root: $unexpected_root_containers" "Configure containers to run as non-root users or accept in ssot.audit.yml baseline"
+            if [ -n "$priv_containers" ]; then
+                local unexpected_priv=$(echo "$priv_containers" | while IFS= read -r c; do
+                    if [ -n "$c" ] && ! echo "$ACCEPTED_ROOT_CONTAINERS" | grep -qx "$c"; then
+                        echo "$c"
+                    fi
+                done)
+                if [ -n "$unexpected_priv" ]; then
+                    report_issue "medium" "docker-security" "Privileged containers under rootless $rt: $unexpected_priv" "Drop --privileged or accept in ssot.audit.baseline.yml"
+                fi
+            fi
+        else
+            # Check for containers running as root
+            local root_containers=$($rt ps --format "{{.Names}}" | while read -r container; do
+                if [ -n "$container" ] && $rt inspect "$container" 2>/dev/null | grep -q '"User": ""'; then
+                    echo "$container"
+                fi
+            done)
+
+            if [ -n "$root_containers" ]; then
+                # Filter out accepted baseline root containers
+                local unexpected_root_containers=$(echo "$root_containers" | while IFS= read -r c; do
+                    if [ -n "$c" ] && ! echo "$ACCEPTED_ROOT_CONTAINERS" | grep -qx "$c"; then
+                        echo "$c"
+                    fi
+                done)
+                if [ -n "$unexpected_root_containers" ]; then
+                    report_issue "medium" "docker-security" "Containers running as root: $unexpected_root_containers" "Configure containers to run as non-root users or accept in ssot.audit.yml baseline"
+                fi
             fi
         fi
     fi
-    
+
     # Check for exposed Docker daemon socket
     if [ -S /var/run/docker.sock ]; then
         local docker_sock_perms=$(stat -c "%a" /var/run/docker.sock)

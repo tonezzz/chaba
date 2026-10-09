@@ -120,7 +120,6 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
-
 	handle /apps/gev-live {
 		redir /apps/gev-live/ 308
 	}
@@ -140,7 +139,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy 127.0.0.1:8790
 	}
 
-
 	handle /apps/gesture-live {
 		redir /apps/gesture-live/ 308
 	}
@@ -155,7 +153,6 @@ http://127.0.0.1:8080 {
 			reverse_proxy 100.68.142.13:8794
 		}
 	}
-
 
 	handle /apps/gesture {
 		redir * /apps/gesture/ 308
@@ -248,16 +245,16 @@ http://127.0.0.1:8080 {
 	handle_path /apps/yt-live/* {
 		root * /srv/public/apps/yt-live
 
-	header Access-Control-Allow-Origin "*"
-	header Access-Control-Allow-Headers "Origin, Range"
-	header Access-Control-Expose-Headers "Content-Length, Content-Range"
-	header Cache-Control "no-cache, no-store"
-	@m3u8yt_live path *.m3u8
-	header @m3u8yt_live Content-Type "application/vnd.apple.mpegurl"
-	@tsyt_live path *.ts
-	header @tsyt_live Content-Type "video/mp2t"
-	@vttyt_live path *.vtt
-	header @vttyt_live Content-Type "text/vtt"
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8yt_live path *.m3u8
+		header @m3u8yt_live Content-Type "application/vnd.apple.mpegurl"
+		@tsyt_live path *.ts
+		header @tsyt_live Content-Type "video/mp2t"
+		@vttyt_live path *.vtt
+		header @vttyt_live Content-Type "text/vtt"
 		file_server
 	}
 
@@ -267,16 +264,16 @@ http://127.0.0.1:8080 {
 	handle_path /apps/walldance-live/* {
 		root * /srv/public/apps/walldance-live
 
-	header Access-Control-Allow-Origin "*"
-	header Access-Control-Allow-Headers "Origin, Range"
-	header Access-Control-Expose-Headers "Content-Length, Content-Range"
-	header Cache-Control "no-cache, no-store"
-	@m3u8walldance_live path *.m3u8
-	header @m3u8walldance_live Content-Type "application/vnd.apple.mpegurl"
-	@tswalldance_live path *.ts
-	header @tswalldance_live Content-Type "video/mp2t"
-	@vttwalldance_live path *.vtt
-	header @vttwalldance_live Content-Type "text/vtt"
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8walldance_live path *.m3u8
+		header @m3u8walldance_live Content-Type "application/vnd.apple.mpegurl"
+		@tswalldance_live path *.ts
+		header @tswalldance_live Content-Type "video/mp2t"
+		@vttwalldance_live path *.vtt
+		header @vttwalldance_live Content-Type "text/vtt"
 		file_server
 	}
 
@@ -322,7 +319,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.106.196.22:8377
 	}
 
-
 	# MDDB write lane for /apps/eye — exposes ONLY /v1/add (bench rows
 	# bench/edge-* and the eye/latest detections doc). Writes need a
 	# tailnet identity; there is no read surface here (CMS scripts read
@@ -348,7 +344,6 @@ http://127.0.0.1:8080 {
 		root * /srv/public/chaba-h3
 		file_server
 	}
-
 
 	@root path /
 	handle @root {
@@ -448,7 +443,6 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.68.142.13:8000
 	}
 
-
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
 		reverse_proxy 127.0.0.1:3003 {
@@ -462,7 +456,6 @@ http://127.0.0.1:8080 {
 	handle_path /frigate/* {
 		reverse_proxy frigate:5000
 	}
-
 
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade
@@ -526,7 +519,6 @@ http://127.0.0.1:8080 {
 		root * /srv/public/apps/sw.js
 		file_server
 	}
-
 
 	# Pretty URLs: /cameras -> /cameras.json
 	rewrite /cameras /cameras.json
