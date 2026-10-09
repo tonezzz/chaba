@@ -49,13 +49,19 @@ def collect_rows():
     """Newest result doc per combo id."""
     newest = {}
     for path, doc in lib.iter_results():
-        cid = doc.get("combo", {}).get("id", "?")
+        if not isinstance(doc, dict):
+            continue
+        cdoc = doc.get("combo")
+        cid = cdoc.get("id", "?") if isinstance(cdoc, dict) \
+            else (cdoc or "?")  # legacy schema: combo was a bare string
         if cid not in newest or doc.get("meta", {}).get("at", "") > \
                 newest[cid][1].get("meta", {}).get("at", ""):
             newest[cid] = (path, doc)
     rows = []
     for cid, (path, doc) in sorted(newest.items()):
         c = doc.get("combo", {})
+        if not isinstance(c, dict):
+            c = {}
         s = doc.get("summary", {})
         rows.append({
             "combo": cid,
