@@ -21,6 +21,7 @@ kb-* / chaba-* / cms collection is bounded by maxRevisions instead.
 import json
 import os
 import sys
+import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
@@ -29,6 +30,12 @@ MDDB = "http://100.102.134.91:11023/v1"
 # ops telemetry lives on the no-embed ops DB (ssot.log-digest-standard)
 OPS_MDB = os.environ.get("MDDB_OPS_URL",
                          "http://100.102.134.91:11026/v1").rstrip("/")
+
+# host-logs is ~260k docs across both DBs — 100-doc pages made the list
+# phase alone take ~30min (0.7s/page). 5000-doc pages stay ~1s even at
+# deep offsets, and /delete-batch collapses the delete phase likewise.
+PAGE_SIZE = 5000
+DELETE_CHUNK = 1000
 
 # collection -> (timestamp meta key, retention days)
 POLICY = {
@@ -42,51 +49,61 @@ POLICY = {
 OPS_COLLECTIONS = {"host-logs"}
 
 
-def post(path: str, body: dict, base: str = MDDB) -> object:
+def post(path: str, body: dict, base: str = MDDB,
+         timeout: int = 60) -> object:
     req = urllib.request.Request(
         f"{base}{path}", data=json.dumps(body).encode(),
         headers={"content-type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
 
 def sweep(collection: str, ts_key: str, days: int, dry: bool,
           base: str = MDDB) -> str:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    t0 = time.monotonic()
     skip, deleted, scanned = 0, 0, 0
     while True:
         try:
             page = post("/search", {"collection": collection, "query": "",
-                                    "limit": 100, "offset": skip}, base)
+                                    "limit": PAGE_SIZE, "offset": skip},
+                        base)
         except Exception as e:
             return f"{collection}: list failed — {e}"
         if not page:
             break
         scanned += len(page)
-        kept = 0
+        expired, kept = [], 0
         for d in page:
             ts = ((d.get("meta") or {}).get(ts_key) or [""])[0]
             if ts and ts < cutoff:
-                if dry:
-                    deleted += 1
-                    kept += 1
-                else:
-                    try:
-                        post("/delete", {"collection": collection,
-                                         "key": d["key"],
-                                         "lang": d.get("lang", "en")},
-                             base)
-                        deleted += 1
-                    except urllib.error.HTTPError:
-                        kept += 1
+                expired.append(d)
             else:
                 kept += 1
-        if len(page) < 100:
+        if dry:
+            deleted += len(expired)
+            kept += len(expired)
+        else:
+            for i in range(0, len(expired), DELETE_CHUNK):
+                chunk = expired[i:i + DELETE_CHUNK]
+                try:
+                    r = post("/delete-batch",
+                             {"collection": collection,
+                              "documents": [{"key": d["key"],
+                                             "lang": d.get("lang", "en")}
+                                            for d in chunk]},
+                             base, timeout=180)
+                    deleted += r.get("deleted", 0)
+                    kept += len(chunk) - r.get("deleted", 0)
+                except Exception:
+                    kept += len(chunk)
+        if len(page) < PAGE_SIZE:
             break
         # deleting shifts later docs left — advance only past kept docs
         skip += kept
     verb = "would delete" if dry else "deleted"
-    return f"{collection}: {verb} {deleted}/{scanned} (>{days}d on {ts_key})"
+    return (f"{collection}: {verb} {deleted}/{scanned} "
+            f"(>{days}d on {ts_key}) in {time.monotonic() - t0:.0f}s")
 
 
 def main() -> int:
