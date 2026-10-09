@@ -1,6 +1,6 @@
 {
  "collection": "kb-development",
- "exported_at": "2026-10-08T21:30:14.666473+00:00",
+ "exported_at": "2026-10-09T05:54:17.935130+00:00",
  "doc_count": 19,
  "docs": [
   {
@@ -324,7 +324,7 @@
      "2026-09-25T17:33:00.109305"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-sensors-2026-06-25.md"
@@ -336,12 +336,12 @@
      "tony-omen — Sensor & disk health check"
     ],
     "use_count": [
-     "1017"
+     "1018"
     ]
    },
    "contentMd": "---\ncategory: development\ndate: 2026-06-25\nhostname: tony-omen\nip: 192.168.1.40\nmodel: HP 15-BC (laptop)\nboard: HP 8641\ncpu: Intel Core i7-9750H\n---\n\n# tony-omen — Sensor & disk health check\n\n## Summary\n\n- All temperatures are within safe limits; CPU and GPU are cool.\n- `sensors-detect` did **not** discover any new sensor chips beyond the existing Intel `coretemp`.\n- Internal NVMe SSD is healthy (5% wear, 0 media errors).\n- External/USB drive (`/dev/sda`) reports SMART PASSED via the SAT pass-through driver.\n- Battery is at full health (100%, 0 cycles).\n\n## Tools installed / used\n\n- `lm-sensors`\n- `smartmontools`\n- `nvme-cli`\n\n## `sensors-detect` result\n\n- **Intel digital thermal sensor (`coretemp`)** — confirmed.\n- Super I/O probe found an **unknown chip with ID 0x8987** — no driver available.\n- I2C/SMBus probe found only an `ee1004` EEPROM (not a sensor).\n- No new modules were added.\n\n## Temperatures\n\n| Source           | Sensor       | Reading | Limits / Notes           |\n| ---------------- | ------------ | ------- | ------------------------ |\n| `coretemp`       | Package id 0 | 57.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 0       | 57.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 1       | 53.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 2       | 48.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 3       | 52.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 4       | 50.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 5       | 55.0°C  | high 100°C, crit 100°C   |\n| `pch_cannonlake` | PCH          | 60.0°C  |                          |\n| `acpitz`         | temp1        | 46.0°C  |                          |\n| `iwlwifi_1`      | Wi-Fi        | 47.0°C  |                          |\n| `nvme`           | Composite    | 46.9°C  | high 82.8°C, crit 89.8°C |\n| `nvme`           | Sensor 2     | 78.8°C  | warm but below critical  |\n| `hp`             | pwm1         | N/A     | no exposed RPM           |\n| `BAT0-acpi-0`    | Voltage      | 10.57 V |                          |\n\n## GPU — NVIDIA GeForce GTX 1650\n\n| Metric                    | Value     |\n| ------------------------- | --------- |\n| Performance state         | P8        |\n| GPU temperature           | 44°C      |\n| Shutdown temperature      | 102°C     |\n| Slowdown temperature      | 97°C      |\n| Max operating temperature | 102°C     |\n| Instantaneous power draw  | 1.30 W    |\n| Power limit               | 50.0 W    |\n| Graphics clock            | 300 MHz   |\n| Memory clock              | 405 MHz   |\n| Max graphics clock        | 2,100 MHz |\n| Max memory clock          | 4,001 MHz |\n\n## Disk — internal NVMe (`/dev/nvme0`)\n\n- **SMART overall-health: PASSED**\n- **Temperature:** 47°C (composite), 79°C (Sensor 2)\n- **Percentage used:** 5%\n- **Data read:** 49.2 TB\n- **Data written:** 53.7 TB\n- **Power cycles:** 1,520\n- **Power-on hours:** 6,024\n- **Unsafe shutdowns:** 40\n- **Media errors:** 0\n- **Critical warning:** 0x00\n\n## Disk — external USB (`/dev/sda`)\n\n- `smartctl -d sat -H /dev/sda` → **PASSED**\n- `smartctl -d usbjmicron` / `usbsunplus` → unsupported on this bridge\n- The drive appears to be behind a JMicron USB-SATA bridge that works with the SAT pass-through driver.\n\n## Power (RAPL)\n\n| Zone      | Constraint | Limit   |\n| --------- | ---------- | ------- |\n| package-0 | long_term  | 200.0 W |\n| package-0 | short_term | 56.25 W |\n| core      | long_term  | 0 W     |\n| uncore    | long_term  | 0 W     |\n| dram      | long_term  | 0 W     |\n\n## Battery\n\n| Property           | Value     |\n| ------------------ | --------- |\n| Status             | Full      |\n| Capacity           | 100%      |\n| Cycle count        | 0         |\n| Charge full        | 2,816 mAh |\n| Charge full design | 2,816 mAh |\n| Voltage now        | 10.568 V  |\n| Voltage design     | 11.400 V  |\n\nNo measurable wear.\n\n## Notes / follow-up\n\n- NVMe secondary sensor runs warm (79°C) but is below the critical threshold (89.8°C) and no thermal warnings are logged.\n- Consider checking NVMe temperature under sustained load.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791418135
+   "updatedAt": 1791512597
   },
   {
    "id": "kb-development|hardware-tony-omen-software-env.md|en",
@@ -358,7 +358,7 @@
      "2026-10-08T14:31:05.928482"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-software-env.md"
@@ -370,12 +370,12 @@
      "tony-omen — Software Environment"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ntitle: tony-omen Software Environment\ndescription: Software environment, runtimes, and active projects on tony-omen machine\ntags: [hardware, software, environment, tony-omen]\ncreated: 2026-07-08\nupdated: 2026-08-11\ncategory: troubleshooting\nstatus: active\n---\n\n# tony-omen — Software Environment\n\n**Scanned:** 2026-07-08\n**Last Updated**: 2026-08-11\n\n---\n\n## Core Runtimes\n\n| Tool           | Version |\n| -------------- | ------- |\n| Python         | 3.14.4  |\n| pip            | 25.1.1  |\n| Node.js        | 24.21.0 (upgraded 2026-09-28 by OpenClaw installer — was v22) |\n| npm            | 11.19.0 (user prefix `~/.npm-global`) |\n| Docker         | 29.6.1  |\n| Docker Compose | v5.2.0  |\n| OpenClaw       | 2026.9.6 (`~/.npm-global/bin/openclaw`, gateway :18789 loopback) |\n| GhostRoute     | 1.0 (pipx; `~/.openclaw/workspace/skills/ghost-route`, watcher via systemd user) |\n\n---\n\n## GPU / CUDA\n\n| Item          | Value                                       |\n| ------------- | ------------------------------------------- |\n| NVIDIA Driver | 595.71.05 (Open Kernel Module)              |\n| CUDA Version  | 13.2                                        |\n| GPU           | GeForce GTX 1650 Mobile / Max-Q — 4 GB VRAM |\n\n---\n\n## Active Projects (as of 2026-08-11)\n\n| Path                                          | Description                                                                                                                                |\n| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |\n| `~/CascadeProjects/gaussian-splatting-docker` | Dockerised 3D Gaussian Splatting pipeline (3DGS, COLMAP, NeRFStudio). Renamed to `chaba` on GitHub: `https://github.com/tonezzz/chaba.git` |\n| `~/CascadeProjects/chaba-kbman/mcp-kbman`     | MCP server for KB management with search and workflow integration                                                                          |\n| `~/CascadeProjects/chaba`                     | Main Chaba project repository                                                                                                              |\n\n---\n\n## Notes\n\n- No conda environment detected (pure system Python)\n- No Tailscale installed\n- `~/GoogleDrive` mount directory exists and is mounted at `/home/tony/GoogleDrive`\n- `~/post-install.sh` — bootstrap script for setting up a new Ubuntu machine (see `scripts/post-install.sh`)\n- mcp-kbman provides KB management and search capabilities\n- Personal KB at `/home/tony/GoogleDrive/Tony AI/KB/` for knowledge management\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791467504
+   "updatedAt": 1791509118
   },
   {
    "id": "kb-development|hardware-tony-omen-specs.md|en",
@@ -454,7 +454,7 @@
      "2026-10-08T13:22:56.624053"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/task-remmina-tony-omen-fix-2026-07-21.md"
@@ -466,12 +466,12 @@
      "Remmina RDP to tony-omen fails via hostname and IP"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\n---\n\n# Remmina RDP to tony-omen fails via hostname and IP\n\n**Date:** 2026-07-21  \n**Device:** tony-dell (client) → tony-omen (target, 192.168.1.48)  \n**Protocol:** RDP over xrdp\n\n## Symptoms\n\n- Remmina could not connect to `tony-omen.local` or `192.168.1.48`.\n- `ping tony-omen.local` failed (`Name or service not known`).\n- `ping 192.168.1.48` succeeded.\n- Ports 22 (SSH) and 3389 (RDP/xrdp) were open.\n- `xrdp` on tony-omen was stopped; starting it allowed a terminal `xfreerdp3` test to authenticate, but the session immediately logged off.\n\n## Root causes\n\n1. **xrdp service was inactive** on tony-omen after a prior shutdown.\n2. **Concurrent XFCE session conflict:** tony was already logged in locally on tony-omen (tty2), so a remote XFCE session collided with the existing D-Bus/session manager state.\n3. **mDNS `.local` name** was unreliable for ICMP/ping from tony-dell.\n\n## Resolution\n\n### On tony-omen (target)\n\nStart and enable xrdp:\n\n```bash\nsudo systemctl start xrdp\nsudo systemctl enable xrdp\n```\n\nIsolate the remote XFCE session from the local one by editing `~/.xsession`:\n\n```bash\ncat > ~/.xsession <<'EOF'\n#!/bin/sh\nunset SESSION_MANAGER\nunset DBUS_SESSION_BUS_ADDRESS\nexec dbus-run-session -- xfce4-session\nEOF\nchmod +x ~/.xsession\n```\n\n### On tony-dell (client)\n\nAdd a static hosts entry for consistent `.local` resolution:\n\n```bash\necho -e \"192.168.1.48\\ttony-omen tony-omen.local\" | sudo tee -a /etc/hosts\n```\n\n### Remmina profile\n\n- **Protocol:** RDP\n- **Server:** `192.168.1.48` (or `tony-omen.local` after hosts entry)\n- **Username:** `tony`\n- Leave **Domain** empty for xrdp local logins.\n- Accept the self-signed xrdp certificate on first connect.\n\n## Verification\n\n- `ssh tony@tony-omen.local 'systemctl is-active xrdp'` → `active`\n- `xfreerdp3 /v:192.168.1.48 /u:tony` authenticated and kept the session open.\n- Remmina connected successfully.\n\n## Notes / next time\n\n- If Remmina disconnects again immediately, check whether tony-omen already has a local XFCE session running (`ps aux | grep xfce4-session`). Logging out locally first is the simplest fallback.\n- The `.local` hostname fix relies on the static `/etc/hosts` entry; if tony-omen gets a new DHCP lease, update the entry or configure reliable mDNS on the target.\n",
    "addedAt": 1791440576,
-   "updatedAt": 1791443781
+   "updatedAt": 1791509405
   },
   {
    "id": "kb-development|test-pwa.md|en",
@@ -538,7 +538,7 @@
      "2026-10-08T14:31:06.718836"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/tradecanvas-chart-graph-display-issues.md"
@@ -550,12 +550,12 @@
      "TradeCanvas Chart Graph Display Issues"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\n---\n\n# TradeCanvas Chart Graph Display Issues\n\n## What it is\n\nTradeCanvas UI charts may fail to display or appear blank due to several configuration issues. This entry covers common causes and fixes for chart graph display problems in the compare2.html and other TradeCanvas pages.\n\n## Context/Background\n\nCreated 2026-08-07 as part of Chaba infrastructure documentation.\n\n## Context\n\nTradeCanvas UI charts may fail to display or appear blank due to several configuration issues. This entry covers common causes and fixes for chart graph display problems in the compare2.html and other TradeCanvas pages.\n\n## Problem Description\n\nCharts not displaying or showing blank areas in TradeCanvas UI, particularly in compare2.html strategy comparison page.\n\n## Root Causes\n\n### 1. Timeframe Configuration Issue\n\n**Problem**: `timeframe: '1D'` configuration shows only 1 day of data\n\n- Since CSV files contain daily price data, 1D timeframe displays only 1 candlestick\n- Single candlestick may not render visibly or appear as blank chart\n\n**Solution**: Use longer timeframes for daily data\n\n```javascript\n// In compare2.html or chart initialization\nconst chartLoader = new ChartLoader({\n  timeframe: \"1Y\", // Changed from '1D' to '1Y'\n  // ... other config\n});\n```\n\n**Valid timeframes for daily data**: `'1W'`, `'1M'`, `'3M'`, `'6M'`, `'1Y'`, `'2Y'`, `'all'`\n\n### 2. CSV Data Path Issue\n\n**Problem**: Absolute URL path for CSV data fails to load\n\n- `http://tony-omen.local:8080/apps/trade/data/imported/${csvFile}` causes CORS/fetch errors\n- Browser cannot load data from absolute URLs in certain contexts\n\n**Solution**: Use relative path from tradecanvas-ui directory\n\n```javascript\n// In chart-loader.js loadData() method\nconst csvUrl = `../data/imported/${csvFile}`; // Changed from absolute URL\n```\n\n**Path structure**:\n\n- tradecanvas-ui/ (HTML/JS files)\n- ../data/imported/ (CSV files)\n\n### 3. Chart Container Height Issue\n\n**Problem**: Missing or insufficient chart container height\n\n- LightweightCharts requires explicit height for rendering\n- CSS `min-height` alone may not be sufficient\n\n**Solution**: Add explicit height in CSS and JavaScript\n\n```css\n/* In styles.css */\n.chart-container-compact {\n  flex: 1;\n  min-height: 300px;\n  height: 400px; /* Added explicit height */\n  border: 1px solid #30363d;\n  border-radius: 8px;\n}\n```\n\n```javascript\n// In chart-loader.js initializeChart() method\nchartContainer.style.width = \"100%\";\nif (!chartContainer.style.height || chartContainer.style.height === \"0px\") {\n  chartContainer.style.height = \"400px\"; // Default height fallback\n}\n```\n\n### 4. Cache Busting Issue\n\n**Problem**: Browser caches old JavaScript files after updates\n\n- Changes to chart-loader.js or other JS files may not load immediately\n- Version parameters needed to force reload\n\n**Solution**: Add version parameters to script tags\n\n```html\n<!-- In compare2.html -->\n<script src=\"chart-loader.js?v=13\"></script>\n<script src=\"strategies.js?v=8\"></script>\n<script src=\"strategy-compare.js?v=12\"></script>\n```\n\n### 5. Data Gap and OHLC Variation Issue\n\n**Problem**: Missing dates or flat OHLC data cause invisible candlesticks\n\n- Data gaps in CSV files create discontinuities in chart timeline\n- Flat OHLC data (all Open=High=Low=Close) doesn't render visible candlesticks\n- Weekend dates should be skipped in daily financial data\n\n**Solution**: Fill data gaps with realistic OHLC variation\n\n```python\n# Example: Generate realistic OHLC variation for missing dates\nimport random\n\nbase_rate = 33.086318\nvariation = base_rate * 0.005  # ±0.5% variation\n\nfor date in missing_dates:\n    open_price = base_rate + (random.random() - 0.5) * variation\n    close_price = open_price + (random.random() - 0.5) * variation\n    high_price = max(open_price, close_price) + random.random() * variation * 0.5\n    low_price = min(open_price, close_price) - random.random() * variation * 0.5\n\n    # Write to CSV with realistic volume\n    writer.writerow([date, 'USD', 'THB', close_price, open_price, high_price, low_price, close_price, random.randint(1000000, 2000000)])\n```\n\n**Data gap filling guidelines:**\n\n- Skip weekend dates (Saturday/Sunday) for daily data\n- Use ±0.5% variation for realistic price movement\n- Include realistic volume data (1M-2M range for forex)\n- Maintain price continuity from previous close\n- Sync updated CSV files using `./sync-tradecanvas-ui.sh`\n\n## Troubleshooting Steps\n\n1. **Check browser console** for JavaScript errors\n   - Look for CSV fetch failures\n   - Check for LightweightCharts initialization errors\n   - Verify chart container dimensions\n\n2. **Verify CSV data accessibility**\n\n   ```bash\n   curl -I \"http://tony-omen.local:8080/apps/trade/data/imported/thb_formatted.csv\"\n   # Should return HTTP 200 OK\n   ```\n\n3. **Check timeframe configuration**\n   - Ensure timeframe matches data granularity\n   - Daily data: use 1W or longer\n   - Intraday data: can use shorter timeframes\n\n4. **Verify chart container dimensions**\n   - Check CSS has explicit height\n   - Verify container element exists in DOM\n   - Check JavaScript sets dimensions correctly\n\n5. **Force cache refresh**\n   - Increment version parameters on script tags\n   - Use browser dev tools \"Disable cache\" option\n   - Hard refresh with Ctrl+Shift+R\n\n## Files to Check\n\n- **HTML**: `compare2.html`, `index.html` - chart initialization config\n- **JavaScript**: `chart-loader.js` - CSV loading and chart creation\n- **CSS**: `styles.css` - chart container dimensions\n- **Data**: Verify CSV files exist in `data/imported/` directory\n\n## Deployment\n\nAfter making changes:\n\n```bash\ncd /home/tony/CascadeProjects/trade\n./sync-tradecanvas-ui.sh\n```\n\nThis syncs files to the web server and tests deployment.\n\n## Related Documentation\n\n- TradeCanvas UI documentation\n- LightweightCharts API documentation\n- CSV data import process\n\n## Tags\n\n- **api**: api\n- **rest**: rest\n- **http**: http\n- **web**: web\n- **deployment**: deployment\n- **ci**: ci\n- **cd**: cd\n- **docker**: docker\n- **documentation**: documentation\n- **kb**: kb\n- **knowledge-base**: knowledge-base\n- **2026**: 2026\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791450625
+   "updatedAt": 1791504559
   },
   {
    "id": "kb-development|tradecanvas-ui-function-mismatch-fix.md|en",
@@ -572,7 +572,7 @@
      "2026-10-08T14:31:06.753859"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/tradecanvas-ui-function-mismatch-fix.md"
@@ -584,12 +584,12 @@
      "TradeCanvas UI Function Mismatch Fix & Modular Refactoring"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\n---\n\n# TradeCanvas UI Function Mismatch Fix & Modular Refactoring\n\n## What it is\n\n**Date:** 2026-08-08\n\n**Date:** 2026-08-08  \n**Category:** UI/JavaScript  \n**Tags:** tradecanvas-ui, javascript, debugging, function-mismatch, modular-architecture\n\n## Context/Background\n\nCreated 2026-08-08 as part of Chaba infrastructure documentation.\n\n## Context\n\nDuring development of Hindsight-01 and Hindsight-02 trading strategies, the compare.html page was stuck showing \"Loading strategy\" forever with JavaScript errors. Later refactored for easier debugging.\n\n## Problem 1: Function Name Mismatch\n\nThe compare.html page was calling a JavaScript function that didn't exist, causing the strategy panel to fail initialization:\n\n```javascript\n// compare.html (incorrect)\nchartLoader.init().then(() => initStrategyPanel(chartLoader));\n\n// strategy-compare.js (actual function name)\nfunction initComparePanel(chartLoader) {\n  // ...\n}\n```\n\n**Error:** `Uncaught (in promise) ReferenceError: initStrategyPanel is not defined`\n\n## Root Cause 1\n\n1. **Function name mismatch**: compare.html was calling `initStrategyPanel()` but strategy-compare.js defines `initComparePanel()`\n2. **Wrong JavaScript file**: compare.html was also loading the old `strategy-engine.js` instead of the new `strategy-compare.js`\n3. **Browser caching**: Changes weren't reflected due to browser cache\n\n## Solution 1: Fix Function Name\n\nChanged compare.html to call the correct function:\n\n```html\n<script>\n  document.addEventListener(\"DOMContentLoaded\", function () {\n    const chartLoader = new ChartLoader({\n      containerId: \"main-chart\",\n      symbol: \"THB\",\n      timeframe: \"all\",\n      showVolume: false,\n      showIndicators: false,\n      enableControls: false,\n      enableWebSocket: false,\n      enableMarkers: false,\n      autoRefresh: false,\n    });\n\n    window.chartLoader = chartLoader;\n    chartLoader.init().then(() => initComparePanel(chartLoader)); // Fixed function name\n  });\n</script>\n```\n\n## Problem 2: Large Monolithic File\n\nThe `strategies.js` file became too large (821 lines) with all strategy implementations, making debugging difficult.\n\n## Solution 2: Modular Refactoring\n\n### Created Separate Module\n\n- **`hindsight-strategies.js`** - New file containing Hindsight01Strategy and Hindsight02Strategy classes\n- ~250 lines, focused solely on hindsight algorithms\n- Easier to test and debug independently\n\n### Updated Load Order\n\n```html\n<script src=\"chart-loader.js?v=14\"></script>\n<script src=\"strategies.js?v=14\"></script>\n<script src=\"hindsight-strategies.js?v=14\"></script>\n<script src=\"strategy-compare.js?v=14\"></script>\n```\n\n### Dynamic Registration Pattern\n\n```javascript\nfunction initComparePanel(chartLoader) {\n  // Register hindsight strategies from separate module\n  if (typeof Hindsight01Strategy !== \"undefined\") {\n    StrategyFactory.register(\"hindsight_01\", Hindsight01Strategy);\n    console.log(\"Registered Hindsight-01 strategy\");\n  }\n  if (typeof Hindsight02Strategy !== \"undefined\") {\n    StrategyFactory.register(\"hindsight_02\", Hindsight02Strategy);\n    console.log(\"Registered Hindsight-02 strategy\");\n  }\n  // ... rest of init\n}\n```\n\n### File Size Reduction\n\n- **strategies.js**: Reduced from 821 lines to ~600 lines (removed 286 lines)\n- **hindsight-strategies.js**: New 250-line focused module\n- **Total**: More maintainable, easier to debug\n\n## Benefits of Modular Approach\n\n1. **Easier Debugging**: Smaller, focused files\n2. **Independent Testing**: Can test hindsight strategies separately\n3. **Clear Separation**: Core strategies vs hindsight strategies\n4. **Better Organization**: Each module has a single responsibility\n5. **Faster Development**: Changes to one strategy don't affect others\n\n## Verification\n\nAfter deployment:\n\n1. Hard refresh browser (Ctrl+F5) to clear cache\n2. Check console for \"Registered Hindsight-01 strategy\" and \"Registered Hindsight-02 strategy\"\n3. Verify no JavaScript errors in console\n4. Confirm strategy panel loads correctly\n5. Test that Hindsight-01 and Hindsight-02 strategies are available\n\n## Prevention\n\n1. **Function name consistency**: Ensure function names match between HTML and JavaScript files\n2. **File dependency tracking**: When replacing JavaScript files, update all references\n3. **Cache busting during development**: Use version parameters (`?v=N`) on script tags\n4. **Modular architecture**: Extract related functionality into separate modules when files grow large\n5. **Dynamic registration**: Use registration pattern for modular strategy loading\n6. **Test after deployment**: Always verify deployed files match development files\n\n## Related Documentation\n\n- `tradecanvas-ui/compare.html` - Main compare page\n- `tradecanvas-ui/strategy-compare.js` - Strategy comparison logic\n- `tradecanvas-ui/strategies.js` - Core strategy implementations\n- `tradecanvas-ui/hindsight-strategies.js` - Hindsight strategy implementations\n- `sync-tradecanvas-ui.sh` - Deployment sync script\n\n## Lessons Learned\n\n- Function name mismatches can cause silent failures in JavaScript\n- Browser caching can mask deployment issues during development\n- When replacing core JavaScript files, audit all references across the codebase\n- Cache busting parameters are essential during active development\n- Modular architecture improves maintainability and debugging\n- Dynamic registration pattern enables flexible module loading\n- Smaller files are easier to understand, test, and debug\n\n## Tags\n\n- **deployment**: deployment\n- **ci**: ci\n- **cd**: cd\n- **docker**: docker\n- **testing**: testing\n- **e2e**: e2e\n- **automation**: automation\n- **documentation**: documentation\n- **kb**: kb\n- **knowledge-base**: knowledge-base\n- **trading**: trading\n- **finance**: finance\n- **api**: api\n- **2026**: 2026\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791450625
+   "updatedAt": 1791504559
   },
   {
    "id": "kb-development|yomi-mcp-process-leak.md|en",
@@ -606,7 +606,7 @@
      "2026-10-08T13:22:58.429623"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/yomi-mcp-process-leak.md"
@@ -618,12 +618,12 @@
      "Yomi MCP Process Leak"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\n---\n\n# Yomi MCP Process Leak\n\n## What it is\n\nEach Devin/Windsurf session spawns multiple Yomi MCP server processes (`~/.yomi/mcpb/run.mjs`). When the session ends, these processes are NOT killed — they become orphaned (reparented to PID 1/systemd) and continue running, consuming RAM and CPU indefinitely.\n\n## Context/Background\n\nCreated 2026-08-05 as part of Chaba infrastructure documentation.\n\n## Impact\n\n- **Per session**: ~16 Yomi processes × ~170MB = ~2.7GB per session\n- **Accumulation**: After several sessions, 14+ orphans accumulated → ~8GB of wasted RAM + 10GB of swap pressure\n- **Swap exhaustion**: System reached 46GB/47GB swap used, causing heavy I/O and load average 13+\n\n## Root Cause\n\nThe Yomi MCP server (`run.mjs`) is launched by the IDE as a subprocess for each MCP connection. On IDE exit, the subprocess management doesn't SIGTERM the Yomi processes, so they linger as daemons.\n\n## Fix Applied (2026-08-05)\n\nManually killed 14 orphaned instances (PIDs 1550563–1881206, started 14:32–18:24):\n\n```bash\nkill 1550563 1624473 1625313 1626012 1680464 1801239 1802052 1804111 1858617 1859048 1860685 1879669 1880132 1881206\n```\n\nResult: freed ~2GB RAM, ~10GB swap.\n\n## Detection\n\n```bash\n# Check for orphaned Yomi instances (parent = systemd/PID 1)\nps aux | grep \"yomi/mcpb/run.mjs\" | grep -v grep | wc -l\n\n# Show instances with start time and memory\nps aux | grep \"yomi/mcpb/run.mjs\" | grep -v grep | \\\n  awk '{print $2, $9, int($6/1024)\"MB\"}' | sort -k2\n```\n\n## Mitigation: Session-Start Cleanup\n\nAdd to `~/.bashrc` or run before starting Devin:\n\n```bash\n# Kill orphaned Yomi MCP instances (parent = PID 1) before starting new session\npkill -f \"yomi/mcpb/run.mjs\" 2>/dev/null || true\n```\n\nOr, a more targeted approach that only kills orphans:\n\n```bash\nps aux | grep \"yomi/mcpb/run.mjs\" | grep -v grep | while read user pid rest; do\n  ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' ')\n  [ \"$ppid\" = \"1\" ] && kill $pid 2>/dev/null\ndone\n```\n\n## Long-term Fix\n\nConfigure the Yomi MCP server as a singleton systemd user service:\n\n```bash\n# /home/tony/.config/systemd/user/yomi-mcp.service\n[Service]\nExecStart=/usr/bin/node /home/tony/.yomi/mcpb/run.mjs\nRestart=on-failure\n```\n\nThis ensures only one instance runs and it restarts cleanly across sessions.\n\n## Related\n\n- `ssot.devin.tools.yml` — MCP server configuration\n- `ssot.token-optimization.yml` — MCP server overhead reduction\n\n## Tags\n\n- **yomi**: yomi\n- **line**: line\n- **messaging**: messaging\n- **conversations**: conversations\n- **documentation**: documentation\n- **kb**: kb\n- **knowledge-base**: knowledge-base\n- **ssot**: ssot\n- **configuration**: configuration\n- **infrastructure**: infrastructure\n- **2026**: 2026\n",
    "addedAt": 1791440578,
-   "updatedAt": 1791441253
+   "updatedAt": 1791505966
   }
  ]
 }
