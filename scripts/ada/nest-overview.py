@@ -114,6 +114,32 @@ def _post(path, payload, timeout=30):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
+CARDS_DIR = REPO / "docs" / "ssot" / "kanban" / "cards"
+
+
+def _linked_cards(link_key="chaba-nest"):
+    """Kanban cards whose links: name this report node — the program's
+    live worklist on the hub page (ideas stay updated as they move)."""
+    out = []
+    if not CARDS_DIR.is_dir():
+        return out
+    for f in sorted(CARDS_DIR.glob("*.yml")):
+        try:
+            d = yaml.safe_load(f.read_text()) or {}
+        except Exception:
+            continue
+        links = d.get("links") or []
+        if link_key not in links:
+            continue
+        out.append({"id": d.get("id") or f.stem,
+                    "title": str(d.get("title") or "")[:70],
+                    "column": d.get("column") or "?",
+                    "updated": str(d.get("updated") or "-")})
+    order = {"doing": 0, "review": 1, "ready": 2, "backlog": 3}
+    out.sort(key=lambda c: (order.get(c["column"], 4), c["id"]))
+    return out
+
+
 def _search_all(collection, page_size=500):
     docs, offset = [], 0
     while True:
@@ -298,6 +324,13 @@ def render(lanes, deltas, brains, orch_key, orch_rows, now):
                      else (b.get("metric") or "-"))
             lines.append(f"| `{e.get('entity')}` | {e.get('tier', '-')} | "
                          f"{e.get('status', '-')} | {bench} |")
+    cards = _linked_cards()
+    if cards:
+        lines += ["", "### Program cards — `links: [chaba-nest]`", "",
+                  "| card | column | updated |", "|---|---|---|"]
+        for c in cards:
+            lines.append(f"| {c['id']} — {c['title']} | {c['column']} | "
+                         f"{c['updated']} |")
     if orch_rows:
         lines += ["", f"### Latest topology run — `{orch_key}`", "",
                   "| structure | acc | cpu/call | heavy% |",

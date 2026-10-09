@@ -59,6 +59,14 @@ Standard workflow for ending a session when the user asks to finish/close.
    - After commit, run `git status --short` again. If anything remains, do a second focused
      commit automatically or warn the user.
 
+6b. Report linkage (CMS)
+   - For every card this session closed or advanced, confirm its `links:`
+     names the right report node (e.g. chaba-nest for Nest program work)
+     and that a `comms:` line records the outcome — that is what keeps the
+     CMS report structure updated; the generators read cards.json on their
+     own cadence, so a card without links/comms is invisible to reports.
+   - If the work produced a report artifact, note the doc key/page in comms.
+
 7. Park unfinished work in the kanban inbox
    - Anything still pending at close — deferred subtasks, follow-ups, "would be nice"
      items — must not die in the summary. File it in `docs/ssot/focus-inbox/` per the
