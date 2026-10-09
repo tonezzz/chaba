@@ -1,0 +1,16 @@
+id: ada-output-hygiene-tags
+title: Ada speaks internal tags aloud + drifts to English mid-Thai session
+kind: bug
+priority: medium
+column: backlog
+autonomy: t2
+brief: 'Session 67b02417a8 08:22: Ada literally spoke "(ha_safety: caution)" and "(kanban list review)" — internal tool/safety
+  annotations leaking into TTS. Session e9837ae922: slipped to English 3x mid-conversation, Tony flagged "ทำไมเปลี่ยนภาษา".
+  Fixes: strip parenthesized tool-tag tokens from spoken output pre-TTS; reinforce language-match in instructions or add a
+  language-lock hint when user speaks Thai.'
+created: '2026-10-09'
+updated: 2026-10-09 16:05
+comms:
+- at: 2026-10-09 16:05
+  from: devin
+  text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
