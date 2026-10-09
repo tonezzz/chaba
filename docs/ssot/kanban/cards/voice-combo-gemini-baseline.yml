@@ -1,7 +1,7 @@
 id: voice-combo-gemini-baseline
 title: 'Bench: Gemini Live golden baseline'
 column: backlog
-updated: 2026-10-09 13:35
+updated: 2026-10-09 14:18
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -36,6 +36,13 @@ comms:
   text: 'attempt 2 started: prior run left no comms trace. Plan: restore adapter dispatch (lost when older bench.py
     overwrote 04abd2fc), add gemini_live adapter using gev-gemini client shape, register gemini-baseline combo,
     stream all 20 fixtures on tony-dell.'
+- at: 2026-10-09 14:18
+  from: devin
+  text: 'DONE: results/gemini-baseline-20261009T071325Z.json - 20/20 ok, ttfa 294ms, total 6.2s, WER 0.02, tools
+    6e/8p/0n. Caveats: (1) ~/.config/secrets/gemini-api-key.env + podman gemini-api-key secret are DEAD keys (401
+    on generativelanguage AND aiplatform); used the live key from ada-pi-pwa.env/chaba-guest.env - gev-gemini pod
+    runs the dead key. (2) google-genai SDK silently dropped audio turns (2.29.0 AND ada''s 2.23.0); bench adapter
+    uses raw BidiGenerateContent ws like gemini-mic-test - gev-gemini '
 pipeline: ci
 claim:
   session: 20261009-133139-run-the-golden-baseline-stream

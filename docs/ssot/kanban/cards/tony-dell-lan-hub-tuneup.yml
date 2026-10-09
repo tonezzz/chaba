@@ -9,7 +9,7 @@ action:
   type: manual
   status: backlog
   runner: devin
-updated: 2026-10-09 14:12
+updated: 2026-10-09 14:14
 comms:
 - at: 2026-10-09 13:00
   from: devin
@@ -29,9 +29,15 @@ comms:
     + ada-ha + radios + web edge, nothing else. tony-dell reverts to pure desktop, OR mn01 takes the LAN hub role
     if it proves reliable. Decision gate: measure tony-dell stability over 2-4 weeks after evacuation — if crashes
     were load- related, tuneup suffices; if hardware/OS-level, plan the replacement.'
+- at: 2026-10-09 14:14
+  from: tony
+  text: 'answered disk-hardware-path: stay-optimize — Stay on dell — tidy disk, no new hardware'
+- at: 2026-10-09 14:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: disk-hardware-path
-  status: open
+  status: answered
   from: devin
   to: tony
   ask: 'tony-dell LAN hub: (a) should ada-ha''s media corpus move off the root disk (or off dell entirely)? (b)
@@ -44,3 +50,5 @@ requests:
   - id: move-off
     label: Move media/serving off dell (omen or VPS)
   suggested: stay-optimize
+  answer: stay-optimize — Stay on dell — tidy disk, no new hardware
+awaiting_action: true

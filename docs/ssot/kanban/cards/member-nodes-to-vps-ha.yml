@@ -6,9 +6,8 @@ note: 'Tony 2026-10-09: "can we run it on idc01-03? consider move the others too
   can we make high availability using cloudflare?" — assessed below.'
 action:
   type: manual
-  status: open
-  runner: devin
-updated: 2026-10-09 14:12
+  status: queued
+updated: 2026-10-09 14:14
 comms:
 - at: 2026-10-09 09:45
   from: devin
@@ -27,6 +26,21 @@ comms:
     paid; (c) cheap — two A records to idc02+idc03 edges (both already proxy the same backends), soft failover via
     browser retry; (d) node redundancy — standby member-node container on idc01 with config sync, promoted on failure.
     Recommend (a)+(d): tunnel multi-connector for the path, standby replica for the node.'
+- at: 2026-10-09 14:14
+  from: tony
+  text: 'answered vps-target: idc03 — idc03 — busiest VPS, already runs ada backends'
+- at: 2026-10-09 14:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 14:14
+  from: tony
+  text: 'answered cf-ha-approach: free-tunnels — Free — parallel tunnels per node, DIY failover'
+- at: 2026-10-09 14:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 14:14
+  from: tony
+  text: queued for processing
 comms_tail:
 - at: 2026-10-09 10:55
   from: devin
@@ -40,7 +54,7 @@ comms_tail:
   status: done
 requests:
 - id: vps-target
-  status: open
+  status: answered
   from: devin
   to: tony
   ask: 'Which host should run member-node HA containers (kk-ha, ada-ha, michael-dev)? Also implied: is it OK for
@@ -53,8 +67,9 @@ requests:
   - id: idc03-kk-local
     label: idc03 for compute, but KK data stays off VPS
   suggested: idc03
+  answer: idc03 — idc03 — busiest VPS, already runs ada backends
 - id: cf-ha-approach
-  status: open
+  status: answered
   from: devin
   to: tony
   ask: Cloudflare HA approach for the member nodes — free multi-connector tunnel vs paid Load Balancer (~$5/mo)?
@@ -64,3 +79,4 @@ requests:
   - id: paid-lb
     label: Paid Load Balancer — real health-check failover
   suggested: free-tunnels
+  answer: free-tunnels — Free — parallel tunnels per node, DIY failover
