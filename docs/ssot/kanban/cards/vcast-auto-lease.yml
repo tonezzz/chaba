@@ -2,13 +2,14 @@ id: vcast-auto-lease
 title: stale vcast capture lease / camwall binding
 brief: 'An automated health check flagged: stale vcast capture lease / camwall binding.
   Read the note, fix it, then close the card.'
-column: done
+column: review
 generated: vcast-auto-health
 program: vcast
 area: monitoring
-priority: medium
-note: 'Auto-recovered 2026-10-09: `lease` check passing again.'
+priority: high
+note: zone vms-noble-a bound to offline/absent screen 1
 help: Active /capture lease >6h or enabled camwall zone bound to an offline screen.
   This is the cast_recast_stale_lease regression surface — clear with POST /api/input-bridge/capture
   {screen:N,active:false} or /camwall {zone:Z,enabled:false}.
 updated: '2026-10-09'
+review_kind: triage
