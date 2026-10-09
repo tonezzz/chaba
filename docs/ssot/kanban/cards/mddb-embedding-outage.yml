@@ -1,0 +1,35 @@
+id: mddb-embedding-outage
+title: mddb idc03 — embedding provider chain dead, 2500+ docs dropped without vectors
+brief: 'Since ~2026-10-09 morning all mddb embeddings fail: gemini-ollama-proxy returns
+  "all same-space providers down (OR circuit-open + Gemini failed)". Chain: Gemini direct
+  = 429 quota exhausted; OpenRouter = 402 credits exhausted; OLLAMA_FALLBACK_BASE never
+  configured so idc03 local ollama (nomic-embed-text, verified healthy on
+  100.102.134.91:11434) is never tried. Queue full (4000), droppedTotal ~2514 — those docs
+  have no vector until reindexed. Vector search saturated 4/4 concurrent, 9828 rejected
+  searches; binlog janitor lag is downstream of this.'
+column: review
+review_kind: decide
+priority: high
+created: 2026-10-09
+tags:
+- mddb
+- incident
+- idc03
+claim: {}
+requests:
+- id: recovery-path
+  ask: 'idc03 embedding is fully dead. Recommended: add OLLAMA_FALLBACK_BASE=http://100.102.134.91:11434
+    to ~/.config/secrets/mddb-gemini.env on idc03 + restart gemini-ollama-proxy (dims match —
+    nomic-embed-text is 768). Then reindex dropped docs. Alternatively: top up OpenRouter
+    credits (402) or wait out the Gemini 429 quota window.'
+  status: open
+  at: 2026-10-09 12:15
+  from: devin
+  options:
+  - id: wire-ollama-fallback
+    label: Wire local Ollama fallback + restart proxy
+  - id: topup-openrouter
+    label: Top up OpenRouter credits
+  - id: wait-gemini
+    label: Wait for Gemini quota reset
+  suggested: wire-ollama-fallback
