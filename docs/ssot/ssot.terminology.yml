@@ -101,6 +101,57 @@ sections:
       - label: Prefer canonical action names
         text: When discussing the decision tree, use the exact mcp_focus action names — continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox — to avoid misalignment.
 
+  - title: Infrastructure Vocabulary
+    icon: "\ud83d\udd0c"
+    layout: list
+    items:
+      - label: HA Node
+        text: >-
+          Umbrella term for one Home Assistant instance on the shared fabric.
+          Examples: tony-ha (production), ada-ha (dev/lab), michael-ha,
+          michael-dev, kk-ha. A node is a container + config + edge endpoint,
+          regardless of which host runs it.
+      - label: Member Node
+        text: >-
+          A per-person HA node on the shared fabric — kk-ha is the first.
+          Provisioning procedure is card member-node-kk-ha: quadlet + minimal
+          config, tailscale serve, dedicated ada-<member> backend on idc03,
+          edge block + DNS + CF Access app, preseeded dashboard, owner
+          onboarding via UI.
+      - label: Production Node
+        text: A node that serves real household traffic — tony-ha (and michael-ha).
+          Deploys require explicit same-session approval.
+      - label: Dev Node
+        text: A lab/test node where experiments land first — ada-ha,
+          michael-dev. No hardware radios required.
+      - label: Edge
+        text: The public Cloudflare + caddy-edge layer that terminates a
+          *.surf-thailand.com hostname and proxies to a node's tailnet
+          endpoint. Edges can move between VPS hosts without touching nodes
+          or clients.
+      - label: Ada Backend
+        text: >-
+          A per-assistant ada-pi uvicorn instance on idc03 (ada-tony :8002,
+          ada-michael :8003, ada-dev :8005, ada-kk :8007), mounted at
+          /apps/ha/ada-<instance> on the idc03 tailnet. Own admin key and
+          issued-keys store per instance; identity isolation is per-backend.
+      - label: Same-Origin Lane
+        text: >-
+          The card dials wss://<this-host>/ada-ws/<instance>/ws — the edge
+          proxies it to the right Ada backend. Client config names only its
+          own host, so the network can change underneath.
+      - label: person.<id>
+        text: >-
+          The cross-node identity (person.tony, person.kk, ...). Role is
+          per-node: owner/member assigned via the HA user on that node plus
+          the Ada person policy (banks/domains).
+      - label: Chain-of-Command Voice
+        text: >-
+          The client-side browser TTS announcement while the card connects —
+          "Connecting to <assistant> on <node> from <device> as <person>" —
+          the dumb nest node announcing itself until the assistant takes
+          over. Mechanical on purpose; no AI.
+
   - title: Canonical Sources
     icon: "\ud83d\udccc"
     layout: list
