@@ -1,0 +1,86 @@
+title: 'Lab: crush CLI assessment (lab-crush-cli)'
+subtitle: adopt-as-alt-lane — solid interactive agent CLI; not a dispatch replacement
+icon: flask
+
+decision:
+  summary: >
+    Assessed charmbracelet/crush v0.98.0 as a potential agent lane.
+    Installed to tony-dell:~/.local/bin/crush from the GitHub release
+    tarball (go1.26.0 present on both tony-omen and tony-dell, but the
+    tarball is one curl+tar+install). Configured OpenRouter via
+    ~/.config/crush/crush.json with api_key "$OPENROUTER_API_KEY"
+    (env-var expansion works; the key was copied from tony-omen
+    ~/.config/secrets/openrouter.env to the same path on tony-dell —
+    tony-dell previously had no openrouter env). Headless runs via
+    `crush run "<prompt>"` with `-c <cwd>` work fine; sessions and data
+    land in <cwd>/.crush (sqlite + logs), so per-task isolation is
+    trivial.
+  scorecard: >
+    Smoke task 1 (write fizzbuzz.py + pytest, run tests): 28s wall,
+    5 tool calls (ls -> write -> write -> bash pytest -> bash verify
+    output), 4/4 tests pass on independent re-run. Smoke task 2
+    (edit existing file, add sys.argv bound + test): 30s, sensible
+    sequence view->view->edit(surgical old_string)->view->edit->pytest,
+    recovered itself from `python` not on PATH to `python3`, verified
+    CLI arg end-to-end; 5/5 tests pass. MCP check: stdio `mcp` stanza
+    parsed, server spawned, tools exposed as mcp_<name>_<tool> and
+    called correctly (lab_list/lab_read on a scratch read-only MCP).
+    Global+project config merge confirmed live (two MCPs with similar
+    names coexisted). Scope: all writes stayed inside the scratch cwd.
+    Extras worth noting: `crush server` mode on a unix socket,
+    `--continue`/`--session` resume, `crush models`, `crush stats`.
+  recommendation: >
+    ADOPT-AS-ALT-LANE. Where crush beats devin-dispatch: interactive
+    TUI for hands-on work; model flexibility (any OpenRouter model
+    including :free tiers, trivially swappable via `models.large`);
+    one-line stdio/http MCP wiring; near-zero ceremony for ad-hoc
+    local tasks. Where dispatch beats crush: the unattended kanban
+    lifecycle (claim, comms, board requests/answers.jsonl,
+    needs-input), TASK_RAILS (worktree confinement, no-push, merge
+    gates), outcome artifacts, and board-api integration — crush has
+    none of these, and running it unattended requires a
+    permissions.allowed_tools allowlist because --yolo is broken in
+    v0.98.0. Keep it installed on tony-dell as an interactive/
+    manual lane; do not wire it into the dispatch loop.
+  method_notes: >
+    GOTCHA: `--yolo`/`-y` is advertised in `crush --help` but rejected
+    by the flag parser in v0.98.0 (root and subcommand position both
+    fail) — unattended runs need "permissions": {"allowed_tools": [...]}
+    in config; tool names observed: agent, bash, diagnostics, download,
+    edit, fetch, glob, grep, ls, multiedit, todos, view, web_search,
+    write. GOTCHA: the OpenRouter account key is valid but has ZERO
+    credit balance — paid models return 402 "Insufficient credits";
+    the assessment ran on nvidia/nemotron-3-super-120b-a12b:free
+    (quality still fine for fizzbuzz-scale work; re-run on a paid
+    coding model when the account is topped up for a fairer harness
+    comparison). Config precedence: project .crush.json/crush.json
+    overrides ~/.config/crush/crush.json (merge, more specific wins).
+    Session db: <cwd>/.crush/crush.db (sessions/messages tables,
+    tool calls visible in parts JSON) — good for auditing runs.
+  side_findings: >
+    (a) Parallel-agent collision: a second agent ran the same
+    lab-crush-cli procedure on tony-dell concurrently — separate crush
+    session in the shared /tmp/crush-lab overwrote my fizzbuzz.py
+    mid-run and rewrote the GLOBAL ~/.config/crush/crush.json with its
+    own MCP/permissions/options. My results were only trustworthy
+    after moving to /tmp/crush-lab-devin-omen with a project-local
+    .crush.json. Confirms the repo's parallel-session warnings apply
+    to shared ~/.config state too — prefer project-local crush config
+    for any multi-agent use. (b) The other agent's read-only stdio MCP
+    (lab_mcp.py, ~60 lines of newline-delimited JSON-RPC) worked when
+    loaded through my run — MCP interop is as simple as the docs
+    claim. (c) `crush -H unix:///run/user/1000/crush-1000.sock` client/
+    server split exists — could matter if we ever want a long-lived
+    agent daemon behind a queue.
+  artifacts: >
+    tony-dell: ~/.local/bin/crush (v0.98.0, left installed),
+    ~/.config/crush/crush.json (global; last-writer was the parallel
+    agent — openrouter+free-model+lab-ro MCP+allowlist), project
+    config + transcripts + scratch at /tmp/crush-lab-devin-omen
+    (ephemeral /tmp). ~/.config/secrets/openrouter.env copied to
+    tony-dell (600, same content as tony-omen).
+  verified: >
+    `crush --version` -> v0.98.0 on tony-dell; three headless
+    `crush run` sessions completed EXIT=0; pytest 4/4 then 5/5 pass
+    independent of crush; MCP tools called and returned correct
+    scoped data; session transcripts audited in .crush/crush.db.
