@@ -61,12 +61,26 @@ def open_requests():
 
 
 def stale_inbox():
+    """Pending = old inbox files not yet drained. status: linked|processed
+    inside focus: means drained (linked = filed/mined elsewhere, processed =
+    resolved/obsolete) — draining is a status write, not a delete."""
     cut = datetime.date.today() - datetime.timedelta(days=STALE_DAYS)
     out = []
     for f in glob.glob(os.path.join(INBOX, "*.yml")):
-        m = re.match(r"(\d{4})-(\d{2})-(\d{2})", os.path.basename(f))
-        if m and datetime.date(*map(int, m.groups())) < cut:
-            out.append(os.path.basename(f))
+        base = os.path.basename(f)
+        m = re.match(r"(\d{4})-(\d{2})-(\d{2})", base)
+        if not m or datetime.date(*map(int, m.groups())) >= cut:
+            continue
+        try:
+            d = yaml.safe_load(open(f)) or {}
+            foc = d.get("focus") or {}
+            if foc.get("status") in ("linked", "processed"):
+                continue
+            out.append(str(foc.get("label") or base)[:60])
+            continue
+        except Exception:
+            pass
+        out.append(base)
     return out
 
 

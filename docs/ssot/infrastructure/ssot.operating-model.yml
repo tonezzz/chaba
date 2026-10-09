@@ -101,6 +101,27 @@ bloat:
     attributes it to you). Where it runs: pre-commit (staged), CI job on
     push (full tree), deploy gate (stack-preflight class).
 
+drain:
+  # Tony 2026-10-10: "adjust related procedure so you can do more for me."
+  # Delegated authority: machinery drains the focus-inbox itself. Draining
+  # is a status write inside focus:, not a delete (except pure snapshots).
+  standard: |
+    focus-inbox is a triage queue, not a graveyard. Any agent may drain:
+    (1) DELETE outright only reproducible machine snapshots — dated ARP
+    scans, health-check alerts, dev-system/ssot-optimization/service-log
+    snapshots, resolved flap items, and artifacts of retired hosts;
+    (2) status: linked for material that feeds a downstream consumer —
+    handoff extracts link to tony-ideas-harvest, task specs link to their
+    card or dispatch outcome; the item stays readable but leaves the nag
+    queue; (3) status: processed for resolved-by-reality items, with
+    processed_reason (e.g. 'fixed in commit X', 'idc01 retired');
+    (4) everything else stays pending — the nag owns reminding Tony.
+    chaba-nag counts only un-drained stale items. New inbox writers SHOULD
+    set focus.status: draft and may set linked_to directly at write time
+    when the item is a record, not a request. Verification: a drained item
+    that resurfaces (e.g. a health alert that re-fires) is a NEW file —
+    the canary decides, not this drain.
+
 nudging:
   # Tony 2026-10-10: "notice me repeatedly until I decide — I don't like it
   # but I need it to push myself forward."
@@ -129,5 +150,6 @@ standards_map:
   quality:      "QA/QC/audit layers — unit tests (ci-test-gate), bench tiers, canaries"
   surfacing:    "surfacing.standard — discover/propose/auto-add + state badges (pinned|auto|proposed)"
   nudging:      "nudging.standard — chaba-nag timer pushes pending decisions to LINE until cleared"
+  drain:        "drain.standard — delegated inbox triage: delete snapshots / link / process / leave pending"
   dashboards:   "ssot.chaba-nest-dashboard.yml spec → chaba-nest-build.py --apply"
   bloat:        "bloat.standard — ratchet baseline, pre-commit + scheduled sweep + deploy gate"
