@@ -65,4 +65,10 @@ comms:
 - at: 2026-10-09 16:37
   from: devin
   text: 'Starting: locating scenario suite schedule source of truth (ssot.jobs.yml vs timers on idc03)'
-updated: 2026-10-09 16:37
+- at: 2026-10-09 16:57
+  from: devin
+  text: 'Root cause: daily ada-bench-casting(02:00)->OnSuccess casting suite hangs the full 2h holding :8199 till
+    04:00, plus hourly smoke :00-~:47 — so every 03:30 weekly was refused. Fix live on idc03: weekly timers moved
+    03:30->05:55 (past both windows), new scenario-suite-run.sh wrapper queues on :8199 (<=30m wait + refused-bind
+    retries). Units now repo-tracked in stacks/services/ada-scenario-runner/. Verifying with real suite runs.'
+updated: 2026-10-09 16:57

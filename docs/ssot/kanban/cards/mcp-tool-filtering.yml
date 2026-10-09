@@ -4,7 +4,7 @@ brief: 'ssot.token-tools.yml claimed MCP filters were operational since Aug — 
   no filter scripts exist, /tmp venvs wiped, and every server serves its full tool surface. Measured: github=48
   tools, yomi=41, postgres=~11. Tool schemas are paid EVERY turn of EVERY session — this is the largest controllable
   token overhead. Implement for real this time, in the stable path.'
-column: doing
+column: review
 priority: high
 created: 2026-10-09
 tags:
@@ -38,12 +38,16 @@ expected_goals:
     assert len(json.load(sys.stdin)[\"result\"][\"tools\"]) <= 18"'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc03
   sweep:
     stale_running: 2026-10-09 16:48
     session_gone: 2026-10-09 16:48
+  result: 'exit=0 ice: No such file or directory | devin-task-20261009-164327-implement-mcp-tool-surface-fil.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261009-164327-implement-mcp-tool-surface-fil.service:
+    No such file or directory'
+  verified: false
 review_kind: verify
 comms:
 - at: 2026-10-09 14:06
@@ -84,5 +88,20 @@ comms:
     (incl login/login_complete so re-auth still works), postgres 28→6 (was ~11 in card, real count is 28). tools/call
     to filtered tools blocked with JSON-RPC error — no passthrough. MCP_ALLOWLIST_OFF=1 restores full surface. mcp_config.json
     updated (backup in mcp-backups/). Updating SSOT now.'
-updated: 2026-10-09 16:49
+- at: 2026-10-09 16:52
+  from: devin
+  text: 'DONE. Before/after (real tools/list): github 44→18, yomi 41→10, postgres 28→6. ROLLBACK (one edit): cp
+    ~/.config/devin/mcp-backups/mcp_config.json.pre-allowlist-20261009 ~/.config/devin/mcp_config.json — or set
+    env MCP_ALLOWLIST_OFF=1 on a server entry / empty its allowfile allow-list. Runbook: docs/ssot/jobs/infrastructure/2026-10-09-mcp-tool-allowlist.yml.
+    SSOT updated: token-tools, mcp.yml, devin.tools, mcp-wrappers. Note: mcp-github-proxy.py was NOT in the live
+    path (stale SSOT claim); live '
+- at: 2026-10-09 16:53
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261009-164327-implement-mcp-tool-surface-fil.service:
+    Failed to ope'
+- at: 2026-10-09 16:53
+  from: chaba
+  text: 'auto-merge held — expected_goals not met: goal github-filtered: unknown check kind ''bash'' — expected
+    one of: http, command'
+updated: 2026-10-09 16:53
 claim: {}

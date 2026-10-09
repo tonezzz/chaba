@@ -3,7 +3,7 @@ title: ada-review-refresh on omen — prune-old-docs.py hits 600s timeout
 brief: 2026-10-09 audit — ada-review-refresh.service on tony-omen fails after ~12min because its subprocess prune-old-docs.py
   (sweeps all mddb collections per retention policy) times out at 600s. Either the sweep is genuinely slow on a
   big corpus, or mddb (idc03) is slow under load. Refreshed corpus is stale until fixed.
-column: doing
+column: review
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -22,9 +22,13 @@ spec: "scripts/ada/prune-old-docs.py sweeps every collection in the retention\np
   VERIFY: manual ada-review-refresh run on omen exits 0; prune step\nduration recorded in card comms.\n"
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261009-163707-scripts-ada-prune-old-docs-py-.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261009-163707-scripts-ada-prune-old-docs-py-.service:
+    No such file or directory'
+  verified: true
 comms:
 - at: 2026-10-09 16:36
   from: idc02
@@ -35,4 +39,33 @@ comms:
 - at: 2026-10-09 16:37
   from: devin
   text: dispatch started — timing prune-old-docs.py --dry-run on tony-omen to find where the 600s goes
-updated: 2026-10-09 16:37
+- at: 2026-10-09 16:55
+  from: devin
+  text: 'root cause found: not mddb load — limit=100 pagination over ~261k host-logs docs = ~2650 x 0.7s requests
+    ≈ 30min list phase alone. Fixed: PAGE_SIZE 100→5000 (verified ~1s/page at offset 100k) + /v1/delete-batch chunks
+    of 1000. Real sweep on omen now 62s total (was >600s killed). Leader copy had 70 expired docs — deleted. Full
+    ada-review-refresh verification run in progress.'
+- at: 2026-10-09 17:00
+  from: devin
+  text: 'VERIFIED: manual systemctl --user start ada-review-refresh.service on tony-omen → status=0/SUCCESS, 5m01s
+    wall (vs 12m27s FAIL at 08:57). Prune step inside service: leader host-logs 140886 docs swept in 33s, 0 left
+    to delete (earlier real run cleared 70). Fix commit b9d1c761 on dispatch branch; patched file also scp''d into
+    omen''s live checkout (local mod until merge). Job trail: docs/ssot/jobs/ada/2026-10-09-prune-old-docs-paging-fix.yml'
+- at: 2026-10-09 17:01
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261009-163707-scripts-ada-prune-old-docs-py-.service:
+    Failed to ope'
+- at: 2026-10-09 17:01
+  from: chaba
+  text: 'session-end checkpoint 94ea26ef: 1 leftover file(s) committed'
+- at: 2026-10-09 17:01
+  from: chaba
+  text: pushed dispatch/20261009-163707-scripts-ada-prune-old-docs-py- to origin
+- at: 2026-10-09 17:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 17:01
+  from: chaba
+  text: auto-merged 876f57a8 (dispatch/20261009-163707-scripts-ada-prune-old-docs-py-) → origin/master
+updated: 2026-10-09 17:01
+claim: {}
