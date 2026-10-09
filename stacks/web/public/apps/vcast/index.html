@@ -770,7 +770,13 @@
           ws.send(JSON.stringify(registerMsg()));
         }
       };
-      ws.onclose = () => {
+      ws.onclose = (e) => {
+        // close-code forensics (picked up by vcast-real's console pipe):
+        // 1001 going-away = this page navigated/reloaded; 1006 = abnormal
+        // (no close frame seen — proxy/network drop), 1000 = clean.
+        console.error(`[vcast] ws closed code=${e.code} ` +
+          `reason="${e.reason || ""}" clean=${e.wasClean} ` +
+          `screen=${screenNum} state=${lastState}`);
         ws = null;
         setHud("reconnecting", false);
         setTimeout(connect, Math.min(5000, 500 * ++wsRetry));

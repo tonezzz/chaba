@@ -1,0 +1,101 @@
+title: vcast input-bridge registry bugs — grace reclaim, release tombstones, ws-drop forensics
+subtitle: "Kanban card vcast-bridge-registry-bugs — fix dead-entry pileup, drift-on-reclaim, release resurrection; instrument ws close causes"
+icon: target
+
+planning:
+  goal: Stop dead sockets pinning screen-N names, stop /release resurrection, honor client screen choice, and instrument the real-6 1-3min ws drop so its cause is provable.
+  scope: "stacks/web/input-bridge/server.mjs, vcast-real.mjs, stacks/web/public/apps/vcast/index.html + sw.js, new vcast-registry-check.mjs. Out of scope: deploying to idc03 (dispatch mode — no deploy), changing the Caddy route."
+  success_criteria:
+    - Kill a display's socket -> it re-claims the same screen-N within one reconnect
+    - /release followed by dead-socket state writes stays deleted
+    - No dead entries accumulate (grace sweep vs old 72h prune)
+    - vcast-auto-displays health card stays green
+    - ws close code/reason logged server-side so the next real-6 drop is attributable
+  risks:
+    - Grace sweep deletes entries a display would have re-used after >60s offline — mitigated by screen-N name pinning (wanted slot re-lands anyway) and tombstone semantics unchanged.
+    - Ping/pong terminate kills a healthy socket that misses one cycle — standard ws pattern, 30s cadence.
+  resources:
+    - idc03 input-bridge relay (tailnet 100.102.134.91:3010)
+    - tony-dell Caddy /api/input-bridge/* hop
+    - podman playwright image for node (runner has no node/npm)
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: vcast-bridge-registry-bugs
+      file: docs/ssot/kanban/cards/vcast-bridge-registry-bugs.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-09T00:15:00Z
+  steps:
+    - id: 1
+      label: Diagnose real-6 ws drop path
+      status: completed
+      notes: "Live /displays showed vcast-real-6 owning 4 entries (slots 1,6,8,9; only 8 connected). A plain ws held through the full Caddy+tailscale hop (wss://tony-dell.../api/input-bridge/ws, room vcast-ctl) stayed up 10+min with 30s JSON pings — no proxy idle-timeout. nav cast only retargets a pane iframe (never the parent page); staged GEV bundle has no top/parent navigation. Screen-8 stayed connected >1h while idle; every dead entry's last state was 'nav /apps/gev/' — drops correlate with the GEV cast. Leading cause: headless Chromium renderer crash (Cesium/WebGL on swiftshader) or browser OOM killing the socket; page crash does not fire Playwright 'close', which also wedged the supervisor's waitForEvent."
+    - id: 2
+      label: Server registry lifecycle
+      status: completed
+      notes: "disconnected_at grace stamp on live-binding close (VCAST_GRACE_MS=60s), sweep frees name+slot past grace (replaces 72h prune), /claim honors wanted over dead holders, tombstones on /release block registerDisplay resurrection until re-claim, lastCast flushed on release, want_screen honored on register, ws close code/reason/age logged, protocol ping/pong + half-open terminate."
+    - id: 3
+      label: Client resilience
+      status: completed
+      notes: "index.html logs ws close code/reason/clean/screen/state via console.error (vcast-real pipes console errors to journald). vcast-real.mjs: VCAST_KEY_FILE persisted api_key + VCAST_DEV_ID seeded device_id via addInitScript (relaunch self-registers, skips claim), page.on('crash') + browser disconnected logging, 30s renderer liveness probe forces relaunch on a wedged page, claim() short-circuits when the label is already connected."
+    - id: 4
+      label: Verification
+      status: completed
+      notes: "vcast-registry-check.mjs (new) 14/14 PASS; vcast-flap-check 7/7; vcast-cast-check 17/17; vcast-handoff-check 6/6 — all via podman playwright node image, host networking."
+  decisions:
+    - label: Grace-delete vs keeping dead entries
+      rationale: Spec allows either; deleting after ~60s is what makes 'no dead entries accumulate' true and frees the NAME claim. Rebind within grace is identical UX to today (same slot back).
+      alternatives_considered: Keep entries + mark stale (still pins names, still drifts /claim to lowest-free — the actual bug); in-memory rebind map (lost on restart, more state).
+    - label: Tombstone persisted in displays.json
+      rationale: A relay restart must not un-tombstone a released name or the zombie resurrects on the next register.
+      alternatives_considered: In-memory tombstone (lost on restart); relying on ada revoke (proved insufficient — revoke lags/fails and the observed resurrection came through registerDisplay).
+    - label: No Caddy/proxy change
+      rationale: Probe ws through the identical hop held >10min; server emits traffic every 30s. Not the drop cause.
+      alternatives_considered: Adding flush_interval/timeout knobs to the Caddyfile — unjustified without evidence.
+
+followup:
+  verification:
+    - "Local: node vcast-registry-check.mjs (14 PASS), vcast-flap-check.mjs (7), vcast-cast-check.mjs (17), vcast-handoff-check.mjs (6) — all exit 0."
+    - "Live after deploy: restart input-bridge on idc03, then watch 'journalctl --user -u input-bridge -f' for '[vcast] ws closed code=' lines — real-6's next drop shows 1001 (page nav/reload) vs 1006 (abnormal/proxy) vs ping-timeout."
+    - "Deploy also needs: rsync stacks/web/public/apps/vcast/ to the web mount; update vcast-real@N units on idc02 with VCAST_KEY_FILE=%h/.local/share/vcast-real/screen-%i.key and VCAST_DEV_ID=vcast-real-%i."
+    - "Post-deploy cleanup: POST /release {screen} for the stale vcast-real-6 entries (1,6,9) then let real-6 re-claim — or just restart the relay; the grace sweep frees dead entries within ~90s of boot anyway."
+  rollback_plan:
+    - "git checkout the pre-change server.mjs onto idc03 ~/apps/input-bridge/ + restart input-bridge.service; registry file is backward compatible (extra keys ignored by old code? NOTE: old loadRegistry only reads .screens — tombstones ignored, safe)."
+  handoff:
+    - "Operator/tony deploys: server.mjs -> idc03 input-bridge, vcast pages -> tony-dell web mount, vcast-real.mjs + unit env -> idc02."
+  deferred:
+    - "Root-cause confirmation of the real-6 renderer crash awaits deployed instrumentation; if code=1001 lines appear, look for a 'reload' cast source; if 1006 without preceding ping-timeout, suspect browser process OOM (idc02 dmesg/journal)."
+
+report:
+  status: completed
+  completed_at: 2026-10-09
+  summary: "Fixed the registry bugs and instrumented the ws-drop question. server.mjs: 60s rebind grace with name release, dead-slot reclaim in /claim, persisted release tombstones, want_screen honoring, close-code logging, protocol ping/pong liveness. Client: page logs its own close codes; vcast-real persists its api_key/device_id across relaunches and watchdogs crashed renderers. Evidence says the 1-3min drop is client-side (GEV/Cesium tab crash under swiftshader), not the Caddy hop — definitive answer lands on next deploy via the close-code logs."
+  metrics:
+    - "probe ws uptime through Caddy+tailscale: >10min, 0 drops": true
+    - "registry-check": "14/14 PASS"
+    - "flap/cast/handoff checks": "7/7, 17/17, 6/6 PASS"
+  links:
+    - title: Kanban card
+      file: docs/ssot/kanban/cards/vcast-bridge-registry-bugs.yml
+    - title: Server
+      file: stacks/web/input-bridge/server.mjs
+    - title: New check
+      file: stacks/web/input-bridge/vcast-registry-check.mjs
+  kb_review:
+    - "ws close codes for flap forensics: 1001 = client nav/reload, 1006 = abnormal drop (proxy/network/crash), 1000 clean — log code+reason+screen+age server-side."
+    - "A renderer crash never fires Playwright page 'close' — waitForEvent('close') wedges forever; probe page.evaluate on an interval to catch wedged pages."
+  lessons_learned:
+    - "Registry entries must not outlive their socket by default; persistence belongs to the NAME claim, not the entry — tombstone + grace gives both."
+
+config:
+  version: 1
+  created_at: 2026-10-09
+  last_updated: 2026-10-09
+  maintainer: devin
+  related_files:
+    - stacks/web/input-bridge/server.mjs
+    - stacks/web/input-bridge/vcast-registry-check.mjs
+    - stacks/web/input-bridge/vcast-real.mjs
+    - stacks/web/public/apps/vcast/index.html
