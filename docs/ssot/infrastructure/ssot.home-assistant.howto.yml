@@ -653,6 +653,28 @@ runbooks:
     note: Ordering pins are per-user (owner by default) — other users see panels
       at default registration order. UI drag-edit overwrites the pin.
     last_updated: '2026-10-08'
+  ha_ui_change_procedure:
+    purpose: 'Standard loop for ANY ada-ha dashboard/UX change — established
+      2026-10-08 so every session mutates, verifies, and records the same way.
+      Keeps SSOT honest as the UI evolves.'
+    steps:
+    - '1. Read current config first: websocket lovelace/config with
+        url_path — never edit blind, other sessions may have changed it'
+    - '2. Mutate live via websocket lovelace/config/save (dashboard storage
+        key = url_path), NOT .storage file edits (those need a restart)'
+    - '3. Verify the RENDERED result with playlive — screenshot + DOM read.
+        Storage contents proving nothing: bad prefs are silently ignored'
+    - '4. Iterate in the live UI until the screenshot looks right, THEN write
+        it down — update the matching runbook here (e.g. chaba_nest_dashboard)
+        and the instance note in ssot.home-assistant.instances.yml'
+    - '5. Commit + push + sync-ssot-to-mddb.py in the same session — a UI
+        change with no SSOT update is drift'
+    - '6. For recurring/new patterns, extend this runbook or add one — the
+        procedure itself is maintained here, versioned with the repo'
+    note: 'Auth: refresh_token tony-devin in ~/.config/ada-ha/.storage/auth →
+      POST /auth/token → websocket auth. Playlive auth: seed localStorage
+      hassTokens on the base URL before navigating to a panel path.'
+    last_updated: '2026-10-08'
   chaba_nest_dashboard:
     purpose: 'Structure of the chaba-nest dashboard on ada-ha: top-level tabs
       (Nest | Polity | Security | Traffic | Flood) + per-topic Reports subviews.
@@ -661,11 +683,12 @@ runbooks:
       2026-10-08.'
     steps:
     - 'Top tabs: Nest is type=panel embedding ?embed=1#/chaba-nest. The four
-        topic tabs are type=sections with max_columns=1 (REQUIRED — multiple
-        sections otherwise render side-by-side as columns), one section with
-        two cards: a markdown nav pill ("Document · Reports →" linking to
-        /chaba-nest/<topic>-reports) then an iframe card embedding the CMS
-        doc (?embed=1#/<slug>, aspect_ratio 140%)'
+        topic tabs are type=masonry (switched from sections 2026-10-08 —
+        masonry stacks cards in one centered column; multi-sections rendered
+        side-by-side columns), two cards: a markdown nav pill ("Document ·
+        Reports →" linking to /chaba-nest/<topic>-reports — the pill IS the
+        doc/filter switcher) then an iframe card embedding the CMS doc
+        (?embed=1#/<slug>, aspect_ratio 140%)'
     - 'Reports subviews: path <topic>-reports, subview: true (hides from tab
         bar, shows a back arrow), back_path: /chaba-nest/<topic>, type=panel,
         iframe to the full CMS browser with a pre-set filter'
