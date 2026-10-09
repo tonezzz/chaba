@@ -687,17 +687,15 @@ runbooks:
         traffic|flood tab deep-link; ?q=<regex|substring> seeds the filter
         (q=polity%7Cnest). Security/Traffic/Flood subviews use ?tab=; Polity
         uses ?tab=pages&q=polity%7Cnest'
-    - 'Card sets: polity = polity-research, nest-bench, nest-portable-brains,
-        nest-oss-landscape; security = security-digest, cctv-digest,
-        cctv-walls, dvr-wall; traffic = camwall-traffic; flood =
-        flood-overview, flood-digest, flood-report(-pattaya-rayong,
-        -nongdon-saraburi), flood-hub-assessment, flood-coordinates-rayong'
+    - 'Card sets live in the SPEC, not here:
+        ssot.chaba-nest-dashboard.yml lists topics→tiles→reports. Regenerate
+        + push with scripts/home-assistant/chaba-nest-build.py --apply —
+        the whole dashboard rebuilds from spec (auth + api_key reused from
+        live config); --print previews'
     - 'TILE STANDARD (Tony 2026-10-09): masonry cards NEVER scroll — brief
         content shown in FULL. ?card=1 clamps title to 2 lines + status to
-        3 (line-clamp + overflow:hidden), "Read full →" carries the rest.
+        3 (line-clamp + overflow:hidden), "Read full →" pinned corner.
         Never embed scrollable full docs as masonry cards'
-    - 'CAUTION: card lists are static YAML — new CMS pages do NOT auto-appear;
-        the <topic>-reports subview is the dynamic catch-all'
     note: 'Subviews are drill-down, not panes. Real nested tabs would need a
       HACS tab-card — rejected 2026-10-08.'
     last_updated: '2026-10-09'

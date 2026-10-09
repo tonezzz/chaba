@@ -1,0 +1,68 @@
+# chaba-nest dashboard spec — the SINGLE SOURCE for the ada-ha dashboard.
+# Edit this file, then regenerate + push with:
+#   python3 scripts/home-assistant/chaba-nest-build.py --apply
+# (auth: ~/.config/ada-ha refresh token tony-devin; CMS key reused from the
+#  live dashboard config or CMS_API_KEY env / ~/.config/secrets/ada-ha-cms.env)
+#
+# Conventions:
+# - each topic becomes a masonry view: nav pill card + one CMS summary-tile
+#   card per slug (?card=1 — clamped, never scrolls; TILE STANDARD)
+# - `reports:` becomes a subview (<path>-reports) iframing the filtered CMS
+#   browser; use "tab=<topic>" for CMS-classified groups, "tab=pages&q=<rx>"
+#   for regex filtering
+# - tile order = card order; top-tier doc first
+id: ssot.chaba-nest-dashboard
+title: Chaba Nest Dashboard Spec
+subtitle: Declarative spec for the ada-ha chaba-nest dashboard — tiles + subviews
+dashboard:
+  url_path: chaba-nest
+  title: Chaba Nest
+  cms_base: https://idc03.taila0626a.ts.net/apps/ha/ada-tony/cms/
+  zoom: "1.15"          # CSS zoom applied inside tiles/docs
+  tile_aspect: "55%"    # iframe card height = % of card width (fits 2-line
+                        #  title + 3-line status + link at zoom 1.15)
+topics:
+- name: Nest
+  path: nest
+  tiles:
+  - chaba-nest
+  - nest-bench
+  - nest-portable-brains
+  - nest-oss-landscape
+  - tony-ideas
+  reports: "tab=pages&q=nest"
+- name: Polity
+  path: polity
+  tiles:
+  - polity-research
+  - nest-bench
+  - nest-portable-brains
+  - nest-oss-landscape
+  reports: "tab=pages&q=polity%7Cnest"
+- name: Security
+  path: security
+  tiles:
+  - security-digest
+  - cctv-digest
+  - cctv-walls
+  - dvr-wall
+  reports: "tab=security"
+- name: Traffic
+  path: traffic
+  tiles:
+  - camwall-traffic
+  reports: "tab=traffic"
+- name: Flood
+  path: flood
+  tiles:
+  - flood-overview
+  - flood-digest
+  - flood-report
+  - flood-report-pattaya-rayong
+  - flood-report-nongdon-saraburi
+  - flood-hub-assessment
+  - flood-coordinates-rayong
+  reports: "tab=flood"
+status:
+  health: active — generated + pushed 2026-10-09, verified via playlive
+  last_updated: '2026-10-09'
