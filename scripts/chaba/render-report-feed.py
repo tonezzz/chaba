@@ -513,7 +513,9 @@ def build_events() -> dict:
     ev = load_yaml(CHABA_DATA / "recent-events.yml") or {}
     for e in (ev.get("entries") or [])[:15]:
         if isinstance(e, dict) and e.get("text"):
-            if _is_lifecycle_noise(e["text"]):
+            # kind:lifecycle is the structural tag producers set; the text
+            # regex stays as defense-in-depth for legacy untagged rows
+            if e.get("kind") == "lifecycle" or _is_lifecycle_noise(e["text"]):
                 noise.append(str(e.get("ts", ""))[:16])
                 continue
             ts = str(e.get("ts", ""))[:16]

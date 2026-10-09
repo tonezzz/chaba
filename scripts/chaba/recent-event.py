@@ -23,6 +23,10 @@ def main():
     ap.add_argument("text", nargs="?", help="one-line event summary")
     ap.add_argument("--text", dest="text_opt")
     ap.add_argument("--ref", help="optional pointer — path, key, or url")
+    ap.add_argument("--kind",
+                    help="event class — 'lifecycle' marks routine ceremony "
+                         "(session end etc.); readers fold 'kind: lifecycle' "
+                         "rows structurally instead of regexing the text")
     ap.add_argument("--ttl-hours", type=int, default=72)
     args = ap.parse_args()
     text = args.text_opt or args.text
@@ -40,6 +44,8 @@ def main():
     entry = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "text": text}
     if args.ref:
         entry["ref"] = args.ref
+    if args.kind:
+        entry["kind"] = args.kind
     if args.ttl_hours != 72:
         entry["ttl_hours"] = args.ttl_hours
 
@@ -49,10 +55,14 @@ def main():
     for e in entries:
         if args.ref and e.get("ref") == args.ref:
             e["ts"], e["text"] = entry["ts"], text
+            if args.kind:
+                e["kind"] = args.kind
             merged = True
             break
         if not args.ref and e.get("text", "").casefold() == text.casefold():
             e["ts"] = entry["ts"]
+            if args.kind:
+                e["kind"] = args.kind
             merged = True
             break
     if not merged:

@@ -318,10 +318,14 @@ def run_source(src, render_dir, repo_root, errors):
         now = datetime.datetime.now().astimezone()
         default_ttl = src.get("ttl_hours", 72)
         drop = [re.compile(p) for p in src.get("drop", [])]
+        drop_kinds = set(src.get("drop_kind", []))
         dropped = 0
         lines = []
         for e in doc.get("entries", []) or []:
             if not isinstance(e, dict) or not e.get("text"):
+                continue
+            if drop_kinds and e.get("kind") in drop_kinds:
+                dropped += 1
                 continue
             if drop and any(p.search(e["text"]) for p in drop):
                 dropped += 1

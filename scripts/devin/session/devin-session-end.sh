@@ -89,6 +89,22 @@ except Exception as e:
 
 append_to_memory(f'Session end {session_id}', close_note)
 
+# Hot-tier audit trail: record the session end, tagged kind:lifecycle so
+# feed/context readers fold it structurally instead of regexing the text.
+try:
+    re_script = pathlib.Path(PROJECT_DIR) / 'scripts/chaba/recent-event.py'
+    if re_script.exists():
+        subprocess.run(
+            ['python3', str(re_script),
+             '--text', f'session ended ({reason})',
+             '--ref', f'devin-session:{session_id}',
+             '--kind', 'lifecycle'],
+            capture_output=True, text=True, timeout=30,
+            encoding='utf-8', errors='replace', check=False
+        )
+except Exception as e:
+    print('session-end hook: recent-event error:', e, file=sys.stderr)
+
 # Surface a concise finish message to the agent.
 parts = [f"Session ended ({reason})."]
 if checkpoint_msg:

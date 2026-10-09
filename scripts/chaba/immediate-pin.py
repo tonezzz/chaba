@@ -67,6 +67,17 @@ def main():
         if p.exists():
             entry["pointer"] = str(p)
 
+    # No task/next/open = nothing to resume — a did-nothing session leaves
+    # no pin. (Auto-derived pointer alone doesn't count as resume info.)
+    if not (entry.get("task") or entry.get("next") or entry.get("open")):
+        entries.remove(entry)
+        if entries:
+            STORE.write_text(yaml.safe_dump(
+                {"entries": entries[:KEEP]}, allow_unicode=True,
+                sort_keys=False))
+        print(f"skipped: {args.session} — no task/next/open to pin")
+        return
+
     entries.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
     STORE.parent.mkdir(parents=True, exist_ok=True)
     STORE.write_text(yaml.safe_dump({"entries": entries[:KEEP]}, allow_unicode=True, sort_keys=False))
