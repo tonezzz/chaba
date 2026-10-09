@@ -1,0 +1,46 @@
+id: ada-chat-machine-voice-bracket
+title: Text chat — render machine voice as bracketed line + play button, no autoplay
+brief: "Tony via LINE 2026-10-09: 'Display machine voice as text in a bracket
+  [machine voice] when in text chat. add play button for effect. no default play.'
+  Today the flat speechSynthesis voice (pwa/app.js systemSay, ~line 305) auto-speaks
+  on notify_voice events (~line 239), the response_completed 'text only' fallback
+  (~line 273), and boot voice — and its text lands in the log unlabelled (a bare
+  'This is the machine voice.' line confused Tony in session ed55a8fcb6). Change:
+  (1) every machine-voice utterance renders in the text log as a bracketed,
+  visually distinct '[machine voice] <text>' line; (2) each such line gets a play
+  button that replays it via speechSynthesis on demand; (3) NO autoplay on the
+  text-chat surface — the voice only sounds when the user presses play (live-voice
+  surface behaviour unchanged: response audio still plays there; this governs the
+  text/chat log). Confirm LINE relay needs no change — it is text-only already."
+column: backlog
+review_kind: verify
+priority: medium
+kind: feature
+repo: ada-pi
+created: '2026-10-09'
+tags:
+- ada-chat
+- ux
+- from-line
+action:
+  type: dispatch
+  repo: ada-pi
+comms:
+- at: 2026-10-09 19:20
+  from: devin
+  text: "filed from Tony's LINE message in ada transcript ed55a8fcb6 — 'For Devin:
+    machine voice bracket + play button, no default play'. Ada's own devin dispatch
+    never executed (devin-dispatch-lan-ip bug), so filing directly."
+expected_goals:
+- check: grep -q 'machine voice' pwa/app.js pwa/chat.html
+  expect: exit
+  id: bracket-label
+- check: grep -Eq 'playMachine|machine-voice-play|speakMachine' pwa/app.js pwa/chat.html
+  expect: exit
+  id: play-control
+- check: '! grep -n ''systemSay(event.text'' pwa/app.js'
+  expect: exit
+  id: no-default-autoplay
+verify: "open the PWA text chat; trigger a notify_voice or text-only completion;
+  expect a '[machine voice]' bracketed line with a play button and silence until
+  clicked. Confirm Ada's normal voice replies still play on the voice surface."
