@@ -2,7 +2,7 @@ id: ada-calendar-auth-expired
 title: Ada Google calendar/tasks auth expired — token refresh 400 on idc03
 kind: bug
 priority: high
-column: backlog
+column: done
 autonomy: t1
 brief: 'Ada agenda prefetch fails every session: CalendarAuthError("google: token refresh failed (400) — re-run
   scripts/ada/google-calendar-auth.py"). Three sessions today complained calendar/tasks unreachable (e9837ae922,
@@ -15,11 +15,12 @@ requests:
   status: done
   answer: re-run on tony-dell by Tony 17:28 +07; token file scp'd to idc03; refresh + calendarList verified (5 calendars)
 created: '2026-10-09'
-updated: 2026-10-09 17:30
+updated: 2026-10-09 19:30
 comms:
 - at: 2026-10-09 19:05
   from: devin
-  text: 'consolidated dups: fix-google-calendar-authentication-c78111 and gcal-token-refresh removed — same root cause, already fixed by Tony''s 17:28 re-auth.'
+  text: 'consolidated dups: fix-google-calendar-authentication-c78111 and gcal-token-refresh removed — same root
+    cause, already fixed by Tony''s 17:28 re-auth.'
 - at: 2026-10-09 16:05
   from: devin
   text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
@@ -30,4 +31,9 @@ comms:
     (CallTrack, Banks & payments, Hosting, Jobs, Family). WARNING: consent screen may be in Testing mode — token
     died in 2 days; if it recurs, publish the OAuth app (script docstring notes 7-day expiry). Remaining work on
     this card = script-into-repo commit (dispatch 164335'
-action: {}
+- at: 2026-10-09 19:30
+  from: tony
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

@@ -85,10 +85,16 @@ instances:
           are ignored; verified via playlive DOM render). Dashboard is
           multi-tab (views): Nest → #/chaba-nest, Polity → #/polity-research,
           Security → #/cctv-walls, Traffic → #/camwall-traffic, Flood →
-          #/flood-overview — each a type:panel view with a single iframe card
-          on ?embed=1 (document-only mode). Tabs chosen by Tony 2026-10-08 to
-          mirror the CMS tab groups; a standalone polity-research sidebar
-          dashboard was created then removed — the tab is the home.
+          #/flood-overview, Board → /chaba-nest/board — each a type:panel
+          view with a single iframe card on ?embed=1 (document-only mode).
+          Board tab added by Tony 2026-10-09 via HA web UI — iframe →
+          https://tony-dell.taila0626a.ts.net/apps/board/ (TAILNET-ONLY:
+          board-api 403s non-tailnet writes; blank off-tailnet. The only
+          tab not embedding the Ada CMS — it points at the chaba web
+          stack on tony-dell, so the tab dies if dell sleeps).
+          Tabs chosen by Tony 2026-10-08 to mirror the CMS tab groups; a
+          standalone polity-research sidebar dashboard was created then
+          removed — the tab is the home.
           Per-topic Reports subviews added 2026-10-08: Polity/Security/
           Traffic/Flood topic tabs are type:sections (max_columns=1) with a
           markdown "Reports →" nav pill above the doc iframe; each links to a

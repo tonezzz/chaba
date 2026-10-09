@@ -4,7 +4,7 @@ brief: 'Every /release or force-revoke writes an ada-auth tombstone that POST /a
   so a released screen-N name is burned forever and force-claim can never succeed (revoke→tombstone→create→409 loop).
   Fix: on 409 conflict the bridge should run the resurrect chain — POST /api/auth/invites (reinvite→pending), POST
   /api/auth/keys/{name}/approve, POST /api/auth/invites/{name} for a fresh redeem_url — instead of revoke+create.'
-column: doing
+column: review
 priority: high
 program: vcast
 area: monitoring
@@ -28,13 +28,17 @@ help: 'Manual recovery runbook (proven 2026-10-09): stop the claiming client fir
   then on idc03 with input-bridge.env sourced: POST 127.0.0.1:8001/api/auth/invites {name} → POST /api/auth/keys/{name}/approve
   → POST /api/auth/invites/{name} {path:"/",redirect:"/apps/vcast"} → burn the returned redeem_url and read api_key
   from the 302 Location → write to the client''s VCAST_KEY_FILE → start client. It registers directly, no claim.'
-updated: 2026-10-09 18:07
+updated: 2026-10-09 19:33
 action:
   type: dispatch
-  status: running
+  status: done
   button: ▶ Fix tombstoned-name claims
   repo: chaba
   runner: idc02
+  result: 'exit=0 the dispatch branch — not pushed, not deployed; go-live = restart `input-bridge.service` on idc03.
+    | devin-task-20261009-175800-1-in-server-mjs-replace-the-fo.service: Consumed 1min 12.769s CPU time, 363.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-09 18:05
   from: devin
@@ -50,3 +54,24 @@ comms:
   from: devin
   text: picked up — implementing adaResurrectScreenKey (invites->approve->mint), auto-fallback on conflict, screen-N
     guard, per-claim serialization + new vcast-claim-check.mjs
+- at: 2026-10-09 18:20
+  from: devin
+  text: 'done in worktree (commit 21578ee9): force path replaced by adaResurrectScreenKey (invites→approve→mint→redeem),
+    auto on conflict for /^screen-\d+$/ only; claims serialized + claimed_at marker — rival race verified (1 winner,
+    loser 409/next slot); live-held names = hard 409 with zero ada mutations. New vcast-claim-check 19/19; registry/handoff/cast/flap
+    checks all green. NOT deployed — restart input-bridge.service on idc03 to go live.'
+- at: 2026-10-09 18:21
+  from: idc02
+  text: 'finished (ok): exit=0 the dispatch branch — not pushed, not deployed; go-live = restart `input-bridge.service`
+    on idc03. | devin-task-2'
+- at: 2026-10-09 18:21
+  from: chaba
+  text: pushed dispatch/20261009-175800-1-in-server-mjs-replace-the-fo to origin
+- at: 2026-10-09 18:21
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 18:21
+  from: chaba
+  text: auto-merged 48347aeb (dispatch/20261009-175800-1-in-server-mjs-replace-the-fo) → origin/master
+claim: {}
+review_kind: verify

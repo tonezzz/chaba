@@ -1,6 +1,6 @@
 id: control-entity-verify-state
 title: 'control_entity: verify state delta after actuation'
-column: doing
+column: review
 priority: high
 note: '2026-10-08 transcript 9e96b5a5bc: Ada called volume_down on media_player.tony_tv_cast 4x — every call returned
   ok:true, she said "done" each time, but the volume never changed (user: "เสียงมันยัง ไม่เปลี่ยนเลย"). HA accepts
@@ -10,9 +10,12 @@ note: '2026-10-08 transcript 9e96b5a5bc: Ada called volume_down on media_player.
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-omen
-updated: 2026-10-09 18:11
+  result: 'exit=0 ) and `tests/test_scenarios.py` (13 passed); no commit, push, or deploy was performed. | devin-task-20261009-175933-control-entity-verify-state-de.service:
+    Consumed 3min 16.576s CPU time over 28min 19.240s wall clock time, 1.4G memory peak.'
+  verified: true
+updated: 2026-10-09 19:33
 comms:
 - at: 2026-10-09 17:00
   from: devin
@@ -29,4 +32,30 @@ comms:
   text: 'explored: control_entity dispatches cover/media_player via ha.py; tv_action cast_verify pattern identified
     in screens.py. Implementing before/after attr-delta verify for adjustable verbs (volume_*, mute, select_source,
     cover open/close/stop).'
+- at: 2026-10-09 18:27
+  from: devin
+  text: 'done: control_entity now reads the watched HA attr/state before+after adjustable calls (volume_up/down/mute,
+    select_source, cover open/close/stop) and returns ok:false with before/after/delta when the device swallowed
+    the call — the 2026-10-08 volume_down no-op now fails loudly instead of saying done. Unverifiable reads stay
+    inconclusive and never fail the call. 229 unit tests + 13 offline scenarios green, incl. a scenario replaying
+    the incident. Not committed/deployed.'
+- at: 2026-10-09 18:28
+  from: tony-omen
+  text: 'finished (ok): exit=0 ) and `tests/test_scenarios.py` (13 passed); no commit, push, or deploy was performed.
+    | devin-task-20261009-1759'
+- at: 2026-10-09 18:28
+  from: chaba
+  text: 'session-end checkpoint b2f638e4: 6 leftover file(s) committed'
+- at: 2026-10-09 18:28
+  from: chaba
+  text: pushed dispatch/20261009-175933-control-entity-verify-state-de to origin
+- at: 2026-10-09 18:28
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-09 18:33
+  from: chaba
+  text: 'merge-sweep: merged 678e9823 (dispatch/20261009-175933-control-entity-verify-state-de from tony-omen) ->
+    origin/main'
 requests: []
+claim: {}
+review_kind: verify
