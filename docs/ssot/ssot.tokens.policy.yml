@@ -1,0 +1,173 @@
+title: Token Budget Policy
+subtitle: How context size is managed, measured, and regression-tested
+icon: 📏
+version: 1
+
+overview:
+  purpose: |
+    The authority for token/context management across Ada (Gemini Live
+    sessions) and dispatch/CLI agents. Context exhaustion is the most
+    expensive failure mode we hit repeatedly — the d6cbf6e6e7 incident
+    (78k input tokens/turn → role-marker fabrication) cost a whole
+    debugging cycle before its cause was identified. This policy fixes
+    the numbers, the rationale, and the test contract so tuning changes
+    are deliberate and verified.
+  scope:
+    - Ada voice sessions (ada-pi realtime_provider)
+    - Dispatch/agent sessions (state-vs-context rule)
+    - Tool-declaration surface (static baseline cost)
+    - Regression scenarios and metric reporting
+  out_of_scope:
+    - Per-model pricing choices (provider selection is per-card)
+    - MDDB/embedding token costs (covered by embed-bench cards)
+
+policies:
+  - id: baseline-discipline
+    title: Keep the static baseline small — every token is paid every turn
+    status: accepted
+    rule: |
+      The static context floor (system instructions + tool declarations +
+      pinned context) is ~19k input tokens, paid on EVERY turn of every
+      session. Tool declarations are the largest controllable share —
+      keep the declared surface at the tool-lint target (~38 tools,
+      hard cap 109). Prefer aliases and action-param tools over
+      one-tool-per-action; prefer on-demand detail (tool returns schema)
+      over inlining docs into instructions.
+    applies_to:
+      - backend/realtime_provider.py (instruction assembly)
+      - backend/tool_runner/ (declaration surface)
+      - tools.d/* declarations
+    rationale: |
+      At voice-session turn rates, 10k tokens of extra baseline = 10k ×
+      turns × sessions/day — a large silent bill. The tool-lint cap exists
+      because decl sprawl was the main baseline growth driver.
+    consequences:
+      - scripts/tool-lint.py fails over the cap — the gate is the contract
+      - new tools need an alias/merge argument, not just a use-case
+
+  - id: gentle-compression-window
+    title: Sliding-window trigger stays well above the baseline
+    status: accepted
+    rule: |
+      context_window_compression.sliding_window must keep:
+        trigger_tokens >= ~1.7x static baseline   (currently 32000)
+        target_tokens  >= ~1.25x static baseline  (currently 24000)
+      Tunable via ADA_CONTEXT_TRIGGER_TOKENS / ADA_CONTEXT_TARGET_TOKENS.
+      A trigger near the baseline compresses almost every turn; a target
+      below it forces aggressive trimming — both unmoor the model
+      mid-sequence.
+    applies_to:
+      - backend/realtime_provider.py connect config
+    rationale: |
+      Measured failure 2026-10-07: trigger=24k/target=8k compressed every
+      turn, dropped tool-sequence context, and Ada degenerated into
+      tool-call storms. The window must only fire once real history
+      exists to compress.
+    consequences:
+      - any trigger/target change must update test_context_budget.py and
+        the context_growth.yaml scenario comment in the same commit
+      - making the window more aggressive to save tokens requires a
+        measured floor check, not just a smaller number
+
+  - id: rotation-ceiling
+    title: Sessions rotate at ~45k rather than riding to failure
+    status: accepted
+    rule: |
+      Long-running sessions rotate to a fresh context window at ~45k
+      input tokens; continuity is carried by session_resumption handles
+      (server-side), not by keeping the raw transcript. Riding a session
+      to provider limits is forbidden — degradation starts well before
+      the hard cap (observed at ~78k: role-marker fabrication, model
+      emitting "—user" turns).
+    applies_to:
+      - backend/realtime_provider.py session rotation logic
+    rationale: |
+      Session d6cbf6e6e7 rode to ~78k/turn, 1.5M cumulative in 12min —
+      the failure looked like a model bug, not a budget breach. Rotation
+      converts an invisible cliff into a bounded, observable event.
+    consequences:
+      - rotation events should appear in ops telemetry, not just code
+      - a session that needs >45k of live context is a design smell —
+        the answer is better retrieval, not a bigger window
+
+  - id: ceiling-and-floor-test
+    title: Token tests must assert both ceiling AND retention floor
+    status: accepted
+    rule: |
+      Any context-management change must pass both:
+        ceiling — input tokens per turn stay below the bound
+          (context_growth.yaml: input_tokens_below 55k)
+        floor   — a fact planted early must be recallable at the end
+          (proves compression didn't silently amputate history)
+      A config that passes ceiling-only may be passing by destroying
+      recall; a config that passes floor-only may be ignoring the budget.
+    applies_to:
+      - tests/scenarios-live/context_growth.yaml
+      - tests/test_context_budget.py
+      - any new token-policy scenario
+    rationale: |
+      The floor assertion is what catches "we saved tokens by lobotomizing
+      the session" — ceiling alone would call the 24k/8k storm config a
+      success.
+    consequences:
+      - scenario stays in the memory tier (burns live tokens — kept out
+        of hourly smoke); run on-demand after any window/rotation change
+
+  - id: dispatch-state-in-card
+    title: Dispatch keeps state in the card, not the context
+    status: accepted
+    rule: |
+      Long agent work checkpoints durable state to its kanban card
+      (comms, requests, verified: lines) so a session can end and resume
+      cheaply instead of growing context to hold history. Sessions that
+      need prior state read it back via tools — the board, SSOT files,
+      and job docs are the memory, not the transcript.
+    applies_to:
+      - devin-dispatch sessions
+      - ada card-loop turns
+      - any unattended agent run
+    rationale: |
+      Same budget math as voice but worse: a dispatch that grew context
+      instead of writing comms burns the whole history per turn AND is
+      unresumable if the session dies. TASK_RAILS exists precisely to
+      make card-checkpointed work resumable.
+    consequences:
+      - needing a summarize-the-last-N-hours turn inside a session is a
+        smell — that belongs in comms written as it happened
+      - session resumes should re-derive state from the card+SSOT, not
+        replay transcripts
+
+  - id: token-observability
+    title: Per-turn input tokens are a reportable metric
+    status: accepted
+    rule: |
+      scenario-live reports per-turn input tokens; ops surfaces should
+      flag sessions whose input/turn crosses ~1.5x trigger (approaching
+      rotation) or whose cumulative grows >1M in an hour (the incident
+      signature). Token metrics belong in reports alongside pass/fail —
+      a scenario that passes by spending 3x more is still a regression.
+    applies_to:
+      - scripts/scenario-live.py reporting
+      - ops-events / report surfaces
+    rationale: |
+      The 78k incident was only diagnosed after the fact because nothing
+      surfaced the growth live. Token telemetry turns "the model went
+      weird" into "turn 7 crossed 40k".
+    consequences:
+      - report consumers treat token regressions like test failures
+      - growth-rate alerts are candidate chaba-nag/ops-event material
+
+related_files:
+  - backend/realtime_provider.py          (window config, rotation — ada-pi)
+  - tests/test_context_budget.py          (config regression — ada-pi)
+  - tests/scenarios-live/context_growth.yaml (ceiling+floor — ada-pi)
+  - scripts/scenario-live.py              (per-turn token reporting — ada-pi)
+  - docs/ssot/ssot.secrets.policy.yml     (sibling policy, same shape)
+  - docs/ssot/kanban/cards/ada-context-budget.yml (origin card)
+
+notes: |
+  Origin: consolidated 2026-10-09 from ada-context-budget card, the
+  d6cbf6e6e7 session incident, the 24k/8k compression-storm incident,
+  and the sliding-window tunables landing in connect config. Numbers are
+  current as of writing; when they change, change the tests in the same
+  commit (gentle-compression-window consequences).
