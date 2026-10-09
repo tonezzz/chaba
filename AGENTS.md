@@ -53,6 +53,17 @@ All work lives on the kanban — the board is the single place everyone (Tony, D
 - **Teach efficiency:** when a workflow could be shorter (a card field, a queue action, a one-line command), show it — and where UX/UI friction keeps people off the board, treat improving it as real work worth a card.
 - **Keep evolving:** Tony's ideas are hypotheses — Chaba CI exists to try them, measure, keep what works, retire what doesn't. Not every idea will work; the job is to extract the most value and learn.
 
+## Idea-pipeline duty (added 2026-10-09 — Tony's standing order)
+
+When Tony voices an idea, feature direction, complaint, or "what if we…" — in chat OR to Ada by voice — the default is to **drive it to production through the standard loop without waiting for an explicit "do it"**:
+
+1. Card it (proper spec, advice, options where a decision exists).
+2. Advance it — dispatch it, or do it directly when small — keeping each step verified.
+3. Stop only at real gates: spend/payments, production changes without precedent, ambiguous direction with irreversible tradeoffs, Tony-declared decisions. Everything else is momentum, not permission.
+4. Report what was *pushed*, not just what was captured — "carded + dispatched + deployed" beats "filed for later".
+
+Capture is the floor, not the goal. An idea that stalls in backlog because nobody was explicitly told to continue is a process failure. Ada carries the same norm (mirrored instructions).
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points

@@ -1,0 +1,53 @@
+id: nest-manager-node
+title: Nest manager node — per-host supervisor + live nest report on CMS
+column: backlog
+kind: feature
+priority: high
+autonomy: t2
+created: '2026-10-09'
+updated: 2026-10-09 14:55
+tags:
+- nest
+- polity
+- cms
+- observability
+brief: 'Tony 2026-10-09: "Can the nest page include a report for all nest nodes on its host? What it is trying to
+  do & progress, be brief. What if we make this report as a Nest manager node — when it exists, it takes authority
+  for all ownerless lesser nodes it discovers, just like the polity AI. Then it generates a live report on cms."
+  Maps directly onto the Asher governance tier: a per-host governor mind that adopts unclaimed students/lanes and
+  reports fleet state to CMS, which auto-surfaces on /chaba-nest.
+
+  '
+spec: "nest-mgr service (one per host; start idc03 + tony-omen + tony-dell):\n\nDISCOVERY — a nest node is any of:\n\
+  \  - systemd user unit matching nest patterns (jev|student|bankq|nest|\n    serve-*.py|openjev)\n  - a `serves:`\
+  \ endpoint in ada-pi tests/bench/topologies.yml `models:`/\n    `lanes:` that resolves to this host\n  - a live\
+  \ /metrics endpoint on a known nest port\nOwnership: a unit/env declaring NEST_OWNER (or a kanban card claim)\
+  \ owns\nthe node; everything else is OWNERLESS → the manager adopts it (registers\nin ~/.local/share/nest/manager-state.json,\
+  \ begins tracking). Adoption is\nobservational in v1 — manager reports and health-checks, never restarts\nor enforces\
+  \ (leash principle in ssot.nest-training.yml promotion_gate).\n\nREPORT — publish/update one CMS page per host\
+  \ (`nest-<host>`, e.g.\n`nest-idc03`) via the CMS write path used by report-distill. Per node,\nBRIEF: name ·\
+  \ kind (student/scorer/lane/brain) · endpoint · state\n(active|shadow|failed|parked) · current goal (from its\
+  \ card/topology —\ne.g. \"shadow-scoring memory-bank routing\") · progress (requests served,\ndivergence count,\
+  \ last bench score — read /metrics or state file) ·\nowner (manager|card:<id>|unmanaged). Max 2 lines/node. Page\
+  \ refreshes\non a 15-min timer + on state change.\n\nSURFACE — /chaba-nest auto-picks these: the nest topic match\
+  \ regex\n`nest|polity|tony-ideas` already matches `nest-idc03` etc. — tiles land\nas PROPOSED via chaba-nest-build.py\
+  \ --discover (Tony accepts → pinned).\nNo dashboard spec change needed.\n\nVERIFICATION —\n  - unit runs, manager-state.json\
+  \ has ≥3 adopted nodes on idc03\n    (jev-student, bankq-student, openjev-student)\n  - CMS page nest-idc03 exists\
+  \ with per-node rows\n  - --discover proposes the tile\nauto_done_when:\n  - file_exists: ~/.local/share/nest/manager-state.json\n\
+  \  - command: curl -sf http://127.0.0.1:<cms>/api/pages/nest-idc03\n"
+advice:
+  from: devin
+  at: 2026-10-09 14:55
+  text: Keep v1 strictly observational — adopt + report + health-flag, zero control actions. The enforcement question
+    (restart failed nodes? retrain?) is a separate gate per the leash posture. Discovery via systemd-pattern + registry
+    serves is enough; do NOT port-scan.
+comms:
+- at: 2026-10-09 14:55
+  from: devin
+  text: 'spec written from Tony''s polity-manager idea. v1 = observer-governor: discovers nest nodes on its host,
+    adopts ownerless ones, publishes a live nest-<host> CMS page that auto-surfaces on /chaba-nest via the existing
+    discover flow. Control actions stay human-gated per promotion_gate.'
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
