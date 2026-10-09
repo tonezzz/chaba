@@ -1,15 +1,14 @@
 id: logs-auto-idc01-severe-spike
-title: logs `idc01` 948 severe/24h
-column: done
+title: logs `idc01` 512 severe/24h
+column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
-priority: medium
-note: 'TRIAGED 2026-10-06: severe lines are caddy-edge 502s to public scanners (GPTBot, /.env, /.git probes) on the standby edge — the designed no-backends response — plus mddb-coldtest lifecycle noise. Not an incident signal.'
-
+priority: high
+note: 512 severe lines (oom/panic/failed) in the last 24h (limit 40)
 help: Read the digest's repeat-offender lines for idc01; this is a real incident signal,
   not pipeline breakage.
-updated: '2026-10-06'
+updated: '2026-10-09'
 comms:
 - at: 2026-10-04 14:16
   from: devin
@@ -39,3 +38,5 @@ comms:
   text: closed by Tony
 action:
   status: done
+brief: 'The log digest flagged something worth a look: logs `idc01` 512 severe/24h.
+  Read the note, then fix it or close the card.'
