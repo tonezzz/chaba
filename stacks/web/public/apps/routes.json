@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-07 21:42 +07",
+  "generated": "2026-10-09 13:55 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -25,12 +25,21 @@
         "public"
       ]
     },
+    "cf-surf": {
+      "kind": "cf-worker",
+      "listen": "https://claw.surf-thailand.com/* — KV-backed, no origin",
+      "serves": [
+        "public"
+      ],
+      "note": "claw-channel lab (card lab-cf-kv-claw-channel): GET unlisted paths unauthenticated, POST needs X-Ingest-Key; stack + worker in stacks/edge/claw-channel/ + edge/claw-channel/; not a routes[] entry — render-routes.py kinds are proxy/static/alias only"
+    },
     "idc03-serve": {
       "kind": "tailscale-serve",
       "mounts": {
         "/": "http://127.0.0.1:8001",
         "/apps/ha/ada-tony": "http://127.0.0.1:8002",
-        "/apps/ha/ada-michael": "http://127.0.0.1:8003"
+        "/apps/ha/ada-michael": "http://127.0.0.1:8003",
+        "/apps/ha/ada-dev": "http://127.0.0.1:8005"
       }
     }
   },
@@ -44,6 +53,11 @@
       "host": "idc03",
       "listen": "127.0.0.1:8003",
       "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"
+    },
+    "ada-dev": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8005",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"
     },
     "ada-pi-pwa": {
       "host": "idc03",
@@ -79,6 +93,11 @@
     "gev-cmd": {
       "host": "tony-dell",
       "listen": "127.0.0.1:8790"
+    },
+    "gesture-relay": {
+      "host": "tony-dell",
+      "listen": "100.68.142.13:8794",
+      "note": "tailnet-IP bind only — PublishPort rendered by install.sh; never LAN"
     },
     "dev-v0": {
       "host": "tony-dell",
@@ -224,6 +243,18 @@
       "path": "/apps/gev/token",
       "owner": "gev",
       "local": true
+    },
+    "gesture-live": {
+      "kind": "proxy",
+      "path": "/apps/gesture-live",
+      "owner": "gesture",
+      "http": "http://100.68.142.13:8794/apps/gesture-live",
+      "ws": "ws://100.68.142.13:8794/apps/gesture-live/ws"
+    },
+    "gesture": {
+      "kind": "static",
+      "path": "/apps/gesture",
+      "owner": "gesture"
     },
     "ada-tony": {
       "kind": "proxy",

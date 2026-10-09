@@ -57,6 +57,7 @@ services:
   gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
   gev-api:        {host: tony-dell, listen: "127.0.0.1:4173"}
   gev-cmd:        {host: tony-dell, listen: "127.0.0.1:8790"}
+  gesture-relay:  {host: tony-dell, listen: "100.68.142.13:8794", note: "tailnet-IP bind only — PublishPort rendered by install.sh; never LAN"}
   dev-v0:         {host: tony-dell, listen: "127.0.0.1:8006"}
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
   snapshot:       {host: tony-dell, listen: "127.0.0.1:9005"}
@@ -91,6 +92,8 @@ routes:
   - {id: gev,              kind: static, path: /apps/gev/*,            owner: gev}
   - {id: gev-live,         kind: proxy,  path: /apps/gev-live/*,       ws: true, upstream: "127.0.0.1:8789", owner: gev, custom: true, note: "mixed ws-proxy + static sub-handles — hand block in renderer"}
   - {id: gev-token,        kind: proxy,  path: /apps/gev/token,        strip: /apps/gev/token, upstream: "127.0.0.1:8790", owner: gev}
+  - {id: gesture-live,     kind: proxy,  path: /apps/gesture-live/*,   ws: true, upstream: "100.68.142.13:8794", owner: gesture, custom: true, verify: {get: "/health", expect: 200}, note: "ws fan-out relay — /ws plus /health on the same port; no static side"}
+  - {id: gesture,          kind: static, path: /apps/gesture/*,        owner: gesture, custom: true, verify: {get: "/", expect: 200}, note: "controller + screen pages; /screen rewrites to screen.html"}
   - {id: ada-tony,         kind: proxy,  path: /apps/ha/ada-tony/*,    upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi, verify: {get: "/", expect: 200}}
   - {id: ada-michael,      kind: proxy,  path: /apps/ha/ada-michael/*, upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi}
   - {id: ada-ha-tony-legacy,  kind: alias, path: /apps/ada_ha_tony*,   target: "/apps/ha/ada-tony{uri}", owner: ada-pi}
