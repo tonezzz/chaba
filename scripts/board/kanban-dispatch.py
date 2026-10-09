@@ -123,7 +123,7 @@ def bump_claims(state_file: Path) -> None:
         st = json.loads(state_file.read_text())
     except Exception:
         st = {}
-    today = datetime.now(timezone(timedelta(hours=7)).date())
+    today = datetime.now(timezone(timedelta(hours=7))).date()
     key = today.strftime("%Y-%m-%d")
     st[key] = int(st.get(key, 0)) + 1
     # prune old dates
