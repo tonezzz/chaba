@@ -1,0 +1,29 @@
+id: merge-sweep-verified-gate
+title: merge-sweep verified:true must check the deliverable, not just the merge
+column: backlog
+kind: bug
+priority: high
+autonomy: t1
+created: '2026-10-09'
+updated: '2026-10-09 15:15'
+tags:
+- dispatch
+- verification
+- trust-chain
+brief: >
+  merge-sweep marked nest-manager-node verified because its branch merged —
+  but the dispatch unit exited 1s in (empty DEVIN_MODEL) and produced
+  nothing. verified should mean the card's expected_goals/auto_done_when
+  checks pass or the outcome doc exists, not just "branch in master".
+spec: |
+  In merge-sweep (scripts/board/ or wherever the verified write lives):
+  only set action.verified=true when (a) the dispatch unit exit==0 AND
+  (b) the branch actually added/changed files vs base OR an outcome doc
+  exists, AND (c) if the card has auto_done_when, its checks pass (or
+  defer to kanban-act). Otherwise mark attempt failed + requeue per the
+  retry path. 2026-10-09 nest-mgr incident is the repro.
+comms:
+- at: '2026-10-09 15:15'
+  from: devin
+  text: 'filed from the nest-mgr false-verify — trust-chain gap: verified meant
+    merged, not done.'
