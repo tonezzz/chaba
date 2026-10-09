@@ -1,0 +1,93 @@
+id: jobs/nest/2026-10-09-nest-mgr-service
+title: nest-mgr — per-host observer-governor service + live nest-<host> CMS pages
+card: nest-manager-node
+date: 2026-10-09
+runner: tony-dell
+status: done
+
+# ---------------------------------------------------------------------------
+# Result: one nest-mgr.service per host (idc03, tony-omen, tony-dell) discovers
+# nest nodes, adopts the ownerless ones into ~/.local/share/nest/
+# manager-state.json, and publishes a live ada-cms-pages/nest-<host> report.
+# The pages auto-surface on /chaba-nest — they are specced as PROPOSED tiles
+# under the nest topic (human gate: --accept pins, --reject drops).
+# v1 is strictly observational: report + health-check, never restart/enforce
+# (leash principle, ssot.nest-training.yml promotion_gate).
+# ---------------------------------------------------------------------------
+
+stack: stacks/services/nest-mgr/
+  # nest-mgr.py (self-contained, stdlib+pyyaml), nest-mgr.service,
+  # install.sh <host...>, verify.sh, README.md
+install: >-
+  install.sh scp's nest-mgr.py to ~/.local/share/nest/ and the unit to
+  ~/.config/systemd/user/ on each host — no repo checkout needed at
+  runtime. Enabled + started on all three hosts 2026-10-09.
+
+discovery:
+  sources:
+    - "systemd user units matching jev|student|bankq|nest|serve-*.py|openjev
+       (name, Description, or ExecStart/unit-file contents — covers
+       quadlet-generated units). Live units claim shared endpoints first."
+    - "serves:/lanes: entries in ~/CascadeProjects/ada-pi/tests/bench/
+       topologies.yml resolving to this host (hostname, ts-name, ts-ip,
+       loopback)"
+    - "live /metrics on the fixed known-port list {8777,8778,8779,8791,8878}
+       — a fixed probe list, not a port scan"
+  merge: nodes from multiple sources merge on their endpoint port
+  ownership: >-
+    NEST_OWNER=<x> in unit env/unit-file → owner <x> (NEST_OWNER=none opts
+    out → unmanaged); kanban card `nest_nodes:`/`nest_node:` field →
+    card:<id>; everything else → adopted (owner: manager)
+  states: active | shadow (desc/topology shadow) | failed | parked
+  kinds: student/scorer/lane/brain + ops (non-serving nest infra — leash,
+    bench runners — extends the spec enum; checked last so it never masks
+    a serving node)
+
+report:
+  page: ada-cms-pages/nest-<host> via MDDB add (report-distill write path)
+  meta: "kind=report, domain=bench, report_role=leaf, parent=chaba-nest,
+         fresh_for=30m — links chaba-nest, nest-bench, services-<host>"
+  row: "name · kind · endpoint · state · goal · progress · owner
+        (≤2 lines/node, single table row)"
+  cadence: >-
+    15-min publish + immediate republish on state-change fingerprint +
+    run_now honored from the ada-cms-automation/nest-<host> registry doc
+    (the CMS regenerate button queues run_now; the daemon clears it —
+    no CMS_COMMAND_GENERATORS allowlist change needed in ada-pi)
+  registry: >-
+    ada-cms-automation/nest-<host> seeded with generator
+    {kind: service, name: nest-mgr} + last_run writeback
+
+verified:
+  - "idc03: 4 adopted nodes — jev-student (active, 772 req, bench golden
+     10/10), bankq-student (shadow), openjev-student (active), open-jev
+     (parked stale unit file). ≥3 adopted requirement met."
+  - "tony-omen: open-jev + open-jev-student failed (leash-parked — honest),
+     orch-bench/open-jev-leash/tony-omen-gtx1650 parked"
+  - "tony-dell: tony-dell-cpu/tony-dell-igpu lanes parked, kanban-brief ops"
+  - "curl -sf http://127.0.0.1:8001/api/cms/pages/nest-idc03 on idc03 → 200
+     (x-api-key). NOTE: card's auto_done_when literal `/api/pages/` path
+     404s — the real CMS route is /api/cms/pages/{slug}."
+  - "chaba-nest-build.py --discover listed all three nest-<host> pages as
+     candidates; added to spec tiles as state: proposed (nest topic only —
+     polity still lists them as candidates until Tony accepts there too)"
+  - "./verify.sh all green: unit active + manager-state.json + CMS page
+     on each host"
+
+notes:
+  - "Merge order matters: live units process first so a stale sibling unit
+     file on the same port (idc03's parked jev-bench.service) can't steal
+     the running unit's name/state — loser lands in node aliases."
+  - "tony-omen scorers read 'failed' not 'parked' — that's what systemd
+     reports after the leash kills them; the report is honest, not
+     alarming (leash is the intended controller)."
+  - "run_now path: cms_automation('run') sets run_now in the registry doc;
+     nest-mgr polls it each 60s tick — self-clearing, no ada-pi deploy
+     needed (the ada-pi allowlist lives behind origin/main on idc03)."
+next:
+  - "Tony accepts the 3 PROPOSED tiles → --accept <slug> + --apply pushes
+     them to /chaba-nest"
+  - "enforcement questions (restart failed nodes? auto-leash?) stay gated
+     — separate card per the leash posture"
+  - "NEST_OWNER=<owner> conventions: set it in unit files that should NOT
+     be adopted; `nest_nodes: [<name>]` on a card claims a node"

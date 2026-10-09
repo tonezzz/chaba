@@ -1,0 +1,10 @@
+[Unit]
+Description=Nest manager — per-host observer-governor (adopts ownerless nest nodes, publishes nest-<host> CMS page)
+
+[Service]
+ExecStart=/usr/bin/python3 %h/.local/share/nest/nest-mgr.py --loop
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target
