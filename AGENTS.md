@@ -42,6 +42,17 @@ Tony's requests die when they stay inside a conversation. Before ending any sess
 
 The board is the only trustworthy list of pending work; a request with no card does not exist.
 
+## Kanban-first teamwork (added 2026-10-09 — Tony's working agreement)
+
+All work lives on the kanban — the board is the single place everyone (Tony, Devin, Ada, dispatches) follows every job. This is a *mutual* duty:
+
+- **Agent side:** when Tony raises work in chat that isn't carded, encourage the card — file it, or offer to. When the agent itself discovers follow-up work, card it rather than holding it in-session. Ada carries the same norm (mirrored in her system instructions).
+- **Tony side:** he may equally push agents to card work they mention. Take the nudge gracefully and card it.
+- **Back on track:** everyone is responsible for helping everyone else stay on track — if a request is drifting (unanswered request, stale doing claim, conversation-only work), say so plainly and put it on the board.
+- **Communication is the mechanism:** card comms and requests are how parties hand off asynchronously — write them so the next reader needs no conversation context.
+- **Teach efficiency:** when a workflow could be shorter (a card field, a queue action, a one-line command), show it — and where UX/UI friction keeps people off the board, treat improving it as real work worth a card.
+- **Keep evolving:** Tony's ideas are hypotheses — Chaba CI exists to try them, measure, keep what works, retire what doesn't. Not every idea will work; the job is to extract the most value and learn.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points
