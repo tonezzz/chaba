@@ -1,6 +1,6 @@
 {
  "collection": "kb-development",
- "exported_at": "2026-10-09T05:54:17.935130+00:00",
+ "exported_at": "2026-10-09T21:30:17.586490+00:00",
  "doc_count": 19,
  "docs": [
   {
@@ -222,7 +222,7 @@
      "2026-09-25T17:32:55.957585"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-dell-changes.md"
@@ -234,12 +234,12 @@
      "tony-dell — Change log"
     ],
     "use_count": [
-     "1029"
+     "1030"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\nhostname: tony-dell\ndate: 2026-07-21\ntags: [hardware, changelog]\nstatus: active\n---\n\n# tony-dell — Change log\n\n| Date       | Change                                                                  | Reason                      | Result                                                                                                              | Reference                                  |\n| ---------- | ----------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |\n| 2026-06-25 | Disk health check with `smartmontools`                                  | Establish hardware baseline | Internal Seagate HDD has 8 pending sectors and 8 offline uncorrectable sectors; SMART still PASSED, monitor ongoing | `hardware/tony-dell/2026-06-25-sensors.md` |\n| 2026-07-21 | Updated IP in KB dashboard/context from `192.168.1.37` to current lease | Current-context refresh     | Dashboard now reflects `192.168.1.37` as the known address                                                          | `current-context.md`, `hardware/README.md` |\n\n## Notes\n\n- No configuration changes have been applied to this machine yet; only monitoring and documentation.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791418130
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-development|hardware-tony-dell-sensors-2026-06-25.md|en",
@@ -256,7 +256,7 @@
      "2026-09-25T17:32:58.176798"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-dell-sensors-2026-06-25.md"
@@ -268,12 +268,12 @@
      "tony-dell — Sensor & disk health check"
     ],
     "use_count": [
-     "1014"
+     "1015"
     ]
    },
    "contentMd": "---\ncategory: development\ndate: 2026-06-25\nhostname: tony-dell\nip: 192.168.1.37\nmodel: Dell Inc. OptiPlex 7040\nboard: Dell Inc. 0HD5W2\ncpu: Intel Core i7-6700\n---\n\n# tony-dell — Sensor & disk health check\n\n## Summary\n\n- All temperatures are within normal limits.\n- `sensors-detect` did **not** find any new sensor chips; only the existing Intel `coretemp` sensor was confirmed.\n- Internal HDD is still functional but has **8 pending sectors** and **8 offline uncorrectable sectors** that should be monitored.\n- No battery present.\n\n## Tools installed / used\n\n- `lm-sensors` (already present)\n- `smartmontools`\n- `nvme-cli`\n\n## `sensors-detect` result\n\n- **Intel digital thermal sensor (`coretemp`)** — confirmed.\n- Super I/O probe found an **unknown SMSC chip with ID 0xc9a1** — no driver available.\n- I2C/SMBus probe found only an `ee1004` EEPROM (not a sensor).\n- No new modules were added.\n\n## Temperatures / fans\n\n| Source        | Sensor          | Reading        | Limits / Notes        |\n| ------------- | --------------- | -------------- | --------------------- |\n| `coretemp`    | Package id 0    | 47.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 0          | 53.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 1          | 51.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 2          | 51.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 3          | 49.0°C         | high 84°C, crit 100°C |\n| `dell_smm`    | Ambient         | 45.0°C         |                       |\n| `dell_smm`    | CPU             | 39.0°C         |                       |\n| `dell_smm`    | Processor Fan   | 1,146 RPM      | max 3,300 RPM         |\n| `dell_smm`    | Motherboard Fan | 2,456 RPM      | max 3,100 RPM         |\n| `pch_skylake` | PCH             | 51.5°C         |                       |\n| `acpitz`      | temp1           | 27.8°C         |                       |\n| `acpitz`      | temp2           | 29.8°C         |                       |\n| `amdgpu`      | GPU edge        | 50.0°C         | crit 120°C            |\n| `amdgpu`      | pwm1            | 49%            |                       |\n| `amdgpu`      | sclk / mclk     | 300 / 1000 MHz |                       |\n\n## Disk (`/dev/sda`) — Seagate ST500LM000-1EJ162\n\n- **SMART overall-health: PASSED**\n- **Temperature:** 42°C\n- **Power-on hours:** 8,170\n- **Power cycle count:** 3,244\n- **Start/stop count:** 2,886\n\n### Attributes of concern\n\n| ID  | Attribute               | Value | Raw         |\n| --- | ----------------------- | ----- | ----------- |\n| 5   | Reallocated_Sector_Ct   | 100   | 0           |\n| 187 | Reported_Uncorrect      | 1     | **299**     |\n| 188 | Command_Timeout         | 100   | 1           |\n| 190 | Airflow_Temperature_Cel | 58    | 42°C        |\n| 193 | Load_Cycle_Count        | 1     | **306,291** |\n| 197 | Current_Pending_Sector  | 100   | **8**       |\n| 198 | Offline_Uncorrectable   | 100   | **8**       |\n\n### Self-test\n\n- **Short offline test started:** 2026-06-25 17:01:48\n- **Scheduled completion:** 2026-06-25 17:03:48\n- **Status when last checked:** in progress (90% remaining)\n- **Final result:** _not captured in this log — run `sudo smartctl -l selftest /dev/sda` to update_\n\n## Power (RAPL)\n\n| Zone      | Constraint | Limit   |\n| --------- | ---------- | ------- |\n| package-0 | long_term  | 65.0 W  |\n| package-0 | short_term | 81.25 W |\n| core      | long_term  | 0 W     |\n| uncore    | long_term  | 0 W     |\n| dram      | long_term  | 0 W     |\n\n## Battery\n\n- No battery present on this machine.\n\n## Notes / follow-up\n\n- The 8 pending sectors are the main item to watch. If the count increases, the drive should be replaced.\n- Re-run the short self-test and capture the final result.\n- Check the pending sector count again in ~30 days.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791418134
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-development|hardware-tony-omen-changes.md|en",
@@ -290,7 +290,7 @@
      "2026-09-25T17:32:59.461398"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-changes.md"
@@ -302,12 +302,12 @@
      "tony-omen — Change log"
     ],
     "use_count": [
-     "1040"
+     "1041"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\nhostname: tony-omen\ndate: 2026-07-21\ntags: [hardware, changelog]\nstatus: active\n---\n\n# tony-omen — Change log\n\n| Date       | Change                                                                                                | Reason                                                                                          | Result                                                                                                          | Reference                                                  |\n| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |\n| 2026-06-25 | Sensor & disk health check                                                                            | Establish hardware baseline                                                                     | All temperatures normal, NVMe SSD healthy (5% wear), battery 100% / 0 cycles                                    | `hardware/tony-omen/2026-06-25-sensors.md`                 |\n| 2026-07-20 | Cleared stale xrdp/Chrome Remote Desktop sessions and restarted GDM                                   | GDM showed \"Session Already Running\" and local login failed                                     | Local login restored                                                                                            | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Applied xrdp PAM `XDG_SESSION_TYPE=tty` fix                                                           | Prevent xrdp sessions from being treated as graphical sessions that block GDM                   | New xrdp sessions register as `Type=tty`; local login no longer blocked by xrdp                                 | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Removed `chrome-remote-desktop` package and unused deps (`xbase-clients`, `xserver-xorg-video-dummy`) | CRD always spawns an X11 session at boot and has no clean way to avoid blocking GDM local login | CRD no longer creates a conflicting X11 session; `xrdp` remains the remote access method                        | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Updated IP in KB dashboard/context to `192.168.1.48` via `tony-omen.local`                            | Current-context refresh                                                                         | Dashboard now uses the current lease / mDNS name                                                                | `current-context.md`, `hardware/README.md`                 |\n| 2026-07-23 | Added Caddy route `/tony-omen/apps/imagen` with Docker inference proxy                                | Host the Imagen UI and API on the local web server                                              | UI live at `http://192.168.1.48:8080/tony-omen/apps/imagen/`; API health 200; 512x512 generation tested in ~62s | `tasks/2026-07-23-tony-omen-imagen-website.md`             |\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791418130
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-development|hardware-tony-omen-sensors-2026-06-25.md|en",
@@ -392,7 +392,7 @@
      "2026-09-25T17:33:01.865389"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-specs.md"
@@ -404,12 +404,12 @@
      "tony-omen — Hardware Specs"
     ],
     "use_count": [
-     "1000"
+     "1001"
     ]
    },
    "contentMd": "---\ncategory: development\n---\n\n# tony-omen — Hardware Specs\n\n**Scanned:** 2026-07-08  \n**Form Factor:** HP 15-BC Laptop  \n**Hardware SKU:** D98SKU1@@GM (HW Version: 52.08)  \n**Firmware:** BIOS F.19 (2023-04-17)\n\n**Note**: This file contains static hardware specifications. For operational history and changes, see `hardware/tony-omen/changes.md`\n\n---\n\n## OS & Kernel\n\n- **OS:** Ubuntu 26.04 LTS (Resolute Raccoon)\n- **Kernel:** Linux 7.0.0-27-generic (x86_64)\n\n---\n\n## CPU\n\n- **Model:** Intel Core i7-9750H @ 2.60 GHz (CoffeeLake-H)\n- **Cores / Threads:** 6 cores / 12 threads (Hyper-Threading enabled)\n- **Max Turbo:** 4.5 GHz\n- **Cache:** L1d 192 KiB, L1i 192 KiB, L2 1.5 MiB, L3 12 MiB\n- **Virtualization:** VT-x enabled\n\n---\n\n## RAM\n\n- **Total:** 32 GB DDR4 dual-channel (2 × 16 GB), configured at 2667 MT/s\n- **Slot 1 (BANK 0):** 16 GB DDR4 @ 2667 MT/s — Part: EXRAM (manufacturer unknown)\n- **Slot 2 (BANK 2):** 16 GB DDR4 @ 3200 MT/s (downclocked to 2667) — Corsair CMSX16GX4M1A3200C22\n\n---\n\n## GPU\n\n- **Discrete:** NVIDIA GeForce GTX 1650 Mobile / Max-Q (TU117M, rev a1) — 4 GB VRAM\n- **Integrated:** Intel UHD Graphics 630 (CoffeeLake-H GT2)\n- **NVIDIA Driver:** 595.71.05 (Open Kernel Module)\n\n---\n\n## Storage\n\n- **Primary:** Kingston SNV2S1000G — 1 TB NVMe SSD (`/dev/nvme0n1`)\n  - `nvme0n1p1` — 100 MB EFI\n  - `nvme0n1p2` — 16 MB (MSR)\n  - `nvme0n1p3` — 865.7 GB (Windows / shared data)\n  - `nvme0n1p4` — 768 MB (WinRE)\n  - `nvme0n1p5` — 64.9 GB → Ubuntu `/`\n- **Secondary:** WD WD5000LPLX-22ZNT — 500 GB 2.5\" SATA HDD (`/dev/sdb`)\n  - `sdb1` — 499 MB\n  - `sdb2` — 128 MB\n  - `sdb3` — 20 GB\n  - `sdb4` — 445.1 GB\n  - ⚠️ **Note (2026-07-08):** `gdisk` reports no valid partition table; `sdb1`–`sdb4` throw I/O errors when read directly. Drive may be failing or in an inconsistent state. `lsblk` shows partitions but `blkid` returns nothing. Recommend checking SMART data (`smartctl -a /dev/sdb`).\n- **SATA Controller:** Intel 82801 Mobile SATA Controller (RAID mode)\n\n---\n\n## Display\n\n- **Resolution:** 1920 × 1080 (internal panel; RDP active at time of scan)\n\n---\n\n## Networking\n\n- **Ethernet:** Realtek RTL8111/8168/8411 PCIe Gigabit (`03:00.0`)\n- **Wi-Fi:** Intel Wireless 7265 (`04:00.0`, interface `wlo1`)\n\n---\n\n## Audio\n\n- **Integrated:** Intel Cannon Lake PCH cAVS (`00:1f.3`)\n- **HDMI / DP audio:** NVIDIA Device 10fa (`01:00.1`)\n\n---\n\n## USB\n\n- **Controller:** Intel Cannon Lake PCH USB 3.1 xHCI (`00:14.0`)\n\n---\n\n## Battery\n\n- **Status at scan:** 100 %, Full\n",
    "addedAt": 1790677648,
-   "updatedAt": 1791418135
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-development|model-token-baseline-2026-08-17.md|en",
@@ -425,6 +425,9 @@
     "last_synced": [
      "2026-10-08T13:22:53.319745"
     ],
+    "last_used": [
+     "2026-10-09"
+    ],
     "rel_path": [
      "docs/kb/model-token-baseline-2026-08-17.md"
     ],
@@ -433,11 +436,14 @@
     ],
     "title": [
      "Model Token Baseline — 2026-08-17"
+    ],
+    "use_count": [
+     "1"
     ]
    },
    "contentMd": "---\ncategory: development\n---\n\n# Model Token Baseline — 2026-08-17\n\n**Purpose**: Baseline snapshot for comparing GLM-5.2 vs SWE-1.7 Medium token usage and internal thinking length. Re-measure after 100+ GLM-5.2 messages.\n\n**Source**: `~/.local/share/devin/cli/sessions.db` — `sessions.metadata` JSON column, `response_dimensions` array.\n\n## Measurement Method\n\nEach session's `metadata.response_dimensions` contains `CumulativeMetric` objects keyed by `uid`:\n\n- `agent_messages` — turn count\n- `input_tokens` — cumulative input tokens\n- `output_tokens` — cumulative output tokens (includes internal thinking/reasoning)\n- `cached_input_tokens` — cumulative cached prefix tokens\n\nDerived metrics:\n\n- `output_tokens/msg` — proxy for internal thinking length (lower = shorter thinking)\n- `input_tokens/msg` — context overhead per turn\n- `cached_input_tokens/msg` — prefix cache growth rate\n- `cache/input ratio` — `cached_input_tokens / input_tokens`\n\n## GLM-5.2 Baseline (session: tide-krypton)\n\n| Metric                  | Value        |\n| ----------------------- | ------------ |\n| model                   | GLM-5.2 High |\n| agent_messages          | 20           |\n| input_tokens            | 93,050       |\n| output_tokens           | 10,028       |\n| cached_input_tokens     | 605,953      |\n| input_tokens/msg        | 4,653        |\n| output_tokens/msg       | 501          |\n| cached_input_tokens/msg | 30,298       |\n| cache/input ratio       | 6.51         |\n\n**Notes**: First session after switching default to `glm-5-2` in `~/.config/devin/config.json`. Only 20 messages — `cached_per_msg` will grow in longer sessions.\n\n## SWE-1.7 Medium Baseline (historical sessions)\n\n| Session            | msgs | input_tokens | output_tokens | cached_input_tokens | input/msg | output/msg | cached/msg | cache/input |\n| ------------------ | ---- | ------------ | ------------- | ------------------- | --------- | ---------- | ---------- | ----------- |\n| quilted-sneezeweed | 1803 | 8,984,672    | 1,010,946     | 262,344,770         | 4,983     | 561        | 145,505    | 29.20       |\n| juvenile-umbra     | 1224 | 7,224,598    | 678,794       | 163,429,060         | 5,902     | 555        | 133,520    | 22.62       |\n| great-consonant    | 306  | 2,132,714    | 219,410       | 39,122,430          | 6,969     | 717        | 127,851    | 18.34       |\n| amazing-viola      | 260  | 1,748,539    | 177,768       | 35,611,070          | 6,725     | 684        | 136,966    | 20.37       |\n\n## Comparison (GLM-5.2 vs SWE-1.7 Medium)\n\n| Metric                  | GLM-5.2 (20 msgs) | SWE-1.7 (260-1803 msgs) | Delta                                        |\n| ----------------------- | ----------------- | ----------------------- | -------------------------------------------- |\n| output_tokens/msg       | 501               | 561-717                 | -11% to -30% (shorter thinking)              |\n| input_tokens/msg        | 4,653             | 4,983-6,969             | -7% to -33% (lower context overhead)         |\n| cached_input_tokens/msg | 30,298            | 127,851-145,505         | too early to compare (session length effect) |\n\n## Findings\n\n1. **GLM-5.2 supports prompt caching** through Cognition's proxy — resolves pending test in `ssot.token-optimization.yml`.\n2. **GLM-5.2 has shorter internal thinking** — 11-30% fewer output tokens per message vs SWE-1.7 Medium.\n3. **GLM-5.2 has lower context overhead** — 7-33% fewer input tokens per message.\n4. **Caveat**: GLM-5.2 sample is only 20 messages; need re-measurement after 100+ messages to confirm output/msg stays low.\n\n## Pending Re-measurement\n\nAfter GLM-5.2 session reaches 100+ messages, re-run:\n\n```bash\nsqlite3 ~/.local/share/devin/cli/sessions.db \"SELECT metadata FROM sessions WHERE id='<glm-session-id>';\" | python3 -m json.tool\n```\n\nCompare against this baseline. If `output_tokens/msg` stays below 560, GLM-5.2 confirms shorter internal thinking at scale.\n\n## Related\n\n- SSOT: `docs/ssot/ssot.token-optimization.yml` — `Prompt Caching Model Selection` item\n- Config: `~/.config/devin/config.json` — `agent.model: \"glm-5-2\"`\n",
    "addedAt": 1791440573,
-   "updatedAt": 1791440573
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-development|task-remmina-tony-omen-fix-2026-07-21.md|en",

@@ -1,6 +1,6 @@
 {
  "collection": "kb-system",
- "exported_at": "2026-10-09T05:54:18.305706+00:00",
+ "exported_at": "2026-10-09T21:30:18.274197+00:00",
  "doc_count": 34,
  "docs": [
   {
@@ -52,7 +52,7 @@
      "2026-09-25T17:32:25.525802"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/auto-chaba-1787458590579.md"
@@ -64,12 +64,12 @@
      "Rebuilt the chaba status-api image with ubi9/python-311"
     ],
     "use_count": [
-     "475"
+     "476"
     ]
    },
    "contentMd": "---\ncategory: implementation\n---\n\n# Rebuilt the chaba status-api image with ubi9/python-311\n\n## What it is\n\nRebuilt the chaba status-api image with ubi9/python-311:latest and removed unused kernel-headers / -devel packages; Trivy dropped from 46 HIGH / 17 CRITICAL to 8 HIGH / 0 CRITICAL\n\n## Context/Background\n\nCreated 2026-08-23 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-23\n- **Source**: Automated KB creation skill\n- **Category**: implementation\n\n### Implementation\n\nRebuilt the chaba status-api image with ubi9/python-311:latest and removed unused kernel-headers / -devel packages; Trivy dropped from 46 HIGH / 17 CRITICAL to 8 HIGH / 0 CRITICAL. The python:3.11-slim alternative tested worse (72/12). The status-api container is not running on tony-dell; the new image should be deployed to tony-omen when convenient.\n\n## Related Documentation\n\n- **[auto-chaba-creation.md](../../.windsurf/workflows/auto-chaba-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n",
    "addedAt": 1790677649,
-   "updatedAt": 1791418149
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-system|auto-chaba-1788266704105.md|en",
@@ -86,7 +86,7 @@
      "2026-09-25T17:32:25.893252"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/auto-chaba-1788266704105.md"
@@ -98,12 +98,12 @@
      "Proved end-to-end remote task dispatch to tony-dell: deploy-"
     ],
     "use_count": [
-     "619"
+     "620"
     ]
    },
    "contentMd": "---\ncategory: implementation\n---\n\n# Proved end-to-end remote task dispatch to tony-dell: deploy-\n\n## What it is\n\nProved end-to-end remote task dispatch to tony-dell: deploy-key based git push works, tony-dell can SSH to tony-omen, and a read-only branch/worktree inventory job was dispatched, executed, committed, and pushed autonomously\n\n## Context/Background\n\nCreated 2026-09-01 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-09-01\n- **Source**: Automated KB creation skill\n- **Category**: implementation\n\n### Implementation\n\nProved end-to-end remote task dispatch to tony-dell: deploy-key based git push works, tony-dell can SSH to tony-omen, and a read-only branch/worktree inventory job was dispatched, executed, committed, and pushed autonomously. Key findings: tony-omen chaba repo has 19 local branches, 46 remote branch refs, and 8 worktrees; research/thb-base-settlement is ahead 52 / behind 51, michael ahead 30, master ahead 1 / behind 3. Generated reports are in gitignored reports/ and require git add -f.\n\n## Related Documentation\n\n- **[auto-chaba-creation.md](../../.windsurf/workflows/auto-chaba-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n",
    "addedAt": 1790677649,
-   "updatedAt": 1791418149
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-system|auto-kb-1786765697660.md|en",
@@ -120,7 +120,7 @@
      "2026-09-25T17:32:26.557850"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/auto-kb-1786765697660.md"
@@ -132,12 +132,12 @@
      "Bug fix: auto-kb skill was failing because it required a CLI"
     ],
     "use_count": [
-     "534"
+     "535"
     ]
    },
    "contentMd": "---\ncategory: implementation\n---\n\n# Bug fix: auto-kb skill was failing because it required a CLI\n\n## What it is\n\nBug fix: auto-kb skill was failing because it required a CLI argument and left a stale lock file on error\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nBug fix: auto-kb skill was failing because it required a CLI argument and left a stale lock file on error. The script now accepts KB review content via CLI argument, the KB_REVIEW_CONTENT environment variable, or stdin, and the lock file is always removed because process.exit no longer bypasses the finally block. Also fixed the MDDB semantic_search call to use threshold instead of min_score.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n",
    "addedAt": 1790677649,
-   "updatedAt": 1791418149
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-system|auto-kb-1786777231055.md|en",
@@ -483,7 +483,7 @@
      "2026-10-08T13:22:54.892734"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/project-wifi-camera-solutions.md"
@@ -495,12 +495,12 @@
      "WiFi Camera Solutions"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ncategory: implementation\n---\n\n# WiFi Camera Solutions\n\n## Goal\n\nFind and deploy a self-hosted NVR for multiple WiFi cameras.\n\n## Status\n\nPlanning.\n\n## Decision\n\n- **Frigate** is the recommended NVR.\n- Target host: `tony-omen` (`192.168.1.40`).\n- Deployment method: Docker, managed by Ansible.\n\n## Key details\n\n- Coral USB accelerator availability is unknown.\n- Camera RTSP URL formats are unknown.\n- Possible install paths: `/opt/frigate` or `~/frigate`.\n\n## References\n\n- Detailed research: `tasks/2026-07-15-wifi-camera-solutions.md`\n",
    "addedAt": 1791440574,
-   "updatedAt": 1791443781
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-system|raceman-worktree-scope.md|en",
@@ -735,7 +735,7 @@
      "2026-10-08T13:22:56.654382"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "docs/kb/task-tony-omen-imagen-website-2026-07-23.md"
@@ -747,12 +747,12 @@
      "task-tony-omen-imagen-website-2026-07-23.md"
     ],
     "use_count": [
-     "1"
+     "2"
     ]
    },
    "contentMd": "---\ntitle: \"tony-omen local Imagen website\"\ndate: 2026-07-23\ntags: [tony-omen, caddy, imagen, docker, ai]\nstatus: completed\ncategory: implementation\n---\n\n## Context\n\n`tony-omen` (`192.168.1.48` via `tony-omen.local`) already runs a Caddy container (`web`) on port `8080`. It serves static files from `chaba/web/public` and proxies several paths to backend containers. There was no KB record of this local website setup or how the new `chaba-h3` Imagen app should be exposed.\n\n## Goal\n\nServe the `chaba-h3/public/apps/imagen` UI and the `imagen-inference` Docker API under `http://192.168.1.48:8080/tony-omen/apps/imagen/`.\n\n## Decisions / why\n\n| Date       | Decision                                                                              | Reason                                                                                         |\n| ---------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |\n| 2026-07-23 | Use the Caddy container (`web`) for `/tony-omen/apps/imagen`                          | It is the existing web server on `:8080`; `chaba-h3/proxy-server.mjs` was not the live process |\n| 2026-07-23 | Mount `chaba-h3/public/apps/imagen` into `web` at `/srv/public/tony-omen/apps/imagen` | Caddy's `root` is `/srv/public`; the URL path mirrors the container path                       |\n| 2026-07-23 | Connect the `web` container to the `chaba-h3_default` network                         | `imagen-inference` lives on that network, so `reverse_proxy imagen-inference:8000` works       |\n\n## Notes\n\n- Caddy container: `web` (`caddy:2-alpine`)\n- Caddyfile: `/home/tony/CascadeProjects/chaba/web/Caddyfile`\n- Compose file: `/home/tony/CascadeProjects/chaba/web/docker-compose.yml`\n- Static mount inside `web`:\n  - Host: `/home/tony/CascadeProjects/chaba-h3/public/apps/imagen`\n  - Container: `/srv/public/tony-omen/apps/imagen`\n- API proxy path: `/tony-omen/apps/imagen/api/*` → strip `/tony-omen/apps/imagen/api` → `reverse_proxy imagen-inference:8000`\n- Static URL: `http://192.168.1.48:8080/tony-omen/apps/imagen/`\n- Health API: `GET /tony-omen/apps/imagen/api/health` (tested, 200 OK)\n- Generate API: `POST /tony-omen/apps/imagen/api/generate` (tested 512x512 in ~62s)\n- Inference model: `runwayml/stable-diffusion-v1-5` with `enable_model_cpu_offload()` and `enable_vae_slicing()` for small GPUs\n- Start inference: `docker compose -f /home/tony/CascadeProjects/chaba-h3/docker-compose.yml up -d --build`\n- Start/recreate Caddy: `docker compose -f /home/tony/CascadeProjects/chaba/web/docker-compose.yml up -d`\n- Public Chaba status site (`chaba.h3.gizmo-thailand.com`) is a separate Plesk/nginx deployment\n\n## Verification\n\n- 2026-07-23: UI at `http://192.168.1.48:8080/tony-omen/apps/imagen/` returned `200` with `Server: Caddy`.\n- Health API returned `200` `{\"status\":\"ok\",\"model\":\"runwayml/stable-diffusion-v1-5\"}`.\n- Generate API returned `200` with a base64 PNG (512×512, 10 steps).\n- Confirmed separation from `chaba.h3.gizmo-thailand.com`, which returned `200` with `Server: nginx` and `X-Powered-By: PleskLin`.\n\n## Blockers\n\nNone.\n\n## Next steps\n\n- Add Caddy basic auth or Plesk-style protection if `tony-omen/apps/imagen` should be private.\n- Swap `MODEL_ID` in `chaba-h3/docker-compose.yml` if 512x512 generation is too slow on the small GPU.\n",
    "addedAt": 1791440576,
-   "updatedAt": 1791443781
+   "updatedAt": 1791532459
   },
   {
    "id": "kb-system|thailand-timezone-standard.md|en",

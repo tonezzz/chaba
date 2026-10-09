@@ -1,6 +1,6 @@
 {
  "collection": "chaba-docs",
- "exported_at": "2026-10-09T05:54:19.737651+00:00",
+ "exported_at": "2026-10-09T21:30:22.404654+00:00",
  "doc_count": 40,
  "docs": [
   {
@@ -49,7 +49,7 @@
      "2026-09-22T16:36:30.819608"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "architecture/overview.md"
@@ -64,12 +64,12 @@
      "System Architecture Overview"
     ],
     "use_count": [
-     "720"
+     "721"
     ]
    },
    "contentMd": "# System Architecture Overview\n\nAuto-generated from SSOT configuration\nGenerated: 2026-08-12 20:33:16\n\n## Components\n\n### Web Stack\n\n- Caddy web server\n- Static file serving\n- Reverse proxy for APIs\n\n### Data Services\n\n- PostgreSQL database\n- Weaviate vector database\n- Redis cache (optional)\n\n### AI/ML Services\n\n- Llama Router (GPU inference)\n- GPU Queue management\n- Image generation services\n\n### Monitoring\n\n- Health check system\n- Performance monitoring\n- Alerting system\n\n## Service Dependencies\n\nSee [Services Overview](../services/overview.md) for detailed dependency information.\n\n## Related Documentation\n\n- [SSOT Index](../ssot/ssot.index.yml)\n- [Infrastructure Configuration](../ssot/infrastructure/)\n",
    "addedAt": 1790677618,
-   "updatedAt": 1791417658
+   "updatedAt": 1791532439
   },
   {
    "id": "chaba-docs|architecture/wireguard-architecture.md|en",
@@ -593,7 +593,7 @@
      "2026-09-22T16:36:31.609315"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "home-assistant/visionos-theme-automation.md"
@@ -608,12 +608,12 @@
      "visionOS / Liquid Glass theme automation"
     ],
     "use_count": [
-     "63"
+     "64"
     ]
    },
    "contentMd": "# visionOS / Liquid Glass theme automation\n\nAdd this to `configuration.yaml` so the theme is set automatically on Home Assistant startup.\n\n```yaml\nautomation:\n  - alias: \"Set visionOS theme on startup\"\n    id: set_visionos_theme_on_startup\n    trigger:\n      - platform: homeassistant\n        event: start\n    action:\n      - service: frontend.set_theme\n        data:\n          name: visionos\n```\n\nAfter installing the theme via HACS, run `ha core check` and restart Home Assistant.\n\nTo apply the theme immediately without a restart, call the service manually:\n\n```yaml\nservice: frontend.set_theme\ndata:\n  name: visionos\n```\n",
    "addedAt": 1790677618,
-   "updatedAt": 1791418447
+   "updatedAt": 1791532439
   },
   {
    "id": "chaba-docs|implementation/mcp-config-sync-implementation.md|en",
@@ -1035,7 +1035,7 @@
      "2026-09-22T16:36:32.372946"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "reports/mcp-savings-2026-08-16.md"
@@ -1050,12 +1050,12 @@
      "MCP Debug Savings Report"
     ],
     "use_count": [
-     "374"
+     "375"
     ]
    },
    "contentMd": "# MCP Debug Savings Report\n\n## tony_omen\n\n| Command | Raw chars | Compact chars | Saved chars | Char % | Word % |\n|---------------------------------------|-----------|---------------|-------------|--------|--------|\n| ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | 36652     | 1508          | 35144       | 95.9   | 99.6   |\n| ps -eo pid,ppid,cmd,%mem --sort=-%mem | 36701     | 1503          | 35198       | 95.9   | 99.6   |\n| systemctl list-units                  | 78205     | 5181          | 73024       | 93.4   | 95.6   |\n| ps                                    | 5302      | 1057          | 4245        | 80.1   | 99.8   |\n| ss -tlnp                              | 7488      | 2120          | 5368        | 71.7   | 70.4   |\n| ip -4 route                           | 799       | 472           | 327         | 40.9   | 97.2   |\n| free -h                               | 207       | 148           | 59          | 28.5   | 88.2   |\n| tailscale status                      | 535       | 491           | 44          | 8.2    | 46.2   |\n| uptime                                | 69        | 69            | 0           | 0.0    | 75.0   |\n| mount                                 | 33863     | 35454         | -1591       | -4.7   | 99.8   |\n| ip -4 -br addr show                   | 526       | 593           | -67         | -12.7  | 84.8   |\n| lsusb                                 | 432       | 535           | -103        | -23.8  | 56.9   |\n| lsblk                                 | 1432      | 1991          | -559        | -39.0  | 99.4   |\n| df -h                                 | 696       | 1000          | -304        | -43.7  | 97.5   |\n\n**tony_omen totals**: raw=202907, compact=52122, saved=150785 (74.3%)\n\n## tony_dell\n\n| Command | Raw chars | Compact chars | Saved chars | Char % | Word % |\n|---------------------------------------|-----------|---------------|-------------|--------|--------|\n| systemctl list-units                  | 41070     | 3700          | 37370       | 91.0   | 95.4   |\n| ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | 15092     | 1385          | 13707       | 90.8   | 98.4   |\n| ps -eo pid,ppid,cmd,%mem --sort=-%mem | 15092     | 1470          | 13622       | 90.3   | 98.4   |\n| ps                                    | 2661      | 1034          | 1627        | 61.1   | 99.7   |\n| free -h                               | 207       | 151           | 56          | 27.1   | 88.2   |\n| ip -4 route                           | 382       | 284           | 98          | 25.7   | 94.1   |\n| tailscale status                      | 594       | 491           | 103         | 17.3   | 53.3   |\n| uptime                                | 72        | 71            | 1           | 1.4    | 69.2   |\n| ss -tlnp                              | 1870      | 1951          | -81         | -4.3   | -1.1   |\n| mount                                 | 5808      | 6663          | -855        | -14.7  | 99.7   |\n| ip -4 -br addr show                   | 193       | 255           | -62         | -32.1  | 58.3   |\n| lsusb                                 | 209       | 280           | -71         | -34.0  | 58.8   |\n| df -h                                 | 547       | 754           | -207        | -37.8  | 96.7   |\n| lsblk                                 | 1400      | 2074          | -674        | -48.1  | 99.5   |\n\n**tony_dell totals**: raw=85197, compact=20563, saved=64634 (75.9%)\n\n**Overall totals**: raw=288104, compact=72685, saved=215419 (74.8%)\n",
    "addedAt": 1790677618,
-   "updatedAt": 1791417638
+   "updatedAt": 1791532439
   },
   {
    "id": "chaba-docs|runbooks/backup-system-operations.md|en",
@@ -1341,7 +1341,7 @@
      "2026-09-22T16:36:32.928031"
     ],
     "last_used": [
-     "2026-10-08"
+     "2026-10-09"
     ],
     "rel_path": [
      "services/overview.md"
@@ -1356,12 +1356,12 @@
      "Services Overview"
     ],
     "use_count": [
-     "118"
+     "119"
     ]
    },
    "contentMd": "# Services Overview\n\nAuto-generated from SSOT services configuration\nGenerated: 2026-08-12 20:33:14\n\n## Service Groups\n\n## Dependencies\n\n## Related Documentation\n\n- [SSOT Services Configuration](../ssot/infrastructure/ssot.services.yml)\n- [Health Check Configuration](../ssot/infrastructure/ssot.health.yml)\n",
    "addedAt": 1790677618,
-   "updatedAt": 1791417638
+   "updatedAt": 1791532935
   }
  ]
 }
