@@ -97,6 +97,40 @@ persons:
     control: {domains: [light]}
     persona: {tone: warm, formality: polite, proactiveness: minimal}
 
+features:
+  description: |
+    Feature switches Ada consults per session — the debug/interrogation
+    surface. Global defaults here; a person may override any flag under
+    persons.<key>.features. Live state lives in MDDB doc
+    ada-config/feature-flags (ada_debug tool writes it; sessions read
+    with short TTL) — toggling never needs a restart. This block is the
+    DECLARED default; the MDDB doc is the LIVE override.
+  flags:
+    awareness:      # resolve speaker identity → person at session start
+      default: true
+      note: off = everyone runs as 'unknown' — the sandbox state
+    persona:        # apply per-person tone/language/verbosity overrides
+      default: true
+    memory_read:    # bank recall in context
+      default: true
+    memory_write:   # ada_remember + auto-extract writes
+      default: true
+    recall_gate:    # relevance gate before injecting memory (0.6/60s)
+      default: true
+    vocab_coaching: # word-recast + glossary logging
+      default: true
+    confirm_gate:   # confirmation required for actuation/writes
+      default: true
+      note: NEVER default-off in prod — debugging only, owner turns
+    jev_advisory:   # jev-student pre-check on tool calls
+      default: true
+    speaker_enroll: # offer enrollment to unrecognized speakers
+      default: true
+  override_example: |
+    persons:
+      kk:
+        features: {vocab_coaching: false}   # quiet mode for her
+
 lifecycle:
   description: |
     Standard procedure for a person in the system. Steps 1-3 are the
