@@ -179,6 +179,11 @@ class AdaChatCard extends HTMLElement {
     this._screenBtn.onclick = () => this._toggleScreen();
     inRow.append(this._input, this._attachBtn, this._micBtn, this._screenBtn, this._sendBtn);
     body.appendChild(inRow);
+    // auto-activate: screen pane opens itself unless config says otherwise
+    // (screen: "manual" | "off" to opt out) — Tony 2026-10-09: Ada should be
+    // able to push media to the chat screen without a manual open first.
+    if (this._config.screen !== "manual" && this._config.screen !== "off")
+      setTimeout(() => this._openScreen(), 1200);
 
     // screen pane — lazy: iframe only connects when first opened
     this._screenPane = document.createElement("div");
@@ -191,7 +196,7 @@ class AdaChatCard extends HTMLElement {
     hint.style.cssText =
       "position:absolute;left:6px;bottom:4px;font-size:.65rem;opacity:.6;" +
       "color:var(--secondary-text-color);pointer-events:none;z-index:2";
-    hint.textContent = "virtual screen — pair once via its QR, then Ada can push content here";
+    hint.textContent = "virtual screen — auto-pairing as ada-chat-" + this._chatId();
     this._screenPane.appendChild(hint);
     body.appendChild(this._screenPane);
     body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
@@ -821,23 +826,68 @@ class AdaChatCard extends HTMLElement {
     return `${base}?label=${encodeURIComponent("ada-chat-" + this._chatId())}`;
   }
 
+  _openScreen() {
+    const p = this._screenPane;
+    if (p.style.display !== "none") return;
+    if (!this._screenFrame) {
+      this._screenFrame = document.createElement("iframe");
+      this._screenFrame.className = "acc-screen-frame";
+      this._screenFrame.src = this._screenUrl();
+      this._screenFrame.style.cssText = "width:100%;height:100%;border:0;display:block";
+      this._screenFrame.setAttribute("allow", "autoplay; fullscreen");
+      p.insertBefore(this._screenFrame, p.firstChild);
+      this._autoPairScreen();
+    }
+    p.style.display = "block";
+    this._screenBtn.style.background = "color-mix(in srgb,var(--primary-color,#03a9f4) 25%,transparent)";
+  }
+
   _toggleScreen() {
     const p = this._screenPane;
     if (p.style.display === "none") {
-      if (!this._screenFrame) {
-        this._screenFrame = document.createElement("iframe");
-        this._screenFrame.className = "acc-screen-frame";
-        this._screenFrame.src = this._screenUrl();
-        this._screenFrame.style.cssText = "width:100%;height:100%;border:0;display:block";
-        this._screenFrame.setAttribute("allow", "autoplay; fullscreen");
-        p.insertBefore(this._screenFrame, p.firstChild);
-      }
-      p.style.display = "block";
-      this._screenBtn.style.background = "color-mix(in srgb,var(--primary-color,#03a9f4) 25%,transparent)";
+      this._openScreen();
       this._system(`virtual screen ada-chat-${this._chatId()} open`);
     } else {
       p.style.display = "none";
       this._screenBtn.style.background = "";
+    }
+  }
+
+  _vcastApi() {
+    // input-bridge relay base — same origin as the vcast app unless overridden
+    return (this._config.vcast_api
+      || "https://tony-dell.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
+  }
+
+  // Zero-touch pairing: the iframe registers pending as label ada-chat-<id>;
+  // we poll /displays, find it, POST /claim (keyless on tailnet — server
+  // trusts CGNAT/loopback XFF). Falls back to the QR in the iframe if the
+  // browser isn't on the tailnet. Runs until paired or pane closed.
+  async _autoPairScreen() {
+    const label = "ada-chat-" + this._chatId();
+    const api = this._vcastApi();
+    for (let i = 0; i < 40; i++) {
+      if (!this._screenFrame || this._screenPane.style.display === "none") return;
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const d = await (await fetch(`${api}/displays`)).json();
+        const mine = (d.screens || []).find(s => (s.label || s.name || "") === label);
+        if (mine) {
+          localStorage.setItem("acc.screen_num", String(mine.screen));
+          const h = this._screenPane.querySelector(".acc-screen-hint");
+          if (h) h.textContent = `screen #${mine.screen} · ${label} — Ada can cast here (and mirror to other screens)`;
+          this._system(`virtual screen paired: screen #${mine.screen} (${label})`);
+          return;
+        }
+        const pend = (d.pending || []).find(p => (p.label || "") === label);
+        if (pend && !this._pairing) {
+          this._pairing = true;
+          await fetch(`${api}/claim`, {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sid: pend.sid, name: label }),
+          }).finally(() => { this._pairing = false; });
+        }
+      } catch (_) { /* relay unreachable — keep retrying while pane open */ }
     }
   }
 

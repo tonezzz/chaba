@@ -69,6 +69,15 @@ procedure:
   rebalance_triggers:
     - "disk free < 15% of total, or mem sustained > 80%."
     - "any host marked unstable in session notes."
+  rebalance_flow:
+    - "audit-hosts.py --consolidate + health-monitor alerts (load>80%, disk) feed ops-health; a trigger event = a kanban card naming source host, target host, service list, verify steps."
+    - "Move via the service's own stack (quadlet/install.sh per stacks/services/<svc>/) — never ad-hoc rsync."
+    - "After the move: re-measure + update this file, verify the moved service's health lane, close the card with evidence."
+  add_capacity:
+    - "New host: provision OS + tailscale + podman; reachable by tailnet name."
+    - "Bootstrap the dispatch runner: scripts/devin/install-devin-host.sh <host> (card runner-bootstrap-check covers verification)."
+    - "Register: append a hosts: block here + add to the audit-hosts.py host list (ssot.jobs ~line 128) so capacity stays measured."
+    - "First placements go through placement_policy; nothing lands by convenience."
   refresh:
     - "Re-measure this file after any service lands or moves; add 'as-of' date."
 
