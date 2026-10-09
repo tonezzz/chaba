@@ -1,0 +1,52 @@
+title: prune-old-docs 600s timeout — root cause + paging fix
+date: '2026-10-09'
+card: fix-review-refresh-prune
+host: tony-omen (chain), idc03 (mddb leader :11023 + ops :11026)
+commit: b9d1c761 (dispatch/20261009-163707-scripts-ada-prune-old-docs-py-)
+
+symptom: |
+  ada-review-refresh.service on tony-omen failed daily at ~12min —
+  subprocess prune-old-docs.py killed by its 600s timeout in
+  export-transcripts.py.
+
+root_cause: |
+  NOT mddb slowness under load (idc03 load ~3, mddbd ~6% CPU — normal).
+  The sweep paginated /search at limit=100. Page latency is ~0.7s
+  regardless of offset depth, and host-logs is ~261k docs across the
+  two DBs (ops 120.5k + stale leader copy 141k). List phase alone =
+  ~2650 requests ≈ 30min > 600s. The delete phase (one POST per doc)
+  would have been worse still had any docs been expired.
+
+corpus_at_fix:
+  ops:11026 host-logs: 120530 docs, 0 expired (ops DB only ~5d old)
+  leader:11023 host-logs: 140956 docs, 70 expired (stale copy aging out)
+  ada-ha-events-tony: 4187 · events-michael: 750
+  snapshots-tony: 505 · snapshots-michael: 232 — all trivial
+
+fix: |
+  scripts/ada/prune-old-docs.py — PAGE_SIZE 100→5000 (verified ~1s/page
+  at offset 100k on both DBs); deletes now go through /v1/delete-batch
+  in chunks of 1000 instead of one /delete per doc; per-collection
+  elapsed seconds printed; skip+=kept shift-compensation unchanged.
+  export-transcripts.py subprocess timeout left at 600s — that is now
+  honest ~7x headroom, not a mask.
+
+measured:
+  dry_run: 82s total (host-logs 40s + 40s, others <1s)
+  real_run: 62s total, deleted 70 leader docs, exit 0
+  before: >600s (killed mid-list of first collection)
+
+verify: |
+  Manual `systemctl --user start ada-review-refresh.service` on
+  tony-omen run in-session; journal checked for prune line + exit 0.
+
+notes: |
+  - /search ignores rangeMeta (that filter is /fts-only); full scan
+    stays the honest approach — 60s is cheap.
+  - /fts with wildcard query over host-logs ran ~59s then dropped —
+    do not use FTS for retention sweeps.
+  - Batch deletes commit incrementally, so a future timeout loses no
+    work — the sweep is naturally resumable.
+  - omen's ~/CascadeProjects/chaba checkout carries the patched file
+    as a local modification (dispatch branch not yet merged); reset to
+    HEAD once the commit lands on master.
