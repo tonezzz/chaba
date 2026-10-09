@@ -670,35 +670,37 @@ runbooks:
       POST /auth/token → websocket; playlive: seed localStorage hassTokens.'
     last_updated: '2026-10-09'
   chaba_nest_dashboard:
-    purpose: 'chaba-nest dashboard on ada-ha: top tabs (Nest | Polity |
-      Security | Traffic | Flood) + per-topic Reports subviews. HA has no
-      nested tabs — subview + masonry pattern, no custom cards. Verified
-      via playlive 2026-10-09.'
+    purpose: 'chaba-nest dashboard on ada-ha: masonry summary-tile tabs
+      (Nest|Polity|Security|Traffic|Flood) + Reports subviews, generated
+      from ssot.chaba-nest-dashboard.yml. Verified via playlive 2026-10-10.'
     steps:
-    - 'Nest tab: type=panel, iframe ?embed=1#/chaba-nest'
-    - 'Topic tabs: type=masonry, card-per-report — card 1 = markdown nav pill
-        ("<Topic> · All reports →" to the subview = live filter box), then
-        one iframe SUMMARY-TILE card per page (?card=1&zoom=1.15#/<slug>,
-        aspect 50%; "Read full →" swaps the iframe into ?embed=1 doc mode)'
-    - 'Reports subviews: <topic>-reports, subview:true + back_path to the
-        topic tab, panel iframe to the pre-filtered CMS browser'
-    - 'CMS params (ada-pi 29c738e + 5ccfe86): ?embed=1 doc-only; ?card=1
-        summary tile (implies embed); ?zoom=N CSS zoom; ?tab=pages|security|
-        traffic|flood tab deep-link; ?q=<regex|substring> seeds the filter
-        (q=polity%7Cnest). Security/Traffic/Flood subviews use ?tab=; Polity
-        uses ?tab=pages&q=polity%7Cnest'
-    - 'Card sets live in the SPEC, not here:
-        ssot.chaba-nest-dashboard.yml lists topics→tiles→reports. Regenerate
-        + push with scripts/home-assistant/chaba-nest-build.py --apply —
-        the whole dashboard rebuilds from spec (auth + api_key reused from
-        live config); --print previews'
+    - 'All five tabs are masonry: card 1 = markdown nav pill ("<Topic> ·
+        All reports →" to the subview = live filter box), then one iframe
+        SUMMARY-TILE per spec slug (?card=1&zoom=1.15, aspect 55%)'
+    - 'Reports subviews: <topic>-reports, subview:true + back_path, panel
+        iframe to the pre-filtered CMS browser'
+    - 'CMS params: ?embed=1 doc-only; ?card=1 tile (implies embed);
+        ?zoom=N CSS zoom; ?tab=pages|security|traffic|flood; ?q=<regex|sub>
+        seeds filter; ?badge/?why/?opts = state pill + popover'
+    - 'Card sets live in the SPEC: ssot.chaba-nest-dashboard.yml lists
+        topics→tiles→reports. Regenerate + push with
+        scripts/home-assistant/chaba-nest-build.py --apply (auth + api_key
+        reused from live config); --print previews'
+    - 'DISCOVERY (surfacing.standard): --discover lists CMS pages matching a
+        topic match: regex but absent from tiles; --propose adds them as
+        state:proposed (PROPOSED badge + why + opts popover on the tile);
+        --auto-add DAYS auto-adds old candidates (badge AUTO); --accept
+        pins, --reject drops. Default gate = human.'
     - 'TILE STANDARD (Tony 2026-10-09): masonry cards NEVER scroll — brief
         content shown in FULL. ?card=1 clamps title to 2 lines + status to
-        3 (line-clamp + overflow:hidden), "Read full →" pinned corner.
-        Never embed scrollable full docs as masonry cards'
-    note: 'Subviews are drill-down, not panes. Real nested tabs would need a
-      HACS tab-card — rejected 2026-10-08.'
-    last_updated: '2026-10-09'
+        3 (line-clamp + overflow:hidden). "Read full →" requestFullscreen()s
+        the tile into a scrollable doc (HA iframe cards allow=fullscreen);
+        Esc/✕ returns to tile; in-frame nav is the fallback'
+    - 'BADGES: non-pinned tiles get ?badge=<state>&why=<text>&opts=<actions>
+        — pill top-right, click toggles the explanation popover'
+    note: 'Subviews are drill-down, not panes. Nested tabs need a HACS
+      tab-card — rejected 2026-10-08.'
+    last_updated: '2026-10-10'
   staging_actuation_guard:
     purpose: Clone a prod HA config into a staging twin (tony-dev/ada-dev) with
       every write path neutralized — run before first boot (card

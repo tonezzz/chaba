@@ -1,0 +1,115 @@
+title: Operating Model — who decides, who does, who watches
+subtitle: The one-page constitution for the Tony + Devin + Ada + fleet team. Point of entry for "how do we work".
+icon: compass
+version: 1
+last_updated: "2026-10-10"
+
+overview:
+  purpose: |
+    Tony sets direction; the team executes best-effort with evidence;
+    machinery watches continuously. This doc maps which standard governs
+    which part of the cycle so "the standard procedure" is one lookup,
+    not tribal knowledge. (Asked for by Tony 2026-10-09 — "I control the
+    direction and our team follows with their best effort.")
+
+roles:
+  tony:
+    owns: direction, priorities, promotion approvals, taste calls
+    does_not_own: execution detail, remembering — the board remembers
+  devin:
+    owns: implementation, verification evidence, card hygiene in-session
+    duty: "kanban-first teamwork (AGENTS.md) — card everything, flag drift,
+           educate on shorter paths"
+  ada:
+    owns: voice interaction, personal memory, carding asks from conversation
+    duty: same norm mirrored in DEFAULT_ADA_INSTRUCTIONS
+  machinery:
+    owns: watching (timers, canaries, audits), claiming, merging, reporting
+    rule: machines never self-approve — gates route to the board
+
+direction_control:
+  capture_paths:
+    - "voice to Ada — her kanban tool files it (file/list/read/respond)"
+    - "LINE / Telegram to Ada — same relays, same tool; deterministic
+       convention: start the message with 'card:' or 'idea:' and she
+       files without asking"
+    - "Devin chat — open-ask duty: anything un-cardable in-session lands
+       on the board before the session ends"
+    - "focus-inbox / ada-ha-bank-ideas — parking for fragments; the
+       tony-ideas-harvest card mines them into the ideas CMS page"
+    - "yomi LINE archive — passive backstop; missed ideas surface in
+       the ideas harvest sweep"
+  how_tony_steers:
+    - "kanban cards — priorities, columns, card requests (the structured ask)"
+    - "approvals — every production-affecting step is a card request or
+       same-session explicit yes (release-lifecycle rule_zero)"
+    - "program tags + lab column — which lanes run, which hypotheses park"
+  how_team_reports:
+    - "card comms — written so the next reader needs no conversation context"
+    - "CMS evidence pages — every result is a discussable page, not a claim"
+    - "focus-inbox — anything awaiting Tony lands there, not in chat"
+
+priority:
+  # Cards carry priority: high|medium|low (absent = normal). Display sorts
+  # on the board. CLAIM ORDER: kanban-dispatch/runner-agent must drain
+  # queued cards priority-first then oldest-first — card
+  # dispatch-priority-order closes the current gap (claims are unordered).
+  rule: "high = user-visible or infra-risk work; medium = steady progress;
+         low = opportunistic. Priority never overrides host labels/caps or
+         merge_guard — it orders within eligibility."
+
+monitoring:
+  standard: |
+    Layers, cheapest first: health lanes generate cards on violation;
+    canaries detect silent-stall patterns (service active but stream dead
+    — mddb-follower-stall); watchers notify; audits verify claims vs state.
+    See monitoring-standard card + ssot.tony-dell-monitoring.yml. Every new
+    service gets its check at onboarding (service-onboarding-standard gate 6).
+
+surfacing:
+  # Tony 2026-10-10: "auto discovery and auto add — over a threshold can
+  # auto add, but have a badge of status and explanation with options."
+  standard: |
+    Discovery proposes; the human pins or drops; auto-add is the threshold
+    exception, never silent. Three states on every surfaced item —
+    pinned (human-approved, no badge), auto (added over threshold, badge
+    AUTO), proposed (awaiting decision, badge PROPOSED). Every badged item
+    carries `why` (what matched, when) and `opts` (the exact commands to
+    keep or drop it). Default gate is human: --discover lists, --propose
+    writes badges, --auto-add DAYS only for topics/cards Tony delegated.
+    Applies to: dashboard tiles (chaba-nest-build.py --discover/--accept/
+    --reject — live), kanban cards (same states map to column +
+    review_kind), CMS reports (a report tile IS this pattern). A surfaced
+    item without badge+options is a bug — it either earned pinned or it
+    shows its provenance.
+
+bloat:
+  # Tony 2026-10-10: "standard procedure for bloating as important in CI"
+  standard: |
+    Bloat is a first-class CI gate, not a cleanup chore. The ratchet rule:
+    the baseline only moves DOWN — new debt fails, old debt is budgeted.
+    Existing machinery: ssot-optimize.mjs warnings baseline (pre-commit
+    fails on ANY warning not in reports/SSOT_OPTIMIZATION_WARNINGS.json),
+    750-line hard cap per SSOT file, schema required-fields. Adding a new
+    bloat check: (1) pick a measurable metric — lines, file count, dep
+    weight, view/card count per dashboard; (2) write the checker +
+    baseline current debt; (3) gate at pre-commit (fast) AND a scheduled
+    sweep that files a card on regression (slow, catches drift between
+    commits); (4) exceptions live in the baseline file with a reason, not
+    in suppression comments. Commit hygiene is part of bloat control:
+    commit only your own files (auto-committer stages others' debt and
+    attributes it to you). Where it runs: pre-commit (staged), CI job on
+    push (full tree), deploy gate (stack-preflight class).
+
+standards_map:
+  capture:      "AGENTS.md open-ask duty + kanban-first teamwork; ada voice capture"
+  card_work:    "chaba-ci-standard — plan -> structure -> develop -> audit -> benchmark"
+  dispatch:     "ssot.kanban.yml — claim, caps, labels, merge_guard, merge_sweep"
+  production:   "ssot.release-lifecycle.yml — 6 stages, exit gates, rule_zero approvals"
+  new_services: "service-onboarding-standard — 7 gates + stack-preflight.py"
+  monitoring:   "monitoring-standard + ssot.tony-dell-monitoring.yml"
+  improvement:  "chaba-ci program tag — bench suites, corpus loops, promotion gates"
+  quality:      "QA/QC/audit layers — unit tests (ci-test-gate), bench tiers, canaries"
+  surfacing:    "surfacing.standard — discover/propose/auto-add + state badges (pinned|auto|proposed)"
+  dashboards:   "ssot.chaba-nest-dashboard.yml spec → chaba-nest-build.py --apply"
+  bloat:        "bloat.standard — ratchet baseline, pre-commit + scheduled sweep + deploy gate"

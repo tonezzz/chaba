@@ -11,6 +11,18 @@
 #   browser; use "tab=<topic>" for CMS-classified groups, "tab=pages&q=<rx>"
 #   for regex filtering
 # - tile order = card order; top-tier doc first
+#
+# AUTO-DISCOVERY (standard procedure, Tony 2026-10-10):
+# - `match:` per topic = regex on slug+title used by --discover (mirrors the
+#   CMS tab classification; q= topics reuse their reports regex)
+# - tiles may be a bare slug (state: pinned) or {slug, state, why}
+# - states: pinned = human-approved, no badge | auto = auto-added over the
+#   threshold, badge AUTO | proposed = discovered, awaiting decision, badge
+#   PROPOSED with why + options popover
+# - lifecycle: chaba-nest-build.py --discover proposes; --auto-add promotes
+#   over threshold; --accept <slug> pins; --reject <slug> drops
+# - default is human-gated: discovery proposes, Tony decides. auto-add is
+#   the exception for topics he has explicitly delegated (auto_add: true)
 id: ssot.chaba-nest-dashboard
 title: Chaba Nest Dashboard Spec
 subtitle: Declarative spec for the ada-ha chaba-nest dashboard — tiles + subviews
@@ -18,42 +30,105 @@ dashboard:
   url_path: chaba-nest
   title: Chaba Nest
   cms_base: https://idc03.taila0626a.ts.net/apps/ha/ada-tony/cms/
-  zoom: "1.15"          # CSS zoom applied inside tiles/docs
-  tile_aspect: "55%"    # iframe card height = % of card width (fits 2-line
-                        #  title + 3-line status + link at zoom 1.15)
+  zoom: '1.15'
+  tile_aspect: 55%
 topics:
 - name: Nest
   path: nest
+  match: nest|polity|tony-ideas
   tiles:
   - chaba-nest
   - nest-bench
   - nest-portable-brains
   - nest-oss-landscape
   - tony-ideas
-  reports: "tab=pages&q=nest"
+  - slug: polity-research
+    state: proposed
+    why: 'proposed: matched ''nest|polity|tony-ideas'' on 2026-10-09'
+  reports: tab=pages&q=nest
 - name: Polity
   path: polity
+  match: polity|nest
   tiles:
   - polity-research
   - nest-bench
   - nest-portable-brains
   - nest-oss-landscape
-  reports: "tab=pages&q=polity%7Cnest"
+  - slug: chaba-nest
+    state: proposed
+    why: 'proposed: matched ''polity|nest'' on 2026-10-09'
+  reports: tab=pages&q=polity%7Cnest
 - name: Security
   path: security
+  match: security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit
+  exclude: traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี|^cam-(?!wall)
   tiles:
   - security-digest
   - cctv-digest
   - cctv-walls
   - dvr-wall
-  reports: "tab=security"
+  - slug: camwall-tony-house
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: camwall-noble-club
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: camwall-noble-a
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: services-mn01
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: cctv-roster-audit
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: cctv-venue-network-access
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: cctv-random-cycle
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: cctv-assessment-2026-10-02
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: vms-wall-outage-20261001
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: cctv-request-flow
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: transcript-audit-2026-09-29
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  - slug: transcript-audit-2026-09-28
+    state: proposed
+    why: 'proposed: matched ''security|cctv|dvr|noble|tony.?house|cam-|vms|transcript-audit'' on 2026-10-09'
+  reports: tab=security
 - name: Traffic
   path: traffic
+  match: traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี
+  exclude: ^cam-(?!wall)
   tiles:
   - camwall-traffic
-  reports: "tab=traffic"
+  - slug: camwall-rama9
+    state: proposed
+    why: 'proposed: matched ''traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี'' on 2026-10-09'
+  - slug: camwall-dohweb
+    state: proposed
+    why: 'proposed: matched ''traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี'' on 2026-10-09'
+  - slug: camwall-chonburi
+    state: proposed
+    why: 'proposed: matched ''traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี'' on 2026-10-09'
+  - slug: camwall-burapha
+    state: proposed
+    why: 'proposed: matched ''traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี'' on 2026-10-09'
+  - slug: cctv-walls
+    state: proposed
+    why: 'proposed: matched ''traffic|rama ?9|rama9|dohweb|burapha|chonburi|จราจร|บางนา|ชลบุรี'' on 2026-10-09'
+  reports: tab=traffic
 - name: Flood
   path: flood
+  match: flood|น้ำท่วม|อุทกภัย
   tiles:
   - flood-overview
   - flood-digest
@@ -62,7 +137,10 @@ topics:
   - flood-report-nongdon-saraburi
   - flood-hub-assessment
   - flood-coordinates-rayong
-  reports: "tab=flood"
+  - slug: news-flood
+    state: proposed
+    why: 'proposed: matched ''flood|น้ำท่วม|อุทกภัย'' on 2026-10-09'
+  reports: tab=flood
 status:
   health: active — generated + pushed 2026-10-09, verified via playlive
   last_updated: '2026-10-09'
