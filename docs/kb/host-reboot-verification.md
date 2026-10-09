@@ -150,6 +150,12 @@ Fixed during recovery — all now persistent:
     shim) and no systemd unit; the container had to be recreated manually with
     `podman run --network host` (the Caddyfile `bind`s host IPs). Compose file's
     `ports:` are decorative under host networking.
+    **Caddyfile file-bind-mount inode gotcha (2026-10-09):** git checkouts
+    replace `stacks/web/Caddyfile` atomically (new inode); the container's
+    file bind-mount keeps the OLD inode, so `caddy reload` validates+serves
+    stale routes while the new file looks applied on disk. Symptom: new
+    handles 404. Fix: `podman restart web` (remounts the current inode) —
+    never `caddy reload` alone after a checkout touched the Caddyfile.
 - **`tailscale serve` mappings can vanish on tailscaled restart/upgrade**
   (incident 2026-10-09): after `tailscaled` restarted at 08:59, all serve
   entries (https :8444→9005, :8446→9101, tcp :3000, :9002) were gone even though

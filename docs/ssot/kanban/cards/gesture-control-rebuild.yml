@@ -6,6 +6,7 @@ brief: 'Tony (2026-10-09): use the iPhone camera for hand-gesture control of wha
   rebuild-gesture-control-using-yolo-1d906b (YOLO boxes are wrong primitive — landmark pipeline stays, per the KB
   recommendation).'
 column: review
+review_kind: verify
 priority: high
 created: 2026-10-09
 tags:
@@ -96,4 +97,10 @@ comms:
   from: chaba
   text: 'merge-sweep: merged e27b4ebc (dispatch/20261009-133455-rebuild-ada-v2-s-hand-gesture- from tony-omen) ->
     origin/master'
-updated: 2026-10-09 14:11
+- at: 2026-10-09 14:17
+  from: devin
+  text: 'deployed on tony-dell: gesture-relay quadlet running (tailnet :8794), web container recreated (Caddyfile
+    file-bind-mount inode was stale — podman restart web needed, not caddy reload). All 5 expected_goals verified
+    LIVE: /apps/gesture/ 200, /apps/gesture/screen 200, vendored model, /apps/gesture-live/health 200, ws handshake
+    ok. chaba-home Gesture tab live. Remaining: real iPhone+TV E2E.'
+updated: 2026-10-09 14:17
