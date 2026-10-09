@@ -226,6 +226,9 @@ def validate_one(file_path):
                     if not r.get('options'):
                         warnings.append(f"Kanban: open request '{r.get('id') or r.get('ask', '?')[:40]}' "
                                         'has no options — add options+suggested for click-to-answer')
+                    elif not r.get('suggested'):
+                        warnings.append(f"Kanban: open request '{r.get('id') or '?'}' has no suggested — "
+                                        "record the raiser's recommendation")
 
         if 'ideas' in data and isinstance(data['ideas'], list):
             for idx, idea in enumerate(data['ideas']):

@@ -1,56 +1,62 @@
 id: ops-incident-ladder
-title: 'Incident response ladder — detect → triage → auto-remediate → gate, + fault drills'
-brief: "We detect failures well but respond ad-hoc — every alert should know its severity, playbook, and whether a machine may fix it. Waiting in the backlog — no action needed."
-column: doing
+title: Incident response ladder — detect → triage → auto-remediate → gate, + fault drills
+brief: We detect failures well but respond ad-hoc — every alert should know its severity, playbook, and whether
+  a machine may fix it. Waiting in the backlog — no action needed.
+column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09 07:08
 lab:
-  hypothesis: A 4-level incident ladder + quarterly fault drills keeps home-ops failures bounded — detection under 2 min, auto-fix for routine staleness, humans only paged for real decisions
-  metric: drill scorecard — time-to-detect < 2min, time-to-alert < 5min, L2-class faults auto-remediated < 10min, zero unactioned pages after 30 days
+  hypothesis: A 4-level incident ladder + quarterly fault drills keeps home-ops failures bounded — detection under
+    2 min, auto-fix for routine staleness, humans only paged for real decisions
+  metric: drill scorecard — time-to-detect < 2min, time-to-alert < 5min, L2-class faults auto-remediated < 10min,
+    zero unactioned pages after 30 days
   review_by: '2026-10-22'
-note: >-
-  Today 2026-10-08 the board-api ran pre-commit code for ~10h after a
-  fix landed — detection existed nowhere because "stale process" isn't
-  a health check. staleness-sentinel.sh now sweeps tony-omen+tony-dell
-  every 10min (first shipped piece of L2). Existing detection:
-  ssot.health.*.yml registry, ssh-canary (1min, incident evidence pull),
-  mn01-canary, watchdogs, infra-digest. Missing: unified severity,
-  per-service playbooks, alert->card triage, postmortem loop, drills.
-spec: >-
-  Ladder (ssot.incident-response.yml):
-  L0 detect — every ssot.health check gains severity: page|notify|log
-  + playbook: <runbook ref>. L1 triage — page-severity alerts auto-open
-  a review card (board is already the attention queue; reuse
-  request-sweep re-ping). L2 auto-remediate — allowlisted bounded
-  actions: restart-stale-service (sentinel verdict), git-safe-pull,
-  disk GC, unit reload on NeedDaemonReload. L3 human gate —
-  edge/production/destructive -> board ask: with options (the ask
-  machinery fixed 10-07 is the gate UI).
-  Fault drills (scripts/ops/fault-drill.sh): inject bounded faults into
-  a canary service on tony-omen — stop-unit, touch-ExecStart-file
-  (staleness sim), fill scratch dir, blackhole a port — measure
-  time-to-detect/alert/remediate, publish scorecard to CMS page
-  ops-drill-scorecard. Faults self-heal: drill harness restores state
-  after measurement regardless of outcome.
-  Postmortem hook: incident recovery -> append to card comms + create/
-  link ssot.learning.* entry (file pattern exists — needs a writer,
-  maybe kanban-autofix or recent-event consumer).
-help: >-
-  First L2 member is live: scripts/ops/staleness-sentinel.sh —
-  compares /proc/<MainPID> start vs ExecStart file mtimes, flags
-  NeedDaemonReload, dedup via ~/var/chaba/health/staleness-state/,
-  alerts via recent-event + HA event log. Verified 10-08: caught real
-  stale cast-browser (file edited 6h after proc start) + rclone
-  log-file false-positive (fixed: skip *.log/.cache). Units:
-  systemd/staleness-sentinel.{service,timer} repo + armed on tony-omen
-  and tony-dell (~/.local/bin copy). Rollout order: sentinel done ->
-  ssot.incident-response.yml ladder -> alert->card triage glue ->
-  fault-drill lab.
+note: 'Today 2026-10-08 the board-api ran pre-commit code for ~10h after a fix landed — detection existed nowhere
+  because "stale process" isn''t a health check. staleness-sentinel.sh now sweeps tony-omen+tony-dell every 10min
+  (first shipped piece of L2). Existing detection: ssot.health.*.yml registry, ssh-canary (1min, incident evidence
+  pull), mn01-canary, watchdogs, infra-digest. Missing: unified severity, per-service playbooks, alert->card triage,
+  postmortem loop, drills.'
+spec: 'Ladder (ssot.incident-response.yml): L0 detect — every ssot.health check gains severity: page|notify|log
+  + playbook: <runbook ref>. L1 triage — page-severity alerts auto-open a review card (board is already the attention
+  queue; reuse request-sweep re-ping). L2 auto-remediate — allowlisted bounded actions: restart-stale-service (sentinel
+  verdict), git-safe-pull, disk GC, unit reload on NeedDaemonReload. L3 human gate — edge/production/destructive
+  -> board ask: with options (the ask machinery fixed 10-07 is the gate UI). Fault drills (scripts/ops/fault-drill.sh):
+  inject bounded faults into a canary service on tony-omen — stop-unit, touch-ExecStart-file (staleness sim), fill
+  scratch dir, blackhole a port — measure time-to-detect/alert/remediate, publish scorecard to CMS page ops-drill-scorecard.
+  Faults self-heal: drill harness restores state after measurement regardless of outcome. Postmortem hook: incident
+  recovery -> append to card comms + create/ link ssot.learning.* entry (file pattern exists — needs a writer, maybe
+  kanban-autofix or recent-event consumer).'
+help: 'First L2 member is live: scripts/ops/staleness-sentinel.sh — compares /proc/<MainPID> start vs ExecStart
+  file mtimes, flags NeedDaemonReload, dedup via ~/var/chaba/health/staleness-state/, alerts via recent-event +
+  HA event log. Verified 10-08: caught real stale cast-browser (file edited 6h after proc start) + rclone log-file
+  false-positive (fixed: skip *.log/.cache). Units: systemd/staleness-sentinel.{service,timer} repo + armed on tony-omen
+  and tony-dell (~/.local/bin copy). Rollout order: sentinel done -> ssot.incident-response.yml ladder -> alert->card
+  triage glue -> fault-drill lab.'
 links:
-  - request-lifecycle
-  - ops-kanban-commit-guard
-  - scripts/ops/ssh-canary.sh
-  - scripts/ops/staleness-sentinel.sh
+- request-lifecycle
+- ops-kanban-commit-guard
+- scripts/ops/ssh-canary.sh
+- scripts/ops/staleness-sentinel.sh
 blocked_by: []
 autonomy: t2
+action:
+  type: dispatch
+  status: done
+  button: ▶ Dispatch
+  repo: chaba
+  runner: idc03
+  result: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-070741-ladder-ssot-incident-response-.service:
+    Failed with result ''exit-code''. | devin-task-20261009-070741-ladder-ssot-incident-response-.service: Consumed
+    1.074s CPU time.'
+comms:
+- at: 2026-10-09 07:07
+  from: idc03
+  text: claimed
+- at: 2026-10-09 07:07
+  from: chaba
+  text: started devin-task-20261009-070741-ladder-ssot-incident-response- on idc03 (dispatch)
+- at: 2026-10-09 07:08
+  from: idc03
+  text: 'finished (ok): exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-070741-ladder-ssot-incident-response-.service:'
+claim: {}

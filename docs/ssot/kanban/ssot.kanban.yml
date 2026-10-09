@@ -160,6 +160,9 @@ card_schema:
   ask:
     question: "the decision Tony owes"
     options: ["Yes — …", "Option 1: …"]   # strings or {id, label}
+    suggested: "optional — must match an options[] item (label, id, or
+      'id — label'); renders that option ★ green/bold — a recommendation,
+      never auto-answered (same contract as requests[].suggested)"
     status: "open | answered  — written by /respond (no request_id)"
     answer: "resolved option label or free text — written by /respond"
     answered_at: "YYYY-MM-DD HH:MM — written by /respond"
@@ -182,6 +185,11 @@ card_schema:
       to: "target actor; absent = tony. Tony-targeted agent-raised requests
         push a notification on create and one escalation after 12h open
         (escalated_at stamp, once per request — see request-sweep.py)."
+  # optional — the filing/working agent's standing recommendation,
+  # rendered 💡 on the card tile + an Advice block in the modal.
+  # Refreshed whenever the agent's take changes; NOT a decision.
+  advice: "{from: devin|ada|chaba, at: 'YYYY-MM-DD HH:MM', text: 'the
+      recommendation in one or two sentences'} — bare string also accepted"
   # optional — append-only log; every actor writes here (board shows last 4)
   comms:
     - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}

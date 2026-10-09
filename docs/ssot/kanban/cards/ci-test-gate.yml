@@ -1,21 +1,44 @@
 id: ci-test-gate
 title: Wire pytest into the merge gate — close_out runs the suite before auto-merge
-brief: 'Tests exist (tests/board, ada_memory, camwall, yt_dub) but nothing runs them automatically — a dispatch branch
-  can auto-merge green without ever executing a test. Run the repo suite in the merge worktree before auto-merge and
-  add a fast pre-commit check on served checkouts.'
-column: backlog
+brief: Tests exist (tests/board, ada_memory, camwall, yt_dub) but nothing runs them automatically — a dispatch branch
+  can auto-merge green without ever executing a test. Run the repo suite in the merge worktree before auto-merge
+  and add a fast pre-commit check on served checkouts.
+column: doing
 priority: high
 program: chaba-ci
 area: board
 note: 'Chaba CI gap: bench suites measure model quality, canaries audit prod, but the per-change floor is missing.
   Evidence: ~10 test files under tests/ incl. merge_sweep/close_out/dispatch_rails coverage — all opt-in, never
   gated. A merge that breaks merge-sweep.py merges green today.'
-spec: "1. In scripts/board/kanban-dispatch.py close_out: after a clean merge in the throwaway\n   worktree, run the repo's fast test step (pytest tests/ or a declared `test:` key\n   in dispatch_repos.py per repo — default: `python -m pytest tests -x -q`).\n   Failure -> do NOT merge; set action.last_failure with the failing test names\n   and let the existing auto-retry path requeue informed (same rails as merge\n   conflicts). Keep a KANBAN_TESTGATE=0 env off-switch.\n2. Per-repo test config: dispatch_repos.py gains optional test command + timeout\n   (chaba: pytest tests; ada-pi: pytest tests -k 'not slow'; others: none).\n3. Served-checkout pre-commit: add a fast pytest step to the existing pre-commit\n   hook chain scoped to changed test/script dirs — keep it under ~15s.\n4. Update ssot.kanban.yml close_out doc + chaba-ci program note.\nAcceptance: a dispatch branch whose code breaks a test fails the gate and\nrequeues with last_failure populated; a clean branch merges as before;\ntests/board gains coverage for both paths.\n"
-help: 'Merge worktree already exists (close_out step). Guard against slow/hanging suites with a per-repo timeout;
-  never block merges on test-infra errors (pytest missing = warn+pass, same fail-open convention as merge_guard).'
-updated: 2026-10-08 18:40
+spec: "1. In scripts/board/kanban-dispatch.py close_out: after a clean merge in the throwaway\n   worktree, run\
+  \ the repo's fast test step (pytest tests/ or a declared `test:` key\n   in dispatch_repos.py per repo — default:\
+  \ `python -m pytest tests -x -q`).\n   Failure -> do NOT merge; set action.last_failure with the failing test\
+  \ names\n   and let the existing auto-retry path requeue informed (same rails as merge\n   conflicts). Keep a\
+  \ KANBAN_TESTGATE=0 env off-switch.\n2. Per-repo test config: dispatch_repos.py gains optional test command +\
+  \ timeout\n   (chaba: pytest tests; ada-pi: pytest tests -k 'not slow'; others: none).\n3. Served-checkout pre-commit:\
+  \ add a fast pytest step to the existing pre-commit\n   hook chain scoped to changed test/script dirs — keep it\
+  \ under ~15s.\n4. Update ssot.kanban.yml close_out doc + chaba-ci program note.\nAcceptance: a dispatch branch\
+  \ whose code breaks a test fails the gate and\nrequeues with last_failure populated; a clean branch merges as\
+  \ before;\ntests/board gains coverage for both paths.\n"
+help: Merge worktree already exists (close_out step). Guard against slow/hanging suites with a per-repo timeout;
+  never block merges on test-infra errors (pytest missing = warn+pass, same fail-open convention as merge_guard).
+updated: 2026-10-09 07:07
 action:
   type: dispatch
-  status: idle
-  button: "▶ Wire the test gate"
+  status: running
+  button: ▶ Wire the test gate
   repo: chaba
+  runner: idc02
+comms:
+- at: 2026-10-09 07:07
+  from: tony
+  text: queued for processing
+- at: 2026-10-09 07:07
+  from: idc02
+  text: claimed
+- at: 2026-10-09 07:07
+  from: chaba
+  text: started devin-task-20261009-070722-1-in-scripts-board-kanban-disp on idc02 (dispatch)
+- at: 2026-10-09 07:07
+  from: devin
+  text: 'Starting: exploring kanban-dispatch close_out, dispatch_repos, and hook chain'

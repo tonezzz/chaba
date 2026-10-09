@@ -458,9 +458,12 @@ function optLabel(o) {{ return typeof o === 'string' ? o : (o.label || o.id); }}
 function askAnswerHtml(c) {{
   const a = askOf(c) || {{}};
   const opts = a.options || [];
+  const sug = a.suggested || '';
+  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === `${{o.id}} — ${{o.label || ''}}`)));
   let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
   opts.forEach((o, i) => {{
-    h += `<button class="ask-opt text-xs bg-amber-800/70 hover:bg-amber-700 text-amber-100 rounded px-2 py-1" data-id="${{esc(c.id)}}" data-opt="${{i}}">${{esc(optLabel(o))}}</button>`;
+    const s = isSug(o);
+    h += `<button class="ask-opt text-xs ${{s ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 ring-1 ring-emerald-400 font-semibold' : 'bg-amber-800/70 hover:bg-amber-700 text-amber-100'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-opt="${{i}}">${{s ? '★ ' : ''}}${{esc(optLabel(o))}}</button>`;
   }});
   h += '</div>';
   h += `<div class="flex gap-1 mt-1"><input class="ask-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" placeholder="other — free text…">` +
@@ -537,6 +540,7 @@ function cardHtml(c) {{
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
     (badges ? `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` : '') +
     `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
+    (c.advice ? `<div class="text-xs text-emerald-300/90 mt-1.5">💡 ${{esc(typeof c.advice === 'string' ? c.advice : ((c.advice.from ? c.advice.from + ': ' : '') + (c.advice.text || '')))}}</div>` : '') +
     `<div class="text-[10px] text-slate-500 mt-1">${{esc(c.id)}} · ${{esc(c.updated || '')}}</div>` +
     '</div>';
 }}
@@ -773,6 +777,7 @@ function showCard(id) {{
     `<div class="flex flex-wrap gap-1.5 mb-3">${{actBtns(c, true)}}${{c.help ? `<button id="cm-help" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-2 py-1">? help</button>` : ''}}</div>` +
     `<div class="flex flex-wrap gap-1.5 mb-4">${{colBtns}}</div>` +
     ((c.lab && (c.lab.hypothesis || c.lab.metric)) ? `<div class="mb-3 border-l-2 border-violet-600 pl-2"><div class="text-[10px] uppercase tracking-wide text-violet-400 mb-1">Lab</div>${{c.lab.hypothesis ? `<div class="text-xs text-slate-300">hypothesis: ${{esc(c.lab.hypothesis)}}</div>` : ''}}${{c.lab.metric ? `<div class="text-xs text-slate-400">metric: ${{esc(c.lab.metric)}}</div>` : ''}}</div>` : '') +
+    (c.advice ? `<div class="mb-3 border-l-2 border-emerald-600 pl-2"><div class="text-[10px] uppercase tracking-wide text-emerald-400 mb-1">💡 Advice${{typeof c.advice === 'object' && c.advice.from ? ' · ' + esc(c.advice.from) : ''}}</div><div class="text-xs text-slate-300 whitespace-pre-wrap">${{esc(typeof c.advice === 'string' ? c.advice : (c.advice.text || ''))}}</div></div>` : '') +
     (c.spec ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Spec</div><pre class="text-xs text-slate-300 whitespace-pre-wrap font-sans border-l-2 border-slate-600 pl-2">${{esc(c.spec)}}</pre></div>` : '') +
     (askOf(c) ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Decision</div>${{askHtml(c)}}</div>` : '') +
     ((c.requests || []).length ? `<div class="mb-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Requests</div>${{reqList(c, true)}}</div>` : '') +

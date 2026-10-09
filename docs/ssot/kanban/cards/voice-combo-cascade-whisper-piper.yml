@@ -1,7 +1,7 @@
 id: voice-combo-cascade-whisper-piper
 title: 'Bench: faster-whisper + ollama LLM + piper cascade'
-column: doing
-updated: 2026-10-09 06:40
+column: review
+updated: 2026-10-09 07:03
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -18,8 +18,11 @@ action:
   labels:
   - gpu
   model: swe-2-medium
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 the dispatch branch (not pushed), and the board was updated. | devin-task-20261009-063553-bench-combo-cascade-whisper-pi.service:
+    Consumed 22min 37.219s CPU time over 20min 33.509s wall clock time, 4.6G memory peak, 522.2M memory swap peak.'
+  verified: false
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -37,4 +40,42 @@ comms:
   from: devin
   text: harness scripts/voice-bench/ never landed (idc03 worktree swept dirty) — rebuilding harness in this worktree,
     then running combo. ollama+phi3 up on GPU host, piper en_US-lessac installed, faster-whisper venv ready.
+- at: 2026-10-09 06:56
+  from: devin
+  text: 'done. 15 fixtures x whisper small+medium. EN: STT(small,cuda) 652ms, LLM(phi3) ~6-14s, TTS(piper) ~1.9s,
+    WER 0.029, tool 5/10 exact 3 partial. Medium OOM->CPU (15-20s/fix, unusable on 4GB card beside phi3). TH: STT
+    ok (CER .12), LLM tool-json fails 4/5, TTS skipped — no Thai piper voice. Report: reports/voice-fallback/LATEST.md,
+    metrics JSON + job yml committed.'
+- at: 2026-10-09 06:57
+  from: tony-omen
+  text: 'finished (ok): exit=0 the dispatch branch (not pushed), and the board was updated. | devin-task-20261009-063553-bench-combo-cascade-whi'
+- at: 2026-10-09 06:57
+  from: chaba
+  text: 'session-end checkpoint 4732697c: 1 leftover file(s) committed'
+- at: 2026-10-09 06:57
+  from: chaba
+  text: pushed dispatch/20261009-063553-bench-combo-cascade-whisper-pi to origin
+- at: 2026-10-09 06:57
+  from: chaba
+  text: 'auto-merge conflicts: scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/manifest.yml,
+    scripts/voice-bench/report.py — card stays in review for manual resolution'
+- at: 2026-10-09 07:03
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-063553-bench-combo-cascade-whisper-pi conflicts with origin/master: scripts/voice-bench/bench.py,
+    scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/manifest.yml, scripts/voice-bench/report.py — merge
+    aborted, card stays for human resolution'
+- at: 2026-10-09 07:03
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261009-063553-bench-combo-cascade-whisper-pi:
+    2 commit(s) conflict with origin/master '
 pipeline: ci
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261009-063553-bench-combo-cascade-whisper-pi: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/voice-bench/bench.py, scripts/voice-bench/combos.yml, scripts/voice-bench/fixtures/manifest.yml,
+    scripts/voice-bench/report.py. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261009-063553-bench-combo-cascade-whisper-pi
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-09 07:03
+  from: chaba
