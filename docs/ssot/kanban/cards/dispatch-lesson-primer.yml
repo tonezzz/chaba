@@ -1,11 +1,11 @@
 id: dispatch-lesson-primer
 title: Dispatch lesson primer — inject relevant past failures into each dispatch prompt
-column: backlog
+column: done
 kind: feature
 priority: high
 autonomy: t2
 created: '2026-10-09'
-updated: 2026-10-09 15:28
+updated: 2026-10-09 15:47
 tags:
 - dispatch
 - compounding
@@ -39,13 +39,40 @@ comms:
 - at: 2026-10-09 15:28
   from: chaba
   text: dispatched 20261009-152757-1-scripts-board-kanban-dispatc on chaba
+- at: 2026-10-09 15:37
+  from: devin
+  text: 'primer landed: scripts/board/lesson_primer.py harvests outcome-doc lessons + job fields + comms + kb runbooks,
+    scores on host/repo/task kws, caps 8 lines/~1.5k tok. KNOWN_PITFALLS verified after TASK_RAILS in live build_task
+    smoke; injected lines logged to card comms on dispatch. tests green.'
+- at: 2026-10-09 15:43
+  from: devin
+  text: 'DONE (attempt 2). lesson_primer.py harvests outcome-lessons/jobs-fields/comms/kb-runbooks, scores on host+repo+task
+    kws (>=2 hits), caps 8 lines/5.5k chars. KNOWN_PITFALLS injected after TASK_RAILS (KANBAN_PRIMER=0 off, warn-only
+    fail-open); injected lines logged to card comms; TASK_RAILS now requires lessons: in outcome docs (self-seeding).
+    Also fixed test_merge_sweep fixture git-identity (was red on tony-dell, would wedge the merge gate). tests/board
+    53 + full suite 107 green. Commits bf051766'
+- at: 2026-10-09 15:45
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-09 15:46
+  from: chaba
+  text: pushed dispatch/20261009-152757-1-scripts-board-kanban-dispatc to origin
+- at: 2026-10-09 15:46
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 19.5s)
+- at: 2026-10-09 15:46
+  from: chaba
+  text: auto-merged 12d5016f (dispatch/20261009-152757-1-scripts-board-kanban-dispatc) → origin/master
+- at: 2026-10-09 15:47
+  from: devin
+  text: 'merged + verified on master: KNOWN_PITFALLS injects 8 real lessons into build_task (smoke on merge-sweep-verified-gate
+    surfaced the stale-idc03-runner incident unprompted — exactly the repeat it was built to catch).'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
-  runner: tony-dell
   attempts: 1
-  task_id: 20261009-152757-1-scripts-board-kanban-dispatc
+  result: 20261009-152757-1-scripts-board-kanban-dispatc finished (inactive) — see `devin-dispatch logs 20261009-152757-1-scripts-board-kanban-dispatc`
+  verified: true
 claim:
-  session: 20261009-152757-1-scripts-board-kanban-dispatc
   since: 2026-10-09 15:28
