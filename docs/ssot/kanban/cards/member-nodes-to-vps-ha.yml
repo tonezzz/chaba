@@ -1,61 +1,66 @@
 id: member-nodes-to-vps-ha
-title: 'Member/dev nodes to VPS (idc01/idc03) + Cloudflare HA for HA nodes'
+title: Member/dev nodes to VPS (idc01/idc03) + Cloudflare HA for HA nodes
 column: backlog
 priority: high
-note: >-
-  Tony 2026-10-09: "can we run it on idc01-03? consider move the others too,
-  tony-dell is too unstable. how can we make high availability using
-  cloudflare?" — assessed below.
+note: 'Tony 2026-10-09: "can we run it on idc01-03? consider move the others too, tony-dell is too unstable. how
+  can we make high availability using cloudflare?" — assessed below.'
 action:
   type: manual
   status: open
   runner: devin
-updated: 2026-10-09 09:15
+updated: 2026-10-09 14:12
 comms:
 - at: 2026-10-09 09:45
   from: devin
-  text: >-
-    Correction — ada-pi AGENTS.md states idc01 is RETIRED (mddb masked,
-    never unmask; warm-DR role is stale). VPS targets for member nodes are
-    idc02/idc03 only. kk-ha could co-locate on idc03 (edge leg becomes
-    loopback) if KK data-on-VPS is accepted.
+  text: Correction — ada-pi AGENTS.md states idc01 is RETIRED (mddb masked, never unmask; warm-DR role is stale).
+    VPS targets for member nodes are idc02/idc03 only. kk-ha could co-locate on idc03 (edge leg becomes loopback)
+    if KK data-on-VPS is accepted.
 - at: 2026-10-09 09:15
   from: devin
-  text: >-
-    Assessment: (1) MOVABLE: memory-only member nodes (kk-ha) and dev nodes
-    (ada-ha, michael-dev) have no LAN dependency — they only need idc03 Ada
-    backends + their config dir. kk-ha could even run co-located on idc03
-    (edge leg drops to loopback). NOT MOVABLE: tony-ha — it owns LAN
-    hardware (ESPHome/cameras/plugs/tuya-local); it is the household LAN hub
-    and must stay local. Fix tony-ha stability locally instead (watchdog or
-    better local box). (2) DATA: moving kk-ha puts KK's personal assistant
-    config on a VPS disk — needs Tony's call. (3) CF HA options: (a) FREE —
-    Cloudflare Tunnel with 2+ cloudflared connectors (tony-dell + VPS);
-    CF routes to any healthy connector, real failover without LB add-on;
-    (b) CF Load Balancing add-on — proper health-checked pools, paid;
-    (c) cheap — two A records to idc02+idc03 edges (both already proxy the
-    same backends), soft failover via browser retry; (d) node redundancy —
-    standby member-node container on idc01 with config sync, promoted on
-    failure. Recommend (a)+(d): tunnel multi-connector for the path, standby
-    replica for the node.
+  text: 'Assessment: (1) MOVABLE: memory-only member nodes (kk-ha) and dev nodes (ada-ha, michael-dev) have no LAN
+    dependency — they only need idc03 Ada backends + their config dir. kk-ha could even run co-located on idc03
+    (edge leg drops to loopback). NOT MOVABLE: tony-ha — it owns LAN hardware (ESPHome/cameras/plugs/tuya-local);
+    it is the household LAN hub and must stay local. Fix tony-ha stability locally instead (watchdog or better local
+    box). (2) DATA: moving kk-ha puts KK''s personal assistant config on a VPS disk — needs Tony''s call. (3) CF
+    HA options: (a) FREE — Cloudflare Tunnel with 2+ cloudflared connectors (tony-dell + VPS); CF routes to any
+    healthy connector, real failover without LB add-on; (b) CF Load Balancing add-on — proper health-checked pools,
+    paid; (c) cheap — two A records to idc02+idc03 edges (both already proxy the same backends), soft failover via
+    browser retry; (d) node redundancy — standby member-node container on idc01 with config sync, promoted on failure.
+    Recommend (a)+(d): tunnel multi-connector for the path, standby replica for the node.'
 comms_tail:
 - at: 2026-10-09 10:55
   from: devin
-  text: >-
-    EXECUTED (approved by Tony): kk-ha and michael-dev migrated to idc03
-    — config tar -> quadlet (podman net, loopback publish, --add-host pins;
-    NOTE quadlet AddHost unsupported on podman 4.9 — use PodmanArgs
-    --add-host) -> tailscale serve -> idc02 edge repoint (Caddyfile is a
-    single-file bind mount: NEVER sed -i, it breaks the inode — write via
-    cat > then restart caddy-edge). ada-ha HELD on tony-dell: its media/cast
-    lane (yt-live mounts -> Chromecast fetch) is LAN-adjacent and would
-    break on a VPS. tony-ha stays (LAN hardware). CAUTION: `tailscale serve
-    reset` wiped ALL tony-dell routes incl. :443 /apps/* — restored with
-    --bg --https=443 http://127.0.0.1:80; use per-port 'off' only.
+  text: 'EXECUTED (approved by Tony): kk-ha and michael-dev migrated to idc03 — config tar -> quadlet (podman net,
+    loopback publish, --add-host pins; NOTE quadlet AddHost unsupported on podman 4.9 — use PodmanArgs --add-host)
+    -> tailscale serve -> idc02 edge repoint (Caddyfile is a single-file bind mount: NEVER sed -i, it breaks the
+    inode — write via cat > then restart caddy-edge). ada-ha HELD on tony-dell: its media/cast lane (yt-live mounts
+    -> Chromecast fetch) is LAN-adjacent and would break on a VPS. tony-ha stays (LAN hardware). CAUTION: `tailscale
+    serve reset` wiped ALL tony-dell routes incl. :443 /apps/* — restored with --bg --https=443 http://127.0.0.1:80;
+    use per-port ''off'' only.'
   status: done
 requests:
-- from: tony
-  needed: Decide (a) move kk-ha/ada-ha/michael-dev containers to idc01 or
-    idc03 — and whether KK's assistant data may live on a VPS disk; (b) CF
-    approach — free tunnel multi-connector vs paid Load Balancer.
+- id: vps-target
   status: open
+  from: devin
+  to: tony
+  ask: 'Which host should run member-node HA containers (kk-ha, ada-ha, michael-dev)? Also implied: is it OK for
+    KK''s assistant data to live on a VPS disk?'
+  options:
+  - id: idc03
+    label: idc03 — busiest VPS, already runs ada backends
+  - id: idc01
+    label: idc01 — dedicated member node, lighter load
+  - id: idc03-kk-local
+    label: idc03 for compute, but KK data stays off VPS
+  suggested: idc03
+- id: cf-ha-approach
+  status: open
+  from: devin
+  to: tony
+  ask: Cloudflare HA approach for the member nodes — free multi-connector tunnel vs paid Load Balancer (~$5/mo)?
+  options:
+  - id: free-tunnels
+    label: Free — parallel tunnels per node, DIY failover
+  - id: paid-lb
+    label: Paid Load Balancer — real health-check failover
+  suggested: free-tunnels

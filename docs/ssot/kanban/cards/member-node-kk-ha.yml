@@ -1,42 +1,34 @@
 id: member-node-kk-ha
-title: 'kk-ha member node — first member-node provisioning (runbook seed)'
+title: kk-ha member node — first member-node provisioning (runbook seed)
 column: done
 priority: high
-note: >-
-  DONE 2026-10-09: kk-ha live at https://kk-ha.surf-thailand.com (CF Access
-  app 4e806482-6481-496a-955c-07400f154cce). ada-kk backend on idc03 :8007,
-  tailnet /apps/ha/ada-kk, edge /ada-ws/kk lane. Verified E2E via playlive:
-  key mint + browser-TTS "Connecting to Kaewta on kk-ha …" + ws failover to
-  tailnet + session ready (Listening). HA onboarding completed with user kk
-  (owner; temp password set at bootstrap — KK should change it in her
-  profile). This is the template for member-node provisioning — the standard
-  procedure: (1) quadlet + minimal config on tony-dell, own loopback port +
-  AddHost tailnet pins; (2) tailscale serve --https=<port>; (3) ada-<member>
-  backend on idc03 (own env + keys file, ADA_INSTANCE_ID=<member>);
-  (4) idc02 edge block + /ada-ws/<member> + DNS CNAME -> edge.surf-thailand.com
-  + CF Access app scoped to member email; (5) preseed .storage dashboard +
-  lovelace_resources before first boot; (6) member onboards via UI = node
-  owner. Identity model: person.<member> shared across nodes; role per-node
-  (owner/member) via HA user + Ada person policy.
+note: 'DONE 2026-10-09: kk-ha live at https://kk-ha.surf-thailand.com (CF Access app 4e806482-6481-496a-955c-07400f154cce).
+  ada-kk backend on idc03 :8007, tailnet /apps/ha/ada-kk, edge /ada-ws/kk lane. Verified E2E via playlive: key mint
+  + browser-TTS "Connecting to Kaewta on kk-ha …" + ws failover to tailnet + session ready (Listening). HA onboarding
+  completed with user kk (owner; temp password set at bootstrap — KK should change it in her profile). This is the
+  template for member-node provisioning — the standard procedure: (1) quadlet + minimal config on tony-dell, own
+  loopback port + AddHost tailnet pins; (2) tailscale serve --https=<port>; (3) ada-<member> backend on idc03 (own
+  env + keys file, ADA_INSTANCE_ID=<member>); (4) idc02 edge block + /ada-ws/<member> + DNS CNAME -> edge.surf-thailand.com
+  + CF Access app scoped to member email; (5) preseed .storage dashboard + lovelace_resources before first boot;
+  (6) member onboards via UI = node owner. Identity model: person.<member> shared across nodes; role per-node (owner/member)
+  via HA user + Ada person policy.'
 requests:
-- from: tony
-  needed: >-
-    Nhong's email for the kk-ha CF Access policy. KK's two gmails
-    (kkgtaday24@gmail.com, kkgt6019@gmail.com) added 2026-10-09 — both work
-    for OTP sign-in.
-  status: open
+- id: legacy-needed
+  ask: Nhong's email for the kk-ha CF Access policy. KK's two gmails (kkgtaday24@gmail.com, kkgt6019@gmail.com)
+    added 2026-10-09 — both work for OTP sign-in.
+  status: answered
+  from: devin
+  to: tony
+  answer: self-resolved — the needed emails/details were supplied and the work landed (card is done)
 action:
   type: manual
   status: done
   runner: devin
-updated: 2026-10-09 09:00
+updated: 2026-10-09 14:12
 comms:
 - at: 2026-10-09 09:00
   from: devin
-  text: 'kk-ha provisioned end-to-end. Gotchas captured in
-    ssot.home-assistant.instances.yml: HA 2026.8 migrates http: to
-    .storage/http on first boot (yaml_migration_done — later YAML edits
-    ignored; patch storage instead); the podman bridge gw subnet must be in
-    trusted_proxies for tailscale-serve traffic (subnet in
-    ssot.values.yml::paths.podman_bridge_subnet). ada-kk is memory-only (no HA
-    tool bindings) per minimal spec.'
+  text: 'kk-ha provisioned end-to-end. Gotchas captured in ssot.home-assistant.instances.yml: HA 2026.8 migrates
+    http: to .storage/http on first boot (yaml_migration_done — later YAML edits ignored; patch storage instead);
+    the podman bridge gw subnet must be in trusted_proxies for tailscale-serve traffic (subnet in ssot.values.yml::paths.podman_bridge_subnet).
+    ada-kk is memory-only (no HA tool bindings) per minimal spec.'

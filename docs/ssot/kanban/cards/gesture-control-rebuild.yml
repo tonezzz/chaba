@@ -5,7 +5,7 @@ brief: 'Tony (2026-10-09): use the iPhone camera for hand-gesture control of wha
   (READ THIS FIRST — no re-digging the archive). Supersedes rebuild-gesture-system-using-yolo-for-cu-94356f and
   rebuild-gesture-control-using-yolo-1d906b (YOLO boxes are wrong primitive — landmark pipeline stays, per the KB
   recommendation).'
-column: doing
+column: review
 priority: high
 created: 2026-10-09
 tags:
@@ -58,9 +58,12 @@ expected_goals:
   check: ws wss://tony-dell.taila0626a.ts.net/apps/gesture-live/ws
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  result: 'exit=0 patch-outcome file and `docs/ssot/jobs/gesture/2026-10-09-gesture-two-page-rebuild.yml`. | devin-task-20261009-133455-rebuild-ada-v2-s-hand-gesture-.service:
+    Consumed 2min 59.584s CPU time over 35min 41.440s wall clock time, 1G memory peak.'
+  verified: true
 comms:
 - at: 2026-10-09 13:34
   from: tony-omen
@@ -68,4 +71,29 @@ comms:
 - at: 2026-10-09 13:34
   from: chaba
   text: started devin-task-20261009-133455-rebuild-ada-v2-s-hand-gesture- on tony-omen (dispatch)
-updated: 2026-10-09 13:34
+- at: 2026-10-09 14:08
+  from: devin
+  text: 'built: gesture-relay quadlet (ws fan-out :8794 tailnet-bound, /health), controller+screen pages under /apps/gesture/,
+    vendored hand_landmarker.task, routes+render-routes+Caddyfile synced, chaba-home Gesture tab live on tony-ha.
+    Verified locally: health, ws fan-out, playlive pinch-click + fist-drag end-to-end. Remaining: merge + deploy
+    steps on tony-dell (podman build, install.sh, caddy reload).'
+- at: 2026-10-09 14:10
+  from: devin
+  text: 'done (dispatch 926fb20e+9cab2854): relay+pages+routes+dashboard all built and locally verified end-to-end
+    (pinch clicks, fist drags via playlive). Live-URL goals need post-merge deploy on tony-dell — steps in dispatch-outcome
+    + jobs/gesture/2026-10-09 doc.'
+- at: 2026-10-09 14:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 patch-outcome file and `docs/ssot/jobs/gesture/2026-10-09-gesture-two-page-rebuild.yml`.
+    | devin-task-20261009-13'
+- at: 2026-10-09 14:10
+  from: chaba
+  text: pushed dispatch/20261009-133455-rebuild-ada-v2-s-hand-gesture- to origin
+- at: 2026-10-09 14:10
+  from: chaba
+  text: 'auto-merge held — expected_goals not met: app-page; screen-page; relay-health; relay-ws'
+- at: 2026-10-09 14:11
+  from: chaba
+  text: 'merge-sweep: merged e27b4ebc (dispatch/20261009-133455-rebuild-ada-v2-s-hand-gesture- from tony-omen) ->
+    origin/master'
+updated: 2026-10-09 14:11
