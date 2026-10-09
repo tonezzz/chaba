@@ -1,0 +1,82 @@
+title: "dispatch-lesson-primer: KNOWN_PITFALLS block injected into every dispatch"
+subtitle: >-
+  kanban-dispatch build_task now harvests top-8 lesson lines from outcome
+  docs, job docs, card comms and kb runbooks — matched on host+repo+task
+  keywords — so each failure makes the next dispatch smarter
+icon: 🧠
+id: 2026-10-09-dispatch-lesson-primer
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-lesson-primer
+branch: dispatch/20261009-152757-1-scripts-board-kanban-dispatc
+started: "2026-10-09"
+completed: "2026-10-09"
+
+context:
+  user_request: >
+    Card dispatch-lesson-primer (snowball proposal): dispatches re-learn
+    the same lessons — the 24k/8k compression storm, the empty-DEVIN_MODEL
+    stale runner, worktree races are all written down but nothing reads
+    them before the next run. Build a primer step that injects top-K
+    relevant lessons into each dispatch prompt.
+
+implementation:
+  module: >-
+    scripts/board/lesson_primer.py — new. build(card, host, repo, root)
+    collects candidates from four sources, scores each by distinct
+    keyword hits (task tokens len>=4 minus stopwords + host + repo
+    tokens), requires MIN_SCORE=2, dedupes, and returns top MAX_LINES=8
+    lines within MAX_CHARS=5500 (~1.5k tokens).
+  sources: >-
+    (1) dispatch-outcome-*.md `lessons:` lists — self-seeded by the new
+    TASK_RAILS bullet (rank 0); (2) docs/ssot/jobs/**/*.yml fields named
+    method_notes/side_findings/gotchas/lessons/pitfalls at any depth,
+    split into lines and kept only when carrying a signal word
+    (gotcha|fail|lesson|never|do not|workaround|race|stall|...) —
+    paragraphs are split on sentence/GOTCHA: boundaries first (rank 1);
+    (3) kanban card comms matching gotcha|failed|lesson|do not|never,
+    prefixed [card-id] (rank 2); (4) docs/kb/**/*.md runbook pointer
+    lines when title+first-paragraph shares >=2 keywords (rank 3).
+  injection: >-
+    kanban-dispatch.build_task appends lp.format_block() — a
+    `---\nKNOWN_PITFALLS` section — immediately after TASK_RAILS, before
+    RETRY_RAILS/REPORT_RAILS. KANBAN_PRIMER=0 disables; any primer
+    exception is warn-only and never blocks a dispatch.
+  observability: >-
+    LAST_PRIMER_LINES (module global set by build_task) is logged to the
+    card's comms by start_pending: "primer injected N lesson(s): <80-char
+    previews>" — comms_add caps at 500 chars.
+  self_seeding: >-
+    TASK_RAILS gained a bullet requiring every dispatch-outcome doc to
+    end with a `lessons:` list (0-5 gotcha lines; `lessons: []` if none).
+    _outcome_candidates parses `lessons:` + following `- ` items, so the
+    corpus grows every run.
+  tests: >-
+    tests/board/test_lesson_primer.py — synthetic repo root in tmp:
+    all-sources harvest, signal-word filtering, MIN_SCORE drop,
+    format_block. 6 tests incl. existing rails tests, all green.
+
+verification:
+  - "python3 -m pytest tests/board/test_lesson_primer.py tests/board/test_kanban_dispatch_rails.py — 6 passed"
+  - "live build_task smoke on card dispatch-lesson-primer: KNOWN_PITFALLS rendered after TASK_RAILS with 8 lines, ~3s build (phase-B, lock-free)"
+  - "grep -l KNOWN_PITFALLS scripts/board/kanban-dispatch.py — auto_done_when gate"
+
+method_notes: >
+  Keyword scoring deliberately cheap — no embeddings (card advice: v2
+  may use mddb similarity). Host tokens (tony-dell -> tony, dell) score
+  2 alone, so host-specific incidents surface even for unrelated tasks.
+  A card's own comms get prefixed [card-id] and self-match — desired:
+  retries see their own failure trail twice (RETRY_RAILS + primer).
+  Primer runs inside build_task (phase B, after the claim lock is
+  released) — 3s corpus scan never extends the flock window.
+
+gotchas:
+  - "LESSON: job-doc lesson fields are prose paragraphs, not lists —
+    harvest must split on sentence/GOTCHA: boundaries and keep only
+    signal-word lines, else the cap fills with narrative."
+  - "LESSON: card specs are keyword-dense (scripts/docs/kanban hit
+    everywhere) — MIN_SCORE=2 distinct hits is the noise floor; score>=1
+    would primer-stuff with false matches."
+  - "GOTCHA: `repo` must be bound before the KANBAN_PRIMER=0 guard or the
+    format_block call refs an unbound local — keep it outside the if."

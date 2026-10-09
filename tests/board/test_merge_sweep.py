@@ -86,6 +86,10 @@ class Case(unittest.TestCase):
         self.served = self.tmp / "served"
         subprocess.run(["git", "clone", "-q", str(self.origin),
                         str(self.served)], capture_output=True)
+        # merges run inside served — needs local identity (global may
+        # be unset, e.g. tony-dell has none)
+        git(self.served, "config", "user.name", "t")
+        git(self.served, "config", "user.email", "t@t")
         self.runner_repo = self.tmp / "runner-repo"
         subprocess.run(["git", "clone", "-q", str(self.origin),
                         str(self.runner_repo)], capture_output=True)
