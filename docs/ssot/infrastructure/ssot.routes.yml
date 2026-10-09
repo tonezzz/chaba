@@ -42,6 +42,12 @@ edges:
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
+  # ada-ha.surf-thailand.com edge (idc02 caddy) also serves — same-origin Ada
+  # lane so voice cards dial THIS host/path and the network can move underneath:
+  #   /ada-ws/tony/*    -> rewrite /apps/ha/ada-tony{uri}    -> https://idc03.taila0626a.ts.net
+  #   /ada-ws/michael/* -> rewrite /apps/ha/ada-michael{uri} -> https://idc03.taila0626a.ts.net
+  #   /ada-ws/dev/*     -> rewrite /apps/ha/ada-dev{uri}     -> https://idc03.taila0626a.ts.net
+  # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless

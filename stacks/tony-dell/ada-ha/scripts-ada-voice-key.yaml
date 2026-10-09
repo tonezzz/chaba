@@ -1,0 +1,68 @@
+ada_voice_key:
+  alias: 'Ada: voice-card key (auto)'
+  description: >-
+    Called by ada-voice-card over the HA websocket. Creates or re-pairs a
+    per-device issued key named ha-<device8> and returns the raw api_key so
+    the card can connect directly - the key never sits in dashboard config.
+  icon: mdi:microphone-key
+  mode: single
+  fields:
+    instance:
+      required: true
+      selector:
+        select:
+          options:
+          - tony
+          - michael
+          - dev
+    device_id:
+      required: true
+      selector:
+        text:
+    person:
+      required: false
+      selector:
+        text:
+  sequence:
+  - variables:
+      key_name: ha-{{ device_id | replace("-","") | truncate(8, true, "") }}
+  - action: rest_command.ada_issue_key
+    data:
+      instance: '{{ instance }}'
+      name: '{{ key_name }}'
+      ha_person: '{{ person | default("") }}'
+    response_variable: issued
+    continue_on_error: true
+  - if:
+    - condition: template
+      value_template: '{{ issued is not defined or issued.content.redeem_url is not defined }}'
+    then:
+    - action: rest_command.ada_repair_key
+      data:
+        instance: '{{ instance }}'
+        name: '{{ key_name }}'
+        redirect: ''
+      response_variable: repaired
+      continue_on_error: true
+  - variables:
+      redeem_url: >-
+        {% if issued is defined and issued.content.redeem_url is defined %}{{ issued.content.redeem_url }}
+        {%- elif repaired is defined and repaired.content.redeem_url is defined %}{{ repaired.content.redeem_url }}{% endif %}
+      token: '{{ redeem_url.rsplit("/", 1)[-1] if redeem_url else "" }}'
+  - if:
+    - condition: template
+      value_template: "{{ token != '' }}"
+    then:
+    - action: rest_command.ada_voice_redeem
+      data:
+        instance: '{{ instance }}'
+        name: '{{ key_name }}'
+        device_id: '{{ device_id }}'
+        token: '{{ token }}'
+      response_variable: redeemed
+  - action: homeassistant.update_entity
+    target:
+      entity_id: sensor.ada_{{ instance }}_issued_keys
+    continue_on_error: true
+  - stop: key ready
+    response_variable: redeemed
