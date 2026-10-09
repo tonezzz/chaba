@@ -2,40 +2,53 @@ id: kk-ha-tg-relay
 title: TG group kk-ha + Kaewta relay (ada-tg-relay-kk)
 column: backlog
 priority: medium
-note: 'Tony asked for a TG group "kk-ha" for member communication with Kaewta inside (2026-10-09). Pattern: one
-  TG bot per Ada instance — a second relay service on idc03 bound to ada-kk (:8007) with its own keys file.'
+note: 'Tony asked for a TG group "kk-ha" for member communication with Kaewta inside
+  (2026-10-09). Pattern: one TG bot per Ada instance — a second relay service on idc03
+  bound to ada-kk (:8007) with its own keys file.'
 action:
   type: manual
   status: queued
-updated: 2026-10-09 14:50
+updated: 2026-10-09 16:20
 comms:
 - at: 2026-10-09 13:00
   from: devin
-  text: 'Tony''s manual steps: (1) @BotFather /newbot — name แก้วตา, username e.g. kaewta_kk_bot, copy token; (2)
-    /mybots -> Bot Settings -> Group Privacy -> Disable (else it only sees /commands); (3) create TG group "kk-ha",
-    add the bot + KK + Nhong + Tony; (4) write token to idc03 ~/.config/secrets/telegram-kk-bot.env (TELEGRAM_BOT_TOKEN=...).'
+  text: 'Tony''s manual steps: (1) @BotFather /newbot — name แก้วตา, username e.g.
+    kaewta_kk_bot, copy token; (2) /mybots -> Bot Settings -> Group Privacy -> Disable
+    (else it only sees /commands); (3) create TG group "kk-ha", add the bot + KK +
+    Nhong + Tony; (4) write token to idc03 ~/.config/secrets/telegram-kk-bot.env (TELEGRAM_BOT_TOKEN=...).'
 - at: 2026-10-09 13:00
   from: devin
-  text: 'My steps once token lands: (1) hit getUpdates to read group chat_id + member tg user_ids; (2) issue ada-kk
-    keys tg-kk/tg-nhong/tg-tony -> ada-ha-kk-keys.json; (3) write telegram-kk-bot.env + ada-tg-relay-kk.service
-    (TELEGRAM_MODE=webhook, TG_WEBHOOK_LISTEN 127.0.0.1:8912, ADA_KEYS_FILE=ada-ha-kk-keys.json, TELEGRAM_CHAT_CALLERS=<chat>:tg-kk?
-    NO — group uses TELEGRAM_USER_CALLERS uid->key per sender, allowed chat id); (4) caddy /webhook/tg-kk -> 127.0.0.1:8912
-    on idc03; (5) setWebhook on the bot token; (6) test: member message -> Kaewta answers with that person''s bank
-    policy.'
+  text: 'My steps once token lands: (1) hit getUpdates to read group chat_id + member
+    tg user_ids; (2) issue ada-kk keys tg-kk/tg-nhong/tg-tony -> ada-ha-kk-keys.json;
+    (3) write telegram-kk-bot.env + ada-tg-relay-kk.service (TELEGRAM_MODE=webhook,
+    TG_WEBHOOK_LISTEN 127.0.0.1:8912, ADA_KEYS_FILE=ada-ha-kk-keys.json, TELEGRAM_CHAT_CALLERS=<chat>:tg-kk?
+    NO — group uses TELEGRAM_USER_CALLERS uid->key per sender, allowed chat id); (4)
+    caddy /webhook/tg-kk -> 127.0.0.1:8912 on idc03; (5) setWebhook on the bot token;
+    (6) test: member message -> Kaewta answers with that person''s bank policy.'
 - at: 2026-10-09 14:50
   from: tony
-  text: 'answered bot-token: please push the the secret-drop UI forward so I can use it.'
+  text: 'answered bot-token: please push the the secret-drop UI forward so I can use
+    it.'
 - at: 2026-10-09 14:50
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-09 14:50
   from: tony
   text: queued for processing
+- at: 2026-10-09 16:20
+  from: devin
+  text: 'Lane live: ada-tg-relay-kk.service active on idc03 (poll mode, ada-kk :8007,
+    listen :8913). Bot @kk_ha_bot verified. Chat -5597972933 allowlisted. Keys tg-kk/tg-nhong/tg-tony
+    minted approved on ada-ha-kk-keys. WAITING: BotFather /setprivacy off + group
+    messages so member uids can be mapped into TELEGRAM_USER_CALLERS (refusals echo
+    uid for capture).'
 requests:
 - id: bot-token
-  ask: 'Bot token from @BotFather + the group created with bot added.  NOTE: the bot token is a secret — do NOT
-    paste it as the board answer. Drop it in ~/.config/secrets/ on idc03 (or wait for the secret-drop UI) and answer
-    ''delivered'' + the file path.'
+  ask: 'Bot token from @BotFather + the group created with bot added.  NOTE: the bot
+    token is a secret — do NOT paste it as the board answer. Drop it in ~/.config/secrets/
+    on idc03 (or wait for the secret-drop UI) and answer ''delivered'' + the file
+    path.'
   status: answered
   from: devin
   to: tony
