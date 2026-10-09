@@ -5,7 +5,7 @@ brief: 2026-10-09 audit — ada-scenario-reports (Thu 03:30) and ada-scenario-to
   and corrupt results), but the schedule guarantees collisions — hourly ada-scenario-smoke + daily ada-scenario-casting
   (04:30) + ada-bench-casting (02:00) all surround the weekly 03:30 slots. Weekly suites get skipped whenever a
   run overruns.
-column: doing
+column: done
 review_kind: verify
 priority: medium
 kind: improvement
@@ -52,7 +52,8 @@ spec: 'Fix scenario-suite scheduling on idc03 so weekly suites aren''t refused:
   '
 action:
   type: dispatch
-  status: running
+  status: done
+  verified: true
   repo: chaba
   runner: mn01
 comms:
@@ -81,4 +82,4 @@ comms:
   from: devin
   text: 'merged 1958c3cb7 via format-patch salvage from mn01 worktree (mn01 has no push creds by design — same gap as idc03 salvage). Verified live by dispatch before merge.'
 
-updated: 2026-10-09 17:32
+updated: 2026-10-09 19:15
