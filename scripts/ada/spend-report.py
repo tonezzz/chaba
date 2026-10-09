@@ -85,7 +85,9 @@ def spend_block(rows: list[dict], since: str) -> str:
             f"{r['host']}: rate/quota lines {r['rl_lines']} "
             f"(429 {r['http_429']}, quota {r['quota']}, "
             f"ratelimit {r['rate_limit']}){flag}")
-        for t, c in list(r["top"].items())[:3]:
+        # one representative sample per host — the journal is queryable for
+        # the rest; a wall of mid-sentence-truncated lines is noise
+        for t, c in list(r["top"].items())[:1]:
             lines.append(f"  x{c} {t}")
     return "\n".join(lines)
 

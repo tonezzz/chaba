@@ -65,7 +65,9 @@ sections:
     description: |
       Working set at last session end — resume context. Written by
       scripts/chaba/immediate-pin.py (session-end hook or mid-flight pin);
-      entries expire via ttl_hours. Only file this section may read.
+      entries expire via ttl_hours. Pins with no task/next/open are not
+      written — a session that did nothing leaves nothing to resume.
+      Only file this section may read.
     priority: 85
     limits: {soft: 800, hard: 1500}
     hide_empty: true
@@ -82,6 +84,8 @@ sections:
       or ad-hoc pin by an agent). Entries expire via ttl_hours; a thread
       that stays active promotes to 'focus', durable facts consolidate
       into MDDB banks — the entry then cools off and drops away.
+      Routine ceremony rows carry 'kind: lifecycle' (set via --kind) so
+      they keep the audit trail but fold out of the feed structurally.
     priority: 84
     limits: {soft: 700, hard: 1200}
     source:
@@ -89,7 +93,8 @@ sections:
       file: ~/.local/share/chaba/recent-events.yml
       max_entries: 10
       ttl_hours: 72
-      drop: ["^session ended"]   # lifecycle noise — a count line is shown instead
+      drop_kind: [lifecycle]     # structural fold — producers tag routine rows
+      drop: ["^session ended"]   # legacy untagged rows — defense-in-depth
 
   home:
     description: Host inventory, canonical addresses, service topology.
@@ -155,6 +160,10 @@ sections:
       Recent session outcomes, fed by compaction/session-end hooks.
       Budget sized so this fits instead of being dropped by global
       overflow — it is the primary "what happened recently" content.
+      Entry convention for session-memory.md (entry_match depends on it
+      staying stable): '## Compaction <id>' and '## Session end <id>' are
+      entry headers; '## N. Section' blocks inside a compaction summary
+      are fragments that belong to the entry above, not new entries.
     priority: 40
     limits: {soft: 2600, hard: 4000}
     source:

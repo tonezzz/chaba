@@ -1,0 +1,74 @@
+title: chaba-memory-producer-hygiene — stop generating noise at the producers
+subtitle: >-
+  tag lifecycle events structurally, cap raw journal samples in digests,
+  skip no-resume immediate pins, document the session-memory.md entry
+  convention
+icon: broom
+id: 2026-10-09-chaba-memory-producer-hygiene
+status: done
+owner: devin-dispatch
+project: chaba
+card: chaba-memory-producer-hygiene
+started: "2026-10-09"
+completed: "2026-10-09"
+
+context:
+  user_request: >
+    Renderer-side filters shipped 2026-10-08 (drop/entry_match/skip_status/
+    hide_empty). This card is the upstream half: fix the three producers so
+    the noise is never written — the renderer rules stay as
+    defense-in-depth for legacy untagged rows.
+
+deliverables:
+  - scripts/chaba/recent-event.py — new --kind flag; stored as `kind:` on
+    the entry and re-applied on refresh-on-re-mention merges
+  - scripts/devin/session/devin-session-end.sh — appends
+    "session ended (<reason>)" to recent-events.yml via recent-event.py
+    with `--kind lifecycle` and `--ref devin-session:<id>` (audit trail
+    kept, feed readers fold it structurally). Best-effort — a missing
+    script or failure only logs to stderr
+  - scripts/chaba/render-memory.py — recent-events source gains
+    `drop_kind` list; matching entries count into the
+    "…(N routine events hidden)" rollup line
+  - scripts/chaba/render-report-feed.py — entries with
+    `kind == "lifecycle"` fold into the lifecycle rollup alongside the
+    legacy text-regex matches
+  - docs/ssot/chaba/ssot.chaba.memory.yml — recent-events source sets
+    `drop_kind:[lifecycle]` (regex `drop` kept as defense-in-depth);
+    sessions section documents the session-memory.md entry convention
+    ('## Compaction <id>' / '## Session end <id>' are entry headers,
+    '## N. Section' blocks are fragments of the entry above — entry_match
+    depends on it); immediate + recent-events descriptions updated
+  - scripts/ada/spend-report.py — spend block emits at most 1 representative
+    sample line per host (was 3 mid-sentence-truncated journal lines)
+  - scripts/ada/caddy-report.py — apps block emits at most 1 `slow` sample
+    per host (was 2); aggregated top/err counters unchanged
+  - scripts/chaba/immediate-pin.py — entries with no task/next/open are
+    not written ("a session that did nothing leaves nothing to resume");
+    a legacy stub for the same session id is removed on the skipped write
+
+verify:
+  - HOME=<sandbox> recent-event.py --kind lifecycle → entry carries
+    `kind:lifecycle` in recent-events.yml
+  - HOME=<sandbox> DEVIN_PROJECT_DIR=<repo> devin-session-end.sh on a
+    {"reason":"other"} stub payload → recent-events.yml gains a tagged
+    `session ended (other)` row; render-memory folds it as
+    "…(N routine events hidden)" — invisible to the feed
+  - render-memory run_source() — legacy untagged "session ended" rows still
+    drop via the regex (defense-in-depth); normal events render
+  - spend_block/caddy_block on fake rows → ≤1 sample line per bucket,
+    header count + ⚠ retained
+  - immediate-pin.py --session x (no task/next/open) → "skipped", no
+    entry written; with --task → pinned normally
+  - python -m py_compile + bash -n on all touched files; memory yml
+    parses (node ssot-validate-all.mjs not runnable on idc02 — no node)
+
+notes:
+  - The "session ended (other)" rows were produced by the deployed
+    session-end hook under ~/.config/devin/scripts/ on tony-dell — a
+    superset of the repo copy (which lacked the recent-event call). The
+    repo copy now emits the tagged form; on next hook sync the deployed
+    producer matches.
+  - Card metric wording "no new 'session ended (other)' rows" resolves
+    via the card's own preference for the tag — rows still land (audit
+    trail) but carry kind:lifecycle and never reach a feed.

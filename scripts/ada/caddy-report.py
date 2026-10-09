@@ -96,7 +96,7 @@ def caddy_block(rows: list[dict], since: str) -> str:
         if r["errors"]:
             lines.append("  err: " + ", ".join(
                 f"{a} x{c}" for a, c in list(r["errors"].items())[:5]))
-        for s in r["slowest"][:2]:
+        for s in r["slowest"][:1]:
             lines.append(f"  slow {s['dur']}s {s['uri']}")
     return "\n".join(lines)
 
