@@ -71,4 +71,10 @@ comms:
     04:00, plus hourly smoke :00-~:47 — so every 03:30 weekly was refused. Fix live on idc03: weekly timers moved
     03:30->05:55 (past both windows), new scenario-suite-run.sh wrapper queues on :8199 (<=30m wait + refused-bind
     retries). Units now repo-tracked in stacks/services/ada-scenario-runner/. Verifying with real suite runs.'
-updated: 2026-10-09 16:57
+- at: 2026-10-09 17:32
+  from: devin
+  text: 'VERIFIED live: tools suite ran to completion (9 scenarios, real results — no refusal); reports queued via
+    new wrapper then completed (score 0.5); memory waited on :8199 then bound instantly when reports freed it. 17:00
+    smoke skipped cleanly while a suite held the lock + its new cms-audit ExecStopPost published fine. Weekly timers
+    now Mon-Sat 05:55; casting hang carded separately as ada-scenario-casting-hang.'
+updated: 2026-10-09 17:32

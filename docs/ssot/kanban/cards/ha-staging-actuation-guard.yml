@@ -1,30 +1,25 @@
 id: ha-staging-actuation-guard
 title: Staging actuation guard — dev clones must never double-fire household automations
-brief: A cloned tony-ha/ada-ha config carries real automations, scripts, shell_commands
-  and cloud integrations. If a dev twin boots as-is it will actuate real devices twice.
-  Define the strip list before ha-dev-instances boots anything.
-column: review
+brief: A cloned tony-ha/ada-ha config carries real automations, scripts, shell_commands and cloud integrations.
+  If a dev twin boots as-is it will actuate real devices twice. Define the strip list before ha-dev-instances boots
+  anything.
+column: done
 priority: high
 created: 2026-10-08
-updated: 2026-10-09 07:55
+updated: 2026-10-09 17:30
 program: ha-lanes
-metric: 'Booting tony-dev/ada-dev produces zero outbound actuation: no Tuya/local
-  switch toggles, no cast commands, no notifications, no shell_command effects; read-only
-  sensors and dashboards stay functional for UI testing.'
-verify: Boot ada-dev with cloned config, watch 24h of its logbook + tony-ha state
-  for duplicate actions (e.g. switch.plug_tv, cast targets); checklist in SSOT marks
-  each dangerous integration disabled or stubbed.
-spec: 'Strategy: keep config byte-identical where possible; neutralize only the write
-  paths. Strip/stub on the staging copy: automation + script automations that actuate
-  (or set `initial_state: ''off''` via a staging overlay), shell_command entries (point
-  at a no-op script that logs), rest_command targets (rewrite to a local echo endpoint
-  or drop), Tuya/cloud integrations that can write (keep entities readable where safe),
-  cast/notify services, webhooks outbound (board-api, recent-event posts). Read-keep:
-  sensors, history, dashboards, Lovelace resources, themes. Deliverable: scripts/home-assistant/stage-clone.sh
-  — copies prod config and applies the overlay; overlay list lives in SSOT so it stays
-  reviewable. Open question to decide in-card: test automations on staging should
-  run against mha_mirror_*/dev_* mock entities (michael-dev already proves this pattern)
-  rather than real entities.'
+metric: 'Booting tony-dev/ada-dev produces zero outbound actuation: no Tuya/local switch toggles, no cast commands,
+  no notifications, no shell_command effects; read-only sensors and dashboards stay functional for UI testing.'
+verify: Boot ada-dev with cloned config, watch 24h of its logbook + tony-ha state for duplicate actions (e.g. switch.plug_tv,
+  cast targets); checklist in SSOT marks each dangerous integration disabled or stubbed.
+spec: 'Strategy: keep config byte-identical where possible; neutralize only the write paths. Strip/stub on the staging
+  copy: automation + script automations that actuate (or set `initial_state: ''off''` via a staging overlay), shell_command
+  entries (point at a no-op script that logs), rest_command targets (rewrite to a local echo endpoint or drop),
+  Tuya/cloud integrations that can write (keep entities readable where safe), cast/notify services, webhooks outbound
+  (board-api, recent-event posts). Read-keep: sensors, history, dashboards, Lovelace resources, themes. Deliverable:
+  scripts/home-assistant/stage-clone.sh — copies prod config and applies the overlay; overlay list lives in SSOT
+  so it stays reviewable. Open question to decide in-card: test automations on staging should run against mha_mirror_*/dev_*
+  mock entities (michael-dev already proves this pattern) rather than real entities.'
 links:
 - ha-lanes-program
 - ha-dev-instances
@@ -36,9 +31,9 @@ action:
   button: ▶ Dispatch
   repo: chaba
   runner: idc02
-  result: 'exit=0 ntries, card in `review`, and a final board comment — committed
-    on the dispatch branch, not pushed. | devin-task-20261009-070729-strategy-keep-config-byte-iden.service:
-    Consumed 2min 8.075s CPU time, 110.3M memory peak, 0B memory swap peak.'
+  result: 'exit=0 ntries, card in `review`, and a final board comment — committed on the dispatch branch, not pushed.
+    | devin-task-20261009-070729-strategy-keep-config-byte-iden.service: Consumed 2min 8.075s CPU time, 110.3M memory
+    peak, 0B memory swap peak.'
   verified: true
 comms:
 - at: 2026-10-09 07:07
@@ -46,33 +41,31 @@ comms:
   text: claimed
 - at: 2026-10-09 07:07
   from: chaba
-  text: started devin-task-20261009-070729-strategy-keep-config-byte-iden on idc02
-    (dispatch)
+  text: started devin-task-20261009-070729-strategy-keep-config-byte-iden on idc02 (dispatch)
 - at: 2026-10-09 07:27
   from: devin
   text: 'in progress: writing SSOT-driven overlay (docs/ssot/infrastructure/ssot.home-assistant.staging-overlay.yml)
-    + stage-clone.sh + staging-overlay.py. Design: byte-identical clone, mark-aware
-    YAML text edits (initial_state:false on automations, stub script/scene/intent
-    sequences, shell_command->noop echo, rest_command->loopback sink, drop outbound
-    notify/influxdb/statestream blocks), .storage config-entry + entity-registry disable
-    for write-capable domains. Open question -> decided: staging test aut'
+    + stage-clone.sh + staging-overlay.py. Design: byte-identical clone, mark-aware YAML text edits (initial_state:false
+    on automations, stub script/scene/intent sequences, shell_command->noop echo, rest_command->loopback sink, drop
+    outbound notify/influxdb/statestream blocks), .storage config-entry + entity-registry disable for write-capable
+    domains. Open question -> decided: staging test aut'
 - at: 2026-10-09 07:54
   from: devin
-  text: 'Done -> review. stage-clone.sh + staging-overlay.py + SSOT overlay committed
-    on dispatch branch (not pushed). 13/13 tests, end-to-end fixture: 26 surgical
-    edits, verify=0 failures. Decision recorded: staging automations use mha_mirror_*/dev_*
-    mocks only. Card ha-dev-instances unblocked for quadlets + first boot + 24h logbook
-    watch.'
+  text: 'Done -> review. stage-clone.sh + staging-overlay.py + SSOT overlay committed on dispatch branch (not pushed).
+    13/13 tests, end-to-end fixture: 26 surgical edits, verify=0 failures. Decision recorded: staging automations
+    use mha_mirror_*/dev_* mocks only. Card ha-dev-instances unblocked for quadlets + first boot + 24h logbook watch.'
 - at: 2026-10-09 07:55
   from: idc02
-  text: 'finished (ok): exit=0 ntries, card in `review`, and a final board comment
-    — committed on the dispatch branch, not pushed. | devin-task-'
+  text: 'finished (ok): exit=0 ntries, card in `review`, and a final board comment — committed on the dispatch branch,
+    not pushed. | devin-task-'
 - at: 2026-10-09 07:55
   from: chaba
   text: pushed dispatch/20261009-070729-strategy-keep-config-byte-iden to origin
 - at: 2026-10-09 07:55
   from: chaba
-  text: auto-merged 7ac6bb96 (dispatch/20261009-070729-strategy-keep-config-byte-iden)
-    → origin/master
+  text: auto-merged 7ac6bb96 (dispatch/20261009-070729-strategy-keep-config-byte-iden) → origin/master
+- at: 2026-10-09 17:30
+  from: tony
+  text: closed by tony
 claim: {}
 review_kind: verify

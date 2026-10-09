@@ -5,7 +5,7 @@ brief: 2026-10-09 host audit exposed fleet-wide references to mddb http://100.74
   and doc_archive.py still point at it; ssot.services.yml and ssot.values.yml record it as current. doc-mirror.service
   timing out at 10min on idc03 is very likely this — doc_archive.py retries a dead endpoint until TimeoutStartSec
   kills it. mn01-canary had the same stale URL (fixed 2026-10-09 — canary now green).
-column: doing
+column: review
 review_kind: verify
 priority: high
 kind: bugfix
@@ -26,12 +26,15 @@ spec: "Replace all LIVE references to 100.74.146.0 with the idc03 leader\n(100.1
   \ returns\n200; doc-mirror.service completes inside TimeoutStartSec; gev-gemini\nbridge health still green.\n"
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc03
   sweep:
     stale_running: 2026-10-09 16:48
     session_gone: 2026-10-09 16:48
+  result: 'exit=0 ice: No such file or directory | devin-task-20261009-164335-replace-all-live-references-to.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261009-164335-replace-all-live-references-to.service:
+    No such file or directory'
 comms:
 - at: 2026-10-09 16:36
   from: idc01
@@ -68,5 +71,26 @@ comms:
     200 on :11123/v1/health — so ssot.values.yml:43 and ssot.services.yml:160 are CORRECT, left unchanged. Dead
     endpoint is only :11023 (old leader). doc-mirror root cause on idc03 is NOT the stale IP — deployed doc_archive.py
     + mirror script already point at leader; the run legitimatel'
-updated: 2026-10-09 16:53
+- at: 2026-10-09 17:24
+  from: devin
+  text: 'Done + verified. VERIFY results: (1) POST /v1/search on leader -> 200. (2) doc-mirror.service now COMPLETES:
+    synced 100 pages across 100 archives in 22min, inside new TimeoutStartSec=1800 (was killed at 600s + exit-28
+    on >120s Drive fetches; --max-time now 240). (3) gev-gemini restarted active/running with GEV_MDDB_URL=leader.
+    Corrections to card premise: 100.74.146.0 is ALIVE (idc01 warm-DR follower, :11123 health 200) — ssot.values.yml:43
+    and ssot.services.yml:160 were already correct, left al'
+- at: 2026-10-09 17:25
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261009-164335-replace-all-live-references-to.service:
+    Failed to ope'
+- at: 2026-10-09 17:25
+  from: chaba
+  text: 'session-end checkpoint 129d79be: 22 leftover file(s) committed'
+- at: 2026-10-09 17:25
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 17:25
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+updated: 2026-10-09 17:25
 claim: {}

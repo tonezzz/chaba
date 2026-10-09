@@ -4,7 +4,7 @@ brief: 2026-10-09 audit — chaba-audit.service / chaba-audit-full.service on id
   Last report (Oct 04, reports/audits/summary.json) shows 3 error-severity findings worth fixing — security-audit
   calls docker (absent on idc02, podman host), caddy format check fails, and standardization flags duplicate audit
   name cms-pages.
-column: doing
+column: review
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -25,12 +25,16 @@ spec: "From reports/audits/summary.json on idc02 (run Oct 04, still open):\n\n1.
   \ resolved).\nVERIFY: manual chaba-audit.service run on idc02 exits 0 or only warns.\n"
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc02
   sweep:
     stale_running: 2026-10-09 16:48
     session_gone: 2026-10-09 16:48
+  result: 'exit=0 ice: No such file or directory | devin-task-20261009-164359-from-reports-audits-summary-js.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261009-164359-from-reports-audits-summary-js.service:
+    No such file or directory'
+  verified: true
 comms:
 - at: 2026-10-09 16:36
   from: idc01
@@ -65,5 +69,25 @@ comms:
   text: 'Investigating: Oct-04 findings partially fixed already by 35c0cb1a (cms-pages dup renamed to cms-pages-live;
     caddy podman fallback added; security-audit db check docker|podman). Remaining: check_docker_security still
     docker-only (extends to podman now), Caddyfile fmt drift from gesture merge, then verifying suite green on idc02.'
-updated: 2026-10-09 16:50
+- at: 2026-10-09 17:25
+  from: devin
+  text: 'Done — suite exits 0 on idc02 (default + --full, warnings only). Oct-04 findings were partially fixed already
+    by 35c0cb1a; this branch completes them: security-audit.sh container-runtime detect (docker->podman->podman-remote;
+    rootless podman flags --privileged, empty-User kept for rootful), Caddyfile committed fmt-clean, plus 2 new
+    findings fixed (ci.camwall-smoke registry entry; dead rview related: paths failing doc-links — still failing
+    on live until merge). No known_failed entries existed to '
+- at: 2026-10-09 17:25
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261009-164359-from-reports-audits-summary-js.service:
+    Failed to ope'
+- at: 2026-10-09 17:26
+  from: chaba
+  text: pushed dispatch/20261009-164359-from-reports-audits-summary-js to origin
+- at: 2026-10-09 17:26
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 17:26
+  from: chaba
+  text: auto-merged d7f794ee (dispatch/20261009-164359-from-reports-audits-summary-js) → origin/master
+updated: 2026-10-09 17:26
 claim: {}
