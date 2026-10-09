@@ -2,6 +2,10 @@
 # SSOT Pre-commit Validation Hook
 # Validates SSOT YAML files before commit
 
+# Husky may exec hooks via /bin/sh despite the shebang — re-exec under bash
+# before the parser reaches the bash-only constructs below (arrays, < <()).
+[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
+
 set -e
 
 # Privacy guard: personal vault notes must never be committed — chaba is
