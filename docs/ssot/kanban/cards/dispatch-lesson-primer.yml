@@ -5,43 +5,47 @@ kind: feature
 priority: high
 autonomy: t2
 created: '2026-10-09'
-updated: '2026-10-09 15:15'
+updated: 2026-10-09 15:28
 tags:
 - dispatch
 - compounding
 - memory
-brief: >
-  Dispatches start from zero every time — the 24k/8k compression storm, the
-  empty-DEVIN_MODEL stale runner, worktree races are all written down but
-  nothing reads them before the next run. Add a primer step to
-  devin-dispatch/kanban-dispatch: before launching, pull the top-K relevant
-  lessons (job docs with failures, card comms marked "gotcha"/"failed",
-  docs/kb/ ops notes, ops-events) scoped by host+repo+task keywords, and
-  append a "known pitfalls" block to the prompt. Each failure makes the next
-  dispatch smarter — compounding quality, like mddb did for Ada.
-spec: |
-  1. scripts/board/kanban-dispatch.py (or devin-dispatch.sh wrapper):
-     before launch, build primer = top ~8 lesson lines matched on
-     (host, repo, task keywords) from:
-       - docs/ssot/jobs/**/ (fields: method_notes, side_findings, gotchas)
-       - card comms lines containing gotcha|failed|lesson|do NOT|never
-       - docs/kb/ ops runbooks (title+abstract match)
-     Cap ~1.5k tokens (ssot.tokens.policy baseline-discipline).
-  2. Prompt gains a KNOWN_PITFALLS block appended after TASK_RAILS.
-  3. Every dispatch outcome doc gains `lessons:` list — explicit short
-     gotcha lines the primer can harvest next time (self-seeding).
-  4. Log which lesson lines were injected (card comms) — observability.
+brief: 'Dispatches start from zero every time — the 24k/8k compression storm, the empty-DEVIN_MODEL stale runner,
+  worktree races are all written down but nothing reads them before the next run. Add a primer step to devin-dispatch/kanban-dispatch:
+  before launching, pull the top-K relevant lessons (job docs with failures, card comms marked "gotcha"/"failed",
+  docs/kb/ ops notes, ops-events) scoped by host+repo+task keywords, and append a "known pitfalls" block to the
+  prompt. Each failure makes the next dispatch smarter — compounding quality, like mddb did for Ada.
+
+  '
+spec: "1. scripts/board/kanban-dispatch.py (or devin-dispatch.sh wrapper):\n   before launch, build primer = top\
+  \ ~8 lesson lines matched on\n   (host, repo, task keywords) from:\n     - docs/ssot/jobs/**/ (fields: method_notes,\
+  \ side_findings, gotchas)\n     - card comms lines containing gotcha|failed|lesson|do NOT|never\n     - docs/kb/\
+  \ ops runbooks (title+abstract match)\n   Cap ~1.5k tokens (ssot.tokens.policy baseline-discipline).\n2. Prompt\
+  \ gains a KNOWN_PITFALLS block appended after TASK_RAILS.\n3. Every dispatch outcome doc gains `lessons:` list\
+  \ — explicit short\n   gotcha lines the primer can harvest next time (self-seeding).\n4. Log which lesson lines\
+  \ were injected (card comms) — observability.\n"
 auto_done_when:
 - command: grep -l "KNOWN_PITFALLS" scripts/board/kanban-dispatch.py
 advice:
   from: devin
-  at: '2026-10-09 15:15'
-  text: 'Start with comms+job-docs harvesting — cheap, no embedding needed. The
-    mddb similarity version is v2; keyword/host match catches most repeats
-    (today''s stale-runner kill was idc03-specific and keyword-matchable).'
+  at: 2026-10-09 15:15
+  text: Start with comms+job-docs harvesting — cheap, no embedding needed. The mddb similarity version is v2; keyword/host
+    match catches most repeats (today's stale-runner kill was idc03-specific and keyword-matchable).
 comms:
-- at: '2026-10-09 15:15'
+- at: 2026-10-09 15:15
   from: devin
-  text: 'filed as the snowball proposal — dispatches re-learn the same lessons;
-    this closes the loop. Evidence today: empty-DEVIN_MODEL killed nest-mgr
-    (repo-fixed, host-stale); same class as prior runner incidents.'
+  text: 'filed as the snowball proposal — dispatches re-learn the same lessons; this closes the loop. Evidence today:
+    empty-DEVIN_MODEL killed nest-mgr (repo-fixed, host-stale); same class as prior runner incidents.'
+- at: 2026-10-09 15:28
+  from: chaba
+  text: dispatched 20261009-152757-1-scripts-board-kanban-dispatc on chaba
+action:
+  type: dispatch
+  status: running
+  repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-152757-1-scripts-board-kanban-dispatc
+claim:
+  session: 20261009-152757-1-scripts-board-kanban-dispatc
+  since: 2026-10-09 15:28
