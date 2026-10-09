@@ -689,6 +689,11 @@ class AdaVoiceCard extends HTMLElement {
         this._state = "reconnecting";
         this._setStatus("Reconnecting…");
         break;
+      case "bark":
+        // sci-fi narration (voice_fx) — flat machine-voice aside on
+        // deep-memory calls; same channel as avcSpeak.
+        if (ev.text) avcSpeak(ev.text);
+        break;
       case "error":
         this._line.textContent = `Error: ${ev.message || ev.type}`;
         avcLog("error", ev.message || ev.type);

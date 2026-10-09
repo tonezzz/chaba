@@ -42,4 +42,6 @@ procedures:
   - {id: vocab,         where: "ssot.terminology.yml + this file",                             trigger: "new shared vocabulary",               status: verified, last_run: 2026-10-09}
   - {id: board-report,  where: "scripts/render-board.py + chaba-board-render.timer",           trigger: "card -> board/CMS report refresh",    status: verified}
   - {id: dashboard-mutate, where: "AGENTS.md (push-dashboard.py -> sync-ssot-from-live.sh)",   trigger: "live HA dashboard changes",           status: verified}
+  - {id: voice-fx,      where: "ada-pi backend/voice_fx.py + card ada-voice-fx",              trigger: "adding/toggling a sci-fi narration bark", status: verified, last_run: 2026-10-09}
   - {id: session-close, where: "finish-and-close skill + auto-kb rules",                       trigger: "session end",                         status: verified}
+  - {id: github-process, where: "docs/ssot/ssot.github-process.yml",                           trigger: "repo settings, CI gates, PR/merge conventions on GitHub", status: verified, last_run: 2026-10-09}

@@ -1,0 +1,28 @@
+id: ada-voice-fx
+title: 'Voice FX — sci-fi narration layer (machine-voice memory barks)'
+column: doing
+priority: medium
+note: >-
+  Tony 2026-10-09: mechanical voice should announce deeper memory access
+  and the on/off + sci-fi-insertion pattern becomes a standard part of
+  Ada interaction, evolving over time. Shipped v1 (ada-pi 116166a):
+  backend/voice_fx.py per-caller flags + level map (L1 banks / L2
+  sessions / L3 archive), tools.d/voice_fx toggle tool, pwa_server emits
+  {"type":"bark"}, clients speak via speechSynthesis (flat voice, not
+  Ada's). Toggle by voice: "sci-fi mode off".
+action:
+  type: devin
+  status: doing
+  runner: devin
+updated: 2026-10-09 14:45
+comms:
+- at: 2026-10-09 14:45
+  from: devin
+  text: >-
+    v1 live on all ada backends. Evolve directions: more levels/tools
+    (camera scan, cast engage, devin dispatch), phrase pools per persona
+    (Kaewta Thai lines), a bark toggle on the voice card UI itself, and
+    per-level volume/pitch. Pattern rule: barks come from tool_call
+    events server-side; clients just play them — adding a new bark =
+    one line in voice_fx._RULES.
+requests: []
