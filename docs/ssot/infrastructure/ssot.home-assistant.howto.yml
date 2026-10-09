@@ -653,6 +653,38 @@ runbooks:
     note: Ordering pins are per-user (owner by default) — other users see panels
       at default registration order. UI drag-edit overwrites the pin.
     last_updated: '2026-10-08'
+  chaba_nest_dashboard:
+    purpose: 'Structure of the chaba-nest dashboard on ada-ha: top-level tabs
+      (Nest | Polity | Security | Traffic | Flood) + per-topic Reports subviews.
+      HA has NO nested tabs — this is the native-subview pattern chosen over
+      custom HACS tab-cards (zero dependencies). Verified live via playlive
+      2026-10-08.'
+    steps:
+    - 'Top tabs: Nest is type=panel embedding ?embed=1#/chaba-nest. The four
+        topic tabs are type=sections with max_columns=1 (REQUIRED — multiple
+        sections otherwise render side-by-side as columns), one section with
+        two cards: a markdown nav pill ("Document · Reports →" linking to
+        /chaba-nest/<topic>-reports) then an iframe card embedding the CMS
+        doc (?embed=1#/<slug>, aspect_ratio 140%)'
+    - 'Reports subviews: path <topic>-reports, subview: true (hides from tab
+        bar, shows a back arrow), back_path: /chaba-nest/<topic>, type=panel,
+        iframe to the full CMS browser with a pre-set filter'
+    - 'CMS filter params (ada-pi pwa/cms/index.html, commit 29c738e): ?embed=1
+        renders document-only; ?tab=pages|security|traffic|flood deep-links
+        the sidebar tab; ?q=<regex|substring> seeds the page-filter input —
+        regex OR-substring match on title+slug, so q=polity%7Cnest works.
+        Security/Traffic/Flood subviews use bare ?tab=<topic> (the CMS tab
+        classification IS the topic filter); Polity uses
+        ?tab=pages&q=polity%7Cnest'
+    - 'Topic doc slugs: polity=polity-research, security=cctv-walls,
+        traffic=camwall-traffic, flood=flood-overview'
+    - 'Deep links: /chaba-nest/<topic> and /chaba-nest/<topic>-reports are
+        real URLs — Tony can bookmark Reports views directly'
+    note: Subview navigation is drill-down (back arrow), not persistent panes.
+      If Tony wants real nested tabs later, the community answer is HACS
+      tab-cards (simple-tabs, tabbed-stack-card) — rejected 2026-10-08 as
+      too much maintenance for the benefit.
+    last_updated: '2026-10-08'
 status:
   last_updated: '2026-09-26'
   last_verified: '2026-09-18'
