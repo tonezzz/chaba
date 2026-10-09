@@ -306,6 +306,7 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
                   f"{title}. Read the note, then fix it or close the "
                   "card."),
         "column": "review",
+        "review_kind": "triage",
         "generated": "logs-kanban",
         "program": "logs-digest",
         "priority": "high" if age_h >= ESCALATE_H else "medium",

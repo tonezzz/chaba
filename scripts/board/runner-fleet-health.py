@@ -539,6 +539,7 @@ def upsert_card(path: Path, host: str, violations: list,
                   f"{host} that will strand dispatch cards. Read the "
                   f"note, fix on the host, close the card."),
         "column": "review",
+        "review_kind": "triage",
         "generated": "runner-fleet-health",
         "program": "chaba-ci",
         "area": "dispatch",

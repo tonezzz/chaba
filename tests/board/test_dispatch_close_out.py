@@ -53,6 +53,14 @@ class Case(unittest.TestCase):
         self.tmp = Path(self._td.name)
         self._old_dir = os.environ.get("DISPATCH_DIR")
         os.environ["DISPATCH_DIR"] = str(self.tmp / "dispatch")
+        # hermetic git identity — the close_out merge needs a committer;
+        # hosts without a global user.name/email would fail the fixture
+        self._old_ident = {k: os.environ.get(k) for k in (
+            "GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL")}
+        os.environ.update({
+            "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
 
         self.origin = self.tmp / "origin.git"
         self.origin.mkdir()
@@ -94,6 +102,11 @@ class Case(unittest.TestCase):
             os.environ.pop("DISPATCH_DIR", None)
         else:
             os.environ["DISPATCH_DIR"] = self._old_dir
+        for k, v in self._old_ident.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         self._td.cleanup()
 
     def remote_has(self, ref: str, path: str) -> bool:

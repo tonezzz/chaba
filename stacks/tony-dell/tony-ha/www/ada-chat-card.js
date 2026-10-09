@@ -60,27 +60,53 @@ class AdaChatCard extends HTMLElement {
     const body = document.createElement("div");
     body.style.cssText = "padding:0 16px 16px;display:flex;flex-direction:column;gap:8px";
 
-    // status row: status text + connect/disconnect buttons
+    // status row: live dot + status text + connect/disconnect buttons
     const row = document.createElement("div");
     row.style.cssText = "display:flex;align-items:center;gap:8px";
+    this._dot = document.createElement("span");
+    this._dot.style.cssText =
+      "width:8px;height:8px;border-radius:50%;flex:none;" +
+      "background:var(--disabled-text-color,#777);transition:background .3s";
     this._status = document.createElement("div");
-    this._status.style.cssText = "flex:1;font-size:.85rem;color:var(--secondary-text-color)";
+    this._status.style.cssText = "flex:1;font-size:.8rem;color:var(--secondary-text-color)";
     this._status.textContent = "Disconnected";
     this._connectBtn = this._btn("Connect");
     this._connectBtn.onclick = () => this._connect();
     this._disconnectBtn = this._btn("Disconnect");
     this._disconnectBtn.disabled = true;
     this._disconnectBtn.onclick = () => this._teardown(true);
-    row.append(this._status, this._connectBtn, this._disconnectBtn);
+    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn);
     body.appendChild(row);
 
-    // transcript log
+    // transcript log — bubble layout; bubbles handle their own wrapping
     this._log = document.createElement("div");
     this._log.style.cssText =
-      `height:${this._config.height || "260px"};overflow-y:auto;font-size:.82rem;line-height:1.5;` +
-      "padding:6px 8px;border-radius:8px;background:var(--secondary-background-color,#1c2128);" +
-      "white-space:pre-wrap;word-break:break-word";
+      `height:${this._config.height || "260px"};overflow-y:auto;font-size:.85rem;line-height:1.45;` +
+      "padding:10px 10px 6px;border-radius:10px;background:var(--secondary-background-color,#1c2128);" +
+      "display:flex;flex-direction:column;gap:6px";
     body.appendChild(this._log);
+
+    // typing indicator — shown while Ada is composing, hidden on first delta
+    this._typing = document.createElement("div");
+    this._typing.style.cssText =
+      "align-self:flex-start;display:none;align-items:center;gap:5px;padding:6px 12px;" +
+      "border-radius:14px 14px 14px 4px;background:var(--card-background-color,#2b3138);" +
+      "color:var(--secondary-text-color);font-size:.78rem";
+    this._typing.innerHTML =
+      "Ada is typing <span class='acc-dots'><span>.</span><span>.</span><span>.</span></span>";
+    const dots = this._typing.querySelectorAll(".acc-dots span");
+    dots.forEach((d, i) => {
+      d.style.cssText = "display:inline-block;animation:acc-blink 1.2s infinite;" +
+        `animation-delay:${i * 0.2}s;opacity:.4`;
+    });
+    if (!document.getElementById("acc-typing-anim")) {
+      const st = document.createElement("style");
+      st.id = "acc-typing-anim";
+      st.textContent =
+        "@keyframes acc-blink{0%,60%,100%{opacity:.25;transform:translateY(0)}" +
+        "30%{opacity:1;transform:translateY(-2px)}}";
+      document.head.appendChild(st);
+    }
 
     // input row
     const inRow = document.createElement("div");
@@ -95,6 +121,9 @@ class AdaChatCard extends HTMLElement {
     this._input.addEventListener("keydown", (e) => { if (e.key === "Enter") this._send(); });
     this._sendBtn = this._btn("Send");
     this._sendBtn.disabled = true;
+    this._sendBtn.style.background = "var(--primary-color,#03a9f4)";
+    this._sendBtn.style.color = "var(--text-primary-color,#fff)";
+    this._sendBtn.style.borderColor = "var(--primary-color,#03a9f4)";
     this._sendBtn.onclick = () => this._send();
     // Attach button — upload a photo/document for Ada to assess, then
     // archive/print via chat. capture-less accept still offers the camera
@@ -188,32 +217,89 @@ class AdaChatCard extends HTMLElement {
 
   // ---------- log ----------
 
-  _setStatus(t) { if (this._status) this._status.textContent = t; }
+  _setStatus(t) {
+    if (this._status) this._status.textContent = t;
+    if (this._dot) {
+      const colors = {
+        connected: "var(--success-color,#4caf50)",
+        connecting: "var(--warning-color,#ffc107)",
+        locked: "var(--error-color,#f44336)",
+        error: "var(--error-color,#f44336)",
+      };
+      this._dot.style.background =
+        colors[this._state] || "var(--disabled-text-color,#777)";
+    }
+  }
 
-  _row(who, text, color) {
+  _nearBottom() {
+    return this._log.scrollHeight - this._log.scrollTop - this._log.clientHeight < 60;
+  }
+
+  _scrollDown(force = false) {
+    if (force || this._nearBottom()) this._log.scrollTop = this._log.scrollHeight;
+  }
+
+  _stamp() {
+    const d = new Date();
+    return d.toTimeString().slice(0, 5);
+  }
+
+  // Chat bubble: user right (accent-tinted), Ada left (surface), voice
+  // user-side with a 🎤 tag. Returns the text container for streaming appends.
+  _bubble(kind, text) {
+    const mine = kind === "user" || kind === "voice";
     const d = document.createElement("div");
-    const tag = document.createElement("span");
-    tag.style.cssText = `font-weight:600;color:${color};margin-right:6px`;
-    tag.textContent = who;
+    d.style.cssText =
+      `align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;` +
+      `padding:6px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word;` +
+      (mine
+        ? "border-bottom-right-radius:4px;background:color-mix(in srgb,var(--primary-color,#03a9f4) 22%,transparent);" +
+          "color:var(--primary-text-color)"
+        : "border-bottom-left-radius:4px;background:var(--card-background-color,#2b3138);" +
+          "color:var(--primary-text-color)");
+    if (kind === "voice") {
+      const tag = document.createElement("span");
+      tag.style.cssText = "font-size:.72rem;opacity:.7;margin-right:5px";
+      tag.textContent = "🎤";
+      d.appendChild(tag);
+    }
     const body = document.createElement("span");
     body.textContent = text;
-    d.append(tag, body);
-    return d;
+    d.appendChild(body);
+    const ts = document.createElement("span");
+    ts.style.cssText = "display:block;font-size:.65rem;opacity:.45;margin-top:2px;text-align:right";
+    ts.textContent = this._stamp();
+    d.appendChild(ts);
+    return { el: d, body };
+  }
+
+  _showTyping() {
+    if (!this._typing) return;
+    this._typing.style.display = "flex";
+    this._log.appendChild(this._typing);
+    this._scrollDown();
+  }
+
+  _hideTyping() {
+    if (this._typing) this._typing.style.display = "none";
   }
 
   _add(who, text, color) {
-    const el = this._row(who, text, color);
+    // who: 'You' (typed), 'Voice' (mic transcript), 'Ada' (assistant)
+    const kind = who === "You" ? "user" : who === "Voice" ? "voice" : "ada";
+    const { el, body } = this._bubble(kind, text);
     this._log.appendChild(el);
-    this._log.scrollTop = this._log.scrollHeight;
-    return el;
+    this._scrollDown(true);  // own message / new turn always lands visible
+    return { lastChild: body, el, body };
   }
 
   _system(text) {
     const d = document.createElement("div");
-    d.style.color = "var(--secondary-text-color,#888)";
+    d.style.cssText =
+      "align-self:center;color:var(--secondary-text-color,#888);font-size:.75rem;text-align:center";
     d.textContent = `· ${text}`;
     this._log.appendChild(d);
-    this._log.scrollTop = this._log.scrollHeight;
+    this._scrollDown();
   }
 
   _flushAssistant() {
@@ -335,24 +421,28 @@ class AdaChatCard extends HTMLElement {
         this._add("Voice", ev.text, "var(--success-color,#4caf50)");
         break;
       case "assistant_transcript_delta": {
+        this._hideTyping();
         if (!this._assistantEntry)
           this._assistantEntry = this._add("Ada", "", "var(--primary-color,#03a9f4)").lastChild;
         this._assistantEntry.textContent += ev.text;
-        this._log.scrollTop = this._log.scrollHeight;
+        this._scrollDown();
         break;
       }
       case "response_started":
         this._responseActive = true;
         this._flushAssistant();
+        this._showTyping();
         break;
       case "response_completed":
       case "clear_audio":
         this._responseActive = false;
+        this._hideTyping();
         this._flushAssistant();
         this._flushDocNotes();
         break;
       case "response_interrupted":
         this._responseActive = false;
+        this._hideTyping();
         this._flushAssistant();
         this._system("(interrupted)");
         this._flushDocNotes();
@@ -464,6 +554,13 @@ class AdaChatCard extends HTMLElement {
       "padding:2px 10px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
       "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.75rem;white-space:nowrap";
     return b;
+  }
+
+  connectedCallback() {
+    // Auto-connect on view load (default) — chat shouldn't need a Connect
+    // click first. autoconnect: false in config restores the manual flow.
+    if (this._config && this._config.autoconnect !== false
+        && !this._socket && !this._connecting) this._connect();
   }
 
   disconnectedCallback() {

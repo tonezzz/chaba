@@ -1,25 +1,30 @@
 id: voice-combo-moshi
 title: 'Bench: kyutai moshi full-duplex baseline'
-column: doing
-updated: 2026-10-09 07:11
+column: review
+updated: 2026-10-09 08:32
 priority: low
 program: voice-fallback
 blocked_by: voice-bench-harness
 tags:
 - voice
 - bench
-spec: 'Bench combo `moshi` via scripts/voice-bench/bench.py: run kyutai-labs/moshi (rust or pytorch server) on GPU,
-  stream English fixtures only (Moshi is English-only — record Thai fixtures as n/a). Capture latency/ttfa (expect
-  best-in-class ~200ms) and record tool-call=none (Moshi has no tool plumbing — that IS the finding). Document how
-  far a full-duplex model is from our needs.'
+spec: 'Bench combo `moshi` via scripts/voice-bench/bench.py: run kyutai-labs/moshi
+  (rust or pytorch server) on GPU, stream English fixtures only (Moshi is English-only
+  — record Thai fixtures as n/a). Capture latency/ttfa (expect best-in-class ~200ms)
+  and record tool-call=none (Moshi has no tool plumbing — that IS the finding). Document
+  how far a full-duplex model is from our needs.'
 action:
   type: dispatch
   repo: chaba
   labels:
   - gpu
   model: swe-2-medium
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0  pushed; moshi server and adapter were shut down cleanly. | devin-task-20261009-070849-bench-combo-moshi-via-scripts-.service:
+    Consumed 2h 27min 26.433s CPU time over 1h 22min 51.753s wall clock time, 16G
+    memory peak, 2.9G memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -32,10 +37,36 @@ comms:
   text: claimed
 - at: 2026-10-09 07:08
   from: chaba
-  text: started devin-task-20261009-070849-bench-combo-moshi-via-scripts- on tony-omen (dispatch)
+  text: started devin-task-20261009-070849-bench-combo-moshi-via-scripts- on tony-omen
+    (dispatch)
 - at: 2026-10-09 07:11
   from: devin
-  text: 'Started on tony-omen. Hardware check: GTX 1650 4GB (~2.8GB free) — below Moshi min spec (bf16 ~16GB; q4
-    candle ~4.5GB+). Will attempt PyTorch moshi install + quantized/CPU fallback, then adapter for /bench transport.
-    English fixtures only; Thai recorded n/a; tool_call expected none by design.'
+  text: 'Started on tony-omen. Hardware check: GTX 1650 4GB (~2.8GB free) — below
+    Moshi min spec (bf16 ~16GB; q4 candle ~4.5GB+). Will attempt PyTorch moshi install
+    + quantized/CPU fallback, then adapter for /bench transport. English fixtures
+    only; Thai recorded n/a; tool_call expected none by design.'
+- at: 2026-10-09 08:30
+  from: devin
+  text: 'DONE (cpu-only). moshi 0.2.13 + kyutai/moshiko-pytorch-bf16 ran via new scripts/voice-bench/moshi_adapter.py
+    + combos.yml entry. 10 en fixtures streamed; 10 th recorded n/a (English-only).
+    GTX 1650 4GB cannot hold moshi (bf16 ~15GB, candle q4 ~4.5GB+KV) -> ran on CPU:
+    mean ttfa 50.6s (10-114s), mean total 218s incl 90s reply window. Moshi did reply
+    (audio+text: "Hey", "Hi there"). tool_call=none across all expected-call fixtures
+    — no tool plumbing exists, that IS the finding. Fit: full-duplex s2'
+- at: 2026-10-09 08:32
+  from: tony-omen
+  text: 'finished (ok): exit=0  pushed; moshi server and adapter were shut down cleanly.
+    | devin-task-20261009-070849-bench-combo-moshi-via-scri'
+- at: 2026-10-09 08:32
+  from: chaba
+  text: 'session-end checkpoint 2f415316: 6 leftover file(s) committed'
+- at: 2026-10-09 08:32
+  from: chaba
+  text: pushed dispatch/20261009-070849-bench-combo-moshi-via-scripts- to origin
+- at: 2026-10-09 08:32
+  from: chaba
+  text: auto-merged 9088cd22 (dispatch/20261009-070849-bench-combo-moshi-via-scripts-)
+    → origin/master
 pipeline: ci
+claim: {}
+review_kind: verify

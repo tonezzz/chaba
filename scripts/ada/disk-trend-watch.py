@@ -409,6 +409,7 @@ def upsert_alert_card(path: Path, host: str, mount: str, state: str,
                   "check the note for the rate and top growers, then "
                   "free space or close the card."),
         "column": "review",
+        "review_kind": "triage",
         "generated": "disk-trend-watch",
         "area": "monitoring",
         "priority": "high" if (state == "critical" or age_h >= ESCALATE_H)

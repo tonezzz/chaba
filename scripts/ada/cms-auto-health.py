@@ -174,6 +174,7 @@ def main() -> int:
                           f"{state}. Re-run it or check the generator — "
                           "details in the note."),
                 "column": "review",
+        "review_kind": "triage",
                 "generated": "cms-auto-health",
                 "priority": "high" if age_h >= ESCALATE_H else "medium",
                 "note": (f"{reason}. last_run={cfg.get('last_run')} "

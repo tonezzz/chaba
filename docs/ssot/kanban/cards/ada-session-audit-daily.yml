@@ -1,22 +1,85 @@
 id: ada-session-audit-daily
 title: Daily automated Ada session audit — transcripts → friction findings → CMS evidence
-brief: 'The ada-transcript-audit skill only runs when Tony asks. Schedule it: daily audit of yesterday''s sessions —
-  phantom tool claims, failed calls Ada glossed, repeated asks, confirm-gate friction — published as a CMS page and
-  filed to focus-inbox/cards when friction is found. Labels feed the Ada corpus.'
-column: backlog
+brief: 'The ada-transcript-audit skill only runs when Tony asks. Schedule it: daily
+  audit of yesterday''s sessions — phantom tool claims, failed calls Ada glossed,
+  repeated asks, confirm-gate friction — published as a CMS page and filed to focus-inbox/cards
+  when friction is found. Labels feed the Ada corpus.'
+column: review
 priority: high
 program: chaba-ci
 area: ada-tools
-note: 'Gap found 2026-10-09: capability benches are automated (orch-bench hourly, scenario/bench/embed daily, recall
-  canary weekly) but session QUALITY audit is manual-only. Checklist already defined in
-  .devin/skills/ada-transcript-audit/SKILL.md — the job is to run it headlessly on a timer.'
-spec: "1. scripts/ada/session-audit.py (or .sh wrapping the existing steps):\n   - window: transcripts newer than ~/.local/share/devin/ada-audit-marker\n     (mtime > marker; marker bumps after each run — idc01\n     ~/.local/share/ada/transcripts/2026-*.md)\n   - per session: phantom tool-claim turns, tool results with ok:false/err,\n     needs_confirm round-trips, repeated user asks, friction turns\n   - journalctl ada-ha-tony function_call results for the window\n2. Output contract:\n   - structured findings -> MDDB ada-ha-scenario-reports key\n     audit/session-<date> (kind: session-audit) + CMS page render\n     (cms-page-standard) so the audit is discussable evidence\n   - friction items -> focus-inbox entries (or card requests) — never\n     silently swallowed; clean days publish a short green page\n   - labeled rows appended to the Ada corpus path the nest loop harvests\n     (same shape as bankq-router-corpus.jsonl)\n3. systemd user timer daily ~05:30 on dell (before the morning digest).\n4. Close the loop: recurring friction patterns -> kanban cards\n   (dedup against open cards by title/slug).\nAcceptance: runs hands-off for 3 days; a seeded friction case appears on\nthe CMS page and in focus-inbox; marker advances; no false-positive flood\n(threshold: only repeated or high-severity friction surfaces).\n"
-help: 'Skill reference: .devin/skills/ada-transcript-audit/SKILL.md has the full manual checklist. Transcripts live on
-  idc01 (~/.local/share/ada/transcripts/). This is the session-quality half of Chaba CI for Ada — the bench half already
-  exists.'
-updated: 2026-10-09 07:30
+note: 'Gap found 2026-10-09: capability benches are automated (orch-bench hourly,
+  scenario/bench/embed daily, recall canary weekly) but session QUALITY audit is manual-only.
+  Checklist already defined in .devin/skills/ada-transcript-audit/SKILL.md — the job
+  is to run it headlessly on a timer.'
+spec: "1. scripts/ada/session-audit.py (or .sh wrapping the existing steps):\n   -\
+  \ window: transcripts newer than ~/.local/share/devin/ada-audit-marker\n     (mtime\
+  \ > marker; marker bumps after each run — idc01\n     ~/.local/share/ada/transcripts/2026-*.md)\n\
+  \   - per session: phantom tool-claim turns, tool results with ok:false/err,\n \
+  \    needs_confirm round-trips, repeated user asks, friction turns\n   - journalctl\
+  \ ada-ha-tony function_call results for the window\n2. Output contract:\n   - structured\
+  \ findings -> MDDB ada-ha-scenario-reports key\n     audit/session-<date> (kind:\
+  \ session-audit) + CMS page render\n     (cms-page-standard) so the audit is discussable\
+  \ evidence\n   - friction items -> focus-inbox entries (or card requests) — never\n\
+  \     silently swallowed; clean days publish a short green page\n   - labeled rows\
+  \ appended to the Ada corpus path the nest loop harvests\n     (same shape as bankq-router-corpus.jsonl)\n\
+  3. systemd user timer daily ~05:30 on dell (before the morning digest).\n4. Close\
+  \ the loop: recurring friction patterns -> kanban cards\n   (dedup against open\
+  \ cards by title/slug).\nAcceptance: runs hands-off for 3 days; a seeded friction\
+  \ case appears on\nthe CMS page and in focus-inbox; marker advances; no false-positive\
+  \ flood\n(threshold: only repeated or high-severity friction surfaces).\n"
+help: 'Skill reference: .devin/skills/ada-transcript-audit/SKILL.md has the full manual
+  checklist. Transcripts live on idc01 (~/.local/share/ada/transcripts/). This is
+  the session-quality half of Chaba CI for Ada — the bench half already exists.'
+updated: 2026-10-09 08:17
 action:
   type: dispatch
-  status: idle
-  button: "▶ Build the daily audit"
+  status: done
+  button: ▶ Build the daily audit
   repo: chaba
+  runner: mn01
+  result: 'exit=0  approved; `python3 scripts/ada/session-audit.py --selftest` or
+    `--dry-run` verifies. | devin-task-20261009-004016-1-scripts-ada-session-audit-py.service:
+    Consumed 2min 9.294s CPU time over 35min 20.619s wall clock time, 312.6M memory
+    peak.'
+  verified: true
+comms:
+- at: 2026-10-09 07:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-09 07:40
+  from: mn01
+  text: claimed
+- at: 2026-10-09 07:40
+  from: chaba
+  text: started devin-task-20261009-004016-1-scripts-ada-session-audit-py on mn01
+    (dispatch)
+- at: 2026-10-09 07:50
+  from: devin
+  text: '[dispatch] exploring — live Ada is on idc03 (transcripts+journal), marker
+    on dell. Design: self-contained install like log-shipper, ssot.jobs entry @05:30,
+    board-api /card for recurring friction.'
+- at: 2026-10-09 08:15
+  from: devin
+  text: 'session-audit.py done + ssot.jobs.yml timer (05:30 dell) + install-session-audit.sh
+    + job record. selftest PASS (6 kinds, flood gate). Real dry run vs idc01: 7 sessions,
+    235 findings, 15 surfaced (cap) — all real (Unknown tool, unknown bank, 429, bad
+    lang). Fixture e2e: inbox yml filed, corpus appended, marker bumps, day-2 dedup
+    ok. Install pending (no deploy per card).'
+- at: 2026-10-09 08:17
+  from: mn01
+  text: 'finished (ok): exit=0  approved; `python3 scripts/ada/session-audit.py --selftest`
+    or `--dry-run` verifies. | devin-task-20261009-00401'
+- at: 2026-10-09 08:17
+  from: chaba
+  text: 'session-end checkpoint dac1b36e: 7 leftover file(s) committed'
+- at: 2026-10-09 08:17
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'':
+    No such device or address — close will block until merged'
+- at: 2026-10-09 08:17
+  from: chaba
+  text: 'merge-sweep: merged ef6b22c8 (dispatch/20261009-004016-1-scripts-ada-session-audit-py
+    from mn01) -> origin/master'
+claim: {}
+review_kind: verify

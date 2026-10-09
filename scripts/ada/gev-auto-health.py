@@ -227,6 +227,7 @@ def upsert_card(path: Path, card_id: str, title: str, note: str,
         "brief": (f"An automated health check flagged: {title}. "
                   "Read the note, fix it, then close the card."),
         "column": "review",
+        "review_kind": "triage",
         "generated": "gev-auto-health",
         "program": "gev",
         "area": "monitoring",

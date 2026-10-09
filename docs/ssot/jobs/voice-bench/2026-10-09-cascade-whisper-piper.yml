@@ -3,33 +3,35 @@ date: 2026-10-09
 runner: tony-omen
 card: voice-combo-cascade-whisper-piper
 status: done
-
 combo:
   stt: faster-whisper (small=cuda, medium=cpu-fallback)
   llm: ollama phi3-gguf:latest @ http://100.75.102.88:11434 (docker, CUDA)
   tts: piper en_US-lessac-medium (English only)
   fixtures: 15 (10 en piper-synth, 5 th gTTS-synth)
-
 key_findings:
-  - whisper-small on GTX 1650 (int8_float16) transcribes a fixture in ~650ms — viable STT.
-  - whisper-medium does NOT fit beside resident phi3 (~2.6GB) in 4GB VRAM; CPU int8 fallback
-    is 15-20s/fixture — unusable for voice. Medium needs the LLM unloaded or a bigger card.
-  - piper TTS RTF ~0.16 — 1.4-2.9s for a one-line reply, fine for fallback.
-  - LLM latency is the bottleneck: phi3 avg 6-14s/generate; cold-load outliers 21s/39s.
-    Keep-alive or a smaller/quicker model needed for conversational feel.
-  - EN WER ~0.03 (small) / 0.05 (medium); TH CER ~0.12-0.14 — whisper is multilingual-ok.
-  - Tool-call JSON: phi3 picks the right tool ~2/3 of the time for EN commands but invents
-    entity_ids (partial) — needs few-shot or constrained decoding for exact match.
-  - THAI TTS GAP: no piper Thai voice exists; th fixtures scored STT+LLM only.
-    phi3 also fails to emit valid tool JSON for Thai input (4/5 none).
-
+- whisper-small on GTX 1650 (int8_float16) transcribes a fixture in ~650ms — viable
+  STT.
+- whisper-medium does NOT fit beside resident phi3 (~2.6GB) in 4GB VRAM; CPU int8
+  fallback is 15-20s/fixture — unusable for voice. Medium needs the LLM unloaded or
+  a bigger card.
+- piper TTS RTF ~0.16 — 1.4-2.9s for a one-line reply, fine for fallback.
+- 'LLM latency is the bottleneck: phi3 avg 6-14s/generate; cold-load outliers 21s/39s.
+  Keep-alive or a smaller/quicker model needed for conversational feel.'
+- EN WER ~0.03 (small) / 0.05 (medium); TH CER ~0.12-0.14 — whisper is multilingual-ok.
+- 'Tool-call JSON: phi3 picks the right tool ~2/3 of the time for EN commands but
+  invents entity_ids (partial) — needs few-shot or constrained decoding for exact
+  match.'
+- 'THAI TTS GAP: no piper Thai voice exists; th fixtures scored STT+LLM only. phi3
+  also fails to emit valid tool JSON for Thai input (4/5 none).'
 artifacts:
   metrics: scripts/voice-bench/results/cascade-whisper-piper-20261009-065457.json
   report: reports/voice-fallback/LATEST.md
-  harness: scripts/voice-bench/ (combos.yml, bench.py, report.py, gen_fixtures.py, fixtures/)
+  harness: scripts/voice-bench/ (combos.yml, bench.py, report.py, gen_fixtures.py,
+    fixtures/)
   tools: .bench-tools/ (venv, piper binary, voice model — NOT committed)
+notes: 'The voice-bench-harness dispatch on idc03 was swept dirty and never merged;
+  the harness was rebuilt in this worktree per its card spec. Fixture wavs are synthesized
+  (piper for en, gTTS for th) — small files, committed.
 
-notes: >
-  The voice-bench-harness dispatch on idc03 was swept dirty and never merged;
-  the harness was rebuilt in this worktree per its card spec. Fixture wavs are
-  synthesized (piper for en, gTTS for th) — small files, committed.
+  '
+title: 'Bench combo cascade: whisper + phi3 + piper (tony-omen)'
