@@ -138,6 +138,39 @@ policies:
       - promote-ui-feature.sh moves feature refs from compare2 to family SSOT
       - Family SSOTs (ssot.ui.compare-family.yml) hold shared scripts and defaults
 
+  - id: agent-inspectable-dom
+    title: HTML must be agent-inspectable and agent-testable
+    status: accepted
+    rule: |
+      Any UI we ship (HA cards, board pages, apps) must expose a DOM that
+      Ada and Devin can inspect and test programmatically — via playlive
+      (Playwright-over-MCP) or CI Playwright — without visual guesswork:
+      - stable selectors on interactive elements: id or a semantic class/
+        data-* hook on every button, input, and message container that an
+        agent might click, fill, or assert on (no styling-only class names
+        that change with a refactor)
+      - semantic roles: real <button>/<input>/<a> over clickable <div>s;
+        meaningful text content or aria-label on icon-only controls
+      - state in the DOM, not only visuals: status/typing/error surfaces
+        must exist as readable elements (or attributes) an agent can
+        assert on, not just color changes
+      - testability check: before shipping, the author must name one
+        Playwright assertion a reviewer could run (e.g.
+        'expect(page.locator(".acc-bubble-user")).toBeVisible()')
+    applies_to:
+      - stacks/tony-dell/tony-ha/www/*.js  (HA custom cards)
+      - stacks/web/public/apps/**
+      - any new card/app UI
+    rationale: |
+      If agents can't read the DOM, every UI change needs a human eyeball
+      and can't be regression-tested by dispatch. Stable hooks decouple the
+      test contract from styling churn — the same principle as
+      request.options making board answers machine-answerable.
+    consequences:
+      - ada-chat-card bubbles carry .acc-bubble/-user/-ada/-voice classes
+        and a testable typing element (added 2026-10-09)
+      - new UI PRs are expected to survive a playlive inspection pass
+
 related_files:
   - docs/ssot/ssot.libs.yml
   - docs/ssot/ssot.ui.yml

@@ -64,15 +64,19 @@ class AdaChatCard extends HTMLElement {
     const row = document.createElement("div");
     row.style.cssText = "display:flex;align-items:center;gap:8px";
     this._dot = document.createElement("span");
+    this._dot.className = "acc-status-dot";
     this._dot.style.cssText =
       "width:8px;height:8px;border-radius:50%;flex:none;" +
       "background:var(--disabled-text-color,#777);transition:background .3s";
     this._status = document.createElement("div");
+    this._status.className = "acc-status";
     this._status.style.cssText = "flex:1;font-size:.8rem;color:var(--secondary-text-color)";
     this._status.textContent = "Disconnected";
     this._connectBtn = this._btn("Connect");
+    this._connectBtn.className = "acc-connect";
     this._connectBtn.onclick = () => this._connect();
     this._disconnectBtn = this._btn("Disconnect");
+    this._disconnectBtn.className = "acc-disconnect";
     this._disconnectBtn.disabled = true;
     this._disconnectBtn.onclick = () => this._teardown(true);
     row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn);
@@ -88,6 +92,7 @@ class AdaChatCard extends HTMLElement {
 
     // typing indicator — shown while Ada is composing, hidden on first delta
     this._typing = document.createElement("div");
+    this._typing.className = "acc-typing";
     this._typing.style.cssText =
       "align-self:flex-start;display:none;align-items:center;gap:5px;padding:6px 12px;" +
       "border-radius:14px 14px 14px 4px;background:var(--card-background-color,#2b3138);" +
@@ -112,6 +117,7 @@ class AdaChatCard extends HTMLElement {
     const inRow = document.createElement("div");
     inRow.style.cssText = "display:flex;gap:6px";
     this._input = document.createElement("input");
+    this._input.className = "acc-input";
     this._input.type = "text";
     this._input.placeholder = "Message Ada…";
     this._input.disabled = true;
@@ -120,6 +126,7 @@ class AdaChatCard extends HTMLElement {
       "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:.85rem";
     this._input.addEventListener("keydown", (e) => { if (e.key === "Enter") this._send(); });
     this._sendBtn = this._btn("Send");
+    this._sendBtn.className = "acc-send";
     this._sendBtn.disabled = true;
     this._sendBtn.style.background = "var(--primary-color,#03a9f4)";
     this._sendBtn.style.color = "var(--text-primary-color,#fff)";
@@ -129,6 +136,7 @@ class AdaChatCard extends HTMLElement {
     // archive/print via chat. capture-less accept still offers the camera
     // on iOS/Android pickers.
     this._attachBtn = this._btn("📎");
+    this._attachBtn.className = "acc-attach";
     this._attachBtn.title = "Upload a document/photo for Ada";
     this._attachBtn.disabled = true;
     this._attachBtn.onclick = () => this._fileInput?.click();
@@ -249,6 +257,8 @@ class AdaChatCard extends HTMLElement {
   _bubble(kind, text) {
     const mine = kind === "user" || kind === "voice";
     const d = document.createElement("div");
+    // agent-inspectable-dom: stable hooks for playlive/Playwright assertions
+    d.className = `acc-bubble acc-bubble-${kind}`;
     d.style.cssText =
       `align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;` +
       `padding:6px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word;` +
@@ -295,6 +305,7 @@ class AdaChatCard extends HTMLElement {
 
   _system(text) {
     const d = document.createElement("div");
+    d.className = "acc-system";
     d.style.cssText =
       "align-self:center;color:var(--secondary-text-color,#888);font-size:.75rem;text-align:center";
     d.textContent = `· ${text}`;

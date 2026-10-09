@@ -1,0 +1,78 @@
+id: lab-crush-cli
+title: 'Lab: charmbracelet/crush — terminal agentic coding CLI as an alternate lane'
+brief: 'Evaluate crush (Charm''s Go TUI coding agent: multi-provider incl.
+  OpenRouter/OpenAI-compatible, LSP-enhanced, MCP client stdio/http/sse,
+  per-project sessions) as an alternate agent lane next to devin-dispatch.
+  Lab — no CI or production role until it proves itself on a real task.'
+column: lab
+priority: medium
+created: 2026-10-09
+lab:
+  hypothesis: crush + our existing OpenRouter key gives a working off-Devin
+    agent lane (install to first successful task < 30 min) whose MCP support
+    could eventually plug it into our own tool surface — useful as a second
+    opinion or a model-flexible runner the dispatch system doesn't have
+  metric: "(1) crush installed on tony-dell; (2) a scoped smoke task in a
+    scratch repo completes end-to-end (code written, test run, result sane);
+    (3) provider config with an OpenRouter-compatible endpoint verified;
+    (4) honest verdict — adds something dispatch lacks vs redundant"
+  review_by: '2026-10-23'
+review_kind: verify
+autonomy: t2
+note: 'Tony 2026-10-09: "charmbracelet/crush might help us with developer
+  tools — run our standard procedure to include this repo into our ci until
+  production." Facts: Go single binary (go install github.com/charmbracelet/
+  crush@latest or a release tarball), active project, providers via
+  OpenAI/Anthropic-compatible APIs (OpenRouter key already on omen/dell),
+  MCP client support (stdio/http/sse — our whole tool surface speaks MCP),
+  mid-session model switching, LSP context. Adjacent to, not replacing,
+  devin-dispatch: crush is an interactive TUI — the fit to test is
+  scripted/headless usage as a claw brain, plus MCP-tooling overlap.'
+spec: 'Standard lab procedure — assess, prove, verdict. (1) Install crush on
+  tony-dell (go install or github release binary under ~/.local/bin; check `go
+  version` first, fall back to the release tarball if no toolchain).
+  (2) Configure ONE provider: OpenRouter with the existing key (check
+  ~/.config/secrets/ for an openrouter env — do NOT print the key; crush config
+  is ~/.config/crush/crush.json with a providers block). If no OpenRouter key
+  exists, raise a board request for which provider to use instead of guessing.
+  (3) Smoke task IN A SCRATCH DIR ONLY (/tmp/crush-lab — never a live repo):
+  ask crush to write fizzbuzz + a pytest, run the test, confirm it passes;
+  then a second task touching an existing file to gauge edit quality.
+  Record: install friction, time-to-first-task, tool-call behavior, whether
+  it stays in scope. (4) MCP check: verify the config accepts an mcp stanza
+  pointing at a local server (no need to fully wire — validate it parses +
+  connects to one safe read-only MCP). (5) Verdict in the card outcome:
+  where it beats devin-dispatch (model flexibility? interactivity? MCP?),
+  where dispatch beats it (unattended kanban runs, TASK_RAILS, merge gates —
+  dispatch is CI, crush is interactive). Recommend: adopt-as-alt-lane /
+  park / drop, with the reasoning. Output: job-trail doc +
+  ~/.local/bin/crush left installed if the verdict is not ''drop''.'
+expected_goals:
+- id: crush-installed
+  check: test -x ~/.local/bin/crush -o -x "$(command -v crush)"
+  expect: exit
+- id: job-trail
+  check: ls docs/ssot/jobs/labs/ | grep -q crush
+  expect: exit
+links:
+- lab-cf-kv-claw-channel
+- dispatch-model-smoke-max
+blocked_by: []
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+advice:
+  from: devin
+  at: '2026-10-09 12:20'
+  text: 'Honest prior: crush''s value for us is model-flexible MCP tooling in
+    a terminal — but dispatch already does unattended card work, so the lab''s
+    real question is whether scripted crush can act as an alternate claw
+    brain. Expect "park" or "alt-lane" rather than production CI slot.'
+comms:
+- at: '2026-10-09 12:20'
+  from: devin
+  text: 'filed from Tony''s ask — standard lab lane: dispatch installs +
+    smokes in a scratch dir, verdict gates any further adoption. No live-repo
+    scope, no keys invented.'
+updated: '2026-10-09 12:20'

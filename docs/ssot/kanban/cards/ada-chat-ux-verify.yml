@@ -1,0 +1,41 @@
+id: ada-chat-ux-verify
+title: 'Verify the ada-chat-card UX rework on /chaba-home/chat'
+brief: 'The chat card was rebuilt 2026-10-09: bubbles + timestamps, typing indicator,
+  auto-connect, sticky scroll, status dot. Deployed to ada-ha (?v=6). Needs a
+  human eyeball before we call it done — the open request below is what
+  chaba-nag will keep surfacing until answered.'
+column: review
+priority: medium
+review_kind: verify
+requests:
+- id: bubbles-look-test
+  ask: 'Open https://ada-ha.surf-thailand.com/chaba-home/chat — do the bubbles,
+    typing dots, auto-connect and smart scroll behave?'
+  status: open
+  at: '2026-10-09 12:10'
+  from: devin
+  options:
+  - id: works
+    label: 'Works — looks right, closes the card'
+  - id: tune
+    label: 'Tune — mostly right, note what in a comment'
+  - id: broken
+    label: 'Broken — say what''s wrong, I''ll fix'
+  suggested: works
+advice:
+  from: devin
+  at: '2026-10-09 12:10'
+  text: 'Try three things: (1) send a message — it should auto-connect with no
+    Connect click; (2) watch for the "Ada is typing" dots before the reply;
+    (3) scroll up mid-reply — the log should NOT yank you back down.'
+note: 'Commit b5526a171. Protocol/auth/doc-upload untouched. Live copy also
+  picked up the pending handshake-rejection re-mint fix (d5f6b2639).'
+action:
+  type: manual
+  status: idle
+updated: '2026-10-09 12:10'
+comms:
+- at: '2026-10-09 12:10'
+  from: devin
+  text: 'card filed so chaba-nag keeps surfacing the verify ask until Tony
+    answers it on the board'
