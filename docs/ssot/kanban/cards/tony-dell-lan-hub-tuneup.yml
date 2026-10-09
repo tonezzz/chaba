@@ -2,48 +2,67 @@ id: tony-dell-lan-hub-tuneup
 title: 'tony-dell: tune up the LAN hub — now / intermediate / long-term'
 column: backlog
 priority: high
-note: 'After the 2026-10-09 node evacuation, tony-dell is the LAN tier: tony-ha (household hardware) + ada-ha (media/cast)
-  + web/caddy :80 + websockify bridges + desktop apps. Measured: 118G disk / 19-20G free, 14G RAM / ~10G used, 8
-  cores. It is also Tony''s desktop — devin-desktop + chrome compete with services.'
+note: 'After the 2026-10-09 node evacuation, tony-dell is the LAN tier: tony-ha (household
+  hardware) + ada-ha (media/cast) + web/caddy :80 + websockify bridges + desktop apps.
+  Measured: 118G disk / 19-20G free, 14G RAM / ~10G used, 8 cores. It is also Tony''s
+  desktop — devin-desktop + chrome compete with services.'
 action:
   type: manual
   status: queued
-updated: 2026-10-09 14:48
+updated: 2026-10-09 18:00
 comms:
 - at: 2026-10-09 13:00
   from: devin
-  text: 'NOW (free wins, done): pruned podman images (+~1G), removed migration tars from /tmp. Next cheap: journal
-    vacuum needs sudo (1.5G journals -> cap 400M); audit ~/.config/michael-dev (999M rollback copy — keep or move
-    off-host to idc03 cold storage); unused container images still ~3G reclaimable after review.'
+  text: 'NOW (free wins, done): pruned podman images (+~1G), removed migration tars
+    from /tmp. Next cheap: journal vacuum needs sudo (1.5G journals -> cap 400M);
+    audit ~/.config/michael-dev (999M rollback copy — keep or move off-host to idc03
+    cold storage); unused container images still ~3G reclaimable after review.'
 - at: 2026-10-09 13:00
   from: devin
-  text: 'INTERMEDIATE (days-weeks): (1) move the yt media corpus + GoogleDrive cache off root disk to an external/NAS
-    mount — it''s the largest growth path on this box; (2) journald SystemMaxUse cap in config; (3) prune dead services
-    (helm? node-red? old proxies) per ssot.services.yml inventory; (4) hardware: SSD swap to 500G+ and/or RAM to
-    32G if slots allow — cheap, removes the real bottleneck; (5) watchdog: systemd watchdog or a cron''d health-check
-    so instability auto-recovers.'
+  text: 'INTERMEDIATE (days-weeks): (1) move the yt media corpus + GoogleDrive cache
+    off root disk to an external/NAS mount — it''s the largest growth path on this
+    box; (2) journald SystemMaxUse cap in config; (3) prune dead services (helm? node-red?
+    old proxies) per ssot.services.yml inventory; (4) hardware: SSD swap to 500G+
+    and/or RAM to 32G if slots allow — cheap, removes the real bottleneck; (5) watchdog:
+    systemd watchdog or a cron''d health-check so instability auto-recovers.'
 - at: 2026-10-09 13:00
   from: devin
-  text: 'LONG-TERM (build a better host): the LAN tier wants a small dedicated always-on box (mini-PC/NUC) — tony-ha
-    + ada-ha + radios + web edge, nothing else. tony-dell reverts to pure desktop, OR mn01 takes the LAN hub role
-    if it proves reliable. Decision gate: measure tony-dell stability over 2-4 weeks after evacuation — if crashes
-    were load- related, tuneup suffices; if hardware/OS-level, plan the replacement.'
+  text: 'LONG-TERM (build a better host): the LAN tier wants a small dedicated always-on
+    box (mini-PC/NUC) — tony-ha + ada-ha + radios + web edge, nothing else. tony-dell
+    reverts to pure desktop, OR mn01 takes the LAN hub role if it proves reliable.
+    Decision gate: measure tony-dell stability over 2-4 weeks after evacuation — if
+    crashes were load- related, tuneup suffices; if hardware/OS-level, plan the replacement.'
 - at: 2026-10-09 14:14
   from: tony
-  text: 'answered disk-hardware-path: stay-optimize — Stay on dell — tidy disk, no new hardware'
+  text: 'answered disk-hardware-path: stay-optimize — Stay on dell — tidy disk, no
+    new hardware'
 - at: 2026-10-09 14:14
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-09 14:48
   from: tony
   text: queued for processing
+- at: 2026-10-09 18:00
+  from: devin
+  text: 'Camera dig (all 4 cams 0-byte frames): go2rtc healthy, cams ping alive. xiaomi_c100/c201:
+    producers time out on xiaomi:// protocol — LAN-alive but cloud-protocol dead;
+    needs power-cycle or Mi Home re-auth (physical). ip_cam_65 (.71): RTSP answers
+    but sends HEVC with missing VPS headers — ffmpeg can''t decode, producers EOF.
+    Needs cam reboot or codec switch to H.264. Both are device-side faults, not go2rtc.
+    DISK AUDIT: / = 118G, 96G used. sda3 = 200G NTFS old Windows install, unmounted
+    — biggest reclaim option, needs Tony decision (abandon dual-boot?). ~/GoogleDrive
+    is rclone FUSE (cloud, ~0 local). podman images 10.2G (3G reclaimable), .cache
+    6.5G, /var/log 2.6G, journald 509M, HA config 3.1G. Real media corpus is cloud-mounted
+    — the ''media off root'' item shrinks to caches only.'
 requests:
 - id: disk-hardware-path
   status: answered
   from: devin
   to: tony
-  ask: 'tony-dell LAN hub: (a) should ada-ha''s media corpus move off the root disk (or off dell entirely)? (b)
-    hardware path — bigger SSD/RAM in dell vs a dedicated LAN-hub box?'
+  ask: 'tony-dell LAN hub: (a) should ada-ha''s media corpus move off the root disk
+    (or off dell entirely)? (b) hardware path — bigger SSD/RAM in dell vs a dedicated
+    LAN-hub box?'
   options:
   - id: stay-optimize
     label: Stay on dell — tidy disk, no new hardware
