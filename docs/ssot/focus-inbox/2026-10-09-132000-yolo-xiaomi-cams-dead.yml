@@ -1,0 +1,15 @@
+title: YOLO xiaomi cams producing no frames since 2026-10-06
+subtitle: mn01 yolo-xiaomi service healthy but upstream go2rtc streams empty
+icon: video
+focus:
+  label: yolo-xiaomi-cams-dead
+  text: 'xiaomi_c201 + xiaomi_c100 go2rtc streams return 200/0-byte frames
+    (producers registered, no data) since 2026-10-06 ~02:25Z. mn01
+    yolo-xiaomi.service active and correctly errors on imdecode — the cameras
+    or go2rtc upstream are the dead link. New ada-chat-card YOLO panel shows
+    the error state; fix = check the two xiaomi cameras/go2rtc producers on
+    tony-dell:1984. Source switched to c100 via /set-source (harmless, unit
+    default is c201 on restart).'
+  branch: chaba
+  priority: medium
+  status: pending
