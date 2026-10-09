@@ -366,13 +366,17 @@ everything:
 
 ## Procedure Quick Map
 
+The canonical index is `docs/ssot/ssot.procedures.yml` — consult it before
+improvising; add a 4-line entry there after doing something repeatable.
+Frequent ones:
+
 - **New idea / feature / "what if we…"** → capture to a kanban card
   (`column: backlog`) or focus-inbox entry immediately, then triage with
   `mcp_focus`. The board owns all pending work.
-- **Deploy or place a service** → consult
-  `docs/ssot/infrastructure/ssot.host-capacity.yml` (placement_policy +
-  live `free`/`df`), record the host decision on the card.
-- **New vocabulary** → add to `docs/ssot/ssot.terminology.yml`; MDDB picks
-  it up on the next sync so every session shares it.
-- **New member/user on a node** → procedure on card
-  `member-user-onboarding`; new node → `member-node-kk-ha`.
+- **Deploy or place a service** → `ssot.host-capacity.yml` (placement_policy
+  + live `free`/`df`), record the host decision on the card.
+- **New vocabulary** → `ssot.terminology.yml`; MDDB picks it up on sync.
+- **New member/user/node** → `member-user-onboarding` / `member-node-kk-ha`
+  / `kk-ha-tg-relay` cards.
+- **Migration/ops gotchas** (bind-mount inode, serve reset, HA 2026.8 http
+  storage, quadlet AddHost) → see `member-nodes-to-vps-ha` comms.
