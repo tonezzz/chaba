@@ -1,0 +1,8 @@
+# voice-fallback trend
+
+| at | combo | n | ok | mean ttfa ms | mean total ms | mean wer | tool e/p/n | dry |
+|---|---|---|---|---|---|---|---|---|
+| ? | cascade-whisper-piper | 0 | 0 | — | — | — | 0/0/0 | no |
+| 20261009T071325Z | gemini-baseline | 20 | 20 | 294.05 | 6219.6 | 0.02 | 6/8/0 | no |
+| 20261009T012606Z | hf-s2s | 20 | 20 | 75827.53 | 132645.2 | 0.11 | 0/1/13 | no |
+| 20261009T004739Z | moshi | 20 | 10 | 50563.8 | 218073.7 | 1.0 | 0/0/7 | no |

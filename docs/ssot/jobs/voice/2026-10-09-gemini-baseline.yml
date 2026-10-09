@@ -1,0 +1,60 @@
+title: Gemini Live golden baseline (voice-combo-gemini-baseline)
+id: 2026-10-09-gemini-baseline
+card: voice-combo-gemini-baseline
+date: 2026-10-09
+runner: tony-dell
+kind: bench-result
+
+summary: >
+  Streamed all 20 voice-bench fixtures through the CURRENT Gemini Live path
+  (gemini-3.1-flash-live-preview, AUDIO modality, PCM16@16k realtimeInput,
+  in/out audio transcription, harness HA_TOOLS + INSTRUCTIONS). 20/20 ok,
+  mean ttfa 294ms after audio send, mean round-trip 6.2s, WER 0.02
+  (en 0.03 / th 0.01 char), tool calls 6 exact / 8 partial / 0 none.
+  This is the reference row every fallback combo is compared against.
+
+path_notes:
+  transport: >
+    Raw BidiGenerateContent websocket JSON — the same wire shape
+    stacks/web/gemini-mic-test/server.mjs drives. The google-genai SDK path
+    (aio.live.connect + send_realtime_input audio=Blob) connected fine on
+    this host but every audio turn was silently dropped (no VAD events, no
+    model turn) on BOTH genai 2.29.0 and ada-pi's pinned 2.23.0 — text turns
+    on the same session answered normally. Root cause not pinned; bench
+    uses raw ws (adapters.py:gemini_live). gev-gemini bridge.py uses the SDK
+    and may currently be equally deaf — worth a live-check run.
+  credentials: >
+    ~/.config/secrets/gemini-api-key.env (and the podman secret feeding
+    gev-gemini) hold a 53-char AQ.* key that returns 401/1008 on BOTH
+    generativelanguage and aiplatform — dead. The working key came from
+    ada-pi-pwa.env / chaba-guest.env (also AQ.*, different value): valid but
+    free-tier — gemini-2.5-flash daily REST quota was already exhausted
+    (retry ~17h). Live sessions still connect; treat Ada key quota as
+    shared. gemini-api-key.env needs a fresh key.
+  fixtures: >
+    This worktree's fixture wavs were tone placeholders (all 70444B); real
+    edge-tts/gemini speech wavs cherry-picked from e4522ead
+    (dispatch/20261009-133135-the-harness-landed-scripts-voi), which is not
+    yet merged to master.
+
+results:
+  file: scripts/voice-bench/results/gemini-baseline-20261009T071325Z.json
+  n: 20
+  ok: 20
+  mean_ttfa_ms: 294.05
+  mean_total_ms: 6219.6
+  mean_wer: 0.02
+  tool_calls: {exact: 6, partial: 8, none: 0, n/a: 6}
+
+findings:
+  - Partial tool matches were mostly casing ('Kitchen' vs 'kitchen') and
+    extra/dropped args, not wrong tool choice — the scorer compares literal
+    values.
+  - ttfa is measured from end-of-audio-send to first modelTurn audio chunk;
+    ~290ms mean is the bar fallbacks must beat.
+  - 3.1-flash-live transcribed Thai fixtures cleanly (CER 0.00-0.07).
+
+verify: |
+  cd scripts/voice-bench && GEMINI_API_KEY=<ada-pi-pwa.env key> \
+    python3 bench.py --combo gemini-baseline
+  # or regenerate report: python3 scripts/voice-bench/report.py

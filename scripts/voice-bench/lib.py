@@ -47,6 +47,7 @@ def load_combos():
             "host_labels": labels,
             "runtime": rt,
             "endpoint": c.get("endpoint", ""),
+            "adapter": c.get("adapter"),
             "notes": c.get("notes", ""),
         }
     return combos

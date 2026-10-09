@@ -11,6 +11,7 @@ returned dict into lib.fixture_result.
 """
 import base64
 import json
+import os
 import time
 import wave
 from pathlib import Path
@@ -227,4 +228,199 @@ def openai_realtime(combo, fx, timeout):
     }
 
 
-ADAPTERS = {"openai_realtime": openai_realtime}
+GEMINI_MODEL = os.environ.get(
+    "GEMINI_LIVE_MODEL",
+    os.environ.get("GEV_GEMINI_MODEL", "gemini-3.1-flash-live-preview"))
+
+
+def _clean_schema(schema):
+    """Same cleanup gev-gemini/bridge.py applies — Live rejects
+    additionalProperties."""
+    if not isinstance(schema, dict):
+        return schema
+    schema = dict(schema)
+    schema.pop("additionalProperties", None)
+    schema.pop("additional_properties", None)
+    for key, val in schema.items():
+        if isinstance(val, dict):
+            schema[key] = _clean_schema(val)
+        elif isinstance(val, list):
+            schema[key] = [_clean_schema(v) if isinstance(v, dict) else v
+                           for v in val]
+    return schema
+
+
+def gemini_live(combo, fx, timeout):
+    """Stream a fixture through the current Gemini Live path — same client
+    shape as gev-gemini/bridge.py: google-genai aio.live.connect with AUDIO
+    modality + input/output audio transcription, PCM16@16k pushed via
+    send_realtime_input at real-time pace.
+
+    Tool surface is the harness's HA_TOOLS (not GEV's tools.json) so
+    tool_call_match scores the same hass_* calls as every other combo.
+    This is the golden baseline row the fallbacks are compared against.
+
+      transcript      <- server_content.input_transcription (accumulated)
+      tool_call       <- msg.tool_call.function_calls (first; answered with
+                         a stub response so the turn completes)
+      first_audio_ms  <- first msg.data (audio chunk) after audio send
+      total           <- server_content.turn_complete
+    """
+    import asyncio
+
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        secret = os.environ.get(
+            "GEMINI_KEY_FILE",
+            os.path.expanduser("~/.config/secrets/gemini-api-key.env"))
+        try:
+            for line in Path(secret).read_text().splitlines():
+                line = line.strip().lstrip("export ").strip()
+                if line.startswith("GEMINI_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip().strip('"\'')
+        except OSError:
+            pass
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set and key file unreadable")
+
+    wav = Path(fx["wav"])
+    pcm, rate = _wav_pcm(wav)
+    if rate != 16000:
+        raise RuntimeError(f"{wav.name}: expected 16kHz, got {rate}")
+    # ~1.0 s trailing silence so Gemini VAD sees end-of-speech.
+    payload = pcm + b"\x00" * rate * 2
+    chunk_ms = 100
+    chunk_bytes = int(rate * chunk_ms / 1000) * 2
+
+    model = os.environ.get("GEMINI_LIVE_MODEL", GEMINI_MODEL)
+
+    async def run():
+        import websockets
+        out = {"transcript": None, "tool_call": None,
+               "first_audio_ms": None, "assistant_text": None,
+               "events_seen": [], "session_id": None}
+        transcripts = []
+        assistant_parts = []
+        url = ("wss://generativelanguage.googleapis.com/ws/"
+               "google.ai.generativelanguage.v1beta.GenerativeService."
+               f"BidiGenerateContent?key={api_key}")
+        declarations = [
+            {"name": t["name"], "description": t.get("description", ""),
+             "parameters": _clean_schema(t.get("parameters")
+                                         or {"type": "object"})}
+            for t in HA_TOOLS]
+        start = time.monotonic()
+        async with websockets.connect(url, max_size=None) as ws:
+            # NOTE: this raw BidiGenerateContent JSON shape is the same one
+            # stacks/web/gemini-mic-test/server.mjs drives. The google-genai
+            # SDK path (aio.live.connect + send_realtime_input) connected but
+            # had its audio turns silently ignored on this host (2026-10-09).
+            await ws.send(json.dumps({"setup": {
+                "model": f"models/{model}",
+                "generationConfig": {"responseModalities": ["AUDIO"]},
+                "inputAudioTranscription": {},
+                "outputAudioTranscription": {},
+                "systemInstruction": {"parts": [{"text": INSTRUCTIONS}]},
+                "tools": [{"functionDeclarations": declarations}],
+            }}))
+            send_done = None
+            done_ev = asyncio.Event()
+
+            async def sender():
+                nonlocal send_done
+                for i in range(0, len(payload), chunk_bytes):
+                    await ws.send(json.dumps({"realtimeInput": {"audio": {
+                        "data": base64.b64encode(
+                            payload[i:i + chunk_bytes]).decode(),
+                        "mimeType": "audio/pcm;rate=16000"}}}))
+                    await asyncio.sleep(chunk_ms / 1000)
+                await ws.send(json.dumps(
+                    {"realtimeInput": {"audioStreamEnd": True}}))
+                send_done = time.monotonic()
+
+            async def receiver():
+                while not done_ev.is_set():
+                    try:
+                        raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
+                    except asyncio.TimeoutError:
+                        break
+                    try:
+                        m = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    sc = m.get("serverContent") or {}
+                    it = sc.get("inputTranscription") or {}
+                    if it.get("text"):
+                        out["events_seen"].append("input_transcription")
+                        transcripts.append(it["text"])
+                    ot = sc.get("outputTranscription") or {}
+                    if ot.get("text"):
+                        out["events_seen"].append("output_transcription")
+                        assistant_parts.append(ot["text"])
+                    for part in ((sc.get("modelTurn") or {}).get("parts") or []):
+                        if part.get("inlineData", {}).get("data"):
+                            if out["first_audio_ms"] is None and send_done:
+                                out["first_audio_ms"] = round(
+                                    (time.monotonic() - send_done) * 1000)
+                            out["events_seen"].append("audio")
+                    if sc.get("interrupted"):
+                        out["events_seen"].append("interrupted")
+                    if sc.get("turnComplete"):
+                        out["events_seen"].append("turn_complete")
+                        done_ev.set()
+                        return
+                    if "toolCall" in m:
+                        out["events_seen"].append("tool_call")
+                        responses = []
+                        for call in (m["toolCall"].get("functionCalls") or []):
+                            if out["tool_call"] is None:
+                                out["tool_call"] = {
+                                    "name": call.get("name"),
+                                    "args": call.get("args") or {}}
+                            responses.append({
+                                "id": call.get("id", ""),
+                                "name": call.get("name", ""),
+                                "response": {"ok": True,
+                                             "result": "done (bench stub)"}})
+                        if responses:
+                            try:
+                                await ws.send(json.dumps({"toolResponse": {
+                                    "functionResponses": responses}}))
+                            except Exception as e:
+                                out["tool_response_error"] = str(e)
+                    if m.get("error"):
+                        out["server_error"] = m["error"]
+                        done_ev.set()
+                        return
+
+            send_task = asyncio.create_task(sender())
+            recv_task = asyncio.create_task(receiver())
+            try:
+                await asyncio.wait_for(done_ev.wait(), timeout=timeout)
+            except asyncio.TimeoutError:
+                pass
+            try:
+                await asyncio.wait_for(recv_task, timeout=5)
+            except asyncio.TimeoutError:
+                recv_task.cancel()
+            send_task.cancel()
+            out["elapsed_ms"] = round((time.monotonic() - start) * 1000)
+            out["transcript"] = "".join(transcripts).strip() or None
+            out["assistant_text"] = "".join(assistant_parts).strip() or None
+            if out.get("server_error"):
+                out["error"] = json.dumps(out["server_error"])
+            return out
+
+    r = asyncio.run(run())
+    return {
+        "transcript": r.get("transcript"),
+        "tool_call": r.get("tool_call"),
+        "first_audio_ms": r.get("first_audio_ms"),
+        "assistant_text": r.get("assistant_text"),
+        "elapsed_ms": r.get("elapsed_ms"),
+        "error": r.get("error"),
+        "events_seen": sorted(set(r.get("events_seen") or [])),
+    }
+
+
+ADAPTERS = {"openai_realtime": openai_realtime, "gemini_live": gemini_live}
