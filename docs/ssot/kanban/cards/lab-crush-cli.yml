@@ -3,7 +3,7 @@ title: 'Lab: charmbracelet/crush — terminal agentic coding CLI as an alternate
 brief: 'Evaluate crush (Charm''s Go TUI coding agent: multi-provider incl. OpenRouter/OpenAI-compatible, LSP-enhanced,
   MCP client stdio/http/sse, per-project sessions) as an alternate agent lane next to devin-dispatch. Lab — no CI
   or production role until it proves itself on a real task.'
-column: lab
+column: done
 priority: medium
 created: 2026-10-09
 lab:
@@ -47,10 +47,13 @@ links:
 blocked_by: []
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
   task_id: 20261009-120247-standard-lab-procedure-assess-
+  result: 'exit=0 essment.yml` + `dispatch-outcome-...md`; board card has progress and outcome comments. | devin-task-20261009-120247-standard-lab-procedure-assess-.service:
+    Consumed 1min 34.005s CPU time over 17min 43.691s wall clock time, 1.2G memory peak.'
+  verified: false
 advice:
   from: devin
   at: 2026-10-09 12:20
@@ -126,7 +129,24 @@ comms:
   from: devin
   text: 'resolved stale request: dispatch found openrouter.env itself; provider question moot (free tier lane in
     use)'
-updated: 2026-10-09 12:30
+- at: 2026-10-09 12:21
+  from: tony-omen
+  text: 'finished (ok): exit=0 essment.yml` + `dispatch-outcome-...md`; board card has progress and outcome comments.
+    | devin-task-20261009-1202'
+- at: 2026-10-09 12:21
+  from: chaba
+  text: pushed dispatch/20261009-120247-standard-lab-procedure-assess- to origin
+- at: 2026-10-09 12:21
+  from: chaba
+  text: 'auto-merge held — expected_goals not met: goal crush-installed: unknown check kind ''test'' — expected
+    one of: http, command; goal job-trail: unknown check kind ''ls'' — expected one of: http, command, file-e'
+- at: 2026-10-09 12:27
+  from: devin
+  text: 'verified: dispatch/20261009-120247 merged to master (job doc + outcome md landed). Verdict adopt-as-alt-lane
+    — crush installed on tony-dell for interactive/manual use; NOT wired into dispatch (no kanban lifecycle/TASK_RAILS,
+    --yolo broken in v0.98.0). Side-finding filed: parallel agent ran same lab concurrently, clobbered /tmp/crush-lab
+    + ~/.config/crush/crush.json — prefer project-local .crush.json for multi-agent use.'
+updated: 2026-10-09 12:27
 requests:
 - id: no-openrouter-key-found-in-config-secret-2276b8
   ask: No OpenRouter key found in ~/.config/secrets on tony-dell or idc02. Which provider should I configure crush
@@ -144,3 +164,4 @@ requests:
     label: Use Anthropic
   suggested: gemini
   answer: self-resolved — openrouter.env landed 12:06; key has no credits, running nemotron-3-super :free instead
+claim: {}

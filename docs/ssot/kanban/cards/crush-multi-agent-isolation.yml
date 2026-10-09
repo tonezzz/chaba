@@ -1,0 +1,31 @@
+title: Crush multi-agent config isolation
+column: backlog
+priority: low
+kind: ops
+autonomy: t1
+created: '2026-10-09'
+updated: '2026-10-09 12:45'
+tags:
+- crush
+- parallel-sessions
+note: lab-crush-cli side-finding — a second agent running the same lab overwrote /tmp/crush-lab files AND the global ~/.config/crush/crush.json mid-run. Same class of incident as our worktree rules.
+requests:
+- id: isolation-doc
+  ask: Should the crush isolation recipe live in docs/kb/ (project-local .crush.json recipe) or the card note is enough?
+  status: open
+  options:
+  - id: kb-runbook
+    label: Write docs/kb/crush-multi-agent.md runbook
+  - id: card-note
+    label: Card note is enough
+  suggested: kb-runbook
+  from: devin
+  to: tony
+advice:
+  from: devin
+  at: '2026-10-09 12:45'
+  text: 'The fix pattern exists already: project-local .crush.json + per-agent scratch dir under /tmp/crush-lab-<agent>. A 20-line kb runbook makes it repeatable; recommend kb-runbook when someone next drives crush.'
+comms:
+- at: '2026-10-09 12:45'
+  from: devin
+  text: 'filed from lab-crush-cli outcome: shared ~/.config/crush/crush.json is a single-writer hazard; project-local config + isolated cwd is the pattern. Low urgency — only matters when two agents run crush concurrently.'
