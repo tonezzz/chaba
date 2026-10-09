@@ -3,10 +3,10 @@ title: Member PWA invite flow — shareable link → install as "ADA-{inst}({per
 brief: Tony wants to send an ada-ha link via LINE/TG; member opens on iPhone/iPad, saves as PWA titled "ADA-TONY(Tony)",
   key lands pending until Tony/Ada approves. Restructures the current key page (ada-keys-card) around this invite
   → redeem → approve lifecycle.
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-08
-updated: 2026-10-09 07:15
+updated: 2026-10-09 12:39
 spec: "Standard first, then build end-to-end: 1. Standard doc (docs/kb/ada-member-invite.md): invite token format,\
   \ PWA\n   manifest naming pattern \"ADA-{INSTANCE}({Person})\", pending/approved key\n   states, approval surface\
   \ (Ada voice + keys card), revocation.\n2. ada-pi-pwa (idc03, public — no CF Access so members never hit a login):\n\
@@ -27,7 +27,7 @@ autonomy: t2
 requests:
 - id: approver-default
   ask: Who approves invite requests by default — Tony only, or any admin key?
-  status: open
+  status: answered
   at: '2026-10-08'
   from: devin
   options:
@@ -37,9 +37,10 @@ requests:
     label: Any admin key holder
   suggested: tony-only
   escalated_at: 2026-10-09 07:15
+  answer: tony-only — Tony only — safest; admin approval can come later
 - id: invite-expiry
   ask: Should invite links expire (e.g. 24h) and be single-use?
-  status: open
+  status: answered
   from: devin
   at: '2026-10-08'
   options:
@@ -49,6 +50,7 @@ requests:
     label: Persistent link — simpler, less safe
   suggested: expire-single-use
   escalated_at: 2026-10-09 07:15
+  answer: expire-single-use — Yes — 24h TTL + single-use (recommended)
 comms_tail:
 - at: 2026-10-08
   from: devin
@@ -73,3 +75,30 @@ comms:
 - at: 2026-10-09 07:15
   from: chaba
   text: 'request-sweep: 2 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-09 12:35
+  from: tony
+  text: 'answered approver-default: tony-only — Tony only — safest; admin approval can come later'
+- at: 2026-10-09 12:35
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 12:35
+  from: tony
+  text: 'answered invite-expiry: expire-single-use — Yes — 24h TTL + single-use (recommended)'
+- at: 2026-10-09 12:35
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 12:39
+  from: devin
+  text: 'queued — Tony answered: approver=tony-only, links 24h+single-use. Spec covers invite/approval/revocation
+    flow.'
+- at: 2026-10-09 12:39
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 12:39
+  from: chaba
+  text: started devin-task-20261009-123934-standard-first-then-build-end- on tony-omen (dispatch)
+action:
+  type: dispatch
+  status: running
+  repo: ada-pi
+  runner: tony-omen
