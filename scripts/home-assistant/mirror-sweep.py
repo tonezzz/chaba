@@ -27,7 +27,7 @@ import asyncio
 import websockets
 
 DEV_URL = os.environ.get(
-    "DEV_URL", "https://tony-dell.taila0626a.ts.net:8124"
+    "DEV_URL", "https://idc03.taila0626a.ts.net:8124"
 )
 HA_URL = os.environ.get("HA_URL", "http://michael-ha:8123")
 DASH = os.environ.get("DASH", "tony-test")

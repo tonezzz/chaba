@@ -57,7 +57,7 @@ def open_requests():
         for r in card.get("requests") or []:
             if isinstance(r, dict) and r.get("status", "open") != "answered":
                 out.append(f"{os.path.basename(f)[:-4]}: "
-                           f"{(r.get('ask') or r.get('id') or '?')[:70]}")
+                           f"{(r.get('ask') or r.get('needed') or r.get('id') or '?')[:70]}")
     return out
 
 
