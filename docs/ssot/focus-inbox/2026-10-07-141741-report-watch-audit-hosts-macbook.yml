@@ -2,7 +2,8 @@ title: Focus Inbox Item
 subtitle: Report node audit-hosts/macbook is error
 focus:
   label: 'Report watch: audit-hosts/macbook = error'
-  text: 'Report node `audit-hosts/macbook` is `error` — the generator crashed on its last run.
+  text: 'Report node `audit-hosts/macbook` is `error` — the generator crashed on its
+    last run.
 
 
     Summary: unreachable — empty snapshot (ssh failed)
@@ -12,8 +13,9 @@ focus:
     Meta: reports/audit-hosts/meta.macbook.yml
 
 
-    Fix the producer or mark the node retired; the item clears once the node reports ok.'
-  status: draft
+    Fix the producer or mark the node retired; the item clears once the node reports
+    ok.'
+  status: processed
   priority: high
   tags:
   - report
@@ -22,3 +24,6 @@ focus:
   missing_info:
   - Is the failure a producer bug or real findings to triage?
   - Should the node be fixed, muted (expect_down), or retired?
+  processed_reason: kk-macbook offline — 'unreachable/ssh failed' is expected for
+    an offline laptop, not an error; audit-hosts should skip offline hosts (machinery
+    improvement noted)

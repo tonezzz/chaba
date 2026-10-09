@@ -68,6 +68,8 @@ def stale_inbox():
     out = []
     for f in glob.glob(os.path.join(INBOX, "*.yml")):
         base = os.path.basename(f)
+        if base == "TEMPLATE.yml":
+            continue
         m = re.match(r"(\d{4})-(\d{2})-(\d{2})", base)
         if not m or datetime.date(*map(int, m.groups())) >= cut:
             continue

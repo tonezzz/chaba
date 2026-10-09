@@ -121,6 +121,8 @@ def main():
     )
     ha_token = load_token(
         "~/.local/share/home-assistant-michael/ha-token", ["HA_TOKEN"]
+    ) or load_token(
+        "~/.config/secrets/ha-michael-live.env", ["HA_TOKEN", "HASS_TOKEN"]
     )
     if not dev_token:
         sys.exit("no dev token (set DEV_TOKEN or HASS_TOKEN)")
