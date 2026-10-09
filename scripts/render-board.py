@@ -318,7 +318,7 @@ def main():
     </div>
   </div>
 
-  <div class="max-w-6xl mx-auto p-4 md:flex md:gap-6 board-shell">
+  <div class="w-full px-4 md:flex md:gap-6 board-shell">
     <aside class="md:w-64 shrink-0 mb-6 md:mb-0 board-aside">
       <div class="flex items-center gap-2 mb-2">
         <h2 class="text-xs uppercase tracking-wide text-slate-500 i18n" data-en="Cards" data-th="การ์ด">Cards</h2>
