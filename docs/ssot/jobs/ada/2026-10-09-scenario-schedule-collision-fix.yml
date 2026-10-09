@@ -1,0 +1,85 @@
+id: scenario-schedule-collision-fix
+title: Fix weekly ada-scenario suites refused by :8199 lock contention (idc03)
+date: 2026-10-09
+card: fix-scenario-schedule-collision
+host: idc03
+status: deployed   # units live on idc03; repo stack updated (this worktree)
+
+root_cause: >
+  Weekly suites fired at 03:30 into a window the :8199 suite lock almost
+  never leaves free:
+    * hourly ada-scenario-smoke starts :00 and typically runs ~34 min
+      (cap 45m + kill), still holding :8199 at :30;
+    * ada-bench-casting (daily 02:00) chains into
+      ada-scenario-casting.service via OnSuccess — and casting currently
+      HANGS the full TimeoutStartSec=7200 every run (~18s CPU in 2h, no
+      output), so :8199 is held 02:00->04:00 daily.
+  Journal: memory/reports/tools all refused (exit 2) at 03:30 on
+  2026-10-07/08/09. scenario-benchmark.py refuses on a held lock by
+  design (concurrent suites corrupt the shared Ada session), so the fix
+  is scheduling + queueing, not removing the guard.
+
+fix: >
+  Option A (schedule) + a bounded queue, implemented without touching
+  ada-pi (edit point is tony-dell; pushes were out of scope):
+    * weekly suite timers moved 03:30 -> :55 of 05:00 — Mon-Fri 05:55,
+      casting Sat 05:55. Clear of smoke's worst case (:00 start + 45m
+      cap + kill ≈ :47) and of the daily casting chain (02:00 + 2h cap
+      = free by 04:00). A suite that binds before the next :00 makes
+      that hour's smoke self-skip — correct priority.
+    * new wrapper scenario-suite-run.sh (installed to
+      ~/.local/share/ada-scenario-runner/, self-contained like
+      log-shipper): waits <=30m per pass for :8199 to become bindable
+      (bind-probe — a connect-probe proved unreliable against the
+      backlog-1 listener and reported 'free' while held), runs the
+      suite, and re-queues on refused binds (exit 2 — simultaneous
+      starters race the bind), up to 8 passes bounded by the unit's
+      TimeoutStartSec. Real results pass through.
+    * Environment=PYTHONUNBUFFERED=1 on all weekly services so a hang
+      still leaves per-scenario '== name: status' lines in the journal
+      (casting previously produced zero output on SIGTERM).
+    * TimeoutStartSec: weekday suites 3600->5400 (wait doesn't eat the
+      run budget), casting 7200->9000.
+    * smoke.container MDDB_BASE_URL fixed 100.74.146.0 -> 100.102.134.91
+      (stale since the idc03 migration) and the cms-audit ExecStopPost
+      made failure-tolerant ('-' prefix).
+
+source_of_truth: >
+  The weekly/bench units existed ONLY on idc03
+  (~/.config/systemd/user/) — the repo stack carried just research,
+  casting and embed-bench. Now all 9 timers + 9 services + wrapper +
+  quadlets live in stacks/services/ada-scenario-runner/ with install.sh
+  covering them. ssot.audit.hosts.yml lists every timer under
+  expected_services and every suite under known_failed (scenario
+  failures are the test signal, reviewed via review-scenario-results).
+
+verify: >
+  Verified live 2026-10-09 ~16:55-17:50 +07:
+  * daemon-reload re-fired the three persistent timers whose 05:55 slots
+    had passed this week: tools won :8199 and ran to completion
+    (9 scenarios, exit 1 = real test signal — tool_selection_accuracy
+    fail; NOT a refusal).
+  * reports queued via the wrapper while tools ran, then ran to
+    completion — score 0.5 (2 pass / 3 flaky / 2 fail).
+  * memory exhausted the first-gen wrapper's 4 blind retries and
+    exited 2; restarted under the final wrapper it waited correctly
+    ('waiting N/30 (pass 1)') and bound :8199 the moment reports freed
+    it — the queue working end to end.
+  * 17:00 smoke saw the held lock, skipped the tier cleanly, and its new
+    cms-audit ExecStopPost published ada-cms-pages/cms-audit-report.
+  * Next real slots: Sat 05:55 casting (expected to hang — card
+    ada-scenario-casting-hang), Mon 05:55 research, Tue 05:55 cms.
+
+findings: >
+  * ada-scenario-casting 'runs' (timer + daily OnSuccess both fire) but
+    never completes — always killed at TimeoutStartSec. Carded as
+    ada-scenario-casting-hang (blocks ~2h of :8199 nightly).
+  * mn01 has no direct ssh to idc03 — route is mn01 -> idc01
+    (~/.ssh/id_idc03 lives there) -> tony@idc03.
+
+files:
+  - stacks/services/ada-scenario-runner/ (all units + scenario-suite-run.sh
+    + install.sh + README schedule/lock section)
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml (idc03 timers +
+    known_failed)
+  - docs/ssot/kanban/cards/ada-scenario-casting-hang.yml (follow-up)

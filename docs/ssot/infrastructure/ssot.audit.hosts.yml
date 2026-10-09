@@ -1590,6 +1590,66 @@ hosts:
         expected_state: active
         critical: false
         note: Hourly smoke tier of the live-scenario suite
+      - name: ada-scenario-research.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Weekly Mon 05:55. Units from stacks/services/ada-scenario-runner/;
+          weeklies queue on the :8199 suite lock via scenario-suite-run.sh
+          (<=30m waits + refused-bind re-queue) — schedule collision fix
+          2026-10-09, card fix-scenario-schedule-collision."
+      - name: ada-scenario-cms.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Tue 05:55 — see ada-scenario-research.timer note
+      - name: ada-scenario-memory.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Wed 05:55 — see ada-scenario-research.timer note
+      - name: ada-scenario-reports.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Thu 05:55 — see ada-scenario-research.timer note
+      - name: ada-scenario-tools.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Fri 05:55 — see ada-scenario-research.timer note
+      - name: ada-scenario-casting.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Weekly Sat 05:55 — also runs daily via ada-bench-casting
+          OnSuccess. KNOWN ISSUE (2026-10-09): every observed run hits the
+          full TimeoutStartSec producing no results — hangs on first
+          scenario; follow-up card ada-scenario-casting-hang."
+      - name: ada-bench-casting.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Daily 02:00 preflight gate -> OnSuccess ada-scenario-casting.service
+      - name: ada-embed-bench.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Sat 06:00 — embed benchmark (no :8199 lock)
+      - name: jev-bench.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly :47 — Jev decision bench, no scenario lock
       - name: mddb-embed-probe.timer
         type: timer
         scope: user
@@ -1638,10 +1698,25 @@ hosts:
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — exit code is the review signal, not a crash"
         action: review-sync-conflicts
       - name: ada-scenario-smoke.service
-        reason: "Live-scenario smoke suite — failures are the test signal (also exits 2 when a weekly suite holds the Ada session lock)"
+        reason: "Live-scenario smoke suite — failures are the test signal (skips cleanly when a weekly suite holds the :8199 session lock)"
         action: review-scenario-results
       - name: ada-scenario-memory.service
-        reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock (timer collision guard); scenario failures are the test signal"
+        reason: "Weekly scenario suite — scenario failures are the test signal (exit 1); since 2026-10-09 the suite queues on :8199 via scenario-suite-run.sh instead of refusing"
+        action: review-scenario-results
+      - name: ada-scenario-cms.service
+        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        action: review-scenario-results
+      - name: ada-scenario-reports.service
+        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        action: review-scenario-results
+      - name: ada-scenario-tools.service
+        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        action: review-scenario-results
+      - name: ada-scenario-research.service
+        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        action: review-scenario-results
+      - name: ada-scenario-casting.service
+        reason: "Casting suite — runs daily via ada-bench-casting OnSuccess + Sat timer; currently hangs to TimeoutStartSec (ada-scenario-casting-hang card); queues on :8199"
         action: review-scenario-results
       - name: mddb-memory-standard.service
         reason: "Exits 1 by design when the memory-standard sweep finds breaches — sends an ops event + HA notification; the exit code IS the alert"

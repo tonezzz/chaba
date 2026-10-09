@@ -1,0 +1,10 @@
+[Unit]
+Description=Gated casting suite rerun (preflight-bench first)
+# Preflight is the gate; when it exits 0 the real suite unit starts.
+# The suite self-locks on :8199 and queues up to 30 min via its
+# ExecStartPre, so a colliding smoke run delays rather than drops it.
+OnSuccess=ada-scenario-casting.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/CascadeProjects/ada-pi/scripts/preflight-bench.sh

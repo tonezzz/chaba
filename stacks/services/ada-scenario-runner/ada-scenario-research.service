@@ -8,5 +8,8 @@ WorkingDirectory=%h/CascadeProjects/ada-pi
 EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
-ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python scripts/scenario-benchmark.py --suite research
-TimeoutStartSec=3600
+Environment=PYTHONUNBUFFERED=1
+# Wrapper queues behind the :8199 suite lock (<=30m wait + refused-bind
+# retries) instead of dropping the run — see scenario-suite-run.sh.
+ExecStart=%h/.local/share/ada-scenario-runner/scenario-suite-run.sh research
+TimeoutStartSec=5400

@@ -1,0 +1,52 @@
+id: ada-scenario-casting-hang
+title: ada-scenario-casting hangs to TimeoutStartSec every run — zero results
+brief: "2026-10-09 (found while fixing fix-scenario-schedule-collision):
+  ada-scenario-casting.service runs daily at 02:00 via ada-bench-casting
+  OnSuccess + Sat weekly timer, but every observed run (>=30d journal)
+  burns the full timeout (2h, ~18s CPU) with zero scenario output —
+  e.g. 2026-10-08 20:47->22:47 and 2026-10-09 02:00->04:00 both 'start
+  operation timed out'. It holds the :8199 suite lock the whole time,
+  which is what refused every 03:30 weekly suite. PYTHONUNBUFFERED=1
+  added 2026-10-09, so the next hang should show which scenario stalls.
+  Likely suspect: scenario-benchmark.py subprocess timeout is 30min per
+  scenario and casting has 19 scenarios — a ws-wait hang per scenario
+  (e.g. vcast screen/service absent) exhausts the unit cap silently.
+  Note 'last run' evidence: preflight-bench passes all gates (ada up,
+  :8002 listening, embed-probe up, no lock) so the hang is inside the
+  run, not startup."
+column: backlog
+review_kind: verify
+priority: high
+kind: bug
+created: '2026-10-09'
+tags:
+- idc03
+- ada
+- scenario
+- bench
+- hang
+spec: |
+  Reproduce / diagnose:
+    ssh idc03 'journalctl --user -u ada-scenario-casting.service --since today --no-pager'
+    # next daily run fires ~02:00 via ada-bench-casting OnSuccess; with
+    # PYTHONUNBUFFERED=1 the per-scenario '== name: status' lines should
+    # show where it stalls. Manual repro while smoke is idle:
+    systemctl --user start ada-scenario-casting.service
+  Hypotheses:
+    - a casting scenario blocks on a vcast screen / GEV event that never
+      arrives (screens offline at 02:00?) — check which scenario is
+      running when it stalls (journal) and its yaml in ada-pi
+      tests/scenarios-live/.
+    - scenario-live.py ws recv wait with no scenario-level deadline —
+      check asyncio.wait_for coverage around tool-call waits.
+  Also consider: give casting its own lower-impact slot or make the
+  daily rerun opt-in — a suite that fails/hung daily costs the :8199
+  lock for 2h each night (02:00-04:00), starving the 02:00/03:00 smoke
+  runs (they self-skip — data gap in the hourly benchmark).
+  DONE WHEN: a casting run completes and writes a benchmark/casting doc
+  to ada-ha-scenario-reports, or the stall root cause is identified and
+  fixed/acked.
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi

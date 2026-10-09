@@ -1,7 +1,6 @@
 [Unit]
-Description=Ada live-scenario benchmark — casting suite (weekly + daily via ada-bench-casting OnSuccess)
+Description=Ada live-scenario benchmark — memory suite (weekly Wed)
 After=network-online.target mddb.service ada-ha-tony.service
-
 [Service]
 Type=oneshot
 WorkingDirectory=%h/CascadeProjects/ada-pi
@@ -11,5 +10,5 @@ Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
 Environment=PYTHONUNBUFFERED=1
 # Wrapper queues behind the :8199 suite lock (<=30m wait + refused-bind
 # retries) instead of dropping the run — see scenario-suite-run.sh.
-ExecStart=%h/.local/share/ada-scenario-runner/scenario-suite-run.sh casting
-TimeoutStartSec=9000
+ExecStart=%h/.local/share/ada-scenario-runner/scenario-suite-run.sh memory
+TimeoutStartSec=5400
