@@ -98,6 +98,37 @@ instances:
     note: 'created 2026-10-06 by a parallel session — see card
       tony-ha-split-ada-dev'
 
+  kk-ha:
+    id: kk-ha
+    base: kk
+    host: tony_dell
+    runtime: rootless podman
+    network: podman (NOT host — member isolation)
+    container: kk-ha
+    image: docker.io/homeassistant/home-assistant:stable
+    port: 8126
+    host_port: 127.0.0.1:8126
+    config: /home/tony/.config/kk-ha
+    stack: stacks/tony-dell/kk-ha/   # quadlet + minimal configuration.yaml + scripts.yaml
+    url:
+      local: http://127.0.0.1:8126
+      tailscale: https://tony-dell.taila0626a.ts.net:8126
+      public: https://kk-ha.surf-thailand.com   # idc02 edge + CF Access (kk-ha app)
+    note: >-
+      KK member node (created 2026-10-09) — minimal HA: Kaewta voice + memory
+      only, no hardware integrations. Ada backend ada-kk on idc03 :8007
+      (instance kk, own admin key + ada-ha-kk-keys.json store, mounted at
+      tailnet /apps/ha/ada-kk). Owner: kk (onboarded via UI — first user).
+      Member-node pattern: person.kk identity is shared across nodes; role is
+      per-node (owner here, member elsewhere). Voice card dials same-origin
+      /ada-ws/kk on the public edge first, tailnet fallback.
+      GOTCHA: HA 2026.8 migrates http: to .storage/http on first boot with
+      yaml_migration_done — later YAML edits to http: are ignored; patch
+      .storage/http stable block instead (trusted_proxies must include the
+      podman bridge subnet — ssot.values.yml::paths.podman_bridge_subnet —
+      because tailscale serve enters the podman bridge via the gw IP).
+    status: active
+
   michael-ha:
     id: michael-ha
     base: michael

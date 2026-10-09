@@ -39,6 +39,7 @@ edges:
       /apps/ha/ada-tony: http://127.0.0.1:8002    # ada-ha-tony backend
       /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
+      /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
@@ -48,6 +49,9 @@ edges:
   #   /ada-ws/michael/* -> rewrite /apps/ha/ada-michael{uri} -> https://idc03.taila0626a.ts.net
   #   /ada-ws/dev/*     -> rewrite /apps/ha/ada-dev{uri}     -> https://idc03.taila0626a.ts.net
   # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
+  # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
+  #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
+  # then proxy -> https://tony-dell.taila0626a.ts.net:8126 (member node kk-ha)
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
@@ -55,6 +59,7 @@ services:
   ada-ha-tony:    {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony"}
   ada-ha-michael: {host: idc03, listen: "127.0.0.1:8003", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"}
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
+  ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
   tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
   michael-dev:    {host: tony-dell, listen: "127.0.0.1:8124", tailnet: "https://tony-dell.taila0626a.ts.net:8124"}
