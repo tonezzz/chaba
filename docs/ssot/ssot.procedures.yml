@@ -31,6 +31,7 @@ procedures:
   - {id: placement,     where: "infrastructure/ssot.host-capacity.yml#procedure",              trigger: "any deploy/service placement decision", status: verified, last_run: 2026-10-09}
   - {id: ha-node-migrate, where: "card member-nodes-to-vps-ha (ops notes)",                    trigger: "moving an HA container between hosts",  status: verified, last_run: 2026-10-09}
   - {id: edge-add-host, where: "docs/kb/edge-add-public-host.md",                              trigger: "new public *.surf-thailand.com hostname", status: verified, last_run: 2026-10-09}
+  - {id: ssh-mesh,    where: "scripts/ops/ssh-mesh-sync.sh + ssh-mesh-sync.timer (omen)",   trigger: "new host joins mesh or ssh edge breaks (hostkey/pubkey)", status: verified, last_run: 2026-10-09}
   - {id: host-restart,  where: "docs/kb/host-reboot-verification.md + operations.yml#transition.post_restart", trigger: "host reboot/crash — classify app-vs-host via uptime first", status: verified, last_run: 2026-10-09}
   - {id: serve-restore, where: "card member-nodes-to-vps-ha comms (serve reset wipes all)",    trigger: "editing tailscale serve on a host",     status: verified, last_run: 2026-10-09}
   - {id: deploy-ada,    where: "~/.local/bin/deploy-ada.sh + ada-pi AGENTS.md",                trigger: "deploying ada-pi to idc02/idc03",       status: verified}

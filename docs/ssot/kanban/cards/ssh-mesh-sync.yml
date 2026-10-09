@@ -1,0 +1,28 @@
+id: ssh-mesh-sync
+title: 'SSH mesh sync — self-healing hostkey/pubkey distribution (standard)'
+column: done
+priority: medium
+note: >-
+  2026-10-09: real ssh failures across the mesh had two mechanical causes —
+  (a) "Host key verification failed" under BatchMode when a host had never
+  ssh-keyscan'd a peer, (b) Permission denied (publickey) from keys that
+  were never authorized. Standard is now scripts/ops/ssh-mesh-sync.sh:
+  mesh membership = hosts: in ssot.host-capacity.yml (underscore->dash);
+  for every reachable host it guarantees a default keypair, installs all
+  peer pubkeys in authorized_keys, and ssh-keyscans all peers into
+  known_hosts. Runs weekly via ssh-mesh-sync.timer on tony-omen
+  (user unit) + on-demand. Excluded by design: michael-ha (HAOS addon
+  keys don't persist) and macbook (off tailnet).
+action:
+  type: devin
+  status: done
+  runner: devin
+updated: 2026-10-09 18:45
+comms:
+- at: 2026-10-09 18:45
+  from: devin
+  text: >-
+    v1 verified: 6 hosts synced, 30 key-checks, 0 unreachable. New host
+    joining the mesh = add to ssot.host-capacity.yml hosts: — next weekly
+    run (or `bash scripts/ops/ssh-mesh-sync.sh`) wires it everywhere.
+requests: []
