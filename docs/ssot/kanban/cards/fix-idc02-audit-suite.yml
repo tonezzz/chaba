@@ -1,0 +1,40 @@
+id: fix-idc02-audit-suite
+title: idc02 chaba-audit suite — 3 error findings (docker, caddy fmt, dup name)
+brief: "2026-10-09 audit — chaba-audit.service / chaba-audit-full.service on
+  idc02 exit nonzero on findings (by design). Last report (Oct 04,
+  reports/audits/summary.json) shows 3 error-severity findings worth
+  fixing — security-audit calls docker (absent on idc02, podman host),
+  caddy format check fails, and standardization flags duplicate audit
+  name cms-pages."
+column: backlog
+review_kind: verify
+priority: medium
+kind: bugfix
+created: '2026-10-09'
+tags:
+- idc02
+- audit-followup
+- audits
+spec: |
+  From reports/audits/summary.json on idc02 (run Oct 04, still open):
+
+  1. security-audit — scripts/security-audit.sh line ~263 calls `docker`
+     which doesn't exist on idc02. Use podman fallback (podman-remote or
+     detect runtime), or skip docker-only checks when absent.
+  2. caddy — "Caddy format failed" — find which Caddyfile fails `caddy
+     fmt` (probably stacks/web/Caddyfile post-gesture-merge — I edited it
+     today for /apps/gesture-live routes; run caddy fmt --check on it).
+  3. standardization — "duplicate audit name: cms-pages" — two audits
+     registered under the same name in ssot.audit.yml; dedupe.
+  4. The cms-pages audit itself hits the dead mddb IP — that's covered by
+     card sweep-stale-mddb-endpoint; just note the dependency.
+
+  These are the audit suite's OWN findings — fixing them is what the
+  suite is for. Remove known_failed entries for chaba-audit.service /
+  chaba-audit-full.service in ssot.audit.hosts.yml once the suite runs
+  clean (or confirms findings genuinely resolved).
+  VERIFY: manual chaba-audit.service run on idc02 exits 0 or only warns.
+action:
+  type: dispatch
+  status: queued
+  repo: chaba

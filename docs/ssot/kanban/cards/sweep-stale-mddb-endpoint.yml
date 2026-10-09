@@ -1,0 +1,46 @@
+id: sweep-stale-mddb-endpoint
+title: Sweep stale mddb endpoint 100.74.146.0 (dead since idc01 retirement)
+brief: 2026-10-09 host audit exposed fleet-wide references to mddb
+  http://100.74.146.0:11023 — idc01's old address, dead since the Oct-05
+  migration to idc03 (100.102.134.91:11023, verified serving). Live defaults
+  in bridge.py and doc_archive.py still point at it; ssot.services.yml and
+  ssot.values.yml record it as current. doc-mirror.service timing out at
+  10min on idc03 is very likely this — doc_archive.py retries a dead
+  endpoint until TimeoutStartSec kills it. mn01-canary had the same stale
+  URL (fixed 2026-10-09 — canary now green).
+column: backlog
+review_kind: verify
+priority: high
+kind: bugfix
+created: '2026-10-09'
+tags:
+- mddb
+- idc01-retirement
+- audit-followup
+spec: |
+  Replace all LIVE references to 100.74.146.0 with the idc03 leader
+  (100.102.134.91) — or better, route through the canonical env vars /
+  ssot.values.yml lookup so this never recurs.
+
+  LIVE FILES (verify each consumer actually works after the change):
+  - stacks/tony-dell/gev-gemini/bridge.py:110 — GEV_MDDB_URL default
+  - stacks/idc01/doc-archive/doc_archive.py:43 — MDDB_BASE default
+    (doc-mirror.service on idc03 times out at 10min — probably this)
+  - docs/ssot/infrastructure/ssot.services.yml:160 — host_port record
+  - docs/ssot/infrastructure/ssot.values.yml:43 — tailscale_ip record
+    (check which generators consume this before editing)
+  - Any env/unit on idc03 setting MDDB_BASE for doc-mirror — check the
+    quadlet/env file on-host, the mirror hangs today.
+  - Also grep ~/CascadeProjects/chaba on EACH host for the IP — remote
+    checkouts may have stale generated units rendered from these defs.
+
+  DO NOT touch: dated reports/jobs/cards (historical), the input-bridge
+  comment, ssot.idc01.yml (retired-host record).
+
+  VERIFY: curl -m5 -X POST http://100.102.134.91:11023/v1/search returns
+  200; doc-mirror.service completes inside TimeoutStartSec; gev-gemini
+  bridge health still green.
+action:
+  type: dispatch
+  status: queued
+  repo: chaba

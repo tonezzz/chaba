@@ -1,0 +1,35 @@
+id: fix-jev-bench-target
+title: jev-bench on idc02 targets retired idc01 — retarget or retire
+brief: 2026-10-09 audit — jev-bench.service on idc02 fails hourly with
+  Connection refused; its unit says "runs on idc02, targets idc01". idc01
+  is retired (2026-10-05) so the bench can never connect. Either repoint
+  it at a live jev endpoint (omen open-jev :8777? idc02's own instance?) or
+  retire the unit — decide which after checking what the bench proves.
+column: backlog
+review_kind: verify
+priority: medium
+kind: bugfix
+created: '2026-10-09'
+tags:
+- idc01-retirement
+- audit-followup
+- bench
+spec: |
+  jev-bench.service on idc02: "Jev decision bench — hourly noul/choice
+  accuracy vs jev-student (runs on idc02, targets idc01)". idc01 retired.
+
+  1. Find the bench script + its target env/config (on idc02
+     ~/CascadeProjects/chaba, likely scripts/jev* or rendered from
+     ssot.jobs.yml — unit says rendered, fix the SOURCE not the unit).
+  2. Decide target: what serves the noul/choice API now? Check
+     ssot.services.yml + whether idc02's local open-jev (:8777) or
+     omen's open-jev is the intended endpoint.
+  3. Repoint or retire — if no live consumer reads the bench's accuracy
+     reports, retire the timer instead of maintaining a dead comparison.
+  4. Remove the known_failed entry added to ssot.audit.hosts.yml
+     (idc02 known_failed: jev-bench.service) when the unit is healthy.
+  VERIFY: one manual jev-bench.service run exits 0 (or unit removed).
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
