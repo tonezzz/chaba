@@ -187,6 +187,32 @@ CUSTOM_BLOCKS = {
 		}
 	}
 """,
+    "gesture-live": """
+	handle /apps/gesture-live {
+		redir /apps/gesture-live/ 308
+	}
+	handle_path /apps/gesture-live/* {
+		@ws path /ws
+		handle @ws {
+			reverse_proxy 100.68.142.13:8794
+		}
+		# /health (and any future plain-HTTP path) lives on the same
+		# relay port — unlike gev-live there is no static side here.
+		handle {
+			reverse_proxy 100.68.142.13:8794
+		}
+	}
+""",
+    "gesture": """
+	handle /apps/gesture {
+		redir * /apps/gesture/ 308
+	}
+	handle_path /apps/gesture/* {
+		root * /srv/public/apps/gesture
+		rewrite /screen /screen.html
+		file_server
+	}
+""",
     "trade-api": """
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade

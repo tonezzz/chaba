@@ -1,0 +1,108 @@
+title: gesture-control rebuild — iPhone camera -> WS relay -> TV screen
+date: '2026-10-09'
+domain: gesture
+status: implemented-pending-deploy
+trigger: kanban card gesture-control-rebuild
+
+deliverables:
+  relay:
+    files:
+      - stacks/tony-dell/gesture-relay/relay.py
+      - stacks/tony-dell/gesture-relay/Containerfile
+      - stacks/tony-dell/gesture-relay/requirements.txt
+      - stacks/tony-dell/gesture-relay/gesture-relay.container
+      - stacks/tony-dell/gesture-relay/install.sh
+      - stacks/tony-dell/gesture-relay/live-check.py
+      - stacks/tony-dell/gesture-relay/README.md
+    what: >
+      asyncio websockets fan-out on port 8794. /ws?role=controller emits,
+      /ws?role=screen receives (default role screen); everything a
+      controller sends is forwarded verbatim to all screens. Both sides get
+      {type:"peer",controllers,screens} presence events. GET /health on the
+      same port via the websockets process_request hook. Quadlet publishes
+      on the host tailscale IP only (install.sh renders PublishPort from
+      `tailscale ip -4`, mirrors xmeye-vms pattern); never LAN/0.0.0.0 —
+      relay is unauthenticated, Caddy+tailnet is the boundary.
+      websockets pinned 16.1.1.
+  pages:
+    files:
+      - stacks/web/public/apps/gesture/index.html   # controller (iPhone)
+      - stacks/web/public/apps/gesture/screen.html  # screen (TV/display)
+    what: >
+      Controller: getUserMedia facingMode:environment (fallback default),
+      MediaPipe HandLandmarker from VENDORED /apps/vendor/mediapipe/
+      (vision_bundle.mjs + vision_wasm_* + hand_landmarker.task 7.8MB
+      vendored this change — no CDN). numHands 1, VIDEO mode, GPU delegate.
+      Emits {type:"gesture",x,y,wx,wy} at ~20Hz (index tip + wrist, X
+      mirror-flipped, RAW normalized — sensitivity/lerp live screen-side),
+      action edges: pinch (dist(lm4,lm8)<0.05 rising edge), fist_start/
+      fist_end (4 finger tips closer to wrist than MCPs, thumb not counted).
+      Live preview + cyan HAND_CONNECTIONS skeleton + status line + manual
+      "Send test pinch".
+      Screen: fullscreen dark surface, 8 demo counter tiles, 2 fist-draggable
+      .gwin windows, CAST TO TV window (tvs list from /apps/yolo/api/tvs,
+      cast via /apps/yolo/api/cast?target=media_player.X — mn01 yolo service
+      casts its own annotated frame via HA play_media). Cursor = ada_v2 cyan
+      ring (24px, z-top, pointer-events-none). Screen-side pipeline per
+      docs/kb/gesture-ui-options.md: SENSITIVITY 2.0 (center-50% camera ->
+      full screen), LERP 0.2, snap 50px / release 100px hysteresis with cyan
+      glow, pinch=elementFromPoint().closest('button,a,[role=button]').click(),
+      fist=wrist-delta drag with 0.5px deadzone + viewport clamp.
+  edge:
+    files:
+      - docs/ssot/infrastructure/ssot.routes.yml   # gesture + gesture-live routes, gesture-relay service
+      - scripts/render-routes.py                   # CUSTOM_BLOCKS entries
+      - stacks/web/Caddyfile                       # synced = generated + yt-cache hunk
+      - stacks/web/Caddyfile.generated             # regenerated
+      - stacks/web/public/apps/routes.json         # regenerated (51 routes)
+    what: >
+      /apps/gesture-live/* -> reverse_proxy 100.68.142.13:8794 (ws /ws via
+      @ws matcher; everything else incl. /health proxied too — no static
+      side, unlike gev-live). /apps/gesture/* -> static with
+      `rewrite /screen /screen.html` so the spec URL /apps/gesture/screen
+      serves directly. `caddy validate` PASS.
+  dashboard:
+    what: >
+      chaba-home (tony-ha, storage-mode sidebar dash) gained a "Gesture"
+      panel tab at position 2 (right after Chat) — markdown explainer +
+      weblink cards to /apps/gesture/ and /apps/gesture/screen. Pushed live
+      via push-dashboard.py ws mutate (HA_LONG_LIVED_TOKEN); repo snapshot
+      docs/home-assistant/dashboards/chaba-home-current.json synced;
+      dashboards SSOT note added.
+
+verified:
+  - "relay: GET /health -> 200 {ok,controllers,screens}; controller->screen
+    fan-out + peer presence verified (local bind on tailnet IP)"
+  - "live-check.py PASS (health + fan-out + peer events)"
+  - "playlive headless: screen page renders, ws connects, controller-sim
+    ws client -> pinch incremented tile-1 counter, fist_start+wrist deltas
+    dragged WINDOW A to edge clamp, fist_end released (grabbing=false)"
+  - "controller page loads; vendored vision_bundle.mjs module import works
+    (status reaches 'idle — tap Start camera'); camera path untestable
+    headless — needs the iPhone"
+  - "caddy validate on synced Caddyfile: valid; routes render: 51 routes,
+    same 18 pre-existing shadow warnings"
+  - "chaba-home live: views now ai/chat/gesture/report/nobito"
+
+post_merge_steps:
+  - "merge dispatch branch -> master on chaba-tony-dell checkout"
+  - "tony-dell: podman build -t localhost/gesture-relay:latest
+    stacks/tony-dell/gesture-relay && bash
+    stacks/tony-dell/gesture-relay/install.sh"
+  - "tony-dell: docker compose -f stacks/web/docker-compose.yml restart web
+    (or caddy reload) — picks up the new Caddyfile + public/apps/gesture"
+  - "verify goals: /apps/gesture/ 200, /apps/gesture/screen 200,
+    /apps/gesture-live/health 200, ws handshake on /apps/gesture-live/ws"
+  - "E2E on real hw: open screen on TV browser, controller on iPhone Safari
+    (tailnet HTTPS); iOS PWA camera caveat — use plain Safari tab if camera
+    denied in installed PWA"
+
+notes:
+  - "iOS PWA caveat: getUserMedia in an installed-PWA (apple-mobile-web-app)
+    context is unreliable — the controller page works in a normal Safari
+    tab; noted on-page."
+  - "cast action goes through the mn01 yolo service — it casts the yolo
+    annotated /image frame via HA play_media; swapping in a real page-URL
+    cast would need a yolo /cast extension or HA token on the client."
+  - "relay is unauthenticated — PublishPort tailnet-IP-only + tailnet edge
+    is the boundary; do not expose via LAN or public edge."

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#05070a">
+<title>Gesture Controller — Chaba</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #05070a; color: #e5e7eb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    overscroll-behavior: none;
+  }
+  body { display: flex; flex-direction: column; min-height: 100dvh; }
+  header {
+    padding: 10px 14px; display: flex; align-items: baseline; gap: 10px;
+    border-bottom: 1px solid #164e63;
+  }
+  header h1 { font-size: 15px; margin: 0; color: #22d3ee; font-weight: 600; }
+  header .sub { font-size: 11px; color: #64748b; }
+  #status {
+    padding: 8px 14px; font-size: 14px; font-weight: 600;
+    border-bottom: 1px solid #1e293b;
+  }
+  #status.ok { color: #4ade80; }
+  #status.warn { color: #fbbf24; }
+  #status.err { color: #f87171; }
+  #stage { position: relative; flex: 1; min-height: 0; }
+  #cam {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; opacity: 0.55;
+  }
+  #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #hud {
+    position: absolute; left: 10px; bottom: 10px; right: 10px;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    font-size: 12px; color: #94a3b8;
+    pointer-events: none;
+  }
+  .pill {
+    background: rgba(8, 47, 73, .85); border: 1px solid #155e75;
+    border-radius: 6px; padding: 4px 10px;
+  }
+  #controls {
+    display: flex; gap: 10px; padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #1e293b; flex-wrap: wrap;
+  }
+  button {
+    background: #0e7490; color: #fff; border: 1px solid #22d3ee;
+    border-radius: 8px; padding: 12px 16px; font: inherit; font-size: 14px;
+    font-weight: 600; cursor: pointer; touch-action: manipulation;
+  }
+  button:active { background: #155e75; }
+  button.toggle { background: #164e63; }
+  button.toggle.on { background: #b45309; border-color: #fbbf24; }
+  #note {
+    padding: 0 14px 10px; font-size: 11px; color: #475569; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>GESTURE CONTROLLER</h1>
+  <span class="sub">ada_v2 rebuild · iPhone camera → TV screen</span>
+</header>
+<div id="status" class="warn">starting…</div>
+<div id="stage">
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+  <div id="hud">
+    <span class="pill" id="hud-fps">fps –</span>
+    <span class="pill" id="hud-hand">hand –</span>
+    <span class="pill" id="hud-pose">pose –</span>
+    <span class="pill" id="hud-tx">tx 0</span>
+  </div>
+</div>
+<div id="controls">
+  <button id="btn-start">Start camera</button>
+  <button id="btn-pinch">Send test pinch</button>
+  <button id="btn-flip" class="toggle on">Mirror X: on</button>
+  <button id="btn-screen" class="toggle">Screen ↗</button>
+</div>
+<div id="note">
+  Rear camera is preferred. Point the index fingertip to move the cursor on the
+  screen page; pinch (thumb+index) clicks; a closed fist grabs and drags
+  windows. iOS: camera needs HTTPS (ok here) and — in installed-PWA mode —
+  camera permission may not persist; use plain Safari tab if denied.
+</div>
+
+<script type="module">
+import { FilesetResolver, HandLandmarker } from '/apps/vendor/mediapipe/vision_bundle.mjs';
+
+const WASM_DIR  = '/apps/vendor/mediapipe/';
+const MODEL_URL = '/apps/vendor/mediapipe/hand_landmarker.task';
+// ada_v2 constants (docs/kb/gesture-ui-options.md) — phone sends RAW
+// normalized coords; SENSITIVITY/LERP are applied screen-side.
+const PINCH_DIST   = 0.05;   // dist(lm4,lm8) normalized
+const EMIT_MIN_MS  = 50;     // ~20 Hz cursor cap
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17],
+];
+
+const $ = id => document.getElementById(id);
+const video = $('cam'), canvas = $('overlay'), ctx = canvas.getContext('2d');
+const statusEl = $('status'), hudFps = $('hud-fps'), hudHand = $('hud-hand'),
+      hudPose = $('hud-pose'), hudTx = $('hud-tx');
+
+let landmarker = null, stream = null;
+let flipX = true;                    // mirror so the pointer matches the hand
+let lastVideoTime = -1, lastEmit = 0, txCount = 0;
+let isPinching = false, isFist = false, lastLm = null;
+let frames = 0, fpsT = performance.now();
+
+function status(text, cls) { statusEl.textContent = text; statusEl.className = cls; }
+
+/* ---------------- ws ---------------- */
+const wsUrl = new URLSearchParams(location.search).get('ws')
+  || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/apps/gesture-live/ws?role=controller`;
+let ws = null, wsOpen = false, wsRetry = 0;
+function connectWs() {
+  try { ws = new WebSocket(wsUrl); } catch (e) { status('ws url bad: ' + e, 'err'); return; }
+  ws.onopen = () => { wsOpen = true; wsRetry = 0; renderStatus(); };
+  ws.onclose = ws.onerror = () => {
+    wsOpen = false; renderStatus();
+    setTimeout(connectWs, Math.min(8000, 500 * 2 ** wsRetry++));
+  };
+}
+function send(obj) {
+  if (wsOpen && ws.readyState === 1) { ws.send(JSON.stringify(obj)); txCount++; hudTx.textContent = 'tx ' + txCount; }
+}
+
+/* ---------------- mediapipe ---------------- */
+async function initLandmarker() {
+  const vision = await FilesetResolver.forVisionTasks(WASM_DIR);
+  landmarker = await HandLandmarker.createFromOptions(vision, {
+    baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+    runningMode: 'VIDEO',
+    numHands: 1,
+  });
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    status('getUserMedia unavailable — needs HTTPS (or PWA camera denied)', 'err');
+    return;
+  }
+  let constraints = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
+  try {
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+  } catch (e) {
+    console.warn('environment camera failed, retrying default:', e);
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+  }
+  video.srcObject = stream;
+  await video.play();
+  if (!landmarker) {
+    status('loading hand model…', 'warn');
+    await initLandmarker();
+  }
+  status('tracking', 'ok');
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- gestures ---------------- */
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
+const folded = (lm, tip, mcp) => dist(lm[tip], lm[0]) < dist(lm[mcp], lm[0]);
+const fistOf = lm => folded(lm, 8, 5) && folded(lm, 12, 9) && folded(lm, 16, 13) && folded(lm, 20, 17); // thumb not counted
+
+function drawSkeleton(lm) {
+  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (const [a, b] of HAND_CONNECTIONS) {
+    ctx.moveTo(lm[a].x * canvas.width, lm[a].y * canvas.height);
+    ctx.lineTo(lm[b].x * canvas.width, lm[b].y * canvas.height);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#e0f2fe';
+  for (const p of lm) { ctx.beginPath(); ctx.arc(p.x * canvas.width, p.y * canvas.height, 3, 0, 7); ctx.fill(); }
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  if (!landmarker || video.readyState < 2 || !video.videoWidth) return;
+  if (video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+
+  if (canvas.width !== video.videoWidth) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const res = landmarker.detectForVideo(video, performance.now());
+  const lm = res.landmarks && res.landmarks[0];
+  frames++;
+  const now = performance.now();
+  if (now - fpsT > 1000) { hudFps.textContent = 'fps ' + frames; frames = 0; fpsT = now; }
+  hudHand.textContent = lm ? 'hand ✓' : 'no hand';
+  if (!lm) {
+    hudPose.textContent = 'pose –';
+    if (isPinching || isFist) { isPinching = isFist = false; }
+    return;
+  }
+  drawSkeleton(lm);
+  lastLm = lm;
+
+  const pinch = dist(lm[4], lm[8]) < PINCH_DIST;
+  const fist = fistOf(lm);
+  hudPose.textContent = fist ? 'FIST' : pinch ? 'PINCH' : 'open';
+
+  const base = () => ({
+    type: 'gesture',
+    x: flipX ? 1 - lm[8].x : lm[8].x,   // index tip
+    y: lm[8].y,
+    wx: flipX ? 1 - lm[0].x : lm[0].x,  // wrist (drag anchor)
+    wy: lm[0].y,
+  });
+
+  // edge events go out immediately; cursor frames throttled to ~20Hz
+  if (pinch && !isPinching) send({ ...base(), action: 'pinch' });
+  if (fist && !isFist) send({ ...base(), action: 'fist_start' });
+  if (!fist && isFist) send({ ...base(), action: 'fist_end' });
+  isPinching = pinch; isFist = fist;
+
+  if (now - lastEmit >= EMIT_MIN_MS) { send(base()); lastEmit = now; }
+}
+
+/* ---------------- ui ---------------- */
+function renderStatus() {
+  if (!stream) return status('idle — tap Start camera', 'warn');
+  if (!landmarker) return status('loading hand model…', 'warn');
+  status(wsOpen ? 'tracking · relay connected' : 'tracking · relay OFFLINE (retrying)', wsOpen ? 'ok' : 'err');
+}
+$('btn-start').onclick = () => startCamera().catch(e => status('camera/model: ' + e.message, 'err'));
+$('btn-flip').onclick = e => { flipX = !flipX; e.target.textContent = 'Mirror X: ' + (flipX ? 'on' : 'off'); e.target.classList.toggle('on', flipX); };
+$('btn-pinch').onclick = () => {
+  const lm = lastLm;
+  send({ type: 'gesture', action: 'pinch',
+         x: lm ? (flipX ? 1 - lm[8].x : lm[8].x) : 0.5,
+         y: lm ? lm[8].y : 0.5,
+         wx: lm ? (flipX ? 1 - lm[0].x : lm[0].x) : 0.5,
+         wy: lm ? lm[0].y : 0.5 });
+};
+$('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };
+
+connectWs();
+status('idle — tap Start camera', 'warn');
+</script>
+</body>
+</html>

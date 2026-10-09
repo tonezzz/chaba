@@ -1,0 +1,25 @@
+[Unit]
+Description=Gesture relay — WS fan-out for ada_v2 gesture rebuild (controller->screen)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/gesture-relay:latest
+ContainerName=gesture-relay
+# Tailnet-only bind — install.sh renders this host's `tailscale ip -4`.
+# Never publish on 0.0.0.0: the relay is unauthenticated fan-out.
+PublishPort=100.68.142.13:8794:8794
+Environment=GESTURE_RELAY_HOST=0.0.0.0
+Environment=GESTURE_RELAY_PORT=8794
+HealthCmd=python3 -c "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8794/health',timeout=3).status==200 else 1)"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=15s
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

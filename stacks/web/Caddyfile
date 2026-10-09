@@ -140,6 +140,32 @@ http://127.0.0.1:8080 {
 		reverse_proxy 127.0.0.1:8790
 	}
 
+
+	handle /apps/gesture-live {
+		redir /apps/gesture-live/ 308
+	}
+	handle_path /apps/gesture-live/* {
+		@ws path /ws
+		handle @ws {
+			reverse_proxy 100.68.142.13:8794
+		}
+		# /health (and any future plain-HTTP path) lives on the same
+		# relay port — unlike gev-live there is no static side here.
+		handle {
+			reverse_proxy 100.68.142.13:8794
+		}
+	}
+
+
+	handle /apps/gesture {
+		redir * /apps/gesture/ 308
+	}
+	handle_path /apps/gesture/* {
+		root * /srv/public/apps/gesture
+		rewrite /screen /screen.html
+		file_server
+	}
+
 	handle /apps/ha/ada-tony {
 		redir * /apps/ha/ada-tony/ 308
 	}
