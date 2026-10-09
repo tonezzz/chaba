@@ -1,0 +1,74 @@
+title: Fix ada-flood-news exit 2 on idc02 — pin MDDB_BASE_URL to the idc03 leader
+subtitle: >-
+  The RSS fetch was fine; the CMS publish step died on ECONNREFUSED
+  because idc02's stale repo checkout still ships a flood-news-update.py
+  whose MDDB default is idc01:11023 — dead since the leader moved to
+  idc03 on 2026-10-05/06. Pinned MDDB_BASE_URL on job:ada-flood-news
+  (same pattern as log-shipper) so the unit is immune to checkout drift.
+icon: wrench
+id: 2026-10-09-ada-flood-news-mddb-env-pin
+status: done
+owner: devin-dispatch
+project: chaba
+card: fix-ada-flood-news-exit
+started: "2026-10-09"
+completed: "2026-10-09"
+
+context:
+  user_request: >
+    Kanban card fix-ada-flood-news-exit: ada-flood-news.service on idc02
+    exits 2/INVALIDARGUMENT after the fetch phase succeeds — find the
+    error after the item listing, fix in ssot.jobs.yml / the script,
+    re-render the unit, drop the known_failed entry, verify exit 0.
+  journal_reading: >
+    The journal was misleading by interleaving: the `== <page>: error
+    <urlopen error [Errno 111] Connection refused>` lines are stderr
+    (unbuffered) while the item listings are stdout (block-buffered
+    under journald, flushed at exit) — so the errors print BEFORE the
+    successful fetch output. Per page the real order was: collect OK
+    ("N flood items"), then get_page/publish -> MDDB POST -> refused ->
+    caught, `== page: error` on stderr, return 2.
+  root_cause: >
+    idc02's ~/CascadeProjects/chaba checkout is ~1379 commits behind
+    origin/master (dirty too — dispatch_repos.py et al). Its copy of
+    scripts/ada/flood-news-update.py still defaults MDDB_BASE_URL to
+    http://100.74.146.0:11023 (idc01), which has not served MDDB since
+    the leader moved to idc03 (100.102.134.91) on 2026-10-05/06. The
+    in-repo script already defaults to idc03; the deployed copy is just
+    stale. Writes must hit the leader — idc02's own mddb.service is a
+    read-only follower.
+  card_step_4_stale: >
+    The card asked to remove a known_failed entry for
+    ada-flood-news.service from ssot.audit.hosts.yml — no such entry
+    exists (idc02 known_failed is already []); nothing to remove.
+
+code_changes:
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — job:ada-flood-news gains
+    `env: {MDDB_BASE_URL: http://100.102.134.91:11023/v1}` (idc03
+    leader, same value log-shipper pins) + note update.
+  - >-
+    systemd/generated/idc02/ada-flood-news.service — re-rendered via
+    render-jobs.py; gains Environment="MDDB_BASE_URL=...".
+
+install_state:
+  idc02: >-
+    rendered unit scp'd to ~/.config/systemd/user/ada-flood-news.service
+    + daemon-reload (the canonical `render-jobs.py --host idc02
+    --install` would have rendered the STALE manifest — the checkout is
+    too far behind; a pull is its own job).
+  stale_checkout_followup: >-
+    idc02's chaba checkout being ~1379 behind with local edits affects
+    every job exec'd from it (chaba-kb-audit, ada-flood-news, ...).
+    Reconciling it (git-safe-pull or re-clone) is worth a card — the
+    env pin only heals ada-flood-news.
+
+verification:
+  - "systemctl --user start ada-flood-news.service on idc02 -> RC=0,
+    ExecMainStatus=0, Result=success"
+  - "journal shows real publish: `updated ada-cms-pages|flood-report|en
+    (+1256c)` + `|th`; registry reachable again (interval gating resumed
+    for nongdon/pattaya-rayong pages)"
+  - "render-jobs.py --check: OK 43 jobs; ssot-validate-all.mjs: 1793
+    valid, 0 errors"
+  - "known_failed for idc02 already [] — confirmed, nothing removed"
