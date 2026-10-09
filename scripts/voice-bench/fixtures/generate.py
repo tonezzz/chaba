@@ -4,6 +4,7 @@
 Engines (pick with --engine):
   gemini  - Gemini TTS (gemini-2.5-flash-preview-tts) via GEMINI_API_KEY
   azure   - Azure Speech TTS via AZURE_SPEECH_KEY + AZURE_SPEECH_REGION
+  edge    - Microsoft Edge neural TTS (edge-tts package, no key needed)
   tone    - offline placeholder: a deterministic harmonic tone derived
             from the phrase hash. NOT speech — use only to seed fixture
             files when no TTS key is available (e.g. CI, offline dev).
@@ -19,6 +20,8 @@ import math
 import os
 import struct
 import sys
+import time
+import urllib.error
 import urllib.request
 import wave
 from pathlib import Path
@@ -34,6 +37,8 @@ VOICES = {
     ("gemini", "th"): "Kore",
     ("azure", "en"): "en-US-JennyNeural",
     ("azure", "th"): "th-TH-PremwadeeNeural",
+    ("edge", "en"): "en-US-JennyNeural",
+    ("edge", "th"): "th-TH-PremwadeeNeural",
 }
 
 
@@ -84,8 +89,18 @@ def synth_gemini(phrase, lang):
     }
     req = urllib.request.Request(url, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.loads(r.read())
+    data = None
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                data = json.loads(r.read())
+            break
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 503) or attempt == 5:
+                raise
+            wait = 20 * (attempt + 1)
+            print(f"  HTTP {e.code}, retrying in {wait}s", file=sys.stderr)
+            time.sleep(wait)
     b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
     import base64
     pcm = base64.b64decode(b64)
@@ -115,7 +130,28 @@ def synth_azure(phrase, lang):
         return r.read()
 
 
-SYNTH = {"tone": synth_tone, "gemini": synth_gemini, "azure": synth_azure}
+def synth_edge(phrase, lang):
+    """Microsoft Edge neural TTS (edge-tts package) -> mp3 -> ffmpeg PCM."""
+    import asyncio
+    import subprocess
+    import tempfile
+
+    import edge_tts
+
+    voice = VOICES[("edge", lang)]
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+        tmp = f.name
+    asyncio.run(edge_tts.Communicate(phrase, voice).save(tmp))
+    p = subprocess.run(
+        ["ffmpeg", "-y", "-i", tmp, "-ar", str(RATE), "-ac", "1",
+         "-f", "s16le", "-"],
+        capture_output=True, check=True)
+    os.unlink(tmp)
+    return p.stdout
+
+
+SYNTH = {"tone": synth_tone, "gemini": synth_gemini, "azure": synth_azure,
+         "edge": synth_edge}
 
 
 def main():
@@ -133,6 +169,8 @@ def main():
             continue
         pcm = SYNTH[args.engine](fx["phrase"], fx["lang"])
         write_wav(out, pcm)
+        if args.engine != "tone":
+            time.sleep(4)
         made += 1
         print(f"wrote {out.name} ({len(pcm)//2} samples)")
     print(f"done: {made} written, {skipped} skipped (engine={args.engine})")
