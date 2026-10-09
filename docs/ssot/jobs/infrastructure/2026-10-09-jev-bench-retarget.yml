@@ -1,0 +1,95 @@
+id: jobs/infrastructure/2026-10-09-jev-bench-retarget
+title: jev-bench on idc02 retargeted idc01 -> idc03, unit now rendered from ssot.jobs.yml
+card: fix-jev-bench-target
+date: 2026-10-09
+runner: tony-omen
+executed_on: idc02
+status: done
+
+# ---------------------------------------------------------------------------
+# Result: jev-bench.service on idc02 exits 0 again. The hourly confirm-gate
+# bench now targets jev-student on idc03:8778 and writes to the idc03 MDDB
+# leader :11023. Score 11/18 (0.6111) — identical to the pre-retirement
+# series, so the jev-decision trend is continuous.
+# ---------------------------------------------------------------------------
+
+context:
+  failure: >-
+    jev-bench.service on idc02 failed hourly with Connection refused since
+    idc01 retirement (2026-10-05). Unit ExecStart pointed at
+    http://100.74.146.0:8778 (jev-student) and --mddb http://100.74.146.0:11023.
+  provenance: >-
+    The unit was hand-installed on idc02 2026-10-01 14:43 — NOT rendered
+    (no 'rendered from ssot.jobs.yml' marker, no jev-bench job in the
+    manifest, nothing in systemd/generated/idc02/). The card's premise that
+    the unit was rendered was wrong; there was no source to fix, so the job
+    was added to the manifest and the unit is now genuinely rendered.
+  script: >-
+    ada-pi checkout on idc02 — tests/bench/jev-bench.py (10 confirm-gate
+    noul cases + 8 tool-routing choice cases). Posts kind:benchmark docs
+    (suite jev-decision, key bench/jev-<ts>) to ada-ha-scenario-reports and
+    refreshes ada-cms-pages/bench-jev.
+
+decision:
+  choice: repoint-not-retire
+  why: >-
+    Live consumer exists — scripts/ada/nest-overview.py (runs every 30min
+    via chaba-kanban-brief.service on tony_dell) reads the bench-jev CMS
+    page into the chaba-nest L2 report, and the auto-report machinery reads
+    kind:benchmark docs for regressions. Retiring would leave a permanent
+    stale page + silent gap.
+  target: >-
+    http://100.102.134.91:8778 (jev-student distilbert confirm-gate on
+    idc03, verified /health 200 + /v1/systemone noul round-trip). NOT
+    idc02's local open-jev :8777 — the unit's stated purpose is 'accuracy
+    vs jev-student' (the prod confirm-gate lane); heavy-lane health is
+    already probed by nest-overview.
+  mddb: >-
+    http://100.102.134.91:11023/v1 — the idc03 LEADER. idc02's local :11023
+    is a read-only replication follower; bench writes must go upstream.
+
+changes:
+  - docs/ssot/infrastructure/ssot.jobs.yml — new job 'jev-bench' (host
+    idc02, OnCalendar=hourly, Persistent, timeout 10m) with retarget note.
+  - systemd/generated/idc02/jev-bench.{service,timer} — rendered via
+    scripts/render-jobs.py --host idc02.
+  - idc02:~/.config/systemd/user/jev-bench.{service,timer} — installed,
+    daemon-reload; timer was already enabled, next run 17:00.
+
+verify:
+  manual_run: >-
+    systemctl --user start jev-bench.service on idc02 -> status=0/SUCCESS.
+    10/10 noul correct; tool-routing 1/8 (expected — student returns a
+    fixed 'answer' stub, binary-only by design). accuracy 11/18 (61%),
+    median 0.1s.
+  mddb_doc: >-
+    ada-ha-scenario-reports bench/jev-20261009-164053 — suite jev-decision,
+    score 0.6111, target http://100.102.134.91:8778 (search via mddb
+    search_documents filter_meta suite=jev-decision).
+  cms_page: ada-cms-pages bench-jev updated 2026-10-09T16:40:53+07:00.
+
+audit_hosts:
+  note: >-
+    ssot.audit.hosts.yml idc02 known_failed is already [] in this checkout —
+    the entry the card refers to was never committed here (likely added
+    only in the live chaba-tony-dell checkout via --save-to-ssot). If it
+    resurfaces on the live checkout it should be dropped; the unit is
+    healthy now.
+
+leftover_dead_idc01_refs:
+  - >-
+    jev-retrain.timer/service on idc02 — ENABLED but inactive (not in
+    list-timers). scripts/jev-retrain.sh harvests corpus from idc01 and
+    deploys back to idc01 — dead pipeline until retargeted at idc03.
+    Separate card material.
+  - >-
+    ssot.nest-brains.yml jev-student entity still says
+    'path: idc01:~/jev-student/' and 'ckpt-v0-deployed live on idc01' —
+    stale after migration; metadata only.
+  - >-
+    ssot.jobs.yml ada-pi-orch-bench exec string renders verbatim
+    ('..., then nest-bench-update.py --force' + relative path) — the
+    DEPLOYED unit on tony-omen is hand-maintained and healthy
+    (WorkingDirectory + ExecStartPre/Post lane guards). Running
+    render-jobs.py --host tony_omen --install would clobber it with a
+    broken unit. Treat that job's exec as documentation, not literal.

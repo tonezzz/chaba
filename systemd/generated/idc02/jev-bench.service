@@ -1,0 +1,7 @@
+[Unit]
+Description=Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on idc02, targets idc03) (job:jev-bench, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/ada-pi/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1 --report-cms

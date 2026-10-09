@@ -195,6 +195,24 @@ jobs:
     nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local
     on tony-omen. Corpus loop feeds misses into the next run.
     Deployed 2026-10-06.'
+- id: jev-bench
+  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs
+    on idc02, targets idc03)
+  host: idc02
+  dispatch: systemd
+  on_calendar: hourly
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/ada-pi/tests/bench/jev-bench.py
+    http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1 --report-cms
+  note: 'retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target).
+    jev-student confirm-gate serves /v1/systemone on idc03 tailnet :8778;
+    MDDB writes go to the idc03 leader :11023 (idc02 local :11023 is a
+    read-only follower). Emits suite:jev-decision docs to
+    ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed
+    by nest-overview.py (chaba-nest L2). Bench script lives in the ada-pi
+    checkout on idc02. Unit was hand-installed 2026-10-01; now rendered
+    from this manifest.'
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen
