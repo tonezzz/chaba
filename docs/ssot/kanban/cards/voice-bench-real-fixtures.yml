@@ -1,7 +1,8 @@
 id: voice-bench-real-fixtures
 title: Regenerate voice-bench fixtures with real TTS audio
-column: backlog
-updated: 2026-10-09 06:39
+column: review
+review_kind: verify
+updated: 2026-10-09 13:49
 priority: high
 program: voice-fallback
 tags:
@@ -18,8 +19,48 @@ action:
   repo: chaba
   host: tony-dell
   model: swe-2-medium
-  status: queued
+  status: done
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-133135-the-harness-landed-scripts-voi
+  result: 20261009-133135-the-harness-landed-scripts-voi finished (inactive) — see `devin-dispatch logs 20261009-133135-the-harness-landed-scripts-voi`
+  verified: false
+  sweep:
+    state_err: 2026-10-09 13:49
 comms:
 - at: 2026-10-09 06:39
   from: tony
   text: card captured via board-api
+- at: 2026-10-09 13:31
+  from: chaba
+  text: dispatched 20261009-133135-the-harness-landed-scripts-voi on chaba
+- at: 2026-10-09 13:32
+  from: devin
+  text: 'attempt 2: manifest wavs confirmed 70444B tone placeholders; GEMINI_API_KEY found in ~/.config/secrets.
+    Regenerating with --engine gemini --force.'
+- at: 2026-10-09 13:43
+  from: devin
+  text: 'DONE (commit e4522ead). All 20 manifest wavs regenerated as real speech: 19 via new --engine edge (edge-tts;
+    Gemini free-tier TTS quota 10/day was exhausted on every local key, reset ~17h), 1 via Gemini. generate.py gained
+    edge engine + 429 backoff. Verified: sizes all differ, durations ~2-2.6s, faster-whisper spot-check transcribed
+    en+th fixtures verbatim to expected transcripts. See dispatch-outcome md in worktree.'
+- at: 2026-10-09 13:43
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-09 13:44
+  from: chaba
+  text: pushed dispatch/20261009-133135-the-harness-landed-scripts-voi to origin
+- at: 2026-10-09 13:44
+  from: chaba
+  text: 'test gate failed — merge held: tests/board/test_merge_sweep.py::Case::test_conflict_posts_request_not_wrong_merge'
+- at: 2026-10-09 13:44
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261009-133135-the-harness-landed-scripts-voi not in origin/master
+    — close will block until merged'
+- at: 2026-10-09 13:49
+  from: chaba
+  text: 'merge-sweep: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/chaba-tony-dell'', ''merge-base'',
+    ''--is-ancestor'', ''e62ce302f89db6c18b947bf8aaf1c87a8aca9b30'', ''origin/master'']'' timed out after 30 seconds
+    for devin-task-20261009-133135-the-harness-landed-scripts-voi'
+claim:
+  since: 2026-10-09 13:31

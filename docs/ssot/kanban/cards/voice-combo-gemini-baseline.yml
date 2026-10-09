@@ -1,7 +1,7 @@
 id: voice-combo-gemini-baseline
 title: 'Bench: Gemini Live golden baseline'
 column: backlog
-updated: 2026-10-08 18:30
+updated: 2026-10-09 13:35
 priority: medium
 program: voice-fallback
 blocked_by: voice-bench-harness
@@ -17,7 +17,10 @@ action:
   repo: chaba
   host: tony-dell
   model: swe-2-medium
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-133139-run-the-golden-baseline-stream
 comms:
 - at: 2026-10-08 18:11
   from: tony
@@ -25,4 +28,15 @@ comms:
 - at: 2026-10-08 18:30
   from: tony
   text: queued for processing
+- at: 2026-10-09 13:31
+  from: chaba
+  text: dispatched 20261009-133139-run-the-golden-baseline-stream on chaba
+- at: 2026-10-09 13:35
+  from: devin
+  text: 'attempt 2 started: prior run left no comms trace. Plan: restore adapter dispatch (lost when older bench.py
+    overwrote 04abd2fc), add gemini_live adapter using gev-gemini client shape, register gemini-baseline combo,
+    stream all 20 fixtures on tony-dell.'
 pipeline: ci
+claim:
+  session: 20261009-133139-run-the-golden-baseline-stream
+  since: 2026-10-09 13:31

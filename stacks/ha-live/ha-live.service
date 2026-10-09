@@ -7,6 +7,7 @@ Requires=tony-ha.service
 EnvironmentFile=/home/tony/.config/secrets/home-assistant-token.env
 ExecStartPre=-/usr/bin/podman exec tony-ha mkdir -p /config/ha-live
 ExecStartPre=-/usr/bin/podman exec tony-ha pkill -f 'python3 /config/ha-live/bridge.py'
+ExecStartPre=-/usr/bin/tailscale serve --bg --https=8444 127.0.0.1:9005
 ExecStart=/usr/bin/podman exec -e HA_LONG_LIVED_TOKEN tony-ha python3 /config/ha-live/bridge.py
 ExecStop=-/usr/bin/podman exec tony-ha pkill -f 'python3 /config/ha-live/bridge.py'
 Restart=always

@@ -150,6 +150,17 @@ Fixed during recovery — all now persistent:
     shim) and no systemd unit; the container had to be recreated manually with
     `podman run --network host` (the Caddyfile `bind`s host IPs). Compose file's
     `ports:` are decorative under host networking.
+- **`tailscale serve` mappings can vanish on tailscaled restart/upgrade**
+  (incident 2026-10-09): after `tailscaled` restarted at 08:59, all serve
+  entries (https :8444→9005, :8446→9101, tcp :3000, :9002) were gone even though
+  serve config is meant to persist. Symptom: backends healthy on loopback but
+  `ts.net:<port>` refuses. Post-reboot verify:
+  `tailscale serve status` vs expected ports. Fix pattern (now standard):
+  every service whose reachability depends on serve should re-assert its
+  mapping with `ExecStartPre=-/usr/bin/tailscale serve --bg ...`
+  (precedent: `yomi-api.service`, `trade-api.service`). A bare
+  `tailscale serve` **without `--bg` runs as a foreground proxy** — it looks
+  "hung" but is serving; killing it reverts the mapping.
 - **rview-live**: removed `Requires/After=rview-live-image-build.service` from
   `~/.config/containers/systemd/rview-live.container` — the build context path
   `/home/tony/CascadeProjects/chaba` doesn't exist on tony-dell. Kept

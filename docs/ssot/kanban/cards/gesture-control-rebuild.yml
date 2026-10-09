@@ -1,13 +1,11 @@
 id: gesture-control-rebuild
 title: 'Gesture control: iPhone camera -> gestures -> TV/screen (ada_v2 rebuild)'
-brief: 'Tony (2026-10-09): use the iPhone camera for hand-gesture control of what is
-  shown on his TV/screens. Rebuild of the archived ada_v2 MediaPipe gesture UI —
-  full port spec + constants + DOM contract already extracted in
-  docs/kb/gesture-ui-options.md (READ THIS FIRST — no re-digging the archive).
-  Supersedes rebuild-gesture-system-using-yolo-for-cu-94356f and
-  rebuild-gesture-control-using-yolo-1d906b (YOLO boxes are wrong primitive —
-  landmark pipeline stays, per the KB recommendation).'
-column: backlog
+brief: 'Tony (2026-10-09): use the iPhone camera for hand-gesture control of what is shown on his TV/screens. Rebuild
+  of the archived ada_v2 MediaPipe gesture UI — full port spec + constants + DOM contract already extracted in docs/kb/gesture-ui-options.md
+  (READ THIS FIRST — no re-digging the archive). Supersedes rebuild-gesture-system-using-yolo-for-cu-94356f and
+  rebuild-gesture-control-using-yolo-1d906b (YOLO boxes are wrong primitive — landmark pipeline stays, per the KB
+  recommendation).'
+column: doing
 priority: high
 created: 2026-10-09
 tags:
@@ -17,62 +15,36 @@ tags:
 - iphone
 - tv-control
 claim: {}
-spec: |
-  Rebuild ada_v2's hand-gesture UI as a two-page web app + WS relay in the
-  chaba web stack. Controller = iPhone (Safari/PWA, getUserMedia rear camera
-  preferred), Screen = TV/display browser. iPhone is ONLY the camera+input
-  device — the controlled surface lives on the screen page.
-
-  ARCHITECTURE (mirror the gev-live pattern):
-
-  1. Relay — new quadlet stacks/tony-dell/gesture-relay/ (copy
-     stacks/tony-dell/gev-gemini/ shape: Containerfile + tiny asyncio WS
-     fan-out). Two roles via query param: ?role=controller emits
-     {type:"gesture",x,y,action} at ~10-20Hz; ?role=screen receives. Also
-     GET /health -> 200. Systemd unit gesture-relay.service on tony-dell,
-     bound to tailscale IP. Caddy: add handle_path /apps/gesture-live/*
-     with @ws /ws matcher -> relay port (copy the /apps/gev-live block).
-
-  2. Screen page — stacks/web/public/apps/gesture/screen.html served at
-     /apps/gesture/screen. Fullscreen dark surface with: demo control grid
-     (buttons/tiles), the ada_v2 cursor (cyan ring, w-6 h-6, z-top,
-     pointer-events-none), snap-to-element hysteresis (50px snap/100px
-     release), pinch=click via elementFromPoint().closest('button,a,[role=button]'),
-     fist=window drag (wrist-delta, all-4-tips-closer-than-MCP check, thumb
-     NOT counted). ALSO: "Cast to TV" action -> call the mn01 yolo service
-     /cast?target=media_player.X (reachable via Caddy /apps/yolo/api/cast)
-     and/or HA REST media_player.play_media for real TV control.
-     Media player list: /apps/yolo/api/tvs.
-
-  3. Controller page — stacks/web/public/apps/gesture/index.html served at
-     /apps/gesture/. getUserMedia({video:{facingMode:"environment"}}) ->
-     hidden <video> -> requestAnimationFrame loop ->
-     MediaPipe HandLandmarker detectForVideo. WASM: use the VENDORED bundle
-     /apps/vendor/mediapipe/vision_bundle.mjs + wasm files (already in repo,
-     NO CDN). Model: vendor hand_landmarker.task into
-     stacks/web/public/apps/vendor/mediapipe/ (fetch from
-     https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task,
-     ~7.8MB — commit it; repo already carries yolov8n.pt).
-     numHands:1, runningMode VIDEO, delegate GPU.
-     Show: live camera preview + cyan skeleton overlay (HAND_CONNECTIONS)
-     + a large connection-status line + a manual "Send test pinch" button.
-     Emit over WS: cursor {x,y} normalized 0-1 EVERY detected frame
-     (flip X for mirror), {action:"pinch"} rising-edge only
-     (dist(lm4,lm8)<0.05), {action:"fist_start"/"fist_end"} state changes.
-     Constants from the KB doc: SENSITIVITY 2.0 (center-50% maps to full
-     screen), LERP 0.2 smoothing — apply smoothing SCREEN-side so the
-     phone link is raw.
-
-  4. Production wiring — register /apps/gesture/ as a link/tile on the
-     ada-ha chaba-home dashboard (next to the chat card), and add the
-     gesture-live ws route to stacks/web/Caddyfile + regenerate
-     Caddyfile.generated via the stack's sync path. iPhone requires secure
-     context — ada-ha https is fine; note iOS PWA camera caveat.
-
-  VERIFY: end-to-end demo script — screen open on a browser, controller on
-  phone, pinch clicks a demo tile (tile flashes/counts), fist drags it.
-  PlayLive-screenshot the screen page if reachable headless; otherwise
-  verify relay + both pages return 200 and ws handshakes.
+spec: "Rebuild ada_v2's hand-gesture UI as a two-page web app + WS relay in the\nchaba web stack. Controller = iPhone\
+  \ (Safari/PWA, getUserMedia rear camera\npreferred), Screen = TV/display browser. iPhone is ONLY the camera+input\n\
+  device — the controlled surface lives on the screen page.\n\nARCHITECTURE (mirror the gev-live pattern):\n\n1.\
+  \ Relay — new quadlet stacks/tony-dell/gesture-relay/ (copy\n   stacks/tony-dell/gev-gemini/ shape: Containerfile\
+  \ + tiny asyncio WS\n   fan-out). Two roles via query param: ?role=controller emits\n   {type:\"gesture\",x,y,action}\
+  \ at ~10-20Hz; ?role=screen receives. Also\n   GET /health -> 200. Systemd unit gesture-relay.service on tony-dell,\n\
+  \   bound to tailscale IP. Caddy: add handle_path /apps/gesture-live/*\n   with @ws /ws matcher -> relay port\
+  \ (copy the /apps/gev-live block).\n\n2. Screen page — stacks/web/public/apps/gesture/screen.html served at\n\
+  \   /apps/gesture/screen. Fullscreen dark surface with: demo control grid\n   (buttons/tiles), the ada_v2 cursor\
+  \ (cyan ring, w-6 h-6, z-top,\n   pointer-events-none), snap-to-element hysteresis (50px snap/100px\n   release),\
+  \ pinch=click via elementFromPoint().closest('button,a,[role=button]'),\n   fist=window drag (wrist-delta, all-4-tips-closer-than-MCP\
+  \ check, thumb\n   NOT counted). ALSO: \"Cast to TV\" action -> call the mn01 yolo service\n   /cast?target=media_player.X\
+  \ (reachable via Caddy /apps/yolo/api/cast)\n   and/or HA REST media_player.play_media for real TV control.\n\
+  \   Media player list: /apps/yolo/api/tvs.\n\n3. Controller page — stacks/web/public/apps/gesture/index.html served\
+  \ at\n   /apps/gesture/. getUserMedia({video:{facingMode:\"environment\"}}) ->\n   hidden <video> -> requestAnimationFrame\
+  \ loop ->\n   MediaPipe HandLandmarker detectForVideo. WASM: use the VENDORED bundle\n   /apps/vendor/mediapipe/vision_bundle.mjs\
+  \ + wasm files (already in repo,\n   NO CDN). Model: vendor hand_landmarker.task into\n   stacks/web/public/apps/vendor/mediapipe/\
+  \ (fetch from\n   https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task,\n\
+  \   ~7.8MB — commit it; repo already carries yolov8n.pt).\n   numHands:1, runningMode VIDEO, delegate GPU.\n \
+  \  Show: live camera preview + cyan skeleton overlay (HAND_CONNECTIONS)\n   + a large connection-status line +\
+  \ a manual \"Send test pinch\" button.\n   Emit over WS: cursor {x,y} normalized 0-1 EVERY detected frame\n  \
+  \ (flip X for mirror), {action:\"pinch\"} rising-edge only\n   (dist(lm4,lm8)<0.05), {action:\"fist_start\"/\"\
+  fist_end\"} state changes.\n   Constants from the KB doc: SENSITIVITY 2.0 (center-50% maps to full\n   screen),\
+  \ LERP 0.2 smoothing — apply smoothing SCREEN-side so the\n   phone link is raw.\n\n4. Production wiring — register\
+  \ /apps/gesture/ as a link/tile on the\n   ada-ha chaba-home dashboard (next to the chat card), and add the\n\
+  \   gesture-live ws route to stacks/web/Caddyfile + regenerate\n   Caddyfile.generated via the stack's sync path.\
+  \ iPhone requires secure\n   context — ada-ha https is fine; note iOS PWA camera caveat.\n\nVERIFY: end-to-end\
+  \ demo script — screen open on a browser, controller on\nphone, pinch clicks a demo tile (tile flashes/counts),\
+  \ fist drags it.\nPlayLive-screenshot the screen page if reachable headless; otherwise\nverify relay + both pages\
+  \ return 200 and ws handshakes.\n"
 expected_goals:
 - id: app-page
   check: http 200 https://tony-dell.taila0626a.ts.net/apps/gesture/
@@ -86,5 +58,14 @@ expected_goals:
   check: ws wss://tony-dell.taila0626a.ts.net/apps/gesture-live/ws
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: tony-omen
+comms:
+- at: 2026-10-09 13:34
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 13:34
+  from: chaba
+  text: started devin-task-20261009-133455-rebuild-ada-v2-s-hand-gesture- on tony-omen (dispatch)
+updated: 2026-10-09 13:34

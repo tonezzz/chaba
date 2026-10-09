@@ -13,7 +13,14 @@ focus:
 
 
     Fix the producer or mark the node retired; the item clears once the node reports ok.'
-  status: draft
+  status: processed
+  processed_reason: 'health_snapshot failure was real: tailscaled restart (2026-10-08
+    08:59 +07) wiped all tailscale serve mappings — ha-live :8444, mcp-debug :8446,
+    yomi tcp:3000, trade-api tcp:9002 all refused while backends stayed healthy.
+    Restored all mappings with `tailscale serve --bg`; added ExecStartPre re-assert
+    self-heals to ha-live.service and mcp-debug-sse.service (yomi-api/trade-api
+    already had them). KB: docs/kb/host-reboot-verification.md. Fresh audit now
+    passes all four.'
   priority: high
   tags:
   - report
