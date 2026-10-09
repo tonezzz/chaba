@@ -1,11 +1,40 @@
 {
-  "generated": "2026-10-09T11:21:07.587Z",
+  "generated": "2026-10-09T12:52:44.054Z",
   "bloat": [
+    {
+      "file": "infrastructure/ssot.home-assistant.staging-overlay.yml",
+      "warning": "Bloat: 511 lines exceeds review threshold of 350"
+    },
+    {
+      "file": "infrastructure/ssot.secrets.yml",
+      "warning": "Bloat: 465 lines exceeds review threshold of 350"
+    },
+    {
+      "file": "kanban/ssot.kanban.yml",
+      "warning": "Bloat: 483 lines exceeds review threshold of 350"
+    },
     {
       "file": "ssot.terminology.yml",
       "warning": "Bloat: 52 items exceeds review threshold of 45"
     }
   ],
-  "data_isolation": [],
+  "data_isolation": [
+    {
+      "file": "infrastructure/ssot.home-assistant.staging-overlay.yml",
+      "warning": "Data isolation: hardcoded IPv4 address 10.0.2.0"
+    },
+    {
+      "file": "infrastructure/ssot.values.yml",
+      "warning": "Data isolation: hardcoded IPv4 address 10.88.0.0"
+    },
+    {
+      "file": "kanban/cards/idc01-return-role.yml",
+      "warning": "Data isolation: hardcoded IPv4 address 157.85.110.99"
+    },
+    {
+      "file": "kanban/cards/kk-ha-tg-relay.yml",
+      "warning": "Data isolation: possible secret value embedded in YAML: please"
+    }
+  ],
   "other": []
 }

@@ -337,17 +337,27 @@ execution:
                KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
                — loaded hosts yield the queue to idle runners; finishes
                and requeues still process"
-    runner_fleet: "as of 2026-10-08 — tony-dell: kanban-dispatch local cap 3
+    cap_adjust: "STANDARD PROCEDURE — scripts/board/runner-cap.sh changes a
+               host's cap/gate over ssh via a systemd drop-in
+               (~/.config/systemd/user/runner-agent.service.d/cap.conf),
+               never hand-edits the unit: `runner-cap.sh <host> <cap>
+               [max-load-pc]` (show = current). Ceiling ~3.5GB RAM/session,
+               --force to override; then mirror the value in runner_fleet
+               below. To push more work to a host WITHOUT changing its
+               cap: pin cards via action.host or match labels —
+               unpinned queued cards already flow to any host under cap
+               and under its load gate."
+    runner_fleet: "as of 2026-10-09 — tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
-               +container+script); idc01: cap 2 labels
+               +container+script); idc01: cap 3 gate 0.9 labels
                always-on,cold-batch,high-mem (dispatch+container+script —
                devin CLI + credentials.toml + devin-dispatch installed
                2026-10-08); idc02: cap 3 labels ssd,always-on (dispatch
-               +container+script); idc03: cap 2 labels ssd,always-on
-               (dispatch+container+script); mn01: cap 1 labels
-               low-mem,edge (dispatch+container+script — devin CLI IS
-               present; RAM-tight so cap stays 1). Unpinned dispatch cards
-               now land on any of the 6 dispatch-capable hosts. Nest lanes:
+               +container+script); idc03: cap 3 gate 0.85 labels
+               ssd,always-on (dispatch+container+script); mn01: cap 1
+               labels low-mem,edge (dispatch+container+script — devin CLI
+               IS present; RAM-tight so cap stays 1). Unpinned dispatch
+               cards land on any dispatch-capable host. Nest lanes:
                micro-training cold batch -> idc01, bench cadence/corpus ->
                idc02/idc03, GPU FT/LoRA -> omen (labels)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
