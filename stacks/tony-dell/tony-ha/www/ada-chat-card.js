@@ -79,7 +79,13 @@ class AdaChatCard extends HTMLElement {
     this._disconnectBtn.className = "acc-disconnect";
     this._disconnectBtn.disabled = true;
     this._disconnectBtn.onclick = () => this._teardown(true);
-    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn);
+    // YOLO button — fullscreen live view of the xiaomi_c201 detection feed
+    // (mn01 yolo-xiaomi service via Caddy /apps/yolo/api proxy).
+    this._yoloBtn = this._btn("🧍 YOLO");
+    this._yoloBtn.className = "acc-yolo";
+    this._yoloBtn.title = "Live YOLO detection view (fullscreen)";
+    this._yoloBtn.onclick = () => this._openYolo();
+    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn, this._yoloBtn);
     body.appendChild(row);
 
     // transcript log — bubble layout; bubbles handle their own wrapping
@@ -558,6 +564,93 @@ class AdaChatCard extends HTMLElement {
     this._unlockRow.style.display = this._state === "locked" ? "flex" : "none";
   }
 
+  _yoloBase() {
+    return (this._config.yolo_base ||
+      "https://tony-dell.taila0626a.ts.net/apps/yolo/api").replace(/\/$/, "");
+  }
+
+  _openYolo() {
+    if (this._yoloOverlay) return;
+    const base = this._yoloBase();
+    const ov = document.createElement("div");
+    ov.className = "acc-yolo-overlay";
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(8,10,14,.97);" +
+      "display:flex;flex-direction:column;color:#eee";
+
+    // header: title + live counts + close
+    const head = document.createElement("div");
+    head.style.cssText =
+      "display:flex;align-items:center;gap:12px;padding:10px 16px;" +
+      "border-bottom:1px solid #2a2f36;flex:none";
+    const ttl = document.createElement("div");
+    ttl.style.cssText = "font-size:1rem;font-weight:600";
+    ttl.textContent = "🧍 YOLO — live detection";
+    const stats = document.createElement("div");
+    stats.style.cssText = "flex:1;font-size:.8rem;color:#9aa4b0";
+    stats.textContent = "connecting…";
+    const close = document.createElement("button");
+    close.textContent = "✕ close — Esc";
+    close.style.cssText =
+      "padding:4px 12px;border-radius:6px;border:1px solid #3a414a;" +
+      "background:#1c2128;color:#eee;cursor:pointer;font-size:.8rem";
+    close.onclick = () => this._closeYolo();
+    head.append(ttl, stats, close);
+    ov.appendChild(head);
+
+    // live annotated frame
+    const imgWrap = document.createElement("div");
+    imgWrap.style.cssText = "flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:8px";
+    const img = document.createElement("img");
+    img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;border-radius:8px";
+    img.alt = "YOLO annotated frame";
+    imgWrap.appendChild(img);
+    ov.appendChild(imgWrap);
+
+    const foot = document.createElement("div");
+    foot.style.cssText =
+      "flex:none;padding:8px 16px;border-top:1px solid #2a2f36;" +
+      "font-size:.75rem;color:#8b94a0;display:flex;gap:16px";
+    foot.textContent = "xiaomi_c201 via mn01:8780 · refresh ~2s";
+    ov.appendChild(foot);
+
+    const onKey = (e) => { if (e.key === "Escape") this._closeYolo(); };
+    document.addEventListener("keydown", onKey);
+
+    const tick = async () => {
+      img.src = `${base}/image?v=${Date.now()}`;
+      try {
+        const r = await fetch(`${base}/detect`, { cache: "no-store" });
+        const d = await r.json();
+        if (d.error) {
+          stats.textContent = `feed error — ${String(d.error).slice(0, 90)}`;
+          return;
+        }
+        const counts = Object.entries(d.counts || {})
+          .map(([k, v]) => `${k}:${v}`).join("  ");
+        stats.textContent =
+          `persons: ${d.person_count ?? 0}   ${counts}` +
+          `   · ${d.ts || ""}`.slice(0, 140);
+      } catch (e) {
+        stats.textContent = "yolo service unreachable";
+      }
+    };
+    this._yoloTimer = setInterval(tick, 2000);
+    tick();
+    this._yoloOverlay = ov;
+    this._yoloKeyHandler = onKey;
+    document.body.appendChild(ov);
+  }
+
+  _closeYolo() {
+    if (this._yoloTimer) { clearInterval(this._yoloTimer); this._yoloTimer = null; }
+    if (this._yoloKeyHandler) {
+      document.removeEventListener("keydown", this._yoloKeyHandler);
+      this._yoloKeyHandler = null;
+    }
+    if (this._yoloOverlay) { this._yoloOverlay.remove(); this._yoloOverlay = null; }
+  }
+
   _btn(label) {
     const b = document.createElement("button");
     b.textContent = label;
@@ -575,6 +668,7 @@ class AdaChatCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._closeYolo();
     if (this._socket) this._teardown(true);
   }
 
