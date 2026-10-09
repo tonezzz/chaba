@@ -1,0 +1,77 @@
+title: Host Capacity & Placement Registry
+subtitle: >-
+  Per-host capacity snapshot + placement policy for the Chaba ecosystem.
+  Measured 2026-10-09 (nproc, free -g, df -BG /). Refresh on each service
+  deployment or via health-check.
+icon: "\ud83d\udcbb"
+version: 1
+
+hosts:
+  tony_dell:
+    role: lan-hub
+    cpu_cores: 8
+    mem_gb: 14        # ~11G used — pressured
+    disk_gb: {total: 118, free: 19}   # DISK TIGHT — do not land new stateful services
+    gpu: none
+    note: >-
+      Household LAN hub — HA prod (tony-ha) must stay here (ESPHome, cameras,
+      plugs). Member/dev nodes may evacuate to VPS. Unstable + low free disk:
+      keep only what requires LAN adjacency.
+  tony_omen:
+    role: gpu-dev
+    cpu_cores: 12
+    mem_gb: 30        # ~17G used
+    disk_gb: {total: 98, free: 60}
+    gpu: yes
+    note: heavy/ML workloads, development; power-hungry — prefer Colab for
+      burst GPU.
+  idc02:
+    role: edge-primary
+    cpu_cores: 4
+    mem_gb: 15        # ~2G used — plenty
+    disk_gb: {total: 290, free: 220}
+    gpu: none
+    note: public edge (caddy, CF). Lots of headroom — good host for
+      stateless member nodes (kk-ha) or replicas.
+  idc03:
+    role: backend-hub
+    cpu_cores: 4
+    mem_gb: 15        # ~8G used
+    disk_gb: {total: 290, free: 188}
+    gpu: none
+    note: >-
+      Ada backends, MDDB leader, secondary edge (api.surf-thailand.com).
+      Natural home for member-node backends + their HA containers if moved.
+  mn01:
+    role: legacy-home
+    cpu_cores: 4
+    mem_gb: 7         # ~4G used
+    disk_gb: {total: 234, free: 167}
+    gpu: none
+    note: legacy/home node; warm capacity.
+  idc01:
+    role: retired    # per ada-pi rules: mddb masked, never unmask
+    note: do not place anything — retired, not warm DR.
+
+placement_policy:
+  - "LAN-bound services (ha integrations, cameras, radios): tony-dell ONLY."
+  - "Member nodes + dev nodes (no LAN dependency): prefer idc02/idc03 — VPS disk/mem headroom and stability beat tony-dell."
+  - "Ada backends + memory banks: idc03 (co-located with MDDB)."
+  - "Public ingress: idc02 primary, idc03 secondary."
+  - "GPU/burst: tony-omen, else Colab free tier."
+  - "Backups/DR artifacts: mn01 + idc02/idc03 cold copy."
+
+procedure:
+  before_deploy:
+    - "Check this registry + live 'free -g' / 'df -BG /' on the target."
+    - "Match service class -> host via placement_policy."
+    - "Record host + reason in the service's SSOT entry / card."
+  rebalance_triggers:
+    - "disk free < 15% of total, or mem sustained > 80%."
+    - "any host marked unstable in session notes."
+  refresh:
+    - "Re-measure this file after any service lands or moves; add 'as-of' date."
+
+related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
+status: active
+updated: 2026-10-09

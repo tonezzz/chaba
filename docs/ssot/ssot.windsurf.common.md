@@ -363,3 +363,16 @@ everything:
 - "status?" → one report from the board.
 - One thread per decision is enough; side ideas are cheaper as interrupts
   than as new sessions because the context is already loaded.
+
+## Procedure Quick Map
+
+- **New idea / feature / "what if we…"** → capture to a kanban card
+  (`column: backlog`) or focus-inbox entry immediately, then triage with
+  `mcp_focus`. The board owns all pending work.
+- **Deploy or place a service** → consult
+  `docs/ssot/infrastructure/ssot.host-capacity.yml` (placement_policy +
+  live `free`/`df`), record the host decision on the card.
+- **New vocabulary** → add to `docs/ssot/ssot.terminology.yml`; MDDB picks
+  it up on the next sync so every session shares it.
+- **New member/user on a node** → procedure on card
+  `member-user-onboarding`; new node → `member-node-kk-ha`.
