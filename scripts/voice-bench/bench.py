@@ -96,16 +96,48 @@ class Stack:
 def run_fixture(combo, fx, timeout):
     """Stream one wav through the live stack. Returns a fixture result.
 
-    Transport: POST the wav to <endpoint>/bench with a 2 s chunk-delay to
-    simulate streaming; the orchestrator is expected to reply with JSON
-    {transcript, tool_call, first_audio_ms}. Combos implementing a custom
-    protocol (e.g. OpenAI Realtime events) provide their own adapter —
-    this fallback is the harness's lingua franca.
+    If the combo declares `adapter: <name>` in combos.yml, the matching
+    callable in adapters.py owns the protocol (e.g. OpenAI Realtime events,
+    Gemini Live) and returns {transcript, tool_call, first_audio_ms, ...}.
+
+    Fallback transport: POST the wav to <endpoint>/bench with a 2 s
+    chunk-delay to simulate streaming; the orchestrator is expected to reply
+    with JSON {transcript, tool_call, first_audio_ms}.
     """
     wav = Path(fx["wav"])
     if not wav.exists():
         return lib.fixture_result(fx, status="missing_wav",
                                   error=f"{wav.name} not found")
+
+    adapter_name = combo.get("adapter")
+    if adapter_name:
+        import adapters
+        fn = adapters.ADAPTERS.get(adapter_name)
+        if fn is None:
+            raise lib.HarnessError(
+                f"{combo['id']}: unknown adapter {adapter_name!r}")
+        start = time.monotonic()
+        try:
+            r = fn(combo, fx, timeout)
+        except Exception as e:
+            return lib.fixture_result(
+                fx, status="error", error=str(e),
+                total_ms=round((time.monotonic() - start) * 1000))
+        res = lib.fixture_result(
+            fx,
+            transcript=r.get("transcript"),
+            tool_call=r.get("tool_call"),
+            ttfa_ms=r.get("first_audio_ms"),
+            total_ms=r.get("elapsed_ms") or round(
+                (time.monotonic() - start) * 1000),
+            status="error" if r.get("error") else "ok",
+            error=r.get("error"))
+        # keep adapter extras (assistant text, event surface) on the record
+        for k in ("assistant_text", "events_seen"):
+            if r.get(k) is not None:
+                res[k] = r[k]
+        return res
+
     ep = combo.get("endpoint", "").rstrip("/")
     if not ep:
         return lib.fixture_result(fx, status="skipped",
