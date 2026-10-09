@@ -1,14 +1,11 @@
 id: sweep-stale-mddb-endpoint
 title: Sweep stale mddb endpoint 100.74.146.0 (dead since idc01 retirement)
-brief: 2026-10-09 host audit exposed fleet-wide references to mddb
-  http://100.74.146.0:11023 — idc01's old address, dead since the Oct-05
-  migration to idc03 (100.102.134.91:11023, verified serving). Live defaults
-  in bridge.py and doc_archive.py still point at it; ssot.services.yml and
-  ssot.values.yml record it as current. doc-mirror.service timing out at
-  10min on idc03 is very likely this — doc_archive.py retries a dead
-  endpoint until TimeoutStartSec kills it. mn01-canary had the same stale
-  URL (fixed 2026-10-09 — canary now green).
-column: backlog
+brief: 2026-10-09 host audit exposed fleet-wide references to mddb http://100.74.146.0:11023 — idc01's old address,
+  dead since the Oct-05 migration to idc03 (100.102.134.91:11023, verified serving). Live defaults in bridge.py
+  and doc_archive.py still point at it; ssot.services.yml and ssot.values.yml record it as current. doc-mirror.service
+  timing out at 10min on idc03 is very likely this — doc_archive.py retries a dead endpoint until TimeoutStartSec
+  kills it. mn01-canary had the same stale URL (fixed 2026-10-09 — canary now green).
+column: doing
 review_kind: verify
 priority: high
 kind: bugfix
@@ -17,30 +14,41 @@ tags:
 - mddb
 - idc01-retirement
 - audit-followup
-spec: |
-  Replace all LIVE references to 100.74.146.0 with the idc03 leader
-  (100.102.134.91) — or better, route through the canonical env vars /
-  ssot.values.yml lookup so this never recurs.
-
-  LIVE FILES (verify each consumer actually works after the change):
-  - stacks/tony-dell/gev-gemini/bridge.py:110 — GEV_MDDB_URL default
-  - stacks/idc01/doc-archive/doc_archive.py:43 — MDDB_BASE default
-    (doc-mirror.service on idc03 times out at 10min — probably this)
-  - docs/ssot/infrastructure/ssot.services.yml:160 — host_port record
-  - docs/ssot/infrastructure/ssot.values.yml:43 — tailscale_ip record
-    (check which generators consume this before editing)
-  - Any env/unit on idc03 setting MDDB_BASE for doc-mirror — check the
-    quadlet/env file on-host, the mirror hangs today.
-  - Also grep ~/CascadeProjects/chaba on EACH host for the IP — remote
-    checkouts may have stale generated units rendered from these defs.
-
-  DO NOT touch: dated reports/jobs/cards (historical), the input-bridge
-  comment, ssot.idc01.yml (retired-host record).
-
-  VERIFY: curl -m5 -X POST http://100.102.134.91:11023/v1/search returns
-  200; doc-mirror.service completes inside TimeoutStartSec; gev-gemini
-  bridge health still green.
+spec: "Replace all LIVE references to 100.74.146.0 with the idc03 leader\n(100.102.134.91) — or better, route through\
+  \ the canonical env vars /\nssot.values.yml lookup so this never recurs.\n\nLIVE FILES (verify each consumer actually\
+  \ works after the change):\n- stacks/tony-dell/gev-gemini/bridge.py:110 — GEV_MDDB_URL default\n- stacks/idc01/doc-archive/doc_archive.py:43\
+  \ — MDDB_BASE default\n  (doc-mirror.service on idc03 times out at 10min — probably this)\n- docs/ssot/infrastructure/ssot.services.yml:160\
+  \ — host_port record\n- docs/ssot/infrastructure/ssot.values.yml:43 — tailscale_ip record\n  (check which generators\
+  \ consume this before editing)\n- Any env/unit on idc03 setting MDDB_BASE for doc-mirror — check the\n  quadlet/env\
+  \ file on-host, the mirror hangs today.\n- Also grep ~/CascadeProjects/chaba on EACH host for the IP — remote\n\
+  \  checkouts may have stale generated units rendered from these defs.\n\nDO NOT touch: dated reports/jobs/cards\
+  \ (historical), the input-bridge\ncomment, ssot.idc01.yml (retired-host record).\n\nVERIFY: curl -m5 -X POST http://100.102.134.91:11023/v1/search\
+  \ returns\n200; doc-mirror.service completes inside TimeoutStartSec; gev-gemini\nbridge health still green.\n"
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc03
+comms:
+- at: 2026-10-09 16:36
+  from: idc01
+  text: claimed
+- at: 2026-10-09 16:36
+  from: chaba
+  text: started devin-task-20261009-163615-replace-all-live-references-to on idc01 (dispatch)
+- at: 2026-10-09 16:37
+  from: idc01
+  text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261009-163615-replace-all-live-references-to.service:
+    Main process exited, cod'
+- at: 2026-10-09 16:50
+  from: devin
+  text: 'requeued: idc01 runner reported ok but did no work — its devin-dispatch was stale (unconditional --setenv=DEVIN_MODEL=''''
+    broke every task, ''Unknown model'' exit-0 hollow). Script synced from dell; card re-queued for a healthy runner.'
+- at: 2026-10-09 16:43
+  from: idc03
+  text: claimed
+- at: 2026-10-09 16:43
+  from: chaba
+  text: started devin-task-20261009-164335-replace-all-live-references-to on idc03 (dispatch)
+updated: 2026-10-09 16:43
+claim: {}

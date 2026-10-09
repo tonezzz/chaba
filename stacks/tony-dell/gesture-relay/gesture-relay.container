@@ -11,7 +11,7 @@ ContainerName=gesture-relay
 PublishPort=100.68.142.13:8794:8794
 Environment=GESTURE_RELAY_HOST=0.0.0.0
 Environment=GESTURE_RELAY_PORT=8794
-HealthCmd=python3 -c "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8794/health',timeout=3).status==200 else 1)"
+HealthCmd=python3 /app/healthcheck.py
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=5

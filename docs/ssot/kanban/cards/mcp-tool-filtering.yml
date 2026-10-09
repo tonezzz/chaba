@@ -4,7 +4,7 @@ brief: 'ssot.token-tools.yml claimed MCP filters were operational since Aug — 
   no filter scripts exist, /tmp venvs wiped, and every server serves its full tool surface. Measured: github=48
   tools, yomi=41, postgres=~11. Tool schemas are paid EVERY turn of EVERY session — this is the largest controllable
   token overhead. Implement for real this time, in the stable path.'
-column: review
+column: doing
 priority: high
 created: 2026-10-09
 tags:
@@ -38,13 +38,9 @@ expected_goals:
     assert len(json.load(sys.stdin)[\"result\"][\"tools\"]) <= 18"'
 action:
   type: dispatch
-  status: done
+  status: running
   repo: chaba
-  runner: idc01
-  result: 'exit=0 sh, deepseek-v4-pro | devin-task-20261009-140615-implement-mcp-tool-surface-fil.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261009-140615-implement-mcp-tool-surface-fil.service:
-    Failed with result ''exit-code''.'
-  verified: true
+  runner: idc03
 review_kind: verify
 comms:
 - at: 2026-10-09 14:06
@@ -61,5 +57,15 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261009-140615-implement-mcp-tool-surface-fil already in origin/master — marked
     verified'
-updated: 2026-10-09 14:11
+- at: 2026-10-09 16:50
+  from: devin
+  text: 'requeued: idc01 runner reported ok but did no work — its devin-dispatch was stale (unconditional --setenv=DEVIN_MODEL=''''
+    broke every task, ''Unknown model'' exit-0 hollow). Script synced from dell; card re-queued for a healthy runner.'
+- at: 2026-10-09 16:43
+  from: idc03
+  text: claimed
+- at: 2026-10-09 16:43
+  from: chaba
+  text: started devin-task-20261009-164327-implement-mcp-tool-surface-fil on idc03 (dispatch)
+updated: 2026-10-09 16:43
 claim: {}

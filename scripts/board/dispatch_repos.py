@@ -161,12 +161,24 @@ def session(card: dict) -> dict:
 
 def merge_state(repo_root: Path, head: str, base_ref: str) -> dict:
     """Ancestry of the session head vs the default-branch ref."""
-    if not _rev_parse(repo_root, base_ref):
+    base_tip = _rev_parse(repo_root, base_ref)
+    if not base_tip:
         return {"checked": False, "error": f"no {base_ref} ref in {repo_root}"}
     r = sh(["git", "-C", str(repo_root), "merge-base", "--is-ancestor",
             head, base_ref])
     if r.returncode == 0:
-        return {"checked": True, "ancestor": True, "unmerged": 0}
+        # head is an ancestor of base — but so is the tip of an EMPTY
+        # session branch (the task died before committing; its head is
+        # just an old base commit). Real merged work reaches base through
+        # the --no-ff merge's second parent, i.e. it is NOT on base's
+        # first-parent chain; an old base commit IS. Flag that so the
+        # caller can refuse to stamp "verified" on work that never
+        # happened (idc01 hollow-dispatch incident 2026-10-09).
+        fp = sh(["git", "-C", str(repo_root), "rev-list", "--first-parent",
+                 "--max-count=5000", base_ref])
+        on_fp = head in (fp.stdout or "").splitlines()
+        return {"checked": True, "ancestor": True, "unmerged": 0,
+                "on_first_parent": on_fp, "empty_session": on_fp and head != base_tip}
     if r.returncode != 1:
         return {"checked": False,
                 "error": (r.stderr or r.stdout).strip() or "merge-base failed"}

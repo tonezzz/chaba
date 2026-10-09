@@ -1,11 +1,9 @@
 id: fix-review-refresh-prune
 title: ada-review-refresh on omen — prune-old-docs.py hits 600s timeout
-brief: 2026-10-09 audit — ada-review-refresh.service on tony-omen fails
-  after ~12min because its subprocess prune-old-docs.py (sweeps all mddb
-  collections per retention policy) times out at 600s. Either the sweep
-  is genuinely slow on a big corpus, or mddb (idc03) is slow under load.
-  Refreshed corpus is stale until fixed.
-column: backlog
+brief: 2026-10-09 audit — ada-review-refresh.service on tony-omen fails after ~12min because its subprocess prune-old-docs.py
+  (sweeps all mddb collections per retention policy) times out at 600s. Either the sweep is genuinely slow on a
+  big corpus, or mddb (idc03) is slow under load. Refreshed corpus is stale until fixed.
+column: doing
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -14,24 +12,27 @@ tags:
 - tony-omen
 - audit-followup
 - mddb
-spec: |
-  scripts/ada/prune-old-docs.py sweeps every collection in the retention
-  policy against MDDB http://100.102.134.91:11023/v1 and times out at 600s
-  (subprocess timeout inside ada-review-refresh, run on tony-omen).
-
-  1. Time it: run prune-old-docs.py --dry-run on omen and see WHERE the
-     time goes (which collection, list-vs-delete phase). If idc03 mddb is
-     slow, check its load — it may share the box with heavy benches.
-  2. Fix direction depends on finding:
-     - huge collection → paginate/parallelize the sweep or split per-
-       collection timeouts
-     - mddb slow → report, don't mask
-     - just needs longer → raise the subprocess timeout to something
-       honest (20min?) and/or make the sweep resumable.
-  3. Confirm ada-review-refresh.service completes end-to-end.
-  VERIFY: manual ada-review-refresh run on omen exits 0; prune step
-  duration recorded in card comms.
+spec: "scripts/ada/prune-old-docs.py sweeps every collection in the retention\npolicy against MDDB http://100.102.134.91:11023/v1\
+  \ and times out at 600s\n(subprocess timeout inside ada-review-refresh, run on tony-omen).\n\n1. Time it: run\
+  \ prune-old-docs.py --dry-run on omen and see WHERE the\n   time goes (which collection, list-vs-delete phase).\
+  \ If idc03 mddb is\n   slow, check its load — it may share the box with heavy benches.\n2. Fix direction depends\
+  \ on finding:\n   - huge collection → paginate/parallelize the sweep or split per-\n     collection timeouts\n\
+  \   - mddb slow → report, don't mask\n   - just needs longer → raise the subprocess timeout to something\n   \
+  \  honest (20min?) and/or make the sweep resumable.\n3. Confirm ada-review-refresh.service completes end-to-end.\n\
+  VERIFY: manual ada-review-refresh run on omen exits 0; prune step\nduration recorded in card comms.\n"
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc02
+comms:
+- at: 2026-10-09 16:36
+  from: idc02
+  text: claimed
+- at: 2026-10-09 16:37
+  from: chaba
+  text: started devin-task-20261009-163707-scripts-ada-prune-old-docs-py- on idc02 (dispatch)
+- at: 2026-10-09 16:37
+  from: devin
+  text: dispatch started — timing prune-old-docs.py --dry-run on tony-omen to find where the 600s goes
+updated: 2026-10-09 16:37

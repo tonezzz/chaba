@@ -1,12 +1,10 @@
 id: fix-idc02-audit-suite
 title: idc02 chaba-audit suite — 3 error findings (docker, caddy fmt, dup name)
-brief: "2026-10-09 audit — chaba-audit.service / chaba-audit-full.service on
-  idc02 exit nonzero on findings (by design). Last report (Oct 04,
-  reports/audits/summary.json) shows 3 error-severity findings worth
-  fixing — security-audit calls docker (absent on idc02, podman host),
-  caddy format check fails, and standardization flags duplicate audit
-  name cms-pages."
-column: backlog
+brief: 2026-10-09 audit — chaba-audit.service / chaba-audit-full.service on idc02 exit nonzero on findings (by design).
+  Last report (Oct 04, reports/audits/summary.json) shows 3 error-severity findings worth fixing — security-audit
+  calls docker (absent on idc02, podman host), caddy format check fails, and standardization flags duplicate audit
+  name cms-pages.
+column: doing
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -15,26 +13,41 @@ tags:
 - idc02
 - audit-followup
 - audits
-spec: |
-  From reports/audits/summary.json on idc02 (run Oct 04, still open):
-
-  1. security-audit — scripts/security-audit.sh line ~263 calls `docker`
-     which doesn't exist on idc02. Use podman fallback (podman-remote or
-     detect runtime), or skip docker-only checks when absent.
-  2. caddy — "Caddy format failed" — find which Caddyfile fails `caddy
-     fmt` (probably stacks/web/Caddyfile post-gesture-merge — I edited it
-     today for /apps/gesture-live routes; run caddy fmt --check on it).
-  3. standardization — "duplicate audit name: cms-pages" — two audits
-     registered under the same name in ssot.audit.yml; dedupe.
-  4. The cms-pages audit itself hits the dead mddb IP — that's covered by
-     card sweep-stale-mddb-endpoint; just note the dependency.
-
-  These are the audit suite's OWN findings — fixing them is what the
-  suite is for. Remove known_failed entries for chaba-audit.service /
-  chaba-audit-full.service in ssot.audit.hosts.yml once the suite runs
-  clean (or confirms findings genuinely resolved).
-  VERIFY: manual chaba-audit.service run on idc02 exits 0 or only warns.
+spec: "From reports/audits/summary.json on idc02 (run Oct 04, still open):\n\n1. security-audit — scripts/security-audit.sh\
+  \ line ~263 calls `docker`\n   which doesn't exist on idc02. Use podman fallback (podman-remote or\n   detect\
+  \ runtime), or skip docker-only checks when absent.\n2. caddy — \"Caddy format failed\" — find which Caddyfile\
+  \ fails `caddy\n   fmt` (probably stacks/web/Caddyfile post-gesture-merge — I edited it\n   today for /apps/gesture-live\
+  \ routes; run caddy fmt --check on it).\n3. standardization — \"duplicate audit name: cms-pages\" — two audits\n\
+  \   registered under the same name in ssot.audit.yml; dedupe.\n4. The cms-pages audit itself hits the dead mddb\
+  \ IP — that's covered by\n   card sweep-stale-mddb-endpoint; just note the dependency.\n\nThese are the audit\
+  \ suite's OWN findings — fixing them is what the\nsuite is for. Remove known_failed entries for chaba-audit.service\
+  \ /\nchaba-audit-full.service in ssot.audit.hosts.yml once the suite runs\nclean (or confirms findings genuinely\
+  \ resolved).\nVERIFY: manual chaba-audit.service run on idc02 exits 0 or only warns.\n"
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc02
+comms:
+- at: 2026-10-09 16:36
+  from: idc01
+  text: claimed
+- at: 2026-10-09 16:36
+  from: chaba
+  text: started devin-task-20261009-163629-from-reports-audits-summary-js on idc01 (dispatch)
+- at: 2026-10-09 16:37
+  from: idc01
+  text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261009-163629-from-reports-audits-summary-js.service:
+    Main process exited, cod'
+- at: 2026-10-09 16:50
+  from: devin
+  text: 'requeued: idc01 runner reported ok but did no work — its devin-dispatch was stale (unconditional --setenv=DEVIN_MODEL=''''
+    broke every task, ''Unknown model'' exit-0 hollow). Script synced from dell; card re-queued for a healthy runner.'
+- at: 2026-10-09 16:43
+  from: idc02
+  text: claimed
+- at: 2026-10-09 16:44
+  from: chaba
+  text: started devin-task-20261009-164359-from-reports-audits-summary-js on idc02 (dispatch)
+updated: 2026-10-09 16:44
+claim: {}

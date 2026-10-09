@@ -629,6 +629,13 @@ def sweep_card(card: dict, active: dict, dry: bool) -> bool:
                   dry)
         return False
     if m["ancestor"]:
+        if m.get("empty_session"):
+            flag_once(card, "empty_session",
+                      f"merge-sweep: devin-task-{tid} head is an old {base} "
+                      "commit — the session produced no work (died before "
+                      "committing, e.g. broken runner); NOT verified",
+                      dry)
+            return False
         changed = False
         if a.get("verified") is not True:
             def mark(c):

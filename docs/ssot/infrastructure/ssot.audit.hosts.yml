@@ -288,6 +288,9 @@ hosts:
         action: disable-or-configure
       - name: tony-dell-monitor.service
         reason: Display/host monitor helper is not currently running
+      - name: focus-dispatcher-overnight.service
+        reason: "03:00 run failed inside its ExecStartPre git pull (exit 128) — script verified clean on a manual run 2026-10-09; next scheduled run verifies"
+        action: verify-next-run
         action: investigate
       - name: cookie-bridge.service
         reason: Cookie bridge service failing on tony-dell; needs restart/investigation
@@ -778,6 +781,18 @@ hosts:
       - name: cast-desktop@0.service
         reason: "Desktop-cast instance exits 255 when display :0 is idle-asleep; cast pipeline largely moved off this host — verify whether the instance should be retired like dell's @1"
         action: verify-cast-instance-needed
+      - name: open-jev.service
+        reason: "Bench-time LLM service (gemma-3-4b, ~11G RSS + heavy swap) — stopped 2026-10-09 01:00 freeing RAM; failed flag is stop residue, not a crash. idc02 runs the always-on second instance (:8777)"
+        action: start-when-benching
+      - name: open-jev-student.service
+        reason: "Bench-time student scorer (gemma-3-1b) — stopped alongside open-jev; same stop residue"
+        action: start-when-benching
+      - name: ada-review-refresh.service
+        reason: "prune-old-docs.py subprocess hits its 600s timeout sweeping mddb collections — tracked in card fix-review-refresh-prune"
+        action: card-fix-review-refresh-prune
+      - name: focus-dispatcher-overnight.service
+        reason: "03:00 run failed SSOT validation on a stale checkout — checkout pulled clean 2026-10-09; next scheduled run verifies"
+        action: verify-next-run
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
@@ -1623,6 +1638,24 @@ hosts:
       - name: cam-wall-pull-vps.service
         reason: "Deliberately stopped during the 2026-10 cam-wall pipeline rework alongside go2rtc (journal shows explicit Stopped, not a crash)"
         action: verify-after-camwall-rework
+      - name: doc-mirror.service
+        reason: "Exceeds TimeoutStartSec=600 mirroring doc-archive — likely hanging on dead mddb default 100.74.146.0 in doc_archive.py; tracked in card sweep-stale-mddb-endpoint"
+        action: card-sweep-stale-mddb-endpoint
+      - name: ada-scenario-casting.service
+        reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock; schedule collision tracked in card fix-scenario-schedule-collision"
+        action: card-fix-scenario-schedule-collision
+      - name: ada-scenario-reports.service
+        reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock; schedule collision tracked in card fix-scenario-schedule-collision"
+        action: card-fix-scenario-schedule-collision
+      - name: ada-scenario-tools.service
+        reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock; schedule collision tracked in card fix-scenario-schedule-collision"
+        action: card-fix-scenario-schedule-collision
+      - name: fwupd.service
+        reason: "Firmware update daemon on a VPS — no firmware to manage; fails harmlessly"
+        action: ignore
+      - name: fwupd-refresh.service
+        reason: "Firmware metadata refresh on a VPS — no firmware to manage; fails harmlessly"
+        action: ignore
   idc02:
     tailscale_ip: 100.123.163.11
     description: Public VPS — onboarded 2026-09-30; lab/offload node —
@@ -1682,7 +1715,19 @@ hosts:
           100.123.163.11:11023, localhost/mddb:2.15.4-blrotate) — migrated
           from tony-dell 2026-10-05; self-seeds via leader snapshot, SSD
           verify ~4 min vs dell HDD >6h timeout loop
-    known_failed: []
+    known_failed:
+      - name: jev-bench.service
+        reason: "Hourly decision bench targets retired idc01 — connection refused until repointed; card fix-jev-bench-target"
+        action: card-fix-jev-bench-target
+      - name: ada-flood-news.service
+        reason: "Exits 2 after successful news fetch — publish-step bug; card fix-ada-flood-news-exit"
+        action: card-fix-ada-flood-news-exit
+      - name: chaba-audit.service
+        reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
+        action: card-fix-idc02-audit-suite
+      - name: chaba-audit-full.service
+        reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
+        action: card-fix-idc02-audit-suite
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/

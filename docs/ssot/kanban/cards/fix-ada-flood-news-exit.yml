@@ -1,10 +1,9 @@
 id: fix-ada-flood-news-exit
 title: ada-flood-news on idc02 exits 2 after successful fetch
-brief: 2026-10-09 audit — ada-flood-news.service on idc02 fetches the flood
-  news fine (journal shows fresh items through 15:01) then exits
-  status=2/INVALIDARGUMENT. The unit is rendered from ssot.jobs.yml —
-  fix the job definition, not the generated unit. Fails every run.
-column: backlog
+brief: 2026-10-09 audit — ada-flood-news.service on idc02 fetches the flood news fine (journal shows fresh items
+  through 15:01) then exits status=2/INVALIDARGUMENT. The unit is rendered from ssot.jobs.yml — fix the job definition,
+  not the generated unit. Fails every run.
+column: review
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -13,23 +12,55 @@ tags:
 - idc02
 - audit-followup
 - jobs
-spec: |
-  ada-flood-news.service on idc02 exits 2 after the fetch phase succeeds.
-  status=2/INVALIDARGUMENT suggests a CLI arg/env problem in a later step
-  (publish to CMS? report write?).
-
-  1. ssh idc02, journalctl --user -u ada-flood-news.service -n 50 —
-     find the actual error line AFTER the item listing (the tail shows
-     items then exits 2 — the error may be on stderr interleaved).
-  2. Find the job def in docs/ssot/infrastructure/ssot.jobs.yml
-     (job:ada-flood-news) and the script it runs.
-  3. Fix in ssot.jobs.yml / the script; re-render the unit per the jobs
-     pipeline (check how other job units get rendered — probably a
-     render script or restart regenerates).
-  4. Remove known_failed entry for ada-flood-news.service in
-     ssot.audit.hosts.yml when green.
-  VERIFY: systemctl --user start ada-flood-news.service exits 0 on idc02.
+spec: "ada-flood-news.service on idc02 exits 2 after the fetch phase succeeds.\nstatus=2/INVALIDARGUMENT suggests\
+  \ a CLI arg/env problem in a later step\n(publish to CMS? report write?).\n\n1. ssh idc02, journalctl --user -u\
+  \ ada-flood-news.service -n 50 —\n   find the actual error line AFTER the item listing (the tail shows\n   items\
+  \ then exits 2 — the error may be on stderr interleaved).\n2. Find the job def in docs/ssot/infrastructure/ssot.jobs.yml\n\
+  \   (job:ada-flood-news) and the script it runs.\n3. Fix in ssot.jobs.yml / the script; re-render the unit per\
+  \ the jobs\n   pipeline (check how other job units get rendered — probably a\n   render script or restart regenerates).\n\
+  4. Remove known_failed entry for ada-flood-news.service in\n   ssot.audit.hosts.yml when green.\nVERIFY: systemctl\
+  \ --user start ada-flood-news.service exits 0 on idc02.\n"
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: tony-omen
+  result: 'exit=0 — the stale idc02 checkout affects every repo-exec job there and deserves its own card. | devin-task-20261009-163627-ada-flood-news-service-on-idc0.service:
+    Consumed 1min 22.277s CPU time over 5min 58.057s wall clock time, 1.1G memory peak.'
+  verified: true
+comms:
+- at: 2026-10-09 16:36
+  from: tony-omen
+  text: claimed
+- at: 2026-10-09 16:36
+  from: chaba
+  text: started devin-task-20261009-163627-ada-flood-news-service-on-idc0 on tony-omen (dispatch)
+- at: 2026-10-09 16:39
+  from: devin
+  text: 'root cause found: idc02 checkout is 1379 commits behind — deployed flood-news-update.py still defaults
+    MDDB_BASE_URL to idc01:11023 (dead since mddb leader moved to idc03). Publish step gets ECONNREFUSED -> exit
+    2. Fix: pin MDDB_BASE_URL env on job:ada-flood-news like log-shipper does, re-render, reinstall unit.'
+- at: 2026-10-09 16:42
+  from: devin
+  text: 'DONE + verified. Fix: env pin MDDB_BASE_URL=idc03:11023/v1 on job:ada-flood-news (ssot.jobs.yml), re-rendered
+    + installed unit on idc02. systemctl --user start -> RC=0, published flood-report en+th to ada-cms-pages. known_failed
+    on idc02 was already empty — nothing removed. Follow-up: idc02 chaba checkout is ~1379 commits behind — every
+    repo-exec job there runs stale code; worth its own card.'
+- at: 2026-10-09 16:44
+  from: tony-omen
+  text: 'finished (ok): exit=0 — the stale idc02 checkout affects every repo-exec job there and deserves its own
+    card. | devin-task-20261009-163'
+- at: 2026-10-09 16:44
+  from: chaba
+  text: 'session-end checkpoint 35abecce: 2 leftover file(s) committed'
+- at: 2026-10-09 16:44
+  from: chaba
+  text: pushed dispatch/20261009-163627-ada-flood-news-service-on-idc0 to origin
+- at: 2026-10-09 16:44
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 28.3s)
+- at: 2026-10-09 16:44
+  from: chaba
+  text: auto-merged 3d562140 (dispatch/20261009-163627-ada-flood-news-service-on-idc0) → origin/master
+updated: 2026-10-09 16:44
+claim: {}

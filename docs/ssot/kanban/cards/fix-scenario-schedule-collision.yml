@@ -1,13 +1,11 @@
 id: fix-scenario-schedule-collision
 title: Weekly ada-scenario suites on idc03 refused by bench-lock contention
-brief: "2026-10-09 audit — ada-scenario-reports (Thu 03:30) and
-  ada-scenario-tools (Fri 03:30) fail with 'another scenario benchmark is
-  already running — refusing'. The refusal is correct (concurrent suites
-  share the Ada session and corrupt results), but the schedule guarantees
-  collisions — hourly ada-scenario-smoke + daily ada-scenario-casting
-  (04:30) + ada-bench-casting (02:00) all surround the weekly 03:30 slots.
-  Weekly suites get skipped whenever a run overruns."
-column: backlog
+brief: 2026-10-09 audit — ada-scenario-reports (Thu 03:30) and ada-scenario-tools (Fri 03:30) fail with 'another
+  scenario benchmark is already running — refusing'. The refusal is correct (concurrent suites share the Ada session
+  and corrupt results), but the schedule guarantees collisions — hourly ada-scenario-smoke + daily ada-scenario-casting
+  (04:30) + ada-bench-casting (02:00) all surround the weekly 03:30 slots. Weekly suites get skipped whenever a
+  run overruns.
+column: doing
 review_kind: verify
 priority: medium
 kind: improvement
@@ -17,27 +15,54 @@ tags:
 - audit-followup
 - bench
 - scheduling
-spec: |
-  Fix scenario-suite scheduling on idc03 so weekly suites aren't refused:
+spec: 'Fix scenario-suite scheduling on idc03 so weekly suites aren''t refused:
+
 
   Option A (preferred if cheap): move weekly suites to a slot with clear
+
   runway — e.g. 06:30 (after casting 04:30 + embed-bench 06:00) — or make
+
   the hourly smoke skip its slot when a weekly suite is due within N min.
+
   Option B: a real queue — refused suites retry instead of dropping.
 
+
   Where the schedule lives: check whether timers are rendered from
+
   ssot.jobs.yml or installed on idc03 directly (systemctl --user
+
   list-timers | grep scenario on idc03). Fix the source of truth.
 
+
   Also check ada-scenario-casting.service — it produced no journal output
+
   in the audit window; confirm it runs (timer shows next Sat 04:30).
 
+
   Remove known_failed entries for ada-scenario-{casting,reports,tools}
+
   in ssot.audit.hosts.yml when suites pass.
+
   VERIFY: the next weekly suite (Tue ada-scenario-cms 03:30) completes
+
   instead of refusing — or demonstrate with a manual run while smoke
+
   is idle.
+
+  '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: mn01
+comms:
+- at: 2026-10-09 16:37
+  from: mn01
+  text: claimed
+- at: 2026-10-09 16:37
+  from: chaba
+  text: started devin-task-20261009-093717-fix-scenario-suite-scheduling- on mn01 (dispatch)
+- at: 2026-10-09 16:37
+  from: devin
+  text: 'Starting: locating scenario suite schedule source of truth (ssot.jobs.yml vs timers on idc03)'
+updated: 2026-10-09 16:37
