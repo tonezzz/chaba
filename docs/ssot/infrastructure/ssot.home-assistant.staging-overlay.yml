@@ -1,0 +1,510 @@
+title: Home Assistant Staging Actuation Guard
+subtitle: Overlay policy that neutralizes write paths on cloned prod configs
+  (tony-ha -> tony-dev, ada-ha -> ada-dev). Consumed by
+  scripts/home-assistant/staging-overlay.py via scripts/home-assistant/stage-clone.sh.
+icon: 🛡️
+version: 1
+last_updated: "2026-10-09"
+card: ha-staging-actuation-guard
+
+# ---------------------------------------------------------------------------
+# Strategy (card ha-staging-actuation-guard):
+#   keep the cloned config byte-identical where possible; neutralize ONLY the
+#   write paths. The clone is for release-candidate / dashboard / automation
+#   testing against mirror+mock entities — it must never double-fire real
+#   household actuation.
+#
+# Decided 2026-10-09 (was the card's open question):
+#   staging test automations run against mirror/mock entities
+#   (mha_mirror_* REST mirrors + dev_* input_* helpers, the michael-dev
+#   pattern) — never against real device entities. Write-capable config
+#   entries are disabled outright; entities dashboards still need come back
+#   read-only via mirrors.
+#
+#   Corollary: mirror template-switches that write back via rest_command are
+#   automatically safe on staging — the overlay rewrites every rest_command
+#   URL to the sink, so mirror toggles land on 127.0.0.1:9 (refused).
+# ---------------------------------------------------------------------------
+
+overlay:
+  # Directories never treated as HA YAML config. .storage is JSON and handled
+  # by the storage transforms below; the rest are code, caches, or foreign
+  # yaml (esphome device files look like HA yaml but are not).
+  skip_dirs:
+    - .storage
+    - .cloud
+    - .git
+    - deps
+    - tts
+    - __pycache__
+    - node_modules
+    - .venv
+    - custom_components   # integration code/services.yaml — not config
+    - custom_templates
+    - blueprints          # blueprint templates must not gain initial_state
+    - esphome             # device firmware yaml, not HA config
+    - www                 # lovelace/web assets; keep byte-identical
+
+  # ---- automation ---------------------------------------------------------
+  # Two independent layers, both applied:
+  #   1. inject `initial_state: false` into every automation item in every
+  #      yaml file (covers automations.yaml + package automations,
+  #      incl. !include'd lists) — wins over restored on-state at boot.
+  #   2. entity_registry disable (.storage): automation.* -> disabled_by=user
+  #      so entities are never constructed even if a yaml edit is missed.
+  # Re-enabling one automation for mirror testing stays a deliberate act.
+  automation:
+    inject_initial_state_off: true
+    registry_disable: true
+
+  # ---- script -------------------------------------------------------------
+  # Replace every script's `sequence:` with a single `stop` step. alias/
+  # fields/mode/icon are kept so script.* entities still exist and dashboard
+  # buttons render — they complete instantly doing nothing.
+  script:
+    stub_sequence:
+      - stop: staging-noop
+    # same treatment for these sibling domains
+    also_stub:
+      - intent_script
+
+  # ---- scene --------------------------------------------------------------
+  # Scenes apply real device states -> empty the entities map (scene exists,
+  # does nothing).
+  scene:
+    empty_entities: true
+
+  # ---- shell_command ------------------------------------------------------
+  # name->command scalars replaced with a logging no-op. The command line
+  # lands in HA's stderr -> home-assistant.log, giving an audit trail of what
+  # would have run.
+  shell_command:
+    noop_template: "echo '[staging-noop] shell_command.{name} invoked; command discarded'"
+
+  # ---- rest_command -------------------------------------------------------
+  # All rest_command `url:` values rewritten to the sink. Port 9 (RFC 863
+  # discard) has no listener -> immediate connection refused, logged, and
+  # provably incapable of reaching a real endpoint (board-api posts,
+  # recent-event posts, webhook fans).
+  rest_command:
+    sink_url: "http://127.0.0.1:9/staging-sink"
+
+  # ---- notify -------------------------------------------------------------
+  # YAML notify platforms that push outbound are dropped entirely. `file` and
+  # `group` stay (group members that were dropped fail harmlessly — nobody
+  # calls them once automations are off).
+  notify:
+    drop_platforms:
+      - smtp
+      - rest
+      - html5
+      - apns
+      - apns_v2
+      - pushover
+      - telegram
+      - discord
+      - slack
+      - matrix
+      - rocketchat
+      - pushbullet
+      - pushsafer
+      - xmpp
+      - twilio_sms
+      - twilio_call
+      - clickatell
+      - clicksms
+      - aws_sns
+      - aws_sqs
+      - aws_lambda
+      - lannouncer
+      - lametric
+      - mailgun
+      - message_bird
+      - nexmo
+      - prowl
+      - pushjet
+      - sendgrid
+      - syslog
+      - ciscospark
+      - hangouts
+      - mastodon
+      - signal_messenger
+      - simplepush
+      - pushy
+      - ecobee
+      - fcm
+      - gntp
+      - ilo
+      - instapush
+      - kodi
+      - linear
+      - netdata_lts
+      - nokia
+      - pushetta
+      - qwikswitch
+      - serviant
+      - stride
+      - synology_chat
+      - tibber
+      - twitter
+      - vybit
+      - webostv
+      - yessssms
+      - zulip
+    # platform names that never reach outside the box — kept as-is
+    keep_platforms:
+      - file
+      - group
+      - persistent_notification
+
+  # ---- actuating YAML platforms -------------------------------------------
+  # Any entity defined under a domain whose *sole purpose* is to change a
+  # device is a write path. Under these domains, a platform list item is
+  # dropped unless its platform is in keep_platforms (template/group only
+  # call services or scripts — all of which are already neutralized — so the
+  # entity stays for dashboards but cannot reach hardware).
+  actuating_domains:
+    domains: &actuating_domains
+      - switch
+      - light
+      - cover
+      - fan
+      - lock
+      - climate
+      - vacuum
+      - siren
+      - humidifier
+      - water_heater
+      - lawn_mower
+      - valve
+      - remote
+      - media_player
+      - alarm_control_panel
+      - button
+      - number
+      - select
+      - text
+      - update
+    keep_platforms:
+      - template
+      - group
+
+  # ---- integration-style YAML blocks with per-entity subkeys ---------------
+  # mqtt:, modbus:, knx: can define write-capable entities directly in YAML.
+  # Drop the actuating subkeys; keep pure-read subkeys (sensor/binary_sensor/
+  # tag/device_automation) so dashboards keep their data where the broker is
+  # still reachable. If the mqtt config entry is also disabled (see storage),
+  # these residual readers simply go unavailable.
+  strip_entity_subkeys:
+    domains:
+      - mqtt
+      - modbus
+      - knx
+    drop_subkeys:
+      - switch
+      - light
+      - cover
+      - fan
+      - climate
+      - lock
+      - vacuum
+      - siren
+      - humidifier
+      - water_heater
+      - lawn_mower
+      - valve
+      - scene
+      - button
+      - number
+      - select
+      - text
+      - notify
+      - alarm_control_panel
+      - camera
+      - image
+      - update
+    keep_subkeys:
+      - sensor
+      - binary_sensor
+      - tag
+      - device_automation
+
+  # ---- modern `command_line:` list format ----------------------------------
+  # Items look like `- sensor: {...}` / `- switch: {command_on: ...}`.
+  # Actuating subkeys are dropped; sensor/binary_sensor are kept but flagged
+  # (the polled shell command could still carry side effects — review the
+  # report).
+  command_line:
+    drop_domains: *actuating_domains
+    keep_domains:
+      - sensor
+      - binary_sensor
+
+  # ---- top-level blocks removed wholesale ----------------------------------
+  # Outbound state feeds, cloud exposures, and inbound-control bridges must
+  # not come up on staging at all.
+  drop_top_level_keys:
+    - influxdb            # pushes state history to an external DB
+    - graphite            # pushes metrics
+    - statsd              # pushes metrics
+    - splunk              # pushes events
+    - mqtt_statestream    # publishes every state change to the real broker
+    - mqtt_eventstream    # publishes every event to the real broker
+    - duckdns             # mutates real DNS records
+    - upnp                # could open ports on the real router (IGD)
+    - igd
+    - emulated_hue        # exposes devices to Alexa/Google as if prod
+    - homekit             # exposes devices to Home/HomeKit
+    - alexa               # Alexa smart-home skill config
+    - google_assistant    # Google smart-home project config
+    - cloud               # Nabu Casa remote/UI + stun
+    - pyscript            # arbitrary python services — not auditable as yaml
+    - python_script
+    - keymaster           # lock management add-on hooks (zwave locks)
+    - nest                # legacy SDM yaml (writes thermostats)
+    - honeymap            # novelty outbound
+    - certbot             # mutates real certs
+    - letsencrypt         # mutates real certs
+  # Same rule, but the key is kept and reported instead of removed — pure
+  # read exposure (a metrics endpoint a dashboard might use); keeping means
+  # the staging UI stays identical.
+  flag_top_level_keys:
+    - prometheus          # pull endpoint; not an actuation path
+    - waze_travel_time    # outbound read
+    - google_travel_time  # outbound read
+    - command_line        # handled structurally above
+    - snmp                # read sensors; GET walks only
+
+  # ---- recorder -----------------------------------------------------------
+  # A prod clone must never write the shared/external history DB — a
+  # non-sqlite db_url is removed, falling back to per-config sqlite.
+  recorder:
+    drop_db_url: true
+
+  # ---- http ---------------------------------------------------------------
+  # Prod binds loopback (tailscale serve terminates TLS). In a podman-network
+  # staging container, `server_host: 127.0.0.1` binds the CONTAINER's loopback
+  # and the published host port can never connect — the key is dropped so HA
+  # binds all container interfaces. trusted_proxies gains the podman
+  # forwarding subnets so `use_x_forwarded_for` still works behind
+  # tailscale serve / Caddy.
+  http:
+    drop_server_host: true
+    ensure_use_x_forwarded_for: true
+    ensure_trusted_proxies:
+      - 127.0.0.1
+      - "::1"
+      - 10.0.2.0/24       # podman slirp4netns rootless port-forward source
+      - 10.88.0.0/16      # podman bridge networks
+
+  # ---- homeassistant: identity overrides ------------------------------------
+  # Optional; stage-clone.sh --name sets `name:` (e.g. "Tony DEV") so the
+  # staging UI is visibly distinct.
+  homeassistant:
+    # set_keys is populated from CLI flags (--name, --internal-url,
+    # --external-url); the policy itself only declares which keys MAY be set.
+    settable_keys:
+      - name
+      - internal_url
+      - external_url
+
+  # ---- .storage transforms ---------------------------------------------------
+  storage:
+    # core.config_entries: every entry whose domain is in this list gets
+    # disabled_by="user" — the integration never sets up, its entities never
+    # exist, and nothing can actuate through it. This is the primary defence
+    # for UI-configured integrations (Tuya cloud, Chromecast, AndroidTV,
+    # ESPHome, mobile_app push, MQTT, ...).
+    disabled_config_entry_domains:
+      # cloud / voice-assistant exposure (double-exposes the household)
+      - cloud
+      - google_assistant
+      - alexa
+      - homekit
+      - matter
+      - thread
+      # mobile push + inbound webhooks from real phones
+      - mobile_app
+      # cloud device clouds that can write
+      - tuya
+      - localtuya
+      - smartthings
+      - ifttt
+      # broker — subscribes AND publishes; staging must not reach it
+      - mqtt
+      # local device control (switches/lights/media/covers)
+      - esphome
+      - shelly
+      - tplink
+      - kasa
+      - wiz
+      - yeelight
+      - lifx
+      - nanoleaf
+      - hue
+      - tradfri
+      - zha
+      - zwave_js
+      - deconz
+      - broadlink
+      - tasmota
+      - sonoff
+      - gree
+      - sensibo
+      - daikin
+      - midea_ac
+      - milot
+      - keba
+      - openevse
+      - wallbox
+      - easee
+      - govee
+      - switchbot
+      - bond
+      - hunterdouglas_powerview
+      - somfy
+      - velux
+      - rfxtrx
+      - rflink
+      - openhome
+      - denonavr
+      - onkyo
+      - yamaha
+      - heos
+      - unifi           # presence is useful but PoE/block services write
+      - mikrotik
+      - asuswrt
+      - fritz
+      - omada
+      # media / cast targets (card explicitly lists cast)
+      - cast
+      - androidtv
+      - androidtv_remote
+      - webostv
+      - samsungtv
+      - braviatv
+      - jellyfin
+      - emby
+      - plex
+      - kodi
+      - sonos
+      - snapcast
+      - roku
+      - spotify         # playback control = actuation
+      - dlna_dmr
+      - dlna_dms
+      - harmony
+      - vlc
+      - firetv
+      # cameras that support PTZ/preset writes (streams stay via
+      # generic/ffmpeg/go2rtc yaml cameras which are read-only)
+      - onvif
+      - reolink
+      - amcrest
+      - axis
+      # security systems — arm/disarm is actuation
+      - blink
+      - ring
+      - august
+      - yale_smart_alarm
+      - verisure
+      - aladdin_connect
+      - myq
+      - surepetcare
+      - homekit_controller
+      # misc write-capable
+      - xiaomi_miio
+      - xiaomi_miot_auto
+      - xiaomi_miot
+      - lg_thinq
+      - smart_irrigation
+      - rainmachine
+      - hydrawise
+      - rainbird
+    # Not disabled, but surfaced in the report for human review —
+    # borderline domains where actuation depends on config.
+    review_config_entry_domains:
+      - frigate         # read-mostly; has detection switches
+      - hacs            # can install/update code
+      - influxdb        # config-entry form of the outbound feed
+      - adguard         # can toggle blocking on the real DNS
+      - pihole          # same
+      - transmission    # can manage torrents
+      - qnap
+      - synology_dsm    # has power/service actions
+      - ipp             # printer; mostly read
+      - brother
+      - speedtestdotnet # harmless bandwidth probe
+      - tailscale
+      - google          # calendar/assistant sdk mixes read + write
+      - google_photos
+      - google_tasks
+      - gmail
+      - webrtc
+      - dwains_dashboard
+    # core.entity_registry: domains disabled outright (belt for the yaml
+    # initial_state suspenders — see automation section).
+    registry_disable_entity_domains:
+      - automation
+
+  # ---- post-apply verification (staging-overlay.py verify) -------------------
+  verify:
+    fail_if:
+      automation_without_initial_state_off: true
+      script_sequence_not_stubbed: true
+      shell_command_without_noop: true
+      rest_command_url_not_sink: true
+      disabled_domain_entry_enabled: true
+      registry_automation_enabled: true
+      actuating_platform_present: true
+      dropped_top_level_key_present: true
+      mqtt_modbus_knx_actuating_subkey: true
+      command_line_actuating_subkey: true
+      http_server_host_present: true
+      recorder_external_db_url: true
+      notify_drop_platform_present: true
+    warn_if:
+      review_domain_entry_enabled: true
+      command_line_sensor_present: true
+      flag_top_level_key_present: true
+      secrets_file_present: true      # cloned secrets.yaml = prod creds (same-host OK)
+      storage_auth_present: true      # cloned .storage/auth* = prod session tokens
+
+  # ---- read-keep (documentation only — these are never touched) ---------------
+  # sensors, binary_sensors, history, logbook, recorder(local sqlite),
+  # dashboards/lovelace (yaml + .storage), lovelace resources, themes,
+  # www assets, custom cards, input_* helpers, timers/counters, persons,
+  # zones, sun/weather reads, template sensors, file/folder sensors,
+  # scrape/sql/rest sensor reads, device_tracker reads.
+
+# ---------------------------------------------------------------------------
+# Per-instance overrides: staging-overlay.py merges `instances.<target>` over
+# the top-level overlay (lists append, dicts shallow-merge, scalars replace).
+# ---------------------------------------------------------------------------
+instances: {}
+
+runbook:
+  clone: |
+    scripts/home-assistant/stage-clone.sh --source tony-ha --target tony-dev \
+        --name "Tony DEV" --package stacks/tony-dell/tony-dev/packages/z_staging_mirrors.yaml
+  verify: |
+    python3 scripts/home-assistant/staging-overlay.py verify --config ~/.config/tony-dev
+    -> exit 0 and zero FAIL lines = no residual write paths
+  residual_risks:
+    - "Manual dashboard taps: remaining entities are mirrors/reads only, so
+       there is no real device to toggle — write-capable entities are absent,
+       not merely dormant."
+    - "A yaml path this guard does not know about can slip through; the
+       `verify` pass + 24h logbook watch (card metric) is the backstop."
+    - "Cloned secrets.yaml/.storage carry prod credentials — acceptable on
+       same-host staging twins; do not ship a staging clone off tony-dell."
+    - "Host-side units (cast-browser, audit-cast, node-red, ha-live) are NOT
+       part of the HA config — the clone cannot start them; stage nothing in
+       ~/.config/<name> outside the container volume."
+
+status:
+  state: active
+  implemented_by:
+    - scripts/home-assistant/stage-clone.sh
+    - scripts/home-assistant/staging-overlay.py
+  blocks_card: ha-dev-instances

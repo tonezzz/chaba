@@ -1,10 +1,27 @@
 id: ha-staging-actuation-guard
 title: 'Staging actuation guard — dev clones must never double-fire household automations'
 brief: "A cloned tony-ha/ada-ha config carries real automations, scripts, shell_commands and cloud integrations. If a dev twin boots as-is it will actuate real devices twice. Define the strip list before ha-dev-instances boots anything."
-column: doing
+column: review
 priority: high
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
+decisions:
+  - id: staging-test-entities
+    decided: 2026-10-09
+    by: devin-dispatch (autonomy t2)
+    choice: >-
+      Staging test automations run against mirror/mock entities — mha_mirror_*
+      REST mirrors + dev_* input_* helpers (the pattern michael-dev already
+      proves) — never real device entities. Write-capable config entries are
+      disabled in .storage; entities dashboards still need come back
+      read-only via mirrors. Mirror template-switches that write back through
+      rest_command are safe automatically: the overlay sinks every
+      rest_command URL to 127.0.0.1:9 (refused).
+deliverables:
+  - scripts/home-assistant/stage-clone.sh
+  - scripts/home-assistant/staging-overlay.py
+  - docs/ssot/infrastructure/ssot.home-assistant.staging-overlay.yml
+  - tests/ha/test_staging_overlay.py
 program: ha-lanes
 metric: >-
   Booting tony-dev/ada-dev produces zero outbound actuation: no Tuya/local
