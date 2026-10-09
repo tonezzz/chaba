@@ -1,0 +1,81 @@
+title: Model Routing Standard — the tiered cascade
+subtitle: Which lane each model class serves; Gemini reserved for its moats
+icon: source-branch
+version: 1
+last_updated: "2026-10-09"
+
+overview:
+  purpose: |
+    One map for every LLM/vision/embed call in the fleet. The principle
+    is the jev cascade generalized: the cheapest tier that can answer,
+    answers. Escalation is deliberate, never default. Adopted 2026-10-09
+    after the Gemini free-tier 429 storms (~5k/day on idc01, ~200/day
+    idc03) showed quota being burned on jobs local models do for free.
+
+tiers:
+  t0-tiny-local:
+    models: [qwen3:0.6b, distilbert (jev-student), micro ONNX nets]
+    serves: routing decisions, classifiers, yes/no gates, tag extraction
+    hosts: idc03 (jev-student :8778), omen ollama (tailnet :11434)
+    cost: 0
+  t1-local-mid:
+    models: [phi3-gguf, llama3.2:3b, gemma-3-4b (open-jev, dormant),
+             nomic-embed-text, moondream]
+    serves: summaries, digests, embeddings, routine vision describes,
+            short transforms, bench scorers
+    hosts: omen :11434, idc03 :11434 (tailnet)
+    cost: 0
+  t2-openrouter-free:
+    models: [OR :free pool via GhostRoute rotation — prefixed ids after
+             tonezzz/GhostRoute c6ca06d]
+    serves: OpenClaw interactive agent turns, bursty experiments,
+            anything that can tolerate a rotated/dead free model
+    cost: 0, unreliable by design — retry/rotate is part of the lane
+  t3-gemini-moats:
+    models: [gemini-2.5/3 live + flash, gemini-embedding-*]
+    serves: >
+      ONLY what its moats earn: Live API full-duplex voice (Ada, GEV),
+      1M-context jobs (whole-repo audits, long transcript batches),
+      vision quality that moondream demonstrably misses. Embeddings are
+      the exception under quota pressure — see migration below.
+    cost: quota — spend it where nothing else can do the job
+    rule: a new caller reaching for Gemini must name which moat it uses.
+
+current_migrations:
+  mddb-embeddings:
+    state: staged
+    detail: |
+      nomic-embed-text config stored on idc03 mddb (id: nomic-local,
+      isDefault:false, apiUrl loopback :11434). Ollama on idc03
+      already serves nomic (verified live 2026-10-09, 768d). Flip needs
+      EITHER a loopback listener shim for ollama (socat loopback→tailnet :11434) OR
+      MDDB_OUTBOUND_ALLOWLIST env — and an mddb restart either way (config loads at boot;
+      cold vector-index reload ~45min per kb note). Existing collections
+      carry Gemini vectors — a flip means re-embed or dual-stack
+      strategy; decide on the card.
+    decision_needed: re-embed corpus vs per-collection embedder feature
+  ada-vision-describe:
+    state: proven-not-deployed
+    detail: |
+      backend/vision_describe.py is already an OpenAI-compat sidecar
+      (ADA_VISION_MODE=describe|both). moondream on idc03 answers images
+      correctly via /v1/chat/completions (verified 2026-10-09). Flip =
+      env on ada service: ADA_VISION_BASE_URL=loopback :11434/v1
+      (needs loopback shim too — ollama binds tailnet IP), MODEL=moondream,
+      and a non-empty dummy key value (the sidecar gates on key presence;
+      ollama ignores the key). Fails safe to inline Gemini image when the
+      sidecar is down.
+    caution: 20s cold CPU inference on 4vCPU — warm after first call;
+      acceptable for 'what do you see' cam probes, not for realtime turns.
+
+policy:
+  - New callers declare their tier in the card/PR description.
+  - A service may not burn t3 quota for a t1-able job (embedding the
+    reindex queue through Gemini during quota storms was the 429 storm).
+  - Zero-LLM paths stay zero-LLM — monitoring/digest detection never
+    routes through any tier.
+  - OR free is bursty-only; scheduled/batch jobs live at t1 or below.
+
+cards:
+  - chaba-nest-models   (micro-model curriculum — t0 factory)
+  - monitoring-standard (digest/health stay deterministic)
