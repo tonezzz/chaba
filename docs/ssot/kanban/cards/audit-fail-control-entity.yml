@@ -1,0 +1,27 @@
+id: audit-fail-control-entity
+title: 'Ada session audit: fail:control_entity (1d seen)'
+column: backlog
+updated: 2026-10-11 05:30
+brief: 'Recurring session-audit signature ''fail:control_entity'': control_entity -> fail — 3x on 2026-10-10, seen
+  on 1 day(s).'
+priority: high
+program: chaba-ci
+tags:
+- session-audit
+- ada
+- fail
+spec: 'Investigate Ada session-audit signature `fail:control_entity`.
+
+
+  Latest evidence: action must be one of: media_pause, media_play, media_stop, select_source, turn_off, turn_on,
+  volume_down, volume_mute, volume_up
+
+
+  Report: CMS page `ada-session-audit` + MDDB `ada-ha-scenario-reports` key `audit/session-2026-10-10`.
+
+  Decide: tool bug / schema-description issue / display-side / correct-by-design friction; fix or document and close.'
+note: Auto-filed by session-audit (dedup on card id audit-fail-control-entity); refiled only if the pattern persists.
+comms:
+- at: 2026-10-11 05:30
+  from: devin
+  text: card captured via board-api
