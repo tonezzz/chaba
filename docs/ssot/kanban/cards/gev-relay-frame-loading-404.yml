@@ -7,7 +7,7 @@ brief: 'Session e05cdaa7ab (2026-10-08): cast_to_screen nav to /apps/gev/ succee
 column: backlog
 priority: medium
 program: gev
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:35
 tags:
 - gev
 - relay
@@ -20,6 +20,16 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 09:35
+  from: devin
+  text: 'DONE on dispatch branch (not pushed/deployed). Two findings: (a) the literal 404 was the missing
+    /apps/gev-cmd strip_prefix — already fixed live Oct-9; synced the checked-in Caddyfile to handle_path.
+    (b) The real race: screen-targeted /command during frame-loading found zero remotes → bare ok:false.
+    bridge.py now waits GEV_REMOTE_GRACE_S (12s) for the remote to register, else returns {ok:false,
+    retryable:true, retry_after_s:5} "client may still be loading; retry in ~Ns". bridge-check.py (new,
+    deps-free) = 13 checks pass. Needs container rebuild+restart on tony-dell (approval-gated). Follow-up:
+    ada-pi gev_command "wait ~10s" hint can be relaxed once live. Job record:
+    docs/ssot/jobs/gev/2026-10-10-gev-relay-frame-loading-grace.yml'
 action:
   type: dispatch
   status: queued

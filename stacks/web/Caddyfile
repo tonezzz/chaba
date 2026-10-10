@@ -101,7 +101,7 @@ http://127.0.0.1:8080 {
 	handle /apps/gev-cmd {
 		redir * /apps/gev-cmd/ 308
 	}
-	handle /apps/gev-cmd/* {
+	handle_path /apps/gev-cmd/* {
 		reverse_proxy 127.0.0.1:8790
 	}
 

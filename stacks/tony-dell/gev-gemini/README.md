@@ -42,6 +42,14 @@ Model proposes, bridge enforces — same posture as Ada's provider:
 `/command` (loopback HTTP) is intentionally ungated — callers like Ada's
 `gev_command` are already gated upstream.
 
+Screen-targeted `/command` calls wait `GEV_REMOTE_GRACE_S` (default 12s)
+for a matching remote to register — a freshly casted page is still in
+frame-loading when the first `gev_command` lands (the 2026-10-08
+nav-then-404 gap). If the grace elapses the response is
+`{ok:false, retryable:true, retry_after_s:N}` with "client may still be
+loading; retry in ~Ns". `python3 bridge-check.py` self-tests the grace +
+retry contract without websockets/genai deps.
+
 ## Live path smoke
 
 ```bash

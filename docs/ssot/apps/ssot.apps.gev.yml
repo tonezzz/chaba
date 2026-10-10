@@ -53,7 +53,7 @@ sections:
       - label: Service
         text: systemctl --user start gev-gemini.service (Docker container on port 8789).
       - label: Remote (casted) clients
-        text: "A GEV page loaded inside a vcast display iframe gets ?screen=N&pane=P injected by the receiver and registers with the bridge as a passive remote (?remote=1 — no Gemini session). GET /apps/gev-cmd/command/health lists remotes {screen,pane}; POST /apps/gev-cmd/command {name,args,screen,pane} drives them. Over-writing the pane (e.g. camwall nav) drops the remote — that read is what ada-pi cast_to_screen turns into the displaced note + split/PiP suggestion (feafff7)."
+        text: "A GEV page loaded inside a vcast display iframe gets ?screen=N&pane=P injected by the receiver and registers with the bridge as a passive remote (?remote=1 — no Gemini session). GET /apps/gev-cmd/command/health lists remotes {screen,pane}; POST /apps/gev-cmd/command {name,args,screen,pane} drives them. Screen-targeted commands wait GEV_REMOTE_GRACE_S (default 12s) for the remote to register — the freshly casted page is still in frame-loading — then answer {ok:false, retryable:true, retry_after_s} ('client may still be loading; retry in ~Ns'). Over-writing the pane (e.g. camwall nav) drops the remote — that read is what ada-pi cast_to_screen turns into the displaced note + split/PiP suggestion (feafff7)."
       - label: Verify-after-act for casts
         text: "A cast tool returning ok is not evidence — after casting /apps/gev/ to a screen, read state before claiming: /displays must show state=nav + pN:frame-ok AND /command/health must list the remote. Automated: node stacks/web/input-bridge/gev-cast-verify.mjs; contract doc: docs/runbooks/vcast-gev-verify-after-act.md."
       - label: Registry

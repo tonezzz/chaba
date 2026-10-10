@@ -1,0 +1,108 @@
+title: GEV cmd relay — frame-loading grace + retryable no-remote error
+subtitle: >
+  Dispatch of kanban card gev-relay-frame-loading-404: a screen-targeted
+  POST /apps/gev-cmd/command that lands while the freshly casted GEV page
+  is still in frame-loading now waits for the ?remote=1 socket to
+  register (GEV_REMOTE_GRACE_S, default 12s) instead of failing, and a
+  still-unmatched command returns a retryable error with a "client may
+  still be loading; retry in ~Ns" hint instead of a bare "reached
+  nobody". Checked-in Caddyfile also caught up to the live handle_path
+  strip fix.
+icon: wifi
+
+planning:
+  goal: >
+    Close the cast-nav → gev_command race: after cast_to_screen navs a
+    display to /apps/gev/, the page needs a few seconds before its
+    ?remote=1 websocket connects and hello carries {screen,pane}. A
+    command arriving in that window must queue (wait) or fail retryable,
+    never hard-fail — Ada can't measure "wait ~10s".
+  scope: >
+    stacks/tony-dell/gev-gemini/bridge.py (_dispatch grace loop + /command
+    response contract), new bridge-check.py self-test, README +
+    ssot.apps.gev.yml contract lines, stacks/web/Caddyfile gev-cmd
+    handle_path drift. ada-pi's gev_command tool is a different repo —
+    unchanged; it already surfaces the relay's ok:false error text.
+  success_criteria:
+    - 'screen-targeted /command with no remote waits ~grace_s then returns
+      {ok:false, retryable:true, retry_after_s:N}'
+    - a remote registering mid-grace receives the function_call
+    - broadcast (screen=None) behavior unchanged (no wait)
+    - bridge-check.py exits 0 without websockets/google-genai installed
+  risks:
+    - grace holds an HTTP handler thread for up to 12s — ThreadingHTTPServer
+      makes this per-request, not a head-of-line block
+    - '12s default means caller-side HTTP timeouts on the
+      ada-pi gev_command path should exceed grace+wait+5s'
+  resources:
+    - gev-gemini cmd relay /apps/gev-cmd/command (tony-dell :8790)
+  owner: devin (dispatch)
+  related_focus:
+    - label: gev-relay-frame-loading-404
+      file: docs/ssot/kanban/cards/gev-relay-frame-loading-404.yml
+
+processing:
+  status: done
+  started_at: "2026-10-10 09:20 +07"
+  steps:
+    - id: 1
+      label: Recon — where the 404 really came from
+      status: done
+      notes: >
+        Two distinct defects shared the symptom. (a) The 2026-10-08
+        incident's literal HTTP 404 was the missing `uri strip_prefix
+        /apps/gev-cmd` on the generated Caddy route — bridge.py only knows
+        /command, so /apps/gev-cmd/command 404'd. Already fixed live Oct-9
+        19:55 + durable in ssot.routes.yml (faaa98ad), but the checked-in
+        stacks/web/Caddyfile still had `handle` (no strip) — synced to
+        `handle_path` here. (b) The underlying race the card describes is
+        real independent of (a): between vcast nav and remote+hello, a
+        screen-targeted /command found zero remotes → 200
+        {ok:false:"no GEV remote on screen N"} — un-actionable for a
+        model caller.
+    - id: 2
+      label: Grace + retryable contract in bridge.py
+      status: done
+      notes: >
+        _dispatch gains grace_s: while zero targets match, it re-polls
+        REMOTE/CLIENTS every 0.25s until deadline (covers both the
+        ws-not-yet-connected and connected-but-hello-pending windows,
+        since hello sets meta['screen']). do_POST passes
+        grace_s=GEV_REMOTE_GRACE_S (12s default) only for screen-targeted
+        calls; broadcasts keep grace=0. On expiry the response keeps the
+        200+ok:false channel (the tool relays the error text; HTTP errors
+        lose the body) and adds retryable:true, retry_after_s (default 5,
+        GEV_REMOTE_RETRY_S) + "client may still be loading; retry in ~Ns".
+        .result() timeout extended to wait_s+grace_s+5. screen coerced to
+        int like pane so a JSON string can't silently miss.
+    - id: 3
+      label: Self-test — bridge-check.py
+      status: done
+      notes: >
+        Stubs websockets + google.genai in sys.modules (neither is on the
+        /command path), runs _cmd_handler on GEV_CMD_PORT=18790 against a
+        real asyncio loop. 13 checks: grace wait timing, retryable shape,
+        late-remote delivery, wrong-screen miss, broadcast fast-path,
+        pane-announced mismatch, /command/health. All pass.
+    - id: 4
+      label: Docs — README + ssot.apps.gev.yml + Caddyfile drift
+      status: done
+      notes: >
+        README documents the grace envs + retryable response +
+        bridge-check.py. ssot.apps.gev.yml remote-clients item carries the
+        contract. stacks/web/Caddyfile gev-cmd block switched to
+        handle_path to match the live fix and ssot strip (the repo copy
+        was still pre-fix; render-routes.py --caddy confirms handle_path
+        is the correct emission for this route).
+
+verification:
+  - "python3 stacks/tony-dell/gev-gemini/bridge-check.py → 13 checks passed"
+  - "ast.parse + manual re-read of do_POST/_dispatch diff"
+  - "live deploy path: podman build -t localhost/gev-gemini:latest stacks/tony-dell/gev-gemini && systemctl --user restart gev-gemini.service (NOT done — deploy needs approval)"
+
+followups:
+  - ada-pi gev_command could drop its "wait ~10s after casting" usage hint
+    now that the relay holds the command — separate repo, noted on card.
+  - Deploy the rebuilt gev-gemini container on tony-dell (approval-gated)
+    for the grace behavior to go live; the Caddyfile edit is a no-op vs
+    the already-patched live file.

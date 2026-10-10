@@ -105,6 +105,17 @@ def log(msg):
 #     dropped and the model gets an error it can act on ("ask the user")
 #  3. guard interventions emit ops events to MDDB for the digest
 TURN_TOOL_BUDGET = int(os.environ.get('GEV_TURN_TOOL_BUDGET', '12'))
+# Screen-targeted /command calls wait this long for a matching remote to
+# register before answering — a freshly casted GEV page needs a few
+# seconds of frame-loading before its ?remote=1 socket + hello land
+# (the 2026-10-08 "nav OK, flyTo 404" gap). Broadcasts (screen=None)
+# don't wait — nobody may be watching at all.
+REMOTE_GRACE_S = float(os.environ.get('GEV_REMOTE_GRACE_S', '12'))
+REMOTE_POLL_S = 0.25
+# Hint embedded in the retryable error once the grace expires — callers
+# get "client may still be loading; retry in ~Ns" instead of a bare
+# "reached nobody".
+REMOTE_RETRY_S = int(os.environ.get('GEV_REMOTE_RETRY_S', '5'))
 CONFIRM_TOOLS = set(filter(None, os.environ.get(
     'GEV_CONFIRM_TOOLS', 'clear_annotations,control_cctv').split(',')))
 MDDB_URL = os.environ.get('GEV_MDDB_URL', 'http://100.102.134.91:11023/v1')
@@ -254,23 +265,32 @@ async def pump_responses(session, websocket, state):
 
 
 async def _dispatch(msg: str, screen: int | None = None,
-                    wait_s: float = 0.0, pane: int | None = None):
+                    wait_s: float = 0.0, pane: int | None = None,
+                    grace_s: float = 0.0):
     """Send msg to matching clients. screen=None broadcasts to voice CLIENTS
     + every remote client; a number narrows remotes to that screen. pane=N
     further narrows to the Nth split-screen pane (clients that never
     announced a pane are treated as the whole screen / pane 0).
-    With wait_s>0, collects tool_response frames for the call's id."""
+    With wait_s>0, collects tool_response frames for the call's id.
+    With grace_s>0 and zero matching targets, keeps polling REMOTE/CLIENTS
+    until one appears or the grace elapses — covers the freshly casted
+    page still in frame-loading."""
     # screen=None broadcasts to voice CLIENTS + every remote; a screen
     # number targets ONLY remotes that announced that screen — voice
     # clients have no screen binding, so including them sends a
     # screen-targeted command to whichever GEV tab happens to be open
     # (2026-09-29: "fly screen 4 to Joburg" answered from a stale tab
     # parked on Austin).
-    remotes = [
-        w for w, m in REMOTE.items()
-        if (screen is None or m.get('screen') == screen)
-        and (pane is None or m.get('pane') in (None, pane))]
-    targets = remotes + (list(CLIENTS) if screen is None else [])
+    deadline = _loop.time() + max(0.0, grace_s)
+    while True:
+        remotes = [
+            w for w, m in REMOTE.items()
+            if (screen is None or m.get('screen') == screen)
+            and (pane is None or m.get('pane') in (None, pane))]
+        targets = remotes + (list(CLIENTS) if screen is None else [])
+        if targets or _loop.time() >= deadline:
+            break
+        await asyncio.sleep(REMOTE_POLL_S)
     delivered = 0
     hit_screens = set()
     for ws in targets:
@@ -346,6 +366,10 @@ def _cmd_handler():
             if not name:
                 return self._reply(400, {'error': 'name required'})
             screen = body.get('screen')
+            try:
+                screen = int(screen) if screen is not None else None
+            except (TypeError, ValueError):
+                pass  # unmatched screen type just never matches a remote
             pane = body.get('pane')
             pane = int(pane) if pane is not None else None
             # wait>0 collects the clients' tool_response frames — lets
@@ -373,18 +397,26 @@ def _cmd_handler():
                 'name': name,
                 'args': args,
             })
+            # Grace: hold screen-targeted commands until a matching
+            # remote registers — the common "cast nav succeeded, page
+            # still loading" case then just works instead of failing.
+            grace_s = REMOTE_GRACE_S if screen is not None else 0.0
             try:
                 delivered, responses, hit = asyncio.run_coroutine_threadsafe(
-                    _dispatch(msg, screen, wait_s, pane),
-                    _loop).result(timeout=wait_s + 5)
+                    _dispatch(msg, screen, wait_s, pane, grace_s),
+                    _loop).result(timeout=wait_s + grace_s + 5)
             except Exception as e:
                 return self._reply(502, {'error': str(e)})
             out = {'ok': True, 'delivered': delivered,
                    'delivered_screens': hit}
             if screen is not None and delivered == 0:
                 out['ok'] = False
-                out['error'] = (f'no GEV remote on screen {screen} — '
-                                'the command reached nobody')
+                out['retryable'] = True
+                out['retry_after_s'] = REMOTE_RETRY_S
+                out['error'] = (
+                    f'no GEV remote on screen {screen} after {grace_s:.0f}s'
+                    ' — client may still be loading; '
+                    f'retry in ~{REMOTE_RETRY_S}s')
             if responses:
                 out['responses'] = responses
             self._reply(200, out)
