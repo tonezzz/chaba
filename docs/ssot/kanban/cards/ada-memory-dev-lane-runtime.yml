@@ -1,0 +1,74 @@
+id: ada-memory-dev-lane-runtime
+title: 'Ada memory: instances_readonly mounts + env:staging doc stamping (dev lane runtime)'
+brief: "Registry contract landed in chaba ssot.apps.ada-memory-banks.yml (card memory-lane-policy): prod banks declare instances_readonly {dev-instance: prod-instance} and dev-scratch carries env: staging. This is the ada-pi half — teach memory_banks.py to mount those banks read-only and memory_ops.py to stamp the bank's env onto written docs."
+column: backlog
+priority: medium
+created: 2026-10-10
+updated: 2026-10-10
+program: ha-lanes
+metric: >-
+  A backend started with ADA_INSTANCE_ID=tony-dev loads every bank whose
+  instances_readonly maps tony-dev (collections resolved as the mapped prod
+  instance, {instance}->tony) with writable=false + allowed_tools=[]; its only
+  writable bank is dev-scratch. ada_remember on a readonly-mounted bank is
+  refused; a write to dev-scratch lands with meta env=[staging].
+verify: >-
+  Registry JSON rendered from current chaba SSOT. With ADA_INSTANCE_ID=tony-dev:
+  GET /api/memory/banks lists prod banks readonly + dev-scratch writable;
+  ada_remember(bank=general) refused, ada_remember(bank=dev-scratch) succeeds and
+  the MDDB doc carries meta.env=staging. ADA_INSTANCE_ID=tony regression: all
+  banks writable per spec, no env field stamped on prod writes.
+spec: |-
+  Contract (already in chaba docs/ssot/apps/ssot.apps.ada-memory-banks.yml —
+  rendered verbatim into ~/.config/ada/memory-banks.json):
+
+    banks.<name>.instances_readonly: {tony-dev: tony, ada-dev: tony}
+      map dev-instance -> prod instance whose view it mirrors.
+    banks.dev-scratch.env: staging
+      bank-level provenance marker; doc meta `env` is now in the schema
+      (ssot.apps.ada-memory-schema.yml, enum [prod, staging]).
+
+  backend/memory_banks.py (~10 lines):
+  - MemoryBank: add `readonly: bool = False`, `env: str | None = None`,
+    and `read_as: str | None = None` (for /api/memory/banks clarity).
+  - _add(): before the instances check compute
+      ro_map = spec.get("instances_readonly") or {}
+      read_as = ro_map.get(self.instance) if isinstance(ro_map, dict) else None
+    keep the bank when self.instance in instances OR read_as; expand
+    {instance} with (read_as or self.instance); when read_as, force
+    writable=False and allowed_tools=[]. The multi-instance scope=instance
+    guard must still evaluate spec["instances"], not readonly mounts.
+  - Nothing else changes: person_policies, control_policies, fail-fast,
+    and bank()/banks_for_person() work untouched — readonly banks flow
+    through the existing writable gate, so ada_remember/ada_forget are
+    refused by the current writable check. Make the refusal message say
+    the bank is read-only-mounted and name dev-scratch as the write lane
+    when the instance has it assigned.
+  backend/memory_ops.py (~3 lines):
+  - memory_meta(): `if bank.env: meta["env"] = [bank.env]` — prod banks
+    have no env marker, so prod docs stay field-free.
+  Edge cases to cover in tests (tests/test_memory_banks.py):
+  - tony-dev sees the same bank set tony sees, all readonly; personal
+    resolves ada-ha-bank-personal-tony (mapped expansion, NOT -tony-dev).
+  - dev instance (ada-dev.service) sees ONLY dev-scratch — no
+    instances_readonly entries map `dev`, so its isolation is unchanged.
+  - person.kk on a tony-dev backend: personal-kk is kk-instance-only so
+    it is not mounted; her allow-list still intersects correctly and
+    dev-scratch (now in restricted allow lists) is her sole writable bank.
+  - unknown fields in spec must not break older/world registries.
+  Deploy: render-memory-banks.py --host idc03 then restart ada-dev +
+  ada-ha-* — deploy needs explicit approval, do not auto-restart prod.
+links:
+  - memory-lane-policy
+  - ha-lanes-program
+  - ha-dev-instances
+blocked_by: []
+autonomy: t2
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi
+comms:
+  - at: 2026-10-10 10:45
+    from: devin
+    text: "filed from memory-lane-policy dispatch: registry side landed in chaba SSOT (dev-scratch bank, instances_readonly on 24 tony-visible banks, env:staging schema field). This card is the ada-pi runtime half — deliberately the smallest memory_banks.py change per the parent spec."
