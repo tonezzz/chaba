@@ -188,9 +188,25 @@ def _cap_repeats(rows: list[dict]) -> tuple[list[dict], int]:
     return kept, suppressed
 
 
+# Container stderr→journald severity artifact (card
+# mddb-stderr-severity-artifact, 2026-10-10): Go/structured loggers write
+# every level to stderr, so journald marks them err and fd-based scoring
+# scores INFO heartbeats as severe — on idc03 mddb alone shipped ~21k
+# fake-severe/day. When a line is JSON with an explicit level field at
+# info-or-lower, the fd verdict is wrong; demote it before KINDS regexes
+# can substring-match noise like \"failed\":0 counters.
+_JSON_LEVEL_RX = re.compile(
+    r'"\s*(?:level|lvl|severity|sev|log\.level)"\s*:\s*"([A-Za-z]+)"')
+_JSON_DEMOTE = frozenset({"trace", "debug", "info", "notice"})
+
+
 def classify(line: str) -> str | None:
     if any(d in line for d in DROP):
         return None
+    if line.startswith("{"):
+        m = _JSON_LEVEL_RX.search(line)
+        if m and m.group(1).lower() in _JSON_DEMOTE:
+            return None
     for kind, rx in KINDS:
         if rx.search(line):
             return kind
