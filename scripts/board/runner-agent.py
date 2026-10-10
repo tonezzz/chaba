@@ -37,8 +37,48 @@ Env:
   RUNNER_MAX_LOAD_PC  stop claiming when 5-min load per core exceeds
                  this (default 1.0; 0 disables — protects the host and
                  yields the queue to idle runners)
-  RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd")
+  RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd";
+                 "desktop" marks an interactive host and arms the
+                 guards below)
   RUNNER_STATE   state dir (default ~/.local/share/runner-agent)
+
+Interactive-host guards (card omen-gpu-display-wedge — on when the host
+carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
+RUNNER_GPU_WATCHDOG = 1; =0 force-off):
+  - task units run deprioritized + capped so benches can't starve the
+    desktop: Nice/IOSchedulingClass (ionice) + CPUQuota/CPUWeight/
+    MemoryMax/IOWeight on the systemd-run argv for container/script
+    units; dispatch units get the same via DISPATCH_UNIT_PROPS
+    (devin-dispatch splices it into its own systemd-run) plus a
+    post-start set-property/renice pass covering stale dispatchers.
+  - gpu-labeled cards get a VRAM pre-flight BEFORE claiming: free VRAM
+    (nvidia-smi) must cover max(card need, host floor). Card need:
+    action.gpu.min_free_mb (bare int or action.min_vram_mb also read).
+    Shortfall defers the claim with a debounced comms note; a need that
+    exceeds total VRAM is refused (fix the spec — it can never fit).
+  - presentation watchdog: each pass while a gpu task runs, a
+    GetVSyncParametersIfAvailable journal/Xorg-log flood (the wedge
+    signature) or a hung `xrandr --verbose` deprioritizes the unit
+    (strike 1) then SIGSTOPs it (strike >=2); sustained healthy probes
+    SIGCONT it. Manual unstick stays `chvt 3; sleep 2; chvt 2`.
+
+  RUNNER_TASK_LIMITS     auto|0|1 — task unit caps (default auto)
+  RUNNER_TASK_NICE       nice for task units (default 10)
+  RUNNER_TASK_CPU_QUOTA  e.g. "600%" (default: 75% of online CPUs)
+  RUNNER_TASK_MEM_MAX    e.g. "12G" (default: 75% of MemTotal)
+  RUNNER_TASK_CPU_WEIGHT / RUNNER_TASK_IO_WEIGHT (default 50)
+  RUNNER_TASK_IO_CLASS   ionice class: idle|best-effort|realtime|none
+                         (default best-effort)
+  RUNNER_TASK_IO_PRIO    ionice priority 0-7 (default 6)
+  RUNNER_GPU_MIN_FREE_MB host floor for gpu cards (default 512)
+  RUNNER_GPU_WATCHDOG    auto|0|1 — presentation watchdog (default auto)
+  RUNNER_WATCHDOG_CPU_QUOTA / RUNNER_WATCHDOG_NICE — stall throttle
+                         (default "30%" / 19)
+  RUNNER_WATCHDOG_PAUSE_STRIKES / RUNNER_WATCHDOG_RESUME_HEALTHY —
+                         strike/resume hysteresis (default 2 / 2)
+  RUNNER_VSYNC_FLOOD_MIN stall-signature hits per ~2min log window that
+                         count as a flood (default 150)
+  RUNNER_XRANDR_TIMEOUT  xrandr probe timeout s (default 8)
 
 State is just unit names — a restart re-polls systemctl, so an agent
 crash loses at most bookkeeping, not running work. All API calls are
@@ -89,6 +129,42 @@ os.environ.setdefault("DISPATCH_PERMISSION_MODE", "dangerous")
 # script-type repo name -> clone url. Extend here or pass
 # action.script.repo_url on the card for anything else.
 REPO_URLS = {"chaba": "https://github.com/tonezzz/chaba.git"}
+
+# --- interactive-host guards (omen-gpu-display-wedge) ----------------
+# "desktop" in RUNNER_LABELS marks the host as interactive; both guards
+# default on there and stay off on headless runners (idc*, mn01).
+def _env_on(name: str, default: str = "auto") -> bool:
+    v = os.environ.get(name, default).strip().lower()
+    if v in ("1", "on", "true", "yes", "always"):
+        return True
+    if v in ("0", "off", "false", "no", "never"):
+        return False
+    return "desktop" in LABELS
+
+LIMITS_ON = _env_on("RUNNER_TASK_LIMITS")
+TASK_NICE = int(os.environ.get("RUNNER_TASK_NICE", "10"))
+TASK_CPU_QUOTA = os.environ.get("RUNNER_TASK_CPU_QUOTA", "")
+TASK_CPU_WEIGHT = os.environ.get("RUNNER_TASK_CPU_WEIGHT", "50")
+TASK_MEM_MAX = os.environ.get("RUNNER_TASK_MEM_MAX", "")
+TASK_IO_CLASS = os.environ.get("RUNNER_TASK_IO_CLASS", "best-effort")
+TASK_IO_PRIO = os.environ.get("RUNNER_TASK_IO_PRIO", "6")
+TASK_IO_WEIGHT = os.environ.get("RUNNER_TASK_IO_WEIGHT", "50")
+GPU_MIN_FREE_MB = int(os.environ.get("RUNNER_GPU_MIN_FREE_MB", "512"))
+GPU_DEFER_SECS = int(os.environ.get("RUNNER_GPU_DEFER_SECS", "21600"))
+DEFER_FILE = STATE_DIR / "gpu-defer.json"
+WD_ON = _env_on("RUNNER_GPU_WATCHDOG")
+WD_NICE = int(os.environ.get("RUNNER_WATCHDOG_NICE", "19"))
+WD_CPU_QUOTA = os.environ.get("RUNNER_WATCHDOG_CPU_QUOTA", "30%")
+WD_STRIKES = int(os.environ.get("RUNNER_WATCHDOG_PAUSE_STRIKES", "2"))
+WD_HEALTHY = int(os.environ.get("RUNNER_WATCHDOG_RESUME_HEALTHY", "2"))
+VSYNC_FLOOD_MIN = int(os.environ.get("RUNNER_VSYNC_FLOOD_MIN", "150"))
+XRANDR_TIMEOUT = int(os.environ.get("RUNNER_XRANDR_TIMEOUT", "8"))
+# The wedge signature (2026-10-08): the nvidia presentation engine stops
+# getting vblank and callers spam this failure thousands of times a
+# second while the desktop picture stays frozen.
+VSYNC_PAT = "GetVSyncParametersIfAvailable"
+UNSTICK = ("display unstick: ssh in, `sudo chvt 3`, sleep 2, "
+           "`sudo chvt 2` (modeset reset — session survives)")
 
 
 def sync_repo(name: str, url: str, ref: str) -> Path:
@@ -284,6 +360,344 @@ def shutil_which(name: str) -> bool:
                for p in os.environ.get("PATH", "").split(":"))
 
 
+# --- task unit resource limits ---------------------------------------
+
+def _mem_total_gb() -> float:
+    try:
+        for ln in Path("/proc/meminfo").read_text().splitlines():
+            if ln.startswith("MemTotal:"):
+                return float(ln.split()[1]) / 1048576
+    except (OSError, ValueError):
+        pass
+    return 0.0
+
+
+def task_cpu_quota() -> str:
+    """Explicit env wins; default leaves ~25% of CPU for the desktop."""
+    if TASK_CPU_QUOTA:
+        return TASK_CPU_QUOTA
+    return f"{max(100, (os.cpu_count() or 2) * 75)}%"
+
+
+def task_mem_max() -> str:
+    if TASK_MEM_MAX:
+        return TASK_MEM_MAX
+    gb = _mem_total_gb()
+    return f"{max(1, int(gb * 0.75))}G" if gb else ""
+
+
+def task_run_props() -> list:
+    """--property= args for systemd-run when task limits are armed."""
+    if not LIMITS_ON:
+        return []
+    props = [f"--property=Nice={TASK_NICE}",
+             f"--property=CPUWeight={TASK_CPU_WEIGHT}",
+             f"--property=CPUQuota={task_cpu_quota()}"]
+    mm = task_mem_max()
+    if mm:
+        props.append(f"--property=MemoryMax={mm}")
+    if TASK_IO_CLASS.lower() not in ("", "none"):
+        props += [f"--property=IOSchedulingClass={TASK_IO_CLASS}",
+                  f"--property=IOSchedulingPriority={TASK_IO_PRIO}"]
+    if TASK_IO_WEIGHT:
+        props.append(f"--property=IOWeight={TASK_IO_WEIGHT}")
+    return props
+
+
+def unit_pids(unit: str) -> list:
+    """PIDs in the unit's cgroup (cgroup v2), MainPID fallback."""
+    r = sh(["systemctl", "--user", "show", unit,
+            "-p", "ControlGroup", "--value"], timeout=15)
+    cg = r.stdout.strip()
+    if cg:
+        try:
+            pids = ((Path("/sys/fs/cgroup") / cg.lstrip("/"))
+                    / "cgroup.procs").read_text().split()
+            if pids:
+                return pids
+        except OSError:
+            pass
+    r = sh(["systemctl", "--user", "show", unit,
+            "-p", "MainPID", "--value"], timeout=15)
+    pid = r.stdout.strip()
+    return [pid] if pid.isdigit() and pid != "0" else []
+
+
+def renice_unit(unit: str, nice: int) -> None:
+    """nice + ionice a running unit's processes; children inherit."""
+    pids = unit_pids(unit)
+    if not pids:
+        return
+    sh(["renice", "-n", str(nice), "-p"] + pids, timeout=15)
+    cls = TASK_IO_CLASS.lower()
+    if shutil_which("ionice") and cls not in ("", "none"):
+        cid = {"realtime": "1", "best-effort": "2", "idle": "3"}.get(cls)
+        if cid:
+            sh(["ionice", "-c", cid, "-n", str(TASK_IO_PRIO),
+                "-p"] + pids, timeout=15)
+
+
+def enforce_task_limits(unit: str) -> None:
+    """Apply the cgroup props to a RUNNING unit — the dispatch path's
+    unit is created inside devin-dispatch, so this covers hosts whose
+    devin-dispatch predates DISPATCH_UNIT_PROPS. Nice isn't a cgroup
+    property, hence the renice."""
+    if not LIMITS_ON:
+        return
+    props = [f"CPUQuota={task_cpu_quota()}",
+             f"CPUWeight={TASK_CPU_WEIGHT}"]
+    if TASK_IO_WEIGHT:
+        props.append(f"IOWeight={TASK_IO_WEIGHT}")
+    mm = task_mem_max()
+    if mm:
+        props.append(f"MemoryMax={mm}")
+    sh(["systemctl", "--user", "set-property", unit] + props, timeout=20)
+    renice_unit(unit, TASK_NICE)
+
+
+# --- gpu card pre-flight ----------------------------------------------
+
+def card_gpu_need_mb(card: dict) -> int:
+    """VRAM the card wants free before claiming: action.gpu.min_free_mb
+    (bare int accepted), action.min_vram_mb / gpu_min_free_mb / vram_mb."""
+    a = card.get("action") or {}
+    g = a.get("gpu")
+    need = 0
+    if isinstance(g, dict):
+        need = g.get("min_free_mb") or g.get("vram_mb") or 0
+    elif isinstance(g, (int, float)):
+        need = g
+    for k in ("min_vram_mb", "gpu_min_free_mb", "vram_mb"):
+        need = need or a.get(k) or 0
+    try:
+        return int(need)
+    except (TypeError, ValueError):
+        return 0
+
+
+_GPU_PROBE = [0.0, None]  # [ts, result] — nvidia-smi per card per pass
+                         # is wasteful; cache for a minute
+
+
+def gpu_free_mb() -> tuple:
+    """(free_mb, total_mb) of the emptiest NVIDIA GPU, or None when
+    nvidia-smi is missing/failed. Cached 60s — preflight calls it once
+    per queued gpu card."""
+    now = time.time()
+    if now - _GPU_PROBE[0] < 60:
+        return _GPU_PROBE[1]
+    best = None
+    if shutil_which("nvidia-smi"):
+        try:
+            r = sh(["nvidia-smi",
+                    "--query-gpu=memory.free,memory.total",
+                    "--format=csv,noheader,nounits"], timeout=20)
+            if r.returncode == 0:
+                for ln in r.stdout.splitlines():
+                    parts = [p.strip() for p in ln.split(",")]
+                    if len(parts) >= 2 and parts[0].isdigit() \
+                            and parts[1].isdigit():
+                        free, tot = int(parts[0]), int(parts[1])
+                        if best is None or free > best[0]:
+                            best = (free, tot)
+        except subprocess.TimeoutExpired:
+            pass
+    _GPU_PROBE[0], _GPU_PROBE[1] = now, best
+    return best
+
+
+def gpu_preflight(card: dict) -> str:
+    """'' when a card may be claimed, else the defer/refuse reason —
+    evaluated BEFORE the claim POST so a deferred card stays queued."""
+    labels = set((card.get("action") or {}).get("labels") or [])
+    if "gpu" not in labels:
+        return ""
+    need = max(card_gpu_need_mb(card), GPU_MIN_FREE_MB)
+    if need <= 0:
+        return ""
+    probe = gpu_free_mb()
+    if probe is None:
+        return ("nvidia-smi unavailable — can't verify VRAM for a "
+                "gpu-labeled card")
+    free, total = probe
+    if need > total:
+        return (f"needs {need}MB free VRAM but the GPU only has "
+                f"{total}MB total — it can never fit; fix the spec "
+                f"(smaller model) or drop the gpu label")
+    if free < need:
+        return f"free VRAM {free}MB < need {need}MB — deferred"
+    return ""
+
+
+def note_gpu_defer(card: dict, reason: str) -> None:
+    """Comment a gpu defer/refuse — at most once per GPU_DEFER_SECS per
+    distinct reason."""
+    cid = card.get("id") or ""
+    try:
+        log = json.loads(DEFER_FILE.read_text())
+    except Exception:
+        log = {}
+    ent = log.get(cid) or {}
+    now = int(time.time())
+    if ent.get("reason") == reason and \
+            now - int(ent.get("at", 0)) < GPU_DEFER_SECS:
+        return
+    api("/comment", {"id": cid, "from": "chaba",
+                     "text": f"gpu preflight: {reason}"})
+    log[cid] = {"at": now, "reason": reason}
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        DEFER_FILE.write_text(json.dumps(log, indent=1))
+    except OSError:
+        pass
+
+
+# --- presentation watchdog --------------------------------------------
+
+def _x_displays() -> list:
+    """':N' for each live X socket."""
+    try:
+        return [f":{s.name[1:]}"
+                for s in sorted(Path("/tmp/.X11-unix").glob("X*"))
+                if s.name[1:].isdigit()]
+    except OSError:
+        return []
+
+
+def _xauthority() -> str:
+    for p in (os.environ.get("XAUTHORITY"),
+              f"/run/user/{os.getuid()}/gdm/Xauthority",
+              str(Path.home() / ".Xauthority")):
+        if p and Path(p).exists():
+            return p
+    return ""
+
+
+def vsync_flood_hits() -> int:
+    """Stall-signature count in the last ~2min of journal + Xorg logs.
+    A healthy desktop logs this never; the wedge floods it."""
+    hits = 0
+    try:
+        r = sh(["journalctl", "-o", "cat",
+                "--since", f"@{int(time.time()) - 120}",
+                "-n", "4000", "--no-pager"], timeout=25)
+        if r.returncode == 0:
+            hits += sum(1 for ln in r.stdout.splitlines()
+                        if VSYNC_PAT in ln)
+    except subprocess.TimeoutExpired:
+        pass
+    for name in (Path.home() / ".local/share/xorg/Xorg.0.log",
+                 Path("/var/log/Xorg.0.log")):
+        try:
+            r = sh(["tail", "-c", "1048576", str(name)], timeout=10)
+            if r.returncode == 0:
+                hits += sum(1 for ln in r.stdout.splitlines()
+                            if VSYNC_PAT in ln)
+        except subprocess.TimeoutExpired:
+            pass
+    return hits
+
+
+def xrandr_probe() -> str:
+    """'' when every live X display answers `xrandr --verbose` quickly —
+    a wedged presentation path stalls or fails the query. Only failures
+    count: a plain answer doesn't prove vblank flows."""
+    if not shutil_which("xrandr"):
+        return ""
+    xa = _xauthority()
+    for disp in _x_displays():
+        env = dict(os.environ, DISPLAY=disp)
+        if xa:
+            env["XAUTHORITY"] = xa
+        try:
+            r = sh(["xrandr", "--verbose"], timeout=XRANDR_TIMEOUT,
+                   env=env)
+        except subprocess.TimeoutExpired:
+            return f"xrandr {disp} timed out ({XRANDR_TIMEOUT}s)"
+        if r.returncode != 0:
+            err = (r.stderr or "") + (r.stdout or "")
+            if "Can't open display" in err or "uthorization" in err:
+                continue  # auth/perm issue — not a wedge signal
+            return f"xrandr {disp} rc={r.returncode}"
+    return ""
+
+
+def display_stalled() -> tuple:
+    """(stalled, detail) — either signal alone is enough."""
+    hits = vsync_flood_hits()
+    if hits >= VSYNC_FLOOD_MIN:
+        return True, f"vsync stall signature x{hits} in ~2min of logs"
+    xr = xrandr_probe()
+    if xr:
+        return True, xr
+    return False, ""
+
+
+def watchdog_pass(st: dict) -> bool:
+    """Guard the desktop while a gpu task runs. Stall strikes: 1 =
+    deprioritize (renice + tight CPUQuota), >=WD_STRIKES = SIGSTOP the
+    unit. WD_HEALTHY consecutive healthy probes SIGCONT a task we
+    paused. State lives in the entry's `wd` dict."""
+    if not WD_ON:
+        return False
+    entries = {cid: e for cid, e in st.items()
+               if e.get("gpu") and e.get("unit")}
+    if not entries:
+        return False
+    if not any(unit_active(e["unit"]) for e in entries.values()):
+        return False
+    stalled, detail = display_stalled()
+    changed = False
+    for cid, e in entries.items():
+        unit = e["unit"]
+        wd = e.setdefault("wd", {})
+        if stalled:
+            if not unit_active(unit):
+                continue  # exited mid-stall — finish_pass reports it
+            wd["healthy"] = 0
+            wd["strikes"] = wd.get("strikes", 0) + 1
+            changed = True
+            if wd["strikes"] == 1:
+                sh(["systemctl", "--user", "set-property", unit,
+                    f"CPUQuota={WD_CPU_QUOTA}"], timeout=15)
+                renice_unit(unit, WD_NICE)
+                api("/comment", {"id": cid, "from": "chaba",
+                    "text": f"display watchdog: {detail} — deprioritized "
+                            f"{unit} (nice {WD_NICE}, CPUQuota "
+                            f"{WD_CPU_QUOTA}); will pause if the stall "
+                            f"persists"})
+            elif wd["strikes"] >= WD_STRIKES and not wd.get("paused"):
+                sh(["systemctl", "--user", "kill", "--kill-whom=all",
+                    "--signal", "SIGSTOP", unit], timeout=15)
+                wd["paused"] = True
+                api("/comment", {"id": cid, "from": "chaba",
+                    "text": f"display watchdog: still stalled ({detail}) "
+                            f"— PAUSED {unit} (SIGSTOP). " + UNSTICK +
+                            f"; resume the task with `systemctl --user "
+                            f"kill -s SIGCONT {unit}` (or wait — the "
+                            f"watchdog auto-resumes on healthy probes)"})
+            elif wd.get("paused") and wd["strikes"] == WD_STRIKES + 8:
+                api("/comment", {"id": cid, "from": "chaba",
+                    "text": f"display watchdog: {unit} still paused, "
+                            f"display still stalled ~10min on — "
+                            + UNSTICK})
+        else:
+            wd["strikes"] = 0
+            if wd.get("paused"):
+                wd["healthy"] = wd.get("healthy", 0) + 1
+                changed = True
+                if wd["healthy"] >= WD_HEALTHY:
+                    sh(["systemctl", "--user", "kill", "--kill-whom=all",
+                        "--signal", "SIGCONT", unit], timeout=15)
+                    wd["paused"] = False
+                    wd["healthy"] = 0
+                    enforce_task_limits(unit)  # undo the throttle
+                    api("/comment", {"id": cid, "from": "chaba",
+                        "text": f"display watchdog: probes healthy — "
+                                f"resumed {unit} (SIGCONT)"})
+    return changed
+
+
 def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
@@ -299,8 +713,8 @@ def start_task(card: dict, typ: str) -> tuple:
         for k, v in (c.get("env") or {}).items():
             env += ["-e", f"{k}={v}"]
         argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
-                 "--description", f"runner {cid}",
-                 "podman", "run", "--rm",
+                 "--description", f"runner {cid}"] + task_run_props() +
+                ["podman", "run", "--rm",
                  f"--pull={c.get('pull', 'missing')}",
                  f"--name={unit}"] + env +
                 [str(c["image"])] + cmd)
@@ -321,7 +735,8 @@ def start_task(card: dict, typ: str) -> tuple:
             env += ["--setenv", f"{k}={v}"]
         argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
                  f"--property=RuntimeMaxSec={int(c.get('timeout', 1800))}",
-                 "--description", f"runner {cid}"] + env +
+                 "--description", f"runner {cid}"] + task_run_props() +
+                env +
                 ["bash", "-lc",
                  f"cd {shlex.quote(workdir)} && "
                  f"exec {shlex.join(cmd)}"])
@@ -330,10 +745,15 @@ def start_task(card: dict, typ: str) -> tuple:
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
         argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
-    r = sh(argv, timeout=180,
-           env={**os.environ,
-                **({"DISPATCH_MODEL": str(a["model"])}
-                   if a.get("model") else {})})
+    env = dict(os.environ)
+    if a.get("model"):
+        env["DISPATCH_MODEL"] = str(a["model"])
+    if typ == "dispatch" and LIMITS_ON:
+        # devin-dispatch splices this into its systemd-run call;
+        # enforce_task_limits below re-applies the cgroup props on the
+        # live unit for hosts with a stale devin-dispatch.
+        env["DISPATCH_UNIT_PROPS"] = " ".join(task_run_props())
+    r = sh(argv, timeout=180, env=env)
     if r.returncode != 0:
         return "", "", (r.stderr or r.stdout).strip()[:240]
     tid = ""
@@ -341,6 +761,7 @@ def start_task(card: dict, typ: str) -> tuple:
         # devin-dispatch prints the task id (unit is devin-task-<id>)
         tid = r.stdout.strip().splitlines()[-1].strip()
         unit = f"devin-task-{tid}"
+        enforce_task_limits(unit)
     return unit, tid, ""
 
 
@@ -415,6 +836,10 @@ def claim_pass(st: dict) -> bool:
                 continue  # gate holds — try again next pass
         if not cid or not typ:
             continue
+        reason = gpu_preflight(card)
+        if reason:
+            note_gpu_defer(card, reason)
+            continue  # stays queued — a later pass or spec fix picks it up
         resp = api("/action", {"id": cid, "do": "claim", "host": HOST})
         if resp.get("error"):
             continue  # lost the race or rejected — next card
@@ -426,7 +851,9 @@ def claim_pass(st: dict) -> bool:
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"started {unit} on {HOST} ({typ})"})
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
-                   "at": int(time.time())}
+                   "at": int(time.time()),
+                   "gpu": "gpu" in set((card.get("action") or {})
+                                      .get("labels") or [])}
         changed = True
         print(f"{cid}: claimed + started {unit}")
     return changed
@@ -434,7 +861,7 @@ def claim_pass(st: dict) -> bool:
 
 def main() -> int:
     st = load_state()
-    changed = finish_pass(st) | claim_pass(st)
+    changed = finish_pass(st) | watchdog_pass(st) | claim_pass(st)
     if changed:
         save_state(st)
     return 0

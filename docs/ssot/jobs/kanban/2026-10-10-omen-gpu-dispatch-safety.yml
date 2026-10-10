@@ -1,0 +1,125 @@
+title: Omen GPU dispatch safety — task unit limits, VRAM pre-flight, display-wedge watchdog
+subtitle: runner-agent.py guards so gpu/bench cards can't wedge the interactive desktop again
+icon: gpu
+
+context:
+  incident: "2026-10-08 ~06:32, card lab-thai-voice-clone on tony-omen:
+    F5-TTS + whisper-large-v3 + CAM++ hammered the GTX1650 4GB with CPU
+    spillover. The nvidia presentation engine stopped getting vblank —
+    physical monitor AND AnyDesk capture froze on a stale frame while X,
+    x11grab, and every session process stayed 'healthy'. Signature:
+    GetVSyncParametersIfAvailable failed ~3.3M times. Unwedged by ssh +
+    `chvt 3; sleep 2; chvt 2` (modeset reset, session survives)."
+  card: omen-gpu-display-wedge
+  seam: scripts/board/runner-agent.py (deploys as a single file to
+    ~/.local/bin/runner-agent on each runner host)
+
+shipped:
+  resource_limits:
+    what: "Every task unit on an interactive host runs deprioritized and
+      capped: Nice=10, IOSchedulingClass=best-effort/6 (ionice),
+      CPUQuota=75%-of-CPUs, CPUWeight=50, MemoryMax=75%-of-RAM,
+      IOWeight=50."
+    mechanism: "container/script types get --property= args on the
+      systemd-run argv runner-agent already builds. dispatch units are
+      created inside devin-dispatch — runner-agent exports
+      DISPATCH_UNIT_PROPS (devin-dispatch splices it into its own
+      systemd-run, scripts/devin/devin-dispatch.sh _devin_run) AND
+      re-applies the cgroup props post-start via `systemctl --user
+      set-property` + renice/ionice of the unit's cgroup.procs, so a
+      stale devin-dispatch is still guarded (Nice/ionice aren't cgroup
+      props — hence the renice path; children inherit)."
+    armed_when: "'desktop' in RUNNER_LABELS (tony-omen carries it) or
+      RUNNER_TASK_LIMITS=1; =0 force-off. Headless runners unchanged."
+
+  vram_preflight:
+    what: "gpu-labeled cards are checked against nvidia-smi free VRAM
+      BEFORE the claim POST, so a deferred card stays queued for a later
+      pass or a spec fix."
+    need_source: "card field action.gpu.min_free_mb (bare `gpu: 3000` or
+      action.min_vram_mb/gpu_min_free_mb/vram_mb also read), floored at
+      RUNNER_GPU_MIN_FREE_MB (default 512MB — desktop compositor/Xorg
+      reserve)."
+    outcomes: "free < need -> defer + debounced comms note (state file
+      ~/.local/share/runner-agent/gpu-defer.json, once per 6h per
+      reason). need > total -> refuse with a comms note telling the
+      filer the spec can never fit (whisper-large-v3 > 4096MB). No
+      nvidia-smi -> gpu cards not claimed (can't verify)."
+
+  watchdog:
+    what: "Each agent pass (timer cadence) while a gpu task is active,
+      probes display health and escalates."
+    signals: "(a) flood of GetVSyncParametersIfAvailable in the last
+      ~2min of journalctl + ~/.local/share/xorg/Xorg.0.log /
+      /var/log/Xorg.0.log tails (>=RUNNER_VSYNC_FLOOD_MIN=150 hits);
+      (b) `xrandr --verbose` on every live /tmp/.X11-unix/X* socket
+      timing out or failing (XAUTHORITY tried: $XAUTHORITY,
+      /run/user/<uid>/gdm/Xauthority, ~/.Xauthority)."
+    escalation: "strike 1 -> set-property CPUQuota=30% + renice 19 +
+      comms. strike >=2 -> SIGSTOP the unit + comms carrying the chvt
+      unstick. WD_STRIKES+8 (~10min paused) -> one reminder comment.
+      healthy probes x2 -> SIGCONT + limits re-applied."
+    state: "per-entry `wd` dict in state.json: {strikes, healthy,
+      paused}. finish_pass still owns reporting; a SIGSTOP'd unit stays
+      'active' so the card keeps running."
+
+manual_unstick_runbook:
+  symptom: "Physical monitor and AnyDesk/remote capture frozen on a
+    stale frame; ssh works; session processes alive."
+  steps:
+    - "ssh tony-omen"
+    - "sudo chvt 3; sleep 2; sudo chvt 2   # force modeset reset; the
+      user session lives on vt2 (GDM). Verify the right VT first:
+      `cat /sys/class/tty/tty0/active` and `loginctl list-sessions` —
+      the Type=x11 session's VTNr is where to return."
+    - "If the watchdog paused the task: `systemctl --user kill -s
+      SIGCONT devin-task-<id>` or let it auto-resume (2 healthy probes)."
+    - "If the wedge recurs per dispatch: keep the card paused and check
+      `journalctl --since -10min | grep -c GetVSyncParametersIfAvailable`."
+  note: "chvt needs CAP_SYS_TTY_CONFIG — sudo. A user systemd service
+    can't self-unstick; that's why the watchdog only pauses."
+
+env_reference: "Full knob list in runner-agent.py docstring:
+  RUNNER_TASK_LIMITS/NICE/CPU_QUOTA/MEM_MAX/CPU_WEIGHT/IO_CLASS/IO_PRIO/
+  IO_WEIGHT, RUNNER_GPU_MIN_FREE_MB, RUNNER_GPU_WATCHDOG,
+  RUNNER_WATCHDOG_CPU_QUOTA/NICE/PAUSE_STRIKES/RESUME_HEALTHY,
+  RUNNER_VSYNC_FLOOD_MIN, RUNNER_XRANDR_TIMEOUT, RUNNER_GPU_DEFER_SECS.
+  Set via ~/.config/systemd/user/runner-agent.service.d/*.conf drop-ins
+  (same pattern as scripts/board/runner-cap.sh)."
+
+deploy:
+  command: "scp scripts/board/runner-agent.py
+    tony-omen:~/.local/bin/runner-agent && ssh tony-omen chmod +x
+    ~/.local/bin/runner-agent"
+  also: "ensure tony-omen's devin-dispatch supports DISPATCH_UNIT_PROPS
+    (repo rev >= this change; runner-fleet-health flags drift). The
+    post-start set-property covers the window regardless."
+  note: "kanban-dispatch hosts (tony-dell) can get the same effect by
+    adding Environment=DISPATCH_UNIT_PROPS=... to the dispatch service —
+    runner-agent is the omen seam, dell uses the local dispatcher."
+
+verification:
+  - "python3 -m unittest tests.board.test_runner_agent_gpu — 19 tests
+    (props argv, DISPATCH_UNIT_PROPS env, preflight defer/refuse/pass,
+    watchdog strike->pause->resume transitions)."
+  - "post-deploy on tony-omen: queue a tiny gpu card, check
+    `systemctl --user show devin-task-<id> -p CPUQuota -p MemoryMax`
+    and `systemctl --user show devin-task-<id> -p Nice`."
+  - "dry-run the watchdog: RUNNER_GPU_WATCHDOG=1 RUNNER_VSYNC_FLOOD_MIN=1
+    against a fake flood, or feed journal lines — a paused unit lists
+    its tasks stopped in `systemctl --user status`."
+
+lessons:
+  - "A 'healthy' X server does not mean a healthy display — x11grab
+    kept capturing the stale frame through the whole wedge. Detect the
+    symptom (vsync-signature flood / hung xrandr), not the daemon."
+  - "whisper-large-v3 does not fit a GTX1650 4GB and silently spills to
+    CPU — cards that bench GPU stacks must declare action.gpu.min_free_mb
+    or they get the 512MB floor only."
+  - "devin-dispatch already had DISPATCH_UNIT_PROPS for exactly this;
+    dispatch-type units are created a process away from runner-agent,
+    so post-start set-property + renice of cgroup.procs is the
+    version-proof enforcement path."
+  - "chvt 3 -> 2 (or the session's own VT — check tty0/active) resets
+    the modeset without killing the graphical session; it needs root,
+    so the watchdog pauses the task and leaves the reset to a human."
