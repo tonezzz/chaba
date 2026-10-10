@@ -339,31 +339,79 @@ class MergeRetryTest(unittest.TestCase):
         cls.mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.mod)
 
-    def test_testgate_failure_requeues_with_last_failure(self):
+    def _merge_card(self, action_yaml: str,
+                    res: dict) -> dict:
         mod = self.mod
         td = tempfile.TemporaryDirectory()
         self.addCleanup(td.cleanup)
         path = Path(td.name) / "gate-card.yml"
         path.write_text(
-            "id: gate-card\ncolumn: review\n"
-            "action: {type: dispatch, status: done, task_id: t-gate}\n")
-        res = {"merged": False,
-               "tests": {"ran": True, "ok": False,
-                         "command": "pytest tests",
-                         "failed": ["tests/test_x.py::test_broke"]},
-               "test_failures": ["tests/test_x.py::test_broke"]}
+            "id: gate-card\ncolumn: review\n" + action_yaml)
         with mock.patch.object(dr, "close_out", return_value=res), \
                 mock.patch.object(mod, "ops_event"), \
                 mock.patch.object(mod, "session_end_notes",
                                   return_value=[]):
-            out = mod.merge_pending_one(path)
-        self.assertIn("merge", out)
-        card = yaml.safe_load(path.read_text())
+            mod.merge_pending_one(path)
+        return yaml.safe_load(path.read_text())
+
+    RES = {"merged": False,
+           "tests": {"ran": True, "ok": False,
+                     "command": "pytest tests",
+                     "failed": ["tests/test_x.py::test_broke"]},
+           "test_failures": ["tests/test_x.py::test_broke"]}
+
+    def test_testgate_failure_requeues_with_last_failure(self):
+        # attempts=1 is the post-claim state (mark_start bumped it); a
+        # first failure at the default max_attempts=2 must requeue —
+        # the old `att = attempts + 1` double-count made 2 < 2 fail and
+        # auto-retry never fired (kanban-autoretry-off-by-one).
+        card = self._merge_card(
+            "action: {type: dispatch, status: done, task_id: t-gate, "
+            "attempts: 1}\n", self.RES)
         a = card["action"]
         self.assertEqual(a["status"], "queued")
         self.assertIs(a["verified"], False)
+        # attempts is claim-side accounting — merge must not bump it
         self.assertEqual(a["attempts"], 1)
         self.assertIn("test_broke", a["last_failure"])
+        self.assertNotIn("task_id", a)
+        self.assertTrue(any("attempt 2/2" in (c.get("text") or "")
+                            for c in card.get("comms") or []),
+                        card.get("comms"))
+
+    def test_retry_budget_exhausted_does_not_requeue(self):
+        # attempts == max_attempts (default 2): the budget is spent —
+        # no third dispatch, card stays unverified for a human.
+        card = self._merge_card(
+            "action: {type: dispatch, status: done, task_id: t-gate, "
+            "attempts: 2}\n", self.RES)
+        a = card["action"]
+        self.assertNotEqual(a["status"], "queued")
+        self.assertIs(a["verified"], False)
+        self.assertEqual(a["attempts"], 2)
+
+    def test_max_attempts_override_extends_budget(self):
+        # max_attempts: 3 on the card beats the default of 2 — a second
+        # failure still leaves one retry slot.
+        card = self._merge_card(
+            "action: {type: dispatch, status: done, task_id: t-gate, "
+            "attempts: 2, max_attempts: 3}\n", self.RES)
+        a = card["action"]
+        self.assertEqual(a["status"], "queued")
+        self.assertEqual(a["attempts"], 2)
+        self.assertTrue(any("attempt 3/3" in (c.get("text") or "")
+                            for c in card.get("comms") or []),
+                        card.get("comms"))
+
+    def test_autoretry_off_does_not_requeue(self):
+        os.environ["KANBAN_AUTORETRY"] = "0"
+        self.addCleanup(os.environ.pop, "KANBAN_AUTORETRY")
+        card = self._merge_card(
+            "action: {type: dispatch, status: done, task_id: t-gate, "
+            "attempts: 1}\n", self.RES)
+        a = card["action"]
+        self.assertNotEqual(a["status"], "queued")
+        self.assertIs(a["verified"], False)
 
     def test_clean_merge_stamps_verified(self):
         mod = self.mod

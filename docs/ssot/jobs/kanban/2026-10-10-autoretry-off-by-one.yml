@@ -1,0 +1,67 @@
+title: "kanban-dispatch auto-retry — attempts counted once, at claim"
+subtitle: >-
+  merge_pending_one dropped its att = attempts + 1 double-count: mark_start
+  owns the attempt count, so the requeue predicate is attempts_used <
+  max_attempts — the documented 'total dispatches incl. auto-retries'
+  semantics, identical to merge-sweep fail_attempt.
+icon: 🔁
+id: 2026-10-10-autoretry-off-by-one
+status: done
+owner: devin-dispatch
+project: chaba
+card: kanban-autoretry-off-by-one
+branch: dispatch/20261010-103355-in-scripts-board-kanban-dispat
+started: "2026-10-10"
+completed: "2026-10-10"
+
+context:
+  bug: >-
+    merge_pending_one computed att = attempts + 1 and requeued only when
+    att < max_attempts — but mark_start already bumped attempts at claim
+    time, so every failed dispatch was counted twice. At the documented
+    default (max_attempts=2 = one run + one retry) a first failure yielded
+    att=2, 2<2 failed, and no card was ever auto-retried: KANBAN_AUTORETRY
+    was effectively off. The inflated count also interacted with the
+    claim-side cap (attempts >= retries_per_card) — a requeued card could
+    park before the retried session ever ran.
+  discovered: >-
+    filed from merge-sweep-verified-gate work — the verified-gate sibling
+    (merge-sweep fail_attempt) had to implement the corrected semantics
+    and refused to mirror the dead arithmetic.
+
+semantics:
+  attempts: >-
+    action.attempts = dispatches used, bumped exactly once per claim by
+    mark_start. A merge/gate failure does NOT consume a slot — the merge
+    step never writes attempts.
+  requeue_predicate: >-
+    KANBAN_AUTORETRY != '0' AND attempts_used < max_attempts
+    (max_attempts = card field, else env KANBAN_MAX_ATTEMPTS, default 2).
+    comms/ops_event print 'attempt {used+1}/{max}' — the upcoming attempt
+    number.
+  exhausted: >-
+    at attempts_used == max_attempts the card stays in review with
+    verified=False + close_out notes for a human — no status flip (unlike
+    merge-sweep fail_attempt which sets status=failed; review column is
+    the equivalent surface here).
+
+files:
+- scripts/board/kanban-dispatch.py
+- scripts/board/merge-sweep.py
+- tests/board/test_dispatch_close_out.py
+
+verified:
+- >-
+  python3 -m pytest tests/board — 93 tests, 0 failures
+  (MergeRetryTest grew to 5 cases: requeue-at-attempt-1, budget-exhausted,
+  max_attempts override, KANBAN_AUTORETRY=0, clean-merge verified stamp)
+
+notes:
+- >-
+  Sibling gap carded as kanban-parked-retry-dead-end: nothing resets
+  action.attempts, so a card parked by attempts >= retries_per_card can't
+  be revived — process re-parks it, and board-api's retry verb makes it
+  worse by bumping attempts again (same double-count shape).
+- >-
+  RETRY_RAILS 'This is attempt {n}' (build_task, attempts+1) is display
+  only and stays correct: attempts=1 after one claim+fail -> 'attempt 2'.

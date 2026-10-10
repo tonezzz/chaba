@@ -723,9 +723,9 @@ def fail_attempt(card: dict, why: str, dry: bool) -> bool:
         c.setdefault("claim", {}).pop("session", None)
         # attempts is counted at claim time (mark_start) — a gate failure
         # requeues while attempts_used < max_attempts (max_attempts =
-        # total dispatches incl. retries; NB merge_pending_one's
-        # att+1<max variant double-counts and never retries at the
-        # default of 2 — card kanban-autoretry-off-by-one)
+        # total dispatches incl. retries; merge_pending_one now uses the
+        # same predicate — its old att+1<max variant double-counted,
+        # card kanban-autoretry-off-by-one)
         att = int(a.get("attempts") or 0)
         max_att = int(a.get("max_attempts")
                       or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))

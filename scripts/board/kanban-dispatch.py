@@ -531,14 +531,16 @@ def merge_pending_one(path: Path) -> str:
             # Review feedback loop: conflicts/goal-failures requeue the
             # card with the failure evidence (RETRY_RAILS carries it into
             # the next session) until action.max_attempts is reached.
-            att = int(a.get("attempts") or 0) + 1
+            # attempts is counted at claim time (mark_start) — requeue
+            # while attempts_used < max_attempts (max_attempts = total
+            # dispatches incl. retries; mirrors merge-sweep fail_attempt).
+            att = int(a.get("attempts") or 0)
             max_att = int(a.get("max_attempts")
                           or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
             if (os.environ.get("KANBAN_AUTORETRY", "1") != "0"
                     and att < max_att):
                 why = ("; ".join(dr.close_out_notes(res)) or
                        "merge/goals failed")[:280]
-                a["attempts"] = att
                 a["last_failure"] = why
                 a["status"] = "queued"
                 a.pop("runner", None)
