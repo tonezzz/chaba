@@ -1,0 +1,135 @@
+# SSOT Job: speaker-id-owner-rebind — rebind/clear the session speaker
+# label on user correction; non-owner confidence floor; deny-path
+# re-verify.
+# Dispatch task dispatch-wt-20261010-080914-speaker-id-misidentification-b
+# (runner tony-omen). Worktree: ~/CascadeProjects/ada-wt-speaker-id-owner-rebind,
+# branch dispatch/20261010-080914-speaker-id-owner-rebind. NOT committed,
+# pushed, or deployed.
+
+title: speaker-id-owner-rebind — correction rebinds/clears the ACL label
+subtitle: ada-pi speaker session — user dispute re-scores the buffered voice; owner-gated denials re-verify first
+icon: microphone
+
+status: implemented-uncommitted   # tests green; awaiting commit/PR/deploy decision
+project: ada-pi
+card: docs/ssot/kanban/cards/speaker-id-owner-rebind.yml
+owner: devin-dispatch
+started: "2026-10-10"
+
+incident: |
+  Session 7a74536b32 (2026-10-07): Tony's own key-bound voice session
+  was labeled 'KK' — two consecutive 64% voiceprint hits cleared
+  FIRST_AFTER hysteresis and pinned person.kk as the current speaker.
+  From then on every owner-gated tool (ada_memory_search,
+  cms_publish_page, …) answered "Only the session owner can run this
+  action" — in Tony's own voice, on his own session. Saying the label
+  was wrong only got an apology; nothing re-resolved the identity, and
+  there was no code path that un-pinned a disputed label.
+
+decision: |
+  Three-layer fix, all in ada-pi backend + pwa_server:
+
+  1) NON_OWNER_MIN_CONF floor (backend/speaker_id.py, env
+     ADA_SPEAKER_NON_OWNER_MIN_CONF, default 0.70): a *new* non-owner
+     person label below the floor never accrues toward hysteresis — it
+     counts as a miss (audio still banks into _pending_voice for
+     enrollment). Owner label and media sinks are exempt (owner scores
+     run 0.25–0.5 far-field; media is a noise sink, not an ACL actor).
+     An already-established label re-confirming below the floor is NOT
+     floored — the floor only gates binding a *new* foreign identity.
+     Rationale: a guest label strips owner tools for every turn it
+     survives, so its evidence bar must be higher than a personalization
+     hint's. This alone would have stopped 7a74536b32 (two 64% hits).
+
+  2) SpeakerSession.correct_speaker(claimed) — the "I'm not KK" path.
+     Re-scores the trailing _recent buffer NOW (user dispute is stronger
+     evidence than hysteresis). Resolution order:
+       - buffer verifies the current label at threshold → label STANDS
+         (a real guest can't talk their way out of a secondary turn)
+       - buffer identifies another person at threshold → rebind
+       - buffer's best person match is the session owner's print at
+         >= OWNER_RECLAIM_MIN (0.25) → rebind to the owner
+       - buffer's best match is the claimed profile at >= 0.25 → bind
+         the claim (a false "I'm Tony" can't land unless Tony's print
+         is genuinely the buffer's best match)
+       - nothing verifies → CLEAR to unrecognized. An unlabeled voice
+         keeps owner rights (same fail-open posture as SPEAKER_STALE_S
+         stale-label expiry), so dropping a disputed label loses no
+         security.
+     Media hits never bind via correction. Resets miss/switch streaks;
+     fires on_identified on rebind and the new on_cleared callback on a
+     clear, so provider + tool_runner + conversation speaker fields
+     resync through the same paths a voice-driven switch uses.
+
+  3) Deny-path re-verify — ToolRunner._reverify_secondary_turn(): the
+     secondary-speaker gate condition now ANDs with
+     `await self._reverify_secondary_turn()`. Before "Only the session
+     owner" fires, the label is re-scored against the buffer; if the
+     audio can't reproduce it, the label is dropped/rebound and the
+     call proceeds. Fails CLOSED on errors or missing session. The
+     provider-dispatched secondary gate in realtime_provider.py (which
+     bypasses the runner gate) calls the same method.
+
+  Surface plumbing:
+    - speaker_profiles action='correct' (tools.d, secondary_allowed
+      already true — the mislabeled guest IS the caller who needs it;
+      it mutates no profile, only session state). Optional name= claim.
+    - pwa_server _on_speaker_cleared: clears provider/runner speaker
+      fields, restores conversation.speaker_identity to the caller,
+      emits a 'speaker_cleared' ws event, and injects a system turn
+      telling Ada to treat the speaker as unrecognized.
+    - DEFAULT_ADA_INSTRUCTIONS: on "I'm not KK" / "this is Tony", call
+      speaker_profiles action='correct' — never just apologize while
+      the label stays pinned, because the label decides tool access.
+
+verification:
+  - >-
+    tests/test_speaker_id.py — NonOwnerFloorTest (6 cases: marginal
+    guest never binds, confident guest binds, owner/media exempt,
+    floored hit counts as miss + resets pending switch) and
+    CorrectSpeakerTest (9 cases: owner rebind, label-verified stay,
+    clear, rebind to other person, claimed-profile binds on buffer
+    evidence, false claim can't override buffer, media hit clears,
+    no-label no-op, streak reset).
+  - >-
+    tests/test_memory_banks.py — deny-path re-verify: cleared label
+    proceeds + heals shared field; rebound-to-owner proceeds; buffer-
+    verified label still denies; reverify exception fails closed; no
+    speaker session stays denied.
+  - >-
+    tests/test_speaker_profiles_tool.py — CorrectActionTest (7 cases
+    incl. secondary turn may correct, honest error when no session).
+  - >-
+    tests/scenarios/speaker_id_correction.yaml + scenario_engine
+    'speaker:' step (_StubSpeakerSession with scripted verdicts):
+    verified label denies → cleared label proceeds → rebound owner
+    proceeds.
+  - >-
+    Result: 1010 passed, 1 skipped; 1 failure =
+    test_tool_audit.py::LintAgainstRepoTests (voice_fx descsize,
+    yt_cached_list impl, voice_fx coverage) — PRE-EXISTING on the base
+    branch (verified via git stash), unrelated to this change.
+  - >-
+    Runner: .venv/bin/python -m pytest tests/ -q
+    (host python lacks google-genai; use the ada-pi checkout venv).
+
+notes:
+  - >-
+    Owner security is not weakened for real secondary speakers: a
+    buffer that still verifies the guest label keeps denying; a false
+    identity claim only binds when the audio's best match agrees;
+    reverify exceptions fail closed; media can never take a person
+    label's seat.
+  - >-
+    Tunables: ADA_SPEAKER_NON_OWNER_MIN_CONF=0.70,
+    ADA_SPEAKER_OWNER_RECLAIM_MIN=0.25, ADA_SPEAKER_OWNER_RECLAIM_AFTER=3.
+  - >-
+    Residual gap: a wrong label pinned for a long stretch whose last
+    minutes of audio are dominated by the *guest's real voice* (Tony
+    hands the mic to KK, then disputes) will verify as KK and keep the
+    label — correct behavior, but the system turn tells Ada to suggest
+    talking longer and correcting again.
+  - >-
+    Follow-up candidates (not in scope): bench the 0.70 floor against
+    real misidentification rates; consider same for the soft owner-hint
+    path; surface 'speaker_cleared' in the ada-voice-card status line.
