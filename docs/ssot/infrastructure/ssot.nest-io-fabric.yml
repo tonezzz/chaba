@@ -1,0 +1,166 @@
+id: ssot.nest-io-fabric
+title: Nest I/O fabric — multi-surface input, tiered ingestion, routed replies
+subtitle: >-
+  The contract that decouples input surface from response surface:
+  utterance on A -> tier decision -> session bind -> reply on B. The
+  ledger is the audit; the broker is the actuation.
+category: infrastructure
+status: active
+source_of_truth: true
+card: docs/ssot/kanban/cards/nest-io-fabric.yml
+created: 2026-10-10
+related:
+  - stacks/services/nest-io/                    # the daemon
+  - docs/ssot/infrastructure/ssot.nest-training.yml   # lanes + promotion gate
+  - docs/ssot/infrastructure/ssot.model-routing.yml   # the tiered cascade
+  - docs/ssot/apps/ssot.apps.vcast.yml          # input-bridge + speak msg
+  - docs/ssot/apps/ssot.apps.ada-memory-banks.yml     # cold/note destinations
+
+# ---------------------------------------------------------------------------
+# v1 scope: the daemon in stacks/services/nest-io/ runs next to ada-pi-pwa
+# on idc03 (loopback :8795). ada-pi adopts it incrementally: POST /v1/inputs
+# per utterance (or dry_run:true consult), POST /v1/respond for the reply.
+# Nothing in the fabric replaces the ws session — it remains the default
+# channel and always gets reply_text back.
+# ---------------------------------------------------------------------------
+
+surfaces:
+  contract: >-
+    POST /v1/surfaces {id?, kind, room?, label?, caps[], target{}, meta?,
+    active?}. kinds: voice (mic/chat endpoint — pwa-iphone, ws session,
+    HA assist), screen (target.vcast_screen -> input-bridge, or
+    target.ha_media_player -> HA tts.speak), card (kanban), note (bank).
+  auto_mirror: >-
+    input-bridge GET /displays mirrors every paired vcast display as a
+    screen surface each 30s tick (target.vcast_screen=N, caps
+    speak/display/cast). A disconnected display goes stale and is never
+    routed to.
+  static_seeds: >-
+    NEST_IO_SURFACES=<file> seeds non-input-bridge surfaces (the real TV
+    as kind=screen + target.ha_media_player:media_player.tony_tv_cast,
+    boards, banks) at boot.
+  liveness: >-
+    registered surface -> stale after 600s without a heartbeat
+    ({active:true} on register or a plain re-POST); bridge-mirrored
+    screens stale after 90s. Stale surfaces are excluded from every
+    route decision.
+
+sessions:
+  bind: >-
+    an input joins the OPEN session of its origin surface when the last
+    input is <120s old, else opens a new one. Explicit session_id pins.
+  co_listen: >-
+    a second surface whose user matches (or same room with no user
+    claim) joins co_listeners — it receives speak deliveries but the
+    reply_surface never moves (no session steal).
+  retention: >-
+    hot turns verbatim (ring of 12) while open; closed >24h sessions are
+    pruned. close flushes the warm summary.
+
+ingestion_tiers:
+  rule: >-
+    EVERY input to POST /v1/inputs returns {tier, tier_reason, facts[]}
+    and lands in the ledger (GET /v1/ledger). The decision record — not
+    just the decision — is the triage.
+  order:
+    - "discard: kind=noise, empty/<2 chars, dup within 60s same surface,
+      filler-only (EN+TH filler sets)"
+    - "cold: explicit 'remember ...' OR unaddressed declarative fact match
+      (FACT_RULES). Facts extract to cold-queue.jsonl {kind, subject,
+      attribute, confidence, status:staged}"
+    - "hot: addressed to Ada, question shape, command shape, or a short
+      continuation of an open session"
+    - "warm: unaddressed content-bearing ambient input (>=30 chars or
+      >=6 words) — folds into the session's extractive summary even when
+      a session is open"
+    - "discard: leftover short non-content"
+  cold_path: >-
+    cold-queue.jsonl under ~/.local/share/nest/io-fabric/ is the staging
+    area (memory-staged-writes posture: staged, not banked). Opt-in
+    NEST_IO_MDDB_COLD=1 additionally writes ada-ha-bank-inbox-cold docs.
+    kind=sensitive (password/pin patterns) NEVER leaves the box — queue
+    only.
+  warm_path: >-
+    per-input gist (160c) + keyword set accumulates in the session; on
+    close the session gets warm_summary {n_bits, keywords, gists}.
+
+response_broker:
+  contract: >-
+    POST /v1/respond {session_id|surface|screen, kind:auto|speak|cast|
+    card|note, text|url, card_id?, bank?, lang?}. Returns
+    {ok, deliveries[], reply_text} — reply_text ALWAYS present so a ws
+    caller keeps something speakable in-session.
+  adapters:
+    vcast:   'POST {INPUT_BRIDGE}/pub {screen, msg:{type:speak|nav|play|
+             image|audio}} — speak uses the display''s client-side
+             speechSynthesis (voice_fx posture); optional audio url is
+             the backend-TTS fallback'
+    card:    'POST {BOARD_API}/comment {id,from:ada-fabric,text}'
+    note:    'MDDB add ada-ha-bank-<bank> key note-<hash>
+             (kind=note,status=active,source=nest-io); MDDB failure ->
+             note-queue.jsonl local spill'
+    ha:      'POST {HA_URL}/api/services/tts/speak with media_player —
+             only when HA_URL+HASS_TOKEN configured, else unsupported'
+    ws:      'kind=voice/ws surface -> no remote call; the reply_text
+             return channel IS the delivery'
+  fallback_chain: >-
+    target -> session reply_surface -> origin surface -> note. A failed
+    surface advances the chain; the note fallback fires whenever nothing
+    delivered — a reply is never dropped, worst case it is filed.
+
+routing:
+  precedence:
+    - explicit phrase in the utterance ("answer on the TV", "on screen
+      3", "reply here", "silently/just note it") — sets session
+      route_override so follow-ups keep the pin
+    - session-pinned route (stale pins are skipped)
+    - room match — a live screen whose room equals the input's room,
+      most recently active wins
+    - last-active screen in the registry
+    - origin surface (speak where you spoke)
+  co_listen_delivery: >-
+    speak deliveries fan out to co_listener screen surfaces so a second
+    display hears the reply too.
+
+lanes:
+  advisory: >-
+    every input returns {lane: gemini-live|local, lane_reason} — who
+    should own this turn. gemini-live for interactive/tool-surface
+    turns (cast, lights, camera, card verbs); local for low-risk Q&A,
+    warm/cold/non-realtime work — the student/encoder tier owns it.
+  breaker: >-
+    NEST_IO_GEMINI=degraded|down forces every lane=local — the quota
+    escape hatch from ssot.model-routing's t3 moat rule.
+  caller_pin: lane field on the input body wins over the heuristic.
+
+ops:
+  state: ~/.local/share/nest/io-fabric/fabric-state.json + queues
+  bind: 'NEST_IO_BIND/NEST_IO_PORT — 127.0.0.1:8795 default (loopback;
+         ada-pi calls same-host; open to tailnet IP if remote surfaces
+         need direct ingest)'
+  offline: 'NEST_IO_OFFLINE=1 — record-only, zero egress (dev + tests)'
+  metrics: 'GET /metrics — requests/inputs/deliveries counters +
+            tier_decisions histogram; /health for uptime/surface/
+            session counts + gemini breaker state'
+  unit: nest-io.service (systemd --user, stacks/services/nest-io/)
+
+verify:
+  - python3 nest-io.py --selftest (always offline — zero egress)
+  - python3 -m unittest tests.nest_io.test_nest_io (29 tests)
+  - ./verify.sh idc03 — unit + /health + selftest
+  - "card verify (needs ada-pi integration): speak on PWA, no TV
+    session -> answer speaks on living-room TV; tier lands right;
+    tablet co-listens without stealing"
+
+open_questions:
+  - >-
+    Who calls the fabric? ada-pi pwa_server adopts /v1/inputs + /v1/respond
+    (ada-pi repo, separate card/dispatch). Until then the daemon is live
+    and testable via curl.
+  - >-
+    Cold -> bank write policy: MDDB_COLD currently opt-in writing
+    ada-ha-bank-inbox-cold; a distill/consolidate pass owns promotion to
+    real banks (memory-staged-writes posture).
+  - >-
+    Lane enforcement: advisory today; a student-lane server that can own
+    low-risk turns end-to-end is the nest-micro-training curriculum side.

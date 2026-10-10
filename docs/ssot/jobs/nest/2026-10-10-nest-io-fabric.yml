@@ -1,0 +1,78 @@
+id: jobs/nest/2026-10-10-nest-io-fabric
+title: nest-io — the I/O fabric daemon (v1, code complete; ada-pi adoption pending)
+card: nest-io-fabric
+date: 2026-10-10
+runner: idc03
+status: done   # code+tests+spec done; NOT deployed (dispatch rails) — install.sh ready
+
+# ---------------------------------------------------------------------------
+# The card asked for the FABRIC between pieces that already exist (PWA,
+# voice_fx barks, cast_to_screen, memory banks, Nest lanes). Delivered as
+# one self-contained daemon, stacks/services/nest-io/nest-io.py (stdlib
+# only, same shape as nest-mgr): surface registry + session registry +
+# ingestion-tier triage + response broker + lane advisory.
+# ---------------------------------------------------------------------------
+
+stack: stacks/services/nest-io/
+  # nest-io.py (~950 lines), nest-io.service, install.sh, verify.sh,
+  # README.md. Spec contract: ssot.nest-io-fabric.yml.
+
+decisions:
+  - "One daemon, four pieces — registry/triage/broker share one state
+     file and one ledger; the triage record lives in GET /v1/ledger."
+  - "Tier order: discard -> cold -> hot -> warm. 'remember'-shaped inputs
+     tier cold (the extraction IS the point) and the response broker
+     still answers — tier is retention, not reply eligibility."
+  - "Ambient content inside an open session tiers warm, not hot — only
+     short continuations (<30 chars) promote into the hot transcript."
+  - "Route precedence: explicit phrase > session pin > room match >
+     last-active screen > origin. 'answer on the TV' resolves via
+     is_tv/label/alias match; 'on screen N' via target.vcast_screen."
+  - "Co-listen = joins co_listeners (receives speak fan-out), never
+     moves reply_surface — the card's verify line."
+  - "speak adapter uses input-bridge /pub {type:speak} — the display's
+     own speechSynthesis (voice_fx posture), no server TTS needed; a
+     backend-TTS audio url stays an optional msg.audio fallback."
+  - "Broker never drops a reply: chain target -> pinned -> origin, then
+     a bank note as the unconditional last fallback."
+  - "Lane advisory returns gemini-live|local per input; NEST_IO_GEMINI=
+     degraded|down is the quota breaker that forces all-local (the
+     t3-moat rule from ssot.model-routing)."
+  - "Offline-safe by contract: NEST_IO_OFFLINE=1 and unconfigured
+     adapters degrade to recorded deliveries — --selftest forces
+     offline so it can never egress."
+
+verified:
+  - "python3 -m unittest tests.nest_io.test_nest_io — 29 tests green:
+     tiers (filler/empty/noise/dup, addressed, continuation, declarative
+     fact, remember, ambient), routing (room, explicit screen/TV/here,
+     pin persistence, co-listen no-steal, last-active, origin),
+     broker (vcast speak, card, note, fallback-to-origin, raw screen
+     number), lanes (tool->gemini, QA->local, warm->local, caller pin),
+     persistence, sweep close+warm_summary, cold queue."
+  - "python3 nest-io.py --selftest — 8-case scenario prints tier/lane/
+     route per input; broker speak/card/note all offline-recorded."
+  - "python3 -c yaml.safe_load on the new SSOT + job files — clean."
+
+caveats:
+  - "Early selftest run (before the offline guard landed) emitted real
+     side-effects: a speak msg to input-bridge room vcast-2 (harmless —
+     broadcast to a possibly-empty room) and one MDDB add to
+     ada-ha-bank-general (key note-*, content 'quiet note'); a board
+     comment attempt 400'd. Selftest is now hard-offline."
+  - "NOT deployed — dispatch rails. install.sh idc03 is ready; the unit
+     binds 127.0.0.1:8795 (loopback; ada-pi is same-host)."
+  - "The real-TV speak path (ha_media_player adapter) needs
+     HA_URL+HASS_TOKEN env — unconfigured it reports unsupported and the
+     chain falls back."
+
+next:
+  - "ada-pi adoption card: pwa_server fires POST /v1/inputs per utterance
+     (dry_run first), routes replies via /v1/respond; ws reply stays the
+     default when reply.surface==origin."
+  - "Seed the living-room TV as a surface: NEST_IO_SURFACES json with
+     {id:tv-living-room, kind:screen, room:living-room, is_tv:true,
+     target:{vcast_screen: <ipad-tv-adjacent or ha_media_player>}}."
+  - "Cold -> bank promotion pass (distill cold-queue.jsonl into real
+     banks) — belongs to the memory-staged-writes flow."
+  - "Deploy: ./install.sh idc03 + ./verify.sh when Tony approves."
