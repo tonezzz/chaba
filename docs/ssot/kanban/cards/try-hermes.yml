@@ -1,0 +1,22 @@
+id: try-hermes
+title: Evaluate NousResearch Hermes for the fleet — evidence-first trial
+column: doing
+priority: low
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  Procedure: card → tier declaration (model-routing T1 local via
+  ollama hermes3:8b) → bench probes (tool-call JSON fidelity, routing,
+  reasoning — Hermes' claimed strengths) → lane fit decision →
+  OpenClaw/GhostRoute slot if proven. Clawd/OpenClaw reuse: it's the
+  agent surface Hermes is designed for — tool-calling loop, OR-backed,
+  same prompts swappable for A/B vs current model.
+  AQ: bench shows measurable tool-call JSON accuracy ≥ current T1
+  models on 3 probes; latency acceptable on omen.
+  First run (2026-10-10): hermes3:8b pulled + live. INCONCLUSIVE — GPU
+  contention on omen (parallel qwen3:4b session) → 120s timeouts on
+  most probes; the one answered probe scored correct (routing=MEMORY).
+  Evidence so far: hermes works but omen shared-GPU is not a latency
+  lane. Rerun when GPU quiet, or measure on idc03 CPU-ollama.
+links:
+  - docs/ssot/infrastructure/ssot.model-routing.yml
