@@ -1,158 +1,163 @@
 {
-  "version": 1,
-  "minor_version": 1,
-  "key": "lovelace.chaba_admin",
-  "data": {
-    "config": {
-      "views": [
+  "views": [
+    {
+      "title": "Pair",
+      "path": "pair",
+      "icon": "mdi:qrcode-plus",
+      "cards": [
         {
-          "title": "Pair",
-          "path": "pair",
-          "icon": "mdi:qrcode-plus",
-          "cards": [
-            {
-              "type": "custom:ada-users-card",
-              "title": "Users & issued keys"
-            },
-            {
-              "type": "custom:vcast-screens-card",
-              "title": "Virtual cast screens"
-            },
-            {
-              "type": "markdown",
-              "title": "What a paired device gets",
-              "content": "The device gets a named, revocable key for **one** Ada HA instance:\n\n- **Voice PWA** — Gemini Live voice assistant\n- **Control** — lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged per device name\n- **Reads** — states, sensors + history, power summary, event timelines, dashboard tabs, device search\n- **Memory** — recall + remember/forget on the instance's memory banks\n\nNot granted: minting/revoking keys (admin only), HA credentials (server-side), the other instance. Revoking a key kills its sessions immediately.\n\n[Open full pair admin page](https://mn01.taila0626a.ts.net/apps/ha/pair/)"
-            }
+          "type": "custom:ada-users-card",
+          "title": "Users & issued keys"
+        },
+        {
+          "type": "custom:vcast-screens-card",
+          "title": "Virtual cast screens"
+        },
+        {
+          "type": "markdown",
+          "title": "What a paired device gets",
+          "content": "The device gets a named, revocable key for **one** Ada HA instance:\n\n- **Voice PWA** \u2014 Gemini Live voice assistant\n- **Control** \u2014 lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged per device name\n- **Reads** \u2014 states, sensors + history, power summary, event timelines, dashboard tabs, device search\n- **Memory** \u2014 recall + remember/forget on the instance's memory banks\n\nNot granted: minting/revoking keys (admin only), HA credentials (server-side), the other instance. Revoking a key kills its sessions immediately.\n\n[Open full pair admin page](https://mn01.taila0626a.ts.net/apps/ha/pair/)"
+        }
+      ]
+    },
+    {
+      "title": "Board",
+      "path": "board",
+      "icon": "mdi:view-column-outline",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-dell.taila0626a.ts.net/apps/board/index.html?v=5"
+        }
+      ],
+      "type": "panel"
+    },
+    {
+      "title": "Chaba CMS",
+      "path": "chaba-cms",
+      "icon": "mdi:file-document-edit-outline",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=pages"
+        }
+      ]
+    },
+    {
+      "title": "CMS Security",
+      "path": "chaba-cms-security",
+      "icon": "mdi:shield-home-outline",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=security"
+        }
+      ]
+    },
+    {
+      "title": "CMS Traffic",
+      "path": "chaba-cms-traffic",
+      "icon": "mdi:car-multiple",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=traffic"
+        }
+      ]
+    },
+    {
+      "title": "CMS Flood",
+      "path": "chaba-cms-flood",
+      "icon": "mdi:home-flood",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=flood"
+        }
+      ]
+    },
+    {
+      "title": "Monitor",
+      "path": "monitor",
+      "icon": "mdi:monitor-dashboard",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-dell.taila0626a.ts.net/apps/system-report/?v=1"
+        }
+      ]
+    },
+    {
+      "title": "Percussion",
+      "path": "percussion",
+      "icon": "mdi:drum",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-dell.taila0626a.ts.net/apps/percussion/index.html?v=1"
+        }
+      ]
+    },
+    {
+      "title": "Events",
+      "path": "events",
+      "icon": "mdi:bell-badge-outline",
+      "cards": [
+        {
+          "type": "custom:chaba-events-card"
+        }
+      ],
+      "type": "panel"
+    },
+    {
+      "title": "Log",
+      "path": "log",
+      "icon": "mdi:history",
+      "cards": [
+        {
+          "type": "custom:chaba-log-card",
+          "title": "Home Assistant logbook",
+          "hours_to_show": 1,
+          "entities": [
+            "script.ada_pair_issue",
+            "script.ada_pair_revoke",
+            "script.ada_pair_reissue",
+            "script.ada_pair_revoke_named",
+            "script.cast_power_on",
+            "script.cast_cleanup",
+            "script.cast_camera",
+            "automation.cast_idle_shutdown",
+            "automation.cast_activity_reset",
+            "automation.cast_youtube_from_search_result",
+            "input_boolean.youtube_search_pending",
+            "input_boolean.cast_powered_by_us",
+            "media_player.tony_tv_cast",
+            "media_player.tv_40c5000",
+            "switch.plug_tv",
+            "sensor.ada_tony_issued_keys",
+            "sensor.ada_michael_issued_keys"
           ]
-        },
+        }
+      ],
+      "type": "panel"
+    },
+    {
+      "title": "Obsidian",
+      "path": "obsidian",
+      "icon": "mdi:notebook-outline",
+      "type": "panel",
+      "cards": [
         {
-          "title": "Board",
-          "path": "board",
-          "icon": "mdi:view-column-outline",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-dell.taila0626a.ts.net/apps/board/index.html?v=5"
-            }
-          ],
-          "type": "panel"
-        },
-        {
-          "title": "Chaba CMS",
-          "path": "chaba-cms",
-          "icon": "mdi:file-document-edit-outline",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=pages"
-            }
-          ]
-        },
-        {
-          "title": "CMS Security",
-          "path": "chaba-cms-security",
-          "icon": "mdi:shield-home-outline",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=security"
-            }
-          ]
-        },
-        {
-          "title": "CMS Traffic",
-          "path": "chaba-cms-traffic",
-          "icon": "mdi:car-multiple",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=traffic"
-            }
-          ]
-        },
-        {
-          "title": "CMS Flood",
-          "path": "chaba-cms-flood",
-          "icon": "mdi:home-flood",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-ha.surf-thailand.com/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7&tab=flood"
-            }
-          ]
-        },
-        {
-          "title": "Monitor",
-          "path": "monitor",
-          "icon": "mdi:monitor-dashboard",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://tony-dell.taila0626a.ts.net/apps/system-report/?v=1"
-            }
-          ]
-        },
-        {
-          "title": "Events",
-          "path": "events",
-          "icon": "mdi:bell-badge-outline",
-          "cards": [
-            {
-              "type": "custom:chaba-events-card"
-            }
-          ],
-          "type": "panel"
-        },
-        {
-          "title": "Log",
-          "path": "log",
-          "icon": "mdi:history",
-          "cards": [
-            {
-              "type": "custom:chaba-log-card",
-              "title": "Home Assistant logbook",
-              "hours_to_show": 1,
-              "entities": [
-                "script.ada_pair_issue",
-                "script.ada_pair_revoke",
-                "script.ada_pair_reissue",
-                "script.ada_pair_revoke_named",
-                "script.cast_power_on",
-                "script.cast_cleanup",
-                "script.cast_camera",
-                "automation.cast_idle_shutdown",
-                "automation.cast_activity_reset",
-                "automation.cast_youtube_from_search_result",
-                "input_boolean.youtube_search_pending",
-                "input_boolean.cast_powered_by_us",
-                "media_player.tony_tv_cast",
-                "media_player.tv_40c5000",
-                "switch.plug_tv",
-                "sensor.ada_tony_issued_keys",
-                "sensor.ada_michael_issued_keys"
-              ]
-            }
-          ],
-          "type": "panel"
-        },
-        {
-          "title": "Obsidian",
-          "path": "obsidian",
-          "icon": "mdi:notebook-outline",
-          "type": "panel",
-          "cards": [
-            {
-              "type": "iframe",
-              "url": "https://mn01.taila0626a.ts.net/apps/obsidian/"
-            }
-          ]
+          "type": "iframe",
+          "url": "https://mn01.taila0626a.ts.net/apps/obsidian/"
         }
       ]
     }
-  }
+  ]
 }
