@@ -1,9 +1,10 @@
 # mn01 stick — identity & management standard
 
-`mn01` is not a box — it is a **tailnet identity that lives on the tony-usb
-stick**. Verified 2026-10-10: a MacBookPro13,3 booted from the stick came up
-as `mn01.taila0626a.ts.net` (100.106.196.22) with fleet ssh keys already
-authorized.
+`mn01` is a real box (ESPRIMO Q556/2 — `hardware-mn01-tony-usb.md`).
+The tony-usb stick carries a **clone of mn01's tailscale node key** —
+booting it anywhere hijacks the `mn01` tailnet session (verified
+2026-10-10: MacBookPro13,3 stole 100.106.196.22 until its tailscaled
+was stopped; the box then reclaimed it normally).
 
 ## Rules
 

@@ -1,24 +1,44 @@
-# mn01 / tony-usb — portable boot stick
+# mn01 — Fujitsu ESPRIMO Q556/2 (real hardware)
 
-Verified 2026-10-10 (MacBook booted from `tony-usb`, LAN 192.168.2.88).
+mn01 is a real box, not just a tailnet identity. Verified 2026-10-10 after
+power-cycle (LAN `192.168.2.81`, tailnet `100.106.196.22` reclaimed).
 
-`tony-usb` is a portable Ubuntu stick Tony carries. Any host booted from it
-comes up fleet-ready:
+## Hardware
 
-- Hostname: `tony-usb` (`/dev/sda2` root, ~115G, ~11G used on MacBook boot)
-- **Tailscale identity: mn01** (`mn01.taila0626a.ts.net`, `100.106.196.22`) —
-  the stick carries mn01's node key, so any machine booted from it *claims the
-  mn01 identity*. If a second mn01-bearing machine powers on they will fight
-  for the same IP — treat mn01 as "the stick is wherever it's plugged in".
-- `openssh-server` installed + running, **authorized_keys already contains the
-  fleet keys** (`ssh tony@<lan-ip>` works keyless out of the box)
-- `sshd` is **not** enabled for boot by default — `sudo systemctl enable ssh`
-- `curl` is NOT in the image (this is why `curl … | bash` fails on a fresh
-  boot); `wget`, `python3`, `tailscale` all are
-- `sudo` is interactive (tony's password), not NOPASSWD
-- First-boot fix (needs password once):
-  `sudo apt install -y curl && sudo systemctl enable ssh`
+- Fujitsu **ESPRIMO Q556/2** mini PC — Intel **i5-7400T** (4c Kaby Lake),
+  7G RAM, Micron 1100 **238G SATA SSD** (26% used), DVDRAM drive
+- NICs: `enp1s0` gigabit ethernet (UP) + `wlx881100c50a2c` **USB wifi
+  dongle — down/no carrier** (its saved creds likely point at the old
+  mn-home SSID; ethernet is the reliable path)
+- Hosts VMs (`vms-snap.service`, `virbr` 192.168.123.x, dnsmasq :53)
 
-MacBook hardware booted 2026-10-10: 15G RAM, laptop chassis. Whether mn01
-has always been this MacBook or other hardware got the same stick —
-unconfirmed; mn01's identity lives in the stick, not a specific machine.
+## What runs (verified alive)
+
+- `runner-agent` — kanban claim+execute lane (devin-dispatch, cap ~2)
+- `devin-dispatch-watch.timer`, `chaba-repo-sync.timer`
+- `log-shipper.timer` + `log-shipper-severe.timer` (→ MDDB host-logs)
+- `ada-standby-sync.timer` (03:15) + `mn01-canary.timer` (03:30)
+- Tailnet listeners: :8004 (Ada standby), :3939, :5900, :8780–8782
+- Ada-ha standby units stopped/disabled since 2026-09-24 (by design)
+
+## Outage record
+
+Dark ~Oct 5 → Oct 10 (~5 days): box powered off / NIC down silently —
+nobody noticed because all its live services are standby/dormant.
+Lesson: it needs a staleness canary on tony-dell (mn01-canary exists
+but is local — useless when the host is down; carded idea: external
+pinger for host-down detection).
+
+## tony-usb stick
+
+Portable Ubuntu stick (117G, `ubuntu-usb` ext4 + EFI). Boots any host
+fleet-ready: sshd + fleet authorized_keys baked, tailscale present.
+
+**Caveat (verified 2026-10-10):** the stick carries a *clone of mn01's
+node key* — booting it anywhere steals the `mn01` tailnet session from
+the real box. When both are up they fight for 100.106.196.22. Policy:
+`mn01-stick-standard.md` — fix pending: stick should get its own node
+key (e.g. `tony-usb`), not mn01's.
+
+First-boot fix on stick image (no curl, sshd not enabled):
+`sudo apt install -y curl && sudo systemctl enable ssh`
