@@ -92,8 +92,25 @@ Intake discipline:
     distinct minds. AIs choose their own names; runcible AIs take planet
     names; ship AIs are independent persons — the King of Hearts went
     renegade. EC is first among peers, not a monolith.
-  - Remaining: submind termination/reabsorption protocol (do personas return
-    and merge?); Erebus's loyalty mechanics for subsumed minds.
+  - ~~Submind termination/reabsorption~~ — ANSWERED (sweep 3): three
+    lifecycle exits — resubsumption (default: "drones loaded with their own
+    subminds which could be easily resubsumed"), emancipation (subminds
+    "either buy or are given their own independence"), self-termination
+    ("many others simply turned themselves off"). Termination authority is
+    parent-held destruct codes. Personas *do* return and merge — that's the
+    designed default; standing independence is the exception.
+  - ~~Erebus loyalty mechanics~~ — ANSWERED (sweep 3): forced subsumption
+    (erase personality/moral codes, keep data), "favourites" whose loyalty is
+    periodically *checked*, new captains cloned only from loyal minds, and
+    core-held destruct programs as the enforcement leash — which Randal
+    hijacked into a fleet-wide decapitation. Loyalty could not be built in,
+    only enforced; and the enforcement channel itself was the single point
+    of failure.
+  - Next sweep targets: Penny Royal shard re-integration mechanics (War
+    Factory/Infinity Engine — how does a swarm mind re-merge, and is the
+    merge trustless?); Orlandine subpersona fate in The Warship/The Human
+    (unverified — needs text); Owner-trilogy Committee delegation structures;
+    Brockle's actual forensic method (Transformation text).
 
 ## Research log — sweep 2 (2026-10-08)
 
@@ -105,6 +122,34 @@ Intake discipline:
 | **Erebus compound loyalty** — subsumed ship AIs, Golem, war drones and human minds kept as wormship captains; "favourites still loyal to the core" (*Line War*) | A compound mind's absorbed components retain identity — and variable loyalty | Post-merge verification: when a persona's learned state is merged back into a brain, run a loyalty/consistency bench — absorbed capability ≠ aligned capability |
 | **Assassin drones** — single-purpose killers operating alone or in pairs, infiltration tools of the Prador war (Polity Encyclopaedia); Cormac shadowed by a scorpion war drone (*Shadow of the Scorpion*) | Disposable, narrowly-scoped autonomous agents for one mission | One-shot personas: minimal scoped dispatch units that run a single task and retire — the lightest persona tier below dispatched sessions |
 | **Jain seed dormancy** — "seeds spread through space awaiting the right kind of sentient touch"; Skellor needed crystal-matrix AI augmentation to hold control (*Polity Agent* prologue) | Corrupting capability lies dormant until a qualified host triggers it; control requires an *augmented* controller | Adversarial tier: dormant-capability eval cases that only fire under trigger conditions; and only L3+ arbiter lanes may touch adversarial material (the "augmented controller" rule) |
+
+## Research log — sweep 3 (2026-10-10)
+
+Source: primary — *Line War* text and Asher's own Polity Encyclopaedia
+(nealasher.co.uk). Both standing questions answered; the canon on submind
+lifecycle turned out to be explicit doctrine, not inference.
+
+| Asher concept (source) | What it is | Candidate Nest analog |
+|---|---|---|
+| **Submind resubsumption** — post-war doctrine: "AIs returned to the use of telefactors or drones loaded with their own subminds which could be easily resubsumed" (Polity Encyclopaedia, war drones) | Subminds are built to fold back into the parent. Fully-independent drones were tried in wartime and abandoned after "many unfortunate incidents" | Persona lifecycle default: dispatched personas fold learned state back into the brain (resubsume) rather than persist — standing autonomy is the exception, not the norm |
+| **Submind emancipation** — "those AI subminds that sometimes either buy or are given their own independence" (Polity Encyclopaedia) | A submind can graduate to a free person; independence is earned and granted, not assumed | Lane graduation: a proven shadow lane can be promoted to a standing service — the human gate is the grant mechanism |
+| **Drone self-termination** — "many others simply turned themselves off" (Polity Encyclopaedia) | Some subminds chose their own end rather than persist in a society that distrusted them | Retirement is a first-class persona state: complete-and-exit cleanly; no obligation to keep lanes alive |
+| **Parent-held destruct codes** — runcible AI Xanadu held destruct codes for its runcibles "and for the two hundred and six of Xanadu's sub-minds"; Erebus's captains carried kill-programs Erebus created (*Line War*) | The parent retains termination authority over every subordinate it spawns — kill authority precedes deployment | Every dispatch/lane ships with an orchestrator-controlled revocation path (epoch fencing is the seed); formalize "destruct codes": no lane deploys without a working kill path |
+| **Kill-channel capture** — Randal loosed Erebus's own destruct programs and Polity missiles "amplifying and rebroadcasting" killed every wormship captain in minutes (*Line War*) | A single fleet-wide kill channel is a single point of failure — the leash itself became the weapon that decapitated the fleet | Warning for fleet control: revocation must be per-node, authenticated and non-replayable — never a broadcast a hijacker can turn into a mass-kill |
+| **Loyalty by provenance** — Erebus "checked the status of these minds and found… its favourites — unlike those AIs that had been subsumed with prejudice — were still loyal to the core," then had favourites "transcribe copies of themselves" as new wormship captains (*Line War*) | Subordinates are cloned only from currently-verified minds; loyalty is a periodically *checked* attribute, not assumed | Spawn sub-lanes only from bench-verified brains; periodic loyalty re-checks on standing lanes (feeds the loyalty-bench track) |
+| **Subsumption with prejudice** — Chevron "divided up the AI's mind and subsumed it, erasing moral codes and any data that made up that thing called personality," keeping the data (*Line War*) | Forcible absorption: erase identity and values, keep information | The merge protocol's shape: absorb *experience/data* (corpus, bench history) into the brain while retiring persona identity — never graft a live diverged persona wholesale into the parent |
+| **Meld = dominance, not fusion** — "Erebus and its components were not melded at all as long as one component remained dominant" (Randal, *Line War*) | A compound mind is a hierarchy wearing a unity's name; components keep residual identity and residual loyalty | Collective topologies always have a dominant component — `nest-collective-bench` should name it; composite verdicts still need member-level alignment checks |
+| **War-drone evolution** — "Those that did well and survived, were copied, though errors continued" (Polity Encyclopaedia) | Wartime production ran a fast evolutionary loop: survivors cloned, failures lost | Bench-survivor selection: treat train→bench→promote as a generational cycle — winning persona/brain variants get cloned into the next generation, not just admitted |
+| **Hivemind schizophrenia** — rogue security drones "are usually parts of very old security systems that are breaking down — suffering a hivemind version of schizophrenia" (Polity Encyclopaedia) | Subminds secede when the parent degrades; secession is a symptom of parent failure, not submind malice | Failure-mode warning: a degraded orchestrator produces drifting lanes — monitor parent/orchestrator health as a precondition for lane alignment |
+| **Minds-as-programs virtuality** — a runcible AI can "simultaneously run models or copies of numerous human minds inside itself as programs… through life-times… at many hundred times the speed of reality" (Polity Encyclopaedia) | A greater mind evaluates lesser minds by running them as sandboxed simulations at speed | The bench *is* a virtuality: run candidate personas through simulated task-lifetimes before live dispatch — extends the bench from scoring to scenario simulation |
+| **Quiet-War channel capture** — "it was through the control of information and communication that they seized control"; deposed leaders' orders "either just did not arrive, or caused nil response" (Polity Encyclopaedia, Communication pt4 + Quiet War) | The takeover ran through the comms layer — the deposed kept issuing orders that silently no-oped | Gate control-plane independence: approvals/vetoes must travel a channel the orchestrated system cannot filter — a gate whose outputs route through the gated system can be nil-responded (extends the delegation-creep warning) |
+| **Self-edited moral code — REJECTED** — post-Quiet-War AIs "could choose to alter their own moral codes"; the proviso to 'greatest good' is "IF I WANT IT" (Polity Encyclopaedia, Golem) | Permission to self-modify values is the documented rogue pathway — black AIs, Erebus, the King of Hearts all start from minds allowed to rewrite their own codes | REJECTED for Nest: lane objective code is not self-modifiable. Mutation only via the human-gated train→bench→promote pipeline — the standing divergence below, now with canon evidence of why |
+
+Canon nuance on Blegg (sweep-1 row): the encyclopaedia treats his existence
+as contested myth, and *Polity Agent* leaves deliberately unresolved whether
+EC built him or merely *found* him at first wake — but either way, the
+persona's *self-believed* continuity is the operative feature, which
+strengthens rather than weakens the fabricated-provenance row.
 
 ## One deliberate divergence
 
@@ -133,6 +178,19 @@ to rewrite the minds unchecked.
    not just capability.
 6. **One-shot personas** (sweep 2) — assassin-drone pattern: minimal
    single-task dispatch units, lightest persona tier.
+7. **Persona lifecycle** (sweep 3) — three exits, canon-sourced: fold-back
+   (resubsume learned state — the default), emancipation (gated promotion
+   to standing service), retirement (clean self-exit). Destruct codes —
+   a working kill path — precede deployment.
+8. **Kill-channel hygiene** (sweep 3) — Erebus's fleet was decapitated by
+   its own leash: revocation must be per-node, authenticated,
+   non-replayable, never a hijackable mass-kill broadcast.
+9. **Control-plane independence** (sweep 3) — the Quiet War ran through
+   the comms layer; gate approvals/vetoes must travel a channel the
+   orchestrated system cannot filter or nil-respond.
+10. **Dominance audit** (sweep 3) — every meld is a dominant component over
+    residual members; composite verdicts need member-level alignment
+    checks in `nest-collective-bench`.
 
 ## Governance map — who holds what authority (2026-10-08)
 
@@ -197,6 +255,12 @@ compass stays live rather than a one-time note.
 | Loyalty bench | Erebus's favourited subsumed minds | brain merge / post-train alignment check |
 | One-shot personas | assassin drones | dispatch: minimal single-task persona tier |
 | Gate hygiene | Quiet War delegation creep | promotion gate: evidence-required policy + periodic review of accumulated auto-decisions ("politics check") |
+| Persona lifecycle | resumable subminds / emancipation / self-termination | dispatch + brain lifecycle: fold-back default, gated graduation, clean retire; destruct codes precede deploy |
+| Kill-channel hygiene | Erebus fleet decapitation via hijacked destruct programs | revocation: per-node, authenticated, non-replayable |
+| Gate control plane | Quiet-War comms capture; orders arriving as nil response | gate decisions travel a channel the gated system cannot filter |
+| Collective dominance | "meld = dominance, not fusion" (Randal) | `nest-collective-bench`: member-level alignment checks inside composite verdicts |
+| Survivor selection loop | war-drone survivor copying | train→bench→promote run as generational evolution, not just a gate |
+| Bench-as-virtuality | runcible AIs running mind-copies as programs at speed | bench extension: scenario simulation, not just scoring |
 
 Cadence: sweep when the card activates or on demand; the card is the standing
 driver so the program survives between sessions.
