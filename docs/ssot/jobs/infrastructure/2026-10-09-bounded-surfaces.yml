@@ -1,0 +1,65 @@
+id: bounded-surfaces
+title: Bounded surfaces — shared budget/noise machinery for the report pipeline
+date: 2026-10-09
+card: report-bounded-surfaces
+host: idc03 (dispatch worktree)
+status: implemented
+
+goal: >
+  Every rendered report surface declares a budget and sheds noise in a
+  declared order — the same discipline the memory render already has —
+  with both pipelines sharing one helper library instead of hand-rolled
+  truncation. Pilot: the L3 system report.
+
+what_landed:
+  - "scripts/lib/bounded.py (new) — extracted verbatim from
+    scripts/chaba/render-memory.py — apply_budget, dedupe_consecutive
+    (×N markers), drop_patterns (suppression + count), filter_status
+    (skip_status), cap_entry (entry_max_chars), keep_last (max_entries),
+    plus enforce_surface — the whole-surface budget helper used by the
+    report side (ordered shed with in-place markers + hard cut)."
+  - "scripts/chaba/render-memory.py — imports from lib.bounded; render
+    output verified byte-identical (modulo timestamp) against the
+    pre-extraction version, plus a synthetic equivalence harness over
+    rolling-log/recent-events/skip_status/budget paths — ALL EQUAL."
+  - "scripts/report-system.py — renders as section blocks
+    (overview, host-loads, domains, producers, recent-timeline,
+    raw-data) through the registry node's own knobs — suppress, dedupe,
+    finding_max_chars, empty (marker|hide, default marker —
+    '_(empty — ran clean)_'), limits + overflow_order. Shed sections
+    keep their heading with a '_(shed — surface over soft budget)_'
+    marker — overflow is deliberate, never a silent crop.
+    meta.extra now records chars + shed/over_hard/suppressed."
+  - "docs/ssot/infrastructure/ssot.reports.yml — limits {soft — 25000,
+    hard — 50000} + overflow_order on the system-report node only;
+    other rendered nodes opt in as their producers get wired."
+  - "scripts/report/report-watch.py — new informational 'overrun'
+    check — meta.extra.chars > declared limits.hard raises a low-priority
+    focus-inbox note (slug-deduped), never a page. Runs for every node
+    with meta, independent of status."
+
+verification:
+  - "render diff: context.md/context-guest.md/report*.yml identical
+    before/after extraction except the generated timestamp."
+  - "equivalence harness: 11/11 PASS across all extracted helpers."
+  - "tiny-limit render: sections shed in declared overflow_order with
+    in-place markers; shedding stops once under soft; over hard →
+    '…(global hard limit reached — truncated)'."
+  - "empty marker: '_(empty — ran clean)_' renders for contentless
+    sections; empty — hide removes them."
+  - "meta: extra.chars + shed list written via lib/report.py::write_meta."
+  - "report-watch: sandboxed run flags an over-budget node once (priority
+    low), skips in-budget and chars-less nodes, dedupes on re-run."
+
+notes:
+  - "L0 artifact writers deliberately get NO budgets — bounded_surfaces
+    is rendered-surface only (registry section explains why — L0 is
+    evidence)."
+  - "Rolling limits/suppress/dedupe/empty onto other rendered nodes is a
+    per-node follow-up — the machinery + one working example was the
+    card's scope."
+  - "dedupe_consecutive got one hardening fix during extraction — blank
+    separator entries can never be merge sources or targets (a heading-
+    only entry's empty body would otherwise collapse into a preceding
+    blank). No behavior change for memory renders (entries there are
+    never blank)."

@@ -32,6 +32,9 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 import yaml  # noqa: E402
 
+from lib.bounded import (  # noqa: E402
+    cap_entry, dedupe_consecutive, drop_patterns, enforce_surface,
+)
 from lib.report import (  # noqa: E402
     REGISTRY_PATH, TIMELINE_PATH, append_timeline, load_registry,
     now_iso, resolve_all, write_meta,
@@ -187,7 +190,15 @@ def _load_timeline_tail(path: Path, n: int) -> list[dict]:
     return events
 
 
-def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
+def render_markdown(doc: dict, states: list[dict], timeline_path: Path,
+                    node: dict | None = None) -> tuple[str, dict]:
+    """Render the overview through the bounded_surfaces knobs declared on
+    the node's own registry entry (ssot.reports.yml): suppress/dedupe/
+    finding_max_chars per section body, `empty: marker|hide` for
+    contentless sections (reports default to marker — absence must be
+    distinguishable from never-ran), and limits + overflow_order over the
+    whole surface. Returns (markdown, info) — info feeds meta.extra."""
+    node = node or {}
     by_id = {s["id"]: s for s in states}
     counts = {}
     for s in states:
@@ -196,7 +207,7 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
         s["status"] in ("missing", "stale", "error", "delta", "unreachable") for s in states
     ) else "ATTENTION"
 
-    lines = [
+    preamble = "\n".join([
         "# System Report",
         "",
         f"- Generated: {now_iso()} by `scripts/report-system.py`",
@@ -208,8 +219,7 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
         "Layered reporting standard: L0 raw -> L1 producer -> L2 domain -> L3 "
         "overview. Each node's `meta.yml` is observed state; the registry is "
         "declared intent. See `docs/ssot/infrastructure/ssot.reports.yml`.",
-        "",
-    ]
+    ])
 
     rendered = set()
 
@@ -228,22 +238,23 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
             "",
         ]
 
+    sections = []
+
+    def add(sid: str, title: str, body: list[str],
+            intro: list[str] | None = None):
+        sections.append({"id": sid, "title": title,
+                         "intro": intro or [], "body": body})
+
     # L3 node first
     l3 = [s for s in states if s["layer"] == "L3-overview"]
-    if l3:
-        lines += ["## Overview", ""] + table([node_row(s) for s in l3])
+    add("overview", "Overview",
+        table([node_row(s) for s in l3]) if l3 else [])
 
     # Host loads — from the latest audit-hosts snapshots
     loads = _host_loads()
+    hbody = []
     if loads:
-        lines += [
-            "## Host loads",
-            "",
-            "From `reports/host-loads/host-loads.yml` (5-min sampler via "
-            "tony-dell-monitor) when fresh, else the 24h "
-            "`reports/audit-hosts/<host>-*.yml` snapshots. "
-            "*Age* = how stale each host's data is.",
-            "",
+        hbody = [
             "| Host | Load 1/5/15m | Mem used/avail | Disk % | OOM 24h | "
             "Snapshot age |",
             "|------|---------------|----------------|--------|---------|"
@@ -251,51 +262,49 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
         ]
         for r in loads:
             if r["unreachable"]:
-                lines.append(f"| `{r['host']}` | - | - | - | - | "
+                hbody.append(f"| `{r['host']}` | - | - | - | - | "
                              f"unreachable ({r['snapshot_age']}) |")
             else:
-                lines.append(
+                hbody.append(
                     f"| `{r['host']}` | {r['load_1m']} / {r['load_5m']} / "
                     f"{r['load_15m']} | {r['mem_used'] or '-'} / "
                     f"{r['mem_avail'] or '-'} | {r['disk_pct']}% | "
                     f"{r['oom_24h'] if r['oom_24h'] is not None else '-'} | "
                     f"{r['snapshot_age']} |")
-        lines.append("")
+        hbody.append("")
+    add("host-loads", "Host loads", hbody, intro=[
+        "From `reports/host-loads/host-loads.yml` (5-min sampler via "
+        "tony-dell-monitor) when fresh, else the 24h "
+        "`reports/audit-hosts/<host>-*.yml` snapshots. "
+        "*Age* = how stale each host's data is.",
+        "",
+    ])
 
     # L2 domains with their children
-    lines += ["## Domains", ""]
+    dbody = []
     for s in states:
         if s["layer"] != "L2-domain":
             continue
-        node = next(n for n in doc.get("nodes", []) if n.get("id") == s["id"])
-        lines.append(f"### {s['id']}")
-        lines.append("")
-        lines.append(f"_{s['purpose'] or ''}_")
-        lines.append("")
+        entry = next(n for n in doc.get("nodes", []) if n.get("id") == s["id"])
+        dbody += [f"### {s['id']}", "", f"_{s['purpose'] or ''}_", ""]
         rows = [node_row(s)]
-        for child_id in node.get("children") or []:
+        for child_id in entry.get("children") or []:
             if child_id in by_id:
                 rows.append(node_row(by_id[child_id]))
-        lines += table(rows)
+        dbody += table(rows)
+    add("domains", "Domains", dbody)
 
     # L1 producers not claimed by any L2
     orphan = [s for s in states
               if s["layer"] == "L1-producer" and s["id"] not in rendered]
-    if orphan:
-        lines += ["## Producers (ungrouped)", ""] + table(
-            [node_row(s) for s in orphan])
+    add("producers", "Producers (ungrouped)",
+        table([node_row(s) for s in orphan]) if orphan else [])
 
     # Timeline tail
     events = _load_timeline_tail(timeline_path, TIMELINE_TAIL)
-    lines += [
-        "## Recent timeline",
-        "",
-        f"Last {len(events)} of `{timeline_path}` "
-        "(append-only, full history):",
-        "",
-    ]
+    tbody = []
     if events:
-        lines += [
+        tbody = [
             "| Time | Node | Status | Summary |",
             "|------|------|--------|---------|",
             *[f"| {_fmt_ts(e.get('ts'))} | `{e.get('node')}` | "
@@ -303,21 +312,55 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
               for e in reversed(events)],
             "",
         ]
-    else:
-        lines += ["_No timeline events yet._", ""]
-
-    lines += [
-        "## Raw data",
+    add("recent-timeline", "Recent timeline", tbody, intro=[
+        f"Last {len(events)} of `{timeline_path}` "
+        "(append-only, full history):",
         "",
+    ])
+
+    add("raw-data", "Raw data", [
         "- `reports/audit-hosts/` — per-host snapshots",
         "- `reports/audits/` — audit suite outputs",
         "- `~/var/chaba/health/` — monitor snapshots",
         f"- `{timeline_path}` — full event history",
         "",
-        "_Generated file — do not hand-edit._",
-        "",
-    ]
-    return "\n".join(lines)
+    ])
+
+    # --- bounded surface: per-section noise knobs, then surface budget ---
+    suppress = node.get("suppress") or []
+    dedupe = bool(node.get("dedupe"))
+    fmax = node.get("finding_max_chars")
+    empty_mode = node.get("empty") or "marker"
+    suppressed = 0
+    blocks = [{"id": "preamble", "text": preamble}]
+    for s in sections:
+        body = s["body"]
+        if suppress:
+            body, n = drop_patterns(body, suppress)
+            suppressed += n
+            if n:
+                body += [f"…({n} routine findings suppressed)", ""]
+        if dedupe:
+            body = dedupe_consecutive(body, mark_plain=True)
+        if fmax:
+            body = [cap_entry(l, fmax) for l in body]
+        if not any(l.strip() for l in body):
+            if empty_mode == "hide":
+                continue
+            block = f"## {s['title']}\n\n_(empty — ran clean)_"
+        else:
+            block = (f"## {s['title']}\n\n"
+                     + "\n".join(s["intro"] + body).rstrip())
+        blocks.append({"id": s["id"], "title": s["title"], "text": block})
+
+    text, shed, over_hard = enforce_surface(
+        blocks, node.get("limits"), node.get("overflow_order"),
+        shed_text=lambda b: (f"## {b.get('title') or b['id']}\n\n"
+                             "_(shed — surface over soft budget)_"))
+    text += "\n\n_Generated file — do not hand-edit._\n"
+    info = {"chars": len(text), "shed": shed,
+            "over_hard": over_hard, "suppressed": suppressed}
+    return text, info
 
 
 def write_focus_inbox_meta() -> None:
@@ -407,7 +450,8 @@ def main() -> int:
     doc = load_registry(args.registry)
     nodes = doc.get("nodes") or []
     states = resolve_all(nodes)
-    md = render_markdown(doc, states, args.timeline)
+    node_cfg = next((n for n in nodes if n.get("id") == "system-report"), {})
+    md, render_info = render_markdown(doc, states, args.timeline, node_cfg)
 
     if args.print_only:
         print(md)
@@ -447,13 +491,21 @@ def main() -> int:
                (", ".join(f"{s['id']}={s['status']}" for s in states
                           if s["status"] in ("missing", "stale", "error"))
                 or "all healthy"))
+    extra = {"chars": render_info["chars"]}
+    if render_info["shed"]:
+        extra["shed"] = render_info["shed"]
+    if render_info["over_hard"]:
+        extra["over_hard"] = True
+    if render_info["suppressed"]:
+        extra["suppressed"] = render_info["suppressed"]
     write_meta(args.meta, node="system-report", layer="L3-overview",
                generated_by="scripts/report-system.py",
                purpose="Single human digest across all domains; makes absence loud",
                status=status, summary=summary,
                sources=[str(args.output), str(args.yml_output)],
                children=[s["id"] for s in states
-                          if s["layer"] == "L2-domain"])
+                          if s["layer"] == "L2-domain"],
+               extra=extra)
     append_timeline("system-report", "L3", status, summary,
                     ref=args.output, timeline=args.timeline)
 

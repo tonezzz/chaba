@@ -576,6 +576,13 @@ nodes:
     cadence: 24h
     output: reports
     meta: reports/meta.system-report.yml
+    # bounded_surfaces pilot (2026-10-09) — rendered via
+    # scripts/lib/bounded.py; meta.extra.chars recorded each run.
+    # Section ids: overview, host-loads, domains, producers,
+    # recent-timeline, raw-data. `empty`/`suppress`/`dedupe`/
+    # `finding_max_chars` are also read (defaults: empty=marker).
+    limits: {soft: 25000, hard: 50000}
+    overflow_order: [recent-timeline, raw-data, host-loads, producers, domains]
     children:
       - fleet
       - audit-suite
@@ -613,8 +620,10 @@ plan:
     - staleness-audit.mjs reads per-host cadences from this registry (meta.generated_at preferred over SSOT last_observed; fallback 14d)
     - chaba-system-report.service/.timer installed on tony-dell — daily chain: audit-hosts x5 -> --consolidate -> report-system.py
     - kanban L2 node (2026-10-05): scripts/board/kanban-stats.py rides kanban-sync.timer, writes reports/kanban/{meta.yml,kanban-stats.yml} + apps/system-report/data/kanban.md, mirrored to the served checkout
+    - bounded surfaces machinery (2026-10-09): scripts/lib/bounded.py extracted from render-memory.py (both pipelines share helpers); system-report is the pilot wired node — limits/overflow_order declared, sections shed with in-place markers, meta.extra.chars + shed recorded; report-watch flags extra.chars > hard as an informational 'overrun' focus item
     - chaba-nest L2 node (2026-10-08): scripts/ada/nest-overview.py (3rd ExecStart of chaba-kanban-brief.service, 30 min) probes lane /health+/metrics, writes reports/nest/{nest-overview.yml,meta.*.yml} — lane, brain, bench child metas + the domain meta + timeline event
   next_steps:
+    - roll limits/suppress/dedupe/empty onto other rendered nodes as their producers get wired through scripts/lib/bounded.py (per-node follow-ups)
     - ada-memory-report L2 renderer (memory-suite + recall-canary)
     - migrate tony-dell production units off the chaba-tony-dell checkout onto chaba (audit suite still writes reports/audits under the old checkout, so the audit-suite node reports missing here until then)
     - mcp-health-snapshot.timer repointed in repo (systemd/) but not installed; install on tony-dell if the snapshot feed is still wanted

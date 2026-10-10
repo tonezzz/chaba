@@ -3,10 +3,10 @@ title: Speaker-ID misidentification binds session owner to wrong ACL — rebind 
 brief: 'Session 7a74536b32 (2026-10-07): Tony was identified as KK twice (64% voiceprint match). Consequence: ada_memory_search
   and cms_publish_page were denied with "Only the session owner can run this action" — the session owner was bound
   to KK''s restricted identity, silently stripping Tony''s owner-only tools mid-session.'
-column: doing
+column: done
 priority: high
 program: ada-tools
-updated: 2026-10-10 08:57
+updated: 2026-10-10 09:06
 tags:
 - speaker-id
 - acl
@@ -15,6 +15,9 @@ note: When user says "I'm not KK" / speaker correction, session must re-resolve 
   just apologize. Also consider a higher match threshold before binding a restricted identity, or re-verify before
   owner-gated denials.
 comms:
+- at: 2026-10-10 09:07
+  from: devin
+  text: 'verified closed: dispatch branch merged e736e9f7b on chaba/master (checkpoint e05ec4dcc).'
 - at: 2026-10-08 20:35
   from: devin
   text: 'filed from transcript audit — evidence: session=7a74536b32, ada_memory_search + cms_publish_page denied
@@ -37,8 +40,37 @@ comms:
     NON_OWNER_MIN_CONF=0.70 floor + SpeakerSession.correct_speaker rebinds/clears on dispute + deny-path re-verify
     (runner + provider gates) + speaker_profiles correct action. 1010 tests pass incl new scenario; 1 fail = pre-existing
     lint debt on base. NOT committed/pushed/deployed.'
+- at: 2026-10-10 09:00
+  from: tony-omen
+  text: 'finished (ok): exit=0 full details in `dispatch-outcome-20261010-080914-speaker-id-misidentification-b.md`.
+    | devin-task-20261010-08091'
+- at: 2026-10-10 09:00
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:01
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:02
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:03
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:04
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:05
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
+- at: 2026-10-10 09:06
+  from: chaba
+  text: pushed dispatch/20261010-080914-speaker-id-misidentification-b to origin
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  result: 'exit=0 full details in `dispatch-outcome-20261010-080914-speaker-id-misidentification-b.md`. | devin-task-20261010-080914-speaker-id-misidentification-b.service:
+    Consumed 10min 28.484s CPU time over 48min 51.451s wall clock time, 1.7G memory peak.'
+  verified: true
+claim: {}

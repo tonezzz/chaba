@@ -23,6 +23,10 @@ import time
 
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.bounded import (apply_budget, cap_entry, dedupe_consecutive,  # noqa: E402
+                         drop_patterns, filter_status, keep_last)
+
 DEFAULT_CONFIG = "docs/ssot/chaba/ssot.chaba.memory.yml"
 SSOT_RE = re.compile(r'\$\{ssot\(\s*["\']([^"\']+)["\']\s*,\s*["\']([^"\']+)["\']\s*\)\}')
 
@@ -174,10 +178,7 @@ def run_query(q, repo_root, errors, warnings):
     if not vals:
         warnings.append(f"{file}: key '{q.get('key')}' produced no matches")
         return []
-    skip = set(q.get("skip_status", []))
-    if skip:
-        vals = [v for v in vals
-                if not (isinstance(v, dict) and v.get("status") in skip)]
+    vals = filter_status(vals, q.get("skip_status"))
     lines = []
     for v in vals:
         lines.extend(flatten_lines(v, q.get("format"), q.get("max_items")))
@@ -214,32 +215,13 @@ def run_source(src, render_dir, repo_root, errors):
         min_chars = src.get("min_chars", 0)
         if min_chars:
             entries = [e for e in entries if len(e) >= min_chars]
-        # collapse consecutive entries that differ only in the heading line
-        # (e.g. repeated scenario-run failures) into one entry marked "×N"
-        deduped = []
-        for e in entries:
-            lines = e.splitlines()
-            body = "\n".join(lines[1:]).strip() if lines and lines[0].startswith("#") else e
-            if deduped and deduped[-1][1] == body:
-                deduped[-1][2] += 1
-            else:
-                deduped.append([e, body, 1])
-        entries = [
-            e if n == 1 else re.sub(r"^(#+.*)$", rf"\g<1> ×{n}", e, count=1, flags=re.M)
-            for e, _body, n in deduped
-        ]
+        entries = dedupe_consecutive(entries)
         # entry_max_chars: cap each entry's length (merged entries can be
         # whole documents — a section budget is not a per-entry budget)
-        emax = src.get("entry_max_chars")
-        if emax:
-            entries = [
-                e if len(e) <= emax
-                else e[: emax - 40].rstrip() + f"\n…({len(e) - emax + 40:,} more chars in source)"
-                for e in entries
-            ]
+        entries = [cap_entry(e, src.get("entry_max_chars")) for e in entries]
         keep = src.get("max_entries", 3)
         # demote every heading in each entry so they nest under '## <section>'
-        return [re.sub(r"^(#+)", r"#\1", e, flags=re.M) for e in entries[-keep:]]
+        return [re.sub(r"^(#+)", r"#\1", e, flags=re.M) for e in keep_last(entries, keep)]
     if kind == "dir":
         bases = src.get("file", "")
         if isinstance(bases, str):
@@ -317,7 +299,6 @@ def run_source(src, render_dir, repo_root, errors):
         import datetime
         now = datetime.datetime.now().astimezone()
         default_ttl = src.get("ttl_hours", 72)
-        drop = [re.compile(p) for p in src.get("drop", [])]
         drop_kinds = set(src.get("drop_kind", []))
         dropped = 0
         lines = []
@@ -327,7 +308,7 @@ def run_source(src, render_dir, repo_root, errors):
             if drop_kinds and e.get("kind") in drop_kinds:
                 dropped += 1
                 continue
-            if drop and any(p.search(e["text"]) for p in drop):
+            if drop_patterns([e], src.get("drop"), key="text")[1]:
                 dropped += 1
                 continue
             try:
@@ -348,24 +329,6 @@ def run_source(src, render_dir, repo_root, errors):
         return lines
     errors.append(f"unknown source kind: {kind}")
     return []
-
-
-def apply_budget(lines, soft, hard):
-    """Returns (kept_lines, truncated_count)."""
-    if not soft and not hard:
-        return lines, 0
-    cap = soft or hard
-    out, total = [], 0
-    for ln in lines:
-        if total + len(ln) + 1 > cap and out:
-            return out + [f"…(truncated — {len(lines) - len(out)} more lines in source)"], len(lines) - len(out)
-        out.append(ln)
-        total += len(ln) + 1
-    joined = "\n".join(out)
-    if hard and len(joined) > hard:
-        joined = joined[: hard - 60] + "\n…(hard-truncated)"
-        return joined.splitlines(), len(lines) - len(out) + 1
-    return joined.splitlines(), 0
 
 
 def render_profile(cfg, profile_name, profile, repo_root, render_dir, report):

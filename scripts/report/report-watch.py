@@ -10,6 +10,9 @@ focus-inbox item when a node needs a human/agent:
   delta   — findings present AND unchanged >24h (a delta that never
             clears is a finding nobody looked at; fresh deltas are
             routine drift — audit-hosts is delta most of the time)
+  overrun — meta.extra.chars exceeds the node's declared hard limit
+            (informational: a rendered surface outgrew its budget —
+            focus-inbox note, never a page)
 
 One inbox item per node while the bad state persists (dedupe by slug);
 state.json records when each bad state was first seen.
@@ -110,6 +113,34 @@ def make_item(node: dict, status: str, summary: str, since: str) -> dict:
             "missing_info": [
                 "Is the failure a producer bug or real findings to triage?",
                 "Should the node be fixed, muted (expect_down), or retired?",
+            ],
+        },
+    }
+
+
+def make_overrun_item(node: dict, chars: float, hard: float) -> dict:
+    nid = node["id"]
+    return {
+        "title": "Focus Inbox Item",
+        "subtitle": f"Report node {nid} exceeded its hard budget",
+        "focus": {
+            "label": f"Report watch: {nid} over budget",
+            "text": (f"Rendered surface `{nid}` is {int(chars):,} chars — "
+                     f"over its declared hard limit of {int(hard):,} "
+                     "(meta.extra.chars > limits.hard in ssot.reports.yml).\n\n"
+                     "The bounded_surfaces standard expects the producer "
+                     "to enforce the budget itself, so an overrun means "
+                     "the render isn't going through scripts/lib/bounded.py "
+                     "or the declared limit is wrong.\n\n"
+                     f"Meta: {node.get('meta')}\n\n"
+                     "Fix the producer to render through bounded.py, or "
+                     "raise the declared limit if the surface is "
+                     "legitimately that large. Informational — no page."),
+            "status": "draft",
+            "priority": "low",
+            "tags": ["report", "watch", "overrun"],
+            "missing_info": [
+                "Producer not enforcing its budget, or a limit that no longer fits the surface?",
             ],
         },
     }
@@ -281,6 +312,26 @@ def main() -> int:
         # hosts leave the tailnet); an unreachable server still flags
         if status == "unreachable" and node.get("offline_ok"):
             continue
+
+        # overrun — informational only: the rendered surface's recorded
+        # char count exceeded its declared hard limit. Independent of
+        # status (a node can be ok AND over budget); slug-deduped like
+        # the status flags.
+        hard = (node.get("limits") or {}).get("hard")
+        chars = (meta.get("extra") or {}).get("chars")
+        if (isinstance(hard, (int, float)) and not isinstance(hard, bool)
+                and isinstance(chars, (int, float)) and not isinstance(chars, bool)
+                and chars > hard):
+            oid = f"{nid}-overrun"
+            if not inbox_exists(oid):
+                fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
+                         f"report-watch-{slug(oid)}.yml")
+                (INBOX / fname).write_text(yaml.safe_dump(
+                    make_overrun_item(node, chars, hard),
+                    sort_keys=False, allow_unicode=True, width=120))
+                created.append(f"{nid}=overrun")
+            if not quiet:
+                print(f"overrun {nid}: {int(chars):,} chars > hard {int(hard):,}")
 
         key = slug(nid)
         prev = state.get(key) or {}

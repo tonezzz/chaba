@@ -3,7 +3,7 @@ title: unified ACL resolver + 'who can do what' explain command
 brief: 'Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json
   overlay, and per-bank allowed_tools. ada_device_acl patched one room''s need; the unification is still ahead.
   Waiting in backlog.'
-column: review
+column: done
 metric: ada_ops action='acl_explain' identity=X entity=Y traces which layer allowed/denied
 verify: explain a granted, a denied, and an ambiguous case — output names the deciding layer each time
 note: 'Read-only first step before merging the systems: one resolver function consumed by all three gates, then
@@ -11,8 +11,11 @@ note: 'Read-only first step before merging the systems: one resolver function co
   Second phase (separate card when designed): converge the stores behind the resolver.'
 help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
   bank.allowed_tools gate; ada-kanban-access card for the ACL design history
-updated: 2026-10-10 08:36
+updated: 2026-10-10 09:03
 comms:
+- at: 2026-10-10 09:03
+  from: devin
+  text: 'verified closed: 155c9df ancestor of ada-pi/main (merged bb10f00).'
 - at: 2026-10-08 16:00
   from: devin
   text: Assessment finding — explainability first; merging three stores blind would move the confusion, not remove
@@ -58,6 +61,10 @@ comms:
   from: chaba
   text: 'session end: 2 commit(s) on dispatch/20261010-080608-unified-acl-resolver-who-can-d not in origin/main
     — close will block until merged'
+- at: 2026-10-10 09:03
+  from: chaba
+  text: 'merge-sweep: dispatch/20261010-080608-unified-acl-resolver-who-can-d already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261010-080608-unified-acl-resolver-who-can-d.md)'
 action:
   type: dispatch
   status: done
@@ -66,7 +73,7 @@ action:
   attempts: 1
   task_id: 20261010-080608-unified-acl-resolver-who-can-d
   result: 20261010-080608-unified-acl-resolver-who-can-d finished (inactive) — see `devin-dispatch logs 20261010-080608-unified-acl-resolver-who-can-d`
-  verified: false
+  verified: true
 claim:
   since: 2026-10-10 08:06
 review_kind: verify
