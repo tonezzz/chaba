@@ -203,6 +203,24 @@ jobs:
     committed comms/inbox state; ada-cms-automation registry gate +
     managed-block upsert same contract as kanban-brief. Added
     2026-10-10.'
+- id: chaba-standard-drift
+  name: Standard-drift digest -> CMS standard-drift
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: hourly
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  env:
+    REPO: '%h/CascadeProjects/chaba-tony-dell'
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/standard-drift-digest.py
+  note: 'card standard-drift-digest — deterministic drift signals (stale
+    generated reports past their own fresh_for, board drift, ada-pi
+    tool-lint violations) -> managed block on CMS standard-drift (en+th).
+    Hourly tick; the ada-cms-automation registry entry self-gates
+    publishing to 6h. The flywheel feedback page — one digest to review
+    instead of scattered fires. Added 2026-10-10.'
 - id: ada-pi-orch-bench
   name: Nest topology bench + nest-bench CMS trend refresh
   host: tony_omen
