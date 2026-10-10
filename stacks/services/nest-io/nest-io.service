@@ -1,0 +1,12 @@
+[Unit]
+Description=Nest I/O fabric — surface/session registry, ingestion triage (hot/warm/cold/discard), response broker, lane advisory
+
+[Service]
+Environment=NEST_IO_BIND=127.0.0.1
+Environment=NEST_IO_PORT=8795
+ExecStart=/usr/bin/python3 %h/.local/share/nest/io-fabric/nest-io.py --serve
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target
