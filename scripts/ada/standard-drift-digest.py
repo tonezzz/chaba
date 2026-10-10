@@ -113,9 +113,15 @@ def stale_reports(now: datetime) -> list[dict]:
     """Generated pages past their own fresh_for — the quality_loop input:
     Ada refreshes by tool, structural failures escalate to Devin."""
     out = []
+    dead = {"superseded", "archived", "retracted", "expired"}
     for d in _search_all(COLLECTION):
         meta = d.get("meta") or {}
         if not meta.get("generated_by"):
+            continue
+        status = meta.get("status")
+        if isinstance(status, list):
+            status = status[0] if status else None
+        if status in dead:
             continue
         fresh = meta.get("fresh_for")
         if isinstance(fresh, list):
