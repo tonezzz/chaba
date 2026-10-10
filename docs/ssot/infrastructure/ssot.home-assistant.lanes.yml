@@ -1,0 +1,160 @@
+title: Home Assistant Release Lanes
+subtitle: Lane endpoints + auth metadata consumed by the release pipeline
+  scripts (frontend-parity-check.sh, promote-lane.sh, promote-<lane>.sh).
+  Card ha-release-pipeline; lifecycle bars live in ssot.release-lifecycle.yml.
+icon: 🚦
+version: 1
+last_updated: "2026-10-10"
+
+# ---------------------------------------------------------------------------
+# A "lane" is a dev twin -> prod twin pair. Promotion flows dev -> prod only,
+# and only via promote-lane.sh/promote-<lane>.sh with explicit --confirm
+# (same-session human approval — ssot.release-lifecycle.yml s5, never
+# automatic). The michael-dev -> michael-ha lane predates the two-lane model
+# and is kept for the sunsynk card work; household releases use tony.
+# ---------------------------------------------------------------------------
+
+lanes:
+  tony:
+    dev: tony-dev
+    prod: tony-ha
+    dashboard: tony-test                    # default --dashboard for promote
+    bundle_base: pfg3d-card
+    note: household lane — until tony-dev is provisioned (card
+      ha-dev-instances) pass --from michael-dev to promote-tony.sh.
+
+  ada:
+    dev: ada-dev
+    prod: ada-ha
+    dashboard: chaba-nest
+    bundle_base: pfg3d-card
+    note: private lane — ada-ha auth is refresh-token exchange (no env token).
+
+  michael:
+    dev: michael-dev
+    prod: michael-ha
+    dashboard: tony-test
+    bundle_base: pfg3d-card
+    note: legacy card lane — dev lives on idc03 since the 2026-10-09
+      migration; prod is remote (tailscale ssh).
+
+instances:
+  tony-ha:
+    ssh: local
+    config: /home/tony/.config/home-assistant
+    url: http://127.0.0.1:8123
+    container: tony-ha                      # rootless podman; `podman restart`
+    auth: {kind: env, file: /home/tony/.config/secrets/home-assistant-token.env, var: HA_LONG_LIVED_TOKEN}
+
+  tony-dev:
+    ssh: local
+    config: /home/tony/.config/tony-dev
+    url: http://127.0.0.1:8127
+    container: tony-dev
+    planned: true                           # card ha-dev-instances, blocked
+    auth: {kind: env, file: /home/tony/.config/secrets/home-assistant-token.env, var: HA_LONG_LIVED_TOKEN,
+           note: stage-clone copies .storage/auth so the prod long-lived
+           token is valid on the twin; re-mint + update here if provisioning
+           invalidates it}
+
+  ada-ha:
+    ssh: local
+    config: /home/tony/.config/ada-ha
+    url: http://127.0.0.1:8125
+    container: ada-ha
+    auth: {kind: refresh, client_name: tony-devin}
+    # no env token file exists for ada-ha — the named refresh token in
+    # .storage/auth is exchanged at <url>/auth/token (same pattern as
+    # scripts/home-assistant/chaba-nest-build.py).
+
+  ada-dev:
+    ssh: local
+    config: /home/tony/.config/ada-dev
+    url: http://127.0.0.1:8128
+    container: ada-dev
+    planned: true                           # card ha-dev-instances, blocked
+    auth: {kind: refresh, client_name: tony-devin}
+
+  michael-dev:
+    ssh: idc03                              # migrated tony-dell -> idc03 2026-10-09
+    config: /home/tony/.config/michael-dev  # path on idc03
+    url: https://idc03.taila0626a.ts.net:8124
+    container: michael-dev
+    auth: {kind: env, file: /home/tony/.config/secrets/ha-michael-dev.env, var: HASS_TOKEN}
+    # ~/.config/michael-dev still exists on tony-dell — it is the STALE
+    # pre-migration copy; scripts must go through ssh idc03, never the local dir.
+
+  michael-ha:
+    ssh: michael-ha
+    ssh_key: /home/tony/.ssh/michael-ha
+    config: /config
+    url: http://michael-ha:8123
+    auth: {kind: file, file: /home/tony/.local/share/home-assistant-michael/ha-token}
+
+# ---------------------------------------------------------------------------
+# Release scopes — what a parity check diffs and what a promote carries.
+# ---------------------------------------------------------------------------
+scopes:
+  dashboards:   lovelace dashboard registry (.storage/lovelace_dashboards) +
+                every .storage/lovelace.<id> config, per-view diff
+  resources:    .storage/lovelace_resources url sets (-vN skew reported)
+  bundle:       md5 of every www/**/*.js on both sides
+  automations:  automations.yaml + scripts.yaml + scenes.yaml, per-item merge
+  helpers:      .storage/{input_*,counter,timer,schedule,group,tag}
+  users:        .storage/auth + auth_provider.homeassistant (+ onboarding)
+                — compare users/groups/persons only, never credential hashes
+
+# ---------------------------------------------------------------------------
+# Destage policy (automations scope only).
+# The actuation guard (ssot.home-assistant.staging-overlay.yml) mutilates the
+# twin's yaml on purpose; promote reverses the mutilation, it does not copy it:
+#   automations: `initial_state: false` injected by the overlay is stripped —
+#     prod enable/disable lives in the entity registry, not the yaml. Items
+#     merge by `id:` (fall back to `alias:`); dev item replaces prod's.
+#   scripts: a script whose sequence is the overlay stub ({stop:
+#     staging-noop}) is treated as absent — prod's real body survives. Only
+#     scripts authored/changed on the twin AFTER cloning carry over.
+#   scenes: a scene whose entities map was emptied by the overlay is skipped
+#     for the same reason.
+# ---------------------------------------------------------------------------
+
+helper_storage_domains:
+  - input_boolean
+  - input_button
+  - input_datetime
+  - input_number
+  - input_select
+  - input_text
+  - counter
+  - timer
+  - schedule
+  - group
+  - tag
+
+user_storage_files:
+  - auth
+  - auth_provider.homeassistant
+  - onboarding
+
+policy:
+  prod_promotion: explicit --confirm in the same session, never automatic
+  restart_required_scopes: [helpers, users]   # .storage writes need HA restart
+  live_reload_scopes: [dashboards, resources, bundle, automations]
+  backup_suffix: .promote-bak-<timestamp>     # prod file copies before overwrite
+
+status:
+  state: active
+  implemented_by:
+    - scripts/home-assistant/ha-lanes.sh
+    - scripts/home-assistant/ha-twin-diff.py
+    - scripts/home-assistant/frontend-parity-check.sh
+    - scripts/home-assistant/promote-lane.sh
+    - scripts/home-assistant/promote-ada.sh
+    - scripts/home-assistant/promote-tony.sh
+    - scripts/home-assistant/promote-michael.sh
+  card: ha-release-pipeline
+  gaps:
+    - "tony-dev/ada-dev endpoints are `planned` until ha-dev-instances lands —
+      scripts resolve them and report 'not provisioned' instead of failing weird"
+    - "users scope is whole-file copy (restart required); a per-user ws merge
+      is future work"

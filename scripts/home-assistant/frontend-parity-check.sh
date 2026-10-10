@@ -1,79 +1,91 @@
 #!/usr/bin/env bash
-# frontend-parity-check.sh — verify tony-ha serves the same Lovelace frontend
-# bundles and resource registrations as michael-ha (the reference instance).
+# frontend-parity-check.sh — per-lane twin diff between two HA instances.
 #
-# Compares:
-#   1. md5 of shared frontend files (www/community/* + flat /local/ cards
-#      that exist on both hosts — tony-ha-only ada/chaba cards are skipped)
-#   2. registered resource URL lists (.storage/lovelace_resources on each)
+# Usage:
+#   frontend-parity-check.sh <lane>      dev<->prod twin diff (tony|ada|michael)
+#   frontend-parity-check.sh --from A --to B    ad-hoc instance pair
+#   frontend-parity-check.sh             legacy check: michael-ha <-> tony-ha
 #
-# Exit 0 = parity, 1 = drift detected. Read-only; safe to run any time.
+# Options:
+#   --scope LIST   comma list: dashboards,resources,bundle,automations,
+#                  helpers,users  (default: all)
+#   --json         machine-readable report
+#
+# Compares (per scope): Lovelace dashboards (registry + per-view config),
+# resource registrations, www card bundles by md5, automations/scripts/scenes
+# (staging-guard artifacts normalized out — see ssot.home-assistant.lanes.yml
+# destage policy), helper storage files, and users/groups/logins (never
+# credential material).
+#
+# Exit 0 = parity, 1 = drift, 2 = an instance could not be reached/collected.
+# Read-only; safe to run any time. Registry: ssot.home-assistant.lanes.yml.
 set -uo pipefail
 
-MHA="ssh -o BatchMode=yes -o ConnectTimeout=10 -i $HOME/.ssh/michael-ha michael-ha"
-DELL="ssh -o BatchMode=yes -o ConnectTimeout=10 tony-dell"
-SHARED=(layout-card.js canvas-gauge-card.js config-template-card.js \
-        pro-v-weather-card.js nimbus-weather-card.js)
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+# shellcheck source=ha-lanes.sh
+source "$SCRIPT_DIR/ha-lanes.sh"
 
-tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+FROM=""; TO=""; SCOPE="all"; JSON=0; LANE=""
 
-echo "== bundle md5s =="
-$MHA 'cd /config/www && md5sum community/lovelace-card-mod/card-mod.js \
-      community/apexcharts-card/apexcharts-card.js \
-      community/ha-sankey-chart/ha-sankey-chart.js \
-      layout-card.js canvas-gauge-card.js config-template-card.js \
-      pro-v-weather-card.js nimbus-weather-card.js 2>/dev/null' \
-    | awk '{print $2, $1}' | sort > "$tmp/mha.md5" || \
-    { echo "FAIL: cannot reach michael-ha"; exit 1; }
+usage() { sed -n '2,21p' "$0"; exit 0; }
+die() { echo "[parity] ERROR: $*" >&2; exit 2; }
 
-$DELL 'cd ~/.config/home-assistant/www && md5sum community/lovelace-card-mod/card-mod.js \
-       community/apexcharts-card/apexcharts-card.js \
-       community/ha-sankey-chart/ha-sankey-chart.js \
-       layout-card.js canvas-gauge-card.js config-template-card.js \
-       pro-v-weather-card.js nimbus-weather-card.js 2>/dev/null' \
-    | awk '{print $2, $1}' | sort > "$tmp/tha.md5" || \
-    { echo "FAIL: cannot reach tony-dell"; exit 1; }
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--from)   FROM="$2"; shift 2 ;;
+	--to)     TO="$2"; shift 2 ;;
+	--scope)  SCOPE="$2"; shift 2 ;;
+	--json)   JSON=1; shift ;;
+	-h|--help) usage ;;
+	-*)       die "unknown arg: $1" ;;
+	*)
+		[ -n "$LANE" ] && die "unexpected extra arg: $1"
+		LANE="$1"; shift ;;
+	esac
+done
 
-drift=0
-diff "$tmp/mha.md5" "$tmp/tha.md5" > "$tmp/md5.diff" || true
-if [ -s "$tmp/md5.diff" ]; then
-    sed 's/^/  DIFF /' "$tmp/md5.diff"
-    drift=1
+# --- resolve the pair --------------------------------------------------------
+if [ -n "$LANE" ]; then
+	lane_exists "$LANE" || die "unknown lane '$LANE' (see ssot.home-assistant.lanes.yml)"
+	FROM=$(lane_field "$LANE" dev); TO=$(lane_field "$LANE" prod)
+elif [ -n "$FROM" ] || [ -n "$TO" ]; then
+	[ -n "$FROM" ] && [ -n "$TO" ] || die "--from and --to must be given together"
+else
+	# legacy behaviour: the original script compared tony-ha against
+	# michael-ha as the reference instance
+	echo "[parity] no lane given — legacy check michael-ha(A) vs tony-ha(B);"
+	echo "[parity] prefer: frontend-parity-check.sh <tony|ada|michael>"
+	FROM="michael-ha"; TO="tony-ha"; SCOPE="resources,bundle"
 fi
 
-echo "== registered resources =="
-$MHA 'cat /config/.storage/lovelace_resources' > "$tmp/mha.res.json"
-$DELL 'cat ~/.config/home-assistant/.storage/lovelace_resources' > "$tmp/tha.res.json"
-python3 - "$tmp/mha.res.json" "$tmp/tha.res.json" <<'PY'
-import json, re, sys
-def urls(p):
-    d = json.load(open(p))
-    items = d["data"]["items"] if "data" in d else d.get("resources", d)
-    return {i["url"].split("?")[0] for i in items}
-mha, tha = (urls(a) for a in sys.argv[1:3])
-# versioned filenames (pfg3d-card-vNNN.js) skew independently per host —
-# normalize the stem for presence, then report version skew separately
-norm = lambda u: re.sub(r"-v\d+(\.js)$", r"\1", u)
-nmha, ntha = {norm(u) for u in mha}, {norm(u) for u in tha}
-shared_missing = sorted(nmha - ntha)
-extra_only     = sorted(u for u in ntha - nmha
-                        if "chaba" not in u and "ada-" not in u
-                        and "vcast" not in u and "youtube" not in u
-                        and "album" not in u)
-skew = [f"{a} vs {b}" for a in mha for b in tha
-        if norm(a) == norm(b) and a != b]
-if shared_missing:
-    print("  MISSING on tony-ha:"); [print("   -", u) for u in shared_missing]
-if extra_only:
-    print("  EXTRA on tony-ha (non-chaba):"); [print("   +", u) for u in extra_only]
-if skew:
-    print("  VERSION SKEW (same card, different pinned bundle):")
-    [print("   ~", s) for s in skew]
-if not shared_missing and not extra_only and not skew:
-    print("  resource sets consistent")
-sys.exit(1 if shared_missing else 0)
-PY
-[ $? -ne 0 ] && drift=1
+inst_exists "$FROM" || die "unknown instance: $FROM"
+inst_exists "$TO"   || die "unknown instance: $TO"
 
-if [ "$drift" -eq 0 ]; then echo "PARITY OK"; else echo "DRIFT DETECTED"; fi
-exit "$drift"
+for inst in "$FROM" "$TO"; do
+	if ! inst_up "$inst"; then
+		planned=$(inst_field "$inst" planned 2>/dev/null || echo "")
+		if [ "$planned" = "True" ] || [ "$planned" = "true" ]; then
+			die "$inst is registered but not provisioned yet (planned twin — card ha-dev-instances)"
+		fi
+		die "$inst unreachable at $(inst_field "$inst" url)"
+	fi
+done
+
+# --- collect + diff -----------------------------------------------------------
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+echo "[parity] collecting $FROM ..."
+inst_collect "$FROM" "$tmp/A" || die "collection failed on $FROM"
+echo "[parity] collecting $TO ..."
+inst_collect "$TO" "$tmp/B" || die "collection failed on $TO"
+
+args=("$tmp/A" "$tmp/B" --names "$FROM:$TO" --scope "$SCOPE")
+[ "$JSON" -eq 1 ] && args+=(--json)
+python3 "$SCRIPT_DIR/ha-twin-diff.py" "${args[@]}"
+rc=$?
+
+case $rc in
+0) echo "[parity] PARITY OK ($FROM <-> $TO, scope=$SCOPE)" ;;
+1) echo "[parity] DRIFT DETECTED ($FROM <-> $TO, scope=$SCOPE)" ;;
+*) echo "[parity] diff engine error (rc=$rc)" ;;
+esac
+exit $rc

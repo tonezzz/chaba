@@ -1,0 +1,109 @@
+title: Lane release pipeline — per-lane twin diff + scoped promote with --confirm gate
+subtitle: frontend-parity-check.sh generalized into a lane/SSOT-driven twin
+  diff; promote-lane.sh engine behind promote-<lane>.sh wrappers
+icon: 🚦
+id: 2026-10-10-lane-release-pipeline
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-10"
+card: ha-release-pipeline
+program: ha-lanes
+
+planning:
+  goal: |
+    Make releases boring: build on dev twin, verify with a twin parity diff,
+    promote dev->prod with one scoped command per lane behind an explicit
+    --confirm gate, with parity evidence before and after.
+  decisions:
+    - id: registry-in-ssot
+      decided: "2026-10-10"
+      choice: >
+        Lane + instance endpoint/auth metadata lives in
+        docs/ssot/infrastructure/ssot.home-assistant.lanes.yml and scripts
+        read it via ha-lanes.sh (release-lifecycle "reads" pattern — config
+        not code). tony-dev/ada-dev are registered with `planned: true` so
+        the scripts resolve them and fail fast as "not provisioned" instead
+        of guessing.
+    - id: destage-on-promote
+      decided: "2026-10-10"
+      choice: >
+        The actuation guard deliberately mutilates the twin's yaml; promote
+        must reverse the mutilation, not copy it. ha-config-merge.py strips
+        injected `initial_state: false` (prod enable lives in the entity
+        registry), treats staging-stub script/scene items as absent (prod's
+        real bodies survive), and merges per id/alias — dev wins, prod-only
+        items keep.
+    - id: users-opt-in-only
+      decided: "2026-10-10"
+      choice: >
+        `users` scope replaces .storage/auth{,_provider.homeassistant}
+        wholesale — prod sessions/tokens become dev's and a restart is
+        required. Too dangerous for `all`; it must be named explicitly.
+    - id: snapshot-diff-architecture
+      decided: "2026-10-10"
+      choice: >
+        One remote tar+md5 collection per instance (2 ssh calls max) into a
+        tmpdir, then a pure-python comparator (ha-twin-diff.py). File-level
+        truth beats per-API queries and works identically for local and
+        remote instances.
+
+deliverables:
+  - scripts/home-assistant/ha-lanes.sh          # registry + ssh/local access + auth resolution
+  - scripts/home-assistant/ha-twin-diff.py      # parity engine, 6 scopes
+  - scripts/home-assistant/frontend-parity-check.sh   # rewritten: lane arg / --from--to / legacy default
+  - scripts/home-assistant/promote-lane.sh      # engine: scopes, --confirm, parity before/after, backups, --card comms
+  - scripts/home-assistant/promote-views.py     # ws view merge dev->prod (+--create, --dry-run plan)
+  - scripts/home-assistant/ha-config-merge.py   # destage yaml merge + semantic-eq check
+  - scripts/home-assistant/ws-resource-url.py   # restored (was dropped by salvage commit 6c963fc0)
+  - scripts/home-assistant/promote-{ada,tony,michael}.sh  # thin lane wrappers
+  - docs/ssot/infrastructure/ssot.home-assistant.lanes.yml
+  - howto runbook lane_release_pipeline; release-lifecycle gates/gaps updated
+
+verification:
+  - "frontend-parity-check.sh --from tony-ha --to ada-ha — real all-scope diff
+    (12 dashboards / 3 resources / 5 bundle / 55 automations diffs; helpers +
+    users parity — consistent with ada-ha being a clone). Exit 1."
+  - "frontend-parity-check.sh michael — remote tar collection over ssh idc03 +
+    michael-ha works; real drift reported, exit 1."
+  - "frontend-parity-check.sh tony / ada — clean fail-fast: 'registered but
+    not provisioned yet (card ha-dev-instances)', exit 2."
+  - "promote-tony.sh --from michael-dev --scope bundle --dry-run — parity
+    before, plan 'v240 -> v239 (pfg3d-card-v240.js)', exit 0, no writes."
+  - "promote-lane.sh --from ada-ha --to tony-ha --scope dashboards --dry-run —
+    ada-ha refresh-token exchange works; exact merge plan printed."
+  - "automations dry-run on the same pair — merge notes + semantic-eq gate
+    (empty scenes.yaml correctly 'no semantic change')."
+  - "Unit fixture: stub script skipped/prod body kept; injected
+    initial_state:false stripped (semantic no-op detected); emptied scene
+    skipped; dev-only items appended."
+  - "promote-michael.sh --rollback --dry-run — 'resource -> pfg3d-card-v213'
+    (prod on v214). Old script died silently pre-fix."
+  - "No-confirm run refuses before writing (policy gate verified)."
+
+found_while_working:
+  - "ws-resource-url.py was missing from the tree (dropped by salvage commit
+    6c963fc0 which restored the promote scripts without it) — both promote
+    scripts were broken. Restored from b037ac08."
+  - "The card bundle is pfg3d-card-vN now, not sunsynk-power-flow-card-fork-vN
+    — the old scripts' BASE was stale. Registry + runbook note updated;
+    michael-ha still has orphaned fork-v* files in www (unreferenced)."
+  - "promote-michael.sh/promote-tony.sh dev pointers predated the 2026-10-09
+    michael-dev -> idc03 migration. ~/.config/michael-dev on tony-dell is a
+    stale pre-migration copy — scripts must go through ssh idc03."
+  - "tony-ha has no tony-test dashboard (it lives on michael-*/ada-ha) —
+    promote-views.py --create-dashboard covers first-seed."
+  - "Pre-existing SSOT validation error in jobs/vcast/2026-10-10-gev-yt-local-
+    media-failures.yml (committed d5ceebbd) — not from this work."
+
+followups:
+  - "tony-dev/ada-dev provisioning (ha-dev-instances) is the blocker for the
+    card's verify metric — the lanes resolve and fail cleanly until then.
+    When the twins boot: run frontend-parity-check.sh tony/ada (expect only
+    guard-artifact notes) and the dry-run promote as the real verify."
+  - "tony-dev auth assumes the cloned .storage/auth keeps the prod
+    HA_LONG_LIVED_TOKEN valid — if provisioning proves otherwise, mint a
+    tony-dev token and update auth.kind in ssot.home-assistant.lanes.yml."
+  - "users scope is whole-file copy; a per-user ws merge is future work."
+  - "Stale fork-v* bundles on michael-ha www are unreferenced junk — remove
+    on the next promote --cleanup."

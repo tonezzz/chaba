@@ -140,11 +140,11 @@ deployment:
   gates_existing:
     capture: "board-api POST /card; Ada ada_board_write action=create; Devin open-ask duty"
     alpha_scenarios: "tests/scenarios-live/* via scenario-live.py; hourly smoke timer on idc03"
-    parity: "scripts/home-assistant/frontend-parity-check.sh (tony-ha<->michael-ha today; generalize per-lane)"
-    promote: "deploy-card.sh (dev), promote-michael.sh, promote-tony.sh"
+    parity: "scripts/home-assistant/frontend-parity-check.sh <lane| --from A --to B> — per-lane twin diff (ha-twin-diff.py + ha-lanes.sh, registry ssot.home-assistant.lanes.yml)"
+    promote: "deploy-card.sh (dev), promote-lane.sh via promote-<lane>.sh — scoped release (dashboards/bundle/automations/helpers/users) with mandatory --confirm"
     feedback: "report-watch.timer, logs-kanban, staleness-sentinel, mddb-binlog-canary, ada-transcript-audit skill"
   gaps:
-    - "per-lane parity checker (tony-dev<->tony-ha, ada-dev<->ada-ha) — card ha-release-pipeline"
+    - "tony-dev/ada-dev not yet provisioned (ha-dev-instances) — lane scripts resolve them and fail fast as 'planned'; verify metric pending real twins"
     - "stage-transition evidence convention ([exp]/[alpha]/[beta]/[rc] comms tags) not yet enforced by a checker"
     - "beta soak tracking — no timer measures soak windows; card owner decides for now"
     - "post-deploy smoke hook — today manual; belongs inside promote-*.sh"
