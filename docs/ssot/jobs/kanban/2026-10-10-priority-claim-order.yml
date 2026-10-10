@@ -1,0 +1,69 @@
+title: Priority-aware claim order — shared sort for both dispatch claim paths
+subtitle: Queued cards now drain starved-first -> priority rank -> oldest updated; card dispatch-priority-order
+icon: sort
+
+context:
+  trigger: "Card dispatch-priority-order — `priority:` was display-only;
+    runners drained the queue in whatever order /cards or the card-dir
+    glob returned, so urgent cards could sit behind parked work."
+  card: dispatch-priority-order
+
+decision:
+  shared_helper: "The ordering lives in dispatch_repos.py
+    (claim_sort_key / sort_claimable) — the module BOTH claim paths
+    already share: kanban-dispatch imports it at top; runner-agent
+    resolves it via dr_module() from the host's chaba checkout (a
+    resolution runner-fleet-health already hard-checks). No new module
+    to deploy."
+  key: "(starved? 0:1, priority rank, updated-ts) — smaller claims
+    first, stable sort keeps API/filename order on ties."
+  rank: "high 0 > medium 1 > absent/unknown 2 > low 3 — the SAME map
+    render-board.py uses for next-up column order, so the board's
+    visual order matches the drain order. (The card spec's 'low >
+    absent' phrasing lost to its own acceptance line — normal drains
+    before low — and to the established display rank.)"
+  starvation: "A queued card whose `updated` is >=
+    KANBAN_STARVE_HOURS / RUNNER_STARVE_HOURS old (default 12, 0
+    disables) claims ahead of every fresh card — priority is a bias,
+    not a ban. A card with no readable `updated` can't prove age, so it
+    never takes the starvation tier (it still wins its rank's
+    oldest-first tie-break)."
+  ordering_is_pure: "No preemption — running cards are never
+    interrupted; and no eligibility relaxation — labels, host caps,
+    blocked_by, autonomy tier, quiet hours, budget and the load gate
+    all still gate per card before the claim POST."
+
+changes:
+  - "dispatch_repos.py: PRIORITY_RANK + card_updated_ts +
+    claim_sort_key + sort_claimable (+datetime import; still stdlib-
+    only for remote runner imports)"
+  - "runner-agent.py: STARVE_HOURS (RUNNER_STARVE_HOURS, default 12);
+    claim_pass drains _claim_order(cards); falls back to API order with
+    a once-per-process journal warning when dispatch_repos can't
+    resolve (fleet-health already flags that drift)"
+  - "kanban-dispatch.py: STARVE_HOURS (KANBAN_STARVE_HOURS, default 12);
+    phase A preloads cards and visits queued/starting ones in
+    claim_sort_key order, rest in filename order"
+  - "tests/board/test_claim_order.py: 11 tests — rank order, oldest-
+    first tie-break, acceptance mixed queue, starvation boundary/
+    disable/starved-vs-starved, unreadable-updated, claim_pass
+    integration incl. eligibility gating"
+  - "ssot.kanban.yml concurrency.claim_order; ssot.operating-model.yml
+    priority section updated (was 'closes the current gap')"
+
+verify:
+  - "python3 tests/board/test_claim_order.py — 11/11 pass"
+  - "python3 -m unittest discover -s tests/board — 90 tests OK
+    (1 pre-existing skip)"
+  - "python3 -m py_compile on all three touched scripts"
+
+gotchas:
+  - "runner-agent deploys as a single scp'd file — ordering changes
+    only reach remote hosts after BOTH redeploy steps: scp
+    runner-agent.py to ~/.local/bin/runner-agent AND pull the host's
+    ~/CascadeProjects/chaba so its dispatch_repos.py carries
+    sort_claimable. A stale checkout degrades to API order (warned
+    once, fleet-health violation), never a crash."
+  - "`updated` is a human-edited field — a card whose stamp someone
+    back-dates past 12h jumps the queue. That is the starvation guard
+    working as designed; treat stale stamps as data rot, not a bypass."

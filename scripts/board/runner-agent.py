@@ -11,6 +11,12 @@ pass:
      - action.runner absent
      - every action.labels[] entry is in RUNNER_LABELS
      - an executor exists for action.type
+     Claimable cards drain in the shared priority order
+     (dispatch_repos.claim_sort_key — card dispatch-priority-order):
+     starved (>=RUNNER_STARVE_HOURS old) first, then priority
+     high > medium > absent > low, then oldest `updated`. A host whose
+     chaba checkout can't resolve dispatch_repos falls back to API
+     order — the queue still drains (fleet-health flags that host).
   3. POST /action {do:claim, host} (atomic first-wins under the api
      flock), then start the task under systemd-run and record the unit.
 
@@ -41,6 +47,9 @@ Env:
                  "desktop" marks an interactive host and arms the
                  guards below)
   RUNNER_STATE   state dir (default ~/.local/share/runner-agent)
+  RUNNER_STARVE_HOURS  queued-card age that outranks fresh higher-
+                 priority cards (default 12; 0 disables — priority is a
+                 bias, not a ban)
 
 Interactive-host guards (card omen-gpu-display-wedge — on when the host
 carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
@@ -119,6 +128,8 @@ LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
 STATE_DIR = Path(os.environ.get(
     "RUNNER_STATE", str(Path.home() / ".local/share/runner-agent")))
 STATE_FILE = STATE_DIR / "state.json"
+# Starvation guard for the shared claim order (dispatch_repos).
+STARVE_HOURS = float(os.environ.get("RUNNER_STARVE_HOURS", "12"))
 DISPATCH = os.environ.get(
     "DEVIN_DISPATCH", str(Path.home() / ".local/bin/devin-dispatch"))
 # Parity with kanban-dispatch: unattended sessions die on permission
@@ -817,12 +828,32 @@ def blocker_released(blocker: dict) -> bool:
     return ba.get("status") == "done" and ba.get("verified") is not False
 
 
+_CLAIM_ORDER_WARNED = False
+
+
+def _claim_order(cards: list) -> list:
+    """Shared priority drain order (dispatch_repos.claim_sort_key, card
+    dispatch-priority-order). The module is resolved like the close-out
+    import; a host that can't resolve it keeps API order — the queue
+    still drains, and runner-fleet-health already flags the drift."""
+    global _CLAIM_ORDER_WARNED
+    dr = dr_module()
+    sorter = getattr(dr, "sort_claimable", None) if dr else None
+    if sorter is None:
+        if not _CLAIM_ORDER_WARNED:
+            _CLAIM_ORDER_WARNED = True
+            print("warn: dispatch_repos.sort_claimable unavailable — "
+                  "claiming in API order (stale/missing host checkout)")
+        return cards
+    return sorter(cards, starve_hours=STARVE_HOURS)
+
+
 def claim_pass(st: dict) -> bool:
     if len(st) >= CAP:
         return False
     if overloaded():
         return False
-    cards = (api("/cards") or {}).get("cards") or []
+    cards = _claim_order((api("/cards") or {}).get("cards") or [])
     by_id = {c.get("id"): c for c in cards}
     changed = False
     for card in cards:

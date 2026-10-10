@@ -78,6 +78,10 @@ MY_LABELS = {x.strip() for x in
 # (~2min cadence — 3 misses ≈ 6min down before requeue).
 REQUEUE_AFTER = int(os.environ.get("KANBAN_REQUEUE_MISSES", "3"))
 MISS_FILE = Path("/tmp/kanban-runner-misses.json")
+# Starvation guard for the shared claim order (dr.claim_sort_key — card
+# dispatch-priority-order): a queued card this many hours old outranks
+# fresh higher-priority cards. 0 disables — priority is a bias, not a ban.
+STARVE_HOURS = float(os.environ.get("KANBAN_STARVE_HOURS", "12"))
 
 # Autonomy contract (docs/ssot/infrastructure/ssot.devin-autonomy.yml) —
 # declarative envelope around claims: kill switch, quiet hours, daily
@@ -580,8 +584,22 @@ def main() -> int:
         if in_quiet_hours(pol.get("quiet_hours") or ""):
             can_claim = False
             print(f"quiet hours {pol['quiet_hours']} — not claiming")
-        for p in sorted(CARD_DIR.glob("*.yml")):
-            card = load_card(p)
+        # Priority-aware drain (card dispatch-priority-order): claimable
+        # queued cards are visited starved-first -> priority rank ->
+        # oldest `updated`; all other cards keep filename order. The
+        # gates below still filter per card — order never overrides
+        # eligibility.
+        loaded = [(p, load_card(p))
+                  for p in sorted(CARD_DIR.glob("*.yml"))]
+        queued = [pc for pc in loaded if (
+            (pc[1].get("action") or {}).get("status")
+            in ("queued", "starting"))]
+        queued.sort(key=lambda pc: dr.claim_sort_key(
+            pc[1], starve_hours=STARVE_HOURS))
+        rest = [pc for pc in loaded if (
+            (pc[1].get("action") or {}).get("status")
+            not in ("queued", "starting"))]
+        for p, card in queued + rest:
             a = card.get("action") or {}
             st = a.get("status")
             if st in ("queued", "starting"):  # 'starting' = crashed mid-start

@@ -366,6 +366,23 @@ execution:
                KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
                — loaded hosts yield the queue to idle runners; finishes
                and requeues still process"
+    claim_order: "priority-aware drain (card dispatch-priority-order,
+               2026-10-10): BOTH claim paths — kanban-dispatch's local
+               drain and runner-agent's remote claim — order claimable
+               queued cards by dispatch_repos.claim_sort_key, so a card's
+               position never depends on which host picks it up: (1)
+               starvation tier — a card whose `updated` is >=
+               KANBAN_STARVE_HOURS / RUNNER_STARVE_HOURS old (default 12,
+               0 disables) claims ahead of every fresh card regardless of
+               priority — priority is a bias, not a ban; (2) priority
+               rank high > medium > absent > low (same map as the
+               board's next-up column order in render-board.py); (3)
+               `updated` oldest-first. Pure ordering — no preemption, and
+               priority never relaxes eligibility: labels, caps,
+               blocked_by, autonomy tier and the load gate still gate per
+               card. A runner host that can't resolve dispatch_repos
+               falls back to API order (fleet-health flags the drift).
+               tests/board/test_claim_order.py"
     cap_adjust: "STANDARD PROCEDURE — scripts/board/runner-cap.sh changes a
                host's cap/gate over ssh via a systemd drop-in
                (~/.config/systemd/user/runner-agent.service.d/cap.conf),
