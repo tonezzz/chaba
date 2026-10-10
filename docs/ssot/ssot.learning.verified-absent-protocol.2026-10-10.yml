@@ -1,0 +1,88 @@
+title: "Verified-Absent Protocol — Lessons (2026-10-10)"
+subtitle: How a scoped grep produced a false 'feature missing' report while the board had the truth
+icon: 🔍
+ideas:
+  - "Record the failure mode: 'search returned nothing' is not 'thing does not exist'"
+  - "Establish the protocol: status/absence claims must check the board before concluding"
+  - "Note the recovery path that worked: card comms told the whole story in one read"
+
+sections:
+  - title: What happened
+    icon: 📖
+    layout: list
+    items:
+      - label: False "half-built" report
+        text: |
+          Asked for the status of the chat secret-drop feature, the agent grepped
+          ada-pi's backend/ for "/api/secret-drop", found nothing, and reported
+          the feature as UI-only: "backend was never written — the modal will 404".
+          A repo-wide grep that would have found the real handler had timed out
+          earlier on ada-pi's heavy tree (.venv/node_modules), and the timeout
+          was silently treated as a negative result.
+      - label: The truth was one board query away
+        text: |
+          Card ada-secret-drop was filed, dispatched, merged, and closed done
+          the day before. Its comms recorded full verification:
+          "POST /api/secret-drop live in ada-pi HEAD (pwa_server.py:2591),
+          deployed on idc03 — auth-gated (401), writes ~/.config/secrets/ 0600".
+          The endpoint lives in ada-pi/pwa_server.py (repo root), not backend/
+          — outside the searched scope.
+
+  - title: Root cause
+    icon: 🔬
+    layout: list
+    items:
+      - label: Timeout ≠ not-found
+        text: |
+          The cheapest broad search hung; instead of narrowing differently or
+          flagging the search as inconclusive, the agent reported absence.
+          "I couldn't find it" and "it doesn't exist" are different claims —
+          the second requires an exhaustive check, the first only a confession.
+      - label: Skipped the authoritative source
+        text: |
+          For "does feature X exist / what's its status", the kanban board is
+          the first-class source in this system. GET /cards would have surfaced
+          ada-secret-drop immediately — its comms even named the file and line.
+          Code search should confirm, not replace, the board.
+
+  - title: The protocol (preventing repeats)
+    icon: ✅
+    layout: list
+    items:
+      - label: Order of checks for existence/status claims
+        text: |
+          1. Board first — search card IDs/titles/comms for the feature name.
+             Cards record not just intent but deployment + verification evidence.
+          2. Repo-wide search with bounded scope — if a broad grep times out,
+             narrow by path/extension or use git grep; never treat a timeout
+             or scoped miss as absence.
+          3. Live state — curl the route / check the service on the host the
+             card says it deployed to.
+          4. Only then report — and if any step was skipped or failed, say
+             "unverified" not "missing".
+      - label: Phrasing discipline
+        text: |
+          Default answer when evidence is incomplete: "not found in X — haven't
+          checked Y" rather than "doesn't exist". Absence claims need the
+          checklist; presence claims need one positive hit.
+      - label: CMS reports are downstream, not detection
+        text: |
+          A CMS status page would have been a second surface showing the same
+          truth — useful for humans, but not the fix. The board comms already
+          carried the record; the gap was reading them, not publishing more.
+
+  - title: What went right
+    icon: 🤝
+    layout: list
+    items:
+      - label: The system caught the mistake
+        text: |
+          The miss was recovered in one board read because the process worked
+          end-to-end: card filed → dispatched → merge-sweep merged → comms
+          recorded verification. Kanban-first teamwork meant the truth was
+          durable and findable — the failure was purely in the search path.
+      - label: Correction was cheap
+        text: |
+          Because the record existed, the fix was minutes not hours — no
+          re-implementation of an already-built, already-deployed feature.
+          This is the payoff the workflow is built for.
