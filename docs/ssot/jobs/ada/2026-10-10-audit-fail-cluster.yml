@@ -1,0 +1,41 @@
+title: audit-fail-* cluster 2026-10-10 — one incident, not 16 bugs
+subtitle: 16 auto-generated audit-fail cards all carry the same-day signature; root causes are shared
+icon: 🔬
+context:
+  trigger: "16 audit-fail-* cards in backlog, all 'seen on 1 day(s)': 2026-10-10, ~310 total failures"
+  units: "ada-ha-tony (idc03), Gemini Live provider, session-audit signature generator"
+
+verification_result:
+  checks:
+    - "PASS: all 16 cards dated 2026-10-10 only — single-day event, not chronic per-tool bugs"
+    - "PASS: web_search 429 RESOURCE_EXHAUSTED (grounded Gemini quota) recurring all day → duckduckgo degraded path"
+    - "PASS: provider stream drops — 'provider stream ended: 1000' + reconnect storm '[Errno 2] ENOENT' ~20:40, reconnected 20:40:31"
+    - "PASS: ada-ha-tony restarted 20:41 (deploy window — multiple ada-pi merges landed today: acl-resolver, parity-check, ada-pi-ci, deploy pre-flight)"
+
+finding_group_a:  # ~half the cards: 'fail (no transcript in window)'
+  members: "gev_command(72x), vcast_snapshot(23x), home-side: tv_action(20x), cctv_wall(19x), cast_to_screen(17x), chat_send(14x), cms_publish_page(8x), drive(3x)"
+  symptom: "tool invoked while no live provider session existed"
+  cause: "provider stream drops + service restart windows — calls during the gap have no transcript to attribute"
+  verdict: "not per-tool bugs — infrastructure downtime signature"
+
+finding_group_b:  # plain 'fail'
+  members: "cms_read(36x), home_status(33x), ada_camera_snapshot(27x), get_home_state(21x), kanban(21x), ada_memory_search(19x), web_search(14x), set_facial_expression(7x)"
+  symptom: "tool calls returned error/fail during live sessions"
+  cause: "Gemini quota exhaustion (429 all day) + ada-ha-tony deploy restarts; web_search additionally flagged 'degraded' on the duckduckgo fallback path"
+  verdict: "likely quota+instability cascade; verify one, close the rest"
+
+recommendation:
+  decision_needed: true
+  options:
+    a: "Treat as one incident: verify gemini quota + provider stability are now healthy, then close all 16 cards citing this record (dedupe)"
+    b: "Investigate each tool separately (16x effort for likely-zero distinct bugs)"
+  suggested: a
+  note: "audit signature generator might also group same-day signatures into ONE card — that would have prevented the 16-card flood. Candidate follow-up card."
+
+evidence:
+  - cmd: "ssh idc03 journalctl --user -u ada-ha-tony --since today | grep 429"
+    observed: "ClientError: 429 RESOURCE_EXHAUSTED on grounded gemini search, duckduckgo fallback with degraded flag, all day"
+  - cmd: "ssh idc03 journalctl --user -u ada-ha-tony --since 20:36 --until 20:41"
+    observed: "provider stream ended: 1000 → reconnect ENOENT storm → reconnected 20:40:31; service stopped/started 20:41:04 (deploy)"
+  - cmd: "board-api /cards | audit-fail-*"
+    observed: "16 cards, all 'seen on 1 day(s)' = 2026-10-10"
