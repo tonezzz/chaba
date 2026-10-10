@@ -1,3 +1,51 @@
+# USB stick standard — mn01 rescue stick & future sticks
+
+Every portable Ubuntu stick follows the same recipe so any session can
+pick one up cold and know exactly what's on it.
+
+## Build recipe (what a "standard stick" carries)
+
+- Ubuntu LTS installed normally to the stick (persistent OS, NOT a
+  dd'd installer image)
+- `openssh-server` enabled + fleet ssh keys in `~tony/.ssh/authorized_keys`
+- tailscale installed — **with its OWN nodekey** (never clone another
+  host's `tailscaled.state`; see identity rules below)
+- `stick-announce.service` enabled — posts `host_online` to the ops
+  feed at boot (LAN + tailnet IP; script at
+  `/usr/local/bin/stick-announce.sh`, writes `/var/log/stick-announce.log`)
+- curl, git, python3, rsync, tmux — the minimum remote-ops set
+- hostname: name of the stick (`tony-usb`), never the machine it boots
+- GRUB loopback-ready: keep a spare ISO on the fs + a disabled
+  `40_custom` entry — turns any booted host into an installer
+
+## Operating rules
+
+- A stick is **rescue/portable media** — hardware-agnostic.
+- Whatever machine it boots is a guest; the stick's tailnet identity
+  announces itself (stick_online event → look for `lan_ip`/`tailnet_ip`).
+- LAN ssh + fleet keys are the always-on control path; tailnet is the
+  reach-anywhere path.
+- **Identity collisions are the one real hazard** — never boot a stick
+  that carries a clone of another host's nodekey while that host runs.
+- Session sudo: `sudo bash -c 'echo "tony ALL=(ALL) NOPASSWD:ALL" >
+  /etc/sudoers.d/99-session'` — remove when done.
+
+## Verify a stick after boot
+
+```bash
+ssh tony@<lan-ip> 'hostname; tailscale ip -4; systemctl is-enabled ssh stick-announce'
+```
+
+Expected: hostname=stick name, own tailnet IP, both enabled.
+
+## Real-world application history
+
+- `mn01` stick → used on MacBookPro13,3 2026-10-10 (the session that
+  proved the loopback-ISO trick, APFS read via libfsapfs-utils +
+  apfs-dkms, and the cloned-nodekey hazard)
+- `tony-macbook` install 2026-10-10 — installer booted off the stick's
+  own GRUB + ISO stored on the stick filesystem
+
 # mn01 stick — identity & management standard
 
 `mn01` is a real box (ESPRIMO Q556/2 — `hardware-mn01-tony-usb.md`).
