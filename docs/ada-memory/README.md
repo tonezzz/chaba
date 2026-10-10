@@ -22,7 +22,7 @@ python3 scripts/ada/sync-ada-memory-to-mddb.py --export-inbox  # voice notes →
 | Folder | MDDB collection | Scope |
 |---|---|---|
 | `general/` | `ada-ha-bank-general` | shared |
-| `home/` | `ada-ha-bank-home` | shared (Ada writes with confirm) |
+| `home/` | `ada-ha-bank-home` | shared (read-only for Ada) |
 | `people/` | `ada-ha-bank-people` | shared |
 | `personal/tony/` | `ada-ha-bank-personal-tony` | tony only |
 | `personal/michael/` | `ada-ha-bank-personal-michael` | michael only |
@@ -62,7 +62,7 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
 - Voice writes (`ada_remember`) go to MDDB first; `--export-inbox` pulls
   them into `inbox/` — review, then move the file into the right bank
   folder to promote it.
-- `writable: false` banks (e.g. `devin`) block *Ada* from writing — this
+- `writable: false` banks (e.g. `home`) block *Ada* from writing — this
   vault is human authority and syncs regardless.
 - **`personal/*` is git-ignored** — the chaba repo is public on GitHub, so
   private notes stay local-only for now. Revisit once a private-mirror or
