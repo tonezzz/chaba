@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""L2 domain report: HA nodes + messaging lanes -> CMS pages (ada-cms-pages).
+
+Index page `ha-fabric` links leaf pages `ha-node-<node>` and
+`msg-lane-<lane>` so the whole fabric is readable from one CMS entry.
+
+Sources (declared, not hand-written — ssot.reports.yml L1->L2):
+  - docs/ssot/infrastructure/ssot.home-assistant.instances.yml  (node defs)
+  - systemctl/podman probes on each node's host                 (live health)
+  - relay units on idc03 + their journal tails                  (lane health)
+
+Usage:
+  ha-fabric-cms.py [--dry-run] [--slug ha-node-kk-ha]
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
+REPO = Path(os.environ.get("CHABA_REPO", "/home/tony/CascadeProjects/chaba"))
+INSTANCES_YML = REPO / "docs/ssot/infrastructure/ssot.home-assistant.instances.yml"
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+COLLECTION = "ada-cms-pages"
+INDEX_SLUG = "ha-fabric"
+ICT = timezone.utc  # timestamps rendered by caller tz
+
+# Messaging lanes — relay units on idc03. Add new lanes here; keys files
+# hold caller counts only (never dump key material into a report).
+LANES = {
+    "line":  {"unit": "ada-line-relay",   "label": "LINE relay (tony)",
+              "keys": "ada-ha-tony-keys.json"},
+    "tg":    {"unit": "ada-tg-relay",     "label": "Telegram relay (tony)",
+              "keys": "ada-ha-tony-keys.json"},
+    "tg-kk": {"unit": "ada-tg-relay-kk",  "label": "Telegram relay — kk-ha lane",
+              "keys": "ada-ha-kk-keys.json"},
+}
+
+
+def _ssh(host, cmd, timeout=25):
+    try:
+        p = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=6",
+                            host, cmd], capture_output=True, text=True,
+                           timeout=timeout)
+        return (p.stdout + p.stderr).strip()
+    except Exception as e:
+        return f"ssh error: {e}"
+
+
+def _curl_code(url, timeout=12):
+    try:
+        p = subprocess.run(["curl", "-s", "-o", "/dev/null", "-m", str(timeout),
+                            "-w", "%{http_code}", url],
+                           capture_output=True, text=True, timeout=timeout + 5)
+        return p.stdout.strip()
+    except Exception:
+        return "curl error"
+
+
+def node_health(inst):
+    """Live health for one HA node."""
+    host = inst.get("host", "").replace("_", "-")
+    container = inst.get("container")
+    out = {"host": host, "container": container}
+    if not host or not container:
+        out["status"] = "no probe"
+        return out
+    active = _ssh(host, f"systemctl --user is-active {container} 2>/dev/null"
+                        f" || podman inspect -f '{{{{.State.Status}}}}' {container}")
+    out["unit_state"] = active.splitlines()[-1] if active else "?"
+    urls = inst.get("url") or {}
+    for name in ("tailscale", "public"):
+        u = urls.get(name)
+        if u:
+            out[f"{name}_http"] = _curl_code(u)
+    out["status"] = "ok" if out["unit_state"] == "active" else out["unit_state"]
+    return out
+
+
+def lane_health(lane):
+    """Relay unit state + last error + caller count on idc03."""
+    unit = lane["unit"]
+    st = _ssh("idc03", f"systemctl --user is-active {unit} 2>/dev/null")
+    err = _ssh("idc03",
+               f"journalctl --user -u {unit} --since '-6 h' --no-pager "
+               "| grep -iE 'error|warn|unauthor|fail' | tail -1")
+    keys = {}
+    if lane.get("keys"):
+        raw = _ssh("idc03",
+                   f"python3 -c \"import json;print(len(json.load(open("
+                   f"'/home/tony/.config/secrets/{lane['keys']}'))))\"")
+        keys["callers"] = raw.strip()
+    return {"unit": unit, "state": st.strip(), "last_signal": err.strip()[:200],
+            **keys}
+
+
+def _md_link(slug, text):
+    return f"[{text}]({slug})"
+
+
+def render_instances():
+    if yaml:
+        d = yaml.safe_load(INSTANCES_YML.read_text())
+        return d.get("instances", {})
+    return {}
+
+
+def node_page(inst, health, now):
+    iid = inst.get("id", "?")
+    urls = inst.get("url") or {}
+    lines = [
+        f"# {iid}",
+        "",
+        f"- Host: `{inst.get('host')}`  Container: `{inst.get('container')}`",
+        f"- Runtime: {inst.get('runtime')}  Port: {inst.get('host_port')}",
+        f"- Status (SSOT): {inst.get('status')}",
+        "",
+        "## Live probe",
+        f"- Unit state: `{health.get('unit_state', '?')}`",
+    ]
+    for k in ("tailscale_http", "public_http"):
+        if k in health:
+            lines.append(f"- {k.replace('_', ' ')}: `{health[k]}`")
+    for name in ("local", "tailscale", "public"):
+        if urls.get(name):
+            lines.append(f"- {name}: `{urls[name]}`")
+    if inst.get("note") or inst.get("migration_notes"):
+        lines += ["", "## Notes", inst.get("note") or inst.get("migration_notes") or ""]
+    lines += ["", f"*Generated by ha-fabric-cms.py · {now} · parent: {INDEX_SLUG}*"]
+    return "\n".join(lines)
+
+
+def lane_page(lane_id, lane, health, now):
+    return "\n".join([
+        f"# {lane['label']}",
+        "",
+        f"- Unit: `{health['unit']}` on idc03 — state: `{health['state']}`",
+        f"- Enrolled callers: {health.get('callers', '?')}",
+        f"- Last warn/error (6h): `{health['last_signal'] or 'clean'}`",
+        "",
+        f"*Generated by ha-fabric-cms.py · {now} · parent: {INDEX_SLUG}*",
+    ])
+
+
+def index_page(rows_nodes, rows_lanes, now):
+    lines = ["# HA + Messaging Fabric", "",
+             "## Home Assistant nodes", "",
+             "| Node | Host | Port | Unit | Edge |", "|---|---|---|---|---|"]
+    for iid, h in rows_nodes:
+        lines.append(
+            f"| {_md_link('ha-node-' + iid, iid)} | {h.get('host','')} "
+            f"| {h.get('port','')} | `{h.get('unit_state','?')}` "
+            f"| {h.get('tailscale_http','')} |")
+    lines += ["", "## Messaging lanes", "",
+              "| Lane | Unit | State | Callers |", "|---|---|---|---|"]
+    for lid, lh in rows_lanes:
+        lines.append(
+            f"| {_md_link('msg-lane-' + lid, lid)} | {lh['unit']} "
+            f"| `{lh['state']}` | {lh.get('callers','?')} |")
+    lines += ["", f"*Generated by ha-fabric-cms.py · {now}*"]
+    return "\n".join(lines)
+
+
+def publish(slug, title, content, extra, now):
+    meta = {
+        "attribute": ["page"], "bank": ["cms"], "domain": ["infra"],
+        "format": ["markdown"], "instance": ["ada"], "kind": ["page"],
+        "lang": ["en"], "scope": ["tony"], "slug": [slug], "source": ["api"],
+        "status": ["active"], "subject": [slug], "title": [title],
+        "updated": [now], "valid_from": [now[:10]], "last_verified": [now[:10]],
+        "written_by": ["ha-fabric-cms"], "generated_by": ["ha-fabric-cms.py"],
+        "sources": ["ssot.home-assistant.instances.yml", "systemctl", "journalctl",
+                    "curl"],
+    }
+    meta.update(extra)
+    body = json.dumps({"collection": COLLECTION, "key": slug, "lang": "en",
+                       "contentMd": content, "meta": meta}).encode()
+    req = urllib.request.Request(f"{MDDB}/add", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.status
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--slug")
+    args = ap.parse_args()
+
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    instances = render_instances()
+    rows_nodes, rows_lanes, pages = [], [], {}
+
+    for iid, inst in instances.items():
+        h = node_health(inst)
+        h["port"] = inst.get("host_port") or inst.get("port")
+        rows_nodes.append((iid, h))
+        slug = f"ha-node-{iid}"
+        if not args.slug or args.slug == slug:
+            pages[slug] = (f"HA node — {iid}", node_page(inst, h, now))
+
+    for lid, lane in LANES.items():
+        lh = lane_health(lane)
+        rows_lanes.append((lid, lh))
+        slug = f"msg-lane-{lid}"
+        if not args.slug or args.slug == slug:
+            pages[slug] = (lane["label"], lane_page(lid, lane, lh, now))
+
+    if not args.slug:
+        leaf_slugs = [f"ha-node-{i}" for i, _ in rows_nodes] + \
+                     [f"msg-lane-{l}" for l, _ in rows_lanes]
+        pages[INDEX_SLUG] = ("HA + Messaging Fabric",
+                             index_page(rows_nodes, rows_lanes, now))
+        pages[INDEX_SLUG] = (pages[INDEX_SLUG][0], pages[INDEX_SLUG][1])
+
+    failed = 0
+    for slug, (title, content) in pages.items():
+        extra = {"report_role": ["index" if slug == INDEX_SLUG else "leaf"]}
+        if slug == INDEX_SLUG:
+            extra["children"] = leaf_slugs
+        else:
+            extra["parent"] = [INDEX_SLUG]
+        if args.dry_run:
+            print(f"--- {slug} ({len(content)} chars) ---\n{content}\n")
+        else:
+            try:
+                code = publish(slug, title, content, extra, now)
+                print(f"{slug}: HTTP {code} ({len(content)} chars)")
+            except Exception as e:
+                print(f"{slug}: PUBLISH FAIL {e}", file=sys.stderr)
+                failed += 1
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

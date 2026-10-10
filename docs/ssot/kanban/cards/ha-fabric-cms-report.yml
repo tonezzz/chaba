@@ -1,0 +1,28 @@
+id: ha-fabric-cms-report
+title: 'CMS report: HA nodes + messaging lanes (ha-fabric, weekly)'
+column: done
+priority: medium
+note: >-
+  Asked 2026-10-10: "structured cms report for all home assistant nodes and
+  TG,Line setup". Built scripts/ada/ha-fabric-cms.py following the
+  ssot.reports.yml L2 pattern (same MDDB ada-cms-pages publish as
+  host-services-cms.py): index page `ha-fabric` + leaf `ha-node-<node>`
+  per SSOT instance + leaf `msg-lane-<lane>` per relay. Sources:
+  ssot.home-assistant.instances.yml, live systemctl/curl probes, relay
+  journal tails. Refreshes weekly via ha-fabric-cms.timer on tony-omen.
+action:
+  type: devin
+  status: done
+  runner: devin
+updated: 2026-10-10 08:35
+comms:
+- at: 2026-10-10 08:35
+  from: devin
+  text: >-
+    STANDARD PROCEDURE (structured CMS report): (1) card it; (2) write a
+    scripts/ada/<name>-cms.py generator that reads SSOT + live probes —
+    never hand-write content; (3) publish index+leaves to ada-cms-pages via
+    MDDB /add with parent/children meta (mirror host-services-cms.py);
+    (4) wire a .timer for refresh; (5) register in ssot.procedures.yml.
+    New HA node or lane = add to SSOT/LANES — next weekly run publishes it.
+requests: []
