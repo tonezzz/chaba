@@ -1,0 +1,85 @@
+title: "merge-sweep verified drain — verified review closes itself"
+subtitle: >-
+  verified dispatch cards drain on the sweep: review_kind verify/absent go
+  column->done with an auto_close record; decide/triage and open-request
+  cards hold in review human-gated; a verified stamp is never re-gated
+icon: ✅
+id: 2026-10-10-review-auto-close
+status: done
+owner: devin-dispatch
+project: chaba
+card: kanban-review-auto-close
+branch: dispatch/20261010-103422-auto-close-review-cards-whose-
+started: "2026-10-10"
+completed: "2026-10-10"
+
+context:
+  ask: >-
+    Tony by voice (ada transcript 67b02417a8): "review cards that pass
+    verification — close them for me, automatically". Observed the same
+    night: merge-sweep logged 'already in origin/master — marked verified'
+    but left action.status running + column doing on 3 cards
+    (fix-scenario-schedule-collision, ci-test-gate, runner-bootstrap-check)
+    — all needed manual close, and one got re-dispatched by the stale-
+    running path after its verified merge.
+  gap: >-
+    kanban-act only drains column:review cards with autonomy:t2 +
+    auto_done_when — verified dispatch cards without that contract sat in
+    review (or doing) forever. merge-sweep stamped verified and moved on.
+
+design:
+  drain: >-
+    drain_verified() is the close decision for an already-verified card —
+    no git work (verified implies merged). close_hold_reason() mirrors
+    kanban-act's gate_hold_reason minus the column gate: review_kind
+    absent-or-verify closes (status->done, column->done, auto_close
+    record); decide/triage move to/stay in review; open requests and
+    unanswered asks block. Idempotent — a held card gets one
+    sweep-stamped 'held in review' comms, then silence; a closed card
+    early-skips on column==done.
+  entry_points: >-
+    1) the done+verified early-skip (covers close_out-stamped cards and
+    pre-drain stragglers — drains without probing git); 2) stamp_gate_result's
+    verify branch — a fresh verify applies status+column+auto_close in the
+    same locked_edit; 3) a dedicated verified check right after merge_state,
+    BEFORE verify_gate — a stamped card is never re-gated.
+  never_regate: >-
+    Re-running verify_gate on a verified card can flip it back: stale
+    evidence (GC'd unit, head==base-tip after the merge) fails the gate,
+    marks verified=False and requeues — the re-dispatch-after-verified-merge
+    bug this card cites. Verified + ancestor head -> drain; verified +
+    non-ancestor (commits the stamp never covered) -> one verified_unmerged
+    flag for a human, no merge, no requeue.
+  relationship_to_kanban_act: >-
+    kanban-act still owns the t2 auto_done_when contract close for
+    non-dispatch review cards; the sweep drain owns dispatch cards whose
+    verified stamp IS the evidence. Both share the decide/open-request
+    hold contract.
+
+files:
+- scripts/board/merge-sweep.py
+- tests/board/test_merge_sweep.py
+- docs/ssot/kanban/ssot.kanban.yml
+- docs/ssot/jobs/kanban/2026-10-10-review-auto-close.yml
+
+verified:
+- >-
+  python3 -m unittest discover -s tests/board — 96 tests, 0 failures
+  (25 in test_merge_sweep incl. 6 new drain tests)
+- >-
+  merge-sweep.py --dry-run against the live-shaped card dir:
+  dispatch-priority-order and ada-deploy-gate-tests (verified, review)
+  report 'verified — auto-close (column -> done)'; fresh ancestor
+  verifies stamp + auto-close; no errors
+- >-
+  decide card holds in review with close_held stamp; open-request card
+  holds; both idempotent on the second pass
+
+notes:
+- >-
+  A verified card with an open merge-conflict request holds in review —
+  the request is the visible signal for a human to resolve/close. The
+  sweep explains the hold once via the close_held stamp.
+- >-
+  auto_close records use the same field shape kanban-act's mark_done
+  writes (by/at/note) so board tooling sees one convention.

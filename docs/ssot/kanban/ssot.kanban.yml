@@ -68,7 +68,12 @@ card_schema:
   review_kind: "verify | decide | triage — only on column:review cards.
              verify = dispatched work needing proof-check (default when
              absent); decide = a judgment call for Tony; triage = sweep-
-             generated cleanup. Renders as sub-groups in the column."
+             generated cleanup. Renders as sub-groups in the column.
+             Auto-close (2026-10-10, kanban-review-auto-close): merge-
+             sweep closes verified dispatch cards itself — verify/absent
+             kinds go column->done with an auto_close record; decide/
+             triage and cards with open requests hold in review with a
+             comms note instead (never auto-closed)."
   claim: {session: "worker session/task id", since: "datetime"}
   brief: "2-3 sentences max, plain language for the OPERATOR — situation
          first, then the expected action (review it / answer on the card
@@ -490,7 +495,9 @@ ops:
     doing:   "soft cap 2/session; >3d claimed with no comms = stale claim, reclaimable"
     review:  "Tony's queue — target <10 open; >48h waiting = the bottleneck is
               review bandwidth, not automation. Sub-grouped by review_kind;
-              stale (>24h) unverified cards surface in the needs-you band"
+              stale (>24h) unverified cards surface in the needs-you band.
+              merge-sweep auto-closes verified review_kind:verify cards;
+              decide/triage + open-request cards stay human-gated"
     lab:     "bounded by review_by; past date with no outcome = sweep violation"
     done:    "terminal; verified-by evidence expected in note/comms.
               Archive: done cards >30d old move to cards/archive/ (non-

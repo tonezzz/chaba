@@ -9,9 +9,12 @@ head over the runner's path and merges into the served checkout.
 Covers: clean merge lands + verified stamp, strict stop-and-report
 conflicts (no side taken), dirty worktree flag, failed-run flag,
 in-flight skip, stale-running rescue, comms task_id resolution, the
-zombie flag, and the verified gate (2026-10-09 nest-mgr incident:
+zombie flag, the verified gate (2026-10-09 nest-mgr incident:
 exit==0 evidence + real deliverable + auto_done_when, else fail +
-requeue). No network, no systemd — all git ops stay in the tmpdir;
+requeue), and the verified drain (2026-10-10 kanban-review-auto-close:
+verified verify/absent-kind cards close themselves; decide/triage and
+open-request cards hold in review, idempotently). No network, no
+systemd — all git ops stay in the tmpdir;
 the 'remote runner' is exercised through the local code path (identical
 git semantics, ssh is only the transport). The task dir fixture writes
 exit_code=0 — the evidence tier the verified gate prefers.
@@ -310,13 +313,115 @@ class Case(unittest.TestCase):
         self.assertTrue(any("already in" in m.get("text", "")
                             for m in c.get("comms") or []), c["comms"])
 
-    def test_verified_card_skips_early(self):
+    def test_verified_card_drains_to_done(self):
+        # kanban-review-auto-close: a verified review card closes
+        # itself — no git work needed (verified implies merged).
         commit(self.wt, "x.py", "x=1\n", "work")
         card = self.write_card(
             action={"type": "dispatch", "status": "done",
                     "task_id": TID, "repo": "chaba", "verified": True})
-        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
         self.assertFalse(self.remote_has("master", "x.py"))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "done")
+        self.assertEqual((c.get("auto_close") or {}).get("by"),
+                         "merge-sweep")
+        self.assertTrue(any("auto-closed" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        # drained — the next pass is a pure skip
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+
+    def test_verified_stale_running_drains(self):
+        # the observed stuck state: merged+verified but status still
+        # 'running' and column 'doing' — the already-merged path runs
+        # the same close decision and flips both.
+        card = self.write_card(
+            column="doing",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "done")
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("stale_running"))
+
+    def test_verified_decide_card_holds_in_review(self):
+        # review_kind:decide is Tony's call — verified but never
+        # auto-closed; a doing card surfaces into review instead.
+        card = self.write_card(
+            column="doing", review_kind="decide",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "review")
+        self.assertEqual(c["action"]["status"], "done")
+        self.assertNotIn("auto_close", c)
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("close_held"))
+        # held and stable — the next pass changes nothing, posts nothing
+        n_comms = len(self.read_card().get("comms") or [])
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+        self.assertEqual(
+            len(self.read_card().get("comms") or []), n_comms)
+
+    def test_verified_open_request_holds(self):
+        # an open request blocks the close even when everything else
+        # is green — same contract kanban-act enforces.
+        card = self.write_card(
+            requests=[{"id": "q1", "ask": "ok?", "status": "open"}],
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "review")
+        self.assertNotIn("auto_close", c)
+        self.assertTrue(any("held in review" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        # the hold explanation posts once, not every pass
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+
+    def test_verified_triage_card_holds(self):
+        # triage = sweep-generated cleanup — also a human skim, not
+        # auto-closed (only verify/absent closes).
+        card = self.write_card(
+            review_kind="triage",
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        ms.sweep_card(card, {}, dry=False)
+        c = self.read_card()
+        self.assertEqual(c["column"], "review")
+        self.assertNotIn("auto_close", c)
+
+    def test_verified_unmerged_commits_flag_not_regated(self):
+        # anomalous: a verified stamp but new commits sit on the
+        # session branch — flag for a human, never requeue or
+        # silently merge work the stamp never covered.
+        commit(self.wt, "late.py", "x=1\n", "post-verify commits")
+        card = self.write_card(
+            column="doing",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)  # stands
+        self.assertNotEqual(c["action"].get("status"), "queued")
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("verified_unmerged"))
+        self.assertFalse(self.remote_has("master", "late.py"))
+
+    def test_fresh_verify_auto_closes_on_merge(self):
+        # the stamp path closes too — a clean merge + green gate ends
+        # with the card in done, not review.
+        commit(self.wt, "auto.py", "x=1\n", "work")
+        card = self.write_card(review_kind="verify")
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)
+        self.assertEqual(c["column"], "done")
+        self.assertTrue((c.get("auto_close") or {}).get("note"))
 
     def test_conflict_posts_request_not_wrong_merge(self):
         commit(self.wt, "file.txt", "session\n", "session change")
