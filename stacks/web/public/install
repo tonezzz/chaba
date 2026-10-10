@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# chaba fleet installer — curl https://api.surf-thailand.com/install -fsS | bash
+# v1: tailscale + openssh-server + join tailnet + announce.
+# Optional env:
+#   TS_AUTHKEY=tskey-...   zero-touch tailnet join (pre-auth key)
+#   NODE_ROLE=label        tag printed in the summary (e.g. shaker)
+set -e
+
+log() { printf '\033[36m[fleet]\033[0m %s\n' "$*"; }
+die() { printf '\033[31m[fleet]\033[0m %s\n' "$*" >&2; exit 1; }
+have() { command -v "$1" >/dev/null 2>&1; }
+SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
+
+[ -r /etc/os-release ] && . /etc/os-release || die "no /etc/os-release"
+log "detected: $PRETTY_NAME"
+
+# --- packages (debian path today; warn on others) ---
+if have apt-get; then
+  $SUDO apt-get update -qq
+  $SUDO apt-get install -y -qq openssh-server curl >/dev/null
+  $SUDO systemctl enable --now ssh 2>/dev/null || \
+    $SUDO systemctl enable --now sshd 2>/dev/null || true
+  log "openssh-server ok"
+else
+  log "non-debian distro — skipping pkg install (install openssh-server + tailscale manually)"
+fi
+
+# --- tailscale ---
+if ! have tailscale; then
+  log "installing tailscale"
+  curl -fsSL https://tailscale.com/install.sh | $SUDO sh
+fi
+
+if ! $SUDO tailscale status >/dev/null 2>&1 || \
+   [ -z "$(tailscale ip -4 2>/dev/null)" ]; then
+  if [ -n "$TS_AUTHKEY" ]; then
+    $SUDO tailscale up --authkey="$TS_AUTHKEY" ${NODE_ROLE:+--hostname="$(hostname | tr '[:upper:]' '[:lower:]')"}
+  else
+    log "joining tailnet — a login URL will print below; open it once"
+    $SUDO tailscale up
+  fi
+fi
+
+IP=$(tailscale ip -4 2>/dev/null | head -1)
+HOST=$(hostname -f 2>/dev/null || hostname)
+log "on tailnet: $HOST = $IP ${NODE_ROLE:+ (role: $NODE_ROLE)}"
+log "next: tell the fleet 'macbook is up' — it gets wired into monitoring,"
+log "host-loads, and the percussion board gets a new voice."
