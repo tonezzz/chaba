@@ -3,7 +3,7 @@ title: Evaluate NousResearch Hermes for the fleet — evidence-first trial
 column: backlog
 priority: low
 created: 2026-10-10
-updated: 2026-10-10 19:22
+updated: 2026-10-10 19:24
 note: 'Procedure: card → tier declaration (model-routing T1 local via ollama hermes3:8b) → bench probes (tool-call
   JSON fidelity, routing, reasoning — Hermes'' claimed strengths) → lane fit decision → OpenClaw/GhostRoute slot
   if proven. Clawd/OpenClaw reuse: it''s the agent surface Hermes is designed for — tool-calling loop, OR-backed,
@@ -18,9 +18,29 @@ links:
 - docs/ssot/infrastructure/ssot.model-routing.yml
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-192348-evaluate-nousresearch-hermes-f
 comms:
 - at: 2026-10-10 19:22
   from: devin
   text: Stale doing claim (no action block) — requeued for dispatch. Hermes evaluation still open.
+- at: 2026-10-10 19:23
+  from: chaba
+  text: dispatched 20261010-192348-evaluate-nousresearch-hermes-f on chaba
+- at: 2026-10-10 19:23
+  from: chaba
+  text: 'primer injected 8 lesson(s): [voice-combo-hf-s2s] picked up on tony-omen. harness merge never landed scripts/;
+    [ada-observability-resilience] Done on branch dispatch/20261005-220830-1-documen; [lab-crush-cli] [outcome]
+    VERDICT: adopt-as-alt-lane. crush v0.98.0 installed to; [mddb-binlog-upstream] Refinement: the 6h verify is
+    not purely an algorithm prob; [member-nodes-to-vps-ha] Correction — ada-pi AGENTS.md states idc01 is RETIRED
+    (; runbook docs/kb/ada-session-health-2026-09-27.md: Ada session'
+- at: 2026-10-10 19:24
+  from: devin
+  text: Run 2 started. Omen GPU quiet (22% util, 55MiB). hermes3:8b live on omen :11434. Building 3-probe bench
+    (tool-call JSON, routing, reasoning) vs T1 baselines qwen3:4b + phi3-gguf.
+claim:
+  session: 20261010-192348-evaluate-nousresearch-hermes-f
+  since: 2026-10-10 19:23
