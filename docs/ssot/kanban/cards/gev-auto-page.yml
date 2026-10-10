@@ -2,13 +2,12 @@ id: gev-auto-page
 title: GEV page /apps/gev/ not 200
 brief: 'An automated health check flagged: GEV page /apps/gev/ not 200. Read the note,
   fix it, then close the card.'
-column: review
+column: done
 generated: gev-auto-health
 program: gev
 area: monitoring
 priority: high
-note: 'GET http://127.0.0.1/apps/gev/ failed: <urlopen error [Errno 111] Connection
-  refused>'
+note: 'Auto-recovered 2026-10-10: `page` check passing again.'
 help: 'Static bundle is Caddy (`web` container, :80) serving stacks/web/public/apps/gev/.
   If Caddy answers but 404s, the staged bundle is missing — rebuild + repatch + re-stage
   per AGENTS.md ''GEV Gemini Live voice deployment''. Check: podman ps | grep web;
