@@ -1,7 +1,7 @@
 id: flood-situation-alert-system-9f3407
 title: Flood Situation Alert System
 column: review
-updated: 2026-10-10 10:39
+updated: 2026-10-10 11:49
 priority: high
 comms:
 - at: 2026-10-10 01:39
@@ -775,6 +775,10 @@ comms:
   text: 'INSTALLED on tony-dell: flood-alert.timer enabled+armed (10:29 +07). First run seeded 21 items silently,
     75 scanned, 0 pushed — designed. Registry doc flood-alert last_status=ok (cms-auto-health watches). NOTE: salvage
     had dropped the ssot.jobs.yml hunk — restored in this dispatch so future renders keep the job.'
+- at: 2026-10-10 11:49
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261010-080601-flood-situation-alert-system-r on
+    idc03 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -783,6 +787,8 @@ action:
     | devin-task-20261010-080601-flood-situation-alert-system-r.service: Consumed 36.345s CPU time, 212.7M memory
     peak, 0B memory swap peak.'
   runner: idc03
+  sweep:
+    session_gone: 2026-10-10 11:49
 requests:
 - id: install-flood-alert
   ask: 'flood-alert.timer install on tony-dell: run scripts/render-jobs.py --host tony_dell --install post-merge?

@@ -2,14 +2,14 @@ id: ada-reads-text-chat
 title: Ada cannot read the text-chat channel — unify voice+chat history per Tony ask
 kind: feature
 priority: medium
-column: review
+column: done
 autonomy: t2
 brief: 'Tony (67b02417a8 08:19): asked if Ada can access text messages in the chat UI — she said no; he wants the
   two channels unified ("ระบบรวมการคุยทั้งสองทาง"). Today the ada-chat-card is a parallel ws channel Ada never sees.
   Direction: persist text-chat turns into the session transcript/bank so voice+text share context; the new ↩ quote
   button already carries [re: ...] citations — extend to a shared history.'
 created: '2026-10-09'
-updated: 2026-10-10 10:33
+updated: 2026-10-10 11:33
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -78,6 +78,9 @@ comms:
 - at: 2026-10-10 10:33
   from: chaba
   text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 11:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -88,3 +91,7 @@ action:
     peak, 0B memory swap peak.'
   verified: true
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:33
+  note: verified — evidence checks green, closing itself

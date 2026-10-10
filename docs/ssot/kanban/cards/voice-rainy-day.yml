@@ -1,7 +1,7 @@
 id: voice-rainy-day
 title: 'Rainy-day voice fallback: insurance adapter + local cascade'
-column: backlog
-updated: 2026-10-10 10:52
+column: done
+updated: 2026-10-10 11:49
 priority: medium
 tags:
 - voice
@@ -16,11 +16,13 @@ spec: 'Prepare for Gemini Live unavailability. Research: docs/kb/voice-fallback-
   not near-term.'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: tony-dell
   attempts: 1
   task_id: 20261010-105201-prepare-for-gemini-live-unavai
+  result: 20261010-105201-prepare-for-gemini-live-unavai finished (inactive) — see `devin-dispatch logs 20261010-105201-prepare-for-gemini-live-unavai`
+  verified: true
 note: 'Filed from session research 2026-10-08. Trigger event: any Gemini Live outage/quota change.'
 comms:
 - at: 2026-10-08 17:27
@@ -39,6 +41,19 @@ comms:
     Known Protected Services — ; runbook docs/kb/rika-rk600-cloud-upload.md: Rika RK600-07B — Cloud Upload Path,
     ; runbook docs/kb/rview-tony-dell-operations.md: RView + Gemini Live on Tony-Dell ; runbook docs/kb/yomi-model.md:
     Model Configuration — - **Prim'
+- at: 2026-10-10 11:35
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 11:36
+  from: chaba
+  text: pushed dispatch/20261010-105201-prepare-for-gemini-live-unavai to origin
+- at: 2026-10-10 11:49
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
-  session: 20261010-105201-prepare-for-gemini-live-unavai
   since: 2026-10-10 10:52
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:49
+  note: verified — evidence checks green, closing itself

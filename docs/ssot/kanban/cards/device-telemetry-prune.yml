@@ -2,7 +2,7 @@ id: device-telemetry-prune
 title: device-telemetry retention — prune beacon history
 brief: The beacon posts ~300 docs/day/device to MDDB device-telemetry with no retention — unbounded growth on a
   production collection. Waiting in backlog.
-column: review
+column: done
 metric: collection holds <=7d of history per device; latest keys never pruned
 verify: run prune -> old <dev>/<ts> keys gone, <dev>/latest + newest 7d intact
 note: 'Nightly timer on idc03 (or the beacon host): delete device-telemetry keys where the <ts> segment is older
@@ -10,7 +10,7 @@ note: 'Nightly timer on idc03 (or the beacon host): delete device-telemetry keys
   beacon timer. Decide 7d vs 30d — logbook already covers long-range history on HA side.'
 help: chaba scripts/device-telemetry/agent.py (post format); docs/ssot/ infrastructure/ssot.jobs.yml (job registration);
   mddb delete path
-updated: 2026-10-10 11:19
+updated: 2026-10-10 11:34
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -54,6 +54,9 @@ comms:
   text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]          HEAD -> master\
     \ (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates were\
     \ rejected becaus — close will block until merged"
+- at: 2026-10-10 11:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -65,3 +68,7 @@ action:
   result: 'exit=0 ention-prune.yml`. Commits 887b6038 + aa423632 on the dispatch branch; board updated. | devin-task-20261010-111011-device-telemetry-retention-pru.service:
     Consumed 1min 24.479s CPU time over 5min 53.276s wall clock time, 940.9M memory peak.'
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:34
+  note: verified — evidence checks green, closing itself

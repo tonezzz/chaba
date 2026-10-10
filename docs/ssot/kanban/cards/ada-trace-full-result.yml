@@ -3,7 +3,7 @@ title: tool_result trace fidelity — result_hash + full payload in ops log
 brief: ws tool_result events run through _safe_args — nested values truncated to 300 chars — so the trace shows
   a stump while the model saw the full result. A track_device scenario failed on assertions against names that were
   genuinely in the result (2026-10-07). Waiting in backlog.
-column: review
+column: done
 metric: scenario/debug tooling can fetch the full result for any call id; ws event stays compact
 verify: replay a >300-char result -> hash in event matches full payload in ops log
 note: 'Keep the ws event as-is (scalars + truncated strings) but add result_hash (sha of canonical json) and emit
@@ -12,7 +12,7 @@ note: 'Keep the ws event as-is (scalars + truncated strings) but add result_hash
   tool_result_full events for debug runs.'
 help: realtime_provider.py _safe_args (~line 684), ProviderEvent tool_result emission (~line 4747), conversation.log_event;
   _emit_ops_event pattern
-updated: 2026-10-10 11:20
+updated: 2026-10-10 11:34
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -50,6 +50,9 @@ comms:
 - at: 2026-10-10 11:20
   from: chaba
   text: auto-merged a867e48e (dispatch/20261010-110924-tool-result-trace-fidelity-res) → origin/main
+- at: 2026-10-10 11:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -60,3 +63,7 @@ action:
     peak, 0B memory swap peak.'
   verified: true
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:34
+  note: verified — evidence checks green, closing itself

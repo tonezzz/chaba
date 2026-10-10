@@ -2,10 +2,10 @@ id: ha-release-pipeline
 title: Lane release pipeline — scripted dev→prod promote with approval gate + parity check
 brief: 'Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the
   card. Extends the existing deploy-card/promote-* pattern to the two-lane topology.'
-column: review
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 11:20
+updated: 2026-10-10 11:34
 program: ha-lanes
 metric: promote-<lane>.sh moves a verified change dev->prod, requires explicit --confirm (same-session human approval),
   prints parity diff before and after; every release lands with card comms evidence.
@@ -72,6 +72,13 @@ comms:
 - at: 2026-10-10 11:20
   from: chaba
   text: auto-merged 9888e4cf (dispatch/20261010-103425-generalize-frontend-parity-che) → origin/master
+- at: 2026-10-10 11:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-10-10 10:34
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:34
+  note: verified — evidence checks green, closing itself

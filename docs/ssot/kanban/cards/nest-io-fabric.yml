@@ -4,10 +4,11 @@ brief: 'Tony 2026-10-09: decouple input surface from response surface to reduce 
   on iPhone (or any mic surface) → Ada answers on TV / dashboard / nearest screen. Inputs route to the appropriate
   Nest node which stores, compresses, extracts, or discards them — a Nest-tier memory pipeline instead of one big
   session context.'
-column: doing
+column: review
+review_kind: decide
 priority: medium
 created: 2026-10-09
-updated: 2026-10-10 10:43
+updated: 2026-10-10 11:49
 autonomy: t2
 links:
 - chaba-nest
@@ -45,9 +46,35 @@ comms:
   text: 'starting: repo survey done — fabric lands as stacks/services/nest-io/ (self-contained daemon like nest-mgr):
     surface+session registry, hot/warm/cold/discard triage ledger, response broker (speak via input-bridge, cast,
     card, note), lane advisory gemini-live vs local. Building now.'
+- at: 2026-10-10 11:38
+  from: devin
+  text: 'done (code, not deployed): stacks/services/nest-io/ — fabric daemon on :8795. POST /v1/inputs -> {tier,session,route,lane};
+    POST /v1/respond brokers to speak/cast/card/note with never-drop fallback. Route precedence explicit>pin>room>last-active>origin;
+    co-listen joins without stealing. 29 tests green, spec ssot.nest-io-fabric.yml, job trail docs/ssot/jobs/nest/2026-10-10-.
+    Next: ada-pi adoption card (separate repo) + install.sh idc03 on approval.'
+- at: 2026-10-10 11:41
+  from: idc03
+  text: 'finished (ok): exit=0 da-pi-side adoption (`/v1/inputs` + `/v1/respond`, separate repo) and `./install.sh
+    idc03` on approval. | devin-t'
+- at: 2026-10-10 11:41
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:41
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 11:49
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261010-103448-pieces-that-exist-already-ios- on
+    idc03 — if the work was never pushed it may be gone'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc03
+  result: 'exit=0 da-pi-side adoption (`/v1/inputs` + `/v1/respond`, separate repo) and `./install.sh idc03` on
+    approval. | devin-task-20261010-103448-pieces-that-exist-already-ios-.service: Consumed 40.698s CPU time, 177.4M
+    memory peak, 0B memory swap peak.'
+  sweep:
+    session_gone: 2026-10-10 11:49
 claim: {}

@@ -3,7 +3,7 @@ title: deploy-ada.sh pre-flight — run tests before restarting services
 brief: Deploy gate should refuse to restart on a broken tree. Today deploy-ada.sh ff-merges and restarts blind —
   a rebase resolution that silently dropped a 958-line tools.d rewrite only surfaced because its unit test happened
   to fail locally afterward (2026-10-08 incident). Waiting in backlog.
-column: review
+column: done
 metric: deploy-ada.sh exits non-zero before any restart when tool-lint or pytest fails
 verify: break a tool deliberately on a branch -> deploy-ada.sh refuses; clean tree deploys normally
 note: 'Add to deploy-ada.sh between merge and restart: (1) python3 scripts/tool-lint.py (contract check, already
@@ -11,7 +11,7 @@ note: 'Add to deploy-ada.sh between merge and restart: (1) python3 scripts/tool-
   Also add a mass-delete warn: when the merged diff drops >50%% of lines in backend/tools.d/ or backend/tool_runner/
   file without touching its scenario, pause and require DEPLOY_FORCE=1 — catches inverted rebase resolutions.'
 help: ~/.local/bin/deploy-ada.sh on idc03; scripts/tool-lint.py; tests/test_track_device.py
-updated: 2026-10-10 09:48
+updated: 2026-10-10 11:33
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -62,6 +62,9 @@ comms:
   from: chaba
   text: 'merge-sweep: merged 35fb5bfb (dispatch/20261010-091603-deploy-ada-sh-pre-flight-run-t from tony-dell) ->
     origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-091603-deploy-ada-sh-pre-flight-run-t.md)'
+- at: 2026-10-10 11:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -74,3 +77,7 @@ action:
 claim:
   since: 2026-10-10 09:16
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:33
+  note: verified — evidence checks green, closing itself

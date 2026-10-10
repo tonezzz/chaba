@@ -3,10 +3,10 @@ title: 'Ada memory: hard size caps with loud rejection'
 brief: Memory writes currently succeed silently regardless of size — oversized entries and unbounded bank growth
   degrade recall quality. This gives every write a hard character cap that fails loudly (structured error telling
   the model to shorten or split), like Hermes' 2,200-char limit that rejects instead of truncating.
-column: review
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 10:03
+updated: 2026-10-10 11:33
 pipeline: ci
 autonomy: t2
 metric: A write over the cap returns ok:false with the measured size, the cap, and an actionable hint (split into
@@ -88,6 +88,13 @@ comms:
   from: chaba
   text: 'merge-sweep: merged c8ff2197 (dispatch/20261010-091631-where-ada-pi-repo-extend-backe from tony-dell) ->
     origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-091631-where-ada-pi-repo-extend-backe.md)'
+- at: 2026-10-10 11:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-10-10 09:16
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 11:33
+  note: verified — evidence checks green, closing itself

@@ -2,11 +2,12 @@ id: release-lifecycle-standard
 title: Release lifecycle standard — wire the stage gates (evidence checker, per-lane parity, soak timer)
 brief: ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't
   skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.
-column: doing
+column: review
+review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 10:46
+updated: 2026-10-10 11:49
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -30,9 +31,15 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc03
+  result: 'exit=0 devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Failed with result ''exit-code''.
+    | devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Consumed 1min 28.884s CPU time, 102.1M
+    memory peak, 0B memory swap peak.'
+  verified: false
+  sweep:
+    session_gone: 2026-10-10 11:49
 comms:
 - at: 2026-10-10 08:03
   from: devin
@@ -48,3 +55,18 @@ comms:
   text: 'picked up (idc03). Plan: tag convention + release: opt-in field in the standard; lifecycle-check.py in
     kanban-sync; lane-parity-check.sh generalizing frontend-parity-check; soak_until stamping; promote-*.sh smoke
     hook -> [prod] comms; dev-twin-smoke.py via playlived -> [smoke] comms.'
+- at: 2026-10-10 11:36
+  from: idc03
+  text: 'finished (ok): exit=0 devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-10 11:36
+  from: chaba
+  text: 'session-end checkpoint 9e658440: 8 leftover file(s) committed'
+- at: 2026-10-10 11:36
+  from: chaba
+  text: 'auto-merge conflicts: scripts/home-assistant/promote-michael.sh — card stays in review for manual resolution'
+- at: 2026-10-10 11:49
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261010-103505-enforcement-plan-gaps-listed-i on
+    idc03 — if the work was never pushed it may be gone'
+claim: {}

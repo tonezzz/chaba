@@ -10,7 +10,7 @@ note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2
   the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
   catches it at push, the gate catches what CI missed.'
 help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
-updated: 2026-10-10 11:22
+updated: 2026-10-10 11:48
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -57,6 +57,14 @@ comms:
   from: chaba
   text: 'session end: 2 commit(s) on dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen not in origin/main
     — close will block until merged'
+- at: 2026-10-10 11:33
+  from: chaba
+  text: 'merge-sweep: merged 2550bdd4 (dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-094410-ada-pi-ci-lint-unit-tests-scen.md)
+    — held in review (open request(s) [''gh-runs-watch-wiring-the-watch''] block close)'
+- at: 2026-10-10 11:48
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''gh-runs-watch-wiring-the-watch''] block close)'
 action:
   type: dispatch
   status: done
@@ -65,7 +73,9 @@ action:
   attempts: 1
   task_id: 20261010-094410-ada-pi-ci-lint-unit-tests-scen
   result: 20261010-094410-ada-pi-ci-lint-unit-tests-scen finished (inactive) — see `devin-dispatch logs 20261010-094410-ada-pi-ci-lint-unit-tests-scen`
-  verified: false
+  verified: true
+  sweep:
+    close_held: 2026-10-10 11:48
 claim:
   since: 2026-10-10 09:44
 requests:
