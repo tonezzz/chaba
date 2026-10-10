@@ -10,6 +10,8 @@ sections:
         text: A named logical memory store. Each bank owns one MDDB collection (fast recall/write tier) and optionally one NotebookLM notebook (deep-recall/archive tier). Banks are the user-facing knowledge layer; the internal operational collections (ada-ha-snapshots-*, ada-ha-events-*, ada-ha-device-*, ada-ha-recall-summary-*) stay unchanged.
       - label: Assignment
         text: Every bank lists the instance IDs allowed to use it. A service loads only banks whose instances list contains its own ADA_INSTANCE_ID. Shared banks appear in both tony and michael; per-instance or single-instance banks are private.
+      - label: Read-only mount (instances_readonly)
+        text: "Dev/staging backends (ADA_INSTANCE_ID=dev, tony-dev, ada-dev — the ha-lanes dev twins) must not write prod memory, so they are never added to instances. Instead a bank may declare instances_readonly: {dev-instance: prod-instance} — the bank loads for the dev instance exactly as it would for the mapped prod instance ({instance} expands to the mapped ID, not the dev ID), with writable and allowed_tools forced off at load. A dev instance not listed is skipped like any unassigned instance. Runtime support lands via card ada-memory-dev-lane-runtime; until then the field is inert and dev instances simply see only their assigned banks."
       - label: Identity rule
         text: Same fail-fast policy as ADA_INSTANCE_ID — a bank that cannot resolve its collection name or is not assigned to the running instance is skipped loudly (logged + surfaced via /api/health degraded flag), never silently routed elsewhere.
   - title: Naming
@@ -44,6 +46,8 @@ sections:
         text: 'Optional TTL date ("pump is being repaired this week") — expiry is applied lazily at recall time as status: expired.'
       - label: source
         text: voice | manual | import — provenance for audits and later consolidation.
+      - label: env
+        text: "prod | staging — lane provenance stamped at write time from the bank's env marker (dev-scratch carries env: staging). Drift reports and consolidation filter env:staging docs out of prod digests. Absent = prod."
   - title: Runtime Wiring
     icon: "⚙️"
     layout: list
@@ -60,6 +64,8 @@ sections:
         text: GET /api/memory/banks returns the banks assigned to the running instance with collection/notebook resolution for debugging.
       - label: ada-pi-pwa
         text: Runs ADA_INSTANCE_ID=tony, so it automatically sees every bank assigned to tony — consistent with today's shared-memory behavior.
+      - label: Dev lane
+        text: "Dev/staging backends (ada-dev.service ADA_INSTANCE_ID=dev; lane twins tony-dev/ada-dev per ha-lanes) write only to the dev-scratch bank and mount prod banks read-only via instances_readonly. Their operational collections (ada-ha-events-<instance>, snapshots, recall-summary) suffix per instance as usual, so test telemetry stays out of prod feeds."
   - title: NotebookLM Tier
     icon: "📓"
     layout: list
@@ -81,7 +87,7 @@ sections:
       - label: Three update verbs
         text: "Correct = overwrite same key in place (MDDB revision history is the audit trail). Supersede = write a new key, mark the old doc status: superseded with superseded_by/supersedes links. Retract = status: retracted, preferred over delete; hard delete only for privacy/secret leaks."
       - label: Per-bank write policy
-        text: "writable gates writes entirely (false = read-only bank). write_policy reuses the ToolRunner confirmed=true gate — same pattern as dangerous HA entities: confirmed = Ada must ask before writing, direct = write immediately. allowed_tools lists which write tools may touch the bank."
+        text: "writable gates writes entirely (false = read-only bank). write_policy reuses the ToolRunner confirmed=true gate — same pattern as dangerous HA entities: confirmed = Ada must ask before writing, direct = write immediately. allowed_tools lists which write tools may touch the bank. Banks mounted via instances_readonly are forced writable=false + allowed_tools=[] at load regardless of these fields — a dev-lane read can never become a dev-lane write."
       - label: Pre-write content scan
         text: "Every memory write (ada_remember curated banks, kind=vocab, kind=guest, guest_remember, guest_remember_private) passes through backend/memory_write_guard.py before the MDDB/chaba upsert. Content matching the write_guard rule classes below is refused with {ok: false, reason, matched_class} — the refusal is identity-agnostic (trusted full:true identities are scanned too; the scan guards the bank, not the caller) and logged as a memory-scan-refused ops event in ada-ha-events-<instance> carrying identity/bank/class/rule only — never the payload."
       - label: NotebookLM is append-only
@@ -113,6 +119,7 @@ banks:
     description: Free-form facts, preferences, and "remember that…" notes
     scope: shared
     instances: [tony, michael, kk]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-general
     notebooklm_group: memory
     notebooklm_id: null
@@ -124,16 +131,17 @@ banks:
     public: false
   home:
     title: Household knowledge
-    description: Home topology, device aliases, procedures, status notices (the planned shared 'home' group)
+    description: "Home topology, device aliases, procedures, status notices — the shared household notebook. Writable (confirmed) since 2026-10-10 so member procedures/notices accumulate via ada_remember."
     scope: shared
     instances: [tony, michael, kk]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-home
     notebooklm_group: null
     notebooklm_id: null
     kinds: [fact, procedure, note]
-    writable: false
+    writable: true
     write_policy: confirmed
-    allowed_tools: []
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
     public: false
   people:
@@ -141,6 +149,7 @@ banks:
     description: Who is who, relationships, individual preferences
     scope: shared
     instances: [tony, michael, kk]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-people
     notebooklm_group: null
     notebooklm_id: null
@@ -155,6 +164,7 @@ banks:
     description: Instance-private notes that must never cross to the other instance. When speaker ID is active, this bank is the default personal bank for the instance owner (Tony on tony, Michael on michael). Other identified speakers (e.g. KK) are routed to their person-scoped bank instead.
     scope: instance
     instances: [tony, michael]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-personal-{instance}
     notebooklm_group: null
     notebooklm_id: null
@@ -202,6 +212,7 @@ banks:
     description: Person-scoped private memory for Testo (HA user). Assigned to the tony instance but isolated from Tony's personal bank — routed by speaker identity (person.testo_2). Testo also gets a restricted person_policies allowlist so his sessions cannot reach Tony's banks.
     scope: person
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-personal-testo
     notebooklm_group: null
     notebooklm_id: null
@@ -219,6 +230,7 @@ banks:
     description: Tony-only project and infrastructure notes
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-projects-tony
     notebooklm_group: infra
     notebooklm_id: null
@@ -233,6 +245,7 @@ banks:
     description: Tony-only sandbox bank for testing the ada_remember write/update flow
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-note-{instance}
     notebooklm_group: null
     notebooklm_id: null
@@ -243,11 +256,28 @@ banks:
     status: testing
     public: false
     prompt_hidden: true
+  dev-scratch:
+    title: Dev scratch pad
+    description: "Sole write target for dev/staging Ada sessions (ada-dev.service ADA_INSTANCE_ID=dev; ha-lanes twins tony-dev/ada-dev). Prod banks mount read-only on those instances via instances_readonly, so ada_remember can only land here — dev writes can never pollute prod memory. prompt_hidden keeps it out of {writable_banks} suggestions; docs are stamped env: staging (bank env marker) so drift reports/consolidation filter them out of prod digests."
+    scope: shared
+    instances: [dev, tony-dev, ada-dev]
+    mddb_collection: ada-ha-bank-dev-scratch
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, fact]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: testing
+    public: false
+    prompt_hidden: true
+    env: staging
   devin:
     title: Devin session history
     description: Tony-only read-only bank of Devin CLI session summaries (~/.local/share/devin/cli/summaries/history_*.md), synced by scripts/ada/sync-devin-summaries.py and distilled weekly by scripts/ada/distill-devin-bank.py (raw transcripts become status=superseded; devin/weekly-* digests stay active). Ask here for "what did we work on" questions.
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-devin-tony
     notebooklm_group: null
     notebooklm_id: null
@@ -262,6 +292,7 @@ banks:
     description: Tony-only writable bank of distilled implementation specs for dispatched Devin sessions. Ada saves a spec here during conversation (ada_remember); a dispatched session is told to 'check the ada handoff' and reads the spec via the mddb MCP server. Keep entries short, self-contained, and free of secrets — a headless agent consumes them verbatim.
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-devin-handoff
     notebooklm_group: null
     notebooklm_id: null
@@ -276,6 +307,7 @@ banks:
     description: Ada CMS pages and published reports (ada-cms-pages collection). Read-only via memory search — use cms_get_page/cms_publish_page for full access. This is where "research on X" and generated reports live. Page meta is normalized onto the memory schema by scripts/ada/cms-normalize-meta.py (bank=cms, scope=tony, status, source, written_by, subject=slug, attribute=page-type, valid_from, last_verified, lang=doc-lang); cms-audit.py warns on missing schema fields (S1). flood-report + flood-report-nongdon* carry auto-updated news blocks from scripts/ada/flood-news-update.py (seed map in scripts/ada/flood-news-feeds.json). Per-page switches/knobs live in the ada-cms-automation collection — one registry doc per slug (enabled, feeds, require, since_hours, max_items, interval_min, langs, run_now + worker write-back) — see docs/implementation/cms-page-automation-plan.md.
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-cms-pages
     notebooklm_group: null
     notebooklm_id: null
@@ -298,6 +330,7 @@ banks:
       on confirmation.
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-ideas-{instance}
     notebooklm_group: null
     notebooklm_id: null
@@ -312,6 +345,7 @@ banks:
     description: Chaba dev/architecture docs synced from the kb — read-only for Ada
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: kb-development
     notebooklm_group: null
     notebooklm_id: null
@@ -326,6 +360,7 @@ banks:
     description: Feature docs synced from the kb — read-only for Ada
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: kb-features
     notebooklm_group: null
     notebooklm_id: null
@@ -339,6 +374,7 @@ banks:
     description: Ops/runbook docs synced from the kb — read-only for Ada
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: kb-operations
     notebooklm_group: null
     notebooklm_id: null
@@ -353,6 +389,7 @@ banks:
     description: System/architecture docs synced from the kb — read-only for Ada
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: kb-system
     notebooklm_group: null
     notebooklm_id: null
@@ -367,6 +404,7 @@ banks:
     description: Per-repo scores, fork/upstream drift, and discovery candidates from scripts/github-repo-assess.py — read-only for Ada. Ask here for "which repos need updating" or "new repos worth trying" questions.
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-github
     notebooklm_group: null
     notebooklm_id: null
@@ -381,6 +419,7 @@ banks:
     description: "Pre-purchase criteria + check history for POST /api/decision/check. Criteria docs (kind fact/preference) teach Ada the rules — 'remember that I don't trust shops under 4.7'. Check docs (kind=check) are the audit log written by the endpoint itself, recallable via ada_memory_search('didn't I check this before?')."
     scope: shared
     instances: [tony, kk]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-purchase
     notebooklm_group: null
     notebooklm_id: null
@@ -422,6 +461,7 @@ banks:
     description: "Synced docs/ssot/** (infrastructure-ssot collection via scripts/sync-ssot-to-mddb.py) — runbooks, decisions, services, hosts. Read-only for Ada; answers 'how do we X' and 'why did we decide Y' from the distilled record."
     scope: shared
     instances: [tony, michael]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: infrastructure-ssot
     notebooklm_group: null
     notebooklm_id: null
@@ -436,6 +476,7 @@ banks:
     description: "Docs from the devin-kb repo (~/devin-kb/docs/**) synced by scripts/sync-docs-to-mddb.py — hardware notes, preferences, tech-stack, runbooks. Read-only for Ada."
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: devin-kb
     notebooklm_group: null
     notebooklm_id: null
@@ -450,6 +491,7 @@ banks:
     description: "Chaba docs/** trees without their own pipeline (runbooks, home-assistant, architecture, assessments, reports, …) synced by scripts/sync-docs-to-mddb.py. Read-only for Ada."
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: chaba-docs
     notebooklm_group: null
     notebooklm_id: null
@@ -464,6 +506,7 @@ banks:
     description: "Topic-organized distillation reports from retired repos (chaba0, ada, …) per docs/ssot/apps/ssot.apps.archive-distillation.yml — stored under docs/kb/archive/, synced by scripts/sync-docs-to-mddb.py. Read-only; Ada queries via kind=archive-report meta. Kept separate from chaba-docs so stale content never contaminates current-state recall."
     scope: shared
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: chaba-archive
     notebooklm_group: null
     notebooklm_id: null
@@ -478,6 +521,7 @@ banks:
     description: "Metadata index for document archives on gdrive:ada-documents/ (stacks/idc03/doc-archive service) — one doc per archived set with page sha256/dhash, Drive folder/file ids, doc_type, and an extracted-identifiers summary for semantic recall. Page bytes never enter MDDB — fetch via the doc-archive REST API or rclone cat. Read-only here: writes go through doc-archive's own confirmed flow (POST /v1/archive), not ada_remember. Devin reads the same collection via the mddb MCP server."
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: documents
     notebooklm_group: null
     notebooklm_id: null
@@ -492,6 +536,7 @@ banks:
     description: "Reports from the ada-scenario-runner service (stacks/services/ada-scenario-runner): one doc per live-scenario run against ada-ha-* with pass/fail/flaky status, per-turn timeline (prompt → tool calls → verdict), and runner output. Read-only — reports are written by scenario-report.py, not ada_remember. Lets Ada answer 'did the doc-recall scenario pass last night?' from memory search."
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-scenario-reports
     notebooklm_group: null
     notebooklm_id: null
@@ -510,6 +555,7 @@ banks:
     description: "Distilled, Tony-confirmed developer facts, procedures, and decisions extracted from Devin session history. Writable via ada_remember; candidates enter as drafts for review before becoming active."
     scope: instance
     instances: [tony]
+    instances_readonly: {tony-dev: tony, ada-dev: tony}
     mddb_collection: ada-ha-bank-developer-tony
     notebooklm_group: null
     notebooklm_id: null
@@ -600,21 +646,24 @@ persona:
 # 'default' policy, NOT the full set — new people start guest-level until
 # explicitly trusted. {full: true} = unrestricted (Tony's people/keys).
 # allow = whitelist; deny = subtractive.
+# dev-scratch appears in restricted allow lists but is inert on prod —
+# the bank is only assigned to dev instances, so it loads nowhere else;
+# on a dev backend it is each identity's sole writable bank.
 person_policies:
   admin:        {full: true, label: Tony}   # env ADA_API_KEY identity
   person.tony: {full: true, label: Tony}
   person.kk:
     label: KK
-    allow: [general, home, people, purchase, personal-kk]
+    allow: [general, home, people, purchase, personal-kk, dev-scratch]
   user-kk:
     label: KK
-    allow: [general, home, people, purchase, personal-kk]
+    allow: [general, home, people, purchase, personal-kk, dev-scratch]
   person.nhong:
     label: Nhong
-    allow: [general, home, people, personal-nhong]
+    allow: [general, home, people, personal-nhong, dev-scratch]
   user-nhong:
     label: Nhong
-    allow: [general, home, people, personal-nhong]
+    allow: [general, home, people, personal-nhong, dev-scratch]
   tony-ip:     {full: true, label: Tony}
   user-tonezzzz: {full: true, label: Tony}
   user-tony2:    {full: true, label: Tony}
@@ -625,17 +674,17 @@ person_policies:
   ha-testdebug001: {full: true, label: Tony}
   person.testo_2:
     label: Testo
-    allow: [general, home, people, purchase, personal-testo]
+    allow: [general, home, people, purchase, personal-testo, dev-scratch]
   testo:
     label: Testo
-    allow: [general, home, people, purchase, personal-testo]
+    allow: [general, home, people, purchase, personal-testo, dev-scratch]
   user-testo:
     label: Testo
-    allow: [general, home, people, purchase, personal-testo]
+    allow: [general, home, people, purchase, personal-testo, dev-scratch]
   default:
-    allow: [general, home]
+    allow: [general, home, dev-scratch]
   unknown:
-    allow: [general, home]
+    allow: [general, home, dev-scratch]
 
 # Per-identity actuation ACL — which HA control tools a session may use.
 # Same identity resolution as person_policies. {full: true} bypasses the
@@ -704,7 +753,7 @@ language_policy:
 config:
   version: 3
   created: "2026-09-18"
-  updated: "2026-09-22"
+  updated: "2026-10-10"
   maintainer: tony
   status: draft
   deployment: mn01

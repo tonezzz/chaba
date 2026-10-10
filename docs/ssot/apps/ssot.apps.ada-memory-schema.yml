@@ -120,6 +120,11 @@ meta_schema:
     product: {required: false}
     mode: {required: false, enum: [quick, deep]}
     checked_by: {role: provenance, required: false}
+    # lane provenance — stamped at write time from the bank's `env`
+    # marker (dev-scratch -> staging). Drift reports and consolidation
+    # filter env:staging docs out of prod digests. Absent = prod.
+    # (card memory-lane-policy, 2026-10-10)
+    env: {role: provenance, required: false, enum: [prod, staging]}
   # Frontmatter-only field (pins the MDDB key on the vault side; stored as
   # the MDDB doc key, not as meta).
   vault_only_fields: [key]

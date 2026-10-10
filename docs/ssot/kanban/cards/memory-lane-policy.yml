@@ -5,7 +5,7 @@ brief: Formalize how Ada memory banks map onto the two HA lanes so household mem
 column: backlog
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 08:03
+updated: 2026-10-10 10:45
 program: ha-lanes
 metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
   household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
@@ -26,6 +26,7 @@ spec: "Current model already does most of this: banks assigned per Ada instance,
 links:
 - ha-lanes-program
 - ssot.apps.ada-memory-banks.yml
+- ada-memory-dev-lane-runtime
 blocked_by: []
 autonomy: t2
 action:
@@ -36,3 +37,6 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 10:45
+  from: devin
+  text: "chaba side done: home writable+confirmed w/ tools; new dev-scratch bank (dev/tony-dev/ada-dev, prompt_hidden, env:staging); instances_readonly {dev->prod map} on all 24 tony-visible banks — picked over 'leave unassigned' because verify requires dev READ of prod banks (unassigned = fail-fast skip = no read). person_policies allow lists gained dev-scratch (inert on prod). env field added to meta_schema. memory_banks.py change lives in ada-pi repo — filed ada-memory-dev-lane-runtime (queued) with the ~10-line spec; field is inert until then. Heads-up: live registry on idc03 has hand-added dev-lab/dev-bench/dev-dispatch banks NOT in SSOT — next render drops them (collections stay in MDDB)."

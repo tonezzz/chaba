@@ -11,7 +11,7 @@ sections:
       - label: Motivation
         text: Memory collection names were previously derived from HOME_ASSISTANT_URL — a URL change orphaned all existing memories. Identity is now pinned by ADA_INSTANCE_ID (fail-fast in backend/instance.py), and curated knowledge is separated from operational telemetry.
       - label: Instances
-        text: tony (ada-ha-tony.service :8002, ada-pi-pwa :8001) and michael (ada-ha-michael.service :8003). Every memory bank lists which instances may use it; a service loads only banks assigned to its own ADA_INSTANCE_ID.
+        text: "tony (ada-ha-tony.service :8002, ada-pi-pwa :8001), michael (ada-ha-michael.service :8003), and kk (kk-ha member node). Dev/staging backends — ada-dev.service (ADA_INSTANCE_ID=dev) and the ha-lanes twins tony-dev/ada-dev — are never assigned prod banks: they write only to the dev-scratch bank and mount prod banks read-only via instances_readonly (card ada-memory-dev-lane-runtime). Every memory bank lists which instances may use it; a service loads only banks assigned to its own ADA_INSTANCE_ID."
       - label: Fail-fast rule
         text: A bank not assigned to the running instance, or one whose collection template cannot resolve, is rejected loudly (log + degraded health flag) — never silently routed elsewhere. Same policy as ADA_INSTANCE_ID.
   - title: Tiers

@@ -1,0 +1,104 @@
+title: Memory lane policy — household vs private banks, dev never writes prod
+subtitle: "home bank writable; dev-scratch is the only dev-lane write target;
+  instances_readonly mounts prod banks read-only on staging backends"
+icon: 🧠
+id: 2026-10-10-memory-lane-policy
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-10"
+card: memory-lane-policy
+unblocks: ada-memory-dev-lane-runtime
+
+planning:
+  goal: |
+    Card memory-lane-policy (ha-lanes): formalize bank assignment for the
+    two HA lanes — household members get shared+personal memory, Tony his
+    private banks, and dev/staging Ada traffic can never write prod memory.
+    Chaba-side = the registry contract; ada-pi-side = a small runtime patch
+    filed as ada-memory-dev-lane-runtime.
+  decisions:
+    - id: instances-readonly-map
+      decided: "2026-10-10"
+      choice: >
+        Picked `instances_readonly: {dev-instance: prod-instance}` over
+        leaving dev IDs unassigned. The card offered both ("smallest change
+        to memory_banks.py") but its own verify requires a dev session to
+        READ prod banks — unassigned means fail-fast skips and zero read.
+        Map form (not a bare list) because {instance} collections must
+        expand to the PROD twin (tony-dev -> ada-ha-bank-personal-tony, not
+        a nonexistent -tony-dev collection) and because future kk-dev ->
+        kk mappings stay expressible. ~10 lines in memory_banks.py.
+        Applied to all 24 banks that list `tony` — personal-kk/nhong are
+        kk-only so the tony-dev twin correctly does NOT see them (it mirrors
+        tony's view, and prod tony can't see them either).
+    - id: split-across-repos
+      decided: "2026-10-10"
+      choice: >
+        Dispatch worktree is chaba-only; memory_banks.py/memory_ops.py live
+        in the ada-pi repo. The registry change is forward-compatible —
+        unknown keys are ignored by the current loader, so dev instances
+        just see dev-scratch until the ada-pi patch lands. Follow-up card
+        ada-memory-dev-lane-runtime carries the exact patch spec.
+    - id: env-marker-on-bank
+      decided: "2026-10-10"
+      choice: >
+        env:staging provenance is stamped from a bank-level `env:` marker
+        (dev-scratch) rather than an instance-name heuristic — the only
+        writable bank on a dev lane IS the staging bank, so every dev write
+        gets tagged without guessing. `env` added to meta_schema
+        (enum prod|staging, absent = prod).
+    - id: dev-scratch-in-allowlists
+      decided: "2026-10-10"
+      choice: >
+        dev-scratch added to every restricted person_policies allow list
+        (incl. default/unknown). Inert on prod — the bank isn't assigned to
+        prod instances so it never loads there; on a dev backend it makes
+        the scratch bank each identity's sole writable bank.
+    - id: home-writable
+      decided: "2026-10-10"
+      choice: >
+        `home` flipped writable:true + allowed_tools per spec — the shared
+        household notebook where member procedures accumulate; writes stay
+        write_policy:confirmed so Ada still asks first.
+    - id: legacy-dev-banks-drift
+      decided: "2026-10-10"
+      choice: >
+        The live registry on idc03 carries hand-added dev-lab/dev-bench/
+        dev-dispatch banks (ada-dev-* collections, per ssot.services.yml)
+        that are NOT in SSOT. Not re-added: the card defines dev-scratch as
+        THE dev write target, so next render drops them — flagged on the
+        card comms; collections remain in MDDB if recall is ever needed.
+
+deliverables:
+  - docs/ssot/apps/ssot.apps.ada-memory-banks.yml   # home writable; +dev-scratch; instances_readonly x24; allow-list updates; prose
+  - docs/ssot/apps/ssot.apps.ada-memory-schema.yml  # meta_schema.env field
+  - docs/ssot/kanban/cards/ada-memory-dev-lane-runtime.yml  # ada-pi follow-up, queued
+  - docs/ssot/infrastructure/ssot.services.yml      # ada-dev banks line -> dev-scratch + drift note
+  - docs/ssot/apps/ssot.apps.ada-memory.yml         # Instances section covers kk + dev lane
+  - docs/ssot/apps/ssot.apps.ada_ha.yml             # ADA_INSTANCE_ID env doc lists dev IDs
+  - docs/ada-memory/README.md                       # home no longer read-only
+
+execution:
+  verify: |
+    yaml.safe_load OK (27 banks). render-memory-banks.py renders registry +
+    schema to JSON — dev-scratch present with env:staging, 24 banks carry
+    instances_readonly {tony-dev: tony, ada-dev: tony}, home writable with
+    tools. ssot-validate-all.mjs passes.
+  not_done: |
+    Live deploy not touched: render to idc03/tony-dell + service restarts
+    need explicit approval. ada-pi runtime patch is card
+    ada-memory-dev-lane-runtime (queued, repo: ada-pi). Until it lands,
+    instances_readonly is inert — a dev instance sees only its assigned
+    banks (dev-scratch), which already satisfies "dev never writes prod".
+
+residual_risks:
+  - "ada-dev.service live registry has hand-added dev-lab/dev-bench/
+     dev-dispatch banks; next SSOT render removes them — intended, but
+     noted on the card so it isn't a surprise"
+  - "ada-ha-bank-dev-scratch collection doesn't exist in MDDB yet — created
+     lazily on first write; memory-banks audit will warn 'declared but
+     missing' until then"
+  - "env:staging only stamped once the ada-pi patch lands; existing
+     ada-dev-lab/bench/dispatch docs carry no env meta — filter by
+     collection name for historical dev docs"
