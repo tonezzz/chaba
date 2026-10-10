@@ -186,9 +186,46 @@ def results_path(combo_id, ts):
     return RESULTS / f"{combo_id}-{ts}.json"
 
 
+def _normalize_legacy(doc):
+    """Upgrade pre-schema result docs {combo: str, ts, runs[].fixtures[]}
+    to the canonical shape. Runs flatten into fixtures; summary is
+    recomputed so report.py/trend.py see legacy files like any other."""
+    if doc.get("schema") == "voice-bench-result" or "runs" not in doc:
+        return doc
+    runs = doc.get("runs") or []
+    fx = [f for r in runs for f in (r.get("fixtures") or [])]
+    cid = doc.get("combo") or "?"
+    try:
+        combo = get_combo(cid)
+        cdoc = {k: combo.get(k) for k in
+                ("id", "stt", "llm", "tts", "orchestrator", "host_labels", "notes")}
+        cdoc["llm"] = f"{cdoc['llm']} ({doc.get('llm_model')})" \
+            if doc.get("llm_model") else cdoc["llm"]
+    except HarnessError:
+        cdoc = {"id": cid, "llm": doc.get("llm_model")}
+    return {
+        "schema": "voice-bench-result",
+        "schema_version": 0,          # marks legacy provenance
+        "combo": cdoc,
+        "meta": {"at": doc.get("ts")},
+        "summary": {
+            "n": len(fx),
+            "ok": sum(1 for f in fx
+                      if not f.get("error") and
+                      (f.get("transcript") or f.get("llm_raw"))),
+            "mean_ttfa_ms": _mean(f.get("ttfa_ms") for f in fx),
+            "mean_total_ms": _mean(f.get("total_ms") for f in fx),
+            "mean_wer": _mean(f.get("wer") for f in fx),
+            "tool_call": _tally(f.get("tool_match") for f in fx),
+        },
+        "fixtures": fx,
+        "legacy_runs": len(runs),
+    }
+
+
 def iter_results():
     for p in sorted(RESULTS.glob("*.json")):
         try:
-            yield p, json.loads(p.read_text())
+            yield p, _normalize_legacy(json.loads(p.read_text()))
         except (OSError, json.JSONDecodeError):
             continue
