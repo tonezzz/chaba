@@ -4,33 +4,30 @@ kind: feature
 priority: medium
 column: backlog
 autonomy: t2
-brief: "Weekly OR key rotation is a 4-store manual procedure (done by hand
-  2026-10-10 — works but error-prone: missed the sqlite store = openclaw 401
-  cascade twice before). Write scripts/ops/rotate-or-key.sh that takes a key
-  FILE (never an arg — args land in process listings/shell history), swaps
-  all 4 stores atomically, restarts env-baked services, and verifies e2e.
-  Usage: Tony drops the minted key into ~/.config/secrets/or-next-key then
-  says 'rotate OR key' — a dispatch or manual run does the rest."
-spec: "Script requirements (procedure verified live 2026-10-10):\n
-  - input: reads key from ~/.config/secrets/or-next-key (or $1 path); REFUSE
-  if key would come via argv — never accept the key itself as an argument\n
-  - store 1+2: OPENROUTER_API_KEY= line in ~/.config/secrets/openrouter.env
-  on tony-dell and tony-omen (sed in place)\n
-  - store 3: OPENROUTER_API_KEY= line 5 in idc03
-  ~/.config/secrets/mddb-gemini.env (keep the commented line 4)\n
-  - store 4: json_replace on omen ~/.openclaw/state/openclaw.sqlite
-  config_machine_state authProfiles.store $.profiles.\"openrouter:manual\".key\n
-  - restart ghostroute-watcher (omen) + gemini-ollama-proxy (idc03);
-  openclaw-gateway only if it caches the key (check before restart)\n
-  - verify: /api/v1/auth/key shows expected label/expiry + one :free
-  chat/completions call returns cost:0\n
-  - update ssot.services.yml rotation note with date + expiry\n
-  - rm the input file after success\n
-  VERIFY: dry-run flag prints the 4 targets without changing anything; real
-  run verified on the Oct-17 rotation (or sooner with a test key)."
+brief: 'Weekly OR key rotation is a 4-store manual procedure (done by hand 2026-10-10 — works but error-prone: missed
+  the sqlite store = openclaw 401 cascade twice before). Write scripts/ops/rotate-or-key.sh that takes a key FILE
+  (never an arg — args land in process listings/shell history), swaps all 4 stores atomically, restarts env-baked
+  services, and verifies e2e. Usage: Tony drops the minted key into ~/.config/secrets/or-next-key then says ''rotate
+  OR key'' — a dispatch or manual run does the rest.'
+spec: "Script requirements (procedure verified live 2026-10-10):\n - input: reads key from ~/.config/secrets/or-next-key\
+  \ (or $1 path); REFUSE if key would come via argv — never accept the key itself as an argument\n - store 1+2:\
+  \ OPENROUTER_API_KEY= line in ~/.config/secrets/openrouter.env on tony-dell and tony-omen (sed in place)\n - store\
+  \ 3: OPENROUTER_API_KEY= line 5 in idc03 ~/.config/secrets/mddb-gemini.env (keep the commented line 4)\n - store\
+  \ 4: json_replace on omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store $.profiles.\"\
+  openrouter:manual\".key\n - restart ghostroute-watcher (omen) + gemini-ollama-proxy (idc03); openclaw-gateway\
+  \ only if it caches the key (check before restart)\n - verify: /api/v1/auth/key shows expected label/expiry +\
+  \ one :free chat/completions call returns cost:0\n - update ssot.services.yml rotation note with date + expiry\n\
+  \ - rm the input file after success\n VERIFY: dry-run flag prints the 4 targets without changing anything; real\
+  \ run verified on the Oct-17 rotation (or sooner with a test key)."
 comms:
 - at: 2026-10-10 10:00
   from: devin
-  text: 'filed — Tony approved the one-command rotation helper'
+  text: filed — Tony approved the one-command rotation helper
+- at: 2026-10-10 20:57
+  from: devin
+  text: 'shipped scripts/ops/rotate-or-key.sh (fb21602c) + installed ~/.local/bin/rotate-or-key. Reads key from
+    ~/.config/secrets/or-next-key (refuses argv keys), prechecks /auth/key, merges all 4 stores (key rides ssh stdin,
+    never argv), restarts ghostroute-watcher+gemini-ollama-proxy, e2e via qwen/qwen3.8-27b:free. sqlite schema verified:
+    config_machine_state(state_key,value_json).'
 created: '2026-10-10'
-updated: 2026-10-10 10:00
+updated: 2026-10-10 20:57

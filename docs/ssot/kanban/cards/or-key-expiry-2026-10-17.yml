@@ -3,25 +3,25 @@ title: OR key sk-or-v1-a40822 expires 2026-10-17 — mint + rotate before cliff
 kind: ops
 priority: high
 column: todo
-brief: "Tony is minting weekly OR keys ($10/1-week cadence). The key swapped in
-  2026-10-10 (sk-or-v1-a40822...) expires 2026-10-17T01:09Z. If it lapses:
-  openclaw-gateway (omen) + ghostroute-watcher + mddb OR embedding route
-  (idc03) all fail — the 401 cascade hit twice before (09-28, 10-08)."
+brief: 'Tony is minting weekly OR keys ($10/1-week cadence). The key swapped in 2026-10-10 (sk-or-v1-a40822...)
+  expires 2026-10-17T01:09Z. If it lapses: openclaw-gateway (omen) + ghostroute-watcher + mddb OR embedding route
+  (idc03) all fail — the 401 cascade hit twice before (09-28, 10-08).'
 requests:
-- needed: 'Tony mints next weekly key at openrouter.ai/keys before Oct 17, pastes it here or to me'
+- needed: Tony mints next weekly key at openrouter.ai/keys before Oct 17, pastes it here or to me
   from: tony
   status: pending
-spec: "Rotation procedure (verified 2026-10-10 — 4 stores): (1) verify new key via
-  /api/v1/auth/key; (2) ~/.config/secrets/openrouter.env on tony-dell AND tony-omen;
-  (3) idc03 ~/.config/secrets/mddb-gemini.env OPENROUTER_API_KEY= line (line 5, keep
-  line-4 comment); (4) omen: json_replace ~/.openclaw/state/openclaw.sqlite
-  config_machine_state authProfiles.store $.profiles.\"openrouter:manual\".key;
-  (5) restart ghostroute-watcher + gemini-ollama-proxy (env baked at boot;
-  openclaw-gateway restart only if it caches); (6) e2e test a :free model call;
-  (7) update ssot.services.yml rotation note."
+spec: 'Rotation procedure (verified 2026-10-10 — 4 stores): (1) verify new key via /api/v1/auth/key; (2) ~/.config/secrets/openrouter.env
+  on tony-dell AND tony-omen; (3) idc03 ~/.config/secrets/mddb-gemini.env OPENROUTER_API_KEY= line (line 5, keep
+  line-4 comment); (4) omen: json_replace ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
+  $.profiles."openrouter:manual".key; (5) restart ghostroute-watcher + gemini-ollama-proxy (env baked at boot; openclaw-gateway
+  restart only if it caches); (6) e2e test a :free model call; (7) update ssot.services.yml rotation note.'
 comms:
 - at: 2026-10-10 09:45
   from: devin
-  text: 'filed at rotation — previous key sk-or-v1-633 (expires Oct 14) replaced early, no cliff'
+  text: filed at rotation — previous key sk-or-v1-633 (expires Oct 14) replaced early, no cliff
+- at: 2026-10-10 20:57
+  from: devin
+  text: 'rotation script ready (rotate-or-key). Still needs Tony: mint next key at openrouter.ai/keys → drop into
+    ~/.config/secrets/or-next-key → then one command rotates all 4 stores.'
 created: '2026-10-10'
-updated: 2026-10-10 09:45
+updated: 2026-10-10 20:57
