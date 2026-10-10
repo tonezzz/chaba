@@ -288,7 +288,7 @@ def publish(lang, body, now):
         "timeline": [f"{now.isoformat(timespec='minutes')}: digest run"],
         "written_by": ["standard-drift-digest"],
     })
-    _post("add", {"collection": COLLECTION, "key": PAGE, "lang": lang,
+    _post("/add", {"collection": COLLECTION, "key": PAGE, "lang": lang,
                   "contentMd": body, "meta": meta}, timeout=120)
 
 
@@ -300,7 +300,7 @@ def save_registry(cfg, now):
             "title": [f"CMS automation: {PAGE}"], "format": ["json"],
             "lang": ["en"], "updated": [now.isoformat(timespec="seconds")],
             "last_verified": [now.date().isoformat()]}
-    _post("add", {"collection": REGISTRY, "key": PAGE, "lang": "en",
+    _post("/add", {"collection": REGISTRY, "key": PAGE, "lang": "en",
                   "contentMd": json.dumps(cfg, ensure_ascii=False,
                                           indent=2), "meta": meta},
           timeout=120)

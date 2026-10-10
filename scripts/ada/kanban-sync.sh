@@ -29,9 +29,10 @@ if ! git merge --ff-only origin/master; then
     # a raced push leaves the detached HEAD one auto-commit ahead while
     # origin/master moved too — diverged, and ff-only then fails on EVERY
     # tick (kanban-sync wedged 2026-10-07). The local commits are only
-    # generated card writes, so replaying them is safe.
-    echo "ff-pull failed — rebasing local auto-commits onto origin/master"
-    git rebase origin/master || { git rebase --abort 2>/dev/null; echo "rebase failed"; exit 1; }
+    # generated card writes — the next tick re-derives them — so discarding
+    # is correct; a rebase only adds conflict risk (wedged again 2026-10-10).
+    echo "ff-pull failed — resetting to origin/master (generated commits re-derive next tick)"
+    git reset --hard origin/master || { echo "reset failed"; exit 1; }
 fi
 
 python3 scripts/ada/cms-auto-health.py || echo "health check failed (non-fatal)"
