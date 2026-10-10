@@ -1094,6 +1094,36 @@ hosts:
           is normal, not an outage.
         - "Fleet provisioned 2026-10-11: ~/CascadeProjects/{chaba,ada-pi} cloned from tony-dell checkouts (fleet-internal ssh origin — no GitHub creds needed; merge-sweep pulls runner branches). runner-agent.timer was already armed; hooks armed via install-hooks.sh; git identity Devin Fleet."
     deltas: []
+  tony-macbook:
+    tailscale_ip: 100.77.76.112
+    description: MacBookPro13,3 (2016 15") — Ubuntu 26.04.1 on internal NVMe;
+      travel/lab host. Installed 2026-10-10 (replaced macOS; user data backed
+      up to the tony-usb stick first — docs/kb/hardware-mn01-tony-usb.md).
+    role: portable
+    tags:
+      - laptop
+      - portable
+      - dev-host
+    expected_services:
+      - name: ssh
+        type: systemd
+        expected_state: enabled
+        critical: true
+      - name: tailscaled
+        type: systemd
+        expected_state: active
+        critical: true
+      - name: stick-announce
+        type: systemd
+        expected_state: enabled
+        critical: false
+        note: posts host_online ops-event at boot (LAN + tailnet IP)
+    expected_resources:
+      min_free_ram_mb: 500
+      max_swap_used_percent: 80
+      max_root_disk_percent: 90
+      max_load_5m: 8.0
+    deltas: []
   mn01:
     tailscale_ip: 100.106.196.22
     description: Portable Ubuntu PC in mn-home
