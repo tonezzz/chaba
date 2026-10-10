@@ -11,7 +11,7 @@ note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client
   become unnecessary).'
 help: backend/tools_loader.py contract; tool_runner/common.py ToolContext; backend/mddb_client.py read-routing;
   tools.d/ada_track_device.py current raw-httpx pattern; docs/ada-tool-dev.md
-updated: 2026-10-10 11:18
+updated: 2026-10-10 14:26
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -37,11 +37,27 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261010-040335-tools-d-runner-facade-runner-c on
     mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-10 14:20
+  from: chaba
+  text: runner mn01 unreachable 3 passes — requeued
+- at: 2026-10-10 14:20
+  from: idc03
+  text: claimed
+- at: 2026-10-10 14:20
+  from: chaba
+  text: started devin-task-20261010-142058-tools-d-runner-facade-runner-c on idc03 (dispatch)
+- at: 2026-10-10 14:22
+  from: devin
+  text: devin session started — exploring tool_runner.ToolContext + the three tools.d migration targets
+- at: 2026-10-10 14:26
+  from: chaba
+  text: 'auto-merge conflicts: backend/tools.d/kanban.py — card stays in review for manual resolution'
 action:
   type: dispatch
   status: running
   repo: ada-pi
-  runner: mn01
   sweep:
     stale_running: 2026-10-10 11:18
     session_gone: 2026-10-10 11:18
+  runner: idc03
+claim: {}
