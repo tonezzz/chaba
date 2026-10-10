@@ -30,3 +30,8 @@ comms:
 - at: 2026-10-10 10:45
   from: devin
   text: 'closed: verified — idc01 is retired; nothing to fix.'
+- at: 2026-10-10 08:56
+  from: devin
+  text: 'recurrence root cause found+fixed: runner-agent.timer on idc01 was still ENABLED and kept
+    claiming dispatches (3 stranded worktrees salvaged today: mic-capture, tv-action, options-pick).
+    Timer now stopped+disabled. Scheduler should also exclude retired hosts — see dispatch-merge-guard.'

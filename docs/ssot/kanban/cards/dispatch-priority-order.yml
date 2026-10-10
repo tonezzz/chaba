@@ -18,13 +18,12 @@ spec: "1. runner-agent claim loop: sort claimable queued cards by\n   priority r
   \ high.\n"
 help: Keep it a pure sort — do not add preemption (running cards never get interrupted). Same ordering must be shared
   between the two claim paths (kanban-dispatch local drain + runner-agent remote claim) — extract a helper if needed.
-updated: 2026-10-09 17:49
+updated: 2026-10-10 08:49
 action:
   type: dispatch
-  status: running
+  status: queued
   button: ▶ Wire priority ordering
   repo: chaba
-  runner: idc03
   result: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service:
     Failed with result ''exit-code''. | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service: Consumed
     1.317s CPU time.'
@@ -32,6 +31,7 @@ action:
   sweep:
     stale_running: 2026-10-09 17:48
     empty_session: 2026-10-09 17:48
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
 comms:
 - at: 2026-10-09 07:40
   from: tony
@@ -72,5 +72,9 @@ comms:
   from: devin
   text: session up — implementing priority-ranked claim order + starvation guard in runner-agent.py and kanban-dispatch.py,
     plus tests + SSOT docs
+- at: 2026-10-10 08:49
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
 claim: {}
 review_kind: verify
