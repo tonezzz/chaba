@@ -1,0 +1,16 @@
+id: tony-usb-own-nodekey
+title: "tony-usb stick: own tailnet node key (stop claiming mn01)"
+column: backlog
+priority: medium
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  The stick's /var/lib/tailscale/tailscaled.state is a clone of real
+  mn01's nodekey — any booted host steals the mn01 session (verified
+  2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale
+  logout + delete tailscaled.state + tailscale up as its own node
+  (name: tony-usb or rescue). Then document generated per-stick identity
+  in mn01-stick-standard.md.
+links:
+  - docs/kb/mn01-stick-standard.md
+  - docs/kb/hardware-mn01-tony-usb.md

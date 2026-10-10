@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import concurrent.futures
 import datetime
+import json
+import os
 import socket
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -30,7 +33,57 @@ HOSTS_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.audit.hosts.yml"
 OUT_DIR = REPO / "reports" / "host-loads"
 OUT_YML = OUT_DIR / "host-loads.yml"
 META = OUT_DIR / "meta.host-loads.yml"
+STATE = OUT_DIR / ".prev-state.json"
 SSH_TIMEOUT = 12
+
+MDDB = os.environ.get(
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+
+
+def _ops_event(etype: str, host: str, detail: str) -> None:
+    """host_down/host_up line -> ada ops digest (same shape kanban uses)."""
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        req = urllib.request.Request(
+            f"{MDDB}/add",
+            data=json.dumps({
+                "collection": "ada-ha-events-tony",
+                "key": f"ops-host-{etype}-{host}-{now:%Y%m%d%H%M%S}",
+                "lang": "en", "contentMd": detail,
+                "meta": {"kind": ["ops-event"], "type": [etype],
+                         "instance": ["tony"], "host": [host],
+                         "ts": [now.isoformat(timespec="seconds")],
+                         "written_by": ["host-loads"]}}).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as e:
+        print(f"warn: ops event failed: {e}", file=sys.stderr)
+
+
+def _emit_transitions(rows: list[dict]) -> None:
+    """Alert only on reachability flips — a host that stays down is not
+    re-alerted every 5 min; its recovery emits host_up once."""
+    try:
+        prev = json.loads(STATE.read_text()) if STATE.exists() else {}
+    except Exception:
+        prev = {}
+    now_iso_ = now_iso()
+    for r in rows:
+        h = r["host"]
+        was_up = prev.get(h, True)          # default up: don't alert on first run
+        up = not r["unreachable"]
+        if was_up and not up:
+            _ops_event("host_down", h,
+                       f"host {h} unreachable at {now_iso_} "
+                       f"(ssh probe failed, host-loads sampler)")
+        elif up and not was_up:
+            _ops_event("host_up", h,
+                       f"host {h} reachable again at {now_iso_}")
+        prev[h] = up
+    try:
+        STATE.write_text(json.dumps(prev))
+    except Exception as e:
+        print(f"warn: state write failed: {e}", file=sys.stderr)
 
 # One probe, both OSes. Emits tagged lines the parser below consumes.
 PROBE = """{
@@ -116,6 +169,7 @@ def main() -> int:
 
     ok = sum(1 for r in rows if not r["unreachable"])
     bad = [r["host"] for r in rows if r["unreachable"]]
+    _emit_transitions(rows)
     write_meta(
         META, node="host-loads", layer="L1-producer",
         purpose="5-min fleet load/mem/disk sampler (via tony-dell-monitor); "
