@@ -7,7 +7,7 @@ review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 11:49
+updated: 2026-10-10 12:04
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -31,15 +31,16 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: done
+  status: running
   repo: chaba
-  runner: idc03
   result: 'exit=0 devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Failed with result ''exit-code''.
     | devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Consumed 1min 28.884s CPU time, 102.1M
     memory peak, 0B memory swap peak.'
   verified: false
   sweep:
     session_gone: 2026-10-10 11:49
+  last_failure: unit did not exit 0 (exit_code=1) — unmerged partial work isn't auto-merged
+  runner: tony-omen
 comms:
 - at: 2026-10-10 08:03
   from: devin
@@ -69,4 +70,14 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261010-103505-enforcement-plan-gaps-listed-i on
     idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-10 12:04
+  from: chaba
+  text: 'merge-sweep: verified gate failed — unit did not exit 0 (exit_code=1) — unmerged partial work isn''t auto-merged;
+    auto-retry queued (attempt 1/2)'
+- at: 2026-10-10 12:04
+  from: tony-omen
+  text: claimed
+- at: 2026-10-10 12:04
+  from: chaba
+  text: started devin-task-20261010-120438-enforcement-plan-gaps-listed-i on tony-omen (dispatch)
 claim: {}

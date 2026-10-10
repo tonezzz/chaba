@@ -1,0 +1,27 @@
+id: audit-fail-chat-send
+title: 'Ada session audit: fail:chat_send (1d seen)'
+column: backlog
+updated: 2026-10-10 12:04
+brief: 'Recurring session-audit signature ''fail:chat_send'': chat_send -> fail (no transcript in window) — 14x
+  on 2026-10-10, seen on 1 day(s).'
+priority: high
+program: chaba-ci
+tags:
+- session-audit
+- ada
+- fail
+spec: 'Investigate Ada session-audit signature `fail:chat_send`.
+
+
+  Latest evidence: photos picker failed: HTTP 501 {"detail":"photos picker not configured — set GPHOTO_REFRESH_TOKEN
+  (run gphoto-auth.py)"}
+
+
+  Report: CMS page `ada-session-audit` + MDDB `ada-ha-scenario-reports` key `audit/session-2026-10-10`.
+
+  Decide: tool bug / schema-description issue / display-side / correct-by-design friction; fix or document and close.'
+note: Auto-filed by session-audit (dedup on card id audit-fail-chat-send); refiled only if the pattern persists.
+comms:
+- at: 2026-10-10 12:04
+  from: devin
+  text: card captured via board-api

@@ -1,0 +1,27 @@
+id: audit-fail-get-home-state
+title: 'Ada session audit: fail:get_home_state (1d seen)'
+column: backlog
+updated: 2026-10-10 12:04
+brief: 'Recurring session-audit signature ''fail:get_home_state'': get_home_state -> fail — 21x on 2026-10-10, seen
+  on 1 day(s).'
+priority: high
+program: chaba-ci
+tags:
+- session-audit
+- ada
+- fail
+spec: 'Investigate Ada session-audit signature `fail:get_home_state`.
+
+
+  Latest evidence: Client error ''404 Not Found'' for url ''https://tony-dell.taila0626a.ts.net:8123/api/states/binary_sensor.occupancy''
+  For more information check: https://developer…
+
+
+  Report: CMS page `ada-session-audit` + MDDB `ada-ha-scenario-reports` key `audit/session-2026-10-10`.
+
+  Decide: tool bug / schema-description issue / display-side / correct-by-design friction; fix or document and close.'
+note: Auto-filed by session-audit (dedup on card id audit-fail-get-home-state); refiled only if the pattern persists.
+comms:
+- at: 2026-10-10 12:04
+  from: devin
+  text: card captured via board-api
