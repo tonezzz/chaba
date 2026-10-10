@@ -189,7 +189,14 @@ entity_mocks:
     state_changed and POSTs the 56 mirrored ids to dev /api/states —
     rest polling remains as fallback. dev-simulator.yaml now in repo
     (docs/home-assistant/dev/) and deployed by deploy-michael-dev.sh;
-    all |float calls have (0) defaults.
+    all |float calls have (0) defaults. 2026-10-10 (card
+    michael-dev-offlan-mirrors): mha_mirror_* rest sensors are gated on
+    binary_sensor.michael_ha_reachable (curl probe, 300s) — scan_interval
+    is 86400 and the mha_mirror_refresh automation calls
+    homeassistant.update_entity every 30s only while reachable, so
+    off-LAN replicas (idc03, tony-omen) fail quiet instead of spamming
+    ~1.5-2.1k timeout/UndefinedError lines/day. Deploy per host:
+    deploy-michael-dev.sh (or rsync the package + ha_reload_core).
 
 verification:
   dev:
