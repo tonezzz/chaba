@@ -1,0 +1,24 @@
+title: Focus Inbox Item
+subtitle: Health alert for mddb binlog (replication canary)
+focus:
+  label: mddb-binlog health
+  text: 'mddb binlog canary on tony-dellre-alerted an ONGOING breach (open 270449s; re-alert cadence while unresolved) (270449s
+    > 600s) at 2026-10-10T13:21:48Z. Reasons: binlog_size_bytes=1427962994 > 1073741824; lsn_gap=10055783 > 5000000; follower
+    idc01 status=''unhealthy''; follower idc02 status=''unhealthy''. binlog_size_bytes=1427962994, lsn_gap=10055783 (current_lsn=204060582
+    - binlog_oldest_lsn=194004799). The retention janitor on idc03 may have stalled — check mddb.service before the disk fills.
+    If a reason says ''apply-stalled'', that follower''s stream is connected but not applying: restart mddb-follower.service
+    on that host (mddb-follower-watchdog.timer automates it once installed).'
+  status: draft
+  priority: high
+  tags:
+  - health
+  - inbox
+  - mddb
+  - binlog
+  missing_info:
+  - Is the retention janitor still running on idc03 (journalctl --user -u mddb.service)?
+  - Are the idc02 (idc02:11023) and idc01 (idc01:11123) followers still connected and caught up?
+  - 'If apply-stalled: is confirmed_lsn advancing after a follower restart (watchdog logs/journal)?'
+source:
+  session: mddb-binlog-canary
+  date: '2026-10-10'
