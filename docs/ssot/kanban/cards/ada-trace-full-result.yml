@@ -3,7 +3,7 @@ title: tool_result trace fidelity — result_hash + full payload in ops log
 brief: ws tool_result events run through _safe_args — nested values truncated to 300 chars — so the trace shows
   a stump while the model saw the full result. A track_device scenario failed on assertions against names that were
   genuinely in the result (2026-10-07). Waiting in backlog.
-column: backlog
+column: review
 metric: scenario/debug tooling can fetch the full result for any call id; ws event stays compact
 verify: replay a >300-char result -> hash in event matches full payload in ops log
 note: 'Keep the ws event as-is (scalars + truncated strings) but add result_hash (sha of canonical json) and emit
@@ -12,7 +12,7 @@ note: 'Keep the ws event as-is (scalars + truncated strings) but add result_hash
   tool_result_full events for debug runs.'
 help: realtime_provider.py _safe_args (~line 684), ProviderEvent tool_result emission (~line 4747), conversation.log_event;
   _emit_ops_event pattern
-updated: 2026-10-10 08:03
+updated: 2026-10-10 11:20
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -21,7 +21,42 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 11:09
+  from: idc02
+  text: claimed
+- at: 2026-10-10 11:09
+  from: chaba
+  text: started devin-task-20261010-110924-tool-result-trace-fidelity-res on idc02 (dispatch)
+- at: 2026-10-10 11:19
+  from: devin
+  text: 'implemented: ws tool_result keeps stump + gains id/result_hash (sha256 of canonical normalized result);
+    call-log function_result now writes result_full keyed by session+call id; ADA_TRACE_FULL=1 emits tool_result_full
+    ws events; scenario-live asserts result_* on full payload when flag on; session_events anchors hash. 12 new
+    tests pass; suite failures are pre-existing env gaps (ai_edge_litert, eye fixture staleness, tool-lint voice_fx/yt_cached_list
+    on base tree).'
+- at: 2026-10-10 11:20
+  from: idc02
+  text: 'finished (ok): exit=0 rify via `pytest tests/test_trace_fidelity.py` or by running a live session with
+    `ADA_TRACE_FULL=1`. | devin-task'
+- at: 2026-10-10 11:20
+  from: chaba
+  text: 'session-end checkpoint 24baf494: 8 leftover file(s) committed'
+- at: 2026-10-10 11:20
+  from: chaba
+  text: pushed dispatch/20261010-110924-tool-result-trace-fidelity-res to origin
+- at: 2026-10-10 11:20
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:20
+  from: chaba
+  text: auto-merged a867e48e (dispatch/20261010-110924-tool-result-trace-fidelity-res) → origin/main
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: ada-pi
+  runner: idc02
+  result: 'exit=0 rify via `pytest tests/test_trace_fidelity.py` or by running a live session with `ADA_TRACE_FULL=1`.
+    | devin-task-20261010-110924-tool-result-trace-fidelity-res.service: Consumed 1min 56.066s CPU time, 1.0G memory
+    peak, 0B memory swap peak.'
+  verified: true
+claim: {}

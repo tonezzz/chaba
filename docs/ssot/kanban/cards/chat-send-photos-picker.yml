@@ -2,7 +2,7 @@ id: chat-send-photos-picker
 title: chat_send photo picking unconfigured — GPHOTO_REFRESH_TOKEN missing
 brief: 'Audit found chat_send failing with "photos picker failed: photos picker not configured — set GPHOTO_REFRESH_TOKEN
   (run gphoto-auth.py)" when asked to send a photo. Text sends work; photo sends die.'
-column: backlog
+column: doing
 review_kind: verify
 priority: low
 kind: bugfix
@@ -22,10 +22,31 @@ spec: 'Either configure Google Photos auth (run gphoto-auth.py, set
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc02
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
-updated: 2026-10-10 08:03
+- at: 2026-10-10 11:17
+  from: idc02
+  text: claimed
+- at: 2026-10-10 11:17
+  from: chaba
+  text: started devin-task-20261010-111758-either-configure-google-photos on idc02 (dispatch)
+- at: 2026-10-10 11:23
+  from: devin
+  text: 'chose honest-degradation path (gphoto-auth needs interactive OAuth + idc03 env write — not possible unattended).
+    doc_archive_client now maps the service 501 to PhotosNotConfiguredError: chat_send photo=pick|picked return
+    ok:false "photo sending is not configured — run gphoto-auth.py + set GPHOTO_REFRESH_TOKEN". tool_guide narrates
+    it. 271 tests pass; lint shows only 3 pre-existing violations.'
+- at: 2026-10-10 11:24
+  from: devin
+  text: 'honest-degradation done: doc_archive_client maps service 501 to PhotosNotConfiguredError so chat_send photo=
+    returns photo sending is not configured; guide + tests added; 271 pass'
+- at: 2026-10-10 11:24
+  from: devin
+  text: 'honest-degradation done: doc_archive_client maps service 501 to PhotosNotConfiguredError so chat_send photo=
+    reports photo sending is not configured; guide+tests added, 271 pass'
+updated: 2026-10-10 11:24

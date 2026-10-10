@@ -2,11 +2,11 @@ id: release-lifecycle-standard
 title: Release lifecycle standard — wire the stage gates (evidence checker, per-lane parity, soak timer)
 brief: ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't
   skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.
-column: backlog
+column: doing
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 08:03
+updated: 2026-10-10 10:46
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -30,9 +30,21 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc03
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 10:35
+  from: idc03
+  text: claimed
+- at: 2026-10-10 10:35
+  from: chaba
+  text: started devin-task-20261010-103505-enforcement-plan-gaps-listed-i on idc03 (dispatch)
+- at: 2026-10-10 10:46
+  from: devin
+  text: 'picked up (idc03). Plan: tag convention + release: opt-in field in the standard; lifecycle-check.py in
+    kanban-sync; lane-parity-check.sh generalizing frontend-parity-check; soak_until stamping; promote-*.sh smoke
+    hook -> [prod] comms; dev-twin-smoke.py via playlived -> [smoke] comms.'

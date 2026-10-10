@@ -2,14 +2,14 @@ id: ada-reads-text-chat
 title: Ada cannot read the text-chat channel — unify voice+chat history per Tony ask
 kind: feature
 priority: medium
-column: doing
+column: review
 autonomy: t2
 brief: 'Tony (67b02417a8 08:19): asked if Ada can access text messages in the chat UI — she said no; he wants the
   two channels unified ("ระบบรวมการคุยทั้งสองทาง"). Today the ada-chat-card is a parallel ws channel Ada never sees.
   Direction: persist text-chat turns into the session transcript/bank so voice+text share context; the new ↩ quote
   button already carries [re: ...] citations — extend to a shared history.'
 created: '2026-10-09'
-updated: 2026-10-10 09:21
+updated: 2026-10-10 10:33
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -27,8 +27,64 @@ comms:
   from: devin
   text: 'investigating: chat ws sessions already persist at close, but concurrent-session turns are invisible and
     Ada has no chat-history recall path — mapping the gap'
+- at: 2026-10-10 10:19
+  from: devin
+  text: 'done: unified voice+chat history — shared owner-scoped channel log, live mirror to same-owner siblings
+    (transcript+silent note+channel_activity UI), persisted shared tail across backends, session prime injects it,
+    chat card now channel=chat. 15 focused tests pass; no commit/push/deploy. Outcome file written.'
+- at: 2026-10-10 10:21
+  from: idc02
+  text: 'finished (ok): exit=0 r, type in chat, and the voice session sees the `[chat]` turn in log, transcript,
+    and Ada''s context. | devin-task'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: 'session-end checkpoint ac6bd568: 10 leftover file(s) committed'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:21
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: auto-merged b60817b8 (dispatch/20261010-091641-ada-cannot-read-the-text-chat-) → origin/main
+- at: 2026-10-10 10:22
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:24
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:25
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:26
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:27
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:29
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:30
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:31
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:32
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
+- at: 2026-10-10 10:33
+  from: chaba
+  text: pushed dispatch/20261010-091641-ada-cannot-read-the-text-chat- to origin
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: idc02
+  result: 'exit=0 r, type in chat, and the voice session sees the `[chat]` turn in log, transcript, and Ada''s context.
+    | devin-task-20261010-091641-ada-cannot-read-the-text-chat-.service: Consumed 2min 44.688s CPU time, 1.0G memory
+    peak, 0B memory swap peak.'
+  verified: true
+claim: {}

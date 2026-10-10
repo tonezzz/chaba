@@ -1,6 +1,6 @@
 id: kanban-autoretry-off-by-one
 title: kanban-dispatch auto-retry never fires at default max_attempts=2 (attempts double-count)
-column: backlog
+column: review
 kind: bug
 priority: medium
 autonomy: t1
@@ -8,30 +8,85 @@ created: '2026-10-10'
 tags:
 - dispatch
 - kanban
-brief: 'merge_pending_one computes att = attempts + 1 and requeues only when att <
-  max_attempts — but mark_start already bumped attempts at claim time, so the failed
-  attempt is counted twice. At the documented default (max_attempts=2 = one dispatch +
-  one retry) a first failure yields att=2, 2<2 fails, and no card is ever auto-retried;
-  effectively KANBAN_AUTORETRY defaults to off. The same bump also interacts badly with
-  the claim-side cap: even an explicit requeue can be parked by attempts >= retries_per_card
-  before the retried session ever runs.
+brief: 'merge_pending_one computes att = attempts + 1 and requeues only when att < max_attempts — but mark_start
+  already bumped attempts at claim time, so the failed attempt is counted twice. At the documented default (max_attempts=2
+  = one dispatch + one retry) a first failure yields att=2, 2<2 fails, and no card is ever auto-retried; effectively
+  KANBAN_AUTORETRY defaults to off. The same bump also interacts badly with the claim-side cap: even an explicit
+  requeue can be parked by attempts >= retries_per_card before the retried session ever runs.
 
   '
-spec: "In scripts/board/kanban-dispatch.py merge_pending_one: drop the +1 double-count\n\
-  — attempts is incremented by mark_start on each claim, so the requeue predicate\n\
-  should be `int(a.get('attempts') or 0) < max_att` (attempts_used < total allowed),\n\
-  matching the card template's 'max_attempts: total dispatches incl. auto-retries\n\
-  (default 2)' and the claim gate `attempts >= retries_per_card`. merge-sweep.py's\n\
-  fail_attempt (verified gate, this card's sibling) already implements the corrected\n\
-  semantics — mirror that. Check tests/board/test_dispatch_close_out.py expectations\n\
-  around attempts/auto-retry and update or extend coverage.\n"
+spec: 'In scripts/board/kanban-dispatch.py merge_pending_one: drop the +1 double-count
+
+  — attempts is incremented by mark_start on each claim, so the requeue predicate
+
+  should be `int(a.get(''attempts'') or 0) < max_att` (attempts_used < total allowed),
+
+  matching the card template''s ''max_attempts: total dispatches incl. auto-retries
+
+  (default 2)'' and the claim gate `attempts >= retries_per_card`. merge-sweep.py''s
+
+  fail_attempt (verified gate, this card''s sibling) already implements the corrected
+
+  semantics — mirror that. Check tests/board/test_dispatch_close_out.py expectations
+
+  around attempts/auto-retry and update or extend coverage.
+
+  '
 comms:
 - at: 2026-10-10 08:35
   from: devin
-  text: 'filed from merge-sweep-verified-gate work: the retry path this card was meant
-    to mirror turns out to be dead at defaults (attempts double-counted across mark_start
-    + merge_pending_one).'
+  text: 'filed from merge-sweep-verified-gate work: the retry path this card was meant to mirror turns out to be
+    dead at defaults (attempts double-counted across mark_start + merge_pending_one).'
+- at: 2026-10-10 10:34
+  from: chaba
+  text: dispatched 20261010-103355-in-scripts-board-kanban-dispat on chaba
+- at: 2026-10-10 10:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): [dispatch-priority-order] FALSE-VERIFIED by merge-sweep: branch "already in
+    orig; [ada-deploy-gate-tests] primer injected 8 lesson(s): "test_merge_sweep fixture r; [dispatch-priority-order]
+    merge-sweep: verified gate failed — no delivered work ; [ada-memory-write-caps] DONE (attempt 2). Created backend/memory_write_guard.py
+    ; [ada-phantom-card-claims] verified closed: dispatch push failed on mn01 (no GH c; [board-needs-you-strip]
+    Retry run = verification pass. Featur'
+- at: 2026-10-10 10:44
+  from: devin
+  text: 'fix landed in worktree: merge_pending_one now uses attempts<max_attempts (mark_start owns the count), mirroring
+    fail_attempt. tests/board 93/93 pass incl. 3 new cases (budget-exhausted, max_attempts override, KANBAN_AUTORETRY=0).
+    Found sibling issue: parked cards can never retry — board-api retry bumps attempts again and nothing resets
+    it; filing follow-up card.'
+- at: 2026-10-10 10:47
+  from: devin
+  text: 'done: merge_pending_one requeues on attempts_used < max_attempts (mark_start owns the count — merge never
+    writes attempts). At the default of 2 a first failure now requeues (attempt 2/2) instead of silently dying.
+    tests/board 93/93 pass; MergeRetryTest covers requeue, budget-exhausted, max_attempts override, KANBAN_AUTORETRY=0.
+    Deliverables: commit b96a852f on dispatch/20261010-103355-in-scripts-board-kanban-dispat, job note docs/ssot/jobs/kanban/2026-10-10-autoretry-off-by-one.yml,
+    outcome doc '
+- at: 2026-10-10 10:49
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 10:50
+  from: chaba
+  text: pushed dispatch/20261010-103355-in-scripts-board-kanban-dispat to origin
+- at: 2026-10-10 10:50
+  from: chaba
+  text: 'test gate failed — merge held: tests/board/test_claim_order.py::RunnerAgentClaimOrderTest::test_claims_drain_in_priority_order'
+- at: 2026-10-10 10:50
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261010-103355-in-scripts-board-kanban-dispat not in origin/master
+    — close will block until merged'
+- at: 2026-10-10 11:04
+  from: chaba
+  text: 'merge-sweep: merged fbb150f9 (dispatch/20261010-103355-in-scripts-board-kanban-dispat from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-103355-in-scripts-board-kanban-dispat.md)'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-103355-in-scripts-board-kanban-dispat
+  result: 20261010-103355-in-scripts-board-kanban-dispat finished (inactive) — see `devin-dispatch logs 20261010-103355-in-scripts-board-kanban-dispat`
+  verified: true
+updated: 2026-10-10 11:04
+claim:
+  since: 2026-10-10 10:34
+review_kind: verify

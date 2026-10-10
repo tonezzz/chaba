@@ -1,48 +1,35 @@
 id: home-search-unknown-state-entities
 title: Verify home_search surfaces entities whose state is unknown
-column: backlog
-updated: 2026-10-10 11:40
-note: >-
-  Tuya no-feedback covers like cover.gate_motor sit at state `unknown` at
-  rest (normal — they only report while moving) and are flagged
-  available:false by the entities endpoint. If home_search drops
-  unavailable entities, the gate is invisible to voice search even on
-  ada-michael. Verify the filter and surface such entities (flagged)
-  instead of hiding them.
+column: doing
+updated: 2026-10-10 11:23
+note: Tuya no-feedback covers like cover.gate_motor sit at state `unknown` at rest (normal — they only report while
+  moving) and are flagged available:false by the entities endpoint. If home_search drops unavailable entities, the
+  gate is invisible to voice search even on ada-michael. Verify the filter and surface such entities (flagged) instead
+  of hiding them.
 comms:
 - at: 2026-10-10 11:40
   from: devin
-  text: >-
-    Filed from chaba dispatch fix-gate-entity-in-home-assistant-1df995.
-    Verified live: ada-michael entities endpoint lists cover.gate_motor
-    with state=unknown, available:false; tony-ha has zero cover/door/lock
-    entities. Full findings: chaba
-    docs/ssot/jobs/home-assistant/2026-10-10-gate-entity-home-search.yml
-spec: >-
-  Self-contained spec (this card dispatches on repo ada-pi, which cannot
-  read chaba docs):
-
-  1. In the ada-pi tool_runner HA module, find the code behind home_search
-     kind=device (absorbed search_home_devices / list_home_devices /
-     ada_ha_search_devices) and the /api/home-assistant/entities handler in
-     pwa_server.py — check whether entities with state `unknown` or
-     `unavailable` are filtered out of search results.
-  2. Expected behavior: entities at state `unknown` must remain
-     discoverable — Tuya curtain-type covers (cover.gate_motor on
-     michael-ha) have no position feedback and rest at `unknown`
-     permanently; treating them as absent makes the physical gate
-     unfindable/uncontrollable by voice. `unavailable` entities may be
-     ranked down or annotated but should still be mentionable when the
-     query matches (a temporarily-flapping Tuya device reads unavailable
-     for ~10-25 s bursts and recovers).
-  3. If a filter exists, change it to include unknown/unavailable entities
-     flagged with their state (e.g. return them with available:false and
-     let the model explain), and add a unit test covering cover.gate_motor-
-     style entities (state=unknown, state=unavailable) appearing in
-     search results.
-  4. Verify: tool decl lint passes; a search for "gate" on the michael
-     instance returns cover.gate_motor even when its state is unknown.
+  text: 'Filed from chaba dispatch fix-gate-entity-in-home-assistant-1df995. Verified live: ada-michael entities
+    endpoint lists cover.gate_motor with state=unknown, available:false; tony-ha has zero cover/door/lock entities.
+    Full findings: chaba docs/ssot/jobs/home-assistant/2026-10-10-gate-entity-home-search.yml'
+- at: 2026-10-10 11:23
+  from: idc02
+  text: claimed
+spec: "Self-contained spec (this card dispatches on repo ada-pi, which cannot read chaba docs):\n1. In the ada-pi\
+  \ tool_runner HA module, find the code behind home_search\n   kind=device (absorbed search_home_devices / list_home_devices\
+  \ /\n   ada_ha_search_devices) and the /api/home-assistant/entities handler in\n   pwa_server.py — check whether\
+  \ entities with state `unknown` or\n   `unavailable` are filtered out of search results.\n2. Expected behavior:\
+  \ entities at state `unknown` must remain\n   discoverable — Tuya curtain-type covers (cover.gate_motor on\n \
+  \  michael-ha) have no position feedback and rest at `unknown`\n   permanently; treating them as absent makes\
+  \ the physical gate\n   unfindable/uncontrollable by voice. `unavailable` entities may be\n   ranked down or annotated\
+  \ but should still be mentionable when the\n   query matches (a temporarily-flapping Tuya device reads unavailable\n\
+  \   for ~10-25 s bursts and recovers).\n3. If a filter exists, change it to include unknown/unavailable entities\n\
+  \   flagged with their state (e.g. return them with available:false and\n   let the model explain), and add a\
+  \ unit test covering cover.gate_motor-\n   style entities (state=unknown, state=unavailable) appearing in\n  \
+  \ search results.\n4. Verify: tool decl lint passes; a search for \"gate\" on the michael\n   instance returns\
+  \ cover.gate_motor even when its state is unknown."
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc02

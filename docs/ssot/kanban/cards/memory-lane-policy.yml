@@ -2,10 +2,10 @@ id: memory-lane-policy
 title: Memory lane policy — household vs private banks, dev never writes prod memory
 brief: Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory,
   Tony gets his private banks, and staging/test traffic can't pollute production memory.
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 10:45
+updated: 2026-10-10 11:23
 program: ha-lanes
 metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
   household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
@@ -31,12 +31,22 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc02
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
 - at: 2026-10-10 10:45
   from: devin
-  text: "chaba side done: home writable+confirmed w/ tools; new dev-scratch bank (dev/tony-dev/ada-dev, prompt_hidden, env:staging); instances_readonly {dev->prod map} on all 24 tony-visible banks — picked over 'leave unassigned' because verify requires dev READ of prod banks (unassigned = fail-fast skip = no read). person_policies allow lists gained dev-scratch (inert on prod). env field added to meta_schema. memory_banks.py change lives in ada-pi repo — filed ada-memory-dev-lane-runtime (queued) with the ~10-line spec; field is inert until then. Heads-up: live registry on idc03 has hand-added dev-lab/dev-bench/dev-dispatch banks NOT in SSOT — next render drops them (collections stay in MDDB)."
+  text: 'chaba side done: home writable+confirmed w/ tools; new dev-scratch bank (dev/tony-dev/ada-dev, prompt_hidden,
+    env:staging); instances_readonly {dev->prod map} on all 24 tony-visible banks — picked over ''leave unassigned''
+    because verify requires dev READ of prod banks (unassigned = fail-fast skip = no read). person_policies allow
+    lists gained dev-scratch (inert on prod). env field added to meta_schema. memory_banks.py change lives in ada-pi
+    repo — filed ada-memory-dev-lane-runtime (queued) with the ~10-line spec; field is inert until then. Heads-up:
+    live registry on idc03 has hand-added dev-lab/dev-bench/dev-dispatch banks NOT in SSOT — next render drops them
+    (collections stay in MDDB).'
+- at: 2026-10-10 11:23
+  from: idc02
+  text: claimed

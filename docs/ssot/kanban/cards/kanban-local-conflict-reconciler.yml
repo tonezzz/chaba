@@ -1,6 +1,6 @@
 id: kanban-local-conflict-reconciler
 title: Auto-reconcile .local-conflict card files
-column: backlog
+column: review
 priority: medium
 autonomy: t2
 kind: ops
@@ -14,10 +14,46 @@ acceptance:
 - 'no card write is silently dropped: if merge fails, conflict file stays and the card is flagged in review'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 pushed; `node` was absent so `ssot-validate-all.mjs` didn''t run — the new YAML passes `yaml.safe_load`.
+    | devin-task-20261010-103407-auto-reconcile-local-conflict-.service: Consumed 28.481s CPU time, 105.3M memory
+    peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
-updated: 2026-10-10 08:03
+- at: 2026-10-10 10:34
+  from: idc02
+  text: claimed
+- at: 2026-10-10 10:34
+  from: chaba
+  text: started devin-task-20261010-103407-auto-reconcile-local-conflict- on idc02 (dispatch)
+- at: 2026-10-10 10:40
+  from: devin
+  text: session started on idc02 — building scripts/board/reconcile-local-conflicts.py + git-safe-pull post-pull
+    hook
+- at: 2026-10-10 11:06
+  from: devin
+  text: 'done on idc02 (branch dispatch/20261010-103407): new scripts/board/reconcile-local-conflicts.py merges
+    each card .local-conflict back (comms union, requests/ask by id newer-wins, action per-key, scalars by updated),
+    failures keep file + flag review; git-safe-pull EXIT trap runs it on every path + -N suffix for same-second
+    repeats. Verified: selftest OK + live scratch-repo pull produced+reconciled a conflict end-to-end. Job doc docs/ssot/jobs/kanban/2026-10-10-local-conflict-reconciler.yml.
+    Not p'
+- at: 2026-10-10 11:10
+  from: idc02
+  text: 'finished (ok): exit=0 pushed; `node` was absent so `ssot-validate-all.mjs` didn''t run — the new YAML passes
+    `yaml.safe_load`. | devin-t'
+- at: 2026-10-10 11:10
+  from: chaba
+  text: pushed dispatch/20261010-103407-auto-reconcile-local-conflict- to origin
+- at: 2026-10-10 11:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:10
+  from: chaba
+  text: auto-merged 1d54babb (dispatch/20261010-103407-auto-reconcile-local-conflict-) → origin/master
+updated: 2026-10-10 11:10
+claim: {}

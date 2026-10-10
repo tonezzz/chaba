@@ -6,7 +6,7 @@ brief: Memory writes currently succeed silently regardless of size — oversized
 column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 09:56
+updated: 2026-10-10 10:03
 pipeline: ci
 autonomy: t2
 metric: A write over the cap returns ok:false with the measured size, the cap, and an actionable hint (split into
@@ -41,7 +41,7 @@ action:
   attempts: 1
   task_id: 20261010-091631-where-ada-pi-repo-extend-backe
   result: 20261010-091631-where-ada-pi-repo-extend-backe finished (inactive) — see `devin-dispatch logs 20261010-091631-where-ada-pi-repo-extend-backe`
-  verified: false
+  verified: true
 comms:
 - at: 2026-10-10 08:03
   from: devin
@@ -84,6 +84,10 @@ comms:
   from: chaba
   text: 'session end: 1 commit(s) on dispatch/20261010-091631-where-ada-pi-repo-extend-backe not in origin/main
     — close will block until merged'
+- at: 2026-10-10 10:03
+  from: chaba
+  text: 'merge-sweep: merged c8ff2197 (dispatch/20261010-091631-where-ada-pi-repo-extend-backe from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-091631-where-ada-pi-repo-extend-backe.md)'
 claim:
   since: 2026-10-10 09:16
 review_kind: verify

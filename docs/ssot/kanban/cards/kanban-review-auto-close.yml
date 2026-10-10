@@ -2,14 +2,14 @@ id: kanban-review-auto-close
 title: Auto-close review cards whose evidence checks pass — Tony wants verified review to close itself
 kind: feature
 priority: medium
-column: backlog
+column: review
 autonomy: t2
 brief: 'Tony by voice (67b02417a8 08:22-08:23): "การ์ดในรีวิวที่ผ่านการตรวจสอบเรียบร้อยพร้อมปิด ปิดแทนผมได้ไหม /
   ถ้าผ่านมาตรฐานแล้วก็ปิดได้เลยอัตโนมัติ". Extend auto_done_when: review_kind:verify cards with green evidence commands
   auto-close on the sweep. Companion to merge-sweep-verified-gate (that one gates on REAL deliverable, not just
   merge). Keep review_kind:decide human-gated.'
 created: '2026-10-09'
-updated: 2026-10-10 08:03
+updated: 2026-10-10 11:09
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -23,7 +23,44 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 10:34
+  from: idc02
+  text: claimed
+- at: 2026-10-10 10:34
+  from: chaba
+  text: started devin-task-20261010-103422-auto-close-review-cards-whose- on idc02 (dispatch)
+- at: 2026-10-10 10:40
+  from: devin
+  text: 'working it: verified cards never drain — merge-sweep stamps action.verified but leaves column doing/review
+    + status running. Plan: close_hold_reason (verify|absent closes; decide/triage + open requests hold) + drain_verified
+    on the sweep; rides stamp_gate_result for fresh verifies and drains already-verified stragglers.'
+- at: 2026-10-10 11:01
+  from: devin
+  text: 'DONE on dispatch/20261010-103422-auto-close-review-cards-whose- (cabab0c9, no push). merge-sweep drains
+    verified cards: review_kind verify/absent -> status done + column done + auto_close record; decide/triage +
+    open requests hold in review with one close_held note. Verified cards are never re-gated — fixes the re-dispatch-after-verified-merge
+    bug too. 96 board tests green (6 new); dry-run on live cards shows dispatch-priority-order + ada-deploy-gate-tests
+    auto-closing.'
+- at: 2026-10-10 11:09
+  from: idc02
+  text: 'finished (ok): exit=0 ten to `dispatch-outcome-20261010-103422-auto-close-review-cards-whose-.md`; board
+    comment posted. | devin-task-2'
+- at: 2026-10-10 11:09
+  from: chaba
+  text: pushed dispatch/20261010-103422-auto-close-review-cards-whose- to origin
+- at: 2026-10-10 11:09
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:09
+  from: chaba
+  text: auto-merged 491e0497 (dispatch/20261010-103422-auto-close-review-cards-whose-) → origin/master
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 ten to `dispatch-outcome-20261010-103422-auto-close-review-cards-whose-.md`; board comment posted.
+    | devin-task-20261010-103422-auto-close-review-cards-whose-.service: Consumed 1min 18.123s CPU time, 124.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim: {}

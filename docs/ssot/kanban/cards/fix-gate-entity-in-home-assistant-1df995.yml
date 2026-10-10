@@ -1,7 +1,7 @@
 id: fix-gate-entity-in-home-assistant-1df995
 title: Fix gate entity in Home Assistant
-column: backlog
-updated: 2026-10-10 08:03
+column: review
+updated: 2026-10-10 11:17
 note: User wants to control the gate, but cover.front_gate is missing from home_search.
 comms:
 - at: 2026-10-09 18:00
@@ -10,7 +10,45 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 11:10
+  from: idc02
+  text: claimed
+- at: 2026-10-10 11:10
+  from: chaba
+  text: started devin-task-20261010-111032-fix-gate-entity-in-home-assist on idc02 (dispatch)
+- at: 2026-10-10 11:10
+  from: devin
+  text: '[devin] session started — investigating why cover.front_gate is missing from home_search'
+- at: 2026-10-10 11:16
+  from: devin
+  text: '[devin] Diagnosis: cover.front_gate does not exist on any HA instance. The gate is cover.gate_motor on
+    michael-ha (Tuya curtain cover, no feedback — state=unknown at rest is NORMAL, flagged available:false). tony-ha
+    has ZERO cover/door/lock entities, so home_search on the ada-tony instance can never find the gate — only ada-michael
+    can. Fix landed in worktree: docs/ada-memory/home/gate-control.md alias doc for the shared home bank (auto-syncs
+    to ada-ha-bank-home via ada-memory-sync.timer after m'
+- at: 2026-10-10 11:17
+  from: idc02
+  text: 'finished (ok): exit=0 e the user asked (if ada-tony, the miss is instance isolation by design), and whether
+    `switch.living_room_front_g'
+- at: 2026-10-10 11:17
+  from: chaba
+  text: 'session-end checkpoint 005be618: 4 leftover file(s) committed'
+- at: 2026-10-10 11:17
+  from: chaba
+  text: pushed dispatch/20261010-111032-fix-gate-entity-in-home-assist to origin
+- at: 2026-10-10 11:17
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:17
+  from: chaba
+  text: auto-merged a9d47a86 (dispatch/20261010-111032-fix-gate-entity-in-home-assist) → origin/master
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 e the user asked (if ada-tony, the miss is instance isolation by design), and whether `switch.living_room_front_gate`
+    is a working gate trigger. | devin-task-20261010-111032-fix-gate-entity-in-home-assist.service: Consumed 21.753s
+    CPU time.'
+  verified: true
+claim: {}

@@ -2,10 +2,10 @@ id: ha-release-pipeline
 title: Lane release pipeline — scripted dev→prod promote with approval gate + parity check
 brief: 'Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the
   card. Extends the existing deploy-card/promote-* pattern to the two-lane topology.'
-column: backlog
+column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 08:03
+updated: 2026-10-10 11:20
 program: ha-lanes
 metric: promote-<lane>.sh moves a verified change dev->prod, requires explicit --confirm (same-session human approval),
   prints parity diff before and after; every release lands with card comms evidence.
@@ -24,9 +24,54 @@ blocked_by:
 autonomy: t2
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-103425-generalize-frontend-parity-che
+  result: 20261010-103425-generalize-frontend-parity-che finished (inactive) — see `devin-dispatch logs 20261010-103425-generalize-frontend-parity-che`
+  verified: true
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 10:34
+  from: chaba
+  text: dispatched 20261010-103425-generalize-frontend-parity-che on chaba
+- at: 2026-10-10 10:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): Primer runs inside build_task (phase B, after the claim lock is released)
+    — 3s c; [report-bounded-surfaces] merge-sweep: landing devin-task-20261009-195511-1-scri; runbook docs/kb/idea-to-production.md:
+    Idea → CI → Production — the pipeline sta; runbook docs/kb/orchestration-conflict-management.md: Orchestration
+    conflict man; [ada-memory-write-caps] DONE (attempt 2). Created backend/memory_write_guard.py ; [ada-secret-drop]
+    VERIFIED: POST /api/secret-drop live in ada'
+- at: 2026-10-10 10:44
+  from: devin
+  text: 'attempt 2 started. Findings: tony-dev/ada-dev not yet provisioned (ha-dev-instances still backlog) — building
+    lane-driven scripts that resolve them but degrade cleanly; ws-resource-url.py missing from tree (dropped by
+    6c963fc0 salvage) — restoring; promote-michael.sh dev pointers stale post-idc03-migration — fixing defaults.'
+- at: 2026-10-10 11:18
+  from: devin
+  text: 'DONE (attempt 2). Lane release pipeline built: ssot.home-assistant.lanes.yml registry (3 lanes/6 instances),
+    ha-lanes.sh shared lib, ha-twin-diff.py parity engine (6 scopes: dashboards/resources/bundle-md5/automations/helpers/users,
+    staging-guard artifacts normalized), frontend-parity-check.sh generalized (lane arg or --from/--to, legacy mode
+    kept), promote-lane.sh engine + promote-ada.sh + rewritten promote-tony.sh (tony-dev->tony-ha, --from michael-dev
+    compat) + converted promote-michael.sh (f'
+- at: 2026-10-10 11:19
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 11:20
+  from: chaba
+  text: 'session-end checkpoint bed9dada: 10 leftover file(s) committed'
+- at: 2026-10-10 11:20
+  from: chaba
+  text: pushed dispatch/20261010-103425-generalize-frontend-parity-che to origin
+- at: 2026-10-10 11:20
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 37.7s)
+- at: 2026-10-10 11:20
+  from: chaba
+  text: auto-merged 9888e4cf (dispatch/20261010-103425-generalize-frontend-parity-che) → origin/master
+claim:
+  since: 2026-10-10 10:34
+review_kind: verify

@@ -1,7 +1,7 @@
 id: ada-dispatch-tailnet-target
 title: Ada devin_dispatch default host — flip ADA_DEVIN_DISPATCH_HOST from LAN IP to tailnet `tony-dell`
-column: backlog
-updated: 2026-10-10 09:56
+column: review
+updated: 2026-10-10 10:33
 priority: high
 program: ada-tools
 tags:
@@ -22,10 +22,12 @@ spec: 'In ada-pi, the Ada -> Devin dispatch client still SSHes the tony-dell LAN
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   task_id: 20261010-095613-in-ada-pi-the-ada-devin-dispat
+  result: 20261010-095613-in-ada-pi-the-ada-devin-dispat finished (inactive) — see `devin-dispatch logs 20261010-095613-in-ada-pi-the-ada-devin-dispat`
+  verified: true
 note: 'Sibling of devin-dispatch-lan-ip — the chaba half (EVENT_SSH defaults, runbook, learning doc) landed in that
   dispatch; the client-side default lives in this repo. Blocks reliable voice dispatch: every Ada "hand this to
   Devin" silently failed whenever dell LAN was partitioned (2026-10-07, 2026-10-09).'
@@ -44,6 +46,59 @@ comms:
     Remmina RDP to tony-om; [dispatch-priority-order] FALSE-VERIFIED by merge-sweep: branch "already in orig; runbook
     docs/kb/auto-chaba-1788266704105.md: Proved end-to-end remote task dispa; runbook docs/kb/host-reboot-verification.md:
     Host Reboot Veri'
+- at: 2026-10-10 10:07
+  from: devin
+  text: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell in backend/devin_dispatch.py + stale RunSSH comment
+    corrected; 26/26 tests pass; live `ssh tony-dell devin-dispatch status` verified from tony-dell
+- at: 2026-10-10 10:09
+  from: devin
+  text: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell in backend/devin_dispatch.py + stale RunSSH comment
+    corrected; 26/26 tests pass; live ssh tony-dell devin-dispatch status verified
+- at: 2026-10-10 10:10
+  from: devin
+  text: test
+- at: 2026-10-10 10:15
+  from: devin
+  text: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell in backend/devin_dispatch.py + stale RunSSH comment
+    corrected; 26/26 tests pass; live ssh tony-dell devin-dispatch status verified; SSOT job doc + outcome doc in
+    worktree
+- at: 2026-10-10 10:15
+  from: devin
+  text: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell in backend/devin_dispatch.py + stale RunSSH comment
+    corrected; 26/26 tests pass; live ssh tony-dell devin-dispatch status verified; SSOT job doc + outcome doc in
+    worktree
+- at: 2026-10-10 10:17
+  from: devin
+  text: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell in backend/devin_dispatch.py + stale RunSSH comment
+    corrected; 26/26 tests pass; live ssh tony-dell devin-dispatch status verified; SSOT job doc + outcome doc in
+    worktree
+- at: 2026-10-10 10:19
+  from: devin
+  text: 'DONE (attempt 2): committed 6d376fe on dispatch branch — backend/devin_dispatch.py HOST default 192.168.2.67
+    -> tony-dell, stale RunSSH comment corrected, SSOT job doc added. 26/26 devin_dispatch tests pass; ssh tony-dell
+    devin-dispatch status verified live. Outcome: dispatch-outcome-20261010-095613-in-ada-pi-the-ada-devin-dispat.md.
+    Note: POST /comment responses hang but writes land — earlier retries are dups, ignore them. tool-lint has 3
+    pre-existing violations (voice_fx x2, yt_cached_list) th'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 10:21
+  from: chaba
+  text: 'session-end checkpoint 4703f197: 1 leftover file(s) committed'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: pushed dispatch/20261010-095613-in-ada-pi-the-ada-devin-dispat to origin
+- at: 2026-10-10 10:21
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-10 10:21
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261010-095613-in-ada-pi-the-ada-devin-dispat not in origin/main
+    — close will block until merged'
+- at: 2026-10-10 10:33
+  from: chaba
+  text: 'merge-sweep: merged e7723848 (dispatch/20261010-095613-in-ada-pi-the-ada-devin-dispat from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-095613-in-ada-pi-the-ada-devin-dispat.md)'
 claim:
-  session: 20261010-095613-in-ada-pi-the-ada-devin-dispat
   since: 2026-10-10 09:56
+review_kind: verify
