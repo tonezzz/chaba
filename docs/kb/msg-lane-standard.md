@@ -38,3 +38,31 @@ curl -X POST http://<TG_LISTEN>/send -H 'content-type: application/json' \
 - [ ] unit file cloned from a working lane, enabled
 - [ ] verify: push test + real inbound → reply carries `[tag]`
 - [ ] add row to the table above + bump member-tg/msg-lane in ssot.procedures.yml
+
+## Voice-message handling (DRAFT — pending Tony's review 2026-10-10)
+
+When a lane (TG/LINE voice note, or a voice turn bridged into a text lane)
+receives a **voice message**, the assistant replies in this order:
+
+1. **Transcript echo** — first message in the *same channel*: the text
+   transcript of what was heard, prefixed `[<speaker>]`, so the channel
+   has a readable record of what was actually understood.
+   Format: `[kaewta] 🎙 "<transcript>"`
+2. **Result** — the answer/action outcome in the *same channel* —
+   `[kaewta] <reply>` (text, never voice-only on a lane).
+3. **Home-channel mirror** — the same transcript + result is mirrored to
+   the lane's *home channel* so each house has one place to see its
+   assistant's lane activity:
+   - ada → tony-ha lane (Tony TG DM + group)
+   - kaewta → kk-ha lane (KK-HA group)
+   - chaba → chaba lane when it exists
+   Mirror format: `[kaewta] (via tg-kk) 🎙 "<transcript>" → <one-line result>`
+   — no full repost of long answers, one line of outcome.
+
+**Why**: voice is ephemeral — a lane with no transcript is unauditable, and
+each house's channel should show everything its assistant did for that
+house, regardless of which lane the request arrived on.
+
+**Rules**: transcripts are verbatim (no cleanup); results summarize to one
+line on the mirror; failures report as `(no reply)`/`(failed: <err>)`, never
+silence; the same `[speaker]` tag applies everywhere.
