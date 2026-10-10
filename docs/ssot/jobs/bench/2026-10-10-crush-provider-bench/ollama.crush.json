@@ -1,0 +1,86 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "ollama": {
+      "type": "ollama",
+      "base_url": "http://100.75.102.88:11434/v1",
+      "api_key": "ollama",
+      "models": [
+        {
+          "id": "qwen2.5:1.5b",
+          "name": "qwen2.5:1.5b",
+          "cost_per_1m_in": 0,
+          "cost_per_1m_out": 0,
+          "cost_per_1m_in_cached": 0,
+          "cost_per_1m_out_cached": 0,
+          "context_window": 8192,
+          "default_max_tokens": 4096,
+          "can_reason": false,
+          "supports_attachments": false
+        },
+        {
+          "id": "qwen3:0.6b",
+          "name": "qwen3:0.6b",
+          "cost_per_1m_in": 0,
+          "cost_per_1m_out": 0,
+          "cost_per_1m_in_cached": 0,
+          "cost_per_1m_out_cached": 0,
+          "context_window": 8192,
+          "default_max_tokens": 4096,
+          "can_reason": false,
+          "supports_attachments": false
+        },
+        {
+          "id": "qwen3:4b",
+          "name": "qwen3:4b",
+          "cost_per_1m_in": 0,
+          "cost_per_1m_out": 0,
+          "cost_per_1m_in_cached": 0,
+          "cost_per_1m_out_cached": 0,
+          "context_window": 8192,
+          "default_max_tokens": 4096,
+          "can_reason": false,
+          "supports_attachments": false
+        }
+      ]
+    }
+  },
+  "models": {
+    "large": {
+      "model": "qwen3:4b",
+      "provider": "ollama"
+    },
+    "small": {
+      "model": "qwen3:4b",
+      "provider": "ollama"
+    }
+  },
+  "mcp": {
+    "bench-ro": {
+      "type": "stdio",
+      "command": "/usr/bin/python3",
+      "args": [
+        "/tmp/crush-bench-mn01/lanes/ollama/lab_mcp.py"
+      ],
+      "timeout": 30
+    }
+  },
+  "permissions": {
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "bash"
+    ]
+  },
+  "options": {
+    "disable_metrics": true,
+    "attribution": {
+      "trailer_style": "none",
+      "generated_with": false
+    }
+  }
+}
