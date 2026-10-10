@@ -37,4 +37,21 @@ comms:
 - at: 2026-10-10 08:10
   from: devin
   text: filed from Tony's question 'how are we using token? a lot of rate limit?' — journal evidence above
+- at: 2026-10-10 08:45
+  from: devin
+  text: "per-tool model map (all env-overridable): web_search=ADA_WEB_SEARCH_MODEL
+    gemini-2.5-flash WITH google_search grounding + existing duckduckgo auto-fallback;
+    DOC_MODEL/DECISION_MODEL/DEVTEAM_MODEL all default gemini-2.5-flash (plain
+    generateContent — substitutable); gemini-3.5-flash-lite already used for
+    summaries/posture/cms (own 20/day pool); vcast TTS on flash-preview-tts.
+    Substitutes: (a) billing-enabled key — pennies/day for side tools, removes
+    wall entirely; (b) extra free-tier projects — 20/day each; (c) local via
+    gemini-ollama-proxy on idc03 (already fronts ollama for mddb; llama3.2:3b
+    installed — fine for classify/decision/devteam, CANNOT do grounded web_search);
+    (d) OpenRouter — hosts google/gemini-2.5-flash + flash-lite paid, and :free
+    variants of llama/deepseek/qwen/gemma (~50 req/day free, 1000/day w/ $10
+    credit) — but needs an OpenAI-shaped client shim (extend gemini-ollama-proxy
+    or add a provider branch like the existing ddg fallback); OR-hosted gemini
+    does NOT include google_search grounding, so web_search needs DDG fallback,
+    Tavily/Brave free tier, or a paid Gemini key."
 updated: 2026-10-10 08:10

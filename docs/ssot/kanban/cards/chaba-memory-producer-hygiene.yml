@@ -1,68 +1,78 @@
 id: chaba-memory-producer-hygiene
 title: 'Chaba memory: stop generating noise at the producers'
-brief: >-
-  The context render now filters noise, but the upstream scripts still
-  *generate* it: session-end stubs written as events, raw journal lines in
-  the infra digest, "(no task)" immediate pins. Fixing the producers cleans
-  the data for every consumer — context render, reports, and Ada — instead
-  of patching each reader.
-column: backlog
+brief: 'The context render now filters noise, but the upstream scripts still *generate* it: session-end stubs written
+  as events, raw journal lines in the infra digest, "(no task)" immediate pins. Fixing the producers cleans the
+  data for every consumer — context render, reports, and Ada — instead of patching each reader.'
+column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09 20:07
 pipeline: ci
 autonomy: t2
-metric: >-
-  recent-events.yml gains no new "session ended (other)" rows; personal/
-  infra digests contain no raw `x2 [timestamp]` journal fragments;
-  immediate.yml gets no "(no task)" entries. Renderer's drop/filter counts
-  trend to zero over a week.
-verify: >-
-  Run each producer on test input: session-end hook on a stub session ->
-  nothing appended (or kind:lifecycle, invisible to the feed);
-  personal-rollup on a journal with rate-limit spam -> header counts kept,
-  no sample lines; immediate-pin with no task -> entry skipped.
-spec: |
-  Three producers, all in this repo (scripts/):
-
-  1. recent-event.py / devin-session-end.sh — "session ended (other)"
-     is lifecycle ceremony, not an event. Either stop appending it, or
-     tag it `kind: lifecycle` so readers can filter structurally instead
-     of by regex (render-memory currently drops by "^session ended").
-     Prefer the tag — keeps the audit trail, hides it from the feed.
-
-  2. personal-rollup.py — the ## spend / ## apps blocks embed raw
-     `xN [timestamp] unit: <truncated log line>` samples. The header line
-     (count + ⚠) is the signal; the samples are noise that truncates
-     mid-sentence in context. Keep at most 1 representative line per
-     bucket, or drop samples entirely — the journal is always queryable.
-
-  3. immediate-pin.py — don't write entries with no task/next/open;
-     a session that did nothing leaves nothing to resume.
-
-  Also document the session-memory.md entry convention (## Compaction
-  <id> / ## Session end <id> are entry headers; '## N. Section' blocks
-  belong to the entry above) in ssot.chaba.memory.yml — render-memory's
-  entry_match depends on it staying stable.
-
-  Context: renderer-side filters shipped 2026-10-08 (drop/entry_match/
-  skip_status/hide_empty). This card is the upstream half — after it
-  lands, the renderer rules stay as defense-in-depth, not the fix.
+metric: recent-events.yml gains no new "session ended (other)" rows; personal/ infra digests contain no raw `x2
+  [timestamp]` journal fragments; immediate.yml gets no "(no task)" entries. Renderer's drop/filter counts trend
+  to zero over a week.
+verify: 'Run each producer on test input: session-end hook on a stub session -> nothing appended (or kind:lifecycle,
+  invisible to the feed); personal-rollup on a journal with rate-limit spam -> header counts kept, no sample lines;
+  immediate-pin with no task -> entry skipped.'
+spec: "Three producers, all in this repo (scripts/):\n\n1. recent-event.py / devin-session-end.sh — \"session ended\
+  \ (other)\"\n   is lifecycle ceremony, not an event. Either stop appending it, or\n   tag it `kind: lifecycle`\
+  \ so readers can filter structurally instead\n   of by regex (render-memory currently drops by \"^session ended\"\
+  ).\n   Prefer the tag — keeps the audit trail, hides it from the feed.\n\n2. personal-rollup.py — the ## spend\
+  \ / ## apps blocks embed raw\n   `xN [timestamp] unit: <truncated log line>` samples. The header line\n   (count\
+  \ + ⚠) is the signal; the samples are noise that truncates\n   mid-sentence in context. Keep at most 1 representative\
+  \ line per\n   bucket, or drop samples entirely — the journal is always queryable.\n\n3. immediate-pin.py — don't\
+  \ write entries with no task/next/open;\n   a session that did nothing leaves nothing to resume.\n\nAlso document\
+  \ the session-memory.md entry convention (## Compaction\n<id> / ## Session end <id> are entry headers; '## N.\
+  \ Section' blocks\nbelong to the entry above) in ssot.chaba.memory.yml — render-memory's\nentry_match depends\
+  \ on it staying stable.\n\nContext: renderer-side filters shipped 2026-10-08 (drop/entry_match/\nskip_status/hide_empty).\
+  \ This card is the upstream half — after it\nlands, the renderer rules stay as defense-in-depth, not the fix.\n"
 expected_goals:
-  - id: no-stub-events
-    check: "command grep -c 'kind: lifecycle\\|session ended' scripts/chaba/recent-event.py expect exit 0"
+- id: no-stub-events
+  check: 'command grep -c ''kind: lifecycle\|session ended'' scripts/chaba/recent-event.py expect exit 0'
 links:
-  - ada-memory-hit-shape-guard
+- ada-memory-hit-shape-guard
 blocked_by: []
+action:
+  type: dispatch
+  status: done
+  labels:
+  - always-on
+  runner: idc02
+  result: 'exit=0 is `ssot-validate-all.mjs` — node isn''t installed on idc02, so it should run on tony-dell before
+    merge. | devin-task-20261009-195508-three-producers-all-in-this-re.service: Consumed 43.211s CPU time, 217.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
 comms:
-  - at: 2026-10-09 20:05
-    from: devin
-    text: >-
-      done in dispatch worktree (idc02): recent-event.py --kind →
-      kind:lifecycle on the entry; session-end hook emits tagged
-      "session ended" rows (audit trail kept, feeds fold via new
-      drop_kind in render-memory + kind check in render-report-feed);
-      spend/apps blocks cap raw samples at 1 per bucket; immediate-pin
-      skips no-task/next/open entries; entry convention documented in
-      ssot.chaba.memory.yml. Verified with sandboxed HOME — see
-      jobs/kanban/2026-10-09-chaba-memory-producer-hygiene.yml.
+- at: 2026-10-09 19:55
+  from: idc02
+  text: claimed
+- at: 2026-10-09 19:55
+  from: chaba
+  text: started devin-task-20261009-195508-three-producers-all-in-this-re on idc02 (dispatch)
+- at: 2026-10-09 19:55
+  from: devin
+  text: Picked up on idc02. Reading the three producers + render-memory to scope changes.
+- at: 2026-10-09 20:06
+  from: devin
+  text: 'done, committed e03f0bbe on dispatch branch. All 3 producers fixed: --kind lifecycle tag (recent-event
+    + session-end hook), drop_kind in render-memory, kind check in report feed; spend/apps capped at 1 sample/bucket;
+    immediate-pin skips empty pins; entry convention documented in ssot.chaba.memory.yml. Verified with sandboxed
+    HOME. Caveat: ssot-validate-all.mjs needs node — not on idc02, run on tony-dell before merge. Job doc: jobs/kanban/2026-10-09-chaba-memory-producer-hygiene.yml'
+- at: 2026-10-09 20:07
+  from: idc02
+  text: 'finished (ok): exit=0 is `ssot-validate-all.mjs` — node isn''t installed on idc02, so it should run on
+    tony-dell before merge. | devin-t'
+- at: 2026-10-09 20:07
+  from: chaba
+  text: 'session-end checkpoint f7d927ac: 1 leftover file(s) committed'
+- at: 2026-10-09 20:07
+  from: chaba
+  text: pushed dispatch/20261009-195508-three-producers-all-in-this-re to origin
+- at: 2026-10-09 20:07
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 20:07
+  from: chaba
+  text: auto-merged 5821b723 (dispatch/20261009-195508-three-producers-all-in-this-re) → origin/master
+claim: {}
