@@ -182,6 +182,27 @@ jobs:
     Deployed 2026-10-06; exec/env/cwd captured into this manifest
     2026-10-08 (kanban-act-loop) — the rendered unit previously dropped
     kanban-act + nest-overview.'
+- id: chaba-tony-ideas
+  name: Tony ideas/decisions harvest -> CMS tony-ideas
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*:0/30'
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  env:
+    REPO: '%h/CascadeProjects/chaba-tony-dell'
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/tony-ideas-update.py
+  note: 'card tony-ideas-harvest — mines card comms from:tony (ops-verb
+    regex filter), focus-inbox drafts, ssot.focus.decisions.yml and
+    dispatch-outcome-*.md into the tony-ideas CMS page with
+    adopted/pending/superseded statuses; the hand-curated Standing
+    directions section is preserved verbatim from the live page each
+    run. Runs against the served checkout (chaba-tony-dell) so it sees
+    committed comms/inbox state; ada-cms-automation registry gate +
+    managed-block upsert same contract as kanban-brief. Added
+    2026-10-10.'
 - id: ada-pi-orch-bench
   name: Nest topology bench + nest-bench CMS trend refresh
   host: tony_omen

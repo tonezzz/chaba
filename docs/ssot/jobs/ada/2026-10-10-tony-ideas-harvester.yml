@@ -1,0 +1,90 @@
+title: tony-ideas automatic harvester — direction/decision mining -> CMS tony-ideas
+subtitle: >-
+  scripts/ada/tony-ideas-update.py mines card comms from:tony, focus-inbox
+  drafts, the focus decisions log and dispatch outcomes into the
+  tony-ideas CMS page every 30 min (chaba-tony-ideas job), replacing the
+  hand-seeded v0 snapshot with a self-feeding one.
+icon: sprout
+id: 2026-10-10-tony-ideas-harvester
+status: done
+owner: devin-dispatch
+project: chaba
+branch: dispatch/20261010-080923-automatic-harvest-of-tony-s-id
+started: "2026-10-10"
+completed: "2026-10-10"
+
+context:
+  card: tony-ideas-harvest
+  prior_state: >
+    ada-cms-pages/tony-ideas was seeded manually on 2026-10-08 (44
+    directives from card comms only). Tony: "apply all my ideas to all
+    cms pages — I have missed many ideas I added and cannot recall
+    them." The material existed (536+ comms, 200+ inbox items, decisions
+    log) but nothing surfaced it continuously.
+
+decisions:
+  - >-
+    Deterministic mining only, no model calls — same posture as
+    kanban-brief (program ranks, page still publishes on any failure).
+    The ops-verb filter is regex v0 per the card; a classifier upgrade
+    is a stated follow-up.
+  - >-
+    Statuses: adopted = card done/review, inbox processed/linked, or a
+    routed/active decision; pending = captured with no artifact yet;
+    superseded = focus-inbox/archived items.
+  - >-
+    Two managed blocks (tony-ideas:head for status+Latest+section links,
+    tony-ideas:auto for the tables+sources+provenance) around the
+    hand-curated Standing directions section, which is re-extracted
+    from the live page verbatim each run and stray markers stripped —
+    curation survives every regeneration.
+  - >-
+    Focus-inbox watcher families (gh-run/report-watch/ha-auth/
+    SSOT-optimize/ARP/binlog) are collapsed into a count, not listed —
+    they are ops alerts, not Tony ideas. processed/ (880 items) counts
+    only.
+  - >-
+    Devin session summaries source = in-repo dispatch-outcome-*.md
+    (mined as adopted rows). The ada-ha-bank-devin-tony bank (~2000
+    docs) is probed for reachability only — full-text idea mining and
+    Ada transcripts are deferred per the card.
+  - >-
+    Scheduling is a separate systemd job (chaba-tony-ideas, *:0/30 on
+    tony_dell, REPO=chaba-tony-dell served checkout) rather than a new
+    ExecStart in chaba-kanban-brief's chain — independent failure domain.
+
+deliverables:
+  - >-
+    scripts/ada/tony-ideas-update.py — miners (comms/inbox/decisions/
+    outcomes), ops + answer-ack + continuation-cue regex filters,
+    cms-page-standard render (status line, Latest, section links,
+    provenance footer), full meta, ada-cms-automation registry gate,
+    --force/--dry-run, 3x retry on MDDB posts.
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — new chaba-tony-ideas job
+    (tony_dell, *:0/30, REPO=chaba-tony-dell).
+  - >-
+    systemd/generated/tony_dell/chaba-tony-ideas.{service,timer} —
+    rendered via render-jobs.py.
+  - >-
+    Live publish verified twice: page is idempotent — markers balanced,
+    standing table intact, 250 mined lines (127 adopted / 96 pending /
+    27 superseded).
+
+verify:
+  - "python3 scripts/ada/tony-ideas-update.py --dry-run — renders full page"
+  - "python3 scripts/ada/tony-ideas-update.py --force — 'published (127 adopted / 96 pending / 27 superseded)' x2, second run leaves markers + curated section intact"
+  - "python3 scripts/render-jobs.py --check — OK 45 jobs, 7 hosts"
+
+notes:
+  - >-
+    First live publish hit a transient RemoteDisconnected on the MDDB
+    /add call — _post now retries 3x with backoff; republish succeeded.
+  - >-
+    Not yet wired to run on tony_dell: the generated units need
+    render-jobs.py --host tony_dell --install (or the next deploy sweep)
+    — a production enable, left for the operator/deploy path.
+  - >-
+    Follow-ups (per card): ops filter -> classifier, Ada transcript
+    mining, full-text devin-bank mining, and a trend chart per
+    report-graph-standard.
