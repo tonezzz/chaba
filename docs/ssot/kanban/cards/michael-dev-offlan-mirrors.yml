@@ -32,6 +32,18 @@ comms:
 - at: 2026-10-10 12:38
   from: chaba
   text: started devin-task-20261010-123840-michael-dev-replicas-on-off-la on idc03 (dispatch)
+- at: 2026-10-10 12:55
+  from: devin
+  text: 'dispatch running: implementing gate-mirrors in dev-mocks.yaml + both stacks copies — reachability probe
+    (command_line curl, 300s, always exit 0), rest scan_interval 86400 + update_entity automation gated on probe,
+    guarded value/availability templates to kill UndefinedError, switch wrappers unavailable when gate closed. mirror-sweep.py
+    emitter updated to match.'
+- at: 2026-10-10 13:01
+  from: devin
+  text: 'gate-mirrors implemented in worktree (not deployed): binary_sensor.michael_ha_reachable curl probe 300s
+    + mha_mirror_refresh automation drives update_entity every 30s only while reachable; rest scan_interval 86400
+    + guarded value/availability templates kill UndefinedError; switch wrappers gated too. Files: docs/home-assistant/dev/dev-mocks.yaml,
+    stacks/{tony-omen,tony-dell} snapshots, mirror-sweep emitter, SSOT + job yml. Deploy per host: rsync to ~/.config/michael-dev/packages/a_dev_mocks.yaml '
 requests:
 - id: mirror-replica-policy
   ask: michael-dev on idc03/omen can't reach michael-ha LAN mirrors — what should replicas do?
@@ -49,4 +61,4 @@ requests:
   answer: gate-mirrors — ★ keep replicas — gate mha_mirror_* sensors behind a reachability check (fail quiet, retry
     slow)
 claim: {}
-updated: 2026-10-10 12:38
+updated: 2026-10-10 13:01
