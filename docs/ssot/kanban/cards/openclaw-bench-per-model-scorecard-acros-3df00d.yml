@@ -1,7 +1,16 @@
 id: openclaw-bench-per-model-scorecard-acros-3df00d
 title: OpenClaw bench — per-model scorecard across ghostroute rotation
-brief: Plan to grade each free AI model on speed and whether it calls tools correctly. Waiting in the backlog — no action
-  needed yet.
+brief: >-
+  Grade each OpenRouter free model on speed + tool-call correctness through the
+  openclaw-gateway API (fixed prompt suite, jev-bench shape). Feeds the
+  ada-gemini-free-tier-quota decision: which OR :free models can take Ada
+  side-tool calls (classify/decision/devteam — plain generateContent, no
+  grounding needed). Tony bought $100 OR credit 2026-10-09 — :free cap is
+  1000 req/day/model AND paid models unlocked; include 2-3 cheap paid
+  reference points (gemini-2.5-flash-lite, gemini-2.5-flash) so free-vs-paid
+  quality is compared directly. RISK: OR key is shared with mddb embeddings
+  (per-key cap starved it before) — spread calls, <=50/model; note if a
+  dedicated openclaw key is needed.
 column: backlog
 updated: 2026-10-07 23:10
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench shape. From
@@ -13,6 +22,9 @@ comms:
 - at: 2026-10-07 23:10
   from: devin
   text: 'triage: armed as dispatch (chaba), idle until started'
+- at: 2026-10-10 09:05
+  from: devin
+  text: 'armed with credit context: $100 OR credit bought 2026-10-09 (1000/day free cap + paid unlocked). Feeds ada-gemini-free-tier-quota; suite should include JSON-schema-shaped tool-call outputs — free-model schema errors are the known flake.'
 action:
   type: dispatch
   status: idle
