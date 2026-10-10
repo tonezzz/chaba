@@ -1,0 +1,26 @@
+id: audit-fail-drive
+title: 'Ada session audit: fail:drive (1d seen)'
+column: backlog
+updated: 2026-10-10 13:27
+brief: 'Recurring session-audit signature ''fail:drive'': drive -> fail (no transcript in window) — 3x on 2026-10-10,
+  seen on 1 day(s).'
+priority: high
+program: chaba-ci
+tags:
+- session-audit
+- ada
+- fail
+spec: 'Investigate Ada session-audit signature `fail:drive`.
+
+
+  Latest evidence: drive get failed: HTTP 404 {"detail":"drive get failed: HTTP 404"}
+
+
+  Report: CMS page `ada-session-audit` + MDDB `ada-ha-scenario-reports` key `audit/session-2026-10-10`.
+
+  Decide: tool bug / schema-description issue / display-side / correct-by-design friction; fix or document and close.'
+note: Auto-filed by session-audit (dedup on card id audit-fail-drive); refiled only if the pattern persists.
+comms:
+- at: 2026-10-10 13:27
+  from: devin
+  text: card captured via board-api
