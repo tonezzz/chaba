@@ -1,0 +1,32 @@
+id: ha-restructure-roles
+title: "HA restructure — tony-ha=prod control, ada-ha/kk-ha=lab instances"
+column: doing
+priority: high
+created: 2026-10-10
+updated: '2026-10-10'
+requests:
+  - ask: "ada-ha strip — how do you want the ~18 cloned integrations removed?"
+    options:
+      - "Tony deletes them in the ada-ha UI (Settings→Integrations, ~5 min) [recommended - safest]"
+      - "Devin mints a token from ada-ha .storage and deletes via API"
+spec: >
+  Evidence from consumer audit (docs/assessments/ada-ha-consumer-audit-2026-10-10.md):
+  ada-ha is a stale config CLONE of tony-ha (337/340 entities identical;
+  phone+watch already feed tony-ha live). kk-ha on idc03 is already a
+  clean lab shell. Target: tony-ha=sole prod control (like michael-ha);
+  ada-ha+kk-ha=virtual homes for project dev (the lab tier of the
+  existing ada-dev/michael-dev/tony-dev promotion lanes).
+note: >
+  Phase 1 [done]: roles declared in ssot.home-assistant.instances.yml.
+  Phase 2: strip ada-ha's cloned prod integrations (mobile_app, sonoff,
+  xiaomi_miot, tuya, cozylife, androidtv, cast, dlna, go2rtc, esphome,
+  ipp, album_slideshow, gemini_live + google_ai dead creds) — keeps
+  chaba-nest dashboard + 3 chaba scripts + lab integrations.
+  Phase 3: stop+disable stale kk-ha container on tony-dell (zombie of
+  the 2026-10-09 idc03 migration — revived on reboot, fights real one).
+  Phase 4: prune ada-ha dead gemini config + orphaned automation.*
+  registry entries. Phase 5: verify chaba-nest still renders
+  (CMS iframes, no entity dep) + close.
+links:
+  - docs/assessments/ada-ha-consumer-audit-2026-10-10.md
+  - docs/ssot/infrastructure/ssot.home-assistant.instances.yml

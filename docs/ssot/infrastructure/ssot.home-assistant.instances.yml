@@ -5,6 +5,7 @@ instances:
   tony-ha:
     id: tony-ha
     base: ha
+    role: prod           # restructure 2026-10-10: sole home-control plane
     host: tony_dell
     runtime: rootless podman
     network: host
@@ -56,6 +57,7 @@ instances:
   ada-ha:
     id: ada-ha
     base: ada
+    role: lab            # restructure 2026-10-10: tony-ha=prod, ada-ha+kk-ha=virtual homes for project dev
     host: tony_dell
     runtime: rootless podman
     network: podman (NOT host — dev isolation)
@@ -114,6 +116,7 @@ instances:
   kk-ha:
     id: kk-ha
     base: kk
+    role: lab            # restructure 2026-10-10: KK's virtual home for project dev
     host: idc03     # migrated tony-dell -> idc03 2026-10-09 (capacity + stability)
     runtime: rootless podman
     network: podman (NOT host — member isolation)
