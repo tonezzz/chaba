@@ -2,16 +2,21 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
-column: done
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Auto-recovered 2026-10-10: all bootstrap checks pass.'
+note: 'Failing: chaba clone 201 commits behind origin/master (limit 200). Info: chaba
+  origin is fetch-only (by design — no push creds); merge-sweep salvage path verified;
+  no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view
+  checkout — host can''t take action.repo=gods-eye-view cards; dispatch_repos copy
+  differs from repo (sha 243abf1676341230 vs 8e1ffb0e5b964cbe) — functional attrs
+  present; devin: /home/tony/.local/bin/devin (devin 3000.10.35 (dfa4a2d6)).'
 help: 'Per-check fixes:
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
-  && ssh <host> chmod +x ~/.local/bin/runner-agent'
+  - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale
+  clones crash runner-agent on missing dispatch_repos helpers (idc01, 860 behind).'
 updated: '2026-10-10'
 review_kind: triage
 action:
