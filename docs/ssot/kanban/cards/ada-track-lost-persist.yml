@@ -3,7 +3,7 @@ title: lost-mode durability — persist armed watches across restarts
 brief: ada_track_device action='lost' arms an in-process watcher that dies with the backend (volatile by design
   for v1). A lost-device watch should survive deploys and restarts — that is exactly when it matters. Waiting in
   backlog.
-column: doing
+column: review
 metric: armed watch survives ada-ha-tony restart; resumes polling within one interval
 verify: arm lost-mode on a test device -> restart service -> deltas still push to LINE/TG
 note: Persist armed watches to MDDB device-telemetry as _watch/<device> docs (armed_at, channel prefs, last-pushed-sighting).
@@ -11,7 +11,7 @@ note: Persist armed watches to MDDB device-telemetry as _watch/<device> docs (ar
   + a resume hook. Watch push path already exists (relay /send, ADA_TRACK_PUSH_DRYRUN for tests).
 help: backend/tools.d/ada_track_device.py (lost-mode watcher ~action=lost); device-telemetry collection conventions
   (<dev>/latest pattern)
-updated: 2026-10-10 11:16
+updated: 2026-10-10 11:26
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -30,8 +30,30 @@ comms:
   from: devin
   text: 'implementing: _watch/<dev> mddb docs, claim-aware resume_watches + on_service_start hook in pwa_server,
     found/expiry deletes'
+- at: 2026-10-10 11:25
+  from: devin
+  text: 'done: _watch/<dev> docs persist armed watches; resume_watches + new tools.d on_service_start hook (pwa_server)
+    re-arm at boot, lazy resume on first call; found/expiry deletes; claim heartbeat prevents double-arm across
+    services. 19 unit + scenario pass, live mddb smoke verified. worktree only'
+- at: 2026-10-10 11:25
+  from: tony-omen
+  text: 'finished (ok): exit=0 durability.yml`; no commit/push/deploy — prod picks it up on the next `deploy-ada.sh`.
+    | devin-task-20261010-1109'
+- at: 2026-10-10 11:26
+  from: chaba
+  text: 'session-end checkpoint dfec7563: 5 leftover file(s) committed'
+- at: 2026-10-10 11:26
+  from: chaba
+  text: pushed dispatch/20261010-110959-lost-mode-durability-persist-a to origin
+- at: 2026-10-10 11:26
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: tony-omen
+  result: 'exit=0 durability.yml`; no commit/push/deploy — prod picks it up on the next `deploy-ada.sh`. | devin-task-20261010-110959-lost-mode-durability-persist-a.service:
+    Consumed 4min 28.808s CPU time over 15min 44.105s wall clock time, 1.4G memory peak.'
+  verified: false
+claim: {}
