@@ -1,6 +1,6 @@
 id: michael-dev-offlan-mirrors
 title: michael-dev replicas on off-LAN hosts spam mirror timeouts — keep or gate?
-column: backlog
+column: doing
 priority: medium
 program: chaba-ci
 area: placement
@@ -9,7 +9,8 @@ note: idc03 (1.5k/day) + tony-omen (2.1k/day) severe = michael-dev instances who
   hosts.
 action:
   type: dispatch
-  status: todo
+  status: running
+  runner: idc03
 comms:
 - at: 2026-10-10 09:51
   from: devin
@@ -22,6 +23,15 @@ comms:
 - at: 2026-10-10 09:54
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-10 12:38
+  from: tony
+  text: queued for processing
+- at: 2026-10-10 12:38
+  from: idc03
+  text: claimed
+- at: 2026-10-10 12:38
+  from: chaba
+  text: started devin-task-20261010-123840-michael-dev-replicas-on-off-la on idc03 (dispatch)
 requests:
 - id: mirror-replica-policy
   ask: michael-dev on idc03/omen can't reach michael-ha LAN mirrors — what should replicas do?
@@ -39,5 +49,4 @@ requests:
   answer: gate-mirrors — ★ keep replicas — gate mha_mirror_* sensors behind a reachability check (fail quiet, retry
     slow)
 claim: {}
-awaiting_action: true
-updated: 2026-10-10 09:54
+updated: 2026-10-10 12:38

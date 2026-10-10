@@ -7,7 +7,7 @@ review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 12:19
+updated: 2026-10-10 12:33
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -39,6 +39,7 @@ action:
   sweep:
     session_gone: 2026-10-10 11:49
     stale_running: 2026-10-10 12:18
+    close_held: 2026-10-10 12:33
   last_failure: unit did not exit 0 (exit_code=1) — unmerged partial work isn't auto-merged
   runner: tony-omen
 comms:
@@ -113,4 +114,7 @@ comms:
 - at: 2026-10-10 12:19
   from: chaba
   text: auto-merged 5aa3e716 (dispatch/20261010-120438-enforcement-plan-gaps-listed-i) → origin/master
+- at: 2026-10-10 12:33
+  from: chaba
+  text: 'merge-sweep: verified — held in review (review_kind=decide — human-gated)'
 claim: {}
