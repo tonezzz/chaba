@@ -37,7 +37,11 @@
   <div class="card">
     <div class="muted">Confirm on the display before tapping — anyone on the tailnet who can see this display's QR can claim it.</div>
     <button id="pairBtn">Add as cast target</button>
+    <div class="row" id="keyRow" hidden>
+      <input id="adminKey" type="password" placeholder="Ada admin key (off-tailnet claim)" autocomplete="off">
+    </div>
     <div id="result"></div>
+    <div class="muted" id="hint"></div>
   </div>
 
   <div class="card">
@@ -86,19 +90,38 @@
     if (!(data.screens || []).length) tb.innerHTML = '<tr><td colspan="4" class="muted">none yet</td></tr>';
   }
 
+  // Tailnet is keyless — show the key field only when the first claim
+  // attempt proves we're off-tailnet (403), then remember it.
+  const keyRow = document.getElementById("keyRow");
+  const keyIn = document.getElementById("adminKey");
+  const hint = document.getElementById("hint");
+  keyIn.value = localStorage.getItem("vcast-admin-key") || "";
+  if (location.hostname.endsWith(".ts.net") || location.hostname === "tony-dell")
+    hint.textContent = "On Tailscale — claims are keyless here.";
+  else
+    hint.textContent = "Not on the tailnet — the first claim will ask for the Ada admin key.";
+
   document.getElementById("pairBtn").addEventListener("click", async () => {
     const out = document.getElementById("result");
     const btn = document.getElementById("pairBtn");
     btn.disabled = true; out.textContent = "pairing…";
+    const body = { sid };
+    const k = keyIn.value.trim();
+    if (k) body.admin_key = k;
     const { status, data } = await api("/claim", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sid }),
+      body: JSON.stringify(body),
     });
     btn.disabled = false;
     if (status === 200) {
+      if (k) localStorage.setItem("vcast-admin-key", k);
       out.innerHTML = `<span class="ok">Paired — Screen #${data.screen} (${data.name})</span>`;
       loadScreens();
+    } else if (status === 403 && !k) {
+      keyRow.hidden = false;
+      keyIn.focus();
+      out.innerHTML = `<span class="err">Off-tailnet claim — paste the Ada admin key above and tap again.</span>`;
     } else if (status === 409) {
       out.innerHTML = `<span class="err">${data.error}</span><br>the name is held by a live display — release it from the admin page first.`;
     } else {
