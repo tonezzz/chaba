@@ -11,7 +11,7 @@ note: 'Read-only first step before merging the systems: one resolver function co
   Second phase (separate card when designed): converge the stores behind the resolver.'
 help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
   bank.allowed_tools gate; ada-kanban-access card for the ACL design history
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:14
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -20,7 +20,28 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:06
+  from: chaba
+  text: dispatched 20261010-080608-unified-acl-resolver-who-can-d on ada-pi
+- at: 2026-10-10 08:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): GOTCHA: `--yolo`/`-y` is advertised in `crush --help` but rejected by the
+    flag p; [confirm-token-retry-expiry] filed from transcript audit — two sessions hit this; runbook docs/kb/mddb-migration-phases.md:
+    Migration Phases — **Objective**: Run ; runbook docs/kb/prompt-preprocessor.md: Prompt / command preprocessor
+    — A read-o; "test_merge_sweep fixture relied on global git identity — tony-dell has none (re; [ada-cms-discovery-fixes]
+    filed by devin dispatch 180802 — ad'
+- at: 2026-10-10 08:14
+  from: devin
+  text: 'attempt 2 started — mapped the three ACL layers (control_policies+grants overlay in memory_banks.control_allowed,
+    person_policies bank ACL, per-bank allowed_tools in _check_memory_write_allowed). Plan: acl_decision() resolver
+    on MemoryBankRegistry, gates delegate to it, ada_ops action=acl_explain exposes the trace.'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-080608-unified-acl-resolver-who-can-d
+claim:
+  session: 20261010-080608-unified-acl-resolver-who-can-d
+  since: 2026-10-10 08:06

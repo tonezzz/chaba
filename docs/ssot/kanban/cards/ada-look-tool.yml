@@ -3,10 +3,10 @@ title: ada_look tool — read eye/latest detections doc (ada-pi)
 brief: 'Implement the ada_look voice tool in ada-pi: GET the ada-ha-scenario-reports/eye:latest MDDB doc, answer
   "what do you see" with class counts + source + freshness. Read-only; never triggers actions on detections (confirm-gate
   model preserved).'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-07
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:15
 note: 'Phase 4 of nest-edge-vision. The write side is done in chaba: /apps/eye/?pub=N rewrites ada-ha-scenario-reports
   eye/latest every N s with {ts, src, model, detections[{cls,score,box}], ua}. Full spec (declaration + tool_runner
   sketch) in docs/ssot/jobs/eye/2026-10-07-nest-edge-vision.yml handoff_ada_look.'
@@ -23,9 +23,19 @@ blocked_by: []
 autonomy: t1
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc03
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:13
+  from: idc03
+  text: claimed
+- at: 2026-10-10 08:13
+  from: chaba
+  text: started devin-task-20261010-081352-in-ada-pi-1-tools-eye-yml-mani on idc03 (dispatch)
+- at: 2026-10-10 08:15
+  from: devin
+  text: 'exploring: card found, locating nest-edge-vision job doc for the ada_look snippet'

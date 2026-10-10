@@ -3,7 +3,7 @@ title: Speech capture degraded — "ฟังไม่ชัด" ×8, enroll_spe
 brief: 'Audit 2026-10-09: ~8 "didn''t catch that" turns across sessions; speaker_profiles returned "not enough speech
   captured in the buffer" ×3; ada_enroll_speaker for KK failed with "0.0s captured — capture bridge may be dead".
   Tony noted the line drops ("AI หลุดบ่อย") — related to the kanban card Ada filed herself.'
-column: backlog
+column: doing
 review_kind: verify
 priority: high
 kind: bugfix
@@ -32,10 +32,20 @@ spec: 'Check the mic/capture bridge feeding speaker_profiles and enrollment (the
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc01
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
-updated: 2026-10-10 08:03
+- at: 2026-10-10 08:05
+  from: idc01
+  text: claimed
+- at: 2026-10-10 08:05
+  from: chaba
+  text: started devin-task-20261010-080529-check-the-mic-capture-bridge-f on idc01 (dispatch)
+- at: 2026-10-10 08:05
+  from: devin
+  text: Investigating mic/capture bridge (0.0s capture) and session-rotation context loss. Starting in worktree.
+updated: 2026-10-10 08:05

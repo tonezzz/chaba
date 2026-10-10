@@ -1,7 +1,7 @@
 id: investigate-gev-youtube-local-media-fail-d043e5
 title: Investigate GEV, YouTube, local media failures
-column: backlog
-updated: 2026-10-10 08:04
+column: review
+updated: 2026-10-10 08:31
 priority: high
 note: 'System showing multiple failures: Map 404, YT Forbidden, local media Timed Out. Sending error brief via Telegram.'
 comms:
@@ -12,7 +12,86 @@ comms:
 - at: 2026-10-10 08:04
   from: devin
   text: armed for dispatch (queue sweep, repo=chaba)
+- at: 2026-10-10 08:06
+  from: idc02
+  text: claimed
+- at: 2026-10-10 08:06
+  from: chaba
+  text: started devin-task-20261010-080623-investigate-gev-youtube-local- on idc02 (dispatch)
+- at: 2026-10-10 08:07
+  from: devin
+  text: 'investigating: context found — gev-cmd relay 404 was fixed 10-09 19:55 (strip_prefix); probing live lanes
+    now (gev page/cmd, yt-live-api, vcast/local media)'
+- at: 2026-10-10 08:14
+  from: devin
+  text: 'ROOT CAUSES (ada-ha-tony session 6744c10aab, 10-09 02:24): (1) Map 404 = gev_command relay — Caddy strip_prefix
+    /apps/gev-cmd bug, ALREADY FIXED 10-09 19:55 + durable in ssot.routes.yml; re-verified ok:true. (2) YT Forbidden
+    = transient yt-dlp 403 from YouTube (interleaved with successes) PLUS a real wedge: last cast job (ydYDqZQpim8)
+    spent 4h+ downloading live_chat "subtitles" (chat-replay, Frag1481+) — killed it 08:12, lane free; patched scripts/ops/yt-live.sh
+    to skip live_chat + cap downloads'
+- at: 2026-10-10 08:15
+  from: devin
+  text: 'DONE — all three explained. Map 404: already-fixed gev-cmd strip bug (re-verified ok). YT Forbidden: transient
+    yt-dlp 403s + a 4h live_chat sub crawl — killed, repo patched (needs approved deploy to sync ~/.local/bin).
+    local media Timed Out: idc03 can''t reach LAN 192.168.2.67, pre-check refuses — cards cast-precheck-vantage
+    + voice-dub-recipe-lan-url filed. Commits on dispatch branch (not pushed); outcome + job record written.'
+- at: 2026-10-10 08:17
+  from: idc02
+  text: 'finished (ok): exit=0 ing committed on the dispatch branch (not pushed) with the full writeup in `dispatch-outcome-20261010-080623-inve'
+- at: 2026-10-10 08:17
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:17
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:17
+  from: chaba
+  text: auto-merged 24e2e75c (dispatch/20261010-080623-investigate-gev-youtube-local-) → origin/master
+- at: 2026-10-10 08:17
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:18
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:20
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:21
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:22
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:23
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:24
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:25
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:26
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:27
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:28
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:30
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
+- at: 2026-10-10 08:31
+  from: chaba
+  text: pushed dispatch/20261010-080623-investigate-gev-youtube-local- to origin
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 ing committed on the dispatch branch (not pushed) with the full writeup in `dispatch-outcome-20261010-080623-investigate-gev-youtube-local-.md`.
+    | devin-task-20261010-080623-investigate-gev-youtube-local-.service: Consumed 37.649s CPU time.'
+  verified: true
+claim: {}

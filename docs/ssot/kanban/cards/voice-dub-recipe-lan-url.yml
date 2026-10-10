@@ -1,0 +1,22 @@
+id: voice-dub-recipe-lan-url
+title: voice-dub-demos CMS recipe hands out LAN-only URLs for vcast casts
+column: backlog
+updated: 2026-10-10 08:14
+priority: medium
+tags:
+- cms
+- vcast
+- media
+- docs
+action:
+  type: dispatch
+  repo: chaba
+note: 'The voice-dub-demos CMS page tells Ada to cast http://192.168.2.67/apps/yt-live/<file>.mp4 — correct for
+  the TV (LAN device), wrong for numbered vcast screens when Ada or the display is off-LAN: idc03 cannot reach 192.168.2.67
+  at all (TimeoutError on the URL pre-check, seen 2026-10-09 02:24 session 6744c10aab), and tailnet displays (vcast-real
+  fleet on idc02) cannot either. Update the recipe: for cast_to_screen use https://tony-dell.taila0626a.ts.net/apps/yt-live/<file>.mp4
+  when the target displ'
+comms:
+- at: 2026-10-10 08:14
+  from: tony
+  text: card captured via board-api

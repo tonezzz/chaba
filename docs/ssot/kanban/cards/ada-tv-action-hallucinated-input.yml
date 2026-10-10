@@ -4,7 +4,7 @@ brief: 'Transcript audit 2026-10-09 (16:21 ICT, session cfed319d22): TV booted t
   cmd=type text=''your-username'' then text=''your-password'' — literally typing placeholder strings into a live
   login form. She also claimed TV was "playing Dancing In The Street" at 17:00 while yt status said translating-subs
   and the screen was dark.'
-column: backlog
+column: doing
 review_kind: verify
 priority: high
 kind: bugfix
@@ -35,10 +35,21 @@ spec: 'In ada-pi tv_action: (1) refuse cmd=type when text is absent or looks lik
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc01
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
-updated: 2026-10-10 08:03
+- at: 2026-10-10 08:05
+  from: idc01
+  text: claimed
+- at: 2026-10-10 08:05
+  from: chaba
+  text: started devin-task-20261010-080541-in-ada-pi-tv-action-1-refuse-c on idc01 (dispatch)
+- at: 2026-10-10 08:19
+  from: devin
+  text: 'working: adding cmd=type placeholder refusal in tv_action + media title/play-state grounding guard in realtime_provider;
+    tests next'
+updated: 2026-10-10 08:19

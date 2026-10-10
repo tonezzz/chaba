@@ -3,10 +3,10 @@ title: Speaker-ID misidentification binds session owner to wrong ACL — rebind 
 brief: 'Session 7a74536b32 (2026-10-07): Tony was identified as KK twice (64% voiceprint match). Consequence: ada_memory_search
   and cms_publish_page were denied with "Only the session owner can run this action" — the session owner was bound
   to KK''s restricted identity, silently stripping Tony''s owner-only tools mid-session.'
-column: backlog
+column: doing
 priority: high
 program: ada-tools
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:10
 tags:
 - speaker-id
 - acl
@@ -22,7 +22,17 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 08:09
+  from: tony-omen
+  text: claimed
+- at: 2026-10-10 08:09
+  from: chaba
+  text: started devin-task-20261010-080914-speaker-id-misidentification-b on tony-omen (dispatch)
+- at: 2026-10-10 08:10
+  from: devin
+  text: dispatch picked up — locating speaker-id owner binding + ACL gate code
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: tony-omen

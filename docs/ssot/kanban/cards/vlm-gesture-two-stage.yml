@@ -1,0 +1,26 @@
+id: vlm-gesture-two-stage
+title: Gesture control v2 — two-stage VLM intent + landmark precision
+kind: feature
+priority: medium
+column: backlog
+autonomy: t2
+brief: "Tony via Ada (2026-10-09): explore VLM for gesture control instead of
+  pure landmark tracking — two-stage: a vision-language model watches the
+  scene and reads INTENT first (what the hand is pointing at / about to do),
+  then the landmark tracker delivers precision positioning. Shipped v1 is
+  MediaPipe landmarks on iPhone camera → relay → TV cursor (gesture-relay,
+  verified live 2026-10-09). YOLO bounding-box approach was assessed and
+  rejected — wrong primitive. VLM stage could run on OR :free vision model
+  (nemotron nano-omni-30b is omni-modal) or local moondream (already on
+  idc03 ollama) — frame rate is the constraint; likely VLM on sampled
+  frames + tracker at full rate."
+depends_on: []
+comms:
+- at: 2026-10-10 10:10
+  from: devin
+  text: "filed — Tony's 'use VLM now instead of mediapipe, two-stage intent+precision'
+    ask from ada transcript ed55a8fcb6; supersedes the 7 YOLO-gesture dupes
+    closed same day. v1 landmark system is live, so this is an upgrade track
+    not a rescue."
+created: '2026-10-10'
+updated: 2026-10-10 10:10

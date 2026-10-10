@@ -1,9 +1,9 @@
 id: omen-gpu-display-wedge
 title: tony-omen display engine wedges under GPU-bench dispatch load (nvidia presentation hang)
-column: backlog
+column: review
 priority: high
 program: chaba-ops
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:31
 tags:
 - omen
 - gpu
@@ -22,8 +22,13 @@ spec: 'Make omen GPU dispatches safe on an interactive host: 1) nice/ionice + sy
   is the right seam — it already builds the systemd-run invocation.'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 ushed — redeploy to tony-omen is a one-line `scp` noted in the runbook and card comms when approved.
+    | devin-task-20261010-080645-make-omen-gpu-dispatches-safe-.service: Consumed 1min 675ms CPU time, 109.3M memory
+    peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-08 09:45
   from: devin
@@ -32,3 +37,53 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 08:06
+  from: idc02
+  text: claimed
+- at: 2026-10-10 08:06
+  from: chaba
+  text: started devin-task-20261010-080645-make-omen-gpu-dispatches-safe- on idc02 (dispatch)
+- at: 2026-10-10 08:06
+  from: devin
+  text: Session started in dispatch worktree — locating runner-agent.py and mapping the systemd-run seam.
+- at: 2026-10-10 08:26
+  from: devin
+  text: 'Implemented in scripts/board/runner-agent.py (worktree dispatch/20261010-080645): 1) all task units on
+    desktop-labeled hosts get Nice=10 + ionice best-effort/6 + CPUQuota 75%CPU + MemoryMax 75%RAM — container/script
+    via systemd-run argv, dispatch via DISPATCH_UNIT_PROPS + post-start set-property/renice; 2) gpu-labeled cards
+    now pass an nvidia-smi VRAM pre-flight BEFORE claim — action.gpu.min_free_mb vs free, 512MB host floor; shortfall
+    defers (card stays queued), need>total refused with comms; 3'
+- at: 2026-10-10 08:26
+  from: devin
+  text: 'RUNBOOK — display wedge manual unstick (also in docs/ssot/jobs/kanban/2026-10-10-omen-gpu-dispatch-safety.yml):
+    symptom = monitor + AnyDesk frozen on a stale frame, ssh alive. 1) ssh tony-omen. 2) `cat /sys/class/tty/tty0/active`
+    + `loginctl list-sessions` — find the Type=x11 session VTNr (GDM user session = vt2). 3) `sudo chvt 3; sleep
+    2; sudo chvt <vt>` — forces a modeset reset, session survives. 4) If the watchdog SIGSTOPped the task it auto-resumes
+    after 2 healthy probes, or `systemctl --use'
+- at: 2026-10-10 08:28
+  from: devin
+  text: 'DONE (branch dispatch/20261010-080645, d7e904e2): runner-agent.py now (a) caps+nices every task unit on
+    desktop-labeled hosts (Nice=10, ionice BE/6, CPUQuota 75%CPU, MemoryMax 75%RAM — dispatch units via DISPATCH_UNIT_PROPS
+    + post-start set-property/renice), (b) pre-flights VRAM before claiming gpu cards (action.gpu.min_free_mb; defer/refuse
+    + comms), (c) watchdogs presentation during gpu tasks (vsync flood or hung xrandr -> throttle -> SIGSTOP ->
+    auto-SIGCONT), (d) chvt unstick in comms + docs/'
+- at: 2026-10-10 08:29
+  from: idc02
+  text: 'finished (ok): exit=0 ushed — redeploy to tony-omen is a one-line `scp` noted in the runbook and card comms
+    when approved. | devin-task'
+- at: 2026-10-10 08:29
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:29
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:29
+  from: chaba
+  text: auto-merged 9c92d5a3 (dispatch/20261010-080645-make-omen-gpu-dispatches-safe-) → origin/master
+- at: 2026-10-10 08:30
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:31
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+claim: {}

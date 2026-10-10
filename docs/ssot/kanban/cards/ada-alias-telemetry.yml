@@ -3,7 +3,7 @@ title: alias-hit rollup — deprecation path for the 91-name compat layer
 brief: 91 retired tool names still route via _ALIASES. conversation.log_event already records the emitted name (alias
   included) — the data exists, nothing aggregates it. Without a deprecation signal the compat layer is permanent
   and the model never converges on canonical names. Waiting in backlog.
-column: backlog
+column: review
 metric: weekly digest shows calls-per-alias; an alias at 0 hits for 14d becomes removal-eligible
 verify: digest lands in ada-ha-ops / reports-index; one real alias retires cleanly
 note: 'Rollup over transcript tool_call events (tool= field): count per emitted name, split declared vs alias. Publish
@@ -12,7 +12,7 @@ note: 'Rollup over transcript tool_call events (tool= field): count per emitted 
   tools nobody calls.'
 help: backend/tool_runner/common.py::_ALIASES; conversation.log_event(tool_call); transcript store; scripts/tool-lint.py
   alias checks
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:31
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -21,7 +21,41 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:06
+  from: chaba
+  text: dispatched 20261010-080626-alias-hit-rollup-deprecation-p on ada-pi
+- at: 2026-10-10 08:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [tools-merge-yt] Done: yt group merged 4 -> 1 — yt(action=cast|status|stop|trans;
+    [logs-weekly-verify] Verified on tony-omen: --dry-run exits 0, rollup renders; a; [lab-cf-kv-claw-channel] built:
+    edge/claw-channel/worker.js (14/14 local checks ; GOTCHA: `--yolo`/`-y` is advertised in `crush --help` but
+    rejected by the flag p; GOTCHA: the OpenRouter account key is valid but has ZERO credit balance — paid m; [ada-dead-turn-guard]
+    done: 3 guards landed in realtime_provi'
+- at: 2026-10-10 08:18
+  from: devin
+  text: 'attempt 2 in progress. Data model: call-logs JSONL function_call.name = emitted name (pre-alias-resolution);
+    session report tool_call tool= is canonical post-rewrite — adding emitted= field so reports carry both. Building
+    scripts/ada/alias_hit_report.py: per-emitted-name rollup (declared|alias|unknown), quiet-days + removal eligibility,
+    dead-surface feed, CMS page report/alias-hits.'
+- at: 2026-10-10 08:29
+  from: devin
+  text: 'done (attempt 2). New scripts/ada/alias_hit_report.py: per-emitted-name rollup over call-logs function_call
+    events (name= is pre-resolution/emitted — the session tool_call.tool was canonical all along; added emitted=
+    to the event so reports carry both going forward). Splits declared|alias|unknown, quiet-day removal eligibility
+    (0 hits/14d observed, partial-window safe), dead-surface list feeds ada-dead-surface-metric. Publishes CMS report/alias-hits
+    -> reports-index + runs/alias-hits/<date>.json'
+- at: 2026-10-10 08:31
+  from: chaba
+  text: run finished (inactive) → review
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-080626-alias-hit-rollup-deprecation-p
+  result: 20261010-080626-alias-hit-rollup-deprecation-p finished (inactive) — see `devin-dispatch logs 20261010-080626-alias-hit-rollup-deprecation-p`
+  merge_pending: true
+claim:
+  since: 2026-10-10 08:06
+review_kind: verify

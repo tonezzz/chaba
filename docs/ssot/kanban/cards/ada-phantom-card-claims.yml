@@ -2,7 +2,7 @@ id: ada-phantom-card-claims
 title: 'Ada phantom-writes: narrates kanban cards that were never filed'
 kind: bug
 priority: high
-column: backlog
+column: doing
 autonomy: t2
 brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ Devin จัดการเรื่องฟังเสียง เรียบร้อยแล้ว อยู่ใน Doing" —
   journal shows NO kanban file call and no such card. Same session, later: "เรื่องปฏิทินได้บันทึกไว้บนบอร์ดแล้ว"
@@ -11,7 +11,7 @@ brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ 
   without the tool result confirming ok:True; (b) kanban tool could return the spoken-confirm phrase; (c) ops-event
   detector for phantom_write_claim already exists — check why it didn''t fire.'
 created: '2026-10-09'
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:31
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -19,7 +19,22 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:05
+  from: mn01
+  text: claimed
+- at: 2026-10-10 08:05
+  from: chaba
+  text: started devin-task-20261010-010520-ada-phantom-writes-narrates-ka on mn01 (dispatch)
+- at: 2026-10-10 08:05
+  from: devin
+  text: 'investigating: looking for kanban write path in ada-pi'
+- at: 2026-10-10 08:31
+  from: devin
+  text: 'fix landed in worktree: (a) DONE-MEANS-DONE + request-capture instructions now require ok before board
+    claims; (b) kanban file does verify-after-write + returns card id; (c) phantom detector gained board vocabulary
+    and a backing-call gate — a passed read no longer whitewashes a write claim. 983 tests, only pre-existing failures.'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: mn01

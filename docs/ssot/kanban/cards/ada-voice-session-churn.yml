@@ -2,14 +2,14 @@ id: ada-voice-session-churn
 title: Ada voice sessions churn ~1/min — disconnects, re-greeting, memory loss between sessions
 kind: bug
 priority: high
-column: backlog
+column: doing
 autonomy: t2
 brief: 'Tony complaint (67b02417a8): "สายมันตัดตลอด ต้องเริ่มคุยใหม่ Ada ก็ลืม". Journal: 52 session start/end/resume
   events in 46min (15:00–15:46). Repeated mid-conversation "สวัสดีครับ Tony" greetings = fresh sessions with cold
   context. Also ada_session_recall returned a multi-day-stale UPS topic as "ล่าสุด" — recency ranking wrong. Two
   sub-bugs: (1) whatever drops the ws every ~2min, (2) recall needs recency-weighted "latest" not just relevance.'
 created: '2026-10-09'
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:11
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -17,7 +17,17 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:05
+  from: idc03
+  text: claimed
+- at: 2026-10-10 08:05
+  from: chaba
+  text: started devin-task-20261010-080544-ada-voice-sessions-churn-1-min on idc03 (dispatch)
+- at: 2026-10-10 08:11
+  from: devin
+  text: 'investigating: reading provider/pwa reconnect paths + live logs on idc03'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: idc03

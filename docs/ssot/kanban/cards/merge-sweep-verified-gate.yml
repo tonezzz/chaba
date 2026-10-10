@@ -1,11 +1,11 @@
 id: merge-sweep-verified-gate
 title: merge-sweep verified:true must check the deliverable, not just the merge
-column: backlog
+column: doing
 kind: bug
 priority: high
 autonomy: t1
 created: '2026-10-09'
-updated: 2026-10-10 08:03
+updated: 2026-10-10 08:27
 tags:
 - dispatch
 - verification
@@ -35,7 +35,19 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 08:06
+  from: idc02
+  text: claimed
+- at: 2026-10-10 08:06
+  from: chaba
+  text: started devin-task-20261010-080633-in-merge-sweep-scripts-board-o on idc02 (dispatch)
+- at: 2026-10-10 08:27
+  from: devin
+  text: 'working it: verified gate = unit exit==0 (exit_code/meta.result/journal/card finish evidence) + produced-work-or-outcome-doc
+    + auto_done_when (defer to kanban-act); fail → mark failed + requeue on the kanban-dispatch retry path. nest-mgr
+    repro covered by the head==base-tip + no-deliverable case.'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc02

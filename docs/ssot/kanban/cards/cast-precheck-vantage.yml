@@ -1,0 +1,21 @@
+id: cast-precheck-vantage
+title: cast_to_screen URL pre-check is vantage-blind — refuses LAN URLs probed from idc03
+column: backlog
+updated: 2026-10-10 08:14
+priority: medium
+tags:
+- vcast
+- ada
+- bug
+action:
+  type: dispatch
+  repo: ada-pi
+note: '2026-10-10 investigation (card investigate-gev-youtube-local-media-fail): cast_to_screen play http://192.168.2.67/apps/yt-live/<file>.mp4
+  to screen 9 returned "URL is unreachable (TimeoutError)" and refused to cast — but the file serves 206 on the
+  LAN and 206 on tailnet. The pre-flight reachability check runs from the Ada backend host (idc03), which has no
+  route to 192.168.2.x. Any LAN-only URL is therefore uncastable by Ada even when the target display could fetch
+  it. Options: (a) downgrade the'
+comms:
+- at: 2026-10-10 08:14
+  from: tony
+  text: card captured via board-api
