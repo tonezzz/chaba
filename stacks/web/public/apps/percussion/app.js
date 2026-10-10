@@ -164,10 +164,10 @@ function render() {
 }
 
 /* ---------- boot ---------- */
-document.getElementById("go").onclick = () => {
+function setRunning(on) {
   if (!S.ac) S.ac = new (window.AudioContext || window.webkitAudioContext)();
   S.ac.resume();
-  S.on = !S.on;
+  S.on = on;
   const b = document.getElementById("go");
   if (S.on) {
     b.classList.add("on"); b.innerHTML = "■<br>live";
@@ -178,5 +178,22 @@ document.getElementById("go").onclick = () => {
     b.classList.remove("on"); b.innerHTML = "▶<br>listen";
     clearInterval(S.timer);
   }
-};
+}
+document.getElementById("go").onclick = () => setRunning(!S.on);
+
+// ?autostart — vcast casts this page as a live display foreground ("play
+// percussion on screen N"): start without waiting for a tap. WebAudio
+// still needs activation; if the AudioContext stays suspended the
+// browser blocked it — the big button stays visible for a real tap.
+if (new URLSearchParams(location.search).has("autostart")) {
+  try {
+    setRunning(true);
+    if (S.ac && S.ac.state === "suspended") {
+      // retry once the context unblocks (a tap anywhere on the page tree)
+      const kick = () => { S.ac.resume(); };
+      document.addEventListener("click", kick, { once: true });
+      document.addEventListener("touchend", kick, { once: true });
+    }
+  } catch (e) { /* blocked — leave the listen button up */ }
+}
 fetchState(); setInterval(fetchState, 30000);   // passive preview state

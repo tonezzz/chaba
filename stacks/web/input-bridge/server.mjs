@@ -43,8 +43,25 @@ const REDEEM_HOSTS = new Set(
 // ---------------------------------------------------------------------------
 const registry = { screens: {}, tombstones: {} };
 const live = new Map(); // screen number -> ws
-const pending = new Map(); // sid -> {ws, label, ts}
+const pending = new Map(); // sid -> {ws, label, ts, code}
 const sockets = new Set(); // every ws the server accepted (for ping sweeps)
+
+// Spoken claim codes: a pending display shows a 4-digit code under its QR
+// so a bystander can tell Ada "claim code 4821" instead of scanning —
+// voice-first pairing. Unique among pending entries only; the code dies
+// with the pending slot (it is not a durable screen identity).
+function mintClaimCode() {
+  for (;;) {
+    const c = String(1000 + Math.floor(Math.random() * 9000));
+    if (![...pending.values()].some(p => p.code === c)) return c;
+  }
+}
+function sidForCode(code) {
+  const c = String(code || "").trim();
+  if (!/^\d{4}$/.test(c)) return "";
+  for (const [sid, p] of pending) if (p.code === c) return sid;
+  return "";
+}
 
 function loadRegistry() {
   try {
@@ -365,6 +382,7 @@ function displaysSnapshot() {
     pending: [...pending.entries()].map(([sid, p]) => ({
       sid,
       label: p.label || null,
+      code: p.code || null,
       since: new Date(p.ts).toISOString(),
     })),
   };
@@ -496,6 +514,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, {
       sid,
       label: p.label || null,
+      code: p.code || null,
       since: new Date(p.ts).toISOString(),
     });
   }
@@ -627,9 +646,9 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return json(res, 400, { error: e.message });
     }
-    const { sid } = body;
+    const sid = body.sid || sidForCode(body.code);
     if (!sid || !pending.has(sid)) {
-      return json(res, 404, { error: "unknown or expired sid" });
+      return json(res, 404, { error: "unknown or expired sid/code" });
     }
     if (!body.admin_key && !tailnetClient(req)) {
       return json(res, 403, { error: "admin key required off-tailnet" });
@@ -832,6 +851,75 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ok: true });
   }
 
+  if (req.method === "POST" && url.pathname === "/screen") {
+    // Retitle / renumber a registered display at will:
+    //   {screen: N, label: "living-room"}  — human name for Ada/reporting
+    //   {screen: N, move_to: M}           — re-slot the number live
+    // `label` is the display name; `name` stays the ada key identity
+    // (renaming that would orphan the display's key on next register).
+    // A live display gets a ws "rescreen" push so its HUD stays honest;
+    // casts already recorded for vcast-N migrate to vcast-M with it.
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    if (!body.admin_key && !tailnetClient(req)) {
+      return json(res, 403, { error: "admin key required off-tailnet" });
+    }
+    const n = parseInt(body.screen, 10);
+    const entry = registry.screens[n];
+    if (!Number.isInteger(n) || !entry)
+      return json(res, 404, { error: "unknown screen" });
+    if (body.label != null) {
+      entry.label = String(body.label).slice(0, 80);
+    }
+    let final = n;
+    const to = parseInt(body.move_to, 10);
+    if (to > 0 && to !== n) {
+      if (slotLive(to))
+        return json(res, 409, { error: `screen ${to} is in use by a live display` });
+      if (registry.screens[to] && !reclaimable(to))
+        return json(res, 409, { error: `screen ${to} is still in its rebind grace` });
+      if (registry.screens[to]) {
+        // dead past grace — same evict rule /claim uses
+        const deadWs = live.get(to);
+        if (deadWs) { deadWs.screen = null; live.delete(to); leaveRoom(deadWs); }
+        delete registry.screens[to];
+      }
+      registry.screens[to] = entry;
+      delete registry.screens[n];
+      final = to;
+      const ws = live.get(n);
+      if (ws) {
+        live.delete(n);
+        live.set(to, ws);
+        ws.screen = to;
+        joinRoom(ws, `vcast-${to}`);   // leaveRoom happens inside joinRoom
+        try {
+          ws.send(JSON.stringify({
+            type: "rescreen", screen: to,
+            name: entry.name, label: entry.label || entry.name,
+          }));
+        } catch (e) {}
+      }
+      for (const k of [...lastCast.keys()]) {
+        if (k.startsWith(`vcast-${n}|`)) {
+          lastCast.set(`vcast-${to}|` + k.slice(`vcast-${n}|`.length),
+                       lastCast.get(k));
+          lastCast.delete(k);
+        }
+      }
+    }
+    saveRegistry();
+    return json(res, 200, {
+      ok: true, screen: final, name: entry.name,
+      label: entry.label || entry.name,
+      moved: final !== n, connected: slotLive(final),
+    });
+  }
+
   json(res, 404, { error: "not found" });
 });
 
@@ -951,17 +1039,19 @@ async function registerDisplay(ws, msg) {
     if (!ws.pendingSid) {
       const sid = `p${Math.random().toString(36).slice(2, 10)}`;
       ws.pendingSid = sid;
-      pending.set(sid, { ws, label, ts: Date.now() });
+      pending.set(sid, { ws, label, ts: Date.now(), code: mintClaimCode() });
     }
     const p = pending.get(ws.pendingSid);
     p.ws = ws;
     p.label = label;
     p.ts = Date.now();
     if (devId) p.device_id = devId;
+    if (!p.code) p.code = mintClaimCode();   // entries predating codes
     ws.send(
       JSON.stringify({
         type: "pending",
         sid: ws.pendingSid,
+        code: p.code,
         reason: apiKey ? "key rejected" : "no key",
       })
     );
@@ -1012,7 +1102,8 @@ async function registerDisplay(ws, msg) {
   ws.screen = screen;
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
-  ws.send(JSON.stringify({ type: "registered", screen, name }));
+  ws.send(JSON.stringify({ type: "registered", screen, name,
+                           label: entry.label || name }));
   // restore the last casts after a reconnect — pane-keyed, layout first so
   // content lands in the right sub-screens (a ws flap no longer blanks it)
   const prefix = `vcast-${screen}|`;

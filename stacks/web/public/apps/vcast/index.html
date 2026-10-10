@@ -55,7 +55,19 @@
     #screenLabel { font-size: 1.4rem; color: var(--muted); }
     #pairQr { background: #fff; padding: 1.2rem; border-radius: 12px; }
     #pairQr img { display: block; width: min(56vw, 320px); height: auto; image-rendering: pixelated; }
+    #pairCode { font-size: clamp(2.6rem, 10vw, 6rem); font-weight: 800; letter-spacing: 0.18em;
+      background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
     #pairHint { color: var(--muted); font-size: 1rem; max-width: 30rem; }
+    /* bg mode: the veil covers the stage visually but leaves panes in the
+       DOM and running — audio keeps playing underneath (moving the iframe
+       would reload it and kill WebAudio, so we cover, not reparent) */
+    #veil { position: fixed; inset: 0; z-index: 65; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; text-align: center; background: var(--bg); }
+    #veilIcon { font-size: clamp(3rem, 12vw, 6rem); }
+    #veilNum { font-size: clamp(2rem, 8vw, 5rem); font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #veil .note { color: var(--muted); font-size: 0.95rem; max-width: 26rem; }
     #hud {
       position: fixed; left: 0.6rem; bottom: 0.6rem; z-index: 20; font-size: 0.72rem;
       color: var(--muted); background: rgba(2,6,23,0.75); padding: 0.3rem 0.6rem; border-radius: 6px;
@@ -94,7 +106,14 @@
 
   <div id="pair">
     <div id="pairQr"></div>
+    <div id="pairCode"></div>
     <div id="pairHint">Unpaired display — scan with the admin phone to add it as a cast target.</div>
+  </div>
+
+  <div id="veil">
+    <div id="veilIcon">♫</div>
+    <div id="veilNum">?</div>
+    <div class="note" id="veilNote">playing in the background</div>
   </div>
 
   <div id="hud"><span class="dot" id="dot"></span><span id="hudText">connecting</span></div>
@@ -141,6 +160,7 @@
     const dot = document.getElementById("dot");
     const toast = document.getElementById("toast");
     const audioGate = document.getElementById("audioGate");
+    const veil = document.getElementById("veil");
 
     let ws = null, wsRetry = 0;
     let screenNum = null, audioOK = false;
@@ -302,16 +322,43 @@
       for (const c of [p.video, p.img, p.frame])
         c.style.display = c === el ? "block" : "none";
     }
+    // human title assigned via POST /screen {label} — shown next to the
+    // number so "screen 5 · living-room" reads naturally
+    let screenTitle = "";
+    function refreshIdentity() {
+      document.getElementById("screenNum").textContent = screenNum != null ? `#${screenNum}` : "?";
+      document.getElementById("screenLabel").textContent =
+        screenNum != null
+          ? `Screen ${screenNum} · ${screenTitle || deviceLabel()}`
+          : "registered";
+    }
     function showIdle() {
       teardown();
       showOnly(idle);
-      document.getElementById("screenNum").textContent = screenNum != null ? `#${screenNum}` : "?";
-      document.getElementById("screenLabel").textContent =
-        screenNum != null ? `Screen ${screenNum} · ${deviceLabel()}` : "registered";
+      refreshIdentity();
       setHud(`screen ${screenNum} idle`, true);
       sendState("idle");
     }
-    function showPair(sid) {
+    // -- background mode: cover the stage with a veil but leave panes
+    //    mounted — an audio app (e.g. percussion) keeps playing while the
+    //    screen reads as idle. Never reparent the iframe: DOM moves reload
+    //    it and kill WebAudio. ------------------------------------------
+    let bgOn = false, preBgState = "idle", preBgDetail = "";
+    function setBg(on) {
+      on = !!on;
+      if (on === bgOn) return;
+      bgOn = on;
+      veil.style.display = on ? "flex" : "none";
+      if (on) {
+        document.getElementById("veilNum").textContent =
+          screenNum != null ? `#${screenNum}` : "";
+        preBgState = lastState; preBgDetail = lastDetail;
+        sendState("bg", lastDetail || "background");
+      } else {
+        sendState(preBgState, preBgDetail);
+      }
+    }
+    function showPair(sid, code) {
       teardown();
       showOnly(pair);
       const el = document.getElementById("pairQr");
@@ -322,8 +369,14 @@
         qr.make();
         el.innerHTML = qr.createImgTag(6);
       } catch (e) { el.textContent = pairBase + sid; }
+      // spoken claim path — a bystander reads the code to Ada instead of
+      // scanning (relay resolves code -> sid inside /claim)
+      document.getElementById("pairCode").textContent = code || "";
+      document.getElementById("pairHint").textContent = code
+        ? `Tell Ada: "claim display ${code}" — or scan the QR with the admin phone.`
+        : "Unpaired display — scan with the admin phone to add it as a cast target.";
       setHud("unpaired — awaiting claim", true);
-      sendState("unpaired", sid);
+      sendState("unpaired", sid + (code ? ` code=${code}` : ""));
     }
     // YouTube/Vimeo page URLs can't be a <video> source and their watch pages
     // refuse iframes (X-Frame-Options) — rewrite to the embed player, which is
@@ -790,14 +843,33 @@
     }
 
     function handle(msg) {
+      // new content or a stop lifts the background veil — the cast replaces
+      // whatever was playing anyway, so the screen shows it honestly
+      if (bgOn && ["play", "image", "nav", "audio", "stop", "layout",
+                   "uplink-start"].includes(msg.type)) setBg(false);
       switch (msg.type) {
         case "registered":
           screenNum = msg.screen;
+          screenTitle = msg.label || "";
           window.__vcastScreen = screenNum; // same-origin iframes (e.g. GEV) read this to identify their screen to the gev command relay
           showIdle();
           break;
+        case "rescreen":
+          // POST /screen moved the number live — keep HUD/idle/iframe view
+          // of "which screen am I" consistent without a page reload
+          screenNum = msg.screen;
+          screenTitle = msg.label || screenTitle;
+          window.__vcastScreen = screenNum;
+          refreshIdentity();
+          setHud(`screen ${screenNum}`, true);
+          showToast(`this display is now screen ${screenNum}`);
+          sendState(lastState, lastDetail);
+          break;
+        case "bg":
+          setBg(msg.on !== false && msg.mode !== "off");
+          break;
         case "pending":
-          showPair(msg.sid);
+          showPair(msg.sid, msg.code);
           break;
         case "dismissed":
           teardown();
