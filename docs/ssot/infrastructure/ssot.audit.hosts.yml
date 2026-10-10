@@ -1118,6 +1118,13 @@ hosts:
         expected_state: enabled
         critical: false
         note: posts host_online ops-event at boot (LAN + tailnet IP)
+      - name: runner-agent.timer
+        type: systemd-user
+        expected_state: enabled
+        critical: false
+        note: 'dispatch lane — RUNNER_CAP=2, labels cpu,dev,portable
+          (installed 2026-10-10; claims unlabeled + cpu/dev/portable
+          cards via board-api)'
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
