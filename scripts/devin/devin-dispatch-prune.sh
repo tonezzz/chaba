@@ -186,7 +186,7 @@ PY
         printf '%s\n' "$payload" | python3 "$EVENT_LOG" add - >/dev/null 2>&1 && return 0
     fi
     printf '%s\n' "$payload" | ssh -o BatchMode=yes -o ConnectTimeout=8 \
-        "${EVENT_SSH:-tony-dell-lan}" \
+        "${EVENT_SSH:-tony-dell}" \
         "python3 ~/.config/home-assistant/scripts/chaba-event-log.py add -" \
         >/dev/null 2>&1 || true
     return 0

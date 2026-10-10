@@ -12,6 +12,15 @@ lessons:
   - id: tailscaled-ssh-intercepts-plain-ssh
     title: ssh <tailnet-name> from other hosts hits interactive re-auth — services must use the LAN path
     severity: high
+    superseded: |
+      2026-10-10 — REVERSED (card devin-dispatch-lan-ip). `tailscale debug
+      prefs` on tony-dell shows RunSSH:false — tailscaled no longer
+      intercepts :22; plain sshd (0.0.0.0:22) answers key auth on the tailnet
+      IP. Verified BatchMode ssh tony-dell from idc02/idc03/mn01/tony-omen
+      while `ssh 192.168.2.67` timed out live. The LAN-only rule it produced
+      became the bug: service ssh must target `tony-dell` (tailnet), which
+      survives LAN partitioning. If Tailscale SSH is ever re-enabled on
+      tony-dell, this tradeoff must be re-evaluated.
     symptom: |
       `ssh tony-dell` from tony-omen/mn01 hangs printing "Tailscale SSH requires an
       additional check" + a login.tailscale.com link. deploy-ada.sh stalled for
@@ -25,10 +34,13 @@ lessons:
       deploy-ada.sh emit_event gained -o ConnectTimeout=8 -o BatchMode=yes.
       Generated a dedicated mn01->tony-dell ed25519 key + ssh config IdentityFile;
       idc01 already had a key.
+      [superseded 2026-10-10: ADA_DEVIN_DISPATCH_HOST default flips to the
+      tailnet name `tony-dell` — see superseded note above.]
     prevention: |
-      Any service-to-service ssh in this infra should target the LAN IP or an
-      explicit ssh config alias, never the tailnet hostname. Interactive `ssh
-      tony-dell` still works for humans after opening the printed auth link.
+      Service-to-service ssh targets must survive LAN partitioning — use the
+      tailnet name/IP (`tony-dell`), not the LAN address. If Tailscale SSH is
+      re-enabled on the target and re-introduces check-mode auth prompts,
+      re-evaluate; otherwise the tailnet path is canonical.
 
   - id: collect-unit-result-loss
     title: systemd-run --collect destroys the unit Result — record exit_code yourself

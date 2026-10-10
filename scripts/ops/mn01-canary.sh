@@ -2,11 +2,12 @@
 # mn01-canary.sh — nightly standby-verification for mn01 (Ada standby + burst lane).
 # Verifies: ada-pi checkout freshness, .venv import smoke, secrets presence,
 # mddb REST reachability, idc03 ada services (the things mn01 stands by for),
-# tailscale up. Emits a chaba-admin event via EVENT_SSH (LAN ssh to dell).
+# tailscale up. Emits a chaba-admin event via EVENT_SSH (ssh tony-dell over
+# tailnet — survives LAN partitioning).
 # Exit 0 on all-ok, 1 on any failure.
 set -uo pipefail
 
-EVENT_SSH="${EVENT_SSH:-192.168.2.67}"
+EVENT_SSH="${EVENT_SSH:-tony-dell}"
 ADA_REPO="${ADA_REPO:-$HOME/CascadeProjects/ada-pi}"
 MDDB_URL="${MDDB_URL:-http://100.102.134.91:11023}"
 

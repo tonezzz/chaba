@@ -27,7 +27,7 @@ MDDB="${MDDB_URL:-http://100.102.134.91:11023/v1}"
 COLLECTION="${JOB_COLLECTION:-ada-ha-bank-devin-handoff}"
 HA_URL="${HA_URL:-https://tony-dell.taila0626a.ts.net:8123}"
 EVENT_LOG="${EVENT_LOG:-$HOME/.config/home-assistant/scripts/chaba-event-log.py}"
-EVENT_SSH="${EVENT_SSH:-tony-dell-lan}"
+EVENT_SSH="${EVENT_SSH:-tony-dell}"
 SECRET_ENV="${JOB_SECRET_ENV:-$HOME/.config/secrets/home-assistant-token.env}"
 SELF="$(readlink -f "$0")"
 

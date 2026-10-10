@@ -134,7 +134,7 @@ conversation ──ada_remember/extract──▶ ada-ha-bank-devin-handoff (spec
               triage / Tony: "start a devin session … check the ada handoff"
                                            ▼
               Ada devin_dispatch (confirmed=true, dedup 600s/0.6)
-                                           │ ssh 192.168.2.67 (LAN IP!)
+                                           │ ssh tony-dell (tailnet)
                                            ▼
               devin-dispatch start <repo> "<task>" on tony-dell
                 ├─ worktree ~/CascadeProjects/dispatch-wt-<id>  (dispatch/<id>)
@@ -151,9 +151,11 @@ conversation ──ada_remember/extract──▶ ada-ha-bank-devin-handoff (spec
 2. **Renderer surfaces it** — `handoff-*.yml` appears in the repo inbox on the
    next watch tick.
 3. **Dispatch** — Ada `devin_dispatch(repo, task)` →
-   `ssh -o BatchMode=yes 192.168.2.67 ~/.local/bin/devin-dispatch start`.
-   The LAN IP is mandatory: the tailnet name hits tailscaled-ssh interactive
-   re-auth and hangs (see learnings doc). In-process + remote dedup
+   `ssh -o BatchMode=yes tony-dell ~/.local/bin/devin-dispatch start`.
+   The tailnet name is mandatory (2026-10-10 reversal): plain sshd listens on
+   0.0.0.0:22 and Tailscale SSH is disabled on tony-dell (`RunSSH: false`), so
+   BatchMode key auth works over the tailnet — and survives LAN partitioning,
+   which the old LAN-IP target did not. In-process + remote dedup
    (600 s window, containment ≥0.6) prevents double-dispatch on model retries.
 4. **Isolation** — `devin-dispatch` cuts a worktree from the host's local HEAD,
    writes `prompt.txt` with the unattended rails (worktree-only, no push, no
@@ -181,7 +183,7 @@ independently:
 
 | Channel | Target | Content |
 |---|---|---|
-| chaba-admin event | Events feed (local `chaba-event-log.py`, or ssh `tony-dell-lan` from other hosts) | `devin task <id>: done|FAILED|needs input` + outcome text |
+| chaba-admin event | Events feed (local `chaba-event-log.py`, or ssh `tony-dell` (tailnet) from other hosts) | `devin task <id>: done|FAILED|needs input` + outcome text |
 | iPhone notify | `notify.mobile_app_tony_ip` via tony-ha loopback REST | title + truncated outcome/question |
 | Outcome doc | `devin/<session_id>` in `ada-ha-bank-devin-tony` | `Dispatched task <id> (unit, result). <last agent message>` |
 | **Job ledger** | `job/<task-id>` in **`ada-ha-bank-devin-handoff`** | `Job <id> on <host>: running|done|failed|awaiting-user.` + needs-input question + summary |
@@ -211,8 +213,12 @@ GCs the `handoff-*.yml` inbox file — keeping the inbox to live items only.
 
 ## Gotchas (learned the hard way)
 
-- **ssh must use the LAN IP** (`192.168.2.67`), never the tailnet name —
-  tailscaled-ssh demands periodic browser re-auth and stalls services.
+- **ssh must use the tailnet name** (`tony-dell` → 100.68.142.13), never the
+  LAN IP — the LAN path dies when the host is off-LAN or wedged (dispatches
+  silently failed all session window on 2026-10-09). The earlier
+  "LAN-only" rule assumed tailscaled-ssh intercepts :22; verified
+  2026-10-10 that `RunSSH` is `false` on tony-dell and BatchMode key auth
+  works over tailnet from idc02/idc03/mn01/tony-omen.
 - **`devin -p` writes no session summaries** — outcome comes from
   `transcript.json`'s last agent message, not the devin bank sync.
 - **`systemd-run --collect` destroys the unit Result** — the `exit_code` file

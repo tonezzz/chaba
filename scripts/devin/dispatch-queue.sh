@@ -8,7 +8,7 @@
 # TSV row:  chaba<TAB>Do the thing, referencing prior session <sid>.
 #
 # Typical:  job-run start drain-x "drain N specs" -- \
-#             ssh tony-dell-lan 'bash ~/.local/bin/dispatch-queue /tmp/q.tsv 3'
+#             ssh tony-dell 'bash ~/.local/bin/dispatch-queue /tmp/q.tsv 3'
 set -u
 TSV="${1:?spec tsv required}"; CAP="${2:-3}"
 BIN="${DEVIN_DISPATCH:-$HOME/.local/bin/devin-dispatch}"

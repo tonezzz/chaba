@@ -182,8 +182,10 @@ PY
         printf '%s\n' "$payload" | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1 && return 0
     fi
     # Non-event-feed hosts (mn01, tony-omen): ship to the shared feed via ssh.
+    # Tailnet name, not tony-dell-lan — the LAN path dies exactly when the
+    # host is off-LAN/wedged, i.e. when these events matter most.
     printf '%s\n' "$payload" | ssh -o BatchMode=yes -o ConnectTimeout=8 \
-        "${EVENT_SSH:-tony-dell-lan}" \
+        "${EVENT_SSH:-tony-dell}" \
         "python3 ~/.config/home-assistant/scripts/chaba-event-log.py add -" \
         >/dev/null 2>&1 || true
     return 0
