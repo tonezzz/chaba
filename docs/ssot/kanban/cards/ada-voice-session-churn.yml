@@ -11,6 +11,18 @@ brief: 'Tony complaint (67b02417a8): "สายมันตัดตลอด �
 created: '2026-10-09'
 updated: 2026-10-10 11:48
 comms:
+- at: 2026-10-10 16:30
+  from: devin
+  text: >
+    Root-cause trace (audit window 10-09→10-10): churn episodes are driven by
+    ws keepalive timeout on the video path — 'camera frame send failed: sent
+    1011 keepalive ping timeout; no close frame received' (caller=admin,
+    video=high). ~40-60s after Gemini Live connects, the client stops
+    answering pings -> session dies -> reconnect -> fresh greeting (the
+    ha-f52670c6 greeting-every-5min loop in transcript fd210c4fbe). Not a
+    quota/429 issue despite idc03 spend-warn. Suggest: ws ping keepalive
+    hardening on video=high sessions or camera frame batching so the event
+    loop isn't starved.
 - at: 2026-10-09 16:05
   from: devin
   text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
