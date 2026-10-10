@@ -45,6 +45,10 @@ python3 scripts/board/runner-fleet-health.py || echo "runner-fleet-health failed
 python3 scripts/ada/disk-trend-watch.py --reports-root "$SRC/reports" \
     || echo "disk-trend-watch failed (non-fatal)"
 python3 scripts/board/request-sweep.py || echo "request-sweep failed (non-fatal)"
+# release-lifecycle gate check: bounce `release:`-tracked cards in
+# review/done that lack the required comms-tag evidence; stamps soak_until
+# on first sight in review (the beta soak timer).
+python3 scripts/ada/lifecycle-check.py || echo "lifecycle-check failed (non-fatal)"
 # L2 'kanban' report node — stats read the live cards in the served
 # checkout; outputs mirror back into $SRC (reports/kanban + web data).
 python3 scripts/board/kanban-stats.py \

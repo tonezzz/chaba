@@ -211,6 +211,18 @@ card_schema:
   # Refreshed whenever the agent's take changes; NOT a decision.
   advice: "{from: devin|ada|chaba, at: 'YYYY-MM-DD HH:MM', text: 'the
       recommendation in one or two sentences'} — bare string also accepted"
+  # optional — release lifecycle opt-in (ssot.release-lifecycle.yml). Truthy
+  # (convention: the lane name, e.g. `release: tony`) puts the card under the
+  # stage-evidence gates enforced by scripts/ada/lifecycle-check.py inside
+  # kanban-sync: review requires [exp]+[alpha] comms tags; done requires
+  # [exp alpha beta smoke rc prod] + the beta soak bar; shortfalls bounce
+  # the card back to doing with a comms note naming the missing gate.
+  release: "lane/track name (e.g. tony|ada|michael|ada-pi) — opt into the
+    release-lifecycle comms-tag gates"
+  soak_until: "YYYY-MM-DD HH:MM — stamped by lifecycle-check.py the first
+    time a release card is seen in review (= entry + bars.beta.soak_hours).
+    The beta soak is satisfied when this passes OR a [beta] comms cites
+    >= sessions_min real sessions."
   # optional — append-only log; every actor writes here (board shows last 4)
   comms:
     - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}

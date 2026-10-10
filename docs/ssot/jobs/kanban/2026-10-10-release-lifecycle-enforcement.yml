@@ -1,0 +1,114 @@
+title: "release-lifecycle enforcement — comms tags, soak timer, smoke gates"
+subtitle: >-
+  wires the gaps listed in ssot.release-lifecycle.yml deployment.gaps:
+  release:-tracked cards need [exp]/[alpha] in review and the full tag chain
+  + soak in done; promote-lane.sh enforces [smoke]+soak before --confirm and
+  runs the post-deploy smoke itself; dev-twin-smoke.py produces the playlive
+  evidence
+icon: 🚦
+id: 2026-10-10-release-lifecycle-enforcement
+status: done
+owner: devin-dispatch
+project: chaba
+card: release-lifecycle-standard
+branch: dispatch/20261010-120438-enforcement-plan-gaps-listed-i
+started: "2026-10-10"
+completed: "2026-10-10"
+
+context:
+  ask: >-
+    Card release-lifecycle-standard: implement the enforcement plan for the
+    standard's deployment.gaps — comms tag convention, lifecycle-check.py
+    in kanban-sync, per-lane parity (already landed via ha-release-pipeline),
+    soak_until soak timer, post-deploy smoke inside promote-*.sh, and the
+    dev-twin playlive pass as the required alpha->pre-prod gate.
+  prior_attempt: >-
+    The 10:35 idc03 dispatch committed 8 files but its merge conflicted on
+    promote-michael.sh and the worktree was gone — nothing landed. This run
+    reimplemented the same plan on tony-omen; promote-michael.sh itself was
+    left untouched (all hooks live in promote-lane.sh).
+
+design:
+  opt_in: >-
+    Cards join the lifecycle with a truthy `release:` field (convention:
+    the lane name). Opt-in keeps report/chore cards exempt — no mass
+    bouncing of existing cards.
+  tag_convention: >-
+    [exp] [alpha] [beta] [smoke] [rc] [prod] anywhere in comms text =
+    stage evidence. Documented in ssot.release-lifecycle.yml
+    evidence_convention + ssot.kanban.yml card_schema.
+  checker: >-
+    scripts/ada/lifecycle-check.py reads bars from the standard and runs
+    inside kanban-sync.sh. review-column release cards missing [exp]/[alpha]
+    and done-column cards missing any tag (or the soak bar) bounce to doing
+    with a comms note naming the missing gate. It also stamps soak_until
+    the first time a release card is seen in review (entry + soak_hours) —
+    the soak timer lives on the card, and survives any review-entry path.
+    `--gate <card.yml> --stage review|preprod|done` is the read-only mode.
+  preprod_gate: >-
+    promote-lane.sh with --card runs the checker's --gate preprod mode
+    before honoring --confirm on a release card: [smoke] evidence +
+    satisfied soak required — no dev-twin playlive evidence, no promotion
+    (Tony 2026-10-08). Dry-run warns instead of refusing.
+  post_deploy_smoke: >-
+    Inside promote-lane.sh after the parity-after diff: prod /api/ 200 +
+    parity-after rc==0 + bundle 200 (when in scope). PASS -> [prod] comms;
+    FAIL -> exit 1 with the rollback hint and a [prod] FAIL comms — well
+    inside the 30-min bar.
+  dev_twin_smoke: >-
+    scripts/home-assistant/dev-twin-smoke.py drives playlived
+    (playwright-headless, token injected via hassTokens like
+    snapshot-card.py; env/file/refresh auth from the lanes registry),
+    probes the dev twin's dashboard for HA shell + rendered cards
+    (optionally --views + --selector), saves screenshot + JSON verdict to
+    reports/dev-twin-smoke/ and posts [smoke] comms to --card.
+
+files:
+- scripts/ada/lifecycle-check.py
+- scripts/ada/kanban-sync.sh
+- scripts/home-assistant/dev-twin-smoke.py
+- scripts/home-assistant/promote-lane.sh
+- docs/ssot/infrastructure/ssot.release-lifecycle.yml
+- docs/ssot/kanban/ssot.kanban.yml
+- docs/ssot/infrastructure/ssot.home-assistant.howto.yml
+- docs/ssot/jobs/kanban/2026-10-10-release-lifecycle-enforcement.yml
+
+verified:
+- >-
+  lifecycle-check.py on a synthetic 6-card dir: review card missing
+  [exp]/[alpha] bounced to doing + soak_until stamped; compliant review
+  card keeps column + gets soak clock; done card closed early (soak_until
+  future) bounced despite full tags; done card satisfying the >=3-sessions
+  [beta] bar passes; non-release card untouched. Second pass idempotent.
+- >-
+  --gate mode: preprod on a card missing [smoke]+soak exits 1 with the
+  missing list; non-release card exits 0 'not release-tracked'; compliant
+  card exits 0 — the shapes promote-lane.sh's REFUSING path consumes.
+- >-
+  Dry-run on the real board (364 cards): 'all release cards gate-clean' —
+  no release:-tracked cards exist yet, so the rollout bounces nothing.
+- >-
+  py_compile both new scripts; bash -n promote-lane.sh + kanban-sync.sh;
+  yaml.safe_load on all three edited SSOT files; ssot-validate-all: the
+  only error is the pre-existing jobs/vcast/2026-10-10-gev-yt-local-media-
+  failures.yml (not this change); pytest tests/ha tests/board tests/ada —
+  135 passed.
+
+notes:
+- >-
+  Gate 3 (per-lane parity) already landed in the ha-release-pipeline merge —
+  the standard's parity entry now names frontend-parity-check.sh as
+  deployed, not a gap.
+- >-
+  Not live-verified end to end: dev-twin-smoke.py needs a reachable
+  playlived + dev twin (michael-dev is reachable; tony-dev/ada-dev are
+  still `planned:` — the script exits 2 with the ha-dev-instances pointer).
+  The first real release card should run it with --inst michael-dev.
+- >-
+  Soak semantics: soak_until is never reset — a bounced card that returns
+  to review keeps its original clock (soak measures real-use time on the
+  twin, orthogonal to column).
+- >-
+  Remaining manual bars (now the documented gaps): zero attributable
+  incident cards (no auto-linkage yet), and [alpha]'s 2-consecutive-passes
+  claim is human/agent-attested, not tool-cross-checked.
