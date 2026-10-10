@@ -512,7 +512,10 @@ print(d.get("id") or "")
 print(d.get("duration") or 0)
 print(base64.b64encode((d.get("title") or "?").encode()).decode())
 audio = (d.get("language") or "").lower()
-subs = list(d.get("subtitles", {})) + list(d.get("automatic_captions", {}))
+# live_chat is the chat-replay stream, not a caption track — yt-dlp pulls it
+# as endless fragments (2026-10-10: ydYDqZQpim8 ran 4h+, Frag1481+, lane held).
+subs = [s for s in list(d.get("subtitles", {})) + list(d.get("automatic_captions", {}))
+        if s != "live_chat"]
 pick = ""
 for want in (audio, audio + "-orig", "en", "en-orig"):
     if want and want in subs:
@@ -536,6 +539,9 @@ SUBS_ARGS=()
 [ -n "$SUBLANG" ] && SUBS_ARGS=(--write-subs --write-auto-subs
   --sub-langs "$SUBLANG" --sub-format 'vtt/best')
 # -i: a subtitle 429 must not kill the video download
+# YT_LIVE_DL_TIMEOUT caps the download so a runaway (huge VOD, trickle
+# fragments) can't hold the serial cast lane forever.
+yt-dlp() { timeout "${YT_LIVE_DL_TIMEOUT:-1800}" command yt-dlp "$@"; }
 yt-dlp --no-playlist --no-warnings --quiet -i -f "$FMT" \
   --merge-output-format mp4 "${SUBS_ARGS[@]}" \
   -o "$APP_DIR/src.%(ext)s" "$URL" 2>"$APP_DIR/ytdlp.log" \
