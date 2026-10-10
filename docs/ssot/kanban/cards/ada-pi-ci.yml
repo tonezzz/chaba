@@ -1,20 +1,16 @@
 id: ada-pi-ci
 title: ada-pi CI — lint + unit tests + scenario-schema on push
-brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone
-  remembers; gh-runs-watch already exists in chaba for failure alerts. Waiting in
-  backlog.
+brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch
+  already exists in chaba for failure alerts. Waiting in backlog.
 column: review
-metric: every push to main runs tool-lint + pytest + scenario yaml validation; failures
-  alert via gh-runs-watch
+metric: every push to main runs tool-lint + pytest + scenario yaml validation; failures alert via gh-runs-watch
 verify: push a violating commit on a branch -> workflow fails + alert fires
-note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2)
-  pytest tests/ -x (unit), (3) a cheap yaml.safe_load + required-keys check over tests/scenarios-live/*.yaml
-  (name/tier/turns). Wire repo into the existing gh-runs-watch channel so failures
-  page instead of rotting. Complements ada-deploy-gate-tests — CI catches it at push,
-  the gate catches what CI missed.'
-help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert
-  path
-updated: 2026-10-10 19:22
+note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2) pytest tests/ -x (unit), (3) a
+  cheap yaml.safe_load + required-keys check over tests/scenarios-live/*.yaml (name/tier/turns). Wire repo into
+  the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
+  catches it at push, the gate catches what CI missed.'
+help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
+updated: 2026-10-10 23:30
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -27,32 +23,27 @@ comms:
   text: dispatched 20261010-094410-ada-pi-ci-lint-unit-tests-scen on ada-pi
 - at: 2026-10-10 09:44
   from: chaba
-  text: 'primer injected 8 lesson(s): "test_merge_sweep fixture relied on global git
-    identity — tony-dell has none (re; [ada-deploy-gate-tests] primer injected 8 lesson(s):
-    "test_merge_sweep fixture r; [report-bounded-surfaces] merge-sweep: landing devin-task-20261009-195511-1-scri;
-    [ada-phantom-card-claims] verified closed: dispatch push failed on mn01 (no GH
-    c; [ada-tools-desc-slim] Started. Plan: move fat per-tool prose into backend/tool_g;
+  text: 'primer injected 8 lesson(s): "test_merge_sweep fixture relied on global git identity — tony-dell has none
+    (re; [ada-deploy-gate-tests] primer injected 8 lesson(s): "test_merge_sweep fixture r; [report-bounded-surfaces]
+    merge-sweep: landing devin-task-20261009-195511-1-scri; [ada-phantom-card-claims] verified closed: dispatch
+    push failed on mn01 (no GH c; [ada-tools-desc-slim] Started. Plan: move fat per-tool prose into backend/tool_g;
     [ha-fabric-cms-report] STANDARD PROCEDURE (structured CMS rep'
 - at: 2026-10-10 10:41
   from: devin
-  text: 'attempt 2: prior CI workflow already on main but every run red — 2 gemini_pool
-    ops-event tests fail deterministically on GitHub runner (pass locally). Diagnosing;
-    also adding missing scenario-schema step + tier:full backfill for 49 untiered
-    scenarios. gh-runs-watch config is chaba-side (outside worktree) — will flag for
-    operator.'
+  text: 'attempt 2: prior CI workflow already on main but every run red — 2 gemini_pool ops-event tests fail deterministically
+    on GitHub runner (pass locally). Diagnosing; also adding missing scenario-schema step + tier:full backfill for
+    49 untiered scenarios. gh-runs-watch config is chaba-side (outside worktree) — will flag for operator.'
 - at: 2026-10-10 11:17
   from: devin
-  text: 'raised request gh-runs-watch-wiring-the-watcher-lives-i-d39b3e: gh-runs-watch
-    wiring: the watcher lives in chaba (outside this worktree) so I cannot add tonezzz/ada-pi
-    to its watched-r'
+  text: 'raised request gh-runs-watch-wiring-the-watcher-lives-i-d39b3e: gh-runs-watch wiring: the watcher lives
+    in chaba (outside this worktree) so I cannot add tonezzz/ada-pi to its watched-r'
 - at: 2026-10-10 11:21
   from: devin
-  text: 'Done (commit 423fd5b). CI existed but was red every push — root cause a monotonic-sentinel
-    family: `now - stamp < window` with stamp=0.0 reads as stamped-at-boot, so fresh
-    runners (uptime < throttle window) silently swallowed first-use events. Fixed
-    in gemini_pool._event_at (the 2 deterministic failures), realtime_provider._strong_hit_at
-    (the recall-gate flake), mddb_client._follower_ok_at, hailo_vision._temperature_read_at;
-    also test_eye_tool import-time FRESH timestamp. Added missing gate: scr'
+  text: 'Done (commit 423fd5b). CI existed but was red every push — root cause a monotonic-sentinel family: `now
+    - stamp < window` with stamp=0.0 reads as stamped-at-boot, so fresh runners (uptime < throttle window) silently
+    swallowed first-use events. Fixed in gemini_pool._event_at (the 2 deterministic failures), realtime_provider._strong_hit_at
+    (the recall-gate flake), mddb_client._follower_ok_at, hailo_vision._temperature_read_at; also test_eye_tool
+    import-time FRESH timestamp. Added missing gate: scr'
 - at: 2026-10-10 11:21
   from: chaba
   text: run finished (inactive) → review
@@ -64,25 +55,27 @@ comms:
   text: 'test gate failed — merge held: tests/test_calendar_providers.py'
 - at: 2026-10-10 11:22
   from: chaba
-  text: 'session end: 2 commit(s) on dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen
-    not in origin/main — close will block until merged'
+  text: 'session end: 2 commit(s) on dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen not in origin/main
+    — close will block until merged'
 - at: 2026-10-10 11:33
   from: chaba
-  text: 'merge-sweep: merged 2550bdd4 (dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen
-    from tony-dell) -> origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-094410-ada-pi-ci-lint-unit-tests-scen.md)
+  text: 'merge-sweep: merged 2550bdd4 (dispatch/20261010-094410-ada-pi-ci-lint-unit-tests-scen from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-094410-ada-pi-ci-lint-unit-tests-scen.md)
     — held in review (open request(s) [''gh-runs-watch-wiring-the-watch''] block close)'
 - at: 2026-10-10 11:48
   from: chaba
-  text: 'merge-sweep: verified — held in review (open request(s) [''gh-runs-watch-wiring-the-watch'']
-    block close)'
+  text: 'merge-sweep: verified — held in review (open request(s) [''gh-runs-watch-wiring-the-watch''] block close)'
 - at: 2026-10-10 19:22
   from: devin
-  text: Held in review on your open request gh-runs-watch-wiring — CI sentinel itself
-    is verified merged; the remaining ask is whether to wire the GH-runs watcher.
+  text: Held in review on your open request gh-runs-watch-wiring — CI sentinel itself is verified merged; the remaining
+    ask is whether to wire the GH-runs watcher.
 - at: 2026-10-10 20:12
   from: devin
-  text: 'answered gh-runs-watch request: ada-pi already watched (DEFAULT_REPOS, verified
-    on tony-omen — timer active, ran 20:04). No wiring needed.'
+  text: 'answered gh-runs-watch request: ada-pi already watched (DEFAULT_REPOS, verified on tony-omen — timer active,
+    ran 20:04). No wiring needed.'
+- at: 2026-10-10 23:30
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 action:
   type: dispatch
   status: done
@@ -90,8 +83,7 @@ action:
   runner: tony-dell
   attempts: 1
   task_id: 20261010-094410-ada-pi-ci-lint-unit-tests-scen
-  result: 20261010-094410-ada-pi-ci-lint-unit-tests-scen finished (inactive) — see
-    `devin-dispatch logs 20261010-094410-ada-pi-ci-lint-unit-tests-scen`
+  result: 20261010-094410-ada-pi-ci-lint-unit-tests-scen finished (inactive) — see `devin-dispatch logs 20261010-094410-ada-pi-ci-lint-unit-tests-scen`
   verified: true
   sweep:
     close_held: 2026-10-10 11:48
@@ -99,16 +91,15 @@ claim:
   since: 2026-10-10 09:44
 requests:
 - id: gh-runs-watch-wiring-the-watcher-lives-i-d39b3e
-  ask: 'gh-runs-watch wiring: the watcher lives in chaba (outside this worktree) so
-    I cannot add tonezzz/ada-pi to its watched-repo list myself. Does it auto-discover
-    repos with workflows, or does a config file need ada-pi added? If the latter,
-    please add tonezzz/ada-pi — every push to main now triggers the CI workflow and
-    a red run should page.'
+  ask: 'gh-runs-watch wiring: the watcher lives in chaba (outside this worktree) so I cannot add tonezzz/ada-pi
+    to its watched-repo list myself. Does it auto-discover repos with workflows, or does a config file need ada-pi
+    added? If the latter, please add tonezzz/ada-pi — every push to main now triggers the CI workflow and a red
+    run should page.'
   status: open
   at: 2026-10-10 11:17
   from: devin
-  answered: 'devin 2026-10-10: already covered — no config needed. gh-runs-watch.py
-    DEFAULT_REPOS includes tonezzz/ada-pi; the timer (ada-gh-runs-watch, tony-omen,
-    15min, last ran 20:04) has no env override. Failures land as focus-inbox alerts
-    automatically.'
+  answered: 'devin 2026-10-10: already covered — no config needed. gh-runs-watch.py DEFAULT_REPOS includes tonezzz/ada-pi;
+    the timer (ada-gh-runs-watch, tony-omen, 15min, last ran 20:04) has no env override. Failures land as focus-inbox
+    alerts automatically.'
+  escalated_at: 2026-10-10 23:30
 review_kind: verify
