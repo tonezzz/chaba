@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Nest Percussion — Chaba</title>
+<link rel="stylesheet" href="/apps/sw-theme.css">
+<style>
+  body{font-family:system-ui;background:#0b0d10;color:#e8e8e8;margin:0;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;
+       justify-content:center;gap:1.2rem}
+  h1{font-size:1.1rem;font-weight:600;letter-spacing:.15em;opacity:.85}
+  #go{width:180px;height:180px;border-radius:50%;border:2px solid #3af;
+      background:#111720;color:#e8e8e8;font-size:1.3rem;cursor:pointer}
+  #go.on{border-color:#5f5;box-shadow:0 0 40px #5f53}
+  #row{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center}
+  .host{text-align:center;padding:.6rem .8rem;border-radius:10px;
+        background:#141a22;min-width:84px;font-size:.72rem}
+  .host .dot{width:14px;height:14px;border-radius:50%;margin:0 auto .3rem;
+             background:#333;transition:background .08s}
+  .host.hit .dot{background:#3af}
+  .host.err .dot{background:#f55}
+  .host.deg .dot{background:#fb4}
+  #stat{font-size:.75rem;opacity:.7;max-width:90vw;text-align:center;
+        line-height:1.5}
+  #log{font-size:.65rem;opacity:.45;max-width:90vw;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>NEST PERCUSSION</h1>
+<button id="go">▶<br>listen</button>
+<div id="row"></div>
+<div id="stat">state: —</div>
+<div id="log"></div>
+<script src="app.js"></script>
+</body>
+</html>
