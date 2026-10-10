@@ -2,7 +2,7 @@ id: ada-pi-ci
 title: ada-pi CI — lint + unit tests + scenario-schema on push
 brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch
   already exists in chaba for failure alerts. Waiting in backlog.
-column: review
+column: done
 metric: every push to main runs tool-lint + pytest + scenario yaml validation; failures alert via gh-runs-watch
 verify: push a violating commit on a branch -> workflow fails + alert fires
 note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2) pytest tests/ -x (unit), (3) a
@@ -10,7 +10,7 @@ note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2
   the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
   catches it at push, the gate catches what CI missed.'
 help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
-updated: 2026-10-10 23:30
+updated: 2026-10-11 06:26
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -76,6 +76,15 @@ comms:
 - at: 2026-10-10 23:30
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-11 06:18
+  from: tony
+  text: 'answered gh-runs-watch-wiring-the-watcher-lives-i-d39b3e: Merge by hand'
+- at: 2026-10-11 06:18
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 06:26
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -95,11 +104,17 @@ requests:
     to its watched-repo list myself. Does it auto-discover repos with workflows, or does a config file need ada-pi
     added? If the latter, please add tonezzz/ada-pi — every push to main now triggers the CI workflow and a red
     run should page.'
-  status: open
+  status: answered
   at: 2026-10-10 11:17
   from: devin
   answered: 'devin 2026-10-10: already covered — no config needed. gh-runs-watch.py DEFAULT_REPOS includes tonezzz/ada-pi;
     the timer (ada-gh-runs-watch, tony-omen, 15min, last ran 20:04) has no env override. Failures land as focus-inbox
     alerts automatically.'
   escalated_at: 2026-10-10 23:30
+  answer: Merge by hand
 review_kind: verify
+awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-11 06:26
+  note: verified — evidence checks green, closing itself

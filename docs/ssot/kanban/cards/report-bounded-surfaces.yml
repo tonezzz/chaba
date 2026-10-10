@@ -7,7 +7,7 @@ brief: 'The report registry now declares the standard (bounded_surfaces in ssot.
 column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 03:36
+updated: 2026-10-11 06:18
 pipeline: ci
 autonomy: t2
 metric: 'SYSTEM-REPORT.md renders with a declared budget: over-budget sections shed in declared order (not arbitrary
@@ -50,9 +50,9 @@ action:
 comms:
 - at: 2026-10-10 09:13
   from: devin
-  text: 'verified+salvaged: stranded idc03 dispatch applied to master (bb60959c2). Conflict in
-    render-memory.py resolved keeping today''s drop_kind feature + delegating regex drop to
-    lib/bounded.drop_patterns. Job-doc YAML repaired (quoted scalars).'
+  text: 'verified+salvaged: stranded idc03 dispatch applied to master (bb60959c2). Conflict in render-memory.py
+    resolved keeping today''s drop_kind feature + delegating regex drop to lib/bounded.drop_patterns. Job-doc YAML
+    repaired (quoted scalars).'
 - at: 2026-10-09 19:55
   from: idc03
   text: claimed
@@ -94,12 +94,16 @@ comms:
   text: 'merge-sweep: landing devin-task-20261009-195511-1-scripts-lib-bounded-py-new-e failed: worktree add: Command
     ''[''git'', ''-C'', ''/home/tony/CascadeProjects/chaba-tony-dell'', ''worktree'', ''add'', ''--detach'', ''/tmp/merge-sweep-xyjzcxab'',
     ''origin/master'']'' timed out after 60 seconds'
+- at: 2026-10-11 06:18
+  from: tony
+  text: 'answered merge-conflict: Merge by hand'
 claim: {}
 requests:
 - id: merge-conflict
   ask: 'merge-sweep can''t land dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e: 1 commit(s) conflict with
     origin/master in chaba — conflicted paths: scripts/chaba/render-memory.py. Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261009-195511-1-scripts-lib-bounded-py-new-e
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-09 20:18
   from: chaba
+  answer: Merge by hand
