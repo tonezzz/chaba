@@ -1,0 +1,66 @@
+title: device-telemetry retention — nightly prune of beacon history keys
+date: '2026-10-10'
+card: device-telemetry-prune
+host: idc03 (MDDB leader :11023); script repo path scripts/device-telemetry/
+
+problem: |
+  The lost-device beacon (scripts/device-telemetry/agent.py) posts ~300
+  docs/day/device into the MDDB device-telemetry collection — keys
+  <dev>/<unix-ts> for history plus <dev>/latest — with no retention.
+  Unbounded growth on a production collection.
+
+decision: |
+  7d retention (env DEVICE_TELEMETRY_RETENTION_DAYS), not 30d — the HA
+  logbook already covers long-range device history, and the card metric
+  specifies <=7d per device. ~300 docs/day => ~2,100 history keys/device
+  steady-state, trivial for /v1/search scans.
+  Key-segment expiry (delete where the <ts> tail segment is all-digit and
+  older than cutoff), NOT meta-ts: the spec's skip rules live in the key
+  shape — <dev>/latest and _watch/<dev> armed-watch docs
+  (ada-track-lost-persist) carry no ts segment and are never pruned.
+  Runs on idc03 beside the leader rather than on the beacon host — the
+  sweep is collection maintenance, not device work; the beacon keeps
+  posting to whatever hosts install.sh arms.
+
+what_changed: |
+  - scripts/device-telemetry/prune.py — stdlib-only sweep; pages
+    /v1/search at 5000/page (proven ~1s/page even at deep offsets),
+    deletes expired keys via /v1/delete-batch in 1000-doc chunks with
+    skip+=kept shift-compensation (same pattern as
+    scripts/ada/prune-old-docs.py). --dry-run counts only.
+  - scripts/device-telemetry/install.sh — new `install.sh prune` mode:
+    installs prune.py to ~/.local/share/device-telemetry/ + the rendered
+    units from systemd/generated/<hostkey>/ and arms the timer. Self-
+    contained like the beacon so idc03 checkout drift can't break it.
+  - ssot.jobs.yml — job:device-telemetry-prune on idc03, OnCalendar
+    *-*-* 04:20:00, Persistent, TimeoutStartSec=300, env retention 7d.
+  - systemd/generated/idc03/device-telemetry-prune.{service,timer} —
+    rendered output (CI drift-checked).
+
+install_runbook: |
+  Deploy requires approval (production idc03):
+    ssh tony-omen -> ssh -i ~/.ssh/id_idc03 idc03   (id_idc03 key lives on
+    tony-omen only)
+    cd ~/CascadeProjects/chaba && git pull
+    scripts/device-telemetry/install.sh prune
+  Verify:
+    systemctl --user list-timers device-telemetry-prune.timer
+    python3 ~/.local/share/device-telemetry/prune.py --dry-run
+    # expect: "device-telemetry: would delete N/M (>7d on key ts)"
+
+verified_in_session: |
+  - Stubbed sweep (fake _post): 1207 docs -> 1200 deleted; latest,
+    _watch/dev and 5 fresh docs untouched; multi-page offset math correct.
+  - Live --dry-run vs leader :11023: "would delete 0/1056" — collection
+    ~3.5 days old, nothing past window; confirmed key shapes
+    tony-omen/<10-digit-ts> + tony-omen/latest (key-sorted tail).
+  - render-jobs.py --check: OK 46 jobs; generated units written.
+
+notes: |
+  - First real delete fires 2026-10-17/18 once keys age past 7d.
+  - /v1/search returns key order; all history tails are 10-digit epochs,
+    so pages are already chronological per device.
+  - _watch/ prefix is guarded on the dev segment, not the ts segment —
+    a future _watch/<dev>/<ts> key shape still can't be pruned.
+  - DEVICE_TELEMETRY_MDBB env overrides the target base if the leader
+    moves again.
