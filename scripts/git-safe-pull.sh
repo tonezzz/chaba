@@ -19,6 +19,10 @@
 #      manual resolution, next run retries.
 #   3. autostash-pop conflicts under generated paths resolve to HEAD; the
 #      stash entry is always retained for recovery.
+#   4. on exit (any path), scripts/board/reconcile-local-conflicts.py
+#      folds each card .local-conflict-* back into its canonical card —
+#      the preserved side usually holds a board write that raced the
+#      pull. Merge failures keep the file and flag the card in review.
 #
 # Usage:  git-safe-pull.sh [repo-dir]
 # Env:    SAFE_PULL_UPSTREAM      upstream ref (default: @{upstream} or
@@ -30,9 +34,25 @@
 set -uo pipefail
 
 REPO="${1:-$PWD}"
+REPO_OK=0
+RECONCILE="$REPO/scripts/board/reconcile-local-conflicts.py"
+
+# Post-pull/step reconcile: fold each card .local-conflict-* file back
+# into its canonical card (the board write that raced the rebase).
+# Runs under a trap so aborted rebases still reconcile the conflict
+# files their resolved steps produced. Best-effort: a reconcile
+# failure never fails the pull — the conflict file stays and the card
+# is flagged in review (card kanban-local-conflict-reconciler).
+_post_pull_reconcile() {
+  [ "$REPO_OK" = 1 ] && [ -f "$RECONCILE" ] || return 0
+  python3 "$RECONCILE" "$REPO" || true
+}
+trap _post_pull_reconcile EXIT
+
 cd "$REPO" 2>/dev/null || { echo "git-safe-pull: no repo $REPO" >&2; exit 2; }
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
   echo "git-safe-pull: $REPO is not a git worktree" >&2; exit 2; }
+REPO_OK=1
 
 TS="$(date '+%Y%m%d-%H%M%S')"
 GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/}"
@@ -102,8 +122,14 @@ _resolve_generated_conflicts() {
   while IFS= read -r p; do
     [ -n "$p" ] || continue
     if [[ "$p" =~ $GENERATED_RE ]]; then
-      # stage 3 = the local commit being replayed — preserve it aside
-      git show ":3:$p" > "$p.local-conflict-$TS" 2>/dev/null || true
+      # stage 3 = the local commit being replayed — preserve it aside.
+      # Same path can conflict in several rebase steps inside one $TS
+      # second; suffix rather than overwrite a preserved side.
+      local dest="$p.local-conflict-$TS" n=1
+      while [ -e "$dest" ]; do
+        n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+      done
+      git show ":3:$p" > "$dest" 2>/dev/null || true
       if git checkout --ours -- "$p" 2>/dev/null; then
         git add -- "$p"
       else
