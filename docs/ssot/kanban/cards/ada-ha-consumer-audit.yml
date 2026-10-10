@@ -1,0 +1,20 @@
+id: ada-ha-consumer-audit
+title: "ada-ha consumer audit — who uses it, can it move off dell"
+column: done
+priority: medium
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  AUDIT DONE 2026-10-10 (docs/assessments/ada-ha-consumer-audit-2026-10-10.md):
+  ada-ha is heavily used — 340 entities/25 integrations (TONY-IP +
+  Watch mobile_app, TONY-TV, sonoff/tuya/xiaomi/cozylife LAN plugs,
+  esphome, cameras, chaba-nest dashboard). Zero live automations.
+  Recommendation: keep on dell (LAN-native; idc03 has
+  --accept-routes=false so LAN actuation would break anyway). Real
+  dell-freeze root cause was devin-desktop autostart — separate card.
+  Follow-ups inside: prune dead gemini entries + orphaned automation.*
+  registry; update stale instance note in
+  ssot.home-assistant.instances.yml ("no integrations" is no longer true).
+links:
+  - docs/assessments/ada-ha-consumer-audit-2026-10-10.md
+  - docs/ssot/infrastructure/ssot.home-assistant.instances.yml
