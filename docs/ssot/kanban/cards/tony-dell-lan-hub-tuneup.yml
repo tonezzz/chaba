@@ -9,7 +9,7 @@ note: 'After the 2026-10-09 node evacuation, tony-dell is the LAN tier: tony-ha 
 action:
   type: manual
   status: queued
-updated: 2026-10-09 18:00
+updated: 2026-10-10 09:05
 comms:
 - at: 2026-10-09 13:00
   from: devin
@@ -55,6 +55,14 @@ comms:
     is rclone FUSE (cloud, ~0 local). podman images 10.2G (3G reclaimable), .cache
     6.5G, /var/log 2.6G, journald 509M, HA config 3.1G. Real media corpus is cloud-mounted
     — the ''media off root'' item shrinks to caches only.'
+- at: 2026-10-10 09:05
+  from: devin
+  text: 'SSH churn root cause: clip-sync (clipboard mirror omen<->dell) polled via
+    2 fresh ssh connections/sec — ~170k sshd sessions/day, journal flood, contributed
+    to overnight load/reconnects. FIXED: ControlMaster=auto + ControlPersist=60s +
+    per-remote socket on both hosts'' ~/.local/bin/clip-sync — one muxed conn per
+    direction. Churn dropped ~90% (60->4 disconnects/30s). Same fix applied to clip-sync-omen
+    (dell) + clip-sync-dell (omen).'
 requests:
 - id: disk-hardware-path
   status: answered
