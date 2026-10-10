@@ -1,0 +1,56 @@
+id: standard-drift-digest
+title: "Standard-drift digest — one page collecting every signal that the standard is slipping"
+column: doing
+priority: high
+created: '2026-10-10'
+updated: '2026-10-10 12:00'
+review_kind: verify
+domain: chaba-ci
+spec: |
+  Tony (2026-10-10): "How can we use our standard procedure on everything and
+  use feedback to refine our standard to be as much hands-off for me as
+  possible. The more we progress, the more hands-off as our standard
+  procedure improves." Approved verbally the same session — implement the
+  digest as the flywheel's feedback layer.
+
+  The standard improves when deviations stop being invisible. One generated
+  CMS page (standard-drift) collects, deterministically and hourly-digest
+  cadence:
+
+  - stale generated reports: ada-cms-pages docs with generated_by whose
+    updated+meta.fresh_for has lapsed (the report_first_protocol
+    quality_loop input — Ada refreshes these by tool, Devin takes
+    structural failures)
+  - board drift: doing cards stale >3d, cards with open requests (aging
+    by card.updated), review pile size — things waiting on someone
+  - tool-surface debt: ada-pi scripts/tool-lint.py --json violations,
+    counted by rule
+
+  Page contract: managed <!-- standard-drift:auto --> block, registry
+  entry in ada-cms-automation (interval 6h), meta per
+  ssot.apps.cms-reports.yml (generated_by, sources, kind=report,
+  report_role=rollup, domain=monitoring, fresh_for=6h). en+th.
+
+  Tony's review surface: ONE page/digest with proposed standard diffs —
+  not scattered fires. Repeated signals across runs should escalate into
+  ratchet rules or standard revisions (that escalation is manual for v1).
+v2: |
+  - ops-event collector: ada-ha-events-* kind=ops-event counts by type
+    (context_rotate rate = disconnect signal) — /v1/search doesn't filter
+    by meta; needs key-prefix scan or an MDDB meta query path
+  - repeated-ask detector: same question asked twice in chat/voice
+    (needs transcript mining — probably via ada session reports)
+  - proposed SSOT diff generator: drift pattern -> concrete yaml edit
+comms:
+  - from: devin
+    text: >
+      carded + implemented same session (Tony's "push it through").
+      Digest = feedback layer of the report-first flywheel: detects where
+      the standard slips so it can tighten without Tony watching each fire.
+verify: >-
+  python3 scripts/ada/standard-drift-digest.py --force publishes
+  ada-cms-pages/standard-drift (en+th) with a populated auto block;
+  registry doc exists; cms-audit sees no new R-rule failure on the page.
+requests: []
+blocked_by: []
+tags: [standards, reports, digest, hands-off-flywheel]
