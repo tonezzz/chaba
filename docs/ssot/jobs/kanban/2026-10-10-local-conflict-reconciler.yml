@@ -1,0 +1,71 @@
+title: auto-reconcile .local-conflict card files
+subtitle: Post-pull step merges raced board writes back into canonical cards
+icon: git
+version: 1
+
+card: kanban-local-conflict-reconciler
+date: 2026-10-10
+dispatch: 20261010-103407-auto-reconcile-local-conflict-
+
+summary: |
+  git-safe-pull.sh resolves generated-path rebase conflicts upstream-wins
+  and preserves the dropped local side as <path>.local-conflict-<ts> — but
+  nothing reconciled them, so they piled up (4 removed by hand 2026-10-09).
+  The preserved side almost always holds a board-api write that raced the
+  pull (column move, action.status, request answer, comms). A new
+  post-pull step now folds each conflict file back into its canonical
+  card automatically; merge failures keep the file and flag the card in
+  review, so no card write is silently dropped.
+
+deliverables:
+  - scripts/board/reconcile-local-conflicts.py — the reconciler. Scans
+    docs/ssot/kanban/cards/*.yml.local-conflict-* (optional -N suffix for
+    same-second repeats), loads both sides under the /tmp/board-api.lock
+    flock, merges, writes the canonical card, deletes the conflict file.
+    Merge policy — comms union (dedup on at|ts+from+text, time-sorted);
+    requests merged by id with the more-resolved/newer entry winning per
+    key (open < answered < closed); ask/action per-key union won by the
+    side with the later `updated`; pipeline stages deep-merged per stage
+    `at`; board scalars (column, note, awaiting_action, claim,
+    review_kind) won by the newer side; `updated` = max; all other keys
+    upstream-wins with conflict-only keys preserved. Identical conflicts
+    are deleted without a card write (no churn); merges get an audit
+    comms line. Non-card .local-conflict files under docs/ssot/ are never
+    auto-merged — they flag the alert card instead.
+  - Flag path — merge/load/write failure leaves the conflict file and
+    appends comms + column=review on the canonical card; orphan or
+    unreadable canonicals flag ops-local-conflict-guard (same upsert
+    pattern as kanban-commit's alert card).
+  - scripts/git-safe-pull.sh — EXIT trap runs the reconciler on every
+    exit path (success, aborted rebase, manual-resolution exits), gated
+    on the repo check passing. Best-effort — reconcile failure never
+    fails the pull. Same-path conflicts in several rebase steps within
+    one second now get -N suffixed filenames instead of overwriting the
+    preserved side.
+  - "CLI: reconcile-local-conflicts.py [--dry-run] [repo-dir];
+    --selftest covers comms union, requests merge, newer-wins scalars,
+    orphan + unparseable failure flags."
+
+verify:
+  - "python3 scripts/board/reconcile-local-conflicts.py --selftest — OK"
+  - "end-to-end scratch repo (bare origin + two clones, divergent card
+    commits): safe-pull rebased, conflict file created, trap merged
+    column=comms+action back into the canonical card and deleted the
+    file; next-tick `git add` picks up the merged card as a normal
+    working-tree change"
+
+gotchas:
+  - "The reconciler only WRITES the working tree — kanban-commit's next
+    tick commits+pushes the merged card, so a merged write can lag one
+    tick (<15min) before reaching origin."
+  - "'Newer' is decided by the card's `updated` stamp (minute
+    resolution); ties prefer the conflict side since it holds the raced
+    write. A back-dated `updated` can flip the winner — treat stale
+    stamps as data rot."
+  - "Per-key union for action/requests never propagates deletions —
+    e.g. a runner key the newer side popped reappears if the older side
+    still has it. Harmless (next claim overwrites), but documented."
+  - "Mid-manual-rebase conflict markers in a canonical card fail YAML
+    load -> flagged in review rather than merged into poisoned content."
+  - "Runs inside a worktree too (flock is advisory, path is repo-
+    relative); harmless for dispatch sessions."
