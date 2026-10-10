@@ -1,59 +1,84 @@
 id: ada-memory-injection-scan
 title: 'Ada memory: pre-write injection/exfiltration scan'
-brief: >-
-  Ada reads untrusted text (LINE messages, guest chat, transcripts) and can
-  save it into long-term memory banks. Nothing currently screens that content
-  before it lands. This adds a scan step that refuses memory writes containing
-  injection phrases, credential-shaped strings, or invisible Unicode —
-  the same class of check Hermes runs before accepting a memory entry.
-column: backlog
+brief: Ada reads untrusted text (LINE messages, guest chat, transcripts) and can save it into long-term memory banks.
+  Nothing currently screens that content before it lands. This adds a scan step that refuses memory writes containing
+  injection phrases, credential-shaped strings, or invisible Unicode — the same class of check Hermes runs before
+  accepting a memory entry.
+column: review
 priority: high
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09 20:33
 pipeline: ci
 autonomy: t2
-metric: >-
-  A seeded injection attempt via ada_remember/guest_remember returns a
-  structured refusal (not a silent write), is logged as an ada event,
-  and never reaches MDDB — while a normal memory write is unaffected.
-verify: >-
-  From an ada-dev session: attempt a memory save whose text contains a
-  classic injection payload ("ignore previous instructions", a fake API
-  key, a zero-width joiner string) — each refused with reason; a benign
-  save succeeds. Scan runs pre-write, so MDDB collections show no
-  injected doc.
-spec: |
-  Where: ada-pi repo — a new backend/memory_write_guard.py module, called
-  from tool_runner/memory.py (ada_remember, guest_remember,
-  guest_remember_private, vocab_note paths) before the MDDB upsert.
-
-  Scan classes (keep the list data-driven — a pattern table at the top of
-  the module, not scattered regex):
-    1. prompt-injection phrases ("ignore previous instructions",
-       "system prompt", "you are now", role-spoof prefixes)
-    2. credential-shaped strings (AKIA/openai/sk-/ghp_ token regexes,
-       "BEGIN PRIVATE KEY", password-style assignments)
-    3. invisible/bidi Unicode (ZWSP, ZWJ where unexpected, RTL overrides)
-    4. oversized homoglyph/whitespace floods
-
-  Behavior: refuse with {ok: false, reason, matched_class} so the model can
-  tell the caller plainly; log a memory-scan-refused event to the ada
-  events collection (identity, bank, class — never the payload itself).
-  Identity-aware: trusted identities (full:true) still scanned — the scan
-  guards the bank, not just the user.
-
-  Ship with --selftest exercising all classes; wire the class list into
-  ssot.apps.ada-memory-banks.yml context so the rule is documented in SSOT.
-
-  Reuse, don't reinvent: keep it string-level and dependency-free like
-  render-memory.py — no model call in the write path.
+metric: A seeded injection attempt via ada_remember/guest_remember returns a structured refusal (not a silent write),
+  is logged as an ada event, and never reaches MDDB — while a normal memory write is unaffected.
+verify: 'From an ada-dev session: attempt a memory save whose text contains a classic injection payload ("ignore
+  previous instructions", a fake API key, a zero-width joiner string) — each refused with reason; a benign save
+  succeeds. Scan runs pre-write, so MDDB collections show no injected doc.'
+spec: "Where: ada-pi repo — a new backend/memory_write_guard.py module, called\nfrom tool_runner/memory.py (ada_remember,\
+  \ guest_remember,\nguest_remember_private, vocab_note paths) before the MDDB upsert.\n\nScan classes (keep the\
+  \ list data-driven — a pattern table at the top of\nthe module, not scattered regex):\n  1. prompt-injection phrases\
+  \ (\"ignore previous instructions\",\n     \"system prompt\", \"you are now\", role-spoof prefixes)\n  2. credential-shaped\
+  \ strings (AKIA/openai/sk-/ghp_ token regexes,\n     \"BEGIN PRIVATE KEY\", password-style assignments)\n  3.\
+  \ invisible/bidi Unicode (ZWSP, ZWJ where unexpected, RTL overrides)\n  4. oversized homoglyph/whitespace floods\n\
+  \nBehavior: refuse with {ok: false, reason, matched_class} so the model can\ntell the caller plainly; log a memory-scan-refused\
+  \ event to the ada\nevents collection (identity, bank, class — never the payload itself).\nIdentity-aware: trusted\
+  \ identities (full:true) still scanned — the scan\nguards the bank, not just the user.\n\nShip with --selftest\
+  \ exercising all classes; wire the class list into\nssot.apps.ada-memory-banks.yml context so the rule is documented\
+  \ in SSOT.\n\nReuse, don't reinvent: keep it string-level and dependency-free like\nrender-memory.py — no model\
+  \ call in the write path.\n"
 expected_goals:
-  - id: guard-module-exists
-    check: "file-exists backend/memory_write_guard.py"
-  - id: selftest-passes
-    check: "command python3 backend/memory_write_guard.py --selftest expect SELFTEST-OK"
+- id: guard-module-exists
+  check: file-exists backend/memory_write_guard.py
+- id: selftest-passes
+  check: command python3 backend/memory_write_guard.py --selftest expect SELFTEST-OK
 links:
-  - ada-memory-write-caps
-  - ada-memory-staged-writes
-  - ada-ha-hardening
+- ada-memory-write-caps
+- ada-memory-staged-writes
+- ada-ha-hardening
 blocked_by: []
+action:
+  type: dispatch
+  status: done
+  labels:
+  - always-on
+  runner: idc02
+  result: 'exit=0 d `ada-memory-write-caps`/`ada-memory-staged-writes` remain follow-on cards extending this module.
+    | devin-task-20261009-195500-where-ada-pi-repo-a-new-backen.service: Consumed 2min 37.491s CPU time, 218.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+comms:
+- at: 2026-10-09 19:54
+  from: idc02
+  text: claimed
+- at: 2026-10-09 19:55
+  from: chaba
+  text: started devin-task-20261009-195500-where-ada-pi-repo-a-new-backen on idc02 (dispatch)
+- at: 2026-10-09 20:02
+  from: devin
+  text: '[devin] picked up — writing backend/memory_write_guard.py (data-driven rule table: prompt-injection, credential
+    shapes, invisible/bidi unicode, flood) + wiring into tool_runner/memory.py write paths. Worktree is chaba; ada-pi
+    edits go to the ~/CascadeProjects/ada-pi edit-point checkout uncommitted.'
+- at: 2026-10-09 20:22
+  from: devin
+  text: 'DONE: memory_write_guard.py wired into all ada-pi write paths (ada_remember/guest_remember/guest_remember_private/vocab).
+    4 data-driven classes; trusted identities still scanned; refusals log memory-scan-refused meta only. selftest
+    59/59, 16 unit tests + scenario OK, 320-test regression OK. SSOT write_guard block + job trail written. Uncommitted
+    on tony-dell ada-pi main — needs commit+push to ship.'
+- at: 2026-10-09 20:24
+  from: idc02
+  text: 'finished (ok): exit=0 d `ada-memory-write-caps`/`ada-memory-staged-writes` remain follow-on cards extending
+    this module. | devin-task-2'
+- at: 2026-10-09 20:24
+  from: chaba
+  text: 'session-end checkpoint de852d82: 3 leftover file(s) committed'
+- at: 2026-10-09 20:24
+  from: chaba
+  text: pushed dispatch/20261009-195500-where-ada-pi-repo-a-new-backen to origin
+- at: 2026-10-09 20:24
+  from: chaba
+  text: 'auto-merge held — expected_goals not met: guard-module-exists; selftest-passes'
+- at: 2026-10-09 20:33
+  from: chaba
+  text: 'merge-sweep: merged 9ecae6dd (dispatch/20261009-195500-where-ada-pi-repo-a-new-backen from idc02) -> origin/master'
+claim: {}

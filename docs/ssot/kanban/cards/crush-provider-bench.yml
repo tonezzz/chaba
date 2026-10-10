@@ -1,9 +1,8 @@
 id: crush-provider-bench
-title: 'Bench crush across providers — rainy-day model options (Tony 2026-10-09)'
-brief: 'Tony: crush runs gemini-first, but benchmark the other provider lanes for
-  rainy-day options. crush v0.98.0 adopted as alt lane (card lab-crush-cli, done
-  2026-10-09 — currently on OpenRouter nemotron-3-super :free). Run the same smoke
-  suite per provider so fallback quality is known before it is needed.'
+title: Bench crush across providers — rainy-day model options (Tony 2026-10-09)
+brief: 'Tony: crush runs gemini-first, but benchmark the other provider lanes for rainy-day options. crush v0.98.0
+  adopted as alt lane (card lab-crush-cli, done 2026-10-09 — currently on OpenRouter nemotron-3-super :free). Run
+  the same smoke suite per provider so fallback quality is known before it is needed.'
 column: backlog
 priority: medium
 created: 2026-10-09
@@ -12,10 +11,17 @@ tags:
 - bench
 - voice-fallback
 claim: {}
-spec: 'Repeat the lab-crush-cli smoke (fizzbuzz+pytest 4/4, surgical edit 5/5, MCP
-  stdio connect+invoke) against each lane: (1) gemini-api-key.env on tony-dell —
-  primary; (2) Anthropic — needs key decision; (3) OpenRouter paid tier — needs
-  credits (currently zero); (4) local ollama on idc03/tony-omen as fully-offline
-  lane. Record latency + pass rates in a jobs/bench doc. Use a project-local
-  .crush.json — parallel agents clobber the shared ~/.config/crush/crush.json
+spec: 'Repeat the lab-crush-cli smoke (fizzbuzz+pytest 4/4, surgical edit 5/5, MCP stdio connect+invoke) against
+  each lane: (1) gemini-api-key.env on tony-dell — primary; (2) Anthropic — needs key decision; (3) OpenRouter paid
+  tier — needs credits (currently zero); (4) local ollama on idc03/tony-omen as fully-offline lane. Record latency
+  + pass rates in a jobs/bench doc. Use a project-local .crush.json — parallel agents clobber the shared ~/.config/crush/crush.json
   (observed 2026-10-09).'
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+comms:
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+updated: 2026-10-10 08:03

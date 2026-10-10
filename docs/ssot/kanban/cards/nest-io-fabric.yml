@@ -1,51 +1,41 @@
 id: nest-io-fabric
-title: 'Nest I/O fabric — multi-input voice in, routed response surfaces out'
-brief: >-
-  Tony 2026-10-09: decouple input surface from response surface to reduce
-  Gemini Live dependence. Voice in on iPhone (or any mic surface) → Ada
-  answers on TV / dashboard / nearest screen. Inputs route to the
-  appropriate Nest node which stores, compresses, extracts, or discards
-  them — a Nest-tier memory pipeline instead of one big session context.
+title: Nest I/O fabric — multi-input voice in, routed response surfaces out
+brief: 'Tony 2026-10-09: decouple input surface from response surface to reduce Gemini Live dependence. Voice in
+  on iPhone (or any mic surface) → Ada answers on TV / dashboard / nearest screen. Inputs route to the appropriate
+  Nest node which stores, compresses, extracts, or discards them — a Nest-tier memory pipeline instead of one big
+  session context.'
 column: backlog
 priority: medium
 created: 2026-10-09
-updated: 2026-10-09
+updated: 2026-10-10 08:03
 autonomy: t2
 links:
 - chaba-nest
 - nest-micro-training
 - ada-member-pwa-invite
-spec: >-
-  Pieces that exist already: iOS PWA (ada-pi-pwa on idc03), voice_fx bark
-  channel (client-side machine voice), cast_to_screen/yt actuation to TVs,
-  memory banks + MDDB tiers, Nest lanes. The new part is the FABRIC:
-  1. Session registry: an utterance on surface A can bind to response
-     surface B (route rule: last-active screen, room sensor, or explicit
-     "answer on the TV").
-  2. Ingestion tiers per Nest node: hot (live session), warm (compressed
-     summary), cold (extracted facts → memory banks), discard (noise).
-     Every input gets a tier decision — that IS the Nest doing triage.
-  3. Response broker: picks the output surface (voice reply / cast /
-     card push / silent note) — today the ws session is the only channel.
-  4. Gemini Live becomes one lane among others; a local lane
-     (student/encoder tier) can own low-risk turns.
-verify: >-
-  Speak into the PWA on iPhone with no TV session open → answer plays on
-  the living-room TV; the utterance lands in the correct memory tier
-  (check the bank); a second surface (tablet) can co-listen without
-  stealing the session.
+spec: "Pieces that exist already: iOS PWA (ada-pi-pwa on idc03), voice_fx bark channel (client-side machine voice),\
+  \ cast_to_screen/yt actuation to TVs, memory banks + MDDB tiers, Nest lanes. The new part is the FABRIC: 1. Session\
+  \ registry: an utterance on surface A can bind to response\n   surface B (route rule: last-active screen, room\
+  \ sensor, or explicit\n   \"answer on the TV\").\n2. Ingestion tiers per Nest node: hot (live session), warm (compressed\n\
+  \   summary), cold (extracted facts → memory banks), discard (noise).\n   Every input gets a tier decision — that\
+  \ IS the Nest doing triage.\n3. Response broker: picks the output surface (voice reply / cast /\n   card push\
+  \ / silent note) — today the ws session is the only channel.\n4. Gemini Live becomes one lane among others; a\
+  \ local lane\n   (student/encoder tier) can own low-risk turns."
+verify: Speak into the PWA on iPhone with no TV session open → answer plays on the living-room TV; the utterance
+  lands in the correct memory tier (check the bank); a second surface (tablet) can co-listen without stealing the
+  session.
 requests: []
 comms:
 - at: 2026-10-09 15:40
   from: devin
-  text: >-
-    Filed per idea-procedure. Natural first slice: cast_to_screen 'say'
-    already moves Ada's voice to the TV — a route rule tying PWA input to
-    TV output is mostly orchestration, not new primitives. The tier
-    pipeline (store/compress/extract/discard) overlaps the existing
-    memory-tier work; worth folding into one design.
+  text: 'Filed per idea-procedure. Natural first slice: cast_to_screen ''say'' already moves Ada''s voice to the
+    TV — a route rule tying PWA input to TV output is mostly orchestration, not new primitives. The tier pipeline
+    (store/compress/extract/discard) overlaps the existing memory-tier work; worth folding into one design.'
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
 action:
-  type: ''
-  status: ''
-  runner: ''
+  type: dispatch
+  status: queued
+  repo: chaba
 claim: {}

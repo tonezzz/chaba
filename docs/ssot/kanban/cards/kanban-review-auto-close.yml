@@ -4,19 +4,26 @@ kind: feature
 priority: medium
 column: backlog
 autonomy: t2
-brief: 'Tony by voice (67b02417a8 08:22-08:23): "การ์ดในรีวิวที่ผ่านการตรวจสอบเรียบร้อยพร้อมปิด ปิดแทนผมได้ไหม / ถ้าผ่านมาตรฐานแล้วก็ปิดได้เลยอัตโนมัติ".
-  Extend auto_done_when: review_kind:verify cards with green evidence commands auto-close on the sweep. Companion to merge-sweep-verified-gate
-  (that one gates on REAL deliverable, not just merge). Keep review_kind:decide human-gated.'
+brief: 'Tony by voice (67b02417a8 08:22-08:23): "การ์ดในรีวิวที่ผ่านการตรวจสอบเรียบร้อยพร้อมปิด ปิดแทนผมได้ไหม /
+  ถ้าผ่านมาตรฐานแล้วก็ปิดได้เลยอัตโนมัติ". Extend auto_done_when: review_kind:verify cards with green evidence commands
+  auto-close on the sweep. Companion to merge-sweep-verified-gate (that one gates on REAL deliverable, not just
+  merge). Keep review_kind:decide human-gated.'
 created: '2026-10-09'
-updated: 2026-10-09 16:05
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-09 16:05
   from: devin
   text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
 - at: 2026-10-09 19:30
   from: devin
-  text: 'evidence tonight: merge-sweep logs "already in origin/master — marked verified" in comms but leaves
-    action.status: running + column: doing. Hit 3 cards (fix-scenario-schedule-collision, ci-test-gate,
-    runner-bootstrap-check) — all had real merges, all needed manual close. Worse: stale-running sweeper
-    re-dispatched the collision card after its verified merge. Fix should flip status->done + column->done
-    on verified merge, not just append a comm.'
+  text: 'evidence tonight: merge-sweep logs "already in origin/master — marked verified" in comms but leaves action.status:
+    running + column: doing. Hit 3 cards (fix-scenario-schedule-collision, ci-test-gate, runner-bootstrap-check)
+    — all had real merges, all needed manual close. Worse: stale-running sweeper re-dispatched the collision card
+    after its verified merge. Fix should flip status->done + column->done on verified merge, not just append a comm.'
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+action:
+  type: dispatch
+  status: queued
+  repo: chaba

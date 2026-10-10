@@ -4,15 +4,22 @@ kind: bug
 priority: high
 column: backlog
 autonomy: t2
-brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ Devin จัดการเรื่องฟังเสียง เรียบร้อยแล้ว อยู่ใน Doing" — journal shows
-  NO kanban file call and no such card. Same session, later: "เรื่องปฏิทินได้บันทึกไว้บนบอร์ดแล้ว" — no card exists. Two phantom
-  write claims in one session. This is the worst class of bug: the board IS the memory; a narrated-but-absent card silently
-  drops Tony''s ask. Fix directions: (a) instructions — never claim a write without the tool result confirming ok:True; (b)
-  kanban tool could return the spoken-confirm phrase; (c) ops-event detector for phantom_write_claim already exists — check
-  why it didn''t fire.'
+brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ Devin จัดการเรื่องฟังเสียง เรียบร้อยแล้ว อยู่ใน Doing" —
+  journal shows NO kanban file call and no such card. Same session, later: "เรื่องปฏิทินได้บันทึกไว้บนบอร์ดแล้ว"
+  — no card exists. Two phantom write claims in one session. This is the worst class of bug: the board IS the memory;
+  a narrated-but-absent card silently drops Tony''s ask. Fix directions: (a) instructions — never claim a write
+  without the tool result confirming ok:True; (b) kanban tool could return the spoken-confirm phrase; (c) ops-event
+  detector for phantom_write_claim already exists — check why it didn''t fire.'
 created: '2026-10-09'
-updated: 2026-10-09 16:05
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-09 16:05
   from: devin
   text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi

@@ -1,8 +1,7 @@
 id: ada-tool-retry-storm
-title: 'Retry storms on failing tools — tasks ×11 and calendar_read ×5 in seconds'
-brief: 'Audit 2026-10-09: on CalendarAuthError the model re-issued tasks action=list
-  ~11 times in 9s (16:31:03–16:31:12 ICT) and calendar_read 5 times in 9s
-  (16:32:09–16:32:18). Burns quota, adds dead air, never succeeds.'
+title: Retry storms on failing tools — tasks ×11 and calendar_read ×5 in seconds
+brief: 'Audit 2026-10-09: on CalendarAuthError the model re-issued tasks action=list ~11 times in 9s (16:31:03–16:31:12
+  ICT) and calendar_read 5 times in 9s (16:32:09–16:32:18). Burns quota, adds dead air, never succeeds.'
 column: backlog
 review_kind: verify
 priority: medium
@@ -13,8 +12,25 @@ tags:
 - tools
 - quota
 - audit-2026-10-09
-spec: "Add a per-session circuit breaker in ada-pi's tool runner: if the same tool\nfails\
-  \ twice with the same error_class within N seconds, return a synthesized\n'do not retry —\
-  \ tell the user it is broken' result instead of executing.\nCovers CalendarAuthError, ReadTimeout,\
-  \ ACL denials. Evidence: journal\n16:31:03-16:32:18 ICT. VERIFY: scenario — forced-failing\
-  \ tool stops after 2\ncalls; Ada narrates the outage once.\n"
+spec: 'Add a per-session circuit breaker in ada-pi''s tool runner: if the same tool
+
+  fails twice with the same error_class within N seconds, return a synthesized
+
+  ''do not retry — tell the user it is broken'' result instead of executing.
+
+  Covers CalendarAuthError, ReadTimeout, ACL denials. Evidence: journal
+
+  16:31:03-16:32:18 ICT. VERIFY: scenario — forced-failing tool stops after 2
+
+  calls; Ada narrates the outage once.
+
+  '
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi
+comms:
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+updated: 2026-10-10 08:03

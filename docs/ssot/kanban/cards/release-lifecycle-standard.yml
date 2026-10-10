@@ -1,41 +1,38 @@
 id: release-lifecycle-standard
-title: 'Release lifecycle standard — wire the stage gates (evidence checker, per-lane parity, soak timer)'
-brief: "ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too."
+title: Release lifecycle standard — wire the stage gates (evidence checker, per-lane parity, soak timer)
+brief: ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't
+  skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.
 column: backlog
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
-metric: >-
-  A card cannot reach done without the stage evidence its bars require —
-  [exp]/[alpha]/[beta]/[rc] comms tags + scenario result refs + parity diff —
-  enforced by a checker that runs inside kanban-sync (same pattern as
-  logs-kanban).
-verify: >-
-  Deliberately promote a test card missing evidence -> checker opens/re-pings
-  it back with the missing gate listed; a compliant card passes.
-spec: >-
-  Enforcement plan (gaps listed in the standard's deployment.gaps):
-  1. Comms tag convention: stage transitions append tagged comms
-     ([exp], [alpha], [beta], [rc], [prod]) — cheap, human + tool usable.
-  2. scripts/ada/lifecycle-check.py (new): reads standard bars + card comms;
-     cards in review/done missing required tags get bounced to doing with a
-     comms note naming the missing gate.
-  3. Per-lane parity checker generalizing frontend-parity-check.sh
-     (ha-release-pipeline).
-  4. Beta soak: card field `soak_until` set when entering review; checker
-     enforces 72h/3-session bar before pre-prod.
-  5. Post-deploy smoke hook inside promote-*.sh — health + one scenario
-     within 30min, result appended to comms.
-  6. Playlive browser smoke on the *-dev version as a required alpha->preprod
-     gate (Tony 2026-10-08): scripted browser pass on the dev twin's public
-     URL, evidence ref appended to comms — no dev-twin playlive evidence, no
-     promotion.
+updated: 2026-10-10 08:03
+metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
+  + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
+verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
+  listed; a compliant card passes.
+spec: "Enforcement plan (gaps listed in the standard's deployment.gaps): 1. Comms tag convention: stage transitions\
+  \ append tagged comms\n   ([exp], [alpha], [beta], [rc], [prod]) — cheap, human + tool usable.\n2. scripts/ada/lifecycle-check.py\
+  \ (new): reads standard bars + card comms;\n   cards in review/done missing required tags get bounced to doing\
+  \ with a\n   comms note naming the missing gate.\n3. Per-lane parity checker generalizing frontend-parity-check.sh\n\
+  \   (ha-release-pipeline).\n4. Beta soak: card field `soak_until` set when entering review; checker\n   enforces\
+  \ 72h/3-session bar before pre-prod.\n5. Post-deploy smoke hook inside promote-*.sh — health + one scenario\n\
+  \   within 30min, result appended to comms.\n6. Playlive browser smoke on the *-dev version as a required alpha->preprod\n\
+  \   gate (Tony 2026-10-08): scripted browser pass on the dev twin's public\n   URL, evidence ref appended to comms\
+  \ — no dev-twin playlive evidence, no\n   promotion."
 links:
-  - ha-lanes-program
-  - ha-release-pipeline
-  - request-lifecycle
-  - ops-incident-ladder
-  - ada-deploy-gate-tests
+- ha-lanes-program
+- ha-release-pipeline
+- request-lifecycle
+- ops-incident-ladder
+- ada-deploy-gate-tests
 blocked_by: []
 autonomy: t2
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+comms:
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)

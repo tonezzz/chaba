@@ -1,24 +1,26 @@
 id: ada-toolsd-runner-facade
 title: tools.d runner facade — runner.context.{mddb,ha_client,emit_ops_event}
-brief: Drop-ins get `runner` but hand-roll httpx against env URLs — they bypass
-  runner.mddb's leader/follower read-routing (built in mddb_client for
-  88f22e3-era resilience) and reach runner.context.ha_client informally.
-  Waiting in backlog.
+brief: Drop-ins get `runner` but hand-roll httpx against env URLs — they bypass runner.mddb's leader/follower read-routing
+  (built in mddb_client for 88f22e3-era resilience) and reach runner.context.ha_client informally. Waiting in backlog.
 column: backlog
 metric: all 5 tools.d modules use the facade; docs/ada-tool-dev.md declares it the contract
 verify: kill the MDDB leader -> a tools.d read fails over like core tools do
-note: 'Formalize in tool_runner: context exposes mddb (routed client),
-  ha_client, session_id, emit_ops_event(). Update docs/ada-tool-dev.md
-  authoring contract + migrate ada_track_device (5 hand-rolled call sites),
-  ada_market_quote, ada_board_write. Benefit beyond failover: fixture injection
-  for unit tests becomes one seam (ADA_TRACK_* env overrides become
-  unnecessary).'
-help: backend/tools_loader.py contract; tool_runner/common.py ToolContext;
-  backend/mddb_client.py read-routing; tools.d/ada_track_device.py current
-  raw-httpx pattern; docs/ada-tool-dev.md
-updated: 2026-10-08 16:00
+note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client, session_id, emit_ops_event().
+  Update docs/ada-tool-dev.md authoring contract + migrate ada_track_device (5 hand-rolled call sites), ada_market_quote,
+  ada_board_write. Benefit beyond failover: fixture injection for unit tests becomes one seam (ADA_TRACK_* env overrides
+  become unnecessary).'
+help: backend/tools_loader.py contract; tool_runner/common.py ToolContext; backend/mddb_client.py read-routing;
+  tools.d/ada_track_device.py current raw-httpx pattern; docs/ada-tool-dev.md
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-08 16:00
   from: devin
-  text: Assessment finding — resilience built for core tools does not reach
-    drop-ins; the newest tool invented runner.context.ha_client by need.
+  text: Assessment finding — resilience built for core tools does not reach drop-ins; the newest tool invented runner.context.ha_client
+    by need.
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi

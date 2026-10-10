@@ -1,19 +1,24 @@
 id: ada-pi-ci
 title: ada-pi CI — lint + unit tests + scenario-schema on push
-brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when
-  someone remembers; gh-runs-watch already exists in chaba for failure alerts.
-  Waiting in backlog.
+brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch
+  already exists in chaba for failure alerts. Waiting in backlog.
 column: backlog
 metric: every push to main runs tool-lint + pytest + scenario yaml validation; failures alert via gh-runs-watch
 verify: push a violating commit on a branch -> workflow fails + alert fires
-note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract),
-  (2) pytest tests/ -x (unit), (3) a cheap yaml.safe_load + required-keys check
-  over tests/scenarios-live/*.yaml (name/tier/turns). Wire repo into the existing
-  gh-runs-watch channel so failures page instead of rotting. Complements
-  ada-deploy-gate-tests — CI catches it at push, the gate catches what CI missed.'
+note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2) pytest tests/ -x (unit), (3) a
+  cheap yaml.safe_load + required-keys check over tests/scenarios-live/*.yaml (name/tier/turns). Wire repo into
+  the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
+  catches it at push, the gate catches what CI missed.'
 help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
-updated: 2026-10-08 16:00
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-08 16:00
   from: devin
   text: Assessment finding — contract exists locally but nothing enforces it on push.
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi

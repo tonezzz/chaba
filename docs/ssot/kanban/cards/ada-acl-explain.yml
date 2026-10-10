@@ -1,23 +1,26 @@
 id: ada-acl-explain
-title: "unified ACL resolver + 'who can do what' explain command"
-brief: 'Three overlapping ACL systems answer differently: control_policies
-  domain lists, ~/.config/ada/device-grants.json overlay, and per-bank
-  allowed_tools. ada_device_acl patched one room''s need; the unification
-  is still ahead. Waiting in backlog.'
+title: unified ACL resolver + 'who can do what' explain command
+brief: 'Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json
+  overlay, and per-bank allowed_tools. ada_device_acl patched one room''s need; the unification is still ahead.
+  Waiting in backlog.'
 column: backlog
 metric: ada_ops action='acl_explain' identity=X entity=Y traces which layer allowed/denied
 verify: explain a granted, a denied, and an ambiguous case — output names the deciding layer each time
-note: 'Read-only first step before merging the systems: one resolver function
-  consumed by all three gates, then the explain path. Makes "why can kk
-  control the TV" answerable in one call — today it is a three-file
-  investigation. Second phase (separate card when designed): converge the
-  stores behind the resolver.'
-help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py
-  device-grants.json; tool_runner bank.allowed_tools gate; ada-kanban-access card
-  for the ACL design history
-updated: 2026-10-08 16:00
+note: 'Read-only first step before merging the systems: one resolver function consumed by all three gates, then
+  the explain path. Makes "why can kk control the TV" answerable in one call — today it is a three-file investigation.
+  Second phase (separate card when designed): converge the stores behind the resolver.'
+help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
+  bank.allowed_tools gate; ada-kanban-access card for the ACL design history
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-08 16:00
   from: devin
-  text: Assessment finding — explainability first; merging three stores blind
-    would move the confusion, not remove it.
+  text: Assessment finding — explainability first; merging three stores blind would move the confusion, not remove
+    it.
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi

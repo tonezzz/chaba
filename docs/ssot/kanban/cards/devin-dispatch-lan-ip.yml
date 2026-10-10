@@ -1,15 +1,12 @@
 id: devin-dispatch-lan-ip
 title: devin dispatch SSHes to LAN IP 192.168.2.67 — dead when host off-LAN or wedged
-brief: 'Session 38b18589b0 (2026-10-07): devin dispatch failed twice with
-  "ssh: connect to host 192.168.2.67 port 22: Connection timed out" during the tony-dell
-  outage. The dispatch target should be the tailnet hostname
-  (tony-dell.taila0626a.ts.net), not the LAN address — tailnet survives LAN
-  partitioning and is the canonical path per ssot home inventory.'
+brief: 'Session 38b18589b0 (2026-10-07): devin dispatch failed twice with "ssh: connect to host 192.168.2.67 port
+  22: Connection timed out" during the tony-dell outage. The dispatch target should be the tailnet hostname (tony-dell.taila0626a.ts.net),
+  not the LAN address — tailnet survives LAN partitioning and is the canonical path per ssot home inventory.'
 column: backlog
 priority: medium
 program: ada-tools
-
-updated: 2026-10-08 20:35
+updated: 2026-10-10 08:03
 tags:
 - devin-dispatch
 - network
@@ -17,8 +14,17 @@ tags:
 comms:
 - at: 2026-10-08 20:35
   from: devin
-  text: 'filed from transcript audit — devin dispatch error output shows bare LAN IP;
-    check devin-dispatch target resolution in tools.d/devin.py'
+  text: filed from transcript audit — devin dispatch error output shows bare LAN IP; check devin-dispatch target
+    resolution in tools.d/devin.py
 - at: 2026-10-09 19:05
   from: devin
-  text: '2026-10-09 recurrence: connection refused (not timeout this time) on 192.168.2.67 all session window — every Ada ''hand this to Devin'' dispatch silently failed, user told it was queued. Consolidated dup card ada-devin-tool-stale-endpoint here; fix = tailnet hostname per card brief.'
+  text: '2026-10-09 recurrence: connection refused (not timeout this time) on 192.168.2.67 all session window —
+    every Ada ''hand this to Devin'' dispatch silently failed, user told it was queued. Consolidated dup card ada-devin-tool-stale-endpoint
+    here; fix = tailnet hostname per card brief.'
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+action:
+  type: dispatch
+  status: queued
+  repo: chaba

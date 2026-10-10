@@ -8,11 +8,10 @@ program: vcast
 area: monitoring
 priority: high
 note: no headless-* display registered
-help: Expects headless-* (vcast-headless@N on idc03) and vcast-real-* (vcast-real@N
-  on idc02) connected, and screen-N names on slot N. Dead headless usually = a 409-stuck
-  claim (fixed 2026-10-07 by force-reclaim + persisted keys); drift = pre-fix registry,
-  repair with POST /release + re-claim or let registerDisplay re-home it.
-updated: '2026-10-09'
+help: Expects headless-* (vcast-headless@N on idc03) and vcast-real-* (vcast-real@N on idc02) connected, and screen-N
+  names on slot N. Dead headless usually = a 409-stuck claim (fixed 2026-10-07 by force-reclaim + persisted keys);
+  drift = pre-fix registry, repair with POST /release + re-claim or let registerDisplay re-home it.
+updated: 2026-10-10 07:28
 action:
   status: open
   verified: false
@@ -29,6 +28,10 @@ comms:
   text: 'review sweep: verified evidence present, requests resolved — closed'
 - at: 2026-10-09 17:44
   from: devin
-  text: 'PARTIAL: flap cleared and auto-pair path landed, BUT fleet still unhealthy at 17:51 — pending displays churning (headless-2/4, vcast-real-6 unclaimed). Keeping open (ada-chat card self-claims pending displays
-    via keyless tailnet /claim). Comm prior said closed — normalizing column.'
+  text: 'PARTIAL: flap cleared and auto-pair path landed, BUT fleet still unhealthy at 17:51 — pending displays
+    churning (headless-2/4, vcast-real-6 unclaimed). Keeping open (ada-chat card self-claims pending displays via
+    keyless tailnet /claim). Comm prior said closed — normalizing column.'
+- at: 2026-10-10 07:28
+  from: tony
+  text: verified
 review_kind: triage

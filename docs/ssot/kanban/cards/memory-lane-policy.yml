@@ -1,40 +1,38 @@
 id: memory-lane-policy
-title: 'Memory lane policy — household vs private banks, dev never writes prod memory'
-brief: "Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory, Tony gets his private banks, and staging/test traffic can't pollute production memory."
+title: Memory lane policy — household vs private banks, dev never writes prod memory
+brief: Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory,
+  Tony gets his private banks, and staging/test traffic can't pollute production memory.
 column: backlog
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-10 08:03
 program: ha-lanes
-metric: >-
-  Bank registry carries an env/provenance rule: writes from non-prod contexts land
-  only in a scratch bank; household members get general/home/people/purchase +
-  own personal bank and nothing Tony-private; `home` bank made writable
-  (confirmed) so household procedures accumulate.
-verify: >-
-  ssot.apps.ada-memory-banks.yml updated + rendered; a dev-lane Ada session
-  (ADA_INSTANCE_ID=tony-dev) can read prod banks but ada_remember lands only in
-  ada-ha-bank-dev-scratch; KK session still reaches general/home/people/purchase
+metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
+  household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
+  writable (confirmed) so household procedures accumulate.'
+verify: ssot.apps.ada-memory-banks.yml updated + rendered; a dev-lane Ada session (ADA_INSTANCE_ID=tony-dev) can
+  read prod banks but ada_remember lands only in ada-ha-bank-dev-scratch; KK session still reaches general/home/people/purchase
   + personal-kk.
-spec: >-
-  Current model already does most of this: banks assigned per Ada instance,
-  person_scope routes KK/Testo to their own banks, fail-fast skips unassigned
-  banks. Delta for the lanes:
-  1. `home` bank writable:true + write_policy:confirmed (it is the shared
-     household notebook; currently read-only while it was planned).
-  2. New bank `dev-scratch`: status testing, writable+direct, collection
-     ada-ha-bank-dev-scratch, prompt_hidden — the only write target for
-     dev/staging Ada sessions.
-  3. Assignment rule: a dev Ada backend gets ADA_INSTANCE_ID=tony-dev/ada-dev;
-     add those IDs to prod banks as read-only (new field e.g.
-     instances_readonly) or leave them unassigned (fail-fast skips; scratch
-     still works). Pick the smallest change to memory_banks.py.
-  4. Provenance: docs written from dev contexts carry env: staging so drift
-     reports/consolidation can filter them out of prod digests.
-  5. Operational collections (events/snapshots/recall-summary) already suffix
-     per instance — dev instance IDs keep test telemetry out of prod feeds.
+spec: "Current model already does most of this: banks assigned per Ada instance, person_scope routes KK/Testo to\
+  \ their own banks, fail-fast skips unassigned banks. Delta for the lanes: 1. `home` bank writable:true + write_policy:confirmed\
+  \ (it is the shared\n   household notebook; currently read-only while it was planned).\n2. New bank `dev-scratch`:\
+  \ status testing, writable+direct, collection\n   ada-ha-bank-dev-scratch, prompt_hidden — the only write target\
+  \ for\n   dev/staging Ada sessions.\n3. Assignment rule: a dev Ada backend gets ADA_INSTANCE_ID=tony-dev/ada-dev;\n\
+  \   add those IDs to prod banks as read-only (new field e.g.\n   instances_readonly) or leave them unassigned\
+  \ (fail-fast skips; scratch\n   still works). Pick the smallest change to memory_banks.py.\n4. Provenance: docs\
+  \ written from dev contexts carry env: staging so drift\n   reports/consolidation can filter them out of prod\
+  \ digests.\n5. Operational collections (events/snapshots/recall-summary) already suffix\n   per instance — dev\
+  \ instance IDs keep test telemetry out of prod feeds."
 links:
-  - ha-lanes-program
-  - ssot.apps.ada-memory-banks.yml
+- ha-lanes-program
+- ssot.apps.ada-memory-banks.yml
 blocked_by: []
 autonomy: t2
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
+comms:
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)

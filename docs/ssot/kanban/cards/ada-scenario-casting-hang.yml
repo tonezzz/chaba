@@ -9,7 +9,7 @@ brief: '2026-10-09 (found while fixing fix-scenario-schedule-collision): ada-sce
   hang per scenario (e.g. vcast screen/service absent) exhausts the unit cap silently. Note ''last run'' evidence:
   preflight-bench passes all gates (ada up, :8002 listening, embed-probe up, no lock) so the hang is inside the
   run, not startup.'
-column: backlog
+column: review
 review_kind: verify
 priority: high
 kind: bug
@@ -33,16 +33,15 @@ spec: "Reproduce / diagnose:\n  ssh idc03 'journalctl --user -u ada-scenario-cas
   \ root cause is identified and\nfixed/acked.\n"
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
-  result: 'exit=0 ite-stall-diagnosis.yml` and `./dispatch-outcome-20261009-175929-reproduce-diagnose-ssh-idc03-j.md`.
-    | devin-task-20261009-175929-reproduce-diagnose-ssh-idc03-j.service: Consumed 1min 26.949s CPU time, 1.3G memory
-    peak, 0B memory swap peak.'
+  result: 20261009-193531-reproduce-diagnose-ssh-idc03-j finished (inactive) — see `devin-dispatch logs 20261009-193531-reproduce-diagnose-ssh-idc03-j`
   sweep:
     session_gone: 2026-10-09 18:33
   runner: tony-dell
   attempts: 1
   task_id: 20261009-193531-reproduce-diagnose-ssh-idc03-j
+  verified: true
 comms:
 - at: 2026-10-09 17:59
   from: chaba
@@ -149,7 +148,40 @@ comms:
     POST /apps/gev-cmd/command returns 200 with real view-state via tailnet edge (parallel dispatch verified E2E
     at 19:51). gemini key: DEAD — same AQ.… token in gemini-api-key.env + podman secret, 401 on models + Live ws
     (matches 18:13 invalid-credentials). Needs fresh AI Studio key.'
-updated: 2026-10-09 19:55
+- at: 2026-10-09 20:03
+  from: devin
+  text: 'DONE (tony-dell side). gev-cmd relay restored+verified: POST /apps/gev-cmd/command → 200 real view-state
+    from both tony-dell :8080 and idc03 via tailnet edge; bridge journal shows 200s. gemini-api-key confirmed dead
+    (identical AQ. token in all 3 stores, 401 as key+bearer; real-path check: gev_ws_tool_roundtrip → INFRA on clean
+    1000 close, journal shows 1008 invalid-credentials) — needs fresh AI Studio key, steps in dispatch outcome.
+    idc03 still pre-fix (8b3896a); pending request gev-cmd-relay-re'
+- at: 2026-10-09 20:05
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-09 20:05
+  from: chaba
+  text: 'session-end checkpoint 6b4ce1d6: 2 leftover file(s) committed'
+- at: 2026-10-09 20:05
+  from: chaba
+  text: pushed dispatch/20261009-193531-reproduce-diagnose-ssh-idc03-j to origin
+- at: 2026-10-09 20:05
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-09 20:05
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261009-193531-reproduce-diagnose-ssh-idc03-j not in origin/main
+    — close will block until merged'
+- at: 2026-10-09 20:18
+  from: chaba
+  text: 'merge-sweep: merged 73995540 (dispatch/20261009-193531-reproduce-diagnose-ssh-idc03-j from tony-dell) ->
+    origin/main'
+- at: 2026-10-10 07:28
+  from: tony
+  text: 'answered gev-cmd-relay-restored-verified-200-e2e-be01aa: deploy-and-budget — Deploy + budget pin'
+- at: 2026-10-10 07:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+updated: 2026-10-10 07:28
 requests:
 - id: tony-dell-side-needed-no-ssh-from-idc03-eb011b
   ask: 'tony-dell side needed (no ssh from idc03): (1) add strip: /apps/gev-cmd to gev-cmd route in chaba docs/ssot/infrastructure/ssot.routes.yml,
@@ -169,7 +201,7 @@ requests:
   answer: dispatch-it — Dispatch a tony-dell session
 - id: gev-cmd-relay-restored-verified-200-e2e-be01aa
   from: devin
-  status: open
+  status: answered
   ask: 'gev-cmd relay restored + verified 200 E2E. Two remaining: (1) gemini-api-key is dead — same AQ.… token 401s
     in gemini-api-key.env, gemini-mic-test.env, podman secret; needs a fresh AI Studio key (drop in ~/.config/secrets/gemini-api-key.env,
     a session can re-secret it). (2) idc03 runs pre-fix code (8b3896a) — OK to deploy-ada.sh + add Environment=BENCH_BUDGET_S=8400
@@ -184,6 +216,7 @@ requests:
   - id: hold
     label: Hold — leave for review
   suggested: deploy-and-budget
+  answer: deploy-and-budget — Deploy + budget pin
 claim:
-  session: 20261009-193531-reproduce-diagnose-ssh-idc03-j
   since: 2026-10-09 19:35
+awaiting_action: true

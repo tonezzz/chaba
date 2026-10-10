@@ -1,22 +1,28 @@
 id: speaker-id-owner-rebind
 title: Speaker-ID misidentification binds session owner to wrong ACL — rebind on correction
-brief: 'Session 7a74536b32 (2026-10-07): Tony was identified as KK twice (64% voiceprint
-  match). Consequence: ada_memory_search and cms_publish_page were denied with "Only the
-  session owner can run this action" — the session owner was bound to KK''s restricted
-  identity, silently stripping Tony''s owner-only tools mid-session.'
+brief: 'Session 7a74536b32 (2026-10-07): Tony was identified as KK twice (64% voiceprint match). Consequence: ada_memory_search
+  and cms_publish_page were denied with "Only the session owner can run this action" — the session owner was bound
+  to KK''s restricted identity, silently stripping Tony''s owner-only tools mid-session.'
 column: backlog
 priority: high
 program: ada-tools
-updated: 2026-10-08 20:35
+updated: 2026-10-10 08:03
 tags:
 - speaker-id
 - acl
 - audit-2026-10-08
-note: When user says "I'm not KK" / speaker correction, session must re-resolve identity
-  and rebind owner — not just apologize. Also consider a higher match threshold before
-  binding a restricted identity, or re-verify before owner-gated denials.
+note: When user says "I'm not KK" / speaker correction, session must re-resolve identity and rebind owner — not
+  just apologize. Also consider a higher match threshold before binding a restricted identity, or re-verify before
+  owner-gated denials.
 comms:
 - at: 2026-10-08 20:35
   from: devin
-  text: 'filed from transcript audit — evidence: session=7a74536b32, ada_memory_search
-    + cms_publish_page denied after speaker flap'
+  text: 'filed from transcript audit — evidence: session=7a74536b32, ada_memory_search + cms_publish_page denied
+    after speaker flap'
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+action:
+  type: dispatch
+  status: queued
+  repo: chaba

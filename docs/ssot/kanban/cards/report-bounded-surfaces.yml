@@ -1,56 +1,100 @@
 id: report-bounded-surfaces
-title: 'Bounded surfaces — shared budget/noise machinery for the report pipeline'
-brief: >-
-  The report registry now declares the standard (bounded_surfaces in
-  ssot.reports.yml): every rendered surface gets limits, suppression,
-  explicit empties, and ordered overflow — the same knobs the memory
-  render just gained. This card implements it: extract the shared
-  helpers, wire the L3 system report as pilot, and teach report-watch
-  to flag surfaces that breach their declared budget.
-column: backlog
+title: Bounded surfaces — shared budget/noise machinery for the report pipeline
+brief: 'The report registry now declares the standard (bounded_surfaces in ssot.reports.yml): every rendered surface
+  gets limits, suppression, explicit empties, and ordered overflow — the same knobs the memory render just gained.
+  This card implements it: extract the shared helpers, wire the L3 system report as pilot, and teach report-watch
+  to flag surfaces that breach their declared budget.'
+column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-10 03:36
 pipeline: ci
 autonomy: t2
-metric: >-
-  SYSTEM-REPORT.md renders with a declared budget: over-budget sections
-  shed in declared order (not arbitrary crop), an empty section shows
-  '_(empty — ran clean)_', and meta.extra.chars is recorded per rendered
-  node. Memory render and report render share the same helper code —
-  no duplicate truncation logic.
-verify: >-
-  Render SYSTEM-REPORT with an artificially tiny limit -> sections shed
-  in overflow_order with markers; a clean-run section renders the empty
-  marker; meta records chars. render-memory.py keeps passing its render
-  unchanged after the lib extraction (diff before/after context.md).
-spec: |
-  1. scripts/lib/bounded.py (new): extract from render-memory.py —
-     apply_budget(lines, soft, hard), dedupe_consecutive (×N),
-     drop_patterns, skip_status filter, entry cap. render-memory.py
-     imports from it (behavior must not change — diff a render).
-  2. scripts/report-system.py (pilot L3): read limits/overflow_order/
-     empty/suppress from the node's registry entry; render through
-     bounded.py; write extra.chars via lib/report.py::write_meta.
-  3. ssot.reports.yml: add limits/overflow_order to the system-report
-     node only — other nodes opt in as their producers get wired
-     (follow-on work, not this card).
-  4. report-watch.py: flag nodes whose meta.extra.chars > declared hard
-     limit (new BAD-class: 'overrun' is informational — report via a
-     focus-inbox note, don't page).
-  5. Do NOT add budgets to L0 artifact writers — bounded_surfaces is
-     rendered-surface only (the registry section says why).
-
-  After the pilot proves out, rolling the fields onto other rendered
-  nodes is a per-node follow-up — this card is the machinery + one
-  working example, per the usual demo pattern.
+metric: 'SYSTEM-REPORT.md renders with a declared budget: over-budget sections shed in declared order (not arbitrary
+  crop), an empty section shows ''_(empty — ran clean)_'', and meta.extra.chars is recorded per rendered node. Memory
+  render and report render share the same helper code — no duplicate truncation logic.'
+verify: Render SYSTEM-REPORT with an artificially tiny limit -> sections shed in overflow_order with markers; a
+  clean-run section renders the empty marker; meta records chars. render-memory.py keeps passing its render unchanged
+  after the lib extraction (diff before/after context.md).
+spec: "1. scripts/lib/bounded.py (new): extract from render-memory.py —\n   apply_budget(lines, soft, hard), dedupe_consecutive\
+  \ (×N),\n   drop_patterns, skip_status filter, entry cap. render-memory.py\n   imports from it (behavior must\
+  \ not change — diff a render).\n2. scripts/report-system.py (pilot L3): read limits/overflow_order/\n   empty/suppress\
+  \ from the node's registry entry; render through\n   bounded.py; write extra.chars via lib/report.py::write_meta.\n\
+  3. ssot.reports.yml: add limits/overflow_order to the system-report\n   node only — other nodes opt in as their\
+  \ producers get wired\n   (follow-on work, not this card).\n4. report-watch.py: flag nodes whose meta.extra.chars\
+  \ > declared hard\n   limit (new BAD-class: 'overrun' is informational — report via a\n   focus-inbox note, don't\
+  \ page).\n5. Do NOT add budgets to L0 artifact writers — bounded_surfaces is\n   rendered-surface only (the registry\
+  \ section says why).\n\nAfter the pilot proves out, rolling the fields onto other rendered\nnodes is a per-node\
+  \ follow-up — this card is the machinery + one\nworking example, per the usual demo pattern.\n"
 expected_goals:
-  - id: shared-lib
-    check: "file-exists scripts/lib/bounded.py"
-  - id: memory-render-uses-lib
-    check: "command grep -l 'lib.bounded\\|from lib import bounded\\|bounded' scripts/chaba/render-memory.py expect render-memory.py"
+- id: shared-lib
+  check: file-exists scripts/lib/bounded.py
+- id: memory-render-uses-lib
+  check: command grep -l 'lib.bounded\|from lib import bounded\|bounded' scripts/chaba/render-memory.py expect render-memory.py
 links:
-  - chaba-ci-standard
-  - chaba-memory-producer-hygiene
-  - release-lifecycle-standard
+- chaba-ci-standard
+- chaba-memory-producer-hygiene
+- release-lifecycle-standard
 blocked_by: []
+action:
+  type: dispatch
+  status: done
+  labels:
+  - always-on
+  runner: idc03
+  result: 'exit=0 new-e.md`, trail doc at `docs/ssot/jobs/infrastructure/2026-10-09-bounded-surfaces.yml`, board
+    updated. | devin-task-20261009-195511-1-scripts-lib-bounded-py-new-e.service: Consumed 29.668s CPU time, 248.8M
+    memory peak, 0B memory swap peak.'
+  sweep:
+    merge_err: 2026-10-10 03:36
+comms:
+- at: 2026-10-09 19:55
+  from: idc03
+  text: claimed
+- at: 2026-10-09 19:55
+  from: chaba
+  text: started devin-task-20261009-195511-1-scripts-lib-bounded-py-new-e on idc03 (dispatch)
+- at: 2026-10-09 19:57
+  from: devin
+  text: picked up — extracting scripts/lib/bounded.py from render-memory.py, then piloting on L3 system-report
+- at: 2026-10-09 20:03
+  from: devin
+  text: 'done — scripts/lib/bounded.py extracted (render diff byte-identical + 11/11 equivalence), report-system.py
+    renders through it w/ limits+overflow_order from registry, meta.extra.chars written, report-watch flags overruns
+    as low-pri inbox notes, limits declared on system-report node only. trail doc: docs/ssot/jobs/infrastructure/2026-10-09-bounded-surfaces.yml'
+- at: 2026-10-09 20:04
+  from: idc03
+  text: 'finished (ok): exit=0 new-e.md`, trail doc at `docs/ssot/jobs/infrastructure/2026-10-09-bounded-surfaces.yml`,
+    board updated. | devin-t'
+- at: 2026-10-09 20:04
+  from: chaba
+  text: 'session-end checkpoint 86db834c: 7 leftover file(s) committed'
+- at: 2026-10-09 20:04
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-09 20:04
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-09 20:18
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e conflicts with origin/master: scripts/chaba/render-memory.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-09 20:18
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e:
+    1 commit(s) conflict with origin/master '
+- at: 2026-10-10 03:36
+  from: chaba
+  text: 'merge-sweep: landing devin-task-20261009-195511-1-scripts-lib-bounded-py-new-e failed: worktree add: Command
+    ''[''git'', ''-C'', ''/home/tony/CascadeProjects/chaba-tony-dell'', ''worktree'', ''add'', ''--detach'', ''/tmp/merge-sweep-xyjzcxab'',
+    ''origin/master'']'' timed out after 60 seconds'
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/chaba/render-memory.py. Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261009-195511-1-scripts-lib-bounded-py-new-e
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-09 20:18
+  from: chaba

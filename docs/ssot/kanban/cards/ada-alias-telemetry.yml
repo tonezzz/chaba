@@ -1,22 +1,27 @@
 id: ada-alias-telemetry
 title: alias-hit rollup — deprecation path for the 91-name compat layer
-brief: 91 retired tool names still route via _ALIASES. conversation.log_event
-  already records the emitted name (alias included) — the data exists, nothing
-  aggregates it. Without a deprecation signal the compat layer is permanent and
-  the model never converges on canonical names. Waiting in backlog.
+brief: 91 retired tool names still route via _ALIASES. conversation.log_event already records the emitted name (alias
+  included) — the data exists, nothing aggregates it. Without a deprecation signal the compat layer is permanent
+  and the model never converges on canonical names. Waiting in backlog.
 column: backlog
 metric: weekly digest shows calls-per-alias; an alias at 0 hits for 14d becomes removal-eligible
 verify: digest lands in ada-ha-ops / reports-index; one real alias retires cleanly
-note: 'Rollup over transcript tool_call events (tool= field): count per emitted
-  name, split declared vs alias. Publish as CMS report or ops digest line.
-  Removal safety is already guaranteed by lint (no chains, gates resolve).
-  Output also feeds ada-dead-surface-metric — same pass, different question:
-  aliases = stale names; dead surface = declared tools nobody calls.'
-help: backend/tool_runner/common.py::_ALIASES; conversation.log_event(tool_call);
-  transcript store; scripts/tool-lint.py alias checks
-updated: 2026-10-08 16:00
+note: 'Rollup over transcript tool_call events (tool= field): count per emitted name, split declared vs alias. Publish
+  as CMS report or ops digest line. Removal safety is already guaranteed by lint (no chains, gates resolve). Output
+  also feeds ada-dead-surface-metric — same pass, different question: aliases = stale names; dead surface = declared
+  tools nobody calls.'
+help: backend/tool_runner/common.py::_ALIASES; conversation.log_event(tool_call); transcript store; scripts/tool-lint.py
+  alias checks
+updated: 2026-10-10 08:03
 comms:
 - at: 2026-10-08 16:00
   from: devin
-  text: Assessment finding — aliases mask drift; model keeps emitting vcast_list
-    forever with no pressure to learn action='list'.
+  text: Assessment finding — aliases mask drift; model keeps emitting vcast_list forever with no pressure to learn
+    action='list'.
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+action:
+  type: dispatch
+  status: queued
+  repo: ada-pi
