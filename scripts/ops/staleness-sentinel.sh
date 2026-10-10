@@ -23,7 +23,9 @@
 # Env overrides:
 #   STALENESS_SKIP   space-separated unit-name globs to skip
 #                    (default: oneshot-ish + container/template noise)
-#   EVENT_SSH        host:port for the HA chaba-event-log post (default dell LAN)
+#   EVENT_SSH        ssh target for the HA chaba-event-log post (default
+#                    tony-dell over tailnet — LAN-only targets can't report a
+#                    LAN-path outage)
 # Exit 0 always — findings go to the log + events, not the exit code.
 set -uo pipefail
 
@@ -32,7 +34,7 @@ LOG_FILE="$LOG_DIR/staleness-sentinel.log"
 STATE_DIR="$LOG_DIR/staleness-state"
 mkdir -p "$LOG_DIR" "$STATE_DIR"
 
-EVENT_SSH="${EVENT_SSH:-192.168.2.67}"
+EVENT_SSH="${EVENT_SSH:-tony-dell}"
 SKIP="${STALENESS_SKIP:-cast-desktop@*.service dbus-*.service devin-task-*.service}"
 WITH_SYSTEM=0
 [ "${1:-}" = "--system" ] && WITH_SYSTEM=1

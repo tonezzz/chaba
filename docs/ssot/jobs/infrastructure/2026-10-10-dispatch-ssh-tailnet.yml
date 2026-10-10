@@ -1,0 +1,161 @@
+# SSOT Job Lifecycle: dispatch SSH target — LAN IP -> tailnet
+# Card: devin-dispatch-lan-ip (repo chaba). Ada->Devin dispatch and the
+# ops-canary event posts targeted the tony-dell LAN IP 192.168.2.67,
+# which dies whenever the LAN is partitioned or the host is wedged —
+# exactly when dispatch/events matter.
+
+title: Dispatch SSH target flips from LAN IP to tailnet
+subtitle: 192.168.2.67 dies off-LAN; tailnet `tony-dell` verified working with BatchMode key auth — 2026-09-24 LAN-only rule reversed
+icon: network
+
+planning:
+  goal: |
+    Service-to-service ssh to tony-dell must survive LAN partitioning.
+    Kanban card devin-dispatch-lan-ip: Ada devin_dispatch failed with
+    "ssh: connect to host 192.168.2.67 port 22: Connection timed out"
+    (2026-10-07) and "Connection refused" all window (2026-10-09) — every
+    "hand this to Devin" dispatch silently died.
+  scope: |
+    In scope (this worktree, chaba repo):
+      - EVENT_SSH defaults in scripts/ops/{ssh-canary,staleness-sentinel,
+        mn01-canary}.sh and scripts/devin/{job-run,devin-dispatch-watch,
+        devin-dispatch-prune}.sh — LAN IP / tony-dell-lan -> tony-dell
+      - Doc corrections: runbook ada-devin-handoff-workflow.md, learning
+        ssot.learning.ada-devin-dispatch.2026-09-24.yml, job note
+        2026-09-22-ada-devin-dispatch.yml
+      - Sibling card for the ada-pi half (ADA_DEVIN_DISPATCH_HOST default
+        lives in ada-pi/backend/devin_dispatch.py — outside this worktree)
+    Out of scope:
+      - Editing ada-pi directly (separate repo, separate dispatch)
+      - Deliberately LAN-bound listeners (Caddy :8125/:8126 guest proxies,
+        Chromecast media URLs) — LAN is correct there
+  success_criteria:
+    - 'No chaba script defaults to a LAN-only ssh target for tony-dell'
+    - 'BatchMode ssh tony-dell verified working from dispatch-capable hosts'
+    - 'Stale "tailscaled-ssh intercepts :22" guidance marked superseded'
+  risks:
+    - 'If Tailscale SSH is re-enabled on tony-dell (RunSSH true +
+      check-mode), service ssh over tailnet hits interactive re-auth —
+      the ssh-canary tony-dell-ts target catches it; mitigation documented
+      in the learning superseded note.'
+    - 'Deployed ~/.local/bin copies lead repo copies — the script edits take
+      effect on hosts only when the repo files are synced to ~/.local/bin
+      (they are installed by copy, not symlink).'
+  resources:
+    - card docs/ssot/kanban/cards/devin-dispatch-lan-ip.yml
+    - scripts/ops/ssh-canary.sh (already probes both paths)
+    - learning ssot.learning.ada-devin-dispatch.2026-09-24.yml (stale rule)
+  owner: tony
+  estimated_duration: 1 session
+
+processing:
+  status: done
+  started_at: "2026-10-10"
+  steps:
+    - id: 1
+      label: Live verification of the failure + fix path
+      status: done
+      notes: |
+        From idc02: `ssh 192.168.2.67` -> Connection timed out (reproduces
+        the card's failure right now); `ssh tony-dell`,
+        `ssh tony-dell.taila0626a.ts.net`, `ssh 100.68.142.13` all return
+        via BatchMode key auth. From idc03 (Ada's current home): same —
+        tony-dell OK-TS, LAN IP timed out. On tony-dell:
+        `tailscale debug prefs` -> RunSSH:false, plain sshd enabled and
+        listening on 0.0.0.0:22 — the tailscaled-ssh interception that
+        forced the 2026-09-24 LAN-IP workaround no longer exists.
+        ssh configs verified: tony-omen Host tony-dell -> 100.68.142.13
+        (id_ed25519); mn01 Host tony-dell/100.68.142.13 ->
+        id_ed25519_tonydell; idc03 Host tony-dell(-m2m) -> 100.68.142.13
+        (id_tony_dell); idc02 resolves tony-dell via MagicDNS, default keys.
+        Note: mn01 has NO tony-dell-lan alias — the old EVENT_SSH default
+        `tony-dell-lan` was already silently broken there.
+    - id: 2
+      label: Flip EVENT_SSH defaults to tailnet
+      status: done
+      notes: |
+        ssh-canary.sh, staleness-sentinel.sh, mn01-canary.sh:
+        EVENT_SSH default 192.168.2.67 -> tony-dell. job-run.sh,
+        devin-dispatch-watch.sh, devin-dispatch-prune.sh: default
+        tony-dell-lan -> tony-dell. All remain env-overridable. The
+        ssh-canary TARGETS line keeps the tony-dell-lan probe — measuring
+        LAN-path health is its job; only the alert channel moves.
+    - id: 3
+      label: Doc corrections
+      status: done
+      notes: |
+        ada-devin-handoff-workflow.md: dispatch line now `ssh tony-dell`,
+        "LAN IP mandatory" replaced with tailnet-mandatory + the RunSSH
+        evidence; outcome-channel table and gotchas updated.
+        ssot.learning.ada-devin-dispatch.2026-09-24.yml: lesson
+        tailscaled-ssh-intercepts-plain-ssh marked superseded/REVERSED;
+        prevention rewritten to "survive LAN partitioning".
+        jobs/ada/2026-09-22-ada-devin-dispatch.yml step-5 note tagged
+        superseded (history preserved).
+    - id: 4
+      label: ada-pi sibling card
+      status: done
+      notes: |
+        The actual `ssh 192.168.2.67` Ada dispatch call lives in
+        ada-pi backend/devin_dispatch.py (ADA_DEVIN_DISPATCH_HOST default)
+        + tools.d/devin.py — outside this worktree. Filed card
+        ada-dispatch-tailnet-target (repo ada-pi, queued) with the spec
+        and verification evidence.
+  decisions:
+    - label: Tailnet short name `tony-dell`, not FQDN or raw IP
+      rationale: |
+        `tony-dell` resolves via ssh-config alias on hosts that have one
+        (tony-omen/mn01/idc03 — each pointing at 100.68.142.13 with the
+        right IdentityFile) and via MagicDNS everywhere else (verified
+        idc02). Matches the hostname-usage standard ("use the tailnet
+        short name or MagicDNS name").
+      alternatives_considered: |
+        192.168.2.67 (dead off-LAN — the bug), tony-dell-lan (same, and
+        undefined on mn01), raw 100.68.142.13 (works but bypasses the
+        alias convention; ssh config keys it anyway).
+    - label: No runtime fallback list
+      rationale: |
+        A probe-and-failover wrapper adds a second failure mode for a
+        benefit that only exists while Tailscale SSH is off — and the
+        canary already alarms when either path degrades. One canonical
+        resilient target is simpler.
+      alternatives_considered: ssh ProxyCommand failover script.
+
+followup:
+  verification:
+    - 'bash -n on all six edited scripts — syntax clean'
+    - 'Live: ssh -o BatchMode=yes tony-dell true from idc02/idc03 (done)'
+    - 'Next kanban dispatch watch: EVENT posts land during a LAN outage'
+  rollback_plan:
+    - 'Set EVENT_SSH=tony-dell-lan (or the IP) in the environment — all
+      defaults are env-overridable; git revert the commit for the code.'
+  handoff:
+    - 'ada-pi half: card ada-dispatch-tailnet-target (queued, repo ada-pi)'
+    - 'Deployed ~/.local/bin copies on each host need the repo sync
+      (scripts are installed by copy) — happens on next install/sync pass'
+  deferred:
+    - 'If Tailscale SSH is ever re-enabled on tony-dell, re-evaluate the
+      service-ssh target policy (documented in the learning superseded note)'
+
+report:
+  status: done
+  completed_at: "2026-10-10"
+  summary: |
+    Root cause confirmed live: Ada's devin dispatch SSHes the tony-dell LAN
+    IP 192.168.2.67, which is unreachable whenever the LAN is partitioned
+    (from idc02/idc03 right now) or sshd is wedged. The 2026-09-24 rule
+    that forced the LAN IP is stale — Tailscale SSH is disabled on
+    tony-dell (RunSSH:false) so the tailnet path carries plain sshd key
+    auth with no interactive check. Flipped all six chaba-side ssh-to-dell
+    defaults (canary alerts, dispatch outcome events, job-run fallback) to
+    `tony-dell`, corrected the runbook + learning + job docs, and filed
+    ada-dispatch-tailnet-target for the ada-pi client-side default
+    (ADA_DEVIN_DISPATCH_HOST) which lives outside this worktree.
+  lessons:
+    - Defaults that alert on a path must not depend on that path —
+      EVENT_SSH=192.168.2.67 meant a LAN outage also killed its own alarm.
+    - Infrastructure lessons have a shelf life — RunSSH flipped off at some
+      point and a rule written for it became the bug. Date-stamped
+      superseded notes beat silent doc edits.
+    - 'ssh -G <alias> + tailscale debug prefs are the two commands that
+      settle "which path does service ssh actually take".'

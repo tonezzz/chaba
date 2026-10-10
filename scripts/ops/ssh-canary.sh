@@ -25,7 +25,10 @@
 #   SSH_CANARY_CONNECT_TIMEOUT  (default 6)
 #   SSH_CANARY_BANNER_TIMEOUT   (default 6)
 #   SSH_CANARY_ALERT_AFTER      consecutive failures before alert (default 2)
-#   EVENT_SSH                   host:port for the HA chaba-event-log post
+#   EVENT_SSH                   ssh target for the HA chaba-event-log post
+#                               (default: tony-dell over tailnet — survives LAN
+#                               partitioning; LAN-only targets can't report a
+#                               LAN-path outage)
 # Exit 0 if every target answered the full ssh probe, 1 otherwise.
 set -uo pipefail
 
@@ -37,7 +40,7 @@ mkdir -p "$LOG_DIR" "$STATE_DIR"
 CONNECT_TIMEOUT="${SSH_CANARY_CONNECT_TIMEOUT:-6}"
 BANNER_TIMEOUT="${SSH_CANARY_BANNER_TIMEOUT:-6}"
 ALERT_AFTER="${SSH_CANARY_ALERT_AFTER:-2}"
-EVENT_SSH="${EVENT_SSH:-192.168.2.67}"
+EVENT_SSH="${EVENT_SSH:-tony-dell}"
 PORT=22
 
 TARGETS="${SSH_CANARY_TARGETS:-tony-dell-ts|tony-dell|100.68.142.13 tony-dell-lan|tony-dell-lan|192.168.2.67}"
