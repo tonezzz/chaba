@@ -1,0 +1,40 @@
+id: ada-gemini-free-tier-quota
+title: Gemini free-tier 20/day cap exhausts every day — Ada side tools fail ~21h daily
+kind: bug
+priority: high
+column: backlog
+autonomy: t1
+brief: "ada-ha-tony journal, 7d: gemini-2.5-flash generateContent calls return
+  429 RESOURCE_EXHAUSTED — metric generate_content_free_tier_requests, limit
+  20 req/day/project/model. Failure lines per day escalating: Oct06=33,
+  Oct07=170, Oct08=210, Oct09=744, Oct10=201 (partial). Each 429 carries
+  'retry in ~21h' — once the cap hits, every flash-backed tool call fails
+  for the rest of the UTC day. Confirmed casualties: web_search tool,
+  documents.check (classify on ingest). Likely explains a share of the
+  'tool quietly failed' audits. NOTE: dispatch/CLI side (devin tasks on
+  idc02/mn01) shows ZERO rate-limit errors — this is only the Gemini free
+  tier under ada-ha."
+spec: "Options, pick after checking how many keys/projects are already wired
+  (secrets: ~/.config/secrets/ada-ha-tony-keys.json on idc03):\n
+  A. Move side-tool calls (web_search, documents classify, any flash
+  generateContent) to a billing-enabled project/key — quota is
+  per-project-per-model, billing removes the 20/day wall.\n
+  B. Round-robin across N projects/keys — each project gets its own 20/day
+  free tier.\n
+  C. Cache + debounce: web_search results and document classify are
+  repeat-heavy; a small cache cuts the request count.\n
+  D. Loud-fail surface: when quota exhausts, flag ops event + tell Tony
+  plainly (companion to google-token-loud-fail pattern) instead of silent
+  per-call failures.\nVERIFY: simulate/confirm no 429s in ada-ha-tony journal
+  for 48h; during a forced-exhaust test, Ada surfaces the quota error
+  instead of silent tool failure."
+expected_goals:
+- check: test "$(ssh -o BatchMode=yes idc03 'journalctl --user -u ada-ha-tony --since \"2 days ago\" --no-pager | grep -c \"429 Too Many Requests\"')" -lt 10
+  expect: exit
+  id: quota-429s-drained
+created: '2026-10-09'
+comms:
+- at: 2026-10-10 08:10
+  from: devin
+  text: filed from Tony's question 'how are we using token? a lot of rate limit?' — journal evidence above
+updated: 2026-10-10 08:10
