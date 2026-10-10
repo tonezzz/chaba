@@ -2,7 +2,7 @@ id: ada-phantom-card-claims
 title: 'Ada phantom-writes: narrates kanban cards that were never filed'
 kind: bug
 priority: high
-column: doing
+column: done
 autonomy: t2
 brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ Devin จัดการเรื่องฟังเสียง เรียบร้อยแล้ว อยู่ใน Doing" —
   journal shows NO kanban file call and no such card. Same session, later: "เรื่องปฏิทินได้บันทึกไว้บนบอร์ดแล้ว"
@@ -11,7 +11,7 @@ brief: 'Session 67b02417a8: Ada told Tony "เปิดการ์ดให้ 
   without the tool result confirming ok:True; (b) kanban tool could return the spoken-confirm phrase; (c) ops-event
   detector for phantom_write_claim already exists — check why it didn''t fire.'
 created: '2026-10-09'
-updated: 2026-10-10 08:31
+updated: 2026-10-10 08:35
 comms:
 - at: 2026-10-09 16:05
   from: devin
@@ -33,8 +33,55 @@ comms:
   text: 'fix landed in worktree: (a) DONE-MEANS-DONE + request-capture instructions now require ok before board
     claims; (b) kanban file does verify-after-write + returns card id; (c) phantom detector gained board vocabulary
     and a backing-call gate — a passed read no longer whitewashes a write claim. 983 tests, only pre-existing failures.'
+- at: 2026-10-10 08:33
+  from: mn01
+  text: 'finished (ok): exit=0 progress posted to the board. Changes are uncommitted in this worktree per dispatch
+    rules. | devin-task-20261010-'
+- at: 2026-10-10 08:33
+  from: chaba
+  text: 'session-end checkpoint 4101df05: 6 leftover file(s) committed'
+- at: 2026-10-10 08:33
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:33
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 08:34
+  from: chaba
+  text: 'merge-sweep: devin-task-20261010-010520-ada-phantom-writes-narrates-ka no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-10 08:34
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:34
+  from: chaba
+  text: 'merge-sweep: merged 192b18eb (dispatch/20261010-010520-ada-phantom-writes-narrates-ka from mn01) -> origin/main'
+- at: 2026-10-10 08:34
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 08:35
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:35
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 08:44
+  from: devin
+  text: 'verified closed: dispatch push failed on mn01 (no GH creds) but work landed in ada-pi/main via
+    merge 192b18e — checkpoint 4101df0 is ancestor; phantom-claims guard + observability resilience +
+    tests (488 insertions). Salvage confirmed unnecessary.'
+
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: mn01
+  result: 'exit=0 progress posted to the board. Changes are uncommitted in this worktree per dispatch rules. | devin-task-20261010-010520-ada-phantom-writes-narrates-ka.service:
+    Consumed 1min 29.156s CPU time over 27min 505ms wall clock time, 1G memory peak.'
+  sweep:
+    stale_running: 2026-10-10 08:34
+  verified: true
+claim: {}

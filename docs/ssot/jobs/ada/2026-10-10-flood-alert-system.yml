@@ -1,0 +1,123 @@
+title: Flood situation alert system — severity watchdog + HA iPhone push
+subtitle: >-
+  Closes the alert gap in the flood pipeline: flood-news-update.py writes
+  CMS pages every 15 min but nothing escalated to Tony. flood-alert.py
+  scans the same feeds, classifies Thai/English severity vocabulary, and
+  pushes ONE batched notification per run for new items at/above each
+  page's alert_min.
+icon: bell
+id: 2026-10-10-flood-alert-system
+status: committed (install pending)
+owner: devin-dispatch
+project: chaba
+card: flood-situation-alert-system-9f3407
+started: "2026-10-10"
+
+context:
+  card: >
+    Thin card "Flood Situation Alert System" captured by Ada via
+    board-api 2026-10-10 01:39 — Tony wants ongoing flood monitoring +
+    alerts (sibling card monitor-flood-situation-and-update-cms-r-e082c7:
+    "user wants ongoing monitoring of the flood situation in Bangkok").
+  gap: >
+    Existing pieces: ada-flood-news.timer on idc02 regenerates
+    flood-report* CMS pages every 15 min; news-flood.timer on idc03 writes
+    the news-flood digest hourly; Flood Hub gauge API is waitlist-blocked
+    (card flood-hub-integration). Missing: any severity judgement or push
+    channel — a dam breach would sit silently in a CMS page until Tony
+    looked.
+  channel_decision: >
+    Push via scripts/board/board_notify.py, channel 'ha' —
+    notify.mobile_app_tony_ip on tony-ha loopback + ~/.config/secrets/
+    home-assistant-token.env. Proven live by devin-dispatch-watch and the
+    board-request notify hook. yomi LINE rejected (session invalid);
+    ntfy rejected (external SaaS, no subscription). Job therefore runs on
+    tony_dell, NOT idc02 — idc02 has no HA token file and tony-ha binds
+    loopback; also keeps alerting alive if the idc02 CMS writer breaks.
+  severity_model: >
+    Vocabulary, not presence — every collected item is already
+    flood-related (feeds + 'require' filter), so 'info' is baseline.
+    warning = เตือนภัย/เฝ้าระวัง/น้ำท่วมฉับพลัน/น้ำป่า/ระบายน้ำ/ท่วมขัง/
+    ถนนปิด + flash flood/flood warning/runoff/dam discharge.
+    critical = อพยพ/ภัยพิบัติ/เสียชีวิต/จมน้ำ/มวลน้ำ/วิกฤต/ท่วมสูง +
+    evacuat*/drown/death toll/disaster zone/state of emergency, plus a
+    paired barrier(คันกั้น|เขื่อน|dike|dam)+breach(แตก|ทะลัก|รั่ว|breach|
+    burst|collaps) match — so routine 'เขื่อนเจ้าพระยาระบายน้ำ' stays
+    warning but 'เขื่อนแตก' goes critical.
+  thresholds: >
+    Per-page 'alert_min' in flood-news-feeds.json (registry doc can
+    override — same precedence as all other knobs): flood-report
+    (home) = warning; flood-report-pattaya-rayong = warning;
+    flood-report-nongdon-saraburi = critical — every dam-discharge cycle
+    generates เฝ้าระวัง copy; routine watch language there is noise.
+    'alert_min: off' or 'alert: false' disables a page's alerts.
+  dedup: >
+    State file ~/.cache/flood-alert-state.json on tony-dell, keyed by
+    flood-news-update.dedup_key(title). Each item fires at most once per
+    severity level — a re-classification upward fires once more
+    (escalation). Missing state file = silent seed (arming never bursts).
+    Items pruned after 14 days.
+  observability: >
+    Each run writes ada-cms-automation doc 'flood-alert'
+    (interval_min 15, last_run, last_status, alerts_sent, alert_log tail)
+    so cms-auto-health watches the lane — a dead timer surfaces as a
+    cms-auto-flood-alert kanban card in review, same as broken page
+    generators. flood-news-update --all skips the feed-less doc cleanly.
+
+code_changes:
+  - scripts/ada/flood-alert.py (new) — the watchdog; reuses
+    flood-news-update.py fetch/dedup/registry machinery via importlib
+    (module name has dashes) and scripts/board/board_notify.py for push.
+  - scripts/ada/flood-news-feeds.json — alert_min/alert_label per page +
+    _comment docs.
+  - docs/ssot/infrastructure/ssot.jobs.yml — job:flood-alert (host
+    tony_dell, every 15m, systemd, env MDDB_BASE_URL + BOARD_NOTIFY_CHANNEL=ha).
+  - systemd/generated/tony_dell/flood-alert.{service,timer} — rendered.
+  - docs/ssot/infrastructure/ssot.automation.yml — flood_alert entry.
+  - tests/ada/test_flood_alert.py — 14 unit tests (classifier tiers,
+    thresholding, state dedup/escalation, cross-page merge, push render).
+
+install_state:
+  pending: >-
+    Post-merge on tony-dell: `scripts/render-jobs.py --host tony_dell
+    --install` (copies generated units to ~/.config/systemd/user,
+    daemon-reload, enables+starts the timer). First run seeds the state
+    silently; the first NEW severe item after that produces a real push.
+  verify_install: >-
+    systemctl --user list-timers flood-alert.timer;
+    journalctl --user -u flood-alert.service -n 20 — expect 'seeded N
+    items' on first run, then 'nothing new' or 'push sent'.
+
+verification:
+  - "python3 scripts/ada/flood-alert.py --self-test -> 9/9 ok"
+  - "python3 -m unittest tests.ada.test_flood_alert -> 14/14 ok"
+  - "--dry-run against live feeds (2026-10-10): correctly flagged CRIT
+    'ชลบุรีอ่วม! มวลน้ำ…ท่วมสูง' (Pattaya/Rayong), kept routine
+    เขื่อนเจ้าพระยาระบายน้ำ items at warning, กทม. traffic/น้ำขัง items
+    at warning on the home page"
+  - "end-to-end with seeded state + file channel: escalation re-alert
+    fired, batched 'FLOOD ALERT — 6 critical' push written to sink,
+    15 item keys + alert_log recorded; MDDB-down run degrades to
+    seed-config-only without crashing"
+  - "python3 scripts/render-jobs.py --check -> OK 45 jobs"
+
+tuning:
+  quieter: raise alert_min to 'critical' on flood-report in
+    flood-news-feeds.json (or the live ada-cms-automation registry doc —
+    it wins over the seed).
+  louder: lower alert_min to 'warning' on nongdon-saraburi, or add a new
+    feed+page — alerts inherit the page's knobs.
+  channel: BOARD_NOTIFY_CHANNEL env on job:flood-alert — 'file' to test
+    (BOARD_NOTIFY_FILE sink), 'off' to silence without uninstalling.
+  preview: flood-alert.py --dry-run prints per-item severity + the exact
+    push body that would fire.
+
+known_limits:
+  - News-vocabulary severity can be fooled — commentary videos shouting
+    วิกฤต push once each (deduped, but still a push). If noisy, raise
+    alert_min per page rather than tuning the regex.
+  - Flood Hub gauge data (card flood-hub-integration) is still the real
+    sensor; this is news-signal alerting until the API key lands. When
+    it does, the same push path should carry gauge>=WARNING alerts.
+  - Two headline variants of one story can push twice (different dedup
+    keys) — bounded, acceptable.

@@ -12,7 +12,7 @@ note: 'Rollup over transcript tool_call events (tool= field): count per emitted 
   tools nobody calls.'
 help: backend/tool_runner/common.py::_ALIASES; conversation.log_event(tool_call); transcript store; scripts/tool-lint.py
   alias checks
-updated: 2026-10-10 08:31
+updated: 2026-10-10 08:33
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -47,6 +47,23 @@ comms:
 - at: 2026-10-10 08:31
   from: chaba
   text: run finished (inactive) → review
+- at: 2026-10-10 08:32
+  from: chaba
+  text: 'session-end checkpoint 650d1030: 8 leftover file(s) committed'
+- at: 2026-10-10 08:32
+  from: chaba
+  text: pushed dispatch/20261010-080626-alias-hit-rollup-deprecation-p to origin
+- at: 2026-10-10 08:32
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-10 08:32
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261010-080626-alias-hit-rollup-deprecation-p not in origin/main
+    — close will block until merged'
+- at: 2026-10-10 08:33
+  from: chaba
+  text: 'merge-sweep: merged 9fccec5d (dispatch/20261010-080626-alias-hit-rollup-deprecation-p from tony-dell) ->
+    origin/main'
 action:
   type: dispatch
   status: done
@@ -55,7 +72,7 @@ action:
   attempts: 1
   task_id: 20261010-080626-alias-hit-rollup-deprecation-p
   result: 20261010-080626-alias-hit-rollup-deprecation-p finished (inactive) — see `devin-dispatch logs 20261010-080626-alias-hit-rollup-deprecation-p`
-  merge_pending: true
+  verified: true
 claim:
   since: 2026-10-10 08:06
 review_kind: verify

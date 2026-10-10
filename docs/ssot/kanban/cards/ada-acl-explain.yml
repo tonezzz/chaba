@@ -11,7 +11,7 @@ note: 'Read-only first step before merging the systems: one resolver function co
   Second phase (separate card when designed): converge the stores behind the resolver.'
 help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
   bank.allowed_tools gate; ada-kanban-access card for the ACL design history
-updated: 2026-10-10 08:14
+updated: 2026-10-10 08:33
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -35,6 +35,13 @@ comms:
   text: 'attempt 2 started — mapped the three ACL layers (control_policies+grants overlay in memory_banks.control_allowed,
     person_policies bank ACL, per-bank allowed_tools in _check_memory_write_allowed). Plan: acl_decision() resolver
     on MemoryBankRegistry, gates delegate to it, ada_ops action=acl_explain exposes the trace.'
+- at: 2026-10-10 08:33
+  from: devin
+  text: 'DONE (attempt 2, branch dispatch/20261010-080608, commit c0ceba9, not pushed). One resolver — MemoryBankRegistry.acl_decision(identity,
+    entity_id=|bank=|tool=) — now backs control_allowed, bank_allowed, _check_control_allowed, and _check_memory_write_allowed;
+    ada_ops action=''acl_explain'' returns the trace + runtime gates (READ_ONLY/guest-pattern/dangerous/rate). Verify:
+    granted (kk+media_player via allow_domains), denied (kk+cover.gate via allow_domains), ambiguous (grant losing
+    to deny_entities'
 action:
   type: dispatch
   status: running
