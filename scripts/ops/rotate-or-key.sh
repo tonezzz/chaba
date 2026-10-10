@@ -99,11 +99,16 @@ else
   say "· openclaw-gateway: reads sqlite at call time — no restart needed"
 fi
 
-# ── e2e: one :free chat call ───────────────────────────────────────
+# ── e2e: one :free chat call (free slugs churn — query live list) ──
 say "→ e2e: :free model call"
+FREE_MODEL=$(curl -sf -m 20 https://openrouter.ai/api/v1/models \
+  -H "Authorization: Bearer $KEY" \
+  | python3 -c "import json,sys; print(next(m['id'] for m in json.load(sys.stdin)['data'] if m['id'].endswith(':free')))") \
+  || die "no :free model found in catalog"
+say "   using $FREE_MODEL"
 curl -sf -m 30 https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"model":"qwen/qwen3.8-27b:free","messages":[{"role":"user","content":"reply with the single word ok"}],"max_tokens":8}' \
+  -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"reply with the single word ok\"}],\"max_tokens\":8}" \
   | python3 -c "import json,sys; print('   reply:', json.load(sys.stdin)['choices'][0]['message']['content'].strip()[:40])" \
   || die "e2e call failed — check per-store files above"
 
