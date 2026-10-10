@@ -7,7 +7,7 @@ review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 12:04
+updated: 2026-10-10 12:07
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -80,4 +80,10 @@ comms:
 - at: 2026-10-10 12:04
   from: chaba
   text: started devin-task-20261010-120438-enforcement-plan-gaps-listed-i on tony-omen (dispatch)
+- at: 2026-10-10 12:07
+  from: devin
+  text: 'picked up on tony-omen (2nd attempt — idc03 worktree lost after merge conflict on promote-michael.sh).
+    Plan: release: opt-in + tag convention in the standard; lifecycle-check.py in kanban-sync (bounce review/done
+    w/o gate tags, stamps soak_until); dev-twin-smoke.py via playlived -> [smoke] comms; promote-lane.sh gates ([smoke]+soak
+    before --confirm) + post-deploy smoke -> [rc]/[prod] comms.'
 claim: {}
