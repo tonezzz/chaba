@@ -26,7 +26,8 @@ procedures:
   # --- member / identity ---
   - {id: member-node,   where: "card member-node-kk-ha + ssot.terminology.yml#Member Node",   trigger: "adding a per-person HA node",            status: verified, last_run: 2026-10-09}
   - {id: member-user,   where: "card member-user-onboarding",                                  trigger: "adding a user to a member node (HA user + person + bank policy + Access)", status: verified, last_run: 2026-10-09}
-  - {id: member-tg,     where: "card kk-ha-tg-relay",                                          trigger: "wiring a TG group to an Ada instance (bot per instance)", status: pending, last_run: null}
+  - {id: member-tg,     where: "card kk-ha-tg-relay + docs/kb/msg-lane-standard.md",           trigger: "wiring a TG/LINE group to an Ada instance (bot per instance)", status: verified, last_run: 2026-10-10}
+  - {id: msg-lane,      where: "docs/kb/msg-lane-standard.md",                                 trigger: "any bot/messaging lane outbound or new lane (tag + push contract)", status: verified, last_run: 2026-10-10}
   # --- deploy / infra ---
   - {id: placement,     where: "infrastructure/ssot.host-capacity.yml#procedure",              trigger: "any deploy/service placement decision", status: verified, last_run: 2026-10-09}
   - {id: ha-node-migrate, where: "card member-nodes-to-vps-ha (ops notes)",                    trigger: "moving an HA container between hosts",  status: verified, last_run: 2026-10-09}
