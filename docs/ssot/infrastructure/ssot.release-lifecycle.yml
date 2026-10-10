@@ -54,7 +54,8 @@ stages:
       relevant live scenario(s) pass 2 consecutive runs; tool-lint /
       typecheck / ssot-validate clean; no errors in the dev twin's log
       during the test window.
-    evidence: scenario result docs in ada-ha-scenario-reports + card comms link
+    evidence: scenario result docs in ada-ha-scenario-reports + card comms
+      [alpha] tag linking the runs
     feedback_loop: >-
       scenario failures bounce the card back to doing with the failing
       turn cited in comms; hourly smoke suite re-runs detect drift.
@@ -68,7 +69,8 @@ stages:
       72h soak OR >=3 real sessions, zero auto-opened incident cards
       attributable to the change, user feedback captured (transcript or
       explicit verdict).
-    evidence: card comms beta-soak note + ada-transcript-audit extract
+    evidence: card comms [beta] soak note + ada-transcript-audit extract;
+      card.soak_until is the timer
     feedback_loop: >-
       report-watch / logs-kanban / transcript audit findings link back
       to the card; a regression during soak reverts to alpha stage.
@@ -81,8 +83,9 @@ stages:
     exit_gate: >-
       parity diff between dev twin and prod shows exactly the declared
       scope (nothing extra, nothing missing); promote dry-run output
-      attached to comms; rollback step written.
-    evidence: parity diff + rollback plan in card comms
+      attached to comms; rollback step written; dev-twin browser smoke
+      passed (dev-twin-smoke.py — no playlive evidence, no promotion).
+    evidence: card comms [smoke] + [rc] tags (parity diff + rollback plan)
     feedback_loop: >-
       unexplained drift in the parity diff blocks promotion — drift
       means the two instances diverged and the release would be
@@ -97,7 +100,8 @@ stages:
       promote script ran with --confirm; post-deploy smoke within 30min;
       sync-ssot-from-live + commit + push; SSOT/AGENTS updated;
       dashboard mutations synced immediately (parallel-session rule).
-    evidence: deploy log + smoke result + commit hash in card comms; card -> done
+    evidence: deploy log + smoke result + commit hash in card comms —
+      promote-lane.sh posts [prod]; card -> done
     feedback_loop: >-
       staleness-sentinel confirms the running process matches the new
       files (<10min sweep); health checks go green; hourly smoke suite
@@ -115,6 +119,29 @@ stages:
       focus-inbox -> kanban card -> s0 again. Postmortem entries append
       to the release card and can mint ssot.learning.* records.
 
+evidence_convention:
+  # The machine-checkable contract (card release-lifecycle-standard,
+  # enforced 2026-10-10). Cheap for humans, parseable by tools.
+  opt_in: "a card joins the lifecycle by setting a truthy `release:` field
+    (convention: the lane/track name, e.g. `release: tony`). Cards without
+    it are untouched — reports, chores and non-release work are exempt."
+  comms_tags: "stage transitions append a comms line carrying the tag:
+    [exp] experiment answered | [alpha] dev-twin scenarios green |
+    [beta] soak note (may cite '>= N sessions' to meet sessions_min early) |
+    [smoke] dev-twin browser pass via dev-twin-smoke.py (alpha->pre-prod
+    gate) | [rc] parity diff + rollback plan (promote-lane.sh posts) |
+    [prod] deploy + post-deploy smoke result (promote-lane.sh posts)"
+  soak_timer: "card field `soak_until` — lifecycle-check.py stamps it the
+    first time a release card is seen in review (= entry + soak_hours).
+    Soak is satisfied when it passes OR a [beta] comms cites >=
+    sessions_min sessions."
+  checker: "scripts/ada/lifecycle-check.py runs inside kanban-sync.sh —
+    review-column release cards missing [exp]/[alpha] and done-column cards
+    missing any of [exp alpha beta smoke rc prod] (or the soak bar) bounce
+    back to doing with a comms note naming the missing gate.
+    `--gate <card.yml> --stage review|preprod|done` is the read-only mode
+    promote-lane.sh calls before honoring --confirm on a release card."
+
 bars:
   alpha:
     consecutive_scenario_passes: 2     # flaky-then-green is not green
@@ -126,8 +153,11 @@ bars:
   preprod:
     parity_unexplained_drift_max: 0   # any unexplained diff blocks
     rollback_plan_required: true
+    dev_twin_smoke_required: true     # [smoke] comms tag — no playlive
+      # evidence on the dev twin, no promotion (Tony 2026-10-08)
   production:
-    post_deploy_smoke_within_min: 30
+    post_deploy_smoke_within_min: 30  # built into promote-lane.sh — runs
+      # immediately after the parity-after diff
     sync_ssot_required: true          # sync-ssot-from-live.sh after any
       # push-dashboard mutation — unsynced live state is the main
       # cross-session drift source
@@ -141,13 +171,14 @@ deployment:
     capture: "board-api POST /card; Ada ada_board_write action=create; Devin open-ask duty"
     alpha_scenarios: "tests/scenarios-live/* via scenario-live.py; hourly smoke timer on idc03"
     parity: "scripts/home-assistant/frontend-parity-check.sh <lane| --from A --to B> — per-lane twin diff (ha-twin-diff.py + ha-lanes.sh, registry ssot.home-assistant.lanes.yml)"
-    promote: "deploy-card.sh (dev), promote-lane.sh via promote-<lane>.sh — scoped release (dashboards/bundle/automations/helpers/users) with mandatory --confirm"
+    dev_twin_smoke: "scripts/home-assistant/dev-twin-smoke.py --lane <lane> --card <id> — playlived headless pass on the dev twin; [smoke] comms + reports/dev-twin-smoke/ evidence"
+    lifecycle_check: "scripts/ada/lifecycle-check.py — comms-tag gate enforcement + soak_until stamping, inside kanban-sync.sh"
+    promote: "deploy-card.sh (dev), promote-lane.sh via promote-<lane>.sh — scoped release (dashboards/bundle/automations/helpers/users) with mandatory --confirm; s4 gate check on release cards ([smoke]+soak), posts [rc] + [prod] comms and runs the post-deploy smoke"
     feedback: "report-watch.timer, logs-kanban, staleness-sentinel, mddb-binlog-canary, ada-transcript-audit skill"
   gaps:
-    - "tony-dev/ada-dev not yet provisioned (ha-dev-instances) — lane scripts resolve them and fail fast as 'planned'; verify metric pending real twins"
-    - "stage-transition evidence convention ([exp]/[alpha]/[beta]/[rc] comms tags) not yet enforced by a checker"
-    - "beta soak tracking — no timer measures soak windows; card owner decides for now"
-    - "post-deploy smoke hook — today manual; belongs inside promote-*.sh"
+    - "tony-dev/ada-dev not yet provisioned (ha-dev-instances) — lane scripts resolve them and fail fast as 'planned'; the [smoke] gate is unmeetable on those lanes until the twins exist (--from michael-dev remains the bridge)"
+    - "beta 'zero attributable incident cards' bar is manual — no auto-linkage from report-watch/logs-kanban incident cards to the release card yet"
+    - "[alpha] evidence is still human/agent-attested — no tool cross-checks the 2-consecutive-scenario-passes claim against scenario-reports"
 
 reads:
   standard_file: this file — promote scripts and scenario gates should

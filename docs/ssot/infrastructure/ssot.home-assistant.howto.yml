@@ -753,7 +753,12 @@ runbooks:
       - "Promote: `scripts/home-assistant/promote-<lane>.sh --scope <list>
         --dry-run` prints the parity diff BEFORE + the exact write plan; add
         --confirm for real (release policy: explicit same-session approval,
-        never automatic). --card <id> posts progress to the kanban."
+        never automatic). --card <id> posts progress to the kanban — when
+        the card is release-tracked (`release:` field) the s4 gate is
+        enforced before prod writes: [smoke] dev-twin evidence + satisfied
+        soak; confirmed runs post [rc] comms, then run the post-deploy
+        smoke (prod /api 200 + parity-after clean + bundle 200) and post
+        [prod] — smoke FAIL exits 1 with the rollback hint."
       - "Scopes: dashboards (websocket view merge by path, --views a,b|all,
         --dashboard, --create-dashboard) | bundle (copy pfg3d-card-vN from
         dev www + bump prod lovelace resource + HTTP 200 verify;
@@ -766,9 +771,20 @@ runbooks:
         stripped — prod enable lives in the entity registry; scripts whose
         sequence is the guard stub are skipped (prod body survives); scenes
         emptied by the guard are skipped."
+      - "Dev-twin smoke (alpha->pre-prod gate): `scripts/home-assistant/
+        dev-twin-smoke.py --lane <lane> [--dashboard <path>] [--views a,b]
+        [--selector <css>] --card <id>` — playlived headless pass on the
+        dev twin, screenshot + JSON verdict in reports/dev-twin-smoke/,
+        [smoke] comms on the card. Exit 0 pass / 1 fail / 2 infra."
       - "While tony-dev/ada-dev are unprovisioned (ha-dev-instances):
         promote-tony.sh --from michael-dev restores the old dev source;
         lane runs fail fast with 'registered but not provisioned'."
+      - "Lifecycle enforcement: scripts/ada/lifecycle-check.py runs inside
+        kanban-sync.sh — `release:`-tracked cards in review/done that lack
+        the comms-tag evidence bounce back to doing; it also stamps
+        soak_until when a release card enters review (beta soak timer).
+        `--gate <card.yml> --stage preprod` is the read-only mode
+        promote-lane.sh uses."
       - "After any prod write: parity diff AFTER prints automatically;
         then sync-ssot-from-live.sh + commit for dashboard mutations
         (parallel-session rule)."

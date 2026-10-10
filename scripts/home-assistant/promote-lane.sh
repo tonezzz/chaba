@@ -19,21 +19,29 @@
 #   --rollback       bundle: point the resource back at the previous bundle
 #   --restart        helpers/users: restart the prod container after copying
 #                    .storage files (required for them to load)
-#   --card ID        post promote progress + outcome to the kanban card
+#   --card ID        post promote progress + outcome to the kanban card.
+#                    When the card is release-tracked (`release:` field),
+#                    the s4 pre-prod gate is enforced before --confirm:
+#                    [smoke] dev-twin evidence + satisfied beta soak —
+#                    no playlive pass, no promotion (Tony 2026-10-08).
 #   -n | --dry-run   print the exact plan + parity diff, write nothing
 #   --confirm        REQUIRED for any real prod write (ssot.release-lifecycle
 #                    s5: explicit same-session approval, never automatic)
 #
 # What it does (in order): preflight -> collect both snapshots -> parity diff
 # before -> per-scope writes (with .promote-bak-<ts> backups on prod) -> live
-# reload where supported -> parity diff after -> evidence summary.
+# reload where supported -> parity diff after -> post-deploy smoke (health +
+# parity-after clean + bundle 200, inside the 30-min bar) -> [rc]/[prod]
+# comms evidence on the card.
 # Registry: docs/ssot/infrastructure/ssot.home-assistant.lanes.yml
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 # shellcheck source=ha-lanes.sh
 source "$SCRIPT_DIR/ha-lanes.sh"
+REPO_ROOT=$(cd -- "$SCRIPT_DIR/../.." &>/dev/null && pwd)
 BOARD_API="${BOARD_API:-http://127.0.0.1:8787}"
+LIFECYCLE_CHECK="$REPO_ROOT/scripts/ada/lifecycle-check.py"
 
 LANE=""; FROM=""; TO=""
 SCOPE=""; DASH=""; VIEWS="all"; BASE=""
@@ -195,6 +203,7 @@ scope_bundle() {
 	[ -s "$localfile" ] || die "$file missing on $FROM www"
 	inst_sh "$TO" "cat > 'www/$file.incoming' && mv -f 'www/$file.incoming' 'www/$file'" \
 		< "$localfile" || die "cannot write $file on $TO www"
+	BUNDLE_FILE="$file"   # re-checked by the post-deploy smoke
 	HASS_TOKEN="$PROD_TOKEN" python3 "$SCRIPT_DIR/ws-resource-url.py" \
 		"$(inst_field "$TO" url)" "$BASE" "$file" || die "resource bump failed"
 	sleep 2
@@ -286,7 +295,47 @@ if [ "$DRY_RUN" -eq 0 ] && [ "$CONFIRM" -ne 1 ]; then
 	log "same-session approval, never automatic). Re-run with --confirm."
 	exit 1
 fi
+
+# --- release-lifecycle s4 gate -------------------------------------------------
+# When --card names a release-tracked card (release: field), the pre-prod bar
+# must be met before prod writes: [smoke] dev-twin playlive evidence + the
+# beta soak (72h or >=3 sessions). Dry-run reports the verdict, never blocks.
+BUNDLE_FILE=""
+if [ -n "$CARD" ] && [ -f "$LIFECYCLE_CHECK" ]; then
+	cardfile="$REPO_ROOT/docs/ssot/kanban/cards/$CARD.yml"
+	if [ -f "$cardfile" ]; then
+		gate_out=$(python3 "$LIFECYCLE_CHECK" --gate "$cardfile" \
+			--stage preprod 2>/dev/null || true)
+		gate_note=$(python3 -c 'import json,sys
+try:
+    d = json.loads(sys.argv[1])
+except Exception:
+    print(""); sys.exit()
+print("ok" if d.get("ok") else "missing: " + ", ".join(d.get("missing") or []))
+if d.get("release") is None and "note" in d:
+    print("NOT-TRACKED")' "$gate_out" 2>/dev/null)
+		case "$gate_note" in
+		*"NOT-TRACKED"*)
+			log "card $CARD not release-tracked — lifecycle gates skipped" ;;
+		"missing: "*)
+			if [ "$DRY_RUN" -eq 1 ]; then
+				log "WARN release gate (preprod) unmet on $CARD — $gate_note"
+			else
+				log "REFUSING promote: card $CARD fails the s4 pre-prod gate:"
+				log "  $gate_note"
+				log "  produce [smoke] evidence with dev-twin-smoke.py --lane $LANE --card $CARD;"
+				log "  soak_until must be reached or a [beta] comms must cite >=3 sessions."
+				board "[lifecycle] promote refused — s4 gate unmet: $gate_note"
+				exit 1
+			fi ;;
+		esac
+	else
+		log "warn: --card $CARD has no card file under $REPO_ROOT — skipping lifecycle gate"
+	fi
+fi
+
 board "promote ${LANE:-ad-hoc} $FROM->$TO scope=[$SCOPES] $([ $DRY_RUN -eq 1 ] && echo 'dry-run' || echo 'CONFIRMED') started"
+[ "$DRY_RUN" -eq 0 ] && board "[rc] pre-prod evidence: parity diff BEFORE (dev $FROM vs prod $TO, scope=[$SCOPES]) in this run's log; rollback = ${0##*/} ${LANE:-} --rollback or restore *.$TS promote-bak files on $TO"
 
 RESTART_NEEDED=0
 for s in $SCOPES; do "scope_$s" || die "scope $s failed"; done
@@ -311,8 +360,35 @@ if [ "$DRY_RUN" -eq 0 ]; then
 	sleep 5   # .storage writes are debounced — let prod flush before recollecting
 	log "parity diff AFTER (dev vs prod):"
 	inst_collect "$TO" "$tmp/prod2"
+	PARITY_AFTER_RC=0
 	python3 "$SCRIPT_DIR/ha-twin-diff.py" "$tmp/dev" "$tmp/prod2" \
-		--names "$FROM:$TO" --scope "$DIFF_SCOPES" || true
+		--names "$FROM:$TO" --scope "$DIFF_SCOPES" || PARITY_AFTER_RC=$?
+
+	# --- post-deploy smoke (ssot.release-lifecycle.yml s5 bar: health +
+	# one scenario within 30min of the deploy — this runs immediately) ----
+	SMOKE_T0=$SECONDS; smoke_fails=""
+	code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 6 \
+		"$(inst_field "$TO" url)/api/")
+	[ "$code" = "200" ] || smoke_fails="prod /api/ http $code; "
+	[ "$PARITY_AFTER_RC" -eq 0 ] \
+		|| smoke_fails="${smoke_fails}parity-after diff rc=$PARITY_AFTER_RC; "
+	if [ -n "$BUNDLE_FILE" ]; then
+		bcode=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 6 \
+			"$(inst_field "$TO" url)/local/$BUNDLE_FILE")
+		[ "$bcode" = "200" ] \
+			|| smoke_fails="${smoke_fails}bundle $BUNDLE_FILE http $bcode; "
+	fi
+	elapsed=$((SECONDS - SMOKE_T0))
+	if [ -z "$smoke_fails" ]; then
+		log "post-deploy smoke PASS (${elapsed}s): /api 200, parity-after clean$([ -n "$BUNDLE_FILE" ] && echo ", bundle 200")"
+		board "[prod] deploy $FROM->$TO scope=[$SCOPES] + post-deploy smoke PASS (${elapsed}s): /api 200, parity-after clean$([ -n "$BUNDLE_FILE" ] && echo ", /local/$BUNDLE_FILE 200"); backups *.$TS on $TO"
+	else
+		log "post-deploy smoke FAIL (${elapsed}s): $smoke_fails"
+		board "[prod] deploy $FROM->$TO scope=[$SCOPES] ran but post-deploy smoke FAIL (${elapsed}s): $smoke_fails — consider rollback"
+		log "rollback: bundle -> '$0 $LANE --rollback'; file scopes -> restore"
+		log "  <file>.promote-bak-$TS on $TO."
+		exit 1
+	fi
 	log "done. rollback: bundle -> '$0 $LANE --rollback'; file scopes -> restore"
 	log "  <file>.promote-bak-$TS on $TO. Record evidence on the card."
 	board "promote ${LANE:-ad-hoc} $FROM->$TO scope=[$SCOPES] DONE — parity after above; backups *.$TS on $TO"
