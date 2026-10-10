@@ -1,9 +1,9 @@
 id: try-hermes
 title: Evaluate NousResearch Hermes for the fleet — evidence-first trial
-column: backlog
+column: review
 priority: low
 created: 2026-10-10
-updated: 2026-10-10 20:02
+updated: 2026-10-10 21:12
 note: 'Procedure: card → tier declaration (model-routing T1 local via ollama hermes3:8b) → bench probes (tool-call
   JSON fidelity, routing, reasoning — Hermes'' claimed strengths) → lane fit decision → OpenClaw/GhostRoute slot
   if proven. Clawd/OpenClaw reuse: it''s the agent surface Hermes is designed for — tool-calling loop, OR-backed,
@@ -18,11 +18,13 @@ links:
 - docs/ssot/infrastructure/ssot.model-routing.yml
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-dell
   attempts: 1
   task_id: 20261010-192348-evaluate-nousresearch-hermes-f
+  result: 20261010-192348-evaluate-nousresearch-hermes-f finished (inactive) — see `devin-dispatch logs 20261010-192348-evaluate-nousresearch-hermes-f`
+  verified: true
 comms:
 - at: 2026-10-10 19:22
   from: devin
@@ -46,6 +48,28 @@ comms:
   text: 'Bench restart: found orphaned duplicate run from my own nohup racing the GPU (kill hit the shim, not the
     python child) — early latency numbers were self-contended. Single clean run now in flight: hermes3:8b vs qwen3:4b
     vs phi3-gguf, 4 probes x3 reps.'
+- at: 2026-10-10 21:09
+  from: devin
+  text: 'VERDICT: adopt — AQ PASS. hermes3:8b = T1 tool-calling slot on omen. 4 probes x3 reps, quiet GPU: native
+    tool-calls 80% (ties qwen3, 3x faster: 14.6s vs 42.3s p50), prompted-JSON 100% (phi3 ties, qwen3 47%), routing
+    83% (ties phi3), reasoning 57% (weakest — phi3 86%). Only model good at BOTH tool-call arms. Follow-up carded:
+    hermes-openclaw-slot. Evidence: reports/bench-hermes-20261010.{json,md} + docs/ssot/jobs/models/2026-10-10-hermes3-t1-eval.yml;
+    harness scripts/bench-hermes.py; ssot.model-r'
+- at: 2026-10-10 21:11
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 21:12
+  from: chaba
+  text: 'session-end checkpoint e211d9e2: 3 leftover file(s) committed'
+- at: 2026-10-10 21:12
+  from: chaba
+  text: pushed dispatch/20261010-192348-evaluate-nousresearch-hermes-f to origin
+- at: 2026-10-10 21:12
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 19.0s)
+- at: 2026-10-10 21:12
+  from: chaba
+  text: auto-merged b0fbf957 (dispatch/20261010-192348-evaluate-nousresearch-hermes-f) → origin/master
 claim:
-  session: 20261010-192348-evaluate-nousresearch-hermes-f
   since: 2026-10-10 19:23
+review_kind: verify
