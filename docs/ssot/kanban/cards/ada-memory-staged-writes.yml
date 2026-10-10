@@ -1,32 +1,38 @@
 id: ada-memory-staged-writes
 title: 'Ada memory: staged writes with approval for untrusted identities'
-brief: 'Today any identity''s memory save lands directly in a bank, and "I saved it" can be claimed without a write
-  happening. This adds a staging lane: writes from guests/untrusted identities park in a pending collection until
-  approved, while trusted identities keep writing directly — the write_approval pattern from Hermes, scoped by our
-  existing access map.'
+brief: 'Today any identity''s memory save lands directly in a bank, and "I saved it"
+  can be claimed without a write happening. This adds a staging lane: writes from
+  guests/untrusted identities park in a pending collection until approved, while trusted
+  identities keep writing directly — the write_approval pattern from Hermes, scoped
+  by our existing access map.'
 column: review
 priority: medium
 created: 2026-10-08
 updated: 2026-10-10 19:22
 pipeline: ci
 autonomy: t2
-metric: A guest/untrusted save produces a pending entry visible to the approver surface and NOTHING in the target
-  bank; on approval the entry lands verbatim; on reject it's marked refused with provenance. Trusted identities
-  (full:true) see zero added latency.
-verify: 'On ada-dev: guest_remember as a guest identity -> pending, not in bank; approve via the review path ->
-  lands; reject -> never lands. A person.tony save still writes directly. A second approval attempt on a consumed
-  pending entry is refused (no double-apply).'
-spec: "Where: ada-pi repo — tool_runner/memory.py write paths + a small\npending store (MDDB collection ada-ha-memory-pending,\
-  \ or a vault\npending/ dir — pick one, document in ssot.apps.ada-memory-banks.yml).\n\nRouting rule — reuse the\
-  \ existing access map, don't invent a new ACL:\n  - person_policies {full: true} identities -> direct write (today's\n\
-  \    behavior; Tony must not start approving every \"remember X\")\n  - restricted/unknown/guest identities ->\
-  \ staged\n  - per-bank write_policy: confirmed already gates the WRITE TOOL call;\n    staging gates the CONTENT\
-  \ for untrusted callers — complementary,\n    keep both.\n\nPending entry shape: {id, identity, bank, key, text,\
-  \ staged_at,\nsource_session}. Approval applies the pinned content — if it changed\nafter staging, refuse and\
-  \ keep pending (Hermes' pinning rule).\n\nApprover surface: reuse an existing one — card comms + a board-api\n\
-  respond, or a nightly digest in focus-inbox. Do NOT build new UI.\n\nAda-visible behavior: model gets {ok: true,\
-  \ staged: true, id} and says\n\"I'll keep that for Tony to approve\" — never \"saved\".\n\nDepends on ada-memory-injection-scan\
-  \ being the first line of defense;\nstage AFTER scanning, not before.\n"
+metric: A guest/untrusted save produces a pending entry visible to the approver surface
+  and NOTHING in the target bank; on approval the entry lands verbatim; on reject
+  it's marked refused with provenance. Trusted identities (full:true) see zero added
+  latency.
+verify: 'On ada-dev: guest_remember as a guest identity -> pending, not in bank; approve
+  via the review path -> lands; reject -> never lands. A person.tony save still writes
+  directly. A second approval attempt on a consumed pending entry is refused (no double-apply).'
+spec: "Where: ada-pi repo — tool_runner/memory.py write paths + a small\npending store\
+  \ (MDDB collection ada-ha-memory-pending, or a vault\npending/ dir — pick one, document\
+  \ in ssot.apps.ada-memory-banks.yml).\n\nRouting rule — reuse the existing access\
+  \ map, don't invent a new ACL:\n  - person_policies {full: true} identities -> direct\
+  \ write (today's\n    behavior; Tony must not start approving every \"remember X\"\
+  )\n  - restricted/unknown/guest identities -> staged\n  - per-bank write_policy:\
+  \ confirmed already gates the WRITE TOOL call;\n    staging gates the CONTENT for\
+  \ untrusted callers — complementary,\n    keep both.\n\nPending entry shape: {id,\
+  \ identity, bank, key, text, staged_at,\nsource_session}. Approval applies the pinned\
+  \ content — if it changed\nafter staging, refuse and keep pending (Hermes' pinning\
+  \ rule).\n\nApprover surface: reuse an existing one — card comms + a board-api\n\
+  respond, or a nightly digest in focus-inbox. Do NOT build new UI.\n\nAda-visible\
+  \ behavior: model gets {ok: true, staged: true, id} and says\n\"I'll keep that for\
+  \ Tony to approve\" — never \"saved\".\n\nDepends on ada-memory-injection-scan being\
+  \ the first line of defense;\nstage AFTER scanning, not before.\n"
 expected_goals:
 - id: pending-collection
   check: command python3 -c 'import backend.memory_write_guard' expect exit 0
@@ -44,7 +50,8 @@ action:
   runner: tony-dell
   attempts: 1
   task_id: 20261010-091611-where-ada-pi-repo-tool-runner-
-  result: 20261010-091611-where-ada-pi-repo-tool-runner- finished (inactive) — see `devin-dispatch logs 20261010-091611-where-ada-pi-repo-tool-runner-`
+  result: 20261010-091611-where-ada-pi-repo-tool-runner- finished (inactive) — see
+    `devin-dispatch logs 20261010-091611-where-ada-pi-repo-tool-runner-`
   verified: false
 comms:
 - at: 2026-10-10 08:03
@@ -55,25 +62,31 @@ comms:
   text: dispatched 20261010-091611-where-ada-pi-repo-tool-runner- on ada-pi
 - at: 2026-10-10 09:16
   from: chaba
-  text: 'primer injected 8 lesson(s): [ada-remember-confirm-flake] Done (option a + phantom fix). backend/tool_runner:;
-    [tg-voice-corpus-capture] filed + queued — Tony confirmed the approach after cod; "test_merge_sweep fixture
-    relied on global git identity — tony-dell has none (re; [ada-secret-drop] VERIFIED: POST /api/secret-drop live
-    in ada-pi HEAD (pwa_serve; [ada-tools-desc-slim] Started. Plan: move fat per-tool prose into backend/tool_g;
-    [ada-dead-turn-guard] done: 3 guards landed in realtime_provi'
+  text: 'primer injected 8 lesson(s): [ada-remember-confirm-flake] Done (option a
+    + phantom fix). backend/tool_runner:; [tg-voice-corpus-capture] filed + queued
+    — Tony confirmed the approach after cod; "test_merge_sweep fixture relied on global
+    git identity — tony-dell has none (re; [ada-secret-drop] VERIFIED: POST /api/secret-drop
+    live in ada-pi HEAD (pwa_serve; [ada-tools-desc-slim] Started. Plan: move fat
+    per-tool prose into backend/tool_g; [ada-dead-turn-guard] done: 3 guards landed
+    in realtime_provi'
 - at: 2026-10-10 09:36
   from: devin
-  text: 'picked up (attempt 2). Root cause of attempt-1 failure found: dependency card ada-memory-injection-scan
-    merged to a different repo — backend/memory_write_guard.py exists in NO ada-pi branch; the code is stranded
-    uncommitted on the edit-point checkout. Recreating the guard module per that card''s spec, then staging: vault
-    pending/ dir (~/.local/share/ada/memory-pending), scan-then-stage in ada_remember/guest/vocab, scripts/ada/memory-pending.py
-    approve/reject as the respond surface + events.md dig'
+  text: 'picked up (attempt 2). Root cause of attempt-1 failure found: dependency
+    card ada-memory-injection-scan merged to a different repo — backend/memory_write_guard.py
+    exists in NO ada-pi branch; the code is stranded uncommitted on the edit-point
+    checkout. Recreating the guard module per that card''s spec, then staging: vault
+    pending/ dir (~/.local/share/ada/memory-pending), scan-then-stage in ada_remember/guest/vocab,
+    scripts/ada/memory-pending.py approve/reject as the respond surface + events.md
+    dig'
 - at: 2026-10-10 10:25
   from: devin
-  text: 'DONE (attempt 2). Staged-write lane landed: backend/memory_pending.py (vault pending/ dir, flock+atomic
-    yml entries, pin=sha256, single-use), backend/memory_write_guard.py RECREATED (dependency card was done but
-    module never reached a branch — likely why attempt 1 failed its import goal). tool_runner/memory.py: scan-first
-    then route — {full:true} direct, everyone else stages when a policy map exists; guest-store writes always stage
-    for non-admin; no-map instances keep direct writes. Returns {ok,'
+  text: 'DONE (attempt 2). Staged-write lane landed: backend/memory_pending.py (vault
+    pending/ dir, flock+atomic yml entries, pin=sha256, single-use), backend/memory_write_guard.py
+    RECREATED (dependency card was done but module never reached a branch — likely
+    why attempt 1 failed its import goal). tool_runner/memory.py: scan-first then
+    route — {full:true} direct, everyone else stages when a policy map exists; guest-store
+    writes always stage for non-admin; no-map instances keep direct writes. Returns
+    {ok,'
 - at: 2026-10-10 10:27
   from: chaba
   text: run finished (inactive) → review
@@ -85,33 +98,46 @@ comms:
   text: pushed dispatch/20261010-091611-where-ada-pi-repo-tool-runner- to origin
 - at: 2026-10-10 10:28
   from: chaba
-  text: 'auto-merge conflicts: backend/memory_write_guard.py, backend/tool_runner/common.py, backend/tool_runner/memory.py
-    — card stays in review for manual resolution'
+  text: 'auto-merge conflicts: backend/memory_write_guard.py, backend/tool_runner/common.py,
+    backend/tool_runner/memory.py — card stays in review for manual resolution'
 - at: 2026-10-10 10:28
   from: chaba
-  text: 'session end: 1 commit(s) on dispatch/20261010-091611-where-ada-pi-repo-tool-runner- not in origin/main
-    — close will block until merged'
+  text: 'session end: 1 commit(s) on dispatch/20261010-091611-where-ada-pi-repo-tool-runner-
+    not in origin/main — close will block until merged'
 - at: 2026-10-10 10:33
   from: chaba
-  text: 'merge-sweep: dispatch/20261010-091611-where-ada-pi-repo-tool-runner- conflicts with origin/main: backend/memory_write_guard.py,
-    backend/tool_runner/common.py, backend/tool_runner/memory.py — merge aborted, card stays for human resolution'
+  text: 'merge-sweep: dispatch/20261010-091611-where-ada-pi-repo-tool-runner- conflicts
+    with origin/main: backend/memory_write_guard.py, backend/tool_runner/common.py,
+    backend/tool_runner/memory.py — merge aborted, card stays for human resolution'
 - at: 2026-10-10 10:33
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261010-091611-where-ada-pi-repo-tool-runner-:
     1 commit(s) conflict with origin/main in'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'Merge conflict still pending (memory_write_guard.py etc. vs origin/main) — needs a real conflict resolution,
-    not a sweep. Options: a conflict-resolution dispatch, or I resolve in-session next pass.'
+  text: 'Merge conflict still pending (memory_write_guard.py etc. vs origin/main)
+    — needs a real conflict resolution, not a sweep. Options: a conflict-resolution
+    dispatch, or I resolve in-session next pass.'
+- at: 2026-10-10 21:05
+  from: devin
+  text: 'MERGED a992a40: add/add conflict resolved by design — scan inside check_write
+    (HEAD extension note anticipated it). Dispatch-side refactor kept; dropped vocab
+    cap restored; guest back-door writes now get full pipeline. Note: 4 tool-lint
+    + 1 tool-audit failures are PRE-EXISTING on main (voice_fx dispatch in-flight
+    + earlier screens edits) — deploy gate red until those settle.'
 claim:
   since: 2026-10-10 09:16
 review_kind: verify
 requests:
 - id: merge-conflict
-  ask: 'merge-sweep can''t land dispatch/20261010-091611-where-ada-pi-repo-tool-runner-: 1 commit(s) conflict with
-    origin/main in ada-pi — conflicted paths: backend/memory_write_guard.py, backend/tool_runner/common.py, backend/tool_runner/memory.py.
-    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261010-091611-where-ada-pi-repo-tool-runner- by hand,
-    or retry/abandon the card.'
+  ask: 'merge-sweep can''t land dispatch/20261010-091611-where-ada-pi-repo-tool-runner-:
+    1 commit(s) conflict with origin/main in ada-pi — conflicted paths: backend/memory_write_guard.py,
+    backend/tool_runner/common.py, backend/tool_runner/memory.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261010-091611-where-ada-pi-repo-tool-runner-
+    by hand, or retry/abandon the card.'
   status: open
   at: 2026-10-10 10:33
   from: chaba
+  answered: 'devin 2026-10-10: resolved + merged to ada-pi/main as a992a40. Injection
+    scan folded inside check_write() ahead of caps; vocab_append regained dropped
+    cap; guest_remember* now routes through the full scan->caps->staging pipeline.
+    447 memory/runner tests pass; combined selftest OK.'
