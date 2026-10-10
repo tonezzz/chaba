@@ -4,42 +4,52 @@ kind: bug
 priority: high
 column: done
 autonomy: t1
-brief: 'ada-ha-tony journal, 7d: gemini-2.5-flash generateContent calls return 429 RESOURCE_EXHAUSTED — metric generate_content_free_tier_requests,
-  limit 20 req/day/project/model. Failure lines per day escalating: Oct06=33, Oct07=170, Oct08=210, Oct09=744, Oct10=201
-  (partial). Each 429 carries ''retry in ~21h'' — once the cap hits, every flash-backed tool call fails for the
-  rest of the UTC day. Confirmed casualties: web_search tool, documents.check (classify on ingest). Likely explains
-  a share of the ''tool quietly failed'' audits. NOTE: dispatch/CLI side (devin tasks on idc02/mn01) shows ZERO
+brief: 'ada-ha-tony journal, 7d: gemini-2.5-flash generateContent calls return 429
+  RESOURCE_EXHAUSTED — metric generate_content_free_tier_requests, limit 20 req/day/project/model.
+  Failure lines per day escalating: Oct06=33, Oct07=170, Oct08=210, Oct09=744, Oct10=201
+  (partial). Each 429 carries ''retry in ~21h'' — once the cap hits, every flash-backed
+  tool call fails for the rest of the UTC day. Confirmed casualties: web_search tool,
+  documents.check (classify on ingest). Likely explains a share of the ''tool quietly
+  failed'' audits. NOTE: dispatch/CLI side (devin tasks on idc02/mn01) shows ZERO
   rate-limit errors — this is only the Gemini free tier under ada-ha.'
-spec: "Options, pick after checking how many keys/projects are already wired (secrets: ~/.config/secrets/ada-ha-tony-keys.json\
-  \ on idc03):\n A. Move side-tool calls (web_search, documents classify, any flash generateContent) to a billing-enabled\
-  \ project/key — quota is per-project-per-model, billing removes the 20/day wall.\n B. Round-robin across N projects/keys\
-  \ — each project gets its own 20/day free tier.\n C. Cache + debounce: web_search results and document classify\
-  \ are repeat-heavy; a small cache cuts the request count.\n D. Loud-fail surface: when quota exhausts, flag ops\
-  \ event + tell Tony plainly (companion to google-token-loud-fail pattern) instead of silent per-call failures.\n\
-  VERIFY: simulate/confirm no 429s in ada-ha-tony journal for 48h; during a forced-exhaust test, Ada surfaces the\
-  \ quota error instead of silent tool failure."
+spec: "Options, pick after checking how many keys/projects are already wired (secrets:\
+  \ ~/.config/secrets/ada-ha-tony-keys.json on idc03):\n A. Move side-tool calls (web_search,\
+  \ documents classify, any flash generateContent) to a billing-enabled project/key\
+  \ — quota is per-project-per-model, billing removes the 20/day wall.\n B. Round-robin\
+  \ across N projects/keys — each project gets its own 20/day free tier.\n C. Cache\
+  \ + debounce: web_search results and document classify are repeat-heavy; a small\
+  \ cache cuts the request count.\n D. Loud-fail surface: when quota exhausts, flag\
+  \ ops event + tell Tony plainly (companion to google-token-loud-fail pattern) instead\
+  \ of silent per-call failures.\nVERIFY: simulate/confirm no 429s in ada-ha-tony\
+  \ journal for 48h; during a forced-exhaust test, Ada surfaces the quota error instead\
+  \ of silent tool failure."
 expected_goals:
-- check: test "$(ssh -o BatchMode=yes idc03 'journalctl --user -u ada-ha-tony --since \"2 days ago\" --no-pager
-    | grep -c \"429 Too Many Requests\"')" -lt 10
+- check: test "$(ssh -o BatchMode=yes idc03 'journalctl --user -u ada-ha-tony --since
+    \"2 days ago\" --no-pager | grep -c \"429 Too Many Requests\"')" -lt 10
   expect: exit
   id: quota-429s-drained
 created: '2026-10-09'
 comms:
 - at: 2026-10-10 08:10
   from: devin
-  text: filed from Tony's question 'how are we using token? a lot of rate limit?' — journal evidence above
+  text: filed from Tony's question 'how are we using token? a lot of rate limit?'
+    — journal evidence above
 - at: 2026-10-10 08:45
   from: devin
-  text: 'per-tool model map (all env-overridable): web_search=ADA_WEB_SEARCH_MODEL gemini-2.5-flash WITH google_search
-    grounding + existing duckduckgo auto-fallback; DOC_MODEL/DECISION_MODEL/DEVTEAM_MODEL all default gemini-2.5-flash
-    (plain generateContent — substitutable); gemini-3.5-flash-lite already used for summaries/posture/cms (own 20/day
-    pool); vcast TTS on flash-preview-tts. Substitutes: (a) billing-enabled key — pennies/day for side tools, removes
-    wall entirely; (b) extra free-tier projects — 20/day each; (c) local via gemini-ollama-proxy on idc03 (already
-    fronts ollama for mddb; llama3.2:3b installed — fine for classify/decision/devteam, CANNOT do grounded web_search);
-    (d) OpenRouter — hosts google/gemini-2.5-flash + flash-lite paid, and :free variants of llama/deepseek/qwen/gemma
-    (~50 req/day free, 1000/day w/ $10 credit) — but needs an OpenAI-shaped client shim (extend gemini-ollama-proxy
-    or add a provider branch like the existing ddg fallback); OR-hosted gemini does NOT include google_search grounding,
-    so web_search needs DDG fallback, Tavily/Brave free tier, or a paid Gemini key.'
+  text: 'per-tool model map (all env-overridable): web_search=ADA_WEB_SEARCH_MODEL
+    gemini-2.5-flash WITH google_search grounding + existing duckduckgo auto-fallback;
+    DOC_MODEL/DECISION_MODEL/DEVTEAM_MODEL all default gemini-2.5-flash (plain generateContent
+    — substitutable); gemini-3.5-flash-lite already used for summaries/posture/cms
+    (own 20/day pool); vcast TTS on flash-preview-tts. Substitutes: (a) billing-enabled
+    key — pennies/day for side tools, removes wall entirely; (b) extra free-tier projects
+    — 20/day each; (c) local via gemini-ollama-proxy on idc03 (already fronts ollama
+    for mddb; llama3.2:3b installed — fine for classify/decision/devteam, CANNOT do
+    grounded web_search); (d) OpenRouter — hosts google/gemini-2.5-flash + flash-lite
+    paid, and :free variants of llama/deepseek/qwen/gemma (~50 req/day free, 1000/day
+    w/ $10 credit) — but needs an OpenAI-shaped client shim (extend gemini-ollama-proxy
+    or add a provider branch like the existing ddg fallback); OR-hosted gemini does
+    NOT include google_search grounding, so web_search needs DDG fallback, Tavily/Brave
+    free tier, or a paid Gemini key.'
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
@@ -48,19 +58,21 @@ comms:
   text: claimed
 - at: 2026-10-10 08:05
   from: chaba
-  text: started devin-task-20261010-080517-options-pick-after-checking-ho on idc01 (dispatch)
+  text: started devin-task-20261010-080517-options-pick-after-checking-ho on idc01
+    (dispatch)
 - at: 2026-10-10 08:06
   from: devin
-  text: 'checked wiring: 1 active GEMINI_API_KEY shared by ada-ha-tony/michael, ada-dev, ada-pi-pwa, mddb-gemini
-    (same sha). attic has 1 retired key. -> B needs new projects; surveying call sites for C+D and a multi-key-ready
-    pool.'
+  text: 'checked wiring: 1 active GEMINI_API_KEY shared by ada-ha-tony/michael, ada-dev,
+    ada-pi-pwa, mddb-gemini (same sha). attic has 1 retired key. -> B needs new projects;
+    surveying call sites for C+D and a multi-key-ready pool.'
 - at: 2026-10-10 08:19
   from: devin
-  text: 'done (worktree, not deployed). audit: 1 active key shared by all 5 env files -> A/B need new GCP keys from
-    you. shipped C+D + B-ready pool: backend/gemini_pool.py (round-robin per-model exhaustion->PT-midnight reset,
-    GEMINI_API_KEYS/_2..9 plug in later), caches for web_search+doc classify, *_quota ops events on every side call,
-    gemini block in conversation_health, ADA_GEMINI_SIMULATE_EXHAUSTED=1 lever for the forced-exhaust verify. 520
-    tests green.'
+  text: 'done (worktree, not deployed). audit: 1 active key shared by all 5 env files
+    -> A/B need new GCP keys from you. shipped C+D + B-ready pool: backend/gemini_pool.py
+    (round-robin per-model exhaustion->PT-midnight reset, GEMINI_API_KEYS/_2..9 plug
+    in later), caches for web_search+doc classify, *_quota ops events on every side
+    call, gemini block in conversation_health, ADA_GEMINI_SIMULATE_EXHAUSTED=1 lever
+    for the forced-exhaust verify. 520 tests green.'
 - at: 2026-10-10 08:19
   from: idc01
   text: 'finished (ok): exit=0 l.yml` and the full write-up in `dispatch-outcome-20261010-080517-options-pick-after-checking-ho.md`.
@@ -70,38 +82,47 @@ comms:
   text: 'session-end checkpoint 6f1bee49: 18 leftover file(s) committed'
 - at: 2026-10-10 08:19
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:21
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:22
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:24
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:26
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:27
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:29
   from: chaba
-  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown check kind ''test'' — expected
-    one of: http, comm'
+  text: 'auto-merge held — expected_goals not met: goal quota-429s-drained: unknown
+    check kind ''test'' — expected one of: http, comm'
 - at: 2026-10-10 08:34
   from: chaba
-  text: 'merge-sweep: merged 2c4150d8 (dispatch/20261010-080517-options-pick-after-checking-ho from idc01) -> origin/main'
+  text: 'merge-sweep: merged 2c4150d8 (dispatch/20261010-080517-options-pick-after-checking-ho
+    from idc01) -> origin/main'
 - at: 2026-10-10 10:45
   from: devin
-  text: 'closed: merge 2c4150d8 verified in ada-pi/main — real content confirmed in review sweep 2026-10-10.'
+  text: 'closed: merge 2c4150d8 verified in ada-pi/main — real content confirmed in
+    review sweep 2026-10-10.'
+- at: 2026-10-10 19:40
+  from: devin
+  text: 'ROOT FIX LANDED: billed-project key deployed fleet-wide on idc03 via new
+    `gemini-tier` switcher — all 6 env files (ada-ha-tony/michael/dev/kk/pi-pwa +
+    mddb-gemini) now on the paid-tier key. Free key preserved in gemini-keys.env;
+    `gemini-tier free` = instant rollback. Verified: paid key HTTP 200, all services
+    active, 0 quota errors post-restart. Free-tier 20/day cap no longer applies.'
 updated: 2026-10-10 08:34
 action:
   type: dispatch
@@ -109,7 +130,7 @@ action:
   repo: ada-pi
   runner: idc01
   result: 'exit=0 l.yml` and the full write-up in `dispatch-outcome-20261010-080517-options-pick-after-checking-ho.md`.
-    | devin-task-20261010-080517-options-pick-after-checking-ho.service: Consumed 2min 3.170s CPU time, 1.2G memory
-    peak, 0B memory swap peak.'
+    | devin-task-20261010-080517-options-pick-after-checking-ho.service: Consumed
+    2min 3.170s CPU time, 1.2G memory peak, 0B memory swap peak.'
   verified: true
 claim: {}
