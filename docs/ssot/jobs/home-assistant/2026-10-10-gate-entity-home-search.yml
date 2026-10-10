@@ -1,0 +1,87 @@
+title: Gate entity missing from home_search — investigation + alias fix
+subtitle: cover.front_gate does not exist; the gate is cover.gate_motor on
+  michael-ha, unreachable from the ada-tony instance by design
+icon: 🚪
+id: 2026-10-10-gate-entity-home-search
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-10"
+card: fix-gate-entity-in-home-assistant-1df995
+
+planning:
+  goal: |
+    Card: "User wants to control the gate, but cover.front_gate is missing
+    from home_search." Determine why the search fails and make the gate
+    resolvable/controllable by voice.
+
+investigation:
+  method: |
+    Queried both Ada HA instances over their open read GET endpoints
+    (no secrets needed):
+    - https://idc03.taila0626a.ts.net/apps/ha/ada-tony/api/home-assistant/*
+    - https://idc03.taila0626a.ts.net/apps/ha/ada-michael/api/home-assistant/*
+    endpoints used: entities, events, entity-events, logbook, sensors.
+  findings:
+    - id: no-cover-front-gate
+      detail: >
+        cover.front_gate does not exist on any instance and never did —
+        the canonical gate entity has been cover.gate_motor since the
+        2026-09-16 incident report (docs/kb/ada-ha-gate-incident-2026-09-16.md).
+    - id: tony-ha-has-no-gate
+      detail: >
+        ada-tony / tony-ha exposes 32 controllable entities (switch 19,
+        button 5, input_boolean 3, light 3, media_player 2) — zero covers.
+        The event recorder scanned 0 entities for query=cover|door|lock|gate
+        over 90 days. tony-ha physically has no gate entities, so
+        home_search on the tony instance can NEVER find the gate. If the
+        user asked on the tony instance, that alone explains the miss.
+    - id: gate-entities-on-michael
+      detail: >
+        michael-ha carries the gate: cover.gate_motor ("Gate Motor",
+        device_class curtain, Tuya no-feedback — state `unknown` at rest,
+        flagged available:false by the entities endpoint, flaps to
+        `unavailable` ~10-25 s several times/hour);
+        button.gate_motor_my_position (jog, available);
+        switch.living_room_front_gate ("Front Gate", available, steady off
+        since 2026-10-01); switch.sonoff_10010b42b6 (the front-gate LIGHT).
+    - id: unknown-state-is-normal
+      detail: >
+        cover.gate_motor reports `unknown` at rest by design (no position
+        feedback; reports opening/closing only while moving — documented in
+        the incident report). The entities endpoint marks it
+        available:false. If home_search drops unavailable entities from
+        results, the gate cover is hidden even on ada-michael. That filter
+        lives in ada-pi (tool_runner ha tools) — out of scope for this
+        chaba worktree; follow-up card home-search-unknown-state-entities.
+
+fix:
+  - wrote docs/ada-memory/home/gate-control.md — shared 'home' bank alias
+    doc mapping "front gate / the gate" to the real michael-ha entities,
+    warning that state=unknown is normal, that cover.front_gate does not
+    exist, that only ada-michael can actuate it, and that moving it needs
+    confirmed=true (dangerous-entity safety gate). Syncs to
+    ada-ha-bank-home automatically via ada-memory-sync.timer once merged
+    into the chaba-vault checkout.
+  - >
+    filed card home-search-unknown-state-entities (repo ada-pi) — verify
+    home_search surfaces entities whose state is `unknown`; Tuya
+    no-feedback covers sit at unknown and are flagged available:false, so
+    they may be silently dropped from device search results.
+
+verify:
+  - "curl https://idc03.taila0626a.ts.net/apps/ha/ada-michael/api/home-assistant/entities
+    — gate entities present: cover.gate_motor, button.gate_motor_my_position,
+    switch.living_room_front_gate."
+  - "After merge + ada-memory-sync.timer run: ask ada-michael 'how do I open
+    the front gate' — recall should resolve the alias doc; control still
+    requires confirmed=true."
+
+open_questions:
+  - "Which Ada instance did the user ask? If ada-tony, the miss is instance
+    isolation by design (tony-ha has no gate); the answer is 'the gate is
+    on the Michael instance'. Cross-instance control would be a product
+    decision for Tony, not a bug fix."
+  - "Is switch.living_room_front_gate a working gate trigger? State has
+    been steady off; needs one manual test from michael-ha before Ada
+    treats it as a control path."
