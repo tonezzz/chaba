@@ -51,9 +51,11 @@ direction_control:
 
 priority:
   # Cards carry priority: high|medium|low (absent = normal). Display sorts
-  # on the board. CLAIM ORDER: kanban-dispatch/runner-agent must drain
-  # queued cards priority-first then oldest-first — card
-  # dispatch-priority-order closes the current gap (claims are unordered).
+  # on the board AND claims drain in the same order (card
+  # dispatch-priority-order, 2026-10-10): starved-first (>=12h by
+  # `updated`, env-tunable) -> rank high > medium > absent > low ->
+  # oldest `updated`. Shared key: dispatch_repos.claim_sort_key; see
+  # ssot.kanban.yml concurrency.claim_order.
   rule: "high = user-visible or infra-risk work; medium = steady progress;
          low = opportunistic. Priority never overrides host labels/caps or
          merge_guard — it orders within eligibility."

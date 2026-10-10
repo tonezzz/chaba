@@ -15,7 +15,9 @@ Consumers:
                                      commits are non-ancestors of the
                                      default branch
   scripts/board/kanban-dispatch.py — session-end comms (dirty worktree /
-                                     unmerged commit counts)
+                                     unmerged commit counts), claim order
+  scripts/board/runner-agent.py    — close_out merge + the same claim
+                                     order via dr_module()
 """
 import json
 import os
@@ -24,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
@@ -237,6 +240,64 @@ def guard(card: dict) -> dict:
             "summary": "",
             "note": f"merge guard: {s['branch']} merged into "
                     f"{s['base_ref']}{dirty_txt}"}
+
+
+# -------------------------------------------------------- claim ordering
+#
+# Priority-aware drain order for queued cards (card
+# dispatch-priority-order). Shared by BOTH claim paths —
+# kanban-dispatch's local drain and runner-agent's remote claim — so a
+# card's position doesn't depend on which host picks it up:
+#
+#   1. starvation tier — a card whose `updated` is >= starve_hours old
+#      claims ahead of every fresh card regardless of priority
+#      (priority is a bias, not a ban; starve_hours <= 0 disables)
+#   2. priority rank — high > medium > absent/unknown > low (the map
+#      render-board.py uses for the board's "next-up" column order)
+#   3. `updated` oldest-first
+#
+# Pure ordering — no preemption and no eligibility relaxation: labels,
+# caps, blocked_by, autonomy tier and the load gate still run per card.
+
+PRIORITY_RANK = {"high": 0, "medium": 1, "low": 3}  # absent/unknown -> 2
+CARD_TZ = timezone(timedelta(hours=7))  # card `updated` stamps this zone
+
+
+def card_updated_ts(card: dict) -> float:
+    """epoch of card['updated'] ('YYYY-MM-DD[ HH:MM]' in CARD_TZ); 0 when
+    absent/unparseable — sorts oldest inside its rank rather than
+    sinking forever."""
+    s = str(card.get("updated") or "").strip()
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).replace(
+                tzinfo=CARD_TZ).timestamp()
+        except ValueError:
+            pass
+    return 0.0
+
+
+def claim_sort_key(card: dict, starve_hours: float = 12.0,
+                   now_ts: float | None = None) -> tuple:
+    """(starved?, priority rank, updated) — smaller claims first. A card
+    with no readable `updated` can't prove its age, so it never takes
+    the starvation tier (it still wins its own rank's oldest-first)."""
+    upd = card_updated_ts(card)
+    starved = (starve_hours > 0 and upd > 0 and
+               (time.time() if now_ts is None else now_ts) - upd
+               >= starve_hours * 3600)
+    rank = PRIORITY_RANK.get(
+        str(card.get("priority") or "").strip().lower(), 2)
+    return (0 if starved else 1, rank, upd)
+
+
+def sort_claimable(cards: list, starve_hours: float = 12.0,
+                   now_ts: float | None = None) -> list:
+    """Cards in claim-drain order. Stable — equal keys keep input order
+    (API order for runner-agent, filename order for kanban-dispatch)."""
+    now = time.time() if now_ts is None else now_ts
+    return sorted(cards,
+                  key=lambda c: claim_sort_key(c, starve_hours, now))
 
 
 # ------------------------------------------------------------- close-out
