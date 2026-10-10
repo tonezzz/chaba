@@ -393,6 +393,7 @@ template:
   - switch:
       - name: basement_4_gang_switch_switch_1
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_1','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_1 }
@@ -401,6 +402,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_1 }
       - name: basement_4_gang_switch_switch_2
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_2','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_2 }
@@ -409,6 +411,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_2 }
       - name: basement_4_gang_switch_switch_3
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_3','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_3 }
@@ -417,6 +420,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_3 }
       - name: basement_4_gang_switch_switch_4
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_4','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_4 }
@@ -425,6 +429,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_4 }
       - name: kitchen_table_switch_1
         state: "{{ is_state('sensor.kitchen_table_switch_1','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.kitchen_table_switch_1 }
@@ -433,6 +438,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.kitchen_table_switch_1 }
       - name: pool_wifi_smart_meter_switch_switch
         state: "{{ is_state('sensor.pool_wifi_smart_meter_switch_switch','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.pool_wifi_smart_meter_switch_switch }
@@ -441,6 +447,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.pool_wifi_smart_meter_switch_switch }
       - name: smart_plug_socket_1_2
         state: "{{ is_state('sensor.smart_plug_socket_1_2','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.smart_plug_socket_1_2 }
@@ -449,6 +456,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.smart_plug_socket_1_2 }
       - name: terrace_switch_switch_1
         state: "{{ is_state('sensor.terrace_switch_switch_1','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.terrace_switch_switch_1 }
@@ -457,6 +465,7 @@ template:
           data: { domain: switch, service: turn_off, entity_id: switch.terrace_switch_switch_1 }
       - name: terrace_switch_switch_2
         state: "{{ is_state('sensor.terrace_switch_switch_2','on') }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') }}"
         turn_on:
           service: rest_command.mha_call
           data: { domain: switch, service: turn_on, entity_id: switch.terrace_switch_switch_2 }
@@ -468,70 +477,76 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_temperature
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: tze200_mja3fuja_ts0601_temperature
         unique_id: mha_mirror_tze200_temperature
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         state_class: measurement
         device_class: temperature
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_humidity
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: tze200_mja3fuja_ts0601_humidity
         unique_id: mha_mirror_tze200_humidity
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "%"
         state_class: measurement
         device_class: humidity
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_carbon_dioxide
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: tze200_mja3fuja_ts0601_carbon_dioxide
         unique_id: mha_mirror_tze200_co2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "ppm"
         state_class: measurement
         device_class: carbon_dioxide
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: tze200_mja3fuja_ts0601_volatile_organic_compounds
         unique_id: mha_mirror_tze200_voc
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "µg/m³"
         state_class: measurement
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: tze200_mja3fuja_ts0601_formaldehyde_concentration
         unique_id: mha_mirror_tze200_hcho
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "mg/m³"
         state_class: measurement
   - resource: http://michael-ha:8123/api/states/sensor.laundry_room_washing_machine_power
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: laundry_room_washing_machine_power
         unique_id: mha_mirror_washer_power
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "W"
         state_class: measurement
         device_class: power
@@ -540,12 +555,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_cell_voltage_average
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_cell_voltage_average
         unique_id: mha_mirror_batteries_1_cell_voltage_average
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -553,12 +569,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_cell_voltage_highest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_cell_voltage_highest
         unique_id: mha_mirror_batteries_1_cell_voltage_highest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -566,12 +583,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_cell_voltage_imbalance
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_cell_voltage_imbalance
         unique_id: mha_mirror_batteries_1_cell_voltage_imbalance
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -579,12 +597,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_cell_voltage_lowest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_cell_voltage_lowest
         unique_id: mha_mirror_batteries_1_cell_voltage_lowest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -592,24 +611,26 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_charge_capacity
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_charge_capacity
         unique_id: mha_mirror_batteries_1_charge_capacity
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "Ah"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_temperature_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_temperature_1
         unique_id: mha_mirror_batteries_1_temperature_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -617,12 +638,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_temperature_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_temperature_2
         unique_id: mha_mirror_batteries_1_temperature_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -630,12 +652,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_1_temperature_mos
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_1_temperature_mos
         unique_id: mha_mirror_batteries_1_temperature_mos
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -643,12 +666,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_cell_voltage_average
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_cell_voltage_average
         unique_id: mha_mirror_batteries_2_cell_voltage_average
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -656,12 +680,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_cell_voltage_highest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_cell_voltage_highest
         unique_id: mha_mirror_batteries_2_cell_voltage_highest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -669,12 +694,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_cell_voltage_imbalance
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_cell_voltage_imbalance
         unique_id: mha_mirror_batteries_2_cell_voltage_imbalance
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -682,12 +708,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_cell_voltage_lowest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_cell_voltage_lowest
         unique_id: mha_mirror_batteries_2_cell_voltage_lowest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -695,24 +722,26 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_charge_capacity
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_charge_capacity
         unique_id: mha_mirror_batteries_2_charge_capacity
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "Ah"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_temperature_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_temperature_1
         unique_id: mha_mirror_batteries_2_temperature_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -720,12 +749,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_temperature_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_temperature_2
         unique_id: mha_mirror_batteries_2_temperature_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -733,12 +763,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_2_temperature_mos
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_2_temperature_mos
         unique_id: mha_mirror_batteries_2_temperature_mos
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -746,12 +777,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_cell_voltage_average
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_cell_voltage_average
         unique_id: mha_mirror_batteries_3_cell_voltage_average
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -759,12 +791,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_cell_voltage_highest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_cell_voltage_highest
         unique_id: mha_mirror_batteries_3_cell_voltage_highest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -772,12 +805,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_cell_voltage_imbalance
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_cell_voltage_imbalance
         unique_id: mha_mirror_batteries_3_cell_voltage_imbalance
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -785,12 +819,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_cell_voltage_lowest
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_cell_voltage_lowest
         unique_id: mha_mirror_batteries_3_cell_voltage_lowest
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -798,24 +833,26 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_charge_capacity
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_charge_capacity
         unique_id: mha_mirror_batteries_3_charge_capacity
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "Ah"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_temperature_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_temperature_1
         unique_id: mha_mirror_batteries_3_temperature_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -823,12 +860,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_temperature_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_temperature_2
         unique_id: mha_mirror_batteries_3_temperature_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -836,12 +874,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.batteries_3_temperature_mos
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: batteries_3_temperature_mos
         unique_id: mha_mirror_batteries_3_temperature_mos
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -849,12 +888,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.inverters_1_battery_current
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: inverters_1_battery_current
         unique_id: mha_mirror_inverters_1_battery_current
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "A"
         device_class: current
         state_class: measurement
@@ -862,12 +902,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.inverters_1_battery_power
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: inverters_1_battery_power
         unique_id: mha_mirror_inverters_1_battery_power
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
@@ -875,12 +916,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.inverters_1_battery_state_of_charge
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: inverters_1_battery_state_of_charge
         unique_id: mha_mirror_inverters_1_battery_state_of_charge
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "%"
         device_class: battery
         state_class: measurement
@@ -888,12 +930,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.inverters_1_battery_voltage
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: inverters_1_battery_voltage
         unique_id: mha_mirror_inverters_1_battery_voltage
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "V"
         device_class: voltage
         state_class: measurement
@@ -901,12 +944,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation
         unique_id: mha_mirror_solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -914,12 +958,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.solis_s6_eh3p10k_h_zp_backup_load_today_energy
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: solis_s6_eh3p10k_h_zp_backup_load_today_energy
         unique_id: mha_mirror_solis_s6_eh3p10k_h_zp_backup_load_today_energy
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -927,12 +972,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.solis_s6_eh3p10k_h_zp_household_load_today_energy
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: solis_s6_eh3p10k_h_zp_household_load_today_energy
         unique_id: mha_mirror_solis_s6_eh3p10k_h_zp_household_load_today_energy
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -940,12 +986,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid
         unique_id: mha_mirror_solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -953,12 +1000,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid
         unique_id: mha_mirror_solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -966,48 +1014,52 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.weather_cloud_cover
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_cloud_cover
         unique_id: mha_mirror_weather_cloud_cover
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "%"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.weather_global_tilted_irradiance
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_global_tilted_irradiance
         unique_id: mha_mirror_weather_global_tilted_irradiance
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "W/m²"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.weather_is_day
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_is_day
         unique_id: mha_mirror_weather_is_day
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "Day"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.weather_outside_temperature
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_outside_temperature
         unique_id: mha_mirror_weather_outside_temperature
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -1015,12 +1067,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.weather_pv_energy_generated
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_pv_energy_generated
         unique_id: mha_mirror_weather_pv_energy_generated
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "kWh"
         device_class: energy
         state_class: total
@@ -1028,12 +1081,13 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.weather_pv_power_predicted
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_pv_power_predicted
         unique_id: mha_mirror_weather_pv_power_predicted
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
@@ -1041,126 +1095,138 @@ rest:
   - resource: http://michael-ha:8123/api/states/sensor.weather_weather_code
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_weather_code
         unique_id: mha_mirror_weather_weather_code
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "WMO"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/sensor.weather_wind_speed
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: weather_wind_speed
         unique_id: mha_mirror_weather_wind_speed
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "km/h"
         state_class: measurement
 
   - resource: http://michael-ha:8123/api/states/switch.basement_4_gang_switch_switch_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: basement_4_gang_switch_switch_1
         unique_id: mha_mirror_basement_4_gang_switch_switch_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.basement_4_gang_switch_switch_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: basement_4_gang_switch_switch_2
         unique_id: mha_mirror_basement_4_gang_switch_switch_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.basement_4_gang_switch_switch_3
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: basement_4_gang_switch_switch_3
         unique_id: mha_mirror_basement_4_gang_switch_switch_3
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.basement_4_gang_switch_switch_4
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: basement_4_gang_switch_switch_4
         unique_id: mha_mirror_basement_4_gang_switch_switch_4
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.kitchen_table_switch_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: kitchen_table_switch_1
         unique_id: mha_mirror_kitchen_table_switch_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.pool_wifi_smart_meter_switch_switch
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: pool_wifi_smart_meter_switch_switch
         unique_id: mha_mirror_pool_wifi_smart_meter_switch_switch
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.smart_plug_socket_1_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: smart_plug_socket_1_2
         unique_id: mha_mirror_smart_plug_socket_1_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.terrace_switch_switch_1
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: terrace_switch_switch_1
         unique_id: mha_mirror_terrace_switch_switch_1
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/switch.terrace_switch_switch_2
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: terrace_switch_switch_2
         unique_id: mha_mirror_terrace_switch_switch_2
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
 
   - resource: http://michael-ha:8123/api/states/sensor.inverters_1_pv_power
     headers:
       Authorization: !secret michael_ha_auth
-    scan_interval: 30
+    scan_interval: 86400
+    timeout: 5
     sensor:
       - name: inverters_1_pv_power
         unique_id: mha_mirror_inverters_1_pv_power
-        value_template: "{{ value_json.state }}"
-        availability: "{{ value_json.state not in ('unavailable', 'unknown', 'none') }}"
+        value_template: "{{ value_json.get('state', 'unavailable') if (value_json is defined and value_json is mapping) else 'unavailable' }}"
+        availability: "{{ is_state('binary_sensor.michael_ha_reachable', 'on') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in ('unavailable', 'unknown', 'none') }}"
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
@@ -1176,3 +1242,102 @@ rest_command:
       Authorization: !secret michael_ha_auth
       Content-Type: application/json
     payload: '{"entity_id": "{{ entity_id }}"}'
+
+# --- mha mirror reachability gate (card michael-dev-offlan-mirrors, 2026-10-10) ---
+# Off-LAN replicas cannot reach michael-ha:8123 cleanly; ungated 30s REST
+# polling produced ~1.5-2.1k timeout/UndefinedError lines per host per day.
+# Gate design: keep the mirrors, fetch only while the probe says michael-ha
+# is reachable. Probe retries slowly (300s, always exits 0 -> quiet);
+# mirrors refresh every 30s while the gate is on; a gate->off transition
+# forces one last refresh so mirrors mark unavailable promptly.
+command_line:
+  - binary_sensor:
+      name: michael_ha_reachable
+      unique_id: mha_gate_michael_ha_reachable
+      device_class: connectivity
+      command: 'curl -sf -o /dev/null -m 5 http://michael-ha:8123/ >/dev/null 2>&1 && echo ON || echo OFF'
+      payload_on: "ON"
+      payload_off: "OFF"
+      scan_interval: 300
+      command_timeout: 8
+
+automation:
+  - id: mha_mirror_refresh
+    alias: "Dev: refresh mha mirrors while michael-ha reachable"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        seconds: "/30"
+        id: tick
+      - trigger: state
+        entity_id: binary_sensor.michael_ha_reachable
+        to: "off"
+        id: gate-down
+    conditions:
+      - or:
+          - condition: trigger
+            id: gate-down
+          - condition: state
+            entity_id: binary_sensor.michael_ha_reachable
+            state: "on"
+    actions:
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.tze200_mja3fuja_ts0601_temperature
+            - sensor.tze200_mja3fuja_ts0601_humidity
+            - sensor.tze200_mja3fuja_ts0601_carbon_dioxide
+            - sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds
+            - sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration
+            - sensor.laundry_room_washing_machine_power
+            - sensor.batteries_1_cell_voltage_average
+            - sensor.batteries_1_cell_voltage_highest
+            - sensor.batteries_1_cell_voltage_imbalance
+            - sensor.batteries_1_cell_voltage_lowest
+            - sensor.batteries_1_charge_capacity
+            - sensor.batteries_1_temperature_1
+            - sensor.batteries_1_temperature_2
+            - sensor.batteries_1_temperature_mos
+            - sensor.batteries_2_cell_voltage_average
+            - sensor.batteries_2_cell_voltage_highest
+            - sensor.batteries_2_cell_voltage_imbalance
+            - sensor.batteries_2_cell_voltage_lowest
+            - sensor.batteries_2_charge_capacity
+            - sensor.batteries_2_temperature_1
+            - sensor.batteries_2_temperature_2
+            - sensor.batteries_2_temperature_mos
+            - sensor.batteries_3_cell_voltage_average
+            - sensor.batteries_3_cell_voltage_highest
+            - sensor.batteries_3_cell_voltage_imbalance
+            - sensor.batteries_3_cell_voltage_lowest
+            - sensor.batteries_3_charge_capacity
+            - sensor.batteries_3_temperature_1
+            - sensor.batteries_3_temperature_2
+            - sensor.batteries_3_temperature_mos
+            - sensor.inverters_1_battery_current
+            - sensor.inverters_1_battery_power
+            - sensor.inverters_1_battery_state_of_charge
+            - sensor.inverters_1_battery_voltage
+            - sensor.solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation
+            - sensor.solis_s6_eh3p10k_h_zp_backup_load_today_energy
+            - sensor.solis_s6_eh3p10k_h_zp_household_load_today_energy
+            - sensor.solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid
+            - sensor.solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid
+            - sensor.weather_cloud_cover
+            - sensor.weather_global_tilted_irradiance
+            - sensor.weather_is_day
+            - sensor.weather_outside_temperature
+            - sensor.weather_pv_energy_generated
+            - sensor.weather_pv_power_predicted
+            - sensor.weather_weather_code
+            - sensor.weather_wind_speed
+            - sensor.basement_4_gang_switch_switch_1
+            - sensor.basement_4_gang_switch_switch_2
+            - sensor.basement_4_gang_switch_switch_3
+            - sensor.basement_4_gang_switch_switch_4
+            - sensor.kitchen_table_switch_1
+            - sensor.pool_wifi_smart_meter_switch_switch
+            - sensor.smart_plug_socket_1_2
+            - sensor.terrace_switch_switch_1
+            - sensor.terrace_switch_switch_2
+            - sensor.inverters_1_pv_power

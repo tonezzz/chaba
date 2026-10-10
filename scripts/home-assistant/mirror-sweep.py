@@ -165,6 +165,8 @@ def main():
             print("# nothing to mirror")
             return
         print("\n# --- append to docs/home-assistant/dev/dev-mocks.yaml under rest: ---")
+        print("# NOTE: new mirrors must also be added to the mha_mirror_refresh")
+        print("# automation's update_entity list at the bottom of the file.")
         for e in mirrorable:
             attrs = ha_states[e].get("attributes", {})
             unit = attrs.get("unit_of_measurement")
@@ -173,11 +175,13 @@ def main():
             print(f"  - resource: {HA_URL}/api/states/{e}")
             print("    headers:")
             print("      Authorization: !secret michael_ha_auth")
-            print("    scan_interval: 30")
+            print("    scan_interval: 86400")
+            print("    timeout: 5")
             print("    sensor:")
             print(f"      - name: {e.split('.', 1)[1]}")
             print(f"        unique_id: mha_mirror_{slug}")
-            print('        value_template: "{{ value_json.state }}"')
+            print('        value_template: "{{ value_json.get(\'state\', \'unavailable\') if (value_json is defined and value_json is mapping) else \'unavailable\' }}"')
+            print('        availability: "{{ is_state(\'binary_sensor.michael_ha_reachable\', \'on\') and value_json is defined and value_json is mapping and value_json.state is defined and value_json.state not in (\'unavailable\', \'unknown\', \'none\') }}"')
             if unit:
                 print(f'        unit_of_measurement: "{unit}"')
             SENSOR_CLASSES = {

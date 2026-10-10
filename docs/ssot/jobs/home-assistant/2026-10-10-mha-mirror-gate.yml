@@ -1,0 +1,69 @@
+title: Gate mha_mirror_* sensors behind michael-ha reachability probe
+subtitle: Off-LAN michael-dev replicas (idc03, tony-omen) spammed REST
+  timeouts + UndefinedError because mha_mirror_* polled
+  http://michael-ha:8123 unconditionally every 30s
+icon: mirror
+id: 2026-10-10-mha-mirror-gate
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-10"
+card: michael-dev-offlan-mirrors
+
+planning:
+  goal: |
+    Card: idc03 (~1.5k/day) + tony-omen (~2.1k/day) severe log lines from
+    michael-dev mha_mirror_* REST sensors + template mirrors that cannot
+    reach http://michael-ha:8123 cleanly off-LAN. Tony answered request
+    mirror-replica-policy: "gate-mirrors — keep replicas, gate mha_mirror_*
+    sensors behind a reachability check (fail quiet, retry slow)."
+
+decision:
+  chosen: gate-mirrors
+  mechanism: |
+    - binary_sensor.michael_ha_reachable (command_line): `curl -sf -m 5
+      http://michael-ha:8123/` every 300s, always exits 0 so probe failures
+      are silent — this is the slow retry path.
+    - Every mha_mirror_* rest resource: scan_interval 30 -> 86400 and
+      timeout: 5. The scheduled poll is now a once-a-day fallback.
+    - automation mha_mirror_refresh fires homeassistant.update_entity on
+      all mirror sensor ids every 30s while the gate is on (parity with the
+      old cadence when LAN is fine, e.g. tony-dell), plus one burst on
+      gate->off so mirrors mark unavailable promptly.
+    - value_template/availability on every mirror now guard
+      `value_json is defined and value_json is mapping` — the UndefinedError
+      spam came from rendering `value_json.state` on failed/empty fetches.
+    - The 9 template switch wrappers get availability on the same gate so
+      toggles are disabled (no rest_command.mha_call hang) when unreachable.
+  rejected:
+    - "drop-mirrors: would lose parity entity_ids on off-LAN dev dashboards."
+    - "lan-only (confine replicas to LAN hosts): kills the idc03 replica that
+      chaba CI now depends on for card dev."
+
+files_changed:
+  - docs/home-assistant/dev/dev-mocks.yaml  # canonical package source
+  - stacks/tony-omen/michael-dev/packages/a_dev_mocks.yaml  # host snapshot
+  - stacks/tony-dell/michael-dev/packages/a_dev_mocks.yaml  # host snapshot
+  - scripts/home-assistant/mirror-sweep.py  # --yaml emitter now emits gated blocks
+  - docs/ssot/infrastructure/ssot.home-assistant.entities.yml
+  - docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml
+  - AGENTS.md  # parity-entities note documents the gate
+
+deploy_notes: |
+  Not deployed by this dispatch (worktree-only). To apply on a replica host:
+  rsync docs/home-assistant/dev/dev-mocks.yaml to
+  ~/.config/michael-dev/packages/a_dev_mocks.yaml then reload core
+  (ha_reload_core via HA-MCP, or restart michael-dev.service).
+  Residual noise: one fetch per mirror at HA startup + once daily per
+  mirror — ~57 lines/event instead of ~2k/day.
+  stacks/idc03/michael-dev has no packages/ snapshot in the repo — the
+  live file on idc03 was never tracked; deploy + track it like the
+  tony-omen/tony-dell copies.
+
+verification:
+  - python3 yaml parse of all three package files (custom !secret loader)
+  - mirror name/entity collisions vs template sensors: none
+  - "post-deploy on idc03/tony-omen: watch journalctl --user -u michael-dev
+    / docker logs for REST timeout and UndefinedError lines; expect ~0/h
+    while michael-ha is unreachable and mirrors showing state
+    'unavailable'."
