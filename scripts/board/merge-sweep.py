@@ -33,9 +33,18 @@ For each card in doing/review with action.type=dispatch:
      ANY conflicted path aborts and posts a card request naming the
      files. Unlike close_out this sweep never silently resolves either
      side — the branch may carry state a human already reviewed.
-  6. on clean merge: push + card comms + action.verified=True.
-     Already-merged branches are silent no-ops (verified is still
-     stamped when missing).
+  6. verified gate before any verified stamp (2026-10-09 nest-mgr
+     incident — the unit died 1s in, produced nothing, and was stamped
+     verified anyway): verified=True requires (a) the devin-task unit
+     exited 0 per the best surviving evidence (task-dir exit_code >
+     meta.result > unit/journal > card finish report), (b) the branch
+     changed files vs base or carries dispatch-outcome-<tid>.md, and
+     (c) the card's auto_done_when checks pass (a self verified_true
+     counts the a+b verdict; anything else failing defers the stamp to
+     kanban-act — the work still merges). A provable failure — no
+     deliverable, or a nonzero unit exit on unmerged work — marks the
+     attempt failed and requeues on kanban-dispatch's retry path.
+     Undecidable states hold in review with a comms flag.
 
 Zombie lane: devin-task-* units on dell + the recorded runners +
 MERGE_SWEEP_HOSTS running > ZOMBIE_AGE_H (6h) with no activity >
@@ -60,6 +69,7 @@ Usage: merge-sweep.py [--dry-run]
 from __future__ import annotations
 
 import fcntl
+import importlib.util
 import json
 import os
 import re
@@ -132,7 +142,7 @@ def sh(cmd: list, timeout: int = 60,
 # for the branch), and the fetch spec (<path>, <ref>) for this host's
 # repo clone. Prints one JSON object.
 REMOTE_SESSION_PROBE = r'''
-import json, subprocess, sys
+import json, re, subprocess, sys
 from pathlib import Path
 tid = sys.argv[1]
 home = Path.home()
@@ -184,6 +194,41 @@ if not out.get("repo_root"):
                 out.update(repo_root=c, head=s, fetch_path=c,
                            fetch_ref=f"refs/heads/{branch}")
                 break
+# exit evidence for the verified gate: the dispatch wrapper's exit_code
+# survives systemd --collect GC; the unit's Result only exists while it
+# is still loaded; journal Succeeded/Failed lines outlive both.
+try:
+    ecp = tdir / "exit_code"
+    out["exit_code"] = ecp.read_text().strip() if ecp.is_file() else None
+except Exception:
+    out["exit_code"] = None
+try:
+    r = subprocess.run(["systemctl", "--user", "show",
+                        f"devin-task-{tid}.service",
+                        "-p", "ExecMainStatus", "-p", "Result",
+                        "-p", "LoadState"],
+                       capture_output=True, text=True, timeout=15)
+    kv = dict(l.split("=", 1) for l in r.stdout.splitlines() if "=" in l)
+    # NB: show on a never-loaded unit prints defaults
+    # (Result=success/ExecMainStatus=0) — only LoadState=loaded is real.
+    out["unit"] = {"exec": kv.get("ExecMainStatus", ""),
+                   "result": kv.get("Result", ""),
+                   "load": kv.get("LoadState", "")}
+except Exception:
+    out["unit"] = {}
+if out["exit_code"] is None and not out["unit"].get("result"):
+    try:
+        j = subprocess.run(["journalctl", "--user-unit",
+                            f"devin-task-{tid}.service", "--no-pager",
+                            "-o", "cat"],
+                           capture_output=True, text=True, timeout=20)
+        hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'",
+                          j.stdout or "")
+        if hits:
+            out["journal_result"] = ("success" if hits[-1] == "Succeeded."
+                                     else hits[-1].split("'")[1])
+    except Exception:
+        pass
 print(json.dumps(out))
 '''
 
@@ -265,6 +310,36 @@ def runner_probe(host: str, script: str, *argv: str):
         return None
 
 
+def _local_exit_evidence(tid: str, out: dict) -> None:
+    """Same exit evidence the REMOTE_SESSION_PROBE collects, for a task
+    on this host: task-dir exit_code (survives --collect GC), live unit
+    Result, journal Succeeded/Failed lines."""
+    tdir = dr.dispatch_dir() / "tasks" / tid
+    try:
+        ecp = tdir / "exit_code"
+        out["exit_code"] = ecp.read_text().strip() \
+            if ecp.is_file() else None
+    except Exception:
+        out["exit_code"] = None
+    r = sh(["systemctl", "--user", "show", f"devin-task-{tid}.service",
+            "-p", "ExecMainStatus", "-p", "Result", "-p", "LoadState"],
+           timeout=15)
+    kv = dict(l.split("=", 1) for l in (r.stdout or "").splitlines()
+              if "=" in l)
+    out["unit"] = {"exec": kv.get("ExecMainStatus", ""),
+                   "result": kv.get("Result", ""),
+                   "load": kv.get("LoadState", "")}
+    if out["exit_code"] is None and not out["unit"]["result"]:
+        j = sh(["journalctl", "--user-unit", f"devin-task-{tid}.service",
+                "--no-pager", "-o", "cat"], timeout=20)
+        hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'",
+                          j.stdout or "")
+        if hits:
+            out["journal_result"] = (
+                "success" if hits[-1] == "Succeeded."
+                else hits[-1].split("'")[1])
+
+
 def session_probe(host: str, tid: str) -> dict:
     """meta.json + worktree state on the runner (local when host==HOST)."""
     if not host or host == HOST:
@@ -292,6 +367,7 @@ def session_probe(host: str, tid: str) -> dict:
                                fetch_path=str(p),
                                fetch_ref=f"refs/heads/{out['branch']}")
                     break
+        _local_exit_evidence(tid, out)
         return out
     res = runner_probe(host, REMOTE_SESSION_PROBE, tid)
     return res if isinstance(res, dict) else {}
@@ -426,6 +502,249 @@ def conflict_rid(card: dict) -> str:
     return "merge-conflict" if n == 0 else f"merge-conflict-{n + 1}"
 
 
+# ------------------------------------------------------- verified gate
+# action.verified means "the dispatch delivered", not "the branch
+# merged" — the 2026-10-09 nest-mgr incident: the runner's unit died ~1s
+# in (empty DEVIN_MODEL on a stale devin-dispatch), produced zero
+# commits, and still got stamped verified because the untouched branch
+# head was 'already in origin/master'. verified now requires ALL of:
+#
+#   (a) the devin-task unit exited 0 — evidence precedence: the task
+#       dir's exit_code file (written by the dispatch wrapper, survives
+#       systemd --collect GC) > meta.json result (devin-dispatch-watch
+#       stamp) > systemctl unit Result / journal Succeeded-Failed lines
+#       > the card's own finish report;
+#   (b) the branch actually changed files vs base, or left a
+#       dispatch-outcome-<tid>.md in its tree (research tasks whose only
+#       deliverable is the doc);
+#   (c) the card's auto_done_when checks pass — a self 'verified_true'
+#       entry counts the a+b gate itself; a failing/unrunnable contract
+#       defers to kanban-act rather than failing the attempt.
+#
+# A provable failure (nonzero exit on unmerged work, or no deliverable
+# at all) marks the attempt failed and requeues it on the same path
+# kanban-dispatch's merge step uses. Undecidable states (work landed but
+# no usable exit record, or a merge too old to reconstruct) hold the
+# card in review with a comms flag — never verified on faith.
+
+def unit_exit(probe: dict, card: dict) -> tuple:
+    """(True|False|None, detail) — did devin-task-<tid> exit 0.
+
+    None = no usable record (unit GC'd before exit_code existed, journal
+    rotated, runner never reported): callers treat it as 'unproven',
+    not failed."""
+    ec = str(probe.get("exit_code") or "").strip()
+    if ec:
+        return (ec == "0"), f"exit_code={ec}"
+    mres = str((probe.get("meta") or {}).get("result") or "").strip()
+    if mres and mres != "unknown":
+        return (mres == "success"), f"meta.result={mres}"
+    u = probe.get("unit") or {}
+    if u.get("load") == "loaded":
+        # only a loaded unit's fields are real — a never-loaded/collected
+        # unit reports defaults (Result=success) that prove nothing
+        ok = u.get("result") == "success" and str(u.get("exec")) == "0"
+        return ok, (f"unit ExecMainStatus={u.get('exec') or '?'} "
+                    f"Result={u.get('result') or '?'}")
+    jr = str(probe.get("journal_result") or "").strip()
+    if jr:
+        return (jr == "success"), f"journal={jr}"
+    # card-side last resort: the finish report the runner/dispatcher
+    # already posted — 'finished (ok): exit=N' (runner-agent) or
+    # 'run finished (<state>)' (kanban-dispatch).
+    for cm in reversed(card.get("comms") or []):
+        t = str(cm.get("text") or "")
+        if "finished" not in t:
+            continue
+        ex = re.search(r"\bexit=(\d+)", t)
+        if ex:
+            return (ex.group(1) == "0"), f"finish report exit={ex.group(1)}"
+        hit = re.search(r"finished \((\w+)\)", t)
+        if hit:
+            word = hit.group(1)
+            return (word in ("ok", "inactive", "exited")), \
+                f"finish report '{word}'"
+    if (card.get("action") or {}).get("status") == "done":
+        # weakest tier: the finish path only reaches done for units that
+        # weren't in failed state. Pre-exit_code-era tasks have nothing
+        # better; (b) still requires a real deliverable.
+        return True, "card finished (no exit record survives)"
+    return None, "no exit record"
+
+
+def _containing_merge(repo: Path, head: str, base_tip: str) -> str:
+    """First-parent sha of the newest merge on base_tip whose non-first
+    parent contains head — i.e. the base tip just before the session
+    branch was merged in. '' when head didn't arrive via a merge."""
+    out = sh(["git", "-C", str(repo), "log", "--first-parent", "--merges",
+              "--format=%H %P", "--max-count=2000", base_tip],
+             timeout=60).stdout or ""
+    for ln in out.splitlines():
+        p = ln.split()
+        if len(p) < 3:
+            continue
+        if any(sh(["git", "-C", str(repo), "merge-base", "--is-ancestor",
+                   head, par], timeout=30).returncode == 0
+               for par in p[2:]):
+            return p[1]
+    return ""
+
+
+def produced_work(repo: Path, head: str, base_tip: str,
+                  m: dict, tid: str) -> tuple:
+    """(True|False|None, detail) — gate (b): the session changed files
+    vs base or left its outcome doc. None = can't reconstruct."""
+    doc = sh(["git", "-C", str(repo), "ls-tree", "--name-only", head,
+              f"dispatch-outcome-{tid}.md"], timeout=30)
+    if doc.returncode == 0 and doc.stdout.strip():
+        return True, f"outcome doc dispatch-outcome-{tid}.md"
+    if m["ancestor"]:
+        if head == base_tip:
+            return False, "branch head == base tip — nothing committed"
+        if m.get("on_first_parent"):
+            return False, "head is an old base commit — nothing committed"
+        # head entered base through a merge's non-first parent: diff the
+        # branch tip against that merge's first parent (base at the time)
+        pre = _containing_merge(repo, head, base_tip)
+        if not pre:
+            return None, ("head is merged but the merge isn't in the "
+                          "first-parent window — can't diff the session")
+        diff_from = pre
+    else:
+        r = sh(["git", "-C", str(repo), "merge-base", base_tip, head],
+               timeout=30)
+        diff_from = r.stdout.strip() or base_tip
+    names = (sh(["git", "-C", str(repo), "diff", "--name-only",
+                 diff_from, head], timeout=60).stdout or "").split()
+    if names:
+        return True, f"{len(names)} file(s) changed vs base"
+    return False, "no changed files vs base and no outcome doc"
+
+
+_KA = None
+_KA_TRIED = False
+
+
+def _kanban_act():
+    """Import scripts/ada/kanban-act.py for its CHECKS vocabulary — the
+    same bounded check kinds, evaluated here so verified can reflect the
+    card's own contract instead of waiting a kanban-act pass."""
+    global _KA, _KA_TRIED
+    if _KA_TRIED:
+        return _KA
+    _KA_TRIED = True
+    for cand in (CHABA_REPO / "scripts" / "ada" / "kanban-act.py",
+                 SCRIPT_REPO / "scripts" / "ada" / "kanban-act.py"):
+        if not cand.exists():
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "kanban_act", cand)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            _KA = mod
+            return _KA
+        except Exception:
+            continue
+    return None
+
+
+def auto_done_ok(card: dict, by_id: dict) -> tuple:
+    """(c): (True, detail) when every auto_done_when check passes —
+    a self 'verified_true' entry counts this gate's a+b verdict.
+    (False, detail) = defer to kanban-act. No contract -> True."""
+    when = card.get("auto_done_when")
+    if not when:
+        return True, ""
+    ka = _kanban_act()
+    cid = card.get("id") or ""
+    results = []
+    for expr in when:
+        kind, _, arg = str(expr).partition(":")
+        if kind == "verified_true" and (not arg or arg == cid):
+            results.append(f"{expr}=gate")
+            continue
+        fn = ka.CHECKS.get(kind) if ka else None
+        try:
+            ok = bool(fn and fn(arg, by_id, card))
+        except Exception:
+            ok = False
+        results.append(f"{expr}={'pass' if ok else 'fail'}")
+        if not ok:
+            return False, "; ".join(results)
+    return True, "; ".join(results)
+
+
+def verify_gate(card: dict, probe: dict, repo: Path, head: str,
+                base_tip: str, m: dict, tid: str, by_id: dict) -> dict:
+    """The (a) exit / (b) deliverable / (c) auto_done_when conjunction.
+    Returns {"verify"|"fail"|"hold"|"defer": True, "why": ...}."""
+    ok_b, why_b = produced_work(repo, head, base_tip, m, tid)
+    ok_a, why_a = unit_exit(probe, card)
+    if ok_b is False:
+        return {"fail": True,
+                "why": f"no delivered work — {why_b}; unit: {why_a}"}
+    if ok_a is False and not m["ancestor"]:
+        return {"fail": True,
+                "why": f"unit did not exit 0 ({why_a}) — unmerged "
+                       "partial work isn't auto-merged"}
+    if ok_a is False:
+        return {"hold": True,
+                "why": f"branch is merged ({why_b}) but the unit did "
+                       f"not exit 0 ({why_a}) — needs a human look"}
+    if ok_b is None:
+        return {"hold": True, "why": f"can't verify the diff — {why_b}"}
+    if ok_a is None:
+        return {"hold": True,
+                "why": f"work present ({why_b}) but the unit exit is "
+                       f"unverifiable ({why_a})"}
+    ok_c, why_c = auto_done_ok(card, by_id)
+    if ok_c is False:
+        return {"defer": True,
+                "why": f"auto_done_when not met ({why_c}) — deferred "
+                       "to kanban-act"}
+    return {"verify": True,
+            "why": f"{why_a}; {why_b}" + (f"; {why_c}" if why_c else "")}
+
+
+def fail_attempt(card: dict, why: str, dry: bool) -> bool:
+    """verified-gate failure: verified=False + requeue on the same
+    path kanban-dispatch's merge step uses (attempts/max_attempts cap,
+    last_failure carries the evidence into the next run's RETRY_RAILS)."""
+    cid = card.get("id") or "?"
+    if dry:
+        print(f"  [dry] {cid}: verified gate failed — {why[:110]}")
+        return True
+
+    def apply(c):
+        a = c.setdefault("action", {})
+        a["verified"] = False  # checked, and NOT verified
+        a["last_failure"] = why[:280]
+        c.setdefault("claim", {}).pop("session", None)
+        # attempts is counted at claim time (mark_start) — a gate failure
+        # requeues while attempts_used < max_attempts (max_attempts =
+        # total dispatches incl. retries; NB merge_pending_one's
+        # att+1<max variant double-counts and never retries at the
+        # default of 2 — card kanban-autoretry-off-by-one)
+        att = int(a.get("attempts") or 0)
+        max_att = int(a.get("max_attempts")
+                      or os.environ.get("KANBAN_MAX_ATTEMPTS", "2"))
+        if os.environ.get("KANBAN_AUTORETRY", "1") != "0" \
+                and att < max_att:
+            a["status"] = "queued"
+            a.pop("runner", None)
+            a.pop("task_id", None)
+            text = (f"merge-sweep: verified gate failed — {why[:240]}; "
+                    f"auto-retry queued (attempt {att + 1}/{max_att})")
+        else:
+            a["status"] = "failed"
+            text = (f"merge-sweep: verified gate failed — {why[:240]}; "
+                    "attempt limit reached, needs a human")
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba", "text": text[:500]})
+    return locked_edit(cid, apply)
+
+
 # ------------------------------------------------------------- git ops
 def served_repo(repo_name: str) -> Path | None:
     """The checkout merges land in for repo_name."""
@@ -550,10 +869,13 @@ def flag_once(card: dict, key: str, text: str, dry: bool,
     return True
 
 
-def sweep_card(card: dict, active: dict, dry: bool) -> bool:
+def sweep_card(card: dict, active: dict, dry: bool,
+               by_id: dict | None = None) -> bool:
     """One dispatch card through the merge lane. `active` = {task:
     info} of devin-task units still active on any probed host — used to
-    skip in-flight sessions. True when the board changed."""
+    skip in-flight sessions. `by_id` = all cards for auto_done_when
+    checks (card_done/verified_true:<id>). True when the board
+    changed."""
     a = card.get("action") or {}
     cid = card.get("id") or "?"
     st = a.get("status")
@@ -628,38 +950,52 @@ def sweep_card(card: dict, active: dict, dry: bool) -> bool:
                   f"merge-sweep: {m.get('error')} for devin-task-{tid}",
                   dry)
         return False
-    if m["ancestor"]:
-        if m.get("empty_session"):
-            flag_once(card, "empty_session",
-                      f"merge-sweep: devin-task-{tid} head is an old {base} "
-                      "commit — the session produced no work (died before "
-                      "committing, e.g. broken runner); NOT verified",
-                      dry)
-            return False
-        changed = False
-        if a.get("verified") is not True:
+
+    # verified gate — verified means "the dispatch delivered", not "the
+    # branch merged" (2026-10-09 nest-mgr false-verify). A provable
+    # failure requeues before any merge; undecidable states hold with a
+    # comms flag; auto_done_when gaps defer to kanban-act.
+    base_tip = dr._rev_parse(repo, base_ref)
+    g = verify_gate(card, probe, repo, head, base_tip, m, tid,
+                    by_id or {cid: card})
+    if g.get("fail"):
+        return fail_attempt(card, g["why"], dry)
+
+    def stamp_gate_result(merged_txt: str) -> bool:
+        """Apply the gate verdict after a merge/already-merged check."""
+        if g.get("verify"):
             def mark(c):
                 c.setdefault("action", {})["verified"] = True
             if dry:
-                print(f"  [dry] {cid}: already merged — stamp verified")
+                print(f"  [dry] {cid}: {merged_txt} — stamp verified "
+                      f"({g['why'][:80]})")
             else:
                 locked_edit(cid, mark)
-            card_note(cid, f"merge-sweep: {probe.get('branch')} already "
-                           f"in {base_ref} — marked verified", dry)
-            changed = True
-        return changed
+            card_note(cid, f"merge-sweep: {merged_txt} — marked verified "
+                           f"({g['why'][:160]})", dry)
+            return True
+        key = "verify_deferred" if g.get("defer") else "verify_hold"
+        return flag_once(card, key,
+                         f"merge-sweep: {merged_txt} but verified "
+                         f"withheld — {g['why'][:200]}", dry)
+
+    if m["ancestor"]:
+        if a.get("verified") is True:
+            return False
+        return stamp_gate_result(
+            f"{probe.get('branch')} already in {base_ref}")
     if dry:
+        verdict = ("verify" if g.get("verify") else
+                   "defer" if g.get("defer") else "hold")
         print(f"  [dry] {cid}: would merge {head[:8]} "
-              f"({m['unmerged']} commits) -> {base_ref} in {repo}")
+              f"({m['unmerged']} commits) -> {base_ref} in {repo} "
+              f"[gate: {verdict}]")
         return True
     res = merge_strict(repo, head, base_ref, base)
     if res.get("merged"):
-        def mark(c):
-            c.setdefault("action", {})["verified"] = True
-        locked_edit(cid, mark)
-        card_note(cid, f"merge-sweep: merged {res['sha'][:8]} "
-                       f"({probe.get('branch')} from {runner or HOST}) "
-                       f"-> origin/{base}", dry)
+        stamp_gate_result(
+            f"merged {res['sha'][:8]} ({probe.get('branch')} from "
+            f"{runner or HOST}) -> origin/{base}")
         return True
     if res.get("conflicts"):
         files = ", ".join(str(f) for f in res["conflicts"][:10])
@@ -755,12 +1091,13 @@ def main() -> int:
             active[z["task"]] = {**z, "host": h}
 
     changed = False
+    by_id = {c.get("id"): c for c in cards if c.get("id")}
     in_scope = [c for c in cards
                 if c.get("column") in ("doing", "review")
                 and (c.get("action") or {}).get("type") == "dispatch"]
     for c in in_scope:
         try:
-            changed |= sweep_card(c, active, dry)
+            changed |= sweep_card(c, active, dry, by_id)
         except Exception as e:
             print(f"{c.get('id')}: sweep error {type(e).__name__}: {e}")
     zombies = sweep_zombies(host_units, by_tid, dry)

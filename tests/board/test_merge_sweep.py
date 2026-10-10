@@ -8,10 +8,13 @@ head over the runner's path and merges into the served checkout.
 
 Covers: clean merge lands + verified stamp, strict stop-and-report
 conflicts (no side taken), dirty worktree flag, failed-run flag,
-in-flight skip, stale-running rescue, comms task_id resolution, and the
-zombie flag. No network, no systemd — all git ops stay in the tmpdir;
+in-flight skip, stale-running rescue, comms task_id resolution, the
+zombie flag, and the verified gate (2026-10-09 nest-mgr incident:
+exit==0 evidence + real deliverable + auto_done_when, else fail +
+requeue). No network, no systemd — all git ops stay in the tmpdir;
 the 'remote runner' is exercised through the local code path (identical
-git semantics, ssh is only the transport).
+git semantics, ssh is only the transport). The task dir fixture writes
+exit_code=0 — the evidence tier the verified gate prefers.
 """
 
 from __future__ import annotations
@@ -108,6 +111,11 @@ class Case(unittest.TestCase):
              "branch": f"dispatch/{TID}",
              "default_branch": "master",
              "unit": f"devin-task-{TID}"}))
+        # default exit evidence: a clean exit. The verified gate's other
+        # tiers (meta.result, unit, journal, finish comms) are exercised
+        # by removing/overwriting this file per test.
+        (task / "exit_code").write_text("0\n")
+        self.task_dir = task
 
         # cards dir + merge target map (module-level constants patched)
         self.cards = self.tmp / "cards-repo/docs/ssot/kanban/cards"
@@ -172,21 +180,135 @@ class Case(unittest.TestCase):
         self.assertTrue(any("merge-sweep" in m.get("text", "")
                             for m in c.get("comms") or []), c["comms"])
 
-    def test_clean_noop_when_nothing_produced(self):
+    def test_nothing_produced_fails_and_requeues(self):
+        # the nest-mgr repro: clean unit exit, but the branch head is
+        # the base tip — zero commits, no outcome doc -> NOT verified;
+        # the attempt is marked failed and requeued.
         before = subprocess.run(
             ["git", "--git-dir", str(self.origin), "rev-parse",
              "master"], capture_output=True, text=True).stdout.strip()
         card = self.write_card()  # wt head == base — nothing new
         changed = ms.sweep_card(card, {}, dry=False)
-        self.assertTrue(changed)  # verified stamp + comms
+        self.assertTrue(changed)
         c = self.read_card()
-        self.assertIs(c["action"].get("verified"), True)
-        self.assertTrue(any("already in" in m.get("text", "")
+        a = c["action"]
+        self.assertIs(a.get("verified"), False)  # checked, NOT verified
+        self.assertEqual(a.get("status"), "queued")  # retry path
+        # attempts counts claims (mark_start) — the gate failure itself
+        # doesn't consume a dispatch slot
+        self.assertFalse(a.get("attempts"))
+        self.assertNotIn("task_id", a)
+        self.assertTrue(a.get("last_failure"))
+        self.assertTrue(any("verified gate failed" in m.get("text", "")
                             for m in c.get("comms") or []), c["comms"])
         after = subprocess.run(
             ["git", "--git-dir", str(self.origin), "rev-parse",
              "master"], capture_output=True, text=True).stdout.strip()
         self.assertEqual(before, after)
+
+    def test_failed_unit_work_not_merged_requeued(self):
+        # unit crashed after committing — unmerged partial work is not
+        # auto-merged; the card requeues with the exit evidence.
+        commit(self.wt, "partial.py", "x=1\n", "partial work")
+        (self.task_dir / "exit_code").write_text("1\n")
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertFalse(self.remote_has("master", "partial.py"))
+        a = self.read_card()["action"]
+        self.assertIs(a.get("verified"), False)
+        self.assertEqual(a.get("status"), "queued")
+        self.assertIn("exit_code=1", a.get("last_failure") or "")
+
+    def test_gate_failure_respects_attempt_cap(self):
+        # max_attempts counts total dispatches (attempts is bumped at
+        # claim): attempts=2 at the default cap -> marked failed, no
+        # requeue.
+        (self.task_dir / "exit_code").write_text("1\n")
+        commit(self.wt, "p.py", "x=1\n", "partial")
+        card = self.write_card(
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "attempts": 2})
+        ms.sweep_card(card, {}, dry=False)
+        a = self.read_card()["action"]
+        self.assertEqual(a.get("status"), "failed")
+        self.assertIs(a.get("verified"), False)
+        self.assertFalse(self.remote_has("master", "p.py"))
+
+    def test_no_exit_record_with_work_holds(self):
+        # produced work, mergeable, but no usable exit record anywhere
+        # (pre-exit_code era) -> merge lands, verified is withheld and
+        # flagged for a human instead of stamped on faith.
+        (self.task_dir / "exit_code").unlink()
+        commit(self.wt, "legacy.py", "x=1\n", "old-session work")
+        card = self.write_card(
+            column="doing",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba"})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertTrue(self.remote_has("master", "legacy.py"))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("verify_hold"))
+
+    def test_auto_done_when_defers_to_kanban_act(self):
+        # produced work + clean exit but the card's own contract fails —
+        # merge lands, verified is deferred to kanban-act.
+        commit(self.wt, "feat.py", "x=1\n", "work")
+        card = self.write_card(
+            auto_done_when=["file_exists:no-such-file-deadbeef"])
+        ms.sweep_card(card, {}, dry=False)
+        self.assertTrue(self.remote_has("master", "feat.py"))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("verify_deferred"))
+
+    def test_auto_done_when_verified_true_idiom(self):
+        # the documented dispatch idiom: a self 'verified_true:' entry
+        # counts the a+b gate itself.
+        commit(self.wt, "feat2.py", "x=1\n", "work")
+        card = self.write_card(auto_done_when=["verified_true:"])
+        ms.sweep_card(card, {}, dry=False)
+        self.assertIs(self.read_card()["action"].get("verified"), True)
+
+    def test_outcome_doc_only_counts_as_work(self):
+        # research sessions can deliver only dispatch-outcome-<tid>.md
+        commit(self.wt, f"dispatch-outcome-{TID}.md", "# done\n",
+               "outcome")
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)
+        self.assertTrue(
+            self.remote_has("master", f"dispatch-outcome-{TID}.md"))
+
+    def test_already_merged_work_verifies(self):
+        # branch landed earlier through a merge's second parent: the
+        # gate diffs it against that merge's first parent and sees the
+        # delivered files.
+        commit(self.wt, "landed.py", "x=1\n", "work")
+        r = git(self.runner_repo, "push", "-q", "origin",
+                f"dispatch/{TID}")
+        assert r.returncode == 0, r.stderr
+        other = self.tmp / "other"
+        subprocess.run(["git", "clone", "-q", str(self.origin),
+                        str(other)], capture_output=True)
+        git(other, "config", "user.name", "t")
+        git(other, "config", "user.email", "t@t")
+        r = git(other, "fetch", "-q", "origin", f"dispatch/{TID}")
+        assert r.returncode == 0, r.stderr
+        r = git(other, "merge", "--no-ff", "--no-edit", "-m", "m",
+                "FETCH_HEAD")
+        assert r.returncode == 0, r.stderr
+        r = git(other, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)
+        self.assertTrue(any("already in" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
 
     def test_verified_card_skips_early(self):
         commit(self.wt, "x.py", "x=1\n", "work")

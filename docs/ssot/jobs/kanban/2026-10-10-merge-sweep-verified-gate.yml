@@ -1,0 +1,101 @@
+title: "merge-sweep verified gate — verified means delivered, not merged"
+subtitle: >-
+  action.verified=true now requires a clean unit exit AND a real deliverable
+  AND the card's auto_done_when contract; provable failures mark the attempt
+  failed and requeue on the retry path
+icon: 🛡️
+id: 2026-10-10-merge-sweep-verified-gate
+status: done
+owner: devin-dispatch
+project: chaba
+card: merge-sweep-verified-gate
+branch: dispatch/20261010-080633-in-merge-sweep-scripts-board-o
+started: "2026-10-10"
+completed: "2026-10-10"
+
+context:
+  incident: >-
+    2026-10-09 nest-mgr false-verify: card nest-manager-node was dispatched to
+    idc03 on a stale devin-dispatch; the unit died ~1s in (empty DEVIN_MODEL)
+    producing zero commits, and merge-sweep stamped action.verified=true because
+    the untouched branch head was 'already in origin/master'. The pre-existing
+    empty_session check only caught heads that were old base commits — head ==
+    base tip slipped through. A human had to notice, sync the runner, and
+    requeue by hand.
+  spec: >-
+    verified=true only when (a) the dispatch unit exit==0 AND (b) the branch
+    changed files vs base or an outcome doc exists AND (c) auto_done_when
+    checks pass or defer to kanban-act; otherwise mark attempt failed +
+    requeue per the retry path.
+
+design:
+  exit_evidence: >-
+    devin-dispatch runs units under systemd-run --collect — the unit (and its
+    Result) is GC'd on exit, but the wrapper writes $TASK_DIR/exit_code and
+    devin-dispatch-watch stamps meta.json result. unit_exit() precedence:
+    exit_code > meta.result > systemctl unit fields (only while
+    LoadState=loaded — a never-loaded unit reports phantom
+    Result=success/ExecMainStatus=0) > journalctl Succeeded/Failed lines >
+    the card's own finish comms ('finished (ok): exit=N', 'run finished
+    (<state>)') > card status==done (weakest tier, covers pre-exit_code-era
+    tasks). Both the REMOTE_SESSION_PROBE ssh probe and the local
+    session_probe collect the same fields.
+  produced_work: >-
+    'Changed files' = git diff --name-only of the session base vs head: for
+    unmerged heads that's merge-base(base_tip, head)..head; for heads already
+    in base via a merge's non-first parent, _containing_merge walks the
+    first-parent merges and diffs M^1..head. head == base tip or an old base
+    commit = provably empty. An outcome doc counts on its own
+    (dispatch-outcome-<tid>.md in the head tree — research sessions whose only
+    deliverable is the doc).
+  auto_done_when: >-
+    merge-sweep imports scripts/ada/kanban-act.py for the shared CHECKS
+    vocabulary so the stamp reflects the card's own contract. A self
+    'verified_true:' entry (the documented dispatch idiom) counts the a+b
+    gate itself rather than reading the flag mid-write. Failing or
+    unevaluatable checks DEFER to kanban-act — they never fail the attempt
+    (service/page lag shouldn't burn a retry).
+  verdicts: >-
+    verify -> verified=True (both the merge path and the already-merged path);
+    fail (no deliverable, or nonzero exit on unmerged work) -> verified=False +
+    last_failure + status=queued under KANBAN_AUTORETRY / max_attempts, else
+    status=failed; hold (work landed but exit unprovable, or diff
+    unreconstructable, or nonzero exit on already-merged work) -> merge still
+    lands, verified withheld, one comms flag — a human decides; defer ->
+    merge lands, verified withheld for kanban-act's cadence.
+
+retry_math: >-
+  NB attempts is bumped at claim time (mark_start), so fail_attempt requeues
+  while attempts_used < max_attempts — the documented 'total dispatches incl.
+  retries' semantics. kanban-dispatch merge_pending_one's att+1 < max_att
+  variant double-counts and never retries at the default of 2 — carded
+  separately (kanban-autoretry-off-by-one); this change deliberately does not
+  mirror the dead arithmetic.
+
+files:
+- scripts/board/merge-sweep.py
+- tests/board/test_merge_sweep.py
+- docs/ssot/kanban/cards/kanban-autoretry-off-by-one.yml
+
+verified:
+- >-
+  python3 -m unittest discover -s tests/board — 60 tests, 0 failures
+  (19 in test_merge_sweep incl. 6 new gate tests)
+- >-
+  merge-sweep.py --dry-run against the worktree card dir: no errors,
+  probes collect the new exit fields cleanly
+- >-
+  unit_exit tier table exercised directly — exit_code / meta.result /
+  unit / journal / finish-comms / status==done all classify correctly;
+  phantom not-found units no longer read as exit=0
+
+notes:
+- >-
+  Residual gap (deliberate, out of scope): kanban-dispatch close_out can
+  still stamp verified on a merged checkpoint-of-garbage branch — it noops
+  on head==base_tip but not on a trivial commit. Same fix shape applies if
+  it ever bites.
+- >-
+  runner-agent finish collection on --collect'd units may also see
+  LoadState=not-found and report ok=False — separate surface, observed
+  while building the evidence chain.

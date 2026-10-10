@@ -1,0 +1,37 @@
+id: kanban-autoretry-off-by-one
+title: kanban-dispatch auto-retry never fires at default max_attempts=2 (attempts double-count)
+column: backlog
+kind: bug
+priority: medium
+autonomy: t1
+created: '2026-10-10'
+tags:
+- dispatch
+- kanban
+brief: 'merge_pending_one computes att = attempts + 1 and requeues only when att <
+  max_attempts — but mark_start already bumped attempts at claim time, so the failed
+  attempt is counted twice. At the documented default (max_attempts=2 = one dispatch +
+  one retry) a first failure yields att=2, 2<2 fails, and no card is ever auto-retried;
+  effectively KANBAN_AUTORETRY defaults to off. The same bump also interacts badly with
+  the claim-side cap: even an explicit requeue can be parked by attempts >= retries_per_card
+  before the retried session ever runs.
+
+  '
+spec: "In scripts/board/kanban-dispatch.py merge_pending_one: drop the +1 double-count\n\
+  — attempts is incremented by mark_start on each claim, so the requeue predicate\n\
+  should be `int(a.get('attempts') or 0) < max_att` (attempts_used < total allowed),\n\
+  matching the card template's 'max_attempts: total dispatches incl. auto-retries\n\
+  (default 2)' and the claim gate `attempts >= retries_per_card`. merge-sweep.py's\n\
+  fail_attempt (verified gate, this card's sibling) already implements the corrected\n\
+  semantics — mirror that. Check tests/board/test_dispatch_close_out.py expectations\n\
+  around attempts/auto-retry and update or extend coverage.\n"
+comms:
+- at: 2026-10-10 08:35
+  from: devin
+  text: 'filed from merge-sweep-verified-gate work: the retry path this card was meant
+    to mirror turns out to be dead at defaults (attempts double-counted across mark_start
+    + merge_pending_one).'
+action:
+  type: dispatch
+  status: queued
+  repo: chaba
