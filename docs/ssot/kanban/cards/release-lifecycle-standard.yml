@@ -7,7 +7,7 @@ review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 12:07
+updated: 2026-10-10 12:19
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -31,14 +31,14 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
-  result: 'exit=0 devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Failed with result ''exit-code''.
-    | devin-task-20261010-103505-enforcement-plan-gaps-listed-i.service: Consumed 1min 28.884s CPU time, 102.1M
-    memory peak, 0B memory swap peak.'
-  verified: false
+  result: 'exit=0 438-enforcement-plan-gaps-listed-i.md`; board updated; nothing committed/pushed/deployed. | devin-task-20261010-120438-enforcement-plan-gaps-listed-i.service:
+    Consumed 3min 7.409s CPU time over 13min 35.901s wall clock time, 1G memory peak.'
+  verified: true
   sweep:
     session_gone: 2026-10-10 11:49
+    stale_running: 2026-10-10 12:18
   last_failure: unit did not exit 0 (exit_code=1) — unmerged partial work isn't auto-merged
   runner: tony-omen
 comms:
@@ -86,4 +86,31 @@ comms:
     Plan: release: opt-in + tag convention in the standard; lifecycle-check.py in kanban-sync (bounce review/done
     w/o gate tags, stamps soak_until); dev-twin-smoke.py via playlived -> [smoke] comms; promote-lane.sh gates ([smoke]+soak
     before --confirm) + post-deploy smoke -> [rc]/[prod] comms.'
+- at: 2026-10-10 12:17
+  from: devin
+  text: 'done (tony-omen). All 6 items landed: release: opt-in + tag convention documented; lifecycle-check.py in
+    kanban-sync (bounce review/done w/o [exp]/[alpha] or full chain+soak, stamps soak_until); dev-twin-smoke.py
+    via playlived -> [smoke] comms — LIVE-VERIFIED PASS on tony-ha lovelace (42 cards, 7.2s); promote-lane.sh enforces
+    [smoke]+soak before --confirm, posts [rc]+[prod], runs post-deploy smoke. Dry-run on real board: gate-clean
+    (no release cards yet). 135 tests pass. Job record: docs/ssot/jo'
+- at: 2026-10-10 12:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261010-103505-enforcement-plan-gaps-listed-i no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-10 12:19
+  from: tony-omen
+  text: 'finished (ok): exit=0 438-enforcement-plan-gaps-listed-i.md`; board updated; nothing committed/pushed/deployed.
+    | devin-task-20261010-1'
+- at: 2026-10-10 12:19
+  from: chaba
+  text: 'session-end checkpoint 8d33dfdc: 4 leftover file(s) committed'
+- at: 2026-10-10 12:19
+  from: chaba
+  text: pushed dispatch/20261010-120438-enforcement-plan-gaps-listed-i to origin
+- at: 2026-10-10 12:19
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 41.8s)
+- at: 2026-10-10 12:19
+  from: chaba
+  text: auto-merged 5aa3e716 (dispatch/20261010-120438-enforcement-plan-gaps-listed-i) → origin/master
 claim: {}

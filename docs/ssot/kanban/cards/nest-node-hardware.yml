@@ -1,41 +1,44 @@
 id: nest-node-hardware
 title: Nest node hardware — shortlist, first buy, USB cams for spare PCs
-brief: "Tony 2026-10-10: find a wifi camera that can itself be a Chaba Nest Node; find good
-  devices for Nest Nodes generally; include USB cameras for PCs already lying around. Comparison
-  matrix and buy plan in reports/nest-node-hardware.md."
+brief: 'Tony 2026-10-10: find a wifi camera that can itself be a Chaba Nest Node; find good devices for Nest Nodes
+  generally; include USB cameras for PCs already lying around. Comparison matrix and buy plan in reports/nest-node-hardware.md.'
 column: backlog
 program: chaba-nest
 priority: medium
 created: 2026-10-10
-updated: 2026-10-10 12:15
+updated: 2026-10-10 12:26
 autonomy: t2
 links:
 - chaba-nest
 - nest-edge-vision
 - nest-micro-training
 - nest-io-fabric
-spec: "Hardware tiers (see report for full matrix):\n\
-  1. Vision node: Luckfox Pico Ultra W (~$35-45, RV1106G3, WiFi6, 0.5-1 TOPS NPU, CSI cam, mic,
-  PoE option, Linux+RKNN) — on-device YOLO + RTSP; luckfox-frigate-cam proves the HA path.\n\
-  2. MCU vision node: ESP32-P4-EYE (~$30) — TFLite-Micro person-detect 73ms, camera+mic+display;
-  lowest-power tier, aligns with our ESP32 fleet.\n\
-  3. Compute node (federation-capable): Orange Pi Zero 2W / Radxa Zero 3W — quad-A64, WiFi,
-  Flower client + ONNX.\n\
-  4. USB-cam tier for spare PCs: Logitech C920-class or Arducam IMX500 UVC AI cam (on-sensor
-  inference) — zero new host hardware, onnxruntime/opencv on the PC.\n\
-  Feed-only fallback: OpenIPC/Thingino reflash on cheap T31 cams (RTSP/ONVIF, fully local)."
-metric: One vision node + one MCU node ordered, flashed, registered to HA/Frigate + reporting
-  a first micro-AI detection into Chaba (ops event or MDDB note).
-verify: Detection object from the Luckfox NPU lands in MDDB/Frigate events via tailnet; ESP32-P4
-  emits a person-detect flag; both visible on the nest dashboard lane without cloud dependence.
+spec: 'Hardware tiers (see report for full matrix):
+
+  1. Vision node: Luckfox Pico Ultra W (~$35-45, RV1106G3, WiFi6, 0.5-1 TOPS NPU, CSI cam, mic, PoE option, Linux+RKNN)
+  — on-device YOLO + RTSP; luckfox-frigate-cam proves the HA path.
+
+  2. MCU vision node: ESP32-P4-EYE (~$30) — TFLite-Micro person-detect 73ms, camera+mic+display; lowest-power tier,
+  aligns with our ESP32 fleet.
+
+  3. Compute node (federation-capable): Orange Pi Zero 2W / Radxa Zero 3W — quad-A64, WiFi, Flower client + ONNX.
+
+  4. USB-cam tier for spare PCs: Logitech C920-class or Arducam IMX500 UVC AI cam (on-sensor inference) — zero new
+  host hardware, onnxruntime/opencv on the PC.
+
+  Feed-only fallback: OpenIPC/Thingino reflash on cheap T31 cams (RTSP/ONVIF, fully local).'
+metric: One vision node + one MCU node ordered, flashed, registered to HA/Frigate + reporting a first micro-AI detection
+  into Chaba (ops event or MDDB note).
+verify: Detection object from the Luckfox NPU lands in MDDB/Frigate events via tailnet; ESP32-P4 emits a person-detect
+  flag; both visible on the nest dashboard lane without cloud dependence.
 requests:
 - id: first-buy
   ask: Which nodes to order first for the Nest hardware pilot?
-  status: open
+  status: answered
   suggested: luckfox-plus-esp32p4
   options:
   - id: luckfox-plus-esp32p4
-    label: "\u2605 Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node + one MCU node"
+    label: ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node + one MCU node
   - id: luckfox-only
     label: Luckfox Pico Ultra W only (~$40) — prove the vision lane first
   - id: full-kit
@@ -44,3 +47,13 @@ requests:
     label: USB cam on spare PC first (~$25) — zero new host, slower to the Nest vision
   - id: lora-pair
     label: +2x LilyGo T-Beam LoRa pair (~$45, AS923) — LoRa->MQTT->HA pilot
+  answer: luckfox-plus-esp32p4 — ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node + one MCU node
+comms:
+- at: 2026-10-10 12:26
+  from: tony
+  text: 'answered first-buy: luckfox-plus-esp32p4 — ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node
+    + one MCU node'
+- at: 2026-10-10 12:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+awaiting_action: true
