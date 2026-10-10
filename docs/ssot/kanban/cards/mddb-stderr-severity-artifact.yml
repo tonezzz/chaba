@@ -1,13 +1,13 @@
 id: mddb-stderr-severity-artifact
 title: mddb writes INFO logs to stderr — journald scores them severe (21k/day on idc03)
-column: backlog
+column: doing
 priority: high
 program: chaba-ci
 area: ops
 note: 'logs-auto-idc03-severe-spike diag (a) — mddb sends INFO-level logging to stderr; journald maps container stderr to priority err and the log digest counts each as severe. Same artifact class as xmeye-vms wine noise on mn01.'
 action:
   type: dispatch
-  status: todo
+  status: done
 spec: |
   Fix at source OR digest — pick cheapest:
     A) mddb — redirect app logs to stdout or a file; keep stderr for real errors only.
@@ -18,6 +18,12 @@ spec: |
     Done-when — idc03 severe/24h drops from ~25k to true-error volume (<500) and
     mn01's xmeye-vms wine noise no longer counts as severe.
 comms:
+- at: 2026-10-10 20:26
+  from: devin
+  text: 'implemented path B (digest-side): classify() in log-shipper.py now demotes JSON lines whose
+    level field is info/debug/trace/notice — container stderr fd-artifact can no longer score INFO as
+    severe. Deployed fleet-wide via install-log-shipper (5 hosts, idc01 skipped — retired). Verify:
+    next log digest should show idc03 severe dropping toward true-error volume.'
 - at: 2026-10-10 09:52
   from: devin
   text: 'filed from logs-auto diagnosis — see parent incident card for evidence'
