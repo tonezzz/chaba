@@ -39,7 +39,7 @@ curl -X POST http://<TG_LISTEN>/send -H 'content-type: application/json' \
 - [ ] verify: push test + real inbound → reply carries `[tag]`
 - [ ] add row to the table above + bump member-tg/msg-lane in ssot.procedures.yml
 
-## Voice-message handling (DRAFT — pending Tony's review 2026-10-10)
+## Voice-message handling (approved 2026-10-10)
 
 When a lane (TG/LINE voice note, or a voice turn bridged into a text lane)
 receives a **voice message**, the assistant replies in this order:
