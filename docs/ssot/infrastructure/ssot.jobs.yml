@@ -246,6 +246,24 @@ jobs:
     users/top-procs) to MDDB device-telemetry collection on idc03
     (<device>/<ts> history + <device>/latest). install.sh also supports
     macOS launchd for kk-macbook. scripts/device-telemetry/'
+- id: device-telemetry-prune
+  name: Device telemetry retention prune (7d)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 04:20:00'
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/.local/share/device-telemetry/prune.py
+  env:
+    DEVICE_TELEMETRY_RETENTION_DAYS: '7'
+  note: 'retention sweep for the beacon collection — deletes <dev>/<unix-ts>
+    history keys older than 7d; never touches <dev>/latest or _watch/<dev>
+    armed-watch docs. 7d over 30d: HA logbook already covers long-range
+    history; ~300 docs/day/device -> ~2k keys/device steady-state. Runs on
+    idc03 beside the MDDB leader (:11023). Install on the host:
+    scripts/device-telemetry/install.sh prune — self-contained
+    ~/.local/share copy like the beacon, so idc03 checkout drift can never
+    break it. Card device-telemetry-prune; added 2026-10-10.'
 - id: daily-brief
   name: Daily Brief (morning+evening)
   host: tony_dell

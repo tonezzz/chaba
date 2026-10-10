@@ -2,12 +2,31 @@
 # device-telemetry install — hidden beacon timer.
 # Linux: systemd --user timer (5min). macOS: LaunchAgent (5min).
 # Usage: install.sh [interval_minutes=5]   — run on the device itself.
+#        install.sh prune                — retention sweep only (e.g. idc03):
+#                                          prune.py + rendered units, no beacon.
 set -euo pipefail
-INT="${1:-5}"
 
 DEST="$HOME/.local/share/device-telemetry"
 mkdir -p "$DEST"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ "${1:-}" == "prune" ]]; then
+  HOSTKEY="$(hostname -s | tr '-' '_')"
+  REPO="$(cd "$DIR/../.." && pwd)"
+  python3 "$REPO/scripts/render-jobs.py" >/dev/null
+  GEN="$REPO/systemd/generated/$HOSTKEY"
+  cp "$DIR/prune.py" "$DEST/prune.py"
+  chmod +x "$DEST/prune.py"
+  SDIR="$HOME/.config/systemd/user"
+  mkdir -p "$SDIR"
+  cp "$GEN/device-telemetry-prune.service" "$GEN/device-telemetry-prune.timer" "$SDIR/"
+  systemctl --user daemon-reload
+  systemctl --user enable --now device-telemetry-prune.timer
+  echo "installed: $DEST/prune.py + device-telemetry-prune.timer (nightly, ${DEVICE_TELEMETRY_RETENTION_DAYS:-7}d)"
+  exit 0
+fi
+
+INT="${1:-5}"
 cp "$DIR/agent.py" "$DEST/agent.py"
 chmod +x "$DEST/agent.py"
 
