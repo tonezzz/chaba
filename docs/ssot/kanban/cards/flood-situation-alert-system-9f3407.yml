@@ -1,7 +1,7 @@
 id: flood-situation-alert-system-9f3407
 title: Flood Situation Alert System
-column: review
-updated: 2026-10-10 11:49
+column: done
+updated: 2026-10-10 19:22
 priority: high
 comms:
 - at: 2026-10-10 01:39
@@ -779,6 +779,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261010-080601-flood-situation-alert-system-r on
     idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'VERIFIED: flood-alert.timer enabled+active on tony-dell (armed 10:29 +07); first run seeded 21 items, 0
+    pushed by design. Dispatch outcome docs written. The "no worktree found" sweep note was wrong — work landed
+    via install step.'
 action:
   type: dispatch
   status: done
@@ -789,6 +794,7 @@ action:
   runner: idc03
   sweep:
     session_gone: 2026-10-10 11:49
+  verified: true
 requests:
 - id: install-flood-alert
   ask: 'flood-alert.timer install on tony-dell: run scripts/render-jobs.py --host tony_dell --install post-merge?

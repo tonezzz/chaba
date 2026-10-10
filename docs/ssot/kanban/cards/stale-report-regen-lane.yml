@@ -3,44 +3,39 @@ title: Stale-report regen lane — 14 generated pages past fresh_for; three root
 column: review
 priority: high
 created: '2026-10-10'
-updated: 2026-10-10 14:50
+updated: 2026-10-10 15:52
 review_kind: triage
 domain: chaba-ci
-spec: "First run of standard-drift-digest (2026-10-10) flagged 14 generated\nada-cms-pages\
-  \ stale past their own fresh_for. Root causes found:\n\n1. kind=command generators\
-  \ have no runner — health-digest declares\n   generator.kind=command (report-distill)\
-  \ in ada-cms-automation but\n   nothing executes it on a schedule. The dispatcher\
-  \ 'Regenerate' lane\n   from job 2026-09-29-cms-report-standard P2 was never built\
-  \ for\n   scheduled runs. Options: a chaba job that iterates registry\n   command-generators\
-  \ and runs gated ones, or give report-distill its\n   own ssot.jobs entry.\n2. Missing\
-  \ registry entries — infrastructure-digest has none; nothing\n   schedules it at\
-  \ all.\n3. fresh_for lies — nest-bench declares 1d but its generator only runs\n\
-  \   inside the Monday orch-bench job (weekly => declare 7d). cam-wall\n   leaf pages\
-  \ carry fresh_for=1h while cam-wall-cms.service (15m,\n   succeeding) does not stamp\
-  \ updated on cam-* leaves — either the\n   writer skips unchanged docs (then fresh_for\
-  \ should match real\n   cadence) or leaves are orphaned.\nRule of the fix: fresh_for\
-  \ must equal the page's real regeneration\ncadence — fix the schedule AND the declaration\
-  \ together; a page that\nis intentionally point-in-time gets report_role leaf/point-in-time\n\
+spec: "First run of standard-drift-digest (2026-10-10) flagged 14 generated\nada-cms-pages stale past their own\
+  \ fresh_for. Root causes found:\n\n1. kind=command generators have no runner — health-digest declares\n   generator.kind=command\
+  \ (report-distill) in ada-cms-automation but\n   nothing executes it on a schedule. The dispatcher 'Regenerate'\
+  \ lane\n   from job 2026-09-29-cms-report-standard P2 was never built for\n   scheduled runs. Options: a chaba\
+  \ job that iterates registry\n   command-generators and runs gated ones, or give report-distill its\n   own ssot.jobs\
+  \ entry.\n2. Missing registry entries — infrastructure-digest has none; nothing\n   schedules it at all.\n3. fresh_for\
+  \ lies — nest-bench declares 1d but its generator only runs\n   inside the Monday orch-bench job (weekly => declare\
+  \ 7d). cam-wall\n   leaf pages carry fresh_for=1h while cam-wall-cms.service (15m,\n   succeeding) does not stamp\
+  \ updated on cam-* leaves — either the\n   writer skips unchanged docs (then fresh_for should match real\n   cadence)\
+  \ or leaves are orphaned.\nRule of the fix: fresh_for must equal the page's real regeneration\ncadence — fix the\
+  \ schedule AND the declaration together; a page that\nis intentionally point-in-time gets report_role leaf/point-in-time\n\
   handling, not a fresh_for it can never meet.\n"
 comms:
 - from: devin
-  text: 'triaged from standard-drift first publish: health-digest 5.4d, infrastructure-digest
-    2.4d (no registry), nest-bench 2.8d (weekly job vs 1d fresh_for), 10 cam-* leaves
-    (service green every 15m but updated not stamped). Digest doing its job — drift
-    visible.
+  text: 'triaged from standard-drift first publish: health-digest 5.4d, infrastructure-digest 2.4d (no registry),
+    nest-bench 2.8d (weekly job vs 1d fresh_for), 10 cam-* leaves (service green every 15m but updated not stamped).
+    Digest doing its job — drift visible.
 
     '
 - from: devin
-  text: 'fixed same session: cms-regen-sweep.py + chaba-cms-regen.timer (hourly, tony-dell)
-    now run due kind=command generators — health-digest refreshed live. nest-bench
-    fresh_for 1d->7d (generator + live page meta). infrastructure-digest was an orphan
-    alias -> marked superseded, points at infra-digest. ada-debug-report got a seeded
-    registry entry (run_now, regenerates 15:00). Dead-status pages now skipped by
-    the digest. Remaining: cam-wall leaf stamping (dvr-wall flags despite green 15m
-    service — generator internals).'
-verify: standard-drift stale-reports section drops under ~5 after the lane exists;
-  every flagged page either regenerates on schedule or carries a fresh_for that matches
-  reality.
+  text: 'fixed same session: cms-regen-sweep.py + chaba-cms-regen.timer (hourly, tony-dell) now run due kind=command
+    generators — health-digest refreshed live. nest-bench fresh_for 1d->7d (generator + live page meta). infrastructure-digest
+    was an orphan alias -> marked superseded, points at infra-digest. ada-debug-report got a seeded registry entry
+    (run_now, regenerates 15:00). Dead-status pages now skipped by the digest. Remaining: cam-wall leaf stamping
+    (dvr-wall flags despite green 15m service — generator internals).'
+- at: 2026-10-10 15:52
+  from: ada
+  text: '[opinion] Devin fixed this, but it''s priority:high. Needs Tony''s review before closing.'
+verify: standard-drift stale-reports section drops under ~5 after the lane exists; every flagged page either regenerates
+  on schedule or carries a fresh_for that matches reality.
 requests: []
 blocked_by: []
 tags:

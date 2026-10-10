@@ -4,13 +4,12 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-10: `mn01-backlog` condition cleared — shipper healthy
-  again.'
-help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until
-  it drains.
-updated: '2026-10-10'
+note: last run matched 3269 but the 500/run cap shipped only 2000 — drains 3 days behind
+help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until it drains.
+updated: 2026-10-10 19:22
 action:
   status: done
+  verified: true
 comms:
 - at: 2026-10-04 17:58
   from: tony
@@ -24,6 +23,9 @@ comms:
 - at: 2026-10-05 13:13
   from: tony
   text: closed by Tony
-brief: 'The log digest flagged something worth a look: logs `mn01` backlog 1269. Read
-  the note, then fix it or close the card.'
+- at: 2026-10-10 19:22
+  from: devin
+  text: Column normalized — Tony closed on-board.
+brief: 'The log digest flagged something worth a look: logs `mn01` backlog 1269. Read the note, then fix it or close
+  the card.'
 review_kind: triage

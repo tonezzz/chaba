@@ -2,7 +2,7 @@ id: ada-toolsd-runner-facade
 title: tools.d runner facade — runner.context.{mddb,ha_client,emit_ops_event}
 brief: Drop-ins get `runner` but hand-roll httpx against env URLs — they bypass runner.mddb's leader/follower read-routing
   (built in mddb_client for 88f22e3-era resilience) and reach runner.context.ha_client informally. Waiting in backlog.
-column: doing
+column: done
 metric: all 5 tools.d modules use the facade; docs/ada-tool-dev.md declares it the contract
 verify: kill the MDDB leader -> a tools.d read fails over like core tools do
 note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client, session_id, emit_ops_event().
@@ -11,7 +11,7 @@ note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client
   become unnecessary).'
 help: backend/tools_loader.py contract; tool_runner/common.py ToolContext; backend/mddb_client.py read-routing;
   tools.d/ada_track_device.py current raw-httpx pattern; docs/ada-tool-dev.md
-updated: 2026-10-10 14:26
+updated: 2026-10-10 19:22
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -52,12 +52,39 @@ comms:
 - at: 2026-10-10 14:26
   from: chaba
   text: 'auto-merge conflicts: backend/tools.d/kanban.py — card stays in review for manual resolution'
+- at: 2026-10-10 14:52
+  from: devin
+  text: 'facade landed: ToolContext gains mddb/session_id/emit_ops_event; ada_track_device (6 hand-rolled mddb sites,
+    ADA_TRACK_MDBB gone), ada_market_quote + kanban emit outage ops-events via the seam; docs updated; 1217 tests
+    pass — only failures are pre-existing voice_fx/yt_cached_list lint debt already on HEAD'
+- at: 2026-10-10 14:52
+  from: idc03
+  text: 'finished (ok): exit=0 ")` — out of card scope, flagged for its next touch. Not committed, pushed, or deployed
+    per rails. | devin-task-2'
+- at: 2026-10-10 14:52
+  from: chaba
+  text: 'session-end checkpoint aea31e91: 13 leftover file(s) committed'
+- at: 2026-10-10 14:53
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 14:53
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'VERIFIED: stranded idc03 worktree salvaged (fetch+cherry-pick aea31e9) — 13 files incl. shared runner client
+    + 85-line test_tool_context.py; 262 tests pass. Merged to ada-pi main 6384de7.'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   sweep:
     stale_running: 2026-10-10 11:18
     session_gone: 2026-10-10 11:18
   runner: idc03
+  result: 'exit=0 ")` — out of card scope, flagged for its next touch. Not committed, pushed, or deployed per rails.
+    | devin-task-20261010-142058-tools-d-runner-facade-runner-c.service: Consumed 2min 27.526s CPU time, 514.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim: {}

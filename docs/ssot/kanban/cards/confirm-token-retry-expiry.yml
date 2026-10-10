@@ -3,10 +3,10 @@ title: Confirm tokens expire between dispatch retries — double-prompt churn
 brief: 'Sessions 38b18589b0 + 7a74536b32: user confirmed a devin dispatch, the downstream call failed on infra (SSH
   timeout), and on retry the confirm_token was already expired — forcing a second voice confirmation for the same
   request. "โทเค็นหมดอายุ อีกแล้ว" is pure friction; a downstream failure is not a reason to re-ask.'
-column: doing
+column: done
 priority: medium
 program: ada-tools
-updated: 2026-10-10 11:49
+updated: 2026-10-10 19:22
 tags:
 - confirm-gate
 - ux
@@ -48,12 +48,18 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261010-091652-confirm-tokens-expire-between- on
     idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'VERIFIED: fix landed in ada-pi (d4037a5 — _rearm_confirm_on_infra_failure re-arms the bound token on transport-class
+    failures so a downstream timeout is not a new confirmation question). Conflict with tools-d merge resolved keeping
+    both hooks; 262 tests pass. Outcome doc recovered from the stranded worktree.'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc03
   sweep:
     stale_running: 2026-10-10 09:48
     dirty: 1
     session_gone: 2026-10-10 11:49
+  verified: true

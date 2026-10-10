@@ -2,12 +2,12 @@ id: release-lifecycle-standard
 title: Release lifecycle standard — wire the stage gates (evidence checker, per-lane parity, soak timer)
 brief: ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't
   skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.
-column: review
+column: done
 review_kind: decide
 program: chaba-ci
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 12:33
+updated: 2026-10-10 16:03
 metric: A card cannot reach done without the stage evidence its bars require — [exp]/[alpha]/[beta]/[rc] comms tags
   + scenario result refs + parity diff — enforced by a checker that runs inside kanban-sync (same pattern as logs-kanban).
 verify: Deliberately promote a test card missing evidence -> checker opens/re-pings it back with the missing gate
@@ -117,4 +117,7 @@ comms:
 - at: 2026-10-10 12:33
   from: chaba
   text: 'merge-sweep: verified — held in review (review_kind=decide — human-gated)'
+- at: 2026-10-10 16:03
+  from: tony
+  text: closed by tony
 claim: {}

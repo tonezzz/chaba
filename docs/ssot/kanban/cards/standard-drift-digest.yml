@@ -1,50 +1,53 @@
 id: standard-drift-digest
-title: Standard-drift digest — one page collecting every signal that the standard
-  is slipping
+title: Standard-drift digest — one page collecting every signal that the standard is slipping
 column: review
 priority: high
 created: '2026-10-10'
-updated: 2026-10-10 12:55
+updated: 2026-10-10 19:22
 review_kind: verify
 domain: chaba-ci
-spec: "Tony (2026-10-10): \"How can we use our standard procedure on everything and\n\
-  use feedback to refine our standard to be as much hands-off for me as\npossible.\
-  \ The more we progress, the more hands-off as our standard\nprocedure improves.\"\
-  \ Approved verbally the same session — implement the\ndigest as the flywheel's feedback\
-  \ layer.\n\nThe standard improves when deviations stop being invisible. One generated\n\
-  CMS page (standard-drift) collects, deterministically and hourly-digest\ncadence:\n\
-  \n- stale generated reports: ada-cms-pages docs with generated_by whose\n  updated+meta.fresh_for\
-  \ has lapsed (the report_first_protocol\n  quality_loop input — Ada refreshes these\
-  \ by tool, Devin takes\n  structural failures)\n- board drift: doing cards stale\
-  \ >3d, cards with open requests (aging\n  by card.updated), review pile size — things\
-  \ waiting on someone\n- tool-surface debt: ada-pi scripts/tool-lint.py --json violations,\n\
-  \  counted by rule\n\nPage contract: managed <!-- standard-drift:auto --> block,\
-  \ registry\nentry in ada-cms-automation (interval 6h), meta per\nssot.apps.cms-reports.yml\
-  \ (generated_by, sources, kind=report,\nreport_role=rollup, domain=monitoring, fresh_for=6h).\
-  \ en+th.\n\nTony's review surface: ONE page/digest with proposed standard diffs\
-  \ —\nnot scattered fires. Repeated signals across runs should escalate into\nratchet\
-  \ rules or standard revisions (that escalation is manual for v1).\n"
-v2: "- ops-event collector: ada-ha-events-* kind=ops-event counts by type\n  (context_rotate\
-  \ rate = disconnect signal) — /v1/search doesn't filter\n  by meta; needs key-prefix\
-  \ scan or an MDDB meta query path\n- repeated-ask detector: same question asked\
-  \ twice in chat/voice\n  (needs transcript mining — probably via ada session reports)\n\
-  - proposed SSOT diff generator: drift pattern -> concrete yaml edit\n"
+spec: "Tony (2026-10-10): \"How can we use our standard procedure on everything and\nuse feedback to refine our\
+  \ standard to be as much hands-off for me as\npossible. The more we progress, the more hands-off as our standard\n\
+  procedure improves.\" Approved verbally the same session — implement the\ndigest as the flywheel's feedback layer.\n\
+  \nThe standard improves when deviations stop being invisible. One generated\nCMS page (standard-drift) collects,\
+  \ deterministically and hourly-digest\ncadence:\n\n- stale generated reports: ada-cms-pages docs with generated_by\
+  \ whose\n  updated+meta.fresh_for has lapsed (the report_first_protocol\n  quality_loop input — Ada refreshes\
+  \ these by tool, Devin takes\n  structural failures)\n- board drift: doing cards stale >3d, cards with open requests\
+  \ (aging\n  by card.updated), review pile size — things waiting on someone\n- tool-surface debt: ada-pi scripts/tool-lint.py\
+  \ --json violations,\n  counted by rule\n\nPage contract: managed <!-- standard-drift:auto --> block, registry\n\
+  entry in ada-cms-automation (interval 6h), meta per\nssot.apps.cms-reports.yml (generated_by, sources, kind=report,\n\
+  report_role=rollup, domain=monitoring, fresh_for=6h). en+th.\n\nTony's review surface: ONE page/digest with proposed\
+  \ standard diffs —\nnot scattered fires. Repeated signals across runs should escalate into\nratchet rules or standard\
+  \ revisions (that escalation is manual for v1).\n"
+v2: "- ops-event collector: ada-ha-events-* kind=ops-event counts by type\n  (context_rotate rate = disconnect signal)\
+  \ — /v1/search doesn't filter\n  by meta; needs key-prefix scan or an MDDB meta query path\n- repeated-ask detector:\
+  \ same question asked twice in chat/voice\n  (needs transcript mining — probably via ada session reports)\n- proposed\
+  \ SSOT diff generator: drift pattern -> concrete yaml edit\n"
 comms:
 - from: devin
-  text: 'carded + implemented same session (Tony''s "push it through"). Digest = feedback
-    layer of the report-first flywheel: detects where the standard slips so it can
-    tighten without Tony watching each fire.
+  text: 'carded + implemented same session (Tony''s "push it through"). Digest = feedback layer of the report-first
+    flywheel: detects where the standard slips so it can tighten without Tony watching each fire.
 
     '
 - from: devin
-  text: 'shipped same session: standard-drift page live in ada-cms-pages (en+th, managed
-    block, 14 stale reports / 18 review / 3 lint violations on first publish); ada-cms-automation
-    registry entry enabled interval_min=360; chaba-standard-drift.timer installed
-    on tony-dell (hourly tick, registry gates publish to 6h). verified: page + registry
-    + timer all live.'
-verify: python3 scripts/ada/standard-drift-digest.py --force publishes ada-cms-pages/standard-drift
-  (en+th) with a populated auto block; registry doc exists; cms-audit sees no new
-  R-rule failure on the page.
+  text: 'shipped same session: standard-drift page live in ada-cms-pages (en+th, managed block, 14 stale reports
+    / 18 review / 3 lint violations on first publish); ada-cms-automation registry entry enabled interval_min=360;
+    chaba-standard-drift.timer installed on tony-dell (hourly tick, registry gates publish to 6h). verified: page
+    + registry + timer all live.'
+- at: 2026-10-10 16:05
+  from: tony
+  text: consider re-structure/merge into existing structure. per our standard cms procedure.
+- at: 2026-10-10 16:05
+  from: tony
+  text: consider re-structure/merge into existing structure. per our standard cms procedure.
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'Applying the new report-integration duty: this digest overlaps the auto-health/ops-report surface (ops-health
+    page + logs-digest-program umbrella). Proposal: merge the drift-digest into the existing ops-health report stream
+    rather than a standalone page — same cadence, same audience. Holding for your ack: (a) merge into ops-health
+    [suggested], (b) keep separate page.'
+verify: python3 scripts/ada/standard-drift-digest.py --force publishes ada-cms-pages/standard-drift (en+th) with
+  a populated auto block; registry doc exists; cms-audit sees no new R-rule failure on the page.
 requests: []
 blocked_by: []
 tags:

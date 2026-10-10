@@ -1,25 +1,25 @@
 id: ada-ha-hardening
-title: 'Harden ada-ha into stable private prod — ADA-HA (Tony)'
-brief: "ada-ha stops being the disposable lab and becomes Tony's stable private HA. Dev work moves to ada-dev; ada-ha keeps running and gets backup/health coverage."
-column: doing
+title: Harden ada-ha into stable private prod — ADA-HA (Tony)
+brief: ada-ha stops being the disposable lab and becomes Tony's stable private HA. Dev work moves to ada-dev; ada-ha
+  keeps running and gets backup/health coverage.
+column: backlog
 priority: high
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-10 19:22
 program: ha-lanes
-metric: >-
-  ada-ha survives reboot/restart cleanly, appears in audit + health SSOT, config
-  recoverable; no dev experiments run on it once ada-dev exists.
-verify: >-
-  systemctl --user restart ada-ha.service -> 200 within 60s; audit hosts + health
-  checks include ada-ha; location_name "ADA-HA (Tony)" shown in UI header.
-note: >-
-  Done 2026-10-08: location_name "ADA-HA (Tony)", PWA branding
-  (/local/ada-ha-pwa.js via extra_module_url -> manifest+apple meta = ADA-HA
-  (Tony)), sidebar order chaba-home first for user Tony, inherited `profiler:`
-  YAML error removed. Remaining: register ada-ha in ssot.health/audit expected
-  services, add config dir to secrets/config backup scope, keep household users
-  (decision: keep — CF Access is the boundary).
+metric: ada-ha survives reboot/restart cleanly, appears in audit + health SSOT, config recoverable; no dev experiments
+  run on it once ada-dev exists.
+verify: systemctl --user restart ada-ha.service -> 200 within 60s; audit hosts + health checks include ada-ha; location_name
+  "ADA-HA (Tony)" shown in UI header.
+note: 'Done 2026-10-08: location_name "ADA-HA (Tony)", PWA branding (/local/ada-ha-pwa.js via extra_module_url ->
+  manifest+apple meta = ADA-HA (Tony)), sidebar order chaba-home first for user Tony, inherited `profiler:` YAML
+  error removed. Remaining: register ada-ha in ssot.health/audit expected services, add config dir to secrets/config
+  backup scope, keep household users (decision: keep — CF Access is the boundary).'
 links:
-  - ha-lanes-program
+- ha-lanes-program
 blocked_by: []
 autonomy: t2
+comms:
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'doing→backlog: stale claim (no action block, no session) — needs proper arm/dispatch or it just sat here.'

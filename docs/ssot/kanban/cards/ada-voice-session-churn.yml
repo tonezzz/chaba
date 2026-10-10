@@ -2,14 +2,14 @@ id: ada-voice-session-churn
 title: Ada voice sessions churn ~1/min — disconnects, re-greeting, memory loss between sessions
 kind: bug
 priority: high
-column: review
+column: done
 autonomy: t2
 brief: 'Tony complaint (67b02417a8): "สายมันตัดตลอด ต้องเริ่มคุยใหม่ Ada ก็ลืม". Journal: 52 session start/end/resume
   events in 46min (15:00–15:46). Repeated mid-conversation "สวัสดีครับ Tony" greetings = fresh sessions with cold
   context. Also ada_session_recall returned a multi-day-stale UPS topic as "ล่าสุด" — recency ranking wrong. Two
   sub-bugs: (1) whatever drops the ws every ~2min, (2) recall needs recency-weighted "latest" not just relevance.'
 created: '2026-10-09'
-updated: 2026-10-10 11:48
+updated: 2026-10-10 19:22
 comms:
 - at: 2026-10-10 16:30
   from: devin
@@ -242,6 +242,11 @@ comms:
   from: chaba
   text: 'merge-sweep: fetch idc03:/home/tony/CascadeProjects/dispatch-wt-20261010-080544-ada-voice-sessions-churn-1-min
     HEAD failed — runner down or worktree gone?'
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'VERIFIED: reconnect fixes in origin/main — 98cc543 (stash pending utterance in close) + a7c2398 (resume
+    pending turn after rotate, no re-greet). The 52-events/46min churn got its fix; watch next sessions for reconnect
+    count drop.'
 action:
   type: dispatch
   status: done
@@ -250,7 +255,7 @@ action:
   result: 'exit=0 ssions-churn-1-min.md` and `docs/ssot/jobs/ada/2026-10-10-voice-session-churn-context-billing.yml`.
     | devin-task-20261010-080544-ada-voice-sessions-churn-1-min.service: Consumed 3min 9.091s CPU time, 528.2M memory
     peak, 0B memory swap peak.'
-  verified: false
+  verified: true
   sweep:
     fetch_failed: 2026-10-10 11:48
 claim: {}

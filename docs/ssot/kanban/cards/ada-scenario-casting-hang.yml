@@ -9,8 +9,8 @@ brief: '2026-10-09 (found while fixing fix-scenario-schedule-collision): ada-sce
   hang per scenario (e.g. vcast screen/service absent) exhausts the unit cap silently. Note ''last run'' evidence:
   preflight-bench passes all gates (ada up, :8002 listening, embed-probe up, no lock) so the hang is inside the
   run, not startup.'
-column: doing
-review_kind: verify
+column: review
+review_kind: decide
 priority: high
 kind: bug
 created: '2026-10-09'
@@ -203,7 +203,12 @@ comms:
     (score 0.528, INVALID — the 07:33 deploy bounced ada-ha-tony mid-suite → 25/43 INFRA, correct classification).
     Budget pin applied per your deploy-and-budget answer: drop-in budget.conf BENCH_BUDGET_S=8400, daemon-reloaded+verified.
     Still open: suite ~3.5-4h > 2.5h cap → '
-updated: 2026-10-10 10:27
+- at: 2026-10-10 19:22
+  from: devin
+  text: 'Core dispatch done (DONE-WHEN met: gev_* ran real on post-deploy checkout). Moving doing→review ONLY so
+    the open gemini-key request stays visible — needs a fresh AI Studio key via secret-drop + deploy decision on
+    the new request.'
+updated: 2026-10-10 19:22
 requests:
 - id: tony-dell-side-needed-no-ssh-from-idc03-eb011b
   ask: 'tony-dell side needed (no ssh from idc03): (1) add strip: /apps/gev-cmd to gev-cmd route in chaba docs/ssot/infrastructure/ssot.routes.yml,
