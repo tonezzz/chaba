@@ -2,7 +2,7 @@ id: runner-auto-idc01
 title: Runner host `idc01` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc01 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
@@ -41,6 +41,11 @@ comms:
   from: devin
   text: 'VERIFIED: runner-agent.timer on idc01 now disabled+inactive — recurrence
     plugged (was re-filing after retirement).'
+- at: 2026-10-10 20:05
+  from: devin
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
+    was restored accidentally by an autostash-pop conflict resolution — normalizing
+    to done.'
 action:
   status: done
   verified: true
