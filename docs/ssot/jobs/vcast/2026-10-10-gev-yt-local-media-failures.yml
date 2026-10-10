@@ -1,0 +1,107 @@
+title: "Investigate GEV / YouTube / local-media failures reported by Ada (session 6744c10aab)"
+subtitle: "Kanban card investigate-gev-youtube-local-media-fail-d043e5 — Map 404, YT Forbidden, local media Timed Out"
+icon: target
+
+planning:
+  goal: Trace the three failures Ada reported (kanban card + Telegram) to root causes and verify what is still broken.
+  scope: "Live system diagnosis via ada-ha-tony journal on idc03 + tony-dell services. In scope: repo-side fix to scripts/ops/yt-live.sh. Out of scope: deploys (dispatch mode), ada-pi code, CMS bank writes."
+  owner: devin (dispatch on idc02)
+  estimated_duration: 1 session
+  related_focus:
+    - label: investigate-gev-youtube-local-media-fail-d043e5
+      file: docs/ssot/kanban/cards/investigate-gev-youtube-local-media-fail-d043e5.yml
+    - label: ada-scenario-casting-hang
+      file: docs/ssot/kanban/cards/ada-scenario-casting-hang.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-10T01:06:00Z
+  steps:
+    - id: 1
+      label: Locate the reporting session
+      status: completed
+      notes: >-
+        Card was filed by Ada herself via the kanban tool at 2026-10-09 02:24:55 ICT,
+        ada-ha-tony session 6744c10aab (a casting-suite scenario session,
+        caller=admin). She then sent the Telegram error brief via chat_send:
+        "Can't fly the map to Bangkok, get a 404 error instead. Wait, trying
+        another YouTube clip also says it's forbidden. The voice dub also won't
+        load from local server!"
+    - id: 2
+      label: "Map 404 — gev_command relay"
+      status: completed
+      notes: >-
+        02:24:31 gev_command fly_to_camera_location -> "gev command relay:
+        HTTP Error 404". Root cause already diagnosed on
+        ada-scenario-casting-hang: generated Caddyfile dropped
+        `uri strip_prefix /apps/gev-cmd` (chaba 7cb549b1, Oct 7). Fixed live
+        Oct 9 ~19:55 (Caddyfile patch + reload; POST /apps/gev-cmd/command ->
+        200 E2E). Durable: ssot.routes.yml now carries
+        strip: /apps/gev-cmd (line 101). Re-verified this session:
+        GET /apps/gev/ -> 200, POST /apps/gev-cmd/command -> ok:true.
+        RESOLVED — no residual action.
+    - id: 3
+      label: "YT Forbidden — yt-live-api / yt-dlp"
+      status: completed
+      notes: >-
+        02:24:33 yt action=status showed log_tail with
+        "yt-dlp failed: ERROR: unable to download video data: HTTP Error 403:
+        Forbidden" (ytsearch1:U_io-pqPFfQ). ~/.cache/yt-live-api.last.log shows
+        the 403s are intermittent upstream bot-check flakes — other downloads
+        succeeded minutes apart. SECOND, worse issue found live: the last job
+        (youtube.com/watch?v=ydYDqZQpim8, requested ~04:03) had been
+        "downloading (subs: live_chat)" for 4h+ — the sub picker falls back to
+        subs[0] which was live_chat, and yt-dlp was grinding through the
+        entire chat-replay stream (src.live_chat.json.part-Frag1481, still
+        growing at kill time), holding the serial cast lane. Killed pid
+        3611247 at ~08:12; wrapper logged "yt-dlp failed" and freed the lane.
+        Repo fix applied to scripts/ops/yt-live.sh: live_chat excluded from
+        the sub pick list + download wrapped in
+        timeout ${YT_LIVE_DL_TIMEOUT:-1800}. NOTE: live
+        ~/.local/bin/yt-live.sh on tony-dell is an OLD revision (455 lines,
+        md5 ff6012e6 vs repo 670 lines, no dub support) — the live copy still
+        has the flaw until synced; deploy left for Tony-approved session.
+    - id: 4
+      label: "local media Timed Out — vantage-blind URL pre-check"
+      status: completed
+      notes: >-
+        02:24:41 cast_to_screen play
+        http://192.168.2.67/apps/yt-live/LLALMFmabV4-dub.mp4 -> "URL is
+        unreachable (TimeoutError)". The file itself serves 206 on-LAN
+        (verified from tony-dell over 192.168.2.67:80 -> :8080 site) and 206
+        over tailnet — but 192.168.2.67 is unreachable FROM idc03 (curl 000,
+        8s timeout). Ada's cast_to_screen reachability pre-check runs on the
+        backend host, so any LAN-only URL is refused regardless of whether the
+        target display could reach it. Compounder: the voice-dub-demos CMS
+        recipe hands Ada the LAN URL for casts. Correct URL for tailnet
+        displays: https://tony-dell.taila0626a.ts.net/apps/yt-live/<file>.mp4
+        (verified 206 from idc03). Follow-up cards filed:
+        cast-precheck-vantage (ada-pi) and voice-dub-recipe-lan-url (chaba).
+    - id: 5
+      label: Write-up + repo patch
+      status: completed
+      notes: >-
+        scripts/ops/yt-live.sh patched (bash -n clean; pick logic simulated:
+        live_chat-only video now casts without subs, normal picks unchanged).
+        Board updated with findings; job record committed on the dispatch
+        branch (no push).
+
+outcome:
+  result: >-
+    All three reported failures explained; one was already fixed (gev-cmd
+    strip), one was a runaway live_chat subtitle download (killed + repo
+    patched), one is a vantage-blind URL pre-check + a CMS recipe that hands
+    out LAN-only URLs (follow-up cards filed). Telegram brief was sent by Ada
+    as designed — pipeline working as intended.
+  evidence:
+    - ada-ha-tony journal session=6744c10aab 2026-10-09 02:24:00-02:25:35 ICT
+    - ~/.cache/yt-live-api.last.log on tony-dell (403 flakes + live_chat wedge)
+    - curl probes: /apps/gev/ 200, /apps/gev-cmd/command ok:true,
+      tailnet /apps/yt-live/*.mp4 206, LAN 192.168.2.67 from idc03 timeout
+  followups:
+    - cast-precheck-vantage (ada-pi) — URL pre-check should be advisory or
+      relay/display-side, not refuse LAN URLs probed from idc03
+    - voice-dub-recipe-lan-url (chaba) — voice-dub-demos CMS page must teach
+      per-display URL choice (tailnet vs LAN)
+    - sync ~/.local/bin/yt-live.sh on tony-dell with repo (old rev; needs
+      Tony-approved deploy)
