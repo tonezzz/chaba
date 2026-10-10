@@ -1,0 +1,14 @@
+id: tg-notify-endpoint
+title: "tg-relay: admin push endpoint (ada/devin -> TG chat)"
+column: backlog
+priority: medium
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  Outbound is session-driven only — no way for a headless agent to
+  push "backup done" / "install complete" to Tony's TG. Add a small
+  authenticated endpoint on ada-tg-relay (POST /notify with chat_id
+  + text) that relays via the existing send_text. Then agents (Devin,
+  jobs) can notify through TG — Tony's requested standard comm channel.
+links:
+  - backend/tg_relay.py

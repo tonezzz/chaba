@@ -1,0 +1,22 @@
+id: line-multihome-group
+title: "LINE group (tony+kk+nhong): per-sender routing to each home assistant"
+column: backlog
+priority: medium
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  One chaba LINE bot in a shared group; each sender's message routes to
+  their own assistant/home lane (tony->ada, kk->kaewta on ada-kk, nhong->
+  ada-kk w/ caller=user-nhong until he has a lane). Replies tagged
+  [assistant->sender]; voice notes follow the voice rule in-channel and
+  mirror to the speaker's home channel. Standard: docs/kb/
+  msg-lane-multihome-routing.md. Blocked on LINE auth (token revoked —
+  phone re-login needed), then line-* caller aliases in persons.yml,
+  LINE_ALLOWED_GROUP_IDS + LINE_USER_LANES env, and per-sender WS backend
+  selection in line_relay.py.
+links:
+  - backend/line_relay.py
+  - docs/kb/msg-lane-multihome-routing.md
+  - docs/ssot/apps/ssot.apps.ada-persons.yml
+requests:
+  - "Tony: LINE re-login on phone to restore bot token (blocker)."

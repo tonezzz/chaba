@@ -1,0 +1,31 @@
+id: percussion-music-layer
+title: "percussion: music layer — styles, moods, instruments, voice control"
+column: doing
+priority: medium
+created: 2026-10-10
+updated: '2026-10-10'
+spec: >
+  Percussion is currently sonification-only (drums driven by fleet
+  state). Tony's spec (chat 2026-10-10, verbatim):
+  "add blue chords according to the mood of the system. how to change
+  style, rock, ballad, funcky, electronics, edm. mix & matches, add
+  more instruments" + "Poliphia band instruments style — guitar riffs
+  and bending for heavy hard rock and rock ballad if possible."
+  Voice flow: "Ada, make percussion funky with blue chords and add
+  bass" -> Ada tool -> control.json -> app merges on next poll.
+note: >
+  Design: control.json {style, mood, instruments[]} polled alongside
+  state.json. STYLE presets (16-step grids + bpm offset + swing):
+  rock, ballad, funky, electronic, edm, hardrock, rockballad, polyphia.
+  MOOD -> scale/chord sets: blue (blues+min7), bright (major),
+  tense (tritone/dim), calm (maj7/lydian). NEW synth voices:
+  bass, chord stabs, pad, lead, clap, ride, tamb, rim, guitar
+  (waveshaped saw, riff patterns + pitch bends for hardrock/rockballad/
+  polyphia; polyphia = trap hats + harmonized double-lead + staccato).
+  Ops sonification semantics UNCHANGED (roles still drive drums).
+  Ada side: percussion_set(style?,mood?,instruments?) tool — ada-pi card.
+  AQ: control.json {style:polyphia,mood:blue,instruments:[guitar,bass]}
+  -> audible trap hats + harmonized bends within one state poll.
+links:
+  - stacks/web/public/apps/percussion/app.js
+  - stacks/web/public/apps/percussion/

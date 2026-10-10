@@ -1,0 +1,23 @@
+id: stt-omen-large-v3
+title: "STT endpoint on tony-omen GPU: whisper large-v3 for all msg lanes"
+column: backlog
+priority: high
+created: 2026-10-10
+updated: '2026-10-10'
+note: >
+  Verified 2026-10-10: large-v3 int8_float16 on omen GTX 1650 transcribes
+  the Thai test clips ~2s vs 13s (medium/CPU on idc03) with markedly
+  better Thai ("ผมส่งข้อความนี้เพื่อการทดสอบระบบ Transcript ด้วยข้อความเสียง
+  จาก Telegram" vs medium's garbled output). Build a small whisper HTTP
+  endpoint on omen (fastapi + faster-whisper, decode via ffmpeg->numpy to
+  skip the fragile av API), run as ada-whisper.service, and point
+  tg_relay's transcriber at it (TG_WHISPER_URL) with local small/medium
+  as fallback when omen is down. Omen setup notes: needs nvidia-cublas-cu12
+  + nvidia-cudnn-cu12 pip pkgs and LD_LIBRARY_PATH to their lib dirs.
+requests:
+  - "Approve CUDA/GPU service on omen + LAN endpoint (idc03 -> omen:87xx)?"
+links:
+  - backend/tg_relay.py
+  - docs/kb/msg-lane-standard.md
+comms:
+  - "2026-10-10 bench: small=garbled th, medium=~13s/clip ok-ish, large-v3 GPU=~2s clean th. medium now live as interim."
