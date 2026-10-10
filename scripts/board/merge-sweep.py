@@ -45,6 +45,17 @@ For each card in doing/review with action.type=dispatch:
      deliverable, or a nonzero unit exit on unmerged work — marks the
      attempt failed and requeues on kanban-dispatch's retry path.
      Undecidable states hold in review with a comms flag.
+  7. verified cards drain themselves (card kanban-review-auto-close —
+     Tony: "if it passes the standard, close it automatically"): the
+     verified stamp also flips action.status->done and, unless the
+     card is human-gated (review_kind decide/triage, an open request,
+     or an unanswered ask — the same contract kanban-act enforces),
+     column->done with an auto_close record. Human-gated verified
+     cards surface in review with a comms note. Cards verified by
+     ANY writer (this stamp, close_out, a previous pass) get the
+     same drain — the early-skip and the already-merged path both
+     route through it, so stragglers verified before this lane
+     existed close too.
 
 Zombie lane: devin-task-* units on dell + the recorded runners +
 MERGE_SWEEP_HOSTS running > ZOMBIE_AGE_H (6h) with no activity >
@@ -869,6 +880,84 @@ def flag_once(card: dict, key: str, text: str, dry: bool,
     return True
 
 
+# ----------------------------------------------------- verified drain
+def close_hold_reason(card: dict) -> str:
+    """Why a verified card stays in review instead of closing itself —
+    "" when it may auto-close. Absent review_kind defaults to verify
+    (card_schema); decide/triage are human calls. Open requests and
+    unanswered asks block — the same contract kanban-act's
+    gate_hold_reason enforces for t2 cards."""
+    kind = str(card.get("review_kind") or "verify").strip().lower()
+    if kind != "verify":
+        return f"review_kind={kind} — human-gated"
+    blockers = [
+        str(r.get("id") or r.get("ask", "?"))[:30]
+        for r in card.get("requests") or []
+        if isinstance(r, dict)
+        and (r.get("status") or "open") != "answered"]
+    ask = card.get("ask") or {}
+    if (isinstance(ask, dict) and ask.get("question")
+            and (ask.get("status") or "open") != "answered"):
+        blockers.append("ask")
+    if blockers:
+        return f"open request(s) {blockers} block close"
+    return ""
+
+
+def drain_verified(card: dict, dry: bool) -> bool:
+    """The close decision for a card already stamped verified — the
+    work is merged, so only the column remains. review_kind verify
+    (or absent) closes itself: status->done, column->done, an
+    auto_close record. Human-gated cards (close_hold_reason) move
+    to/stay in review with one comms note. Idempotent: no card
+    change, no output — a held card doesn't re-report every pass."""
+    cid = card.get("id") or "?"
+    if card.get("column") == "done":
+        return False
+    if dry:
+        hold = close_hold_reason(card)
+        print(f"  [dry] {cid}: verified — "
+              + (f"held in review ({hold})" if hold
+                 else "auto-close (column -> done)"))
+        return True
+    out = {}
+
+    def apply(c):
+        a = c.setdefault("action", {})
+        changed = a.get("status") != "done"
+        a["status"] = "done"
+        c.setdefault("claim", {}).pop("session", None)
+        hold = close_hold_reason(c)
+        out["hold"] = hold
+        if hold:
+            if c.get("column") != "review":
+                c["column"] = "review"
+                changed = True
+        elif c.get("column") != "done":
+            c["column"] = "done"
+            c["auto_close"] = {
+                "by": "merge-sweep", "at": now(),
+                "note": "verified — evidence checks green, "
+                        "closing itself"}
+            changed = True
+        return changed
+
+    changed = locked_edit(cid, apply)
+    if out.get("hold"):
+        # the request/kind is the visible gate — explain once (sweep
+        # stamp), even when the card itself needed no field change
+        flagged = flag_once(
+            card, "close_held",
+            f"merge-sweep: verified — held in review ({out['hold']})",
+            dry)
+        return bool(changed or flagged)
+    if not changed:
+        return False
+    card_note(cid, "merge-sweep: verified — auto-closed "
+                   "(column -> done)", dry)
+    return True
+
+
 def sweep_card(card: dict, active: dict, dry: bool,
                by_id: dict | None = None) -> bool:
     """One dispatch card through the merge lane. `active` = {task:
@@ -882,7 +971,10 @@ def sweep_card(card: dict, active: dict, dry: bool,
     if st in ("queued", "starting"):
         return False
     if st == "done" and a.get("verified") is True:
-        return False  # already landed — the cheap skip
+        # already landed — drain the column decision without git work
+        # (verified implies merged; covers close_out-stamped cards and
+        # stragglers from before the drain existed)
+        return drain_verified(card, dry)
     tid = task_id_for(card, str(a.get("runner") or ""))
     if not tid:
         return False
@@ -951,6 +1043,23 @@ def sweep_card(card: dict, active: dict, dry: bool,
                   dry)
         return False
 
+    # A card already stamped verified never re-gates — re-evaluating
+    # stale evidence can flip a proven card back to queued and
+    # re-dispatch it (the 2026-10-09 verified-merge re-dispatch).
+    # ancestor head = the work is in base: run the close decision.
+    # Non-ancestor = anomalous (commits landed after verification the
+    # stamp never covered): flag once for a human, never auto-merge
+    # or requeue on a proven card.
+    if a.get("verified") is True:
+        if not m["ancestor"]:
+            return flag_once(
+                card, "verified_unmerged",
+                f"merge-sweep: {cid} is verified but "
+                f"{probe.get('branch')} has {m['unmerged']} commit(s) "
+                f"not in {base_ref} — not re-gating a proven card; "
+                "check by hand", dry)
+        return drain_verified(card, dry)
+
     # verified gate — verified means "the dispatch delivered", not "the
     # branch merged" (2026-10-09 nest-mgr false-verify). A provable
     # failure requeues before any merge; undecidable states hold with a
@@ -964,15 +1073,33 @@ def sweep_card(card: dict, active: dict, dry: bool,
     def stamp_gate_result(merged_txt: str) -> bool:
         """Apply the gate verdict after a merge/already-merged check."""
         if g.get("verify"):
+            held = {}
+
             def mark(c):
-                c.setdefault("action", {})["verified"] = True
+                a = c.setdefault("action", {})
+                a["verified"] = True
+                a["status"] = "done"
+                c.setdefault("claim", {}).pop("session", None)
+                hold = close_hold_reason(c)
+                if hold:
+                    held["why"] = hold
+                    # human-gated — surface in review, don't close
+                    c["column"] = "review"
+                else:
+                    c["column"] = "done"
+                    c["auto_close"] = {
+                        "by": "merge-sweep", "at": now(),
+                        "note": f"verified — {g['why'][:200]}"}
             if dry:
+                held["why"] = close_hold_reason(card)
                 print(f"  [dry] {cid}: {merged_txt} — stamp verified "
                       f"({g['why'][:80]})")
             else:
                 locked_edit(cid, mark)
-            card_note(cid, f"merge-sweep: {merged_txt} — marked verified "
-                           f"({g['why'][:160]})", dry)
+            tail = (f" — held in review ({held['why']})"
+                    if held.get("why") else " — auto-closed")
+            card_note(cid, f"merge-sweep: {merged_txt} — marked "
+                           f"verified ({g['why'][:160]}){tail}", dry)
             return True
         key = "verify_deferred" if g.get("defer") else "verify_hold"
         return flag_once(card, key,
@@ -980,8 +1107,6 @@ def sweep_card(card: dict, active: dict, dry: bool,
                          f"withheld — {g['why'][:200]}", dry)
 
     if m["ancestor"]:
-        if a.get("verified") is True:
-            return False
         return stamp_gate_result(
             f"{probe.get('branch')} already in {base_ref}")
     if dry:
