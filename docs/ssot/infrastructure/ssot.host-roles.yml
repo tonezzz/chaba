@@ -46,9 +46,9 @@ hosts:
       note: Use only when tony-omen is unavailable for remote browser preview
     mcp_debug_name: tony_dell
 
-  kk-macbook:
+  tony-macbook:
     description: macOS / iOS verification workstation and lightweight offload node
-    tailnet: kk-macbook
+    tailnet: tony-macbook
     tailscale_ip: 100.124.59.112
     local_hostname: KKs-MacBook-Pro.local
     tags:
@@ -92,14 +92,14 @@ policies:
   headless_browser_priority:
     - tony-dell
     - tony-omen
-    - kk-macbook
-  mac_ios_verify: kk-macbook
+    - tony-macbook
+  mac_ios_verify: tony-macbook
   offload:
     candidate_order:
       - tony-dell
-      - kk-macbook
+      - tony-macbook
       - tony-omen
-    when_to_use_kk-macbook:
+    when_to_use_tony-macbook:
       - tony-dell and tony-omen are at high load or memory pressure
       - task is macOS-specific or needs Safari/WebKit
       - task is a lightweight subagent that does not need Linux containers

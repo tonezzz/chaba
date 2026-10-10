@@ -13,7 +13,7 @@ playlive_url: http://tony-dell.taila0626a.ts.net:9230
 # role). TODAY no idc host runs playlived, so nothing here changes until
 # card playlive-idc-targets provisions one. Loader ignores this key.
 target_preference:
-  order: [idc02, idc03, idc01, tony-dell, tony-omen, kk-macbook]
+  order: [idc02, idc03, idc01, tony-dell, tony-omen, tony-macbook]
   status: pending-provisioning
   card: docs/ssot/kanban/cards/playlive-idc-targets.yml
 
@@ -26,9 +26,9 @@ hosts:
     cdp: http://127.0.0.1:9228
     description: Chrome CDP on tony-omen, forwarded to tony-dell via 127.0.0.1:9228 (SSH tunnel)
     available: true
-  kk-macbook:
+  tony-macbook:
     cdp: http://127.0.0.1:9229
-    description: Chrome CDP on kk-macbook, forwarded to tony-dell via 127.0.0.1:9229 (SSH tunnel to ::1:9222)
+    description: Chrome CDP on tony-macbook, forwarded to tony-dell via 127.0.0.1:9229 (SSH tunnel to ::1:9222)
     available: true
 
 per_host:
@@ -74,7 +74,7 @@ session_selection:
     remote_url: http://127.0.0.1:9222
     note: Use when a visible browser window or live screenshot is needed.
   macos:
-    daemon: kk-macbook
+    daemon: tony-macbook
     host: macbook
     session_type: playlive_macbook
     playlive_url: http://tony-dell.taila0626a.ts.net:9230
