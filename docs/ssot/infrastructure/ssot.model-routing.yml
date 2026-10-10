@@ -2,7 +2,7 @@ title: Model Routing Standard — the tiered cascade
 subtitle: Which lane each model class serves; Gemini reserved for its moats
 icon: source-branch
 version: 1
-last_updated: "2026-10-09"
+last_updated: "2026-10-10"
 
 overview:
   purpose: |
@@ -20,9 +20,14 @@ tiers:
     cost: 0
   t1-local-mid:
     models: [phi3-gguf, llama3.2:3b, gemma-3-4b (open-jev, dormant),
-             nomic-embed-text, moondream]
+             nomic-embed-text, moondream, hermes3:8b (omen)]
     serves: summaries, digests, embeddings, routine vision describes,
-            short transforms, bench scorers
+            short transforms, bench scorers,
+            tool-call/agent-surface loops — hermes3:8b benched
+            2026-10-10, only omen model good at BOTH native tools and
+            prompted-JSON; ~11-15s/call on shared 4GB GPU, async lanes
+            only; reasoning stays on phi3 — see
+            docs/ssot/jobs/models/2026-10-10-hermes3-t1-eval.yml
     hosts: omen :11434, idc03 :11434 (tailnet)
     cost: 0
   t2-openrouter-free:

@@ -1,0 +1,75 @@
+title: hermes3:8b T1 evaluation — adopt as omen tool-calling slot
+subtitle: Evidence-first trial vs qwen3:4b and phi3-gguf on 4 probes
+icon: flask
+version: 1
+
+card: try-hermes
+date: 2026-10-10
+dispatch: 20261010-192348-evaluate-nousresearch-hermes-f
+
+question: |
+  Does NousResearch hermes3:8b earn a T1 local slot? AQ from the card:
+  tool-call JSON accuracy >= current T1 models on 3 probes; latency
+  acceptable on omen. Run 1 was inconclusive (GPU contention from a
+  parallel qwen3:4b session -> 120s timeouts); this rerun measured in a
+  quiet GPU window on tony-omen.
+
+method: |
+  scripts/bench-hermes.py --reps 3 against omen ollama
+  (http://100.75.102.88:11434/api/chat, temp 0.2, seed 42, 120s timeout).
+  Four probes x 3 models x 3 reps = 261 calls, single sequential process:
+    toolcall_native   5 scenarios with ollama `tools` param
+    toolcall_prompted same 5 scenarios, prompt-only JSON emission
+    routing           12 labelled intent utterances (MEMORY/SEARCH/HA_ACTION/CODE/CHAT)
+    reasoning         7 trick Q&A items
+  Baselines are the live T1 roster on omen (qwen3:4b, phi3-gguf) —
+  same-host, same-conditions compare. Raw: reports/bench-hermes-20261010.json
+  Human report: reports/bench-hermes-20261010.md
+
+measured: |
+  score% / p50 latency:
+                        hermes3:8b    qwen3:4b     phi3-gguf
+  toolcall_native       80 / 14.6s    80 / 42.3s   unsupported (400)
+  toolcall_prompted    100 / 11.1s    47 / 41.7s  100 / 8.6s
+  routing               83 / 1.4s     67 / 28.0s   83 / 0.6s
+  reasoning             57 / 0.6s     43 / 34.1s   86 / 1.9s
+  Zero errors/timeouts for hermes3 and qwen3. phi3's native arm fails at
+  the API level (ollama rejects `tools` — its template has no tool block).
+  hermes ~4-8 t/s on the 4GB card (partial offload); sole GPU consumer.
+
+verdict: adopt-t1-toolcall-slot
+aq_result: |
+  PASS — tool-call JSON accuracy >= current T1 on all comparable arms:
+  hermes is the only omen model good at BOTH native calls (80%, tied
+  qwen3) and prompted JSON (100%, tied phi3, >> qwen3 47%). Latency
+  ~11-15s/tool-call qualifies for async agent loops; marginal for
+  interactive. Caveat: omen is a shared-GPU lane — under contention the
+  same probes timed out in run 1.
+
+lane_fit:
+  adopt: "hermes3:8b = T1 tool-calling/agent-surface model on omen
+    (native <tool_call> + perfect prompted-JSON fidelity)"
+  keep: "phi3-gguf = general T1 (faster, better reasoning, prompted-only)"
+  caution: "do NOT route reasoning-heavy T1 jobs to hermes (57% vs phi3 86%)"
+  avoid: "qwen3:4b has no structured-output niche left on this evidence;
+    think-mode CoT is its only remaining differentiator at 3-4x latency"
+
+followups:
+  - "card filed: hermes-openclaw-slot — A/B hermes3:8b as local provider
+    inside OpenClaw (ollama /v1) vs OR-free rotation"
+  - "option: pull hermes3:3b on idc03 CPU-ollama if a CPU T1 lane is
+    wanted (8b too slow on 4vCPU)"
+
+lessons:
+  - "nohup kill: `kill <pid>` on a nohup'd python can hit the wrapper and
+    orphan the real process — check `ps` for the child, don't trust the
+    echoed pid. Two concurrent bench runs silently contended the GPU and
+    inflated every p50 ~1.5-2x."
+  - "python under nohup buffers stdout — use `python3 -u` or the log
+    stays empty until exit."
+  - "phi3-gguf's ollama template has no tool block: /api/chat with
+    `tools` returns HTTP 400, not a degraded answer — native-vs-prompted
+    capability must be checked per model."
+  - "qwen3 think-blocks make it 3-4x slower per call AND hurt
+    prompted-JSON fidelity (46.7%) — thinking models are a poor fit for
+    tight-JSON tool loops."
