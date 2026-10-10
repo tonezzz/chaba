@@ -1,13 +1,13 @@
 id: logs-auto-mn01-silent
-title: logs `mn01` never shipped state
-column: done
+title: logs `mn01` silent 3h
+column: review
 generated: logs-kanban
 program: logs-digest
-priority: medium
-note: 'Auto-recovered 2026-10-08: `mn01-silent` condition cleared — shipper healthy
-  again.'
-help: Run `log-shipper.py --hosts mn01 --dry-run` from tony-omen; if the ssh probe
-  fails, check tailscale auth (browser link).
-updated: '2026-10-08'
-brief: 'The log digest flagged something worth a look: logs `mn01` never shipped state.
-  Read the note, then fix it or close the card.'
+priority: high
+note: last ship-state write 3h ago (limit 3.0h) — shipper stopped running
+help: Check ada-review-refresh.service on tony-omen and whether the host was removed
+  from --hosts.
+updated: '2026-10-10'
+brief: 'The log digest flagged something worth a look: logs `mn01` silent 3h. Read
+  the note, then fix it or close the card.'
+review_kind: triage

@@ -1,15 +1,16 @@
 id: disk-auto-tony-dell-root
-title: Disk tony-dell / fills in <7d
-column: done
+title: Disk tony-dell / critical
+column: review
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: '89% used, growing 2.4 GiB/day -> full in ~5.6d top grower 24h: /var/log +0.8 GiB, /home/tony/.cache/yt-live-media/
-  +0.3 GiB'
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
-  (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-09 06:27
+note: '90% used (12.3 GiB free) top grower 24h: /home/tony/.cache +1.1 GiB, /home/tony/.cache/yt-live-media/
+  +1.0 GiB, /var/log +0.8 GiB'
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
+  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
+  ~/.cache/yt-live-media LRU is 8GiB.'
+updated: '2026-10-10'
 comms:
 - at: 2026-10-07 07:27
   from: tony
@@ -17,8 +18,8 @@ comms:
 - at: 2026-10-09 06:27
   from: tony
   text: moved review -> done
-brief: Disk space on tony-dell (/) is running low — check the note for the rate and top growers, then free space
-  or close the card.
+brief: Disk space on tony-dell (/) is running critically low — check the note for
+  the rate and top growers, then free space or close the card.
 action:
   status: done
 claim: {}
