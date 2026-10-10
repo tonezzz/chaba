@@ -4,7 +4,7 @@ brief: 'Every /release or force-revoke writes an ada-auth tombstone that POST /a
   so a released screen-N name is burned forever and force-claim can never succeed (revoke→tombstone→create→409 loop).
   Fix: on 409 conflict the bridge should run the resurrect chain — POST /api/auth/invites (reinvite→pending), POST
   /api/auth/keys/{name}/approve, POST /api/auth/invites/{name} for a fresh redeem_url — instead of revoke+create.'
-column: review
+column: done
 priority: high
 program: vcast
 area: monitoring
@@ -73,5 +73,8 @@ comms:
 - at: 2026-10-09 18:21
   from: chaba
   text: auto-merged 48347aeb (dispatch/20261009-175800-1-in-server-mjs-replace-the-fo) → origin/master
+- at: 2026-10-10 10:45
+  from: devin
+  text: 'closed: merge 48347aeb verified in chaba/master — real content confirmed in review sweep 2026-10-10.'
 claim: {}
 review_kind: verify

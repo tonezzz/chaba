@@ -4,7 +4,7 @@ brief: 'Transcript audit 2026-10-09 (16:21 ICT, session cfed319d22): TV booted t
   cmd=type text=''your-username'' then text=''your-password'' — literally typing placeholder strings into a live
   login form. She also claimed TV was "playing Dancing In The Street" at 17:00 while yt status said translating-subs
   and the screen was dark.'
-column: doing
+column: review
 review_kind: verify
 priority: high
 kind: bugfix
@@ -35,9 +35,13 @@ spec: 'In ada-pi tv_action: (1) refuse cmd=type when text is absent or looks lik
   '
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-pi
   runner: idc01
+  result: 'exit=0 ng. Job record at `docs/ssot/jobs/ada/2026-10-10-tv-action-hallucinated-input.yml`; board updated.
+    | devin-task-20261010-080541-in-ada-pi-tv-action-1-refuse-c.service: Consumed 1min 14.705s CPU time, 421.0M
+    memory peak, 0B memory swap peak.'
+  verified: false
 comms:
 - at: 2026-10-10 08:03
   from: devin
@@ -57,4 +61,36 @@ comms:
   text: 'done: cmd=type placeholder refusal (screens.py _tv_type_text_problem + ha.py gate) and phantom_media_claim
     grounding guard in realtime_provider; prompt+guide updated; 6+7 unit tests, offline scenario tv_type_placeholder
     + live probe tv_whats_playing_grounded all pass (249/249). ssot job doc written.'
-updated: 2026-10-10 08:34
+- at: 2026-10-10 08:36
+  from: idc01
+  text: 'finished (ok): exit=0 ng. Job record at `docs/ssot/jobs/ada/2026-10-10-tv-action-hallucinated-input.yml`;
+    board updated. | devin-task-2'
+- at: 2026-10-10 08:36
+  from: chaba
+  text: 'session-end checkpoint 55c13aec: 11 leftover file(s) committed'
+- at: 2026-10-10 08:36
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+- at: 2026-10-10 08:37
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+- at: 2026-10-10 08:39
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+- at: 2026-10-10 08:41
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+- at: 2026-10-10 08:42
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+- at: 2026-10-10 08:44
+  from: chaba
+  text: 'auto-merge conflicts: backend/realtime_provider.py, tests/test_provider_events.py — card stays in review
+    for manual resolution'
+updated: 2026-10-10 08:44
+claim: {}

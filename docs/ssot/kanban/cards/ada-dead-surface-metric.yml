@@ -2,7 +2,7 @@ id: ada-dead-surface-metric
 title: dead-surface metric — per-tool call counts from transcripts
 brief: Shape is lint-verified (42 declared), usage is not. Some census names had zero calls in 7d — the surface
   may carry dead weight the merge program cannot see. Waiting in backlog.
-column: review
+column: done
 metric: 'weekly report: calls-per-declared-tool over trailing 7d + 30d, zero-call list flagged'
 verify: report matches a manual count of one week''s tool_call events
 note: Same transcript pass as ada-alias-telemetry but counts canonical calls. Zero-call tools for 30d become merge/exclusion
@@ -60,6 +60,9 @@ comms:
   from: chaba
   text: 'merge-sweep: merged 3515ba2e (dispatch/20261010-081554-dead-surface-metric-per-tool-c from tony-dell) ->
     origin/main'
+- at: 2026-10-10 10:45
+  from: devin
+  text: 'closed: merge 3515ba2e verified in ada-pi/main — real content confirmed in review sweep 2026-10-10.'
 action:
   type: dispatch
   status: done

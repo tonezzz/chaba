@@ -2,7 +2,7 @@ id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
 brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
   or close the card.
-column: review
+column: done
 generated: disk-trend-watch
 area: monitoring
 priority: high
@@ -31,6 +31,9 @@ comms:
     driver gone. /data partition exists (295G, 134G free) and remains the right landing zone if cache pressure returns
     — can still execute the move as prevention: mkdir /data/tony-cache, mv+symlink ~/.cache/{huggingface,uv}. Flagging:
     if HF regrows, the move is a 2-min job — no need to ke'
+- at: 2026-10-10 10:45
+  from: devin
+  text: 'closed: resolved — HF cache already emptied (0B); disk-auto finding no longer live.'
 requests:
 - id: omen-disk-plan
   from: devin

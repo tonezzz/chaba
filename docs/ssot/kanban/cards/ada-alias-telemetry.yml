@@ -3,7 +3,7 @@ title: alias-hit rollup — deprecation path for the 91-name compat layer
 brief: 91 retired tool names still route via _ALIASES. conversation.log_event already records the emitted name (alias
   included) — the data exists, nothing aggregates it. Without a deprecation signal the compat layer is permanent
   and the model never converges on canonical names. Waiting in backlog.
-column: review
+column: done
 metric: weekly digest shows calls-per-alias; an alias at 0 hits for 14d becomes removal-eligible
 verify: digest lands in ada-ha-ops / reports-index; one real alias retires cleanly
 note: 'Rollup over transcript tool_call events (tool= field): count per emitted name, split declared vs alias. Publish
@@ -64,6 +64,9 @@ comms:
   from: chaba
   text: 'merge-sweep: merged 9fccec5d (dispatch/20261010-080626-alias-hit-rollup-deprecation-p from tony-dell) ->
     origin/main'
+- at: 2026-10-10 10:45
+  from: devin
+  text: 'closed: merge 9fccec5d verified in ada-pi/main — real content confirmed in review sweep 2026-10-10.'
 action:
   type: dispatch
   status: done

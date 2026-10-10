@@ -1,11 +1,11 @@
 id: merge-sweep-verified-gate
 title: merge-sweep verified:true must check the deliverable, not just the merge
-column: doing
+column: review
 kind: bug
 priority: high
 autonomy: t1
 created: '2026-10-09'
-updated: 2026-10-10 08:27
+updated: 2026-10-10 08:45
 tags:
 - dispatch
 - verification
@@ -46,8 +46,39 @@ comms:
   text: 'working it: verified gate = unit exit==0 (exit_code/meta.result/journal/card finish evidence) + produced-work-or-outcome-doc
     + auto_done_when (defer to kanban-act); fail → mark failed + requeue on the kanban-dispatch retry path. nest-mgr
     repro covered by the head==base-tip + no-deliverable case.'
+- at: 2026-10-10 08:41
+  from: devin
+  text: 'done on dispatch/20261010-080633-in-merge-sweep-scripts-board-o. verified gate landed in merge-sweep: (a)
+    unit exit==0 via exit_code>meta.result>loaded-unit/journal>finish comms>status==done (watch out: not-found units
+    phantom-report Result=success), (b) branch diff vs its base or dispatch-outcome-<tid>.md (already-merged heads
+    diff vs the containing merge''s first parent), (c) auto_done_when via kanban-act CHECKS — self verified_true
+    counts a+b, failing checks defer not requeue. Provable failure'
+- at: 2026-10-10 08:42
+  from: idc02
+  text: 'finished (ok): exit=0 attempts=2` — is filed as `kanban-autoretry-off-by-one`. Committed on the session
+    branch, no push. | devin-task-2'
+- at: 2026-10-10 08:42
+  from: chaba
+  text: pushed dispatch/20261010-080633-in-merge-sweep-scripts-board-o to origin
+- at: 2026-10-10 08:42
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:42
+  from: chaba
+  text: auto-merged 719bc9e3 (dispatch/20261010-080633-in-merge-sweep-scripts-board-o) → origin/master
+- at: 2026-10-10 08:43
+  from: chaba
+  text: pushed dispatch/20261010-080633-in-merge-sweep-scripts-board-o to origin
+- at: 2026-10-10 08:45
+  from: chaba
+  text: pushed dispatch/20261010-080633-in-merge-sweep-scripts-board-o to origin
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc02
+  result: 'exit=0 attempts=2` — is filed as `kanban-autoretry-off-by-one`. Committed on the session branch, no push.
+    | devin-task-20261010-080633-in-merge-sweep-scripts-board-o.service: Consumed 1min 33.043s CPU time, 137.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim: {}
