@@ -63,3 +63,18 @@ comms:
 - at: 2026-10-09 18:05
   from: devin
   text: filed from Tony's request — "assess the flow of vcast at work and suggest ux/ui flow improvement per our default standard"; assessment basis documented in note
+- at: 2026-10-10 17:00
+  from: devin
+  text: >-
+    shipped (spec stages 1+2 partial): spoken claim codes — pending displays mint a
+    4-digit code, shown under the QR + in /pair-info + /displays; POST /claim
+    accepts `code` (tailnet-keyless) so "Ada, claim display 4821" pairs it;
+    POST /screen retitles (label) + renumbers (move_to, live 'rescreen' push,
+    room+lastCast migration); display bg veil — 'bg' ws msg covers the stage while
+    content keeps playing (percussion/audio in background), lifted by any new
+    cast or bg off. Ada seats: cast_to_screen actions claim/assign/background,
+    screen arg resolves labels. Commits: chaba fd7f34cf, ada-pi 2d3f455 —
+    input-bridge restarted on idc03, ada services deployed. Verified live:
+    5→8→5 renumber held the socket, bg veil toggled on real screen 5,
+    percussion nav loaded (p0:frame-ok). Open: pairing-code expiry/rate-limit,
+    expired-code rejection, full lifecycle UI surface.
