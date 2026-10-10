@@ -110,7 +110,17 @@ card_schema:
             --model via DISPATCH_MODEL. Omit = host default
             (~/.config/devin/config.json, currently swe-2-high)."
     labels: "optional list — capability requirements; a runner only claims
-             the card if every label is in its RUNNER_LABELS (e.g. gpu)"
+             the card if every label is in its RUNNER_LABELS (e.g. gpu).
+             'desktop' is reserved as a host marker (not a card label): it
+             arms runner-agent's interactive-host guards"
+    gpu: "optional — VRAM pre-flight for gpu-labeled cards
+          (omen-gpu-display-wedge): {min_free_mb: N} — the runner claims
+          only while some GPU shows >=N MB free in nvidia-smi (a host
+          floor RUNNER_GPU_MIN_FREE_MB applies regardless). Bare int
+          'gpu: 3000' or action.min_vram_mb also read. Shortfall defers
+          (card stays queued, debounced comms note); need > total VRAM
+          is refused with a comms note — whisper-large-v3 alone exceeds
+          the GTX1650's 4096MB, so declare honest numbers"
     container: "type=container only: {image, cmd (str|list), env {K:V},
                 pull: missing|always} — podman run --rm under systemd-run"
     script: "type=script only: {cmd (str|list), repo (default chaba),
@@ -332,7 +342,26 @@ execution:
                needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
     runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
                RUNNER_LABELS, RUNNER_API (default tailnet route —
-               works identically on every host incl. dell)"
+               works identically on every host incl. dell). Hosts whose
+               RUNNER_LABELS include 'desktop' (tony-omen) also arm the
+               interactive-host guards (omen-gpu-display-wedge,
+               2026-10-10): every task unit runs Nice=10/ionice
+               best-effort + CPUQuota (~75% CPUs) + MemoryMax (~75% RAM)
+               — container/script via the systemd-run argv, dispatch via
+               DISPATCH_UNIT_PROPS + post-start set-property; gpu-labeled
+               cards pass an nvidia-smi VRAM pre-flight before claim
+               (action.gpu.min_free_mb vs free, floor
+               RUNNER_GPU_MIN_FREE_MB=512); and a presentation watchdog
+               deprioritizes (strike 1) then SIGSTOP-pauses (strike 2) a
+               gpu task when the GetVSyncParametersIfAvailable flood or a
+               hung xrandr marks a display wedge, auto-SIGCONT on healthy
+               probes. Env overrides: RUNNER_TASK_LIMITS,
+               RUNNER_TASK_NICE/_CPU_QUOTA/_MEM_MAX/_CPU_WEIGHT/
+               _IO_CLASS/_IO_PRIO/_IO_WEIGHT, RUNNER_GPU_MIN_FREE_MB,
+               RUNNER_GPU_WATCHDOG, RUNNER_WATCHDOG_*, RUNNER_VSYNC_
+               FLOOD_MIN, RUNNER_XRANDR_TIMEOUT — runner-agent.py
+               docstring; runbook docs/ssot/jobs/kanban/2026-10-10-omen-
+               gpu-dispatch-safety.yml"
     load_gate: "both claim paths refuse new cards when load5/cpu >
                KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
                — loaded hosts yield the queue to idle runners; finishes
