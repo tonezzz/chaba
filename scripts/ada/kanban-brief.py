@@ -63,6 +63,12 @@ BLOCK_BEGIN = "<!-- kanban-brief:auto -->"
 BLOCK_END = "<!-- /kanban-brief:auto -->"
 BLOCK_RE = re.compile(re.escape(BLOCK_BEGIN) + r".*?" +
                       re.escape(BLOCK_END), re.S)
+# Second managed block — the Ada-facing machine index (report-first
+# protocol, docs/ssot/apps/ssot.apps.cms-reports.yml#report_first_protocol).
+IDX_BEGIN = "<!-- board-index:auto -->"
+IDX_END = "<!-- /board-index:auto -->"
+IDX_RE = re.compile(re.escape(IDX_BEGIN) + r".*?" +
+                    re.escape(IDX_END), re.S)
 ICT = timezone(timedelta(hours=7))
 SOURCES = ["docs/ssot/kanban/cards/*.yml"]
 
@@ -157,6 +163,9 @@ def score_cards(cards: list[dict], now: datetime) -> list[dict]:
         else:
             quad = "park"
 
+        open_reqs = sum(1 for r in (c.get("requests") or [])
+                        if isinstance(r, dict)
+                        and r.get("status") != "answered")
         scored.append({
             "id": cid, "title": (c.get("title") or cid)[:80],
             "column": col, "priority": c.get("priority") or "-",
@@ -165,6 +174,8 @@ def score_cards(cards: list[dict], now: datetime) -> list[dict]:
             "quadrant": quad,
             "urgent": urgent_reasons, "important": important_reasons,
             "note1": _first_line(c.get("note") or ""),
+            "updated": str(c.get("updated") or "")[:16],
+            "open_reqs": open_reqs,
         })
     scored.sort(key=lambda s: (
         {"do-first": 0, "delegate": 1, "schedule": 2, "park": 3}[s["quadrant"]],
@@ -251,19 +262,55 @@ def render(scored: list[dict], now: datetime, lang: str) -> str:
     return "\n".join(lines)
 
 
-def upsert_block(body: str, block: str) -> str:
+_COL_ORDER = {"review": 0, "doing": 1, "todo": 2, "backlog": 3, "lab": 4}
+
+
+def render_index(scored: list[dict], now: datetime) -> str:
+    """Ada-facing board index — one pipe row per open card, cheapest
+    possible parse surface (report_first_protocol#board_index_structure).
+    Reads happen here; drills go through kanban action=read id=<id>."""
+    # column order first, newest-first inside each column
+    out: list[dict] = []
+    for col in sorted(set(s["column"] for s in scored),
+                      key=lambda c: _COL_ORDER.get(c, 5)):
+        grp = [s for s in scored if s["column"] == col]
+        grp.sort(key=lambda s: s["updated"], reverse=True)
+        out += grp
+    lines = [IDX_BEGIN, "",
+             "id | col | pri | updated | reqs | title",
+             "--- | --- | --- | --- | --- | ---"]
+    for s in out:
+        title = s["title"].replace("|", "/")[:80]
+        lines.append(
+            f"{s['id']} | {s['column']} | {s['priority']} | "
+            f"{s['updated'] or '-'} | {s['open_reqs'] or ''} | {title}")
+    lines.append(IDX_END)
+    return "\n".join(lines)
+
+
+def upsert_block(body: str, block: str, idx_block: str = "") -> str:
     if BLOCK_RE.search(body or ""):
-        return BLOCK_RE.sub(lambda m: block, body, count=1)
-    m = re.search(r"^## ", body or "", re.M)
-    if m:
-        return body[:m.start()] + block + "\n\n" + body[m.start():]
-    return (body or "").rstrip() + "\n\n" + block + "\n"
+        body = BLOCK_RE.sub(lambda m: block, body, count=1)
+    else:
+        m = re.search(r"^## ", body or "", re.M)
+        if m:
+            body = body[:m.start()] + block + "\n\n" + body[m.start():]
+        else:
+            body = (body or "").rstrip() + "\n\n" + block + "\n"
+    if idx_block:
+        if IDX_RE.search(body or ""):
+            body = IDX_RE.sub(lambda m: idx_block, body, count=1)
+        else:
+            # park the index right after the main managed block
+            body = BLOCK_RE.sub(lambda m: block + "\n\n" + idx_block,
+                                body, count=1)
+    return body
 
 
-def page_body(lang, block, now):
+def page_body(lang, block, now, idx_block: str = ""):
     doc = get_page(lang)
     if doc and doc.get("contentMd"):
-        return upsert_block(doc["contentMd"], block)
+        return upsert_block(doc["contentMd"], block, idx_block)
     title = ("Kanban Brief — การ์ดไหนควรทำวันนี้" if lang == "th"
              else "Kanban Brief — what needs Tony today")
     lead = ("หน้านี้อัปเดตอัตโนมัติโดย chaba — การ์ดจัดลำดับด้วยกติกา "
@@ -273,7 +320,7 @@ def page_body(lang, block, now):
             "(urgent = waiting on Tony / blocked / stale, "
             "important = priority/blockers). Prose lines may come from a "
             "micro model; the ranking never does.")
-    return (f"# {title}\n\n{lead}\n\n{block}\n")
+    return (f"# {title}\n\n{lead}\n\n{block}\n\n{idx_block}\n")
 
 
 def publish(lang, body, now):
@@ -365,11 +412,12 @@ def main():
     scored = score_cards(cards, now)
     block_en = render(scored, now, "en")
     block_th = render(scored, now, "th")
+    idx_block = render_index(scored, now)
     if args.dry_run:
         print(render(scored, now, "en"))
         return 0
-    publish("en", page_body("en", block_en, now), now)
-    publish("th", page_body("th", block_th, now), now)
+    publish("en", page_body("en", block_en, now, idx_block), now)
+    publish("th", page_body("th", block_th, now, idx_block), now)
     cfg = dict(cfg)
     cfg.update({"last_run": now.isoformat(timespec="seconds"),
                 "run_now": False, "last_cards": len(scored)})
