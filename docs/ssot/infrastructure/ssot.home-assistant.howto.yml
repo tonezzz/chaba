@@ -448,7 +448,10 @@ runbooks:
     last_updated: '2026-09-26'
   promote_tony_ha:
     purpose: Promote the dev bundle to tony-ha on tony-dell (rootless podman, port
-      8123).
+      8123). SUPERSEDED for routine use by promote-tony.sh (lane pipeline,
+      runbook lane_release_pipeline) — kept for the manual seed/edge cases.
+      The bundle is named pfg3d-card-vN.js now, not
+      sunsynk-power-flow-card-fork-vN.
     steps:
     - Ensure tony-ha.service is active: systemctl --user is-active tony-ha.service
     - Check for an existing sunsynk-power-flow-card-fork resource in /home/tony/.config/home-assistant/.storage/lovelace_resources
@@ -733,6 +736,48 @@ runbooks:
       byte-identical. Test automations on staging run against mha_mirror_*/
       dev_* mock entities — never real ones (decision in card).
     last_updated: '2026-10-09'
+
+  lane_release_pipeline:
+    purpose: Per-lane dev->prod release — twin parity check + scoped promote
+      with a mandatory --confirm gate (card ha-release-pipeline). Lane
+      endpoints/auth live in ssot.home-assistant.lanes.yml, lifecycle bars in
+      ssot.release-lifecycle.yml.
+    steps:
+      - "Parity (read-only, safe any time):
+        `scripts/home-assistant/frontend-parity-check.sh <tony|ada|michael>
+        [--scope dashboards,resources,bundle,automations,helpers,users]` —
+        or `--from <inst> --to <inst>` for an ad-hoc pair. Exit 0 parity /
+        1 drift / 2 unreachable. Staging-guard artifacts (injected
+        initial_state:false, stub scripts/scenes) are normalized out and
+        shown as (note) lines, not drift."
+      - "Promote: `scripts/home-assistant/promote-<lane>.sh --scope <list>
+        --dry-run` prints the parity diff BEFORE + the exact write plan; add
+        --confirm for real (release policy: explicit same-session approval,
+        never automatic). --card <id> posts progress to the kanban."
+      - "Scopes: dashboards (websocket view merge by path, --views a,b|all,
+        --dashboard, --create-dashboard) | bundle (copy pfg3d-card-vN from
+        dev www + bump prod lovelace resource + HTTP 200 verify;
+        --cleanup/--rollback) | automations (destage-merge
+        automations/scripts/scenes.yaml via ha-config-merge.py, backup
+        <file>.promote-bak-<ts>, then automation/script/scene .reload — no
+        restart) | helpers + users (.storage file copy with backup —
+        RESTART REQUIRED, pass --restart)"
+      - "Destage rules (automations): injected `initial_state: false` is
+        stripped — prod enable lives in the entity registry; scripts whose
+        sequence is the guard stub are skipped (prod body survives); scenes
+        emptied by the guard are skipped."
+      - "While tony-dev/ada-dev are unprovisioned (ha-dev-instances):
+        promote-tony.sh --from michael-dev restores the old dev source;
+        lane runs fail fast with 'registered but not provisioned'."
+      - "After any prod write: parity diff AFTER prints automatically;
+        then sync-ssot-from-live.sh + commit for dashboard mutations
+        (parallel-session rule)."
+    note: >-
+      users scope is whole-.storage/auth replacement (prod sessions become
+      dev's) — deliberately never in `all`. Helpers/users writes to a running
+      prod need the restart to load; automations/dashboards/bundle/resources
+      reload live.
+    last_updated: '2026-10-10'
 
 status:
   last_updated: '2026-09-26'

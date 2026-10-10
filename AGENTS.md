@@ -98,7 +98,7 @@ Specs come from conversation — mine them, don't guess them:
 ## Key URLs
 
 - tony-ha: `https://tony-dell.taila0626a.ts.net:8123` (tailnet only — HA binds loopback; no LAN/plain-HTTP access)
-- michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
+- michael-dev: `https://idc03.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated to idc03 2026-10-09; `127.0.0.1:8124` refers to that host)
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
 
@@ -113,18 +113,18 @@ Specs come from conversation — mine them, don't guess them:
 ## Deployment policy
 
 - **Never auto-deploy from michael-dev.** Building and previewing on `michael-dev` is fine, but deploying or promoting the bundle/dashboard to `michael-ha` or `tony-ha` requires explicit user approval in the same session.
-- `deploy-card.sh` is dev-only by default; use `promote-michael.sh` or `promote-tony.sh` for live hosts.
+- `deploy-card.sh` is dev-only by default; use `promote-michael.sh`, `promote-tony.sh`, or `promote-ada.sh` for live hosts — all require `--confirm` (explicit same-session approval).
 - Even if `tony-ha` runs on the same machine (`tony-dell`), copying a bundle or resource to it is a deploy and must be approved.
 
 ## Build / deploy commands
 
 - Build card: `cd /home/tony/CascadeProjects/sunsynk-power-flow-card && npm run build`
 - Typecheck before trusting the bundle: `npx -p typescript tsc --noEmit` (the rollup build uses Babel and does NOT type-check)
-- Restart michael-dev: `ssh tony-dell 'systemctl --user restart michael-dev.service'`
+- Restart michael-dev: `ssh idc03 'systemctl --user restart michael-dev.service'` (migrated to idc03 2026-10-09; the `~/.config/michael-dev` copy on tony-dell is stale)
 - Restart michael-ha: `ssh michael-ha 'ha core restart'`
 - Deploy card bundle to dev: `./scripts/home-assistant/deploy-card.sh` — builds, derives the next version from michael-dev's `lovelace_resources`, scp's, restarts, verifies HTTP 200.
-- Promote dev bundle/views to michael-ha: `./scripts/home-assistant/promote-michael.sh --views g1,g2,tpl` (requires explicit user approval)
-- Promote dev bundle/views to tony-ha: `./scripts/home-assistant/promote-tony.sh --views g1,g2,tpl` (requires explicit user approval; seed the resource on first run).
+- Lane parity check: `./scripts/home-assistant/frontend-parity-check.sh <tony|ada|michael>` or `--from A --to B` — twin diff over dashboards/resources/bundles/automations/helpers/users (registry `docs/ssot/infrastructure/ssot.home-assistant.lanes.yml`, runbook `lane_release_pipeline`).
+- Promote per lane (all wrappers on `promote-lane.sh`; `--dry-run` prints the exact diff, `--confirm` required for any prod write — same-session approval, never automatic): `./scripts/home-assistant/promote-michael.sh` (michael-dev→michael-ha), `./scripts/home-assistant/promote-tony.sh` (tony-dev→tony-ha; `--from michael-dev` until tony-dev is provisioned), `./scripts/home-assistant/promote-ada.sh` (ada-dev→ada-ha). Scope selector: `--scope dashboards,bundle,automations,helpers,users`.
 - Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py <ha_url> tony-test --mutate /tmp/mutate.py` (dev: `source ~/.config/secrets/ha-michael-dev.env`; ha: `HASS_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)`)
 - Apply a TPL template onto a view tile: `python3 scripts/home-assistant/apply-tpl.py <ha_url> tony-test tpl pfg2 --map "Title:r,c;..."` (does NOT copy pfg_spans; add `--dry-run` to preview)
 - Sync live dashboard into repo: `./scripts/home-assistant/sync-ssot-from-live.sh`
@@ -159,7 +159,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - Active card bundle: `v207` on michael-dev; `v206` on michael-ha and tony-ha. Per-host counters; verify parity by md5, not version.
 - Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/` plus `pfg3d-loader.ts` and `pfg3d-chart.ts`). `pfg-shared.ts` is gone — update imports to `./pfg`.
 - 3D charts (`surface3d`/`bar3d`) are now rendered by a reactive `<pfg-3d-chart>` custom element: incremental hourly-statistics refresh, camera state preserved on updates, and observers/listeners cleaned up on disconnect.
-- `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha) and `promote-tony.sh` (tony-ha) and requires explicit user approval.
+- `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha), `promote-tony.sh` (tony-ha), `promote-ada.sh` (ada-ha) — all wrappers on `promote-lane.sh`, requiring explicit same-session approval (`--confirm`).
 - echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d`/`bar3d` try local first, CDN fallback.
 - 3D chart lessons (G1 surface3d / G2 bar3d): use `xAxis3D.type: 'category'` + `data` order for hour axes — `inverse` on a `value` axis is ignored by ECharts GL. See `pfg_3d_charts` runbook in `docs/ssot/infrastructure/ssot.home-assistant.howto.yml`.
 - History/accumulating charts share the localStorage incremental cache policy (`data_cache_policy` in `ssot.home-assistant.design.yml`).
