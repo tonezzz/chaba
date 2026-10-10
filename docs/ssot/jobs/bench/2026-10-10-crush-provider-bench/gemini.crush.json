@@ -1,0 +1,47 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "google": {
+      "type": "google",
+      "api_key": ""
+    }
+  },
+  "models": {
+    "large": {
+      "model": "gemini-3-flash-preview",
+      "provider": "google"
+    },
+    "small": {
+      "model": "gemini-3-flash-preview",
+      "provider": "google"
+    }
+  },
+  "mcp": {
+    "bench-ro": {
+      "type": "stdio",
+      "command": "/usr/bin/python3",
+      "args": [
+        "/tmp/crush-bench-mn01/lanes/gemini/lab_mcp.py"
+      ],
+      "timeout": 30
+    }
+  },
+  "permissions": {
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "bash"
+    ]
+  },
+  "options": {
+    "disable_metrics": true,
+    "attribution": {
+      "trailer_style": "none",
+      "generated_with": false
+    }
+  }
+}

@@ -1,0 +1,78 @@
+title: 'Bench: crush v0.98.0 across provider lanes (crush-provider-bench)'
+subtitle: gemini + OR-paid viable; fully-offline ollama not viable on current hardware/models
+icon: flask
+runner: mn01 (runs executed on tony-dell via ssh, scratch /tmp/crush-bench-mn01)
+date: 2026-10-10
+
+method:
+  smoke_suite: |
+    Same suite as lab-crush-cli (docs/ssot/jobs/lab/2026-10-09-crush-cli-assessment.yml),
+    run per lane in an isolated /tmp/crush-bench-mn01/lanes/<lane> dir with a
+    project-local .crush.json (providers, models, mcp, permissions all local —
+    see docs/kb/crush-multi-agent.md for why global config is untrusted).
+    T1: write fizzbuzz.py + test_fizzbuzz.py (4 tests), run pytest -> verify 4/4
+    with an independent pytest run outside crush.
+    T2: edit existing fizzbuzz.py — sys.argv bound check + 1 new test -> verify 5/5.
+    T3: stdio MCP (lab_mcp.py, tools lab_list/lab_read over bench_marker.txt) ->
+    verify marker token CRUSH-BENCH-MARKER-7734 in agent reply.
+    All runs: `crush run -c <dir> [-m provider/model] "<prompt>"`, wall-timed.
+  scoring: pass = independent verification succeeds; wall = crush run duration.
+
+results:
+  gemini:
+    model: gemini-3.1-flash-lite (native google provider, forced via -m flag)
+    key: ~/.config/secrets/ada-pi-pwa.env $GEMINI_API_KEY (see warnings)
+    t1: {result: pass, wall_s: 135, pytest: '4/4', tool_calls: 4, seq: 'write,write,bash,job_output'}
+    t2: {result: pass, wall_s: 89, pytest: '5/5', tool_calls: 6, seq: 'ls,view,view,edit,edit,bash'}
+    t3: {result: pass, wall_s: 58, note: 'mcp_bench-ro_lab_list + lab_read invoked via crush tool surface'}
+    extra: 'gemini-3-flash-preview also did T1 in 80s (4/4) before free-tier daily quota (20 req/day) died — better model, impractical quota'
+  openrouter_paid:
+    model: anthropic/claude-sonnet-4.6 via OpenRouter ($100 credit bought 2026-10-09)
+    key: ~/.config/secrets/openrouter.env $OPENROUTER_API_KEY
+    t1: {result: pass, wall_s: 103, pytest: '4/4', tool_calls: 3, seq: 'write,write,bash'}
+    t2: {result: pass, wall_s: 90, pytest: '5/5', tool_calls: 6, seq: 'bash,view,view,write,write,bash'}
+    t3: {result: 'pass (functional)', wall_s: 180,
+         note: 'crush MCP init stalled (wait-budget warn -> mcp_* tools never registered); sonnet inspected .crush.json and drove the MCP server via direct bash JSON-RPC — lab_list+lab_read invoked manually, correct marker returned. Connect+invoke achieved, not via registered tools.'}
+  ollama_offline:
+    verdict: NOT VIABLE today — no local model can drive the crush agent loop
+    llama3.2:3b_idc03:
+      t1: {result: fail, wall_s: 248, note: 'zero tool calls — wrote code as text'}
+      t2: {result: fail, wall_s: 290, note: 'only seeded 4/4; no effective edit'}
+      t3: {result: fail, wall_s: 89, note: 'hallucinated JS instead of MCP calls'}
+    qwen2.5:1.5b_omen:
+      t1: {result: fail, wall_s: 26}
+      t2: {result: fail, wall_s: 10}
+      t3: {result: fail, wall_s: 7, note: 'fast, returns text, does not execute'}
+    qwen3:4b_omen:
+      note: 'pulled during this bench (2.5GB VRAM on GTX 1650)'
+      t1: {result: fail, wall_s: 122, note: 'LLM stream received no data for 2m0s — stream deadline'}
+      t2: {result: fail, wall_s: 900, note: 'timeout'}
+      t3: {result: fail, wall_s: 900, note: 'timeout'}
+  anthropic:
+    status: pending — no ANTHROPIC_API_KEY exists on tony-dell/omen/idc01-03
+    note: 'board request anthropic-lane-no-anthropic-api-key-foun-ec782a raised; claude-sonnet-4.6 through the OR paid lane already covers the model class — a direct-API lane adds little unless pricing/latency matters'
+
+key_findings:
+  - 'gemini-api-key.env (and gemini-mic-test.env, podman secret) is a DEAD AQ.* token — 401. Working GEMINI key lives in ~/.config/secrets/ada-pi-pwa.env (suffix T0A). Confirms ada-scenario-casting-hang finding; needs a fresh AI Studio key.'
+  - 'crush type=google ignores models.large AND provider.models — it always selects its catalog default (gemini-3.1-pro-preview-customtools). Workaround: -m "gemini/<model>" flag per run. The catalog default has zero free-tier quota on our key.'
+  - 'openai-compat to Google /v1beta/openai/ breaks multi-turn: crush drops extra_content.google.thought_signature when resubmitting history -> HTTP 400 on turn 2. All gemini-3.x models emit signatures. Use native google provider + -m flag.'
+  - 'Free-tier gemini quota is tight: 20 req/day on gemini-3-flash-preview (exhausted mid-bench), more generous on gemini-3.1-flash-lite. Recommend flash-lite as the gemini lane model.'
+  - 'OR paid claude-sonnet-4.6: clean sweep, ~90-180s/task. The rainy-day fallback lane of choice — quality clearly above everything else benched here.'
+  - 'crush MCP init is timing-flaky: one of 9 runs hit "initialization still pending after wait budget" and ran without MCP tools registered.'
+  - 'Fully-offline lane needs a better host or a better small model: idc03 is CPU-only (15G RAM, 13 used); omen GTX 1650 4G is 60% committed. <=3B models installed either ignore tools (llama3.2:3b) or under-reason (qwen2.5:1.5b); qwen3:4b stalls past crush 2m stream deadline.'
+
+recommendation: |
+  Primary: gemini via native google provider, -m gemini/gemini-3.1-flash-lite —
+  free, passes everything, but quota-tight (bench consumes ~13 calls).
+  Rainy-day #1: OpenRouter paid claude-sonnet-4.6 — best quality, all pass.
+  Offline: park — needs >4B tool-capable model on a less-loaded host.
+  Anthropic direct: pending Tony's key decision; low marginal value over OR.
+
+artifacts: |
+  Harness + lane configs kept in-repo at
+  docs/ssot/jobs/bench/2026-10-10-crush-provider-bench/
+  (run_lane.sh, lab_mcp.py, {gemini,orpaid,ollama}.crush.json).
+  Run transcripts + timing on tony-dell:/tmp/crush-bench-mn01/ (ephemeral).
+verified: |
+  Independent `python3 -m pytest -q` per task per lane; marker token grep on
+  task3.out; tool-call sequences extracted from .crush/crush.db messages.parts.

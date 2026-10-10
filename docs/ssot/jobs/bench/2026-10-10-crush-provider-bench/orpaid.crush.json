@@ -1,0 +1,28 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "openrouter": {
+      "type": "openrouter",
+      "api_key": "$OPENROUTER_API_KEY"
+    }
+  },
+  "models": {
+    "large": {"model": "anthropic/claude-sonnet-4.6", "provider": "openrouter"},
+    "small": {"model": "anthropic/claude-sonnet-4.6", "provider": "openrouter"}
+  },
+  "mcp": {
+    "bench-ro": {
+      "type": "stdio",
+      "command": "/usr/bin/python3",
+      "args": ["/tmp/crush-bench-mn01/lanes/orpaid/lab_mcp.py"],
+      "timeout": 30
+    }
+  },
+  "permissions": {
+    "allowed_tools": ["view", "ls", "grep", "glob", "write", "edit", "bash"]
+  },
+  "options": {
+    "disable_metrics": true,
+    "attribution": {"trailer_style": "none", "generated_with": false}
+  }
+}
