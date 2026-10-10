@@ -2,13 +2,15 @@ id: vcast-auto-relay
 title: input-bridge relay not healthy
 brief: 'An automated health check flagged: input-bridge relay not healthy. Read the
   note, fix it, then close the card.'
-column: done
+column: review
 generated: vcast-auto-health
 program: vcast
 area: monitoring
-priority: medium
-note: 'Auto-recovered 2026-10-08: `relay` check passing again.'
+priority: high
+note: 'GET http://127.0.0.1/api/input-bridge/health failed: <urlopen error [Errno
+  111] Connection refused>'
 help: 'Relay is a podman quadlet on idc03 (100.102.134.91:3010, tailnet-bound). Check:
   ssh idc03 systemctl --user status input-bridge; logs: journalctl --user -u input-bridge
   -n 50; edge route is /api/input-bridge/* in stacks/web/Caddyfile'
-updated: '2026-10-08'
+updated: '2026-10-10'
+review_kind: triage
