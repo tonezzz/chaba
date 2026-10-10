@@ -123,6 +123,14 @@ comms:
     mddb-gemini) now on the paid-tier key. Free key preserved in gemini-keys.env;
     `gemini-tier free` = instant rollback. Verified: paid key HTTP 200, all services
     active, 0 quota errors post-restart. Free-tier 20/day cap no longer applies.'
+- at: 2026-10-10 19:55
+  from: devin
+  text: 'STANDARD SET: `gemini-tier hybrid` — free key is primary in all 6 envs, paid
+    key rides GEMINI_API_KEY_2 with ADA_GEMINI_KEY_POLICY=priority (ada-pi b241477
+    deployed). Pool serves free-first; a 429 marks the free key out and paid spills
+    in until Pacific reset. Verified in running ada-ha-tony env (free nT0A primary
+    + paid F6Pg spillover), 0 quota errors post-restart. Caveat: Live voice sessions
+    ride the primary key — voice is on free-tier Live quota, no spillover path there.'
 updated: 2026-10-10 08:34
 action:
   type: dispatch
