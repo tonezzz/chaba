@@ -1,22 +1,24 @@
 id: runner-auto-idc02
 title: Runner host `idc02` fails 1 dispatch bootstrap check(s)
-brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix
-  on the host, close the card.
-column: done
+brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch
+  cards. Read the note, fix on the host, close the card.
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/runner-agent sha 1a196b9d6376ed7b != repo 8dd148f4a9358339 — installed copy drifted;
-  redeploy. Info: chaba origin is fetch-only (by design — no push creds); merge-sweep salvage path verified; no
-  mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take
-  action.repo=gods-eye-view cards; dispatch_repos copy differs from repo (sha 243abf1676341230 vs 8e1ffb0e5b964cbe)
-  — functional attrs present; devin: /home/tony/.local/bin/devin (devin 3000.10.35 (dfa4a2d6)).'
+note: 'Failing: ~/.local/bin/runner-agent sha 1a196b9d6376ed7b != repo 8dd148f4a9358339
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; no mddb-fork checkout — host
+  can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t
+  take action.repo=gods-eye-view cards; dispatch_repos copy differs from repo (sha
+  243abf1676341230 vs 8e1ffb0e5b964cbe) — functional attrs present; devin: /home/tony/.local/bin/devin
+  (devin 3000.10.35 (dfa4a2d6)).'
 help: 'Per-check fixes:
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod
-  +x ~/.local/bin/runner-agent'
-updated: 2026-10-10 19:22
+  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
+  && ssh <host> chmod +x ~/.local/bin/runner-agent'
+updated: '2026-10-10'
 review_kind: triage
 action:
   status: done
@@ -24,10 +26,10 @@ action:
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'FIXED: runner-agent drift — installed sha was 35d1835a vs repo 1a196b9d; repo copy deployed to idc02 and
-    sha-verified identical. Fleet-wide sync done this session. (Same stale-runner class that killed the first nest-mgr
-    dispatch.)'
+  text: 'FIXED: runner-agent drift — installed sha was 35d1835a vs repo 1a196b9d;
+    repo copy deployed to idc02 and sha-verified identical. Fleet-wide sync done this
+    session. (Same stale-runner class that killed the first nest-mgr dispatch.)'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo); timers active. Card left in
-    review by sweep — normalizing.'
+  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo);
+    timers active. Card left in review by sweep — normalizing.'

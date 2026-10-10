@@ -1,35 +1,38 @@
 id: runner-auto-tony-dell
 title: Runner host `tony-dell` fails 5 dispatch bootstrap check(s)
-brief: Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note,
-  fix on the host, close the card.
-column: done
+brief: Automated fleet audit found provisioning gaps on tony-dell that will strand
+  dispatch cards. Read the note, fix on the host, close the card.
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: git committer ident unresolvable (user.name=unset user.email=unset) — dispatch checkpoint/merge
-  commits will fail; sunsynk-card: 256 commits behind origin/sunsynk (limit 200, last-fetched basis); gods-eye-view:
-  770 commits behind origin/main (limit 200, last-fetched basis); ~/.local/bin/runner-agent not executable; ~/.local/bin/runner-agent
-  sha 1a196b9d6376ed7b != repo 8dd148f4a9358339 — installed copy drifted; redeploy. Info: chaba origin is fetch-only
-  (no push creds on this clone); devin resolves only to the bundled desktop copy (devin 3000.10.48 (fcf7ba39)) —
-  devin-dispatch.sh warns this may be stale.'
+note: 'Failing: git committer ident unresolvable (user.name=unset user.email=unset)
+  — dispatch checkpoint/merge commits will fail; sunsynk-card: 256 commits behind
+  origin/sunsynk (limit 200, last-fetched basis); gods-eye-view: 770 commits behind
+  origin/main (limit 200, last-fetched basis); ~/.local/bin/runner-agent not executable;
+  ~/.local/bin/runner-agent sha 1a196b9d6376ed7b != repo 8dd148f4a9358339 — installed
+  copy drifted; redeploy. Info: chaba origin is fetch-only (no push creds on this
+  clone); devin resolves only to the bundled desktop copy (devin 3000.10.48 (fcf7ba39))
+  — devin-dispatch.sh warns this may be stale.'
 help: 'Per-check fixes:
 
-  - git-identity: ssh <host> ''git config --global user.name Devin; git config --global user.email 158243242+devin-ai-integration[bot]@users.noreply.github.com''
-  (the 2026-10-09 fleet convention).
+  - git-identity: ssh <host> ''git config --global user.name Devin; git config --global
+  user.email 158243242+devin-ai-integration[bot]@users.noreply.github.com'' (the 2026-10-09
+  fleet convention).
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
-  that host''s repos.conf.
+  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host
+  — reclone it or drop it from that host''s repos.conf.
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
-  that host''s repos.conf.
+  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host
+  — reclone it or drop it from that host''s repos.conf.
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod
-  +x ~/.local/bin/runner-agent
+  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
+  && ssh <host> chmod +x ~/.local/bin/runner-agent
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod
-  +x ~/.local/bin/runner-agent'
-updated: 2026-10-10 19:22
+  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
+  && ssh <host> chmod +x ~/.local/bin/runner-agent'
+updated: '2026-10-10'
 review_kind: triage
 action:
   status: done
@@ -37,10 +40,11 @@ action:
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'FIXED: ~/.local/bin/runner-agent installed (sha 1a196b9d = repo). git ident resolves globally (Tony/tonezzz@hotmail.com)
-    — dispatch checkpoint commits work. Checkout-drift infos (sunsynk 6, gev 770 behind) remain informational —
-    hosts pull on demand.'
+  text: 'FIXED: ~/.local/bin/runner-agent installed (sha 1a196b9d = repo). git ident
+    resolves globally (Tony/tonezzz@hotmail.com) — dispatch checkpoint commits work.
+    Checkout-drift infos (sunsynk 6, gev 770 behind) remain informational — hosts
+    pull on demand.'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo); timers active. Card left in
-    review by sweep — normalizing.'
+  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo);
+    timers active. Card left in review by sweep — normalizing.'

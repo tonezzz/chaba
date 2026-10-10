@@ -1,16 +1,17 @@
 id: vcast-auto-flap
 title: vcast flap events in last 24h
-brief: 'An automated health check flagged: vcast flap events in last 24h. Read the note, fix it, then close the
-  card.'
-column: done
+brief: 'An automated health check flagged: vcast flap events in last 24h. Read the
+  note, fix it, then close the card.'
+column: review
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: high
-note: 9 supersede/disconnect events in 24h (want 0)
-help: 'Counts ''superseded by new socket'' / ''disconnected'' lines in the idc03 input-bridge journal (metric: 0/24h).
-  A supersede = a display re-registered over a live socket — investigate which device flapped and why it reconnected.'
-updated: 2026-10-10 19:22
+note: 13 supersede/disconnect events in 24h (want 0)
+help: 'Counts ''superseded by new socket'' / ''disconnected'' lines in the idc03 input-bridge
+  journal (metric: 0/24h). A supersede = a display re-registered over a live socket
+  — investigate which device flapped and why it reconnected.'
+updated: '2026-10-10'
 action:
   status: done
   verified: true
@@ -24,9 +25,10 @@ comms:
   text: 'review sweep: verified evidence present, requests resolved — closed'
 - at: 2026-10-09 17:44
   from: devin
-  text: 'CONDITION CLEARED: screen-9 flap was 95 events/24h at carding; now ~1 supersede/disconnect per hour on
-    input-bridge. Registry settle verified live.'
+  text: 'CONDITION CLEARED: screen-9 flap was 95 events/24h at carding; now ~1 supersede/disconnect
+    per hour on input-bridge. Registry settle verified live.'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'VERIFIED: flap rate stays ~1/hr (was 95/24h). Already recorded — normalizing column.'
+  text: 'VERIFIED: flap rate stays ~1/hr (was 95/24h). Already recorded — normalizing
+    column.'
 review_kind: triage
