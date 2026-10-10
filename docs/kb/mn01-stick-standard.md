@@ -31,3 +31,37 @@ was stopped; the box then reclaimed it normally).
   actually holds the identity right now.
 - If a boot lands somewhere unexpected: `sudo tailscale logout` on it, or
   power it off — the last-connected peer wins the IP.
+
+## Call-home (verified live 2026-10-10)
+
+The stick announces itself at boot: `stick-announce.service` (enabled)
+runs `/usr/local/bin/stick-announce.sh` — waits for network+tailscaled,
+then posts `kind=ops-event type=stick_online` to `ada-ha-events-tony`
+with hostname + LAN IP + tailnet IP, and appends to
+`/var/log/stick-announce.log`. The ops-digest picks it up — no manual
+"is it up?" needed. Requires tailscaled running (normal boot path).
+
+## Remote-control playbook (distilled 2026-10-10)
+
+Once the stick boots a machine:
+
+1. **Find it** — LAN: `arp -an` on any local host, or the stick_online
+   event carries `lan_ip`. Reachable via `ssh tony@<lan-ip>` keyless
+   (fleet keys baked). Tailnet name only after its own nodekey lands
+   (currently clones mn01 — card `tony-usb-own-nodekey`).
+2. **Sudo once** — password is interactive. Session-wide unlock:
+   `sudo bash -c 'echo "tony ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-session'`
+   — then everything is remote. Remove the file when done.
+3. **Persist sshd** — `sudo systemctl enable ssh` (image ships with
+   sshd running but not enabled).
+4. **Install curl** — `sudo apt install -y curl` (image lacks it; wget,
+   python3, tailscale are present).
+5. **Read macOS disks** — `apfs-dkms` builds for the *running* kernel:
+   `sudo apt install -y linux-headers-$(uname -r) && sudo dkms install
+   linux-apfs-rw/0.3.18 -k $(uname -r) && sudo modprobe apfs && sudo
+   mount -t apfs -o ro /dev/nvme0n1p2 /mnt`. (`fsapfsmount` ships without
+   FUSE glue — dead end. apfs-fuse is not in 26.04 repos.)
+6. **Serve the stick an ISO** — `wget` the installer ISO to the stick's
+   fs (99G free), add a GRUB loopback entry to `/etc/grub.d/40_custom`,
+   `update-grub`, reboot → installer boots from the same stick, install
+   to the internal disk. No second USB needed.
