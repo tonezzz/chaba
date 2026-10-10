@@ -1,0 +1,45 @@
+id: stale-report-regen-lane
+title: "Stale-report regen lane — 14 generated pages past fresh_for; three root causes"
+column: backlog
+priority: high
+created: '2026-10-10'
+updated: '2026-10-10 13:45'
+review_kind: triage
+domain: chaba-ci
+spec: |
+  First run of standard-drift-digest (2026-10-10) flagged 14 generated
+  ada-cms-pages stale past their own fresh_for. Root causes found:
+
+  1. kind=command generators have no runner — health-digest declares
+     generator.kind=command (report-distill) in ada-cms-automation but
+     nothing executes it on a schedule. The dispatcher 'Regenerate' lane
+     from job 2026-09-29-cms-report-standard P2 was never built for
+     scheduled runs. Options: a chaba job that iterates registry
+     command-generators and runs gated ones, or give report-distill its
+     own ssot.jobs entry.
+  2. Missing registry entries — infrastructure-digest has none; nothing
+     schedules it at all.
+  3. fresh_for lies — nest-bench declares 1d but its generator only runs
+     inside the Monday orch-bench job (weekly => declare 7d). cam-wall
+     leaf pages carry fresh_for=1h while cam-wall-cms.service (15m,
+     succeeding) does not stamp updated on cam-* leaves — either the
+     writer skips unchanged docs (then fresh_for should match real
+     cadence) or leaves are orphaned.
+  Rule of the fix: fresh_for must equal the page's real regeneration
+  cadence — fix the schedule AND the declaration together; a page that
+  is intentionally point-in-time gets report_role leaf/point-in-time
+  handling, not a fresh_for it can never meet.
+comms:
+  - from: devin
+    text: >
+      triaged from standard-drift first publish: health-digest 5.4d,
+      infrastructure-digest 2.4d (no registry), nest-bench 2.8d (weekly
+      job vs 1d fresh_for), 10 cam-* leaves (service green every 15m but
+      updated not stamped). Digest doing its job — drift visible.
+verify: >-
+  standard-drift stale-reports section drops under ~5 after the lane
+  exists; every flagged page either regenerates on schedule or carries
+  a fresh_for that matches reality.
+requests: []
+blocked_by: []
+tags: [standards, reports, cms, digest]
