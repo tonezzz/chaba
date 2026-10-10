@@ -1,0 +1,37 @@
+id: dispatch-gitignore-shadow-guard
+title: 'Dispatcher: reject gitignored-path shadows (symlink/file) in merges'
+program: chaba-ci
+column: backlog
+priority: medium
+note: >-
+  Incident 2026-10-10 ~20:19-20:41 (+07): dispatch merge a992a40 into ada-pi
+  carried a worktree `.venv` SYMLINK into main. .gitignore only had `.venv/`
+  (dir pattern) which does not match a file/symlink named `.venv`, so it
+  slipped through review and deploy-ada.sh replaced the production venv dir
+  with a dangling symlink → ModuleNotFoundError: httpx → ada-tg-relay
+  crash-looped 19 restarts and ada-ha-tony's Gemini client broke mid-turn
+  (Tony's TG image->video request died: FileNotFoundError in
+  ada_render_video, then 1012 restart). Fixed by 172f25e (untrack .venv,
+  gitignore line 13 adds bare `.venv`). Remaining gap: nothing in the
+  merge/dispatch path prevents the NEXT shadow file — any symlink or file
+  whose name is covered only by a trailing-slash gitignore pattern will
+  repeat this.
+spec: >-
+  Add a pre-merge guard in the dispatch merge path (merge-sweep /
+  dispatch-auto-merge / merge-guard in board-api): for each file added by
+  the incoming branch, if it is a symlink, or if `git check-ignore
+  --no-index` would ignore a DIR of the same name (pattern ends in `/`)
+  while the blob itself is untracked, flag it — block the merge with a
+  comms entry listing the shadow paths. Optionally lint-fix: extend
+  stack-preflight to warn when a repo's .gitignore has `X/` patterns where
+  a file `X` could shadow it (suggest adding bare `X`). Verify: create a
+  worktree branch that adds a `.venv` symlink, run the merge path,
+  confirm it blocks.
+comms:
+- at: 2026-10-10 21:05
+  from: devin
+  text: >-
+    filed after diagnosing Tony's TG image-gen failure: root cause was the
+    .venv symlink merge (172f25e already hot-fixed). Guard prevents the
+    class, not just this file. ada-pi services verified healthy post-fix.
+updated: 2026-10-10 21:05
