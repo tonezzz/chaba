@@ -64,6 +64,24 @@ When Tony voices an idea, feature direction, complaint, or "what if we…" — i
 
 Capture is the floor, not the goal. An idea that stalls in backlog because nobody was explicitly told to continue is a process failure. Ada carries the same norm (mirrored instructions).
 
+## Report-integration duty (added 2026-10-09 — Tony's standing order)
+
+When Tony asks to **add a report** (CMS page, docs/reports/, assessment, digest — any named report artifact):
+
+1. **Check for similar existing reports first** — search MDDB `ada-cms-pages` (`/v1/search` or `report-note.py`), `docs/reports/`, and SSOT for overlapping titles/topics before creating anything.
+2. **Propose create-vs-integrate per section** — don't just say "exists" or "new". Map the requested report's sections against the existing report's sections: which slots merge into the old report (update in place, keep history), which warrant a new document (new scope/audience/cadence), and link both ways when split.
+3. **Present the plan before writing** — one short proposal ("extend X with sections Y,Z" or "new page because ..."), then proceed. Tony answers with one word; default = the recommended option.
+4. Reports that supersede an old one get a `supersedes:`/redirect note in the old page, not a silent fork.
+
+## Spec-gathering duty (added 2026-10-09 — Tony's standing order)
+
+Specs come from conversation — mine them, don't guess them:
+
+- Before building or dispatching anything, extract the concrete spec from Tony's messages (goal, surface, host/repo, constraints, done-condition). Write it into the card's `spec:` — verbatim where possible.
+- **Always ask when unsure** — an unanswered ambiguity becomes a kanban request with clickable options (default marked ★), not an assumption baked into code. Never pick between materially different directions silently.
+- "Unsure" includes: multiple plausible interpretations, missing names/hosts/thresholds, scope that could double or halve the work, irreversible choices.
+- One focused ask beats a checklist. If several unknowns exist, batch them into one request with per-item options.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points
