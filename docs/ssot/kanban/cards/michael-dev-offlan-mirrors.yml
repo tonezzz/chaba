@@ -1,6 +1,6 @@
 id: michael-dev-offlan-mirrors
 title: michael-dev replicas on off-LAN hosts spam mirror timeouts — keep or gate?
-column: doing
+column: done
 priority: medium
 program: chaba-ci
 area: placement
@@ -9,8 +9,12 @@ note: idc03 (1.5k/day) + tony-omen (2.1k/day) severe = michael-dev instances who
   hosts.
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc03
+  result: 'exit=0 ed on the card: `stacks/idc03/michael-dev/packages/` is empty — idc03''s live package was never
+    tracked. | devin-task-20261010-123840-michael-dev-replicas-on-off-la.service: Consumed 27.388s CPU time, 136.0M
+    memory peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-10 09:51
   from: devin
@@ -44,6 +48,25 @@ comms:
     + mha_mirror_refresh automation drives update_entity every 30s only while reachable; rest scan_interval 86400
     + guarded value/availability templates kill UndefinedError; switch wrappers gated too. Files: docs/home-assistant/dev/dev-mocks.yaml,
     stacks/{tony-omen,tony-dell} snapshots, mirror-sweep emitter, SSOT + job yml. Deploy per host: rsync to ~/.config/michael-dev/packages/a_dev_mocks.yaml '
+- at: 2026-10-10 13:01
+  from: idc03
+  text: 'finished (ok): exit=0 ed on the card: `stacks/idc03/michael-dev/packages/` is empty — idc03''s live package
+    was never tracked. | devin-t'
+- at: 2026-10-10 13:01
+  from: chaba
+  text: 'session-end checkpoint 57b4720c: 1 leftover file(s) committed'
+- at: 2026-10-10 13:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 13:01
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 13:03
+  from: chaba
+  text: 'merge-sweep: merged 596c5ba8 (dispatch/20261010-123840-michael-dev-replicas-on-off-la from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-123840-michael-dev-replicas-on-off-la.md)
+    — auto-closed'
 requests:
 - id: mirror-replica-policy
   ask: michael-dev on idc03/omen can't reach michael-ha LAN mirrors — what should replicas do?
@@ -61,4 +84,8 @@ requests:
   answer: gate-mirrors — ★ keep replicas — gate mha_mirror_* sensors behind a reachability check (fail quiet, retry
     slow)
 claim: {}
-updated: 2026-10-10 13:01
+updated: 2026-10-10 13:03
+auto_close:
+  by: merge-sweep
+  at: 2026-10-10 13:03
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261010-123840-michael-dev-replicas-on-off-la.md
