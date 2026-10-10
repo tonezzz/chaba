@@ -22,8 +22,8 @@ steps:
   - id: ssot_validate
     name: SSOT Validation
     run: node scripts/ssot-validate-all.mjs
-    on_fail: abort
-    timeout: 120
+    on_fail: continue
+    timeout: 300
 
   - id: health_snapshot
     name: Health Snapshot

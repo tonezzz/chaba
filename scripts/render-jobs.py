@@ -132,10 +132,20 @@ def render_timer(j):
 def render_dispatcher_units(host, man):
     repo = man["config"]["repo"][host]
     tick = systemd_dur(man["config"].get("dispatcher_tick", "1min"))
+    # The service must out-live the slowest dispatcher job plus sequential
+    # pileup slack — a hardcoded 55s killed the tick mid-run when a 120s
+    # podman job (yomi-update-active) was still running (2026-10-10).
+    longest = max(
+        (dur_s(j.get("timeout", "60"))
+         for j in man["jobs"]
+         if j["host"] == host and j["dispatch"] == "dispatcher"
+         and j.get("enabled", True)),
+        default=60)
+    start_cap = max(55, longest * 2 + 60)
     svc = (
         "[Unit]\n"
         "Description=Chaba job dispatcher (runs dispatch:dispatcher jobs from ssot.jobs.yml)\n\n"
-        "[Service]\nType=oneshot\nTimeoutStartSec=55\n"
+        f"[Service]\nType=oneshot\nTimeoutStartSec={start_cap}\n"
         f"ExecStart=/usr/bin/python3 {repo}/scripts/job-dispatcher.py --host {host}\n"
     )
     tim = (
