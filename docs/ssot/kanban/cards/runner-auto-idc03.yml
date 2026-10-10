@@ -2,17 +2,12 @@ id: runner-auto-idc03
 title: Runner host `idc03` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc03 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/runner-agent sha 1a196b9d6376ed7b != repo 8dd148f4a9358339
-  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
-  — no push creds); merge-sweep salvage path verified; no sunsynk-card checkout —
-  host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout — host can''t
-  take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view
-  cards; devin: /home/tony/.local/bin/devin (devin 3000.11.3 (9c803229faa4)).'
+note: 'Auto-recovered 2026-10-10: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
