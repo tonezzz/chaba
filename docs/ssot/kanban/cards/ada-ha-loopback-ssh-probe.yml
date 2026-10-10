@@ -1,0 +1,24 @@
+id: ada-ha-loopback-ssh-probe
+title: ada-ha container ssh-loops to 127.0.0.1:22 ~1/min — screens.py resolves display host to loopback
+column: backlog
+priority: high
+program: chaba-ci
+area: ops
+note: 'logs-auto-tony-dell-severe-spike SOURCE PINNED — inside the ada-ha container, backend/tool_runner/screens.py is the only ssh caller; a screen/display probe resolves the display host to loopback under container host-networking → ~1/min ssh-refused spam. Also dead REST probes — 127.0.0.1:8799 /state and 127.0.0.1:8014 /api/chaba/pending.'
+repo: ada-pi
+action:
+  type: dispatch
+  status: todo
+spec: |
+  backend/tool_runner/screens.py — find the ssh path that resolves a
+    display/screen host; under host-networking containers it must NOT resolve
+    to 127.0.0.1 (loopback inside the container is the container, not the host).
+    Likely fix — resolve the display host via env/config (screen host SSOT) or
+    skip the probe entirely when the resolved addr is loopback. Same for the
+    REST probes on :8799/:8014 — dead endpoints inside container netns.
+    Verify — journalctl --user -u ada-ha | grep -c ssh.*refused → ~0/day.
+comms:
+- at: 2026-10-10 09:52
+  from: devin
+  text: 'filed from logs-auto diagnosis — see parent incident card for evidence'
+claim: {}

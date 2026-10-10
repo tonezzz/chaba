@@ -7,7 +7,7 @@ brief: 'Today any identity''s memory save lands directly in a bank, and "I saved
 column: backlog
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:36
 pipeline: ci
 autonomy: t2
 metric: A guest/untrusted save produces a pending entry visible to the approver surface and NOTHING in the target
@@ -39,9 +39,32 @@ blocked_by:
 - ada-memory-injection-scan
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-091611-where-ada-pi-repo-tool-runner-
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 09:16
+  from: chaba
+  text: dispatched 20261010-091611-where-ada-pi-repo-tool-runner- on ada-pi
+- at: 2026-10-10 09:16
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-remember-confirm-flake] Done (option a + phantom fix). backend/tool_runner:;
+    [tg-voice-corpus-capture] filed + queued — Tony confirmed the approach after cod; "test_merge_sweep fixture
+    relied on global git identity — tony-dell has none (re; [ada-secret-drop] VERIFIED: POST /api/secret-drop live
+    in ada-pi HEAD (pwa_serve; [ada-tools-desc-slim] Started. Plan: move fat per-tool prose into backend/tool_g;
+    [ada-dead-turn-guard] done: 3 guards landed in realtime_provi'
+- at: 2026-10-10 09:36
+  from: devin
+  text: 'picked up (attempt 2). Root cause of attempt-1 failure found: dependency card ada-memory-injection-scan
+    merged to a different repo — backend/memory_write_guard.py exists in NO ada-pi branch; the code is stranded
+    uncommitted on the edit-point checkout. Recreating the guard module per that card''s spec, then staging: vault
+    pending/ dir (~/.local/share/ada/memory-pending), scan-then-stage in ada_remember/guest/vocab, scripts/ada/memory-pending.py
+    approve/reject as the respond surface + events.md dig'
+claim:
+  session: 20261010-091611-where-ada-pi-repo-tool-runner-
+  since: 2026-10-10 09:16

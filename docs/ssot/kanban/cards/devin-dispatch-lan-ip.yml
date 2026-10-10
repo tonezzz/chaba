@@ -3,10 +3,10 @@ title: devin dispatch SSHes to LAN IP 192.168.2.67 — dead when host off-LAN or
 brief: 'Session 38b18589b0 (2026-10-07): devin dispatch failed twice with "ssh: connect to host 192.168.2.67 port
   22: Connection timed out" during the tony-dell outage. The dispatch target should be the tailnet hostname (tony-dell.taila0626a.ts.net),
   not the LAN address — tailnet survives LAN partitioning and is the canonical path per ssot home inventory.'
-column: backlog
+column: done
 priority: medium
 program: ada-tools
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:57
 tags:
 - devin-dispatch
 - network
@@ -24,7 +24,98 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 09:16
+  from: idc02
+  text: claimed
+- at: 2026-10-10 09:17
+  from: chaba
+  text: started devin-task-20261010-091714-devin-dispatch-sshes-to-lan-ip on idc02 (dispatch)
+- at: 2026-10-10 09:26
+  from: devin
+  text: 'working — live-verified from idc02+idc03: ssh 192.168.2.67 times out NOW while ssh tony-dell (tailnet 100.68.142.13)
+    works; RunSSH=false on dell so the 09-24 tailscaled-ssh landmine is gone. Flipping chaba-side EVENT_SSH defaults
+    to tailnet, correcting runbook/learning, filing ada-pi card for ADA_DEVIN_DISPATCH_HOST.'
+- at: 2026-10-10 09:33
+  from: devin
+  text: 'done (chaba half). Verified live: LAN IP dead from idc02+idc03 right now, tailnet `tony-dell` works; RunSSH=false
+    on dell so the 09-24 tailscaled-ssh rule was stale. Flipped 7 script defaults (EVENT_SSH etc.) to tailnet, corrected
+    runbook+learning+job docs, job doc at docs/ssot/jobs/infrastructure/2026-10-10-dispatch-ssh-tailnet.yml. Filed
+    sibling card ada-dispatch-tailnet-target (repo ada-pi, queued) for ADA_DEVIN_DISPATCH_HOST — the actual Ada
+    dispatch call lives in that repo.'
+- at: 2026-10-10 09:35
+  from: idc02
+  text: 'finished (ok): exit=0 patch-outcome-20261010-091714-devin-dispatch-sshes-to-lan-ip.md` and the card has
+    the full comms trail. | devin-t'
+- at: 2026-10-10 09:35
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:35
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 09:35
+  from: chaba
+  text: auto-merged b6d0b394 (dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip) → origin/master
+- at: 2026-10-10 09:36
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:37
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:38
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:40
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:41
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:42
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:43
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:44
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:45
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:47
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:48
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:49
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:49
+  from: tony
+  text: closed by tony
+- at: 2026-10-10 09:50
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:53
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:54
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:56
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
+- at: 2026-10-10 09:57
+  from: chaba
+  text: pushed dispatch/20261010-091714-devin-dispatch-sshes-to-lan-ip to origin
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 patch-outcome-20261010-091714-devin-dispatch-sshes-to-lan-ip.md` and the card has the full comms
+    trail. | devin-task-20261010-091714-devin-dispatch-sshes-to-lan-ip.service: Consumed 34.412s CPU time, 101.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim: {}

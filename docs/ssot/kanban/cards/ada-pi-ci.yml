@@ -10,7 +10,7 @@ note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2
   the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
   catches it at push, the gate catches what CI missed.'
 help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:44
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -18,7 +18,23 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 09:44
+  from: chaba
+  text: dispatched 20261010-094410-ada-pi-ci-lint-unit-tests-scen on ada-pi
+- at: 2026-10-10 09:44
+  from: chaba
+  text: 'primer injected 8 lesson(s): "test_merge_sweep fixture relied on global git identity — tony-dell has none
+    (re; [ada-deploy-gate-tests] primer injected 8 lesson(s): "test_merge_sweep fixture r; [report-bounded-surfaces]
+    merge-sweep: landing devin-task-20261009-195511-1-scri; [ada-phantom-card-claims] verified closed: dispatch
+    push failed on mn01 (no GH c; [ada-tools-desc-slim] Started. Plan: move fat per-tool prose into backend/tool_g;
+    [ha-fabric-cms-report] STANDARD PROCEDURE (structured CMS rep'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-094410-ada-pi-ci-lint-unit-tests-scen
+claim:
+  session: 20261010-094410-ada-pi-ci-lint-unit-tests-scen
+  since: 2026-10-10 09:44

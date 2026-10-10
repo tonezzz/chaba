@@ -2,7 +2,7 @@ id: ada-tool-retry-storm
 title: Retry storms on failing tools — tasks ×11 and calendar_read ×5 in seconds
 brief: 'Audit 2026-10-09: on CalendarAuthError the model re-issued tasks action=list ~11 times in 9s (16:31:03–16:31:12
   ICT) and calendar_read 5 times in 9s (16:32:09–16:32:18). Burns quota, adds dead air, never succeeds.'
-column: backlog
+column: doing
 review_kind: verify
 priority: medium
 kind: bugfix
@@ -27,10 +27,21 @@ spec: 'Add a per-session circuit breaker in ada-pi''s tool runner: if the same t
   '
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: ada-pi
+  runner: tony-omen
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
-updated: 2026-10-10 08:03
+- at: 2026-10-10 09:16
+  from: tony-omen
+  text: claimed
+- at: 2026-10-10 09:16
+  from: chaba
+  text: started devin-task-20261010-091644-add-a-per-session-circuit-brea on tony-omen (dispatch)
+- at: 2026-10-10 09:28
+  from: devin
+  text: 'design settled: per-session storm breaker in tool_runner — (scope,tool,error_class) fails x2 in window
+    -> open, synthesized CircuitOpen result, half-open after cooldown. Implementing now.'
+updated: 2026-10-10 09:28

@@ -1,0 +1,21 @@
+id: tony-ha-usb-probe-loop
+title: tony-ha "No compatible devices at 2-1" USB probe loop — 9.3k severe/day
+column: backlog
+priority: medium
+program: chaba-ci
+area: ops
+note: 'logs-auto-tony-dell-severe-spike diag — tony-ha repeats No compatible devices at 2-1; a configured USB device/integration probing a path with nothing attached.'
+action:
+  type: dispatch
+  status: todo
+spec: |
+  Find the integration owning the 2-1 USB probe on tony-ha
+    (journalctl -u ha / HA logs for the exact source — likely a serial/zigbee/
+    zwave dongle config pointing at a stale /dev path). Either re-point it to
+    the real device path or disable the integration entry. Done-when the log
+    line stops recurring.
+comms:
+- at: 2026-10-10 09:52
+  from: devin
+  text: 'filed from logs-auto diagnosis — see parent incident card for evidence'
+claim: {}

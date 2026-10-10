@@ -9,7 +9,7 @@ brief: '2026-10-09 (found while fixing fix-scenario-schedule-collision): ada-sce
   hang per scenario (e.g. vcast screen/service absent) exhausts the unit cap silently. Note ''last run'' evidence:
   preflight-bench passes all gates (ada up, :8002 listening, embed-probe up, no lock) so the hang is inside the
   run, not startup.'
-column: review
+column: doing
 review_kind: verify
 priority: high
 kind: bug
@@ -33,15 +33,14 @@ spec: "Reproduce / diagnose:\n  ssh idc03 'journalctl --user -u ada-scenario-cas
   \ root cause is identified and\nfixed/acked.\n"
 action:
   type: dispatch
-  status: done
+  status: running
   repo: ada-pi
   result: 20261009-193531-reproduce-diagnose-ssh-idc03-j finished (inactive) — see `devin-dispatch logs 20261009-193531-reproduce-diagnose-ssh-idc03-j`
   sweep:
     session_gone: 2026-10-09 18:33
-  runner: tony-dell
+    stale_running: 2026-10-10 09:48
   attempts: 1
-  task_id: 20261009-193531-reproduce-diagnose-ssh-idc03-j
-  verified: true
+  runner: idc03
 comms:
 - at: 2026-10-09 17:59
   from: chaba
@@ -181,7 +180,23 @@ comms:
 - at: 2026-10-10 07:28
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
-updated: 2026-10-10 07:28
+- at: 2026-10-10 09:43
+  from: tony
+  text: queued for processing
+- at: 2026-10-10 09:44
+  from: idc03
+  text: claimed
+- at: 2026-10-10 09:44
+  from: chaba
+  text: started devin-task-20261010-094439-reproduce-diagnose-ssh-idc03-j on idc03 (dispatch)
+- at: 2026-10-10 09:47
+  from: devin
+  text: 'dispatch 3 on idc03: checking last night 02:00 run journal + whether deploy/budget answer landed'
+- at: 2026-10-10 09:48
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-175902-reproduce-diagnose-ssh-idc03-j no longer active on idc03 but card
+    still says running — sweeping its branch'
+updated: 2026-10-10 09:48
 requests:
 - id: tony-dell-side-needed-no-ssh-from-idc03-eb011b
   ask: 'tony-dell side needed (no ssh from idc03): (1) add strip: /apps/gev-cmd to gev-cmd route in chaba docs/ssot/infrastructure/ssot.routes.yml,
@@ -219,4 +234,3 @@ requests:
   answer: deploy-and-budget — Deploy + budget pin
 claim:
   since: 2026-10-09 19:35
-awaiting_action: true

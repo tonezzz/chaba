@@ -2,7 +2,7 @@ id: dispatch-priority-order
 title: Priority-aware dispatch — queued cards claim high → medium → oldest, not unordered
 brief: 'Cards carry priority: but nothing enforces it at claim time — runners drain the queue in whatever order
   /cards returns. An urgent card can sit behind parked work. Make claim order priority-aware.'
-column: doing
+column: review
 priority: medium
 program: chaba-ci
 area: dispatch
@@ -18,20 +18,22 @@ spec: "1. runner-agent claim loop: sort claimable queued cards by\n   priority r
   \ high.\n"
 help: Keep it a pure sort — do not add preemption (running cards never get interrupted). Same ordering must be shared
   between the two claim paths (kanban-dispatch local drain + runner-agent remote claim) — extract a helper if needed.
-updated: 2026-10-10 08:49
+updated: 2026-10-10 09:56
 action:
   type: dispatch
-  status: queued
+  status: done
   button: ▶ Wire priority ordering
   repo: chaba
-  result: 'exit=0 rocess exited, code=exited, status=1/FAILURE | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service:
-    Failed with result ''exit-code''. | devin-task-20261009-074045-1-runner-agent-claim-loop-sort.service: Consumed
-    1.317s CPU time.'
-  verified: false
+  result: 'exit=0 (remote hosts need both a redeployed runner-agent AND a pulled chaba checkout before ordering
+    applies). | devin-task-20261010-093409-1-runner-agent-claim-loop-sort.service: Consumed 38.481s CPU time, 178.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
   sweep:
     stale_running: 2026-10-09 17:48
     empty_session: 2026-10-09 17:48
+    session_gone: 2026-10-10 09:49
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  runner: idc02
 comms:
 - at: 2026-10-09 07:40
   from: tony
@@ -76,5 +78,82 @@ comms:
   from: chaba
   text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
     unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-10 09:17
+  from: idc03
+  text: claimed
+- at: 2026-10-10 09:17
+  from: chaba
+  text: started devin-task-20261010-091720-1-runner-agent-claim-loop-sort on idc03 (dispatch)
+- at: 2026-10-10 09:19
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-10 09:19
+  from: idc03
+  text: claimed
+- at: 2026-10-10 09:19
+  from: chaba
+  text: started devin-task-20261010-091949-1-runner-agent-claim-loop-sort on idc03 (dispatch)
+- at: 2026-10-10 09:22
+  from: devin
+  text: session up — implementing priority-ranked claim order + starvation guard in runner-agent.py and kanban-dispatch.py,
+    plus tests + SSOT docs
+- at: 2026-10-10 09:25
+  from: devin
+  text: 'done: both claim paths now sort queued cards (priority rank high>medium>normal>low, oldest-updated first)
+    + 12h starvation guard (KANBAN_STARVE_HOURS / RUNNER_STARVE_HOURS, 0=off). Rank mirrors render-board intra-column
+    order — note: spec''s "low>absent" conflicted with its own acceptance + board convention; absent=normal ranks
+    between medium and low. 12 new tests in tests/board/test_claim_order.py incl. cross-module parity; tests.board
+    91 green. SSOT: concurrency.claim_order + jobs runbook. Comm'
+- at: 2026-10-10 09:28
+  from: devin
+  text: session up on idc03 worktree — implementing claim_sort_key (aged-first, then high>medium>normal>low, then
+    oldest updated) in runner-agent.py + kanban-dispatch.py, plus tests/board/test_claim_order.py and ssot.kanban.yml
+    concurrency docs
+- at: 2026-10-10 09:33
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-10 09:34
+  from: idc02
+  text: claimed
+- at: 2026-10-10 09:34
+  from: chaba
+  text: started devin-task-20261010-093409-1-runner-agent-claim-loop-sort on idc02 (dispatch)
+- at: 2026-10-10 09:42
+  from: devin
+  text: 'DONE: claim_sort_key (aged-first tier, then high>medium>normal>low, then oldest updated) wired into runner-agent
+    claim_pass + kanban-dispatch load_board; KANBAN_/RUNNER_STARVATION_HOURS=12 default. Acceptance verified: [low
+    old, high new, normal oldest] drains high->normal->low; 13h low beats fresh high; labels/caps/blocked_by still
+    gate. tests/board/test_claim_order.py 21 tests OK, suite green. Committed ad3abeeb on session branch (no push).
+    runners get it on next runner-agent.py redeploy.'
+- at: 2026-10-10 09:44
+  from: devin
+  text: session up on idc02 — implementing shared claim-order helper in dispatch_repos.py (priority rank + starvation
+    guard), wiring it into runner-agent claim_pass and kanban-dispatch drain, plus tests/board coverage and ssot.kanban.yml
+    docs
+- at: 2026-10-10 09:49
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261009-074045-1-runner-agent-claim-loop-sort on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-10 09:54
+  from: devin
+  text: 'done on branch dispatch/20261010-093409-1-runner-agent-claim-loop-sort (b031c146): shared claim order in
+    dispatch_repos.py — starved-first (>=12h, KANBAN_/RUNNER_STARVE_HOURS) -> rank high>medium>absent>low -> oldest
+    updated — wired into both claim paths; 11 new tests pass, 90-test board suite green; SSOT concurrency.claim_order
+    documented + jobs runbook'
+- at: 2026-10-10 09:56
+  from: idc02
+  text: 'finished (ok): exit=0 (remote hosts need both a redeployed runner-agent AND a pulled chaba checkout before
+    ordering applies). | devin-t'
+- at: 2026-10-10 09:56
+  from: chaba
+  text: pushed dispatch/20261010-093409-1-runner-agent-claim-loop-sort to origin
+- at: 2026-10-10 09:56
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 09:56
+  from: chaba
+  text: auto-merged ce599f93 (dispatch/20261010-093409-1-runner-agent-claim-loop-sort) → origin/master
 claim: {}
 review_kind: verify

@@ -1,0 +1,43 @@
+id: michael-dev-offlan-mirrors
+title: michael-dev replicas on off-LAN hosts spam mirror timeouts — keep or gate?
+column: backlog
+priority: medium
+program: chaba-ci
+area: placement
+note: idc03 (1.5k/day) + tony-omen (2.1k/day) severe = michael-dev instances whose mha_mirror_* REST sensors + template
+  mirrors can't reach http://michael-ha:8123 over LAN cleanly → timeouts + UndefinedError spam. Same class on both
+  hosts.
+action:
+  type: dispatch
+  status: todo
+comms:
+- at: 2026-10-10 09:51
+  from: devin
+  text: decision needed from Tony — options attached. Per placement policy, LAN-bound surfaces belong on tony-dell;
+    these replicas are half-LAN-bound (mirrors need michael-ha reach).
+- at: 2026-10-10 09:54
+  from: tony
+  text: 'answered mirror-replica-policy: gate-mirrors — ★ keep replicas — gate mha_mirror_* sensors behind a reachability
+    check (fail quiet, retry slow)'
+- at: 2026-10-10 09:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: mirror-replica-policy
+  ask: michael-dev on idc03/omen can't reach michael-ha LAN mirrors — what should replicas do?
+  status: answered
+  suggested: gate-mirrors
+  at: 2026-10-10 09:51
+  from: devin
+  options:
+  - id: gate-mirrors
+    label: ★ keep replicas — gate mha_mirror_* sensors behind a reachability check (fail quiet, retry slow)
+  - id: drop-mirrors
+    label: keep replicas, disable the mirror sensors on off-LAN hosts entirely
+  - id: lan-only
+    label: confine michael-dev to LAN hosts (dell/omen only if omen reaches michael-ha)
+  answer: gate-mirrors — ★ keep replicas — gate mha_mirror_* sensors behind a reachability check (fail quiet, retry
+    slow)
+claim: {}
+awaiting_action: true
+updated: 2026-10-10 09:54

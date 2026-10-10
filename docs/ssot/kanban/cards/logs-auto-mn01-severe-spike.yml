@@ -2,7 +2,7 @@ id: logs-auto-mn01-severe-spike
 title: logs `mn01` 185 severe/24h
 brief: 'The log digest flagged something worth a look: logs `mn01` 185 severe/24h. Read the note, then fix it or
   close the card.'
-column: review
+column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
@@ -11,6 +11,11 @@ note: 185 severe lines (oom/panic/failed) in the last 24h (limit 40)
 help: Read the digest's repeat-offender lines for mn01; this is a real incident signal, not pipeline breakage.
 updated: 2026-10-09 18:09
 comms:
+- at: 2026-10-10 09:51
+  from: devin
+  text: 'closed as noise-class: re-measured 60/24h (marginal over 40 limit), 57/60 = xmeye-vms
+    wine/x11vnc stderr churn — same stderr-scoring artifact as mddb. Tuning note carried into
+    card mddb-stderr-severity-artifact (fix B covers the digest side).'
 - at: 2026-10-09 17:44
   from: devin
   text: 'RE-MEASURED: 60 severe/24h (limit 40) — marginal, just over threshold. Worth one look; not a fire.'

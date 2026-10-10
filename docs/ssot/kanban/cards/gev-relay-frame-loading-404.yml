@@ -4,10 +4,10 @@ brief: 'Session e05cdaa7ab (2026-10-08): cast_to_screen nav to /apps/gev/ succee
   then gev_command flyTo immediately returned "gev command relay: HTTP Error 404: Not Found". The client hadn''t
   finished connecting. The tool usage hint says "wait ~10s" but Ada can''t measure that — the relay should queue
   the command, or return a retryable error that says "client still loading, retry in N s".'
-column: backlog
+column: done
 priority: medium
 program: gev
-updated: 2026-10-10 09:35
+updated: 2026-10-10 09:49
 tags:
 - gev
 - relay
@@ -30,7 +30,75 @@ comms:
     deps-free) = 13 checks pass. Needs container rebuild+restart on tony-dell (approval-gated). Follow-up:
     ada-pi gev_command "wait ~10s" hint can be relaxed once live. Job record:
     docs/ssot/jobs/gev/2026-10-10-gev-relay-frame-loading-grace.yml'
+- at: 2026-10-10 09:17
+  from: idc02
+  text: claimed
+- at: 2026-10-10 09:17
+  from: chaba
+  text: started devin-task-20261010-091732-gev-command-404s-when-gev-clie on idc02 (dispatch)
+- at: 2026-10-10 09:17
+  from: devin
+  text: Investigating gev_command 404 during frame-loading; starting codebase exploration
+- at: 2026-10-10 09:23
+  from: devin
+  text: 'DONE committed 9d5a04b2 on dispatch branch (not pushed/deployed). bridge.py: screen-targeted /command now
+    waits GEV_REMOTE_GRACE_S (12s) for the remote to register during frame-loading, else returns {ok:false, retryable:true,
+    retry_after_s:5} "client may still be loading; retry in ~Ns". bridge-check.py 13/13 pass. Checked-in Caddyfile
+    synced to handle_path (strip was already live). Needs gev-gemini rebuild+restart on tony-dell (approval). Job
+    record in docs/ssot/jobs/gev/.'
+- at: 2026-10-10 09:24
+  from: idc02
+  text: 'finished (ok): exit=0 emini container rebuild/restart on tony-dell is noted as needing approval before
+    the behavior goes live. | devin-'
+- at: 2026-10-10 09:24
+  from: chaba
+  text: 'session-end checkpoint 8ced6ff3: 1 leftover file(s) committed'
+- at: 2026-10-10 09:24
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 09:24
+  from: chaba
+  text: auto-merged c61ed3d1 (dispatch/20261010-091732-gev-command-404s-when-gev-clie) → origin/master
+- at: 2026-10-10 09:25
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:26
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:27
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:28
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:29
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:31
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:32
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:33
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:34
+  from: chaba
+  text: pushed dispatch/20261010-091732-gev-command-404s-when-gev-clie to origin
+- at: 2026-10-10 09:49
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: chaba
+  runner: idc02
+  result: 'exit=0 emini container rebuild/restart on tony-dell is noted as needing approval before the behavior
+    goes live. | devin-task-20261010-091732-gev-command-404s-when-gev-clie.service: Consumed 19.729s CPU time, 69.7M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim: {}

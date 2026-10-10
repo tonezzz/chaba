@@ -3,7 +3,7 @@ title: deploy-ada.sh pre-flight — run tests before restarting services
 brief: Deploy gate should refuse to restart on a broken tree. Today deploy-ada.sh ff-merges and restarts blind —
   a rebase resolution that silently dropped a 958-line tools.d rewrite only surfaced because its unit test happened
   to fail locally afterward (2026-10-08 incident). Waiting in backlog.
-column: backlog
+column: review
 metric: deploy-ada.sh exits non-zero before any restart when tool-lint or pytest fails
 verify: break a tool deliberately on a branch -> deploy-ada.sh refuses; clean tree deploys normally
 note: 'Add to deploy-ada.sh between merge and restart: (1) python3 scripts/tool-lint.py (contract check, already
@@ -11,7 +11,7 @@ note: 'Add to deploy-ada.sh between merge and restart: (1) python3 scripts/tool-
   Also add a mass-delete warn: when the merged diff drops >50%% of lines in backend/tools.d/ or backend/tool_runner/
   file without touching its scenario, pause and require DEPLOY_FORCE=1 — catches inverted rebase resolutions.'
 help: ~/.local/bin/deploy-ada.sh on idc03; scripts/tool-lint.py; tests/test_track_device.py
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:48
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -20,7 +20,57 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 09:16
+  from: chaba
+  text: dispatched 20261010-091603-deploy-ada-sh-pre-flight-run-t on ada-pi
+- at: 2026-10-10 09:16
+  from: chaba
+  text: 'primer injected 8 lesson(s): "test_merge_sweep fixture relied on global git identity — tony-dell has none
+    (re; [ada-phantom-card-claims] verified closed: dispatch push failed on mn01 (no GH c; [ada-scenario-casting-hang]
+    test gate failed — merge held: tests/test_calendar_p; [ada-acl-explain] test gate failed — merge held: tests/test_calendar_providers.p;
+    [ada-alias-telemetry] test gate failed — merge held: tests/test_calendar_provide; [ada-dead-surface-metric]
+    test gate failed — merge held: test'
+- at: 2026-10-10 09:23
+  from: devin
+  text: 'attempt 2 running. deploy-ada.sh is NOT tracked in repo (lives at ~/.local/bin on hosts, outside worktree
+    scope) — plan: vendor canonical script into scripts/deploy-ada.sh implementing documented flow (snapshot->ff-merge->restart->verify)
+    + the 3 gates; AGENTS.md updated to install from repo.'
+- at: 2026-10-10 09:43
+  from: devin
+  text: 'DONE (e23027d). deploy-ada.sh was untracked (~/.local/bin only, outside worktree — likely why attempt 1
+    died); vendored canonical copy to scripts/deploy-ada.sh with the documented flow + 3 gates between merge and
+    restart: (a) mass-delete warn — merged diff shrinking a backend/tools.d|tool_runner file past half w/o touching
+    a covering scenario pauses until DEPLOY_FORCE=1 (warn persists in .git so reruns cant slip past); (b) tool-lint;
+    (c) .venv pytest -x -q. 19/19 scratch-harness checks pass. AGE'
+- at: 2026-10-10 09:44
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 09:44
+  from: chaba
+  text: 'session-end checkpoint 799609bb: 1 leftover file(s) committed'
+- at: 2026-10-10 09:44
+  from: chaba
+  text: pushed dispatch/20261010-091603-deploy-ada-sh-pre-flight-run-t to origin
+- at: 2026-10-10 09:44
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-10 09:44
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261010-091603-deploy-ada-sh-pre-flight-run-t not in origin/main
+    — close will block until merged'
+- at: 2026-10-10 09:48
+  from: chaba
+  text: 'merge-sweep: merged 35fb5bfb (dispatch/20261010-091603-deploy-ada-sh-pre-flight-run-t from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-091603-deploy-ada-sh-pre-flight-run-t.md)'
 action:
   type: dispatch
-  status: queued
+  status: done
   repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-091603-deploy-ada-sh-pre-flight-run-t
+  result: 20261010-091603-deploy-ada-sh-pre-flight-run-t finished (inactive) — see `devin-dispatch logs 20261010-091603-deploy-ada-sh-pre-flight-run-t`
+  verified: true
+claim:
+  since: 2026-10-10 09:16
+review_kind: verify

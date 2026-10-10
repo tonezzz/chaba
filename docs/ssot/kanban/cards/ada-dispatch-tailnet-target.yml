@@ -1,40 +1,49 @@
 id: ada-dispatch-tailnet-target
 title: Ada devin_dispatch default host — flip ADA_DEVIN_DISPATCH_HOST from LAN IP to tailnet `tony-dell`
 column: backlog
-updated: 2026-10-10 09:40
+updated: 2026-10-10 09:56
 priority: high
 program: ada-tools
 tags:
 - devin-dispatch
 - network
 - ada-pi
-spec: 'In ada-pi, the Ada -> Devin dispatch client still SSHes the tony-dell LAN IP.
-  Change the default dispatch SSH target to the tailnet name `tony-dell`:
-  - backend/devin_dispatch.py: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67 -> tony-dell
-    (everywhere the LAN IP is used for ssh — dispatch start/status/followup/logs
-    commands all go through it)
-  - tools.d/devin.py (and any declaration/doc strings): same target + description
-  Rationale (verified live 2026-10-10, card devin-dispatch-lan-ip): from idc03 —
-  Ada''s current home — `ssh 192.168.2.67` times out while `ssh -o BatchMode=yes
-  tony-dell` succeeds. On tony-dell `tailscale debug prefs` shows RunSSH:false:
-  tailscaled no longer intercepts :22, so the 2026-09-24 "LAN IP is mandatory"
-  rule is stale. ssh configs already map `tony-dell` -> 100.68.142.13 with the
-  right IdentityFile on mn01/idc03/tony-omen; MagicDNS covers the rest.
-  Keep ADA_DEVIN_DISPATCH_HOST env override working. If any code comment cites
-  the tailscaled-ssh re-auth rationale, correct it (superseded — see chaba
-  docs/ssot/jobs/infrastructure/2026-10-10-dispatch-ssh-tailnet.yml).
-  Verify: `ssh -o BatchMode=yes -o ConnectTimeout=6 tony-dell ~/.local/bin/devin-dispatch status`
-  works from the Ada backend host after the change.'
+spec: 'In ada-pi, the Ada -> Devin dispatch client still SSHes the tony-dell LAN IP. Change the default dispatch
+  SSH target to the tailnet name `tony-dell`: - backend/devin_dispatch.py: ADA_DEVIN_DISPATCH_HOST default 192.168.2.67
+  -> tony-dell (everywhere the LAN IP is used for ssh — dispatch start/status/followup/logs commands all go through
+  it) - tools.d/devin.py (and any declaration/doc strings): same target + description Rationale (verified live 2026-10-10,
+  card devin-dispatch-lan-ip): from idc03 — Ada''s current home — `ssh 192.168.2.67` times out while `ssh -o BatchMode=yes
+  tony-dell` succeeds. On tony-dell `tailscale debug prefs` shows RunSSH:false: tailscaled no longer intercepts
+  :22, so the 2026-09-24 "LAN IP is mandatory" rule is stale. ssh configs already map `tony-dell` -> 100.68.142.13
+  with the right IdentityFile on mn01/idc03/tony-omen; MagicDNS covers the rest. Keep ADA_DEVIN_DISPATCH_HOST env
+  override working. If any code comment cites the tailscaled-ssh re-auth rationale, correct it (superseded — see
+  chaba docs/ssot/jobs/infrastructure/2026-10-10-dispatch-ssh-tailnet.yml). Verify: `ssh -o BatchMode=yes -o ConnectTimeout=6
+  tony-dell ~/.local/bin/devin-dispatch status` works from the Ada backend host after the change.'
 action:
   type: dispatch
   repo: ada-pi
-  status: queued
-note: 'Sibling of devin-dispatch-lan-ip — the chaba half (EVENT_SSH defaults,
-  runbook, learning doc) landed in that dispatch; the client-side default lives
-  in this repo. Blocks reliable voice dispatch: every Ada "hand this to Devin"
-  silently failed whenever dell LAN was partitioned (2026-10-07, 2026-10-09).'
+  status: running
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-095613-in-ada-pi-the-ada-devin-dispat
+note: 'Sibling of devin-dispatch-lan-ip — the chaba half (EVENT_SSH defaults, runbook, learning doc) landed in that
+  dispatch; the client-side default lives in this repo. Blocks reliable voice dispatch: every Ada "hand this to
+  Devin" silently failed whenever dell LAN was partitioned (2026-10-07, 2026-10-09).'
 comms:
 - at: 2026-10-10 09:40
   from: devin
-  text: filed by the devin-dispatch-lan-ip session (idc02 worktree) — chaba-side
-    fix landed there; this card carries the ada-pi client half with live evidence
+  text: filed by the devin-dispatch-lan-ip session (idc02 worktree) — chaba-side fix landed there; this card carries
+    the ada-pi client half with live evidence
+- at: 2026-10-10 09:56
+  from: chaba
+  text: dispatched 20261010-095613-in-ada-pi-the-ada-devin-dispat on ada-pi
+- at: 2026-10-10 09:56
+  from: chaba
+  text: 'primer injected 8 lesson(s): [devin-dispatch-lan-ip] 2026-10-09 recurrence: connection refused (not timeout
+    t; [logs-dell-auth] Self-healed — omen->dell tailscale ssh works again (dell-ssh-ok; runbook docs/kb/task-remmina-tony-omen-fix-2026-07-21.md:
+    Remmina RDP to tony-om; [dispatch-priority-order] FALSE-VERIFIED by merge-sweep: branch "already in orig; runbook
+    docs/kb/auto-chaba-1788266704105.md: Proved end-to-end remote task dispa; runbook docs/kb/host-reboot-verification.md:
+    Host Reboot Veri'
+claim:
+  session: 20261010-095613-in-ada-pi-the-ada-devin-dispat
+  since: 2026-10-10 09:56

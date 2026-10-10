@@ -3,10 +3,10 @@ title: Confirm tokens expire between dispatch retries — double-prompt churn
 brief: 'Sessions 38b18589b0 + 7a74536b32: user confirmed a devin dispatch, the downstream call failed on infra (SSH
   timeout), and on retry the confirm_token was already expired — forcing a second voice confirmation for the same
   request. "โทเค็นหมดอายุ อีกแล้ว" is pure friction; a downstream failure is not a reason to re-ask.'
-column: backlog
+column: doing
 priority: medium
 program: ada-tools
-updated: 2026-10-10 08:03
+updated: 2026-10-10 09:48
 tags:
 - confirm-gate
 - ux
@@ -21,7 +21,34 @@ comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 09:16
+  from: idc03
+  text: claimed
+- at: 2026-10-10 09:16
+  from: chaba
+  text: started devin-task-20261010-091652-confirm-tokens-expire-between- on idc03 (dispatch)
+- at: 2026-10-10 09:25
+  from: devin
+  text: investigating — confirm gate lives in ada-pi tool_runner; fix = re-issue bound token in infra-class error
+    payloads (option B)
+- at: 2026-10-10 09:34
+  from: devin
+  text: 'fixed in ada-pi worktree dispatch-wt-20261010-091652-confirm-token-ada (branch dispatch/20261010-091652-confirm-token-retry-expiry):
+    _rearm_confirm_on_infra_failure mints a fresh bound token inside ok:false results when the error is transport-class
+    — retry executes without re-asking; semantic failures/refusals never re-arm. 273 unit tests pass.'
+- at: 2026-10-10 09:48
+  from: chaba
+  text: 'merge-sweep: devin-task-20261010-091652-confirm-tokens-expire-between- no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-10 09:48
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261010-091652-confirm-tokens-expire-between- on idc03 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
+  runner: idc03
+  sweep:
+    stale_running: 2026-10-10 09:48
+    dirty: 1
