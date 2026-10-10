@@ -63,7 +63,7 @@ HOST = os.uname().nodename
 MAX_BEHIND = int(os.environ.get("RUNNER_FLEET_MAX_BEHIND", "200"))
 ESCALATE_H = 12
 SSH_TIMEOUT = 120          # probe includes one git fetch on the host
-FALLBACK_HOSTS = ["tony-dell", "tony-omen", "idc01", "idc02", "idc03",
+FALLBACK_HOSTS = ["tony-dell", "tony-omen", "idc02", "idc03",
                   "mn01"]
 
 # repo-side reference copies; installed drift is checked against these

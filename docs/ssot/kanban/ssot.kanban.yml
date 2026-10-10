@@ -410,18 +410,17 @@ execution:
                cap: pin cards via action.host or match labels —
                unpinned queued cards already flow to any host under cap
                and under its load gate."
-    runner_fleet: "as of 2026-10-09 — tony-dell: kanban-dispatch local cap 3
+    runner_fleet: "as of 2026-10-10 — tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
-               +container+script); idc01: cap 3 gate 0.9 labels
-               always-on,cold-batch,high-mem (dispatch+container+script —
-               devin CLI + credentials.toml + devin-dispatch installed
-               2026-10-08); idc02: cap 3 labels ssd,always-on (dispatch
+               +container+script); idc02: cap 3 labels ssd,always-on (dispatch
                +container+script); idc03: cap 3 gate 0.85 labels
                ssd,always-on (dispatch+container+script); mn01: cap 1
                labels low-mem,edge (dispatch+container+script — devin CLI
                IS present; RAM-tight so cap stays 1). Unpinned dispatch
                cards land on any dispatch-capable host. Nest lanes:
-               micro-training cold batch -> idc01, bench cadence/corpus ->
+               micro-training cold batch -> idc02 (idc01 RETIRED — removed
+               from fleet 2026-10-10; runner-agent.timer stopped+disabled after
+               stranded dispatches), bench cadence/corpus ->
                idc02/idc03, GPU FT/LoRA -> omen (labels)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
                a runner unreachable via ssh for KANBAN_REQUEUE_MISSES
