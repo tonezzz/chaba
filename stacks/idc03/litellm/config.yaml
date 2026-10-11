@@ -1,0 +1,141 @@
+# LiteLLM proxy config — single LLM API point on idc03.
+# Routing table SSOT: docs/ssot/infrastructure/ssot.llm-gateway.yml
+# Env (all via ~/.config/secrets on idc03, never committed):
+#   GEMINI_API_KEY_PAID / GEMINI_API_KEY_FREE  (gemini-keys.env)
+#   OPENROUTER_API_KEY                          (mddb-gemini.env)
+#   LITELLM_MASTER_KEY / DATABASE_URL           (litellm.env)
+
+model_list:
+  # ── real Gemini names ────────────────────────────────────────────
+  # Ada calls these unchanged over /v1beta (GOOGLE_GEMINI_BASE_URL) or
+  # /v1 — the gateway owns provider choice + fallback.
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: gemini-2.5-flash-free
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY_FREE
+  - model_name: or-gemini-2.5-flash
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  - model_name: gemini-2.5-flash-lite
+    litellm_params:
+      model: gemini/gemini-2.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: gemini-2.5-flash-lite-free
+    litellm_params:
+      model: gemini/gemini-2.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_FREE
+  - model_name: or-gemini-2.5-flash-lite
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash-lite
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  - model_name: gemini-3.5-flash-lite
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: gemini-3.5-flash-lite-free
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_FREE
+  - model_name: or-gemini-3.5-flash-lite
+    litellm_params:
+      model: openrouter/google/gemini-3.5-flash-lite
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  # ── local ollama (tailnet bind on idc03, host-net reachable) ─────
+  - model_name: ollama-llama3.2
+    litellm_params:
+      model: ollama_chat/llama3.2:3b
+      api_base: http://100.102.134.91:11434
+  - model_name: ollama-moondream
+    litellm_params:
+      model: ollama_chat/moondream
+      api_base: http://100.102.134.91:11434
+
+  # ── embeddings — gemini vector space ONLY ────────────────────────
+  # OR-Vertex and direct Gemini produce identical 768d vectors
+  # (cosine 1.000, verified by embed-bench). ollama/nomic-embed-text
+  # is a DIFFERENT space — never a silent fallback for retrieval.
+  - model_name: gemini-embedding-2
+    litellm_params:
+      model: gemini/gemini-embedding-2
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: or-gemini-embedding-2
+    litellm_params:
+      model: openrouter/google/gemini-embedding-2
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: ollama-nomic-embed
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: http://100.102.134.91:11434
+
+  # ── job classes (call these names; SSOT owns the chains) ─────────
+  - model_name: tool-call
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: summary
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: voice-aux
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: classify
+    litellm_params:
+      model: gemini/gemini-2.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: bench
+    litellm_params:
+      model: gemini/gemini-2.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: vision
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: embedding
+    litellm_params:
+      model: openrouter/google/gemini-embedding-2
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+router_settings:
+  # ordered fallbacks per deployed model_name — paid first, free-tier
+  # second, OpenRouter third, local ollama last for text-only classes.
+  fallbacks:
+    - gemini-2.5-flash: [gemini-2.5-flash-free, or-gemini-2.5-flash]
+    - tool-call: [gemini-2.5-flash-free, or-gemini-2.5-flash]
+    - gemini-3.5-flash-lite: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama3.2]
+    - summary: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama3.2]
+    - voice-aux: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama3.2]
+    - gemini-2.5-flash-lite: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, ollama-llama3.2]
+    - classify: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, ollama-llama3.2]
+    - bench: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, ollama-llama3.2]
+    - vision: [ollama-moondream]
+    - embedding: [gemini-embedding-2]
+    - gemini-embedding-2: [or-gemini-embedding-2]
+  allowed_fails: 2
+  cooldown_time: 60
+  num_retries: 1
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+
+litellm_settings:
+  drop_params: true
+  # proxy-wide spend cap — belt over the per-virtual-key budgets
+  max_budget: 50
+  budget_duration: 30d

@@ -1,0 +1,10 @@
+[Unit]
+Description=LiteLLM daily spend ledger — publish ada-cms-pages/llm-gateway-spend-ledger
+After=network-online.target litellm.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba
+EnvironmentFile=%h/.config/secrets/litellm-keys.env
+ExecStart=/usr/bin/python3 scripts/litellm/daily-ledger.py --publish
+TimeoutStartSec=300

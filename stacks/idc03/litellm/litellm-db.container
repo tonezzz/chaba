@@ -1,0 +1,24 @@
+[Unit]
+Description=Postgres for LiteLLM gateway (spend ledger + virtual keys)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/library/postgres:16-alpine
+ContainerName=litellm-db
+Network=host
+Volume=litellm-pgdata:/var/lib/postgresql/data
+EnvironmentFile=%h/.config/secrets/litellm.env
+Exec=postgres -c listen_addresses=127.0.0.1
+HealthCmd=pg_isready -U litellm -d litellm -h 127.0.0.1
+HealthInterval=15s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod=30s
+
+[Service]
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

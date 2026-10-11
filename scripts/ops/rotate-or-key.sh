@@ -89,6 +89,12 @@ ssh -o BatchMode=yes "$HOST_OMEN"  'systemctl --user restart ghostroute-watcher'
   && say "✓ restarted ghostroute-watcher (omen)"
 ssh -o BatchMode=yes "$HOST_IDC03" 'systemctl --user restart gemini-ollama-proxy' \
   && say "✓ restarted gemini-ollama-proxy (idc03)"
+# litellm mounts the same mddb-gemini.env for OPENROUTER_API_KEY
+if ssh -o BatchMode=yes "$HOST_IDC03" \
+     'systemctl --user is-active --quiet litellm'; then
+  ssh -o BatchMode=yes "$HOST_IDC03" 'systemctl --user restart litellm' \
+    && say "✓ restarted litellm (idc03)"
+fi
 # openclaw-gateway reads the key from sqlite at call time — restart only
 # if it instead sources an env file carrying the key:
 if ssh -o BatchMode=yes "$HOST_OMEN" \

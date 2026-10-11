@@ -87,7 +87,9 @@ def _load_key() -> str | None:
 
 
 def gemini_json(prompt: str, model: str, key: str) -> dict:
-    url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+    base = os.environ.get(
+        "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
+    url = (f"{base}/v1beta/models/"
            f"{model}:generateContent?key={key}")
     body = {
         "contents": [{"parts": [{"text": prompt}]}],

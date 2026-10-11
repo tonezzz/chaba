@@ -1,0 +1,27 @@
+[Unit]
+Description=LiteLLM gateway — single LLM API point (route, classify, benchmark, spend-cap)
+Wants=network-online.target
+After=network-online.target litellm-db.service
+Requires=litellm-db.service
+
+[Container]
+Image=ghcr.io/berriai/litellm:main-stable
+ContainerName=litellm
+Network=host
+Volume=%h/.config/litellm/config.yaml:/app/config.yaml:ro
+EnvironmentFile=%h/.config/secrets/litellm.env
+EnvironmentFile=%h/.config/secrets/gemini-keys.env
+EnvironmentFile=%h/.config/secrets/mddb-gemini.env
+Exec=--config /app/config.yaml --port 4000 --host 100.102.134.91 --num_workers 1
+HealthCmd=python -c "import urllib.request;urllib.request.urlopen('http://100.102.134.91:4000/health/liveliness',timeout=4)"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=90s
+
+[Service]
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
