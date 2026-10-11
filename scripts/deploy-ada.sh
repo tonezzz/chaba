@@ -31,7 +31,9 @@ host_config() {
     tony-dell) echo "chaba-guest.service|8014" ;;
     # idc03 = post-migration Ada home (idc01 retired 2026-10-05). Relays have
     # no HTTP port — their auth/status probe prints 000, which is expected.
-    idc03)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service,ada-dev.service,ada-line-relay.service,ada-tg-relay.service|8001,8002,8003,8005,," ;;
+    # ada-kk added 2026-10-11 (persona-tool-profiles): it was never in the
+    # restart list, so code pulls never reached the kk instance.
+    idc03)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service,ada-dev.service,ada-line-relay.service,ada-tg-relay.service,ada-kk.service|8001,8002,8003,8005,,,8007" ;;
   esac
 }
 
@@ -70,6 +72,15 @@ for host in "${hosts[@]}"; do
   if [[ "$remote_banks_sum" != "$local_banks_sum" ]]; then
     python3 "$script_dir/ada/render-memory-banks.py" --host "$host"
     force_restart="--restart"   # banks file changed — restart regardless of code drift
+  fi
+  # Per-persona tool profiles (card persona-tool-profiles): merge the
+  # managed ADA_INCLUDED/EXCLUDED_TOOLS block into each profiled
+  # instance's env file; drift forces a restart like a banks change.
+  if tp_out="$(python3 "$script_dir/ada/render-tool-profiles.py" --host "$host" --apply 2>&1)"; then
+    echo "$tp_out"
+    grep -q "UPDATED" <<< "$tp_out" && force_restart="--restart"
+  else
+    echo "warn: render-tool-profiles failed:" >&2; echo "$tp_out" >&2
   fi
   (
     flock -n 9 || { echo "FAIL: another deploy to $host holds the lock"; exit 1; }

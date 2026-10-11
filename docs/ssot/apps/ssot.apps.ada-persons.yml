@@ -58,6 +58,71 @@ persons:
     persona: {language: auto, tone: warm, verbosity: normal,
               formality: polite, proactiveness: normal}
     prefs_doc: person/kk/prefs
+    tools:
+      # Per-persona tool profile (card persona-tool-profiles). Rendered by
+      # scripts/ada/render-tool-profiles.py into a managed block of
+      # ~/.config/secrets/<env_file> on <host> at deploy; see
+      # tool_profiles: below for the field semantics. Keep-list only —
+      # every declared tool NOT under include: is stripped.
+      instance: kk
+      env_file: ada-kk.env
+      host: idc03
+      include:
+        - ada_memory_search
+        - ada_remember
+        - ada_forget
+        - ada_session_recall
+        - cms_read
+        - cms_publish_page
+        - cms_edit
+        - chat_send
+        - web_search
+        - ada_persona
+        - speaker_profiles
+        - voice_fx
+        - set_facial_expression
+        # card lists capture_frame — merged into vcast_snapshot (its
+        # declared seat; capture_frame lives on as a runner alias)
+        - vcast_snapshot
+        - vcast_gesture
+        - ada_market_quote
+        - ada_render_video
+      exclude:
+        # Explicit drop-list — Tony-lane lures + cross-lane data leak
+        # (Tony calendar/tasks on a member-tier session). Rendered as
+        # ADA_EXCLUDED_TOOLS alongside the allowlist; the deploy lint
+        # warns on any declared tool in NEITHER list, so merges/renames
+        # force a decision here instead of slipping through.
+        - calendar_read
+        - calendar_write
+        - plan_day
+        - tasks
+        - ada_resolve_action
+        - devin
+        - devin_read
+        - kanban
+        - docs
+        - drive
+        - yt
+        - cast_to_screen
+        - cctv_wall
+        - tv_action
+        - gev_command
+        - control_entity
+        - get_home_state
+        - home_search
+        - home_status
+        - home_history
+        - ha_confidence
+        - get_rk600_weather
+        - ada_camera_snapshot
+        - ada_look
+        - ada_track_device
+        - ada_member_keys
+        - ada_device_acl
+        - ada_enroll_speaker
+        - ada_ops
+        - percussion
 
   testo:
     label: Testo
@@ -108,6 +173,47 @@ persons:
     bank_write: null
     control: {domains: [light]}
     persona: {tone: warm, formality: polite, proactiveness: minimal}
+
+tool_profiles:
+  description: |
+    Per-persona tool surface (card persona-tool-profiles, 2026-10-11).
+    persons.<key>.tools declares which Gemini Live declarations that
+    person's dedicated instance may offer. ADA_EXCLUDED_TOOLS alone is a
+    denylist that rots — tool merges rename and add names faster than the
+    list gets re-audited (home_search slipped onto ada-kk 2026-10-11
+    while the env still named pre-merge ada_ha_* tools). The keep-list
+    cannot grow silently: a merged-in tool is stripped by default until
+    someone deliberately adds it here.
+  fields:
+    instance: ADA_INSTANCE_ID the profile applies to (the person's dedicated backend)
+    env_file: basename under ~/.config/secrets/ on the host (default ada-<instance>.env)
+    host: deploy host that runs the instance (render-tool-profiles.py --host)
+    include: tools the persona KEEPS — renders ADA_INCLUDED_TOOLS (allowlist; all else stripped)
+    exclude: tools deliberately dropped — renders ADA_EXCLUDED_TOOLS too, and completes lint coverage
+  render: |
+    scripts/ada/render-tool-profiles.py merges a managed block
+    (>>> chaba-rendered: ada-tool-profile … <<<) into the env file —
+    ADA_INCLUDED_TOOLS when include: is non-empty, ADA_EXCLUDED_TOOLS
+    when exclude: is non-empty. deploy-ada.sh applies profiles whose
+    host: matches the deploy target and restarts when the block drifts.
+  lint: |
+    A deploy-time warning (render-tool-profiles.py --lint, also run
+    inside --apply): for every profiled instance, any tool DECLARED in
+    ada-pi's surface (scripts/tool-lint.py collect_surface — builtins +
+    tools.d) that sits in NEITHER include: nor exclude: is uncovered —
+    a merge/rename slipped past the profile. Names that resolve only
+    through the runner alias table are accepted (they name a declared
+    seat). Unknown names in either list warn as stale.
+  rules:
+    - "A profile belongs on the person, not the shared prod instances —
+      ada-ha-tony/ada-ha-michael/ada-dev serve mixed speakers and keep
+      the full surface."
+    - "include: and exclude: may coexist: include wins at runtime
+      (intersection), exclude documents the decision for the lint."
+    - "Renamed tools list their DECLARED seat (e.g. capture_frame ->
+      vcast_snapshot); absorbed names stay reachable as runner aliases."
+    - "Env edits are staged, not live: the managed block applies on the
+      next service restart (deploy-ada.sh restarts on drift)."
 
 features:
   description: |

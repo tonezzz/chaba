@@ -1,0 +1,82 @@
+title: Per-persona tool profiles — ADA_INCLUDED_TOOLS allowlist
+date: 2026-10-11
+card: persona-tool-profiles
+dispatch: dispatch-wt-20261011-190526-ada-excluded-tools-denylist-ro
+status: shipped-staged   # ada-pi edit uncommitted on edit-point main; env live on ada-kk
+
+summary: |
+  ADA_EXCLUDED_TOOLS denylist rotted on tool merges — the ada-kk env still
+  named pre-merge ada_ha_* tools while home_search/home_status/
+  home_history/ha_confidence sailed through live, and Tony-lane lures
+  (calendar/tasks/devin/yt) stayed reachable on a member-tier session.
+  The fix moves persona surfaces to keep-lists: a keep-list can only
+  shrink; a denylist can only rot.
+
+changes:
+  ada_pi: |
+    Edit point ~/CascadeProjects/ada-pi, uncommitted on main.
+    - backend/realtime_provider.py: ADA_INCLUDED_TOOLS env — when set,
+      every declared name not listed is folded into the effective
+      excluded set before the strip point (former L4585), so declaration
+      strip, family instruction paragraphs, the ada_camera_snapshot gate,
+      tools.d filtering, and the agenda prefetch in _session_context_tail
+      all behave as if hand-listed. A second late-merge pass re-applies
+      the keep-list after tools.d/chaba guest declarations merge.
+      Both vars set: intersection wins.
+    - tests/test_tool_include_list.py (new): 4 tests — keep-list filters
+      builtin+tools.d, strips family instruction paragraphs, intersects
+      with ADA_EXCLUDED_TOOLS, drops late-merged declarations.
+  chaba: |
+    Dispatch worktree, branch dispatch/20261011-190526-ada-excluded-tools-denylist-ro.
+    - docs/ssot/apps/ssot.apps.ada-persons.yml: persons.<key>.tools
+      profile (instance/env_file/host/include/exclude) + tool_profiles
+      doc section. kk gets the card's 17-tool keep-list (capture_frame
+      listed as its declared seat vcast_snapshot) + 30-name explicit
+      drop-list.
+    - scripts/ada/render-tool-profiles.py (new): renders profiles into a
+      managed block (>>> chaba-rendered: ada-tool-profile) in
+      ~/.config/secrets/<env_file> on the profiled host;
+      apply/check/lint/local modes; secret-redacting diffs; retires
+      hand-written ADA_*_TOOLS lines into comments.
+    - scripts/deploy-ada.sh: per-host render-tool-profiles --apply
+      (drift forces restart, same pattern as memory-banks.json);
+      ada-kk.service added to the idc03 service list (:8007) — it was
+      never in the restart map, so deploys never restarted it.
+    - docs/ssot/apps/ssot.apps.ada_ha.yml + ssot.ada.howto.yml:
+      ADA_INCLUDED_TOOLS documented; add_ada_tool runbook now says a new
+      tool is a per-persona keep/drop decision (lint enforces).
+  live: |
+    idc03 ~/.config/secrets/ada-kk.env: managed block written; the stale
+    pre-merge ADA_EXCLUDED_TOOLS line retired to a comment.
+    ada-kk.service restarted — process env verified to carry
+    ADA_INCLUDED_TOOLS (17) + ADA_EXCLUDED_TOOLS (30); HTTP 200 on
+    :8007/api/auth/status.
+
+lint_semantics: |
+  render-tool-profiles.py lint (run inside --apply at every deploy):
+  declared tool in neither include: nor exclude: -> warning (the
+  merge/rename tripwire). Include/exclude names not in the declared
+  surface or alias table -> warning (stale). Names that are runner
+  aliases get a hint naming their declared seat.
+  Verified live 2026-10-11: the local ada-pi checkout was behind
+  origin/main and missed `percussion` (declared on prod) — the lint
+  caught it once the census ran against current code. The checkout
+  lag itself is the rot pattern this mechanism exists for.
+
+verify:
+  - "ada-pi tests on idc03 vs patched tree: test_tool_include_list 4/4,
+    test_calendar_providers whole file pass, tool-lint clean."
+  - "python3 scripts/ada/render-tool-profiles.py --lint -> clean (47
+    declared = 17 include + 30 exclude)"
+  - "python3 scripts/ada/render-tool-profiles.py --host idc03 --check ->
+    UNCHANGED (env in sync)"
+  - "ssh idc03 systemctl --user status ada-kk -> active; process env has
+    both vars"
+
+follow_ups:
+  - "ada-pi changes uncommitted on edit-point main — ship via normal
+    commit+push+deploy-ada flow (dispatch does not push)."
+  - "Shared instances (ada-ha-tony/ada-ha-michael/ada-dev) keep the full
+    surface by design; profiles are for dedicated/personal instances."
+  - "Personas beyond kk (testo/nhong/guest) have no dedicated instance
+    yet — the tools: field is ready when they get one."

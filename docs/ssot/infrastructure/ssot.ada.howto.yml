@@ -20,7 +20,12 @@ runbooks:
       The description is the primary steering mechanism; the instruction
       paragraph teaches sequencing. The gate enforces the contract server-side
       even if the model misbehaves. Keep declarations and instructions in sync —
-      ADA_EXCLUDED_TOOLS removes both.
+      ADA_EXCLUDED_TOOLS removes both; ADA_INCLUDED_TOOLS removes both for
+      every tool not on the keep-list. A new tool also lands on every
+      persona profile's lint radar: a declared name in neither
+      persons.<p>.tools.include nor .exclude is a deploy warning, so a
+      merge/rename forces an explicit keep/drop decision per persona
+      instead of slipping through (ssot.apps.ada-persons.yml tool_profiles).
 
   google_calendar_reauth:
     purpose: Re-mint the Google refresh token when calendar tools return auth errors.
