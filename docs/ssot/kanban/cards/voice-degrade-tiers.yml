@@ -1,0 +1,18 @@
+id: voice-degrade-tiers
+title: "Voice degrade chain — Live -> OR text+TTS -> local cascade, with bench"
+column: backlog
+priority: high
+autonomy: t2
+kind: lab
+description: >-
+  When Gemini Live dies (dunning 1008, quota), Ada currently goes fully
+  silent. Define degrade tiers so communication continues: tier0 Gemini
+  Live (paid), tier1 Gemini Live (free key), tier2 OpenRouter chat +
+  browser/edge TTS (text-paced voice), tier3 local cascade
+  whisper+ollama+piper on omen (offline). Each tier announces itself so
+  Tony knows the mode.
+acceptance:
+  - create_provider picks tier by probe order, not env rewrite
+  - 1008/quota on tier N -> try N+1 automatically, log tier to comms
+  - "voice-bench-harness measures per-tier: TTFB, WER/quality proxy, $/min — matrix in the card"
+  - manual override env ADA_VOICE_TIER for pinning

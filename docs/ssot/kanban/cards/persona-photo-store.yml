@@ -1,0 +1,32 @@
+id: persona-photo-store
+title: Persona photo/asset store — bank doc with fetchable URL + tool returning it to relay images
+column: backlog
+updated: 2026-10-11 18:00
+priority: medium
+spec: 'Personas cannot hold or reshow photos: bank docs are text-only and no tool returns a stored image URL to
+  the relay _image_msgs path (relay re-hosts any fetchable URL publicly, verified working). Needed: (1) storage
+  — a served dir on idc03 (or object store) holding persona assets, referenced by URL in bank docs (meta.image_url);
+  (2) a memory-search/tool path that surfaces the URL in results so the backend includes it in tool_result images;
+  (3) ingestion — a way to save an in-group LINE image as a persona asset (relay downloads via message content API
+  -> asset dir -> bank doc). Driver: kaewta reshowing kk car photo on request.'
+note: Companion to line-proactive-persona (OPS-0468). LINE inbound images already reach the relay as image turns
+  — persisting them is the missing piece.
+ref: OPS-0470
+comms:
+- at: 2026-10-11 17:49
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 17:57
+  from: devin
+  text: 'Discovery 2026-10-11: transport already exists — chat_send(image_url=,to=group_id) pushes any fetchable
+    image to LINE via the relay loopback /send + _image_msgs re-host. Static hosting exists: files in ada-pi/frontend/cam-snap/
+    serve at https://idc03.taila0626a.ts.net/static/cam-snap/ (verified 200). Seeded first asset doc ada-ha-bank-personal-kk
+    assets/pool-snap-demo as the convention: memory doc carrying image_url + chat_send usage hint. Remaining work:
+    (1) dedicated asset dir (mem-img/) + ing'
+- at: 2026-10-11 18:00
+  from: devin
+  text: 'Tony direction 2026-10-11: image-gen tool should expose a model param and personas should ASK the user
+    which model to use when unspecified, presenting options with clear one-line descriptions. Model registry (free-first):
+    flash-image=Gemini nano banana, free tier, best quality, quota-limited (needs dedicated key — shared fleet key
+    429s); pollinations=free no-key flux, lower consistency; local-sd=self-hosted on mcp-gpu fleet host, free unlimited,
+    needs setup; imagen4-fast=paid ~0.02/img top quali'

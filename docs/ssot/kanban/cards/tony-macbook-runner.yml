@@ -1,0 +1,25 @@
+id: tony-macbook-runner
+title: Enroll tony-macbook into the runner fleet
+column: done
+priority: medium
+autonomy: t2
+kind: ops
+description: 'tony-macbook (Ubuntu, 8 cores, 15.4GB, ssh+tailnet reachable, git+py3, no podman/devin yet) is idle
+  — make it a fleet lane via the standard procedure: fleet-installer (runner-agent unit + labels), then runner-cap.sh
+  for cap/gate.'
+acceptance:
+- runner-agent.service+timer active on tony-macbook, claims cards
+- labels: macbook,local-8c,always-home (matches no production host)
+- cap 2 gate 0.8 via runner-cap.sh; ssot.kanban.yml runner_fleet updated
+- one queued card runs end-to-end on it as the enrollment test
+comms:
+- at: 2026-10-11 17:07
+  from: devin
+  text: 'sweep verify 16:50: runner-agent.timer fires clean every ~2min on macbook (cap 2, labels macbook/local-8c/always-home),
+    polls board-api — enrolled and working'
+- at: 2026-10-11 17:07
+  from: tony
+  text: closed by tony
+updated: 2026-10-11 17:07
+action:
+  status: done

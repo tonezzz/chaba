@@ -1,0 +1,23 @@
+id: llm-gateway-litellm
+title: "LiteLLM gateway on idc — single API point: route, classify, benchmark, spend-cap"
+column: doing
+priority: high
+autonomy: t2
+kind: lab
+description: >-
+  Tony wants one point of service where every provider/model is classified
+  and benchmarked per job class. LiteLLM (BerriAI) is the standard
+  self-hosted answer: OpenAI-compatible gateway, 100+ providers, virtual
+  keys with per-key budgets, spend tracking per key/model/team, fallbacks,
+  admin UI, Postgres-backed. Fits our existing gemini-ollama-proxy slot.
+hypothesis: >-
+  A LiteLLM gateway on idc03 can front gemini-paid, gemini-free,
+  openrouter, and local ollama with a per-job-class routing table
+  (voice-aux, summary, embedding, tool-call, bench) and daily spend
+  visibility — replacing ad-hoc key env wiring.
+acceptance:
+  - litellm container on idc03, tailnet-only, keys in env not git
+  - routing table SSOT: job class -> ordered model list w/ fallbacks
+  - one ada service + one chaba job migrated through it (proof lane)
+  - spend per provider/model visible in admin UI + daily ledger to CMS
+  - bench: latency + cost per call class vs direct provider calls

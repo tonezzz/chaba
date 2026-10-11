@@ -1,0 +1,19 @@
+id: scenario-spend-guard
+title: "Stop scenario smoke burning paid quota — provider-health gate + spend ledger"
+column: doing
+priority: high
+autonomy: t2
+kind: ops
+description: >-
+  ada-scenario-smoke.timer runs hourly, ~39 live-tier cases, each opening a
+  REAL Gemini Live session (~936 billed connects/day; 3982 ws sessions on
+  ada-ha-tony in 7d). On a paid key this is the main burn behind the
+  missing $100; on a free key it hammers daily quota -> 429 storms.
+acceptance:
+  - smoke suite skips Live cases when the provider is dunned/quota-dead
+    (probe once per run, fail fast, report skip)
+  - smoke tier runs against the FREE-lane key or ada-dev only — never the
+    paid key while a free lane exists
+  - daily Live-session + aux-call count -> spend ledger line in the CMS
+    ops report (est. $ burn/day so the next surprise is visible)
+  - "reconnect-churn counter: >50 ws connects/hour on one ada-ha-* unit logs a warn to chaba-events"

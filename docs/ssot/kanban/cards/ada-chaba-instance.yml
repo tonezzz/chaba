@@ -1,0 +1,21 @@
+id: ada-chaba-instance
+title: Provision ada-chaba backend :8008 — the tony-ha lane presence for LINE group
+column: backlog
+updated: 2026-10-11 16:54
+priority: medium
+spec: 'Provision the chaba persona backend on idc03, answering "chaba" mentions in the shared LINE group (spec v3
+  on line-multihome-group). Per ha-ada-isolation.md pattern: (1) ada-chaba.service on :8008 cloned from ada-ha-*
+  shape w/ cgroup caps (MemoryMax/CPUQuota); (2) ~/.config/secrets/ada-chaba.env — ADA_INSTANCE_ID=chaba, own GEMINI
+  key/pool (NOT the shared one), HA upstream tony-ha via svc-chaba non-admin LLAT (or upstream_ha:none initially),
+  MDDB bank + ops/docs tools (kanban, SSOT, report API) — chaba = house/ops brain, not an Ada clone; (3) ada-ha-chaba-keys.json
+  — callers per authority matrix: tony=owner, kk=member, nhong=guest; (4) persona instructions — the house presence,
+  mention-quiet by default; (5) relay: LINE_NAME_BACKENDS chaba->ws://127.0.0.1:8008 + per-lane caller keys; (6)
+  deploy-ada.sh SERVICES membership in canary order; (7) SSOT: ssot.services + ada-persons entries. Depends on:
+  line-multihome-group mention router landing first.'
+note: Blocked on the mention-router deploy (line-multihome-group, running). Until then chaba mentions get polite
+  not-home — do not alias to ada.
+ref: ADA-0467
+comms:
+- at: 2026-10-11 16:54
+  from: devin
+  text: card captured via board-api

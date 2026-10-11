@@ -1,0 +1,36 @@
+id: ada-chat-text-lane-provider-reconnects-c-8ad4bc
+title: 'ada-chat text lane: provider reconnects come back resumed=False — cold prime + re-greet + token burn'
+column: backlog
+updated: 2026-10-11 15:15
+brief: 'Ada chat card shows a greeting every ~5min while client ws stays connected. Server side on ada-ha-tony (idc03):
+  provider stream ends -> reconnect -> "prime injected (resumed=False)" -> fresh greeting pushed into the same chat.
+  142 Live connects in 90min. Each cold reconnect re-bills system+tools+prime (~2.6k chars) and generates a greeting
+  — measured single-session totals of 115k input tokens. Yesterday''s rotate-resume fix (a7c2398, deployed) covers
+  voice rotates but NOT this lane: chat connects with no_persist=1 so every provider drop = cold session + amnesia
+  + re-greet. Likely driver underne'
+priority: high
+tags:
+- ada
+- gemini
+- reliability
+- spend
+spec: 'In ada-pi pwa_server/realtime_provider text-chat path: (1) carry a resumption handle across provider reconnects
+  for no_persist chat sessions the same way voice rotates do — or suppress the greeting on provider-side reconnect
+  (no-greet flicker directive already exists for voice); (2) verify what actually ends the stream every ~5min on
+  an idle chat — if it is the context-budget rotate firing on idle sessions, the budget accounting for a text lane
+  should not rotate a quiet session; (3) do not regress the voice path. Repro: watch journalctl -u ada-ha-tony for
+  "prime injected (resumed=False)" while an ada-chat-card sits open.'
+action:
+  type: dispatch
+  repo: ada-pi
+  labels:
+  - ada
+  status: queued
+ref: ADA-0463
+comms:
+- at: 2026-10-11 15:15
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 15:15
+  from: tony
+  text: queued for processing

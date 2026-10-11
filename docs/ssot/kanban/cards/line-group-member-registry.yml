@@ -1,0 +1,17 @@
+id: line-group-member-registry
+title: Auto-register LINE senders on first message in allowed groups
+column: backlog
+updated: 2026-10-11 18:22
+priority: medium
+spec: 'LINE members API is gated to verified accounts (404 on group/members/userIds 2026-10-11), so users cannot
+  be pre-enumerated — registration must happen on first message. Procedure: when a message arrives in an allow-listed
+  group from an unmapped userId, relay writes a registry doc (mddb line-user-registry or similar) with userId, groupId,
+  display name if available, first-seen timestamp. Operator (or auto) then binds userId -> caller in LINE_USER_CALLERS.
+  Standard for every new group: allow-list the group, watch first senders, bind each to a lane caller. KK pending:
+  user-kk owner key minted on ada-ha-kk-keys.json awaiting her userId.'
+note: 'Requester: tony 2026-10-11 — save all users when we connect to a new group so I can identify them later.'
+ref: OPS-0472
+comms:
+- at: 2026-10-11 18:22
+  from: devin
+  text: card captured via board-api

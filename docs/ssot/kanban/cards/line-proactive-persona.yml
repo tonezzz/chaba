@@ -1,0 +1,18 @@
+id: line-proactive-persona
+title: 'LINE relay: persona-initiated outbound to group members (proactive turns)'
+column: backlog
+updated: 2026-10-11 17:21
+priority: medium
+spec: 'Relay is reply-only today — a persona can answer but cannot INITIATE a conversation with a member (e.g. Kaewta
+  asks Nhong about kk car after serving a photo). Needed: (1) outbound path — backend tool/intent -> relay push
+  to chat_id or member DM (LINE push API, rate-limited); (2) addressing a specific member in-group (@Nhong display
+  name via group member profile API); (3) policy: proactive only from owner-tier triggers or backend-declared intent,
+  debounced so personas dont spam rooms. Scenario driver: tony asks kaewta for kk car photo -> kaewta shows it ->
+  kaewta engages nhong about it using her memory bank.'
+note: Follows line-multihome-group (mention router live). Second half of Tony car-photo scenario; first half needs
+  a kk-car photo source on ada-kk.
+ref: OPS-0468
+comms:
+- at: 2026-10-11 17:21
+  from: devin
+  text: card captured via board-api

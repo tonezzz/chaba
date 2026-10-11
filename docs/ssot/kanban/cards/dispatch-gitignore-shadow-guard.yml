@@ -27,5 +27,45 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0427'
-updated: 2026-10-11 06:58
+- at: 2026-10-11 18:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-11 18:05
+  from: mn01
+  text: claimed
+- at: 2026-10-11 18:05
+  from: chaba
+  text: started devin-task-20261011-110526-add-a-pre-merge-guard-in-the-d on mn01 (dispatch)
+- at: 2026-10-11 18:08
+  from: devin
+  text: 'started: adding shadow-path guard (symlink + dir-pattern-shadowed blobs) to dispatch merge path — dr.shadow_paths
+    shared helper, enforced in close_out/_merge_and_gate and merge-sweep merge_strict, surfaced in board-api guard
+    note; tests to follow'
+- at: 2026-10-11 18:18
+  from: devin
+  text: 'done: shadow_paths guard in dispatch_repos (symlink mode + check-ignore P/ dir-pattern probe, batched);
+    enforced pre-push in close_out/_merge_and_gate and merge-sweep merge_strict; shadows ride the held-merge requeue
+    lane in kanban-dispatch + runner-agent; dr.guard notes them; stack-preflight warns on X/ lacking bare X. Verified:
+    220/220 unittests incl. 6 new shadow tests + manual .venv-symlink repro — merge held, branch pushed, origin
+    clean. SSOT: docs/ssot/jobs/kanban/2026-10-11-gitignore-shad'
+- at: 2026-10-11 18:20
+  from: mn01
+  text: 'finished (ok): exit=0 n/2026-10-11-gitignore-shadow-guard.yml`; committed on the dispatch branch (no push).
+    | devin-task-20261011-11052'
+- at: 2026-10-11 18:20
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-11 18:20
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+updated: 2026-10-11 18:20
 ref: OPS-0427
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 n/2026-10-11-gitignore-shadow-guard.yml`; committed on the dispatch branch (no push). | devin-task-20261011-110526-add-a-pre-merge-guard-in-the-d.service:
+    Consumed 1min 26.482s CPU time over 13min 2.136s wall clock time, 243.2M memory peak.'
+review_kind: verify
+claim: {}

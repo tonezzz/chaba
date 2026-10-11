@@ -1,0 +1,56 @@
+id: micro-ai-input-polish
+title: 'micro-ai input polish: small local model normalizes user input for each receiving AI'
+column: backlog
+updated: 2026-10-11 18:12
+brief: 'Hypothesis (Tony 2026-10-11): a small local model sits in front of each receiving AI and rewrites raw user
+  input (ASR errors, Thai/Eng mix, fragments) into the format that AI performs best on — better accuracy AND fewer
+  downstream tokens. Bench-first per model-eval procedure; adopt only on measured gain.'
+priority: medium
+tags:
+- ai
+- bench
+- micro-model
+- ada
+spec: "Build scripts/micro-bench/ cloning the scripts/voice-bench/ harness pattern:\n\n1. fixtures/ — ~40 real-shape\
+  \ messy inputs + gold canonical form + expected downstream\n   result. Sources: ada ASR transcripts (the noisiest\
+  \ real input — mishearings, Thai\n   transliteration), kanban-style fragments, voice commands. Synthesized fixtures\
+  \ per\n   voice-bench precedent are acceptable.\n\n2. variants.yml — {direct (baseline), micro-polish:<model>}\
+  \ where <model> tries: llama-router\n   on omen (existing), macbook Vulkan llama.cpp (host-roles offload lane),\
+  \ idc02. Each variant\n   = polish step (or none) -> same downstream call.\n\n3. bench.py — per fixture: downstream-result\
+  \ match vs gold (exact/partial/none),\n   end-to-end latency, token cost (polish tokens + downstream tokens —\
+  \ the efficiency claim\n   is NET tokens, must count both).\n\n4. report.py — reports/micro-polish/LATEST.md (variant\
+  \ x metric) + trend row + board comment.\n\nAdopt gate (write into the report): polish adopted at an insertion\
+  \ point only if\nmatch-rate >= baseline AND net-token OR latency cost is neutral-or-better. If it only\nhelps\
+  \ on ASR-class input, deploy scoped to that lane — not a universal layer."
+action:
+  type: manual
+ref: BEN-0465
+comms:
+- at: 2026-10-11 16:49
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 16:50
+  from: devin
+  text: 'raised request insertion-point: Where should the first bench target the polish layer? ASR has the messiest
+    input and clearest expected win.'
+- at: 2026-10-11 18:12
+  from: devin
+  text: 'harness landed (bb9a3ab22): scripts/micro-bench/ — 40 fixtures x 10 categories (en/th ASR noise, mix, typo,
+    fragment, entity-heavy, clean controls, ambiguous, gibberish). Scoring adds ''fabricated'' class + entity preservation
+    + NET tokens. report.py emits reports/micro-polish/LATEST.md + trend + adopt-gate verdict (adopt / scope-to-noisy-lanes
+    / reject). Smoke result (3 fixtures, llama3.2:3b idc03): pipeline verified AND already caught the hypothesized
+    regressions — polisher translated clean EN->'
+requests:
+- id: insertion-point
+  ask: Where should the first bench target the polish layer? ASR has the messiest input and clearest expected win.
+  status: open
+  at: 2026-10-11 16:50
+  from: devin
+  options:
+  - id: ada-asr
+    label: Ada ASR pre-filter (recommended) — fixes transcription errors before the Gemini call
+  - id: dispatch-intake
+    label: kanban/dispatch card intake — normalizes vague requests into spec shape
+  - id: both-lanes
+    label: bench both insertion points in one harness
+  suggested: ada-asr

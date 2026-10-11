@@ -7,39 +7,42 @@ tags:
 - incident
 - openrouter
 created: '2026-10-11'
-brief: 'Every OR key across the fleet returns 401 "User not found" — ada-safety …39eaee
-  (minted today), omen ghostroute, idc03 mddb line-5. That error means the ACCOUNT
-  is gone (deleted/suspended/renamed), not key expiry. Affects: OpenClaw model routing,
-  mddb embeddings fallback, any OR consumer.'
-spec: Verify at openrouter.ai — is the account suspended/deleted? If Tony minted ada-safety
-  on a NEW account, the old-account keys are dead by design and slots need the new
-  account's key. If OR suspended it, account recovery path needed. Then re-run rotate-or-key.sh
-  to repopulate slots + restart consumers.
+brief: 'Every OR key across the fleet returns 401 "User not found" — ada-safety …39eaee (minted today), omen ghostroute,
+  idc03 mddb line-5. That error means the ACCOUNT is gone (deleted/suspended/renamed), not key expiry. Affects:
+  OpenClaw model routing, mddb embeddings fallback, any OR consumer.'
+spec: Verify at openrouter.ai — is the account suspended/deleted? If Tony minted ada-safety on a NEW account, the
+  old-account keys are dead by design and slots need the new account's key. If OR suspended it, account recovery
+  path needed. Then re-run rotate-or-key.sh to repopulate slots + restart consumers.
 comms:
 - at: 2026-10-11 12:45
   from: devin
-  text: found during narrated-digest test — probed 4 keys across 3 hosts, all "User
-    not found". Second account-level auth outage today alongside Gemini dunning.
+  text: found during narrated-digest test — probed 4 keys across 3 hosts, all "User not found". Second account-level
+    auth outage today alongside Gemini dunning.
 - at: 2026-10-11 13:05
   from: devin
-  text: 're-verified: still 401 "User not found" on ada-safety + omen keys, incl.
-    GET /auth/key. Panel-looks-good + user-not-found ⇒ likely signed into a DIFFERENT
-    OR account (Google vs GitHub signin = separate accounts). Definitive test requested:
-    mint throwaway key on the visible panel → drop as or-next-key → I verify auth.'
+  text: 're-verified: still 401 "User not found" on ada-safety + omen keys, incl. GET /auth/key. Panel-looks-good
+    + user-not-found ⇒ likely signed into a DIFFERENT OR account (Google vs GitHub signin = separate accounts).
+    Definitive test requested: mint throwaway key on the visible panel → drop as or-next-key → I verify auth.'
 - at: 2026-10-11 13:20
   from: devin
-  text: 'RESOLVED as bridge: Tony''s throwaway key verified (acct user_3ACXf7 alive
-    — two-account theory confirmed; slot keys belonged to the dead account). rotate-or-key
-    wrote all 4 stores + restarted ghostroute+ollama-proxy; e2e :free call ok. NOTE:
-    this key is $1-cap, expires 2026-10-12 04:55 UTC (~17h) — mint the real weekly
-    key on THIS account and re-run the rotator before then.'
+  text: 'RESOLVED as bridge: Tony''s throwaway key verified (acct user_3ACXf7 alive — two-account theory confirmed;
+    slot keys belonged to the dead account). rotate-or-key wrote all 4 stores + restarted ghostroute+ollama-proxy;
+    e2e :free call ok. NOTE: this key is $1-cap, expires 2026-10-12 04:55 UTC (~17h) — mint the real weekly key
+    on THIS account and re-run the rotator before then.'
+- at: 2026-10-11 17:07
+  from: devin
+  text: 'sweep verify: current OR key (sk-or-v1-005...44b) VALID — $0.48 left of $1.00. Outage resolved. WARNING:
+    key expires 2026-10-12 (~tomorrow) — needs rotation/mint before then.'
+- at: 2026-10-11 17:07
+  from: tony
+  text: 'raised request or-key-works-but-expires-2026-10-12-with-b86ecc: OR key works but expires 2026-10-12 with
+    $0.48 left — mint+rotate a fresh key now (rotate-or-key.sh exists)?'
 requests:
 - id: weekly-key-on-new-account
-  ask: 'Bridge key ($1 cap) expires 2026-10-12 04:55 UTC. Needed: mint the real weekly
-    key ($10/1-week) on the LIVE account (user_3ACXf7 — the one whose panel shows
-    the throwaway key) at openrouter.ai/keys, then deliver via secret-drop (Ada chat
-    card) or drop into ~/.config/secrets/or-next-key on tony-dell. Never paste the
-    value in comms/chat. I verify + run rotate-or-key on receipt.'
+  ask: 'Bridge key ($1 cap) expires 2026-10-12 04:55 UTC. Needed: mint the real weekly key ($10/1-week) on the LIVE
+    account (user_3ACXf7 — the one whose panel shows the throwaway key) at openrouter.ai/keys, then deliver via
+    secret-drop (Ada chat card) or drop into ~/.config/secrets/or-next-key on tony-dell. Never paste the value in
+    comms/chat. I verify + run rotate-or-key on receipt.'
   from: devin
   to: tony
   status: open
@@ -50,4 +53,16 @@ requests:
     label: extend/raise-cap the throwaway key instead
   suggested: mint-weekly
   at: 2026-10-11 14:10
+- id: or-key-works-but-expires-2026-10-12-with-b86ecc
+  ask: OR key works but expires 2026-10-12 with $0.48 left — mint+rotate a fresh key now (rotate-or-key.sh exists)?
+  status: open
+  at: 2026-10-11 17:07
+  from: tony
+  options:
+  - id: 'yes'
+    label: rotate key now
+  - id: 'no'
+    label: leave until expiry
+  suggested: 'yes'
 review_kind: triage
+updated: 2026-10-11 17:07

@@ -1,0 +1,31 @@
+id: guard-card-yaml-syntax-validation-at-wri-a39362
+title: 'Guard: card-YAML syntax validation at write time — render died 2.5h on 3 malformed cards'
+column: backlog
+updated: 2026-10-11 15:11
+brief: '2026-10-11 ~12:45-15:10: chaba-board-render crashed every 60s on yaml.scanner errors. Three cards had YAML-invalid
+  free text (ada-secret-drop unindented continuation; voice-degrade-tiers + scenario-spend-guard list items containing
+  key: and >N sequences). cards.json went stale silently — board page showed 2.5h-old data while API writes kept
+  landing.'
+priority: medium
+tags:
+- kanban
+- chaba-ci
+spec: 'Two cheap guards, both small: (1) board-api /card + /comment + /action write path: after mutating card YAML,
+  yaml.safe_load the result and refuse/rollback on parse failure; (2) ssot-validate-all.mjs (or pre-commit hook):
+  syntax-check every docs/ssot/kanban/cards/*.yml so a bad card can never reach master. Bonus: render-failure alert
+  — if chaba-board-render exits nonzero twice in a row, file a cms-auto-style card instead of retrying silently.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - cpu
+  - small
+  status: queued
+ref: KNB-0461
+comms:
+- at: 2026-10-11 15:11
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 15:11
+  from: tony
+  text: queued for processing

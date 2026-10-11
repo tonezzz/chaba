@@ -1,9 +1,9 @@
 id: devin-desktop-dell-autostart
 title: disable devin-desktop autostart on tony-dell — GUI froze the box
-column: doing
+column: done
 priority: high
 created: 2026-10-10
-updated: 2026-10-11 06:57
+updated: 2026-10-11 18:28
 note: '2026-10-10: tony-dell GUI froze (mouse moves, zero control) — root cause: devin-desktop autostarted TWO instances
   at login, 4 Electron renderers oversubscribed all 8 cores. Reboot + killing the dupe recovered it. tony-dell is
   a server (HA+apps): devin-desktop should not autostart on login. Fix: remove its autostart entry on tony-dell,
@@ -20,4 +20,15 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: DEV-0424'
+- at: 2026-10-11 17:06
+  from: devin
+  text: 'sweep verify: autostart already .disabled + running under manual app-scope — closing as verified done'
+- at: 2026-10-11 17:07
+  from: tony
+  text: closed by tony
+- at: 2026-10-11 18:28
+  from: tony
+  text: closed by tony
 ref: DEV-0424
+action:
+  status: done

@@ -1,7 +1,7 @@
 id: ada-gemini-quota-breaker
 title: 'Ada: circuit-breaker on Gemini quota exhaustion'
 column: backlog
-updated: 2026-10-11 07:43
+updated: 2026-10-11 15:15
 brief: 'Stop the 1008 reconnect-storm when Gemini Live hits quota (429/RESOURCE_EXHAUSTED). Evidence: jobs/ada/2026-10-10-audit-fail-cluster.yml
   — 1389x429, 643x RESOURCE_EXHAUSTED, 198x quota_exhausted, ws close 1008 looping all evening on idc03 ada-ha-tony.'
 priority: high
@@ -19,6 +19,7 @@ action:
   repo: ada-pi
   labels:
   - ada
+  status: queued
 comms:
 - at: 2026-10-11 07:43
   from: tony
@@ -26,4 +27,7 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: ADA-0444'
+- at: 2026-10-11 15:15
+  from: tony
+  text: queued for processing
 ref: ADA-0444

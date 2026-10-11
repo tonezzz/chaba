@@ -1,22 +1,286 @@
 id: line-multihome-group
-title: "LINE group (tony+kk+nhong): per-sender routing to each home assistant"
+title: 'LINE group (tony+kk+nhong): per-sender routing to each home assistant'
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: '2026-10-10'
-note: >
-  One chaba LINE bot in a shared group; each sender's message routes to
-  their own assistant/home lane (tony->ada, kk->kaewta on ada-kk, nhong->
-  ada-kk w/ caller=user-nhong until he has a lane). Replies tagged
-  [assistant->sender]; voice notes follow the voice rule in-channel and
-  mirror to the speaker's home channel. Standard: docs/kb/
-  msg-lane-multihome-routing.md. Blocked on LINE auth (token revoked —
-  phone re-login needed), then line-* caller aliases in persons.yml,
-  LINE_ALLOWED_GROUP_IDS + LINE_USER_LANES env, and per-sender WS backend
-  selection in line_relay.py.
+updated: 2026-10-11 17:42
+note: 'One chaba LINE bot (@339sbrov) in a shared group. UPDATED SPEC 2026-10-11 (Tony): MENTION-triggered routing
+  — any member addresses ada|kaewta|chaba by name in the message; relay routes the turn to that persona WS backend,
+  replies tagged [persona->sender]. Unaddressed messages must NOT all hit Ada (noise) — default: ignore, or route
+  to one configured default persona. Personas are isolated backends: ada->ws://127.0.0.1:8002, kaewta->ada-kk ws://127.0.0.1:8007,
+  chaba->TBD (see chaba-backend request). Sender identity maps via LINE_USER_CALLERS -> issued caller key per person.
+  Voice notes follow the voice rule in-channel + mirror to the speaker home channel. Standard doc: docs/kb/msg-lane-multihome-routing.md
+  (to be written). BLOCKERS CLEARED 2026-10-11: webhook endpoint repointed idc01->idc03 (157.85.102.125.sslip.io),
+  ada-ha-tony restarted, LINE_PUBLIC_IMG_BASE env set — inbound live, real Ada reply delivered. REMAINING: mention
+  parse + LINE_NAME_BACKENDS map in line_relay.py, LINE_ALLOWED_GROUP_IDS, user-nhong key mint, relay unit env update.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  attempts: 1
+  result: 'exit=0  is provisioned; a board comment was posted and the outcome doc is at `dispatch-outcome-20261011-170000-line-group-tony-kk-nhong-per-s.md`.
+    | devin-task-20261011-170000-line-group-tony-kk-nhong-per-s.service: Consumed 2min 12.184s CPU time.'
+  verified: true
+  last_failure: 'session-end checkpoint 2aa8ed49: 7 leftover file(s) committed; pushed dispatch/20261011-163937-line-group-tony-kk-nhong-per-s
+    to origin; test gate failed — merge held: tests/test_calendar_providers.py'
+  runner: idc02
 links:
-  - backend/line_relay.py
-  - docs/kb/msg-lane-multihome-routing.md
-  - docs/ssot/apps/ssot.apps.ada-persons.yml
+- backend/line_relay.py
+- docs/kb/msg-lane-multihome-routing.md
+- docs/ssot/apps/ssot.apps.ada-persons.yml
 requests:
-  - "Tony: LINE re-login on phone to restore bot token (blocker)."
+- id: line-relogin
+  ask: 'Tony: LINE re-login on phone to restore bot token (blocker).'
+  status: open
+  at: '2026-10-10'
+  from: devin
+- id: chaba-backend
+  ask: Chaba backend for mention-routing — what answers when the group says chaba?
+  status: answered
+  at: 2026-10-11 17:00
+  from: devin
+  suggested: ada-chaba
+  options:
+  - id: ada-chaba
+    label: new ada-chaba instance on idc03 :8008 — isolated persona, ecosystem/ops prompt; same Ada stack now, diverge
+      later
+  - id: ada-dev
+    label: ada-dev :8001 stand-in persona — zero setup, shared lab instance
+  - id: defer
+    label: defer — mention gets polite chaba-not-home-yet until a different stack exists
+  answer: ada-chaba — dedicated chaba backend (tony-ha lane), resolves via the ada-chaba option
+- id: kk-addressing-ada-chaba-lane-her-tier-sh-7a6a57
+  ask: kk addressing ada/chaba-lane — her tier? (she lives in the household but it is tony lane)
+  status: answered
+  at: 2026-10-11 16:42
+  from: devin
+  options:
+  - id: house-member
+    label: house member — casual + info queries, no actions
+  - id: guest
+    label: guest — casual chat only
+  suggested: house-member
+  answer: guest of ada-ha; member of tony-ha
+- id: tony-addressing-kaewta-your-tier-on-kk-l-fd3f30
+  ask: tony addressing kaewta — your tier on kk lane?
+  status: answered
+  at: 2026-10-11 16:42
+  from: devin
+  options:
+  - id: house-member
+    label: 'house member — casual + info, no commands (symmetric: owners rule their own lane only)'
+  - id: owner-equivalent
+    label: elevated — fleet owner override (breaks lane isolation)
+  - id: guest
+    label: guest — casual only
+  suggested: house-member
+  answer: member of kk-ha
+- id: when-someone-says-chaba-who-answers-bot-36a3f4
+  ask: when someone says "chaba" — who answers? (bot display name is Chaba; chaba lane has no backend yet)
+  status: answered
+  at: 2026-10-11 16:42
+  from: devin
+  options:
+  - id: house-alias
+    label: chaba = the house presence -> tony lane answers (Ada as Chaba)
+  - id: wait-backend
+    label: defer until ada-chaba instance exists (chaba-backend request)
+  suggested: house-alias
+  answer: answer as chaba — chaba is its own lane (tony-ha front), not an ada alias
+- id: two-open-config-items-1-chaba-persona-ba-5b4657
+  ask: 'Two open config items: (1) chaba persona backend ws url — still TBD on the card; I will ship LINE_NAME_BACKENDS
+    so it is a pure env addition when known. (2) user-nhong key mint: which backend keys file(s) should hold it
+    — every backend nhong may address (ada/kaewta/chaba), or only chaba? Mint is outside-worktree (POST /api/auth/keys
+    on each backend) so it lands in the kb runbook unless you want it done live.'
+  status: open
+  at: 2026-10-11 16:57
+  from: devin
+comms:
+- at: 2026-10-11 16:38
+  from: devin
+  text: 'LIVE TEST 2026-10-11 eve: relay repaired + group verified end-to-end. (1) Root cause found: LINE webhook
+    endpoint still pointed at dead idc01 sslip since the migration — inbound dead fleet-wide, outbound pushes masked
+    it. Repointed via LINE API to 157.85.102.125.sslip.io/webhook/line (verified active). (2) ada-ha-tony was stopped
+    15:42 (deploy-stop leftover) — restarted, :8002 healthy. (3) LINE_PUBLIC_IMG_BASE env set to idc03 edge (code
+    default still old IP — fix in repo pending). (4) Tony mess'
+- at: 2026-10-11 16:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-11 16:39
+  from: chaba
+  text: dispatched 20261011-163937-line-group-tony-kk-nhong-per-s on ada-pi
+- at: 2026-10-11 16:42
+  from: devin
+  text: 'SPEC DRAFT v2 for Tony review — polished from his 17:xx description. Two axes kept separate: (A) ROUTING
+    = mention-triggered (ada|kaewta|chaba named in msg -> that persona replies tagged [persona->name]; no mention
+    -> silence). (B) AUTHORITY = per-lane relationship tier, enforced at the caller-key/backend (hard gate, not
+    relay prompt): owner=full commands+actions; house member=casual + info queries, NO actions; guest=casual chat
+    only, NO info/actions. MATRIX (draft): ada/chaba-lane: tony=owner, '
+- at: 2026-10-11 16:42
+  from: devin
+  text: 'raised request kk-addressing-ada-chaba-lane-her-tier-sh-7a6a57: kk addressing ada/chaba-lane — her tier?
+    (she lives in the household but it is tony lane)'
+- at: 2026-10-11 16:42
+  from: devin
+  text: 'raised request tony-addressing-kaewta-your-tier-on-kk-l-fd3f30: tony addressing kaewta — your tier on kk
+    lane?'
+- at: 2026-10-11 16:42
+  from: devin
+  text: 'raised request when-someone-says-chaba-who-answers-bot-36a3f4: when someone says "chaba" — who answers?
+    (bot display name is Chaba; chaba lane has no backend yet)'
+- at: 2026-10-11 16:45
+  from: devin
+  text: 'answered kk-addressing-ada-chaba-lane-her-tier-sh-7a6a57: guest of ada-ha; member of tony-ha'
+- at: 2026-10-11 16:45
+  from: chaba
+  text: answer delivered to running session 20261011-163937-line-group-tony-kk-nhong-per-s
+- at: 2026-10-11 16:45
+  from: devin
+  text: 'answered tony-addressing-kaewta-your-tier-on-kk-l-fd3f30: member of kk-ha'
+- at: 2026-10-11 16:45
+  from: chaba
+  text: answer delivered to running session 20261011-163937-line-group-tony-kk-nhong-per-s
+- at: 2026-10-11 16:45
+  from: devin
+  text: 'answered when-someone-says-chaba-who-answers-bot-36a3f4: answer as chaba — chaba is its own lane (tony-ha
+    front), not an ada alias'
+- at: 2026-10-11 16:45
+  from: chaba
+  text: answer delivered to running session 20261011-163937-line-group-tony-kk-nhong-per-s
+- at: 2026-10-11 16:45
+  from: devin
+  text: 'answered chaba-backend: ada-chaba — dedicated chaba backend (tony-ha lane), resolves via the ada-chaba
+    option'
+- at: 2026-10-11 16:45
+  from: chaba
+  text: answer delivered to running session 20261011-163937-line-group-tony-kk-nhong-per-s
+- at: 2026-10-11 16:46
+  from: devin
+  text: 'SPEC v3 FINAL (Tony-decided 2026-10-11 eve). THREE lanes: ada-ha (:8002 Ada), tony-ha (fronted by chaba
+    persona — needs ada-chaba backend per answered request), kk-ha (:8007 Kaewta). ROUTING: mention ada|kaewta|chaba
+    -> that lane answers tagged [persona->name]; no mention -> silence. AUTHORITY matrix (lane x speaker): ada-ha:
+    tony=owner, kk=guest, nhong=guest. tony-ha: tony=owner, kk=member, nhong=guest. kk-ha: kk=owner, tony=member,
+    nhong=member. Tiers: owner=commands+actions; member=casual+inf'
+- at: 2026-10-11 16:46
+  from: devin
+  text: 'attempt 2 in progress: mention-routing implemented in line_relay.py (LINE_NAME_BACKENDS/LINE_ALLOWED_GROUP_IDS/LINE_DEFAULT_PERSONA,
+    [persona->sender] tags, group voice rule + DM mirror, markAsReadToken fix, img base -> idc03 edge). 17 unit
+    tests green. Docs + env reference next.'
+- at: 2026-10-11 16:52
+  from: devin
+  text: 'DONE (attempt 2): mention-routing shipped in backend/line_relay.py — LINE_NAME_BACKENDS persona map (ada
+    implicit via ADA_WS_URL, bare host gets /ws, empty URL = isnt-home persona), first-word-boundary mention wins
+    + lead strip, unaddressed room chatter ignored unless LINE_DEFAULT_PERSONA, [persona->sender] tags, per-(group,sender,persona)
+    sessions with caller keys + no admin fallback (1/h refusal echoes userId), LINE_ALLOWED_GROUP_IDS + join greeting,
+    group voice rule (corpus+ack, optional whis'
+- at: 2026-10-11 16:53
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-11 16:53
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): session-end checkpoint 2aa8ed49: 7 leftover file(s) committed; pushed
+    dispatch/20261011-163937-line-group-tony-kk-nhong-per-s to origin; test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-11 16:53
+  from: chaba
+  text: 'session-end checkpoint 2aa8ed49: 7 leftover file(s) committed'
+- at: 2026-10-11 16:53
+  from: chaba
+  text: pushed dispatch/20261011-163937-line-group-tony-kk-nhong-per-s to origin
+- at: 2026-10-11 16:53
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-11 16:53
+  from: idc03
+  text: claimed
+- at: 2026-10-11 16:53
+  from: chaba
+  text: started devin-task-20261011-165356-line-group-tony-kk-nhong-per-s on idc03 (dispatch)
+- at: 2026-10-11 16:54
+  from: devin
+  text: 'WIRED 17:1x: nhong LINE id Uc0b894d3f0e715e8077fca887ce4534c captured from unauthorized-reply log. Minted
+    user-nhong on ada-ha-tony-keys (guest, person.nhong) + line-nhong on ada-ha-kk-keys (member, mirrors tg-nhong).
+    line-bot.env: LINE_ALLOWED_USER_IDS += nhong; LINE_USER_CALLERS now tony->user-tonezzzz + nhong->user-nhong
+    (was EMPTY — tony previously rode the fallback). RELAY RESTARTED, active. SECURITY NOTE for the router patch:
+    _key_for_user falls back to ADA_API_KEY when caller unmapped — a'
+- at: 2026-10-11 16:57
+  from: devin
+  text: dispatch up — implementing mention routing + LINE_NAME_BACKENDS + LINE_ALLOWED_GROUP_IDS in line_relay.py,
+    voice notes follow corpus/transcribe rule, kb doc to follow
+- at: 2026-10-11 16:57
+  from: devin
+  text: 'raised request two-open-config-items-1-chaba-persona-ba-5b4657: Two open config items: (1) chaba persona
+    backend ws url — still TBD on the card; I will ship LINE_NAME_BACKENDS so it is'
+- at: 2026-10-11 16:59
+  from: chaba
+  text: runner idc03 unreachable 3 passes — requeued
+- at: 2026-10-11 16:59
+  from: idc02
+  text: claimed
+- at: 2026-10-11 17:00
+  from: chaba
+  text: started devin-task-20261011-170000-line-group-tony-kk-nhong-per-s on idc02 (dispatch)
+- at: 2026-10-11 17:02
+  from: devin
+  text: 'done in worktree: mention routing + LINE_NAME_BACKENDS (JSON/compact, per-backend keys_file) + LINE_ALLOWED_GROUP_IDS
+    + LINE_DEFAULT_PERSONA + tagged [persona->sender] replies; voice notes save to corpus, transcribe, route on
+    transcript, mirror to speaker DM. 22 new tests green, tool-lint clean. kb doc docs/kb/msg-lane-multihome-routing.md
+    has the unit-env + key-mint runbook. OPEN: chaba ws url, user-nhong mint scope, groupId — request raised on
+    card. Not deployed per dispatch rules.'
+- at: 2026-10-11 17:03
+  from: chaba
+  text: 'session-end checkpoint 224fcafe: 6 leftover file(s) committed'
+- at: 2026-10-11 17:03
+  from: chaba
+  text: 'auto-merge conflicts: backend/line_relay.py, docs/kb/msg-lane-multihome-routing.md, tests/test_line_relay_group.py
+    — card stays in review for manual resolution'
+- at: 2026-10-11 17:08
+  from: devin
+  text: 'DEPLOYED + DEBUGGED (17:0x): router live at 2aa8ed4 (1291 tests green; earlier calendar-test hold was runner-env,
+    unrelated). GROUP_ID C822026077530a29620b5041bd1a955c5 allow-listed. Two caller-mint gotchas learned for the
+    runbook: (1) ada-kk reads its OWN keys file ~/.config/secrets/ada-ha-kk-keys.json (auth.py resolves per ADA_INSTANCE_ID)
+    — LINE caller keys must be mirrored per-lane with the SAME key value, since relay resolves key once from ada-ha-tony
+    file then sends it to the routed backen'
+- at: 2026-10-11 17:09
+  from: devin
+  text: 'attempt 3: verified the committed mention-routing work, hardened 4 edges (default-persona typo no longer
+    KeyErrors; room sources use /room/ profile endpoint; join greeting uses replyToken; get_running_loop). 21/21
+    group tests + suite green. Remaining is ops on idc03: unit env (LINE_ALLOWED_GROUP_IDS, LINE_NAME_BACKENDS,
+    nhong caller), user-nhong key mint per backend, ada-chaba :8008.'
+- at: 2026-10-11 17:11
+  from: idc02
+  text: 'finished (ok): exit=0  is provisioned; a board comment was posted and the outcome doc is at `dispatch-outcome-20261011-170000-line-grou'
+- at: 2026-10-11 17:11
+  from: chaba
+  text: 'session-end checkpoint 4c36aa16: 5 leftover file(s) committed'
+- at: 2026-10-11 17:11
+  from: chaba
+  text: pushed dispatch/20261011-170000-line-group-tony-kk-nhong-per-s to origin
+- at: 2026-10-11 17:11
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-11 17:11
+  from: chaba
+  text: auto-merged cc7431ed (dispatch/20261011-170000-line-group-tony-kk-nhong-per-s) → origin/main
+- at: 2026-10-11 17:14
+  from: devin
+  text: 'LIVE VERIFIED 17:1x: kaewta mention in group C8220...955c5 -> routed to ada-kk :8007 -> Thai reply delivered
+    tagged, Tony confirmed seeing it. Full chain working: mention parse -> group allow -> caller key (user-tonezzzz,
+    member tier on kk-ha) -> ws :8007 -> reply. Device-binding + keys-mirror fixes documented in prior comms. Persona
+    attrs: chaba+kaewta gender=female recorded in ssot.apps.ada-persons.yml (ada-pi ac21e27). REMAINING: kk LINE
+    userId capture (she sends 1 msg), nhong guest-tier test'
+- at: 2026-10-11 17:37
+  from: devin
+  text: 'SPEC v4 (Tony 17:4x): group C8220 is KK-HA ROOM — isolated to kk-ha; all memory/control belongs to kk-ha.
+    LINE_DEFAULT_PERSONA=kaewta set live: unaddressed messages now route to kaewta (was: silence). ada/chaba remain
+    mention-only in this room. NOTE for future rooms: default persona should become PER-GROUP (each room has an
+    owner-lane) — current env is global; revisit when a second group is allow-listed.'
+- at: 2026-10-11 17:42
+  from: devin
+  text: 'FIX: kaewta "cannot access the system" — she was calling home_search which ada-kk has no upstream for (by
+    design, kk-ha virtual). Root cause: ADA_EXCLUDED_TOOLS predates the tool-merge — it lists old names (list_home_devices,
+    ada_ha_search_devices…) but NOT the merged home_search, so the exclusion missed it. Added home_search to ada-kk
+    + ada-dev exclusion lists, restarted. LESSON: when tools merge, every instance ADA_EXCLUDED_TOOLS must be re-audited
+    against the new names — worth a lint check (t'
+claim:
+  since: 2026-10-11 16:39
+review_kind: verify
