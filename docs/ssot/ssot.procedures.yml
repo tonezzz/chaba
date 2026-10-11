@@ -53,6 +53,9 @@ procedures:
   - {id: github-process, where: "docs/ssot/ssot.github-process.yml",                           trigger: "repo settings, CI gates, PR/merge conventions on GitHub", status: verified, last_run: 2026-10-09}
   # --- desktop / hardware ---
   - {id: display-scale, where: ".devin/skills/scalecheck + scripts/devin/display-scale-check.sh", trigger: "codeword 'scalecheck' — Chrome/UI/text wrong size on any monitor (GNOME)", status: verified, last_run: 2026-10-11}
+  - {id: incident-capture, where: "scripts/devin/incident-capture.sh + hardware-tony-macbook.md#suspend-wedge", trigger: "host goes dark / GPU wedge / pre-reboot evidence grab — run over ssh at symptom time", status: verified, last_run: 2026-10-11}
+  # --- ai / eval ---
+  - {id: model-eval,   where: "scripts/voice-bench pattern + ada-pi tests/benchmark.yml + reports/<topic>/", trigger: "'can micro/local model X help with Y' — fixtures -> variant harness -> measure vs baseline -> report -> adopt-gate", status: verified, last_run: 2026-10-11}
   # --- git / board write paths ---
   - {id: board-write,   where: "scripts/board/board-api.py (POST /apps/board-api/{card,comment,request,respond,action} on tony-dell)", trigger: "any kanban card mutation from a non-dell host — file-edit+push races the served-checkout writer", status: verified, last_run: 2026-10-11}
   - {id: git-push,      where: "scripts/git-safe-push.sh (safe-pull rebase + push, retry x4)", trigger: "pushing master from any non-dell chaba checkout — dell's kanban-commit.timer races every ~15min", status: verified, last_run: 2026-10-11}
