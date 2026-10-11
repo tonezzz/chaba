@@ -93,4 +93,17 @@ fi
 
 AFTER=$(du -sh "$DB" | awk '{print $1}')
 echo "After:  $AFTER"
+
+# Finished dispatch task dirs are archived state — GC those past retention
+# so the registry doesn't grow forever (learned 2026-10-11: 235 dirs/137M
+# accumulated with no cleanup path). exit_code present = task finished.
+TASKS_DIR="/home/tony/.local/share/devin-dispatch/tasks"
+if [ -d "$TASKS_DIR" ]; then
+  mapfile -t OLD_TASKS < <(find "$TASKS_DIR" -mindepth 2 -maxdepth 2 \
+      -name exit_code -mtime +"$RETENTION_DAYS" -printf '%h\n')
+  if [ "${#OLD_TASKS[@]}" -gt 0 ]; then
+    echo "Task-dir GC: removing ${#OLD_TASKS[@]} finished task dir(s) older than ${RETENTION_DAYS}d ..."
+    rm -rf "${OLD_TASKS[@]}"
+  fi
+fi
 echo "Done."
