@@ -32,7 +32,13 @@ For each card in doing/review with action.type=dispatch:
      safe-pull path converges it). CONFLICT POLICY = stop-and-report:
      ANY conflicted path aborts and posts a card request naming the
      files. Unlike close_out this sweep never silently resolves either
-     side — the branch may carry state a human already reviewed.
+     side — the branch may carry state a human already reviewed. A clean
+     merge still holds when the branch adds gitignored-dir shadow paths
+     (symlinks, or files ignored only as directories — the 2026-10-10
+     .venv incident): merge_strict flags them pre-push; sweep_card posts
+     comms and stamps action.sweep.shadow_blocked keyed to the head sha
+     so a fixed branch re-checks but a flagged head doesn't re-merge
+     every pass.
   6. verified gate before any verified stamp (2026-10-09 nest-mgr
      incident — the unit died 1s in, produced nothing, and was stamped
      verified anyway): verified=True requires (a) the devin-task unit
@@ -792,8 +798,9 @@ def merge_strict(repo: Path, sha: str, base_ref: str,
                  base: str) -> dict:
     """--no-ff merge of sha into origin/<base> inside a throwaway
     detached worktree of the served repo — NEVER silently resolves a
-    side: any conflicted path aborts and is reported.
-    {merged, sha, conflicts, error}."""
+    side: any conflicted path aborts and is reported. A clean merge is
+    still held when it introduces gitignored-dir shadow paths.
+    {merged, sha, conflicts, shadows, error}."""
     mwt = Path(tempfile.mkdtemp(prefix="merge-sweep-"))
     try:
         r = sh(["git", "-C", str(repo), "worktree", "add", "--detach",
@@ -815,6 +822,12 @@ def merge_strict(repo: Path, sha: str, base_ref: str,
                 sh(["git", "-C", str(mwt), "merge", "--abort"],
                    timeout=30)
                 return {"merged": False, "conflicts": conflicts}
+            shadows = dr.shadow_paths(mwt, base_ref, "HEAD")
+            if shadows:
+                # gitignored-dir shadow (card dispatch-gitignore-shadow-
+                # guard) — the 2026-10-10 .venv incident class. The merge
+                # is clean but the tree must not reach origin.
+                return {"merged": False, "shadows": shadows}
             push = sh(["git", "-C", str(mwt), "push", "-q", "origin",
                        f"HEAD:{base}"], timeout=90)
             if push.returncode == 0:
@@ -1109,6 +1122,10 @@ def sweep_card(card: dict, active: dict, dry: bool,
     if m["ancestor"]:
         return stamp_gate_result(
             f"{probe.get('branch')} already in {base_ref}")
+    # shadow-flagged heads don't re-attempt the doomed merge every pass —
+    # a new head sha re-checks from scratch
+    if (a.get("sweep") or {}).get("shadow_blocked") == head[:12]:
+        return False
     if dry:
         verdict = ("verify" if g.get("verify") else
                    "defer" if g.get("defer") else "hold")
@@ -1121,6 +1138,19 @@ def sweep_card(card: dict, active: dict, dry: bool,
         stamp_gate_result(
             f"merged {res['sha'][:8]} ({probe.get('branch')} from "
             f"{runner or HOST}) -> origin/{base}")
+        return True
+    if res.get("shadows"):
+        paths = ", ".join(str(p) for p in res["shadows"][:10])
+        if (a.get("sweep") or {}).get("shadow_blocked") != head[:12]:
+            card_note(
+                cid,
+                f"merge-sweep: {probe.get('branch')} adds "
+                f"gitignored-dir shadow path(s) vs {base_ref}: {paths} "
+                "— merge blocked (a symlink, or a file whose name is "
+                "ignored only as a directory — the 2026-10-10 .venv "
+                "incident class). Untrack/rename it or add the bare "
+                "ignore name and the next pass lands it.", dry)
+            stamp(cid, "shadow_blocked", head[:12], dry)
         return True
     if res.get("conflicts"):
         files = ", ".join(str(f) for f in res["conflicts"][:10])

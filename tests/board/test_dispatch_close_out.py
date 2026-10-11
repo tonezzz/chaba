@@ -220,6 +220,81 @@ class Case(unittest.TestCase):
         self.assertFalse(res["merged"])
         self.assertFalse(res["gate"]["ok"])
 
+    # -------------------------------------------------- shadow guard
+    # gitignored-dir shadow paths (card dispatch-gitignore-shadow-guard,
+    # the 2026-10-10 .venv incident): a clean merge is held pre-push when
+    # the branch adds a symlink or a file whose name is ignored only as
+    # a directory.
+
+    def test_shadow_symlink_holds_merge(self):
+        commit(self.wt, ".gitignore", ".venv/\n", "ignore venv dir")
+        os.symlink("/nonexistent/venv", self.wt / ".venv")
+        git(self.wt, "add", ".venv")
+        r = git(self.wt, "-c", "user.name=t", "-c", "user.email=t@t",
+                "commit", "-qm", "worktree venv")
+        assert r.returncode == 0, r.stderr
+        commit(self.wt, "feature.py", "x=1\n", "work")
+
+        res = dr.close_out(self.card)
+
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(res["shadows"], res)
+        self.assertTrue(any(".venv" in s for s in res["shadows"]),
+                        res["shadows"])
+        # nothing reached origin/master — but the branch still pushed,
+        # so the work isn't stranded for the fix
+        self.assertFalse(self.remote_has("master", ".venv"))
+        self.assertFalse(self.remote_has("master", "feature.py"))
+        r = git(self.main, "ls-remote", "--heads", "origin",
+                f"dispatch/{TID}")
+        self.assertIn(f"dispatch/{TID}", r.stdout)
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("shadow" in n and ".venv" in n
+                            for n in notes), notes)
+        # the board-api merge guard surfaces the same paths in its
+        # unmerged-commits note
+        g = dr.guard(self.card)
+        self.assertFalse(g["allowed"])
+        self.assertIn("shadow", g["note"])
+
+    def test_shadow_dirpattern_file_holds_merge(self):
+        # plain file named like an ignored dir — the `.venv/` pattern
+        # here is `cache/`; the blob `cache` is trackable yet shadows it.
+        commit(self.wt, ".gitignore", "cache/\n", "ignore cache dir")
+        commit(self.wt, "cache", "oops a file\n", "not a dir")
+        commit(self.wt, "feature.py", "x=1\n", "work")
+
+        res = dr.close_out(self.card)
+
+        self.assertFalse(res["merged"], res)
+        self.assertTrue(any("cache" in s and "cache/" in s
+                            for s in res["shadows"]), res["shadows"])
+        self.assertFalse(self.remote_has("master", "cache"))
+
+    def test_shadow_detector_direct(self):
+        # unit-level: shadow_paths flags modes/patterns, stays quiet
+        # for ordinary adds.
+        commit(self.wt, ".gitignore", "cache/\n*.log\n", "ignores")
+        os.symlink("/nonexistent", self.wt / ".venv")
+        (self.wt / "debug.log").write_text("ignored anyway\n")
+        git(self.wt, "add", "-f", ".venv", "debug.log")
+        r = git(self.wt, "-c", "user.name=t", "-c", "user.email=t@t",
+                "commit", "-qm", "shadow batch")
+        assert r.returncode == 0, r.stderr
+        commit(self.wt, "cache", "file\n", "shadow file")
+        commit(self.wt, "plain.py", "x=1\n", "clean add")
+        flags = dr.shadow_paths(self.wt, "origin/master", "HEAD")
+        self.assertTrue(any(s.startswith(".venv") and "symlink" in s
+                            for s in flags), flags)
+        self.assertTrue(any(s.startswith("cache") for s in flags),
+                        flags)
+        # debug.log is ignored as a file — not a dir-shadow; plain.py
+        # is clean
+        self.assertFalse(any(s.startswith("debug.log")
+                             for s in flags), flags)
+        self.assertFalse(any(s.startswith("plain.py")
+                             for s in flags), flags)
+
     def test_missing_session_is_silent_noop(self):
         card = {"id": "nope",
                 "action": {"type": "dispatch", "task_id": "gone",

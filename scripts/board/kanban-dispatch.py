@@ -525,7 +525,8 @@ def merge_pending_one(path: Path) -> str:
         a.pop("merge_pending", None)
         if res.get("merged"):
             a["verified"] = True
-        elif res.get("conflicts") or res.get("test_failures") or (
+        elif res.get("conflicts") or res.get("test_failures") \
+                or res.get("shadows") or (
                 res.get("gate") and not res["gate"]["ok"]):
             a["verified"] = False  # checked and NOT verified
             # Review feedback loop: conflicts/goal-failures requeue the
