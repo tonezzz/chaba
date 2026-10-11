@@ -536,12 +536,12 @@ function cardHtml(c) {{
     badges += `<span class="text-xs ${{cls}} rounded px-1.5 py-0.5" title="${{esc(k.how || '')}}">${{mark}} ${{esc(k.k)}}</span> `;
   }}
 
-  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">` +
+  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.ref||'')).toLowerCase())}}">` +
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
     (badges ? `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` : '') +
     `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
     (c.advice ? `<div class="text-xs text-emerald-300/90 mt-1.5">💡 ${{esc(typeof c.advice === 'string' ? c.advice : ((c.advice.from ? c.advice.from + ': ' : '') + (c.advice.text || '')))}}</div>` : '') +
-    `<div class="text-[10px] text-slate-500 mt-1">${{esc(c.id)}} · ${{esc(c.updated || '')}}</div>` +
+    `<div class="text-[10px] text-slate-500 mt-1">${{c.ref ? `<span class="font-semibold text-sky-400">${{esc(c.ref)}}</span> · ` : ''}}${{esc(c.id)}} · ${{esc(c.updated || '')}}</div>` +
     '</div>';
 }}
 

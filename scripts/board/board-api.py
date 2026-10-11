@@ -188,15 +188,83 @@ def card_path(cid: str) -> Path:
     if not p.exists():
         # filename/id drift happens when a session renames a card's id
         # without renaming the file — fall back to an id-field scan so
-        # respond/action/comment still find it.
+        # respond/action/comment still find it. Refs (ADA-0042) resolve
+        # through the same scan.
         for cand in CARD_DIR.glob("*.yml"):
             try:
-                if (yaml.safe_load(cand.read_text()) or {}).get("id") == cid:
-                    return cand
+                c = yaml.safe_load(cand.read_text()) or {}
             except Exception:
                 continue
+            if c.get("id") == cid or c.get("ref") == cid:
+                return cand
         raise ValueError(f"no card {cid}")
     return p
+
+
+# Card refs — human handle CAT-NNNN (Tony 2026-10-11). Slug stays the
+# canonical key (filename/API); ref is for voice/TG/display. Global
+# sequence in CARD_DIR/.ref-seq; allocated under the write flock so
+# multi-host creates can't collide.
+REF_SEQ = CARD_DIR / ".ref-seq"
+REF_RE = re.compile(r"^[A-Z]{3}-\d{4}$")
+REF_CATS = {
+    "ada": "ADA", "voice": "ADA", "chat": "ADA",
+    "infra": "SYS", "host": "SYS", "hosts": "SYS", "network": "SYS",
+    "tailscale": "SYS", "macbook": "SYS",
+    "dispatch": "OPS", "ops": "OPS", "worktree": "OPS", "runner": "OPS",
+    "fleet": "OPS", "restore": "OPS", "remote-access": "OPS",
+    "kanban": "KNB", "board": "KNB", "card": "KNB", "cards": "KNB",
+    "audit": "AUD", "monitoring": "AUD", "verify": "AUD",
+    "ha": "HOM", "home-assistant": "HOM", "dashboard": "HOM",
+    "secret": "SEC", "secrets": "SEC", "key": "SEC", "security": "SEC",
+    "rotation": "SEC", "auth": "SEC",
+    "mddb": "MEM", "memory": "MEM", "embedding": "MEM",
+    "cast": "MED", "media": "MED", "cctv": "MED", "gev": "MED",
+    "devin": "DEV", "cli": "DEV", "skill": "DEV", "tools": "DEV",
+    "bench": "BEN", "benchmark": "BEN",
+}
+REF_DEFAULT = "OPS"
+
+
+def _ref_seed() -> int:
+    """Highest ref number already on the board (for first-run init)."""
+    hi = 0
+    for cand in CARD_DIR.glob("*.yml"):
+        try:
+            r = (yaml.safe_load(cand.read_text()) or {}).get("ref") or ""
+        except Exception:
+            continue
+        m = re.match(r"^[A-Z]{3}-(\d{4})$", str(r))
+        if m:
+            hi = max(hi, int(m.group(1)))
+    return hi
+
+
+def alloc_ref(cat: str) -> str:
+    """Allocate the next global ref under the caller's write flock."""
+    seq = REF_SEQ
+    if seq.exists():
+        n = int(seq.read_text().strip() or 0)
+    else:
+        n = _ref_seed()
+    n += 1
+    seq.write_text(f"{n}\n")
+    return f"{cat}-{n:04d}"
+
+
+def ref_cat(card: dict, body: dict) -> str:
+    """Pick the 3-letter category: explicit cat/ref prefix > tag map > OPS."""
+    explicit = str(body.get("cat") or "").strip().upper()
+    if explicit in set(REF_CATS.values()):
+        return explicit
+    want = str(body.get("ref") or "").strip().upper()
+    if REF_RE.match(want):
+        return want[:3]
+    for t in body.get("tags") or card.get("tags") or []:
+        c = REF_CATS.get(str(t).strip().lower())
+        if c:
+            return c
+    return REF_DEFAULT
 
 
 def load(p: Path) -> dict:
@@ -807,12 +875,15 @@ def do_create(body: dict, frm: str) -> dict:
     help_txt = str(body.get("help") or "").strip()
     if help_txt:
         card["help"] = help_txt[:4000]
+    want_ref = str(body.get("ref") or "").strip().upper()
+    card["ref"] = (want_ref if REF_RE.match(want_ref)
+                   else alloc_ref(ref_cat(card, body)))
     card["comms"] = [{"at": now(), "from": frm,
                       "text": str(body.get("text") or
                                    "card captured via board-api")[:500]}]
     save(p, card)
-    msg = f"card {cid} created in {col}"
-    res = {"message": msg, "id": cid}
+    msg = f"card {cid} created in {col} as {card['ref']}"
+    res = {"message": msg, "id": cid, "ref": card["ref"]}
     a = card.get("action") or {}
     if a.get("status"):
         res["status"] = a["status"]
