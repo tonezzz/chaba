@@ -1,26 +1,32 @@
 id: cms-auto-flood-alert
 title: CMS automation `flood-alert` stale
-brief: A scheduled report-page job ('flood-alert') is stale. Re-run it or check the generator — details in the note.
+brief: A scheduled report-page job ('flood-alert') is stale. Re-run it or check the
+  generator — details in the note.
 column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'last_run 975m overdue (interval 15m). last_run=2026-10-10T08:59:46+00:00 interval=15m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/flood-alert'
-help: 'Trigger a manual regen: cms_automation run_now for ''flood-alert'' (or POST /api/cms/pages/flood-alert/regenerate).
-  If it repeats, check the page''s generator command in the registry doc.'
+note: 'last_run 990m overdue (interval 15m). last_run=2026-10-10T08:59:46+00:00 interval=15m
+  status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/flood-alert'
+help: 'Trigger a manual regen: cms_automation run_now for ''flood-alert'' (or POST
+  /api/cms/pages/flood-alert/regenerate). If it repeats, check the page''s generator
+  command in the registry doc.'
 updated: '2026-10-11'
 comms:
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
-    by an autostash-pop conflict resolution — normalizing to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
+    was restored accidentally by an autostash-pop conflict resolution — normalizing
+    to done.'
 - at: 2026-10-11 08:10
   from: devin
-  text: 'closed (3rd verification): news-flood.timer on idc03 ran 08:00, next 09:00 — automation healthy. Card keeps
-    re-appearing in review via the autostash-pop revert pattern; evidence unchanged.'
+  text: 'closed (3rd verification): news-flood.timer on idc03 ran 08:00, next 09:00
+    — automation healthy. Card keeps re-appearing in review via the autostash-pop
+    revert pattern; evidence unchanged.'
 - at: 2026-10-11 08:35
   from: devin
-  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified live this session).'
+  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified
+    live this session).'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0403'
