@@ -1,6 +1,6 @@
 id: or-account-outage
 title: OpenRouter account gone — all keys 401 "User not found" (fleet-wide)
-column: backlog
+column: review
 priority: high
 tags:
 - secrets
@@ -26,3 +26,11 @@ comms:
     GET /auth/key. Panel-looks-good + user-not-found ⇒ likely signed into a DIFFERENT
     OR account (Google vs GitHub signin = separate accounts). Definitive test requested:
     mint throwaway key on the visible panel → drop as or-next-key → I verify auth.'
+- at: 2026-10-11 13:20
+  from: devin
+  text: 'RESOLVED as bridge: Tony''s throwaway key verified (acct user_3ACXf7 alive
+    — two-account theory confirmed; slot keys belonged to the dead account). rotate-or-key
+    wrote all 4 stores + restarted ghostroute+ollama-proxy; e2e :free call ok. NOTE:
+    this key is $1-cap, expires 2026-10-12 04:55 UTC (~17h) — mint the real weekly
+    key on THIS account and re-run the rotator before then.'
+review_kind: triage
