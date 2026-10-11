@@ -1,6 +1,6 @@
 id: ada-chat-or-fallback
 title: 'Ada chat: degrade to OpenRouter text when Gemini Live is down'
-column: backlog
+column: done
 priority: medium
 tags:
 - ada
@@ -22,3 +22,12 @@ comms:
   from: devin
   text: filed from live incident — dunning killed Live on all channels; chat could
     have degraded gracefully
+- at: 2026-10-11 12:15
+  from: devin
+  text: '[prod] shipped 132c2e1+b5946c1+784c77e. Live e2e on ada-dev: Gemini connect
+    fails (dunning 1008) -> ''degraded'' frame -> OR turn ''say ok'' -> assistant
+    reply ''ok'' -> response_completed. Voice still fails loudly by design. OR key
+    added to all 4 ada envs; model chain nvidia-super-120b/nano-30b/liquid-2.6b :free
+    tried in order (gemma:free 400s upstream on this account). Env: OPENROUTER_API_KEY
+    + ADA_OR_FALLBACK_MODEL.'
+done: {}
