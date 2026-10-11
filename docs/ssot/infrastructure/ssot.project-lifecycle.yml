@@ -20,9 +20,19 @@ overview:
 
 project_container:
   definition: |
-    A project = ONE CMS page in ada-cms-pages (the project home) + the
-    `project: <slug>` tag on every kanban card that belongs to it.
-    The board filters/rolls up by tag; the page carries the narrative.
+    A project = ONE CMS page in ada-cms-pages (the project home) + a
+    `project:<slug>` entry in the card's `tags:` list on every kanban
+    card that belongs to it. The board filters/rolls up by tag; the
+    page carries the narrative.
+    Canonical fill-in template: docs/ssot/templates/project-page.md
+    (conforms to docs/kb/cms-page-standard.md).
+  tag_syntax: |
+    `project:<slug>` — one entry in the card `tags:` list, no space
+    after the colon (machine-filterable). This is ORTHOGONAL to the
+    existing `program:` field: program = the domain lane the work is
+    (ada-tools, vcast, chaba-ci, …), project = the named effort the
+    card advances. A card may carry both; a card belongs to at most
+    one project at a time.
   page_template: |
     ## <Project Name>            (slug: <slug>)
     goal:        one sentence — what done looks like
@@ -32,6 +42,19 @@ project_container:
     linked_cards: [card ids, kept current]
     decision_log:  dated one-liners — every Tony decision verbatim
     next:        the single next action + who owns it
+  stage_field: |
+    DECISION (2026-10-11): no stored `stage:` field on cards. A card's
+    release-lifecycle position is already derivable from its comms
+    evidence tags ([exp]→s1 … [prod]→s5; lifecycle-check.py computes
+    it). A mutable field would drift from the evidence — two truths,
+    one wrong. The PROJECT-level stage is a human/steward judgement
+    and lives on the CMS page `stage:` line only; the steward updates
+    it when the mapped gate below is met.
+  board_filter: |
+    `project:<slug>` tags ride the card `tags:` list — searchable in
+    both board views (board2 filter box; classic view's data-text),
+    and rendered as a 📁 badge on the card tile. Rollup = filter by
+    the slug; the CMS page keeps the curated linked_cards list.
   rules:
     - "page slug = card tag value; rename both together or not at all"
     - "one project = one page; sub-efforts are separate projects linked in the log"
@@ -57,13 +80,13 @@ intake_router:
   applies_to: "any Tony idea arriving via voice or Telegram (ada-tg-relay) that names or implies project work"
   flow:
     - "match: search ada-cms-pages for a project whose page/slug fits the idea"
-    - "confident match -> file the card with `project: <slug>` + note the project page in card links"
+    - "confident match -> file the card with `project:<slug>` in tags + note the project page in card links"
     - "unsure -> file in backlog WITHOUT a project tag + raise a board request with clickable options (candidate projects + 'new project') — auto-file+ask, never hold"
-    - "clearly a new project -> create the CMS page first (template above), then the card with the new tag"
+    - "clearly a new project -> create the CMS page first (docs/ssot/templates/project-page.md), then the card with the new tag"
     - "always: tell Tony the card id + project in one short phrase — DONE MEANS DONE applies, say it only after the tool returns ok"
   anti_pattern: "an idea discussed in chat with no card does not exist — capture is the floor"
 
 card_ux_loop:
   trigger: "any friction using the board/card interface — missing filter, slow view, dead button, confusing state"
-  flow: "file a card tagged `kanban-ux` with the surface named -> review-digest surfaces it -> small fixes direct, larger ones dispatched"
+  flow: "file a card tagged `kanban-ux` with the surface named -> review-digest lists open kanban-ux cards in its own section -> small fixes direct, larger ones dispatched"
   rule: "UX friction is real work worth a card — the board is the shared surface, its usability is everyone's throughput"

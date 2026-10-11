@@ -9,6 +9,9 @@ timer. The card sits in `review` and is excluded from its own list.
 Content:
   - every card in column=review (ref, title, age, report link if any)
   - cards with open requests aimed at tony (answers waiting)
+  - open cards tagged `kanban-ux` — board/card-UX friction reports
+    (project-lifecycle card_ux_loop): surfaced here so interface
+    friction is never invisible just because it sits in backlog
 
 Writes under the board-api flock so it can't race the API. The 60s
 render sweep picks the change up; no service calls needed.
@@ -32,7 +35,7 @@ def load(p: Path) -> dict:
 
 
 def main() -> int:
-    review, asks = [], []
+    review, asks, ux = [], [], []
     for p in sorted(CARD_DIR.glob("*.yml")):
         try:
             c = load(p)
@@ -45,6 +48,9 @@ def main() -> int:
             ref = c.get("ref") or "----"
             rep = f" → {c['report']}" if c.get("report") else ""
             review.append(f"{ref} · {c.get('title') or cid}{rep}")
+        if "kanban-ux" in (c.get("tags") or []) \
+                and c.get("column") != "done":
+            ux.append(f"{cid} ({c.get('column') or 'backlog'})")
         open_reqs = [r for r in c.get("requests") or []
                      if r.get("status") not in ("answered", "closed", "done")
                      and r.get("to", "tony") == "tony"]
@@ -58,6 +64,9 @@ def main() -> int:
     if asks:
         lines.append(f"**{len(asks)} unanswered request(s):** "
                      + ", ".join(asks[:8]))
+    if ux:
+        lines.append(f"**{len(ux)} kanban-ux friction card(s):** "
+                     + ", ".join(ux[:8]))
     note = "\n".join(lines)
 
     with LOCK.open("w") as lf:

@@ -536,7 +536,7 @@ function cardHtml(c) {{
     badges += `<span class="text-xs ${{cls}} rounded px-1.5 py-0.5" title="${{esc(k.how || '')}}">${{mark}} ${{esc(k.k)}}</span> `;
   }}
 
-  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.ref||'')).toLowerCase())}}">` +
+  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.ref||'')+' '+(c.program||'')+' '+((c.tags||[]).join(' '))).toLowerCase())}}">` +
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
     (badges ? `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` : '') +
     `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
@@ -724,7 +724,7 @@ function render() {{
     let any = false;
     for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) {{
       any = true;
-      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300 truncate" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
+      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300 truncate" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.program||'')+' '+((c.tags||[]).join(' '))).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
     }}
     if (!any) list += '<div class="text-slate-600 text-xs px-2">—</div>';
   }}

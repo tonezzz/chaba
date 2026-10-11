@@ -128,7 +128,7 @@ function cardsFor(t) {{
 }}
 function matchQ(c, q) {{
   if (!q) return true;
-  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
+  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')+' '+((c.tags||[]).join(' '))).toLowerCase();
   return q.toLowerCase().split(/\\s+/).every(w => hay.includes(w));
 }}
 function needYou(c) {{
@@ -137,6 +137,8 @@ function needYou(c) {{
 
 function badgeHtml(c) {{
   let b = '';
+  const proj = (c.tags||[]).find(t => t.startsWith('project:'));
+  if (proj) b += `<span class="badge bg-indigo-800/80 text-indigo-100">📁 ${{esc(proj.slice(8))}}</span> `;
   const p = (c.priority||'').toLowerCase();
   if (p === 'high') b += `<span class="badge bg-red-800/80 text-red-100">high</span> `;
   const ny = needYou(c).length;
