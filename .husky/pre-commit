@@ -32,6 +32,12 @@ if [ -n "$SW_TOP" ] \
         echo "   ($SERVED_CHECKOUT). kanban-commit.timer does not sweep this checkout —" >&2
         echo "   push/merge it yourself or write the files there." >&2
     fi
+    if git diff --cached --name-only | grep -q '^docs/ssot/kanban/cards/'; then
+        echo "⚠️  single-writer: docs/ssot/kanban/cards/ staged outside the served checkout" >&2
+        echo "   card edits race the board-api writer — prefer the API" >&2
+        echo "   (POST /apps/board-api/comment|request|action|card on tony-dell) or" >&2
+        echo "   push immediately via scripts/git-safe-push.sh." >&2
+    fi
     SW_UP="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null \
              || echo origin/master)"
     SW_COUNTS="$(git rev-list --left-right --count "$SW_UP...HEAD" 2>/dev/null \
