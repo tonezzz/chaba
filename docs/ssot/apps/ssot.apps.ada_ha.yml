@@ -221,7 +221,7 @@ sections:
       - label: Auth
         text: "ADA_API_KEY (required for writes + /ws), ADA_API_KEYS=name:key,... per-caller keys, ADA_KEYS_FILE (keys JSON path), ADA_REDEEM_TTL_S (600), ADA_SESSION_TTL_S, ADA_DASHBOARD_URL_PATH (tony-test)."
       - label: Safety / policy
-        text: "ADA_READ_ONLY=true disables actuating tools. ADA_CONTROL_MAX_PER_ENTITY (5) / ADA_CONTROL_MAX_GLOBAL (30) / ADA_CONTROL_RATE_WINDOW_S (60) — sliding-window rate limits. ADA_EXCLUDED_TOOLS — comma list to hide tools."
+        text: "ADA_READ_ONLY=true disables actuating tools. ADA_CONTROL_MAX_PER_ENTITY (5) / ADA_CONTROL_MAX_GLOBAL (30) / ADA_CONTROL_RATE_WINDOW_S (60) — sliding-window rate limits. ADA_EXCLUDED_TOOLS — comma list to hide tools. ADA_INCLUDED_TOOLS (2026-10-11) — comma keep-list: when set, every declaration NOT listed is stripped (allowlist; per-persona profiles render it from ssot.apps.ada-persons.yml tools:)."
       - label: Memory recall
         text: "ADA_BANK_SEARCH_THRESHOLD (0.45) — bank + summary vector hit floor. ADA_BANK_UPDATE_THRESHOLD (0.85) — ada_remember dedupe/correct-in-place floor. ADA_RECALL_SLOW_AFTER_S (10) — filler-speech delay before NotebookLM completes."
       - label: Summarization
