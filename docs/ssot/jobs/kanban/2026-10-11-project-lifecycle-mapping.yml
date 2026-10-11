@@ -1,0 +1,125 @@
+title: "project-lifecycle mapping — machinery gaps closed behind the SOP"
+subtitle: >-
+  verify-and-complete pass on card project-lifecycle-pipeline: the SOP
+  (ssot.project-lifecycle.yml) landed in an earlier session, but the board
+  machinery it promises didn't exist — tags were invisible to both board
+  filters, tags+program were undocumented in card_schema, review-digest
+  had no kanban-ux lane, and the stage-field question was unanswered.
+icon: 🗺️
+id: 2026-10-11-project-lifecycle-mapping
+status: done
+owner: devin-dispatch
+project: chaba
+card: project-lifecycle-pipeline
+branch: dispatch/20261011-103449-mapping-onto-existing-machiner
+started: "2026-10-11"
+completed: "2026-10-11"
+
+context:
+  ask: >-
+    Card project-lifecycle-pipeline: map Tony's idea->requirement->PoC->
+    prototype->alpha->beta->product pipeline onto the existing release
+    lifecycle (s0-s5) and close 4 gaps — project container, TG idea
+    intake, role split, card-UX loop.
+  prior_state: >-
+    An earlier session (same day) wrote the SOP doc and closed the card,
+    claiming Ada steward+intake duties deployed to idc03 (ada-pi a6bea13).
+    This dispatch was already queued, so it became a verify pass: the SOP
+    existed, but several machinery claims in it were aspirational —
+    checked each against the code and fixed what was missing.
+
+decisions:
+  project_tag_vs_program_field: >-
+    Spec language was "`project: <id>` tag on cards". The repo already
+    has a `program:` field (board-api write path, programs: registry,
+    150+ cards, board2-searchable) — but program is the DOMAIN lane
+    (ada-tools, vcast, chaba-ci). A project is an orthogonal named
+    effort; a card can legitimately be `program: ada-tools` AND
+    `project:ada-memory-v2`. So `project:<slug>` rides the card `tags:`
+    list (no new field, no board-api change needed); SOP amended to say
+    so explicitly.
+  stage_field: >-
+    Spec asked for a "release-lifecycle stage field". No stored field was
+    added: a card's stage is already derivable from its comms evidence
+    tags (lifecycle-check.py computes it; a mutable field would drift
+    from the evidence — two truths, one wrong). The PROJECT-level stage
+    is a steward judgement and lives on the CMS page `stage:` line only.
+    Recorded as an explicit DECISION block in the SOP.
+  cms_template: >-
+    The SOP embedded the project page shape as a text block; now also a
+    canonical fill-in file docs/ssot/templates/project-page.md conforming
+    to docs/kb/cms-page-standard.md (status line, Latest, meta block,
+    provenance footer), slug convention `project-<slug>`.
+
+machinery_gaps_closed:
+  - >-
+    Board filters couldn't see tags at all: render-board2.py matchQ
+    haystack now includes c.tags (it already had program); classic
+    render-board.py data-text now includes program + tags on both the
+    card tiles and the sidebar list. Filtering `project:<slug>` or
+    `kanban-ux` now works in both views.
+  - >-
+    board2 renders `project:`-tagged cards with a 📁 <slug> badge (row +
+    detail via shared badgeHtml).
+  - >-
+    card_schema documented `tags:` (with the project:/kanban-ux
+    conventions and the board-api limits) and `program:` — both were live
+    fields with zero schema coverage (program: had a registry block and
+    API support but no field doc).
+  - >-
+    review-digest.py gained a `kanban-ux` section — open cards tagged
+    kanban-ux are listed by id+column, so UX-friction cards in backlog
+    surface on the digest instead of sitting invisible.
+  - >-
+    SOP reconciled: tag_syntax, stage_field decision, board_filter note,
+    template path, intake-router syntax now match the code.
+  - >-
+    Sweep bonus (unrelated but blocking): ssot.home-assistant.dashboards.yml
+    had a hard YAML syntax error — "Source: stacks/…" inside a plain
+    multi-line scalar parsed as a mapping. Repunctuated (Source —);
+    file parses again, ssot-validate-all goes to 0 errors.
+
+files:
+- docs/ssot/infrastructure/ssot.project-lifecycle.yml
+- docs/ssot/kanban/ssot.kanban.yml
+- docs/ssot/templates/project-page.md
+- scripts/render-board.py
+- scripts/render-board2.py
+- scripts/board/review-digest.py
+- docs/ssot/jobs/kanban/2026-10-11-project-lifecycle-mapping.yml
+- docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+
+verified:
+- >-
+  yaml.safe_load all edited SSOT files; py_compile all three scripts.
+- >-
+  node scripts/ssot-validate-all.mjs — 2009 files, 0 errors after the
+  dashboards.yml fix (was 1 pre-existing YAML error).
+- >-
+  render-board.py + render-board2.py run clean on the real card set
+  (459 cards each, generated pages written).
+- >-
+  review-digest.py runs on the real card dir — digest note lists the 4
+  current review cards; kanban-ux section absent (correctly, no such
+  cards exist yet); run output restored afterward to keep the diff clean.
+
+notes:
+- >-
+  UNVERIFIED: the earlier session's claim that Ada steward+intake duties
+  were deployed to ada-pi on idc03 (commit a6bea13) cannot be checked
+  from inside this worktree — ada-pi is a separate repo on idc03. The
+  intake_router contract is now fully documented in-repo; if the ada-pi
+  instruction deploy didn't actually land, gap 2 reopens — worth a
+  spot-check on idc03 (`git -C ~/CascadeProjects/ada-pi log --oneline -3`
+  + a TG idea probe).
+- >-
+  First live exercise remains: the next TG idea should produce a card
+  tagged `project:<slug>` (or a clickable-options request). That is the
+  end-to-end proof of gap 2, and it depends on the ada-pi side.
+- >-
+  No `kanban-ux` or `project:*` cards exist yet — both conventions are
+  armed, first use will exercise them.
+- >-
+  board2 is the documented "alternative view"; the classic board filter
+  matches tags via data-text only (no visual badge) — deliberate minimal
+  touch on the older renderer.
