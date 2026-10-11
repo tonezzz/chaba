@@ -2,15 +2,13 @@ id: vcast-auto-flap-check
 title: vcast-flap-check regression fails on deployed relay
 brief: 'An automated health check flagged: vcast-flap-check regression fails on deployed
   relay. Read the note, fix it, then close the card.'
-column: review
+column: done
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: high
-note: 'ssh idc03 rc=255: Connection timed out during banner exchange
-
-  Connection to UNKNOWN port 65535 timed out'
+note: 'Auto-recovered 2026-10-11: `flap-check` check passing again.'
 help: 'Runs stacks/web/input-bridge/vcast-flap-check.mjs inside the relay''s podman
   image on idc03 — exercises the stale-socket race against the DEPLOYED server.mjs.
   A FAIL means the deployed bundle regressed vs repo: diff ~/apps/input-bridge/server.mjs

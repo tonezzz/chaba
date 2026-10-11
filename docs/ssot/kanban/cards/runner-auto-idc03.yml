@@ -7,13 +7,16 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: probe failed: Connection timed out during banner exchange
-
-  Connection to UNKNOWN port 65535 timed out.'
+note: 'Failing: ~/.local/bin/runner-agent sha 8dd148f4a9358339 != repo 28f641cfe4ee10bf
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; no sunsynk-card checkout —
+  host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout — host can''t
+  take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view
+  cards; devin: /home/tony/.local/bin/devin (devin 3000.11.3 (9c803229faa4)).'
 help: 'Per-check fixes:
 
-  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
-  Check tailscale + sshd + the key on the host.'
+  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
+  && ssh <host> chmod +x ~/.local/bin/runner-agent'
 updated: '2026-10-11'
 review_kind: triage
 action:
