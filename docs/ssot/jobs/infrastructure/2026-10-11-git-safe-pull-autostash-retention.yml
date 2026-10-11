@@ -1,0 +1,79 @@
+# SSOT Job: git-safe-pull autostash retention fix
+# Card: safe-pull-autostash-resurrection (repo chaba). Conflict-retained
+# autostash entries piled up on every checkout (33 observed on dell) and
+# were the reservoir the card-resurrection waves drew from — a later pop
+# 3-way-merged a stale card file over the rebased tree, flipping closed
+# cards back to review.
+
+title: git-safe-pull drops superseded autostashes + GCs the pile
+subtitle: pop conflicts fully resolved to HEAD -> archive+drop; autostash entries >7d -> archive+GC on every pull — 2026-10-11
+icon: git
+
+changes:
+  file: scripts/git-safe-pull.sh
+  items:
+    - '_resolve_autostash_pop: when every contested path is generated
+      (resolved to HEAD) and no unmerged paths remain, the retained
+      autostash is archived then DROPPED — its contested hunks were
+      superseded upstream-wins and clean hunks already landed. Any
+      non-generated conflict still keeps the stash for manual merge.'
+    - '_drop_resolved_autostash: only fires when stash@{0} is the entry
+      this pull created (sha differs from pre-pull refs/stash tip AND
+      message matches autostash/"Auto stash") — a pre-existing or named
+      stash is never touched.'
+    - '_gc_autostash: periodic GC piggybacked on every safe-pull run
+      (dell kanban-commit.timer ~15min; satellites via git-safe-push).
+      Autostash entries with commit date > SAFE_PULL_AUTOSTASH_GC_DAYS
+      (default 7; 0 disables) are archived then dropped, highest index
+      first. Named stashes untouched.'
+    - '_archive_stash: `git stash show -p` to
+      SAFE_PULL_STASH_ARCHIVE (default ~/.local/share/chaba-stash-archive/)
+      as <stashdate>-stash-<n>-<sha8>-<why>.patch. Archive failure blocks
+      a GC drop (may hold real work) but not a resolved-pop drop
+      (provably redundant).'
+    - '_rebase_in_progress: `.git/rebase-merge` -> `git rev-parse
+      --git-dir`/rebase-merge — the old check never fired in linked
+      worktrees (.git is a file there), leaving conflicted rebases
+      stalled until a human found them.'
+    - '_resolve_autostash_pop also handles modify/delete on generated
+      paths: `git checkout HEAD` fails when upstream deleted the file ->
+      `git rm -qf` accepts the deletion.'
+
+mechanism:
+  resurrection_chain: |
+    pull --rebase --autostash stashes dirty tracked state -> rebase ->
+    pop. On pop conflict git retains the stash (by design, "in case you
+    need it again"). Pre-fix this script retained it ALWAYS, so each
+    conflicted pull added one entry; dell accumulated 33. The pile is
+    the reservoir: any later pop 3-way-merges an ancient card file —
+    stale `column:` at top merges "cleanly" while upstream comms land at
+    bottom — closed cards flip back to review (4 waves, sibling card
+    git-autostash-column-guard shipped the post-pop column guard).
+  why_drop_is_safe: |
+    A conflicted-pop entry is dropped only when every contested path was
+    generated (upstream-wins semantics already accepted by the rebase
+    resolver) and zero unmerged paths remain. Clean hunks are already in
+    the worktree; contested hunks are deliberately discarded; the patch
+    is archived regardless. Nothing of value is lost.
+
+env:
+  SAFE_PULL_AUTOSTASH_GC_DAYS: '7 (0 disables GC)'
+  SAFE_PULL_STASH_ARCHIVE: '~/.local/share/chaba-stash-archive'
+
+verification:
+  - 'scratch repo pop conflict on docs/ssot path: resolved to HEAD,
+    autostash archived+dropped, pre-existing named stash kept — exit 0'
+  - 'pop conflict on non-generated path: stash retained, conflict left
+    for manual merge — unchanged behavior'
+  - 'forged 40-day-old autostash: archived + GC''d; fresh autostash and
+    named stash kept; stash indices renumber correctly'
+  - 'SAFE_PULL_AUTOSTASH_GC_DAYS=0: GC skipped entirely'
+  - 'mid-rebase generated conflict still resolves upstream-wins with
+    .local-conflict preservation; --git-dir rebase check verified in a
+    linked worktree'
+
+related:
+  - docs/ssot/kanban/cards/safe-pull-autostash-resurrection.yml
+  - docs/ssot/kanban/cards/git-autostash-column-guard.yml
+  - docs/ssot/kanban/cards/stash-graveyard-triage.yml
+  - scripts/board/card-column-guard.py

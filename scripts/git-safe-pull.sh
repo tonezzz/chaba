@@ -17,18 +17,32 @@
 #      preserving the dropped local side as <path>.local-conflict-<ts>.
 #      Conflicts outside generated paths abort the rebase and exit 1 —
 #      manual resolution, next run retries.
-#   3. autostash-pop conflicts under generated paths resolve to HEAD; the
-#      stash entry is always retained for recovery.
-#   4. on exit (any path), scripts/board/reconcile-local-conflicts.py
+#   3. autostash-pop conflicts under generated paths resolve to HEAD.
+#      When every contested path resolves (nothing kept for a human),
+#      the stash's contested hunks are superseded upstream-wins and its
+#      clean hunks already landed — the retained entry is pure
+#      resurrection fuel (card safe-pull-autostash-resurrection), so it
+#      is archived to ~/.local/share/chaba-stash-archive/ and DROPPED.
+#      Unresolved leftovers keep the stash for manual recovery.
+#   4. periodic autostash GC: retained autostash entries older than
+#      SAFE_PULL_AUTOSTASH_GC_DAYS (default 7) are archived the same way
+#      then dropped — the pile is the reservoir stale card states
+#      resurrect from. Named (human) stashes are never touched.
+#   5. on exit (any path), scripts/board/reconcile-local-conflicts.py
 #      folds each card .local-conflict-* back into its canonical card —
 #      the preserved side usually holds a board write that raced the
 #      pull. Merge failures keep the file and flag the card in review.
 #
 # Usage:  git-safe-pull.sh [repo-dir]
-# Env:    SAFE_PULL_UPSTREAM      upstream ref (default: @{upstream} or
-#                                 origin/master)
-#         SAFE_PULL_GENERATED_RE  regex of upstream-wins paths
-#                                 (default: ^docs/ssot/)
+# Env:    SAFE_PULL_UPSTREAM          upstream ref (default: @{upstream}
+#                                     or origin/master)
+#         SAFE_PULL_GENERATED_RE      regex of upstream-wins paths
+#                                     (default: ^docs/ssot/)
+#         SAFE_PULL_AUTOSTASH_GC_DAYS drop autostash entries older than
+#                                     N days (default 7; 0 disables GC)
+#         SAFE_PULL_STASH_ARCHIVE     patch archive dir for dropped
+#                                     stashes (default:
+#                                     ~/.local/share/chaba-stash-archive)
 # Exit:   0 = HEAD now contains upstream (or pull not needed);
 #         1 = needs manual resolution; 2 = not a repo.
 set -uo pipefail
@@ -56,6 +70,8 @@ REPO_OK=1
 
 TS="$(date '+%Y%m%d-%H%M%S')"
 GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/}"
+GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
+ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
 
 if [ -n "${SAFE_PULL_UPSTREAM:-}" ]; then
   UPSTREAM="$SAFE_PULL_UPSTREAM"
@@ -113,7 +129,11 @@ _resolve_untracked_collisions() {
 }
 
 _rebase_in_progress() {
-  [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]
+  # git-path is worktree-aware — `.git/rebase-merge` misses linked
+  # worktrees where .git is a file, not a directory.
+  local gd
+  gd="$(git rev-parse --git-dir 2>/dev/null)" || return 1
+  [ -d "$gd/rebase-merge" ] || [ -d "$gd/rebase-apply" ]
 }
 
 # Returns 0 when all unmerged paths were generated (resolved upstream-wins).
@@ -144,24 +164,106 @@ _resolve_generated_conflicts() {
   return $bad
 }
 
+# Patch-archive a stash entry before dropping it — the safety net the
+# manual GC used (patches in ~/.local/share/chaba-stash-archive/).
+# Prints the path on success; non-zero when the archive could not be
+# written (the caller decides whether the drop is still safe).
+_archive_stash() {
+  local ref="$1" why="$2" sha ts name dest
+  sha="$(git rev-parse -q --verify "$ref" 2>/dev/null)" || return 1
+  ts="$(git show -s --format=%cd --date=format:%Y%m%d-%H%M%S "$ref" 2>/dev/null)"
+  name="$(echo "$ref" | tr -c 'A-Za-z0-9' '-')"
+  dest="$ARCHIVE_DIR/${ts:-unknown}-${name}-${sha:0:8}-${why}.patch"
+  mkdir -p "$ARCHIVE_DIR" 2>/dev/null || return 1
+  {
+    echo "# archived $(date '+%Y-%m-%d %H:%M:%S') on $(hostname 2>/dev/null) — $why"
+    echo "# $ref: $(git show -s --format=%s "$ref" 2>/dev/null)"
+    git stash show -p "$ref"
+  } > "$dest" 2>/dev/null || { rm -f "$dest"; return 1; }
+  echo "git-safe-pull: archived $ref -> $dest" >&2
+}
+
+# Drop the retained autostash when its pop conflicts all resolved to
+# HEAD: contested hunks were superseded upstream-wins and clean hunks
+# are already in the worktree, so the entry only feeds the resurrection
+# pile. Archive first, then drop — but only when stash@{0} is the entry
+# this pull created (a pre-existing or named stash is left alone).
+_drop_resolved_autostash() {
+  local sha msg
+  sha="$(git rev-parse -q --verify 'stash@{0}' 2>/dev/null)" || return 0
+  [ "$sha" != "$PRE_STASH_SHA" ] || return 0
+  msg="$(git stash list | head -1)"; msg="${msg#*: }"
+  case "$msg" in
+    *autostash*|*"Auto stash"*) ;;
+    *) return 0 ;;
+  esac
+  _archive_stash 'stash@{0}' "resolved-pop" || true
+  git stash drop -q 'stash@{0}' \
+    && echo "git-safe-pull: dropped autostash ${sha:0:8} — pop conflicts all resolved to HEAD, entry superseded" >&2
+}
+
+# Periodic GC — the retained-autostash pile is the reservoir the card
+# resurrection waves drew from (card safe-pull-autostash-resurrection).
+# Autostash entries older than GC_DAYS are past their recovery window:
+# archive the patch, then drop. Drops run highest-index-first so live
+# stash@{n} numbering never shifts under a pending target.
+_gc_autostash() {
+  [ "${GC_DAYS:-0}" -gt 0 ] 2>/dev/null || return 0
+  local cutoff=$(( $(date +%s) - GC_DAYS * 86400 ))
+  local drops=() gd ct sha gs
+  while read -r gd ct sha gs; do
+    [ -n "$gd" ] || continue
+    case "$gs" in
+      *autostash*|*"Auto stash"*) ;;
+      *) continue ;;
+    esac
+    [ "$ct" -lt "$cutoff" ] 2>/dev/null || continue
+    drops+=("$gd|$ct")
+  done < <(git stash list --format='%gd %ct %H %gs' 2>/dev/null)
+  local i ref ago
+  for (( i=${#drops[@]}-1; i>=0; i-- )); do
+    ref="${drops[$i]%%|*}"
+    ago="${drops[$i]#*|}"
+    _archive_stash "$ref" "gc" \
+      || { echo "git-safe-pull: GC skipped $ref — archive failed" >&2; continue; }
+    git stash drop -q "$ref" \
+      && echo "git-safe-pull: GC'd $ref — autostash older than ${GC_DAYS}d ($(date -d "@$ago" '+%Y-%m-%d' 2>/dev/null))" >&2
+  done
+}
+
 _resolve_autostash_pop() {
   # A failed autostash pop leaves unmerged entries + a retained stash.
   # Generated paths resolve to HEAD; anything else stays for a human.
-  local p bad=0
+  local p bad=0 saw=0
   while IFS= read -r p; do
     [ -n "$p" ] || continue
+    saw=1
     if [[ "$p" =~ $GENERATED_RE ]]; then
-      git checkout HEAD -- "$p" 2>/dev/null && git reset -q HEAD -- "$p" 2>/dev/null
+      if git checkout HEAD -- "$p" 2>/dev/null; then
+        git reset -q HEAD -- "$p" 2>/dev/null || true
+      else
+        # upstream deleted the path — accept the deletion
+        git rm -qf -- "$p" 2>/dev/null || true
+      fi
     else
       echo "git-safe-pull: autostash pop conflict kept for manual merge: $p" >&2
       bad=1
     fi
   done < <(git diff --name-only --diff-filter=U 2>/dev/null)
-  [ $bad -eq 1 ] && git stash list | head -1 >&2
+  if [ $bad -eq 1 ]; then
+    git stash list | head -1 >&2
+  elif [ $saw -eq 1 ] \
+       && [ -z "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
+    _drop_resolved_autostash
+  fi
   return 0
 }
 
 _resolve_untracked_collisions
+
+# Snapshot the stash tip pre-pull so post-pop code can tell the entry
+# this pull's autostash created from pre-existing stashes.
+PRE_STASH_SHA="$(git rev-parse -q --verify refs/stash 2>/dev/null || true)"
 
 git pull --rebase --autostash "$REMOTE" ${REF:+"$REF"} >/dev/null 2>&1 || true
 
@@ -189,6 +291,10 @@ while _rebase_in_progress; do
 done
 
 _resolve_autostash_pop
+
+# Every pull doubles as the periodic GC tick — dell's kanban-commit.timer
+# runs this every ~15min, satellites hit it through git-safe-push.
+_gc_autostash
 
 # Autostash pops merge cleanly even when they shouldn't — the stash's
 # stale card `column:` fields re-apply over the rebased tree while newer
