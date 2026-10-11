@@ -35,5 +35,21 @@ living_and_evolving:
   improve: "any 'the digest should also show X' → card tagged report + kanban-ux; the generator is code, improvements ship through the normal release lifecycle"
   feedback: "Tony's review reactions are themselves digest input — correction duty applies"
 
+narration_delivery:
+  rule: |
+    The digest isn't only a page — each live persona lane narrates it in
+    its own voice. Lanes follow docs/kb/msg-lane-standard.md: one bot per
+    persona, [<tag>] prefix, outbound only via loopback POST /send.
+  lanes:
+    ada:    {relay: ada-tg-relay, listen: "127.0.0.1:8911", chats: "Tony DM + group", tag: ada, state: live}
+    kaewta: {relay: ada-tg-relay-kk, listen: "127.0.0.1:8913", chats: "KK-HA group", tag: kaewta, state: live}
+    chaba:  {relay: none, listen: none, chats: "LINE (blocked: Yomi token revoked); no TG lane yet", tag: chaba, state: pending}
+  narration:
+    source: "the digest sections — persona narrates ALL channels' activity, not just its own lane"
+    voice: "each persona's model (Gemini normally); when billing/quota is down, OpenRouter fallback generates the text — the channel never goes silent over a provider outage"
+    format: "[<tag>] ≤10 lines, spoken register, ends with pointer to the tony-team-digest CMS page for detail"
+    cadence: "with the digest edition — morning + evening"
+    failures: "a failed lane posts '(digest narration failed)' on ITS OWN channel — never silence"
+
 owner: devin
 enforcement: "daily-brief job (existing timers); new sections ride the same job run"

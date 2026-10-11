@@ -1,0 +1,22 @@
+id: or-account-outage
+title: OpenRouter account gone — all keys 401 "User not found" (fleet-wide)
+column: backlog
+priority: high
+tags:
+- secrets
+- incident
+- openrouter
+created: '2026-10-11'
+brief: 'Every OR key across the fleet returns 401 "User not found" — ada-safety …39eaee
+  (minted today), omen ghostroute, idc03 mddb line-5. That error means the ACCOUNT
+  is gone (deleted/suspended/renamed), not key expiry. Affects: OpenClaw model routing,
+  mddb embeddings fallback, any OR consumer.'
+spec: Verify at openrouter.ai — is the account suspended/deleted? If Tony minted ada-safety
+  on a NEW account, the old-account keys are dead by design and slots need the new
+  account's key. If OR suspended it, account recovery path needed. Then re-run rotate-or-key.sh
+  to repopulate slots + restart consumers.
+comms:
+- at: 2026-10-11 12:45
+  from: devin
+  text: found during narrated-digest test — probed 4 keys across 3 hosts, all "User
+    not found". Second account-level auth outage today alongside Gemini dunning.

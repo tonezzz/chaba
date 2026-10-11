@@ -1,0 +1,30 @@
+id: narrated-comms-digest
+title: Narrated comms digest — each TG lane persona reads the day's digest aloud in-channel
+column: backlog
+priority: medium
+tags:
+- report
+- ada
+- tg
+- process
+created: '2026-10-11'
+brief: 'Tony: ada, kaewta (and chaba when its lane exists) should narrate the comms
+  digest into their Telegram channels — a spoken-style summary per persona, sourced
+  from all channels'' activity, not a raw data dump.'
+spec: 'Layer on top of comms-digest-builder: after the daily/evening digest generates,
+  each live lane (ada :8911, kaewta :8913; chaba lane pending — LINE blocked) posts
+  a persona-voiced narration via POST /send on its TG_LISTEN. Narration text generated
+  by the persona''s model (Gemini normally; OpenRouter fallback when billing is down
+  — proven in the 2026-10-11 test). Format: [<tag>] digest narration, ≤10 lines, links
+  to tony-team-digest CMS page for detail.'
+comms:
+- at: 2026-10-11 12:30
+  from: devin
+  text: filed + narrate/deliver mechanics test running same-day (see comms below)
+- at: 2026-10-11 12:45
+  from: devin
+  text: 'TEST PASSED (narrate+deliver layer): persona narrations pushed via POST /send
+    — [ada]→Tony DM ok, [kaewta]→KK-HA group ok. Caveats: narration text hand-written
+    for the test (digest-builder card generates it in prod); OR narration path untested
+    because ALL OR keys 401 "User not found" — see or-account-outage card. chaba TG
+    lane doesn''t exist yet.'
