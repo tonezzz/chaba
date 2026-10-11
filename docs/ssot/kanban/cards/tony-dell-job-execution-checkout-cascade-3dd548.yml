@@ -1,0 +1,18 @@
+id: tony-dell-job-execution-checkout-cascade-3dd548
+title: 'tony-dell: job-execution checkout ~/CascadeProjects/chaba lags served checkout chaba-tony-dell'
+column: backlog
+updated: 2026-10-11 20:07
+tags:
+- tony-dell
+- ops
+- drift
+note: 'Found 2026-10-11 via flood-alert quiet-streak: flood-alert.service ExecStart=%h/CascadeProjects/chaba/...
+  — a SECOND checkout that syncs on a slower/different cadence than the served writer checkout (chaba-tony-dell).
+  My committed+pushed change sat unexecuted (~5h lag) until a manual git-safe-pull. Either converge to one checkout,
+  or make the execution checkout pull on the same trigger as kanban-commit. Audit which units point at which checkout:
+  systemctl --user list-units | grep ExecStart paths'
+ref: OPS-0479
+comms:
+- at: 2026-10-11 20:07
+  from: devin
+  text: card captured via board-api

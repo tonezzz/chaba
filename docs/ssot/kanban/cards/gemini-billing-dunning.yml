@@ -1,5 +1,5 @@
 id: gemini-billing-dunning
-title: 'Gemini Live dunning-blocked — "Lightning dunning decision is deny" kills every Ada session'
+title: Gemini Live dunning-blocked — "Lightning dunning decision is deny" kills every Ada session
 column: backlog
 priority: high
 kind: ops
@@ -9,26 +9,22 @@ tags:
 - billing
 - gemini
 - secrets
-brief: 'Since ~11:40 2026-10-11 every google.genai.live connect from ada-ha-tony is
-  rejected at handshake: ws close 1008, "Lightning dunning decision is deny for project:
-  projects/517766007004". This is billing/account state, not app code — no local fix
-  exists. Effect: TG relay turns, voice, and any Live-dependent tool die before the
+brief: 'Since ~11:40 2026-10-11 every google.genai.live connect from ada-ha-tony is rejected at handshake: ws close
+  1008, "Lightning dunning decision is deny for project: projects/517766007004". This is billing/account state,
+  not app code — no local fix exists. Effect: TG relay turns, voice, and any Live-dependent tool die before the
   first frame; the ada-chat OR text fallback (done) covers only the chat lane.'
-spec: 'Tony-side only: (a) settle the billing/dunning flag on GCP project 517766007004
-  (console.cloud.google.com billing), or (b) point ada-ha-tony at a different billed
-  project''s GEMINI_API_KEY via secret-drop into idc03 ~/.config/secrets/ada-ha-tony.env.
-  Verify after: a ws session reaches live (no 1008) — journal stops showing the
+spec: 'Tony-side only: (a) settle the billing/dunning flag on GCP project 517766007004 (console.cloud.google.com
+  billing), or (b) point ada-ha-tony at a different billed project''s GEMINI_API_KEY via secret-drop into idc03
+  ~/.config/secrets/ada-ha-tony.env. Verify after: a ws session reaches live (no 1008) — journal stops showing the
   dunning line and a TG text turn gets a real reply.'
 requests:
 - id: billing-or-new-key
-  ask: 'GCP project 517766007004 is dunning-denied — Gemini Live refuses every connect
-    (1008). Two options, pick one: (1) settle billing on that project in the GCP
-    console, or (2) secret-drop a GEMINI_API_KEY from a healthy billed project —
-    I''ll swap idc03 ada-ha-tony.env and restart. No ETA pressure but TG/voice are
-    down until then.'
+  ask: 'GCP project 517766007004 is dunning-denied — Gemini Live refuses every connect (1008). Two options, pick
+    one: (1) settle billing on that project in the GCP console, or (2) secret-drop a GEMINI_API_KEY from a healthy
+    billed project — I''ll swap idc03 ada-ha-tony.env and restart. No ETA pressure but TG/voice are down until then.'
   from: devin
   to: tony
-  status: open
+  status: answered
   options:
   - id: settle-billing
     label: settle billing on project 517766007004
@@ -36,11 +32,19 @@ requests:
     label: secret-drop a key from another billed project
   suggested: settle-billing
   at: 2026-10-11 14:10
+  answer: settle-billing — settle billing on project 517766007004
 comms:
 - at: 2026-10-11 14:10
   from: devin
-  text: 'filed during review sweep — evidence: ada-ha-tony journal 11:40 + 12:06,
-    ws close 1008 "Lightning dunning decision is deny for project: projects/517766007004".
-    Tony''s TG message (sent ~12:xx) never reached a session — relay logged only
-    outbound sends, no inbound payload survived; asked him to resend via any lane.
-    OR text fallback keeps /chat alive; TG relay + voice have no fallback.'
+  text: 'filed during review sweep — evidence: ada-ha-tony journal 11:40 + 12:06, ws close 1008 "Lightning dunning
+    decision is deny for project: projects/517766007004". Tony''s TG message (sent ~12:xx) never reached a session
+    — relay logged only outbound sends, no inbound payload survived; asked him to resend via any lane. OR text fallback
+    keeps /chat alive; TG relay + voice have no fallback.'
+- at: 2026-10-11 20:04
+  from: tony
+  text: 'answered billing-or-new-key: settle-billing — settle billing on project 517766007004'
+- at: 2026-10-11 20:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+awaiting_action: true
+updated: 2026-10-11 20:04

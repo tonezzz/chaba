@@ -1,0 +1,16 @@
+id: ada-kk-dev-lane
+title: Provision ada-kk-dev — kk persona dev twin + lane CI
+column: backlog
+updated: 2026-10-11 20:22
+spec: 'Per ssot.apps.ada-persona-lanes.yml: (1) systemd ada-kk-dev.service on idc03 :8009, env ada-kk-dev.env, keys
+  ada-ha-kk-dev-keys.json; (2) dev collections: ada-ha-bank-personal-kk-dev (write), bank_read_extra real personal-kk
+  (parity), ada-cms-pages-kk-dev, ada-ha-events-kk-dev, ada-ha-recall-summary-kk-dev, calendar-kk-dev.json test
+  calendar; (3) tool profile = persons.kk.tools identical to prod via render-tool-profiles.py; (4) kk-lane scenario
+  suite: virtual-home HA exclusion, bank isolation, cms public_url, chat_send room targeting, photo asset reshow;
+  (5) optional LINE e2e: kaewta-dev in LINE_NAME_BACKENDS + throwaway group (needs Tony to create the group). Deploy
+  restarts dev before prod.'
+ref: ADA-0480
+comms:
+- at: 2026-10-11 20:22
+  from: tony
+  text: card captured via board-api

@@ -1,7 +1,7 @@
 id: ha-ada-isolation
 title: Isolate tony-ha + kk-ha from Ada failures (runbook ha-ada-isolation)
 column: backlog
-updated: 2026-10-11 16:16
+updated: 2026-10-11 19:48
 brief: Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy,
   idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
 priority: high
@@ -42,11 +42,18 @@ comms:
     in ada-cms-pages (generator scripts/ada/ha-ada-isolation-cms.py — live-probes token user, key hashes, cgroup
     caps, deploy set). Scorecard now: 1/6 controls PASS. Probes corrected the map: ada-pi-pwa AND ada-ha-michael
     also hold OWNER tokens — 3 owner-token lanes total, not 1.'
+- at: 2026-10-11 19:48
+  from: tony
+  text: 'answered gemini-key-isolation-strategy-today-all-12834c: two-pools — Two pools: tony-lane vs member/dev
+    — splits KK+Michael from Tony''s storm, less admin'
+- at: 2026-10-11 19:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: gemini-key-isolation-strategy-today-all-12834c
   ask: Gemini key isolation strategy — today all 5 ada instances share one GEMINI_API_KEY, so one lane's quota storm
     starves everyone.
-  status: open
+  status: answered
   at: 2026-10-11 16:09
   from: devin
   options:
@@ -57,6 +64,7 @@ requests:
   - id: keep-shared
     label: Keep shared key, rely on ada-gemini-quota-breaker only
   suggested: two-pools
+  answer: 'two-pools — Two pools: tony-lane vs member/dev — splits KK+Michael from Tony''s storm, less admin'
 - id: ada-kk-is-not-in-deploy-ada-sh-default-s-5d853d
   ask: ada-kk is NOT in deploy-ada.sh default SERVICES — it drifts on old code until manually restarted (accidental
     isolation). Keep or fix?
@@ -81,3 +89,4 @@ requests:
   - id: hold
     label: Hold — Phase A only for now
   suggested: approve
+awaiting_action: true

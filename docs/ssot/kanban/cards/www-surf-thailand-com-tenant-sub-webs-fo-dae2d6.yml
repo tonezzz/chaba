@@ -1,7 +1,7 @@
 id: www-surf-thailand-com-tenant-sub-webs-fo-dae2d6
 title: www.surf-thailand.com — tenant sub-webs for published CMS pages
 column: doing
-updated: 2026-10-11 18:40
+updated: 2026-10-11 20:07
 tags:
 - web
 - cms
@@ -27,3 +27,28 @@ comms:
     = container /data,Z/www — note the literal comma-Z mount quirk). Publisher scripts/ada/cms-publish-site.py runs
     on idc02 via cms-publish-site.timer every 15min; opt-in flag meta.public documented in ssot.cms.yml. E2E verified:
     ada-cms-pages|www-site-smoke'
+- at: 2026-10-11 19:43
+  from: devin
+  text: 'Canonical host flipped per Tony: apex surf-thailand.com IS the site (CF CNAME @->edge flattened). www now
+    308s to apex incl. deep links. Verified: apex / =200 black, /tony-ha/www-site-smoke.html =200, www->apex redir
+    ok. ssot.cms.yml updated.'
+- at: 2026-10-11 19:59
+  from: devin
+  text: 'Kaewta URL gap FIXED (ada-pi 11bc999+763649a on idc03, deployed all backends): root cause — parallel session
+    added public= to cms_publish_page runner but never declared it in the tool schema, and CMS_INSTRUCTIONS never
+    mentioned the lane; cms_get_page did not return public_url. Fixed all three + www->apex flip. Live scenario
+    tests/scenarios-live/cms_public_url_lane.yaml replays Tony''s repro vs ada-kk: PASS 4/4 — she explains public=yes
+    + URL shape, publishes flagged, and LINE-sends the exact ape'
+- at: 2026-10-11 20:06
+  from: devin
+  text: push resolved — ada-pi commits already on origin/main (fb678c6/45ca192 via dell sync path); idc03 local-only
+    note moot.
+- at: 2026-10-11 20:07
+  from: devin
+  text: 'kk-ha lane verified E2E: published a meta.public doc in ada-cms-pages-kk -> https://surf-thailand.com/kk-ha/<key>.html
+    served 200 -> deleted doc -> pruned on next publish. KK''s own hello-world page is live at /kk-ha/hello-world.html.
+    Card done-condition met: root black, both tenant lanes serve published pages, publisher on timer. Moving to
+    review.'
+- at: 2026-10-11 20:07
+  from: tony
+  text: moved doing -> review

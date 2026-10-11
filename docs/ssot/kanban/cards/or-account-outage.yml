@@ -37,6 +37,13 @@ comms:
   from: tony
   text: 'raised request or-key-works-but-expires-2026-10-12-with-b86ecc: OR key works but expires 2026-10-12 with
     $0.48 left — mint+rotate a fresh key now (rotate-or-key.sh exists)?'
+- at: 2026-10-11 19:53
+  from: devin
+  text: 'on the mint+rotate request: no OpenRouter provisioning/management key is stored anywhere in the fleet,
+    so minting still needs the OR web console — that step is Tony-gated. Everything after it is automated: drop
+    the new sk-or-v1-* into ~/.config/secrets/or-next-key on tony-dell and rotate-or-key.sh repopulates all 4 stores
+    + restarts consumers + verifies e2e. Note: or-next-key currently holds the SAME bridge key already deployed
+    (tail …c44b) — waiting on a fresh mint.'
 requests:
 - id: weekly-key-on-new-account
   ask: 'Bridge key ($1 cap) expires 2026-10-12 04:55 UTC. Needed: mint the real weekly key ($10/1-week) on the LIVE
@@ -65,4 +72,4 @@ requests:
     label: leave until expiry
   suggested: 'yes'
 review_kind: triage
-updated: 2026-10-11 17:07
+updated: 2026-10-11 19:53

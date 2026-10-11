@@ -1,0 +1,13 @@
+id: ada-transcript-archive-retention
+title: Distill→NotebookLM→purge retention for ada transcripts + events
+column: backlog
+updated: 2026-10-11 19:56
+spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
+  tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
+  (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
+  kk sessions lost raw transcripts silently — only extracts survived. Runs weekly per lane; logs a card comment.'
+ref: ADA-0478
+comms:
+- at: 2026-10-11 19:56
+  from: tony
+  text: card captured via board-api

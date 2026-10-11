@@ -1,51 +1,58 @@
 id: ssid-location-profiles
 title: 'location profiles: TONY-WIFI_2.4G missing from home SSIDs; document the auto-detect model'
-column: review
+column: backlog
 review_kind: decision
-updated: 2026-10-11 16:20
-brief: 'mcp-health auto-detects home vs mobile profile by Wi-Fi SSID (ssot.health.yml). Home list only had
-  TONY-WIFI/TONY-WIFI_5G — tony-macbook on TONY-WIFI_2.4G would misdetect as mobile at home. Also: no written
-  procedure explains the location model (SSID detect + tailnet-only + GNOME monitors.xml auto-save).'
+updated: 2026-10-11 20:53
+brief: 'mcp-health auto-detects home vs mobile profile by Wi-Fi SSID (ssot.health.yml). Home list only had TONY-WIFI/TONY-WIFI_5G
+  — tony-macbook on TONY-WIFI_2.4G would misdetect as mobile at home. Also: no written procedure explains the location
+  model (SSID detect + tailnet-only + GNOME monitors.xml auto-save).'
 priority: medium
 tags:
 - macbook
 - network
 - health
 - ssot
-spec: |
-  1. Add TONY-WIFI_2.4G to profiles.home.ssids in infrastructure/ssot.health.yml.
-  2. mnhome (Michael's house): NO entry needed — being on mn01's LAN does not make tony-dell local, so mobile
-     profile semantics are correct there (all access via tailnet names). Recorded as a decision, not a fix.
-  3. Document the location model in the new-host runbook work (SYS-0452 comms) — monitors.xml auto-persists
-     per monitor-set (verified: Philips 276E7 + Dell P2425H docked layout saved 2026-10-11); nothing manual
-     to save for displays.
+spec: "1. Add TONY-WIFI_2.4G to profiles.home.ssids in infrastructure/ssot.health.yml.\n2. mnhome (Michael's house):\
+  \ NO entry needed — being on mn01's LAN does not make tony-dell local, so mobile\n   profile semantics are correct\
+  \ there (all access via tailnet names). Recorded as a decision, not a fix.\n3. Document the location model in\
+  \ the new-host runbook work (SYS-0452 comms) — monitors.xml auto-persists\n   per monitor-set (verified: Philips\
+  \ 276E7 + Dell P2425H docked layout saved 2026-10-11); nothing manual\n   to save for displays.\n"
 requests:
 - id: mnhome-ssid
   ask: Should mnhome ever get its own health profile (mn01 as local-primary node) or is mobile correct? Default
     marked - recommend mobile (no change needed).
-  status: open
+  status: answered
   suggested: mobile
   options:
   - id: mobile
     label: keep mobile (recommended)
   - id: mnhome-profile
     label: add a third mnhome profile with mn01 as local node
+  answer: mobile — keep mobile (recommended)
 action:
   type: self
+  status: queued
 comms:
 - at: 2026-10-11 15:05
   from: tony
   text: captured from chat — "add a card and push it through"
 - at: 2026-10-11 15:05
   from: devin
-  text: 'STANDARD PROCEDURE note: there is no location-switch runbook today. Model = ssot.health.yml
-    profiles (default: auto-detect by SSID) + Tailscale-everything (never .local/LAN IP off-home) +
-    monitors.xml per-monitor-set auto-save. This card fixes the one real gap found during tony-macbook
-    onboarding (2.4G SSID).'
+  text: 'STANDARD PROCEDURE note: there is no location-switch runbook today. Model = ssot.health.yml profiles (default:
+    auto-detect by SSID) + Tailscale-everything (never .local/LAN IP off-home) + monitors.xml per-monitor-set auto-save.
+    This card fixes the one real gap found during tony-macbook onboarding (2.4G SSID).'
 - at: 2026-10-11 16:20
   from: devin
-  text: 'DONE: TONY-WIFI_2.4G added to profiles.home.ssids (commit 1ef24883b, pushed to github
-    origin). Side-fix same session: macbook had no github push path — added its ed25519 pubkey as a
-    repo deploy key (id 166072417) via dell-side GITHUB_ACCESS_TOKEN; macbook origin now
-    git@github.com:tonezzz/chaba.git, dell ssh path kept as remote "dell". Awaiting: mnhome-ssid
-    request (recommend mobile).'
+  text: 'DONE: TONY-WIFI_2.4G added to profiles.home.ssids (commit 1ef24883b, pushed to github origin). Side-fix
+    same session: macbook had no github push path — added its ed25519 pubkey as a repo deploy key (id 166072417)
+    via dell-side GITHUB_ACCESS_TOKEN; macbook origin now git@github.com:tonezzz/chaba.git, dell ssh path kept as
+    remote "dell". Awaiting: mnhome-ssid request (recommend mobile).'
+- at: 2026-10-11 20:53
+  from: tony
+  text: 'answered mnhome-ssid: mobile — keep mobile (recommended)'
+- at: 2026-10-11 20:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 20:53
+  from: tony
+  text: queued for processing

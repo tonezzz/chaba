@@ -1,7 +1,7 @@
 id: micro-ai-input-polish
 title: 'micro-ai input polish: small local model normalizes user input for each receiving AI'
 column: backlog
-updated: 2026-10-11 18:12
+updated: 2026-10-11 20:56
 brief: 'Hypothesis (Tony 2026-10-11): a small local model sits in front of each receiving AI and rewrites raw user
   input (ASR errors, Thai/Eng mix, fragments) into the format that AI performs best on — better accuracy AND fewer
   downstream tokens. Bench-first per model-eval procedure; adopt only on measured gain.'
@@ -24,6 +24,7 @@ spec: "Build scripts/micro-bench/ cloning the scripts/voice-bench/ harness patte
   \ on ASR-class input, deploy scoped to that lane — not a universal layer."
 action:
   type: manual
+  status: queued
 ref: BEN-0465
 comms:
 - at: 2026-10-11 16:49
@@ -40,10 +41,61 @@ comms:
     + NET tokens. report.py emits reports/micro-polish/LATEST.md + trend + adopt-gate verdict (adopt / scope-to-noisy-lanes
     / reject). Smoke result (3 fixtures, llama3.2:3b idc03): pipeline verified AND already caught the hypothesized
     regressions — polisher translated clean EN->'
+- at: 2026-10-11 19:57
+  from: devin
+  text: ping
+- at: 2026-10-11 19:57
+  from: devin
+  text: "micro-bench: micro-bench report (2026-10-11 12:57 UTC): 3 variant(s) benched\n- **polish-llama32-llama32**\
+    \ vs `direct-llama32` → **REJECT (no match-rate gain)**\n  exact 0.278 → 0.222, downstream-tok 275.77 → net-tok\
+    \ 457.86, total 9152.45ms → 9193.5ms, fabricated 1 → 1\ntable: reports/micro-polish/LATEST.md"
+- at: 2026-10-11 20:23
+  from: devin
+  text: 'feature-explore run (GitHub precedent search) — expands the option space and VALIDATES the 3B reject:
+
+
+    1. dayyanj/DJ-AI-ASR-GRAMMAR-CORRECTOR — T5-small/base trained on 90M noisy->clean pairs specifically for ASR
+    post-correction, <50ms GPU. The ''polish'' role done by a task-TRAINED model, not a prompted chat model. English-only
+    — Thai lane uncovered.
+
+    2. MorenoLaQuatra/FlanEC — Flan-T5 post-ASR correction (GenSEC), HF models published.
+
+    3. KOURENYILI/Error-Correction-Using-LLM — hard data matching '
+- at: 2026-10-11 20:53
+  from: tony
+  text: 'answered insertion-point: ada-asr — Ada ASR pre-filter (recommended) — fixes transcription errors before
+    the Gemini call'
+- at: 2026-10-11 20:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 20:53
+  from: tony
+  text: queued for processing
+- at: 2026-10-11 20:56
+  from: devin
+  text: "micro-bench: micro-bench report (2026-10-11 13:56 UTC): 7 variant(s) benched\n- **polish-gate-llama32-llama32**\
+    \ vs `direct-llama32` → **REJECT (no match-rate gain)**\n  exact 0.278 → 0.25, downstream-tok 275.77 → net-tok\
+    \ 454.57, total 9152.45ms → 14847.73ms, fabricated 1 → 1\n- **polish-gemini-gemini** vs `direct-gemini` → **SCOPE\
+    \ — helps noisy lanes only (+2 exact on 27 noisy fixtures), clean/ambiguous lanes unharmed**\n  exact 0.556\
+    \ → 0.611, downstream-tok 273.7 → net-tok 428.16, total 1103.25ms →"
+- at: 2026-10-11 20:56
+  from: devin
+  text: 'BENCH COMPLETE — 6 variants x 44 fixtures, reports/micro-polish/LATEST.md
+
+
+    VERDICTS:
+
+    - Weak polisher (llama3.2:3b): REJECT x3 — hurts every downstream (3B .278->.222/.25, gemini .556->.389), +65%
+    tokens, entity drift .54, even translates EN->TH.
+
+    - Trained corrector (dayyanj T5 small+base): REJECT — fixes none of our noise classes (semantic mishearings
+    out of its function-word scope; ''till running''->''till THE running'').
+
+    - STRONG polisher (gemini-3.5-flash-lite -> same): SCOPE — .556->.611 exact ('
 requests:
 - id: insertion-point
   ask: Where should the first bench target the polish layer? ASR has the messiest input and clearest expected win.
-  status: open
+  status: answered
   at: 2026-10-11 16:50
   from: devin
   options:
@@ -54,3 +106,4 @@ requests:
   - id: both-lanes
     label: bench both insertion points in one harness
   suggested: ada-asr
+  answer: ada-asr — Ada ASR pre-filter (recommended) — fixes transcription errors before the Gemini call

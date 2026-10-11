@@ -1,20 +1,27 @@
 id: vcast-auto-cast-browser-proxy
 title: cast-browser-proxy :8799 not answering
-brief: 'An automated health check flagged: cast-browser-proxy :8799 not answering.
-  Read the note, fix it, then close the card.'
+brief: 'An automated health check flagged: cast-browser-proxy :8799 not answering. Read the note, fix it, then close
+  the card.'
 column: review
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: medium
-note: 'GET http://127.0.0.1:8799/__vcast_health_probe__ failed: Remote end closed
-  connection without response'
-help: 'cast-browser-proxy.service proxies :8799 -> tony-omen cast-browser. Any HTTP
-  <500 is alive. Check: systemctl --user status cast-browser-proxy'
-updated: 2026-10-11 17:08
+note: 'GET http://127.0.0.1:8799/__vcast_health_probe__ failed: Remote end closed connection without response'
+help: 'cast-browser-proxy.service proxies :8799 -> tony-omen cast-browser. Any HTTP <500 is alive. Check: systemctl
+  --user status cast-browser-proxy'
+updated: 2026-10-11 19:53
 comms:
 - at: 2026-10-11 17:08
   from: devin
-  text: 'root cause: proxy is up (socat :8799) but upstream tony-omen is offline —
-    blocked, not a proxy bug'
+  text: 'root cause: proxy is up (socat :8799) but upstream tony-omen is offline — blocked, not a proxy bug'
+- at: 2026-10-11 19:53
+  from: devin
+  text: 'verified: proxy fine, upstream tony-omen is back online ~19:4x — the 8799 probe failure was the outage
+    window. Should clear next health pass.'
+- at: 2026-10-11 19:53
+  from: tony
+  text: closed by tony
+action:
+  status: done
