@@ -50,6 +50,7 @@ import json
 import os
 import re
 import sys
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -73,6 +74,15 @@ LEVELS = ("info", "warning", "critical")
 STATE_FILE = os.environ.get(
     "FLOOD_ALERT_STATE",
     os.path.expanduser("~/.cache/flood-alert-state.json"))
+
+# Quiet-streak → "turn me off?" board request (Tony 2026-10-11: keep an
+# eye on floods recurring until no flood, then offer to disable). When
+# nothing alert-worthy is found for QUIET_RUNS consecutive ticks, post a
+# board-api request on QUIET_CARD once; any later alert re-arms it.
+QUIET_RUNS = int(os.environ.get("FLOOD_QUIET_RUNS", "96"))  # ~24h @15min
+QUIET_CARD = os.environ.get("FLOOD_QUIET_CARD",
+                            "keep-eye-on-floods-4f0f97")
+BOARD_API = os.environ.get("FLOOD_BOARD_API", "http://127.0.0.1:8787")
 STATE_KEEP_DAYS = 14
 MAX_PUSH_ITEMS = 6
 ALERT_LOG_KEEP = 10
@@ -263,6 +273,31 @@ def self_test():
 
 # --- main -----------------------------------------------------------------
 
+def offer_quiet_disable(state):
+    """POST a 'turn flood watch off?' board request via loopback API.
+    Returns True when the request was accepted (we then mark
+    quiet_offered so it only asks once per quiet streak)."""
+    hours = int(state.get("quiet_streak") or 0) // 4  # 15min ticks
+    req = {"id": QUIET_CARD, "from": "chaba",
+           "ask": (f"Flood watch quiet ~{hours}h — no alert-level flood "
+                   f"news. Turn it off? (disables ada-flood-news.timer "
+                   f"+ flood-alert.timer)"),
+           "suggested": "keep",
+           "options": [{"id": "off", "label": "turn flood watch off"},
+                       {"id": "keep", "label": "keep watching"}]}
+    try:
+        r = urllib.request.Request(
+            BOARD_API + "/request",
+            data=json.dumps(req).encode(),
+            headers={"Content-Type": "application/json"})
+        ok = urllib.request.urlopen(r, timeout=10).status == 200
+        print(f"quiet-disable offer -> board-api {'ok' if ok else 'rejected'}")
+        return ok
+    except Exception as e:
+        print(f"warn: quiet-disable offer failed: {e}", file=sys.stderr)
+        return False
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Flood-news severity watchdog — batched push alerts")
@@ -367,6 +402,8 @@ def main():
                       file=sys.stderr)
             else:
                 print(f"push sent: {len(alerts)} alert(s)")
+                state["quiet_streak"] = 0
+                state.pop("quiet_offered", None)
                 log = state.setdefault("alert_log", [])
                 for a in alerts:
                     pushed += 1
@@ -380,8 +417,15 @@ def main():
                                 "areas": sorted(a["areas"]),
                                 "title": a["item"]["title"][:140]})
     else:
+        state["quiet_streak"] = int(state.get("quiet_streak") or 0) + 1
         print(f"{scanned} items scanned, nothing new at/above "
-              f"{args.min_level}")
+              f"{args.min_level} (quiet x{state['quiet_streak']})")
+        if (state["quiet_streak"] >= QUIET_RUNS
+                and not state.get("quiet_offered")
+                and not args.dry_run):
+            if offer_quiet_disable(state):
+                state["quiet_offered"] = now.isoformat(
+                    timespec="seconds")
 
     if not args.dry_run:
         state["last_run"] = now.isoformat(timespec="seconds")
