@@ -1,7 +1,7 @@
 id: cast-precheck-vantage
 title: cast_to_screen URL pre-check is vantage-blind — refuses LAN URLs probed from idc03
-column: doing
-updated: 2026-10-11 06:57
+column: done
+updated: 2026-10-11 07:11
 priority: medium
 tags:
 - vcast
@@ -10,8 +10,11 @@ tags:
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 ead only when the display''s side agrees) and flagged the truncation in a board comment. | devin-task-20261011-065755-cast-to-screen-url-pre-check-i.service:
+    Consumed 2min 12.971s CPU time over 8min 34.944s wall clock time, 1.3G memory peak.'
+  verified: true
 note: '2026-10-10 investigation (card investigate-gev-youtube-local-media-fail): cast_to_screen play http://192.168.2.67/apps/yt-live/<file>.mp4
   to screen 9 returned "URL is unreachable (TimeoutError)" and refused to cast — but the file serves 206 on the
   LAN and 206 on tailnet. The pre-flight reachability check runs from the Ada backend host (idc03), which has no
@@ -30,3 +33,37 @@ comms:
 - at: 2026-10-11 06:57
   from: chaba
   text: started devin-task-20261011-065755-cast-to-screen-url-pre-check-i on tony-omen (dispatch)
+- at: 2026-10-11 07:00
+  from: devin
+  text: 'card note is truncated at "Options: (a) downgrade the" — proceeding with best judgment: on transport-dead
+    probes to non-public hosts, re-HEAD via the LAN vantage (ssh ADA_CCTV_SSH/curl) before declaring dead; inconclusive
+    probe downgrades to frame_warn so the display can still try'
+- at: 2026-10-11 07:06
+  from: devin
+  text: 'done: _frame_check now re-HEADs vantage-blind targets (non-public IP/name) via ssh $ADA_CCTV_SSH curl before
+    declaring dead — dead only when the LAN vantage agrees; inconclusive probe -> frame_warn + cast proceeds unverified.
+    16 new/updated tests, full suite 1264 pass, tool-lint clean. Branch dispatch/20261011-065755-cast-to-screen-url-pre-check-i'
+- at: 2026-10-11 07:07
+  from: tony-omen
+  text: 'finished (ok): exit=0 ead only when the display''s side agrees) and flagged the truncation in a board comment.
+    | devin-task-20261011-065'
+- at: 2026-10-11 07:07
+  from: chaba
+  text: 'session-end checkpoint aa6478c0: 4 leftover file(s) committed'
+- at: 2026-10-11 07:07
+  from: chaba
+  text: pushed dispatch/20261011-065755-cast-to-screen-url-pre-check-i to origin
+- at: 2026-10-11 07:07
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-11 07:11
+  from: chaba
+  text: 'merge-sweep: merged 0cf85bf4 (dispatch/20261011-065755-cast-to-screen-url-pre-check-i from tony-omen) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261011-065755-cast-to-screen-url-pre-check-i.md)
+    — auto-closed'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-11 07:11
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261011-065755-cast-to-screen-url-pre-check-i.md

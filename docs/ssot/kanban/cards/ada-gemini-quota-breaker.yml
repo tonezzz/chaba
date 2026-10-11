@@ -1,0 +1,25 @@
+id: ada-gemini-quota-breaker
+title: 'Ada: circuit-breaker on Gemini quota exhaustion'
+column: backlog
+updated: 2026-10-11 07:43
+brief: 'Stop the 1008 reconnect-storm when Gemini Live hits quota (429/RESOURCE_EXHAUSTED). Evidence: jobs/ada/2026-10-10-audit-fail-cluster.yml
+  — 1389x429, 643x RESOURCE_EXHAUSTED, 198x quota_exhausted, ws close 1008 looping all evening on idc03 ada-ha-tony.'
+priority: high
+tags:
+- ada
+- gemini
+- reliability
+spec: 'In ada-pi backend/realtime_provider.py (and the live-session loop), add a circuit breaker: after N consecutive
+  quota-class failures (429, RESOURCE_EXHAUSTED, ws 1008 with quota reason) within a window, back off for a cooldown
+  period and surface a clear state to the webui instead of immediately reconnecting. On cooldown expiry, single
+  probe reconnect; resume normal on success. Must not break normal transient-reconnect behavior. Verify: simulate
+  quota failure → confirm backoff engages and Ada reports degraded-not-dead.'
+action:
+  type: dispatch
+  repo: ada-pi
+  labels:
+  - ada
+comms:
+- at: 2026-10-11 07:43
+  from: tony
+  text: card captured via board-api

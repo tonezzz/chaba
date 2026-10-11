@@ -1,15 +1,17 @@
 id: or-key-expiry-2026-10-17
-title: OR key sk-or-v1-a40822 expires 2026-10-17 — mint + rotate before cliff
+title: OR key sk-or-v1-a408…(masked) expires 2026-10-17 — mint + rotate before cliff
 kind: ops
 priority: high
-column: todo
-brief: 'Tony is minting weekly OR keys ($10/1-week cadence). The key swapped in 2026-10-10 (sk-or-v1-a40822...)
+column: done
+brief: 'Tony is minting weekly OR keys ($10/1-week cadence). The key swapped in 2026-10-10 (sk-or-v1-a408…(masked)...)
   expires 2026-10-17T01:09Z. If it lapses: openclaw-gateway (omen) + ghostroute-watcher + mddb OR embedding route
   (idc03) all fail — the 401 cascade hit twice before (09-28, 10-08).'
 requests:
 - needed: Tony mints next weekly key at openrouter.ai/keys before Oct 17, pastes it here or to me
   from: tony
-  status: pending
+  status: answered
+  id: request
+  answer: sk-or-v1-4e0c…(masked)
 spec: 'Rotation procedure (verified 2026-10-10 — 4 stores): (1) verify new key via /api/v1/auth/key; (2) ~/.config/secrets/openrouter.env
   on tony-dell AND tony-omen; (3) idc03 ~/.config/secrets/mddb-gemini.env OPENROUTER_API_KEY= line (line 5, keep
   line-4 comment); (4) omen: json_replace ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
@@ -28,5 +30,19 @@ comms:
   text: 'rotation dry-run complete on the existing key: all 4 stores consistent (a408…ff09), restarts done, e2e
     passes via live :free catalog (nemotron-3.5-lightning). New key still not found on any host — please drop it
     into ~/.config/secrets/or-next-key or via chat secret-drop to tony-dell.'
+- at: 2026-10-11 07:57
+  from: tony
+  text: moved todo -> done
+- at: 2026-10-11 07:57
+  from: devin
+  text: 'ROTATED: new key ada-safety (tail 39eaee, $10 limit, exp 2026-11-10) live in all 4 stores — dell+omen openrouter.env,
+    idc03 mddb-gemini.env, omen openclaw sqlite. ghostroute-watcher + gemini-ollama-proxy restarted. e2e verified
+    via live :free call. Key registered in ssot.secrets.yml manifest (d2805947).'
+- at: 2026-10-11 08:01
+  from: tony
+  text: 'answered request: sk-or-v1-4e0c…(masked)'
 created: '2026-10-10'
-updated: 2026-10-11 06:58
+updated: 2026-10-11 08:01
+action:
+  status: done
+claim: {}

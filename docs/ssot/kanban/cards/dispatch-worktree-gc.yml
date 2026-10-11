@@ -1,0 +1,23 @@
+id: dispatch-worktree-gc
+title: GC dispatch worktrees + task dirs at card close
+column: backlog
+updated: 2026-10-11 07:43
+brief: Dispatch worktrees and task dirs accumulate forever — root cause of the 2026-10-11 tony-dell disk pressure
+  (97% to 87% after manual sweep). Task-dir GC now lives in prune-devin-sessions.sh (d721e9b0); worktrees still
+  leak.
+priority: medium
+tags:
+- dispatch
+- ops
+- disk
+spec: 'In scripts/board/runner-agent.py close path (or a sweep hook), remove the dispatch worktree when the card
+  closes AND the worktree is clean+merged. Rules: never remove dirty worktrees, never remove unmerged branches,
+  record a one-line comms note on the card listing what was removed. Also handle the merge-sweep salvage path (dell
+  fetches remote branches — the local worktree on the runner host should be cleaned after successful merge+push).
+  Verify: close a test card, confirm worktree gone, dirty worktree preserved.'
+action:
+  type: dispatch
+comms:
+- at: 2026-10-11 07:43
+  from: tony
+  text: card captured via board-api

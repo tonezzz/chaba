@@ -1,0 +1,23 @@
+id: tony-macbook-restore-enroll
+title: 'tony-macbook: restore KK files + enroll runner-agent'
+column: backlog
+updated: 2026-10-11 08:05
+brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
+  per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
+priority: medium
+tags:
+- macbook
+- fleet
+- restore
+spec: 'ssh macbook (tony@100.77.76.112). (1) Locate the KK files in the macOS backup used by the rejoin session
+  (check ~/backup* or the path recorded in the rejoin jobs record / dispatch transcript); rsync into ~ on tony-macbook,
+  preserving structure. (2) Install the runner-agent lane: follow the pattern in scripts/board/runner-agent.py systemd-user
+  units on tony-omen/tony-dell — cap 2, labels cpu/dev/portable; enroll in fleet inventory (ssot.host-roles.yml
+  + audit-hosts.py if it lists runners). (3) Verify: runner claims a queued card OR reports capacity in kanban-dispatch;
+  files present in ~. Do NOT install redis (no backup). Report what was restored vs skipped in comms.'
+action:
+  type: dispatch
+comms:
+- at: 2026-10-11 08:05
+  from: tony
+  text: card captured via board-api

@@ -2,10 +2,10 @@ id: tony-macbook-ubuntu
 title: 'tony-macbook: wipe macOS, install Ubuntu as main OS'
 brief: KK's old Intel MacBook Pro becomes a Linux machine — macOS gets wiped entirely. Needs a wake-up to confirm
   the model, then a guided install. Waiting on Tony to power it on.
-column: doing
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-11 06:59
+updated: 2026-10-11 08:05
 ask:
   question: Which install path — depends on whether this Mac has the T2 chip?
   options:
@@ -30,8 +30,8 @@ spec: "T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple T2
   \ lack kb/trackpad/ssd-touch drivers. Fedora-t2 spin is the\n   alternative (better-maintained kernels, ask option\
   \ 3).\n5. Install: recovery -> Security Utility: allow external boot, no\n   secure boot; erase APFS entirely;\
   \ install to whole disk.\n6. Post-install: applespi (keyboard/trackpad), wifi firmware from\n   step-2 tarball,\
-  \ audio fix, suspend quirks.\n7. Rejoin infra: tailscale (new machine name or reuse tony-macbook —\n   revoke old\
-  \ key), SSH host 'macbook' in ssh-config on tony-dell/\n   tony-omen, restore redis container if wanted, update\
+  \ audio fix, suspend quirks.\n7. Rejoin infra: tailscale (new machine name or reuse tony-macbook —\n   revoke\
+  \ old key), SSH host 'macbook' in ssh-config on tony-dell/\n   tony-omen, restore redis container if wanted, update\
   \ SSOT\n   (ssot.mysystem.macbook.yml -> Linux, drop macbook-appdev.yml).\nPRE-T2 PATH (if model is 14,3): vanilla\
   \ Ubuntu 24.04 USB, standard install, broadcom-sta for wifi — skip all T2 steps."
 help: 'What lives on it today (from SSOT): Chrome Remote Desktop, PlayLive/ CDP offload (ports 9222/9231), podman
@@ -68,7 +68,50 @@ comms:
 - at: 2026-10-11 06:59
   from: chaba
   text: started devin-task-20261011-065857-t2-fork-likely-if-hw-model-mac on tony-omen (dispatch)
+- at: 2026-10-11 06:59
+  from: tony
+  text: moved doing -> done
+- at: 2026-10-11 07:03
+  from: devin
+  text: '[dispatch] Picked up card — found prior session already did the PRE-T2 path: machine is MacBookPro13,3
+    (2016, no T2). Ubuntu 26.04.1 on nvme0n1, macOS wiped, 23G kkkakk backup on ubuntu-usb stick. Live now as tailnet
+    tony-macbook (100.77.76.112). This run: verify leftovers, rejoin ssh-config/SSOT, close out.'
+- at: 2026-10-11 07:10
+  from: devin
+  text: 'raised request tony-macbook-is-live-on-ubuntu-pre-t2-13-45f588: tony-macbook is live on Ubuntu (pre-T2
+    13,3 — T2 fork never needed). 3 leftover decisions: (1) revoke dead tailnet node '
+- at: 2026-10-11 07:11
+  from: devin
+  text: '[done] Card -> review. tony-macbook verified live on Ubuntu 26.04.1 (MacBookPro13,3 — pre-T2, T2 fork never
+    needed). Rejoin complete: ssh macbook works from omen+dell (keys seeded from stick backup, configs repointed),
+    audit-hosts.py flipped to linux (live run: 0 deltas), ~30 SSOT files updated to Linux state, appdev dropped,
+    job trail written. Open asks on card: revoke dead tailnet node, one manual Wi-Fi join, optional restores.'
+- at: 2026-10-11 07:13
+  from: chaba
+  text: pushed dispatch/20261011-065857-t2-fork-likely-if-hw-model-mac to origin
+- at: 2026-10-11 07:13
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 37.2s)
+- at: 2026-10-11 07:13
+  from: chaba
+  text: auto-merged ad14a95a (dispatch/20261011-065857-t2-fork-likely-if-hw-model-mac) → origin/master
+- at: 2026-10-11 08:05
+  from: tony
+  text: 'answered tony-macbook-is-live-on-ubuntu-pre-t2-13-45f588: (1) yes — tailnet node revoked. (2) yes — Wi-Fi
+    joined. (3) yes — restore KK files and clean up (runner-agent enroll); skip redis, no backup.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+claim: {}
+requests:
+- id: tony-macbook-is-live-on-ubuntu-pre-t2-13-45f588
+  ask: 'tony-macbook is live on Ubuntu (pre-T2 13,3 — T2 fork never needed). 3 leftover decisions: (1) revoke dead
+    tailnet node kk-macbook 100.124.59.112 in admin console — needs you; (2) one manual Wi-Fi join on the laptop
+    (backup had SSIDs only, no PSKs); (3) optional restores — KK files into ~/, redis container (no backup exists),
+    runner-agent lane — defaults: leave on stick / skip / separate card.'
+  status: answered
+  at: 2026-10-11 07:10
+  from: devin
+  answer: (1) yes — tailnet node revoked. (2) yes — Wi-Fi joined. (3) yes — restore KK files and clean up (runner-agent
+    enroll); skip redis, no backup.
