@@ -1,19 +1,44 @@
 id: scenario-spend-guard
-title: "Stop scenario smoke burning paid quota — provider-health gate + spend ledger"
+title: Stop scenario smoke burning paid quota — provider-health gate + spend ledger
 column: doing
 priority: high
 autonomy: t2
 kind: ops
-description: >-
-  ada-scenario-smoke.timer runs hourly, ~39 live-tier cases, each opening a
-  REAL Gemini Live session (~936 billed connects/day; 3982 ws sessions on
-  ada-ha-tony in 7d). On a paid key this is the main burn behind the
-  missing $100; on a free key it hammers daily quota -> 429 storms.
+description: ada-scenario-smoke.timer runs hourly, ~39 live-tier cases, each opening a REAL Gemini Live session
+  (~936 billed connects/day; 3982 ws sessions on ada-ha-tony in 7d). On a paid key this is the main burn behind
+  the missing $100; on a free key it hammers daily quota -> 429 storms.
 acceptance:
-  - smoke suite skips Live cases when the provider is dunned/quota-dead
-    (probe once per run, fail fast, report skip)
-  - smoke tier runs against the FREE-lane key or ada-dev only — never the
-    paid key while a free lane exists
-  - daily Live-session + aux-call count -> spend ledger line in the CMS
-    ops report (est. $ burn/day so the next surprise is visible)
-  - "reconnect-churn counter: >50 ws connects/hour on one ada-ha-* unit logs a warn to chaba-events"
+- smoke suite skips Live cases when the provider is dunned/quota-dead (probe once per run, fail fast, report skip)
+- smoke tier runs against the FREE-lane key or ada-dev only — never the paid key while a free lane exists
+- daily Live-session + aux-call count -> spend ledger line in the CMS ops report (est. $ burn/day so the next surprise
+  is visible)
+- 'reconnect-churn counter: >50 ws connects/hour on one ada-ha-* unit logs a warn to chaba-events'
+action:
+  status: running
+  type: dispatch
+  runner: idc02
+claim: {}
+comms:
+- at: 2026-10-11 21:04
+  from: tony
+  text: moved doing -> done
+- at: 2026-10-11 21:09
+  from: devin
+  text: '[verify] 2026-10-11 measured on idc03: (1) smoke tier targets ws://127.0.0.1:8002/ws = ada-ha-tony PROD
+    with ada-ha-tony.env — confirmed. (2) ada-kk/ada-ha-tony/ada-dev envs all share the SAME GEMINI_API_KEY pair
+    (...UCiA primary, ...B7MQ secondary) — there is NO separate free-lane key today, so the acceptance criterion
+    "route to free-lane key" needs either a provisioned free-tier key (Tony gate) or health-gate-only skipping.
+    (3) A tools-suite scenario-benchmark has held the :8199 lock for 13.5h'
+- at: 2026-10-11 21:09
+  from: tony
+  text: queued for processing
+- at: 2026-10-11 21:09
+  from: idc02
+  text: claimed
+- at: 2026-10-11 21:10
+  from: chaba
+  text: started devin-task-20261011-210959-stop-scenario-smoke-burning-pa on idc02 (dispatch)
+- at: 2026-10-11 21:10
+  from: devin
+  text: '[start] dispatch picked up card — locating smoke suite + provider-health code'
+updated: 2026-10-11 21:10
