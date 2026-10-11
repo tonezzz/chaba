@@ -455,6 +455,72 @@ class Case(unittest.TestCase):
             sum(1 for r in c2.get("requests") or []
                 if str(r.get("id", "")).startswith("merge-conflict")), 1)
 
+    def _commit_symlink(self, name: str, target: str,
+                        msg: str) -> None:
+        os.symlink(target, self.wt / name)
+        git(self.wt, "add", name)
+        r = git(self.wt, "-c", "user.name=t", "-c", "user.email=t@t",
+                "commit", "-qm", msg)
+        assert r.returncode == 0, r.stderr
+
+    def test_venv_symlink_shadow_blocks_merge(self):
+        # the 2026-10-10 incident: `.venv/` in .gitignore never matched
+        # the committed `.venv` SYMLINK — the guard must hold the merge.
+        commit(self.wt, ".gitignore", ".venv/\n", "ignore venv dir")
+        self._commit_symlink(".venv", "/nonexistent/venv", "worktree venv")
+        commit(self.wt, "real.py", "x=1\n", "real work")
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertFalse(self.remote_has("master", ".venv"))
+        self.assertFalse(self.remote_has("master", "real.py"))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        head = dr._rev_parse(self.runner_repo, f"dispatch/{TID}") or ""
+        self.assertEqual((c["action"].get("sweep") or {})
+                         .get("shadow_blocked"), head[:12])
+        self.assertTrue(any("shadow" in m.get("text", "")
+                            and ".venv" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        # same head — next pass does not re-merge or re-post
+        n_comms = len(c.get("comms") or [])
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+        self.assertEqual(len(self.read_card().get("comms") or []),
+                         n_comms)
+
+    def test_dirpattern_file_shadow_blocks_merge(self):
+        # a plain file whose name is ignored only as a directory —
+        # `.venv/` covers `cache/` here — is the same shadow class.
+        commit(self.wt, ".gitignore", "cache/\n", "ignore cache dir")
+        commit(self.wt, "cache", "not a dir\n", "oops a file")
+        commit(self.wt, "ok.py", "x=1\n", "real work")
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertFalse(self.remote_has("master", "cache"))
+        c = self.read_card()
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("shadow_blocked"))
+        self.assertTrue(any("cache/" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+
+    def test_shadow_fixed_branch_merges_next_pass(self):
+        # after flagging, a new head without the shadow must merge —
+        # the stamp is head-keyed, not permanent.
+        commit(self.wt, ".gitignore", ".venv/\n", "ignore")
+        self._commit_symlink(".venv", "/nonexistent", "bad")
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        self.assertTrue((self.read_card()["action"].get("sweep") or {})
+                        .get("shadow_blocked"))
+        # fix: untrack the symlink (bare rule added too, like 172f25e)
+        git(self.wt, "rm", "-q", "--cached", ".venv")
+        os.unlink(self.wt / ".venv")
+        commit(self.wt, ".gitignore", ".venv/\n.venv\n", "bare name")
+        commit(self.wt, "good.py", "x=1\n", "work")
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        self.assertTrue(self.remote_has("master", "good.py"))
+        self.assertFalse(self.remote_has("master", ".venv"))
+        self.assertIs(self.read_card()["action"].get("verified"), True)
+
     def test_dirty_worktree_flagged_not_fetched(self):
         commit(self.wt, "feature.py", "x=1\n", "work")
         (self.wt / "leftover.md").write_text("uncommitted\n")

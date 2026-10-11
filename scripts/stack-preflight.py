@@ -20,6 +20,7 @@ wrote the quadlet" and "it is deployed".
 from __future__ import annotations
 
 import argparse
+import re
 import shlex
 import subprocess
 import sys
@@ -115,6 +116,39 @@ def main() -> int:
         rc, out = ssh(host, f"mkdir -p {path} && echo y")
         fails += not check(f"state {path}", rc == 0 and out == "y",
                            "created" if rc == 0 else out[:60])
+
+    # Lint: gitignored-dir shadow names (card
+    # dispatch-gitignore-shadow-guard — the 2026-10-10 .venv incident:
+    # `.venv/` ignored only dirs, so a committed `.venv` symlink slipped
+    # in and clobbered the real venv on deploy). For each state dir with
+    # a .gitignore, warn when a single-segment `X/` pattern has no bare
+    # `X`/`/X` counterpart to catch a tracked file of that name.
+    warned_gi = set()
+    for st in m.get("state", []):
+        path = st.split(" — ")[0].strip()
+        if not path or path in warned_gi:
+            continue
+        warned_gi.add(path)
+        q = ("$HOME/" + shlex.quote(path[2:])) \
+            if path.startswith("~/") else shlex.quote(path)
+        rc, gi = ssh(host, f"test -f {q}/.gitignore && cat {q}/.gitignore")
+        if rc != 0:
+            continue
+        lines = [l.strip() for l in gi.splitlines()]
+        dir_only = set()
+        bare = set()
+        for l in lines:
+            if not l or l.startswith(("#", "!")):
+                continue
+            l = l.lstrip("/")
+            if re.fullmatch(r"[A-Za-z0-9_.-]+/", l):
+                dir_only.add(l[:-1])
+            elif "/" not in l:
+                bare.add(l)
+        for name in sorted(dir_only - bare):
+            print(f"  [{YELLOW}warn{RESET}] gitignore {path}: '{name}/' "
+                  f"only ignores dirs — a tracked file/symlink '{name}' "
+                  f"would shadow it (add bare '{name}')")
 
     # Gate: verify command (only meaningful once deployed)
     if args.apply_verify and m.get("verify"):

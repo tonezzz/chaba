@@ -232,6 +232,14 @@ def guard(card: dict) -> dict:
         note = (f"unmerged commits remain on {s['branch']} — "
                 f"{m['unmerged']} commit(s) not in {s['base_ref']}"
                 f"{': ' + subs if subs else ''}{dirty_txt}")
+        try:
+            shad = shadow_paths(s["repo_root"], s["base_ref"], s["head"],
+                                cwd=s["worktree"] or s["repo_root"])
+            if shad:
+                note += ("; gitignored-dir shadow path(s): "
+                         + ", ".join(shad[:5]))
+        except Exception:
+            pass
         return {"allowed": False,
                 "summary": (f"unmerged commits remain on {s['branch']} "
                             f"({m['unmerged']} not in {s['base_ref']})"),
@@ -470,6 +478,78 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
             "failed": failed[:8] or tail or ["pytest exited nonzero"]}
 
 
+# ---------------------------------------------------------- shadow guard
+#
+# Pre-merge guard (card dispatch-gitignore-shadow-guard — the 2026-10-10
+# .venv incident: a worktree `.venv` SYMLINK rode a merge into main while
+# .gitignore only carried `.venv/`, a dir-only pattern that never matches
+# a file/symlink of that name; deploy-ada.sh then replaced the production
+# venv with a dangling link). Paths `head` adds vs `base` are flagged when:
+#
+#   (a) the entry is a symlink (mode 120000) — every added symlink gets a
+#       human look; they routinely point outside the repo, or
+#   (b) `git check-ignore --no-index` would ignore a DIR of the same name
+#       (the matched pattern ends in `/`) while the blob itself is
+#       trackable — i.e. the name is reserved for an ignored directory
+#       and a checked-in file now sits where the runtime recreates it.
+#
+# check-ignore runs in `cwd`, the checkout whose ignore rules apply —
+# the merged worktree on merge paths (the union .gitignore governs the
+# result), the session worktree for pre-merge notes. Fail-open: any
+# plumbing error yields [] rather than a phantom block.
+
+def shadow_paths(repo: Path, base: str, head: str,
+                 cwd: Path | None = None) -> list:
+    """Annotated shadow-path list for `head`'s net additions vs `base`."""
+    r = sh(["git", "-C", str(repo), "diff", "--raw", "-r",
+            "--no-renames", "--diff-filter=A", "-z", base, head],
+           timeout=60)
+    if r.returncode != 0 or not r.stdout:
+        return []
+    # -z raw records: ":<srcmode> <dstmode> <sha> <sha> <status>\0<path>\0"
+    fields = r.stdout.split("\0")
+    entries = []  # (path, dstmode)
+    i = 0
+    while i + 1 < len(fields):
+        meta, path = fields[i], fields[i + 1]
+        i += 2
+        parts = meta.lstrip(":").split()
+        if len(parts) < 5:
+            continue
+        entries.append((path, parts[1]))
+    if not entries:
+        return []
+    out = [f"{p} (symlink)" for p, m in entries if m == "120000"]
+    # check-ignore is only needed for blobs/gitlinks — a `P/` probe on a
+    # symlink is FATAL ("pathspec is beyond a symbolic link") and would
+    # kill the whole --stdin batch.
+    rest = [(p, m) for p, m in entries if m != "120000"]
+    if not rest:
+        return out
+    probe = "".join(f"{p}\n{p}/\n" for p, _ in rest)
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(cwd or repo), "check-ignore",
+             "-v", "-n", "--no-index", "--stdin"],
+            input=probe, capture_output=True, text=True, timeout=60)
+        lines = (r.stdout or "").splitlines()
+    except Exception:
+        lines = []
+    for idx, (path, mode) in enumerate(rest):
+        fprobe = lines[2 * idx] if 2 * idx < len(lines) else "::"
+        dprobe = lines[2 * idx + 1] if 2 * idx + 1 < len(lines) else "::"
+        # verbose match shape: "<source>:<linenum>:<pattern>\t<path>";
+        # "::\t<path>" for non-matches (-n keeps output aligned 1:1).
+        pat = ""
+        if not dprobe.startswith("::") and "\t" in dprobe:
+            seg = dprobe.split("\t", 1)[0].split(":", 2)
+            pat = seg[2] if len(seg) == 3 else ""
+        if pat.endswith("/") and fprobe.startswith("::"):
+            out.append(f"{path} (file shadows ignored dir "
+                       f"— pattern '{pat}')")
+    return out
+
+
 def _merge_in(wt: Path, ref: str) -> tuple:
     """merge --no-ff ref inside wt -> (ok, unresolved_conflict_paths, err).
 
@@ -507,25 +587,32 @@ def _merge_in(wt: Path, ref: str) -> tuple:
     return False, [], "commit after conflict resolution failed"
 
 
-def _merge_and_gate(mwt: Path, mref: str, repo_name: str) -> tuple:
-    """_merge_in + the post-merge test gate -> (ok, conflicts, err, tests).
+def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
+                    base: str) -> tuple:
+    """_merge_in + shadow guard + the post-merge test gate ->
+    (ok, conflicts, err, tests, shadows).
 
     tests is the run_test_gate() result ({} when the merge never got
-    that far). ok=False means do NOT push the merged tree."""
+    that far); shadows is the shadow_paths() flag list ([] likewise).
+    ok=False means do NOT push the merged tree."""
     ok, conflicts, merr = _merge_in(mwt, mref)
     if not ok:
-        return False, conflicts, merr, {}
+        return False, conflicts, merr, {}, []
+    shadows = shadow_paths(mwt, base, "HEAD")
+    if shadows:
+        return False, [], "", {}, shadows
     tests = run_test_gate(mwt, repo_name)
     if not tests.get("ok"):
-        return False, [], "", tests
-    return True, [], "", tests
+        return False, [], "", tests, []
+    return True, [], "", tests, []
 
 
 def close_out(card: dict) -> dict:
     """Dispatch close-out merge step. Consumed by close_out_notes().
 
     Result keys: merged, noop (silent skip — no commits produced),
-    checkpoint, pushed/push_error, gate, conflicts, merged_sha,
+    checkpoint, pushed/push_error, gate, conflicts, shadows (pre-push
+    gitignored-dir shadow guard), merged_sha,
     tests/test_failures (post-merge test gate), skipped|error, note,
     session."""
     out: dict = {"merged": False}
@@ -585,12 +672,14 @@ def close_out(card: dict) -> dict:
             return out
         mref = branch if _rev_parse(repo, f"refs/heads/{branch}") \
             else s["head"]
-        ok, conflicts, merr, tests = _merge_and_gate(
-            mwt, mref, s.get("repo_name") or "")
+        ok, conflicts, merr, tests, shadows = _merge_and_gate(
+            mwt, mref, s.get("repo_name") or "", s["base_ref"])
         if tests:
             out["tests"] = tests
         if not ok:
-            if merr:
+            if shadows:
+                out["shadows"] = shadows
+            elif merr:
                 out["error"] = f"merge: {merr}"
             elif tests and not tests.get("ok"):
                 out["test_failures"] = tests.get("failed") or ["?"]
@@ -606,12 +695,14 @@ def close_out(card: dict) -> dict:
                timeout=45)
             sh(["git", "-C", str(mwt), "reset", "-q", "--hard",
                 s["base_ref"]], timeout=30)
-            ok, conflicts, merr, tests = _merge_and_gate(
-                mwt, mref, s.get("repo_name") or "")
+            ok, conflicts, merr, tests, shadows = _merge_and_gate(
+                mwt, mref, s.get("repo_name") or "", s["base_ref"])
             if tests:
                 out["tests"] = tests
             if not ok:
-                if merr:
+                if shadows:
+                    out["shadows"] = shadows
+                elif merr:
                     out["error"] = f"merge: {merr}"
                 elif tests and not tests.get("ok"):
                     out["test_failures"] = tests.get("failed") or ["?"]
@@ -655,6 +746,12 @@ def close_out_notes(res: dict) -> list:
         bad = gate.get("bad") or gate.get("errors") or ["?"]
         notes.append("auto-merge held — expected_goals not met: "
                      + "; ".join(str(b)[:80] for b in bad[:4]))
+        return notes
+    if res.get("shadows"):
+        notes.append("merge held — gitignored-dir shadow path(s): "
+                     + ", ".join(str(s) for s in res["shadows"][:8])
+                     + " — untrack/rename them or add the bare ignore "
+                       "name (the 2026-10-10 .venv incident class)")
         return notes
     if res.get("conflicts"):
         notes.append("auto-merge conflicts: "

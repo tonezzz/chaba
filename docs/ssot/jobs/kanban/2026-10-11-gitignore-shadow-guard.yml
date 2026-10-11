@@ -1,0 +1,111 @@
+title: "dispatch pre-merge guard — reject gitignored-dir shadow paths"
+subtitle: >-
+  Every dispatch merge path now flags incoming symlinks and files whose
+  names are ignored only as directories (trailing-slash .gitignore
+  patterns) before the merged tree can reach origin
+icon: 🛡️
+id: 2026-10-11-gitignore-shadow-guard
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-gitignore-shadow-guard
+ref: OPS-0427
+started: "2026-10-11"
+completed: "2026-10-11"
+
+context:
+  incident: >-
+    2026-10-10 ~20:19-20:41 (+07): dispatch merge a992a40 into ada-pi
+    carried a worktree `.venv` SYMLINK into main. .gitignore only had
+    `.venv/` — a dir-only pattern that never matches a file/symlink of
+    that name — so it slipped review, and deploy-ada.sh replaced the
+    production venv dir with a dangling symlink → ModuleNotFoundError:
+    httpx → ada-tg-relay crash-looped 19 restarts. Hot-fixed by 172f25e
+    (untrack .venv + bare `.venv` ignore line); nothing in the merge or
+    dispatch path prevented the NEXT shadow file.
+  spec: >-
+    For each file added by the incoming branch: if it is a symlink, or
+    if `git check-ignore --no-index` would ignore a DIR of the same name
+    (matched pattern ends in `/`) while the blob itself is trackable —
+    flag it, block the merge, post comms listing the shadow paths.
+
+design:
+  detector: >-
+    dispatch_repos.shadow_paths(repo, base, head, cwd) — one
+    `git diff --raw -z --diff-filter=A` for net additions, flag mode
+    120000 entries as symlinks, then a single batched
+    `git check-ignore -v -n --no-index --stdin` probing `P` and `P/` per
+    remaining path: flag when `P/` matches a `/`-terminated pattern
+    while `P` itself is not ignored (a committed ignored file is a
+    different pathology, not flagged). check-ignore runs in `cwd` — the
+    merged throwaway worktree on merge paths so the union .gitignore
+    governs; the session worktree for pre-merge notes.
+  symlink_fatal: >-
+    `git check-ignore P/` is FATAL ("pathspec is beyond a symbolic
+    link") when P is a symlink and kills the whole --stdin batch —
+    symlink entries are flagged by mode and never probed.
+  merge_paths: >-
+    Enforced inside the shared gate: _merge_and_gate (close_out →
+    kanban-dispatch local merges + runner-agent remote close-outs)
+    checks shadows between _merge_in and the test gate; merge-sweep's
+    merge_strict checks between the clean merge and the push. Both run
+    post-merge pre-push inside the throwaway worktree — the merged tree
+    never reaches origin when shadows exist, while the session branch is
+    still pushed so work isn't stranded.
+  held_lane: >-
+    Shadows join the existing held-merge lane: close_out res["shadows"]
+    rides the same condition as conflicts/test_failures/goals in
+    kanban-dispatch.merge_pending_one and runner-agent.close_out_merge —
+    verified=False + informed auto-requeue (the retry session inherits
+    the shadow paths via action.last_failure and can untrack/rename
+    them). merge-sweep posts one comms entry per offending head sha
+    (action.sweep.shadow_blocked) and skips re-merging that head; a new
+    head re-checks from scratch.
+  merge_guard: >-
+    dr.guard (board-api review→done gate) appends the shadow paths to
+    its unmerged-commits note — a close attempt explains exactly what
+    must be fixed before the card can close.
+  preflight_lint: >-
+    stack-preflight warns (never fails) when a state dir's .gitignore
+    carries a single-segment `X/` pattern with no bare `X`/`/X`
+    counterpart — "add bare X" suggestion, the 172f25e-shape fix.
+
+files:
+- scripts/board/dispatch_repos.py
+- scripts/board/merge-sweep.py
+- scripts/board/kanban-dispatch.py
+- scripts/board/runner-agent.py
+- scripts/stack-preflight.py
+- tests/board/test_merge_sweep.py
+- tests/board/test_dispatch_close_out.py
+
+verified:
+- >-
+  python3 -m unittest discover -s tests — 220 tests, 0 failures
+  (6 new shadow tests: symlink block + dir-pattern-file block +
+  head-keyed re-merge in test_merge_sweep; symlink hold, dir-pattern
+  hold, guard note, and a direct detector unit test in
+  test_dispatch_close_out)
+- >-
+  Spec verification shape: worktree branch adds a `.venv` symlink over a
+  `.venv/`-only .gitignore, merge path runs → merge held pre-push,
+  branch still pushed, comms lists `.venv (symlink)`
+- >-
+  check-ignore semantics probed live: `P/` trailing-slash arg evaluates
+  dir patterns even when P exists as a file; `*.log` matches `foo.log/`
+  probes — the `/`-terminated matched-pattern check is what isolates the
+  shadow class; symlink `P/` probes are fatal → excluded from probing
+
+notes:
+- >-
+  Deliberate scope: every added symlink is flagged for a human look —
+  repos do carry legitimate symlinks, but a false positive costs one
+  comms entry while a false negative costs a production venv.
+- >-
+  A committed file that is ignored AS A FILE (e.g. `-f` add of
+  `*.log`) is not flagged — different pathology (force-add), no dir
+  shadow.
+- >-
+  merge-sweep raises comms but no card request for shadows (unlike
+  conflicts): the close_out paths auto-requeue with the fix evidence,
+  and the sweep's head-keyed stamp keeps the board quiet meanwhile.
