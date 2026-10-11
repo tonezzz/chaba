@@ -1,0 +1,79 @@
+title: Artifact Lifecycle Standard
+subtitle: How old code, docs, reports, cards and config age out safely — detect, classify, retire, never lose knowledge
+icon: ♻️
+status: operational
+updated: '2026-10-11'
+source_of_truth: true
+owner: tony
+
+# Tony's ask (2026-10-11): "standard procedure to deal with old code and
+# documents when we have millions of them — keep it maintained." The corpus
+# is too big to review by hand; everything flows through detectors ->
+# digest -> cards. This composes mechanisms that already exist.
+
+lifecycle_states:
+  active: current, referenced, or freshly generated — the default
+  stale: past its freshness contract (fresh_for lapsed / last_updated
+    old / unreferenced) — a detection signal, not a verdict
+  superseded: replaced by a named successor — keeps a tombstone that
+    points at it (meta superseded_by + redirect note in body)
+  archived: kept for history, out of active lists/indexes/search paths
+  retracted_expired: wrong or point-in-time content — flagged so
+    nothing reads it as current
+  rule: knowledge is never deleted. Generated artifacts (regenerable
+    from their generator + sources) may be deleted; handwritten content
+    only ever gets tombstoned or archived.
+
+declare: |
+  Every artifact carries its contract — CMS pages: generated_by +
+  fresh_for + status; cards: column + updated; SSOT files: last_updated
+  (+ ssot.file-control thresholds: review>350 lines, hard-split>750);
+  scripts: a home in ssot.jobs.yml / a tool decl / a card reference —
+  otherwise it is an orphan candidate. Reports must live inside the
+  report standard (managed blocks, provenance, registry entry).
+
+detect:
+  - "standard-drift CMS page (6h): stale generated reports past fresh_for,
+    board drift, tool-lint debt — the single review surface."
+  - "cms-audit.py: R-rule failures + baseline ratchet; C2 staleness is a
+    warning (point-in-time pages are supposed to be stale)."
+  - "ssot-validate: schema + card_schema warnings flag stale records."
+  - "cms-regen-sweep: command-generators that cannot run surface as
+    last_status=error/rejected on the registry doc."
+  - "NEW (card stale-report-regen-lane leftovers + this standard):
+    dead-code lint — scripts with zero references from jobs/cards/tools/
+    READMEs, and docs with no inbound links older than ~90d land in the
+    digest as an Orphans section instead of invisibly rotting."
+
+decide:
+  superseded: has a live successor — tombstone it (status + superseded_by
+    + one-line redirect; e.g. infrastructure-digest -> infra-digest)
+  archived: ended work, historical record — status:archived; excluded
+    from report-distill distillation (DEAD_STATUS) and active indexes
+  delete_only_generated: docs/pages/cards built by a generator can be
+    removed — they regenerate if needed. Handwritten content never
+    deleted without Tony's explicit approval in the same session.
+  boards: done cards accumulate -> periodic archive sweep moves them to
+    archive files (pattern already in focus/inbox/archive yamls)
+
+act:
+  automatic: generator-owned surfaces — supersede marking on regen,
+    registry write-backs, digest listing, board-index churn
+  dispatch: mechanical hygiene work (orphan lists -> cards -> dispatch
+    moves files to archives, fixes inbound links, stamps meta)
+  tony_gate: deleting handwritten docs/code, retracting a standard,
+    archive sweeps that move many cards at once
+
+ratchet: |
+  Like cms-audit's baseline: dead-thing counts are tracked and only ever
+  shrink. A digest that shows more orphans/stale artifacts than last run
+  is itself a finding — card it. The goal state isn't zero old files;
+  it's zero *unlabelled* old files: anything old knows why it exists or
+  says which live thing replaced it.
+
+references:
+  - docs/ssot/ssot.file-control.yml (SSOT naming/archive/size rules)
+  - docs/ssot/apps/ssot.apps.cms-reports.yml (report contract + report_first_protocol)
+  - scripts/ada/standard-drift-digest.py + cms-regen-sweep.py (detectors)
+  - scripts/ada/report-distill.py DEAD_STATUS set
+  - docs/ssot/kanban/cards/stale-report-regen-lane.yml (first findings)
