@@ -1,0 +1,69 @@
+title: Project Lifecycle Pipeline
+subtitle: Named projects as first-class citizens — CMS page + `project:` tag, stewarded by Ada, built by Devin/nest, gated only at production
+icon: pipeline
+version: 1
+last_updated: "2026-10-11"
+source_card: project-lifecycle-pipeline
+
+overview:
+  purpose: |
+    Tony's application-development standard: idea -> requirement -> PoC ->
+    prototype -> alpha -> beta -> product -> feedback, evolving forever.
+    A "project" is a named entity that groups the cards, pages, and
+    decisions of one effort. The pipeline rides the existing release
+    lifecycle (ssot.release-lifecycle.yml s0-s5) — this document adds the
+    project container, the intake router, and the role split on top.
+  approved:
+    - "container: cms-page+tag (Tony's pick 2026-10-11)"
+    - "tg routing: auto-file+ask — file under best-guess project + post a confirm request; never hold an idea hostage"
+    - "approval gates: prod-only — the release-lifecycle t-gates already require same-session approval at s5"
+
+project_container:
+  definition: |
+    A project = ONE CMS page in ada-cms-pages (the project home) + the
+    `project: <slug>` tag on every kanban card that belongs to it.
+    The board filters/rolls up by tag; the page carries the narrative.
+  page_template: |
+    ## <Project Name>            (slug: <slug>)
+    goal:        one sentence — what done looks like
+    stage:       idea|requirement|poc|prototype|alpha|beta|product
+    steward:     ada
+    members:     tony, ada, devin, nest
+    linked_cards: [card ids, kept current]
+    decision_log:  dated one-liners — every Tony decision verbatim
+    next:        the single next action + who owns it
+  rules:
+    - "page slug = card tag value; rename both together or not at all"
+    - "one project = one page; sub-efforts are separate projects linked in the log"
+    - "stage advances only when the mapped release-lifecycle gate is met"
+
+stage_mapping:
+  idea:        {lifecycle: s0, gate: "card exists w/ metric+verify"}
+  requirement: {lifecycle: s0, gate: "spec block complete on the card"}
+  poc:         {lifecycle: s1, gate: "hypothesis answered pass/fail, [exp] comm"}
+  prototype:   {lifecycle: "s1->s2", gate: "works on dev twin, [alpha] comm"}
+  alpha:       {lifecycle: s2, gate: "2 consecutive scenario passes"}
+  beta:        {lifecycle: s3, gate: "parity+soak evidence, [beta] comm"}
+  product:     {lifecycle: s5, gate: "[rc]+[prod] comms, Tony same-session approval — the only hard gate"}
+  feedback:    {lifecycle: "loop", gate: "findings become cards tagged with the project — the pipeline never closes"}
+
+roles:
+  tony:  "ideas, decisions, the prod gate — communicates with Ada, Devin, and the nest"
+  ada:   "project steward — discusses, elaborates specs, owns the CMS page (stage, linked cards, decision log, next action), files intake cards, nudges stalled work"
+  devin: "tools/build arm — dispatches, merges, deploys, verifies per standard procedures; picks up Ada's requests"
+  nest:  "execution surface — sub-dispatches and host runners claimed off the board"
+
+intake_router:
+  applies_to: "any Tony idea arriving via voice or Telegram (ada-tg-relay) that names or implies project work"
+  flow:
+    - "match: search ada-cms-pages for a project whose page/slug fits the idea"
+    - "confident match -> file the card with `project: <slug>` + note the project page in card links"
+    - "unsure -> file in backlog WITHOUT a project tag + raise a board request with clickable options (candidate projects + 'new project') — auto-file+ask, never hold"
+    - "clearly a new project -> create the CMS page first (template above), then the card with the new tag"
+    - "always: tell Tony the card id + project in one short phrase — DONE MEANS DONE applies, say it only after the tool returns ok"
+  anti_pattern: "an idea discussed in chat with no card does not exist — capture is the floor"
+
+card_ux_loop:
+  trigger: "any friction using the board/card interface — missing filter, slow view, dead button, confusing state"
+  flow: "file a card tagged `kanban-ux` with the surface named -> review-digest surfaces it -> small fixes direct, larger ones dispatched"
+  rule: "UX friction is real work worth a card — the board is the shared surface, its usability is everyone's throughput"
