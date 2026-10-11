@@ -76,6 +76,13 @@ persons:
         - cms_publish_page
         - cms_edit
         - chat_send
+        # Calendar/tasks un-excluded 2026-10-11: her own calendar-kk.json +
+        # kk-ha task list are live (ADA_CALENDAR_FILE) — the cross-lane leak
+        # the exclude block guarded against no longer applies.
+        - calendar_read
+        - calendar_write
+        - plan_day
+        - tasks
         - web_search
         - ada_persona
         - speaker_profiles
@@ -93,10 +100,6 @@ persons:
         # ADA_EXCLUDED_TOOLS alongside the allowlist; the deploy lint
         # warns on any declared tool in NEITHER list, so merges/renames
         # force a decision here instead of slipping through.
-        - calendar_read
-        - calendar_write
-        - plan_day
-        - tasks
         - ada_resolve_action
         - devin
         - devin_read
