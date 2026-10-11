@@ -47,53 +47,44 @@ hosts:
     mcp_debug_name: tony_dell
 
   tony-macbook:
-    description: macOS / iOS verification workstation and lightweight offload node
+    description: portable Linux dev/lab node — MacBookPro13,3 (2016 15"), Ubuntu 26.04.1 since 2026-10-10 (was macOS)
     tailnet: tony-macbook
-    tailscale_ip: 100.124.59.112
-    local_hostname: KKs-MacBook-Pro.local
+    tailscale_ip: 100.77.76.112
+    lan_ip: 192.168.2.88
+    local_hostname: tony-macbook
     tags:
-      - macos
-      - ios
+      - linux
       - laptop
-      - verify
-      - xcode
+      - portable
+      - dev
       - offload
-      - playlive
     headless_browser:
-      enabled: true
-      role: fallback
-      playlive_port: 9232
-      playlive_url: http://macbook:9232/sessions
-      cdp_url: http://macbook:9222
-      note: mcp_debug compact is not yet ported to macOS; use mcp_raw with macOS-compatible commands. PlayLive/CDP already works via playlive-macbook-tunnel.
+      enabled: false
+      note: Chrome 155 installed; no PlayLive/CDP endpoint provisioned yet (old macOS playlived + tunnel died with the wipe)
     web_preview:
       enabled: false
-      note: Manual Safari and native app verification only
     mcp_debug_name: macbook
     offload:
       eligible: true
-      kind: lightweight-macbook
+      kind: portable-linux-laptop
       can_run:
-        - playwright / headless Chrome automation
-        - mcp_raw macOS-compatible tasks
+        - standard Linux x86_64 commands and scripts
+        - Vulkan-accelerated whisper.cpp/llama.cpp small-model inference (Radeon Pro 450, RADV — no CUDA/ROCm/OpenCL)
         - health snapshots and monitoring
         - subagent explore/research
-        - verification of iOS/macOS builds
       cannot_run:
-        - Linux x86_64 Docker/Podman containers
-        - GPU/ML training workloads
-        - long-running stateful services requiring systemd
+        - macOS/iOS builds or Safari verification (no macOS anymore)
+        - GPU/ML training workloads, CUDA/ROCm-labeled dispatch cards
+        - long-running stateful services (laptop — sleeps/off-net is normal)
       preferred_for:
-        - mac_ios_verify
-        - browser automation overflow when tony-dell/tony-omen are busy
-        - quick one-off macOS commands
+        - portable lab tasks, CPU/dev dispatch lane (planned, cap 2)
 
 policies:
   headless_browser_priority:
     - tony-dell
     - tony-omen
     - tony-macbook
-  mac_ios_verify: tony-macbook
+  mac_ios_verify: null  # retired 2026-10-11 — no macOS host left (tony-macbook is Ubuntu now)
   offload:
     candidate_order:
       - tony-dell

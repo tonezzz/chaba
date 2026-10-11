@@ -1,0 +1,64 @@
+id: tony-macbook-ubuntu-rejoin
+title: tony-macbook Ubuntu rejoin — SSH keys/config + SSOT sweep after macOS wipe
+date: 2026-10-11
+card: kk-macbook-ubuntu (file) / tony-macbook-ubuntu (id)
+host: tony-macbook
+status: done
+
+trigger: >
+  Dispatch picked up card kk-macbook-ubuntu specced as a T2-chip fork
+  (wake macbook → firmware extract → backup → t2linux install → rejoin).
+  On inspection the work was mostly already done: the machine turned out
+  to be MacBookPro13,3 (2016 15", PRE-T2 — no T2 fork ever needed) and a
+  session on 2026-10-10 installed Ubuntu 26.04.1 to the whole internal
+  SSD. Card answer by tony: "This is done by another session."
+
+verified_state:
+  hardware: MacBookPro13,3 — i7-6700HQ, 16GB, 233.8G Apple NVMe SM0256L,
+    Radeon Pro 450 Polaris11 + Intel HD 530 (see docs/kb/hardware-tony-macbook.md)
+  os: Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic, nvme0n1 EFI+ext4 whole-disk
+  tailnet: tony-macbook 100.77.76.112 (new node; NOT the mn01 stick identity)
+  lan: 192.168.2.88 via USB-C ethernet dongle enx00e04c361276 (00:e0:4c:36:12:76)
+  wifi: wlp3s0 UP via brcmfmac (BCM43602) — no AP associated; macOS backup had SSIDs only, no PSKs
+  backup: /home/tony/macbook-backup-2026-10-10 on ubuntu-usb stick (mounted
+    /run/media/tony/ubuntu-usb) — 23G kkkakk home incl. .ssh keys, chaba-health,
+    Library/CRD config, .anydesk; 211M Shared. NO redis dump (podman redis-data
+    volume was never exported — treated as disposable).
+
+actions:
+  - "Seeded ~/.ssh/authorized_keys on the Linux box with the 3 fleet keys
+    recovered from the macOS backup (omen id_ed25519_macbook 'tony@linux-pc-to-macbook',
+    dell 'mcp-debug@tony-dell', dell 'cascade')."
+  - "Updated Host 'macbook' in ~/.ssh/config on tony-omen (-> tony@100.77.76.112,
+    id_ed25519_macbook, added tony-macbook alias) and on tony-dell (-> tony@100.77.76.112,
+    id_cascade; removed the stale 'Host 100.124.59.112' block). Verified ssh macbook
+    end-to-end from both hosts."
+  - "scripts/audit-hosts.py HOSTS: macbook -> {tailnet: tony-macbook, os: linux, user: tony}
+    so the audit lane uses the systemctl path."
+  - "SSOT sweep to Linux state: ssot.mysystem.macbook.yml rewritten (v6);
+    ssot.mysystem.macbook-appdev.yml dropped (macOS/iOS dev moot); updated
+    host-roles, mcp-debug(+files), audit.hosts, security.tony-macbook + security index,
+    ip-address-registry, mac-address-registry(+tony), tony-dell-multi-wan, host-tools,
+    services (playlive-macbook-tunnel obsolete), playlive-hosts (macOS session retired),
+    mcp-tools (playlive-macbook retired), night-jobs(+macbook obsolete), automation.macbook
+    (obsolete), cleanup, focus.triage, reports, mysystem.home, index, registry.ssot-extra,
+    follow-up, registry.script-core."
+  - "Card kk-macbook-ubuntu.yml -> column: review (autonomy t3 — human closes),
+    3 open requests recorded, full comms entry."
+
+open_items:
+  - "Revoke dead tailnet node 'kk-macbook' 100.124.59.112 in the admin console (needs Tony)."
+  - "One manual Wi-Fi join to TONY-WIFI on the laptop (no PSK recoverable from backup)."
+  - "Optional restores, undecided: KK files into ~/, redis container (no backup),
+    runner-agent lane install (cap 2, cpu/dev/portable per hardware doc)."
+  - "playlive-macbook-tunnel.service on tony-dell now connects (ssh works again)
+    but forwards to a dead CDP endpoint — safe to disable/remove the unit."
+  - "ssh-mesh-sync: macbook was excluded as 'off tailnet' — now eligible; the
+    weekly sync will pick it up or the exclusion note can be removed."
+
+notes: >
+  Serial C02T902XH03M + 2.6GHz base clock had suggested a 2018 T2 model in the
+  card spec; DMI confirmed 13,3 — lesson: serial-prefix inference can mislead,
+  hw.model/DMI is the only authority (matches the verified-absent protocol
+  learning). No T2 steps (firmware extract, applespi, secure-boot dance) were
+  ever required.

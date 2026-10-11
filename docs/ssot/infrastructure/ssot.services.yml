@@ -334,8 +334,8 @@ tony-dell:
     host: tony_dell
     purpose: Persistent SSH tunnel from tony-dell to tony-macbook Chrome CDP for PlayLive
     systemd: systemd/playlive-macbook-tunnel.service
-    status: running (2026-09-04)
-    note: "Forwards tony-dell 127.0.0.1:9229 to tony-macbook [::1]:9222. playlive-hosts.yml uses http://127.0.0.1:9229 for tony-macbook."
+    status: obsolete (2026-10-11)
+    note: "macOS wiped — no CDP on ::1:9222 anymore. Tunnel now connects to the Linux box but forwards to nothing; safe to disable/remove the unit on tony-dell."
   focus-dispatcher-overnight:
     timer: focus-dispatcher-overnight.timer
     host: tony_dell

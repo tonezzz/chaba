@@ -1,288 +1,160 @@
 title: MacBook Pro Workstation
-subtitle: MacBook Pro system configuration, remote access, and macOS/iOS verification
+subtitle: MacBook Pro (MacBookPro13,3) running Ubuntu Linux — portable dev/lab fleet node
 icon: 💻
 related_files:
   - docs/ssot/infrastructure/ssot.host-roles.yml
   - docs/ssot/ssot.mysystem.home.yml
   - docs/ssot/infrastructure/ssot.mcp-debug.yml
+  - docs/kb/hardware-tony-macbook.md
+  - docs/kb/ubuntu-install-macbook-pro13-3.md
+  - docs/kb/mn01-stick-standard.md
 
 ideas:
-  - MacBook Pro as additional workstation in home network
-  - Remote access via Chrome Remote Desktop and SSH
-  - Cross-platform development and testing capabilities
-  - macOS-specific tools and environments
+  - MacBook Pro as portable Linux dev/lab node in home network
+  - Remote access via SSH + Tailscale
+  - Vulkan-capable GPU offload for small whisper.cpp/llama.cpp models
   - Integration with existing home network infrastructure
 
 sections:
+  - title: Transition Record
+    icon: 🔄
+    layout: list
+    items:
+      - label: macOS wiped 2026-10-10
+        text: "Was macOS 13.7.8 Ventura (user kkkakk). Turned out to be MacBookPro13,3 (2016 15\", pre-T2) — serial C02T902XH03M and 2.6GHz base clock had suggested a 2018 T2 model; the T2 fork of kk-macbook-ubuntu was never needed. Ubuntu 26.04.1 LTS installed to whole internal SSD via ubuntu-usb stick (docs/kb/ubuntu-install-macbook-pro13-3.md)."
+        status: done
+      - label: Backup location
+        text: "Full kkkakk home (23G) + Shared (211M) preserved at /home/tony/macbook-backup-2026-10-10 on the ubuntu-usb stick (still plugged into the MacBook, mounted /run/media/tony/ubuntu-usb). Includes .ssh/authorized_keys, chaba-health, Library (Chrome Remote Desktop config), .anydesk, wifi SSID list (no PSKs)."
+        status: retained
+      - label: Not backed up
+        text: "podman redis-macbook container data (redis-data volume, port 16379) — no .rdb/.aof dump exists; treated as disposable cache."
+        status: known-gap
+      - label: History
+        text: Pre-2026-10-10 macOS configuration is in git history (file version <=5, last_updated 2026-09-18).
+
   - title: System Information
     icon: 🖥️
     layout: list
     items:
       - label: Model
-        text: MacBook Pro (Quad-Core Intel Core i7, 2.6 GHz)
+        text: MacBookPro13,3 — MacBook Pro 15" Late 2016, Touch Bar (DMI verified 2026-10-11)
+      - label: CPU
+        text: Intel Core i7-6700HQ, 4c/8t @ 2.6GHz (Skylake)
       - label: Memory
         text: 16 GB RAM
       - label: Operating System
-        text: macOS 13.7.8 (Ventura, build 22H730) - Verified 2026-09-09
-      - label: Serial Number
-        text: C02T902XH03M
+        text: Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic (verified 2026-10-11)
+      - label: GPU
+        text: Intel HD 530 (i915, display) + AMD Radeon Pro 450 Polaris11 2GB (amdgpu/RADV — Vulkan works, no OpenCL/ROCm). See docs/kb/hardware-tony-macbook.md
       - label: Hostname
-        text: KKs-MacBook-Pro.local
+        text: tony-macbook
       - label: Username
-        text: kkkakk
+        text: tony
       - label: Storage
-        text: 233Gi total, 22Gi used, 95Gi available, 19% capacity - Verified 2026-09-09
+        text: "233.8G Apple NVMe SM0256L — nvme0n1p1 1G EFI + nvme0n1p2 232.7G ext4 / (fresh install 2026-10-10)"
 
   - title: Network Configuration
     icon: 🌐
     layout: list
     items:
-      - label: IP Address
-        text: 192.168.2.80 (DHCP assigned, TONY-WIFI_5G)
+      - label: LAN IP
+        text: 192.168.2.88/24 via USB-C ethernet dongle (enx00e04c361276, MAC 00:e0:4c:36:12:76 — same dongle that held 192.168.2.80 under macOS)
       - label: Tailnet IPv4
-        text: 100.124.59.112 (machine name 'tony-macbook')
-      - label: Network
-        text: 192.168.2.0/24 subnet (home WiFi)
-      - label: Hostname Resolution
-        text: .local hostname resolution available; reachable over Tailscale as 100.124.59.112
+        text: 100.77.76.112 (machine name 'tony-macbook' — new tailnet node; old macOS node 'kk-macbook' 100.124.59.112 still registered, pending revoke in admin console)
+      - label: WiFi
+        text: "BCM43602 via brcmfmac — interface wlp3s0 UP, driver/firmware fine, but no AP associated yet. macOS backup has SSID list only (no PSKs) — needs one manual join to TONY-WIFI."
+        status: pending
+      - label: Bluetooth
+        text: hci0 present, unblocked
       - label: Network Status
-        text: Connected to home network
+        text: Connected to home network via ethernet dongle
         status: active
 
   - title: Remote Access Methods
     icon: 🔐
     layout: list
     items:
-      - label: Chrome Remote Desktop
-        text: Full GUI remote access via Chrome Remote Desktop (dedicated profile for remote access only)
-        url: https://remotedesktop.google.com/access
-        status: active
-        tags: [gui, remote-desktop, cross-platform, dedicated-profile]
-      - label: Chrome Profile Strategy
-        text: Current Chrome profile dedicated to Chrome Remote Desktop only - not used for regular browsing on MacBook
-        status: active
-        tags: [profile-management, access-control, separation]
-      - label: Multi-User Access
-        text: Other users can use different Chrome profiles or macOS accounts without affecting remote access setup
-        status: active
-        tags: [multi-user, concurrent-access, isolation]
       - label: SSH Access
-        text: Command-line access via SSH with key authentication
+        text: "ssh macbook — Host alias 'macbook'/'tony-macbook' -> 100.77.76.112, User tony, on tony-omen (~/.ssh/id_ed25519_macbook) and tony-dell (~/.ssh/id_cascade). Re-pointed 2026-10-11; verified end-to-end from both hosts."
         status: active
         tags: [ssh, command-line, key-auth]
-      - label: SSH Configuration
-        text: "Host: macbook 192.168.2.80 100.124.59.112, HostName: 100.124.59.112, User: kkkakk, IdentityFile: per-PC key (tony-dell: ~/.ssh/id_cascade, tony-omen: ~/.ssh/id_ed25519_macbook)"
-        url: file:///home/tony/.ssh/config
-      - label: SSH Connection
-        text: ssh macbook (configured in ~/.ssh/config)
-        status: active
-      - label: Tailscale Funnel
-        text: Public landing page and active-connections API on https://tony-macbook.taila0626a.ts.net/
-        url: https://tony-macbook.taila0626a.ts.net/
-        status: active
-        tags: [tailscale, funnel, public, landing-page]
-
-  - title: SSH Setup Details
-    icon: 🔑
-    layout: list
-    items:
-      - label: SSH Server
-        text: macOS Remote Login enabled in System Settings → Sharing
-      - label: Authentication
-        text: SSH key-based authentication (no password required)
-      - label: SSH Key Path
-        text: per-PC key (tony-dell uses ~/.ssh/id_cascade; tony-omen uses ~/.ssh/id_ed25519_macbook)
       - label: Authorized Keys
-        text: ~/.ssh/authorized_keys (MacBook)
-      - label: SSH Config
-        text: ~/.ssh/config (Linux PC) with 'macbook' host entry
-      - label: Connection Test
-        text: "ssh macbook 'whoami && hostname' (key auth verified 2026-08-15)"
-
-  - title: Chrome Profile Management
-    icon: 👤
-    layout: list
-    items:
-      - label: Remote-Only Profile
-        text: Current Chrome profile dedicated exclusively to Chrome Remote Desktop access
+        text: "~/.ssh/authorized_keys re-seeded 2026-10-11 with the 3 fleet keys from macOS backup: tony@linux-pc-to-macbook (omen), mcp-debug@tony-dell, cascade (dell)"
         status: active
-        tags: [dedicated-profile, remote-access, separation]
-      - label: Profile Strategy
-        text: Keep remote access profile separate from regular browsing profiles to avoid conflicts
-      - label: Multi-User Access
-        text: Other users can use different Chrome profiles without affecting remote access setup
-        status: active
-      - label: Concurrent Access
-        text: Multiple users can access simultaneously via different Chrome profiles or macOS accounts
-        status: supported
-      - label: Access Control
-        text: Chrome Remote Desktop tied to Google account, not local Chrome profiles
-      - label: Security Consideration
-        text: Avoid setting up Chrome Remote Desktop in multiple profiles for same macOS user
-      - label: Detailed Documentation
-        text: Complete profile management strategy and troubleshooting guide
-        url: file:///home/tony/CascadeProjects/chaba-tony-dell/docs/kb/chrome-remote-desktop-profile-management.md
+      - label: Chrome Remote Desktop
+        text: REMOVED with macOS — Linux CRD host not set up (optional, manual)
+        status: removed
+      - label: Tailscale Funnel
+        text: Old landing page/funnel config died with macOS — none configured on Linux
+        status: removed
 
-  - title: System Capabilities
+  - title: Installed Software
     icon: ⚡
     layout: list
     items:
-      - label: Development Environment
-        text: Command Line Tools installed; full Xcode not installed. Target state tracked in ssot.mysystem.macbook-appdev.yml.
-        url: file:///home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.mysystem.macbook-appdev.yml
-        tags: [development, macos, xcode, clt]
-      - label: Cross-Platform Testing
-        text: Test web apps and services on macOS/Safari
-        tags: [testing, cross-platform, safari]
-      - label: File Transfer
-        text: scp/rsync for file transfer between machines
-        tags: [file-transfer, scp, rsync]
-      - label: Service Management
-        text: launchctl for macOS service management
-        tags: [services, launchctl, macos]
-      - label: Health Snapshot Agent
-        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Verified fresh at 2026-09-09 18:48 local (timestamp 2026-09-09T11:48:13Z, uptime 1 day 2:16). Each snapshot includes lan_ip, tailscale_ip, wifi_ssid, memory pressure, top CPU/memory, Adobe/CRD/PlayLive process counts, disk hogs, and 9222/9231 ports. Run python3 /Users/kkkakk/chaba-health/collect-macbook-snapshot.py --fix to auto-kill Adobe CC, duplicate PlayLive Chrome, and orphaned /tmp/playlive-chrome-mac.
+      - label: Fleet stack
+        text: "tailscale (own node identity — NOT the mn01 stick identity, per docs/kb/mn01-stick-standard.md), openssh-server, Chrome 155, devin-desktop (windsurf) 3.10.48, devin CLI 3000.11.3 (credentials ported)"
         status: active
-        tags: [health, monitoring, snapshot]
-      - label: PlayLive / CDP Node
-        text: Playwright+CDP browser automation daemon (playlived) is running on port 9231 (PID 5967). Headless Google Chrome is running with remote-debugging-port=9222 (PID 5773). A test chrome-live session was created and closed successfully. CDP is reachable at 127.0.0.1:9222 and playlived at 0.0.0.0:9231.
-        status: active
-        tags: [playlive, cdp, browser, playwright, automation]
-      - label: Node.js
-        text: Node.js v20.17.0 and npm 10.8.2 installed at ~/.local/node; available on the shell PATH via ~/.zshenv
-        status: active
-        tags: [node, npm, development, javascript]
-      - label: Homebrew
-        text: Homebrew installed at ~/.homebrew and available on the shell PATH via ~/.zshenv
-        status: active
-        tags: [homebrew, package-manager, macos]
-      - label: Podman
-        text: 'Podman v5.8.5 installed at ~/.local/podman (binary at ~/.local/podman/bin/podman). The podman-machine-default VM is running (created 3 weeks ago, started 2026-09-10). The redis-macbook container is running and responding PONG on port 16379. PATH includes ~/.local/podman/bin via ~/.zshenv.'
-        status: active
-        tags: [podman, containers, virtualization]
-      - label: Redis
-        text: Redis 7 Alpine container 'redis-macbook' is running and responding PONG on port 16379. It is backed by persistent volume 'redis-data' and podman-machine-default.
-        status: active
-        tags: [redis, podman, cache]
-      - label: Terminal Access
-        text: Full terminal access via SSH for command-line operations
-        tags: [terminal, ssh, command-line]
+      - label: GPU tooling
+        text: vulkan-tools, clinfo, mesa-utils, glmark2 (bench done 2026-10-10 — see hardware doc)
+      - label: Not yet installed
+        text: "runner-agent dispatch lane (hw doc target: cap 2, labels cpu/dev/portable — not registered in ssot.devin-claims/focus-dispatcher yet), podman/redis (was macOS-only, data not backed up), PlayLive/CDP, mcp-debug, device-telemetry agent, WiFi profile (no PSK in backup)"
 
   - title: Power & Sleep
     icon: 🔋
     layout: list
     items:
-      - label: Keep-Awake
-        text: "caffeinate -i -s is running (PID 4407); system sleep is prevented while display sleep remains at 30 minutes (pmset -g shows 'sleep prevented by caffeinate')"
-        status: active
-        tags: [power, sleep, caffeinate, remote]
-      - label: Power Settings
-        text: "sleep 1, displaysleep 30, disksleep 10, tcpkeepalive 1, ttyskeepawake 1, powernap 0"
-        status: active
-        tags: [power, pmset]
-
-  - title: Integration with Home Network
-    icon: 🏠
-    layout: list
-    items:
-      - label: Network Integration
-        text: Part of 192.168.2.0/24 home network
-      - label: Service Access
-        text: Can access tony-omen and tony-dell services
-      - label: Shared Resources
-        text: Access to shared network resources and services
-      - label: DNS Resolution
-        text: .local hostname resolution for network devices
-      - label: Profile Compatibility
-        text: Compatible with home network profile configuration
+      - label: Lid-close suspend
+        text: "Ubuntu default — lid close suspends. For headless-lid-closed use set HandleLidSwitch=ignore in logind.conf (not yet applied)"
+        status: pending
 
   - title: Maintenance & Troubleshooting
     icon: 🔧
     layout: list
     items:
-      - label: System Updates
-        text: macOS Software Update via System Settings - Last verified 2026-09-09 (macOS 13.7.8, build 22H730)
+      - label: Install runbook
+        text: docs/kb/ubuntu-install-macbook-pro13-3.md (hardware notes, Option-key boot, BCM43602 firmware note)
       - label: SSH Troubleshooting
-        text: Check Remote Login in System Settings → Sharing
-      - label: Network Troubleshooting
-        text: Check WiFi connection and IP assignment
-      - label: Chrome Remote Desktop
-        text: Verify Chrome Remote Desktop service is running
-      - label: Key Regeneration
-        text: "Regenerate SSH keys if authentication fails: ssh-keygen -t ed25519"
+        text: sshd enabled (port 22); 'ssh macbook' from omen/dell
+      - label: Boot picker
+        text: Hold Option (⌥) at power-on — EFI Boot entries; tony-usb stick identity rules in docs/kb/mn01-stick-standard.md
 
   - title: Security Status
     icon: 🔒
     layout: list
     items:
-      - label: OS Updates
-        text: macOS 13.7.8 installed (2026-09-09, build 22H730) - Safari 18.6 installed
-        status: updated
-        tags: [security, updates, completed]
-      - label: FileVault
-        text: Full disk encryption - PENDING (requires manual enablement)
-        status: pending
-        tags: [security, encryption, pending]
+      - label: Declared posture
+        text: docs/ssot/infrastructure/ssot.security.tony-macbook.yml (updated to Linux 2026-10-11)
+      - label: Exposure
+        text: "sshd 0.0.0.0:22 (LAN+tailnet) — the only service listener besides CUPS/systemd-resolved loopback"
       - label: Firewall
-        text: macOS Firewall with stealth mode - PENDING (requires manual enablement)
+        text: ufw not configured yet (desktop default)
         status: pending
-        tags: [security, firewall, pending]
-      - label: System Integrity Protection
-        text: Disabled - Evaluate necessity (OpenCore-Patcher may require disabled SIP)
-        status: review-needed
-        tags: [security, sip, review]
-      - label: Sharing Preferences
-        text: Guest sharing review - PENDING (requires manual review)
-        status: pending
-        tags: [security, sharing, pending]
-      - label: Security Score
-        text: 4/10 (improved from 2/10 after OS updates)
-        status: partial
-
-  - title: Storage Management
-    icon: 💾
-    layout: list
-    items:
-      - label: Storage Status
-        text: 233Gi total, 22Gi used, 95Gi available, 19% capacity (APFS shared container)
-        status: healthy
-      - label: Cleanup Performed (2026-08-10)
-        text: Adobe cache (23GB), Chrome cache (1.8GB), Safari cache, system caches, Downloads DMG files
-        status: completed
-      - label: Space Recovered
-        text: ~27GB recovered during cleanup
-        status: completed
-      - label: Remaining Large Files
-        text: "Desktop: 6.1GB (PSD work files), Library: 18GB, Downloads: 817MB (manual review recommended)"
-        status: review-needed
 
   - title: Future Enhancements
     icon: 🚀
     layout: list
     items:
-      - label: Service Deployment
-        text: Enable lightweight offload services on MacBook (PlayLive/CDP, mcp_raw, subagent)
-        status: in-progress
-        updated: "2026-09-08"
-      - label: Development Environment
-        text: Set up consistent development environment across machines
+      - label: runner-agent lane
+        text: Register + install dispatch lane (cap 2, cpu/dev/portable) per hardware doc fleet role
         status: planned
-      - label: Automation Scripts
-        text: Create automation scripts for common tasks and offload jobs
-        status: in-progress
-        updated: "2026-09-08"
-      - label: Monitoring Integration
-        text: Integrate with home network monitoring systems
+      - label: WiFi onboarding
+        text: Join TONY-WIFI once with password; laptop then works untethered
         status: planned
+      - label: Optional restores
+        text: "redis container (no backup exists — fresh start only), Chrome Remote Desktop host, PlayLive/CDP endpoint, KK user files from stick backup into ~/ on demand"
+        status: optional
 
 config:
-  version: 5
-  last_updated: 2026-09-18
+  version: 6
+  last_updated: 2026-10-11
   maintainer: tony
   related_files:
     - ssot.mysystem.home.yml (home environment overview)
     - ssot.mysystem.mobile.yml (mobile environment)
     - infrastructure/ssot.health.home.yml (home health checks)
     - ssot.index.yml (SSOT master index)
-    - kb/chrome-remote-desktop-profile-management.md (Chrome profile management strategy)
-    - reports/macbook-assessment-2026-08-10.md (comprehensive security assessment)
+    - kb/hardware-tony-macbook.md (hardware record + GPU bench)
+    - kb/ubuntu-install-macbook-pro13-3.md (install runbook)
+    - kb/mn01-stick-standard.md (tony-usb stick identity)
+    - reports/macbook-assessment-2026-08-10.md (historical macOS security assessment)

@@ -1,11 +1,12 @@
 id: tony-macbook-ubuntu
 title: 'tony-macbook: wipe macOS, install Ubuntu as main OS'
-brief: KK's old Intel MacBook Pro becomes a Linux machine — macOS gets wiped entirely. Needs a wake-up to confirm
-  the model, then a guided install. Waiting on Tony to power it on.
-column: backlog
+brief: DONE — KK's old MacBook Pro is now an Ubuntu fleet node. Turned out to be MacBookPro13,3 (2016, pre-T2);
+  the T2 fork was never needed. Installed 2026-10-10 by a prior session; this dispatch rejoined it to the fleet
+  (ssh keys/config, SSOT) and recorded leftovers.
+column: review
 priority: medium
 created: 2026-10-08
-updated: 2026-10-11 06:17
+updated: 2026-10-11 07:20
 ask:
   question: Which install path — depends on whether this Mac has the T2 chip?
   options:
@@ -16,10 +17,27 @@ ask:
   status: answered
   answer: This is done by another session.
   answered_at: 2026-10-11 06:17
-note: 'Machine (SSOT ssot.mysystem.macbook.yml): MacBook Pro quad-core i7 2.6GHz, 16GB, 233GB SSD, macOS Ventura
-  13.7.8, serial C02T902XH03M, user kkkakk, tailnet 100.124.59.112. Currently OFFLINE (last seen 5d ago — lid closed/asleep).
-  Serial + 2.6GHz base clock strongly suggest 2018 15" MacBookPro15,1 (i7-8850H) = T2 chip — CONFIRM before anything:
-  `sysctl hw.model`.'
+note: 'Machine: MacBookPro13,3 (2016 15" Touch Bar, i7-6700HQ, 16GB, 233.8G Apple NVMe, Radeon Pro 450) — PRE-T2
+  confirmed by DMI, not the suspected 2018 T2 model. Ubuntu 26.04.1 LTS on whole disk since 2026-10-10; macOS
+  wiped. Live on tailnet as tony-macbook (100.77.76.112), LAN 192.168.2.88 via USB-C ethernet. Backup: 23G
+  kkkakk home + Shared on ubuntu-usb stick at /home/tony/macbook-backup-2026-10-10.'
+requests:
+- id: revoke-old-tailnet-node
+  needed: Revoke/remove dead tailnet node 'kk-macbook' (100.124.59.112, old macOS identity) in the tailscale
+    admin console — node CLI can't remove another node
+  from: tony
+  status: open
+- id: wifi-first-join
+  needed: 'One manual Wi-Fi join on the laptop (TONY-WIFI) — the macOS backup exported SSIDs only, no PSKs.
+    After that it works untethered (currently USB-C ethernet dongle).'
+  from: tony
+  status: open
+- id: optional-restores
+  needed: 'Decide on optional restores: (a) copy KK user files from stick backup into ~/. default: leave on
+    stick, copy on demand; (b) redis container — no backup exists, fresh start only, default: skip; (c)
+    runner-agent dispatch lane install (cap 2, cpu/dev/portable), default: card it separately.'
+  from: tony
+  status: open
 spec: "T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple T2 security chip blocks stock Linux.\
   \ REQUIRED PATH: 1. WAKE MACBOOK FIRST — cannot do anything while offline. 2. BEFORE wiping macOS (irreversible):\
   \ extract Broadcom Wi-Fi +\n   Bluetooth firmware — T2 Macs source it from the macOS install\n   (t2linux guide,\
@@ -34,17 +52,13 @@ spec: "T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple T2
   \ key), SSH host 'macbook' in ssh-config on tony-dell/\n   tony-omen, restore redis container if wanted, update\
   \ SSOT\n   (ssot.mysystem.macbook.yml -> Linux, drop macbook-appdev.yml).\nPRE-T2 PATH (if model is 14,3): vanilla\
   \ Ubuntu 24.04 USB, standard install, broadcom-sta for wifi — skip all T2 steps."
-help: 'What lives on it today (from SSOT): Chrome Remote Desktop, PlayLive/ CDP offload (ports 9222/9231), podman
-  + redis-macbook container, com.chaba.macbook-health launchd job, ssh host ''macbook''. All replaceable on Linux
-  — podman/redis are native, CRD has a Linux client, tailscale native. Chirawat''s-task / iOS-dev goals in ssot.mysystem.macbook-appdev.yml
-  become moot — archive it. VERIFY hardware first (macbook offline, can''t check remotely): sysctl -n hw.model;
-  system_profiler SPHardwareDataType. Firmware extract command lives in t2linux.org guide — run it in macOS before
-  any erase. USB creation: balenaEtcher or dd from tony-omen/tony-dell; >=8GB stick.'
+help: 'Resolved PRE-T2. Install runbook: docs/kb/ubuntu-install-macbook-pro13-3.md; hardware record + GPU bench:
+  docs/kb/hardware-tony-macbook.md; stick identity: docs/kb/mn01-stick-standard.md. Rejoin trail:
+  docs/ssot/jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml.'
 links:
 - ssot.mysystem.macbook.yml
-- ssot.mysystem.macbook-appdev.yml
-- t2linux.org (t2 kernel + firmware guide)
-- github:marcosfad/mbp-ubuntu (t2linux Ubuntu ISOs)
+- t2linux.org (t2 kernel + firmware guide) — not needed, pre-T2 confirmed
+- github:marcosfad/mbp-ubuntu (t2linux Ubuntu ISOs) — not needed
 blocked_by: []
 autonomy: t3
 comms:
@@ -54,4 +68,18 @@ comms:
 - at: 2026-10-11 06:17
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 07:05
+  from: devin
+  text: '[dispatch] Picked up card — found prior session already did the PRE-T2 path: machine is MacBookPro13,3
+    (2016, no T2). Ubuntu 26.04.1 on nvme0n1, macOS wiped, 23G kkkakk backup on ubuntu-usb stick. Live now as
+    tailnet tony-macbook (100.77.76.112). This run: verify leftovers, rejoin ssh-config/SSOT, close out.'
+- at: 2026-10-11 07:20
+  from: devin
+  text: 'REJOIN DONE. Verified live: ssh macbook works from tony-omen AND tony-dell (authorized_keys re-seeded
+    with 3 fleet keys from backup; ssh-config repointed 100.124.59.112->100.77.76.112 user tony). Confirmed on-box:
+    MacBookPro13,3, Ubuntu 26.04.1, brcmfmac WiFi up (no AP yet), bt ok, tailscaled+sshd active, backup dir intact
+    (23G). Gaps found: no redis dump ever made (treated disposable), no WiFi PSKs in backup, no runner-agent yet.
+    SSOT sweep: mysystem.macbook.yml rewritten to Linux, appdev dropped, host-roles/mcp-debug/audit/security/
+    ip+mac registries/night-jobs/playlive/services/cleanup/jobs all updated; audit-hosts.py flipped to linux.
+    Open for Tony: 3 requests on this card.'
 awaiting_action: true

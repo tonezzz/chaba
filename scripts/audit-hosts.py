@@ -23,7 +23,7 @@ HOSTS = {
     "idc01": {"tailnet": "idc01", "os": "linux", "user": "tony"},
     "idc02": {"tailnet": "idc02", "os": "linux", "user": "tony"},
     "idc03": {"tailnet": "idc03", "os": "linux", "user": "tony"},
-    "macbook": {"tailnet": "macbook", "os": "macos", "user": "kkkakk"},
+    "macbook": {"tailnet": "tony-macbook", "os": "linux", "user": "tony"},
 }
 
 

@@ -60,12 +60,12 @@ sections:
         when_remote: Always use tony-dell or 100.68.142.13 over Tailscale.
         used_by: MDDB, trade-api, postgres, redis, weaviate
       - label: tony-macbook
-        local_ip: n/a
+        local_ip: 192.168.2.88
         local_dns: n/a
         tailnet_name: tony-macbook
-        tailnet_ip: 100.124.59.112
-        when_local: No wired/LAN interface; rely on Tailscale.
-        when_remote: Always use tony-macbook or 100.124.59.112 over Tailscale.
+        tailnet_ip: 100.77.76.112
+        when_local: USB-C ethernet dongle on 192.168.2.0/24; WiFi not onboarded yet.
+        when_remote: Always use tony-macbook or 100.77.76.112 over Tailscale.
         used_by: mcp-debug host
     note: mcp-health has been switched to use tailnet short names (tony-omen, tony-dell) for all health-check reachability. .local/mDNS is intentionally not used by mcp-health because it is unreliable across the iPhone hotspot path and when mDNS caches fail.
 
