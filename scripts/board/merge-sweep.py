@@ -1189,6 +1189,8 @@ def main() -> int:
                   .get("session") or "")
         if not tid:
             for m in c.get("comms") or []:
+                if not isinstance(m, dict):
+                    continue
                 hit = TASK_ID_RE.search(str(m.get("text") or ""))
                 if hit:
                     tid = hit.group(1)
