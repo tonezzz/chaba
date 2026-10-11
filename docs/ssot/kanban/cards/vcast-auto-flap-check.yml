@@ -2,16 +2,13 @@ id: vcast-auto-flap-check
 title: vcast-flap-check regression fails on deployed relay
 brief: 'An automated health check flagged: vcast-flap-check regression fails on deployed
   relay. Read the note, fix it, then close the card.'
-column: review
+column: done
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: high
-note: 'ssh idc03 failed: Command ''[''ssh'', ''-o'', ''BatchMode=yes'', ''-o'', ''ConnectTimeout=8'',
-  ''idc03'', ''cd ~/apps/input-bridge && podman run --rm --network=host -v $PWD:/app:ro,Z
-  -w /app docker.io/library/node:22-alpine node vcast-flap-check.mjs 2>&1 | tail -12'']''
-  timed out after 90 seconds'
+note: 'Auto-recovered 2026-10-11: `flap-check` check passing again.'
 help: 'Runs stacks/web/input-bridge/vcast-flap-check.mjs inside the relay''s podman
   image on idc03 — exercises the stale-socket race against the DEPLOYED server.mjs.
   A FAIL means the deployed bundle regressed vs repo: diff ~/apps/input-bridge/server.mjs
