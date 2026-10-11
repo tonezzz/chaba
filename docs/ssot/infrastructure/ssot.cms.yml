@@ -46,6 +46,17 @@ meta:
                  invisible to list/search/index (orphaned docs).
     rule: every doc MUST have kind; missing is a normalize warning.
 
+  public:
+    description: >
+      Public-publish flag (added 2026-10-11, OPS-0474). When any value is
+      truthy ("true"/"yes"/"1"), scripts/ada/cms-publish-site.py renders the
+      page to the static tenant lane on www.surf-thailand.com
+      (/<tenant>/<key>.html, tenants: kk-ha=ada-cms-pages-kk,
+      tony-ha=ada-cms-pages). Opt-in per page — the member decides what
+      leaves the tailnet. Absent/false = tailnet-only. Unpublish by
+      removing the flag; the publisher prunes the static file next run.
+    values: ["true", "yes", "1"]
+
   status:
     description: lifecycle state.
     values:
