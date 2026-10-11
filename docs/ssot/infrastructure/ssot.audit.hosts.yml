@@ -1,5 +1,5 @@
 title: Host Service & Resource Audit
-subtitle: Expected and observed state for tony-dell, tony-omen and tony-macbook
+subtitle: Expected and observed state for tony-dell, tony-omen and tony-macbook (Linux since 2026-10-10)
 icon: server
 version: 1
 last_updated: "2026-09-11"
@@ -1060,42 +1060,38 @@ hosts:
         - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.093040+07:00
     deltas: []
   macbook:
-    tailscale_ip: 100.124.59.112
-    description: macOS / iOS verification workstation and lightweight offload node
-    role: verify
+    tailscale_ip: 100.77.76.112
+    description: portable Linux dev/lab node — MacBookPro13,3, Ubuntu 26.04.1 since 2026-10-10 (was macOS)
+    role: portable-lab
     tags:
-      - macos
+      - linux
       - laptop
-      - offload
+      - portable
+      - dev
     expected_services:
-      - name: macbook-health
-        type: launchd
+      - name: ssh.service
+        type: service
+        scope: system
         expected_state: active
         critical: false
-      - name: macbook-offload-audit
-        type: launchd
-        expected_state: inactive
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
         critical: false
-        note: Planned, currently disabled
-    known_failed:
-      - name: macbook-health
-        reason: macOS health snapshot launchd agent not yet installed
-        action: install-on-macbook
-      - name: macbook-offload-audit
-        reason: Offload-audit launchd agent is planned but not yet installed
-        action: install-on-macbook
+    known_failed: []
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
       max_root_disk_percent: 90
       max_load_5m: 8.0
     last_observed:
-      status: unreachable
-      observed_at: "2026-09-11T14:55:00+07:00"
-      tailscale_ip: 100.124.59.112
+      status: reachable
+      observed_at: "2026-10-11T07:10:00+07:00"
+      tailscale_ip: 100.77.76.112
       notes:
-        - macbook is offline (last seen 15m ago, relay sin); SSH on 100.124.59.112:22
-          times out. Install launchd agents when reachable.
+        - Ubuntu 26.04.1 verified over ssh macbook 2026-10-11; laptop — sleeps/off-net
+          is normal, not an outage.
     deltas: []
   mn01:
     tailscale_ip: 100.106.196.22

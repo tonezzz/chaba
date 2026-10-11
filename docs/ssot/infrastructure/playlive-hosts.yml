@@ -28,8 +28,8 @@ hosts:
     available: true
   tony-macbook:
     cdp: http://127.0.0.1:9229
-    description: Chrome CDP on tony-macbook, forwarded to tony-dell via 127.0.0.1:9229 (SSH tunnel to ::1:9222)
-    available: true
+    description: RETIRED 2026-10-11 — was Chrome CDP on macOS via SSH tunnel; host is Linux now, no CDP endpoint provisioned
+    available: false
 
 per_host:
   tony_dell:
@@ -79,7 +79,8 @@ session_selection:
     session_type: playlive_macbook
     playlive_url: http://tony-dell.taila0626a.ts.net:9230
     remote_url: http://127.0.0.1:9229
-    note: Use for Safari/WebKit/macOS-specific verification.
+    available: false
+    note: RETIRED 2026-10-11 — no macOS host left in the fleet; Safari/WebKit verification unavailable.
   fallback:
     daemon: tony-omen
     host: tony_omen

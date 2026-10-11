@@ -134,8 +134,8 @@ policy:
       Do not use PlayLive for raw HTML/JSON/HTTP status checks. Use curl or
       mcp-debug first; it is lighter and avoids browser startup overhead.
     fallback: |
-      For macOS Chrome CDP, use playlive-macbook via the SSH tunnel from
-      tony-omen. Verify CDP endpoints with curl before creating sessions.
+      macOS Chrome CDP via playlive-macbook is retired (no macOS host since
+      2026-10-11). For visible-browser needs use chrome_live on tony-dell.
 
   ssot_editing:
     primary: mcp_read_ssot
@@ -358,8 +358,9 @@ servers:
       - Restart Chrome and playlived if needed
 
   - name: playlive-macbook
-    status: active
+    status: retired
     category: browser
+    retired: "2026-10-11 — host is Ubuntu now; no macOS/Safari target left, no CDP endpoint provisioned"
     use_cases:
       - Chrome CDP automation on macbook via SSH tunnel
     failure_procedure:

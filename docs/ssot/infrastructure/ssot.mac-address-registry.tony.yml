@@ -179,20 +179,28 @@ config:
           status: active
       mac_conflict: false
       status: active
-    - device_id: macbook
-      label: KKs MacBook Pro
+    - device_id: tony-macbook
+      label: tony-macbook (MacBookPro13,3, Ubuntu since 2026-10-10)
       local_ids:
-        hostname: KKs-MacBook-Pro.local
+        hostname: tony-macbook
       interfaces:
-        - interface_id: wlan0
-          mac: null
+        - interface_id: enx00e04c361276
+          mac: "00:e0:4c:36:12:76"
+          oui: null
+          type: usb-ethernet
+          source: observed
+          first_seen: "2026-10-11"
+          status: active
+        - interface_id: wlp3s0
+          mac: "00:90:4c:0d:f4:3e"
           oui: null
           type: wifi
-          source: manual
-          first_seen: "2026-09-01"
-          status: stale
+          source: observed
+          first_seen: "2026-10-11"
+          status: inactive
+          note: BCM43602 — up but no AP associated yet
       mac_conflict: false
-      status: stale
+      status: active
     - device_id: google-tv
       label: Google TV / Smart TV
       local_ids: {}

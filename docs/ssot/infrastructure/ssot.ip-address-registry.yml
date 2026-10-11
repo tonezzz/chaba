@@ -240,10 +240,20 @@ config:
           device_id: kks-macbook-pro
           interface_id: eth0
           kind: dhcp
-          status: active
+          status: stale
           first_seen: "2026-09-09"
           last_observed: "2026-09-09"
           source: dhcp
+          note: pre-Linux lease; same USB-C dongle now holds .88 on Ubuntu
+        - ip: 192.168.2.88
+          device_id: tony-macbook
+          interface_id: enx00e04c361276
+          kind: dhcp
+          status: active
+          first_seen: "2026-10-11"
+          last_observed: "2026-10-11"
+          source: dhcp
+          note: USB-C ethernet dongle (MAC 00:e0:4c:36:12:76) on Ubuntu install
         - ip: 192.168.2.81
           device_id: xiaomi-c100
           interface_id: wlan0

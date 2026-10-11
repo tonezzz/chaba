@@ -192,20 +192,19 @@ hosts:
       - headless
       - primary
   macbook:
-    name: MacBook Pro
-    description: macOS / iOS verification workstation
-    role: mac_ios_verify
-    hostname: 100.124.59.112
-    ssh_user: kkkakk
-    mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
+    name: MacBook Pro (Linux)
+    description: portable Linux dev/lab node — Ubuntu since 2026-10-10 (was macOS verify workstation)
+    role: portable-lab
+    hostname: 100.77.76.112
+    ssh_user: tony
+    mcp_debug_path: null  # mcp-debug not installed on the Linux image yet
     compact: true
-    clipboard: true
+    clipboard: false
     tags:
-      - macos
-      - ios
-      - verify
-      - xcode
-    note: mcp-debug-macos is installed for df -h, ps, uptime, and mount.
+      - linux
+      - laptop
+      - portable
+    note: ssh alias 'macbook' -> tony@100.77.76.112 (id_ed25519_macbook on omen, id_cascade on dell). Standard Linux command set applies.
 debug_commands:
   systemctl list-units:
     description: Running systemd services

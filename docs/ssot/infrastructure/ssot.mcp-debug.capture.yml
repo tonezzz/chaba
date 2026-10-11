@@ -97,7 +97,7 @@ host_allowlist:
   macbook:
     capture: true
     clipboard_image: true
-    note: safest first target; screencapture and pbcopy/pbpaste are well documented
+    note: host is Ubuntu now — needs a Linux capture path (gnome-screenshot/import), not screencapture
   tony_omen:
     capture: true
     clipboard_image: true
@@ -115,8 +115,8 @@ limits:
 
 implementation:
   order:
-    - 1. macbook first (screencapture + pbcopy/pbpaste)
-    - 2. Linux screenshot fallbacks after macOS path is stable
+    - 1. macbook first (was screencapture/pbcopy — now Linux: use gnome-screenshot or import)
+    - 2. Linux screenshot fallbacks
     - 3. mcp_window_list for macOS and one Linux host
     - 4. mcp_clipboard_image_get for macOS
     - 5. mcp_a11y_tree only if explicitly requested later

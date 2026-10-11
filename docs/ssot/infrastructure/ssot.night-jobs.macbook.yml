@@ -1,7 +1,9 @@
 title: Night Jobs — macbook
-subtitle: Overnight and scheduled jobs running on macbook
+subtitle: Overnight and scheduled jobs running on macbook — OBSOLETE 2026-10-11 (macOS wiped; host is Ubuntu now)
 icon: moon
 host: macbook
+obsolete: true
+obsolete_reason: macOS install removed 2026-10-10; launchd jobs died with it. No Linux night jobs defined yet.
 jobs:
   - id: macbook-health
     name: MacBook Health Snapshot
@@ -9,8 +11,8 @@ jobs:
     type: launchd
     unit: com.chaba.macbook-health
     schedule: every 15 minutes
-    enabled: true
-    status: active
+    enabled: false
+    status: removed
     output: /Users/kkkakk/var/chaba/health/macbook-snapshot.json
     note: Captures lan_ip, tailscale_ip, wifi_ssid, memory pressure, process counts, disk hogs, and ports.
   - id: macbook-offload-audit
@@ -20,6 +22,6 @@ jobs:
     unit: com.chaba.macbook-offload-audit
     schedule: every 30 minutes
     enabled: false
-    status: planned
+    status: removed
     output: /Users/kkkakk/var/chaba/health/macbook-offload-audit.json
     note: Reports PlayLive/mcp-raw availability, load average, and whether the MacBook is ready to receive offloaded tasks.
