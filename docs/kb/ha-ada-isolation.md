@@ -3,17 +3,18 @@
 An Ada backend failure (quota storm, tool loop, token leak, bad deploy, host
 exhaustion) must not damage or take down an HA instance. Written after the
 2026-10-11 ada-ha-tony Gemini Live reconnect storm; tony-ha is prod, kk-ha is
-KK's member node — both must survive any Ada meltdown.
+KK's member node — both must survive any Ada meltdown. Live posture report:
+CMS index `ha-ada-isolation` (generator `scripts/ada/ha-ada-isolation-cms.py`).
 
 ## Coupling map (verified 2026-10-11)
 
 | Ada backend | host:port | upstream HA | HA credential | surface into HA |
 |---|---|---|---|---|
 | ada-ha-tony | idc03:8002 | tony-ha via tailnet :8123 | **Tony OWNER LLAT** | REST only: `/api/states`, `/api/services/*` for light/switch/fan/input_boolean/cover/button/media_player tools + `office_lights` ~5s poller |
-| ada-ha-michael | idc03:8003 | michael-ha via tailnet | Michael LLAT | same tool set |
+| ada-ha-michael | idc03:8003 | michael-ha via tailnet | **Michael OWNER LLAT** | same tool set |
 | ada-kk | idc03:8007 | **none — no `HOME_ASSISTANT_*` in env** | — | voice card dials browser→`/ada-ws/kk`; kk-ha unreachable from the backend |
 | ada-dev | idc03:8005 | none (upstream removed) | — | HA tools excluded |
-| ada-pi-pwa | idc03:8001 | none | — | CMS/enroll frontend |
+| ada-pi-pwa | idc03:8001 | tony-ha via tailnet | **Tony OWNER LLAT** | CMS/enroll frontend **+ full HA tool set** (only 2 exclusions) |
 
 Shared-fate vectors (one failure hits every lane):
 
