@@ -1,6 +1,6 @@
 title: Jobs Registry
-subtitle: Single manifest for scheduled work — renderer emits systemd units per host;
-  dispatcher absorbs cheap interval jobs
+subtitle: Single manifest for scheduled work — renderer emits systemd units per host; dispatcher absorbs cheap interval
+  jobs
 icon: clock
 version: 1
 config:
@@ -20,31 +20,28 @@ config:
     mn01: '%h/CascadeProjects/chaba'
     macbook: '%h/CascadeProjects/chaba'
 conventions:
-  dispatch: 'systemd — render a real <id>.timer + <id>.service (isolation, TimeoutStartSec,
-    Persistent catchup, journald tags). Required for heavyweight jobs and anything
-    faster than dispatcher_min_interval. dispatcher — run by the single chaba-jobs.timer
-    tick; interval jobs only (every:). For the cheap high-frequency tail.
+  dispatch: 'systemd — render a real <id>.timer + <id>.service (isolation, TimeoutStartSec, Persistent catchup,
+    journald tags). Required for heavyweight jobs and anything faster than dispatcher_min_interval. dispatcher —
+    run by the single chaba-jobs.timer tick; interval jobs only (every:). For the cheap high-frequency tail.
 
     '
-  host: 'The job''s only address — move = change this field, re-render, re-install
-    on the new host. Host keys match ssot naming (tony_dell, idc01, idc02, tony_omen,
-    mn01, macbook).
+  host: 'The job''s only address — move = change this field, re-render, re-install on the new host. Host keys match
+    ssot naming (tony_dell, idc01, idc02, tony_omen, mn01, macbook).
 
     '
-  schedule: 'on_calendar: systemd OnCalendar string, or every: interval like 15m/1h/6h/1d.
-    Dispatcher jobs MUST use every:.
+  schedule: 'on_calendar: systemd OnCalendar string, or every: interval like 15m/1h/6h/1d. Dispatcher jobs MUST
+    use every:.
 
     '
-  exec: 'string or list of strings — a list renders one ExecStart per entry
-    (oneshot chain: later steps run only when earlier ones succeed); for
-    dispatcher jobs the entries are joined with &&.
+  exec: 'string or list of strings — a list renders one ExecStart per entry (oneshot chain: later steps run only
+    when earlier ones succeed); for dispatcher jobs the entries are joined with &&.
 
     '
   persistent: catch up runs missed while the unit was down.
   timeout: per-job hard cap (e.g. 30s, 20m, 1h).
   env: inline KEY=value map -> Environment= lines (units) / process env (dispatcher).
-  result_record: 'Dispatcher jobs append {name, command, ok, exit_code, duration_ms,
-    ts} to config.results per ssot.reports.yml conventions.
+  result_record: 'Dispatcher jobs append {name, command, ok, exit_code, duration_ms, ts} to config.results per ssot.reports.yml
+    conventions.
 
     '
 jobs:
@@ -55,8 +52,7 @@ jobs:
   on_calendar: '*-*-* 02:00:00'
   persistent: true
   timeout: 30m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/orchestrate.py --workflow
-    overnight --force
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/orchestrate.py --workflow overnight --force
 - id: focus-dispatcher-overnight
   name: Chaba Overnight Focus Review
   host: tony_dell
@@ -79,8 +75,8 @@ jobs:
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs'
   env:
     MDDB_BASE: http://100.102.134.91:11023
-  note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout; MDDB_BASE
-    points at idc03, the live leader (was dell-local env)
+  note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout; MDDB_BASE points at idc03, the live
+    leader (was dell-local env)
 - id: ha-config-backup
   name: HA Config Backup
   host: tony_dell
@@ -98,8 +94,8 @@ jobs:
   persistent: true
   timeout: 1h
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
-  note: migrated tony_dell -> idc02 2026-10-04 (node via ~/.n/bin/node symlink; PATH
-    env needed — runner spawns bare `node` children)
+  note: migrated tony_dell -> idc02 2026-10-04 (node via ~/.n/bin/node symlink; PATH env needed — runner spawns
+    bare `node` children)
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-audit-full
@@ -110,11 +106,10 @@ jobs:
   persistent: true
   timeout: 2h
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs --full'
-  note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement
-    as chaba-audit. Verified run 2026-10-04 (~3min) — same core failures as dell
-    (security-audit, standardization dup cms-pages, code-quality); idc02-only env
-    gaps — no host caddy/docker binaries, no devin mcp_config, http-health
-    checks dell-localhost gpu-queue/playlived-dell.
+  note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement as chaba-audit. Verified
+    run 2026-10-04 (~3min) — same core failures as dell (security-audit, standardization dup cms-pages, code-quality);
+    idc02-only env gaps — no host caddy/docker binaries, no devin mcp_config, http-health checks dell-localhost
+    gpu-queue/playlived-dell.
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-system-report
@@ -124,13 +119,11 @@ jobs:
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen
-    mn01 idc01 idc03 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" ||
-    true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3
-    scripts/report-system.py'
-  note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran
-    bash chain, not the nonexistent .sh); audit host list + idc03 2026-10-06;
-    on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 macbook;
+    do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
+    --consolidate; /usr/bin/python3 scripts/report-system.py'
+  note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran bash chain, not the nonexistent
+    .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
 - id: chaba-cached-videos
   name: yt-live media cache -> CMS cached-videos-report
   host: tony_dell
@@ -139,10 +132,8 @@ jobs:
   persistent: true
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cached-videos-update.py
-  note: 'scans ~/.cache/yt-live-media (real entries need info.json id
-    match; mismatches listed as misplaced) + ~/.cache/yt-live-subs into
-    CMS page cached-videos-report (en+th); replaces the hand-written
-    2026-09-27 snapshot'
+  note: scans ~/.cache/yt-live-media (real entries need info.json id match; mismatches listed as misplaced) + ~/.cache/yt-live-subs
+    into CMS page cached-videos-report (en+th); replaces the hand-written 2026-09-27 snapshot
 - id: chaba-starboard-tracker
   name: Starboard catalogs tracker -> CMS page
   host: tony_dell
@@ -151,10 +142,8 @@ jobs:
   persistent: true
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/starboard-tracker-update.py
-  note: 'renders kanban card starboard-windsurf-catalogs + manifest
-    reports/starboard-catalogs/catalogs.yml into a managed block on CMS
-    page starboard-catalogs (en+th); interval-gated via ada-cms-automation
-    registry doc'
+  note: renders kanban card starboard-windsurf-catalogs + manifest reports/starboard-catalogs/catalogs.yml into
+    a managed block on CMS page starboard-catalogs (en+th); interval-gated via ada-cms-automation registry doc
 - id: chaba-kanban-brief
   name: Kanban Eisenhower brief + T2 auto-close -> CMS kanban-brief
   host: tony_dell
@@ -167,21 +156,16 @@ jobs:
     KANBAN_BRIEF_LLM_URL: http://100.75.102.88:11434/v1
     KANBAN_BRIEF_LLM_MODEL: phi3-gguf:latest
   exec:
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/nest-overview.py
-  note: 'three-step ExecStart chain (exec: list renders one ExecStart per
-    line, in order — a failed step skips the rest). kanban-brief.py ranks
-    open cards do-first/delegate/schedule/park by deterministic rules ->
-    managed block on CMS kanban-brief (en+th), 30m registry gate. Then
-    kanban-act.py auto-closes column:review cards carrying autonomy:t2
-    whose auto_done_when checks all pass (card_done/page_exists/
-    file_exists/service_active/git_merged/verified_true — bounded
-    vocabulary, no shell); rk=decide and open-request cards are held;
-    every close emits a kanban_act ops event. Then nest-overview.py.
-    Deployed 2026-10-06; exec/env/cwd captured into this manifest
-    2026-10-08 (kanban-act-loop) — the rendered unit previously dropped
-    kanban-act + nest-overview.'
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/nest-overview.py
+  note: 'three-step ExecStart chain (exec: list renders one ExecStart per line, in order — a failed step skips the
+    rest). kanban-brief.py ranks open cards do-first/delegate/schedule/park by deterministic rules -> managed block
+    on CMS kanban-brief (en+th), 30m registry gate. Then kanban-act.py auto-closes column:review cards carrying
+    autonomy:t2 whose auto_done_when checks all pass (card_done/page_exists/ file_exists/service_active/git_merged/verified_true
+    — bounded vocabulary, no shell); rk=decide and open-request cards are held; every close emits a kanban_act ops
+    event. Then nest-overview.py. Deployed 2026-10-06; exec/env/cwd captured into this manifest 2026-10-08 (kanban-act-loop)
+    — the rendered unit previously dropped kanban-act + nest-overview.'
 - id: chaba-tony-ideas
   name: Tony ideas/decisions harvest -> CMS tony-ideas
   host: tony_dell
@@ -193,16 +177,12 @@ jobs:
   env:
     REPO: '%h/CascadeProjects/chaba-tony-dell'
   exec:
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/tony-ideas-update.py
-  note: 'card tony-ideas-harvest — mines card comms from:tony (ops-verb
-    regex filter), focus-inbox drafts, ssot.focus.decisions.yml and
-    dispatch-outcome-*.md into the tony-ideas CMS page with
-    adopted/pending/superseded statuses; the hand-curated Standing
-    directions section is preserved verbatim from the live page each
-    run. Runs against the served checkout (chaba-tony-dell) so it sees
-    committed comms/inbox state; ada-cms-automation registry gate +
-    managed-block upsert same contract as kanban-brief. Added
-    2026-10-10.'
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/tony-ideas-update.py
+  note: card tony-ideas-harvest — mines card comms from:tony (ops-verb regex filter), focus-inbox drafts, ssot.focus.decisions.yml
+    and dispatch-outcome-*.md into the tony-ideas CMS page with adopted/pending/superseded statuses; the hand-curated
+    Standing directions section is preserved verbatim from the live page each run. Runs against the served checkout
+    (chaba-tony-dell) so it sees committed comms/inbox state; ada-cms-automation registry gate + managed-block upsert
+    same contract as kanban-brief. Added 2026-10-10.
 - id: chaba-cms-regen
   name: CMS registry command-generator sweeper (the missing regen lane)
   host: tony_dell
@@ -214,12 +194,10 @@ jobs:
   env:
     REPO: '%h/CascadeProjects/chaba-tony-dell'
   exec:
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cms-regen-sweep.py
-  note: 'card stale-report-regen-lane — iterates ada-cms-automation
-    command-generators, runs the due ones (interval_min/last_run gate,
-    run_now = Regenerate button, interval 0 = manual-only). cmd must be
-    a scripts/ repo file — registry docs are untrusted input. Write-back
-    stamps last_run/status/duration. Added 2026-10-10.'
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cms-regen-sweep.py
+  note: card stale-report-regen-lane — iterates ada-cms-automation command-generators, runs the due ones (interval_min/last_run
+    gate, run_now = Regenerate button, interval 0 = manual-only). cmd must be a scripts/ repo file — registry docs
+    are untrusted input. Write-back stamps last_run/status/duration. Added 2026-10-10.
 - id: chaba-standard-drift
   name: Standard-drift digest -> CMS standard-drift
   host: tony_dell
@@ -231,13 +209,11 @@ jobs:
   env:
     REPO: '%h/CascadeProjects/chaba-tony-dell'
   exec:
-    - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/standard-drift-digest.py
-  note: 'card standard-drift-digest — deterministic drift signals (stale
-    generated reports past their own fresh_for, board drift, ada-pi
-    tool-lint violations) -> managed block on CMS standard-drift (en+th).
-    Hourly tick; the ada-cms-automation registry entry self-gates
-    publishing to 6h. The flywheel feedback page — one digest to review
-    instead of scattered fires. Added 2026-10-10.'
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/standard-drift-digest.py
+  note: card standard-drift-digest — deterministic drift signals (stale generated reports past their own fresh_for,
+    board drift, ada-pi tool-lint violations) -> managed block on CMS standard-drift (en+th). Hourly tick; the ada-cms-automation
+    registry entry self-gates publishing to 6h. The flywheel feedback page — one digest to review instead of scattered
+    fires. Added 2026-10-10.
 - id: ada-pi-orch-bench
   name: Nest topology bench + nest-bench CMS trend refresh
   host: tony_omen
@@ -245,30 +221,25 @@ jobs:
   on_calendar: Mon *-*-* 04:30
   persistent: true
   timeout: 90m
-  exec: tests/bench/orch-bench.py --student 100.75.102.88:8778 --heavy 100.75.102.88:8777 --mddb + --report-cms, then nest-bench-update.py --force
-  note: 'weekly compound-AI structure comparison (student/cascade/parallel/
-    router/verifier on golden+tool+hard sets) -> bench/orch-* docs +
-    nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local
-    on tony-omen. Corpus loop feeds misses into the next run.
-    Deployed 2026-10-06.'
+  exec: tests/bench/orch-bench.py --student 100.75.102.88:8778 --heavy 100.75.102.88:8777 --mddb + --report-cms,
+    then nest-bench-update.py --force
+  note: weekly compound-AI structure comparison (student/cascade/parallel/ router/verifier on golden+tool+hard sets)
+    -> bench/orch-* docs + nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local on tony-omen. Corpus
+    loop feeds misses into the next run. Deployed 2026-10-06.
 - id: jev-bench
-  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs
-    on idc02, targets idc03)
+  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on idc02, targets idc03)
   host: idc02
   dispatch: systemd
   on_calendar: hourly
   persistent: true
   timeout: 10m
-  exec: /usr/bin/python3 %h/CascadeProjects/ada-pi/tests/bench/jev-bench.py
-    http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1 --report-cms
-  note: 'retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target).
-    jev-student confirm-gate serves /v1/systemone on idc03 tailnet :8778;
-    MDDB writes go to the idc03 leader :11023 (idc02 local :11023 is a
-    read-only follower). Emits suite:jev-decision docs to
-    ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed
-    by nest-overview.py (chaba-nest L2). Bench script lives in the ada-pi
-    checkout on idc02. Unit was hand-installed 2026-10-01; now rendered
-    from this manifest.'
+  exec: /usr/bin/python3 %h/CascadeProjects/ada-pi/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1
+    --report-cms
+  note: retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target). jev-student confirm-gate serves /v1/systemone
+    on idc03 tailnet :8778; MDDB writes go to the idc03 leader :11023 (idc02 local :11023 is a read-only follower).
+    Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by nest-overview.py
+    (chaba-nest L2). Bench script lives in the ada-pi checkout on idc02. Unit was hand-installed 2026-10-01; now
+    rendered from this manifest.
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen
@@ -277,10 +248,9 @@ jobs:
   persistent: true
   timeout: 30s
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/agent.py
-  note: 'hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/
-    users/top-procs) to MDDB device-telemetry collection on idc03
-    (<device>/<ts> history + <device>/latest). install.sh also supports
-    macOS launchd for tony-macbook. scripts/device-telemetry/'
+  note: hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/ users/top-procs) to MDDB device-telemetry
+    collection on idc03 (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
+    scripts/device-telemetry/
 - id: device-telemetry-prune
   name: Device telemetry retention prune (7d)
   host: idc03
@@ -291,14 +261,11 @@ jobs:
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/prune.py
   env:
     DEVICE_TELEMETRY_RETENTION_DAYS: '7'
-  note: 'retention sweep for the beacon collection — deletes <dev>/<unix-ts>
-    history keys older than 7d; never touches <dev>/latest or _watch/<dev>
-    armed-watch docs. 7d over 30d: HA logbook already covers long-range
-    history; ~300 docs/day/device -> ~2k keys/device steady-state. Runs on
-    idc03 beside the MDDB leader (:11023). Install on the host:
-    scripts/device-telemetry/install.sh prune — self-contained
-    ~/.local/share copy like the beacon, so idc03 checkout drift can never
-    break it. Card device-telemetry-prune; added 2026-10-10.'
+  note: 'retention sweep for the beacon collection — deletes <dev>/<unix-ts> history keys older than 7d; never touches
+    <dev>/latest or _watch/<dev> armed-watch docs. 7d over 30d: HA logbook already covers long-range history; ~300
+    docs/day/device -> ~2k keys/device steady-state. Runs on idc03 beside the MDDB leader (:11023). Install on the
+    host: scripts/device-telemetry/install.sh prune — self-contained ~/.local/share copy like the beacon, so idc03
+    checkout drift can never break it. Card device-telemetry-prune; added 2026-10-10.'
 - id: daily-brief
   name: Daily Brief (morning+evening)
   host: tony_dell
@@ -306,15 +273,11 @@ jobs:
   on_calendar: '*-*-* 07,19:05:00'
   persistent: true
   timeout: 10m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/report-daily-brief.py
-    --edition auto --cards-dir %h/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards
-  note: 'L2 daily-brief node (ssot.reports.yml) — one timer, two editions:
-    morning (07:05, after the 06:45 system report + overnight producers) =
-    overnight results; evening (19:05) = day completions + needs-Tony.
-    Edition auto-picked by run hour. Stays on tony_dell: reads the local
-    devin-dispatch ledger, ~/var/chaba/health, and the served-checkout card
-    dir (git log = truthful "filed" signal; board-api fallback). Added
-    2026-10-05 (card daily-brief-node).'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/report-daily-brief.py --edition auto --cards-dir %h/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards
+  note: 'L2 daily-brief node (ssot.reports.yml) — one timer, two editions: morning (07:05, after the 06:45 system
+    report + overnight producers) = overnight results; evening (19:05) = day completions + needs-Tony. Edition auto-picked
+    by run hour. Stays on tony_dell: reads the local devin-dispatch ledger, ~/var/chaba/health, and the served-checkout
+    card dir (git log = truthful "filed" signal; board-api fallback). Added 2026-10-05 (card daily-brief-node).'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_dell
@@ -334,18 +297,13 @@ jobs:
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     AUDIT_HOSTS: idc03,idc01
-  note: 'card ada-session-audit-daily. Window = transcripts newer than
-    ~/.local/share/devin/ada-audit-marker (mtime; marker bumps after a
-    clean run). Publishes ada-ha-scenario-reports/audit/session-<date>
-    (kind session-audit), refreshes CMS page ada-session-audit, files
-    focus-inbox entries for surfaced friction only (high-sev or repeated —
-    capped at 15/run), cards recurring sigs via board-api /card deduped
-    on audit-<sig>, and appends labeled rows to idc03
-    ~/.local/share/ada/session-audit-corpus.jsonl for the nest loop.
-    Self-contained install: scripts/ada/install-session-audit.sh tony-dell —
-    the unit runs the ~/.local/share copy, never the repo checkout. idc03
-    journal+transcripts come over dell''s ssh key. 05:30 lands before the
-    07:05 daily-brief.'
+  note: 'card ada-session-audit-daily. Window = transcripts newer than ~/.local/share/devin/ada-audit-marker (mtime;
+    marker bumps after a clean run). Publishes ada-ha-scenario-reports/audit/session-<date> (kind session-audit),
+    refreshes CMS page ada-session-audit, files focus-inbox entries for surfaced friction only (high-sev or repeated
+    — capped at 15/run), cards recurring sigs via board-api /card deduped on audit-<sig>, and appends labeled rows
+    to idc03 ~/.local/share/ada/session-audit-corpus.jsonl for the nest loop. Self-contained install: scripts/ada/install-session-audit.sh
+    tony-dell — the unit runs the ~/.local/share copy, never the repo checkout. idc03 journal+transcripts come over
+    dell''s ssh key. 05:30 lands before the 07:05 daily-brief.'
 - id: devin-session-prune
   name: Devin Dispatch Session Prune
   host: tony_dell
@@ -353,16 +311,12 @@ jobs:
   on_calendar: Sun *-*-* 03:00:00
   persistent: true
   timeout: 30m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devin/session-prune.py
-    --days 14
-  note: 'dispatch-era sessions only (title prefix / dispatch-wt-* worktree /
-    resume-task meta); interactive sessions are never touched. Keeps sessions
-    with needs-input.txt, live locks, or unmerged/dirty worktrees+branches.
-    Runs the guarded vacuum-devin-db.sh only after two consecutive clear
-    checks (no devin process, no fuser on sessions.db) — same logic as
-    devin-vacuum-when-closed.sh. Logs each pruned session to timeline.jsonl.
-    Added 2026-10-05 (card devin-session-prune). Coexists with devin-cleanup.timer
-    (Sun 04:00, 7d, all sessions).'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devin/session-prune.py --days 14
+  note: dispatch-era sessions only (title prefix / dispatch-wt-* worktree / resume-task meta); interactive sessions
+    are never touched. Keeps sessions with needs-input.txt, live locks, or unmerged/dirty worktrees+branches. Runs
+    the guarded vacuum-devin-db.sh only after two consecutive clear checks (no devin process, no fuser on sessions.db)
+    — same logic as devin-vacuum-when-closed.sh. Logs each pruned session to timeline.jsonl. Added 2026-10-05 (card
+    devin-session-prune). Coexists with devin-cleanup.timer (Sun 04:00, 7d, all sessions).
 - id: yomi-backup
   name: Yomi + PostgreSQL Backup
   host: tony_dell
@@ -383,9 +337,8 @@ jobs:
   persistent: true
   timeout: 10m
   exec: /usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
-    -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z
-    -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi --add-host postgre:100.68.142.13
-    --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
+    -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
+    --add-host postgre:100.68.142.13 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
     node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs
   note: podman one-shot; pause while yomi-api is failed over to tony-omen
 - id: xiaomi-token-refresh
@@ -410,11 +363,9 @@ jobs:
   dispatch: dispatcher
   every: 15m
   timeout: 120s
-  exec: /usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api
-    -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z -v
-    %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w
-    %h/CascadeProjects/chaba-tony-dell/scripts/yomi docker.io/library/node:22-slim
-    node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs
+  exec: /usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
+    -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
+    docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs
 - id: mcp-debug-h3-sync
   name: MCP Debug H3 Sync
   host: tony_dell
@@ -436,8 +387,7 @@ jobs:
   dispatch: dispatcher
   every: 15m
   timeout: 120s
-  exec: '%h/CascadeProjects/chaba-tony-dell/venv/bin/python3 scripts/network-scan.py
-    --push'
+  exec: '%h/CascadeProjects/chaba-tony-dell/venv/bin/python3 scripts/network-scan.py --push'
   cwd: '%h/CascadeProjects/chaba-tony-dell'
   note: scans the LAN — stays on tony_dell
 - id: ada-flood-news
@@ -447,15 +397,13 @@ jobs:
   every: 15m
   persistent: true
   timeout: 10m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-news-update.py
-    --all
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-news-update.py --all
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
-  note: migrated tony_dell -> idc02 2026-10-03 (phase-1 pilot); exits 2 on all-skipped
-    tick — pre-existing wart, see mha-log-noise-style fixup. MDDB_BASE_URL pinned
-    2026-10-09 — the stale idc02 checkout's script still defaults to idc01:11023
-    (dead since the leader moved to idc03), which made the CMS publish step
-    ECONNREFUSED -> exit 2; env wins regardless of checkout drift.
+  note: migrated tony_dell -> idc02 2026-10-03 (phase-1 pilot); exits 2 on all-skipped tick — pre-existing wart,
+    see mha-log-noise-style fixup. MDDB_BASE_URL pinned 2026-10-09 — the stale idc02 checkout's script still defaults
+    to idc01:11023 (dead since the leader moved to idc03), which made the CMS publish step ECONNREFUSED -> exit
+    2; env wins regardless of checkout drift.
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
   host: idc02
@@ -463,10 +411,9 @@ jobs:
   on_calendar: Sun *-*-* 04:00:00
   persistent: true
   timeout: 30m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && %h/.n/bin/node scripts/auto-kb-quality-audit.mjs
-    --json && %h/.n/bin/node scripts/kb-categorize-audit.mjs && %h/.n/bin/node scripts/audits/kb-modularity-audit.mjs'
-  note: registered 2026-10-04 at idc02 migration; was deployed on dell but missing
-    from manifest
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && %h/.n/bin/node scripts/auto-kb-quality-audit.mjs --json
+    && %h/.n/bin/node scripts/kb-categorize-audit.mjs && %h/.n/bin/node scripts/audits/kb-modularity-audit.mjs'
+  note: registered 2026-10-04 at idc02 migration; was deployed on dell but missing from manifest
 - id: devin-bank-distill
   name: Devin bank distill (weekly)
   host: idc02
@@ -486,54 +433,36 @@ jobs:
   timeout: 10m
   persistent: true
   on_failure: ada-report-fail@%p.service
-  note: 'xmatch pair: cms-auto-health -> cms-auto-* kanban cards (commit+push), kanban-cms
-    -> live dev-kanban page; also runs logs-kanban, gev-auto-health (gev-auto-* cards),
-    vcast-auto-health (vcast-auto-* cards — audit-cast, cast-browser-proxy :8799,
-    yt-live-api :8791, flap-check, capture-lease age; added 2026-10-05),
-    runner-fleet-health (runner-auto-<host> cards — dispatch bootstrap
-    audit: git identity, chaba clone freshness >200 behind, fetch-only
-    remote + merge-sweep salvage ls-remote, installed runner-agent /
-    devin-dispatch / dispatch_repos drift, devin CLI; added 2026-10-09,
-    card runner-bootstrap-check),
-    request-sweep.py (board requests unanswered >12h get one batched
-    escalation push, escalated_at stamp — added 2026-10-05, card
-    kanban-push-notify), and kanban-stats.py (L2 kanban report node,
-    ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04.
-    on_failure added 2026-10-05 (cms-generator-schedule-audit) — a dead sync
-    would silently stall every cms-auto-* card and the dev-kanban page.'
-# --- per-host local log shippers (card logs-local-shippers, 2026-10-05) ---
-# Each host ships its own journald to MDDB host-logs — kills the ssh
-# dependency of the tony-omen ada-review-refresh nightly (which stays on
-# as fallback lane, sharing the remote cursor files). The shipper script
-# is installed self-contained at ~/.local/share/log-shipper/ by
-# scripts/ada/install-log-shipper.sh — NOT exec'd from the repo checkout,
-# so a stale/divergent checkout can never break shipping and adding a
-# host = one installer run.
+  note: 'xmatch pair: cms-auto-health -> cms-auto-* kanban cards (commit+push), kanban-cms -> live dev-kanban page;
+    also runs logs-kanban, gev-auto-health (gev-auto-* cards), vcast-auto-health (vcast-auto-* cards — audit-cast,
+    cast-browser-proxy :8799, yt-live-api :8791, flap-check, capture-lease age; added 2026-10-05), runner-fleet-health
+    (runner-auto-<host> cards — dispatch bootstrap audit: git identity, chaba clone freshness >200 behind, fetch-only
+    remote + merge-sweep salvage ls-remote, installed runner-agent / devin-dispatch / dispatch_repos drift, devin
+    CLI; added 2026-10-09, card runner-bootstrap-check), request-sweep.py (board requests unanswered >12h get one
+    batched escalation push, escalated_at stamp — added 2026-10-05, card kanban-push-notify), and kanban-stats.py
+    (L2 kanban report node, ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04. on_failure added
+    2026-10-05 (cms-generator-schedule-audit) — a dead sync would silently stall every cms-auto-* card and the dev-kanban
+    page.'
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
   host: tony_dell
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
-  note: MDDB_BASE_URL = live leader (idc03 tailnet IP — the docs' idc01
-    label is stale; 100.74.146.0 no longer serves MDDB). MDDB_OPS_URL =
-    mddb-ops no-embed instance on idc03:11026 — ops collections
-    (host-logs, host-logs-state) route there per
-    ssot.log-digest-standard.yml; only leader writes (CMS/banks) belong
-    on :11023.
+  note: MDDB_BASE_URL = live leader (idc03 tailnet IP — the docs' idc01 label is stale; 100.74.146.0 no longer serves
+    MDDB). MDDB_OPS_URL = mddb-ops no-embed instance on idc03:11026 — ops collections (host-logs, host-logs-state)
+    route there per ssot.log-digest-standard.yml; only leader writes (CMS/banks) belong on :11023.
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
   host: tony_omen
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -543,8 +472,7 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -554,8 +482,7 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -565,21 +492,19 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
-  note: idc03 ssh needs the id_idc03 key that lives on tony-omen —
-    install via `install-log-shipper.sh idc03 --via tony-omen`.
+  note: idc03 ssh needs the id_idc03 key that lives on tony-omen — install via `install-log-shipper.sh idc03 --via
+    tony-omen`.
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
   host: mn01
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --max-docs 2000
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -589,32 +514,21 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts
-    michael-ha
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
-  note: 'michael-ha cannot host a local shipper: ssh lands in the Alpine
-    core-ssh addon (no python3/systemd/journalctl) and the supervisor only
-    serves text logs. Pull lane instead: `ha host logs` over key-auth ssh
-    (root@michael-ha -i ~/.ssh/michael-ha — key-based, not tailscale-ssh
-    auth). Dedup is a collector-side ts+hash file (no journald cursor).'
-# --- severe fast lane (card logs-severe-hourly, 2026-10-06) ---
-# Second timer per host shipping ONLY severe kinds (oom/panic/failed —
-# mirrors SEVERE in logs-report.py) on an independent tagged cursor +
-# ship-severe/<host> state docs. Purpose: a severe line never queues
-# behind a capped backlog of the full lane, and a host going down gets
-# its last-gasp oom/panic lines into host-logs within the hour rather
-# than waiting for the next full sweep. The daily 08:45
-# ada-review-refresh digest then sees them on the next render.
+  note: 'michael-ha cannot host a local shipper: ssh lands in the Alpine core-ssh addon (no python3/systemd/journalctl)
+    and the supervisor only serves text logs. Pull lane instead: `ha host logs` over key-auth ssh (root@michael-ha
+    -i ~/.ssh/michael-ha — key-based, not tailscale-ssh auth). Dedup is a collector-side ts+hash file (no journald
+    cursor).'
 - id: log-shipper-severe
   name: Log shipper — severe kinds fast lane
   host: tony_dell
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -624,8 +538,7 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -635,8 +548,7 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -646,8 +558,7 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -657,21 +568,19 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
-  note: idc03 ssh needs the id_idc03 key that lives on tony-omen —
-    install via `install-log-shipper.sh idc03 --via tony-omen`.
+  note: idc03 ssh needs the id_idc03 key that lives on tony-omen — install via `install-log-shipper.sh idc03 --via
+    tony-omen`.
 - id: log-shipper-severe
   name: Log shipper — severe kinds fast lane
   host: mn01
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self
-    --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
@@ -681,15 +590,12 @@ jobs:
   dispatch: systemd
   every: 1h
   timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py
-    --hosts michael-ha --severe
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
-  note: 'severe-lane twin of log-shipper-mha — michael-ha cannot host a
-    local timer (Alpine core-ssh addon), so dell pulls `ha host logs`
-    hourly with --severe; dedup file is tag-suffixed
-    (log-shipper-ha-severe-michael-ha.json).'
+  note: severe-lane twin of log-shipper-mha — michael-ha cannot host a local timer (Alpine core-ssh addon), so dell
+    pulls `ha host logs` hourly with --severe; dedup file is tag-suffixed (log-shipper-ha-severe-michael-ha.json).
 - id: report-distill
   name: Report distill (L1 bank -> L2 domain digests)
   host: idc02
@@ -699,16 +605,25 @@ jobs:
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/report-distill.py
   on_failure: ada-report-fail@%p.service
-  note: 'nightly bank->report promotion per ssot.apps.ada-cms-reports.yml
-    distill_jobs — refreshes every <domain>-digest page (kind:report, full
-    meta_contract incl. supersedes; health domain carries the v1
-    bank-delta template). Registered 2026-10-06 (card report-distill-v1).
-    Same idc02 04:00 slot as the hand-installed ada-pi prototype timer —
-    installing this unit retires the ~/CascadeProjects/ada-pi copy
-    (git pull the chaba checkout first so the script exists). On idc02
-    it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot
-    (03:30); the SSOT ''after ada-scenario-* timers'' note targets idc03,
-    whose scenario timers are weekly, not nightly.'
+  note: nightly bank->report promotion per ssot.apps.ada-cms-reports.yml distill_jobs — refreshes every <domain>-digest
+    page (kind:report, full meta_contract incl. supersedes; health domain carries the v1 bank-delta template). Registered
+    2026-10-06 (card report-distill-v1). Same idc02 04:00 slot as the hand-installed ada-pi prototype timer — installing
+    this unit retires the ~/CascadeProjects/ada-pi copy (git pull the chaba checkout first so the script exists).
+    On idc02 it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot (03:30); the SSOT 'after ada-scenario-*
+    timers' note targets idc03, whose scenario timers are weekly, not nightly.
+- id: chaba-review-digest
+  name: Kanban review-digest card refresher (standing summary card for Tony)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*:0/15'
+  persistent: true
+  timeout: 2m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  env:
+    REPO: '%h/CascadeProjects/chaba-tony-dell'
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/review-digest.py
+  note: Tony request 2026-10-11 — single summary card listing review pile + open requests, refreshed every 15m.
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
@@ -716,8 +631,7 @@ related_files:
 - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
 - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
 - docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
-note: 'ssot.night-jobs.* remains the descriptive/status view (last_run, next_run,
-  prose notes). This file is the authoritative manifest — new jobs land HERE and render
-  out; do not hand-create timer units.
+note: 'ssot.night-jobs.* remains the descriptive/status view (last_run, next_run, prose notes). This file is the
+  authoritative manifest — new jobs land HERE and render out; do not hand-create timer units.
 
   '
