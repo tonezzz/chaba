@@ -224,6 +224,23 @@ REF_CATS = {
     "bench": "BEN", "benchmark": "BEN",
 }
 REF_DEFAULT = "OPS"
+# id-slug keywords → category, for legacy cards without tags.
+# First match wins — order is the priority.
+REF_ID_HINTS = (
+    ("audit", "AUD"), ("ada-", "ADA"), ("voice", "ADA"), ("gemini", "ADA"),
+    ("memory", "MEM"), ("mddb", "MEM"), ("embed", "MEM"),
+    ("secret", "SEC"), ("key", "SEC"), ("auth", "SEC"), ("secur", "SEC"),
+    ("kanban", "KNB"), ("board", "KNB"), ("card", "KNB"), ("report", "KNB"),
+    ("cms", "KNB"), ("ssot", "KNB"),
+    ("runner", "OPS"), ("dispatch", "OPS"), ("worktree", "OPS"),
+    ("host", "SYS"), ("macbook", "SYS"), ("tailnet", "SYS"),
+    ("network", "SYS"), ("wifi", "SYS"), ("ssh", "SYS"),
+    ("ha-", "HOM"), ("home-", "HOM"), ("dashboard", "HOM"),
+    ("cam", "MED"), ("cctv", "MED"), ("cast", "MED"), ("gev", "MED"),
+    ("yt-", "MED"), ("media", "MED"), ("screen", "MED"),
+    ("devin", "DEV"), ("cli", "DEV"), ("skill", "DEV"),
+    ("bench", "BEN"), ("cascade", "BEN"),
+)
 
 
 def _ref_seed() -> int:
@@ -263,6 +280,10 @@ def ref_cat(card: dict, body: dict) -> str:
     for t in body.get("tags") or card.get("tags") or []:
         c = REF_CATS.get(str(t).strip().lower())
         if c:
+            return c
+    slug = str(card.get("id") or "").lower()
+    for kw, c in REF_ID_HINTS:
+        if kw in slug:
             return c
     return REF_DEFAULT
 
