@@ -1,8 +1,8 @@
 id: runner-auto-idc03
 title: Runner host `idc03` fails 1 dispatch bootstrap check(s)
-brief: Automated fleet audit found provisioning gaps on idc03 that will strand dispatch cards. Read the note, fix
-  on the host, close the card.
-column: done
+brief: Automated fleet audit found provisioning gaps on idc03 that will strand dispatch
+  cards. Read the note, fix on the host, close the card.
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
@@ -12,9 +12,9 @@ note: 'Failing: probe failed: Connection timed out during banner exchange
   Connection to UNKNOWN port 65535 timed out.'
 help: 'Per-check fixes:
 
-  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
-  the key on the host.'
-updated: 2026-10-11 18:28
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
+  Check tailscale + sshd + the key on the host.'
+updated: '2026-10-11'
 review_kind: triage
 action:
   status: done
@@ -22,23 +22,25 @@ action:
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'FIXED: runner-agent drift — installed sha was 35d1835a vs repo 1a196b9d; repo copy deployed to idc03 and
-    sha-verified identical. Fleet-wide sync done this session. (Same stale-runner class that killed the first nest-mgr
-    dispatch.)'
+  text: 'FIXED: runner-agent drift — installed sha was 35d1835a vs repo 1a196b9d;
+    repo copy deployed to idc03 and sha-verified identical. Fleet-wide sync done this
+    session. (Same stale-runner class that killed the first nest-mgr dispatch.)'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo); timers active. Card left in
-    review by sweep — normalizing.'
+  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo);
+    timers active. Card left in review by sweep — normalizing.'
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
-    by an autostash-pop conflict resolution — normalizing to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
+    was restored accidentally by an autostash-pop conflict resolution — normalizing
+    to done.'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0300'
 - at: 2026-10-11 17:08
   from: devin
-  text: 'sweep verify: ssh idc03 banner/probe works now (was transient at card-gen time)'
+  text: 'sweep verify: ssh idc03 banner/probe works now (was transient at card-gen
+    time)'
 - at: 2026-10-11 17:08
   from: tony
   text: closed by tony
