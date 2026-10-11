@@ -529,7 +529,19 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
 def do_respond(card: dict, body: dict, frm: str) -> str:
     rid = str(body.get("request_id") or "").strip()
     if not rid:
-        return do_ask_respond(card, body, frm)
+        # a lone open request is unambiguous — answer it without
+        # requiring the caller to know request_id. Requests written
+        # directly into card YAML (agent edits, escalations) can lack
+        # id/status; heal the id so the request stays referenceable.
+        open_reqs = [r for r in card.get("requests") or []
+                     if r.get("status") not in ("answered", "closed")]
+        if len(open_reqs) == 1:
+            r = open_reqs[0]
+            if not r.get("id"):
+                r["id"] = slugify(str(r.get("ask") or "request")) or "request"
+            rid = r["id"]
+        else:
+            return do_ask_respond(card, body, frm)
     answer = str(body.get("answer") or body.get("text") or "").strip()
     if not answer:
         raise ValueError("answer required")
