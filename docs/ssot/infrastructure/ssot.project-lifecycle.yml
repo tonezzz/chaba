@@ -67,3 +67,23 @@ card_ux_loop:
   trigger: "any friction using the board/card interface — missing filter, slow view, dead button, confusing state"
   flow: "file a card tagged `kanban-ux` with the surface named -> review-digest surfaces it -> small fixes direct, larger ones dispatched"
   rule: "UX friction is real work worth a card — the board is the shared surface, its usability is everyone's throughput"
+
+ci_and_feedback:
+  ci: |
+    Defined in ssot.quality.yml (5 lanes) + ssot.ci.yml (per-card pipeline).
+    Every project card runs the shared lanes — ci-gate (GH Actions, offline,
+    blocks merge), on-host ci-all.sh, scheduled audits, live-health probes —
+    and may opt into per-card CI via `pipeline: ci` (plan -> structure ->
+    develop -> audit -> benchmark -> verify, card-pipeline.py; unautomatable
+    gates become board requests, never silent passes). ada-pi changes carry
+    their own deploy gates (tool-lint + pytest -x). CI is a property of the
+    card's stage, not the project — a product-stage card needs the full
+    evidence chain, a poc card needs plan+verify.
+  feedback: |
+    Three surfaces, all standard: (1) per-stage feedback_loop fields in
+    release-lifecycle — every gate writes findings back to card comms;
+    (2) this pipeline's feedback stage — product findings become new
+    project-tagged cards, the loop never closes; (3) dispatch-lesson-primer —
+    prior failures/lessons inject into future dispatch prompts so the fleet
+    stops repeating them. Transcript audits + logs-auto cards are the
+    passive capture layer underneath.
