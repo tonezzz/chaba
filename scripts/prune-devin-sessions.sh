@@ -62,6 +62,12 @@ fi
 
 BEFORE=$(du -sh "$DB" | awk '{print $1}')
 echo "Before: $BEFORE"
+
+# Dispatch sessions are unattended — hide them from the session list
+# immediately (they're also deleted once they pass the retention age).
+HIDDEN=$(sqlite3 "$DB" "UPDATE sessions SET hidden=1 WHERE working_directory LIKE '%/dispatch-wt-%' AND hidden=0; SELECT changes();")
+[ "$HIDDEN" != "0" ] && echo "Hid $HIDDEN dispatch session(s) from the session list."
+
 echo "Pruning sessions with last_activity_at < $CUTOFF ($RETENTION_DAYS days ago) ..."
 
 # Keep WAL mode; changing journal_mode can fail while Devin is connected.

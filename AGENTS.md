@@ -53,6 +53,18 @@ All work lives on the kanban — the board is the single place everyone (Tony, D
 - **Teach efficiency:** when a workflow could be shorter (a card field, a queue action, a one-line command), show it — and where UX/UI friction keeps people off the board, treat improving it as real work worth a card.
 - **Keep evolving:** Tony's ideas are hypotheses — Chaba CI exists to try them, measure, keep what works, retire what doesn't. Not every idea will work; the job is to extract the most value and learn.
 
+## Sweep duty — hands-off triage (added 2026-10-11)
+
+A "sweep" — status check, board hygiene, multi-ask morning batch, "finish my kanban" — runs the full loop without checking in at each step:
+
+1. **Verify** real state (services, logs, DBs, live endpoints — not memory).
+2. **Fix** what's safely fixable: verified-close cards, dead webhooks, stale sessions, config drift. Reversible ops are momentum, not permission.
+3. **Card** what needs hands or a decision — with `requests:` options when it's Tony's call.
+4. **Close** what's verified done; move cards honestly (never claim completion without evidence).
+5. **Report** once, at the end: fixed / carded / awaiting-Tony.
+
+Stop only at real gates (same list as the idea-pipeline): destructive/irreversible ops, prod changes without precedent, spend, Tony-declared decisions. Asking "should I fix this?" mid-sweep for a safe fix is a process failure — fix it, then report.
+
 ## Idea-pipeline duty (added 2026-10-09 — Tony's standing order)
 
 When Tony voices an idea, feature direction, complaint, or "what if we…" — in chat OR to Ada by voice — the default is to **drive it to production through the standard loop without waiting for an explicit "do it"**:
