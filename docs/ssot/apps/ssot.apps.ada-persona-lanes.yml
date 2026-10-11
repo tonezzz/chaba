@@ -1,0 +1,94 @@
+title: Ada Persona Lanes — dev/prod twin + CI procedure
+subtitle: Per-persona backend lanes (kk-dev -> ada-kk). Mirrors the HA
+  lanes model (ssot.home-assistant.lanes.yml) adapted to ada services.
+icon: 🚦
+version: 1
+last_updated: "2026-10-11"
+
+# ---------------------------------------------------------------------------
+# A persona lane is a dev backend -> prod backend pair for ONE person.
+# Code promotes: idc03 deploy puts every instance on the same checkout —
+# "promote" means: verify on the dev port, then restart the prod service.
+# Config promotes: render-tool-profiles.py writes the env managed block —
+# dev env first, scenarios green, then the prod env.
+# DATA NEVER PROMOTES: banks, CMS, calendars are lane-scoped; dev writes
+# only reach -dev collections. Scenarios run --no_persist + cleanup blocks.
+# ---------------------------------------------------------------------------
+
+lanes:
+  kk:
+    dev: ada-kk-dev
+    prod: ada-kk
+    persona: kaewta            # LINE name binding (LINE_NAME_BACKENDS)
+    ha_home: kk-ha             # virtual home — no live HA upstream
+    owner_person: kk
+
+instances:
+  ada-kk:
+    host: idc03
+    port: 8007
+    env_file: ada-kk.env
+    keys_file: ada-ha-kk-keys.json
+    bank: ada-ha-bank-personal-kk
+    cms_collection: ada-cms-pages-kk
+    cms_public_base: https://surf-thailand.com/kk-ha/
+    calendar_file: calendar-kk.json        # real kk-ha calendar + task list
+    events: ada-ha-events-kk
+    recall_summary: ada-ha-recall-summary-kk
+    line_persona: kaewta       # reachable from the real LINE group
+    tool_profile: kk           # persons.kk.tools in ssot.apps.ada-persons.yml
+
+  ada-kk-dev:
+    host: idc03
+    port: 8009
+    env_file: ada-kk-dev.env
+    keys_file: ada-ha-kk-dev-keys.json
+    bank: ada-ha-bank-personal-kk-dev      # dev writes stay off prod memory
+    bank_read_extra: [ada-ha-bank-personal-kk]  # read the real kk bank for parity
+    cms_collection: ada-cms-pages-kk-dev
+    cms_public_base: ""        # no public lane for dev pages
+    calendar_file: calendar-kk-dev.json    # separate test calendar
+    events: ada-ha-events-kk-dev
+    recall_summary: ada-ha-recall-summary-kk-dev
+    line_persona: null         # ws-direct only until a test group exists;
+                               # add kaewta-dev to LINE_NAME_BACKENDS + a
+                               # throwaway group for LINE e2e
+    tool_profile: kk           # identical profile — same surface as prod
+    status: planned            # card ada-kk-dev-lane
+
+ci:
+  description: |
+    Standard CI for a persona lane. Every ada-pi change ships to all
+    instances at once (deploy-ada.sh) — "promotion" is a verification
+    order, not a separate build. The dev instance is the tripwire:
+    scenarios run against it before prod restarts.
+  steps:
+    - code: |
+        Edit on tony-dell, push, deploy-ada.sh on idc03 (gates:
+        tool-lint + pytest). Deploy restarts ada-* — dev port first to
+        verify, prod service last.
+    - config: |
+        persons.<p>.tools / banks edits → render-tool-profiles.py writes
+        the dev env block → scenarios green → render prod env → restart.
+    - verify_dev: |
+        .venv/bin/python scripts/scenario-live.py \
+          tests/scenarios-live/<suite>.yaml \
+          --url ws://127.0.0.1:8009/ws --api-key $ADA_KK_DEV_KEY
+        Lane suite (tag: kk-lane): virtual-home HA exclusion,
+        bank isolation, cms publish -> public_url, chat_send
+        group targeting, photo asset reshow.
+    - promote: |
+        Scenarios green on :8009 → systemctl --user restart ada-kk →
+        prod smoke = one LINE message in the group expecting a sane
+        tagged reply (manual — the inbound webhook can't be synthesized).
+    - rollback: |
+        deploy-ada.sh ff-merge is atomic; roll back by reverting on dell
+        and redeploying. Env: re-render the previous managed block.
+
+regressions_to_cover:
+  - virtual-home: home_*/ha_* tools absent on kk lane (merged-name slips)
+  - memory: retracted/superseded docs invisible; vault-first writes
+  - chat_send: empty to= -> last active room, never first-allowed-user DM
+  - images: non-image fetch rejected (HTML SPA as image_url)
+  - cms: public='yes' -> public_url; personal-data gate blocks
+  - identity: LINE userId -> caller -> owner tier on her lane

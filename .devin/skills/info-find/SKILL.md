@@ -39,6 +39,22 @@ Unified information-finding flow for `chaba`, `trade`, and any other project in 
    - `mcp` → MCP tool lookup
    - `web` → Google/web search for external facts (stock events, corporate actions, news, docs not in MDDB)
    - `general-doc` → MDDB first, then SSOT, then optionally web if `--web` is used
+   - `explore` → feature/option expansion ("what's our standard procedure to expand", "what exists for X", "any tool for X"):
+     internal sources first (MDDB/SSOT/code — is X already here?), then the **GitHub
+     precedent rung** below, then generic web, then findings go on the card.
+
+4a. GitHub precedent rung (standard for feature exploration — added 2026-10-11)
+   When a card/hypothesis asks "can X help" or a feature needs options, search for
+   who already built it before designing from scratch:
+   - Repo-level discovery → `web_search "<domain terms> github"` (github MCP has
+     no repo-search tool; web search finds projects better).
+   - Implementation-level → github MCP `search_code` / `search_issues` for how
+     a specific repo wires the thing (prompts, pipelines, metrics).
+   - Collect per project: name, what it does, why it matters to our case,
+     fit (adopt/adapt/reject), maturity signal (stars/commit recency).
+   - Write findings onto the kanban card via board-api comment — precedent
+     research is card work, not chat memory.
+   - Skip only when the question is purely internal (config, state, our own data).
 
 5. MDDB health preflight (only if `use_mddb` is true)
    - `exec curl -s http://100.102.134.91:11023/health` (idc03, tailnet-only)
