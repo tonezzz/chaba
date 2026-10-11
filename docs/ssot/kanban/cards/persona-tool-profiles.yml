@@ -1,0 +1,22 @@
+id: persona-tool-profiles
+title: Per-persona tool profiles — ADA_INCLUDED_TOOLS allowlist + SSOT tool_profile + deploy lint
+column: backlog
+updated: 2026-10-11 18:46
+priority: high
+spec: 'ADA_EXCLUDED_TOOLS denylist rots on tool merges (home_search slipped through 2026-10-11; home_status/home_history/ha_confidence
+  still live on ada-kk) and can never shrink prompt surface for simple personas (ada-kk currently 39 tools incl.
+  Tony-calendar/tasks/devin lures). Add: (1) ADA_INCLUDED_TOOLS env — when set, strip every declaration NOT listed
+  (mirror the excluded-strip point realtime_provider.py:4585); (2) tools: profile in ssot.apps.ada-persons.yml per
+  persona rendered into env at deploy; (3) deploy lint: any declared tool neither included nor excluded for a virtual/personal
+  instance = warning; (4) ada-kk keep-list to start: ada_memory_search, ada_remember, ada_forget, ada_session_recall,
+  cms_read, cms_publish_page, cms_edit, chat_send, web_search, ada_persona, speaker_profiles, voice_fx, set_facial_expression,
+  capture_frame, vcast_gesture, ada_market_quote, ada_render_video (17). Also drop calendar_read/write, plan_day,
+  tasks, devin*, yt, cast/vcast screens, home_*, ada_look, track/member/device_acl, percussion, docs from ada-kk
+  — Tony-lane lures + cross-lane data leak (Tony calendar on a member-tier session).'
+note: 'Requester: tony 2026-10-11 — standard procedure to control persona tools, limit ability, simplify prompt.
+  Same pattern as per-persona banks.'
+ref: OPS-0476
+comms:
+- at: 2026-10-11 18:46
+  from: devin
+  text: card captured via board-api
