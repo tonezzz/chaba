@@ -453,6 +453,35 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, camwallState);
   }
 
+  // Percussion music control: GET reads the active control, POST sets
+  // style/mood/instruments — Ada's percussion_set tool uses this.
+  if (req.method === "GET" && url.pathname === "/percussion") {
+    return json(res, 200, {
+      control: percControl,
+      choices: {
+        styles: [...PERC_STYLE], moods: [...PERC_MOOD],
+        instruments: [...PERC_INS],
+      },
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/percussion") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    if ("style" in body)
+      percControl.style = PERC_STYLE.has(body.style) ? body.style : "";
+    if ("mood" in body)
+      percControl.mood = PERC_MOOD.has(body.mood) ? body.mood : "";
+    if (Array.isArray(body.instruments))
+      percControl.instruments = body.instruments.filter(i => PERC_INS.has(i));
+    savePercControl();
+    return json(res, 200, { ok: true, control: percControl });
+  }
+
   if (req.method === "POST" && url.pathname === "/camwall") {
     let body;
     try {
@@ -938,6 +967,42 @@ const CAMWALL_FILE =
   process.env.VCAST_CAMWALL ||
   path.join(os.homedir(), ".local", "share", "input-bridge", "camwall.json");
 const camwallState = { zones: {} };
+
+// Percussion music layer: POST writes the app's control.json (style,
+// mood, instruments[]) — the web app polls it on its state cadence.
+const PERC_CONTROL_FILE =
+  process.env.PERC_CONTROL ||
+  path.join(process.env.VCAST_CAMWALL
+              ? path.dirname(process.env.VCAST_CAMWALL)
+              : path.join(os.homedir(), ".local", "share", "input-bridge"),
+            "percussion.json");
+const PERC_STYLE = new Set(["rock","ballad","funky","electronic","edm",
+                            "hardrock","rockballad","polyphia"]);
+const PERC_MOOD = new Set(["blue","bright","tense","calm"]);
+const PERC_INS = new Set(["bass","stab","pad","lead","guitar","clap",
+                          "ride","tamb","rim"]);
+const percControl = { style:"", mood:"", instruments:[] };
+function savePercControl() {
+  try {
+    fs.mkdirSync(path.dirname(PERC_CONTROL_FILE), { recursive: true });
+    fs.writeFileSync(PERC_CONTROL_FILE,
+                     JSON.stringify({ ...percControl,
+                                      updated: new Date().toISOString() },
+                                    null, 2) + "\n");
+  } catch (e) {
+    console.error("[input-bridge] percussion control save failed:", e.message);
+  }
+}
+function loadPercControl() {
+  try {
+    const c = JSON.parse(fs.readFileSync(PERC_CONTROL_FILE, "utf8"));
+    if (PERC_STYLE.has(c.style)) percControl.style = c.style;
+    if (PERC_MOOD.has(c.mood)) percControl.mood = c.mood;
+    if (Array.isArray(c.instruments))
+      percControl.instruments = c.instruments.filter(i => PERC_INS.has(i));
+  } catch (e) { /* fresh state */ }
+}
+loadPercControl();
 
 function loadCamwall() {
   try {

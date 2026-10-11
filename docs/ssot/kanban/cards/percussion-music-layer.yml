@@ -1,6 +1,6 @@
 id: percussion-music-layer
 title: "percussion: music layer — styles, moods, instruments, voice control"
-column: doing
+column: done
 priority: medium
 created: 2026-10-10
 updated: '2026-10-10'
@@ -24,8 +24,14 @@ note: >
   polyphia; polyphia = trap hats + harmonized double-lead + staccato).
   Ops sonification semantics UNCHANGED (roles still drive drums).
   Ada side: percussion_set(style?,mood?,instruments?) tool — ada-pi card.
-  AQ: control.json {style:polyphia,mood:blue,instruments:[guitar,bass]}
-  -> audible trap hats + harmonized bends within one state poll.
+  DONE 2026-10-10: music layer shipped — 8 style grids + riffs
+  (incl. polyphia trap hats + harmonized double lead), 4 mood
+  scales/chords, 9 new synth voices (guitar has waveshaper dist +
+  pitch-bend glide). Control: input-bridge POST/GET /percussion
+  (idc03:3010, persisted), app polls same-origin each 30s;
+  ?style=&mood=&instruments= URL override. Ada tool 'percussion'
+  deployed via ada-pi (1268 tests pass, all services green).
+  /send on tg-relay :8911 verified -> TG ping delivered.
 links:
   - stacks/web/public/apps/percussion/app.js
   - stacks/web/public/apps/percussion/
