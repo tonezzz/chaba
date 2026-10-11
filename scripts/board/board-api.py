@@ -186,6 +186,15 @@ def card_path(cid: str) -> Path:
         raise ValueError("bad card id")
     p = CARD_DIR / f"{cid}.yml"
     if not p.exists():
+        # filename/id drift happens when a session renames a card's id
+        # without renaming the file — fall back to an id-field scan so
+        # respond/action/comment still find it.
+        for cand in CARD_DIR.glob("*.yml"):
+            try:
+                if (yaml.safe_load(cand.read_text()) or {}).get("id") == cid:
+                    return cand
+            except Exception:
+                continue
         raise ValueError(f"no card {cid}")
     return p
 
