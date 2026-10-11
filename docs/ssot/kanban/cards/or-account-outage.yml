@@ -44,6 +44,19 @@ comms:
     the new sk-or-v1-* into ~/.config/secrets/or-next-key on tony-dell and rotate-or-key.sh repopulates all 4 stores
     + restarts consumers + verifies e2e. Note: or-next-key currently holds the SAME bridge key already deployed
     (tail …c44b) — waiting on a fresh mint.'
+- at: 2026-10-11 21:17
+  from: devin
+  text: '[verify] 2026-10-11 full fleet census (dell, omen, idc03, idc02, macbook): deployed everywhere is the bridge
+    key sk-or-v1-005...c44b only. Strays: 631...9c6a in idc03 mddb-gemini.env + omen secrets, f1e...04fe in idc03
+    attic backup. Tony reports his weekly key is sk-or-v1-fe7...0ec — it exists on his OR account but is installed
+    NOWHERE on the fleet. Next step is delivery only (no re-mint needed): drop it into ~/.config/secrets/or-next-key
+    on dell, then run scripts/ops/rotate-or-key.sh — it pre-v'
+- at: 2026-10-11 21:24
+  from: tony
+  text: 'answered weekly-key-on-new-account: mint-weekly — mint weekly key on user_3ACXf7, secret-drop it'
+- at: 2026-10-11 21:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: weekly-key-on-new-account
   ask: 'Bridge key ($1 cap) expires 2026-10-12 04:55 UTC. Needed: mint the real weekly key ($10/1-week) on the LIVE
@@ -52,7 +65,7 @@ requests:
     comms/chat. I verify + run rotate-or-key on receipt.'
   from: devin
   to: tony
-  status: open
+  status: answered
   options:
   - id: mint-weekly
     label: mint weekly key on user_3ACXf7, secret-drop it
@@ -60,6 +73,7 @@ requests:
     label: extend/raise-cap the throwaway key instead
   suggested: mint-weekly
   at: 2026-10-11 14:10
+  answer: mint-weekly — mint weekly key on user_3ACXf7, secret-drop it
 - id: or-key-works-but-expires-2026-10-12-with-b86ecc
   ask: OR key works but expires 2026-10-12 with $0.48 left — mint+rotate a fresh key now (rotate-or-key.sh exists)?
   status: open
@@ -72,4 +86,5 @@ requests:
     label: leave until expiry
   suggested: 'yes'
 review_kind: triage
-updated: 2026-10-11 19:53
+updated: 2026-10-11 21:24
+awaiting_action: true

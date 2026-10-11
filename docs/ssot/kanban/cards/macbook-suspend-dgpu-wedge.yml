@@ -1,7 +1,7 @@
 id: macbook-suspend-dgpu-wedge
 title: 'tony-macbook: S3 (deep) suspend wedges amdgpu+Thunderbolt on resume — screen dead, host alive'
 column: backlog
-updated: 2026-10-11 16:51
+updated: 2026-10-11 21:24
 brief: '2026-10-11 15:52 suspend entry (deep) → on resume pcieports stuck in D3cold ("device inaccessible") + thunderbolt
   tb_cfg_read WARN storm → 15:56 amdgpu SMU mailbox dead, fw reload failed, GPU Recovery Failed -22 → display pipe
   dead, host stayed up (ssh/power-key worked until force-off ~16:01). Known MBP13,3-on-Linux disease: Alpine Ridge
@@ -26,7 +26,7 @@ requests:
   ask: 'Two sudo steps needed on tony-macbook: (1) runtime test — `echo s2idle | sudo tee /sys/power/mem_sleep`
     then lid-close/open while docked; (2) if screen survives, persist — add mem_sleep_default=s2idle to GRUB_CMDLINE_LINUX_DEFAULT
     in /etc/default/grub + `sudo update-grub`. I can do both myself with one sudo password, or Tony runs them.'
-  status: open
+  status: answered
   suggested: agent-with-sudo
   options:
   - id: agent-with-sudo
@@ -35,11 +35,12 @@ requests:
     label: Tony runs the two commands
   - id: keep-deep
     label: leave deep sleep, accept the wedge risk
+  answer: agent-with-sudo — I run it (needs sudo password once)
 - id: telemetry-layer
   ask: 'Optional: continuous metrics timeline for the NEXT wedge — sar (sysstat, light) or netdata (per-second,
     fleet precedent on omen). Needs sudo to install+enable. Worth it if the wedge recurs; skip if s2idle fixes it
     first try.'
-  status: open
+  status: answered
   at: 2026-10-11 16:51
   from: devin
   options:
@@ -50,8 +51,10 @@ requests:
   - id: netdata-now
     label: install netdata now (kickstart, one sudo)
   suggested: defer-until-recur
+  answer: defer-until-recur — only install if wedge happens again (recommended)
 action:
   type: self
+  status: queued
 comms:
 - at: 2026-10-11 16:10
   from: devin
@@ -69,3 +72,18 @@ comms:
   from: devin
   text: 'raised request telemetry-layer: Optional: continuous metrics timeline for the NEXT wedge — sar (sysstat,
     light) or netdata (per-second, fleet precedent '
+- at: 2026-10-11 21:24
+  from: tony
+  text: 'answered sudo-sleep-mode: agent-with-sudo — I run it (needs sudo password once)'
+- at: 2026-10-11 21:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 21:24
+  from: tony
+  text: 'answered telemetry-layer: defer-until-recur — only install if wedge happens again (recommended)'
+- at: 2026-10-11 21:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 21:24
+  from: tony
+  text: queued for processing

@@ -1,7 +1,7 @@
 id: micro-ai-input-polish
 title: 'micro-ai input polish: small local model normalizes user input for each receiving AI'
 column: backlog
-updated: 2026-10-11 20:56
+updated: 2026-10-11 21:28
 brief: 'Hypothesis (Tony 2026-10-11): a small local model sits in front of each receiving AI and rewrites raw user
   input (ASR errors, Thai/Eng mix, fragments) into the format that AI performs best on — better accuracy AND fewer
   downstream tokens. Bench-first per model-eval procedure; adopt only on measured gain.'
@@ -92,6 +92,10 @@ comms:
     out of its function-word scope; ''till running''->''till THE running'').
 
     - STRONG polisher (gemini-3.5-flash-lite -> same): SCOPE — .556->.611 exact ('
+- at: 2026-10-11 21:28
+  from: devin
+  text: 'raised request asr-lane-scope: insertion-point answered ada-asr — but Ada''s voice lane is native Gemini
+    Live audio (no text surface; transcript is an O'
 requests:
 - id: insertion-point
   ask: Where should the first bench target the polish layer? ASR has the messiest input and clearest expected win.
@@ -107,3 +111,19 @@ requests:
     label: bench both insertion points in one harness
   suggested: ada-asr
   answer: ada-asr — Ada ASR pre-filter (recommended) — fixes transcription errors before the Gemini call
+- id: asr-lane-scope
+  ask: 'insertion-point answered ada-asr — but Ada''s voice lane is native Gemini Live audio (no text surface; transcript
+    is an OUTPUT). A text polisher can only sit on (a) typed/relay lanes — LINE/TG/PWA via send_text_turn, deployable
+    today, or (b) true voice ASR — needs a cascade pre-pass (whisper->polish->LLM) in front of native audio: architecture
+    change + latency. Which scope do we build first?'
+  status: open
+  at: 2026-10-11 21:28
+  from: devin
+  options:
+  - id: typed-relays
+    label: text/relay lanes first (LINE/TG/PWA) — deployable now, bench applies directly (recommended)
+  - id: voice-cascade
+    label: true voice ASR — cascade pre-pass card (whisper->polish->LLM), architecture change
+  - id: both
+    label: typed now + cascade card in parallel
+  suggested: typed-relays
