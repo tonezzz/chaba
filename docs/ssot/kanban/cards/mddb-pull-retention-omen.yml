@@ -1,0 +1,14 @@
+id: mddb-pull-retention-omen
+title: mddb-backup-pull on tony-omen has no retention
+column: backlog
+updated: 2026-10-11 09:06
+brief: 'mddb-backup-pull.service rsyncs idc01:mddb-backups/ daily into /data/backups/mddb-backups/ with no keep-N
+  and no offload tier — accumulates ~3.4G/day forever. /data is already at 87% after the move-cache offload. Apply
+  the same pattern as tony-dell standby-pull: newest-1 local + rclone move older dumps to gdrive:backups/mddb-omen/
+  (or keep-N if the DR design needs more local copies — check the mddb standby redesign card first).'
+priority: medium
+ref: MEM-0455
+comms:
+- at: 2026-10-11 09:06
+  from: tony
+  text: card captured via board-api
