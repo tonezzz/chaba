@@ -23,6 +23,11 @@
 const ACC_KEY_STORAGE = "ada_voice_api_key";
 const ACC_DEVICE_STORAGE = "ada_voice_device_id";
 const ACC_DEFAULT_WS = "wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws";
+// Secret-drop modal (card ada-secret-drop): POST {api_base}/api/secret-drop
+// writes ~/.config/secrets/<name> (0600) on the target host. The value
+// leaves the page exactly once — receipt is metadata only (path + sha256).
+const ACC_SECRET_HOSTS = ["idc03", "tony-dell", "tony-omen", "idc02"];
+const ACC_SECRET_NAME_RE = /^[a-z0-9._-]{1,64}$/;
 
 // Endpoint resolution order: explicit ws_url config > routes.json
 // (generated from docs/ssot/infrastructure/ssot.routes.yml, served to HA
@@ -85,7 +90,12 @@ class AdaChatCard extends HTMLElement {
     this._yoloBtn.className = "acc-yolo";
     this._yoloBtn.title = "Live YOLO detection view (fullscreen)";
     this._yoloBtn.onclick = () => this._openYolo();
-    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn, this._yoloBtn);
+    this._secretBtn = this._btn("🔐");
+    this._secretBtn.className = "acc-secret";
+    this._secretBtn.title = "Drop a secret onto a fleet host";
+    this._secretBtn.onclick = () => this._openSecretDrop();
+    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn,
+               this._yoloBtn, this._secretBtn);
     body.appendChild(row);
 
     // transcript log — bubble layout; bubbles handle their own wrapping
@@ -891,6 +901,164 @@ class AdaChatCard extends HTMLElement {
     }
   }
 
+  // ---------- secret drop ----------
+
+  _openSecretDrop() {
+    if (this._secretOverlay) return;
+    const ov = document.createElement("div");
+    ov.className = "acc-secret-overlay";
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(8,10,14,.85);" +
+      "display:flex;align-items:center;justify-content:center";
+
+    const card = document.createElement("div");
+    card.style.cssText =
+      "width:min(380px,90vw);padding:24px;border-radius:14px;" +
+      "background:var(--card-background-color,#1c2128);" +
+      "border:1px solid var(--divider-color,#444);color:var(--primary-text-color)";
+
+    const h = document.createElement("div");
+    h.style.cssText = "font-size:1.05rem;font-weight:700;margin-bottom:4px";
+    h.textContent = "🔐 Drop a secret";
+    const hint = document.createElement("div");
+    hint.style.cssText = "font-size:.8rem;color:var(--secondary-text-color);margin-bottom:12px;line-height:1.5";
+    hint.textContent = "Writes ~/.config/secrets/<name> (0600) on the target " +
+      "host. The value is never shown or logged — you get back a receipt " +
+      "(path + sha256).";
+    card.append(h, hint);
+
+    const label = (t) => {
+      const l = document.createElement("div");
+      l.style.cssText =
+        "font-size:.68rem;font-weight:700;text-transform:uppercase;" +
+        "letter-spacing:.06em;color:var(--secondary-text-color);margin:10px 0 4px";
+      l.textContent = t;
+      return l;
+    };
+    const fieldCss =
+      "width:100%;box-sizing:border-box;padding:10px 12px;min-height:38px;" +
+      "border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#12161c);" +
+      "color:var(--primary-text-color);font-size:.9rem";
+
+    card.appendChild(label("Target host"));
+    const host = document.createElement("select");
+    host.className = "acc-secret-host";
+    host.style.cssText = fieldCss;
+    for (const h2 of ACC_SECRET_HOSTS) {
+      const o = document.createElement("option");
+      o.value = h2; o.textContent = h2;
+      host.appendChild(o);
+    }
+    card.appendChild(host);
+
+    card.appendChild(label("Secret name"));
+    const name = document.createElement("input");
+    name.className = "acc-secret-name";
+    name.type = "text";
+    name.autocomplete = "off";
+    name.maxLength = 64;
+    name.placeholder = "e.g. telegram-kk-bot.env";
+    name.style.cssText = fieldCss;
+    card.appendChild(name);
+
+    card.appendChild(label("Value"));
+    const value = document.createElement("input");
+    value.className = "acc-secret-value";
+    value.type = "password";
+    value.autocomplete = "new-password";
+    value.setAttribute("data-lpignore", "true");
+    value.setAttribute("data-1p-ignore", "true");
+    value.setAttribute("data-form-type", "other");
+    value.placeholder = "secret value";
+    value.style.cssText = fieldCss;
+    card.appendChild(value);
+
+    const err = document.createElement("div");
+    err.style.cssText = "min-height:18px;color:var(--error-color,#f77);font-size:.8rem;margin-top:8px";
+    const receipt = document.createElement("div");
+    receipt.style.cssText =
+      "display:none;color:var(--success-color,#4caf50);font-size:.8rem;" +
+      "margin-top:8px;overflow-wrap:anywhere";
+    card.append(err, receipt);
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;gap:8px;margin-top:14px";
+    const submit = this._btn("Drop it");
+    submit.style.flex = "1";
+    submit.style.borderColor = "var(--primary-color,#03a9f4)";
+    const cancel = this._btn("Close");
+    cancel.style.flex = "1";
+    actions.append(submit, cancel);
+    card.appendChild(actions);
+
+    submit.onclick = () => this._submitSecretDrop(host, name, value, err, receipt, submit);
+    value.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit.click();
+    });
+    cancel.onclick = () => this._closeSecretDrop();
+    const onKey = (e) => { if (e.key === "Escape") this._closeSecretDrop(); };
+    document.addEventListener("keydown", onKey);
+    this._secretKeyHandler = onKey;
+
+    this._secretOverlay = ov;
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    name.focus();
+  }
+
+  _closeSecretDrop() {
+    if (this._secretKeyHandler) {
+      document.removeEventListener("keydown", this._secretKeyHandler);
+      this._secretKeyHandler = null;
+    }
+    if (this._secretOverlay) {
+      // scrub the value before the node leaves the DOM
+      const v = this._secretOverlay.querySelector(".acc-secret-value");
+      if (v) v.value = "";
+      this._secretOverlay.remove();
+      this._secretOverlay = null;
+    }
+  }
+
+  async _submitSecretDrop(host, name, value, err, receipt, submit) {
+    const n = name.value.trim();
+    if (!ACC_SECRET_NAME_RE.test(n)) {
+      err.textContent = "name must match [a-z0-9._-] (1-64 chars)";
+      return;
+    }
+    const v = value.value;
+    if (!v) { err.textContent = "value required"; return; }
+    err.textContent = "";
+    receipt.style.display = "none";
+    submit.disabled = true;
+    try {
+      if (!this._wsBase) this._wsBase = await accResolveWs(this._config);
+      const post = () => fetch(`${this._apiBase()}/api/secret-drop`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": this._apiKey(),
+        },
+        body: JSON.stringify({ host: host.value, name: n, value: v }),
+      });
+      let resp = await post();
+      if (resp.status === 401 && !this._config.api_key) {
+        localStorage.removeItem(ACC_KEY_STORAGE);
+        if (await this._mintKey()) resp = await post();
+      }
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      value.value = ""; // clear first — never re-render the value
+      receipt.textContent = `dropped → ${out.path}  (sha256:${out.sha8})`;
+      receipt.style.display = "block";
+    } catch (e) {
+      err.textContent = e.message || String(e);
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
   _btn(label) {
     const b = document.createElement("button");
     b.textContent = label;
@@ -909,6 +1077,7 @@ class AdaChatCard extends HTMLElement {
 
   disconnectedCallback() {
     this._closeYolo();
+    this._closeSecretDrop();
     if (this._socket) this._teardown(true);
   }
 

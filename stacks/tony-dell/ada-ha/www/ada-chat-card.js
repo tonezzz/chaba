@@ -1,0 +1,1086 @@
+// ada-chat-card — HA-native Ada text chat embedded in a Lovelace card.
+// Same Gemini Live session as the voice card, text turns in, transcript out.
+// Reuses the voice card's per-device key flow: script.ada_voice_key mints a
+// ha-<device8> key server-side; the key and device_id live in the SAME
+// localStorage slots (ada_voice_api_key / ada_voice_device_id) so one browser
+// counts as one device across both cards. First WS connect TOFU-binds the
+// key to device_id; a 4401 close re-mints once, then shows the unlock field.
+// Server PCM audio frames are received but dropped (text-only surface).
+//
+// Config:
+//   title:    card title (default "Ada chat")
+//   instance: ada instance key, e.g. tony|michael (default tony)
+//   ws_url:   wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
+//   height:   log height (default 260px)
+//   api_key:  <key>   optional — normally unset, card self-mints
+//
+// Attach: the 📎 button uploads a photo/document to
+// POST {api_base}/api/documents/intake (client-downscaled to ~2400px first),
+// then queues a "[document uploaded via card]" session note that is sent over
+// the ws only while the session is idle — mid-turn text turns can abort the
+// stream (same flow as ada-voice-card).
+
+const ACC_KEY_STORAGE = "ada_voice_api_key";
+const ACC_DEVICE_STORAGE = "ada_voice_device_id";
+const ACC_DEFAULT_WS = "wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws";
+// Secret-drop modal (card ada-secret-drop): POST {api_base}/api/secret-drop
+// writes ~/.config/secrets/<name> (0600) on the target host. The value
+// leaves the page exactly once — receipt is metadata only (path + sha256).
+const ACC_SECRET_HOSTS = ["idc03", "tony-dell", "tony-omen", "idc02"];
+const ACC_SECRET_NAME_RE = /^[a-z0-9._-]{1,64}$/;
+
+// Endpoint resolution order: explicit ws_url config > routes.json
+// (generated from docs/ssot/infrastructure/ssot.routes.yml, served to HA
+// cards as /local/routes.json) > literal fallback. Hostnames must not
+// live in card code — the registry is the single source (edge-route-registry).
+let _accRoutesP = null;
+async function accResolveWs(cfg) {
+  if (cfg && cfg.ws_url) return cfg.ws_url;
+  try {
+    if (!_accRoutesP)
+      _accRoutesP = fetch("/local/routes.json")
+        .then(r => (r.ok ? r.json() : null)).catch(() => null);
+    const reg = await _accRoutesP;
+    const ws = reg && reg.routes && reg.routes["ada-tony"] &&
+      reg.routes["ada-tony"].ws;
+    if (ws) return ws;
+  } catch (e) { /* fall through to literal */ }
+  return ACC_DEFAULT_WS;
+}
+
+class AdaChatCard extends HTMLElement {
+  setConfig(config) {
+    this._config = config || {};
+    this._state = "idle";
+    this._socket = null;
+    this._connecting = false;
+    this._mintRetried = false;
+    this._assistantEntry = null;
+    this._docNotes = [];      // queued "document uploaded" session notes
+    this._docUploading = false;
+    this._responseActive = false;
+
+    this._card = document.createElement("ha-card");
+    this._card.header = this._config.title || "Ada chat";
+    const body = document.createElement("div");
+    body.style.cssText = "padding:0 16px 16px;display:flex;flex-direction:column;gap:8px";
+
+    // status row: live dot + status text + connect/disconnect buttons
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:8px";
+    this._dot = document.createElement("span");
+    this._dot.className = "acc-status-dot";
+    this._dot.style.cssText =
+      "width:8px;height:8px;border-radius:50%;flex:none;" +
+      "background:var(--disabled-text-color,#777);transition:background .3s";
+    this._status = document.createElement("div");
+    this._status.className = "acc-status";
+    this._status.style.cssText = "flex:1;font-size:.8rem;color:var(--secondary-text-color)";
+    this._status.textContent = "Disconnected";
+    this._connectBtn = this._btn("Connect");
+    this._connectBtn.className = "acc-connect";
+    this._connectBtn.onclick = () => this._connect();
+    this._disconnectBtn = this._btn("Disconnect");
+    this._disconnectBtn.className = "acc-disconnect";
+    this._disconnectBtn.disabled = true;
+    this._disconnectBtn.onclick = () => this._teardown(true);
+    // YOLO button — fullscreen live view of the xiaomi_c201 detection feed
+    // (mn01 yolo-xiaomi service via Caddy /apps/yolo/api proxy).
+    this._yoloBtn = this._btn("🧍 YOLO");
+    this._yoloBtn.className = "acc-yolo";
+    this._yoloBtn.title = "Live YOLO detection view (fullscreen)";
+    this._yoloBtn.onclick = () => this._openYolo();
+    this._secretBtn = this._btn("🔐");
+    this._secretBtn.className = "acc-secret";
+    this._secretBtn.title = "Drop a secret onto a fleet host";
+    this._secretBtn.onclick = () => this._openSecretDrop();
+    row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn,
+               this._yoloBtn, this._secretBtn);
+    body.appendChild(row);
+
+    // transcript log — bubble layout; bubbles handle their own wrapping
+    this._log = document.createElement("div");
+    this._log.style.cssText =
+      `height:${this._config.height || "260px"};overflow-y:auto;font-size:.95rem;line-height:1.5;` +
+      "padding:10px 10px 6px;border-radius:10px;background:var(--secondary-background-color,#1c2128);" +
+      "display:flex;flex-direction:column;gap:6px";
+    body.appendChild(this._log);
+
+    // typing indicator — shown while Ada is composing, hidden on first delta
+    this._typing = document.createElement("div");
+    this._typing.className = "acc-typing";
+    this._typing.style.cssText =
+      "align-self:flex-start;display:none;align-items:center;gap:5px;padding:6px 12px;" +
+      "border-radius:14px 14px 14px 4px;background:var(--card-background-color,#2b3138);" +
+      "color:var(--secondary-text-color);font-size:.78rem";
+    this._typing.innerHTML =
+      "Ada is typing <span class='acc-dots'><span>.</span><span>.</span><span>.</span></span>";
+    const dots = this._typing.querySelectorAll(".acc-dots span");
+    dots.forEach((d, i) => {
+      d.style.cssText = "display:inline-block;animation:acc-blink 1.2s infinite;" +
+        `animation-delay:${i * 0.2}s;opacity:.4`;
+    });
+    if (!document.getElementById("acc-typing-anim")) {
+      const st = document.createElement("style");
+      st.id = "acc-typing-anim";
+      st.textContent =
+        "@keyframes acc-blink{0%,60%,100%{opacity:.25;transform:translateY(0)}" +
+        "30%{opacity:1;transform:translateY(-2px)}}";
+      document.head.appendChild(st);
+    }
+
+    // input row
+    const inRow = document.createElement("div");
+    inRow.style.cssText = "display:flex;gap:6px";
+    this._input = document.createElement("input");
+    this._input.className = "acc-input";
+    this._input.type = "text";
+    this._input.placeholder = "Message Ada…";
+    this._input.disabled = true;
+    this._input.style.cssText =
+      "flex:1;padding:8px 10px;min-height:36px;border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);font-size:.95rem";
+    this._input.addEventListener("keydown", (e) => { if (e.key === "Enter") this._send(); });
+    this._sendBtn = this._btn("Send");
+    this._sendBtn.className = "acc-send";
+    this._sendBtn.disabled = true;
+    this._sendBtn.style.background = "var(--primary-color,#03a9f4)";
+    this._sendBtn.style.color = "var(--text-primary-color,#fff)";
+    this._sendBtn.style.borderColor = "var(--primary-color,#03a9f4)";
+    this._sendBtn.onclick = () => this._send();
+    // Attach button — upload a photo/document for Ada to assess, then
+    // archive/print via chat. capture-less accept still offers the camera
+    // on iOS/Android pickers.
+    this._attachBtn = this._btn("📎");
+    this._attachBtn.className = "acc-attach";
+    this._attachBtn.title = "Upload a document/photo for Ada";
+    this._attachBtn.disabled = true;
+    this._attachBtn.onclick = () => this._fileInput?.click();
+    this._fileInput = document.createElement("input");
+    this._fileInput.type = "file";
+    this._fileInput.accept = "image/*";
+    this._fileInput.style.display = "none";
+    this._fileInput.onchange = () => {
+      const f = this._fileInput.files && this._fileInput.files[0];
+      this._fileInput.value = "";
+      if (f) this._uploadDoc(f);
+    };
+    // Mic button — browser SpeechRecognition dictation into the input
+    // (Tony ask 2026-10-09: "add mic to the input use browser stt").
+    // Needs a secure context; unsupported browsers get a disabled button.
+    this._micBtn = this._btn("🎤");
+    this._micBtn.className = "acc-mic";
+    this._micBtn.title = "Dictate (browser speech-to-text)";
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      this._micBtn.disabled = true;
+      this._micBtn.title = "Speech recognition not supported in this browser";
+      this._micBtn.style.opacity = ".45";
+    } else {
+      this._micBtn.onclick = () => this._toggleMic(SR);
+    }
+    // 🖥 virtual screen — one vcast display per chat. The iframe IS the
+    // display endpoint: it registers to input-bridge as a vcast screen
+    // (label ada-chat-<chat id>), pairs once via its own claim QR, then
+    // Ada can /pub content (page/image/video) straight into this pane.
+    this._screenBtn = this._btn("🖥");
+    this._screenBtn.className = "acc-screen";
+    this._screenBtn.title = "Virtual screen for this chat (vcast) — Ada shows pages/images here";
+    this._screenBtn.onclick = () => this._toggleScreen();
+    inRow.append(this._input, this._attachBtn, this._micBtn, this._screenBtn, this._sendBtn);
+    body.appendChild(inRow);
+    // auto-activate: screen pane opens itself unless config says otherwise
+    // (screen: "manual" | "off" to opt out) — Tony 2026-10-09: Ada should be
+    // able to push media to the chat screen without a manual open first.
+    if (this._config.screen !== "manual" && this._config.screen !== "off")
+      setTimeout(() => this._openScreen(), 1200);
+
+    // screen pane — lazy: iframe only connects when first opened
+    this._screenPane = document.createElement("div");
+    this._screenPane.className = "acc-screen-pane";
+    this._screenPane.style.cssText =
+      "display:none;position:relative;height:260px;border-radius:10px;overflow:hidden;" +
+      "border:1px solid color-mix(in srgb,var(--primary-color,#03a9f4) 40%,transparent)";
+    const hint = document.createElement("div");
+    hint.className = "acc-screen-hint";
+    hint.style.cssText =
+      "position:absolute;left:6px;bottom:4px;font-size:.65rem;opacity:.6;" +
+      "color:var(--secondary-text-color);pointer-events:none;z-index:2";
+    hint.textContent = "virtual screen — auto-pairing as ada-chat-" + this._chatId();
+    this._screenPane.appendChild(hint);
+    body.appendChild(this._screenPane);
+    body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
+
+    // unlock row — shown when minting fails twice / no key available
+    this._unlockRow = document.createElement("div");
+    this._unlockRow.style.cssText = "display:none;gap:6px;align-items:center";
+    this._unlockInput = document.createElement("input");
+    this._unlockInput.type = "password";
+    this._unlockInput.placeholder = "Ada device key (or ?api_key= link)";
+    // device key is NOT a credential — stop Chrome/Google password-save
+    // popup (reported 2026-10-09). new-password + 1p/lp ignore hints.
+    this._unlockInput.autocomplete = "new-password";
+    this._unlockInput.setAttribute("data-1p-ignore", "true");
+    this._unlockInput.setAttribute("data-lpignore", "true");
+    this._unlockInput.setAttribute("data-form-type", "other");
+    this._unlockInput.setAttribute("spellcheck", "false");
+    this._unlockInput.style.cssText = this._input.style.cssText;
+    const save = this._btn("Save");
+    const apply = () => {
+      let v = (this._unlockInput.value || "").trim();
+      if (!v) return;
+      const m = v.match(/[?&]api_key=([^&#]+)/);
+      if (m) v = decodeURIComponent(m[1]);
+      localStorage.setItem(ACC_KEY_STORAGE, v);
+      this._unlockInput.value = "";
+      this._unlockRow.style.display = "none";
+      this._setStatus("Key saved — tap Connect");
+      this._render();
+    };
+    save.onclick = apply;
+    this._unlockInput.addEventListener("keydown", (e) => { if (e.key === "Enter") apply(); });
+    this._unlockRow.append(this._unlockInput, save);
+    body.appendChild(this._unlockRow);
+
+    this._card.appendChild(body);
+    this.appendChild(this._card);
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  // ---------- auth (same slots/flow as ada-voice-card) ----------
+
+  _deviceId() {
+    let id = localStorage.getItem(ACC_DEVICE_STORAGE);
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).replace(/-/g, "");
+      localStorage.setItem(ACC_DEVICE_STORAGE, id);
+    }
+    return id;
+  }
+
+  _apiKey() {
+    if (this._config.api_key) return this._config.api_key;
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get("api_key");
+    if (fromUrl) localStorage.setItem(ACC_KEY_STORAGE, fromUrl);
+    return localStorage.getItem(ACC_KEY_STORAGE) || "";
+  }
+
+  async _mintKey() {
+    if (!this._hass) return null;
+    try {
+      const res = await this._hass.callWS({
+        type: "call_service",
+        domain: "script",
+        service: "ada_voice_key",
+        service_data: {
+          instance: this._config.instance || "tony",
+          device_id: this._deviceId(),
+        },
+        return_response: true,
+      });
+      const key = res?.response?.content?.api_key || null;
+      if (key) localStorage.setItem(ACC_KEY_STORAGE, key);
+      return key;
+    } catch {
+      return null;
+    }
+  }
+
+  // ---------- log ----------
+
+  _setStatus(t) {
+    if (this._status) this._status.textContent = t;
+    if (this._dot) {
+      const colors = {
+        connected: "var(--success-color,#4caf50)",
+        connecting: "var(--warning-color,#ffc107)",
+        locked: "var(--error-color,#f44336)",
+        error: "var(--error-color,#f44336)",
+      };
+      this._dot.style.background =
+        colors[this._state] || "var(--disabled-text-color,#777)";
+    }
+  }
+
+  _nearBottom() {
+    return this._log.scrollHeight - this._log.scrollTop - this._log.clientHeight < 60;
+  }
+
+  _scrollDown(force = false) {
+    if (force || this._nearBottom()) this._log.scrollTop = this._log.scrollHeight;
+  }
+
+  _stamp() {
+    const d = new Date();
+    return d.toTimeString().slice(0, 5);
+  }
+
+  // Chat bubble: user right (accent-tinted), Ada left (surface), voice
+  // user-side with a 🎤 tag. Returns the text container for streaming appends.
+  _bubble(kind, text) {
+    const mine = kind === "user" || kind === "voice";
+    const d = document.createElement("div");
+    // agent-inspectable-dom: stable hooks for playlive/Playwright assertions
+    d.className = `acc-bubble acc-bubble-${kind}`;
+    d.style.cssText =
+      `position:relative;align-self:${mine ? "flex-end" : "flex-start"};max-width:82%;` +
+      `padding:6px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word;` +
+      (mine
+        ? "border-bottom-right-radius:4px;background:color-mix(in srgb,var(--primary-color,#03a9f4) 22%,transparent);" +
+          "color:var(--primary-text-color)"
+        : "border-bottom-left-radius:4px;background:var(--card-background-color,#2b3138);" +
+          "color:var(--primary-text-color)");
+    if (kind === "voice") {
+      const tag = document.createElement("span");
+      tag.style.cssText = "font-size:.72rem;opacity:.7;margin-right:5px";
+      tag.textContent = "🎤";
+      d.appendChild(tag);
+    }
+    const body = document.createElement("span");
+    this._fillBubble(body, text);
+    d.appendChild(body);
+    // quote/reference — tap ↩ to cite this message in your next input
+    const q = document.createElement("button");
+    q.className = "acc-quote";
+    q.textContent = "↩";
+    q.title = "Quote this message in your reply";
+    q.style.cssText =
+      "position:absolute;top:2px;right:2px;opacity:0;border:none;background:none;" +
+      "color:var(--secondary-text-color);cursor:pointer;font-size:.8rem;padding:2px 5px";
+    d.addEventListener("mouseenter", () => q.style.opacity = ".8");
+    d.addEventListener("mouseleave", () => q.style.opacity = "0");
+    q.onclick = (e) => {
+      e.stopPropagation();
+      const t = (body.textContent || "").replace(/\s+/g, " ").trim();
+      const cited = t.length > 140 ? t.slice(0, 140) + "…" : t;
+      const who = kind === "user" || kind === "voice" ? "me" : "Ada";
+      this._input.value = `[re ${who}: "${cited}"] ` + this._input.value;
+      this._input.focus();
+    };
+    d.appendChild(q);
+    const ts = document.createElement("span");
+    ts.style.cssText = "display:block;font-size:.65rem;opacity:.45;margin-top:2px;text-align:right";
+    ts.textContent = this._stamp();
+    d.appendChild(ts);
+    return { el: d, body };
+  }
+
+  // Fill a bubble body: plain text, plus inline media/link rendering —
+  // image URLs become <img>, http(s) links become anchors. Ada can drop
+  // an image/page URL in a reply and it renders in-chat.
+  _fillBubble(body, text) {
+    body.textContent = "";
+    const urlRe = /(https?:\/\/[^\s<>"']+)/g;
+    const parts = String(text || "").split(urlRe);
+    for (const p of parts) {
+      if (!p) continue;
+      if (!/^https?:\/\//.test(p)) {
+        body.appendChild(document.createTextNode(p));
+        continue;
+      }
+      if (/\.(png|jpe?g|gif|webp|avif|svg)(\?[^\s]*)?$/i.test(p)
+          || /\/(snap|frame|thumb|image)[/?]/.test(p)) {
+        const img = document.createElement("img");
+        img.className = "acc-media";
+        img.src = p;
+        img.alt = "media";
+        img.loading = "lazy";
+        img.style.cssText =
+          "display:block;max-width:100%;max-height:260px;border-radius:8px;margin:4px 0;cursor:pointer";
+        img.onclick = () => window.open(p, "_blank");
+        body.appendChild(img);
+      } else {
+        const a = document.createElement("a");
+        a.className = "acc-link";
+        a.href = p;
+        a.textContent = p;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.style.cssText = "color:var(--primary-color,#03a9f4);word-break:break-all";
+        body.appendChild(a);
+      }
+    }
+  }
+
+  _showTyping() {
+    if (!this._typing) return;
+    this._typing.style.display = "flex";
+    this._log.appendChild(this._typing);
+    this._scrollDown();
+  }
+
+  _hideTyping() {
+    if (this._typing) this._typing.style.display = "none";
+  }
+
+  _add(who, text, color) {
+    // who: 'You' (typed), 'Voice' (mic transcript), 'Ada' (assistant)
+    const kind = who === "You" ? "user" : who === "Voice" ? "voice" : "ada";
+    const { el, body } = this._bubble(kind, text);
+    this._log.appendChild(el);
+    this._scrollDown(true);  // own message / new turn always lands visible
+    return { lastChild: body, el, body };
+  }
+
+  _system(text) {
+    const d = document.createElement("div");
+    d.className = "acc-system";
+    d.style.cssText =
+      "align-self:center;color:var(--secondary-text-color,#888);font-size:.75rem;text-align:center";
+    d.textContent = `· ${text}`;
+    this._log.appendChild(d);
+    this._scrollDown();
+  }
+
+  _flushAssistant() {
+    // streamed deltas append raw textContent — re-render at turn end so
+    // image URLs become <img> and links become anchors (acc-media/acc-link)
+    if (this._assistantEntry && /https?:\/\//.test(this._assistantEntry.textContent || "")) {
+      this._fillBubble(this._assistantEntry, this._assistantEntry.textContent);
+    }
+    this._assistantEntry = null;
+  }
+
+  // ---------- document upload ----------
+
+  _apiBase() {
+    const ws = this._wsBase || this._config.ws_url || ACC_DEFAULT_WS;
+    return ws.replace(/^ws(s?):/, "http$1:").replace(/\/ws\/?$/, "");
+  }
+
+  async _uploadDoc(file) {
+    if (this._docUploading) return;
+    this._docUploading = true;
+    if (!this._wsBase) this._wsBase = await accResolveWs(this._config);
+    this._setStatus(`Uploading ${file.name}…`);
+    try {
+      const blob = await this._downscale(file);
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",", 2)[1]);
+        r.onerror = rej;
+        r.readAsDataURL(blob);
+      });
+      const post = () => fetch(`${this._apiBase()}/api/documents/intake`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": this._apiKey(),
+        },
+        body: JSON.stringify({
+          image_b64: b64, image_mime: blob.type || "image/jpeg",
+          filename: file.name, mode: "both",
+        }),
+      });
+      let resp = await post();
+      // 401 = stored key is stale/revoked — re-mint once and retry
+      // (ws layer already does this on a 4401 close; intake needs its own).
+      if (resp.status === 401 && !this._config.api_key) {
+        localStorage.removeItem(ACC_KEY_STORAGE);
+        if (await this._mintKey()) resp = await post();
+      }
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      const w = (out.measured || {}).width || "?";
+      const h = (out.measured || {}).height || "?";
+      const warn = (out.warnings || []).length ? " ⚠ " + out.warnings.join("; ") : "";
+      this._add("You", `📎 ${file.name}`, "var(--success-color,#4caf50)");
+      this._system(`${file.name} → ${out.doc_type} ${w}×${h}${warn}`);
+      this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+      // Session note — sent when the session is idle so it never lands
+      // mid-response (mid-turn text turns can abort the stream).
+      const note =
+        `[document uploaded via card] file=${file.name} intake_key=${out.key} ` +
+        `type=${out.doc_type} size=${w}x${h}` +
+        (warn ? ` warnings=${out.warnings.join("; ")}` : "") +
+        " — ask what to do with it (archive/print); the intake key is held in RAM only.";
+      this._docNotes.push(note);
+      this._flushDocNotes();
+    } catch (e) {
+      this._system(`📎 upload failed: ${e.message || e}`);
+      this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+    } finally {
+      this._docUploading = false;
+      this._render();
+    }
+  }
+
+  async _downscale(file, maxSide = 2400, quality = 0.87) {
+    // Phone shots are 10-15MB; intake needs at most ~2400px for 300dpi A4.
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      if (scale >= 1) return file;
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * scale);
+      c.height = Math.round(bmp.height * scale);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      return await new Promise((res) =>
+        c.toBlob((b) => res(b || file), "image/jpeg", quality));
+    } catch {
+      return file;  // e.g. HEIC the browser can't decode — let the server try
+    }
+  }
+
+  _flushDocNotes() {
+    // Never inject a text turn while Ada is mid-response — queue until the
+    // response completes (or a reconnect flushes on 'ready').
+    if (!this._docNotes.length) return;
+    if (!this._socket || this._socket.readyState !== 1) return;
+    if (this._responseActive) return;
+    const notes = this._docNotes.splice(0);
+    for (const text of notes) {
+      try { this._socket.send(JSON.stringify({ type: "text", text })); }
+      catch { this._docNotes.unshift(text); break; }
+    }
+  }
+
+  // ---------- ws ----------
+
+  _handleControl(ev) {
+    switch (ev.type) {
+      case "ready":
+        this._state = "connected";
+        this._responseActive = false;
+        this._setStatus("Connected — type below");
+        this._flushDocNotes();
+        break;
+      case "speech_started":
+        this._setStatus("Voice input in progress…");
+        break;
+      case "speech_stopped":
+        this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+        this._flushDocNotes();
+        break;
+      case "user_transcript":
+        this._add("Voice", ev.text, "var(--success-color,#4caf50)");
+        break;
+      case "assistant_transcript_delta": {
+        this._hideTyping();
+        if (!this._assistantEntry)
+          this._assistantEntry = this._add("Ada", "", "var(--primary-color,#03a9f4)").lastChild;
+        this._assistantEntry.textContent += ev.text;
+        this._scrollDown();
+        break;
+      }
+      case "response_started":
+        this._responseActive = true;
+        this._flushAssistant();
+        this._showTyping();
+        break;
+      case "response_completed":
+      case "clear_audio":
+        this._responseActive = false;
+        this._hideTyping();
+        this._flushAssistant();
+        this._flushDocNotes();
+        break;
+      case "response_interrupted":
+        this._responseActive = false;
+        this._hideTyping();
+        this._flushAssistant();
+        this._system("(interrupted)");
+        this._flushDocNotes();
+        break;
+      case "live_reconnecting":
+        this._setStatus("Reconnecting…");
+        break;
+      case "error":
+        this._system(`Error: ${ev.message || ev.type}`);
+        break;
+    }
+    this._render();
+  }
+
+  async _connect(isRetry = false) {
+    if (this._connecting || this._socket) return;
+    this._connecting = true;
+    if (!isRetry) this._mintRetried = false;
+    this._state = "connecting";
+    this._setStatus("Pairing this device…");
+    this._render();
+    try {
+      if (!this._apiKey() && !(await this._mintKey())) throw new Error("locked");
+      this._setStatus("Connecting to Ada…");
+      if (!this._wsBase) this._wsBase = await accResolveWs(this._config);
+      const wsUrl = `${this._wsBase}`
+        + `?device_id=${encodeURIComponent(this._deviceId())}`
+        + `&api_key=${encodeURIComponent(this._apiKey())}`;
+      let opened = false;
+      this._socket = new WebSocket(wsUrl);
+      this._socket.binaryType = "arraybuffer";
+      this._socket.onopen = () => { opened = true; };
+      this._socket.onmessage = (m) => {
+        if (typeof m.data === "string") this._handleControl(JSON.parse(m.data));
+        // binary PCM audio frames: dropped — this card is text-only
+      };
+      this._socket.onerror = () => this._system("WebSocket error");
+      this._socket.onclose = async (e) => {
+        // A handshake rejection (HTTP 403 — stale/foreign key) surfaces as
+        // 1006, not 4401 — the server never accepted the socket. Treat both
+        // as key rejection: drop the cached key, re-mint, retry once.
+        const rejected = e.code === 4401 || (!opened && e.code !== 1000);
+        if (rejected && !this._mintRetried) {
+          this._mintRetried = true;
+          localStorage.removeItem(ACC_KEY_STORAGE);
+          await this._teardown(false);
+          this._connect(true);
+          return;
+        }
+        if (rejected) {
+          localStorage.removeItem(ACC_KEY_STORAGE);
+          this._state = "locked";
+          this._setStatus("Key rejected — paste a key below");
+        }
+        this._teardown(false);
+      };
+    } catch (err) {
+      if (err && err.message === "locked") {
+        this._state = "locked";
+        this._setStatus("Add a device key to unlock");
+      } else {
+        this._state = "error";
+        this._setStatus(err.message || "Connection failed");
+      }
+      await this._teardown(false);
+    } finally {
+      this._connecting = false;
+      this._render();
+    }
+  }
+
+  async _teardown(closeSocket = true) {
+    if (closeSocket && this._socket && this._socket.readyState < WebSocket.CLOSING)
+      this._socket.close(1000, "user disconnect");
+    this._socket = null;
+    this._assistantEntry = null;
+    this._responseActive = false;
+    if (this._state !== "locked" && this._state !== "error") {
+      this._state = "idle";
+      this._setStatus("Disconnected");
+    }
+    this._render();
+  }
+
+  _send() {
+    const text = (this._input.value || "").trim();
+    if (!text || !this._socket || this._socket.readyState !== WebSocket.OPEN) return;
+    this._socket.send(JSON.stringify({ type: "text", text }));
+    this._add("You", text, "var(--success-color,#4caf50)");
+    this._input.value = "";
+    this._input.focus();
+  }
+
+  _render() {
+    if (!this._connectBtn) return;
+    const connected = this._state === "connected" || !!this._socket;
+    this._connectBtn.disabled = connected || this._connecting || this._state === "locked";
+    this._disconnectBtn.disabled = !connected;
+    this._input.disabled = !connected;
+    this._sendBtn.disabled = !connected;
+    if (this._attachBtn) this._attachBtn.disabled = !connected || this._docUploading;
+    this._unlockRow.style.display = this._state === "locked" ? "flex" : "none";
+  }
+
+  _yoloBase() {
+    return (this._config.yolo_base ||
+      "https://tony-dell.taila0626a.ts.net/apps/yolo/api").replace(/\/$/, "");
+  }
+
+  _openYolo() {
+    if (this._yoloOverlay) return;
+    const base = this._yoloBase();
+    const ov = document.createElement("div");
+    ov.className = "acc-yolo-overlay";
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(8,10,14,.97);" +
+      "display:flex;flex-direction:column;color:#eee";
+
+    // header: title + live counts + close
+    const head = document.createElement("div");
+    head.style.cssText =
+      "display:flex;align-items:center;gap:12px;padding:10px 16px;" +
+      "border-bottom:1px solid #2a2f36;flex:none";
+    const ttl = document.createElement("div");
+    ttl.style.cssText = "font-size:1rem;font-weight:600";
+    ttl.textContent = "🧍 YOLO — live detection";
+    const stats = document.createElement("div");
+    stats.style.cssText = "flex:1;font-size:.8rem;color:#9aa4b0";
+    stats.textContent = "connecting…";
+    const close = document.createElement("button");
+    close.textContent = "✕ close — Esc";
+    close.style.cssText =
+      "padding:4px 12px;border-radius:6px;border:1px solid #3a414a;" +
+      "background:#1c2128;color:#eee;cursor:pointer;font-size:.8rem";
+    close.onclick = () => this._closeYolo();
+    head.append(ttl, stats, close);
+    ov.appendChild(head);
+
+    // live annotated frame
+    const imgWrap = document.createElement("div");
+    imgWrap.style.cssText = "flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:8px";
+    const img = document.createElement("img");
+    img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;border-radius:8px";
+    img.alt = "YOLO annotated frame";
+    imgWrap.appendChild(img);
+    ov.appendChild(imgWrap);
+
+    const foot = document.createElement("div");
+    foot.style.cssText =
+      "flex:none;padding:8px 16px;border-top:1px solid #2a2f36;" +
+      "font-size:.75rem;color:#8b94a0;display:flex;gap:16px";
+    foot.textContent = "xiaomi_c201 via mn01:8780 · refresh ~2s";
+    ov.appendChild(foot);
+
+    const onKey = (e) => { if (e.key === "Escape") this._closeYolo(); };
+    document.addEventListener("keydown", onKey);
+
+    const tick = async () => {
+      img.src = `${base}/image?v=${Date.now()}`;
+      try {
+        const r = await fetch(`${base}/detect`, { cache: "no-store" });
+        const d = await r.json();
+        if (d.error) {
+          stats.textContent = `feed error — ${String(d.error).slice(0, 90)}`;
+          return;
+        }
+        const counts = Object.entries(d.counts || {})
+          .map(([k, v]) => `${k}:${v}`).join("  ");
+        stats.textContent =
+          `persons: ${d.person_count ?? 0}   ${counts}` +
+          `   · ${d.ts || ""}`.slice(0, 140);
+      } catch (e) {
+        stats.textContent = "yolo service unreachable";
+      }
+    };
+    this._yoloTimer = setInterval(tick, 2000);
+    tick();
+    this._yoloOverlay = ov;
+    this._yoloKeyHandler = onKey;
+    document.body.appendChild(ov);
+  }
+
+  _closeYolo() {
+    if (this._yoloTimer) { clearInterval(this._yoloTimer); this._yoloTimer = null; }
+    if (this._yoloKeyHandler) {
+      document.removeEventListener("keydown", this._yoloKeyHandler);
+      this._yoloKeyHandler = null;
+    }
+    if (this._yoloOverlay) { this._yoloOverlay.remove(); this._yoloOverlay = null; }
+  }
+
+  _toggleMic(SR) {
+    if (this._rec) {
+      this._rec.stop();
+      return;
+    }
+    const rec = new SR();
+    rec.lang = this._config.mic_lang || "th-TH";
+    rec.interimResults = true;
+    rec.continuous = false;
+    const base = this._input.value;
+    rec.onresult = (e) => {
+      let interim = "";
+      for (const r of e.results) {
+        if (r.isFinal) {
+          const t = r[0].transcript.trim();
+          if (t) this._input.value = (this._input.value + " " + t).trim();
+        } else {
+          interim += r[0].transcript;
+        }
+      }
+      // show interim inline so the user sees live dictation
+      this._input.placeholder = interim
+        ? interim.trim()
+        : "Message Ada…";
+    };
+    rec.onend = () => {
+      this._rec = null;
+      this._micBtn.style.background = "";
+      this._micBtn.style.color = "";
+      this._input.placeholder = "Message Ada…";
+      if (this._input.value !== base) this._input.focus();
+    };
+    rec.onerror = (e) => {
+      this._rec = null;
+      this._micBtn.style.background = "";
+      this._input.placeholder = "Message Ada…";
+      if (e.error && e.error !== "aborted") {
+        this._system(`mic: ${e.error}`);
+      }
+    };
+    this._rec = rec;
+    this._micBtn.style.background = "var(--error-color,#db4437)";
+    this._micBtn.style.color = "#fff";
+    try { rec.start(); } catch (_) {}
+  }
+
+  _chatId() {
+    let id = localStorage.getItem("acc.chat_id");
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : "c" + Math.random().toString(36).slice(2)).slice(0, 8);
+      localStorage.setItem("acc.chat_id", id);
+    }
+    return id;
+  }
+
+  _screenUrl() {
+    if (this._config.screen_url) return this._config.screen_url;
+    // vcast display page on the tony-dell web edge (ssot.routes.yml:
+    // /apps/vcast/* is tailnet/LAN only). Reached via the public ada-ha
+    // edge, the iframe needs the browser on the tailnet — or set
+    // screen_url in card config to a reachable route.
+    const base = "https://tony-dell.taila0626a.ts.net/apps/vcast/";
+    return `${base}?label=${encodeURIComponent("ada-chat-" + this._chatId())}`;
+  }
+
+  _openScreen() {
+    const p = this._screenPane;
+    if (p.style.display !== "none") return;
+    if (!this._screenFrame) {
+      this._screenFrame = document.createElement("iframe");
+      this._screenFrame.className = "acc-screen-frame";
+      this._screenFrame.src = this._screenUrl();
+      this._screenFrame.style.cssText = "width:100%;height:100%;border:0;display:block";
+      this._screenFrame.setAttribute("allow", "autoplay; fullscreen");
+      p.insertBefore(this._screenFrame, p.firstChild);
+      this._autoPairScreen();
+    }
+    p.style.display = "block";
+    this._screenBtn.style.background = "color-mix(in srgb,var(--primary-color,#03a9f4) 25%,transparent)";
+  }
+
+  _toggleScreen() {
+    const p = this._screenPane;
+    if (p.style.display === "none") {
+      this._openScreen();
+      this._system(`virtual screen ada-chat-${this._chatId()} open`);
+    } else {
+      p.style.display = "none";
+      this._screenBtn.style.background = "";
+    }
+  }
+
+  _vcastApi() {
+    // input-bridge relay base — same origin as the vcast app unless overridden
+    return (this._config.vcast_api
+      || "https://tony-dell.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
+  }
+
+  // Zero-touch pairing: the iframe registers pending as label ada-chat-<id>;
+  // we poll /displays, find it, POST /claim (keyless on tailnet — server
+  // trusts CGNAT/loopback XFF). Falls back to the QR in the iframe if the
+  // browser isn't on the tailnet. Runs until paired or pane closed.
+  async _autoPairScreen() {
+    const label = "ada-chat-" + this._chatId();
+    const api = this._vcastApi();
+    for (let i = 0; i < 40; i++) {
+      if (!this._screenFrame || this._screenPane.style.display === "none") return;
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const d = await (await fetch(`${api}/displays`)).json();
+        const mine = (d.screens || []).find(s => (s.label || s.name || "") === label);
+        if (mine) {
+          localStorage.setItem("acc.screen_num", String(mine.screen));
+          const h = this._screenPane.querySelector(".acc-screen-hint");
+          if (h) h.textContent = `screen #${mine.screen} · ${label} — Ada can cast here (and mirror to other screens)`;
+          this._system(`virtual screen paired: screen #${mine.screen} (${label})`);
+          return;
+        }
+        const pend = (d.pending || []).find(p => (p.label || "") === label);
+        if (pend && !this._pairing) {
+          this._pairing = true;
+          await fetch(`${api}/claim`, {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sid: pend.sid, name: label }),
+          }).finally(() => { this._pairing = false; });
+        }
+      } catch (_) { /* relay unreachable — keep retrying while pane open */ }
+    }
+  }
+
+  // ---------- secret drop ----------
+
+  _openSecretDrop() {
+    if (this._secretOverlay) return;
+    const ov = document.createElement("div");
+    ov.className = "acc-secret-overlay";
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(8,10,14,.85);" +
+      "display:flex;align-items:center;justify-content:center";
+
+    const card = document.createElement("div");
+    card.style.cssText =
+      "width:min(380px,90vw);padding:24px;border-radius:14px;" +
+      "background:var(--card-background-color,#1c2128);" +
+      "border:1px solid var(--divider-color,#444);color:var(--primary-text-color)";
+
+    const h = document.createElement("div");
+    h.style.cssText = "font-size:1.05rem;font-weight:700;margin-bottom:4px";
+    h.textContent = "🔐 Drop a secret";
+    const hint = document.createElement("div");
+    hint.style.cssText = "font-size:.8rem;color:var(--secondary-text-color);margin-bottom:12px;line-height:1.5";
+    hint.textContent = "Writes ~/.config/secrets/<name> (0600) on the target " +
+      "host. The value is never shown or logged — you get back a receipt " +
+      "(path + sha256).";
+    card.append(h, hint);
+
+    const label = (t) => {
+      const l = document.createElement("div");
+      l.style.cssText =
+        "font-size:.68rem;font-weight:700;text-transform:uppercase;" +
+        "letter-spacing:.06em;color:var(--secondary-text-color);margin:10px 0 4px";
+      l.textContent = t;
+      return l;
+    };
+    const fieldCss =
+      "width:100%;box-sizing:border-box;padding:10px 12px;min-height:38px;" +
+      "border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#12161c);" +
+      "color:var(--primary-text-color);font-size:.9rem";
+
+    card.appendChild(label("Target host"));
+    const host = document.createElement("select");
+    host.className = "acc-secret-host";
+    host.style.cssText = fieldCss;
+    for (const h2 of ACC_SECRET_HOSTS) {
+      const o = document.createElement("option");
+      o.value = h2; o.textContent = h2;
+      host.appendChild(o);
+    }
+    card.appendChild(host);
+
+    card.appendChild(label("Secret name"));
+    const name = document.createElement("input");
+    name.className = "acc-secret-name";
+    name.type = "text";
+    name.autocomplete = "off";
+    name.maxLength = 64;
+    name.placeholder = "e.g. telegram-kk-bot.env";
+    name.style.cssText = fieldCss;
+    card.appendChild(name);
+
+    card.appendChild(label("Value"));
+    const value = document.createElement("input");
+    value.className = "acc-secret-value";
+    value.type = "password";
+    value.autocomplete = "new-password";
+    value.setAttribute("data-lpignore", "true");
+    value.setAttribute("data-1p-ignore", "true");
+    value.setAttribute("data-form-type", "other");
+    value.placeholder = "secret value";
+    value.style.cssText = fieldCss;
+    card.appendChild(value);
+
+    const err = document.createElement("div");
+    err.style.cssText = "min-height:18px;color:var(--error-color,#f77);font-size:.8rem;margin-top:8px";
+    const receipt = document.createElement("div");
+    receipt.style.cssText =
+      "display:none;color:var(--success-color,#4caf50);font-size:.8rem;" +
+      "margin-top:8px;overflow-wrap:anywhere";
+    card.append(err, receipt);
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;gap:8px;margin-top:14px";
+    const submit = this._btn("Drop it");
+    submit.style.flex = "1";
+    submit.style.borderColor = "var(--primary-color,#03a9f4)";
+    const cancel = this._btn("Close");
+    cancel.style.flex = "1";
+    actions.append(submit, cancel);
+    card.appendChild(actions);
+
+    submit.onclick = () => this._submitSecretDrop(host, name, value, err, receipt, submit);
+    value.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit.click();
+    });
+    cancel.onclick = () => this._closeSecretDrop();
+    const onKey = (e) => { if (e.key === "Escape") this._closeSecretDrop(); };
+    document.addEventListener("keydown", onKey);
+    this._secretKeyHandler = onKey;
+
+    this._secretOverlay = ov;
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    name.focus();
+  }
+
+  _closeSecretDrop() {
+    if (this._secretKeyHandler) {
+      document.removeEventListener("keydown", this._secretKeyHandler);
+      this._secretKeyHandler = null;
+    }
+    if (this._secretOverlay) {
+      // scrub the value before the node leaves the DOM
+      const v = this._secretOverlay.querySelector(".acc-secret-value");
+      if (v) v.value = "";
+      this._secretOverlay.remove();
+      this._secretOverlay = null;
+    }
+  }
+
+  async _submitSecretDrop(host, name, value, err, receipt, submit) {
+    const n = name.value.trim();
+    if (!ACC_SECRET_NAME_RE.test(n)) {
+      err.textContent = "name must match [a-z0-9._-] (1-64 chars)";
+      return;
+    }
+    const v = value.value;
+    if (!v) { err.textContent = "value required"; return; }
+    err.textContent = "";
+    receipt.style.display = "none";
+    submit.disabled = true;
+    try {
+      if (!this._wsBase) this._wsBase = await accResolveWs(this._config);
+      const post = () => fetch(`${this._apiBase()}/api/secret-drop`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": this._apiKey(),
+        },
+        body: JSON.stringify({ host: host.value, name: n, value: v }),
+      });
+      let resp = await post();
+      if (resp.status === 401 && !this._config.api_key) {
+        localStorage.removeItem(ACC_KEY_STORAGE);
+        if (await this._mintKey()) resp = await post();
+      }
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      value.value = ""; // clear first — never re-render the value
+      receipt.textContent = `dropped → ${out.path}  (sha256:${out.sha8})`;
+      receipt.style.display = "block";
+    } catch (e) {
+      err.textContent = e.message || String(e);
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  _btn(label) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.style.cssText =
+      "padding:8px 14px;min-height:36px;border-radius:8px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.9rem;white-space:nowrap";
+    return b;
+  }
+
+  connectedCallback() {
+    // Auto-connect on view load (default) — chat shouldn't need a Connect
+    // click first. autoconnect: false in config restores the manual flow.
+    if (this._config && this._config.autoconnect !== false
+        && !this._socket && !this._connecting) this._connect();
+  }
+
+  disconnectedCallback() {
+    this._closeYolo();
+    this._closeSecretDrop();
+    if (this._socket) this._teardown(true);
+  }
+
+  getCardSize() { return 6; }
+}
+customElements.define("ada-chat-card", AdaChatCard);
