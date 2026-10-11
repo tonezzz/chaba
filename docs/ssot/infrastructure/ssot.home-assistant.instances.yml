@@ -76,6 +76,20 @@ instances:
         plugs, esphome, cameras. Still no live automations. See
         docs/assessments/ada-ha-consumer-audit-2026-10-10.md.'
     dashboards:
+      chaba-home:
+        note: >-
+          Storage dashboard (url_path chaba-home, title "Ada home"). Tabs
+          (views): ai → chat → calendar → gesture → report → nobito; each
+          type:panel with a single card. Calendar tab added 2026-10-11
+          (card HOM-0456, Tony request): iframe embed of Google Calendar —
+          src=tonezzzz@gmail.com primary + en.th#holiday, ctz=Asia/Bangkok,
+          showTitle=0. No Google Calendar HA integration exists on any
+          instance — embed renders for viewers signed into the Google
+          account; upgrade path is an ICS/remote_calendar entity + native
+          calendar card. Auth: mint LLAT JWT from .storage/auth
+          (client_name tony-devin, jwt_key-signed iss=<id>) — the stored
+          token field is NOT the JWT itself. Snapshot:
+          docs/home-assistant/dashboards/ada-ha-chaba-home-current.json.
       chaba-nest:
         note: >-
           Storage dashboard (url_path chaba-nest, created 2026-10-08 via
