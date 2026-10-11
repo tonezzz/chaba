@@ -106,10 +106,13 @@ FREE_MODEL=$(curl -sf -m 20 https://openrouter.ai/api/v1/models \
   | python3 -c "import json,sys; print(next(m['id'] for m in json.load(sys.stdin)['data'] if m['id'].endswith(':free')))") \
   || die "no :free model found in catalog"
 say "   using $FREE_MODEL"
+# reasoning models (e.g. apodex-mini) burn max_tokens on `reasoning`
+# and return content:null — accept either field, give enough tokens
+# for a real reply.
 curl -sf -m 30 https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"reply with the single word ok\"}],\"max_tokens\":8}" \
-  | python3 -c "import json,sys; print('   reply:', json.load(sys.stdin)['choices'][0]['message']['content'].strip()[:40])" \
+  -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"reply with the single word ok\"}],\"max_tokens\":128}" \
+  | python3 -c "import json,sys; m=json.load(sys.stdin)['choices'][0]['message']; print('   reply:', (m.get('content') or m.get('reasoning') or '').strip()[:40] or '(empty)')" \
   || die "e2e call failed — check per-store files above"
 
 say "done — $(mask "$KEY") live in all 4 stores"
