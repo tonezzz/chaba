@@ -194,7 +194,7 @@ PY
 notify_iphone() { # title message [url] — url opens on tap (in-app HA path)
     set -a; . "$HOME/.config/secrets/home-assistant-token.env" 2>/dev/null
     set +a
-    local token="${HA_LONG_LIVED_TOKEN:-$HASS_TOKEN}"
+    local token="${HA_LONG_LIVED_TOKEN:-${HASS_TOKEN:-}}"
     [ -n "$token" ] || return 0
     TITLE="$1" MSG="$2" URL="${3:-/chaba-home/report}" python3 - <<'PY' | curl -sf -X POST \
         -H "Authorization: Bearer $token" -H "Content-Type: application/json" \

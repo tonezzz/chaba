@@ -686,9 +686,10 @@ hosts:
       - name: ada-memory-pull.timer
         type: timer
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: Hourly — pulls mn01 vault edits into git + commits + pushes back
+        note: "Currently disabled 2026-10-11 — pulled from retired idc01,
+          permanently broken. Service + timer disabled on tony-omen."
       - name: ada-memory-backup.timer
         type: timer
         scope: user
