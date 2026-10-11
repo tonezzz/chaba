@@ -89,6 +89,22 @@ variants:
       WORSE). Kept registered as harness coverage for the ssh_cmd provider
       + gate; do not expect gains. Runner lives at idc03:/tmp/micro-bench-t5.py"
 
+  - id: polish-pregate-gemini
+    polish:
+      provider: gemini
+      model: gemini-3.5-flash-lite
+      prompt: normalize_v1
+      pre_gate: noise_dict
+      gate: lang_preserve
+    downstream:
+      provider: gemini
+      model: gemini-3.5-flash-lite
+    host_labels: []
+    notes: "THE DEPLOY SHAPE (preprompt precedent): cheap dict gate decides
+      per-input whether polish is worth the token/latency tax. Catches
+      typos+gibberish+code-switch, skips clean+real-word-mishearings
+      (that class needs ASR confidence — absent on text). Runs on dell."
+
   - id: polish-gemini-gemini
     polish:
       provider: gemini

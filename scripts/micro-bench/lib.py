@@ -178,6 +178,47 @@ def tool_call_match(expected, actual):
     return "partial"
 
 
+def _dict_unknown_ratio(raw):
+    """Fraction of latin words unknown to aspell en_US. None if no latin
+    words. Calibrated on the manifest: typos 0.17-1.0, clean 0.0, entity
+    names 0.08-0.14 — 0.15 splits them."""
+    import subprocess
+    words = re.findall(r"[a-zA-Z']+", raw)
+    if not words:
+        return None
+    r = subprocess.run(["aspell", "--lang=en", "list"],
+                       input="\n".join(words), capture_output=True,
+                       text=True, timeout=10)
+    unk = [w for w in r.stdout.split() if w]
+    return len(unk) / len(words)
+
+
+def pre_gate_check(pre_gate, raw):
+    """Should this input get polished at all? Returns (should_polish, reason).
+
+    noise_dict — cheap deterministic classifier (the preprompt precedent):
+      polish if mixed-script (code-switch), Thai-dominant (en dict can't
+      measure it — conservative), or unknown-token ratio > 0.15.
+      Honest gap: real-word mishearings ('kitten lice') pass it — that
+      noise class needs ASR confidence, which text doesn't carry.
+    """
+    if not pre_gate:
+        return True, None
+    if pre_gate == "noise_dict":
+        tr = _thai_ratio(raw)
+        if 0.0 < tr <= 0.95 and re.search(r"[a-zA-Z]", raw):
+            return True, "mixed-script code-switch"
+        if tr > 0.5:
+            return True, "thai input unmeasurable by en dict"
+        ratio = _dict_unknown_ratio(raw)
+        if ratio is None:
+            return False, "no latin words"
+        if ratio > 0.15:
+            return True, f"unknown-ratio {ratio:.2f} > 0.15"
+        return False, f"looks clean (unknown-ratio {ratio:.2f})"
+    raise HarnessError(f"unknown pre_gate {pre_gate!r}")
+
+
 def _thai_ratio(text):
     chars = [c for c in text or "" if not c.isspace()]
     if not chars:
@@ -206,6 +247,7 @@ def gate_ok(gate, raw, polished):
 
 def fixture_result(fx, *, polished=None, polish_ms=None, polish_tokens=None,
                    gated=False, gate_reason=None,
+                   pre_gate_skip=False, pre_gate_reason=None,
                    reply=None, tool_call=None, answer=None, downstream_ms=None,
                    downstream_tokens=None, status="ok", error=None):
     sent = polished if polished is not None and not gated else fx["raw"]
@@ -220,6 +262,8 @@ def fixture_result(fx, *, polished=None, polish_ms=None, polish_tokens=None,
         "polished": polished,
         "gated": gated,
         "gate_reason": gate_reason,
+        "pre_gate_skip": pre_gate_skip,
+        "pre_gate_reason": pre_gate_reason,
         "sent_downstream": sent,
         "polish_ms": polish_ms,
         "polish_tokens": polish_tokens,
@@ -276,6 +320,8 @@ def result_doc(variant, fixture_results, *, dry_run=False, meta=None):
             "mean_downstream_tokens": _mean("downstream_tokens"),
             "mean_net_tokens": _mean("net_tokens"),
             "gated": sum(1 for r in fixture_results if r.get("gated")),
+            "pre_gate_skips": sum(1 for r in fixture_results
+                                  if r.get("pre_gate_skip")),
             "tool_call": _tally(r["tool_call_match"]
                                 for r in fixture_results),
             "per_category": per_cat,

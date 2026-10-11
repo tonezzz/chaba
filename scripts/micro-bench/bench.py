@@ -62,9 +62,17 @@ def run_fixture(variant, fx, timeout):
     polished = polish_ms = polish_tokens = None
     gated = False
     gate_reason = None
+    pre_gate_skip = False
+    pre_gate_reason = None
     sent = fx["raw"]
 
     pol = variant.get("polish")
+    if pol and pol.get("pre_gate"):
+        should, pre_gate_reason = lib.pre_gate_check(
+            pol["pre_gate"], fx["raw"])
+        if not should:
+            pre_gate_skip = True
+            pol = None  # pass raw through untouched
     if pol:
         start = time.monotonic()
         try:
@@ -99,7 +107,8 @@ def run_fixture(variant, fx, timeout):
         return lib.fixture_result(
             fx, polished=polished, polish_ms=polish_ms,
             polish_tokens=polish_tokens, gated=gated,
-            gate_reason=gate_reason, status="error",
+            gate_reason=gate_reason, pre_gate_skip=pre_gate_skip,
+            pre_gate_reason=pre_gate_reason, status="error",
             error=f"downstream: {e}")
 
     parsed = _extract_json(r.get("text"))
@@ -109,6 +118,7 @@ def run_fixture(variant, fx, timeout):
         fx,
         polished=polished, polish_ms=polish_ms, polish_tokens=polish_tokens,
         gated=gated, gate_reason=gate_reason,
+        pre_gate_skip=pre_gate_skip, pre_gate_reason=pre_gate_reason,
         reply=r.get("text"),
         tool_call=tool_call,
         answer=parsed.get("answer"),
