@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: backlog
-updated: 2026-10-11 08:05
+updated: 2026-10-11 08:35
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -21,3 +21,17 @@ comms:
 - at: 2026-10-11 08:05
   from: tony
   text: card captured via board-api
+- at: 2026-10-11 08:31
+  from: devin
+  text: 'SETUP ASSESSMENT (omen+dell → cherry-pick). HW: i7-6700HQ/16G/228G(7%), battery laptop — offload/burst
+    node, never a hard dependency. INSTALL: runner-agent+devin CLI+node (dispatch toolchain), gcr-ssh-agent, mddb-tunnel,
+    barrier-client (desk sharing), playlive/CDP headless (now x86_64-capable fallback browser), devin-cleanup.timer
+    pattern. SKIP: cast-*/gev-* (omen display role), board-api/monitoring/postgres/redis/weaviate/ada-ha/HA (dell
+    control-plane + stateful always-on), gpu-queue/ollama (no'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: SYS-0452'
+- at: 2026-10-11 08:35
+  from: devin
+  text: ref-addressable check — posted via SYS-0452 (resolves to tony-macbook-restore-enroll)
+ref: SYS-0452

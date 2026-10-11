@@ -6,16 +6,15 @@ generated: logs-kanban
 program: logs-digest
 priority: high
 note: 'Coverage clean 2026-10-10: all 7 expected hosts ship both journals.'
-help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
-  usually mean `journalctl --user` isn't permitted for the ssh login.
+help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps usually mean `journalctl --user`
+  isn't permitted for the ssh login.
 updated: '2026-10-10'
 comms:
 - at: 2026-10-04 14:16
   from: devin
-  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen
-    is intentional digest sizing; only-sys-journal on idc01/idc02 = other journal
-    namespaces unreadable by the shipper user. Recommend: leave as accepted limitation,
-    or bump cap if digests feel thin.'
+  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen is intentional digest
+    sizing; only-sys-journal on idc01/idc02 = other journal namespaces unreadable by the shipper user. Recommend:
+    leave as accepted limitation, or bump cap if digests feel thin.'
 - at: 2026-10-04 17:58
   from: tony
   text: closed by Tony
@@ -34,7 +33,11 @@ comms:
 - at: 2026-10-05 21:16
   from: tony
   text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0295'
 action:
   status: done
-brief: 'The log digest flagged something worth a look: Log coverage gaps. Read the
-  note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the
+  card.'
+ref: OPS-0295

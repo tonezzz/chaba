@@ -1,21 +1,19 @@
 id: cms-public-tony-ha
 title: Publish CMS under tony-ha.surf-thailand.com/cms
 column: done
-note: >-
-  DONE 2026-10-03: idc02 edge routes /cms* + /api/cms* -> idc01 tailnet site
-  (http://idc01.taila0626a.ts.net, bind 100.74.146.0) -> ada-pi-pwa :8003.
-  Interim Caddy basicauth (user tony) until cf-access-gate lands CF Access —
-  drop the basicauth blocks then. App still requires Ada api_key inside.
-  Also closed incidental api.surf-thailand.com/cms exposure (canary catch-all
-  now 404s /cms*). Gotcha: reverse_proxy rewrites Host to the dial address —
-  idc01 site needs header_up Host idc01.taila0626a.ts.net.
-  2026-10-04: added `handle /apps/system-report*` -> https://tony-dell
-  (chaba L3 system report web app). Public URL
-  https://tony-ha.surf-thailand.com/apps/system-report/ — gated by the
-  existing CF Access app on this hostname, no extra auth inside.
-  Dedicated host landed same day: monitor.surf-thailand.com (CNAME -> edge,
-  proxied) — site block serves only /apps/system-report*, else 404, root
-  redirs to the report. CF Access app `monitor` + `tony` OTP policy gate
-  it (interim basicauth was removed once CF intercept verified — CF is
-  sole gate, origin not directly reachable).
+note: 'DONE 2026-10-03: idc02 edge routes /cms* + /api/cms* -> idc01 tailnet site (http://idc01.taila0626a.ts.net,
+  bind 100.74.146.0) -> ada-pi-pwa :8003. Interim Caddy basicauth (user tony) until cf-access-gate lands CF Access
+  — drop the basicauth blocks then. App still requires Ada api_key inside. Also closed incidental api.surf-thailand.com/cms
+  exposure (canary catch-all now 404s /cms*). Gotcha: reverse_proxy rewrites Host to the dial address — idc01 site
+  needs header_up Host idc01.taila0626a.ts.net. 2026-10-04: added `handle /apps/system-report*` -> https://tony-dell
+  (chaba L3 system report web app). Public URL https://tony-ha.surf-thailand.com/apps/system-report/ — gated by
+  the existing CF Access app on this hostname, no extra auth inside. Dedicated host landed same day: monitor.surf-thailand.com
+  (CNAME -> edge, proxied) — site block serves only /apps/system-report*, else 404, root redirs to the report. CF
+  Access app `monitor` + `tony` OTP policy gate it (interim basicauth was removed once CF intercept verified — CF
+  is sole gate, origin not directly reachable).'
 updated: '2026-10-04'
+ref: KNB-0010
+comms:
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0010'

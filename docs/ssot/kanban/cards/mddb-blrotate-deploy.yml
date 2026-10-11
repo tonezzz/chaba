@@ -1,16 +1,18 @@
 id: mddb-blrotate-deploy
 title: Deploy mddb 2.15.4-blrotate on idc01 (binlog retention)
 column: done
-note: "Deployed both nodes 2026-10-03/04. Janitor live (256MB cap /
-  follower-acked bound), streaming Rotate (no full-file buffer), snapshot on
-  any fromLSN < oldest incl. 0, and Recv-side FailedPrecondition -> snapshot.
-  idc01 disk 94% -> 54%; follower re-snapshotted from 16M-entry lag."
-help: "Commits on mddb-fork binlog-retention: 598c57d janitor, bfb3b7c stream
-  Rotate, dc88ede snapshot below oldest, 0b46e57 Recv-side snapshot fallback.
-  Runbook: docs/kb/mddb-backup-binlog-2026-10-03.md."
+note: Deployed both nodes 2026-10-03/04. Janitor live (256MB cap / follower-acked bound), streaming Rotate (no full-file
+  buffer), snapshot on any fromLSN < oldest incl. 0, and Recv-side FailedPrecondition -> snapshot. idc01 disk 94%
+  -> 54%; follower re-snapshotted from 16M-entry lag.
+help: 'Commits on mddb-fork binlog-retention: 598c57d janitor, bfb3b7c stream Rotate, dc88ede snapshot below oldest,
+  0b46e57 Recv-side snapshot fallback. Runbook: docs/kb/mddb-backup-binlog-2026-10-03.md.'
 comms:
-  - {at: '2026-10-04 12:05', from: devin, text: "final state — leader healthy,
-    binlog bounded, tony-dell follower pulled 3.8G snapshot (was ~27d of
-    replay at 7 entries/s). Two extra fixes needed beyond the janitor:
-    streamed Rotate + snapshot-on-too-old."}
+- at: 2026-10-04 12:05
+  from: devin
+  text: 'final state — leader healthy, binlog bounded, tony-dell follower pulled 3.8G snapshot (was ~27d of replay
+    at 7 entries/s). Two extra fixes needed beyond the janitor: streamed Rotate + snapshot-on-too-old.'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: MEM-0012'
 updated: '2026-10-04'
+ref: MEM-0012

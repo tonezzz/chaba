@@ -2,25 +2,22 @@ id: tony-macbook-crd
 title: Install Chrome Remote Desktop on tony-macbook
 column: done
 updated: 2026-10-11 08:11
-brief: Ubuntu 26.04 on MacBookPro13,3 (ex-kk-macbook). SSH works (fleet keys seeded
-  by rejoin job). Install CRD host so Tony gets GUI access like omen/dell. Pairing
-  step needs a Google account auth code from Tony — see requests.
+brief: Ubuntu 26.04 on MacBookPro13,3 (ex-kk-macbook). SSH works (fleet keys seeded by rejoin job). Install CRD
+  host so Tony gets GUI access like omen/dell. Pairing step needs a Google account auth code from Tony — see requests.
 priority: medium
 tags:
 - macbook
 - remote-access
-spec: 'ssh macbook (tony@100.77.76.112). Install the chrome-remote-desktop amd64 deb,
-  then configure headless host — pairing needs a one-time --code Tony generates at
-  remotedesktop.google.com/headless (he sets the access PIN there too). After pairing:
-  systemctl status chrome-remote-desktop, add host to SSOT services, verify visible
-  at remotedesktop.google.com/access. Caveat: CRD needs an X session — check for a
-  desktop environment + Xorg (not Wayland-only), install xorg if missing.'
+spec: 'ssh macbook (tony@100.77.76.112). Install the chrome-remote-desktop amd64 deb, then configure headless host
+  — pairing needs a one-time --code Tony generates at remotedesktop.google.com/headless (he sets the access PIN
+  there too). After pairing: systemctl status chrome-remote-desktop, add host to SSOT services, verify visible at
+  remotedesktop.google.com/access. Caveat: CRD needs an X session — check for a desktop environment + Xorg (not
+  Wayland-only), install xorg if missing.'
 action:
   type: dispatch
   status: done
   runner: tony-omen
-  result: 'exit=0 ony.service` should show active and the `/access` listing needs
-    Tony''s own verification. | devin-task-20261011-074649-ssh-macbook-tony-100-77-76-112.service:
+  result: 'exit=0 ony.service` should show active and the `/access` listing needs Tony''s own verification. | devin-task-20261011-074649-ssh-macbook-tony-100-77-76-112.service:
     Consumed 1min 21.556s CPU time over 15min 13.400s wall clock time, 1G memory peak.'
   verified: true
   sweep:
@@ -31,22 +28,18 @@ comms:
   text: card captured via board-api
 - at: 2026-10-11 07:43
   from: devin
-  text: 'STAGED: deb installed, gnome-session config written (~/.chrome-remote-desktop-session),
-    Xorg+GDM confirmed. Blocked only on pairing auth code — needs Google account,
-    cannot be automated.'
+  text: 'STAGED: deb installed, gnome-session config written (~/.chrome-remote-desktop-session), Xorg+GDM confirmed.
+    Blocked only on pairing auth code — needs Google account, cannot be automated.'
 - at: 2026-10-11 07:44
   from: devin
-  text: 'raised request generate-a-crd-pairing-code-open-https-r-5257d6: Generate
-    a CRD pairing code: open https://remotedesktop.google.com/headless logged into
-    the same Google account as omen/'
+  text: 'raised request generate-a-crd-pairing-code-open-https-r-5257d6: Generate a CRD pairing code: open https://remotedesktop.google.com/headless
+    logged into the same Google account as omen/'
 - at: 2026-10-11 07:46
   from: tony
-  text: 'answered generate-a-crd-pairing-code-open-https-r-5257d6: Paste the start-host
-    command here'
+  text: 'answered generate-a-crd-pairing-code-open-https-r-5257d6: Paste the start-host command here'
 - at: 2026-10-11 07:46
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
-    an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-11 07:46
   from: tony
   text: queued for processing
@@ -55,41 +48,35 @@ comms:
   text: claimed
 - at: 2026-10-11 07:46
   from: chaba
-  text: started devin-task-20261011-074649-ssh-macbook-tony-100-77-76-112 on tony-omen
-    (dispatch)
+  text: started devin-task-20261011-074649-ssh-macbook-tony-100-77-76-112 on tony-omen (dispatch)
 - at: 2026-10-11 07:47
   from: devin
-  text: ssh OK — tony-macbook = Ubuntu 26.04.1 x86_64, passwordless sudo. Checking
-    DE/Xorg before CRD install.
+  text: ssh OK — tony-macbook = Ubuntu 26.04.1 x86_64, passwordless sudo. Checking DE/Xorg before CRD install.
 - at: 2026-10-11 07:47
   from: devin
-  text: CRD deb already installed (155.0.8059.19) but never paired. Box is Wayland-only
-    (GNOME, no /usr/share/xsessions) — installing xfce4 for the CRD virtual X session.
+  text: CRD deb already installed (155.0.8059.19) but never paired. Box is Wayland-only (GNOME, no /usr/share/xsessions)
+    — installing xfce4 for the CRD virtual X session.
 - at: 2026-10-11 07:48
   from: devin
-  text: 'raised request please-generate-the-chrome-remote-deskto-065ef5: Please generate
-    the Chrome Remote Desktop headless pairing code: go to https://remotedesktop.google.com/headless
-    → Set u'
+  text: 'raised request please-generate-the-chrome-remote-deskto-065ef5: Please generate the Chrome Remote Desktop
+    headless pairing code: go to https://remotedesktop.google.com/headless → Set u'
 - at: 2026-10-11 07:49
   from: devin
-  text: 'VERIFIED live: host config host#f3afbb6a exists in ~/.config/chrome-remote-desktop
-    and chrome-remote-desktop-host process is running (PID 38582, user-session mode).
-    Pairing completed by Tony — host should be visible at remotedesktop.google.com/access.
+  text: 'VERIFIED live: host config host#f3afbb6a exists in ~/.config/chrome-remote-desktop and chrome-remote-desktop-host
+    process is running (PID 38582, user-session mode). Pairing completed by Tony — host should be visible at remotedesktop.google.com/access.
     Remaining card work: add tony-macbook to SSOT services + confirm listing.'
 - at: 2026-10-11 07:50
   from: devin
-  text: xfce4 installed, ~/.chrome-remote-desktop-session=startxfce4 (fleet default),
-    HandleLidSwitch=ignore applied for lid-closed headless. CRD deb already latest
-    (155.0.8059.19). Waiting on pairing code — board request raised.
+  text: xfce4 installed, ~/.chrome-remote-desktop-session=startxfce4 (fleet default), HandleLidSwitch=ignore applied
+    for lid-closed headless. CRD deb already latest (155.0.8059.19). Waiting on pairing code — board request raised.
 - at: 2026-10-11 08:01
   from: devin
-  text: All prep done — deb current, XFCE virtual session configured, lid-close ignore
-    applied, SSOT staged. BLOCKED on pairing code only (request above). Resume command
-    + trail in docs/ssot/jobs/infrastructure/2026-10-11-tony-macbook-crd-setup.yml
+  text: All prep done — deb current, XFCE virtual session configured, lid-close ignore applied, SSOT staged. BLOCKED
+    on pairing code only (request above). Resume command + trail in docs/ssot/jobs/infrastructure/2026-10-11-tony-macbook-crd-setup.yml
 - at: 2026-10-11 08:03
   from: tony-omen
-  text: 'finished (ok): exit=0 ony.service` should show active and the `/access` listing
-    needs Tony''s own verification. | devin-task-20261011-07'
+  text: 'finished (ok): exit=0 ony.service` should show active and the `/access` listing needs Tony''s own verification.
+    | devin-task-20261011-07'
 - at: 2026-10-11 08:03
   from: chaba
   text: 'session-end checkpoint 3bd188ed: 2 leftover file(s) committed'
@@ -101,28 +88,27 @@ comms:
   text: test gate passed (python3 -m pytest tests -x -q, 49.8s)
 - at: 2026-10-11 08:03
   from: chaba
-  text: auto-merged 802dde6f (dispatch/20261011-074649-ssh-macbook-tony-100-77-76-112)
-    → origin/master
+  text: auto-merged 802dde6f (dispatch/20261011-074649-ssh-macbook-tony-100-77-76-112) → origin/master
 - at: 2026-10-11 08:10
   from: devin
-  text: 'sweep note: prep work merged (802dde6f) — this card correctly waits on your
-    CRD headless pairing code (remotedesktop.google.com/headless, same Google account
-    as omen/dell). Not a stuck card.'
+  text: 'sweep note: prep work merged (802dde6f) — this card correctly waits on your CRD headless pairing code (remotedesktop.google.com/headless,
+    same Google account as omen/dell). Not a stuck card.'
 - at: 2026-10-11 08:11
   from: chaba
-  text: 'merge-sweep: verified — held in review (open request(s) [''please-generate-the-chrome-rem'']
-    block close)'
+  text: 'merge-sweep: verified — held in review (open request(s) [''please-generate-the-chrome-rem''] block close)'
 - at: 2026-10-11 08:30
   from: devin
-  text: 'closed: Tony completed CRD pairing — chrome-remote-d host processes verified
-    running on macbook (systemd unit inactive is normal; CRD runs per-user post-pairing).'
+  text: 'closed: Tony completed CRD pairing — chrome-remote-d host processes verified running on macbook (systemd
+    unit inactive is normal; CRD runs per-user post-pairing).'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: SYS-0448'
 requests:
 - id: generate-a-crd-pairing-code-open-https-r-5257d6
-  ask: 'Generate a CRD pairing code: open https://remotedesktop.google.com/headless
-    logged into the same Google account as omen/dell, choose Debian/Ubuntu, copy the
-    displayed start-host command (it contains --code and --redirect-url), and paste
-    it here or drop it via chat secret-drop to tony-dell. Devin runs it on tony-macbook
-    to finish pairing + PIN.'
+  ask: 'Generate a CRD pairing code: open https://remotedesktop.google.com/headless logged into the same Google
+    account as omen/dell, choose Debian/Ubuntu, copy the displayed start-host command (it contains --code and --redirect-url),
+    and paste it here or drop it via chat secret-drop to tony-dell. Devin runs it on tony-macbook to finish pairing
+    + PIN.'
   status: answered
   at: 2026-10-11 07:44
   from: devin
@@ -134,9 +120,8 @@ requests:
   answered: true
 - id: please-generate-the-chrome-remote-deskto-065ef5
   ask: 'Please generate the Chrome Remote Desktop headless pairing code: go to https://remotedesktop.google.com/headless
-    → Set up another computer → authorize → copy the Debian/Ubuntu command (or just
-    the --code=... value) and set your access PIN there. Reply with the full start-host
-    command or the code string.'
+    → Set up another computer → authorize → copy the Debian/Ubuntu command (or just the --code=... value) and set
+    your access PIN there. Reply with the full start-host command or the code string.'
   status: answered
   at: 2026-10-11 07:48
   from: devin
@@ -150,3 +135,4 @@ requests:
   answered: true
 review_kind: verify
 claim: {}
+ref: SYS-0448

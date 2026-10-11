@@ -12,11 +12,11 @@ comms:
 - at: 2026-10-11 07:38
   from: devin
   to: tony
-  text: 'secret-drop UI is already live (shipped Oct 9, card ada-secret-drop): open the Ada chat
-    card in the PWA, hit the secret-drop button (lock icon), host=idc03, name=telegram-kk-bot.env,
-    value=TELEGRAM_BOT_TOKEN=<your BotFather token> — full line, it becomes the whole file content.
-    It lands mode 0600 in ~/.config/secrets/ on idc03, value never touches transcripts. Then answer
-    delivered on this card — the relay env file skeleton is already in place.'
+  text: 'secret-drop UI is already live (shipped Oct 9, card ada-secret-drop): open the Ada chat card in the PWA,
+    hit the secret-drop button (lock icon), host=idc03, name=telegram-kk-bot.env, value=TELEGRAM_BOT_TOKEN=<your
+    BotFather token> — full line, it becomes the whole file content. It lands mode 0600 in ~/.config/secrets/ on
+    idc03, value never touches transcripts. Then answer delivered on this card — the relay env file skeleton is
+    already in place.'
 - at: 2026-10-09 13:00
   from: devin
   text: 'Tony''s manual steps: (1) @BotFather /newbot — name แก้วตา, username e.g. kaewta_kk_bot, copy token; (2)
@@ -57,6 +57,9 @@ comms:
   text: 'root cause found for unanswered TG msgs: main bot had a stale webhook to api.surf-thailand.com/webhook/tg
     (502 Bad Gateway) — while set, getUpdates gets nothing. Deleted webhook 06:57; polling active again. Watch for
     inbound flow resuming.'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: HOM-0428'
 requests:
 - id: bot-token
   ask: 'Bot token from @BotFather + the group created with bot added.  NOTE: the bot token is a secret — do NOT
@@ -66,3 +69,4 @@ requests:
   from: devin
   to: tony
   answer: please push the the secret-drop UI forward so I can use it.
+ref: HOM-0428

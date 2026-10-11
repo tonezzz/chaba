@@ -1,21 +1,23 @@
 id: veo-video-render
 title: ada render — veo video gen -> LINE/TG/screens
-brief: Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued — a worker
-  session will pick it up.
+brief: Gives Ada the ability to generate short video clips and play them on screens or send them in chat. Queued
+  — a worker session will pick it up.
 column: done
 program: media-gen
 metric: prompt (+ optional ref frame) -> short clip plays on a cast screen AND arrives as video in TG/LINE
 verify: scenario vid_render_basic passes; tg chat prompt -> video arrives <3min
-note: 'Veo (predictLongRunning on generativelanguage) for short clips. Same render-tool group: ada_render_video(prompt, ref_url?,
-  secs, aspect). Differences from image: async op (poll until done — the long-poll shape is why it stays a separate tool),
-  output is mp4 -> /frame or CMS media store -> cast_to_screen(action=play) for screens + relays for chats. Model name to
-  confirm at impl time (veo-3.x-generate-preview lineage); cost/quotas higher — add a per-call spend log + owner_only policy.'
+note: 'Veo (predictLongRunning on generativelanguage) for short clips. Same render-tool group: ada_render_video(prompt,
+  ref_url?, secs, aspect). Differences from image: async op (poll until done — the long-poll shape is why it stays
+  a separate tool), output is mp4 -> /frame or CMS media store -> cast_to_screen(action=play) for screens + relays
+  for chats. Model name to confirm at impl time (veo-3.x-generate-preview lineage); cost/quotas higher — add a per-call
+  spend log + owner_only policy.'
 help: 'gen: longRunningPredict on generativelanguage.googleapis.com; send: same /frame URL + tg sendVideo/line videoMessage
   (both relays handle images today — video message types may need a small extension)'
 updated: 2026-10-08 18:20
-spec: 'ada_render_video(prompt, ref_url?, secs, aspect) via Veo predictLongRunning on generativelanguage — async op, poll
-  until done (the long-poll shape needs a background task or bounded wait ~60-120s), then same artifact->URL hop as ada_render_image.
-  Same render tool group. Verify: stubbed unit test; live scenario produces a playable clip URL.'
+spec: 'ada_render_video(prompt, ref_url?, secs, aspect) via Veo predictLongRunning on generativelanguage — async
+  op, poll until done (the long-poll shape needs a background task or bounded wait ~60-120s), then same artifact->URL
+  hop as ada_render_image. Same render tool group. Verify: stubbed unit test; live scenario produces a playable
+  clip URL.'
 priority: low
 action:
   type: dispatch
@@ -41,16 +43,16 @@ comms:
   text: started devin-task-20261008-152538-ada-render-video-prompt-ref-ur on tony-omen (dispatch)
 - at: 2026-10-08 15:34
   from: devin
-  text: 'design settled: tools.d/ada_render_video.py — Veo predictLongRunning REST, bounded ~120s poll, download, publish_relay
-    hop (video/mp4). Mirrors sibling ada_render_image (unmerged branch). Note: input-bridge /frame serves non-png/wav as image/jpeg
-    — flagging mime caveat in outcome.'
+  text: 'design settled: tools.d/ada_render_video.py — Veo predictLongRunning REST, bounded ~120s poll, download,
+    publish_relay hop (video/mp4). Mirrors sibling ada_render_image (unmerged branch). Note: input-bridge /frame
+    serves non-png/wav as image/jpeg — flagging mime caveat in outcome.'
 - at: 2026-10-08 15:41
   from: devin
-  text: 'DONE (commit 4885611 on dispatch branch): ada_render_video tools.d — Veo predictLongRunning, bounded ~120s poll w/
-    operation= no-rebill resume, download->ADA_RENDER_DIR->publish_relay hop -> playable video_url. 22/22 unit tests, tool-lint
-    clean, live publish hop verified (mp4 served, ftyp intact). Caveats: local Gemini keys 401 (billed idc03 key runs manual
-    video_render_gen scenario post-deploy); input-bridge /frame labels mp4 as image/jpeg — playable in <video> but direct-nav
-    broken: suggest ch'
+  text: 'DONE (commit 4885611 on dispatch branch): ada_render_video tools.d — Veo predictLongRunning, bounded ~120s
+    poll w/ operation= no-rebill resume, download->ADA_RENDER_DIR->publish_relay hop -> playable video_url. 22/22
+    unit tests, tool-lint clean, live publish hop verified (mp4 served, ftyp intact). Caveats: local Gemini keys
+    401 (billed idc03 key runs manual video_render_gen scenario post-deploy); input-bridge /frame labels mp4 as
+    image/jpeg — playable in <video> but direct-nav broken: suggest ch'
 - at: 2026-10-08 15:41
   from: tony-omen
   text: 'finished (ok): exit=0 `/`cast_url`, so relays won''t upload clips as broken photos. | devin-task-20261008-152538-ada-render-video-prompt'
@@ -63,8 +65,12 @@ comms:
 - at: 2026-10-08 18:20
   from: devin
   text: 'review sweep 2: verified + no open requests — closed'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0215'
 claim: {}
 review_kind: verify
 auto_done_when:
 - verified_true
 autonomy: t2
+ref: OPS-0215

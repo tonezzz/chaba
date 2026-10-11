@@ -4,39 +4,35 @@ kind: bug
 priority: high
 column: done
 autonomy: t1
-brief: 'Ada agenda prefetch fails every session: CalendarAuthError("google: token
-  refresh failed (400) — re-run scripts/ada/google-calendar-auth.py"). Three sessions
-  today complained calendar/tasks unreachable (e9837ae922, 67b02417a8, 0e7a9c997a).
-  Needs the OAuth refresh flow re-run on idc03 — likely interactive (browser consent).
+brief: 'Ada agenda prefetch fails every session: CalendarAuthError("google: token refresh failed (400) — re-run
+  scripts/ada/google-calendar-auth.py"). Three sessions today complained calendar/tasks unreachable (e9837ae922,
+  67b02417a8, 0e7a9c997a). Needs the OAuth refresh flow re-run on idc03 — likely interactive (browser consent).
   Evidence: journalctl ada-ha-tony 15:00:01.'
 requests:
-- needed: Re-run scripts/ada/google-calendar-auth.py on idc03 (interactive OAuth consent)
-    — or tell me if a headless path exists
+- needed: Re-run scripts/ada/google-calendar-auth.py on idc03 (interactive OAuth consent) — or tell me if a headless
+    path exists
   from: tony
   status: done
-  answer: re-run on tony-dell by Tony 17:28 +07; token file scp'd to idc03; refresh
-    + calendarList verified (5 calendars)
+  answer: re-run on tony-dell by Tony 17:28 +07; token file scp'd to idc03; refresh + calendarList verified (5 calendars)
   id: request
   answered: true
 created: '2026-10-09'
-updated: 2026-10-10 07:56
+updated: 2026-10-11 08:29
 comms:
 - at: 2026-10-09 19:05
   from: devin
-  text: 'consolidated dups: fix-google-calendar-authentication-c78111 and gcal-token-refresh
-    removed — same root cause, already fixed by Tony''s 17:28 re-auth.'
+  text: 'consolidated dups: fix-google-calendar-authentication-c78111 and gcal-token-refresh removed — same root
+    cause, already fixed by Tony''s 17:28 re-auth.'
 - at: 2026-10-09 16:05
   from: devin
   text: filed from ada-transcript-audit of sessions 67b02417a8/e9837ae922/0e7a9c997a
 - at: 2026-10-09 17:30
   from: devin
-  text: 'auth FIXED: Tony re-ran scripts/ada/google-calendar-auth.py on tony-dell
-    17:28, token scp''d to idc03 (~/.config/secrets/, 0600), ada-ha-tony restarted.
-    Verified: refresh grant mints access_token + calendarList returns 5 calendars
-    (CallTrack, Banks & payments, Hosting, Jobs, Family). WARNING: consent screen
-    may be in Testing mode — token died in 2 days; if it recurs, publish the OAuth
-    app (script docstring notes 7-day expiry). Remaining work on this card = script-into-repo
-    commit (dispatch 164335'
+  text: 'auth FIXED: Tony re-ran scripts/ada/google-calendar-auth.py on tony-dell 17:28, token scp''d to idc03 (~/.config/secrets/,
+    0600), ada-ha-tony restarted. Verified: refresh grant mints access_token + calendarList returns 5 calendars
+    (CallTrack, Banks & payments, Hosting, Jobs, Family). WARNING: consent screen may be in Testing mode — token
+    died in 2 days; if it recurs, publish the OAuth app (script docstring notes 7-day expiry). Remaining work on
+    this card = script-into-repo commit (dispatch 164335'
 - at: 2026-10-09 19:30
   from: tony
   text: moved backlog -> done
@@ -49,6 +45,15 @@ comms:
 - at: 2026-10-10 07:56
   from: tony
   text: closed by tony
+- at: 2026-10-11 08:29
+  from: devin
+  text: 'VERIFIED LIVE: googleapis calendar/v3 returning 200 OK on ada-ha-tony at 08:06 (5 calendars queried). Auth
+    is fixed. NOTE: request was force-closed by card close before an answer was recorded — respond-on-closed-card
+    is a dead end; see comms on the respond fix.'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0450'
 action:
   status: done
 claim: {}
+ref: ADA-0450

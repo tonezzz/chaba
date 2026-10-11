@@ -1,13 +1,13 @@
 id: dev-ha-edge
 title: Add michael-dev/tony-dev to idc02 edge pattern
-brief: Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued — a worker
-  session will pick it up; no action needed.
+brief: Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued
+  — a worker session will pick it up; no action needed.
 column: done
-note: 'Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com -> edge + one Caddy block on idc02 + trusted_proxies
-  (remember: .storage/http on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell port 8124 (http://127.0.0.1:8124
-  on dell; tailnet HTTPS via tony-dell.taila0626a.ts.net:8124). tony-dev does not exist. Caution: dev instance — exposing
-  publicly widens attack surface for a non-production service; recommend CF Access gate BEFORE publishing (see cf-access-gate
-  card).'
+note: 'Same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com -> edge + one Caddy block on idc02 +
+  trusted_proxies (remember: .storage/http on HA 2026.x, yaml http: is dead config). michael-dev lives on tony-dell
+  port 8124 (http://127.0.0.1:8124 on dell; tailnet HTTPS via tony-dell.taila0626a.ts.net:8124). tony-dev does not
+  exist. Caution: dev instance — exposing publicly widens attack surface for a non-production service; recommend
+  CF Access gate BEFORE publishing (see cf-access-gate card).'
 spec: 'Add michael-dev/tony-dev to the idc02 edge pattern — same template as tony-ha/michael-ha: CNAME <name>.surf-thailand.com
   -> edge + one Caddy block on idc02 + trusted_proxies (HA 2026.x: .storage/http — yaml http: is dead config). michael-dev
   lives on tony-dell port 8124. Verify: https://<name>.surf-thailand.com serves the dev HA instance.'
@@ -33,15 +33,16 @@ comms:
   text: dispatched 20261008-152454-add-michael-dev-tony-dev-to-th on chaba
 - at: 2026-10-08 15:28
   from: devin
-  text: 'picked up. Plan: michael-dev only (tony-dev does not exist). Order per card caution: CF Access app for michael-dev.surf-thailand.com
-    FIRST, then CNAME -> edge, Caddy block on idc02, .storage/http trusted_proxies + michael-dev restart, verify.'
+  text: 'picked up. Plan: michael-dev only (tony-dev does not exist). Order per card caution: CF Access app for
+    michael-dev.surf-thailand.com FIRST, then CNAME -> edge, Caddy block on idc02, .storage/http trusted_proxies
+    + michael-dev restart, verify.'
 - at: 2026-10-08 15:38
   from: devin
-  text: 'DONE — michael-dev.surf-thailand.com live on idc02 edge, CF Access gated. Order per card caution: Access app 63a98e86
-    (tony + tony-gmail policies, 720h) created BEFORE the CNAME -> edge (proxied), so the name was never reachable ungated.
-    Caddy block added on idc02 (tls internal -> tony-dell.ts.net:8124), validated+reloaded. trusted_proxies needed no change
-    — 127.0.0.1 already trusted, peer is always loopback via tailscale-serve; verified 200 HA HTML at origin, 302->cloudflareaccess
-    publicly. ton'
+  text: 'DONE — michael-dev.surf-thailand.com live on idc02 edge, CF Access gated. Order per card caution: Access
+    app 63a98e86 (tony + tony-gmail policies, 720h) created BEFORE the CNAME -> edge (proxied), so the name was
+    never reachable ungated. Caddy block added on idc02 (tls internal -> tony-dell.ts.net:8124), validated+reloaded.
+    trusted_proxies needed no change — 127.0.0.1 already trusted, peer is always loopback via tailscale-serve; verified
+    200 HA HTML at origin, 302->cloudflareaccess publicly. ton'
 - at: 2026-10-08 15:38
   from: chaba
   text: run finished (inactive) → review
@@ -54,6 +55,9 @@ comms:
 - at: 2026-10-08 18:20
   from: devin
   text: 'review sweep 2: verified + no open requests — closed'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: HOM-0211'
 updated: 2026-10-08 18:20
 claim:
   since: 2026-10-08 15:24
@@ -61,3 +65,4 @@ review_kind: verify
 auto_done_when:
 - verified_true
 autonomy: t2
+ref: HOM-0211

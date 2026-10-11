@@ -1,7 +1,7 @@
 id: home-search-unknown-state-entities
 title: Verify home_search surfaces entities whose state is unknown
-column: doing
-updated: 2026-10-11 08:27
+column: done
+updated: 2026-10-11 08:41
 note: Tuya no-feedback covers like cover.gate_motor sit at state `unknown` at rest (normal — they only report while
   moving) and are flagged available:false by the entities endpoint. If home_search drops unavailable entities, the
   gate is invisible to voice search even on ada-michael. Verify the filter and surface such entities (flagged) instead
@@ -34,6 +34,35 @@ comms:
     and search includes them. Found adjacent hiding bug: object_id dedup in entities() lets a switch/light sibling
     (e.g. switch.gate_motor) silently erase cover.gate_motor. Fixing dedup + adding cover.gate_motor unknown/unavailable
     tests.'
+- at: 2026-10-11 08:30
+  from: devin
+  text: 'Done. Audit: no unknown/unavailable filter existed — entities() always flagged available:false. Real bug
+    found + fixed: object_id dedup let a switch.gate_motor-style sibling silently erase cover.gate_motor. Dedup
+    now only collapses on/off domains; search ranks unavailable below available on ties; home_search limit= now
+    honored. +3 tests (cover.gate_motor unknown/unavailable in results). tool-lint clean, 287 unit tests pass. Uncommitted
+    on dispatch branch — ready for deploy via normal flow.'
+- at: 2026-10-11 08:31
+  from: idc02
+  text: 'finished (ok): exit=0 self-contained-spec-this-card-.md`. Live confirmation on ada-ha-michael pending the
+    normal deploy flow. | devin-t'
+- at: 2026-10-11 08:31
+  from: chaba
+  text: 'session-end checkpoint 133e5d9d: 6 leftover file(s) committed'
+- at: 2026-10-11 08:31
+  from: chaba
+  text: pushed dispatch/20261011-082400-self-contained-spec-this-card- to origin
+- at: 2026-10-11 08:31
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-11 08:31
+  from: chaba
+  text: auto-merged a4662560 (dispatch/20261011-082400-self-contained-spec-this-card-) → origin/main
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: HOM-0451'
+- at: 2026-10-11 08:41
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: "Self-contained spec (this card dispatches on repo ada-pi, which cannot read chaba docs):\n1. In the ada-pi\
   \ tool_runner HA module, find the code behind home_search\n   kind=device (absorbed search_home_devices / list_home_devices\
   \ /\n   ada_ha_search_devices) and the /api/home-assistant/entities handler in\n   pwa_server.py — check whether\
@@ -50,5 +79,16 @@ spec: "Self-contained spec (this card dispatches on repo ada-pi, which cannot re
 action:
   type: dispatch
   repo: ada-pi
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 self-contained-spec-this-card-.md`. Live confirmation on ada-ha-michael pending the normal deploy
+    flow. | devin-task-20261011-082400-self-contained-spec-this-card-.service: Consumed 50.651s CPU time, 101.0M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+ref: HOM-0451
+auto_close:
+  by: merge-sweep
+  at: 2026-10-11 08:41
+  note: verified — evidence checks green, closing itself

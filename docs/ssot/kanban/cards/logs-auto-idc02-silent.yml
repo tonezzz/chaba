@@ -4,10 +4,9 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: medium
-note: 'Auto-recovered 2026-10-08: `idc02-silent` condition cleared — shipper healthy
-  again.'
-help: Run `log-shipper.py --hosts idc02 --dry-run` from tony-omen; if the ssh probe
-  fails, check tailscale auth (browser link).
+note: 'Auto-recovered 2026-10-08: `idc02-silent` condition cleared — shipper healthy again.'
+help: Run `log-shipper.py --hosts idc02 --dry-run` from tony-omen; if the ssh probe fails, check tailscale auth
+  (browser link).
 updated: '2026-10-08'
 action:
   status: idle
@@ -17,13 +16,15 @@ comms:
   text: put on hold
 - at: 2026-10-05 21:12
   from: devin
-  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed
-    — SIGTERM then SIGKILL, no crash), which made idc02 jobs error (ada-flood-news
-    exit 2 = MDDB refused). mddb restarted 21:06 + vector reindex OK. Watch whether
-    logs resume.'
+  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed — SIGTERM then SIGKILL,
+    no crash), which made idc02 jobs error (ada-flood-news exit 2 = MDDB refused). mddb restarted 21:06 + vector
+    reindex OK. Watch whether logs resume.'
 - at: 2026-10-05 21:15
   from: devin
-  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage
-    window explains the gap
-brief: 'The log digest flagged something worth a look: logs `idc02` never shipped
-  state. Read the note, then fix it or close the card.'
+  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage window explains the gap
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0179'
+brief: 'The log digest flagged something worth a look: logs `idc02` never shipped state. Read the note, then fix
+  it or close the card.'
+ref: OPS-0179
