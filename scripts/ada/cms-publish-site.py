@@ -59,6 +59,14 @@ li{margin:.3rem 0}
 nav.pages{margin-top:2rem}
 nav.pages a{display:block;padding:.6rem .2rem;border-bottom:1px solid #1c1c20;text-decoration:none}
 nav.pages a:hover{color:#fff}
+/* index layout: fixed left panel with filter + page list */
+.wrap{display:flex;gap:2rem;align-items:flex-start}
+aside.panel{flex:0 0 15rem;position:sticky;top:1.5rem;border-right:1px solid #1c1c20;padding-right:1.25rem}
+aside.panel input[type=search]{width:100%;box-sizing:border-box;background:#141418;border:1px solid #2a2a2e;border-radius:6px;color:#e8e8ea;padding:.5rem .6rem;font-size:.9rem;margin-bottom:.5rem}
+aside.panel nav.pages{margin-top:0;max-height:70vh;overflow-y:auto}
+aside.panel nav.pages a{font-size:.9rem;padding:.45rem .2rem}
+aside.panel .count{color:#8a8a92;font-size:.78rem;margin-top:.5rem}
+@media(max-width:48rem){.wrap{flex-direction:column}aside.panel{position:static;flex:none;width:100%;border-right:0;border-bottom:1px solid #1c1c20;padding:0 0 1rem}aside.panel nav.pages{max-height:none}}
 blockquote{border-left:3px solid #2a2a2e;margin-left:0;padding-left:1rem;color:#b8b8be}
 table{border-collapse:collapse}td,th{border:1px solid #2a2a2e;padding:.35em .7em}
 """
@@ -223,9 +231,21 @@ def publish(tenant: str, collection: str, dry: bool = False) -> dict:
             f' · <a href="{key}.{l}.html">{l}</a>'
             for l in langs if f"{key}.{l}.html" != base)
         links.append(f'<a href="{base}">{html.escape(title)}</a>{extra}')
+    links_html = "".join(links) if links else "<p>No pages yet.</p>"
+    index_body = (
+        '<div class="wrap">'
+        '<aside class="panel">'
+        '<input type="search" id="pgfilter" placeholder="filter pages…" '
+        'oninput="var q=this.value.toLowerCase();'
+        "document.querySelectorAll('nav.pages a').forEach("
+        "a=>a.style.display=a.textContent.toLowerCase().includes(q)?'block':'none')\">"
+        f'<nav class="pages">{links_html}</nav>'
+        f'<div class="count">{len(links)} public page(s)</div>'
+        '</aside>'
+        f'<div><h1>{tenant}</h1><p class="meta">Select a page on the left.'
+        "</p></div></div>")
     files["index.html"] = page_html(
-        f"{tenant} — published pages",
-        '<nav class="pages">' + "".join(links) + "</nav>" or "<p>No pages yet.</p>",
+        f"{tenant} — published pages", index_body,
         f"{len(by_key)} page(s)")
 
     if not dry:
