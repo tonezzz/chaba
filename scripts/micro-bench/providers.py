@@ -15,6 +15,7 @@ or raises. Callers translate errors into fixture status=error.
 """
 import json
 import os
+import subprocess
 import time
 import urllib.request
 from pathlib import Path
@@ -49,6 +50,21 @@ def chat(cfg, messages, timeout=60):
         last = messages[-1]["content"] if messages else ""
         return {"text": f'{{"answer": "mock: {last[:40]}"}}',
                 "prompt_tokens": 0, "completion_tokens": 0,
+                "ms": round((time.monotonic() - start) * 1000)}
+
+    if provider == "ssh_cmd":
+        # Remote model runner: cfg.cmd is a shell command that reads the
+        # user text on stdin and writes the reply on stdout (e.g.
+        # "ssh idc03 /tmp/t5-correct.py"). No token usage from an opaque
+        # pipe — polish_tokens stays null, downstream still counts.
+        last = messages[-1]["content"] if messages else ""
+        r = subprocess.run(cfg["cmd"], shell=True, input=last,
+                           capture_output=True, text=True, timeout=timeout)
+        if r.returncode != 0:
+            raise RuntimeError(f"ssh_cmd rc={r.returncode}: "
+                               f"{r.stderr.strip()[:200]}")
+        return {"text": r.stdout.strip(),
+                "prompt_tokens": None, "completion_tokens": None,
                 "ms": round((time.monotonic() - start) * 1000)}
 
     if provider == "openai_compat":

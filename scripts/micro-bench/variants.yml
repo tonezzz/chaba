@@ -50,16 +50,65 @@ variants:
       prompt: normalize_v1
     downstream:
       provider: gemini
-      model: gemini-2.5-flash-lite
+      model: gemini-3.5-flash-lite
     host_labels: []
     notes: "The production-shaped variant: local 3B polish -> real Ada
       downstream. Needs GEMINI_API_KEY; skipped fixtures error out if absent."
+
+  - id: polish-gate-llama32-llama32
+    polish:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+      prompt: normalize_v1
+      gate: lang_preserve
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "Same as polish-llama32-llama32 but post-polish gate rejects
+      script-family drift (EN->TH translation = the observed failure).
+      Measures whether a sanity gate makes a weak polisher deployable:
+      bad polish falls back to raw instead of poisoning downstream."
+
+  - id: polish-t5en-gated-llama32
+    polish:
+      provider: ssh_cmd
+      cmd: ssh idc03 /tmp/micro-bench-t5.py
+      model: dayyanj/dj-ai-asr-grammar-corrector-small
+      gate: lang_preserve
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "TESTED AND REJECTED 2026-10-11: dayyanj T5-small AND T5-base
+      correct none of our real ASR noise classes (semantic mishearings are
+      out of its function-word grammar scope; base made 'till running'
+      WORSE). Kept registered as harness coverage for the ssh_cmd provider
+      + gate; do not expect gains. Runner lives at idc03:/tmp/micro-bench-t5.py"
+
+  - id: polish-gemini-gemini
+    polish:
+      provider: gemini
+      model: gemini-3.5-flash-lite
+      prompt: normalize_v1
+      gate: lang_preserve
+    downstream:
+      provider: gemini
+      model: gemini-3.5-flash-lite
+    host_labels: []
+    notes: "Quality-ceiling test: a STRONG model as polisher vs the same
+      downstream. If even a good normalizer can't beat direct on the
+      strong receiver, the polish idea is dead at this insertion point —
+      not just the small model. Runs on dell (key lives there)."
 
   - id: direct-gemini
     polish: null
     downstream:
       provider: gemini
-      model: gemini-2.5-flash-lite
+      model: gemini-3.5-flash-lite
     host_labels: []
     notes: "Baseline for the gemini-downstream variant — same receiving
       model so polish-vs-direct deltas are apples-to-apples."

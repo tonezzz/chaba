@@ -60,6 +60,8 @@ def _clean_polished(text, raw):
 
 def run_fixture(variant, fx, timeout):
     polished = polish_ms = polish_tokens = None
+    gated = False
+    gate_reason = None
     sent = fx["raw"]
 
     pol = variant.get("polish")
@@ -82,7 +84,10 @@ def run_fixture(variant, fx, timeout):
                 fx, status="error", error=f"polish: {e}",
                 polish_ms=round((time.monotonic() - start) * 1000))
         if polished:
-            sent = polished
+            ok, reason = lib.gate_ok(pol.get("gate"), fx["raw"], polished)
+            gated = not ok
+            gate_reason = reason
+            sent = fx["raw"] if gated else polished
 
     try:
         r = providers.chat(
@@ -93,7 +98,8 @@ def run_fixture(variant, fx, timeout):
     except Exception as e:
         return lib.fixture_result(
             fx, polished=polished, polish_ms=polish_ms,
-            polish_tokens=polish_tokens, status="error",
+            polish_tokens=polish_tokens, gated=gated,
+            gate_reason=gate_reason, status="error",
             error=f"downstream: {e}")
 
     parsed = _extract_json(r.get("text"))
@@ -102,6 +108,7 @@ def run_fixture(variant, fx, timeout):
     return lib.fixture_result(
         fx,
         polished=polished, polish_ms=polish_ms, polish_tokens=polish_tokens,
+        gated=gated, gate_reason=gate_reason,
         reply=r.get("text"),
         tool_call=tool_call,
         answer=parsed.get("answer"),

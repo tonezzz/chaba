@@ -178,10 +178,37 @@ def tool_call_match(expected, actual):
     return "partial"
 
 
+def _thai_ratio(text):
+    chars = [c for c in text or "" if not c.isspace()]
+    if not chars:
+        return 0.0
+    return sum(1 for c in chars if "฀" <= c <= "๿") / len(chars)
+
+
+def gate_ok(gate, raw, polished):
+    """Post-polish sanity gates. Returns (ok, reason).
+
+    lang_preserve — the polisher must not change the script family:
+      reject if it introduces Thai script into a non-Thai input or
+      strips Thai out of a Thai-dominant input (i.e. it translated
+      instead of normalized — the observed llama3.2 failure mode).
+    """
+    if not gate or polished is None:
+        return True, None
+    if gate == "lang_preserve":
+        r, p = _thai_ratio(raw), _thai_ratio(polished)
+        if r < 0.05 and p > 0.15:
+            return False, "polish introduced Thai script into latin input"
+        if r > 0.5 and p < 0.2:
+            return False, "polish stripped Thai script (translation drift)"
+    return True, None
+
+
 def fixture_result(fx, *, polished=None, polish_ms=None, polish_tokens=None,
+                   gated=False, gate_reason=None,
                    reply=None, tool_call=None, answer=None, downstream_ms=None,
                    downstream_tokens=None, status="ok", error=None):
-    sent = polished if polished is not None else fx["raw"]
+    sent = polished if polished is not None and not gated else fx["raw"]
     return {
         "id": fx["id"],
         "lang": fx["lang"],
@@ -191,6 +218,8 @@ def fixture_result(fx, *, polished=None, polish_ms=None, polish_tokens=None,
         "raw": fx["raw"],
         "gold": fx["gold"],
         "polished": polished,
+        "gated": gated,
+        "gate_reason": gate_reason,
         "sent_downstream": sent,
         "polish_ms": polish_ms,
         "polish_tokens": polish_tokens,
@@ -246,6 +275,7 @@ def result_doc(variant, fixture_results, *, dry_run=False, meta=None):
             "mean_polish_tokens": _mean("polish_tokens"),
             "mean_downstream_tokens": _mean("downstream_tokens"),
             "mean_net_tokens": _mean("net_tokens"),
+            "gated": sum(1 for r in fixture_results if r.get("gated")),
             "tool_call": _tally(r["tool_call_match"]
                                 for r in fixture_results),
             "per_category": per_cat,
