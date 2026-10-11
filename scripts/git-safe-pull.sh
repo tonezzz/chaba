@@ -190,6 +190,14 @@ done
 
 _resolve_autostash_pop
 
+# Autostash pops merge cleanly even when they shouldn't — the stash's
+# stale card `column:` fields re-apply over the rebased tree while newer
+# comms land at the bottom (resurrection waves, card
+# git-autostash-column-guard). HEAD's committed column wins; everything
+# else the pop merged stays.
+COLGUARD="$REPO/scripts/board/card-column-guard.py"
+[ -f "$COLGUARD" ] && python3 "$COLGUARD" "$REPO" || true
+
 # Success means upstream is now an ancestor of HEAD (or unresolvable).
 if git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 \
    && ! git merge-base --is-ancestor "$UPSTREAM" HEAD 2>/dev/null; then

@@ -9,11 +9,21 @@ brief: '4 confirmed waves: rebase+autostash pops apply stale card-file versions 
   docs/ssot/kanban/cards/ paths (upstream-wins, same rule the single-writer pull already
   uses for generated paths); (c) teach merge-sweep to detect close-comms followed
   by reopened columns. Root cause lives next to the 33-stash graveyard — see stash-graveyard-triage.'
-column: backlog
+column: review
 priority: high
 tags:
 - kanban
 - git
 - hardening
-comms: []
+comms:
+- at: 2026-10-11 14:00
+  from: devin
+  text: 'built: scripts/board/card-column-guard.py wired into git-safe-pull.sh post-pop.
+    Mechanism confirmed: pop 3-way merges stash''s stale column: (top of file) while
+    upstream comms land at bottom. Guard forces column to HEAD''s value — surgical,
+    other stash content preserved. Verified: simulated review resurrection flipped
+    back to done.'
 created: '2026-10-11'
+review_kind: verify
+action:
+  status: done
