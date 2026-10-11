@@ -993,3 +993,18 @@ mn01:
     quadlet: "~/.config/containers/systemd/google-home-mcp.container"
     source: "mcp-servers/google-home-mcp/server.py; stacks/mn01/google-home-mcp/"
     note: "Rootless podman, host networking, bound to tailnet IP only. CAST_HOSTS=192.168.2.85 (TONY-TV TrueID box, Skyworth SKWAMX3) is on the same 192.168.2.0/24 LAN as mn01; friendly-name enrichment via eureka/8008 when device is powered on. Devin MCP url: http://100.106.196.22:8004/mcp."
+
+tony-macbook:
+  chrome-remote-desktop:
+    service: chrome-remote-desktop@tony.service (per-user instance of chrome-remote-desktop.service)
+    package: chrome-remote-desktop 155.0.8059.19 amd64 deb (dl.google.com — matches current)
+    host: tony-macbook (100.77.76.112)
+    account: tonezzzz@gmail.com
+    purpose: Headless remote desktop into tony-macbook — XFCE virtual X session (fleet default, docs/kb/chrome-remote-desktop-setup.md)
+    session_file: "~/.chrome-remote-desktop-session → exec /usr/bin/startxfce4"
+    related_config:
+      - "xfce4 + dbus-x11 installed 2026-10-11 — box was Wayland-only (GNOME 50, no /usr/share/xsessions before xfce4)"
+      - "/etc/systemd/logind.conf.d/headless-crd.conf — HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore for lid-closed headless use"
+      - "host_secret_hash to be copied from tony-dell host JSON after pairing — same fleet PIN, per runbook step 4"
+    status: staged (2026-10-11) — deb/session/lid-close ready; pairing awaits one-time --code from remotedesktop.google.com/headless (kanban tony-macbook-crd)
+    note: "Ubuntu 26.04 GNOME is Wayland-only — no X11 GNOME session exists, so CRD must use a virtual XFCE session on :20. Host JSON (oauth_refresh_token, private_key) lives at ~/.config/chrome-remote-desktop/host#*.json — never commit."

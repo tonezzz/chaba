@@ -82,8 +82,8 @@ sections:
         text: "~/.ssh/authorized_keys re-seeded 2026-10-11 with the 3 fleet keys from macOS backup: tony@linux-pc-to-macbook (omen), mcp-debug@tony-dell, cascade (dell)"
         status: active
       - label: Chrome Remote Desktop
-        text: REMOVED with macOS — Linux CRD host not set up (optional, manual)
-        status: removed
+        text: "chrome-remote-desktop 155.0.8059.19 deb installed; XFCE virtual session (Wayland-only GNOME — no X11 GNOME session on Ubuntu 26.04), ~/.chrome-remote-desktop-session → startxfce4, HandleLidSwitch=ignore drop-in for lid-closed headless. Pairing staged 2026-10-11 — awaiting one-time --code (kanban tony-macbook-crd). Runs as chrome-remote-desktop@tony.service under tonezzzz@gmail.com."
+        status: staged
       - label: Tailscale Funnel
         text: Old landing page/funnel config died with macOS — none configured on Linux
         status: removed
@@ -105,8 +105,8 @@ sections:
     layout: list
     items:
       - label: Lid-close suspend
-        text: "Ubuntu default — lid close suspends. For headless-lid-closed use set HandleLidSwitch=ignore in logind.conf (not yet applied)"
-        status: pending
+        text: "Disabled for headless use 2026-10-11 — /etc/systemd/logind.conf.d/headless-crd.conf sets HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore (lid close no longer suspends, needed for CRD)"
+        status: done
 
   - title: Maintenance & Troubleshooting
     icon: 🔧
@@ -142,7 +142,7 @@ sections:
         text: Join TONY-WIFI once with password; laptop then works untethered
         status: planned
       - label: Optional restores
-        text: "redis container (no backup exists — fresh start only), Chrome Remote Desktop host, PlayLive/CDP endpoint, KK user files from stick backup into ~/ on demand"
+        text: "redis container (no backup exists — fresh start only), PlayLive/CDP endpoint, KK user files from stick backup into ~/ on demand (CRD host no longer optional — staged 2026-10-11)"
         status: optional
 
 config:
