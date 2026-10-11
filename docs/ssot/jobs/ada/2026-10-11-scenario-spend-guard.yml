@@ -1,0 +1,97 @@
+job: scenario-spend-guard
+date: 2026-10-11
+runner: idc02 (dispatch worktree, repo=chaba)
+card: docs/ssot/kanban/cards/scenario-spend-guard.yml
+summary: >-
+  Provider-health gate + spend ledger for the hourly ada-scenario-smoke
+  tier, which was burning billed upstream connects while the Gemini lane
+  was quota-dead.
+
+root_cause_verified_on_idc03:
+  burn_shape: >-
+    A quota-dead run does NOT trip the in-suite outage sentinel: the
+    upstream 1011 'exceeded your current quota' close lives only in the
+    backend journal; scenario-live sees a bare ready-timeout and reports
+    plain 'fail'. Sentinel counts quota/infra only -> all ~34 smoke
+    scenarios x 2 retries burn ~64-68 ws connects + upstream attempts
+    per hourly run while dead (measured 2026-10-11 03:00: ~64 connects
+    in 6 min, caller=admin, every one 'provider connect failed').
+  scale: >-
+    spend-ledger (backend usage.jsonl): ~$117-162/day est burn,
+    500-620 live sessions/day sustained since 2026-09-27; 2026-10-10 had
+    759 ws connects + 534 upstream provider reconnects on ada-ha-tony.
+    Churn source is ws client retry loops (caller=admin) plus the suite.
+  key_lanes: >-
+    ~/.config/secrets/gemini-keys.env marks GEMINI_API_KEY = FREE lane
+    (sha 566d3734) and GEMINI_API_KEY_2 = PAID (sha e3661937);
+    ada-ha-tony/michael/dev/pwa all carry both, policy 'priority'
+    (free-first, paid spillover) via backend/gemini_pool.py (idc03
+    checkout only — idc02 staging checkout predates it). Live sessions
+    already ride the FREE key — the smoke tier satisfies 'free-lane or
+    ada-dev' by construction; the gate sha-asserts it stays true.
+
+shipped:
+  - >-
+    scripts/ada/scenario-provider-gate.py — ExecCondition on
+    ada-scenario-smoke.service. Zero-spend probe per fire: unit active ->
+    free-lane sha assert -> 70min journal scan for dunning
+    (provider connect failed / quota 1011 / RESOURCE_EXHAUSTED / 429)
+    with no newer healthy marker (provider reconnected / usage turn).
+    Skip verdict records report/<scenario>-<ts> status=skip-quota|infra
+    docs for every smoke scenario + report/smoke-gate-<ts> summary
+    (lab-results stays honest) + throttled chaba-event. Also runs the
+    reconnect-churn counter — >50 ws 'client connected'/hour on an
+    ada-ha-* unit -> throttled warn to chaba-events.
+    Fail-closed on internal error (spend guard), fail-open wrapper when
+    the script file is absent (stale chaba checkout must not kill the
+    suite).
+  - >-
+    scripts/ada/spend-ledger.py — daily ledger; usage.jsonl -> per-day
+    live sessions / turns / aux calls / tokens / est $ (same
+    RATES_PER_MILLION table as usage_tracker) + per-unit ws/upstream
+    churn columns from journald. Publishes ada-cms-pages/spend-ledger
+    (kind=report, domain=ops -> lands in ops-digest), report/spend-<date>
+    snapshot, local spend-ledger.jsonl. Tripwire warns over
+    SPEND_WARN_USD=2 / SPEND_WARN_SESSIONS=300.
+  - >-
+    stacks/services/ada-scenario-runner/ada-spend-ledger.{service,timer}
+    — daily 23:50 on idc03; plus a best-effort ExecStopPost on the smoke
+    unit refreshes today's line after each real run.
+  - >-
+    ada-scenario-smoke.container — ExecCondition gate + ledger
+    ExecStopPost (both shell-guarded against missing files).
+  - install.sh + README.md + ssot.automation.yml entries.
+
+deploy_steps_for_idc03: >-
+  cd ~/CascadeProjects/chaba && git pull --ff-only   # gate+ledger scripts
+  cd ~/CascadeProjects/ada-scenario-runner ... (stacks path) && ./install.sh
+  # verify: systemctl --user start ada-scenario-smoke; journal shows
+  # 'scenario-provider-gate: ok' then the run, or 'condition failed' +
+  # skip-quota reports when dunned.
+
+residual_ada_pi_work:
+  note: out of this repo's scope (ada-pi checkout, separate dispatch)
+  items:
+    - >-
+      scenario-report.py sentinel gap — classify 'provider connect
+      failed'/ready-timeout under quota-dead upstream as infra/quota so
+      mid-run dunning trips it; the gate covers pre-run only.
+    - >-
+      ada-pi ops-health-report.py could add a one-line spend summary
+      reading spend-ledger.jsonl to put the number on the 15-min
+      ops-health page (currently the ledger lives on its own CMS page +
+      ops-digest membership).
+    - >-
+      idc02 ada-pi staging checkout is behind prod (no gemini_pool.py) —
+      unrelated, noted.
+
+verification_performed:
+  - >-
+    gate --dry-run on idc03 — unit active, live key = free lane (sha
+    match), quota-dead detection verified against the real 03:00
+    signature; bare-429 false-positive on log millis (,429) found+fixed.
+  - >-
+    spend-ledger live-run on idc03 — ada-cms-pages/spend-ledger published
+    (15 days of lines), report/spend-2026-10-11 snapshot written,
+    spend-usd tripwire emitted to chaba-events.
+  - gate --report wrote report/smoke-gate-<ts> docs on MDDB ops store.

@@ -347,6 +347,20 @@ automation:
         status: scheduled
         scheduler: ada-review-refresh chain
         outputs: spend-ops.jsonl
+      spend-ledger.py:
+        status: scheduled
+        scheduler: ada-spend-ledger.timer (daily 23:50, idc03) +
+          ada-scenario-smoke ExecStopPost (hourly refresh, best-effort)
+        outputs: ada-cms-pages/spend-ledger (domain=ops -> ops-digest),
+          report/spend-<date> snapshots, spend-ledger.jsonl
+      scenario-provider-gate.py:
+        status: scheduled
+        scheduler: ExecCondition on ada-scenario-smoke.service — probes
+          once per hourly fire (journald+env only, zero API spend); gates
+          the tier on quota-dead/paid-lane/unit-down and records
+          skip-quota|infra report docs per smoke scenario
+        outputs: ada-ha-scenario-reports report/smoke-gate-<ts> +
+          per-scenario skip docs, chaba-events warns (gate + churn)
       caddy-report.py:
         status: scheduled
         scheduler: ada-review-refresh chain

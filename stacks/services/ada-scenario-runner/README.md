@@ -56,6 +56,35 @@ connect refused, no ready event) / `skip-quota` (outage sentinel tripped
 — 2 consecutive quota/infra results skip the rest of the tier; none of
 these fail the unit).
 
+## Spend guard (card scenario-spend-guard)
+
+`ada-scenario-smoke.service` carries
+`ExecCondition=…/chaba/scripts/ada/scenario-provider-gate.py` — a
+zero-spend probe (journald + env-file reads only, no API call) that runs
+once per scheduled fire before the container starts:
+
+- **unit down** → skip (status `infra`)
+- **live key is the PAID lane while `gemini-keys.env` marks a FREE
+  lane** → skip (`skip-quota`) — the "never the paid key while a free
+  lane exists" rule, enforced by sha-compare (no key material logged)
+- **quota-dead** — `provider (re)connect failed` / `exceeded your
+  current quota` / `1011` / `RESOURCE_EXHAUSTED` in the last 70 min with
+  no newer healthy marker → skip (`skip-quota`)
+
+A gated run still lands in lab-results: the gate writes one
+`report/<scenario>-<ts>` skip doc per smoke scenario plus a
+`report/smoke-gate-<ts>` summary, so the skip is reported, not silent.
+It also runs the **reconnect-churn counter** every fire: >50 ws
+`client connected`/hour on an `ada-ha-*` unit emits a throttled warn to
+chaba-events (retry storms are the other quota burner).
+
+`ada-spend-ledger.timer` (daily 23:50) + a best-effort `ExecStopPost`
+after each smoke run → `scripts/ada/spend-ledger.py`: per-day Live
+sessions / turns / aux calls / tokens / est $ from the backend's own
+`data/usage.jsonl` plus per-unit ws churn from journald, published to
+the `spend-ledger` CMS page (`domain: ops` → shows in ops-digest) and
+`report/spend-<date>` snapshot docs.
+
 Dev lane: a scenario can set `url: ws://127.0.0.1:8005/ws` to run against
 `ada-dev` (isolated instance — `dev-*` banks only, no HA tools, admin key
 only). Suitable for dispatch/bench/lab-write experiments, NOT for
