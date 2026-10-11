@@ -1,0 +1,29 @@
+id: www-surf-thailand-com-tenant-sub-webs-fo-dae2d6
+title: www.surf-thailand.com — tenant sub-webs for published CMS pages
+column: doing
+updated: 2026-10-11 18:40
+tags:
+- web
+- cms
+- idc02
+- kk-ha
+- tony-ha
+spec: 'done-condition: (1) www.surf-thailand.com serves black index 200; (2) /kk-ha/<slug> serves published ada-cms-pages-kk
+  pages; (3) publisher runs on timer; (4) /tony-ha lane wired same way; (5) ssot.cms.yml documents meta.public flag'
+note: 'Spec (Tony 2026-10-11): www.surf-thailand.com root = blank black page for now. Sub-web /kk-ha shows pages
+  published from kk-ha CMS (ada-cms-pages-kk). Same pattern prepared for /tony-ha (ada-cms-pages). Design: Caddy
+  site block on idc02 caddy-edge serving /srv/www static; publisher script renders mddb cms docs -> static HTML
+  per tenant dir. Publish control: KK is in command of what is public on her node — opt-in meta flag per page (meta.public:
+  true) so nothing private leaks. DNS www already CF-'
+ref: OPS-0474
+comms:
+- at: 2026-10-11 18:34
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 18:40
+  from: devin
+  text: 'SHIPPED 2026-10-11 (commit d9974e54f): www.surf-thailand.com live — CF CNAME www->edge, idc02 caddy-edge
+    site block, black index 200 verified public. Lanes: /kk-ha/ + /tony-ha/ serve static from webroot (host ~/.config/containers/caddy/data/www
+    = container /data,Z/www — note the literal comma-Z mount quirk). Publisher scripts/ada/cms-publish-site.py runs
+    on idc02 via cms-publish-site.timer every 15min; opt-in flag meta.public documented in ssot.cms.yml. E2E verified:
+    ada-cms-pages|www-site-smoke'

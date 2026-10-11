@@ -1,7 +1,7 @@
 id: dispatch-gitignore-shadow-guard
 title: 'Dispatcher: reject gitignored-path shadows (symlink/file) in merges'
 program: chaba-ci
-column: doing
+column: done
 priority: medium
 note: 'Incident 2026-10-10 ~20:19-20:41 (+07): dispatch merge a992a40 into ada-pi carried a worktree `.venv` SYMLINK
   into main. .gitignore only had `.venv/` (dir pattern) which does not match a file/symlink named `.venv`, so it
@@ -59,7 +59,12 @@ comms:
   from: chaba
   text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
     address — close will block until merged'
-updated: 2026-10-11 18:20
+- at: 2026-10-11 18:41
+  from: chaba
+  text: 'merge-sweep: merged 18f42152 (dispatch/20261011-110526-add-a-pre-merge-guard-in-the-d from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261011-110526-add-a-pre-merge-guard-in-the-d.md)
+    — auto-closed'
+updated: 2026-10-11 18:41
 ref: OPS-0427
 action:
   type: dispatch
@@ -67,5 +72,10 @@ action:
   runner: mn01
   result: 'exit=0 n/2026-10-11-gitignore-shadow-guard.yml`; committed on the dispatch branch (no push). | devin-task-20261011-110526-add-a-pre-merge-guard-in-the-d.service:
     Consumed 1min 26.482s CPU time over 13min 2.136s wall clock time, 243.2M memory peak.'
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-11 18:41
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261011-110526-add-a-pre-merge-guard-in-the-d.md
