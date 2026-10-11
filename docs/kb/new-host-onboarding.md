@@ -24,6 +24,9 @@ user-level unless marked **[sudo]** or **[Tony]** (needs his hands/password).
 - If devin-desktop: `bash scripts/devin/install-devin-host.sh` — apparmor profile is the
   only sudo step; watchdog + cron are user-level (devin-desktop runs fine without the
   profile on most hosts — install it if renderer crashes appear).
+- If GNOME desktop: `bash scripts/devin/desktop-standard.sh` — standard prefs
+  (input sources US + Thai, Super+Space switcher; extend the script as the standard
+  desktop grows).
 
 ## 2. SSH mesh (both directions)
 
