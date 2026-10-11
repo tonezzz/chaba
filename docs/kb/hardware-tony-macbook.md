@@ -44,6 +44,16 @@
   GTK apps only, not Chrome. Standard procedure: codeword `scalecheck`
   → `scripts/devin/display-scale-check.sh` (skill `.devin/skills/scalecheck`).
 
+## Suspend wedge (incident 2026-10-11)
+
+- **S3 (`deep`) suspend + resume kills the display path**: TB pcieports
+  never leave D3cold → amdgpu SMU dead → `GPU Recovery Failed -22` →
+  screen dark, host alive (ssh works). Card `macbook-suspend-dgpu-wedge`.
+- Workaround under test: `mem_sleep_default=s2idle`. Until fixed, avoid
+  suspending while docked — if it goes dark again, **ssh in** (`ssh
+  macbook`, tailnet up) rather than force-off: `sudo systemctl restart
+  gdm` may recover, and logs are intact for diagnosis.
+
 ## Fleet role
 
 - Portable dev/lab host — same standard as any onboarded fleet node:

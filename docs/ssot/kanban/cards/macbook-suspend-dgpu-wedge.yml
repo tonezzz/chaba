@@ -1,0 +1,53 @@
+id: macbook-suspend-dgpu-wedge
+title: 'tony-macbook: S3 (deep) suspend wedges amdgpu+Thunderbolt on resume — screen dead, host alive'
+column: backlog
+updated: 2026-10-11 16:10
+brief: '2026-10-11 15:52 suspend entry (deep) → on resume pcieports stuck in D3cold ("device
+  inaccessible") + thunderbolt tb_cfg_read WARN storm → 15:56 amdgpu SMU mailbox dead, fw reload
+  failed, GPU Recovery Failed -22 → display pipe dead, host stayed up (ssh/power-key worked
+  until force-off ~16:01). Known MBP13,3-on-Linux disease: Alpine Ridge TB fabric does not
+  recover PCIe links after S3; dGPU rides that fabric. Dock MST displays make the impact visible.'
+priority: high
+tags:
+- macbook
+- gpu
+- suspend
+- thunderbolt
+spec: |
+  Root cause chain (journal -b -1, boot a7e1c2fd):
+    15:52:56 suspend entry (deep) → resume: pcieport 0000:7b:00/01/02/04 + 0000:05:00/01/02/04
+    "Unable to change power state D3cold→D0, device inaccessible"; thunderbolt tb_switch_reset
+    WARN storm (ctl.c:1131/1157).
+    15:56:02-29 amdgpu SMU mailbox timeouts, "SMU load firmware failed", GPU reset end ret=-22,
+    GPU Recovery Failed; 15:56:31 sdma0 ring timeout → second reset, devcoredump written.
+  Fix candidates (pick after live test):
+    A) mem_sleep_default=s2idle — keeps PCIe links powered; standard workaround, higher idle
+       drain (~small on this hw). Test: `echo s2idle | sudo tee /sys/power/mem_sleep`, close
+       lid while docked, verify display comes back, then persist via GRUB_CMDLINE_LINUX_DEFAULT.
+    B) pcie_port_pm=off — stops D3cold on ports; heavier hammer, more idle power.
+    C) leave deep sleep but never suspend while docked — policy-only, fragile.
+  Related: dock MST flakiness already documented in docs/kb/hardware-tony-macbook.md.
+requests:
+- id: sudo-sleep-mode
+  ask: 'Two sudo steps needed on tony-macbook: (1) runtime test — `echo s2idle | sudo tee
+    /sys/power/mem_sleep` then lid-close/open while docked; (2) if screen survives, persist —
+    add mem_sleep_default=s2idle to GRUB_CMDLINE_LINUX_DEFAULT in /etc/default/grub +
+    `sudo update-grub`. I can do both myself with one sudo password, or Tony runs them.'
+  status: open
+  suggested: agent-with-sudo
+  options:
+  - id: agent-with-sudo
+    label: I run it (needs sudo password once)
+  - id: tony-runs
+    label: Tony runs the two commands
+  - id: keep-deep
+    label: leave deep sleep, accept the wedge risk
+action:
+  type: self
+comms:
+- at: 2026-10-11 16:10
+  from: devin
+  text: 'Evidence + fix captured same-session as the incident. NOT caused by the scalecheck
+    display work — failure is in the suspend/resume PCIe path, predates and independent of
+    logical-monitor config. Post-crash scan: current boot clean, all 3 displays connected,
+    docked-home layout re-applied by monitors.xml.'
