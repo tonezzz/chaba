@@ -94,6 +94,7 @@ Specs come from conversation — mine them, don't guess them:
 - **Always ask when unsure** — an unanswered ambiguity becomes a kanban request with clickable options (default marked ★), not an assumption baked into code. Never pick between materially different directions silently.
 - "Unsure" includes: multiple plausible interpretations, missing names/hosts/thresholds, scope that could double or halve the work, irreversible choices.
 - One focused ask beats a checklist. If several unknowns exist, batch them into one request with per-item options.
+- **Decision-assist (added 2026-10-11):** when surfacing a decision to Tony — in chat or as a card request — do the research FOR him first: verify the real system state, explain what each option concretely means in plain terms (incl. non-obvious wrinkles), and mark a recommendation. A request he can answer with one word beats a question he must research.
 
 ## Procedure-lookup duty (added 2026-10-11 — Tony's standing order)
 
