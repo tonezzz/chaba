@@ -39,6 +39,7 @@ procedures:
   - {id: serve-restore, where: "card member-nodes-to-vps-ha comms (serve reset wipes all)",    trigger: "editing tailscale serve on a host",     status: verified, last_run: 2026-10-09}
   - {id: deploy-ada,    where: "~/.local/bin/deploy-ada.sh + ada-pi AGENTS.md",                trigger: "deploying ada-pi to idc02/idc03",       status: verified}
   - {id: ha-20268-http, where: "ssot.home-assistant.instances.yml#kk-ha note + member-nodes card", trigger: "HA 2026.8+ http/trusted_proxies config changes", status: verified, last_run: 2026-10-09}
+  - {id: ha-ada-isolate, where: "docs/kb/ha-ada-isolation.md + card ha-ada-isolation", trigger: "shielding an HA instance from Ada blast / wiring any Ada backend to an HA instance", status: defined, last_run: 2026-10-11}
   # --- memory / data ---
   - {id: bank-assign,   where: "scripts/ada/render-memory-banks.py + ssot.apps.ada-memory-banks.yml", trigger: "giving an instance/identity memory banks", status: verified, last_run: 2026-10-09}
   - {id: mddb-backup,   where: "docs/kb/mddb-backup-binlog-2026-10-03.md",                     trigger: "MDDB backup/restore/replication",       status: verified}
