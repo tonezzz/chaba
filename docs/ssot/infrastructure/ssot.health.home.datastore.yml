@@ -202,3 +202,25 @@ services:
       - "Restart: ssh idc03 systemctl --user restart gemini-ollama-proxy.service"
       - "Verify GEMINI_API_KEY podman secret: ssh idc03 podman secret ls"
     host: idc03
+  - id: litellm
+    name: LiteLLM LLM Gateway
+    type: systemd
+    service: litellm.service
+    expected_state: active
+    timeout: 5
+    category: datastore
+    profiles:
+      - home
+      - mobile
+    note: "Single LLM API point on idc03 — tailnet-only bind
+      (100.102.134.91:4000). Virtual keys + Postgres spend ledger
+      (litellm-db sidecar, loopback-only). Routing table SSOT:
+      docs/ssot/infrastructure/ssot.llm-gateway.yml"
+    verification:
+      - "Check service: ssh idc03 systemctl --user status litellm.service litellm-db.service"
+      - "Test health: curl -s http://100.102.134.91:4000/health/liveliness"
+      - "Check logs: ssh idc03 journalctl --user -u litellm.service --since '-1h'"
+    recovery_actions:
+      - "Restart: ssh idc03 systemctl --user restart litellm.service"
+      - "OR key rotation also restarts this (rotate-or-key.sh)"
+    host: idc03

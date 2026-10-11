@@ -1,0 +1,37 @@
+id: litellm
+host: idc03
+description: >-
+  LiteLLM gateway — single OpenAI/Gemini-compatible API point for all
+  LLM calls. Tailnet-only bind (100.102.134.91:4000). Job-class routing
+  table + ordered fallbacks in config.yaml; Postgres sidecar
+  (litellm-db, loopback-only) backs virtual keys, budgets, and the
+  spend ledger.
+verify: >-
+  curl -sf http://100.102.134.91:4000/health/liveliness -o /dev/null
+secrets:
+  - "~/.config/secrets/litellm.env — LITELLM_MASTER_KEY, LITELLM_SALT_KEY, POSTGRES_*, DATABASE_URL, UI creds"
+  - "~/.config/secrets/litellm-keys.env — minted virtual keys (LITELLM_KEY_ADA/_CHABA/_BENCH)"
+  - "~/.config/secrets/gemini-keys.env — GEMINI_API_KEY_PAID/_FREE (mounted)"
+  - "~/.config/secrets/mddb-gemini.env — OPENROUTER_API_KEY (mounted)"
+requires:
+  - "tool:podman"
+  - "tcp:100.102.134.91:11434 — ollama (self)"
+  - "net: outbound https to generativelanguage.googleapis.com + openrouter.ai"
+state:
+  - "~/.config/litellm/config.yaml — router config (canonical copy in this dir)"
+  - "podman volume litellm-pgdata — virtual keys + spend ledger"
+restore: >-
+  run ./deploy.sh (installs quadlets, config, generates secrets env on
+  first run); re-mint virtual keys if pgdata lost.
+related_cards: [llm-gateway-litellm, ada-gemini-free-tier-quota, or-key-expiry-2026-10-17]
+status: deployed
+deployed: 2026-10-11
+endpoints:
+  openai: http://100.102.134.91:4000/v1
+  gemini_native: http://100.102.134.91:4000/v1beta   # routed — aliases + fallbacks
+  gemini_passthrough: http://100.102.134.91:4000/gemini
+  admin_ui: http://100.102.134.91:4000/ui
+ledger:
+  daily-ledger.py --publish writes ada-cms-pages/llm-gateway-spend-ledger.
+  litellm-ledger.timer ships here but stays disabled until this branch
+  merges — unit ExecStart points at ~/CascadeProjects/chaba.

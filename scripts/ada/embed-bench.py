@@ -26,6 +26,8 @@ MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 OR_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OR_BASE = os.environ.get("OPENROUTER_BASE", "https://openrouter.ai/api/v1")
+GW_BASE = os.environ.get("LITELLM_URL", "").rstrip("/")
+GW_KEY = os.environ.get("LITELLM_KEY", "")
 DIRECT_MODELS = ["gemini-embedding-2", "gemini-embedding-001"]
 OR_MODEL = os.environ.get("OR_BENCH_MODEL", "google/gemini-embedding-2")
 DIMS = 768
@@ -97,6 +99,21 @@ def embed_or(texts: list[str]) -> tuple[list[list[float]], float, int]:
     return embs, time.time() - t0, toks
 
 
+def embed_gw(texts: list[str]) -> tuple[list[list[float]], float, int]:
+    """LiteLLM gateway /v1/embeddings (class `embedding`).
+
+    Returns (vectors, elapsed_s, billed_tokens). Gateway chain is
+    OR-Vertex → direct Gemini — same 768d space as both direct legs."""
+    t0 = time.time()
+    data = http_json(f"{GW_BASE}/v1/embeddings", {
+        "model": "embedding", "input": texts, "dimensions": DIMS,
+    }, {"Authorization": f"Bearer {GW_KEY}"}, timeout=60)
+    embs = [e["embedding"] for e in sorted(
+        data["data"], key=lambda e: e.get("index", 0))]
+    toks = (data.get("usage") or {}).get("total_tokens", 0)
+    return embs, time.time() - t0, toks
+
+
 def cos(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     na, nb = math.sqrt(sum(x * x for x in a)), math.sqrt(sum(x * x for x in b))
@@ -142,6 +159,18 @@ def main() -> None:
         hits_o += docs[bo][0] == key
         time.sleep(0.3)
 
+    # gateway leg — same corpus through LiteLLM class `embedding`
+    gw = None
+    if GW_BASE and GW_KEY:
+        try:
+            gdocs = [b for _, b in docs[:10]]
+            ge, gs_, gtk = embed_gw(gdocs)
+            gw = {"docs": len(gdocs), "batch_s": round(gs_, 2), "tokens": gtk,
+                  "cosine_mean_vs_direct": round(statistics.fmean(
+                      [cos(a, b) for a, b in zip(ge, gspace[:len(ge)])]), 4)}
+        except Exception as e:
+            gw = {"error": str(e)[:200]}
+
     est_cost = or_toks / 1e6 * OR_PRICE_PER_MTOK
     rep = {
         "run": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -156,6 +185,8 @@ def main() -> None:
         "top1_hit": {"gemini": f"{hits_g}/{len(probes)}",
                      "openrouter": f"{hits_o}/{len(probes)}"},
     }
+    if gw:
+        rep["gateway"] = gw
     print(json.dumps(rep, indent=2))
     open("/tmp/embed-bench.json", "w").write(json.dumps(rep, indent=2))
 
@@ -180,6 +211,12 @@ OR = `{rep['or_model']}` via OpenRouter (provider order: Google Vertex).
 
 cosine(OR, direct) per doc — mean **{rep['cosine']['mean']}**, min **{rep['cosine']['min']}**
 (≈1.0 = identical space; same underlying model via Vertex).
+
+{"## Gateway leg (LiteLLM class `embedding`)" + chr(10) + chr(10) +
+ f"10-doc batch: **{rep['gateway'].get('batch_s','–')}s**, {rep['gateway'].get('tokens','–')} tokens, "
+ f"cosine vs direct mean **{rep['gateway'].get('cosine_mean_vs_direct','–')}**"
+ if rep.get('gateway') and 'error' not in rep['gateway'] else
+ ("gateway leg failed: " + rep['gateway'].get('error','') if rep.get('gateway') else "gateway leg not configured (no LITELLM_URL/LITELLM_KEY)")}
 
 ## Cost
 

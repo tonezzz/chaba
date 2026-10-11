@@ -1,0 +1,80 @@
+title: LLM Gateway (LiteLLM on idc03)
+subtitle: Single API point for all LLM calls — job-class routing, ordered fallbacks, virtual keys, spend ledger
+icon: "\U0001f9e1"
+version: 1
+card: llm-gateway-litellm
+status: deployed
+deployed: "2026-10-11"
+
+endpoint:
+  base: http://100.102.134.91:4000
+  openai: http://100.102.134.91:4000/v1
+  gemini_native: http://100.102.134.91:4000/v1beta   # routed endpoint — model aliasing + fallbacks apply
+  gemini_passthrough: http://100.102.134.91:4000/gemini # provider-native forward, still spend-logged
+  admin_ui: http://100.102.134.91:4000/ui
+  bind: tailnet-only (host net, --host 100.102.134.91); idc03 public IP never serves :4000
+
+auth:
+  master_key: "~/.config/secrets/litellm.env (LITELLM_MASTER_KEY) — admin only, never in client env"
+  virtual_keys: "~/.config/secrets/litellm-keys.env — minted via scripts/litellm/mint-key.sh"
+  sdk_switch: >-
+    google-genai SDK honors GOOGLE_GEMINI_BASE_URL; OpenAI-compatible
+    clients take base_url=<base>/v1 + any virtual key. Gemini Live-API
+    websockets do NOT route through the gateway — never set
+    GOOGLE_GEMINI_BASE_URL on services that open Live sessions
+    (ada realtime voice).
+
+budgets:
+  proxy_cap: "$50 / 30d (litellm_settings.max_budget — absolute ceiling)"
+  keys:
+    LITELLM_KEY_ADA: "$10 / 30d — ada side-tool traffic"
+    LITELLM_KEY_CHABA: "$5 / 30d — chaba scripts/jobs"
+    LITELLM_KEY_BENCH: "$2 / 30d — benchmark runs"
+  note: OR weekly key rotation (rotate-or-key.sh) also updates OPENROUTER_API_KEY in mddb-gemini.env — mounted into the litellm container; restart litellm after rotation.
+
+providers:
+  gemini-paid: "gemini/* via GEMINI_API_KEY_PAID (billing project — no 20/day wall)"
+  gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
+  openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
+  ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
+
+# canonical routing table — mirrors stacks/idc03/litellm/config.yaml
+# (model_name = what callers send; chain = ordered upstream fallbacks)
+job_classes:
+  tool-call:
+    chain: [gemini-2.5-flash@paid, gemini-2.5-flash@free, gemini-2.5-flash@openrouter]
+    note: ada decision/devteam/doc-check calls. No ollama leg — tool calls need real function-calling.
+  summary:
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: posture/cms/session summaries; lite is cheap and sufficient; ollama acceptable last resort.
+  voice-aux:
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: lightweight classify around the voice path (Live API itself stays direct).
+  classify:
+    chain: [gemini-2.5-flash-lite@paid, gemini-2.5-flash-lite@free, gemini-2.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: doc ingest classify, cheap high-volume calls.
+  bench:
+    chain: [gemini-2.5-flash-lite@paid, gemini-2.5-flash-lite@free, gemini-2.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: benchmark traffic on its own virtual key — spend isolated by design.
+  vision:
+    chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
+    note: ada ADA_VISION_* default reroutes here (ADA_VISION_BASE_URL=<base>/v1).
+  embedding:
+    chain: [gemini-embedding-2@openrouter, gemini-embedding-2@paid]
+    note: "768d gemini space ONLY — OR-Vertex ≡ direct (cosine 1.000). ollama/nomic-embed-text is a different space; never chain it silently (would poison mddb retrieval)."
+
+real_name_deployments:
+  gemini-2.5-flash: [paid, free, openrouter]
+  gemini-2.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]
+  gemini-3.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]
+  gemini-embedding-2: [paid, openrouter]
+  note: callers sending real model names get the same ordered chains — migrating ada = env change only.
+
+proof_lanes:
+  ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
+  chaba: "scripts/litellm/daily-ledger.py + gateway-bench; session-report.py honors GEMINI_BASE_URL override."
+
+verification:
+  - curl -sf http://100.102.134.91:4000/health/liveliness
+  - "POST /v1/chat/completions model=tool-call returns text; x-litellm-model-id header shows which upstream won"
+  - "admin UI /ui shows spend per key+model; daily-ledger.py --publish refreshes the CMS page"
