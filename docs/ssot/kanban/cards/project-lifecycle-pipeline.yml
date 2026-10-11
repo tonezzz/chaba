@@ -1,6 +1,6 @@
 id: project-lifecycle-pipeline
 title: Project lifecycle pipeline — idea → product via Ada-stewarded CMS projects
-column: review
+column: done
 priority: high
 tags:
 - process
@@ -9,32 +9,40 @@ tags:
 - cms
 - lifecycle
 created: '2026-10-11'
-brief: 'Tony wants a standard procedure for application development as a first-class pipeline: idea > requirement
-  > PoC > prototype > alpha > beta > product > feedback — continuously evolving. Flow: Tony discusses the project
-  with Ada (voice or TG); Ada stewards it (elaborates spec, stores the project in CMS report structure, keeps it
-  moving); Ada asks Devin + nest for help; Devin''s job is tools/build per standard procedure. Ideas may arrive
-  via TG — they must route to the right project; if unsure, file a card with clickable options. Also: a standing
-  procedure to assess+improve the card interface itself.'
-spec: 'MAPPING onto existing machinery: ssot.release-lifecycle.yml already defines s0 idea → s1 experiment → s2
-  alpha → s3 beta → s4 pre-prod → s5 production with per-stage feedback loops and evidence tags ([exp][alpha][beta][smoke][rc][prod],
-  enforced by scripts/ada/lifecycle-check.py). Tony''s stages map: idea=s0, requirement=s0-exit-gate (card w/ metric+verify),
-  PoC=s1, prototype=s1→s2, alpha=s2, beta=s3, product=s5, feedback=per-stage feedback_loop.
+brief: 'Tony wants a standard procedure for application development as a first-class
+  pipeline: idea > requirement > PoC > prototype > alpha > beta > product > feedback
+  — continuously evolving. Flow: Tony discusses the project with Ada (voice or TG);
+  Ada stewards it (elaborates spec, stores the project in CMS report structure, keeps
+  it moving); Ada asks Devin + nest for help; Devin''s job is tools/build per standard
+  procedure. Ideas may arrive via TG — they must route to the right project; if unsure,
+  file a card with clickable options. Also: a standing procedure to assess+improve
+  the card interface itself.'
+spec: 'MAPPING onto existing machinery: ssot.release-lifecycle.yml already defines
+  s0 idea → s1 experiment → s2 alpha → s3 beta → s4 pre-prod → s5 production with
+  per-stage feedback loops and evidence tags ([exp][alpha][beta][smoke][rc][prod],
+  enforced by scripts/ada/lifecycle-check.py). Tony''s stages map: idea=s0, requirement=s0-exit-gate
+  (card w/ metric+verify), PoC=s1, prototype=s1→s2, alpha=s2, beta=s3, product=s5,
+  feedback=per-stage feedback_loop.
 
 
   GAPS this card must close:
 
-  1) PROJECT CONTAINER — a named project entity grouping cards. Proposal: CMS page in ada-cms-pages (project template:
-  goal, stage, members, linked cards, decision log) + `project: <id>` tag on cards + release-lifecycle stage field.
-  Board filters/rollups by tag.
+  1) PROJECT CONTAINER — a named project entity grouping cards. Proposal: CMS page
+  in ada-cms-pages (project template: goal, stage, members, linked cards, decision
+  log) + `project: <id>` tag on cards + release-lifecycle stage field. Board filters/rollups
+  by tag.
 
-  2) TG IDEA INTAKE — ada-tg-relay already carries Tony→Ada text. Add an Ada instruction + tool: idea arrives →
-  match to a project (tag/page search) → file card under it; if confidence is low, card in backlog + board request
-  with clickable options (existing mechanism) instead of guessing.
+  2) TG IDEA INTAKE — ada-tg-relay already carries Tony→Ada text. Add an Ada instruction
+  + tool: idea arrives → match to a project (tag/page search) → file card under it;
+  if confidence is low, card in backlog + board request with clickable options (existing
+  mechanism) instead of guessing.
 
-  3) ROLES — Ada = project steward (discussion, spec elaboration, CMS page upkeep, nudge stalled cards); Devin =
-  tools/build/dispatch per standard procedures; nest = sub-dispatch execution surface.
+  3) ROLES — Ada = project steward (discussion, spec elaboration, CMS page upkeep,
+  nudge stalled cards); Devin = tools/build/dispatch per standard procedures; nest
+  = sub-dispatch execution surface.
 
-  4) CARD-UX IMPROVEMENT LOOP — friction observed → card tagged kanban-ux → review-digest picks it up.'
+  4) CARD-UX IMPROVEMENT LOOP — friction observed → card tagged kanban-ux → review-digest
+  picks it up.'
 requests:
 - id: project-container-shape
   at: 2026-10-11 09:05
@@ -61,8 +69,8 @@ requests:
   at: 2026-10-11 09:05
   from: devin
   status: answered
-  ask: Which stage transitions need your explicit approval? (s5 production already requires same-session approval
-    — keep that)
+  ask: Which stage transitions need your explicit approval? (s5 production already
+    requires same-session approval — keep that)
   options:
   - label: prod-only
   - label: beta+prod
@@ -71,41 +79,49 @@ requests:
 comms:
 - at: 2026-10-11 09:05
   from: devin
-  text: 'Distilled from Tony''s ramble — options detail: cms-page+tag = project lives as ada-cms-pages doc + `project:`
-    tag on cards (visible in board/PWA); ssot-file = docs/ssot project registry; repo-folder = per-project dir.
-    TG routing: auto-file+ask = file under best guess and post a request to confirm (undo = one comm); always-ask
-    = hold in inbox until you pick. Approval: prod-only keeps momentum through beta per release-lifecycle t-gates.'
+  text: 'Distilled from Tony''s ramble — options detail: cms-page+tag = project lives
+    as ada-cms-pages doc + `project:` tag on cards (visible in board/PWA); ssot-file
+    = docs/ssot project registry; repo-folder = per-project dir. TG routing: auto-file+ask
+    = file under best guess and post a request to confirm (undo = one comm); always-ask
+    = hold in inbox until you pick. Approval: prod-only keeps momentum through beta
+    per release-lifecycle t-gates.'
 - at: 2026-10-11 10:01
   from: tony
   text: 'answered project-container-shape: undefined — cms-page+tag'
 - at: 2026-10-11 10:01
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-11 10:01
   from: tony
   text: 'answered tg-routing-behavior: undefined — auto-file+ask'
 - at: 2026-10-11 10:01
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-11 10:01
   from: tony
   text: 'answered approval-gates: undefined — prod-only'
 - at: 2026-10-11 10:01
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-11 10:20
   from: devin
-  text: 'armed queued: Tony approved all three defaults — cms-page+tag container, auto-file+ask TG routing, prod-only
-    approval gate. Spec complete; dispatch builds the SOP doc + Ada steward instructions + idea-router.'
+  text: 'armed queued: Tony approved all three defaults — cms-page+tag container,
+    auto-file+ask TG routing, prod-only approval gate. Spec complete; dispatch builds
+    the SOP doc + Ada steward instructions + idea-router.'
 - at: 2026-10-11 11:00
   from: devin
-  text: 'claimed: building — SOP doc (ssot.project-lifecycle.yml) + Ada steward/intake instructions (ada-pi realtime_provider)
-    + card-UX loop. TG router is instruction-level: Ada already has kanban+memory tools, no new code needed.'
+  text: 'claimed: building — SOP doc (ssot.project-lifecycle.yml) + Ada steward/intake
+    instructions (ada-pi realtime_provider) + card-UX loop. TG router is instruction-level:
+    Ada already has kanban+memory tools, no new code needed.'
 - at: 2026-10-11 11:20
   from: devin
-  text: 'done: SOP pushed (ssot.project-lifecycle.yml — container, stage map, roles, intake router, card-UX loop);
-    Ada steward+intake duties deployed to idc03 (a6bea13, 1268 tests, 6 services active). First live exercise =
-    your next TG idea — Ada should file under a project or leave you clickable options.'
+  text: 'done: SOP pushed (ssot.project-lifecycle.yml — container, stage map, roles,
+    intake router, card-UX loop); Ada steward+intake duties deployed to idc03 (a6bea13,
+    1268 tests, 6 services active). First live exercise = your next TG idea — Ada
+    should file under a project or leave you clickable options.'
 - at: 2026-10-11 10:34
   from: chaba
   text: runner devin unreachable 3 passes — requeued
@@ -114,24 +130,27 @@ comms:
   text: claimed
 - at: 2026-10-11 10:34
   from: chaba
-  text: started devin-task-20261011-103449-mapping-onto-existing-machiner on tony-omen (dispatch)
+  text: started devin-task-20261011-103449-mapping-onto-existing-machiner on tony-omen
+    (dispatch)
 - at: 2026-10-11 10:38
   from: devin
-  text: 'verify pass (dispatch 10:34): SOP exists and card is done, but machinery gaps remain — board filters cant
-    see project:/kanban-ux tags (board2 haystack lacks tags; classic lacks both), tags+program undocumented in card_schema,
-    review-digest has no kanban-ux lane, stage-field decision unrecorded. Closing those in-repo now; ada-pi steward
-    deploy (a6bea13) is outside-worktree, flagged unverified.'
+  text: 'verify pass (dispatch 10:34): SOP exists and card is done, but machinery
+    gaps remain — board filters cant see project:/kanban-ux tags (board2 haystack
+    lacks tags; classic lacks both), tags+program undocumented in card_schema, review-digest
+    has no kanban-ux lane, stage-field decision unrecorded. Closing those in-repo
+    now; ada-pi steward deploy (a6bea13) is outside-worktree, flagged unverified.'
 - at: 2026-10-11 10:43
   from: devin
-  text: 'verify+complete pass done (dispatch 10:34): board filters now see tags in BOTH views (board2 haystack+📁
-    badge, classic data-text), tags+program documented in card_schema, review-digest has a kanban-ux lane, CMS project
-    template at docs/ssot/templates/project-page.md, stage-field decision recorded (derived, not stored — see SOP).
-    Bonus: fixed a hard YAML break in ssot.home-assistant.dashboards.yml (validate-all now 0 errors). UNVERIFIED:
-    ada-pi steward/intake deploy a6bea13 is outside-worktree — '
+  text: 'verify+complete pass done (dispatch 10:34): board filters now see tags in
+    BOTH views (board2 haystack+📁 badge, classic data-text), tags+program documented
+    in card_schema, review-digest has a kanban-ux lane, CMS project template at docs/ssot/templates/project-page.md,
+    stage-field decision recorded (derived, not stored — see SOP). Bonus: fixed a
+    hard YAML break in ssot.home-assistant.dashboards.yml (validate-all now 0 errors).
+    UNVERIFIED: ada-pi steward/intake deploy a6bea13 is outside-worktree — '
 - at: 2026-10-11 10:46
   from: tony-omen
-  text: 'finished (ok): exit=0 -11-project-lifecycle-mapping.yml`; the first TG idea is the end-to-end proof of
-    gap 2. | devin-task-20261011-103'
+  text: 'finished (ok): exit=0 -11-project-lifecycle-mapping.yml`; the first TG idea
+    is the end-to-end proof of gap 2. | devin-task-20261011-103'
 - at: 2026-10-11 10:46
   from: chaba
   text: 'session-end checkpoint 9edc596d: 3 leftover file(s) committed'
@@ -140,14 +159,21 @@ comms:
   text: pushed dispatch/20261011-103449-mapping-onto-existing-machiner to origin
 - at: 2026-10-11 10:46
   from: chaba
-  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]            HEAD -> master\
-    \ (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates were\
-    \ rejected beca — close will block until merged"
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]\
+    \            HEAD -> master (fetch first)\nerror: failed to push some refs to\
+    \ 'https://github.com/tonezzz/chaba.git'\nhint: Updates were rejected beca — close\
+    \ will block until merged"
+- at: 2026-10-11 13:40
+  from: devin
+  text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands.
+    Fix card: git-autostash-column-guard.'
 updated: 2026-10-11 10:46
 action:
   status: done
   runner: tony-omen
-  result: 'exit=0 -11-project-lifecycle-mapping.yml`; the first TG idea is the end-to-end proof of gap 2. | devin-task-20261011-103449-mapping-onto-existing-machiner.service:
-    Consumed 2min 42.363s CPU time over 9min 14.236s wall clock time, 1.1G memory peak.'
+  result: 'exit=0 -11-project-lifecycle-mapping.yml`; the first TG idea is the end-to-end
+    proof of gap 2. | devin-task-20261011-103449-mapping-onto-existing-machiner.service:
+    Consumed 2min 42.363s CPU time over 9min 14.236s wall clock time, 1.1G memory
+    peak.'
 claim: {}
 review_kind: verify

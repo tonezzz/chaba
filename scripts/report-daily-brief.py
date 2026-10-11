@@ -63,6 +63,7 @@ BOARD_API = os.environ.get("BOARD_API", "http://127.0.0.1:8787").rstrip("/")
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 CMS_SLUG = "daily-brief"
+CMS_COMMS_SLUG = "tony-team-digest"
 REVIEW_STALE_H = 24  # same bar as the board's Needs You strip
 MAX_LIST = 8
 
@@ -343,6 +344,132 @@ def failed_cards(cards: list[dict]) -> list[dict]:
             if (c.get("action") or {}).get("status") == "failed"]
 
 
+# ------------------------------------------------ comms digest (ssot.comms-digest.yml)
+#
+# Tony ↔ Team section: what Tony asked, what he decided, what is still
+# open, and what the team told him. All card-side sources — transcript
+# mining is a follow-up; card comms/requests are the durable record.
+
+import re as _re
+
+# Board-action comms aren't asks — clicks the UI records as comms.
+_BOARD_ACTION = _re.compile(
+    r"^(moved|closed|opened|reopened|renamed|requeued|armed|claimed|"
+    r"merged|answered request|card captured|column:)\b", _re.I)
+
+
+def _is_ask(text: str) -> bool:
+    return bool(text) and not _BOARD_ACTION.match(text.strip())
+
+
+def tony_comms(cards: list[dict], start, end) -> list[dict]:
+    """Comms from=tony in window -> the ask + the card's current outcome.
+    Filters board-action noise (moves/closes/captures) — those aren't asks."""
+    out = []
+    for c in cards:
+        comms = c.get("comms") or []
+        for e in comms:
+            if str(e.get("from", "")).lower() != "tony":
+                continue
+            at = _parse_card_ts(e.get("at"))
+            if not (at and start <= at <= end):
+                continue
+            text = (e.get("text") or "").strip()
+            if not _is_ask(text):
+                continue
+            agents = [x for x in comms
+                      if str(x.get("from", "")).lower() != "tony"]
+            outcome = (agents[-1].get("text") or "")[:90] if agents else ""
+            out.append({"card": c.get("id"), "ask": text[:110],
+                        "at": at, "column": c.get("column"),
+                        "outcome": outcome})
+    out.sort(key=lambda r: r["at"], reverse=True)
+    return out
+
+
+def decisions_made(cards: list[dict], start, end) -> list[dict]:
+    """Requests answered on cards updated in window (approx — requests
+    carry no answered_at, so the card's `updated` is the proxy)."""
+    out = []
+    for c in cards:
+        upd = _parse_card_ts(c.get("updated"))
+        if not (upd and start <= upd <= end):
+            continue
+        for r in c.get("requests") or []:
+            if r.get("status") in ("answered", "done") or r.get("answered"):
+                ans = r.get("answer")
+                out.append({"card": c.get("id"),
+                            "ask": (r.get("ask") or r.get("needed") or "")[:80],
+                            "answer": (str(ans)[:70] if ans else "answered")})
+    return out
+
+
+def unreplied_loops(cards: list[dict]) -> list[dict]:
+    """Cards whose NEWEST comm is from=tony — he said something and nobody
+    answered yet. The honest 'still open' list."""
+    out = []
+    for c in cards:
+        if c.get("column") == "done":
+            continue
+        comms = c.get("comms") or []
+        if (comms and str(comms[-1].get("from", "")).lower() == "tony"
+                and _is_ask(comms[-1].get("text") or "")):
+            out.append({"card": c.get("id"), "column": c.get("column"),
+                        "ask": (comms[-1].get("text") or "")[:90]})
+    return out
+
+
+def notable_replies(cards: list[dict], start, end,
+                    limit: int = 8) -> list[dict]:
+    """Newest agent comms in window, excluding tony + automation noise."""
+    noise = {"auto", "cms-auto-health", "kanban-commit", "merge-sweep"}
+    out = []
+    for c in cards:
+        for e in c.get("comms") or []:
+            fr = str(e.get("from", "")).lower()
+            if fr == "tony" or fr in noise or fr.startswith("auto"):
+                continue
+            at = _parse_card_ts(e.get("at"))
+            if at and start <= at <= end:
+                out.append({"card": c.get("id"), "from": e.get("from"),
+                            "text": (e.get("text") or "")[:110], "at": at})
+    out.sort(key=lambda r: r["at"], reverse=True)
+    return out[:limit]
+
+
+def comms_section(cards: list[dict], start, end) -> list[str]:
+    """The 'Tony ↔ Team' block — appended to every edition."""
+    asks = tony_comms(cards, start, end)
+    decs = decisions_made(cards, start, end)
+    loops = unreplied_loops(cards)
+    reps = notable_replies(cards, start, end)
+    lines = ["## Tony ↔ Team (comms digest)", ""]
+    lines += [f"### Your asks ({len(asks)})", ""]
+    for a in asks[:MAX_LIST]:
+        lines.append(f"- `{a['card']}` [{a['column']}] — {a['ask']}")
+        if a["outcome"]:
+            lines.append(f"  → {a['outcome']}")
+    if not asks:
+        lines.append("_None recorded this window._")
+    lines += ["", f"### Decisions made ({len(decs)})", ""]
+    for d in decs[:MAX_LIST]:
+        lines.append(f"- `{d['card']}` — {d['ask']} → {d['answer']}")
+    if not decs:
+        lines.append("_None._")
+    lines += ["", f"### Open loops ({len(loops)})", ""]
+    for lp in loops[:MAX_LIST]:
+        lines.append(f"- `{lp['card']}` [{lp['column']}] — {lp['ask']}")
+    if not loops:
+        lines.append("_All caught up._")
+    lines += ["", "### Latest from the team", ""]
+    for r in reps:
+        lines.append(f"- `{r['card']}` ({r['from']}) — {r['text']}")
+    if not reps:
+        lines.append("_Quiet._")
+    lines.append("")
+    return lines
+
+
 # ----------------------------------------------------------------- render
 
 MARKET_SUMMARY = REPO / "reports" / "market-summary.json"
@@ -432,6 +559,8 @@ def render(edition: str, start, end, disp, cards, flags,
         f"- **Needs Tony:** {needs}",
         "",
     ]
+
+    lines += comms_section(cards, start, end)
 
     if edition == "morning":
         lines += [
@@ -541,15 +670,16 @@ def _mddb_post(path: str, payload: dict, timeout: int = 30):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
-def publish_cms(md: str, edition: str, summary: str) -> bool:
-    """Upsert ada-cms-pages/daily-brief — kind:report, full meta_contract
+def publish_cms(md: str, edition: str, summary: str,
+                slug: str = CMS_SLUG) -> bool:
+    """Upsert ada-cms-pages/<slug> — kind:report, full meta_contract
     (summary/domain/fresh_for/confidence/timeline/links/updated). Caller
     re-renders reports-index after this so Ada sees it immediately."""
     now = now_iso()
     existing = {}
     try:
         existing = _mddb_post("get", {"collection": "ada-cms-pages",
-                                      "key": CMS_SLUG, "lang": "en"}) or {}
+                                      "key": slug, "lang": "en"}) or {}
     except Exception:
         pass
     meta = {k: (v if isinstance(v, list) else [v])
@@ -558,11 +688,11 @@ def publish_cms(md: str, edition: str, summary: str) -> bool:
     meta.setdefault("scope", ["tony"])
     meta.setdefault("status", ["active"])
     meta.setdefault("source", ["api"])
-    meta.setdefault("subject", [CMS_SLUG])
+    meta.setdefault("subject", [slug])
     meta.setdefault("attribute", ["page"])
     meta.update({
-        "kind": ["report"], "slug": [CMS_SLUG],
-        "title": [f"Daily Brief — {edition.title()} {now[:10]}"],
+        "kind": ["report"], "slug": [slug],
+        "title": [f"{slug.replace('-', ' ').title()} — {edition.title()} {now[:10]}"],
         "format": ["markdown"], "lang": ["en"],
         "updated": [now], "last_verified": [now[:10]],
         "domain": ["ops"], "summary": [summary[:240]],
@@ -572,7 +702,7 @@ def publish_cms(md: str, edition: str, summary: str) -> bool:
     tl = [x for x in meta.get("timeline", []) if isinstance(x, str)]
     tl.append(f"{now[:16]} {edition} edition published")
     meta["timeline"] = tl[-40:]
-    _mddb_post("add", {"collection": "ada-cms-pages", "key": CMS_SLUG,
+    _mddb_post("add", {"collection": "ada-cms-pages", "key": slug,
                        "lang": "en", "contentMd": md, "meta": meta},
                timeout=60)
     return True
@@ -691,6 +821,21 @@ def main() -> int:
             # MDDB /v1/add occasionally drops the response AFTER the write
             # lands — treat as warn; the page is verified via get below.
             print(f"warn: CMS publish response lost ({e})", file=sys.stderr)
+        try:
+            comms_md = "\n".join(
+                [f"# Tony ↔ Team Digest — {edition.title()}",
+                 "",
+                 f"- Generated: {now_iso()} by `scripts/report-daily-brief.py`",
+                 f"- Window: {_fmt(start)} -> {_fmt(end)}",
+                 ""] + comms_section(cards, start, end)
+                + ["_Generated file — do not hand-edit._"])
+            publish_cms(comms_md, edition,
+                        f"comms digest: {len(tony_comms(cards, start, end))} asks, "
+                        f"{len(unreplied_loops(cards))} open loops",
+                        slug=CMS_COMMS_SLUG)
+        except Exception as e:
+            print(f"warn: comms-digest CMS publish failed ({e})",
+                  file=sys.stderr)
         try:
             # regen runs even when the publish response was lost: the write
             # usually landed anyway, and the index render is read-only on
