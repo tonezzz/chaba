@@ -1,0 +1,24 @@
+id: ada-chat-or-fallback
+title: 'Ada chat: degrade to OpenRouter text when Gemini Live is down'
+column: backlog
+priority: medium
+tags:
+- ada
+- resilience
+- voice
+- chat
+created: '2026-10-11'
+brief: When Gemini Live is unreachable (billing dunning 2026-10-11 proved it can die
+  for hours), Ada goes fully silent — voice AND chat. Voice has no non-Gemini path,
+  but the TG/LINE/PWA chat channels could degrade to an OpenRouter text model instead
+  of dying at provider connect.
+spec: 'pwa_server provider-connect failure (1008/quota/billing) on text channels →
+  fallback path: create a text-only session backed by OpenRouter chat completions
+  (reuse ada-safety key, mddb-gemini pattern) with the tool surface degraded or disabled;
+  announce degraded mode once. Gate: only for text channels — voice sessions have
+  no equivalent and should fail loudly as today.'
+comms:
+- at: 2026-10-11 11:50
+  from: devin
+  text: filed from live incident — dunning killed Live on all channels; chat could
+    have degraded gracefully
