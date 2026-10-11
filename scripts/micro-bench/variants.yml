@@ -1,0 +1,77 @@
+# Micro-bench variant definitions — one entry per polish-model x
+# downstream-model pair. bench.py --variant <id> runs the full fixture
+# manifest through the pipeline: raw -> polish (or none) -> downstream.
+#
+# Fields:
+#   id          unique slug (bench.py --variant <id>)
+#   polish      null (= direct baseline, raw goes straight downstream)
+#               or {provider, base_url, model, prompt} — the micro-AI step.
+#               `prompt` names a template in lib.POLISH_PROMPTS.
+#   downstream  {provider, base_url, model} — the receiving AI under test.
+#               provider openai_compat covers ollama/llama.cpp/vllm /v1.
+#               provider gemini uses GEMINI_API_KEY (or
+#               ~/.config/secrets/gemini-api-key.env) + generateContent.
+#   host_labels runner capability labels (same convention as voice-bench)
+#   notes       free text
+#
+# Adopt gate lives in report.py: polish wins only if match-rate >= the
+# direct baseline AND net tokens OR e2e latency is neutral-or-better.
+
+variants:
+  - id: direct-llama32
+    polish: null
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "Baseline — raw input straight to llama3.2:3b on idc03.
+      Establishes the no-polish floor for every metric."
+
+  - id: polish-llama32-llama32
+    polish:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+      prompt: normalize_v1
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "llama3.2:3b as both polisher and receiver on idc03 — cheapest
+      fully-local variant; measures whether self-polish helps a small model."
+
+  - id: polish-llama32-gemini
+    polish:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+      prompt: normalize_v1
+    downstream:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+    host_labels: []
+    notes: "The production-shaped variant: local 3B polish -> real Ada
+      downstream. Needs GEMINI_API_KEY; skipped fixtures error out if absent."
+
+  - id: direct-gemini
+    polish: null
+    downstream:
+      provider: gemini
+      model: gemini-2.5-flash-lite
+    host_labels: []
+    notes: "Baseline for the gemini-downstream variant — same receiving
+      model so polish-vs-direct deltas are apples-to-apples."
+
+  # --- future: omen phi3-gguf (ollama :11434/v1, currently unreachable from
+  #     macbook), macbook Vulkan llama.cpp server (host-roles offload lane),
+  #     a bigger polisher (llama3.1:8b) as the quality ceiling ---
+
+  - id: dry-run-dummy
+    polish: null
+    downstream:
+      provider: mock
+      model: none
+    host_labels: []
+    notes: "Harness self-test — exercises the result schema with no services."

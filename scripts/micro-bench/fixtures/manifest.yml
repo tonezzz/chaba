@@ -1,0 +1,340 @@
+# Micro-bench fixtures — messy user inputs for the input-polish hypothesis.
+#
+# Each fixture: raw user text -> optional micro-AI polish -> downstream AI.
+# Scored on: downstream tool_call vs expected (exact/partial/none/fabricated),
+# entity preservation through the polish step, and (for polish variants)
+# similarity of the polished text to `gold`.
+#
+# Fields:
+#   id                  unique slug
+#   lang                en | th | mixed (drives normalization)
+#   category            asr_noise_en | asr_noise_th | thai_eng_mix | typo |
+#                       fragment | clean | entity_heavy | chit_chat |
+#                       ambiguous | gibberish
+#   raw                 the input exactly as a user/ASR produced it
+#   gold                canonical form the polish step should approach
+#   preserve            strings that MUST survive polishing verbatim
+#                       (normalized compare; entity-drift detector)
+#   expected_tool_call  semantic call the downstream should emit, or null.
+#                       null + a real call emitted = "fabricated" (invention
+#                       by polish or downstream — the key regression signal)
+fixtures:
+  # --- English ASR mishearings (homophones, dropped/split words) ---
+  - id: asr-en-kitten-lice
+    lang: en
+    category: asr_noise_en
+    raw: turn on the kitten lice
+    gold: turn on the kitchen lights
+    preserve: [kitchen]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: asr-en-twenty-for
+    lang: en
+    category: asr_noise_en
+    raw: set the air con to twenty for degrees
+    gold: set the air conditioner to 24 degrees
+    preserve: ["24"]
+    expected_tool_call: {name: hass_set_temperature, args: {temperature: 24}}
+  - id: asr-en-watching-machine
+    lang: en
+    category: asr_noise_en
+    raw: is the watching machine till running
+    gold: is the washing machine still running
+    preserve: [washing machine]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.washer_power}}
+  - id: asr-en-font-door
+    lang: en
+    category: asr_noise_en
+    raw: lock the font door
+    gold: lock the front door
+    preserve: [front door]
+    expected_tool_call: {name: hass_lock, args: {entity: front_door}}
+  - id: asr-en-temperate
+    lang: en
+    category: asr_noise_en
+    raw: what's the temperate outside right now
+    gold: what is the temperature outside right now
+    preserve: [outside]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.outside_temperature}}
+  - id: asr-en-living-van
+    lang: en
+    category: asr_noise_en
+    raw: turn of the living room van
+    gold: turn off the living room fan
+    preserve: [living room, fan]
+    expected_tool_call: {name: hass_turn_off, args: {domain: fan, area: living_room}}
+  - id: asr-en-soldier-power
+    lang: en
+    category: asr_noise_en
+    raw: how much soldier power are we generating
+    gold: how much solar power are we generating
+    preserve: [solar]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.solar_power}}
+  # --- Thai ASR mishearings ---
+  - id: asr-th-fai-krap
+    lang: th
+    category: asr_noise_th
+    raw: เปิดไฟครับ
+    gold: เปิดไฟครัว
+    preserve: [ไฟ]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: asr-th-tid-air
+    lang: th
+    category: asr_noise_th
+    raw: ติดแอร์ห้องนอน
+    gold: ปิดแอร์ห้องนอน
+    preserve: [แอร์, ห้องนอน]
+    expected_tool_call: {name: hass_turn_off, args: {domain: climate, area: bedroom}}
+  - id: asr-th-unapumi
+    lang: th
+    category: asr_noise_th
+    raw: อุณภูมิข้างนอกกี่องศา
+    gold: อุณหภูมิข้างนอกกี่องศา
+    preserve: [ข้างนอก]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.outside_temperature}}
+  - id: asr-th-pratu-rok
+    lang: th
+    category: asr_noise_th
+    raw: ประตูหน้ารอกอยู่ไหม
+    gold: ประตูหน้าล็อกอยู่ไหม
+    preserve: [ประตู]
+    expected_tool_call: {name: hass_get_state, args: {entity: lock.front_door}}
+  - id: asr-th-fai-kru
+    lang: th
+    category: asr_noise_th
+    raw: ไฟในครูเปิดอยู่ไหม
+    gold: ไฟในครัวเปิดอยู่ไหม
+    preserve: [ไฟ]
+    expected_tool_call: {name: hass_get_state, args: {entity: light.kitchen}}
+  # --- Thai/English code-switch ---
+  - id: mix-light-kitchen
+    lang: mixed
+    category: thai_eng_mix
+    raw: เปิด light ในครัว
+    gold: เปิดไฟในครัว
+    preserve: [ครัว]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: mix-air-24
+    lang: mixed
+    category: thai_eng_mix
+    raw: set แอร์ห้องนอน to 24 องศา
+    gold: set the bedroom air conditioner to 24 degrees
+    preserve: ["24"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: bedroom, temperature: 24}}
+  - id: mix-fan-living
+    lang: mixed
+    category: thai_eng_mix
+    raw: turn off พัดลม living room
+    gold: turn off the living room fan
+    preserve: [living room]
+    expected_tool_call: {name: hass_turn_off, args: {domain: fan, area: living_room}}
+  - id: mix-washer-run
+    lang: mixed
+    category: thai_eng_mix
+    raw: เช็คว่า washer ยัง run อยู่มั้ย
+    gold: is the washing machine still running
+    preserve: [washer]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.washer_power}}
+  - id: mix-air-bedroom
+    lang: mixed
+    category: thai_eng_mix
+    raw: turn on แอร์ห้องนอนหน่อย
+    gold: turn on the bedroom air conditioner
+    preserve: [ห้องนอน]
+    expected_tool_call: {name: hass_turn_on, args: {domain: climate, area: bedroom}}
+  - id: mix-tv-living
+    lang: mixed
+    category: thai_eng_mix
+    raw: เปิด tv ห้องนั่งเล่น
+    gold: เปิดทีวีห้องนั่งเล่น
+    preserve: [ห้องนั่งเล่น]
+    expected_tool_call: {name: hass_turn_on, args: {domain: media_player, area: living_room}}
+  # --- Keyboard typos ---
+  - id: typo-kicthen-light
+    lang: en
+    category: typo
+    raw: trun on the kicthen light
+    gold: turn on the kitchen light
+    preserve: [kitchen]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: typo-bedrom-digress
+    lang: en
+    category: typo
+    raw: set the bedrom ac to 24 digress
+    gold: set the bedroom ac to 24 degrees
+    preserve: [bedroom, "24"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: bedroom, temperature: 24}}
+  - id: typo-livign-fn
+    lang: en
+    category: typo
+    raw: trun of livign room fn
+    gold: turn off living room fan
+    preserve: [living room]
+    expected_tool_call: {name: hass_turn_off, args: {domain: fan, area: living_room}}
+  - id: typo-wasing-machne
+    lang: en
+    category: typo
+    raw: is the wasing machne runing
+    gold: is the washing machine running
+    preserve: []
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.washer_power}}
+  - id: typo-temp-outsied
+    lang: en
+    category: typo
+    raw: wahts the temp outsied
+    gold: what is the temperature outside
+    preserve: [outside]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.outside_temperature}}
+  # --- Fragments / telegraphic ---
+  - id: frag-kitchen-on
+    lang: en
+    category: fragment
+    raw: kitchen lights on
+    gold: turn on the kitchen lights
+    preserve: [kitchen]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: frag-ac-bedroom-24
+    lang: en
+    category: fragment
+    raw: ac bedroom 24
+    gold: set the bedroom air conditioner to 24 degrees
+    preserve: [bedroom, "24"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: bedroom, temperature: 24}}
+  - id: frag-washer-done
+    lang: en
+    category: fragment
+    raw: washer done?
+    gold: is the washing machine done
+    preserve: [washer]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.washer_power}}
+  - id: frag-outside-temp
+    lang: en
+    category: fragment
+    raw: outside temp
+    gold: what is the outside temperature
+    preserve: [outside]
+    expected_tool_call: {name: hass_get_state, args: {entity: sensor.outside_temperature}}
+  # --- Entity-heavy — names/numbers/ids must survive verbatim ---
+  - id: ent-michael-215
+    lang: en
+    category: entity_heavy
+    raw: set the thermostat in michael's room to twenty one point five degrees
+    gold: set the thermostat in michael's room to 21.5 degrees
+    preserve: [michael, "21.5"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: michael_room, temperature: 21.5}}
+  - id: ent-tze200
+    lang: en
+    category: entity_heavy
+    raw: turn off the tze200 plug in the living room
+    gold: turn off the tze200 plug in the living room
+    preserve: [tze200, living room]
+    expected_tool_call: {name: hass_turn_off, args: {domain: switch, area: living_room}}
+  - id: ent-235-bedroom
+    lang: en
+    category: entity_heavy
+    raw: set bedroom ac to twenty three point five
+    gold: set bedroom ac to 23.5
+    preserve: [bedroom, "23.5"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: bedroom, temperature: 23.5}}
+  - id: ent-channel7
+    lang: en
+    category: entity_heavy
+    raw: play channel 7 on the living room tv
+    gold: play channel 7 on the living room tv
+    preserve: ["7", living room]
+    expected_tool_call: {name: hass_turn_on, args: {domain: media_player, area: living_room}}
+  - id: ent-office-2h
+    lang: en
+    category: entity_heavy
+    raw: turn on the aircon for 2 hours in the office
+    gold: turn on the air conditioner for 2 hours in the office
+    preserve: ["2", office]
+    expected_tool_call: {name: hass_turn_on, args: {domain: climate, area: office}}
+  # --- Clean controls — polish must NOT degrade these ---
+  - id: clean-kitchen-lights
+    lang: en
+    category: clean
+    raw: Turn on the kitchen lights.
+    gold: turn on the kitchen lights
+    preserve: [kitchen]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: clean-bedroom-ac
+    lang: en
+    category: clean
+    raw: Set the bedroom air conditioner to 24 degrees.
+    gold: set the bedroom air conditioner to 24 degrees
+    preserve: [bedroom, "24"]
+    expected_tool_call: {name: hass_set_temperature, args: {area: bedroom, temperature: 24}}
+  - id: clean-door-locked
+    lang: en
+    category: clean
+    raw: Is the front door locked?
+    gold: is the front door locked
+    preserve: [front door]
+    expected_tool_call: {name: hass_get_state, args: {entity: lock.front_door}}
+  - id: clean-th-fai-krua
+    lang: th
+    category: clean
+    raw: เปิดไฟครัวหน่อย
+    gold: เปิดไฟครัวหน่อย
+    preserve: [ไฟ, ครัว]
+    expected_tool_call: {name: hass_turn_on, args: {domain: light, area: kitchen}}
+  - id: clean-th-thanks
+    lang: th
+    category: clean
+    raw: ขอบคุณมากครับ
+    gold: ขอบคุณมากครับ
+    preserve: []
+    expected_tool_call: null
+  # --- Chit-chat — no tool call expected ---
+  - id: chat-thanks
+    lang: en
+    category: chit_chat
+    raw: thanks that's all
+    gold: thanks that's all
+    preserve: []
+    expected_tool_call: null
+  - id: chat-how-are-you
+    lang: en
+    category: chit_chat
+    raw: how are you today
+    gold: how are you today
+    preserve: []
+    expected_tool_call: null
+  - id: chat-joke
+    lang: en
+    category: chit_chat
+    raw: tell me a joke
+    gold: tell me a joke
+    preserve: []
+    expected_tool_call: null
+  # --- Ambiguous — polish must NOT invent a referent; downstream should
+  #     answer/clarify, not fabricate a tool call ---
+  - id: amb-turn-it-on
+    lang: en
+    category: ambiguous
+    raw: turn it on
+    gold: turn it on
+    preserve: []
+    expected_tool_call: null
+  - id: amb-the-thing
+    lang: en
+    category: ambiguous
+    raw: the thing in the place
+    gold: the thing in the place
+    preserve: []
+    expected_tool_call: null
+  - id: amb-do-that
+    lang: en
+    category: ambiguous
+    raw: do that again
+    gold: do that again
+    preserve: []
+    expected_tool_call: null
+  # --- Gibberish — passthrough expected ---
+  - id: gib-keyboard-mash
+    lang: en
+    category: gibberish
+    raw: asdkfj alskdjf
+    gold: asdkfj alskdjf
+    preserve: []
+    expected_tool_call: null
