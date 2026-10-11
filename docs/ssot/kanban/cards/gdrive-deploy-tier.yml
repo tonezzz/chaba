@@ -1,0 +1,45 @@
+id: gdrive-deploy-tier
+title: 'gdrive for push/deploy? verdict: no for transport, yes as cold artifact tier'
+column: review
+review_kind: decision
+updated: 2026-10-11 16:45
+brief: 'Tony asked whether gdrive could carry push+deploy. Analysis: no for git transport (no atomic
+  refs/locking over rclone, reintroduces sync-race class git-safe-pull was built to kill, adds a
+  third-party repo copy) and no for deploy trigger (deploy = scp+restart+verify+flock+confirm gates,
+  not file-arrival; all targets already on tailnet). YES for cold artifact tier — the fleet already
+  runs this pattern (rclone-gdrive.service on dell, gdrive:nest-brains tar+sha manifests, gcrypt
+  remote approved).'
+priority: low
+tags:
+- architecture
+- deploy
+- gdrive
+spec: |
+  Decision recorded. If approved, implement the one useful increment:
+  deploy-card.sh post-verify step runs `rclone copyto gdrive:chaba/bundles/`
+  for each deployed sunsynk-power-flow-card bundle + updates latest.yml
+  manifest (same manifest contract as nest-brains). Gives an offsite,
+  tailscale-independent copy of every released bundle.
+requests:
+- id: bundle-cold-tier
+  ask: Wire `rclone copyto gdrive:chaba/bundles/` into deploy-card.sh post-verify (+ latest.yml
+    manifest)? Needs rclone configured on whichever host runs deploys (dell has rclone-gdrive
+    already).
+  status: open
+  suggested: yes
+  options:
+  - id: yes
+    label: add gdrive bundle tier to deploy-card.sh
+  - id: no
+    label: keep deploy local+tailscale only
+action:
+  type: self
+comms:
+- at: 2026-10-11 16:45
+  from: tony
+  text: '"To push and deploy, what if we use gdrive? what benefits can we gain? pros&cons?"'
+- at: 2026-10-11 16:45
+  from: devin
+  text: 'Analysis posted in session: transport/deploy-trigger = no (atomicity, races, third-party
+    copy, no gate value); cold artifact tier = yes, consistent with existing gdrive:nest-brains
+    precedent. Deploy-key fix today already removed the only real push gap (macbook->github).'
