@@ -1,0 +1,39 @@
+title: Comms Digest — Tony ↔ Team conversation consolidation
+subtitle: Standard procedure for collecting Tony's communication with Ada, Devin, and the nest into a structured, reviewable report — living, evolving
+icon: 💬
+version: 1
+last_updated: "2026-10-11"
+
+overview:
+  purpose: |
+    Development outpaces perception when conversations scatter across
+    voice sessions, Telegram, and Devin chats. This digest answers
+    "what did we discuss, what came of it, what's still open" — the
+    communication layer that daily-brief's system rollup doesn't cover.
+  integration: |
+    Extends the daily-brief pipeline (scripts/report-daily-brief.py) as a
+    new section + a dedicated CMS page tony-team-digest — same cadence
+    (morning + evening), same publish path (ada-cms-pages), so Ada can
+    also answer "what did we talk about?" from it.
+
+sections:
+  asks_and_outcomes:
+    source: "Ada session transcripts (voice+TG turns) + card comms from=tony + devin session meta"
+    renders: "each Tony ask → the card/action it produced → current status"
+  decisions_made:
+    source: "board requests answered since last edition + project decision_log appends"
+    renders: "decision → which card/project → what it unblocked"
+  open_loops:
+    source: "unanswered requests, asks with no card yet, ideas parked in ada-ha-bank-ideas"
+    renders: "the honest 'you said X and nothing happened yet' list — this section never lies"
+  notable_replies:
+    source: "agent comms addressed to Tony or containing decisions"
+    renders: "one line each — what the team told you, newest first"
+
+living_and_evolving:
+  live: "published to ada-cms-pages/tony-team-digest every morning+evening edition; the page is the living document, history in docs/reports/comms-digest/"
+  improve: "any 'the digest should also show X' → card tagged report + kanban-ux; the generator is code, improvements ship through the normal release lifecycle"
+  feedback: "Tony's review reactions are themselves digest input — correction duty applies"
+
+owner: devin
+enforcement: "daily-brief job (existing timers); new sections ride the same job run"

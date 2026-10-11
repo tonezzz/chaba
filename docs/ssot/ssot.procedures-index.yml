@@ -1,0 +1,42 @@
+title: Procedures Index — how all standard procedures work together
+subtitle: The meta-procedure — where SOPs live, what enforces them, how they evolve, and the order they apply in
+icon: 📚
+version: 1
+last_updated: "2026-10-11"
+
+overview:
+  purpose: |
+    Standard procedures only work if they're findable, enforced, and
+    non-conflicting. This index is the single map: every standing SOP,
+    its role, its enforcing surface, and the shared rules they all obey.
+  shared_rules:
+    - "board is truth — a request with no card does not exist (open-ask duty)"
+    - "evidence over assertion — comms/proof at every gate, never 'trust me'"
+    - "momentum not permission — drive to prod; stop only at real gates"
+    - "answer from the system — procedures are looked up, not improvised (procedure-lookup duty)"
+    - "SSOT is source — a behavior with no doc is a drift candidate; a doc with no enforcement is a wish"
+
+index:
+  - file: docs/ssot/infrastructure/ssot.devin-autonomy.yml
+    role: hands-off envelope — autonomy tiers t0-t4, kill switch, quiet hours, budgets
+    enforced_by: kanban-dispatch + runner-agent + review auto-close
+  - file: docs/ssot/infrastructure/ssot.release-lifecycle.yml
+    role: stage gates — idea→experiment→alpha→beta→pre-prod→prod with evidence tags
+    enforced_by: lifecycle-check.py + promote-*.sh --confirm
+  - file: docs/ssot/infrastructure/ssot.project-lifecycle.yml
+    role: project container + roles + intake router + card-UX + ci/feedback links
+    enforced_by: Ada steward duties + card tags + board requests
+  - file: docs/ssot/ssot.ci.yml + infrastructure/ssot.quality.yml
+    role: CI — 5 lanes (ci-gate, on-host, audit, live-health, card-pipeline)
+    enforced_by: GH Actions + ci-all.sh + card-pipeline.py + husky hooks
+  - file: docs/ssot/infrastructure/ssot.comms-digest.yml
+    role: conversation consolidation — Tony↔Team asks/decisions/open loops
+    enforced_by: daily-brief job + CMS publish
+  - file: AGENTS.md duties
+    role: behavior contracts — correction, open-ask, kanban-first, idea-pipeline, report-integration, spec-gathering, procedure-lookup
+    enforced_by: session prompts + Ada mirror (realtime_provider.py)
+
+interactions:
+  flow: "idea arrives (intake router) → card (kanban-first) → spec (spec-gathering) → dispatch under autonomy envelope → CI lanes → release-lifecycle gates → prod (Tony gate) → feedback/lessons → digest tells Tony"
+  conflict_resolution: "stricter gate wins; an SOP that contradicts a gate is edited, never worked around; when two SOPs overlap, the more specific file governs"
+  evolution: "every SOP is a file under git — improvements come as cards; doc changes ride the same lifecycle as code; a procedure nobody follows gets fixed or retired, not ignored"
