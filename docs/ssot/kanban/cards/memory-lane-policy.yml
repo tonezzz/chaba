@@ -1,28 +1,33 @@
 id: memory-lane-policy
 title: Memory lane policy — household vs private banks, dev never writes prod memory
-brief: Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory,
-  Tony gets his private banks, and staging/test traffic can't pollute production memory.
-column: doing
+brief: Formalize how Ada memory banks map onto the two HA lanes so household members
+  get shared+private memory, Tony gets his private banks, and staging/test traffic
+  can't pollute production memory.
+column: backlog
 priority: medium
 created: 2026-10-08
 updated: 2026-10-10 11:23
 program: ha-lanes
-metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
-  household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
-  writable (confirmed) so household procedures accumulate.'
-verify: ssot.apps.ada-memory-banks.yml updated + rendered; a dev-lane Ada session (ADA_INSTANCE_ID=tony-dev) can
-  read prod banks but ada_remember lands only in ada-ha-bank-dev-scratch; KK session still reaches general/home/people/purchase
-  + personal-kk.
-spec: "Current model already does most of this: banks assigned per Ada instance, person_scope routes KK/Testo to\
-  \ their own banks, fail-fast skips unassigned banks. Delta for the lanes: 1. `home` bank writable:true + write_policy:confirmed\
-  \ (it is the shared\n   household notebook; currently read-only while it was planned).\n2. New bank `dev-scratch`:\
-  \ status testing, writable+direct, collection\n   ada-ha-bank-dev-scratch, prompt_hidden — the only write target\
-  \ for\n   dev/staging Ada sessions.\n3. Assignment rule: a dev Ada backend gets ADA_INSTANCE_ID=tony-dev/ada-dev;\n\
-  \   add those IDs to prod banks as read-only (new field e.g.\n   instances_readonly) or leave them unassigned\
-  \ (fail-fast skips; scratch\n   still works). Pick the smallest change to memory_banks.py.\n4. Provenance: docs\
-  \ written from dev contexts carry env: staging so drift\n   reports/consolidation can filter them out of prod\
-  \ digests.\n5. Operational collections (events/snapshots/recall-summary) already suffix\n   per instance — dev\
-  \ instance IDs keep test telemetry out of prod feeds."
+metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts
+  land only in a scratch bank; household members get general/home/people/purchase
+  + own personal bank and nothing Tony-private; `home` bank made writable (confirmed)
+  so household procedures accumulate.'
+verify: ssot.apps.ada-memory-banks.yml updated + rendered; a dev-lane Ada session
+  (ADA_INSTANCE_ID=tony-dev) can read prod banks but ada_remember lands only in ada-ha-bank-dev-scratch;
+  KK session still reaches general/home/people/purchase + personal-kk.
+spec: "Current model already does most of this: banks assigned per Ada instance, person_scope\
+  \ routes KK/Testo to their own banks, fail-fast skips unassigned banks. Delta for\
+  \ the lanes: 1. `home` bank writable:true + write_policy:confirmed (it is the shared\n\
+  \   household notebook; currently read-only while it was planned).\n2. New bank\
+  \ `dev-scratch`: status testing, writable+direct, collection\n   ada-ha-bank-dev-scratch,\
+  \ prompt_hidden — the only write target for\n   dev/staging Ada sessions.\n3. Assignment\
+  \ rule: a dev Ada backend gets ADA_INSTANCE_ID=tony-dev/ada-dev;\n   add those IDs\
+  \ to prod banks as read-only (new field e.g.\n   instances_readonly) or leave them\
+  \ unassigned (fail-fast skips; scratch\n   still works). Pick the smallest change\
+  \ to memory_banks.py.\n4. Provenance: docs written from dev contexts carry env:\
+  \ staging so drift\n   reports/consolidation can filter them out of prod digests.\n\
+  5. Operational collections (events/snapshots/recall-summary) already suffix\n  \
+  \ per instance — dev instance IDs keep test telemetry out of prod feeds."
 links:
 - ha-lanes-program
 - ssot.apps.ada-memory-banks.yml
@@ -31,22 +36,26 @@ blocked_by: []
 autonomy: t2
 action:
   type: dispatch
-  status: running
   repo: chaba
-  runner: idc02
 comms:
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=chaba)
 - at: 2026-10-10 10:45
   from: devin
-  text: 'chaba side done: home writable+confirmed w/ tools; new dev-scratch bank (dev/tony-dev/ada-dev, prompt_hidden,
-    env:staging); instances_readonly {dev->prod map} on all 24 tony-visible banks — picked over ''leave unassigned''
-    because verify requires dev READ of prod banks (unassigned = fail-fast skip = no read). person_policies allow
-    lists gained dev-scratch (inert on prod). env field added to meta_schema. memory_banks.py change lives in ada-pi
-    repo — filed ada-memory-dev-lane-runtime (queued) with the ~10-line spec; field is inert until then. Heads-up:
-    live registry on idc03 has hand-added dev-lab/dev-bench/dev-dispatch banks NOT in SSOT — next render drops them
-    (collections stay in MDDB).'
+  text: 'chaba side done: home writable+confirmed w/ tools; new dev-scratch bank (dev/tony-dev/ada-dev,
+    prompt_hidden, env:staging); instances_readonly {dev->prod map} on all 24 tony-visible
+    banks — picked over ''leave unassigned'' because verify requires dev READ of prod
+    banks (unassigned = fail-fast skip = no read). person_policies allow lists gained
+    dev-scratch (inert on prod). env field added to meta_schema. memory_banks.py change
+    lives in ada-pi repo — filed ada-memory-dev-lane-runtime (queued) with the ~10-line
+    spec; field is inert until then. Heads-up: live registry on idc03 has hand-added
+    dev-lab/dev-bench/dev-dispatch banks NOT in SSOT — next render drops them (collections
+    stay in MDDB).'
 - at: 2026-10-10 11:23
   from: idc02
   text: claimed
+- at: 2026-10-11 08:15
+  from: devin
+  text: 'stale claim reset: claimed ~21h ago, no live dispatch process and no progress
+    comms — back to queue for a fresh claim.'
