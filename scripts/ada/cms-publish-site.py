@@ -82,6 +82,25 @@ def is_public(doc: dict) -> bool:
     return _meta1(doc.get("meta"), "public").lower() in ("true", "yes", "1")
 
 
+# Hard gate (2026-10-11, tony): personal data never goes public — even on a
+# meta.public-flagged page. A hit blocks ALL lang variants of the key and is
+# reported under "blocked" so the flag-holder can scrub and re-flag.
+PERSONAL_RES = [
+    (re.compile(r"\b\d{1,2}[ก-ฮ]{2}\s?\d{3,4}\b"), "thai license plate"),
+    (re.compile(r"\b\d[\d ]{11,13}\d\b"), "thai national id"),
+    (re.compile(r"\b0[689]\d[\s-]?\d{3}[\s-]?\d{4}\b"), "thai mobile"),
+    (re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"), "email"),
+    (re.compile(r"\b(passport|id.?card|บัตรประชาชน|พาสปอร์ต)\b", re.I),
+     "id-document term"),
+    (re.compile(r"(bank account|เลขบัญชี|account no\.?)\s*[:#]?\s*\d", re.I),
+     "bank account"),
+]
+
+
+def personal_hits(content: str) -> list[str]:
+    return [label for rx, label in PERSONAL_RES if rx.search(content or "")]
+
+
 def md_to_html(md: str) -> str:
     """Minimal markdown renderer — headings, lists, code, inline styles.
     The PWA viewer remains the rich surface; this is the static public lane."""
@@ -173,9 +192,14 @@ def publish(tenant: str, collection: str, dry: bool = False) -> dict:
         by_key.setdefault(d.get("key", ""), []).append(d)
 
     outdir = SITE_ROOT / tenant
-    written, removed = [], []
+    written, removed, blocked = [], [], []
     files: dict[str, str] = {}
     for key, variants in sorted(by_key.items()):
+        hits = personal_hits(
+            " ".join(v.get("contentMd", "") for v in variants))
+        if hits:
+            blocked.append({"key": key, "hits": hits})
+            continue
         langs = sorted({d.get("lang", "en") for d in variants})
         for d in variants:
             lang = d.get("lang", "en")
@@ -189,6 +213,8 @@ def publish(tenant: str, collection: str, dry: bool = False) -> dict:
 
     links = []
     for key, variants in sorted(by_key.items()):
+        if key in {b["key"] for b in blocked}:
+            continue
         langs = sorted({d.get("lang", "en") for d in variants})
         title = _meta1(variants[0].get("meta"), "title") or key
         base = f"{key}.html" if "en" in langs or len(langs) == 1 \
@@ -215,6 +241,7 @@ def publish(tenant: str, collection: str, dry: bool = False) -> dict:
                 removed.append(stale.name)
     return {"tenant": tenant, "collection": collection,
             "public_pages": len(by_key), "files": len(files),
+            "blocked": blocked,
             "written": sorted(written), "removed": sorted(removed)}
 
 
