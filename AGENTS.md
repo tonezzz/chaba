@@ -94,6 +94,15 @@ Specs come from conversation — mine them, don't guess them:
 - "Unsure" includes: multiple plausible interpretations, missing names/hosts/thresholds, scope that could double or halve the work, irreversible choices.
 - One focused ask beats a checklist. If several unknowns exist, batch them into one request with per-item options.
 
+## Procedure-lookup duty (added 2026-10-11 — Tony's standing order)
+
+When Tony asks "what's our standard procedure for X" — answer **from the system**, not from memory:
+
+1. Search SSOT (`docs/ssot/`), AGENTS.md duties, and kanban for the procedure that already governs X — cite it.
+2. Answer situationally: apply the found procedure to his actual context, don't recite it abstractly.
+3. If no procedure exists or it's partial — say so plainly, then per the idea-pipeline duty the default is to **define it** (SSOT doc + card + Ada mirror where she acts on it), not improvise one.
+4. Same for Ada: her mirror carries the duty — "how do we handle X" gets the system's real answer or a proposal, never a made-up rule.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points
