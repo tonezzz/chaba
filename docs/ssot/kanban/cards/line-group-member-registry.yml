@@ -1,7 +1,7 @@
 id: line-group-member-registry
 title: Auto-register LINE senders on first message in allowed groups
 column: backlog
-updated: 2026-10-11 18:22
+updated: 2026-10-11 19:22
 priority: medium
 spec: 'LINE members API is gated to verified accounts (404 on group/members/userIds 2026-10-11), so users cannot
   be pre-enumerated — registration must happen on first message. Procedure: when a message arrives in an allow-listed
@@ -15,3 +15,8 @@ comms:
 - at: 2026-10-11 18:22
   from: devin
   text: card captured via board-api
+- at: 2026-10-11 19:22
+  from: devin
+  text: 'Live bug found: relay /push endpoint takes to= verbatim — Kaewta called chat_send(to="กุ้ง") using KK display
+    name, LINE 400 to-invalid (idc03 19:15-19:18). Registry should power name→userId resolution on the push path
+    so personas can address people by name.'

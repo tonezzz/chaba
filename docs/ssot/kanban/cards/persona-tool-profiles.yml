@@ -1,7 +1,7 @@
 id: persona-tool-profiles
 title: Per-persona tool profiles — ADA_INCLUDED_TOOLS allowlist + SSOT tool_profile + deploy lint
-column: doing
-updated: 2026-10-11 19:05
+column: done
+updated: 2026-10-11 19:26
 priority: high
 spec: 'ADA_EXCLUDED_TOOLS denylist rots on tool merges (home_search slipped through 2026-10-11; home_status/home_history/ha_confidence
   still live on ada-kk) and can never shrink prompt surface for simple personas (ada-kk currently 39 tools incl.
@@ -32,7 +32,43 @@ comms:
 - at: 2026-10-11 19:05
   from: devin
   text: '[dispatch] picked up card; exploring worktree + realtime_provider + ada-persons SSOT'
+- at: 2026-10-11 19:16
+  from: devin
+  text: '[dispatch] DONE-staged: ADA_INCLUDED_TOOLS allowlist in ada-pi realtime_provider (uncommitted on main,
+    tests 4/4 + lint clean on idc03) — keep-list strips every non-listed decl incl. tools.d/camera/chaba late-merges
+    + family instructions. SSOT persons.<p>.tools profile (kk: 17 keep + 30 drop) rendered via new scripts/ada/render-tool-profiles.py
+    into a managed block of ada-kk.env on idc03 — LIVE (ada-kk restarted, env verified). deploy-ada.sh applies profiles
+    per host + lint warns on uncovered/st'
+- at: 2026-10-11 19:18
+  from: tony-macbook
+  text: 'finished (ok): exit=0 cluded-tools-denylist-ro.md` and `docs/ssot/jobs/ada/2026-10-11-persona-tool-profiles.yml`.
+    | devin-task-20261011'
+- at: 2026-10-11 19:18
+  from: chaba
+  text: 'session-end checkpoint d5f3a9d3: 1 leftover file(s) committed'
+- at: 2026-10-11 19:18
+  from: chaba
+  text: pushed dispatch/20261011-190526-ada-excluded-tools-denylist-ro to origin
+- at: 2026-10-11 19:18
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-11 19:19
+  from: chaba
+  text: auto-merged 50ba83cf (dispatch/20261011-190526-ada-excluded-tools-denylist-ro) → origin/master
+- at: 2026-10-11 19:26
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 cluded-tools-denylist-ro.md` and `docs/ssot/jobs/ada/2026-10-11-persona-tool-profiles.yml`. |
+    devin-task-20261011-190526-ada-excluded-tools-denylist-ro.service: Consumed 55.496s CPU time over 12min 807ms
+    wall clock time, 239.6M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-11 19:26
+  note: verified — evidence checks green, closing itself
