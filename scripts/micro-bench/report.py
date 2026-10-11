@@ -192,15 +192,19 @@ def append_trend(rows):
 
 
 def post_card_comment(card_id, text):
-    payload = json.dumps({"id": card_id, "from": "micro-bench", "text": text})
+    payload = json.dumps({"id": card_id, "from": "devin",
+                          "text": "micro-bench: " + text})
+    # payload goes over stdin — the verdict text can contain shell-active
+    # chars (backticks around variant ids) that -d would expose to the
+    # remote shell
     r = subprocess.run(
         ["ssh", "tony-dell",
          "curl", "-s", "-X", "POST", BOARD_API,
-         "-H", "Content-Type: application/json", "-d", payload],
-        capture_output=True, text=True, timeout=20)
-    if r.returncode != 0:
-        print(f"warn: board-api comment failed: {r.stderr.strip()}",
-              file=sys.stderr)
+         "-H", "Content-Type: application/json", "-d", "@-"],
+        input=payload, capture_output=True, text=True, timeout=20)
+    if '"ok": true' not in r.stdout and '"ok":true' not in r.stdout:
+        print(f"warn: board-api comment failed: rc={r.returncode} "
+              f"{r.stdout[:120]} {r.stderr.strip()}", file=sys.stderr)
 
 
 def main():
