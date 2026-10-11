@@ -74,10 +74,14 @@ sections:
     icon: 🔐
     layout: list
     items:
-      - label: SSH Access
+      - label: SSH Access (inbound)
         text: "ssh macbook — Host alias 'macbook'/'tony-macbook' -> 100.77.76.112, User tony, on tony-omen (~/.ssh/id_ed25519_macbook) and tony-dell (~/.ssh/id_cascade). Re-pointed 2026-10-11; verified end-to-end from both hosts."
         status: active
         tags: [ssh, command-line, key-auth]
+      - label: SSH mesh (outbound)
+        text: "macbook -> fleet: id_ed25519 pubkey authorized on tony-dell, tony-omen, idc02, idc03, mn01 (pushed via dell chain 2026-10-11); hostkeys scanned for all + self. removed from ssh-mesh-sync EXCLUDE + added to ssot.host-capacity.yml hosts — weekly mesh sync now covers it both directions."
+        status: active
+        tags: [ssh, mesh]
       - label: Authorized Keys
         text: "~/.ssh/authorized_keys re-seeded 2026-10-11 with the 3 fleet keys from macOS backup: tony@linux-pc-to-macbook (omen), mcp-debug@tony-dell, cascade (dell)"
         status: active
@@ -93,12 +97,18 @@ sections:
     layout: list
     items:
       - label: Fleet stack
-        text: "tailscale (own node identity — NOT the mn01 stick identity, per docs/kb/mn01-stick-standard.md), openssh-server, Chrome 155, devin-desktop (windsurf) 3.10.48, devin CLI 3000.11.3 (credentials ported)"
+        text: "tailscale (own node identity — NOT the mn01 stick identity, per docs/kb/mn01-stick-standard.md), openssh-server, Chrome 155, devin-desktop (windsurf) 3.10.48, devin CLI 3000.11.3, node v22.20.0 (~/.local/node user-space install), devin-dispatch toolchain (~/.local/bin + repos.conf)"
+        status: active
+      - label: Devin satellite layer
+        text: "~/.config/devin/mcp_config.json — 19 servers; command-type re-exec on tony-dell over ssh (satellite pattern), URL-type direct over tailnet; mddb -> idc03:9000 (dell's stale idc01 URL fixed same day). Session hooks in ~/.config/devin/scripts/ + mcp-scripts/ ported from dell. Timers: devin-cleanup, devin-session-prune, devin-dispatch-watch, devin-dispatch-prune. devin-desktop watchdog via cron."
+        status: active
+      - label: Runner lane
+        text: "runner-agent.service+timer cap 2 labels cpu,dev,portable — enrolled in ssot.kanban.yml runner_fleet 2026-10-11 (script type only until devin CLI auth + podman)"
         status: active
       - label: GPU tooling
         text: vulkan-tools, clinfo, mesa-utils, glmark2 (bench done 2026-10-10 — see hardware doc)
       - label: Not yet installed
-        text: "runner-agent dispatch lane (hw doc target: cap 2, labels cpu/dev/portable — not registered in ssot.devin-claims/focus-dispatcher yet), podman/redis (was macOS-only, data not backed up), PlayLive/CDP, mcp-debug, device-telemetry agent, WiFi profile (no PSK in backup)"
+        text: "devin CLI login (auth status = not logged in — needs one `devin auth login` browser round), podman (no container/script container tasks yet), redis (was macOS-only, no backup), PlayLive/CDP headless endpoint, device-telemetry agent, WiFi profile (no PSK in backup)"
 
   - title: Power & Sleep
     icon: 🔋
@@ -135,8 +145,8 @@ sections:
     icon: 🚀
     layout: list
     items:
-      - label: runner-agent lane
-        text: Register + install dispatch lane (cap 2, cpu/dev/portable) per hardware doc fleet role
+      - label: devin CLI auth
+        text: One `devin auth login` browser round — standalone CLI/bundled say not-logged-in despite valid credentials.toml (fleet-verified). Blocks dispatch-type cards on this runner.
         status: planned
       - label: WiFi onboarding
         text: Join TONY-WIFI once with password; laptop then works untethered
@@ -146,7 +156,7 @@ sections:
         status: optional
 
 config:
-  version: 6
+  version: 7
   last_updated: 2026-10-11
   maintainer: tony
   related_files:

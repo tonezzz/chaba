@@ -10,7 +10,8 @@
 #
 # Mesh membership = hosts: in docs/ssot/infrastructure/ssot.host-capacity.yml
 # (underscores -> dashes for ssh names). Excluded: michael-ha (HAOS keys
-# live in addon config — edits don't persist) and macbook (off tailnet).
+# live in addon config — edits don't persist). tony-macbook is mesh-eligible
+# again since the 2026-10-10 Ubuntu install (was excluded while off tailnet).
 #
 # Idempotent. Run on any host that reaches the mesh — intended as the
 # ssh-mesh-sync.timer unit on tony-omen weekly + on-demand.
@@ -18,7 +19,7 @@ set -uo pipefail
 
 REPO="${CHABA_REPO:-/home/tony/CascadeProjects/chaba}"
 SSOT="$REPO/docs/ssot/infrastructure/ssot.host-capacity.yml"
-EXCLUDE="macbook michael-ha"
+EXCLUDE="michael-ha"
 
 # hosts: section -> top-level host keys -> ssh names (underscore -> dash)
 HOSTS=$(awk '/^hosts:/{f=1;next} /^[a-z]/ && f{exit} f && /^  [a-z0-9_]+:/{gsub(":","",$1); gsub("_","-",$1); print $1}' "$SSOT")
