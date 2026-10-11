@@ -37,6 +37,9 @@ instances:
     recall_summary: ada-ha-recall-summary-kk
     line_persona: kaewta       # reachable from the real LINE group
     tool_profile: kk           # persons.kk.tools in ssot.apps.ada-persons.yml
+    identity_env: ADA_IDENTITY_INSTRUCTIONS   # Kaewta identity + feminine
+      # register — overrides the default introduce-yourself-as-Ada block
+      # (59fceb8). Without it the lane inherits Ada's identity paragraph.
 
   ada-kk-dev:
     host: idc03
@@ -92,3 +95,5 @@ regressions_to_cover:
   - images: non-image fetch rejected (HTML SPA as image_url)
   - cms: public='yes' -> public_url; personal-data gate blocks
   - identity: LINE userId -> caller -> owner tier on her lane
+  - identity: answers as Kaewta not Ada; feminine register ค่ะ/ดิฉัน,
+      never ครับ/ผม; คุณโทนี่ not "Tony" (caught by tools suite 2026-10-11)
