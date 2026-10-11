@@ -1,0 +1,23 @@
+id: board-project-rollup
+title: 'Board: project rollup view — group/filter cards by `project:` tag with stage
+  chips'
+column: backlog
+priority: medium
+tags:
+- kanban-ux
+- board
+created: '2026-10-11'
+brief: 'The project-lifecycle SOP makes `project: <slug>` a first-class tag, but the
+  board has no way to see "all cards of project X grouped by pipeline stage". Add
+  a project filter/rollup to render-board.py and/or board-api: filter by tag, show
+  stage chips (idea→product), count linked cards. This is the view Tony watches projects
+  through.'
+spec: 'Filter cards where tags contains "project:<slug>" (or a dedicated project field
+  if added); render per-project rollup: stage (from linked CMS page or card column),
+  card list w/ columns, next-action line. Surface in render-board.py HTML + board-api
+  query param.'
+comms:
+- at: 2026-10-11 11:45
+  from: devin
+  text: filed from lifecycle-SOP gap review — the missing view that makes projects
+    visible on the board
