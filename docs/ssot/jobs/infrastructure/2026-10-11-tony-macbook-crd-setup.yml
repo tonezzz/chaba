@@ -1,0 +1,100 @@
+title: Chrome Remote Desktop host on tony-macbook (Linux)
+subtitle: Stage + pair CRD on the freshly-rebuilt Ubuntu 26.04 MacBook
+icon: monitor-share
+id: 2026-10-11-tony-macbook-crd-setup
+status: blocked-on-pairing-code
+owner: devin
+project: chaba
+card: tony-macbook-crd
+started: "2026-10-11"
+
+planning:
+  goal: |
+    Install the chrome-remote-desktop amd64 deb on tony-macbook
+    (100.77.76.112), configure a headless host session, pair with the
+    tonezzzz@gmail.com fleet account via one-time --code, and record the
+    service in SSOT.
+  runbook: docs/kb/chrome-remote-desktop-setup.md (fleet default, XFCE)
+
+findings:
+  - id: deb-already-installed
+    note: |
+      chrome-remote-desktop 155.0.8059.19 was already installed (left over
+      from the Ubuntu install media session) and matches the current deb at
+      dl.google.com — no reinstall needed. Never paired: no
+      ~/.config/chrome-remote-desktop, service disabled, zero journal entries.
+  - id: wayland-only-gnome
+    note: |
+      Task caveat confirmed — Ubuntu 26.04 GNOME 50 is Wayland-only:
+      /usr/share/xsessions did not exist, no X11 GNOME session possible
+      (gnome-session --session=ubuntu can't run on Xorg). A stale
+      ~/.chrome-remote-desktop-session pointing at gnome-session was replaced.
+      Fix: installed xfce4 + dbus-x11 (fleet default session), which also
+      created /usr/share/xsessions/xfce.desktop.
+  - id: xorg-dummy-present
+    note: |
+      Xorg 1.21.1.22 and xserver-xorg-video-dummy already installed — exactly
+      what CRD's launcher uses for its virtual display :20 (verified in
+      /opt/google/chrome-remote-desktop/chrome-remote-desktop source).
+  - id: lid-close-suspend
+    note: |
+      Laptop lid-close suspends by default, which would kill headless remote
+      use. Applied /etc/systemd/logind.conf.d/headless-crd.conf with
+      HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore; logind
+      restarted, GDM greeter re-spawned cleanly.
+  - id: fleet-pin-hash
+    note: |
+      tony-dell's host JSON host_secret_hash retrieved
+      (hmac:vC+k+IIDEalTQ+jQEhqBy1Rh136yCkfCyQag5f3Kt94=) — after pairing with
+      a temp PIN, patch it into the macbook host JSON so the fleet PIN works
+      without ever being typed (runbook step 4).
+
+implementation:
+  steps:
+    - id: 1
+      label: Verify SSH + OS + sudo
+      status: done
+      notes: tony@100.77.76.112, Ubuntu 26.04.1, kernel 7.0.0-38, passwordless sudo.
+    - id: 2
+      label: CRD deb present + current (155.0.8059.19)
+      status: done
+    - id: 3
+      label: Install xfce4 + dbus-x11; set ~/.chrome-remote-desktop-session
+      status: done
+      notes: "File content: exec /usr/bin/startxfce4 (fleet default)."
+    - id: 4
+      label: Headless lid-close fix (logind drop-in)
+      status: done
+    - id: 5
+      label: Pair host via start-host --code
+      status: blocked
+      notes: |
+        Needs Tony to generate the one-time code at
+        https://remotedesktop.google.com/headless while signed into
+        tonezzzz@gmail.com. Board request raised on tony-macbook-crd and
+        $TASK_DIR/needs-input.txt written. Resume command:
+          DISPLAY= /opt/google/chrome-remote-desktop/start-host \
+            --code="<code>" \
+            --redirect-url="https://remotedesktop.google.com/_/oauthredirect" \
+            --display-name=tony-macbook --pin=<temp-6-digit>
+        Then patch host_secret_hash from tony-dell into the new host JSON and
+        `sudo systemctl restart chrome-remote-desktop@tony.service`.
+    - id: 6
+      label: Verify systemctl + remotedesktop.google.com/access
+      status: pending
+      notes: "systemd side verifiable by Devin; the /access list is Tony's Google account — needs his eyes."
+    - id: 7
+      label: SSOT updates
+      status: done
+      notes: |
+        ssot.services.yml gained a tony-macbook section (status: staged);
+        ssot.mysystem.macbook.yml CRD item updated removed→staged and
+        lid-close item marked done. Flip status→active after pairing.
+
+decisions:
+  - id: xfce-over-gdm-managed
+    decision: Use XFCE virtual session, not CRD's gdm-managed mode
+    rationale: |
+      gdm-managed mode mirrors the console Wayland session but is not the
+      fleet default; tony-dell and mn01 both run the XFCE virtual session
+      and the runbook prescribes it.
