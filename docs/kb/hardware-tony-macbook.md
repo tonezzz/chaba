@@ -26,6 +26,24 @@
   windsurf apt repo, devin CLI 3000.11.3 (credentials ported),
   tailscale, runner-agent lane (cap 2, labels cpu/dev/portable)
 
+## Display (verified 2026-10-11)
+
+- **Panel**: 2880×1800 Retina (eDP-1, i915) @ mutter scale 2.5 → 1152×720
+  logical. Fractional scaling + `xwayland-native-scaling` on.
+- **External path**: USB-C dock → one DP MST link via amdgpu dGPU →
+  per-monitor connectors appear as `card2-DP-N` (dynamic, numbering not
+  stable). Verified: PHL 276E7 27" (DP-7) + DELL P2425H 24" (DP-8),
+  both 1920×1080@60, extended via `gdctl`.
+- **Quirk**: multi-monitor enable on the MST link can fail at kernel
+  level (`amdgpu ERROR Step 2 of creating MST payload failed`) — retry
+  or replug; `gdctl set -P -L -M <conn> --right-of <anchor>` persists to
+  `~/.config/monitors.xml`. Genesys Logic hub in the dock is data+video
+  but alt-mode negotiation is flaky; a connector can show `connected`
+  while GNOME has it disabled.
+- **`text-scaling-factor 0.6`** is set (compact UI on retina) — affects
+  GTK apps only, not Chrome. Standard procedure: codeword `scalecheck`
+  → `scripts/devin/display-scale-check.sh` (skill `.devin/skills/scalecheck`).
+
 ## Fleet role
 
 - Portable dev/lab host — same standard as any onboarded fleet node:
