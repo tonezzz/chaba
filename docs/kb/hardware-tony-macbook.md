@@ -51,8 +51,19 @@
   screen dark, host alive (ssh works). Card `macbook-suspend-dgpu-wedge`.
 - Workaround under test: `mem_sleep_default=s2idle`. Until fixed, avoid
   suspending while docked — if it goes dark again, **ssh in** (`ssh
-  macbook`, tailnet up) rather than force-off: `sudo systemctl restart
-  gdm` may recover, and logs are intact for diagnosis.
+  macbook`, tailnet up) rather than force-off: run
+  `incident-capture` (~/.local/bin) FIRST — it grabs the amdgpu
+  devcoredump (self-destructs on read/reboot) + journal slices + GPU
+  state into `~/incidents/<ts>.tar.gz`. Then `sudo systemctl restart gdm`
+  may recover the display with evidence already safe.
+- Lost evidence 2026-10-11: the 15:56 wedge wrote a devcoredump at
+  `/sys/class/drm/card2/device/devcoredump/data` — per-boot, consumed on
+  read, gone after the force-off. incident-capture exists so this never
+  happens again.
+- Timeline tools on this host: `lnav` (static, ~/.local/bin — merge any
+  logs into one chronology; `lnav /var/log/journal` or files from an
+  incident bundle), `journalctl -b -1 -o short-precise`,
+  `~/incidents/*/journal-*.txt` from capture bundles.
 
 ## Fleet role
 

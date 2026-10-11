@@ -51,3 +51,11 @@ comms:
     display work — failure is in the suspend/resume PCIe path, predates and independent of
     logical-monitor config. Post-crash scan: current boot clean, all 3 displays connected,
     docked-home layout re-applied by monitors.xml.'
+- at: 2026-10-11 16:30
+  from: devin
+  text: 'Tooling added: scripts/devin/incident-capture.sh (~/.local/bin/incident-capture) —
+    run over ssh AT symptom time: captures amdgpu devcoredump (self-destructs on read/reboot
+    — the 15:56 dump was lost to the force-off), journal -b/-b-1 slices, drm/gdctl state,
+    sensors, failed units, scalecheck report -> ~/incidents/<ts>.tar.gz. lnav 0.14.1 static
+    installed for merged-timeline review of the bundle. For repro: trigger suspend docked,
+    watch for pcieport D3cold errors, capture before any force-off.'
