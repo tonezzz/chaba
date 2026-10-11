@@ -1,0 +1,19 @@
+id: git-autostash-column-guard
+title: git pull --rebase --autostash silently resurrects closed kanban cards
+brief: '4 confirmed waves: rebase+autostash pops apply stale card-file versions over
+  the rebased tree, reverting column: done -> review even when close-evidence comms
+  are already on the card. ~10 card-resurrections so far; each sweep re-closes them
+  by hand. Fix directions: (a) post-pop guard in scripts/git-safe-pull.sh — snapshot
+  card columns pre-pull, after pop diff column fields and refuse/flag silent reverts
+  of cards whose comms show close evidence; (b) make the autostash pop non-fatal for
+  docs/ssot/kanban/cards/ paths (upstream-wins, same rule the single-writer pull already
+  uses for generated paths); (c) teach merge-sweep to detect close-comms followed
+  by reopened columns. Root cause lives next to the 33-stash graveyard — see stash-graveyard-triage.'
+column: backlog
+priority: high
+tags:
+- kanban
+- git
+- hardening
+comms: []
+created: '2026-10-11'
