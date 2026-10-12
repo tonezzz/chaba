@@ -41,7 +41,7 @@ setInterval(() => {
 }, 500);
 // diag overlay: top event emitters — when it "screams", the HUD names it
 const _diag = document.createElement("div");
-_diag.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:98;" +
+_diag.style.cssText = "position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:98;" +
   "font:11px ui-monospace,monospace;color:#4ade80;opacity:.75;white-space:pre";
 document.body.appendChild(_diag);
 setInterval(() => {

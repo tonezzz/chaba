@@ -32,11 +32,14 @@ JAM.register("band", {
   ],
 
   async init(J) {
-    this.step = 0;
+    // reset ALL musical state — a re-enabled band must start resting,
+    // not resume at old energy (was: instant full-tempo barrage on enable)
+    this.step = 0; this.energy = 0; this.hits = 0; this.echo = [];
+    this.soloUntil = 0;
+    this.bpm = this.targetBpm = this.STYLES[this.style].bpm;
     this.nextT = J._actx().currentTime + 0.1;
     this.timer = setInterval(() => this.tick(), 30);
     const st = this.STYLES[this.style];
-    this.bpm = this.targetBpm = st.bpm;
     J.hud(`🎹 AUTO TUNE — "${st.name}" backing live · swipe hand fast L/R to change style · smile = you like it`);
   },
 
