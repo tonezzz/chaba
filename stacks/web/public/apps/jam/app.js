@@ -362,9 +362,19 @@ document.getElementById("b-fb").onclick = () => {
 };
 
 /* ---------- module loader ---------- */
+// ?mods=remote,fx auto-enables modules once their script registers
+const wantMods = new Set(
+  (new URLSearchParams(location.search).get("mods") || "").split(",").filter(Boolean));
 for (const m of ["fx", "hands", "mic", "remote"]) {
   const s = document.createElement("script");
   s.src = "mod/" + m + ".js";
+  s.onload = () => {
+    if (wantMods.has(m)) {
+      const btn = [...document.querySelectorAll("#mods .btn")]
+        .find(b => b.textContent === m);
+      JAM.toggle(m, btn);
+    }
+  };
   s.onerror = () => {};   // optional module missing = fine
   document.body.appendChild(s);
 }
