@@ -120,7 +120,7 @@ const statusEl = $('status'), hudFps = $('hud-fps'), hudHand = $('hud-hand'),
 let landmarker = null, stream = null;
 let flipX = true;                    // mirror so the pointer matches the hand
 let lastVideoTime = -1, lastEmit = 0, txCount = 0;
-let isPinching = false, isFist = false, lastLm = null;
+let handState = {}, lastLm = null;   // per-hand {pinch,fist} edge state
 let frames = 0, fpsT = performance.now();
 
 function status(text, cls) { statusEl.textContent = text; statusEl.className = cls; }
@@ -147,7 +147,7 @@ async function initLandmarker() {
   landmarker = await HandLandmarker.createFromOptions(vision, {
     baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
     runningMode: 'VIDEO',
-    numHands: 1,
+    numHands: 2,
   });
 }
 
@@ -217,38 +217,49 @@ function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const res = landmarker.detectForVideo(video, performance.now());
-  const lm = res.landmarks && res.landmarks[0];
+  const hands = res.landmarks || [];
   frames++;
   const now = performance.now();
   if (now - fpsT > 1000) { hudFps.textContent = 'fps ' + frames; frames = 0; fpsT = now; }
-  hudHand.textContent = lm ? 'hand ✓' : 'no hand';
-  if (!lm) {
+  hudHand.textContent = hands.length ? 'hands ' + hands.length : 'no hand';
+  if (!hands.length) {
     hudPose.textContent = 'pose –';
-    if (isPinching || isFist) { isPinching = isFist = false; }
+    handState = {};
     return;
   }
-  drawSkeleton(lm);
-  lastLm = lm;
 
-  const pinch = dist(lm[4], lm[8]) < PINCH_DIST;
-  const fist = fistOf(lm);
-  hudPose.textContent = fist ? 'FIST' : pinch ? 'PINCH' : 'open';
+  const seen = {}, poses = [];
+  for (let i = 0; i < hands.length; i++) {
+    const lm = hands[i];
+    const hand = res.handednesses?.[i]?.[0]?.categoryName || 'Right';
+    seen[hand] = true;
+    drawSkeleton(lm);
+    lastLm = lm;
 
-  const base = () => ({
-    type: 'gesture',
-    x: flipX ? 1 - lm[8].x : lm[8].x,   // index tip
-    y: lm[8].y,
-    wx: flipX ? 1 - lm[0].x : lm[0].x,  // wrist (drag anchor)
-    wy: lm[0].y,
-  });
+    const pinch = dist(lm[4], lm[8]) < PINCH_DIST;
+    const fist = fistOf(lm);
+    const st = handState[hand] || (handState[hand] = { pinch: false, fist: false });
+    poses.push(hand[0] + ':' + (fist ? 'FIST' : pinch ? 'PINCH' : 'open'));
 
-  // edge events go out immediately; cursor frames throttled to ~20Hz
-  if (pinch && !isPinching) send({ ...base(), action: 'pinch' });
-  if (fist && !isFist) send({ ...base(), action: 'fist_start' });
-  if (!fist && isFist) send({ ...base(), action: 'fist_end' });
-  isPinching = pinch; isFist = fist;
+    const base = () => ({
+      type: 'gesture', hand,
+      x: flipX ? 1 - lm[8].x : lm[8].x,   // index tip
+      y: lm[8].y,
+      wx: flipX ? 1 - lm[0].x : lm[0].x,  // wrist (drag anchor)
+      wy: lm[0].y,
+    });
 
-  if (now - lastEmit >= EMIT_MIN_MS) { send(base()); lastEmit = now; }
+    // edge events go out immediately; cursor frames throttled to ~20Hz
+    if (pinch && !st.pinch) send({ ...base(), action: 'pinch' });
+    if (fist && !st.fist) send({ ...base(), action: 'fist_start' });
+    if (!fist && st.fist) send({ ...base(), action: 'fist_end' });
+    st.pinch = pinch; st.fist = fist;
+
+    if (now - lastEmit >= EMIT_MIN_MS) send(base());
+  }
+  if (now - lastEmit >= EMIT_MIN_MS) lastEmit = now;
+  hudPose.textContent = poses.join(' · ');
+  for (const h in handState) if (!seen[h]) delete handState[h];
 }
 
 /* ---------------- ui ---------------- */
