@@ -305,17 +305,17 @@ function loop() {
   /* ---------------- face ---------------- */
   // blendshapes -> smile/mouth/brow edges; nose-tip motion -> nod/shake.
   // Emits {type:"body", evt, val} — receivers map via their own bindings.
-  const bodyEmit = (evt, val = 1) => {
+  const bodyEmit = (evt, val = 1, cd = 500) => {
     // retrigger cooldown — stops blendshape/edge flapping screaming
-    if (now - (bodyEmit.last?.[evt] || 0) < 500) return;
+    if (now - (bodyEmit.last?.[evt] || 0) < cd) return;
     (bodyEmit.last ||= {})[evt] = now;
     send({ type: 'body', evt, val }); poses.push('!' + evt);
   };
   // deadband edge: fires once on `on`, cannot re-fire until `off` clears it —
   // a value hovering AT the threshold emits one shot then stays quiet.
-  const edge = (state, evt, on, off) => {
+  const edge = (state, evt, on, off, cd) => {
     if (!state['a_' + evt]) {
-      if (on) { state['a_' + evt] = true; bodyEmit(evt); }
+      if (on) { state['a_' + evt] = true; bodyEmit(evt, 1, cd); }
     } else if (off) state['a_' + evt] = false;
   };
   if (want.face && faceLm) {
@@ -369,10 +369,12 @@ function loop() {
       const vy = (hip.y - (poseState.y ?? hip.y)) / dt * 1000;
       if (vy < -1.2 && now - poseState.jumpT > 800) { poseState.jumpT = now; bodyEmit('jump'); }
       poseState.y = hip.y; poseState.t = now;
+      // arm raised = deliberate solo trigger: fires once per 2.5s max and
+      // re-arms only when the wrist comes clearly BELOW the shoulder
       edge(poseState, 'arm-up-L',
-           pl[15].y < pl[11].y - 0.07, pl[15].y > pl[11].y - 0.01);
+           pl[15].y < pl[11].y - 0.08, pl[15].y > pl[11].y + 0.10, 2500);
       edge(poseState, 'arm-up-R',
-           pl[16].y < pl[12].y - 0.07, pl[16].y > pl[12].y - 0.01);
+           pl[16].y < pl[12].y - 0.08, pl[16].y > pl[12].y + 0.10, 2500);
       if (now - lastEmit >= EMIT_MIN_MS)
         send({ type: 'body', evt: 'lean', val: Math.min(1, Math.max(0, flipX ? 1 - sh.x : sh.x)) });
       ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3;

@@ -133,7 +133,8 @@ JAM.register("band", {
       return;
     }
     const w = (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
-               || evt === "jump" || evt.startsWith("arm-up")) ? 0.09 : 0;
+               || evt === "jump") ? 0.09
+            : evt.startsWith("arm-up") ? 0.03 : 0;   // solo trigger ≠ energy pump
     if (w) {
       this.energy = Math.min(1, this.energy + w);
       this.hits++;
