@@ -13,6 +13,7 @@ Used by report-daily-brief.py and cam-wall-cms.py.
 from __future__ import annotations
 
 import datetime
+import os
 import json
 import urllib.request
 
@@ -117,6 +118,8 @@ def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
             "updated": (meta.get("updated") or ["-"])[0][:16],
             "fresh": (meta.get("fresh_for") or ["-"])[0],
             "stale": stale(meta, now),
+            "public": (meta.get("public") or [""])[0].lower()
+                      in ("true", "yes", "1"),
         })
     rows.sort(key=lambda r: r["updated"], reverse=True)
     return rows
@@ -150,7 +153,8 @@ def group_rows(rows: list[dict]) -> list[tuple[str, str, list[dict]]]:
     return out
 
 
-def render(rows: list[dict], now: datetime.datetime) -> str:
+def render(rows: list[dict], now: datetime.datetime,
+           public_base: str = "") -> str:
     lines = [f"# Reports index — {now:%Y-%m-%d %H:%M}Z\n",
              "Every live CMS page, grouped by nav section"
              " (meta kind/domain — ssot.cms.yml). Read the linked page",
@@ -163,8 +167,15 @@ def render(rows: list[dict], now: datetime.datetime) -> str:
         for r in shown:
             flag = " ⚠STALE" if r["stale"] else ""
             summ = (r["summary"] or r["title"])[:80]
-            lines.append(f"| {r['slug']} | {r['domain']} | {r['updated']}"
-                         f"{flag} | {r['fresh']} | {summ} |")
+            # public pages link to their static .html; internal pages use
+            # the CMS-app-relative #/slug fragment (works on any host the
+            # miniapp is served from)
+            link = (f"{public_base}{r['slug']}.html"
+                    if r.get("public") and public_base
+                    else f"#/{r['slug']}")
+            lines.append(f"| [{r['slug']}]({link}) | {r['domain']} | "
+                         f"{r['updated']}{flag} | {r['fresh']} | "
+                         f"{summ} |")
         if len(srows) > len(shown):
             lines.append(f"\n_…{len(srows) - len(shown)} more in this"
                          " section — see the CMS app._")
@@ -177,7 +188,14 @@ def regen_reports_index(mddb_base: str, written_by: str,
                         now: datetime.datetime | None = None) -> bool:
     """Rewrite ada-cms-pages/reports-index from the current doc set."""
     now = now or datetime.datetime.now(datetime.timezone.utc)
-    md = render(index_rows(list_docs(mddb_base, collection), now), now)
+    tenant = "tony-ha" if collection == "ada-cms-pages" else \
+        (collection[len("ada-cms-pages-"):] + "-ha"
+         if collection.startswith("ada-cms-pages-") else "")
+    pub_base = (os.environ.get("ADA_CMS_PUBLIC_BASE", "").strip()
+                or (f"https://surf-thailand.com/{tenant}/" if tenant
+                    else ""))
+    md = render(index_rows(list_docs(mddb_base, collection), now), now,
+                public_base=pub_base)
     meta = {
         "kind": ["page"], "slug": ["reports-index"],
         "status": ["active"], "page_role": ["index"],
