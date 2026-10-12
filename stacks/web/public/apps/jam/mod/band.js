@@ -70,7 +70,8 @@ JAM.register("band", {
     this.bpm += (this.targetBpm - this.bpm) * 0.08;
     this.energy *= 0.996;                     // activity decays
     const spb = 60 / this.bpm / 4;            // 16th-note seconds
-    const rest = this.energy < 0.06;          // asleep: play nothing, just keep time
+    const rest = this.energy < 0.10;          // asleep: play nothing, just keep time
+    const hot = this.energy > 0.4;            // presence alone = drums only
     // throttled-tab guard: if the timer slept, nextT lags real time and the
     // loop would fire hundreds of PAST-scheduled notes at once = scream.
     // Drop the backlog — resume on the next real beat.
@@ -81,11 +82,13 @@ JAM.register("band", {
       if (!rest) {
         if (st.kick.includes(s16))  v.kick(t, 0.85);
         if (st.snare.includes(s16)) v.snare(t, 0.65);
-        if (st.hat.includes(s16))   v.hat(t, 0.45, s16 === 14 && bar % 2 === 1);
-        const b = st.bass[s16];
-        if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.55);
-        if (s16 === 0 && bar % st.chordBars === 0)
-          [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.28));
+        if (st.hat.includes(s16))   v.hat(t, 0.35, s16 === 14 && bar % 2 === 1);
+        if (hot) {   // bass + chords join only when energy earned them
+          const b = st.bass[s16];
+          if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.45);
+          if (s16 === 0 && bar % st.chordBars === 0)
+            [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.24));
+        }
         if (s16 === 0) this.barStart = t;
         // the feedback payoff: hits in this bar -> fill next bar;
         // ambient surprise scales with energy
@@ -121,15 +124,20 @@ JAM.register("band", {
   },
 
   onEvent(evt, val) {
-    const w = evt.startsWith("hand-move") ? 0.004
-      : (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
-         || evt === "jump" || evt.startsWith("arm-up")) ? 0.09 : 0;
+    // hand-move = presence only: tiny weight AND hard ceiling — a held hand
+    // can wake the band to a simmer but can NEVER drive it to full tilt.
+    // Only deliberate strikes/claps push energy hot.
+    if (evt.startsWith("hand-move")) {
+      this.energy = Math.min(0.25, this.energy + 0.002);
+      this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
+      return;
+    }
+    const w = (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
+               || evt === "jump" || evt.startsWith("arm-up")) ? 0.09 : 0;
     if (w) {
       this.energy = Math.min(1, this.energy + w);
-      if (w >= 0.09) {
-        this.hits++;
-        this.echo.push(JAM._actx().currentTime);   // rhythm to echo
-      }
+      this.hits++;
+      this.echo.push(JAM._actx().currentTime);   // rhythm to echo
       // more movement -> faster music
       this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
     }
