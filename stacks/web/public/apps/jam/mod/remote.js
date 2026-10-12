@@ -15,7 +15,7 @@
 "use strict";
 JAM.register("remote", {
   ws: null, retry: 0, dots: {}, zones: null, zoneSig: "",
-  steps: {}, lastSeen: {}, glideWd: 0, vx: null,
+  steps: {}, lastSeen: {}, lastEmit: {}, glideWd: 0, vx: null,
 
   // iPhone mic -> relay -> here. Random rotating sci-fi chain:
   // ring-mod + feedback delay + playback-rate wobble, preset swaps ~1.2s.
@@ -198,10 +198,13 @@ JAM.register("remote", {
         ac.currentTime, 0.07);
       tone.g.gain.setTargetAtTime(0.12, ac.currentTime, 0.08);
       this.lastSeen[side] = now;
-      // real movement -> energy for the band (unbound by default)
-      if (deg !== (this.steps[side] ?? -1)) {
+      // real movement -> energy for the band (unbound by default);
+      // capped ~4/s so a held hand can't pin the band at full tilt
+      if (deg !== (this.steps[side] ?? -1) &&
+          now - (this.lastEmit[side] || 0) > 250) {
         this.steps[side] = deg;
-        JAM.emit(`hand-move-${side}`, deg / 9);
+        this.lastEmit[side] = now;
+        JAM.emit(`hand-move-${side}`, deg / 7);
       }
     }
     this.paintZones();
@@ -216,6 +219,6 @@ JAM.register("remote", {
     if (this.vx) { try { this.vx.carrier.stop(); } catch {} this.vx = null; }
     clearInterval(this.glideWd);
     JAM._toneDrop("remote-L"); JAM._toneDrop("remote-R");
-    this.steps = {}; this.lastSeen = {};
+    this.steps = {}; this.lastSeen = {}; this.lastEmit = {};
   },
 });

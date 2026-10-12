@@ -83,7 +83,7 @@ JAM.register("band", {
         // ambient surprise scales with energy
         if (s16 === 15) {
           const reward = this.hits >= 3;
-          const surprise = Math.random() < 0.04 + this.energy * 0.08;
+          const surprise = Math.random() < 0.02 + this.energy * 0.05;
           if (reward || surprise) this.fill(t + spb, spb);
           // call-and-response: YOUR rhythm echoed as a melody next bar
           const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
@@ -113,7 +113,7 @@ JAM.register("band", {
   },
 
   onEvent(evt, val) {
-    const w = evt.startsWith("hand-move") ? 0.015
+    const w = evt.startsWith("hand-move") ? 0.004
       : (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
          || evt === "jump" || evt.startsWith("arm-up")) ? 0.09 : 0;
     if (w) {

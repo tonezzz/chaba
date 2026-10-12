@@ -6,7 +6,7 @@
 JAM.register("hands", {
   stream: null, landmarker: null, raf: 0,
   lastY: { Left: null, Right: null }, lastT: { Left: 0, Right: 0 },
-  steps: {}, lastSeen: {}, glideWd: 0,
+  steps: {}, lastSeen: {}, lastEmit: {}, glideWd: 0,
 
   async init() {
     const video = document.getElementById("cam");
@@ -57,9 +57,11 @@ JAM.register("hands", {
           ac.currentTime, 0.07);
         tone.g.gain.setTargetAtTime(0.12, ac.currentTime, 0.08);
         this.lastSeen[side] = now;
-        if (deg !== (this.steps[side] ?? -1)) {
+        if (deg !== (this.steps[side] ?? -1) &&
+            now - (this.lastEmit[side] || 0) > 250) {
           this.steps[side] = deg;
-          JAM.emit(`hand-move-${side}`, deg / 9);
+          this.lastEmit[side] = now;
+          JAM.emit(`hand-move-${side}`, deg / 7);
         }
       }
     };
@@ -85,6 +87,6 @@ JAM.register("hands", {
     clearInterval(this.glideWd);
     JAM._toneDrop("hands-L"); JAM._toneDrop("hands-R");
     this.lastY = { Left: null, Right: null };
-    this.steps = {}; this.lastSeen = {};
+    this.steps = {}; this.lastSeen = {}; this.lastEmit = {};
   },
 });
