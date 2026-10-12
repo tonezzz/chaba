@@ -11,9 +11,7 @@ TimeoutStartSec=900
 # Remote hosts audited over SSH; unreachable hosts still emit a delta meta.
 ExecStart=/bin/bash -c '\
   cd /home/tony/CascadeProjects/chaba && \
-  for h in tony-dell tony-omen mn01 idc01 idc02 idc03 macbook; do \
-    /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; \
-  done; \
+  /usr/bin/python3 scripts/audit-hosts.py --all --cards || true; \
   /usr/bin/python3 scripts/audit-hosts.py --consolidate; \
   /usr/bin/python3 scripts/report-system.py'
 WorkingDirectory=/home/tony/CascadeProjects/chaba
