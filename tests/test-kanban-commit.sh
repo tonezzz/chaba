@@ -59,7 +59,7 @@ export CHABA_CHECKOUTS=""          # keep the sibling scan quiet in tests
 export CHABA_DIVERGENCE_N=2        # small N so the warning is easy to trip
 
 # --- A: two parallel sessions ----------------------------------------------
-echo "live board edit" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+echo "# live board edit" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
 echo "title: card a"  >  "$TMP/served/docs/ssot/kanban/cards/card-a.yml"
 (
   cd "$TMP/other" || exit 1
@@ -89,7 +89,7 @@ check "A: served replayed onto upstream" \
 # untracked — that is the class autostash cannot cover (the reported stall).
 mkdir -p "$TMP/served/docs/ssot/jobs/kanban" "$TMP/other/docs/ssot/jobs/kanban"
 echo "LOCAL version" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-01-collision.yml"
-echo "board tick"    >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+echo "# board tick"    >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -112,7 +112,7 @@ check "B: no rebase left in progress" \
 
 # --- C: untracked collision, identical content ------------------------------
 echo "identical" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-02-identical.yml"
-echo "tick" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+echo "# tick" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -171,6 +171,30 @@ check "E: lint reports uncommitted focus-inbox" \
   "grep -q 'uncommitted focus-inbox' <<<\"$lint_out\""
 check "E: served checkout reports ok" \
   "grep -q 'ok.*served' <<<\"$lint_out\""
+
+# --- F: YAML syntax guard ----------------------------------------------------
+# A staged card that doesn't parse must never reach origin/master — the
+# sweep refuses, files the alert card naming the file, and the same run
+# recovers once the file is fixed (card
+# guard-card-yaml-syntax-validation-at-wri).
+printf 'id: bad\nnote: "unclosed\n  - key: nope\n' \
+    > "$TMP/served/docs/ssot/kanban/cards/bad-card.yml"
+printf 'id: good\ntitle: fine\n' \
+    > "$TMP/served/docs/ssot/kanban/cards/good-card.yml"
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/f.err"; rc_f=$?
+check "F: kanban-commit refuses staged bad YAML" "[ $rc_f -ne 0 ]"
+check "F: refusal names the YAML syntax error" \
+  "grep -q 'YAML syntax errors' '$TMP/f.err'"
+check "F: bad card did NOT reach origin/master" \
+  "! git -C '$TMP/origin.git' show master:docs/ssot/kanban/cards/bad-card.yml >/dev/null 2>&1"
+check "F: alert card filed in served checkout" \
+  "grep -q 'yaml-syntax' '$TMP/served/docs/ssot/kanban/cards/ops-kanban-commit-guard.yml'"
+printf 'id: bad\ntitle: fixed\n' \
+    > "$TMP/served/docs/ssot/kanban/cards/bad-card.yml"
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/f2.err"; rc_f2=$?
+check "F: sweep recovers once YAML is fixed" "[ $rc_f2 -eq 0 ]"
+check "F: fixed card pushed to origin/master" \
+  "git -C '$TMP/origin.git' show master:docs/ssot/kanban/cards/bad-card.yml | grep -q 'fixed'"
 
 echo
 echo "passed: $PASS  failed: $FAIL"

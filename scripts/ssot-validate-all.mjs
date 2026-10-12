@@ -405,6 +405,12 @@ function main() {
   } else {
     console.log(`\n❌ ${allFiles.length - validFiles} SSOT files have validation issues`);
   }
+
+  // Errors must fail the run — a nonzero exit is what makes the
+  // pre-commit `--staged` gate and `check:ssot` actually refuse a bad
+  // file (incl. unparseable kanban cards) instead of reporting then
+  // passing (guard-card-yaml-syntax-validation-at-wri).
+  process.exitCode = totalErrors > 0 ? 1 : 0;
 }
 
 main();
