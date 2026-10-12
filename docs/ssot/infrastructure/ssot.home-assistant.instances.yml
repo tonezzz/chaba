@@ -152,6 +152,10 @@ instances:
       Member-node pattern: person.kk identity is shared across nodes; role is
       per-node (owner here, member elsewhere). Voice card dials same-origin
       /ada-ws/kk on the public edge first, tailnet fallback.
+      kaewta dashboard tabs (2026-10-12): [kaewta, chatui, cms] — chatui/cms
+      are panel views iframing /chatui/chat.html + /cms/ on the same vhost;
+      idc02 routes /chatui* (prefix-stripped -> ada-kk :8007 chat card),
+      /cms* + /api/cms* (-> ada-kk CMS miniapp; lane key required).
       GOTCHA: HA 2026.8 migrates http: to .storage/http on first boot with
       yaml_migration_done — later YAML edits to http: are ignored; patch
       .storage/http stable block instead (trusted_proxies must include the
