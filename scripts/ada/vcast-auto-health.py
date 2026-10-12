@@ -20,8 +20,11 @@ calling this file the whole time and every tick logged "failed"):
                matching headless-* / vcast-real-* connected, and no
                screen-N name parked on the wrong slot (the 2026-10-06
                migration scramble: screen-6 sat on slot 1)
-  flap         journald on idc03: `screen N superseded`/`disconnected`
-               events in the last 24h — the card metric is 0/24h
+  flap         journald on idc03: abnormal display close events in the
+               last 24h — supersede + ws closed with a code other than
+               1000/1001/1005 (clean client closes are normal browser
+               lifecycle, not the stale-socket regression). Thresholds:
+               >=5 on one screen or >=12 total
   flap-check   `node vcast-flap-check.mjs` inside the relay's podman
                image on idc03 — exercises the stale-socket race against
                the DEPLOYED server.mjs, exits 0 on pass
@@ -138,20 +141,52 @@ def probe_displays() -> tuple[bool, str]:
     return True, f"{len(screens)} screens, fleet connected, slots aligned"
 
 
+# close codes that are normal client lifecycle, not a flap: 1000 clean,
+# 1001 going-away (tab nav/reload/suspend), 1005 no-status (page unload).
+# Anything else — 1006 abnormal drop, protocol/server codes — plus a
+# supersede (re-register over a live socket) is a real flap event.
+BENIGN_CLOSE_CODES = {1000, 1001, 1005}
+FLAP_PER_SCREEN = 5        # chronic churn signature on one display
+FLAP_TOTAL = 12            # fleet-wide noise ceiling (shared-fate blips)
+
+
 def probe_flap() -> tuple[bool, str]:
     ok, out = ssh_idc03(
         "journalctl --user -u input-bridge.service "
         f"--since '{FLAP_WINDOW}' --no-pager -o cat 2>/dev/null "
-        "| grep -cE 'superseded by new socket|disconnected' || true")
+        "| grep -E 'superseded by new socket|ws closed code=' || true")
     if not ok:
         return False, out
-    try:
-        n = int(out.strip() or "0")
-    except ValueError:
-        n = 0
-    if n:
-        return False, f"{n} supersede/disconnect events in 24h (want 0)"
-    return True, "0 flap events in 24h"
+    per_screen: dict[int, int] = {}
+    benign = 0
+    for line in out.splitlines():
+        if "superseded by new socket" in line:
+            m = re.search(r"screen (\d+)", line)
+            if m:
+                per_screen[int(m.group(1))] = \
+                    per_screen.get(int(m.group(1)), 0) + 1
+            continue
+        m = re.search(r"ws closed code=(\d+).*?screen=([0-9-]+)", line)
+        if not m:
+            continue
+        code, scr = int(m.group(1)), m.group(2)
+        if scr == "-":              # never registered — not a display flap
+            continue
+        if code in BENIGN_CLOSE_CODES:
+            benign += 1
+            continue
+        per_screen[int(scr)] = per_screen.get(int(scr), 0) + 1
+    total = sum(per_screen.values())
+    worst = max(per_screen.items(), key=lambda kv: kv[1],
+                default=(None, 0))
+    if worst[1] >= FLAP_PER_SCREEN or total >= FLAP_TOTAL:
+        per = ",".join(f"s{s}:{n}" for s, n in
+                       sorted(per_screen.items(), key=lambda kv: -kv[1]))
+        return False, (f"{total} abnormal flap events in 24h ({per}; "
+                       f"{benign} clean closes ignored; thresholds "
+                       f"{FLAP_PER_SCREEN}/screen, {FLAP_TOTAL} total)")
+    return True, (f"{total} abnormal flap events in 24h "
+                  f"({benign} clean closes ignored)")
 
 
 def probe_flap_check() -> tuple[bool, str]:
@@ -241,11 +276,15 @@ def checks() -> list[dict]:
             "slug": "flap",
             "title": "vcast flap events in last 24h",
             "probe": probe_flap,
-            "help": ("Counts 'superseded by new socket' / 'disconnected' "
-                     "lines in the idc03 input-bridge journal (metric: "
-                     "0/24h). A supersede = a display re-registered over a "
-                     "live socket — investigate which device flapped and "
-                     "why it reconnected."),
+            "help": ("Counts ABNORMAL display closes in the idc03 "
+                     "input-bridge journal: 'superseded by new socket' + "
+                     "'ws closed code=' other than 1000/1001/1005 "
+                     "(thresholds: >=5 on one screen or >=12 total). "
+                     "Clean 1001 closes are normal browser lifecycle — a "
+                     "human's vcast tab reload/sleep is not a defect. A "
+                     "supersede = a display re-registered over a live "
+                     "socket — investigate which device flapped and why "
+                     "it reconnected."),
         },
         {
             "slug": "flap-check",

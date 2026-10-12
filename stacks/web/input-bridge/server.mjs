@@ -1228,7 +1228,10 @@ wss.on("connection", (ws, req) => {
   sockets.add(ws);
   ws.isAlive = true;
   ws.connectedAt = Date.now();
-  ws.remote = req && req.socket ? req.socket.remoteAddress : "";
+  // real client IP — edge-proxied sockets all arrive from the proxy's
+  // address (every display showed remote=tony-dell, which made the
+  // 2026-10-12 flap forensics useless); XFF first hop is the true peer
+  ws.remote = req ? clientIp(req) : "";
   ws.on("pong", () => { ws.isAlive = true; });
   joinRoom(ws, "default");
 
