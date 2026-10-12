@@ -43,7 +43,7 @@ JAM.register("band", {
   setStyle(i) {
     this.style = (i + this.STYLES.length) % this.STYLES.length;
     const st = this.STYLES[this.style];
-    this.targetBpm = st.bpm * (0.85 + this.energy * 0.45);
+    this.targetBpm = st.bpm * (0.5 + this.energy * 0.8);
     JAM.hud(`🎹 style → ${st.name} (${st.bpm}bpm base)`);
     JAM._v.riser(JAM._actx().currentTime, 0.3);
   },
@@ -56,8 +56,8 @@ JAM.register("band", {
     } else {
       this.soloUntil = t + 8 * spb;
       for (let i = 0; i < 8; i++)
-        v.lead(t + i * spb, JAM._NOTE(root + scale[(i * 2 + (Math.random() * 3 | 0)) % scale.length]),
-               0.32, 0, spb * 1.4);
+        v.bell(t + i * spb, JAM._NOTE(root + scale[(i * 2 + (Math.random() * 3 | 0)) % scale.length]),
+               0.28, spb * 2.5);
     }
   },
 
@@ -73,9 +73,9 @@ JAM.register("band", {
       if (st.snare.includes(s16)) v.snare(t, 0.65);
       if (st.hat.includes(s16))   v.hat(t, 0.45, s16 === 14 && bar % 2 === 1);
       const b = st.bass[s16];
-      if (b != null) v.bass(t, JAM._NOTE(root + scale[b % scale.length]), 0.45);
+      if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.55);
       if (s16 === 0 && bar % st.chordBars === 0)
-        v.stab(t, [0, 3, 7].map(s => JAM._NOTE(root + 12 + s)), 0.22);
+        [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.28));
       if (s16 === 0) this.barStart = t;
       // the feedback payoff: hits in this bar -> fill next bar;
       // ambient surprise scales with energy
@@ -90,8 +90,8 @@ JAM.register("band", {
             Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
             .sort((a, b) => a - b).slice(0, 8);
           qs.forEach((q, i) =>
-            v.lead(t + spb + q * spb,
-                   JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, 0, spb * 2));
+            v.bell(t + spb + q * spb,
+                   JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, spb * 3));
           JAM.hud("🎹 echoing your riff ↩");
         }
         this.echo = [];
@@ -118,14 +118,14 @@ JAM.register("band", {
         this.echo.push(JAM._actx().currentTime);   // rhythm to echo
       }
       // more movement -> faster music
-      this.targetBpm = this.STYLES[this.style].bpm * (0.85 + this.energy * 0.45);
+      this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
     }
     if (evt === "swipe-L") this.setStyle(this.style - 1);
     else if (evt === "swipe-R") this.setStyle(this.style + 1);
     else if (evt === "arm-up-L") {
       const t = JAM._actx().currentTime, spb = 60 / this.bpm / 4;
       for (let i = 0; i < 4; i++)
-        JAM._v.bass(t + i * spb * 2, JAM._NOTE(36 + i * 3), 0.6);
+        JAM._v.pluck(t + i * spb * 2, JAM._NOTE(36 + i * 3), 0.65);
       JAM.hud("🎹 arm L → bass run");
     } else if (evt === "arm-up-R") {
       this.fill(JAM._actx().currentTime + 0.05, 60 / this.bpm / 4);

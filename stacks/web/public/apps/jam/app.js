@@ -197,6 +197,45 @@ function scratch(t, v = 0.4) {
   o.connect(g).connect(S.fxIn); o.start(t); o.stop(t + 0.32);
 }
 
+/* --- less-synthy timbres --- */
+function pluck(t, f, v = 0.5) {          // Karplus-Strong string
+  const ac = actx(), n = noiseSrc(t, 0.012);
+  const dly = ac.createDelay(0.05), fb = ac.createGain(),
+        lp = ac.createBiquadFilter(), g = ac.createGain();
+  dly.delayTime.value = 1 / f;
+  fb.gain.value = 0.96;
+  lp.type = "lowpass"; lp.frequency.value = 2400;
+  g.gain.value = v;
+  n.connect(dly); dly.connect(lp); lp.connect(fb); fb.connect(dly);
+  dly.connect(g).connect(S.fxIn);
+  fb.gain.setTargetAtTime(0, t + 1.2, 0.2);
+  setTimeout(() => { try { fb.disconnect(); } catch {} }, 3500);
+}
+function bell(t, f, v = 0.35, dur = 1.2) { // FM bell/marimba
+  const ac = actx(), c = ac.createOscillator(), m = ac.createOscillator(),
+        mg = ac.createGain(), g = ac.createGain();
+  c.frequency.value = f; m.frequency.value = f * 3.5;
+  mg.gain.setValueAtTime(f * 2.2, t);
+  mg.gain.exponentialRampToValueAtTime(1, t + dur);
+  m.connect(mg); mg.connect(c.frequency);
+  g.gain.setValueAtTime(v, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  c.connect(g).connect(S.fxIn);
+  c.start(t); c.stop(t + dur + 0.05); m.start(t); m.stop(t + dur + 0.05);
+}
+function organ(t, f, v = 0.3, dur = 0.5) { // drawbar organ tone
+  const ac = actx(), g = ac.createGain(), lp = ac.createBiquadFilter();
+  lp.type = "lowpass"; lp.frequency.value = 4000;
+  g.gain.setValueAtTime(v * 0.32, t);
+  g.gain.setTargetAtTime(0, t + dur - 0.15, 0.05);
+  for (const [r, a] of [[1, 1], [2, 0.6], [3, 0.4], [4, 0.25]]) {
+    const o = ac.createOscillator(), og = ac.createGain();
+    o.type = "sine"; o.frequency.value = f * r; og.gain.value = a;
+    o.connect(og).connect(g); o.start(t); o.stop(t + dur + 0.1);
+  }
+  g.connect(lp).connect(S.fxIn);
+}
+
 /* ---------- JAM core: registry + bus + bindings ---------- */
 const EVENTS = [
   "pad-kick","pad-snare","pad-hat","pad-tom","pad-clap","pad-crash",
@@ -207,11 +246,12 @@ const EVENTS = [
 ];
 const TARGETS = [
   "kick","snare","hat","tom","clap","crash","rim","shaker",
-  "bass-note","lead-note","chord-stab","airhorn","riser","scratch",
+  "bass-note","lead-note","chord-stab","pluck-note","bell-note","organ-stab",
+  "airhorn","riser","scratch",
 ];
 const DEFAULT_BINDINGS = {
   "hand-strike-L": "kick", "hand-strike-R": "snare",
-  "hand-move-L": "lead-note", "hand-move-R": "bass-note",
+  "hand-move-L": "bell-note", "hand-move-R": "pluck-note",
   "clap": "clap", "hum-note": "lead-note",
   "nod": "crash", "smile": "chord-stab",
   "shake": "scratch", "mouth": "airhorn", "jump": "riser",
@@ -270,6 +310,9 @@ const JAM = {
       case "bass-note": bass(t, NOTE(root + scale[(val * 7 | 0) % scale.length])); break;
       case "lead-note": lead(t, NOTE(root + 12 + scale[(val * 7 | 0) % scale.length]), 0.3, 0, 0.4); break;
       case "chord-stab": stab(t, [0,3,7,10].map(s => NOTE(root + 12 + s))); break;
+      case "pluck-note": pluck(t, NOTE(root + 12 + scale[(val * 7 | 0) % scale.length]), 0.55); break;
+      case "bell-note": bell(t, NOTE(root + 24 + scale[(val * 7 | 0) % scale.length]), 0.3); break;
+      case "organ-stab": [0,3,7].forEach(s => organ(t, NOTE(root + 12 + s), 0.3)); break;
       case "fx-delay": case "fx-verb": case "fx-crush": case "fx-stutter":
         if (JAM.mods.fx?.enabled) JAM.mods.fx.toggleFx(tgt);
         break;
@@ -294,7 +337,7 @@ const JAM = {
 window.JAM = JAM;
 // voices + helpers exposed for mods (band schedules these on its own clock)
 JAM._v = { kick, snare, hat, tom, clap, crash, rim, shaker,
-           bass, lead, stab, airhorn, riser, scratch };
+           bass, lead, stab, airhorn, riser, scratch, pluck, bell, organ };
 JAM._actx = actx; JAM._NOTE = NOTE; JAM._SCALES = SCALES;
 JAM.loadBindings();
 
