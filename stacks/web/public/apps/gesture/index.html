@@ -299,9 +299,12 @@ function loop() {
     (bodyEmit.last ||= {})[evt] = now;
     send({ type: 'body', evt, val }); poses.push('!' + evt);
   };
-  const faceEdge = (evt, on) => {
-    if (on && !faceState['e_' + evt]) bodyEmit(evt);
-    faceState['e_' + evt] = on;
+  // deadband edge: fires once on `on`, cannot re-fire until `off` clears it —
+  // a value hovering AT the threshold emits one shot then stays quiet.
+  const edge = (state, evt, on, off) => {
+    if (!state['a_' + evt]) {
+      if (on) { state['a_' + evt] = true; bodyEmit(evt); }
+    } else if (off) state['a_' + evt] = false;
   };
   if (want.face && faceLm) {
     const fr = faceLm.detectForVideo(video, now);
@@ -325,9 +328,14 @@ function loop() {
         }
       }
       if (flips >= 2 && now - faceState.shakeT > 700) { faceState.shakeT = now; bodyEmit('shake'); }
-      faceEdge('smile', bv('mouthSmileLeft') + bv('mouthSmileRight') > 0.9);
-      faceEdge('mouth', bv('jawOpen') > 0.45);
-      faceEdge('brow',  bv('browInnerUp') > 0.5);
+      {
+        const sm = bv('mouthSmileLeft') + bv('mouthSmileRight');
+        edge(faceState, 'smile', sm > 1.0, sm < 0.65);
+        const jaw = bv('jawOpen');
+        edge(faceState, 'mouth', jaw > 0.5, jaw < 0.32);
+        const br = bv('browInnerUp');
+        edge(faceState, 'brow', br > 0.55, br < 0.38);
+      }
       faceState.y = nose.y; faceState.t = now;
       const [px, py] = coverMap(nose.x, nose.y);
       ctx.fillStyle = '#f472b6';
@@ -338,10 +346,6 @@ function loop() {
   /* ---------------- body / pose ---------------- */
   const POSE_CONNECTIONS = [[11,12],[11,13],[13,15],[12,14],[14,16],
                             [11,23],[12,24],[23,24]];
-  const poseEdge = (evt, on) => {
-    if (on && !poseState[evt]) bodyEmit(evt);
-    poseState[evt] = on;
-  };
   if (want.pose && poseLm) {
     const pr = poseLm.detectForVideo(video, now);
     const pl = pr.landmarks?.[0];
@@ -353,8 +357,10 @@ function loop() {
       const vy = (hip.y - (poseState.y ?? hip.y)) / dt * 1000;
       if (vy < -1.2 && now - poseState.jumpT > 800) { poseState.jumpT = now; bodyEmit('jump'); }
       poseState.y = hip.y; poseState.t = now;
-      poseEdge('arm-up-L', pl[15].y < pl[11].y - 0.04);
-      poseEdge('arm-up-R', pl[16].y < pl[12].y - 0.04);
+      edge(poseState, 'arm-up-L',
+           pl[15].y < pl[11].y - 0.07, pl[15].y > pl[11].y - 0.01);
+      edge(poseState, 'arm-up-R',
+           pl[16].y < pl[12].y - 0.07, pl[16].y > pl[12].y - 0.01);
       if (now - lastEmit >= EMIT_MIN_MS)
         send({ type: 'body', evt: 'lean', val: Math.min(1, Math.max(0, flipX ? 1 - sh.x : sh.x)) });
       ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3;

@@ -137,7 +137,7 @@ JAM.register("band", {
       JAM.hud("🎹 arm R → solo run");
     }
     else if (evt === "smile") {          // like-signal: reward the moment
-      this.energy = Math.min(1, this.energy + 0.2);
+      this.energy = Math.min(1, this.energy + 0.06);
       const t = JAM._actx().currentTime;
       JAM._v.stab(t, [0, 3, 7, 10].map(s => JAM._NOTE(57 + s)), 0.3);
       JAM.hud("🎹 🙂 heard — keeping this vibe");
