@@ -214,6 +214,23 @@ sections:
       - label: Access URLs
         text: "https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c100_h264 ; rtsp://127.0.0.1:8554/xiaomi_c100{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c100"
 
+  - title: Omen Webcam (tony-omen built-in camera)
+    icon: video
+    layout: list
+    items:
+      - label: Source
+        text: "tony-omen /dev/video0 (640x480 mjpeg -> libx264). User `tony` on omen is in the `video` group (added 2026-10-11); system units use SupplementaryGroups=video."
+      - label: Omen-side service
+        text: "systemd system unit `go2rtc-omen.service` runs ~/.local/bin/go2rtc with ~/.config/go2rtc/go2rtc.yaml; stream `omen_cam` is `exec:ffmpeg v4l2 -> h264/mpegts` (on-demand, ~zero idle CPU). Listens on :1984 (api) and :8554 (rtsp)."
+      - label: Dell-side stream
+        text: "tony-dell go2rtc.yaml has `omen_cam: ffmpeg:rtsp://100.75.102.88:8554/omen_cam#video=h264`; frame endpoint http://127.0.0.1:1984/api/frame.jpeg?src=omen_cam verified 200."
+      - label: HA entity
+        text: "camera.omen_cam — platform ffmpeg, input `-i http://100.75.102.88:1984/api/frame.jpeg?src=omen_cam` (reads omen's go2rtc jpeg directly; fast snapshots, verified via camera_proxy 200). Live-view rtsp via go2rtc is slow on first connect (exec cold start ~15-20s)."
+      - label: Notes
+        text: "exec-over-ssh producers fail inside go2rtc (exec/pipe EOF) — hence go2rtc runs on omen itself. Dell's rtsp serve for the ffmpeg: source gave 'Invalid data' to direct consumers; HA reads the jpeg URL instead. RTSP publish TO dell go2rtc is not accepted."
+      - label: Access URLs
+        text: "rtsp://100.75.102.88:8554/omen_cam (omen, direct) ; http://100.75.102.88:1984/api/frame.jpeg?src=omen_cam (omen jpeg) ; http://127.0.0.1:1984/api/frame.jpeg?src=omen_cam (dell relay)"
+
   - title: Next Steps
     icon: arrow-right
     layout: list

@@ -42,8 +42,8 @@ providers:
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
   tool-call:
-    chain: [gemini-2.5-flash@paid, gemini-2.5-flash@free, gemini-2.5-flash@openrouter]
-    note: ada decision/devteam/doc-check calls. No ollama leg — tool calls need real function-calling.
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users").
   summary:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
     note: posture/cms/session summaries; lite is cheap and sufficient; ollama acceptable last resort.
@@ -51,11 +51,11 @@ job_classes:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
     note: lightweight classify around the voice path (Live API itself stays direct).
   classify:
-    chain: [gemini-2.5-flash-lite@paid, gemini-2.5-flash-lite@free, gemini-2.5-flash-lite@openrouter, llama3.2:3b@ollama]
-    note: doc ingest classify, cheap high-volume calls.
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
   bench:
-    chain: [gemini-2.5-flash-lite@paid, gemini-2.5-flash-lite@free, gemini-2.5-flash-lite@openrouter, llama3.2:3b@ollama]
-    note: benchmark traffic on its own virtual key — spend isolated by design.
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    note: benchmark traffic on its own virtual key — spend isolated by design. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
   vision:
     chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
     note: ada ADA_VISION_* default reroutes here (ADA_VISION_BASE_URL=<base>/v1).
@@ -64,10 +64,11 @@ job_classes:
     note: "768d gemini space ONLY — OR-Vertex ≡ direct (cosine 1.000). ollama/nomic-embed-text is a different space; never chain it silently (would poison mddb retrieval)."
 
 real_name_deployments:
-  gemini-2.5-flash: [paid, free, openrouter]
-  gemini-2.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]
-  gemini-3.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]
+  gemini-2.5-flash: [paid, free, openrouter]   # DEAD upstream 2026-10-11 — Google retired; kept only for stale callers
+  gemini-2.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]  # DEAD upstream — same retirement
+  gemini-3.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]  # the live Gemini on both keys (verified 2026-10-11)
   gemini-embedding-2: [paid, openrouter]
+  openrouter_note: "OR key over limit 2026-10-11 (Key limit exceeded) — all or-* legs fail until rotate-or-key.sh cycles it"
   note: callers sending real model names get the same ordered chains — migrating ada = env change only.
 
 proof_lanes:
