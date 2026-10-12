@@ -62,4 +62,6 @@ Proven on tony-omen 2026-10-11. See `ssot.ip-camera.yml` "Omen Webcam" section f
 
 ## MacBook note
 
-tony-macbook's FaceTime HD (PCIe `14e4:1570`) does not enumerate in `lspci` on Linux → no `/dev/video*`. Steps 1-2 fail. Needs the `facetimehd` (bcwc_pcie) driver + firmware extraction after the device enumerates — separate effort, carded on `macbook-suspend-dgpu-wedge` comms.
+tony-macbook's FaceTime HD (PCIe `14e4:1570`) does not enumerate in `lspci` on Linux → no `/dev/video*`. Steps 1-2 fail.
+
+Resolved 2026-10-12: the chip is **not on the PCI fabric at all** — a full `pci rescan` (all buses re-enumerated, kernel `busn_res` reconfig logged) produced no `1570`; device count unchanged. On 2016 Touch Bar models (13,3) the camera is routed through the Apple **T1 / iBridge**, for which Linux has no camera path — the `facetimehd` (bcwc_pcie) driver only applies to pre-T1 models where `1570` actually enumerates. Built-in cam on this host is a dead end; use a USB webcam or phone-as-cam instead (the `gesture-control-rebuild` design already uses iPhone as the camera node).
