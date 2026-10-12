@@ -435,8 +435,10 @@ function b64FromI16(i16) {
 }
 // PUSH-TO-TALK: voice streams only while the button is physically held —
 // an unattended mic can never re-capture the screen's own sound (howl).
+let vAuto = 0;
 function stopVoice(btn) {
   if (!vStream) return;
+  clearTimeout(vAuto);
   vStream.getTracks().forEach(t => t.stop());
   vProc.disconnect(); vSrc.disconnect(); vCtx.close();
   vStream = vCtx = vSrc = vProc = null;
@@ -471,6 +473,8 @@ async function startVoice(btn) {
     const mute = vCtx.createGain(); mute.gain.value = 0;
     vSrc.connect(vProc); vProc.connect(mute).connect(vCtx.destination);
     btn.classList.add('on'); btn.textContent = '🎤 TALKING…';
+    // hard cap: never stream >8s without a fresh press (stuck-hold guard)
+    vAuto = setTimeout(() => stopVoice(btn), 8000);
   } catch (err) { status('mic: ' + err.message, 'err'); }
 }
 {
@@ -482,7 +486,14 @@ async function startVoice(btn) {
     try { vb.setPointerCapture(e.pointerId); } catch {}
     startVoice(vb);
   };
-  vb.onpointerup = vb.onpointercancel = () => stopVoice(vb);
+  vb.onpointerup = vb.onpointercancel = vb.onlostpointercapture =
+    () => stopVoice(vb);
+  // iOS fallbacks — a dropped pointerup must not leave the mic streaming
+  window.addEventListener('touchend', () => stopVoice(vb), { passive: true });
+  window.addEventListener('touchcancel', () => stopVoice(vb), { passive: true });
+  window.addEventListener('blur', () => stopVoice(vb));
+  document.addEventListener('visibilitychange',
+    () => { if (document.hidden) stopVoice(vb); });
 }
 
 $('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };

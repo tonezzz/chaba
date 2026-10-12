@@ -39,10 +39,11 @@ JAM.register("remote", {
     delay.delayTime.value = 0.22; fb.gain.value = 0.35;
     const lp = ac.createBiquadFilter();
     lp.type = "lowpass"; lp.frequency.value = 3200; lp.Q.value = 0.5;
+    const out = ac.createGain(); out.gain.value = 0.65;  // hard output cap
     input.connect(ring); input.connect(dry);
     ring.connect(wet); ring.connect(delay);
     delay.connect(fb).connect(delay); delay.connect(wet);
-    dry.connect(lp); wet.connect(lp); lp.connect(ac.destination);
+    dry.connect(lp); wet.connect(lp); lp.connect(out).connect(ac.destination);
     this.vx = { input, carrier, dry, wet, delay, preset: -1, swapT: 0, next: 0 };
     return this.vx;
   },
