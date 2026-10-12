@@ -1,0 +1,301 @@
+From bbb90f194c7e38e1a43e11af4402c28e5f9ec80e Mon Sep 17 00:00:00 2001
+From: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 06:48:29 +0700
+Subject: [PATCH] =?UTF-8?q?fix(ada):=20tool-call=20failure=20surface=20?=
+ =?UTF-8?q?=E2=80=94=20one=20pass=20over=20the=202026-10-10=20audit-fail?=
+ =?UTF-8?q?=20cluster?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Real bugs fixed (from scripts/ada/session-audit.py signatures):
+- cctv_wall: action now defaults to 'start' (schema doesn't require it;
+  positional-only signature raised TypeError on cctv_wall(zone=...) calls)
+- set_facial_expression: out-of-enum expression returns a clear error
+  instead of falling through to the runner as 'Unknown tool'
+- home_status fast-path: valid what= with no HA/habit backend reports
+  'unavailable' instead of the self-contradicting 'invalid what'
+- get_home_state entity_id 404 -> 'no entity ... — home_search first'
+- control_media_player: alias natural verbs (pause/play/stop/mute/...)
+  onto the HA service names
+- web_search: provider aliases google->gemini, ddg->duckduckgo; enum on
+  the declaration
+- devteam/decision_check/document_check/web_search: bump dead default
+  gemini-2.5-flash -> gemini-3.5-flash-lite (repo convention; the old
+  pin 404s — audit-fail devin_read)
+- cms_get_page miss: return did_you_mean close-matches so slug guesses
+  self-correct
+- ada_enroll_speaker: drop who='guest' from the declared enum on
+  non-CHABA_MEMORY instances (the path can never succeed there)
+
+Companion chaba change (scripts/ada/session-audit.py) reclassifies
+owner-gate denials -> acl and arg rejections -> usage, and collapses
+same-day failure storms into one cluster card.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+---
+ backend/decision_check.py      |  2 +-
+ backend/devteam.py             |  2 +-
+ backend/document_check.py      |  2 +-
+ backend/home_assistant.py      |  9 +++++++
+ backend/realtime_provider.py   | 48 +++++++++++++++++++++++++++++++---
+ backend/tool_runner/cms.py     | 24 ++++++++++++++---
+ backend/tool_runner/ha.py      | 11 +++++++-
+ backend/tool_runner/screens.py |  3 ++-
+ backend/tool_runner/web.py     |  7 ++++-
+ 9 files changed, 95 insertions(+), 13 deletions(-)
+
+diff --git a/backend/decision_check.py b/backend/decision_check.py
+index ff0730d..ff2dcab 100644
+--- a/backend/decision_check.py
++++ b/backend/decision_check.py
+@@ -40,7 +40,7 @@ from backend.memory_banks import MemoryBankRegistry, _meta_first, _slug
+ 
+ logger = logging.getLogger("decision.check")
+ 
+-DECISION_MODEL = os.environ.get("DECISION_MODEL", "gemini-2.5-flash")
++DECISION_MODEL = os.environ.get("DECISION_MODEL", "gemini-3.5-flash-lite")
+ DECISION_BANK = os.environ.get("DECISION_BANK", "purchase")
+ DECISION_TIMEOUT_S = float(os.environ.get("DECISION_TIMEOUT_S", "90"))
+ # chaba-admin Events feed — emitted through the Home Assistant
+diff --git a/backend/devteam.py b/backend/devteam.py
+index 2e81c2d..9b6c2be 100644
+--- a/backend/devteam.py
++++ b/backend/devteam.py
+@@ -28,7 +28,7 @@ from google.genai import types
+ 
+ logger = logging.getLogger(__name__)
+ 
+-DEVTEAM_MODEL = os.environ.get("DEVTEAM_MODEL", "gemini-2.5-flash")
++DEVTEAM_MODEL = os.environ.get("DEVTEAM_MODEL", "gemini-3.5-flash-lite")
+ DEVTEAM_TIMEOUT_S = float(os.environ.get("DEVTEAM_TIMEOUT_S", "90"))
+ _PANEL_TIMEOUT_S = float(os.environ.get("DEVTEAM_PANEL_TIMEOUT_S", "60"))
+ 
+diff --git a/backend/document_check.py b/backend/document_check.py
+index 9487d75..dd36bad 100644
+--- a/backend/document_check.py
++++ b/backend/document_check.py
+@@ -44,7 +44,7 @@ except Exception:
+ 
+ logger = logging.getLogger("documents.check")
+ 
+-DOC_MODEL = os.environ.get("DOC_MODEL", "gemini-2.5-flash")
++DOC_MODEL = os.environ.get("DOC_MODEL", "gemini-3.5-flash-lite")
+ DOC_TIMEOUT_S = float(os.environ.get("DOC_TIMEOUT_S", "60"))
+ RESULT_CAP = 20  # in-process result store: newest N intakes
+ 
+diff --git a/backend/home_assistant.py b/backend/home_assistant.py
+index aa29a66..df394f3 100644
+--- a/backend/home_assistant.py
++++ b/backend/home_assistant.py
+@@ -31,6 +31,14 @@ MEDIA_PLAYER_ACTIONS = {
+     "turn_on", "turn_off", "media_play", "media_pause", "media_stop",
+     "volume_up", "volume_down", "volume_mute", "select_source",
+ }
++# The model keeps sending the natural verb ('pause', 'play') instead of
++# the HA service name — alias the unambiguous ones (audit-fail
++# control_entity, 2026-10-10).
++MEDIA_PLAYER_ALIASES = {
++    "pause": "media_pause", "play": "media_play", "stop": "media_stop",
++    "mute": "volume_mute", "unmute": "volume_mute",
++    "on": "turn_on", "off": "turn_off", "source": "select_source",
++}
+ # Domains whose state changes are meaningful "events" a user asks about
+ # (opened/closed, locked/unlocked, arrived/left, turned on/off).
+ EVENT_DOMAINS = {
+@@ -257,6 +265,7 @@ class HomeAssistantClient:
+         domain, separator, _ = entity_id.partition(".")
+         if domain != "media_player":
+             raise ValueError("control_media_player only accepts media_player.* entity_ids")
++        action = MEDIA_PLAYER_ALIASES.get(str(action).lower(), action)
+         if action not in MEDIA_PLAYER_ACTIONS:
+             raise ValueError(f"action must be one of: {', '.join(sorted(MEDIA_PLAYER_ACTIONS))}")
+         client = await self._http_client()
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 47312a5..9d9d7c1 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -3240,6 +3240,7 @@ class GeminiLiveProvider(RealtimeProvider):
+                             },
+                             "provider": {
+                                 "type": "string",
++                                "enum": ["auto", "gemini", "duckduckgo"],
+                                 "description": (
+                                     "Search backend: 'auto' (default — grounded answer, free "
+                                     "fallback on quota), 'gemini' (grounded, billed), or "
+@@ -4304,6 +4305,24 @@ class GeminiLiveProvider(RealtimeProvider):
+             config["tools"][0]["function_declarations"] = _fill_bank_placeholders(
+                 config["tools"][0]["function_declarations"], all_banks, writable_banks
+             )
++            # ada_enroll_speaker who='guest' only works on CHABA_MEMORY=1
++            # instances — strip the enum value here so the model can't
++            # pick a permanently-broken path (audit-fail
++            # ada_enroll_speaker, 2026-10-10).
++            fds = config["tools"][0]["function_declarations"]
++            for i, fd in enumerate(fds):
++                if fd.get("name") != "ada_enroll_speaker":
++                    continue
++                who = ((fd.get("parameters_json_schema") or {})
++                       .get("properties") or {}).get("who") or {}
++                enum = who.get("enum")
++                if isinstance(enum, list) and "guest" in enum:
++                    props = dict(fd["parameters_json_schema"]["properties"])
++                    props["who"] = {**who, "enum": [
++                        e for e in enum if e != "guest"]}
++                    schema = dict(fd["parameters_json_schema"])
++                    schema["properties"] = props
++                    fds[i] = {**fd, "parameters_json_schema": schema}
+         # NOTE: live-session google_search grounding is NOT enabled — the
+         # API key's plan rejects it with a 1011 quota error at connect,
+         # taking down every session. Web search goes through the explicit
+@@ -4657,9 +4676,19 @@ class GeminiLiveProvider(RealtimeProvider):
+                             result = {"error": (
+                                 "Actuation limit for this turn reached — stop and tell the "
+                                 "user what you were trying to control instead of retrying.")}
+-                        elif call.name == "set_facial_expression" and requested in EXPRESSION_NAMES:
+-                            yield ProviderEvent("expression", {"name": requested})
+-                            result = {"output": f"Ada is now {requested}"}
++                        elif call.name == "set_facial_expression":
++                            # Provider-only pseudo tool — an out-of-enum
++                            # name must NOT fall through to the runner
++                            # ('Unknown tool' — audit-fail signature).
++                            if requested in EXPRESSION_NAMES:
++                                yield ProviderEvent(
++                                    "expression", {"name": requested})
++                                result = {"output": f"Ada is now {requested}"}
++                            else:
++                                result = {"error": (
++                                    f"unknown expression {requested!r} — "
++                                    "expected one of: "
++                                    + ", ".join(sorted(EXPRESSION_NAMES)))}
+                         elif (call.name == "get_home_state"
+                               # entity_id=/domain= reads route to the
+                               # runner (tools-merge-ha) — the fast path
+@@ -4756,6 +4785,19 @@ class GeminiLiveProvider(RealtimeProvider):
+                                         result = {"output": await self.home_assistant_client.dashboard_tab(str(tab))}
+                                 elif _hwhat == "habit" and self.habit_state_getter is not None:
+                                     result = {"output": self.habit_state_getter()}
++                                elif _hwhat in (
++                                        "battery", "power", "inverter",
++                                        "pool", "dashboard", "habit"):
++                                    # valid what, missing backend (no HA
++                                    # client / habit getter on this
++                                    # instance) — say so; the generic
++                                    # 'invalid what' error listed the
++                                    # arg as valid (audit-fail
++                                    # home_status, 2026-10-10).
++                                    result = {"error": (
++                                        f"home_status({_hwhat}) unavailable "
++                                        "— this instance has no home/habit "
++                                        "backend connected")}
+                                 else:
+                                     result = {"error": (
+                                         f"invalid what {_hwhat!r}: expected "
+diff --git a/backend/tool_runner/cms.py b/backend/tool_runner/cms.py
+index 10056f4..b2e758b 100644
+--- a/backend/tool_runner/cms.py
++++ b/backend/tool_runner/cms.py
+@@ -10,6 +10,8 @@ from __future__ import annotations
+ 
+ from .common import *  # noqa: F401,F403
+ 
++import difflib
++
+ 
+ class CmsMixin:
+ 
+@@ -147,10 +149,24 @@ class CmsMixin:
+             # ok:False, not a silent None — Ada opined on a page she never
+             # got because a miss read as ok:True/output:None (2026-10-08,
+             # report_opinion_loop smoke fail).
+-            return {"ok": False,
+-                    "error": f"no page {key!r} in {CMS_COLLECTION}",
+-                    "note": "try cms_read action='list' to find the slug "
+-                            "before reading"}
++            out = {"ok": False,
++                   "error": f"no page {key!r} in {CMS_COLLECTION}",
++                   "note": "try cms_read action='list' to find the slug "
++                           "before reading"}
++            # The model guesses slugs — hand back close matches so the
++            # retry lands (audit-fail cms_read, 2026-10-10).
++            try:
++                docs = await self.mddb.search_documents(
++                    CMS_COLLECTION,
++                    filter_meta={"kind": ["page", "report"]}, limit=600)
++                slugs = sorted({str(d.get("key")) for d in docs})
++                close = difflib.get_close_matches(key, slugs, n=3,
++                                                  cutoff=0.6)
++                if close:
++                    out["did_you_mean"] = close
++            except Exception:
++                pass
++            return out
+         page = self._cms_page_summary(doc)
+         page["content"] = doc.get("contentMd") or doc.get("content") or ""
+         page["lang"] = doc.get("lang") or "en"
+diff --git a/backend/tool_runner/ha.py b/backend/tool_runner/ha.py
+index 32fb490..28db219 100644
+--- a/backend/tool_runner/ha.py
++++ b/backend/tool_runner/ha.py
+@@ -27,7 +27,16 @@ class HaMixin:
+         entity_id = str(entity_id or "").strip()
+         domain = str(domain or "").strip().lower()
+         if entity_id:
+-            return await self.context.ha_client.get_state(entity_id)
++            try:
++                return await self.context.ha_client.get_state(entity_id)
++            except Exception as exc:
++                if "404" in str(exc):
++                    # The model guesses entity_ids — a raw aiohttp 404
++                    # teaches it nothing (audit-fail get_home_state).
++                    return {"ok": False, "error": (
++                        f"no entity {entity_id!r} — find the real "
++                        "entity_id with home_search first")}
++                raise
+         if domain == "memory":
+             if self.memory is None:
+                 raise RuntimeError("stored home snapshot not available")
+diff --git a/backend/tool_runner/screens.py b/backend/tool_runner/screens.py
+index 87e3182..a05f6cb 100644
+--- a/backend/tool_runner/screens.py
++++ b/backend/tool_runner/screens.py
+@@ -464,7 +464,8 @@ class ScreensMixin:
+         with urllib.request.urlopen(req, timeout=10) as r:
+             return json.load(r)
+ 
+-    async def cctv_wall(self, action: str, zone: str, screen: int = 0,
++    async def cctv_wall(self, action: str = "start", zone: str = "",
++                        screen: int = 0,
+                         pane: int | None = None,
+                         settings: dict[str, Any] | None = None) -> dict[str, Any]:
+         """Start/stop the periodic-thumbnail camera wall on a vcast screen.
+diff --git a/backend/tool_runner/web.py b/backend/tool_runner/web.py
+index 57d4f1f..95b3615 100644
+--- a/backend/tool_runner/web.py
++++ b/backend/tool_runner/web.py
+@@ -55,6 +55,10 @@ class WebMixin:
+         passing stale or shallower hits off as grounded.
+         """
+         want = (provider or "auto").lower()
++        # The model keeps emitting 'google' for the grounded path —
++        # unambiguous alias beats a hard fail (audit-fail-web_search).
++        want = {"google": "gemini", "google_search": "gemini",
++                "ddg": "duckduckgo", "duck": "duckduckgo"}.get(want, want)
+         if want not in ("auto", "gemini", "duckduckgo"):
+             raise ValueError(f"unknown web_search provider {provider!r} "
+                              "(auto|gemini|duckduckgo)")
+@@ -156,7 +160,8 @@ class WebMixin:
+         from google import genai
+         from google.genai import types
+         client = genai.Client(api_key=api_key)
+-        model = os.environ.get("ADA_WEB_SEARCH_MODEL", "gemini-2.5-flash")
++        model = os.environ.get(
++            "ADA_WEB_SEARCH_MODEL", "gemini-3.5-flash-lite")
+         resp = await client.aio.models.generate_content(
+             model=model,
+             contents=str(query),
+-- 
+2.43.0
+

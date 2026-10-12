@@ -16,9 +16,11 @@ Sources (all over ssh, BatchMode):
    both are scanned and deduped by session id.)
 
 Findings per session (skill checklist):
-  fail     — tool result ok:False / 'error' / 'err' (excl. confirm+acl)
+  fail     — tool result ok:False / 'error' / 'err' (excl. confirm+acl+usage)
   confirm  — NOT EXECUTED/needs_confirm round trips (friction, not failure)
-  acl      — access-policy denials (correct-by-design friction)
+  acl      — access-policy/owner-gate/rate-guard denials (correct-by-design)
+  usage    — model-side arg rejections (invalid action/what/lang/provider,
+             unknown page/card/entity — schema friction, not breakage)
   degraded — ok:True but degraded/quota_exhausted/delivered:0
   phantom  — Ada's reply asserts a completed action but no function_call
              was received for that session inside the turn window
@@ -122,6 +124,7 @@ SURFACE_CAP = 15             # max inbox entries per run — overflow stays on
                              # the page (never swallowed) + one cap note
 CARD_MIN_DAYS = 2            # distinct days seen -> kanban card
 CARD_STORM_MIN = 3           # high-sev occs in one window -> card now
+STORM_GROUP_MIN = 3          # same-day storm sigs -> ONE cluster card
 HISTORY_KEEP_D = 14
 PAGE_HISTORY_DAYS = 7
 JOURNAL_LINE_MAX = 2000      # remote-side truncate; error fields lead the dict
@@ -152,7 +155,25 @@ RE_CONFIRM_KEY = re.compile(
     r"['\"](needs_confirm|would_interrupt)['\"]:\s*(True|[^\s,'\"])")
 RE_ACL = re.compile(
     r"access policy|permission-gated|not allowed|permission denied|"
-    r"acl deny|outside this session", re.I)
+    r"acl deny|outside this session|only the session owner|"
+    r"secondary speaker|guest tools are only available|"
+    r"blocked:[a-z_]+", re.I)
+# Model-side argument/identifier rejections — the tool refused cleanly and
+# the error already names the fix (umbrella-fix-ada-tool-call-failure
+# 2026-10-13: this class drove most of the 2026-10-10 audit-fail-* flood).
+# These are schema/description friction, not tool breakage: they surface
+# for visibility but a single-day burst must not storm-card.
+RE_USAGE = re.compile(
+    r"invalid (action|what|lang|op|period|kind|cmd|who|provider|photo action)\b|"
+    r"unknown \w+ provider|"
+    r"\bmust be one of\b|"
+    r"\bis required\b|requires text\b|"
+    r"no page '[^']+' in|no such page|"
+    r"no card '[^']+' on the board|"
+    r"can(?:'|')t invite|"
+    r"no \w+ camera matched|"
+    r"not a registered display|"
+    r"'404 Not Found' for url '[^']*/api/states/", re.I)
 # 'error'/'err' keys are checked only in the head region right after
 # result={ — nested 'error' text inside payload strings (e.g. a degraded
 # web_search's fallback_error traceback) is not a tool failure.
@@ -408,6 +429,8 @@ def classify_result(raw: str, res) -> tuple[str, str]:
             err = str(res.get("error") or res.get("err") or "ok:false")
             if RE_ACL.search(err):
                 return "acl", _clip(err, 160)
+            if RE_USAGE.search(err):
+                return "usage", _clip(err, 160)
             return "fail", _clip(err, 160)
         if res.get("degraded") or res.get("quota_exhausted") or \
                 res.get("delivered") == 0:
@@ -419,6 +442,8 @@ def classify_result(raw: str, res) -> tuple[str, str]:
         return "confirm", "needs_confirm round trip (unparsed)"
     if RE_ACL.search(raw[:600]):
         return "acl", "access-policy denial"
+    if RE_USAGE.search(raw[:600]):
+        return "usage", "usage/arg rejection (unparsed)"
     if RE_FAIL.search(raw) or RE_HEAD_ERR.match(raw):
         return "fail", "ok:false/error in result (unparsed)"
     if RE_DEGRADED.search(raw):
@@ -531,7 +556,8 @@ def analyze_session(sess: dict, calls: list[dict], no_result: list[dict],
         if c["cls"] == "ok":
             continue
         sev = {"fail": "high", "confirm": "info", "acl": "info",
-               "degraded": "medium"}[c["cls"]]
+               "degraded": "medium", "usage": "medium"}.get(
+                   c["cls"], "low")
         findings.append({
             "kind": c["cls"], "severity": sev,
             "sig": f"{c['cls']}:{c['name']}",
@@ -609,6 +635,30 @@ def surfacing(findings: list[dict], hist: list[dict],
                     "surface": surface, "card": surface and card})
     out.sort(key=lambda d: (-SEV_ORDER[d["severity"]],
                             -d["count"], d["sig"]))
+    # Storm collapse (umbrella-fix-ada-tool-call-failure, 2026-10-13): a
+    # provider-outage/quota day produces many high-sev fail signatures at
+    # once — on 2026-10-10 that filed 16 near-identical audit-fail cards,
+    # all one incident. Same-day storms (card earned by count alone, no
+    # multi-day history) past STORM_GROUP_MIN file ONE cluster card; sigs
+    # recurring across days keep their own deduped cards.
+    storms = [d for d in out
+              if d["surface"] and d["card"] and d["days_seen"] < 2]
+    if len(storms) >= STORM_GROUP_MIN:
+        for d in storms:
+            d["card"] = False
+        out.insert(0, {
+            "sig": f"storm:{today}", "kind": "cluster",
+            "severity": "high", "count": sum(d["count"] for d in storms),
+            "days_seen": 1, "surface": True, "card": True,
+            "title": (f"tool-call failure storm — {len(storms)} "
+                      "signatures, one incident"),
+            "evidence": "; ".join(
+                f"{d['sig']} x{d['count']}" for d in storms)[:400],
+            "tool": "", "detail": "",
+            "members": [
+                {"sig": d["sig"], "count": d["count"],
+                 "title": d["title"], "evidence": d["evidence"]}
+                for d in storms]})
     # worst-case flood guard: past the cap a signature is still on the
     # page/doc/corpus — it just doesn't get its own inbox entry this run.
     overflow = sum(1 for d in out if d["surface"]) - SURFACE_CAP
@@ -727,6 +777,50 @@ def file_card(sig_row: dict, day: str, cards: list[dict]) -> str:
     cid = "audit-" + inbox_slug(sig_row["sig"])
     if any(c.get("id") == cid for c in cards):
         return f"card {cid} already open"
+    if sig_row.get("kind") == "cluster":
+        members = sig_row.get("members") or []
+        listing = "\n".join(
+            f"- `{m['sig']}` x{m['count']} — {m['title']}: "
+            f"{m['evidence'][:140]}" for m in members)
+        body = {
+            "id": cid,
+            "title": (f"Ada session audit: tool-call failure storm {day} "
+                      f"({len(members)} signatures)"),
+            "column": "backlog",
+            "priority": "high",
+            "program": "chaba-ci",
+            "tags": ["session-audit", "ada", "fail", "storm"],
+            "brief": (f"{len(members)} fail signatures stormed on {day} — "
+                      f"{sig_row['count']} failed calls total. Same-day "
+                      "storms are one incident (provider outage/quota/"
+                      "deploy window), not N per-tool bugs."),
+            "spec": ("Investigate the tool-call failure storm on "
+                     f"{day} as ONE incident — check provider quota, "
+                     "stream drops, and service restarts in the window "
+                     "first, then verify any tool whose evidence is a "
+                     "real bug (TypeError/Unknown tool/NameError), not "
+                     "infra noise.\n\nSignatures collapsed into this "
+                     f"card:\n{listing}\n\n"
+                     f"Report: CMS page `{PAGE_SLUG}` + MDDB "
+                     f"`{REPORTS_COLLECTION}` key `audit/session-{day}`.\n"
+                     "Per-signature detail stays on the audit page; "
+                     "signature cards refile individually only if the "
+                     "pattern recurs on a later day."),
+            "note": ("Auto-filed by session-audit storm collapse "
+                     f"(dedup on card id {cid})."),
+            "from": "devin",
+        }
+        try:
+            r = post(f"{BOARD_API}/card", body)
+            return f"card {cid}: {r.get('message', 'ok')}"
+        except urllib.error.HTTPError as exc:
+            try:
+                detail = exc.read().decode()[:160]
+            except Exception:
+                detail = str(exc)
+            return f"card {cid} FAILED {exc.code} {detail}"
+        except Exception as exc:
+            return f"card {cid} FAILED {exc}"
     body = {
         "id": cid,
         "title": f"Ada session audit: {sig_row['sig']} "
@@ -798,6 +892,7 @@ def scenario_doc(day: str, window: str, sessions: list[dict],
         for f in fs:
             tag = {"fail": "FAIL", "phantom": "PHANTOM", "repeat": "REPEAT",
                    "confirm": "CONFIRM", "acl": "ACL", "degraded": "DEGRADED",
+                   "usage": "USAGE", "cluster": "STORM",
                    "latency": "SLOW", "no_result": "NORESULT"}.get(
                        f["kind"], f["kind"].upper())
             lines.append(f"- {tag} {f['title']} — {f['evidence']}")
@@ -1012,12 +1107,14 @@ Done, the hallway light is on.
         """Oct 09 05:10:02 idc03 uvicorn[1]: 2026-10-09 05:10:02,000 INFO voice.provider: session=feedface01 function_call received id=call_1 name=cast_to_screen args={'action': 'play', 'screen': 1}
 Oct 09 05:10:03 idc03 uvicorn[1]: 2026-10-09 05:10:03,000 INFO voice.provider: session=feedface01 function_call result id=call_1 name=cast_to_screen result={'ok': False, 'error': 'screen 1 is not a registered display', 'screens': []}
 Oct 09 05:10:21 idc03 uvicorn[1]: 2026-10-09 05:10:21,000 INFO voice.provider: session=feedface01 function_call received id=call_2 name=cast_to_screen args={'action': 'play', 'screen': 1}
-Oct 09 05:10:22 idc03 uvicorn[1]: 2026-10-09 05:10:22,000 INFO voice.provider: session=feedface01 function_call result id=call_2 name=cast_to_screen result={'ok': False, 'error': 'screen 1 is not a registered display', 'screens': []}
+Oct 09 05:10:22 idc03 uvicorn[1]: 2026-10-09 05:10:22,000 INFO voice.provider: session=feedface01 function_call result id=call_2 name=cast_to_screen result={'ok': False, 'error': 'cast failed: HTTP 502 from vcast relay'}
 Oct 09 05:10:24 idc03 uvicorn[1]: 2026-10-09 05:10:24,000 INFO voice.provider: session=feedface01 function_call received id=call_3 name=cast_to_screen args={'action': 'play', 'screen': 1, 'confirmed': True}
 Oct 09 05:10:25 idc03 uvicorn[1]: 2026-10-09 05:10:25,000 INFO voice.provider: session=feedface01 function_call result id=call_3 name=cast_to_screen result={'ok': False, 'error': 'screen 1 is not a registered display', 'screens': []}
 Oct 09 05:11:02 idc03 uvicorn[1]: 2026-10-09 05:11:02,000 INFO voice.provider: session=feedface01 function_call received id=call_4 name=cms_publish_page args={'slug': 'garden-plan'}
 Oct 09 05:11:03 idc03 uvicorn[1]: 2026-10-09 05:11:03,000 INFO voice.provider: session=feedface01 function_call result id=call_4 name=cms_publish_page result={'error': 'cms_publish_page failed: NOT EXECUTED — the action did not happen: cms_publish_page requires confirmation'}
 Oct 09 05:11:05 idc03 uvicorn[1]: 2026-10-09 05:11:05,000 INFO voice.provider: session=feedface01 function_call received id=call_5 name=web_search args={'query': 'x'}
+Oct 09 05:12:00 idc03 uvicorn[1]: 2026-10-09 05:12:00,000 INFO voice.provider: session=feedface01 function_call received id=call_6 name=ada_memory_search args={'query': 'x'}
+Oct 09 05:12:01 idc03 uvicorn[1]: 2026-10-09 05:12:01,000 INFO voice.provider: session=feedface01 function_call result id=call_6 name=ada_memory_search result={'error': "ada_memory_search failed: Only the session owner can run this action — propose it to them aloud and let them confirm in their own voice."}
 """, encoding="utf-8")
     return tdir, j
 
@@ -1074,8 +1171,9 @@ def main() -> int:
                     findings.append(f)
             kinds = Counter(f["kind"] for f in findings)
             day = "2026-10-09"
-            expect = {"fail": 3, "confirm": 1, "repeat": 1,
-                      "latency": 1, "phantom": 1, "no_result": 1}
+            expect = {"fail": 1, "usage": 2, "acl": 1, "confirm": 1,
+                      "repeat": 1, "latency": 1, "phantom": 1,
+                      "no_result": 1}
             bad = {k: (kinds.get(k, 0), v) for k, v in expect.items()
                    if kinds.get(k, 0) != v}
             surfaced = surfacing(findings, [], day)
@@ -1151,7 +1249,7 @@ def _run(args) -> int:
         if sid in known or sid == "?":
             continue
         for c in j["calls"]:
-            if c["cls"] in ("fail", "degraded"):
+            if c["cls"] in ("fail", "degraded", "usage"):
                 findings.append({
                     "kind": c["cls"], "severity":
                         "high" if c["cls"] == "fail" else "medium",

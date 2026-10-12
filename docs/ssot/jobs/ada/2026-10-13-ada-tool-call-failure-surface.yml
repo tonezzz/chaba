@@ -1,0 +1,117 @@
+title: "umbrella fix: Ada tool-call failure surface (18 audit-fail-* cards)"
+subtitle: "One pass over the 2026-10-10 cluster — audit-side reclass + ada-pi patch"
+icon: 🔧
+context:
+  card: umbrella-fix-ada-tool-call-failure-surfa-48054d (ref ADA-0525)
+  trigger: "2026-10-12 backlog triage: 18 audit-fail-* cards dominate high-pri ada"
+  prior_triage: docs/ssot/jobs/ada/2026-10-10-audit-fail-cluster.yml
+  worktree: dispatch-wt-20261013-063523-umbrella-fix-ada-tool-call-fai (chaba)
+
+root_cause_summary:
+  shared: "2026-10-10 = gemini 429 quota all day + provider stream drops + ada-ha-tony
+    deploy restarts. Most signatures are that one incident, not 18 tool bugs."
+  audit_gap: "every fail-class finding was severity=high and storm-carded at >=3 occs —
+    one bad day filed 16 cards. Owner-gate denials and model arg-rejections were
+    misclassified as tool failures."
+  real_bugs_found: "cctv_wall missing-arg TypeError, set_facial_expression 'Unknown
+    tool' fallthrough, home_status self-contradicting 'invalid what dashboard',
+    devin_read dead gemini-2.5-flash pin, web_search provider enum."
+
+changes:
+
+  chaba_session_audit:  # this repo — scripts/ada/session-audit.py
+    acl_reclass: "owner-gate ('only the session owner', 'guest tools are only
+      available', 'secondary speaker') and rate-guard ('blocked:<code>') denials
+      classify as acl/info — correct-by-design friction, page-visible, never cards."
+    usage_class: "new kind 'usage' (severity medium): invalid action/what/lang/
+      provider, 'must be one of', missing required args the error names, no page/
+      card/camera/entity matches, /api/states 404s. Model-side arg friction —
+      surfaces for schema/desc fixes, cards only if it recurs across days."
+    storm_collapse: ">=3 same-day high-sev storm signatures now file ONE card
+      'audit-storm-<day>' listing all members; recurring (>=2d) signatures still
+      get their own deduped cards. Would have turned 2026-10-10 into one card."
+    selftest: "fixture updated (real fail + owner-gate acl + usage samples); PASS."
+
+  ada_pi_patch:  # NOT landed — repo edit point is tony-dell; deploy gate is explicit
+    branch: "dispatch/20261013-ada-tool-call-failure-surface @ bbb90f1 (local to
+      idc02's ada-pi clone — NOT pushed; durable copy at
+      docs/kb/patches/ada-pi-tool-call-failure-surface-20261013.patch, `git am` on
+      tony-dell's ~/CascadeProjects/ada-pi)"
+    fixes:
+      cctv_wall: "action= defaults 'start' (schema doesn't require it) — kills
+        'missing 1 required positional argument' TypeError"
+      set_facial_expression: "out-of-enum expression -> clear error, no more
+        runner fallthrough 'Unknown tool'"
+      home_status: "valid what= with no HA/habit backend -> 'unavailable —
+        no backend connected' instead of 'invalid what dashboard'"
+      get_home_state: "entity_id 404 -> 'no entity — use home_search' hint"
+      control_entity: "media_player verb aliases pause/play/stop/mute/on/off/
+        source -> media_*/volume_*/turn_*/select_source"
+      web_search: "provider aliases google->gemini, ddg->duckduckgo; enum added
+        to the declaration"
+      cms_get_page: "miss returns did_you_mean[] close-matches for slug guesses"
+      ada_enroll_speaker: "who='guest' stripped from the declared enum on
+        non-CHABA_MEMORY instances (can never succeed there)"
+      model_pins: "gemini-2.5-flash -> gemini-3.5-flash-lite defaults in
+        devteam.py, decision_check.py, document_check.py, web_search
+        (ADA_WEB_SEARCH_MODEL) — 2.5-flash 404s for new users"
+    verification: "py_compile clean; tool-lint unchanged (59 warnings, no new
+      debt); unittest suites: edited-area tests pass; only pre-existing
+      env-dependent CalendarPlanMergeAlias failures remain (ADA_INSTANCE_ID
+      unset on runner, identical on unmodified main)."
+
+per_signature_verdicts:
+  ada_camera_snapshot: "usage — 'no traffic camera matched rama9'; error already
+    guides keywords/lat-lon. reclassified; done already on board."
+  ada_enroll_speaker: "acl — who='guest' on non-chaba instance; enum stripped in
+    patch + acl reclass."
+  ada_member_keys: "obsolete — tool no longer on the ada-pi surface (removed
+    tools.d era); 'can't invite user-scratch-member' was scenario traffic."
+  ada_memory_search: "acl — secondary-speaker owner gate is intended privacy;
+    was misclassified fail/high."
+  ada_remember: "fail stays — 'memory_cap' evidence is thin; next audit run
+    produces clearer evidence via the new classes."
+  calendar_read: "usage — 'list' isn't a read action; enum already declared."
+  cast_to_screen: "fail stays (unparsed ok:false) — downtime noise collapses
+    into the storm card next time."
+  cctv_wall: "fixed — action default 'start'."
+  chat_send: "config — photos picker 501 needs GPHOTO_REFRESH_TOKEN on idc03
+    (already done on board / separate gphoto-auth workstream)."
+  cms_edit: "usage — 'no such page' already guides to cms_publish_page."
+  cms_publish_page: "usage — lang enum already declared; done on board."
+  cms_read: "usage — slug guesses now get did_you_mean[] in the patch."
+  control_entity: "usage — media verb aliases added in patch."
+  devin_read: "fixed — DEVTEAM_MODEL bumped off dead gemini-2.5-flash."
+  docs: "acl — owner gate on document tools."
+  drive: "fail stays — nested HTTP 404 = stale file_id; rare, error is clear."
+  get_home_state: "fixed — 404 now returns a home_search hint."
+  gev_command: "fail stays (unparsed ok:false) — separate card
+    gev-command-404s covers the client-offline case."
+  home_status: "fixed — valid-what-unavailable error."
+  kanban: "obsolete — tool folded back into ada_board_write; the 'no card'
+    path lives there now."
+  percussion: "obsolete — tools.d module removed; 'sonify' NameError can't
+    recur."
+  set_facial_expression: "fixed — unknown-expression error, no runner
+    fallthrough."
+  tv_action: "acl — 'blocked:plug_cooldown' is the deliberate rate guard."
+  vcast_snapshot: "fail stays — uncapturable-iframe is a real display-side
+    limit, error is honest."
+  web_search: "fixed — provider aliases + enum; grounded model bumped."
+
+open_gate:
+  - "ada-pi patch (bbb90f1) must be `git am`'d on tony-dell's ada-pi checkout,
+      pushed, and deployed via deploy-ada.sh on idc03 — requires explicit
+      approval (deploy policy)."
+  - "chat_send photos picker needs GPHOTO_REFRESH_TOKEN configured on idc03
+      (gphoto-auth.py) — config, not code."
+  - "session-audit.py changes ride this dispatch's chaba merge; the installed
+      copy refreshes via install-session-audit.sh / its timer path."
+
+verify:
+  - "after ada-pi deploy + one clean audit day: none of the 18 signatures
+      refile audit-fail-* cards; a staged outage produces one audit-storm-*
+      card instead of N."
+  - "live spot-checks: 'show the rama9 wall' (cctv_wall no-arg action),
+      'pause the TV' (control_entity pause alias), 'google X' phrasing
+      (web_search provider alias)."
