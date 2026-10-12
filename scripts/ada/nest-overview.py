@@ -79,7 +79,7 @@ LANES = [
      "distilbert confirm"),
     ("student-a",   "student-a",               "tony-omen", 8778,
      "gemma-3-1b systemd"),
-    ("student-b",   "student-b",               "idc03", 8779,
+    ("student-b",   "student-b",               "tony-omen", 8779,
      "gemma-3-1b container"),
     ("heavy-a",     "heavy-a",                 "idc02", 8777,
      "gemma-3-4b (prod advisory)"),

@@ -22,7 +22,7 @@ hosts:
   tony_omen:
     role: nest-gpu-lane    # was gpu-dev; dedicated Ada Nest host 2026-10-12 (card omen-dedicate-nest)
     cpu_cores: 12
-    mem_gb: 30        # ~3G used — biggest fleet headroom
+    mem_gb: 30        # ~8G used after openjev-student landed 2026-10-12 (OPS-0524, ~4.5G RSS)
     disk_gb: {total: 98, free: 59}
     gpu: yes          # GTX1650 4GB — jev/nest serve+train lane, ollama :11434 (user svc, reinstalled 2026-10-12)
     note: heavy/ML workloads, development; power-hungry — prefer Colab for
@@ -44,7 +44,9 @@ hosts:
     note: >-
       Ada backends, MDDB leader, secondary edge (api.surf-thailand.com).
       Now also hosts kk-ha (:8126) and michael-dev (:8124) HA nodes —
-      migrated from tony-dell 2026-10-09.
+      migrated from tony-dell 2026-10-09. openjev-student (gemma-3-1b,
+      :8779, ~4.5G RSS) moved to tony-omen 2026-10-12 per capacity-adjust
+      (OPS-0524); source unit parked for 24h rollback.
   mn01:
     role: legacy-home
     cpu_cores: 4
