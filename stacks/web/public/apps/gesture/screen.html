@@ -98,14 +98,6 @@
 </header>
 
 <div id="surface">
-  <div class="grid" id="grid"></div>
-
-  <div class="gwin" id="win-a" style="left: 60%; top: 46%">
-    <div class="bar" data-drag-handle><span>WINDOW A</span><span>✊ drag</span></div>
-    <div class="body">Fist inside this window grabs it; move your fist to drag.
-      Release (open hand) to drop. Pinch clicks buttons.</div>
-  </div>
-
   <div class="gwin" id="win-tv" style="left: 24%; top: 64%">
     <div class="bar" data-drag-handle><span>CAST TO TV</span><span>✊ drag</span></div>
     <div class="body">
@@ -131,22 +123,6 @@ const DRAG_DEADZONE = 0.5;    // px wrist delta
 
 const $ = id => document.getElementById(id);
 const cursor = $('gcursor'), statusEl = $('status');
-
-/* ------- demo control grid ------- */
-const TILES = ['Power', 'Lights', 'Volume +', 'Volume −', 'Scene: Movie',
-               'Scene: Off', 'Cameras', 'Shuffle'];
-const grid = $('grid');
-for (const name of TILES) {
-  const b = document.createElement('button');
-  b.className = 'tile'; b.setAttribute('role', 'button');
-  b.innerHTML = `${name}<span class="count">0</span><small>pinch to ${name.startsWith('Scene') ? 'apply' : 'press'}</small>`;
-  b.addEventListener('click', () => {
-    const c = b.querySelector('.count');
-    c.textContent = +c.textContent + 1;
-    b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
-  });
-  grid.appendChild(b);
-}
 
 /* ------- draggable windows (mouse path too, for testing) ------- */
 // wins[id].{x,y} = left/top within #surface; windows keep their HTML % pose
