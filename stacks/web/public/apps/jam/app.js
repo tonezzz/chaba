@@ -389,6 +389,13 @@ window.JAM = JAM;
 // voices + helpers exposed for mods (band schedules these on its own clock)
 JAM._v = { kick, snare, hat, tom, clap, crash, rim, shaker,
            bass, lead, stab, airhorn, riser, scratch, pluck, bell, organ };
+// diag: count every VOICE call too — band/fills bypass emit entirely, so
+// a runaway scheduler was invisible to the event counter
+for (const [k, f] of Object.entries(JAM._v))
+  JAM._v[k] = (...a) => {
+    (JAM._ec ||= {})["♪" + k] = (JAM._ec["♪" + k] || 0) + 1;
+    return f(...a);
+  };
 JAM._actx = actx; JAM._NOTE = NOTE; JAM._SCALES = SCALES;
 JAM._tone = tone; JAM._toneDrop = toneDrop;
 // ?tones=0 kills all glide voices — A/B flag for "is the theremin the scream?"
