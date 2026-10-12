@@ -1,0 +1,45 @@
+title: Command Truth — watched entity commander allowlists
+subtitle: Every state change on a watched device must have a named,
+  allowlisted commander; anything else is drift (OPS-0521 class)
+version: 1
+runner:
+  script: scripts/home-assistant/command-truth.py
+  schedule: daily (chaba-system-report chain, tony-dell)
+  card: cast-auto-command-truth
+
+instance:
+  base_url: http://127.0.0.1:8123
+  token_file: ~/.config/secrets/nodered-ha.env
+
+# allowed_users: HA user_ids (context.user_id) — find via
+#   ha -> profile, or the context block in /api/history output.
+# allowed_callers: automation/script entity_ids (context.parent_id side).
+# unattributed_ok: integrations whose state churn has no context is normal
+# quiet_hours: local "HH:MM-HH:MM" — unattributed changes inside = violation
+entities:
+  - entity_id: media_player.tony_tv
+    quiet_hours: "23:00-07:00"
+    max_changes_per_day: 40
+    allowed_callers:
+      - automation.cast_guard_rate_limit
+      - automation.cast_idle_shutdown
+      - script.cast_power_on
+      - script.cast_cleanup
+      - script.tv_power
+    note: TV wake source is what we're hunting — keep unattributed noise
+      visible until the 3AM waker is named.
+  - entity_id: media_player.tony_tv_cast
+    quiet_hours: "23:00-07:00"
+    max_changes_per_day: 60
+    allowed_callers:
+      - automation.cast_guard_count_session_starts
+      - script.cast_power_on
+      - script.cast_cleanup
+  - entity_id: switch.plug_tv
+    quiet_hours: "23:00-07:00"
+    max_changes_per_day: 20
+    allowed_callers:
+      - script.cast_power_on
+      - automation.cast_idle_shutdown
+    note: Sonoff/eWeLink — device-side schedules live in the vendor app,
+      invisible to HA; an unattributed plug toggle means look there.
