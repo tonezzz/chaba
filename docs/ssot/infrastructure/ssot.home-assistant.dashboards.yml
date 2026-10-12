@@ -251,8 +251,13 @@ instances:
     note: >-
       Sidebar dashboard (storage mode) created via websocket
       lovelace/dashboards/create on 2026-10-12 — same pattern as kk-ha's
-      Kaewta AI dashboard. Two panel tabs, both same-origin iframes resolved
-      at the idc02 edge (see ssot.routes.yml tony-ha edge note): Chat
+      Kaewta AI dashboard. First view added 2026-10-12 (the "live assistant"
+      move, card ada-rebrand-chaba): markdown intro ("ชบา — household
+      assistant") + ada-voice-card (title ชบา, instance tony,
+      assistant_name Chaba, font_scale 1.6, button_size 100 — mirrors the
+      Kaewta AI card config) + ada-activity-card ("Live activity"). The two
+      original panel tabs are same-origin iframes resolved at the idc02
+      edge (see ssot.routes.yml tony-ha edge note): Chat
       (/chatui/chat.html -> /apps/ha/ada-tony/chat.html on idc03 :8002, card
       derives ws {base}/ws = ada-tony /ws) and CMS (/cms/ -> idc03 ada-pi-pwa
       root CMS = tony's ada-cms-pages). Verified through the edge: /chatui ->
@@ -294,7 +299,9 @@ instances:
       the pfg3d card); the pfg3d card title was removed and pfg_fit_screen
       raised 120px → 290px to keep the chart inside the viewport below the
       voice card. Later 2026-09-23: split into two tabs — "AI" (path ai,
-      mdi:robot-outline) holds the voice card (titled "Live assistant") plus
+      mdi:robot-outline) holds the voice card (titled "ชบา",
+      assistant_name Chaba — rebranded from "Live assistant" 2026-10-12,
+      card ada-rebrand-chaba) plus
       a new custom:ada-activity-card ("Live activity", defined in the same
       ada-voice-card.js bundle v4) that renders a log-style live feed of
       status transitions + You/Ada transcripts from a shared window channel
@@ -332,13 +339,14 @@ instances:
         path: ai
         icon: mdi:robot-outline
         type: panel
-        cards: vertical-stack of ada-voice-card ("Live assistant") +
+        cards: vertical-stack of ada-voice-card ("ชบา", assistant_name
+          Chaba) +
           ada-activity-card ("Live activity" log feed)
       - title: Chat
         path: chat
         icon: mdi:message-text-outline
         type: panel
-        cards: ada-chat-card ("Ada chat", /local/ada-chat-card.js?v=11) —
+        cards: ada-chat-card ("Chaba chat", /local/ada-chat-card.js?v=11) —
           added 2026-09-23; text over the same /ws + shared device key as
           the voice card; replaces the standalone /chat/ miniapp. 📎 attach
           button (2026-09-26) uploads a photo/doc via /api/documents/intake

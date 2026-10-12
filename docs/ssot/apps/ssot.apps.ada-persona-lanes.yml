@@ -22,8 +22,38 @@ lanes:
     persona: kaewta            # LINE name binding (LINE_NAME_BACKENDS)
     ha_home: kk-ha             # virtual home — no live HA upstream
     owner_person: kk
+  tony:
+    dev: ada-dev               # shared lab lane — HA tools excluded
+    prod: ada-ha-tony
+    persona: chaba             # rebranded ada->chaba 2026-10-12 (card
+                               # ada-rebrand-chaba); @ada kept as alias —
+                               # LINE_NAME_BACKENDS routes both to :8002
+    ha_home: tony-ha           # real production HA — owner-token lane
+    owner_person: tony
 
 instances:
+  ada-ha-tony:
+    host: idc03
+    port: 8002
+    env_file: ada-ha-tony.env
+    ha_upstream: tony-ha       # HOME_ASSISTANT_* points at prod tony-ha —
+                               # currently an OWNER token (see
+                               # ha-ada-isolation, open svc-ada request)
+    bank: ada-ha-bank-personal-tony      # instance-derived default
+    cms_collection: ada-cms-pages        # shared tony CMS root
+    events: ada-ha-events
+    tool_profile: tony         # persons.tony.tools — full surface minus
+                               # ADA_EXCLUDED_TOOLS=get_habit_status,
+                               # report_habit_observation
+    line_persona: chaba        # display ชบา (LINE_NAME_TH); ada alias kept
+    pwa_name: Chaba AI         # ADA_PWA_NAME — manifest/app name
+    identity_env: ADA_IDENTITY_INSTRUCTIONS   # Chaba identity + feminine
+      # register (mirrors Kaewta block) — added 2026-10-12. Overrides the
+      # default introduce-yourself-as-Ada paragraph.
+    note: restarted 2026-10-12 ~21:00 +07 after the storm hold —
+      returned with the Chaba identity env in place (NRestarts=0).
+
+  ada-kk:
   ada-kk:
     host: idc03
     port: 8007

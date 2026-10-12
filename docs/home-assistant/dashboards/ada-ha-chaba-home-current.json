@@ -1,147 +1,155 @@
 {
-  "views": [
-    {
-      "title": "AI",
-      "path": "ai",
-      "type": "panel",
-      "icon": "mdi:robot-outline",
-      "badges": [],
-      "cards": [
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.chaba_home",
+  "data": {
+    "config": {
+      "views": [
         {
-          "type": "vertical-stack",
+          "title": "AI",
+          "path": "ai",
+          "type": "panel",
+          "icon": "mdi:robot-outline",
+          "badges": [],
           "cards": [
             {
-              "type": "custom:ada-voice-card",
-              "title": "Live assistant"
-            },
-            {
-              "type": "custom:ada-activity-card",
-              "title": "Live activity"
+              "type": "vertical-stack",
+              "cards": [
+                {
+                  "type": "custom:ada-voice-card",
+                  "title": "ชบา",
+                  "assistant_name": "Chaba"
+                },
+                {
+                  "type": "custom:ada-activity-card",
+                  "title": "Live activity"
+                }
+              ]
             }
-          ]
-        }
-      ],
-      "theme": "Liquid Glass",
-      "subview": false
-    },
-    {
-      "title": "Chat",
-      "path": "chat",
-      "icon": "mdi:message-text-outline",
-      "type": "panel",
-      "cards": [
+          ],
+          "theme": "Liquid Glass",
+          "subview": false
+        },
         {
-          "type": "custom:ada-chat-card",
-          "title": "Ada chat",
-          "height": "calc(100vh - 240px)"
-        }
-      ]
-    },
-    {
-      "title": "Calendar",
-      "path": "calendar",
-      "icon": "mdi:calendar-month",
-      "type": "panel",
-      "cards": [
-        {
-          "type": "iframe",
-          "url": "https://calendar.google.com/calendar/embed?src=tonezzzz%40gmail.com&src=en.th%23holiday%40group.v.calendar.google.com&ctz=Asia/Bangkok&showTitle=0&showPrint=0&showTabs=1",
-          "aspect_ratio": "100%"
-        }
-      ]
-    },
-    {
-      "title": "Gesture",
-      "path": "gesture",
-      "icon": "mdi:hand-back-right-outline",
-      "type": "panel",
-      "badges": [],
-      "cards": [
-        {
-          "type": "vertical-stack",
+          "title": "Chat",
+          "path": "chat",
+          "icon": "mdi:message-text-outline",
+          "type": "panel",
           "cards": [
             {
-              "type": "markdown",
-              "title": "Gesture control — iPhone camera → screen",
-              "content": "Open the **controller** on the iPhone (camera + hand tracking), and the **screen** on the TV/display browser. Point to move the cursor, pinch to click, fist to drag windows. iOS needs HTTPS — use the tailnet URL; camera in installed-PWA mode is unreliable, prefer a plain Safari tab."
-            },
-            {
-              "type": "weblink",
-              "name": "Gesture controller (open on iPhone)",
-              "url": "https://tony-dell.taila0626a.ts.net/apps/gesture/",
-              "icon": "mdi:hand-back-right-outline"
-            },
-            {
-              "type": "weblink",
-              "name": "Gesture screen (open on TV/display)",
-              "url": "https://tony-dell.taila0626a.ts.net/apps/gesture/screen",
-              "icon": "mdi:television"
+              "type": "custom:ada-chat-card",
+              "title": "Chaba chat",
+              "height": "calc(100vh - 240px)"
             }
           ]
-        }
-      ]
-    },
-    {
-      "title": "Report",
-      "path": "report",
-      "icon": "mdi:file-tree-outline",
-      "type": "panel",
-      "badges": [],
-      "cards": [
+        },
         {
-          "type": "custom:chaba-report-card",
-          "title": "System report"
-        }
-      ]
-    },
-    {
-      "title": "Nobito",
-      "path": "nobito",
-      "type": "panel",
-      "icon": "mdi:poll",
-      "badges": [],
-      "cards": [
+          "title": "Calendar",
+          "path": "calendar",
+          "icon": "mdi:calendar-month",
+          "type": "panel",
+          "cards": [
+            {
+              "type": "iframe",
+              "url": "https://calendar.google.com/calendar/embed?src=tonezzzz%40gmail.com&src=en.th%23holiday%40group.v.calendar.google.com&ctz=Asia/Bangkok&showTitle=0&showPrint=0&showTabs=1",
+              "aspect_ratio": "100%"
+            }
+          ]
+        },
         {
-          "type": "custom:pfg3d-card",
-          "cardstyle": "pfg",
-          "card_height": "100%",
-          "card_width": "100%",
-          "pfg_grid_size": 1,
-          "pfg_grid_width": "100%",
-          "pfg_charts": {
-            "1,1": [
-              {
-                "type": "bar3d",
-                "entity": "sensor.nobito_pm2_5",
-                "unit": "µg/m³",
-                "days": 10,
-                "min": 0,
-                "scale": 1,
-                "position": "bg",
-                "height": "100%",
-                "rotate_sensitivity": [
-                  -4,
-                  4
-                ],
-                "opacity": 1,
-                "view_offset": 40,
-                "stat": "range",
-                "key": "nobito",
-                "entity_input": "input_select.nobito_metric"
-              }
-            ]
-          },
-          "preset": "pfg",
-          "show_solar": false,
-          "inverter": {
-            "model": "solis",
-            "modern": true,
-            "autarky": "no"
-          },
-          "pfg_fit_screen": "120px",
-          "pfg_transparent": true
+          "title": "Gesture",
+          "path": "gesture",
+          "icon": "mdi:hand-back-right-outline",
+          "type": "panel",
+          "badges": [],
+          "cards": [
+            {
+              "type": "vertical-stack",
+              "cards": [
+                {
+                  "type": "markdown",
+                  "title": "Gesture control — iPhone camera → screen",
+                  "content": "Open the **controller** on the iPhone (camera + hand tracking), and the **screen** on the TV/display browser. Point to move the cursor, pinch to click, fist to drag windows. iOS needs HTTPS — use the tailnet URL; camera in installed-PWA mode is unreliable, prefer a plain Safari tab."
+                },
+                {
+                  "type": "weblink",
+                  "name": "Gesture controller (open on iPhone)",
+                  "url": "https://tony-dell.taila0626a.ts.net/apps/gesture/",
+                  "icon": "mdi:hand-back-right-outline"
+                },
+                {
+                  "type": "weblink",
+                  "name": "Gesture screen (open on TV/display)",
+                  "url": "https://tony-dell.taila0626a.ts.net/apps/gesture/screen",
+                  "icon": "mdi:television"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Report",
+          "path": "report",
+          "icon": "mdi:file-tree-outline",
+          "type": "panel",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:chaba-report-card",
+              "title": "System report"
+            }
+          ]
+        },
+        {
+          "title": "Nobito",
+          "path": "nobito",
+          "type": "panel",
+          "icon": "mdi:poll",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:pfg3d-card",
+              "cardstyle": "pfg",
+              "card_height": "100%",
+              "card_width": "100%",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bar3d",
+                    "entity": "sensor.nobito_pm2_5",
+                    "unit": "µg/m³",
+                    "days": 10,
+                    "min": 0,
+                    "scale": 1,
+                    "position": "bg",
+                    "height": "100%",
+                    "rotate_sensitivity": [
+                      -4,
+                      4
+                    ],
+                    "opacity": 1,
+                    "view_offset": 40,
+                    "stat": "range",
+                    "key": "nobito",
+                    "entity_input": "input_select.nobito_metric"
+                  }
+                ]
+              },
+              "preset": "pfg",
+              "show_solar": false,
+              "inverter": {
+                "model": "solis",
+                "modern": true,
+                "autarky": "no"
+              },
+              "pfg_fit_screen": "120px",
+              "pfg_transparent": true
+            }
+          ]
         }
       ]
     }
-  ]
+  }
 }
