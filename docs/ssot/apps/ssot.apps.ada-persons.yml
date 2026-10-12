@@ -291,6 +291,130 @@ lifecycle:
         person_coverage — every speaker entity seen in ada-events in
         the last 30d must resolve to a persons entry or 'default'.
 
+# ---------------------------------------------------------------------------
+# bench_profiles: — named experiment tool-surfaces for dev-lane instances.
+# NOT read by render-tool-profiles.py (persons: only) — applied by
+# scripts/ada/kk-bench-env.py, which writes the same managed block format
+# into the dev env file. Runbook: docs/kb/ada-idea-bench.md.
+# Data-never-promotes still applies: bench profiles only ever target -dev
+# env files / -dev collections.
+# ---------------------------------------------------------------------------
+bench_profiles:
+  # CMS-only memory — the 2026-10-12 idea: Kaewta answers only from CMS
+  # reports; the cms_* tools are her buttons/dials/switches and report
+  # availability honestly. Drops the bank/session-recall surface AND
+  # web_search (a live-search safety net would mask honest misses — flip
+  # it back into include: to test "cms memory + honest search" instead).
+  kk-cms-only:
+    instance: kk-dev
+    env_file: ada-kk-dev.env
+    host: idc03
+    include:
+      - cms_read
+      - cms_publish_page
+      - cms_edit
+      - chat_send
+      - calendar_read
+      - calendar_write
+      - plan_day
+      - tasks
+      - ada_persona
+      - speaker_profiles
+      - voice_fx
+      - set_facial_expression
+      - ada_market_quote
+      - ada_render_video
+    exclude:
+      - ada_memory_search
+      - ada_remember
+      - ada_forget
+      - ada_session_recall
+      - web_search
+      - ada_resolve_action
+      - vcast_snapshot
+      - vcast_gesture
+      - devin
+      - devin_read
+      - kanban
+      - docs
+      - drive
+      - yt
+      - cast_to_screen
+      - cctv_wall
+      - tv_action
+      - gev_command
+      - control_entity
+      - get_home_state
+      - home_search
+      - home_status
+      - home_history
+      - ha_confidence
+      - get_rk600_weather
+      - ada_camera_snapshot
+      - ada_look
+      - ada_track_device
+      - ada_member_keys
+      - ada_device_acl
+      - ada_enroll_speaker
+      - ada_ops
+      - percussion
+
+  # Parity restore — identical to persons.kk.tools; the standard profile
+  # the dev lane returns to after a bench run.
+  kk-parity:
+    instance: kk-dev
+    env_file: ada-kk-dev.env
+    host: idc03
+    include:
+      - ada_memory_search
+      - ada_remember
+      - ada_forget
+      - ada_session_recall
+      - cms_read
+      - cms_publish_page
+      - cms_edit
+      - chat_send
+      - calendar_read
+      - calendar_write
+      - plan_day
+      - tasks
+      - web_search
+      - ada_persona
+      - speaker_profiles
+      - voice_fx
+      - set_facial_expression
+      - ada_market_quote
+      - ada_render_video
+    exclude:
+      - ada_resolve_action
+      - vcast_snapshot
+      - vcast_gesture
+      - devin
+      - devin_read
+      - kanban
+      - docs
+      - drive
+      - yt
+      - cast_to_screen
+      - cctv_wall
+      - tv_action
+      - gev_command
+      - control_entity
+      - get_home_state
+      - home_search
+      - home_status
+      - home_history
+      - ha_confidence
+      - get_rk600_weather
+      - ada_camera_snapshot
+      - ada_look
+      - ada_track_device
+      - ada_member_keys
+      - ada_device_acl
+      - ada_enroll_speaker
+      - ada_ops
+      - percussion
+
 open_questions:
   - "persona overrides need the ada-pi hook — session instructions
     currently compose globally; per-person tone/language/verbosity is

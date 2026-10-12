@@ -55,6 +55,9 @@ procedures:
   # --- desktop / hardware ---
   - {id: display-scale, where: ".devin/skills/scalecheck + scripts/devin/display-scale-check.sh", trigger: "codeword 'scalecheck' — Chrome/UI/text wrong size on any monitor (GNOME)", status: verified, last_run: 2026-10-11}
   - {id: incident-capture, where: "scripts/devin/incident-capture.sh + hardware-tony-macbook.md#suspend-wedge", trigger: "host goes dark / GPU wedge / pre-reboot evidence grab — run over ssh at symptom time", status: verified, last_run: 2026-10-11}
+  - {id: cam-onboard,   where: "docs/kb/host-cam-onboard.md + ssot.ip-camera.yml#OmenWebcam", trigger: "expose a host webcam (built-in/USB) as camera.* in tony-ha + go2rtc stream", status: verified, last_run: 2026-10-11}
+  - {id: net-tune,      where: "docs/kb/net-tune-linux-host.md",             trigger: "'tune host network/wifi/lan for performance' — hardware ceiling first, then path pick + BBR", status: verified, last_run: 2026-10-11}
+  - {id: idea-bench,    where: "docs/kb/ada-idea-bench.md + scripts/ada/kk-bench-env.py + ada-pi tests/benchmark.yml suites", trigger: "'bench/test my idea on kk-dev (or a persona dev lane)' — bench_profiles tool surface → live scenarios → benchmark suite run → auto-report", status: verified, last_run: 2026-10-12}
   # --- ai / eval ---
   - {id: model-eval,   where: "scripts/voice-bench pattern + ada-pi tests/benchmark.yml + reports/<topic>/", trigger: "'can micro/local model X help with Y' — fixtures -> variant harness -> measure vs baseline -> report -> adopt-gate", status: verified, last_run: 2026-10-11}
   - {id: feature-explore, where: ".devin/skills/info-find step 4a (GitHub precedent rung)", trigger: "expanding a feature/idea — 'what exists for X', 'any tool for X', hypothesis needs options — internal sources -> GitHub precedent -> web -> findings on card", status: verified, last_run: 2026-10-11}
