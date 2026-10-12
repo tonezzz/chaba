@@ -359,6 +359,10 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--report", action="store_true",
                     help="write the gate summary doc even on verdict ok")
+    ap.add_argument("--daily-budget", type=int, default=0,
+                    help="max allowed runs per UTC day; 0 = unlimited. The "
+                         "incremental ratchet — raise it as the canary "
+                         "proves headroom (gemini-live-canary ledger).")
     args = ap.parse_args()
 
     # MDDB_OPS_URL lives in the instance env file — [Service] only exports
@@ -398,6 +402,15 @@ def main() -> int:
         status, reason = "quota-dead", (
             f"provider dunning in last {args.window}min "
             f"({json.dumps(quota_detail)})")
+    elif args.daily_budget > 0:
+        today = datetime.datetime.now(datetime.timezone.utc
+                                      ).strftime("%Y-%m-%d")
+        runs = [d for d in state.get("allowed_runs", []) if d == today]
+        if len(runs) >= args.daily_budget:
+            status, reason = "budget", (
+                f"daily budget {args.daily_budget} run(s) reached")
+        else:
+            status, reason = "ok", "provider healthy — run proceeds"
     else:
         status, reason = "ok", "provider healthy — run proceeds"
 
@@ -406,6 +419,11 @@ def main() -> int:
         print(f"  {k}: {v}")
 
     if status == "ok" and not args.report:
+        if args.daily_budget > 0 and not args.dry_run:
+            allowed = state.setdefault("allowed_runs", [])
+            allowed.append(today)
+            state["allowed_runs"] = allowed[-64:]
+            _save_state(state)
         return 0
 
     # report path — skip verdicts always; 'ok' only under --report
@@ -437,6 +455,11 @@ def main() -> int:
             })
         elif args.report:
             report_gate_summary(mddb, verdict, names)
+    if status == "ok" and args.daily_budget > 0 and not args.dry_run:
+        allowed = state.setdefault("allowed_runs", [])
+        allowed.append(today)
+        state["allowed_runs"] = allowed[-64:]
+        _save_state(state)
 
     return 0 if status == "ok" else 1
 
