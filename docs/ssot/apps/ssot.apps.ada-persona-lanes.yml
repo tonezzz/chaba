@@ -30,6 +30,14 @@ lanes:
                                # LINE_NAME_BACKENDS routes both to :8002
     ha_home: tony-ha           # real production HA — owner-token lane
     owner_person: tony
+  guest:
+    prod: ada-guest            # PLANNED — CHABA_MEMORY=1 lane, see
+                               # docs/kb/chaba-guest-service.md checklist
+    persona: none              # guests reach Chaba on a guest device,
+                               # never a LINE persona (guest-is-chaba
+                               # decision 2026-10-12)
+    ha_home: tony-ha           # svc-chaba-guest scoped creds, not owner
+    owner_person: none
 
 instances:
   ada-ha-tony:
