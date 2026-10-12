@@ -94,6 +94,12 @@ persons:
         # home lane anyway. Re-add if a kk-ha bridge ever exists.
         - ada_market_quote
         - ada_render_video
+        # page_snapshot (2026-10-12): renders a page URL to a sendable
+        # PNG via playlived — the deterministic plan/diagram renderer
+        # (kk asked for an easy-read trip-plan image; ada_render_video
+        # is genAI and produces unsendable tailnet video). Write-only
+        # asset hop, unlike the dropped vcast read tools.
+        - page_snapshot
       exclude:
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
@@ -324,6 +330,7 @@ bench_profiles:
       - set_facial_expression
       - ada_market_quote
       - ada_render_video
+      - page_snapshot
     exclude:
       - ada_memory_search
       - ada_remember
