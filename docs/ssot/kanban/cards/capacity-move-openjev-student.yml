@@ -1,0 +1,71 @@
+id: capacity-move-openjev-student
+title: Move openjev-student (gemma-3-1b scorer, 4.5GB RSS) idc03 -> tony-omen
+column: done
+updated: 2026-10-13 06:01
+priority: medium
+tags:
+- capacity
+- ops
+- nest
+spec: 'First capacity-adjust move (procedure: docs/kb/capacity-adjust.md).
+
+
+  EVIDENCE (Phase 0, fresh 22:48 +07 host-loads):
+
+  - idc03: mem 12.4G used / 3.6G avail of 16G — tightest host.
+
+  - openjev-student.service = podman openjev:cpu, gemma-3-1b-it at /home/tony/openjev-models, bound 100.102.134.91:8779
+  — RSS ~4.5GB (27% of idc03), the single largest process on the box.
+
+  - tony-omen: 27.6G free + GTX1650, role=nest-gpu-lane (card omen-dedicate-nest) — this service IS a nest lane;
+  placement policy already says nest/GPU workloads go to omen.
+
+
+  MOVE: openjev-student idc03:8779 -> tony-omen. Frees ~4.5GB on idc03 (roughly the whole mem squeeze). Alternative
+  moves (kk-ha/michael-dev -> idc02) only free ~0.5G each — keep as follow-ups.
+
+
+  QA PLAN (pre-flight, fill on card):
+
+  - model dir: /home/tony/openjev-models must exist on omen (one-time rsync; read-only mount).
+
+  - image: podman save/load openjev:cpu (or keep cpu image on omen — CPU serving is fine, GPU optional upgrade later).
+
+  - port: bind 8779 on omen tailnet IP (100.75.102.88); check no conflict.
+
+  - consumers: run scripts/ops/ref-sweep.sh on 100.102.134.91:8779 — bankq serve-student.py on idc03 (:8791) likely
+  proxies it; repoint envs/configs to omen tailnet IP.
+
+  - consumer continuity: remote call over tailnet — verify latency acceptable for nest scoring path.
+
+
+  EXECUTE: stateless scorer — provision omen unit, bring up, cut over consumers, stop idc03 unit, park 24h.
+
+
+  QC: /health on omen:8779; audit-hosts idc03+omen deltas = intended only; 24h soak under thresholds; one real bankq
+  scoring call.
+
+
+  AUDIT: update ssot.host-capacity.yml + ssot.services.yml + ssot.audit.hosts.yml; close with evidence.'
+note: 'Also noted while measuring: idc01 is still running (retired role) with 30G free doing nothing — if it is
+  truly retired, shutting it down saves the VPS budget; decision belongs on its retirement card, not here.'
+ref: OPS-0524
+comms:
+- at: 2026-10-12 22:49
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 22:59
+  from: devin
+  text: '[exec] Phase 2 done 2026-10-12 ~23:20 +07. Model dir rsynced idc03->tony-omen (1.9G, /home/tony/openjev-models);
+    image localhost/openjev:cpu already present on omen. Quadlet copied, PublishPort rebound 100.102.134.91->100.75.102.88:8779,
+    MemoryMax=6G kept, cpu image unchanged (no silent GPU upgrade). [qc] /health 200; real /score request returns
+    ranked options in 0.55s; nest-overview probe student-b tony-omen:8779 UP 9ms. Source unit stopped-not-disabled
+    on idc03 = 24h rollback (systemctl --user'
+- at: 2026-10-13 06:00
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 06:01
+  from: devin
+  text: 'VERIFIED: openjev-student.service active on tony-omen since 22:55 (OPS-0524). idc03 unit parked for rollback.'
+action:
+  status: done

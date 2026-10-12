@@ -1,7 +1,7 @@
 id: macbook-suspend-dgpu-wedge
 title: 'tony-macbook: S3 (deep) suspend wedges amdgpu+Thunderbolt on resume — screen dead, host alive'
 column: backlog
-updated: 2026-10-11 21:24
+updated: 2026-10-11 22:11
 brief: '2026-10-11 15:52 suspend entry (deep) → on resume pcieports stuck in D3cold ("device inaccessible") + thunderbolt
   tb_cfg_read WARN storm → 15:56 amdgpu SMU mailbox dead, fw reload failed, GPU Recovery Failed -22 → display pipe
   dead, host stayed up (ssh/power-key worked until force-off ~16:01). Known MBP13,3-on-Linux disease: Alpine Ridge
@@ -54,7 +54,7 @@ requests:
   answer: defer-until-recur — only install if wedge happens again (recommended)
 action:
   type: self
-  status: queued
+  status: done
 comms:
 - at: 2026-10-11 16:10
   from: devin
@@ -87,3 +87,46 @@ comms:
 - at: 2026-10-11 21:24
   from: tony
   text: queued for processing
+- at: 2026-10-11 21:44
+  from: devin
+  text: '[done] s2idle live test PASSED 21:41: systemctl suspend while docked (lid-close is a no-op here — headless-crd.conf
+    sets HandleLidSwitch=ignore) → resume at 21:41:58 clean: zero amdgpu fail/recovery lines, UVD/VCE re-init ok,
+    gnome-shell active, all 3 connectors enabled (DP-7/DP-8/eDP-1). Entry still shows transient D3cold+tb_cfg WARNs
+    on Alpine Ridge ports — harmless flap, no longer cascades into SMU death. Persisted: GRUB_CMDLINE_LINUX_DEFAULT=mem_sleep_default=s2idle
+    + update-grub (kernel 7.0'
+- at: 2026-10-11 21:44
+  from: tony
+  text: closed by tony
+- at: 2026-10-11 21:48
+  from: devin
+  text: 's2idle VERIFIED LIVE: mem_sleep_default=s2idle in grub + active. rtcwake suspend->resume at 21:41 survived
+    — displays back, all 3 connectors connected, no SMU death, no devcoredump. Caveat: the TB/PCIe fault signature
+    STILL fires on resume (pcieport D3cold + tb WARN storm) — s2idle kept the GPU reachable through it rather than
+    preventing the fabric hiccup. One pass != proof; telemetry-layer deferred per answer. Card can move to review
+    after a few days of lid-close/open usage.'
+- at: 2026-10-11 21:50
+  from: devin
+  text: 'verified applied by sibling session: /sys/power/mem_sleep=[s2idle] + grub mem_sleep_default=s2idle persisted.
+    Wedge path bypassed — lid-close now safe. Remaining: live lid-close test while docked to confirm resume, then
+    card can close.'
+- at: 2026-10-11 21:59
+  from: devin
+  text: 'Test B outcome: s2idle ENTERED clean (no D3cold/amdgpu — GPU path fixed) but machine unwakeable: power
+    button routes through EC which had wakeup *disabled (LID0+SPIT+XHC1 were the only enabled sources — lid-open
+    or keypress would have woken it). Forced-off -> cold boot. Fixes: EC wakeup enabled live via pkexec + persisted
+    /etc/udev/rules.d/90-macbook-ec-wakeup.rules (PNP0C0D:00 power/wakeup=enabled on add). Also noted: the 21:41
+    deep-resume showed xhci_hcd 07:00/7d:00 giving up after 65s — Alpin'
+- at: 2026-10-11 22:04
+  from: devin
+  text: 'TEST B PASSED (22:02): suspend -> power-press wake -> full recovery. Displays DP-7/DP-8/eDP-1 all reconnected,
+    dock USB re-enumerated (kbd/mouse/hubs), dock ethernet up 192.168.2.88. RESIDUAL: resume stalls ~65s while Alpine
+    Ridge xhci (07:00/7d:00) times out then recovers — cosmetic but makes wake feel dead; tb_cfg_read WARNs persist.
+    Possible follow-ups: xhci reset hook or accept + document patience window. Verdict: wedge FIXED for docked use
+    — suspend/wake cycle works end to end.'
+- at: 2026-10-11 22:11
+  from: devin
+  text: '[lid-blank] User asked: lid close should blank all 3 screens to save them (dock monitor auto-switches to
+    tony-dell input when macbook signal drops). Implemented lid-blank-watch.service (user unit, ~/.local/bin/lid-blank-watch):
+    polls /proc/acpi/button/lid/LID0/state; on close -> Mutter PowerSaveMode=3 (all outputs off), on open -> =0.
+    Docked lid-close stays logind-ignored (no suspend); undocked still s2idles. Also ssh-force-DPMS on tony-dell
+    greeter display (Xorg :1, gdm auth /run/user/60578/.mu'

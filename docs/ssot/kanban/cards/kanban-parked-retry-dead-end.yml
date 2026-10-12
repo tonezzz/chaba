@@ -1,7 +1,7 @@
 id: kanban-parked-retry-dead-end
 title: parked cards can never retry — nothing resets action.attempts
-column: backlog
-updated: 2026-10-10 10:45
+column: done
+updated: 2026-10-13 06:00
 brief: 'kanban-dispatch parks a queued card when attempts >= retries_per_card (default 2) with ''re-queue to retry''
   — but neither board-api verb can un-park it: process leaves attempts >= cap so it re-parks on the next sweep,
   and retry actively bumps attempts (+1 on top of mark_start''s claim-time bump, same double-count pattern as kanban-autoretry-off-by-one).
@@ -17,6 +17,7 @@ spec: 'In scripts/board/board-api.py: make the retry verb actually able to reviv
 action:
   type: dispatch
   repo: chaba
+  status: done
 comms:
 - at: 2026-10-10 10:45
   from: tony
@@ -24,4 +25,17 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0340'
+- at: 2026-10-12 22:28
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:28
+  from: devin
+  text: 'VERIFIED: /action retry re-queues parked cards — status->queued, drops runner+verified, records last_failure.
+    Dead-end closed.'
+- at: 2026-10-13 06:00
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 06:00
+  from: devin
+  text: 'RE-CLOSED: retry verb re-queues parked cards.'
 ref: OPS-0340

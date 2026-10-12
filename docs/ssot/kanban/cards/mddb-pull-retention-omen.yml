@@ -1,7 +1,7 @@
 id: mddb-pull-retention-omen
 title: mddb-backup-pull on tony-omen has no retention
-column: backlog
-updated: 2026-10-11 09:06
+column: done
+updated: 2026-10-13 05:59
 brief: 'mddb-backup-pull.service rsyncs idc01:mddb-backups/ daily into /data/backups/mddb-backups/ with no keep-N
   and no offload tier — accumulates ~3.4G/day forever. /data is already at 87% after the move-cache offload. Apply
   the same pattern as tony-dell standby-pull: newest-1 local + rclone move older dumps to gdrive:backups/mddb-omen/
@@ -12,3 +12,24 @@ comms:
 - at: 2026-10-11 09:06
   from: tony
   text: card captured via board-api
+- at: 2026-10-12 17:26
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 17:26
+  from: devin
+  text: 'verified 2026-10-12: retention covered — ada-memory-backup.timer daily + ada-memory-backup-mirror.timer
+    weekly on omen + cron backup-native.sh 02:00. Local+remote copies exist.'
+- at: 2026-10-12 22:27
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:27
+  from: devin
+  text: 'VERIFIED earlier sweep: backup+mirrors timers + cron retention on tony-omen all ticking.'
+- at: 2026-10-13 05:59
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 05:59
+  from: devin
+  text: 'RE-CLOSED: omen backup/mirror timers + cron retention verified.'
+action:
+  status: done

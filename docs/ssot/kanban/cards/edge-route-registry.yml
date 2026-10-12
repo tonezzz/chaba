@@ -19,7 +19,7 @@ action:
   result: 'exit=0  ok, so a missing Caddy block can hide behind a 404 — only `ada-tony` sets `verify.expect`. |
     devin-task-20261007-172308-phase-1-this-session-ssot-rout.service: Consumed 54.517s CPU time over 8min 8.327s
     wall clock time, 996.3M memory peak.'
-updated: 2026-10-07 17:58
+updated: 2026-10-12 18:35
 claim:
   since: 2026-10-07 15:59
 comms:
@@ -172,6 +172,13 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0158'
+- at: 2026-10-12 18:35
+  from: devin
+  text: '2026-10-12 kk-ha.surf-thailand.com (idc02): added kaewta-dashboard tab surfaces — /chatui* -> /apps/ha/ada-kk/*
+    (path-stripped: chat card + its /api/* + /ws stay in-prefix), /cms* -> /apps/ha/ada-kk/cms* (literal /cms/ miniapp),
+    /api/cms* -> /apps/ha/ada-kk/api/cms* (miniapp calls API at origin root). Both legs verified at origin: chat.html
+    200, cms/ 200, api/cms/pages 401 (lane key required, miniapp handles auth). CF Access still gates the vhost.
+    Backup: ~/.config/caddy/Caddyfile.bak-kktabs. HA'
 expected_goals:
 - id: routes-json-served
   check: http 200 http://localhost/apps/routes.json

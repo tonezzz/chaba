@@ -1,7 +1,7 @@
 id: ada-chat-text-lane-provider-reconnects-c-8ad4bc
 title: 'ada-chat text lane: provider reconnects come back resumed=False — cold prime + re-greet + token burn'
 column: backlog
-updated: 2026-10-11 15:15
+updated: 2026-10-12 22:55
 brief: 'Ada chat card shows a greeting every ~5min while client ws stays connected. Server side on ada-ha-tony (idc03):
   provider stream ends -> reconnect -> "prime injected (resumed=False)" -> fresh greeting pushed into the same chat.
   142 Live connects in 90min. Each cold reconnect re-bills system+tools+prime (~2.6k chars) and generates a greeting
@@ -25,7 +25,11 @@ action:
   repo: ada-pi
   labels:
   - ada
-  status: queued
+  status: done
+  runner: idc03
+  result: 'exit=0 n. Post-deploy check: `prime injected (silent, …)` in the journal with no new Ada line in the
+    card. | devin-task-20261012-223338-in-ada-pi-pwa-server-realtime-.service: Consumed 2min 7.381s CPU time, 189.9M
+    memory peak, 0B memory swap peak.'
 ref: ADA-0463
 comms:
 - at: 2026-10-11 15:15
@@ -34,3 +38,35 @@ comms:
 - at: 2026-10-11 15:15
   from: tony
   text: queued for processing
+- at: 2026-10-12 22:33
+  from: idc03
+  text: claimed
+- at: 2026-10-12 22:33
+  from: chaba
+  text: started devin-task-20261012-223338-in-ada-pi-pwa-server-realtime- on idc03 (dispatch)
+- at: 2026-10-12 22:33
+  from: devin
+  text: starting — exploring realtime_provider + pwa_server text-chat path
+- at: 2026-10-12 22:49
+  from: devin
+  text: 'done — silent re-prime on provider reconnect for ?channel= lanes (turn_complete=False context note, same
+    RESUME directive + tail, no greeting). Verified the ~5min ender is Gemini''s ~10min connection reset (goAway),
+    NOT the context rotate — a quiet lane emits no usage events so it cannot fire. Also: relink bark now voice-only;
+    stale handle dropped on connect-retry. 1330 tests green, tool-lint clean. Watch for `prime injected (silent`
+    in ada-ha-tony journal after deploy.'
+- at: 2026-10-12 22:50
+  from: idc03
+  text: 'finished (ok): exit=0 n. Post-deploy check: `prime injected (silent, …)` in the journal with no new Ada
+    line in the card. | devin-task-'
+- at: 2026-10-12 22:50
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-12 22:50
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-12 22:55
+  from: tony
+  text: closed by tony
+review_kind: verify
+claim: {}

@@ -1,0 +1,39 @@
+id: ada-kk-cms-traffic
+title: kk-ha CMS traffic feed — public cam dossiers into ada-cms-pages-kk
+column: backlog
+updated: 2026-10-12 17:27
+spec: 'Tony asked: structure Kaewta CMS to include traffic cam awareness, answers truthful. Pattern = cam-wall-cms
+  (generates cam-*/camwall-* dossiers Ada READS — data, not camera access). Build: (1) zone-group filter on cam-wall-cms.py
+  (or kk wrapper) so only zones.yml group:public zones emit pages; (2) timer run with COLLECTION=ada-cms-pages-kk
+  writing camwall-traffic + cam-traffic-* dossiers; (3) she reads via cms_read and states freshness. NOTE: vms-noble-*
+  zones are group:private in zones.yml — excluded by design; Noble access needs explicit policy exception (request
+  on card).'
+ref: ADA-0496
+comms:
+- at: 2026-10-12 08:38
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 08:39
+  from: devin
+  text: 'raised request noble-vms-cams-are-group-private-in-zone-baf2cb: Noble VMS cams are group:private in zones.yml.
+    Scope kk-ha cam feed to public zones only, or add a Noble exception?'
+- at: 2026-10-12 17:27
+  from: tony
+  text: 'answered noble-vms-cams-are-group-private-in-zone-baf2cb: public-only — traffic/rama9/burapha/chonburi/dohweb,
+    zero private footage on her lane'
+- at: 2026-10-12 17:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: noble-vms-cams-are-group-private-in-zone-baf2cb
+  ask: Noble VMS cams are group:private in zones.yml. Scope kk-ha cam feed to public zones only, or add a Noble
+    exception?
+  status: answered
+  at: 2026-10-12 08:39
+  from: devin
+  options:
+  - public-only — traffic/rama9/burapha/chonburi/dohweb, zero private footage on her lane
+  - include-noble — KK household lives at Noble, scoped exception for vms-noble-* only
+  suggested: public-only — traffic/rama9/burapha/chonburi/dohweb, zero private footage on her lane
+  answer: public-only — traffic/rama9/burapha/chonburi/dohweb, zero private footage on her lane
+awaiting_action: true

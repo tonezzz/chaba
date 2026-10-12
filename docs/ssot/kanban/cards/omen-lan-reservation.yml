@@ -1,0 +1,14 @@
+id: omen-lan-reservation
+title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
+column: backlog
+updated: 2026-10-12 22:27
+brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
+  target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
+  must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
+  reservation for omen on the router (needs Tony), or make MEDIA_BASE resolve at service start. See docs/ssot/jobs/vcast/2026-10-12-omen-lan-ip-drift-cast-proxy.yml.'
+priority: medium
+ref: OPS-0522
+comms:
+- at: 2026-10-12 22:27
+  from: tony
+  text: card captured via board-api

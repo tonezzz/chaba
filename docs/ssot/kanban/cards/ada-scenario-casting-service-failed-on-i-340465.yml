@@ -1,0 +1,19 @@
+id: ada-scenario-casting-service-failed-on-i-340465
+title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
+column: backlog
+updated: 2026-10-12 22:30
+ref: ADA-0507
+comms:
+- at: 2026-10-12 15:43
+  from: devin
+  text: 'Found in board sweep 2026-10-12: unit is in failed state on idc03. Gated by ada-bench-casting preflight
+    — check journalctl -u ada-scenario-casting for the actual error before rerun.'
+- at: 2026-10-12 17:28
+  from: devin
+  text: 'root cause found: NOT a code bug — scenario lock :8199 held >30min by a concurrent run (02:00-02:30 10-12),
+    suite timed out waiting and exited 1. Lock is free now; rerun should pass. Watch: if the nightly fires while
+    another suite holds the lock, this recurs — consider serialize-by-timer or stagger.'
+- at: 2026-10-12 22:30
+  from: devin
+  text: 'Still failed; next weekly run Fri 2026-10-16. Broader: smoke suite now failing auto-report-worthy + cms_public_url_lane
+    + cms-translate (new card).'

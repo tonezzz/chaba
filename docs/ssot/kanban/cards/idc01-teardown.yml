@@ -1,0 +1,15 @@
+id: idc01-teardown
+title: idc01 lease teardown — rescue jev-corpus archive, cancel dead VPS
+column: backlog
+updated: 2026-10-12 21:20
+priority: medium
+spec: 'idc01 is retired (SSOT: not warm DR, mddb masked never unmask) yet ssh now fails entirely (permission denied
+  — access fully dead). It still holds the pre-migration jev-corpus archive (jsonl files referenced by ssot.nest-training.yml
+  corpus_sources.archive). Steps: (1) regain access via provider console/password reset OR write off the archive
+  (corpus has live source on idc03 already); (2) if recovered, pull jev-corpus{,-mined,-reviewed}.jsonl to idc03/mn01
+  cold tier; (3) cancel the VPS lease in provider panel — spend decision, needs Tony.'
+ref: OPS-0520
+comms:
+- at: 2026-10-12 21:20
+  from: tony
+  text: card captured via board-api

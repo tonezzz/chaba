@@ -1,15 +1,18 @@
 id: stash-graveyard-triage
 title: Audit the 33 accumulated git autostashes — salvage real work, drop stale
-brief: 'git stash list shows 33 stashes on master (autostash x~28 + named WIP). Several
-  hold real uncommitted work from dead sessions (e.g. devin hybrid-gemini SSOT edits
-  superseded by 1be9a678e). Conflicted autostash pops are also the mechanism resurrecting
-  kanban cards — clearing the backlog reduces the blast radius. Plan: inventory each
-  stash (files touched, overlap vs current HEAD), salvage anything not already landed,
-  drop the rest. Do NOT bulk-drop — stash@{2} alone contains session edits worth checking.'
+brief: 'git stash list shows 33 stashes on master (autostash x~28 + named WIP). Several hold real uncommitted work
+  from dead sessions (e.g. devin hybrid-gemini SSOT edits superseded by 1be9a678e). Conflicted autostash pops are
+  also the mechanism resurrecting kanban cards — clearing the backlog reduces the blast radius. Plan: inventory
+  each stash (files touched, overlap vs current HEAD), salvage anything not already landed, drop the rest. Do NOT
+  bulk-drop — stash@{2} alone contains session edits worth checking.'
 column: backlog
 priority: medium
 tags:
 - git
 - cleanup
-comms: []
+comms:
+- at: 2026-10-12 22:30
+  from: devin
+  text: 'Current stash counts: tony-dell 5, tony-macbook 2 — the 33 in the title is stale.'
 created: '2026-10-11'
+updated: 2026-10-12 22:30

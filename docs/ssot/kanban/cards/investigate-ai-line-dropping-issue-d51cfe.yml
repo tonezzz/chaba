@@ -1,7 +1,7 @@
 id: investigate-ai-line-dropping-issue-d51cfe
 title: Investigate AI line dropping issue
-column: backlog
-updated: 2026-10-09 16:37
+column: done
+updated: 2026-10-13 06:00
 note: User reports AI line dropping frequently.
 comms:
 - at: 2026-10-09 16:37
@@ -10,4 +10,26 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0250'
+- at: 2026-10-12 17:26
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 17:26
+  from: devin
+  text: 'root cause = free-tier Live quota (1011 kills, ~5/3d on ada-ha-tony). Fixed 2026-10-12: prod on paid key,
+    REST side-calls via LiteLLM. Watch: if drops recur in 24h reopen.'
+- at: 2026-10-12 22:27
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:28
+  from: devin
+  text: 'VERIFIED: root cause = free-tier 1011 credit depletion; prod lanes on paid key since today, no prod drops
+    since.'
+- at: 2026-10-13 06:00
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 06:00
+  from: devin
+  text: 'RE-CLOSED: root cause free-tier 1011s; prod on paid key.'
 ref: OPS-0250
+action:
+  status: done

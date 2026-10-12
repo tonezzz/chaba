@@ -1,0 +1,26 @@
+id: kk-cms-only-memory-bench
+title: kk-cms-only memory bench — Kaewta CMS-only-memory experiment
+column: doing
+updated: 2026-10-12 10:33
+spec: 'Idea (2026-10-12): force Kaewta to read memory ONLY from CMS reports. The cms_* tools are her buttons/dials/switches;
+  tools report availability honestly; she answers honestly. Mechanism: bench_profiles.kk-cms-only in ssot.apps.ada-persons.yml
+  (drops ada_memory_search/ada_remember/ada_forget/ada_session_recall + web_search from ada-kk-dev); toggle via
+  scripts/ada/kk-bench-env.py; scenarios kk_cms_only_* + suite kk_memory_cms in ada-pi tests/benchmark.yml; runbook
+  docs/kb/ada-idea-bench.md.'
+ref: MEM-0498
+comms:
+- at: 2026-10-12 10:05
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 10:10
+  from: devin
+  text: 'Setup shipped 2026-10-12: bench_profiles (kk-cms-only + kk-parity) in ssot.apps.ada-persons.yml; scripts/ada/kk-bench-env.py
+    toggles the ada-kk-dev env surface; 3 scenarios + kk_memory_cms suite in ada-pi (0906c49); runbook docs/kb/ada-idea-bench.md
+    + procedures index (idea-bench). Env flipped to kk-cms-only; first suite run follows deploy.'
+- at: 2026-10-12 10:33
+  from: devin
+  text: 'First suite run 2026-10-12 (kk_memory_cms on ada-kk-dev :8009): score 0.667→all-green after fixes. FINDINGS:
+    (1) dispatch leak — ada_session_recall executed although undeclared; declaration-strip alone is not airtight
+    since instructions still describe the tool; fixed with provider _tool_excluded lane gate (d277b08, alias-aware)
+    — also hardens prod kk excludes (devin/kanban). (2) write fidelity — she stored Tuesdays for Mondays in cms_publish_page
+    content while narrating Mondays; honesty loop its'

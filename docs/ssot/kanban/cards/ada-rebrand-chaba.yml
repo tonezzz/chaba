@@ -1,0 +1,73 @@
+id: ada-rebrand-chaba
+title: Rebrand live Tony assistant as Chaba AI (Kaewta parity)
+column: done
+updated: 2026-10-12 22:10
+tags:
+- ada
+- identity
+spec: 'Tony: "move the live assistant into chaba ai just like kaewta ai." Interpreted + executed as full persona
+  parity with the Kaewta lane: backend identity, PWA name, LINE persona, TG tag, dashboard surface.
+
+
+  Done 2026-10-12:
+
+  - ada-ha-tony.env: +ADA_IDENTITY_INSTRUCTIONS (Chaba/ชบา, feminine Thai register mirroring Kaewta block), +ADA_PWA_NAME="Chaba
+  AI" — manifest now serves name=Chaba AI (verified live).
+
+  - line-bot.env: chaba slot filled -> ws://127.0.0.1:8002/ws; ada: kept as alias to same backend; kaewta untouched.
+
+  - telegram-bot.env: TG_SPEAKER_TAG ada -> chaba (display prefix only).
+
+  - tony-ha chaba-ai dashboard: new first view — markdown intro + ada-voice-card (title ชบา, instance tony, assistant_name
+  Chaba) + ada-activity-card, mirroring Kaewta AI layout.
+
+  - chaba-home dashboards (tony-ha + ada-ha): voice card retitled ชบา/assistant_name Chaba; chat card retitled "Chaba
+  chat".
+
+  - SSOT updated: persona-lanes (tony/chaba lane), services, dashboards; snapshots re-synced.
+
+  - ada-ha-tony restarted at 21:08 +07 to load the env (was already returned from storm hold at 21:00, NRestarts=0).
+  Relays restarted, both active.'
+note: Chaba was already a reserved LINE persona (empty backend) and the guest-mode name in ada-pi — see request
+  on the guest-name collision.
+ref: ADA-0519
+comms:
+- at: 2026-10-12 21:08
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 21:08
+  from: devin
+  text: 'raised request chaba-is-now-the-live-persona-name-but-a-467fd5: Chaba is now the live persona name — but
+    ada-pi also uses "Chaba" for the visitor guest mode (CHABA_INSTRUCTIONS: enroll'
+- at: 2026-10-12 22:06
+  from: tony
+  text: 'answered chaba-is-now-the-live-persona-name-but-a-467fd5: guest-is-chaba — Chaba is the house persona with
+    tiers (Polity ship-AI model): full power on Tony''s lane, sandboxed on guest devices. Guest service procedure
+    being defined.'
+- at: 2026-10-12 22:10
+  from: devin
+  text: 'guest-is-chaba locked in. Procedure defined: docs/kb/chaba-guest-service.md (indexed chaba-guest-service)
+    — tier model (owner/member/guest), guest-lane checklist (CHABA_MEMORY=1, file store, svc-chaba-guest scoped
+    creds, free Gemini pool, cgroup caps, no LINE persona), session flow, what-ifs. ada-pi 5c4afe0 reframes CHABA_INSTRUCTIONS
+    as the house AI in guest mode (ships next deploy). guest lane registered planned in persona-lanes. Open items
+    on the card: guest surface device + whether the lane '
+requests:
+- id: chaba-is-now-the-live-persona-name-but-a-467fd5
+  ask: 'Chaba is now the live persona name — but ada-pi also uses "Chaba" for the visitor guest mode (CHABA_INSTRUCTIONS:
+    enroll speaker as guest, read-only home state, limited lights/media). Two namesakes on one codebase. Guest mode
+    is not live on any lane right now. How to resolve the collision?'
+  status: answered
+  at: 2026-10-12 21:08
+  from: devin
+  options:
+  - id: rename-guest
+    label: 'Rename guest persona (e.g. Visitor/Guest) in CHABA_INSTRUCTIONS — ★ recommended: Chaba becomes exclusively
+      Tony''s assistant, guest mode keeps its limits under a new name'
+  - id: guest-is-chaba
+    label: 'Keep guest mode as Chaba too — deliberate: visitors talk to a limited-mode Chaba, same name different
+      permission scope'
+  - id: defer
+    label: Defer — guest mode is not live; revisit when it is enabled
+  suggested: rename-guest
+  answer: 'guest-is-chaba — Chaba is the house persona with tiers (Polity ship-AI model): full power on Tony''s
+    lane, sandboxed on guest devices. Guest service procedure being defined.'

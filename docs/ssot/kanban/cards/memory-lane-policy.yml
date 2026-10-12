@@ -2,10 +2,10 @@ id: memory-lane-policy
 title: Memory lane policy — household vs private banks, dev never writes prod memory
 brief: Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory,
   Tony gets his private banks, and staging/test traffic can't pollute production memory.
-column: backlog
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-10 11:23
+updated: 2026-10-13 05:59
 program: ha-lanes
 metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
   household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
@@ -32,6 +32,7 @@ autonomy: t2
 action:
   type: dispatch
   repo: chaba
+  status: done
 comms:
 - at: 2026-10-10 08:03
   from: devin
@@ -55,4 +56,23 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: MEM-0345'
+- at: 2026-10-12 17:26
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 17:26
+  from: devin
+  text: 'verified done: ssot.apps.ada-persona-lanes.yml codifies it — dev twin writes only -dev collections, instances_readonly
+    mounts, data never promotes. Live on ada-kk-dev.'
+- at: 2026-10-12 22:27
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:27
+  from: devin
+  text: 'VERIFIED: codified in ssot.apps.ada-persona-lanes.yml — dev never writes prod; guest lane added 2026-10-12.'
+- at: 2026-10-13 05:59
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 05:59
+  from: devin
+  text: 'RE-CLOSED: codified in ssot.apps.ada-persona-lanes.yml.'
 ref: MEM-0345

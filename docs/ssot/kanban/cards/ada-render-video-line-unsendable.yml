@@ -1,0 +1,24 @@
+id: ada-render-video-line-unsendable
+title: ada_render_video output is unsendable on LINE lanes — tailnet URL + no video message type
+column: backlog
+updated: 2026-10-12 17:33
+brief: 'Audit 2026-10-12 (session 7a2f02b3db): KK asked for an easy-to-read trip summary image; Kaewta ran ada_render_video
+  — ok:true but video_url is https://tony-dell.taila0626a.ts.net/api/input-bridge/frame?... — a tailnet-only URL
+  LINE can never fetch, and even if public the relay only sends imageMessages (jpeg) — video needs videoMessage
+  support. She stalled, then fell back to text. The tool produces an artifact no LINE lane can deliver: (a) render
+  output should be hosted on a public base like relay images, (b) relay needs a video path or the tool should also
+  emit a poster jpeg she can actually s'
+priority: medium
+tags:
+- ada
+- line
+- render
+spec: 'Options: (1) add videoMessage support to line_relay + host render output publicly (IMG_CACHE_DIR lane or
+  doc-store asset), (2) emit a poster jpeg + video link in text, (3) mark render tools video-unsupported on LINE-only
+  lanes in tool_guide so she says so upfront instead of producing unsendable output. Recommended (2) cheap + honest
+  now, (1) when video delivery is actually wanted.'
+ref: ADA-0512
+comms:
+- at: 2026-10-12 17:33
+  from: tony
+  text: card captured via board-api

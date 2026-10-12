@@ -1,7 +1,7 @@
 id: ha-ada-isolation
 title: Isolate tony-ha + kk-ha from Ada failures (runbook ha-ada-isolation)
 column: backlog
-updated: 2026-10-11 21:24
+updated: 2026-10-12 22:30
 brief: Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy,
   idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
 priority: high
@@ -62,6 +62,32 @@ comms:
 - at: 2026-10-11 21:24
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-12 11:41
+  from: devin
+  text: 'KK lane split started as card kk-gemini-key (ADA-0501): REST layer DONE (LITELLM_KEY_KK $5/30d live in
+    ada-kk.env); Live layer pending Tony mint — request kk-live-key-mint-which-project raised with project options
+    (recommend new billed project: keys inside one project still share quota+spend cap). gemini-tier on idc03 now
+    preserves per-lane keys across fleet switches.'
+- at: 2026-10-12 17:28
+  from: devin
+  text: 'sweep 2026-10-12: still open on you — Phase A done, the request asks whether to approve Phase B on tony-ha.
+    Answer on the card.'
+- at: 2026-10-12 18:33
+  from: devin
+  text: 'progress 2026-10-12: (1) kaewta-daily OR key ...3c966 wired into ada-kk.env OPENROUTER_API_KEY + restarted
+    — per-lane budget tracking live. (2) secrets-inventory report exposed a worse gap: every ada-*.env held the
+    EXPIRED bridge OR key — rotator only covered 4 stores; fixed live (...5528) + restarted ada-dev/ada-ha-michael/ada-pi-pwa;
+    rotate-or-key.sh now sweeps ada-*.env matching the old key (per-lane keys preserved). (3) Bonus finding: kaewta-paid.env
+    on idc03 holds a VALID dedicated paid Gem'
+- at: 2026-10-12 19:26
+  from: devin
+  text: 'kk-ha lane now FULLY per-lane (first): GEMINI_API_KEY=kaewta-paid …bheg (dedicated paid, valid — was wired
+    18:08 ICT, confirmed + kept), OPENROUTER_API_KEY=kaewta-daily …c966, no HA creds needed. Policy=priority, _2
+    stays shared-paid as spillover only. Remaining shared-fate: tony/michael/pwa all on …B7MQ paid pool + …5528
+    fleet OR. Isolation + secrets CMS reports refreshed.'
+- at: 2026-10-12 22:30
+  from: devin
+  text: Still awaiting Tony Phase B approval.
 requests:
 - id: gemini-key-isolation-strategy-today-all-12834c
   ask: Gemini key isolation strategy — today all 5 ada instances share one GEMINI_API_KEY, so one lane's quota storm

@@ -1,0 +1,65 @@
+id: line-conv-archive
+title: LINE conversation archive + conv_journal report tool (kaewta recall)
+column: done
+updated: 2026-10-12 22:15
+tags:
+- ada
+- line
+- memory
+- cms
+spec: 'Tony ask 2026-10-12: save LINE conversations + media in a reviewable report Kaewta can recall per the memory
+  scheme; hard-force the correct CMS collection by code.
+
+
+  SHIPPED (ada-pi b776e81, deployed 18:07):
+
+  - line_relay: per-room journal-<day>.jsonl (in/out text, persona labels, ts) + durable inbound media archive under
+  ~/.local/share/ada/line-media/<chat>/ + manifest.jsonl, served at /relay-img/arch/<chat>/<file> — media outlives
+  LINE retention and stays resendable.
+
+  - conv_journal tools.d tool: action=build compiles a day of journal entries into a kind=report CMS page (conv-<chat>-<date>);
+  action=list shows archived rooms/days. Collection is enforced by ADA_CMS_COLLECTION at write time — no collection
+  arg exists; reports carry no ''public'' meta so they are never site-published.
+
+  - Profiles: persons.kk + kk-cms-only include conv_journal; envs rendered on idc03; live scenario conv-journal
+  covers the lint gate.
+
+  - Fix: render-tool-profiles.py aliases set->dict crash (chaba).
+
+
+  VERIFIED: journal live-writing post-deploy (G1/R1/Utony1 rooms, in/out pairs with persona labels); 1328 tests
+  pass; all services active.
+
+
+  WRONG-CMS AUDIT RESULT: no leak found — southafrica-trip-plan-image landed in ada-cms-pages-kk only; cms_publish_page
+  never had a collection arg; envs correct on both lanes. conv_journal enforces the same binding in code as requested.
+
+
+  REMAINING:
+
+  - Media-file coverage: image path done; audio/video/file kinds journaled but audio still lands in voice-corpus
+  only — unify or cross-link.
+
+  - Auto-report cadence: conv_journal is on-demand; a nightly timer or ''on session end'' trigger would make reports
+  automatic.
+
+  - Recall index: report lands in CMS (human-reviewable); optionally mirror a recall-summary line into ada-ha-bank-personal-kk
+  so ada_memory_search finds it too.
+
+  - Journal dedup/idempotency: build is idempotent (upsert by key) but same-day rebuilds append no delta markers.
+
+  - Privacy: archive honors the reply gate only; Yomi exclusion list is not consulted — wire exclude_chats before
+  treating archive as canonical.'
+note: deployed + live-verified; review = Tony confirms the report shape is what he wants to review
+ref: ADA-0513
+comms:
+- at: 2026-10-12 18:10
+  from: tony
+  text: carded by devin — feature shipped same-session (ada-pi b776e81); review column for Tony's sign-off on report
+    shape
+- at: 2026-10-12 22:15
+  from: tony
+  text: moved review -> done
+action:
+  status: done
+claim: {}

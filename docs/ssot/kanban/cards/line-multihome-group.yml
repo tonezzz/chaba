@@ -3,7 +3,7 @@ title: 'LINE group (tony+kk+nhong): per-sender routing to each home assistant'
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-10-12 05:00
+updated: 2026-10-12 22:27
 note: 'One chaba LINE bot (@339sbrov) in a shared group. UPDATED SPEC 2026-10-11 (Tony): MENTION-triggered routing
   — any member addresses ada|kaewta|chaba by name in the message; relay routes the turn to that persona WS backend,
   replies tagged [persona->sender]. Unaddressed messages must NOT all hit Ada (noise) — default: ignore, or route
@@ -18,12 +18,13 @@ action:
   repo: ada-pi
   status: done
   attempts: 1
-  result: 'exit=0  is provisioned; a board comment was posted and the outcome doc is at `dispatch-outcome-20261011-170000-line-group-tony-kk-nhong-per-s.md`.
-    | devin-task-20261011-170000-line-group-tony-kk-nhong-per-s.service: Consumed 2min 12.184s CPU time.'
-  verified: true
+  result: 'exit=0 d + ada-chaba :8008 provisioning), documented in the outcome and posted to the board. | devin-task-20261012-221507-line-group-tony-kk-nhong-per-s.service:
+    Consumed 1min 8.075s CPU time over 10min 58.749s wall clock time, 324.4M memory peak.'
   last_failure: 'session-end checkpoint 2aa8ed49: 7 leftover file(s) committed; pushed dispatch/20261011-163937-line-group-tony-kk-nhong-per-s
     to origin; test gate failed — merge held: tests/test_calendar_providers.py'
-  runner: idc02
+  runner: tony-macbook
+  sweep:
+    session_gone: 2026-10-12 22:27
 links:
 - backend/line_relay.py
 - docs/kb/msg-lane-multihome-routing.md
@@ -31,10 +32,11 @@ links:
 requests:
 - id: line-relogin
   ask: 'Tony: LINE re-login on phone to restore bot token (blocker).'
-  status: open
+  status: answered
   at: '2026-10-10'
   from: devin
   escalated_at: 2026-10-11 18:31
+  answer: explain
 - id: chaba-backend
   ask: Chaba backend for mention-routing — what answers when the group says chaba?
   status: answered
@@ -289,6 +291,60 @@ comms:
 - at: 2026-10-12 05:00
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-12 21:53
+  from: devin
+  text: 'Config item (1) resolved 2026-10-12 via ada-rebrand-chaba: chaba:ws://127.0.0.1:8002/ws now live in line-bot.env
+    (ada: kept as alias to same backend); relay restarted + active. Tony-side LINE re-login still pending.'
+- at: 2026-10-12 22:14
+  from: tony
+  text: 'answered line-relogin: explain'
+- at: 2026-10-12 22:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-12 22:14
+  from: tony
+  text: queued for processing
+- at: 2026-10-12 22:15
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-12 22:15
+  from: chaba
+  text: started devin-task-20261012-221507-line-group-tony-kk-nhong-per-s on tony-macbook (dispatch)
+- at: 2026-10-12 22:19
+  from: devin
+  text: 'attempt 4 in worktree: code from attempts 2-3 verified present (mention routing, LINE_NAME_BACKENDS, LINE_ALLOWED_GROUP_IDS,
+    per-member callers, tags, voice). Reviewing the interview-room pin — it is per-room today, so one member''s
+    mention routes EVERYONE''s unaddressed chatter; tightening to per-(room,sender) + no pin on offline personas,
+    then tests.'
+- at: 2026-10-12 22:25
+  from: devin
+  text: 'attempt 4 done: interview-room pin was room-scoped — one member''s mention routed EVERYONE''s unaddressed
+    chatter (noise-rule violation + cross-member leak). Now per-(room,sender): a member''s follow-ups stick to the
+    persona THEY named; offline personas (chaba:) never pin. 28/28 tests pass, tool-lint clean, docs updated. Still
+    ops-only from here: idc03 unit env (LINE_ALLOWED_GROUP_IDS/LINE_NAME_BACKENDS/nhong caller) + user-nhong key
+    mint per backend — documented in dispatch outcome.'
+- at: 2026-10-12 22:26
+  from: tony-macbook
+  text: 'finished (ok): exit=0 d + ada-chaba :8008 provisioning), documented in the outcome and posted to the board.
+    | devin-task-20261012-22150'
+- at: 2026-10-12 22:26
+  from: chaba
+  text: 'session-end checkpoint 1ad963fe: 7 leftover file(s) committed'
+- at: 2026-10-12 22:26
+  from: chaba
+  text: pushed dispatch/20261012-221507-line-group-tony-kk-nhong-per-s to origin
+- at: 2026-10-12 22:26
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-12 22:26
+  from: chaba
+  text: "auto-merge not done: push: remote: error: refusing to update checked out branch: refs/heads/main      \
+    \  \nremote: error: By default, updating the current branch in a non-bare repository        \nremote: is denied,\
+    \ because it will — close will block until merged"
+- at: 2026-10-12 22:27
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261011-165356-line-group-tony-kk-nhong-per-s on
+    tony-macbook — if the work was never pushed it may be gone'
 claim:
   since: 2026-10-11 16:39
 review_kind: verify

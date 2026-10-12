@@ -1,0 +1,14 @@
+id: ada-phantom-claim-gate
+title: Phantom-claim gate — denied/skipped tool results must not be narrated as done
+column: backlog
+updated: 2026-10-12 11:24
+spec: 'kk-dev probes 2026-10-12: (1) chat_send photo:pick policy-DENIED but she told the user it was being sent;
+  (2) run with catalog prime: cms_read ok then claimed delivery with ZERO chat_send calls. Same class as phantom_write_claim
+  events. Need provider-level handling: when a tool result is an error/denial or an expected send never fired, the
+  spoken reply must not assert success — deterministic post-check or forced re-voice. Verify via scenario asserting
+  response_not_contains on success-claim phrases after a forced denial.'
+ref: ADA-0500
+comms:
+- at: 2026-10-12 11:24
+  from: devin
+  text: card captured via board-api

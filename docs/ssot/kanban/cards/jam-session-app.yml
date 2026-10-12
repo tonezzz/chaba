@@ -1,0 +1,70 @@
+id: jam-session-app
+title: Jam Session — public client-side music toy branched from Percussion (camera/mic -> instruments)
+column: backlog
+updated: 2026-10-12 21:53
+brief: 'Tony 2026-10-12: branch stacks/web/public/apps/percussion into a public, 100%-client-side jam toy. Camera
+  button captures body/face/hands (MediaPipe landmarks — NOT YOLO, per gesture-control-rebuild precedent), mic captures
+  sound events; a bindings matrix maps captures -> instruments/effects; modular feature flags for mix&match testing;
+  effects + fun buttons; shareable public link for LINE friends.'
+priority: medium
+spec: "ARCHITECTURE — fork apps/percussion into apps/jam/ (static HTML/JS only):\n1. Audio core: reuse percussion\
+  \ app.js WebAudio synth voices (drums+instruments) — all client-side.\n   The state.json/control.json fleet-sonify\
+  \ feed becomes an OPTIONAL mode flag (?fleet=1), not the core.\n2. Capture layer (all client-side, getUserMedia):\n\
+  \   - Camera button -> MediaPipe Tasks Vision: PoseLandmarker (body 33pt), HandLandmarker (2x21pt),\n     FaceLandmarker\
+  \ (478pt) — reuse docs/kb/gesture-ui-options.md constants/DOM contract + /apps/gesture precedent.\n   - Mic button\
+  \ -> WebAudio AnalyserNode: onset/clap/pitch-class/energy events.\n3. BINDINGS MATRIX (the 'associate captures\
+  \ with instruments' procedure, codified):\n   a bindings.json + UI matrix editor: rows = capture events (left-hand-strike\
+  \ zone, right-hand height,\n   smile, head-nod, clap, hum-pitch...), cols = instruments/effects. User edits live\
+  \ -> URL-encodable\n   (#cfg=...) so Tony can share a tuned mapping. Procedure per new mapping: add capture source\
+  \ ->\n   observe event in debug HUD -> bind cell -> test -> share URL.\n4. Effects/fun: delay/reverb/bitcrush/stutter\
+  \ buttons + fun triggers (airhorn, riser, record-scratch,\n   crowd-cheer). Each = module under a feature-flag\
+  \ toggle row so mix&match testing is trivial.\n5. 'user order' control surface: on-screen controls first; optional\
+  \ voice later (Web Speech API is\n   client-side too, or Ada percussion tool on tailnet only — NOT for public).\n\
+  6. MODULARITY contract: modules register via JAM.register(name, {init, onEvent, destroy}); core ships\n   event\
+  \ bus only. Each module = one file apps/jam/mod/<name>.js toggled in UI + ?mods= URL arg.\nPRIVACY: camera/mic\
+  \ frames never leave the device — landmarks only. No uploads, no analytics.\nPUBLIC EXPOSURE (edge-add-host procedure):\
+  \ new public host or path on the existing public edge —\ncheck edge-route-registry card first; CF Access must\
+  \ bypass this path (it's a no-auth toy).\nVERIFY: page loads cold <3s on phone; camera+mic permissions degrade\
+  \ gracefully (buttons disable,\nnot break); tapping a drum pad plays <50ms; bindings matrix round-trips via URL."
+ref: OPS-0502
+comms:
+- at: 2026-10-12 11:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 11:49
+  from: devin
+  text: 'Tony decisions (2026-10-12): route = surf-thailand.com/fun/jam (rides the verified www public lane — check
+    CF Access bypass for /fun/*). NEW component: surf-thailand.com/fun index page listing ALL fun apps — implement
+    as a fun.json registry (name,path,icon,desc,flags) rendered by /fun/index.html so adding an app = one registry
+    line. Brand: ''Nest Jam'' internal / ''Ada Net'' public-facing (terminology registered — Thai-tongue friendly).'
+- at: 2026-10-12 11:56
+  from: devin
+  text: 'V1 LIVE on tailnet: /apps/jam/ + /apps/fun/ index (fun.json registry). Built: pad grid, mod/fx (delay/verb/crush/stutter
+    + airhorn/riser/scratch), mod/hands (MediaPipe HandLandmarker, air-drum strike + height->note), mod/mic (onset->clap,
+    hum->pitch), bindings matrix UI editable live + #cfg= hash sharing, LINE-share feedback button. On screen 1
+    verified frame-ok.
+
+
+    FEEDBACK LOOP procedure (proposal): player -> 💬 button -> LINE share intent back to Tony (zero backend, spam-free:
+    rides his own LINE'
+- at: 2026-10-12 20:29
+  from: devin
+  text: '[status] Jam scream saga — parked 2026-10-12 (Tony: ''cancel this plan''). Screen 1 nav''d to about:blank;
+    app remains at /apps/jam/?v=26&mods=remote,band. FIXED+verified: stale module cache (?v= cascades to app.js+mods),
+    band energy reset on enable, theremin glide replacing note-ladder, presence-cap 0.25 < rest floor 0.30, deadband
+    hysteresis on face/pose edges, dwell debounce fist/pinch, EMA x smoothing + contiguous swipe window, arm-up
+    2.5s cd, push-to-talk voice + 8s failsafes, mic onset-from-q'
+- at: 2026-10-12 21:33
+  from: devin
+  text: 'PIVOT shipped (commit d35c9e4a1): gesture-scream plan abandoned; AUTO TUNE is now a base-music player.
+    9 synthesized tracks ported from the percussion style library: Blues Jam / Metallica / Rock / Polyphia / Gary
+    Moore / Queen / Funky / Electronic / EDM. Swipe hand fast L/R = prev/next track; strikes raise tempo+fills;
+    hand-move = theremin only (never feeds band). Track plays whenever module enabled. NOTE: ~/Music is empty and
+    no Navidrome/Jellyfin exists, so base tracks are original synth groov'
+- at: 2026-10-12 21:53
+  from: devin
+  text: 'STATE for resume (2026-10-12 night): MVP verified WORKING. band.js = pure track player (9 synthesized tracks:
+    Blues Jam/Metallica/Rock/Polyphia/Gary Moore/Queen/Funky/Electronic/EDM, ported from percussion library). app.js
+    gained ?bind=0 = empty bindings so remote events reach mods but trigger ZERO voices. Running config on screen-1:
+    /apps/jam/?v=32&mods=remote,band&bind=0&tones=0 — track plays, swipe L/R changes it, no scream possible (bind=0
+    + tones=0 + stripped band). LESSON (Tony): when a bu'

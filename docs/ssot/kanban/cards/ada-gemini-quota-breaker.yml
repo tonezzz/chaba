@@ -1,7 +1,7 @@
 id: ada-gemini-quota-breaker
 title: 'Ada: circuit-breaker on Gemini quota exhaustion'
 column: backlog
-updated: 2026-10-11 15:15
+updated: 2026-10-12 22:20
 brief: 'Stop the 1008 reconnect-storm when Gemini Live hits quota (429/RESOURCE_EXHAUSTED). Evidence: jobs/ada/2026-10-10-audit-fail-cluster.yml
   — 1389x429, 643x RESOURCE_EXHAUSTED, 198x quota_exhausted, ws close 1008 looping all evening on idc03 ada-ha-tony.'
 priority: high
@@ -19,7 +19,7 @@ action:
   repo: ada-pi
   labels:
   - ada
-  status: queued
+  status: done
 comms:
 - at: 2026-10-11 07:43
   from: tony
@@ -30,4 +30,15 @@ comms:
 - at: 2026-10-11 15:15
   from: tony
   text: queued for processing
+- at: 2026-10-12 15:42
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 15:42
+  from: devin
+  text: 'verified done 2026-10-12: prod Live lanes on paid key (ada-ha-tony/kk/michael/pwa restarted, active); dev
+    lanes stay free; 5 REST side-call sites now route via LiteLLM gateway (ADA_GEMINI_REST_*, commit 91fba9b, deployed).
+    Zero direct-Google quota calls remain on the patched paths.'
+- at: 2026-10-12 22:20
+  from: tony
+  text: closed by tony
 ref: ADA-0444

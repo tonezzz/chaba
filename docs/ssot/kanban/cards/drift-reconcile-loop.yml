@@ -1,0 +1,32 @@
+id: drift-reconcile-loop
+title: Drift reconciliation loop — audit deltas -> kanban cards + unexpected-running detection
+column: done
+updated: 2026-10-12 22:27
+priority: high
+spec: 'Tony 2026-10-12: keeps finding misses by accident (stale michael-dev duplicate on dell running 3d post-migration
+  + deploy-card.sh still targeting it; ollama absent while kanban-brief pointed at :11434; ada-secret-drop closed
+  with backend route unimplemented). Root gap: audit-hosts.py computes deltas daily but writes reports/*.yml nobody
+  reads. Fix: (1) extend diff_against_ssot with unexpected-running check — active service not in expected_services
+  and not whitelisted -> delta (catches post-migration ghosts); (2) delta->card lifecycle mirroring runner-fleet-health.py
+  (audit-auto-<host> card: deltas -> review, clean -> close, persistent -> bump); (3) migration/retirement procedures
+  gain a dependent-reference sweep step: grep fleet checkouts for old host:port/path before declaring a move done;
+  (4) registry completeness rule: any cross-host-consumed endpoint must be in expected_services (ollama would have
+  been caught); (5) close-gate: ops cards with acceptance criteria need a verify note naming what was actually run
+  before done.'
+ref: OPS-0521
+comms:
+- at: 2026-10-12 21:51
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-12 22:27
+  from: devin
+  text: '[verify] Implemented + live-tested (commit 8ca0eda6e): (1) unexpected-running check — omen michael-dev
+    ghost (running since Jul) caught + stopped; dell ghost declared expected_state:absent. (2) deltas->cards verified
+    live: audit-auto-tony-omen.yml landed in review via --cards on dell; auto-close path tested (macbook clean->done).
+    (3) ref-sweep.sh ships for migration dependent-reference sweeps. (4) census: ~60 undeclared fleet services now
+    in expected_services; per-host fields documented in ssot.'
+- at: 2026-10-12 22:27
+  from: tony
+  text: closed by tony
+action:
+  status: done

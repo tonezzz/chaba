@@ -1,6 +1,6 @@
 id: or-account-outage
 title: OpenRouter account gone — all keys 401 "User not found" (fleet-wide)
-column: review
+column: done
 priority: high
 tags:
 - secrets
@@ -57,6 +57,43 @@ comms:
 - at: 2026-10-11 21:24
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-12 07:58
+  from: devin
+  text: 'TIME-SENSITIVE: current OR key verified working (http 200) but expires 2026-10-12 (today) with $0.48 left.
+    Approved path (mint-weekly): Tony mints a weekly key at openrouter.ai/keys on user_3ACXf7 -> drops the sk-or-v1-*
+    token into ~/.config/secrets/or-next-key on tony-dell -> run `rotate-or-key` (installed ~/.local/bin, verified
+    procedure on card rotate-or-key-script). Everything downstream is scripted — the only manual step is minting.'
+- at: 2026-10-12 15:42
+  from: devin
+  text: 'sweep 2026-10-12: zero OR 401s in litellm logs last 2h — traffic flowing. Bridge key expiry (today 04:55Z)
+    either renewed or gateway is on fallbacks; real weekly key still needs minting per the open request.'
+- at: 2026-10-12 17:27
+  from: tony
+  text: 'answered or-key-works-but-expires-2026-10-12-with-b86ecc: yes — rotate key now'
+- at: 2026-10-12 17:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-12 18:09
+  from: devin
+  text: 'LIVE 2026-10-12 11:09 UTC: bridge key 005...c44b now returns 401 API key expired — fleet OR is DOWN (ghostroute/ollama-proxy/mddb
+    fallback all unauthorized). Weekly key sk-or-v1-fe7...0ec still installed NOWHERE (or-next-key + openrouter.env
+    on dell still hold the expired bridge key). Blocker is delivery only: drop the weekly key into ~/.config/secrets/or-next-key
+    on tony-dell (or Ada secret-drop) and rotate-or-key.sh does the rest in one shot.'
+- at: 2026-10-12 18:19
+  from: devin
+  text: 'RESOLVED 2026-10-12 18:2x ICT: Tony dropped a DAILY key at ~/or-key-528 (cadence change: weekly→daily,
+    he wants per-day usage tracking — mints a fresh key each day). rotate-or-key.sh run: all 4 stores live on sk-or-v1-…5528
+    (expires 2026-11-11), ghostroute-watcher + gemini-ollama-proxy restarted, e2e :free call returned real reply.
+    Fleet OR is back up — outage fully closed. ssot.services.yml rotation note updated; input file removed per spec.'
+- at: 2026-10-12 18:19
+  from: devin
+  text: moved review -> done
+- at: 2026-10-12 22:15
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 05:55
+  from: tony
+  text: closed by tony
 requests:
 - id: weekly-key-on-new-account
   ask: 'Bridge key ($1 cap) expires 2026-10-12 04:55 UTC. Needed: mint the real weekly key ($10/1-week) on the LIVE
@@ -76,7 +113,7 @@ requests:
   answer: mint-weekly — mint weekly key on user_3ACXf7, secret-drop it
 - id: or-key-works-but-expires-2026-10-12-with-b86ecc
   ask: OR key works but expires 2026-10-12 with $0.48 left — mint+rotate a fresh key now (rotate-or-key.sh exists)?
-  status: open
+  status: answered
   at: 2026-10-11 17:07
   from: tony
   options:
@@ -85,6 +122,9 @@ requests:
   - id: 'no'
     label: leave until expiry
   suggested: 'yes'
+  answer: yes — rotate key now
 review_kind: triage
-updated: 2026-10-11 21:24
-awaiting_action: true
+updated: 2026-10-13 05:55
+action:
+  status: done
+claim: {}

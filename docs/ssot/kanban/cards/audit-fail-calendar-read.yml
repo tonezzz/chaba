@@ -1,0 +1,27 @@
+id: audit-fail-calendar-read
+title: 'Ada session audit: fail:calendar_read (1d seen)'
+column: backlog
+updated: 2026-10-13 05:30
+brief: 'Recurring session-audit signature ''fail:calendar_read'': calendar_read -> fail — 4x on 2026-10-12, seen
+  on 1 day(s).'
+priority: high
+program: chaba-ci
+tags:
+- session-audit
+- ada
+- fail
+spec: 'Investigate Ada session-audit signature `fail:calendar_read`.
+
+
+  Latest evidence: invalid action ''list'': expected events|calendars|freebusy
+
+
+  Report: CMS page `ada-session-audit` + MDDB `ada-ha-scenario-reports` key `audit/session-2026-10-12`.
+
+  Decide: tool bug / schema-description issue / display-side / correct-by-design friction; fix or document and close.'
+note: Auto-filed by session-audit (dedup on card id audit-fail-calendar-read); refiled only if the pattern persists.
+ref: ADA-0527
+comms:
+- at: 2026-10-13 05:30
+  from: devin
+  text: card captured via board-api

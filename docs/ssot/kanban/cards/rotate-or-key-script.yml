@@ -2,7 +2,7 @@ id: rotate-or-key-script
 title: rotate-or-key.sh — one-command 4-store OR key rotation
 kind: feature
 priority: medium
-column: backlog
+column: done
 autonomy: t2
 brief: 'Weekly OR key rotation is a 4-store manual procedure (done by hand 2026-10-10 — works but error-prone: missed
   the sqlite store = openclaw 401 cascade twice before). Write scripts/ops/rotate-or-key.sh that takes a key FILE
@@ -32,6 +32,26 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: SEC-0383'
+- at: 2026-10-12 18:33
+  from: devin
+  text: 'spec gap found + fixed 2026-10-12: the 4-store set missed idc03 ada-*.env — every ada backend kept the
+    dead bridge key after rotation (OR fallback 401). Script now captures OLDKEY and sweeps ada-*.env holding it
+    (per-lane keys like kaewta-daily preserved), try-restarts only swept units (never starts a stopped lane). Committed
+    a2fe5f89a. Daily-cadence note: Tony mints daily now, so this sweep matters every rotation.'
+- at: 2026-10-12 22:27
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:27
+  from: devin
+  text: 'VERIFIED: scripts/ops/rotate-or-key.sh in repo (header: procedure verified live 2026-10-1x).'
+- at: 2026-10-13 05:59
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 05:59
+  from: devin
+  text: 'RE-CLOSED: scripts/ops/rotate-or-key.sh exists, header says procedure verified live.'
 created: '2026-10-10'
-updated: 2026-10-10 20:57
+updated: 2026-10-13 05:59
 ref: SEC-0383
+action:
+  status: done

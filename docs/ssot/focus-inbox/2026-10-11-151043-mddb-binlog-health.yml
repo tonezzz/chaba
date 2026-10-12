@@ -1,0 +1,23 @@
+title: Focus Inbox Item
+subtitle: Health alert for mddb binlog (replication canary)
+focus:
+  label: mddb-binlog health
+  text: 'mddb binlog canary on tony-dellflagged a sustained breach (602s > 600s) at 2026-10-11T15:10:43Z. Reasons: follower
+    idc01 status=''warning''; follower idc02 status=''warning''. binlog_size_bytes=70146582, lsn_gap=468114 (current_lsn=213673934
+    - binlog_oldest_lsn=213205820). The retention janitor on idc03 may have stalled — check mddb.service before the disk fills.
+    If a reason says ''apply-stalled'', that follower''s stream is connected but not applying: restart mddb-follower.service
+    on that host (mddb-follower-watchdog.timer automates it once installed).'
+  status: draft
+  priority: high
+  tags:
+  - health
+  - inbox
+  - mddb
+  - binlog
+  missing_info:
+  - Is the retention janitor still running on idc03 (journalctl --user -u mddb.service)?
+  - Are the idc02 (idc02:11023) and idc01 (idc01:11123) followers still connected and caught up?
+  - 'If apply-stalled: is confirmed_lsn advancing after a follower restart (watchdog logs/journal)?'
+source:
+  session: mddb-binlog-canary
+  date: '2026-10-11'

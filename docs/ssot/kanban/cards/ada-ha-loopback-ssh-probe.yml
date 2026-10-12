@@ -10,7 +10,11 @@ note: logs-auto-tony-dell-severe-spike SOURCE PINNED — inside the ada-ha conta
 repo: ada-pi
 action:
   type: dispatch
-  status: todo
+  status: done
+  runner: tony-omen
+  result: 'exit=0 job trail at `docs/ssot/jobs/home-assistant/2026-10-12-ada-ha-loopback-ssh-probe.yml`. | devin-task-20261012-222127-backend-tool-runner-screens-py.service:
+    Consumed 1min 58.154s CPU time over 27min 14.660s wall clock time, 1.2G memory peak.'
+  verified: true
 spec: "backend/tool_runner/screens.py — find the ssh path that resolves a\n  display/screen host; under host-networking\
   \ containers it must NOT resolve\n  to 127.0.0.1 (loopback inside the container is the container, not the host).\n\
   \  Likely fix — resolve the display host via env/config (screen host SSOT) or\n  skip the probe entirely when\
@@ -23,5 +27,40 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: ADA-0001'
+- at: 2026-10-12 22:21
+  from: tony
+  text: queued for processing
+- at: 2026-10-12 22:21
+  from: tony-omen
+  text: claimed
+- at: 2026-10-12 22:21
+  from: chaba
+  text: started devin-task-20261012-222127-backend-tool-runner-screens-py on tony-omen (dispatch)
+- at: 2026-10-12 22:45
+  from: devin
+  text: 'fixed+verified: ada-ha container config (cloned tony-ha) probed host loopback — uhubctl ssh tony@127.0.0.1
+    (~30s) → host.containers.internal (sshd 0.0.0.0); :8799 rest → tony-omen.taila0626a.ts.net:8799 (200); :8014
+    rest+commands disabled (chaba-guest loopback-only, unreachable from netns); rtsp:8554 → host.containers.internal;
+    desktop cams → https tailnet-serve :8123; AddHost pin tony-omen added (also fixes cast_host_cleanup); trusted_proxies
+    +=10.88.0.1 gw. journal refused/rest errors since re'
+- at: 2026-10-12 22:50
+  from: tony-omen
+  text: 'finished (ok): exit=0 job trail at `docs/ssot/jobs/home-assistant/2026-10-12-ada-ha-loopback-ssh-probe.yml`.
+    | devin-task-20261012-2221'
+- at: 2026-10-12 22:50
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-12 22:57
+  from: chaba
+  text: 'merge-sweep: merged 6b6f3d67 (dispatch/20261012-222127-backend-tool-runner-screens-py from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261012-222127-backend-tool-runner-screens-py.md)
+    — auto-closed'
 claim: {}
 ref: ADA-0001
+updated: 2026-10-12 22:57
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-12 22:57
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261012-222127-backend-tool-runner-screens-py.md

@@ -1,16 +1,21 @@
 id: tg-relay-whisper-pin
-title: "tg-relay: faster-whisper/av version drift — pin + smoke test"
+title: 'tg-relay: faster-whisper/av version drift — pin + smoke test'
 column: backlog
 priority: high
 created: 2026-10-10
-updated: '2026-10-10'
-note: >
-  Voice notes to ada-tg-relay silently died for >=1 day: av 19 dropped
-  the metadata_errors kwarg faster-whisper 1.2.1 passes to av.open().
-  Patched audio.py in-place on idc03 (verified: Tony's 2 clips
-  transcribe). Needs a durable fix — pin av<15 or faster-whisper>=1.2.x
-  compatible combo in ada-pi requirements, and a voice-note smoke test
-  so the next drift doesn't silently eat messages again. Evidence:
-  journal showed Task exception TypeError on every voice clip.
+updated: 2026-10-12 17:28
+note: 'Voice notes to ada-tg-relay silently died for >=1 day: av 19 dropped the metadata_errors kwarg faster-whisper
+  1.2.1 passes to av.open(). Patched audio.py in-place on idc03 (verified: Tony''s 2 clips transcribe). Needs a
+  durable fix — pin av<15 or faster-whisper>=1.2.x compatible combo in ada-pi requirements, and a voice-note smoke
+  test so the next drift doesn''t silently eat messages again. Evidence: journal showed Task exception TypeError
+  on every voice clip.
+
+  '
 links:
-  - backend/tg_relay.py
+- backend/tg_relay.py
+comms:
+- at: 2026-10-12 17:28
+  from: devin
+  text: 'sweep 2026-10-12 context: av 15.1 just landed in the ada venv (voice-message transcode 50781cb). faster_whisper
+    still absent — one-off transcription today used Gemini REST inline audio instead, works fine without the whisper
+    dep.'

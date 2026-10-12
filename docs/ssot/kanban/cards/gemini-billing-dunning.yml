@@ -1,6 +1,6 @@
 id: gemini-billing-dunning
 title: Gemini Live dunning-blocked — "Lightning dunning decision is deny" kills every Ada session
-column: backlog
+column: done
 priority: high
 kind: ops
 created: '2026-10-11'
@@ -46,5 +46,32 @@ comms:
 - at: 2026-10-11 20:04
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
-awaiting_action: true
-updated: 2026-10-11 20:04
+- at: 2026-10-12 11:41
+  from: devin
+  text: 'Probed while scoping kk-gemini-key: tony-dell gemini-ops key (gemini-api-key.env, ecf212d2f698) returns
+    429 monthly-spending-cap — billed project over cap. Consumers on dell (ha-live, card-snapshot, node-red, devin-bank-distill,
+    yt-live/dub-batch) are 429ing until monthly reset or cap raise at ai.studio/spend. gemini-mic-test.env key is
+    dead (401). Fleet PAID key on idc03 still healthy (200).'
+- at: 2026-10-12 17:26
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 17:26
+  from: devin
+  text: 'verified done: billing settled (Tony 10-11) + prod Live lanes on paid key 2026-10-12 — no dunning/1011
+    since deploy.'
+- at: 2026-10-12 22:28
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:28
+  from: devin
+  text: 'VERIFIED: prod lanes on paid key, zero prod 1011s since switch. Dev lanes still see occasional free-project
+    1011s (2 in 6h) — expected disposable-tier behavior.'
+- at: 2026-10-13 06:00
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 06:00
+  from: devin
+  text: 'RE-CLOSED: prod on paid key; dev 1011s = expected free tier.'
+updated: 2026-10-13 06:00
+action:
+  status: done

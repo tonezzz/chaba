@@ -1,0 +1,25 @@
+id: chat-send-page-images
+title: chat_send page= mode — attach all CMS page images server-side
+column: backlog
+updated: 2026-10-12 17:18
+brief: 'Prod probe 2026-10-12: Kaewta nondeterministically handles photo asks — sometimes cms_read+image_url+deliver,
+  sometimes invents URLs (surf-thailand.com/kk/..., unsplash → all 404), sometimes text-only phantom sends naming
+  the page. Instruction-level fixes (identity rules, tool-doc verbatim clause, page self-instructions) help but
+  cannot enforce. Structural fix: add page=<slug> to chat_send — the tool reads the CMS doc, extracts every ![..](url)
+  asset, and attaches them server-side (up to LINE batch limit). One call cannot invent URLs or skip the read. Removes
+  the whole failure class for page-b'
+priority: medium
+tags:
+- ada
+- chat_send
+- cms
+- kk
+spec: chat_send(page=sa-beach-photos, to=...) → tool_runner reads doc via mddb, parses markdown image URLs (absolute
+  + site-relative vs LINE_URL_BASE), calls chat_send image_url per asset (or one send w/ image list — LINE allows
+  up to 5 image msgs per push batch). Result reports sent/failed per URL so her voice stays honest. Keep image_url
+  param for ad-hoc URLs.
+ref: ADA-0511
+comms:
+- at: 2026-10-12 17:18
+  from: tony
+  text: card captured via board-api

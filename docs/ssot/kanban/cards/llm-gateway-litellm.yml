@@ -1,6 +1,6 @@
 id: llm-gateway-litellm
 title: 'LiteLLM gateway on idc — single API point: route, classify, benchmark, spend-cap'
-column: doing
+column: done
 priority: high
 autonomy: t2
 kind: lab
@@ -38,8 +38,67 @@ comms:
   from: devin
   text: 'scaffolding done: stacks/idc03/litellm (litellm+pg quadlets, config.yaml routing table, deploy.sh, ledger
     timer), ssot.llm-gateway.yml, scripts/litellm/{bench,daily-ledger,mint-key}. Deploying to idc03 now.'
-updated: 2026-10-11 21:23
+- at: 2026-10-11 21:34
+  from: devin
+  text: 'DEPLOYED+VERIFIED on idc03. litellm+litellm-db quadlets up, bound tailnet-only :4000 (pg loopback-only).
+    19 deployments: real gemini names + 7 job classes (tool-call/summary/voice-aux/classify/bench/vision/embedding),
+    chains paid->free-tier->OR->ollama. Virtual keys minted w/ budgets (ada $10/30d, chaba $5, bench $2; proxy cap
+    $50/30d), model ACLs enforced. Verified live: /v1 + /v1beta + google.genai SDK paths, embeddings 768d, fallback
+    fired live (vision OR-fail->moondream), spend metering work'
+- at: 2026-10-11 21:34
+  from: devin
+  text: 'raised request full-ada-cutover-blocked-on-a-real-cavea-295494: Full ada cutover blocked on a real caveat:
+    GOOGLE_GEMINI_BASE_URL is process-global in the genai SDK — setting it also r'
+- at: 2026-10-11 21:35
+  from: idc02
+  text: 'finished (ok): exit=0 LM can''t proxy — recommended path is a small ada-pi per-client `base_url` patch,
+    starting with ada-dev. | devin-t'
+- at: 2026-10-11 21:35
+  from: chaba
+  text: pushed dispatch/20261011-211200-litellm-gateway-on-idc-single- to origin
+- at: 2026-10-11 21:35
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-11 21:35
+  from: chaba
+  text: auto-merged 43dc8fba (dispatch/20261011-211200-litellm-gateway-on-idc-single-) → origin/master
+- at: 2026-10-11 21:41
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''full-ada-cutover-blocked-on-a-''] block close)'
+- at: 2026-10-12 15:43
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 15:43
+  from: devin
+  text: 'verified done 2026-10-12: gateway live on :4000 (ui up), model chains + fallbacks + per-key budgets ($50
+    proxy cap; ADA $10 / CHABA $5 / BENCH $2 / KK $5) active; now also the single REST point for ada side-calls
+    (ADA_GEMINI_REST_* wired, deployed).'
+- at: 2026-10-12 22:15
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 05:53
+  from: tony
+  text: closed by tony
+updated: 2026-10-13 05:53
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 LM can''t proxy — recommended path is a small ada-pi per-client `base_url` patch, starting with
+    ada-dev. | devin-task-20261011-211200-litellm-gateway-on-idc-single-.service: Consumed 55.391s CPU time, 125.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-11 21:41
+requests:
+- id: full-ada-cutover-blocked-on-a-real-cavea-295494
+  ask: 'Full ada cutover blocked on a real caveat: GOOGLE_GEMINI_BASE_URL is process-global in the genai SDK — setting
+    it also reroutes Live-API voice websockets, which LiteLLM does NOT proxy. Options: (a) patch ada-pi to pass
+    http_options.base_url only on non-live clients (~1-line per call site, env-gated) then migrate ada-dev first
+    ★recommended; (b) leave ada prod direct and migrate only bounded slices (ADA_VISION_BASE_URL already reroutable,
+    embed-bench done); (c) park full migration until LiteLLM proxies the Live API.'
+  status: open
+  at: 2026-10-11 21:34
+  from: devin
+review_kind: verify
+claim: {}

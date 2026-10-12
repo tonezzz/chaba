@@ -1,0 +1,15 @@
+id: kk-places-tool
+title: kk-places tool — Google Places lookup for lane members
+column: backlog
+updated: 2026-10-12 14:02
+ref: OPS-0506
+comms:
+- at: 2026-10-12 13:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 14:02
+  from: devin
+  text: Tested both Gemini keys against places.googleapis.com/v1/places:searchText — 401 API-keys-not-supported
+    on both. AI Studio keys are scoped to Generative Language; Places (New) needs a Maps Platform API key created
+    in GCP console + Places API enabled on the project. No existing key works — the request stands (5 min in console,
+    stays free under 10k/SKU cap).

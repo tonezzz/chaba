@@ -2,7 +2,7 @@ id: gdrive-deploy-tier
 title: 'gdrive for push/deploy? verdict: no for transport, yes as cold artifact tier'
 column: backlog
 review_kind: decision
-updated: 2026-10-11 20:53
+updated: 2026-10-12 20:48
 brief: 'Tony asked whether gdrive could carry push+deploy. Analysis: no for git transport (no atomic refs/locking
   over rclone, reintroduces sync-race class git-safe-pull was built to kill, adds a third-party repo copy) and no
   for deploy trigger (deploy = scp+restart+verify+flock+confirm gates, not file-arrival; all targets already on
@@ -38,7 +38,7 @@ requests:
   answer: true — add gdrive bundle tier to deploy-card.sh
 action:
   type: self
-  status: queued
+  status: done
 comms:
 - at: 2026-10-11 16:45
   from: tony
@@ -57,3 +57,15 @@ comms:
 - at: 2026-10-11 20:53
   from: tony
   text: queued for processing
+- at: 2026-10-12 20:45
+  from: tony
+  text: moved backlog -> doing
+- at: 2026-10-12 20:48
+  from: devin
+  text: '[done] Implemented the approved increment: deploy-card.sh now archives each verified bundle to gdrive:chaba/bundles/<base>-vN.js
+    post-md5-verify + writes latest.yml pointer (sha256/bytes/md5/deployed_to/at — same latest-pointer contract
+    as nest-brains). Skips cleanly when rclone or the gdrive remote is absent; never fails a verified deploy. Commit
+    f55749728 pushed master->origin (macbook checkout via git-safe-push).'
+- at: 2026-10-12 20:48
+  from: tony
+  text: closed by tony

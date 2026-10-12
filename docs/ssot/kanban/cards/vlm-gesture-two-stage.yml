@@ -4,32 +4,43 @@ kind: feature
 priority: medium
 column: backlog
 autonomy: t2
-brief: 'Tony via Ada (2026-10-09): explore VLM for gesture control instead of pure
-  landmark tracking — two-stage: a vision-language model watches the scene and reads
-  INTENT first (what the hand is pointing at / about to do), then the landmark tracker
-  delivers precision positioning. Shipped v1 is MediaPipe landmarks on iPhone camera
-  → relay → TV cursor (gesture-relay, verified live 2026-10-09). YOLO bounding-box
-  approach was assessed and rejected — wrong primitive. VLM stage could run on OR
-  :free vision model (nemotron nano-omni-30b is omni-modal) or local moondream (already
-  on idc03 ollama) — frame rate is the constraint; likely VLM on sampled frames +
-  tracker at full rate.'
+brief: 'Tony via Ada (2026-10-09): explore VLM for gesture control instead of pure landmark tracking — two-stage:
+  a vision-language model watches the scene and reads INTENT first (what the hand is pointing at / about to do),
+  then the landmark tracker delivers precision positioning. Shipped v1 is MediaPipe landmarks on iPhone camera →
+  relay → TV cursor (gesture-relay, verified live 2026-10-09). YOLO bounding-box approach was assessed and rejected
+  — wrong primitive. VLM stage could run on OR :free vision model (nemotron nano-omni-30b is omni-modal) or local
+  moondream (already on idc03 ollama) — frame rate is the constraint; likely VLM on sampled frames + tracker at
+  full rate.'
 depends_on: []
 comms:
 - at: 2026-10-10 10:10
   from: devin
-  text: filed — Tony's 'use VLM now instead of mediapipe, two-stage intent+precision'
-    ask from ada transcript ed55a8fcb6; supersedes the 7 YOLO-gesture dupes closed
-    same day. v1 landmark system is live, so this is an upgrade track not a rescue.
+  text: filed — Tony's 'use VLM now instead of mediapipe, two-stage intent+precision' ask from ada transcript ed55a8fcb6;
+    supersedes the 7 YOLO-gesture dupes closed same day. v1 landmark system is live, so this is an upgrade track
+    not a rescue.
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0333'
 - at: 2026-10-11 10:20
   from: devin
-  text: 'armed queued: spec is dispatch-ready (two-stage VLM intent → landmark precision);
-    needs a GPU host — tony-dell or tony-omen lanes.'
+  text: 'armed queued: spec is dispatch-ready (two-stage VLM intent → landmark precision); needs a GPU host — tony-dell
+    or tony-omen lanes.'
+- at: 2026-10-12 17:27
+  from: devin
+  text: 'sweep 2026-10-12: design input folded into rebuild-gesture-pointer-with-yolo-732b0d (doing) — two-stage
+    VLM idea kept as a note there, not a parallel card.'
+- at: 2026-10-12 17:28
+  from: devin
+  text: closed by devin
+- at: 2026-10-12 22:29
+  from: devin
+  text: merged into rebuild-gesture-pointer-with-yolo-732b0d (canonical, doing)
+- at: 2026-10-12 22:29
+  from: tony
+  text: closed by tony
 created: '2026-10-10'
-updated: 2026-10-10 10:10
+updated: 2026-10-12 22:29
 ref: OPS-0333
 action:
-  status: queued
+  status: done
   type: manual

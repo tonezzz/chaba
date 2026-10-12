@@ -1,7 +1,7 @@
 id: micro-ai-input-polish
 title: 'micro-ai input polish: small local model normalizes user input for each receiving AI'
 column: backlog
-updated: 2026-10-12 09:30
+updated: 2026-10-12 17:27
 brief: 'Hypothesis (Tony 2026-10-11): a small local model sits in front of each receiving AI and rewrites raw user
   input (ASR errors, Thai/Eng mix, fragments) into the format that AI performs best on — better accuracy AND fewer
   downstream tokens. Bench-first per model-eval procedure; adopt only on measured gain.'
@@ -99,6 +99,10 @@ comms:
 - at: 2026-10-12 09:30
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-12 17:27
+  from: tony
+  text: 'answered asr-lane-scope: typed-relays — text/relay lanes first (LINE/TG/PWA) — deployable now, bench applies
+    directly (recommended)'
 requests:
 - id: insertion-point
   ask: Where should the first bench target the polish layer? ASR has the messiest input and clearest expected win.
@@ -119,7 +123,7 @@ requests:
     is an OUTPUT). A text polisher can only sit on (a) typed/relay lanes — LINE/TG/PWA via send_text_turn, deployable
     today, or (b) true voice ASR — needs a cascade pre-pass (whisper->polish->LLM) in front of native audio: architecture
     change + latency. Which scope do we build first?'
-  status: open
+  status: answered
   at: 2026-10-11 21:28
   from: devin
   options:
@@ -131,3 +135,4 @@ requests:
     label: typed now + cascade card in parallel
   suggested: typed-relays
   escalated_at: 2026-10-12 09:30
+  answer: typed-relays — text/relay lanes first (LINE/TG/PWA) — deployable now, bench applies directly (recommended)

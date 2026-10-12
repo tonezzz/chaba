@@ -1,0 +1,24 @@
+id: key-watch-monitor
+title: 'key-watch: credential expiry/quota monitor — the bridge-key-at-$0 gap'
+column: backlog
+updated: 2026-10-12 22:30
+brief: '2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning — inference 403s fleet-wide
+  until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota — different
+  job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.'
+priority: high
+spec: "Sources (metadata only — secrets policy: never touch values):\n- OR /api/v1/key with the deployed key: limit_remaining,\
+  \ expires_at, usage\n- Gemini pool: gemini_pool.status() surface (per-model daily-quota exhaustion) — read the\n\
+  \  ada ops-event stream for QuotaExhausted markers, or a light generate probe\n- HA LLATs: GET /api/ with each\
+  \ stored HOME_ASSISTANT_TOKEN/HASS_TOKEN -> 401 = dead\n- CF_API_TOKEN verify endpoint\nThresholds: expiry <48h\
+  \ or quota >80% -> warn (LINE via ada-line-relay :8912/send, same\npath chaba-nag uses); dead/expired -> alert\
+  \ + auto-file incident card via board-api.\nCadence 6h timer + on-boot. Reuse chaba-nag's LINE helper + quiet-hours\
+  \ (00-07 ICT).\nOutput feeds the same ops-event feed shape as gemini_pool emit_ops_event.\nAlso write the 'key-watch'\
+  \ procedure entry into ssot.procedures.yml so 'what monitors\nour keys' has a system answer."
+ref: SEC-0499
+comms:
+- at: 2026-10-12 10:33
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 22:30
+  from: devin
+  text: No key-watch timer exists on tony-dell — monitor not built yet.

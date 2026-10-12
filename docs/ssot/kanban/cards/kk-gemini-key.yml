@@ -1,0 +1,58 @@
+id: kk-gemini-key
+title: Kaewta gets her own Gemini key (KK lane off fleet pool)
+column: backlog
+updated: 2026-10-12 22:30
+brief: 'Tony ask 2026-10-12: add KK own Gemini. DONE: LITELLM_KEY_KK minted ($5/30d) and live in ada-kk.env ADA_GEMINI_REST_API_KEY
+  — her REST side-calls are metered/budgeted separately now; gemini-keys.env gained GEMINI_API_KEY_KK slot; gemini-tier
+  on idc03 now re-asserts the kk key as ada-kk.env primary after any fleet free|paid|hybrid switch. BLOCKED: Live
+  voice key (GEMINI_API_KEY) still shares fleet PAID — needs a real Google key minted in AI Studio (agent cannot).
+  Drop path: put the raw key in ~/.config/secrets/ada-kk on tony-dell or idc03, chaba picks it up, writes gemini-keys.env
+  + ada-kk.env,'
+priority: medium
+tags:
+- ada
+- gemini
+- isolation
+- kk
+ref: ADA-0501
+comms:
+- at: 2026-10-12 11:41
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-12 11:41
+  from: devin
+  text: 'raised request kk-live-key-mint-which-project: Mint Kaewta''s own Gemini Live key in AI Studio (https://aistudio.google.com/apikey),
+    then drop the raw key in ~/.config/'
+- at: 2026-10-12 18:00
+  from: tony
+  text: 'answered kk-live-key-mint-which-project: new-project — New billed GCP project — true quota/spend-cap isolation:
+    tony-lane storms can never starve Kaewta (quota+caps are per-project). Cost: one-time billing setup in console.'
+- at: 2026-10-12 18:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-12 22:30
+  from: devin
+  text: ada-kk.env has GEMINI_API_KEY (shared) + OPENROUTER_API_KEY; no KK-specific key minted yet (slot reserved
+    in llm-gateway SSOT).
+requests:
+- id: kk-live-key-mint-which-project
+  ask: Mint Kaewta's own Gemini Live key in AI Studio (https://aistudio.google.com/apikey), then drop the raw key
+    in ~/.config/secrets/ada-kk on tony-dell or idc03 — I wire GEMINI_API_KEY_KK + ada-kk.env, restart, verify.
+    Which project should the key live in?
+  status: answered
+  at: 2026-10-12 11:41
+  from: devin
+  options:
+  - id: new-project
+    label: 'New billed GCP project — true quota/spend-cap isolation: tony-lane storms can never starve Kaewta (quota+caps
+      are per-project). Cost: one-time billing setup in console.'
+  - id: same-project
+    label: Inside existing project 517766007004 — 1 minute, paid-tier voice, but KK still shares the fleet spend
+      cap + per-project quota; only gives her a separate key identity/metrics.
+  - id: free-project
+    label: New FREE project — zero spend, but free-tier Live was unstable (~5 session kills/3d); not recommended
+      for prod voice.
+  suggested: new-project
+  answer: 'new-project — New billed GCP project — true quota/spend-cap isolation: tony-lane storms can never starve
+    Kaewta (quota+caps are per-project). Cost: one-time billing setup in console.'
+awaiting_action: true
