@@ -411,11 +411,12 @@ execution:
                unpinned queued cards already flow to any host under cap
                and under its load gate."
     runner_fleet: "as of 2026-10-10 — tony-dell: kanban-dispatch local cap 3
-               (dispatch); tony-omen: cap 2 labels gpu,desktop (dispatch
-               +container+script); idc02: cap 3 labels ssd,always-on (dispatch
-               +container+script); idc03: cap 3 gate 0.85 labels
-               ssd,always-on (dispatch+container+script); mn01: cap 1
-               labels low-mem,edge (dispatch+container+script — devin CLI
+               (dispatch); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
+               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small (dispatch
+               +container+script); idc03: cap 2 gate 0.85 labels
+               ssd,always-on,ada,cpu,small (dispatch+container+script);
+               mn01: cap 1
+               labels low-mem,edge,small (dispatch+container+script — devin CLI
                IS present; RAM-tight so cap stays 1); tony-macbook: cap 2
                gate 0.8 labels macbook,local-8c,always-home (script-type
                only — no devin CLI or podman yet; enrolled 2026-10-11).

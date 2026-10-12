@@ -267,6 +267,20 @@ for d in cands:
     break
 out["dispatch_repos"] = dr
 
+# runner claim identity — labels/cap this host advertises (queue
+# satisfiability check: a queued card whose labels no host satisfies can
+# never be claimed — silent starvation, OPS-0521 class).
+env = {}
+try:
+    unit = (HOME / ".config/systemd/user/runner-agent.service").read_text()
+    for k in ("RUNNER_LABELS", "RUNNER_CAP", "RUNNER_MAX_LOAD_PC"):
+        m = re.search(rf"{k}=([^\s'\"]+)", unit)
+        if m:
+            env[k] = m.group(1)
+except Exception:
+    pass
+out["runner_env"] = env
+
 # devin CLI — devin-dispatch.sh's own resolution order:
 # PATH -> ~/.local/bin -> bundled desktop binary.
 devin = {"path": None}
@@ -568,6 +582,76 @@ def close_card(path: Path, host: str, today: str, why: str) -> bool:
     return True
 
 
+def queue_satisfiability(probes: dict) -> int:
+    """Flag queued cards whose labels/host-pin no live runner can satisfy —
+    otherwise they sit in 'queued' forever, invisible (OPS-0521 class).
+    One fleet-level card, runner-auto-queue, mirrors the host lifecycle."""
+    path = CARDS / "runner-auto-queue.yml"
+    today = time.strftime("%Y-%m-%d")
+    # label sets per probed-ok host
+    can = {}
+    for host, d in probes.items():
+        if not isinstance(d, dict) or d.get("_error"):
+            continue
+        labels = ((d.get("runner_env") or {}).get("RUNNER_LABELS") or "")
+        can[host] = {x.strip() for x in labels.split(",") if x.strip()}
+    stranded = []
+    for p in sorted(CARDS.glob("*.yml")):
+        try:
+            card = yaml.safe_load(p.read_text()) or {}
+        except Exception:
+            continue
+        a = card.get("action") or {}
+        if a.get("status") != "queued" or a.get("type") not in (
+                "dispatch", "container", "script", "devin"):
+            continue
+        needs = set(a.get("labels") or [])
+        pin = a.get("host")
+        if pin:
+            ok = pin in can and needs <= can.get(pin, set())
+            why = f"pinned to {pin} " + (
+                "not in live fleet" if pin not in can
+                else f"lacks labels {sorted(needs - can[pin])}")
+        else:
+            ok = any(needs <= labels for labels in can.values())
+            why = (f"labels {sorted(needs)} satisfied by no live runner "
+                   f"(fleet advertises {sorted(set().union(*can.values()) or set())})")
+        if not ok:
+            stranded.append(f"{card.get('id', p.stem)}: {why}")
+    card = load_card(path)
+    if stranded:
+        card.update({
+            "id": "runner-auto-queue",
+            "title": f"{len(stranded)} queued card(s) unsatisfiable by "
+                     "the live runner fleet",
+            "brief": ("action.labels/action.host are hard requirements — "
+                      "a queued card nothing satisfies starves silently. "
+                      "Fix the card's requirements or teach a host the "
+                      "label (RUNNER_LABELS in runner-agent.service + "
+                      "mirror in ssot.kanban.yml runner_fleet)."),
+            "column": "review",
+            "review_kind": "triage",
+            "generated": "runner-fleet-health",
+            "program": "chaba-ci",
+            "area": "dispatch",
+            "priority": "high",
+            "note": "\n".join(f"- {s}" for s in stranded)[:1400],
+            "updated": today,
+        })
+        if card != load_card(path):
+            path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                           allow_unicode=True))
+            return len(stranded)
+        return len(stranded)
+    if path.exists() and card.get("column") == "review":
+        card["column"] = "done"
+        card["note"] = f"Auto-recovered {today}: every queued card is claimable."
+        card["updated"] = today
+        path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                       allow_unicode=True))
+    return 0
+
+
 def main() -> int:
     now = time.time()
     today = time.strftime("%Y-%m-%d")
@@ -575,8 +659,10 @@ def main() -> int:
               if p.exists() else None for k, p in REFS.items()}
     hosts = fleet()
     n_bad = n_ok = n_close = 0
+    probes = []
     for host in hosts:
         d = probe(host)
+        probes.append(d)
         try:
             violations, notes = judge(host, d or {"_error": "no probe"},
                                       refsha)
@@ -598,11 +684,13 @@ def main() -> int:
     # retired fleet hosts never get probed — close their stale cards.
     for path in CARDS.glob("runner-auto-*.yml"):
         host = path.stem.removeprefix("runner-auto-")
-        if host not in hosts and close_card(
+        if host != "queue" and host not in hosts and close_card(
                 path, host, today, "host left the dispatch fleet"):
             n_close += 1
+    n_starved = queue_satisfiability(dict(zip(hosts, probes)))
     print(f"runner-fleet-health: {n_bad} hosts failing, {n_ok} ok, "
-          f"{n_close} cards auto-closed ({len(hosts)} hosts)")
+          f"{n_close} cards auto-closed, {n_starved} queued cards "
+          f"unsatisfiable ({len(hosts)} hosts)")
     return 0
 
 
