@@ -15,7 +15,7 @@
 "use strict";
 JAM.register("remote", {
   ws: null, retry: 0, dots: {}, zones: null, zoneSig: "",
-  steps: {}, lastNote: {}, vx: null,
+  steps: {}, lastSeen: {}, glideWd: 0, vx: null,
 
   // iPhone mic -> relay -> here. Random rotating sci-fi chain:
   // ring-mod + feedback delay + playback-rate wobble, preset swaps ~1.2s.
@@ -110,6 +110,17 @@ JAM.register("remote", {
     this.zones = z;
     this.paintZones();
 
+    // theremin watchdog: hand out of frame ~350ms -> tone fades out
+    this.glideWd = setInterval(() => {
+      const now = performance.now(), ac = JAM._actx();
+      for (const s of ["L", "R"]) {
+        if (!this.lastSeen[s]) continue;
+        const v = JAM._tone("remote-" + s);
+        if (v.g.gain.value > 0.01 && now - this.lastSeen[s] > 350)
+          v.g.gain.setTargetAtTime(0, ac.currentTime, 0.12);
+      }
+    }, 200);
+
     this.connect();
     JAM.hud("📱 remote listening — /apps/gesture/ on iPhone, Start camera");
   },
@@ -175,14 +186,22 @@ JAM.register("remote", {
       JAM.emit("clap", 1);
       JAM.hud("📱 pinch → " + (JAM.bindings["clap"] || "clap"));
     } else {
-      // note ladder + cooldown: fire only on a NEW rung, max ~7 notes/s
-      const step = Math.min(6, Math.max(0, ((1 - m.y) * 7) | 0));
-      const now = performance.now();
-      if (step !== (this.steps[side] ?? -1) &&
-          now - (this.lastNote[side] || 0) > 140) {
-        this.steps[side] = step;
-        this.lastNote[side] = now;
-        JAM.emit(`hand-move-${side}`, step / 6);
+      // theremin: ONE sustained tone per side, pitch glides with height.
+      // Hand presence = sound, never a note stream — cannot machine-gun.
+      const ac = JAM._actx(), now = performance.now();
+      const tone = JAM._tone("remote-" + side, side === "L" ? "sine" : "triangle");
+      const scale = JAM._SCALES.blue;
+      const deg = Math.min(9, Math.max(0, ((1 - m.y) * 10) | 0));
+      tone.o.frequency.setTargetAtTime(
+        JAM._NOTE((side === "L" ? 57 : 45) +
+                  scale[deg % scale.length] + 12 * (deg / scale.length | 0)),
+        ac.currentTime, 0.07);
+      tone.g.gain.setTargetAtTime(0.15, ac.currentTime, 0.08);
+      this.lastSeen[side] = now;
+      // real movement -> energy for the band (unbound by default)
+      if (deg !== (this.steps[side] ?? -1)) {
+        this.steps[side] = deg;
+        JAM.emit(`hand-move-${side}`, deg / 9);
       }
     }
     this.paintZones();
@@ -195,6 +214,8 @@ JAM.register("remote", {
     this.dots = {};
     this.zones && this.zones.remove(); this.zones = null; this.zoneSig = "";
     if (this.vx) { try { this.vx.carrier.stop(); } catch {} this.vx = null; }
-    this.steps = {};
+    clearInterval(this.glideWd);
+    JAM._toneDrop("remote-L"); JAM._toneDrop("remote-R");
+    this.steps = {}; this.lastSeen = {};
   },
 });

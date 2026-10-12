@@ -6,7 +6,7 @@
 JAM.register("hands", {
   stream: null, landmarker: null, raf: 0,
   lastY: { Left: null, Right: null }, lastT: { Left: 0, Right: 0 },
-  steps: {}, lastNote: {},
+  steps: {}, lastSeen: {}, glideWd: 0,
 
   async init() {
     const video = document.getElementById("cam");
@@ -45,17 +45,35 @@ JAM.register("hands", {
           JAM.hud(`✋ ${hand} strike v=${v.toFixed(2)}`);
         }
         this.lastY[hand] = y;
-        // note ladder + cooldown: new rung only, max ~7 notes/s
-        const step = Math.min(6, Math.max(0, ((1 - y) * 7) | 0));
-        if (step !== (this.steps[hand] ?? -1) &&
-            now - (this.lastNote[hand] || 0) > 140) {
-          this.steps[hand] = step;
-          this.lastNote[hand] = now;
-          JAM.emit(`hand-move-${hand[0]}`, step / 6);
+        // theremin: one sustained gliding tone per hand — presence = sound
+        const side = hand[0], ac = JAM._actx();
+        const tone = JAM._tone("hands-" + side,
+                               side === "L" ? "sine" : "triangle");
+        const scale = JAM._SCALES.blue;
+        const deg = Math.min(9, Math.max(0, ((1 - y) * 10) | 0));
+        tone.o.frequency.setTargetAtTime(
+          JAM._NOTE((side === "L" ? 57 : 45) +
+                    scale[deg % scale.length] + 12 * (deg / scale.length | 0)),
+          ac.currentTime, 0.07);
+        tone.g.gain.setTargetAtTime(0.15, ac.currentTime, 0.08);
+        this.lastSeen[side] = now;
+        if (deg !== (this.steps[side] ?? -1)) {
+          this.steps[side] = deg;
+          JAM.emit(`hand-move-${side}`, deg / 9);
         }
       }
     };
     loop();
+    // theremin watchdog: hand out of frame ~350ms -> tone fades out
+    this.glideWd = setInterval(() => {
+      const now = performance.now(), ac = JAM._actx();
+      for (const s of ["L", "R"]) {
+        if (!this.lastSeen[s]) continue;
+        const v = JAM._tone("hands-" + s);
+        if (v.g.gain.value > 0.01 && now - this.lastSeen[s] > 350)
+          v.g.gain.setTargetAtTime(0, ac.currentTime, 0.12);
+      }
+    }, 200);
     JAM.hud("📷 hands on — slap the air: left=kick right=snare (rebind in matrix)");
   },
 
@@ -64,6 +82,9 @@ JAM.register("hands", {
     this.stream?.getTracks().forEach(t => t.stop());
     document.getElementById("cam").style.display = "none";
     this.landmarker?.close(); this.landmarker = null;
+    clearInterval(this.glideWd);
+    JAM._toneDrop("hands-L"); JAM._toneDrop("hands-R");
     this.lastY = { Left: null, Right: null };
+    this.steps = {}; this.lastSeen = {};
   },
 });
