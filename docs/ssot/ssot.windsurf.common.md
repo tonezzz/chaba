@@ -338,6 +338,10 @@ Tony often interrupts with a new idea mid-task. The standing rule:
 4. **Session is not memory.** Nothing survives except the board, the inbox,
    SSOT, and card `comms:`. If a fact/request/decision isn't written down,
    it is lost — write it the moment it happens.
+5. **Announce the landing spot.** After every capture, say where it went in
+   one line ("carded to MEM-0498", "inboxed as …", "page kk-ha/site-flow").
+   Tony should never have to guess which destination holds his idea — see
+   `docs/kb/where-things-go.md`.
 
 ## Cross-Session Awareness
 
