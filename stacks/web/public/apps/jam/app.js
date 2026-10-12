@@ -359,7 +359,7 @@ document.getElementById("b-fb").onclick = () => {
 };
 
 /* ---------- module loader ---------- */
-for (const m of ["fx", "hands", "mic"]) {
+for (const m of ["fx", "hands", "mic", "remote"]) {
   const s = document.createElement("script");
   s.src = "mod/" + m + ".js";
   s.onerror = () => {};   // optional module missing = fine
