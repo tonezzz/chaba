@@ -388,8 +388,12 @@ def main() -> int:
 
     if not active:
         status, reason = "infra", f"target unit {args.unit} is {active_detail}"
-    elif lane == "paid-lane":
-        status, reason = "paid-lane", lane_detail
+    elif lane in ("paid-lane", "unknown"):
+        # fail-closed: an unmarked key may be a NEW paid key not yet added
+        # to gemini-keys.env — a QA skip costs nothing, a wrong guess burns
+        # credit (2026-10-12: the hole was unknown->ok).
+        status, reason = "paid-lane", (
+            f"unmarked/PAID lane key — {lane_detail}")
     elif quota == "quota-dead":
         status, reason = "quota-dead", (
             f"provider dunning in last {args.window}min "
