@@ -258,6 +258,13 @@ function loop() {
     const st = handState[hand] || (handState[hand] = { pinch: false, fist: false });
     poses.push(hand[0] + ':' + (fist ? 'FIST' : pinch ? 'PINCH' : 'open'));
 
+    // dwell debounce — a pose must HOLD across frames to count; single-frame
+    // landmark flicker was forging fists/pinches (phantom strikes = scream)
+    st.fN = fist ? (st.fN || 0) + 1 : 0;
+    st.pN = pinch ? (st.pN || 0) + 1 : 0;
+    st.uN = !fist ? (st.uN || 0) + 1 : 0;
+    const fistOn = st.fN >= 3, fistOff = st.uN >= 2, pinchOn = st.pN >= 3;
+
     const base = () => ({
       type: 'gesture', hand,
       x: flipX ? 1 - lm[8].x : lm[8].x,   // index tip
@@ -267,16 +274,16 @@ function loop() {
     });
 
     // edge events go out immediately; cursor frames throttled to ~20Hz
-    if (pinch && !st.pinch) send({ ...base(), action: 'pinch' });
-    if (fist && !st.fist) send({ ...base(), action: 'fist_start' });
-    if (!fist && st.fist) send({ ...base(), action: 'fist_end' });
-    st.pinch = pinch; st.fist = fist;
+    if (pinchOn && !st.pinch) { st.pinch = true; send({ ...base(), action: 'pinch' }); }
+    if (!pinchOn && st.pinch) st.pinch = false;
+    if (fistOn && !st.fist) { st.fist = true; send({ ...base(), action: 'fist_start' }); }
+    if (fistOff && st.fist) { st.fist = false; send({ ...base(), action: 'fist_end' }); }
 
     // swipe: open hand crossing >35% of frame in <350ms -> style change
     const tipX = flipX ? 1 - lm[8].x : lm[8].x;
     (st.xs ||= []).push([now, tipX]);
     while (st.xs.length && now - st.xs[0][0] > 350) st.xs.shift();
-    if (st.xs.length > 3 && !fist && now - (st.swipeT || 0) > 700) {
+    if (st.xs.length > 3 && !st.fist && now - (st.swipeT || 0) > 700) {
       const dx = st.xs[st.xs.length - 1][1] - st.xs[0][1];
       if (Math.abs(dx) > 0.35) {
         st.swipeT = now; st.xs.length = 0;
