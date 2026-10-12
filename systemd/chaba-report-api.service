@@ -8,7 +8,12 @@ After=default.target
 # OR bearer token OR loopback — LAN/anonymous peers get 403.
 Environment=REPORT_API_BIND=0.0.0.0
 EnvironmentFile=-%h/.config/secrets/report-api.env
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/report/report-api.py
+# Runs from the dev checkout (~/CascadeProjects/chaba) — the daily timer
+# writes audits+meta into that tree, so the api must read the same tree or
+# refresh regenerates the summary from days-old inputs (bug 2026-10-12:
+# button updated generated_at but data stayed stale). report-system.py
+# still publishes the display files into the served chaba-tony-dell root.
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/report/report-api.py
 Restart=on-failure
 RestartSec=10
 
