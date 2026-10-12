@@ -203,7 +203,7 @@ const EVENTS = [
   "pad-rim","pad-shaker",
   "hand-strike-L","hand-strike-R","hand-move-L","hand-move-R",
   "clap","hum-note","nod","smile","shake","mouth","brow",
-  "lean","jump","arm-up-L","arm-up-R",
+  "lean","jump","arm-up-L","arm-up-R","swipe-L","swipe-R",
 ];
 const TARGETS = [
   "kick","snare","hat","tom","clap","crash","rim","shaker",
@@ -292,6 +292,10 @@ const JAM = {
   },
 };
 window.JAM = JAM;
+// voices + helpers exposed for mods (band schedules these on its own clock)
+JAM._v = { kick, snare, hat, tom, clap, crash, rim, shaker,
+           bass, lead, stab, airhorn, riser, scratch };
+JAM._actx = actx; JAM._NOTE = NOTE; JAM._SCALES = SCALES;
 JAM.loadBindings();
 
 /* ---------- pad grid (always on) ---------- */
@@ -361,11 +365,32 @@ document.getElementById("b-fb").onclick = () => {
   window.open("https://line.me/R/share?text=" + msg, "_blank");
 };
 
+/* ---------- acts ---------- */
+// raw      = direct move -> instrument (all input mods, no backing)
+// autotune = backing band + remote; the app adapts to you
+const ACTS = { raw: [], autotune: ["remote", "band"] };
+for (const [act, mods] of Object.entries(ACTS)) {
+  const b = document.createElement("button");
+  b.className = "btn"; b.textContent = act === "raw" ? "🎭 raw act" : "🎹 auto tune";
+  b.onclick = () => {
+    if (act === "raw") {
+      if (JAM.mods.band?.enabled) JAM.toggle("band");
+      JAM.hud("🎭 raw act — your moves drive the instruments directly");
+    } else {
+      for (const m of mods)
+        if (JAM.mods[m] && !JAM.mods[m].enabled)
+          JAM.toggle(m, [...document.querySelectorAll("#mods .btn")]
+            .find(x => x.textContent === m));
+    }
+  };
+  document.getElementById("mods").appendChild(b);
+}
+
 /* ---------- module loader ---------- */
 // ?mods=remote,fx auto-enables modules once their script registers
 const wantMods = new Set(
   (new URLSearchParams(location.search).get("mods") || "").split(",").filter(Boolean));
-for (const m of ["fx", "hands", "mic", "remote"]) {
+for (const m of ["fx", "hands", "mic", "remote", "band"]) {
   const s = document.createElement("script");
   s.src = "mod/" + m + ".js";
   s.onload = () => {

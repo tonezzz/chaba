@@ -271,6 +271,18 @@ function loop() {
     if (!fist && st.fist) send({ ...base(), action: 'fist_end' });
     st.pinch = pinch; st.fist = fist;
 
+    // swipe: open hand crossing >35% of frame in <350ms -> style change
+    const tipX = flipX ? 1 - lm[8].x : lm[8].x;
+    (st.xs ||= []).push([now, tipX]);
+    while (st.xs.length && now - st.xs[0][0] > 350) st.xs.shift();
+    if (st.xs.length > 3 && !fist && now - (st.swipeT || 0) > 700) {
+      const dx = st.xs[st.xs.length - 1][1] - st.xs[0][1];
+      if (Math.abs(dx) > 0.35) {
+        st.swipeT = now; st.xs.length = 0;
+        send({ type: 'body', evt: dx > 0 ? 'swipe-R' : 'swipe-L', val: 1 });
+      }
+    }
+
     if (now - lastEmit >= EMIT_MIN_MS) send(base());
   }
   if (now - lastEmit >= EMIT_MIN_MS) lastEmit = now;
