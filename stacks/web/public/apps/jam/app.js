@@ -20,6 +20,25 @@ function actx() {
   if (S.ac.state === "suspended") S.ac.resume();
   return S.ac;
 }
+// chrome autoplay policy: a fresh page is muted until a REAL touch —
+// resume on any tap anywhere, and show a banner while still locked
+document.addEventListener("pointerdown", () => {
+  if (S.ac && S.ac.state === "suspended") S.ac.resume();
+});
+const _muteEl = document.createElement("div");
+_muteEl.id = "mute-banner";
+_muteEl.textContent = "🔇 tap screen to unmute";
+Object.assign(_muteEl.style, {
+  position: "fixed", inset: "0", display: "none",
+  alignItems: "center", justifyContent: "center",
+  fontSize: "8vw", fontWeight: "700", color: "#fff",
+  background: "rgba(0,0,0,.72)", zIndex: "99", cursor: "pointer",
+});
+document.body.appendChild(_muteEl);
+setInterval(() => {
+  _muteEl.style.display =
+    (S.ac && S.ac.state === "suspended") ? "flex" : "none";
+}, 500);
 function noiseSrc(t, dur) {
   if (!S.noise) {
     const b = actx().createBuffer(1, S.ac.sampleRate * 1.2, S.ac.sampleRate);
