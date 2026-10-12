@@ -15,7 +15,7 @@
 "use strict";
 JAM.register("remote", {
   ws: null, retry: 0, dots: {}, zones: null, zoneSig: "",
-  steps: {}, vx: null,
+  steps: {}, lastNote: {}, vx: null,
 
   // iPhone mic -> relay -> here. Random rotating sci-fi chain:
   // ring-mod + feedback delay + playback-rate wobble, preset swaps ~1.2s.
@@ -168,11 +168,13 @@ JAM.register("remote", {
       JAM.emit("clap", 1);
       JAM.hud("📱 pinch → " + (JAM.bindings["clap"] || "clap"));
     } else {
-      // note ladder, not machine-gun: a note fires only when the hand
-      // crosses into a new pitch zone (7 rungs)
+      // note ladder + cooldown: fire only on a NEW rung, max ~7 notes/s
       const step = Math.min(6, Math.max(0, ((1 - m.y) * 7) | 0));
-      if (step !== (this.steps[side] ?? -1)) {
+      const now = performance.now();
+      if (step !== (this.steps[side] ?? -1) &&
+          now - (this.lastNote[side] || 0) > 140) {
         this.steps[side] = step;
+        this.lastNote[side] = now;
         JAM.emit(`hand-move-${side}`, step / 6);
       }
     }
