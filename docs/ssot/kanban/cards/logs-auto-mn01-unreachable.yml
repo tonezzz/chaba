@@ -1,0 +1,15 @@
+id: logs-auto-mn01-unreachable
+title: logs `mn01` ssh probe failed
+brief: 'The log digest flagged something worth a look: logs `mn01` ssh probe failed.
+  Read the note, then fix it or close the card.'
+column: review
+review_kind: triage
+generated: logs-kanban
+program: logs-digest
+priority: medium
+note: shipper's ssh probe failed — mn01 logs are not being collected. error=ssh probe
+  failed
+help: 'Likely a tailscale ssh auth check on the tony-omen -> host hop: run a manual
+  ssh and open the login.tailscale.com link it prints, or install a local log-shipper
+  timer on mn01.'
+updated: '2026-10-12'
