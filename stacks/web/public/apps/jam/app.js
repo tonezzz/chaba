@@ -199,29 +199,30 @@ function scratch(t, v = 0.4) {
 
 /* --- less-synthy timbres --- */
 function pluck(t, f, v = 0.5) {          // Karplus-Strong string
-  const ac = actx(), n = noiseSrc(t, 0.012);
+  const ac = actx(), n = noiseSrc(t, 0.008);
   const dly = ac.createDelay(0.05), fb = ac.createGain(),
         lp = ac.createBiquadFilter(), g = ac.createGain();
   dly.delayTime.value = 1 / f;
-  fb.gain.value = 0.96;
-  lp.type = "lowpass"; lp.frequency.value = 2400;
-  g.gain.value = v;
+  fb.gain.value = 0.93;
+  lp.type = "lowpass"; lp.frequency.value = 1500;
+  g.gain.value = v * 0.7;
   n.connect(dly); dly.connect(lp); lp.connect(fb); fb.connect(dly);
   dly.connect(g).connect(S.fxIn);
-  fb.gain.setTargetAtTime(0, t + 1.2, 0.2);
+  fb.gain.setTargetAtTime(0, t + 1.0, 0.2);
   setTimeout(() => { try { fb.disconnect(); } catch {} }, 3500);
 }
-function bell(t, f, v = 0.35, dur = 1.2) { // FM bell/marimba
-  const ac = actx(), c = ac.createOscillator(), m = ac.createOscillator(),
-        mg = ac.createGain(), g = ac.createGain();
-  c.frequency.value = f; m.frequency.value = f * 3.5;
-  mg.gain.setValueAtTime(f * 2.2, t);
-  mg.gain.exponentialRampToValueAtTime(1, t + dur);
+function bell(t, f, v = 0.3, dur = 0.9) {  // soft FM marimba (small index,
+  const ac = actx(), c = ac.createOscillator(), m = ac.createOscillator(),  // fast decay)
+        mg = ac.createGain(), g = ac.createGain(), lp = ac.createBiquadFilter();
+  c.frequency.value = f; m.frequency.value = f * 3;
+  mg.gain.setValueAtTime(f * 0.6, t);
+  mg.gain.exponentialRampToValueAtTime(1, t + 0.12);
   m.connect(mg); mg.connect(c.frequency);
+  lp.type = "lowpass"; lp.frequency.value = 2800;
   g.gain.setValueAtTime(v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  c.connect(g).connect(S.fxIn);
-  c.start(t); c.stop(t + dur + 0.05); m.start(t); m.stop(t + dur + 0.05);
+  c.connect(lp); lp.connect(g).connect(S.fxIn);
+  c.start(t); c.stop(t + dur + 0.05); m.start(t); m.stop(t + 0.2);
 }
 function organ(t, f, v = 0.3, dur = 0.5) { // drawbar organ tone
   const ac = actx(), g = ac.createGain(), lp = ac.createBiquadFilter();

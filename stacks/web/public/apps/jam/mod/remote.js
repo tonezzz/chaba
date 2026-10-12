@@ -20,11 +20,11 @@ JAM.register("remote", {
   // iPhone mic -> relay -> here. Random rotating sci-fi chain:
   // ring-mod + feedback delay + playback-rate wobble, preset swaps ~1.2s.
   SCIFI: [
-    { name: "🤖 robot",     ring: 50,  rate: 1.0,  del: 0.18, wet: 0.9, dry: 0.1 },
-    { name: "👾 dalek",     ring: 75,  rate: 0.85, del: 0.24, wet: 1.0, dry: 0.0 },
+    { name: "🤖 robot",     ring: 45,  rate: 1.0,  del: 0.18, wet: 0.6, dry: 0.4 },
+    { name: "👾 dalek",     ring: 65,  rate: 0.85, del: 0.24, wet: 0.7, dry: 0.3 },
     { name: "🐿 chipmunk",  ring: 0,   rate: 1.55, del: 0.10, wet: 0.4, dry: 0.7 },
-    { name: "🌌 deep space",ring: 24,  rate: 0.72, del: 0.42, wet: 0.9, dry: 0.3 },
-    { name: "🛸 martian",   ring: 130, rate: 1.25, del: 0.15, wet: 0.8, dry: 0.2 },
+    { name: "🌌 deep space",ring: 24,  rate: 0.72, del: 0.42, wet: 0.7, dry: 0.5 },
+    { name: "🛸 martian",   ring: 110, rate: 1.25, del: 0.15, wet: 0.6, dry: 0.4 },
   ],
 
   voiceChain() {
@@ -37,10 +37,12 @@ JAM.register("remote", {
     const dry = ac.createGain(), wet = ac.createGain();
     const delay = ac.createDelay(1), fb = ac.createGain();
     delay.delayTime.value = 0.22; fb.gain.value = 0.35;
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 3200; lp.Q.value = 0.5;
     input.connect(ring); input.connect(dry);
     ring.connect(wet); ring.connect(delay);
     delay.connect(fb).connect(delay); delay.connect(wet);
-    dry.connect(ac.destination); wet.connect(ac.destination);
+    dry.connect(lp); wet.connect(lp); lp.connect(ac.destination);
     this.vx = { input, carrier, dry, wet, delay, preset: -1, swapT: 0, next: 0 };
     return this.vx;
   },
