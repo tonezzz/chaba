@@ -50,12 +50,12 @@ JAM.register("hands", {
         const tone = JAM._tone("hands-" + side,
                                side === "L" ? "sine" : "triangle");
         const scale = JAM._SCALES.blue;
-        const deg = Math.min(9, Math.max(0, ((1 - y) * 10) | 0));
+        const deg = Math.min(7, Math.max(0, ((1 - y) * 8) | 0));
         tone.o.frequency.setTargetAtTime(
-          JAM._NOTE((side === "L" ? 57 : 45) +
+          JAM._NOTE((side === "L" ? 50 : 38) +
                     scale[deg % scale.length] + 12 * (deg / scale.length | 0)),
           ac.currentTime, 0.07);
-        tone.g.gain.setTargetAtTime(0.15, ac.currentTime, 0.08);
+        tone.g.gain.setTargetAtTime(0.12, ac.currentTime, 0.08);
         this.lastSeen[side] = now;
         if (deg !== (this.steps[side] ?? -1)) {
           this.steps[side] = deg;

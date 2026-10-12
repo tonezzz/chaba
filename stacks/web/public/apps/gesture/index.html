@@ -87,7 +87,7 @@
   <button id="btn-hands" class="toggle on">Hands: on</button>
   <button id="btn-face" class="toggle on">Face: on</button>
   <button id="btn-pose" class="toggle on">Body: on</button>
-  <button id="btn-voice" class="toggle">🎤 voice</button>
+  <button id="btn-voice" class="toggle">🎤 hold to talk</button>
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
 <div id="note">
@@ -413,14 +413,17 @@ function b64FromI16(i16) {
     s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
   return btoa(s);
 }
-$('btn-voice').onclick = async e => {
-  if (vStream) {
-    vStream.getTracks().forEach(t => t.stop());
-    vProc.disconnect(); vSrc.disconnect(); vCtx.close();
-    vStream = vCtx = vSrc = vProc = null;
-    e.target.classList.remove('on'); e.target.textContent = '🎤 voice';
-    return;
-  }
+// PUSH-TO-TALK: voice streams only while the button is physically held —
+// an unattended mic can never re-capture the screen's own sound (howl).
+function stopVoice(btn) {
+  if (!vStream) return;
+  vStream.getTracks().forEach(t => t.stop());
+  vProc.disconnect(); vSrc.disconnect(); vCtx.close();
+  vStream = vCtx = vSrc = vProc = null;
+  btn.classList.remove('on'); btn.textContent = '🎤 hold to talk';
+}
+async function startVoice(btn) {
+  if (vStream) return;
   try {
     vStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true } });
@@ -440,7 +443,6 @@ $('btn-voice').onclick = async e => {
           i16[j] = Math.max(-32768, Math.min(32767, chunk[j] * 32767 | 0));
           rms += chunk[j] * chunk[j];
         }
-        // silence gate — no send unless loud; also breaks mic->screen->mic howl
         if (rms / chunk.length > 0.0004)
           send({ type: 'voice', sr: 12000, pcm: b64FromI16(i16) });
       }
@@ -448,9 +450,20 @@ $('btn-voice').onclick = async e => {
     // ScriptProcessor must reach destination to run — through a silent gain
     const mute = vCtx.createGain(); mute.gain.value = 0;
     vSrc.connect(vProc); vProc.connect(mute).connect(vCtx.destination);
-    e.target.classList.add('on'); e.target.textContent = '🎤 voice ON';
+    btn.classList.add('on'); btn.textContent = '🎤 TALKING…';
   } catch (err) { status('mic: ' + err.message, 'err'); }
-};
+}
+{
+  const vb = $('btn-voice');
+  vb.textContent = '🎤 hold to talk';
+  vb.oncontextmenu = e => e.preventDefault();
+  vb.onpointerdown = e => {
+    e.preventDefault();
+    try { vb.setPointerCapture(e.pointerId); } catch {}
+    startVoice(vb);
+  };
+  vb.onpointerup = vb.onpointercancel = () => stopVoice(vb);
+}
 
 $('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };
 
