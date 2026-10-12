@@ -274,7 +274,7 @@ function tone(key, type) {
     const ac = actx(), o = ac.createOscillator(), g = ac.createGain(),
           lp = ac.createBiquadFilter();
     o.type = type || "sine"; g.gain.value = 0;
-    lp.type = "lowpass"; lp.frequency.value = 2800; lp.Q.value = 0.4;
+    lp.type = "lowpass"; lp.frequency.value = 1600; lp.Q.value = 0.4;
     o.connect(g); g.connect(lp); lp.connect(ac.destination); o.start();
     TONES[key] = { o, g };
   }
@@ -391,6 +391,8 @@ JAM._v = { kick, snare, hat, tom, clap, crash, rim, shaker,
            bass, lead, stab, airhorn, riser, scratch, pluck, bell, organ };
 JAM._actx = actx; JAM._NOTE = NOTE; JAM._SCALES = SCALES;
 JAM._tone = tone; JAM._toneDrop = toneDrop;
+// ?tones=0 kills all glide voices — A/B flag for "is the theremin the scream?"
+JAM.tonesOff = new URLSearchParams(location.search).get("tones") === "0";
 JAM.loadBindings();
 
 /* ---------- pad grid (always on) ---------- */

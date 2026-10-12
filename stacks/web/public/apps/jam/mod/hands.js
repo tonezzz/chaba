@@ -45,18 +45,19 @@ JAM.register("hands", {
           JAM.hud(`✋ ${hand} strike v=${v.toFixed(2)}`);
         }
         this.lastY[hand] = y;
-        // theremin: one sustained gliding tone per hand — presence = sound
+        // theremin: one shared gliding tone — presence = sound
         const side = hand[0], ac = JAM._actx();
-        const tone = JAM._tone("hands-" + side,
-                               side === "L" ? "sine" : "triangle");
-        const scale = JAM._SCALES.blue;
-        const deg = Math.min(7, Math.max(0, ((1 - y) * 8) | 0));
-        tone.o.frequency.setTargetAtTime(
-          JAM._NOTE((side === "L" ? 50 : 38) +
-                    scale[deg % scale.length] + 12 * (deg / scale.length | 0)),
-          ac.currentTime, 0.07);
-        tone.g.gain.setTargetAtTime(0.12, ac.currentTime, 0.08);
-        this.lastSeen[side] = now;
+        if (!JAM.tonesOff) {
+          const tone = JAM._tone("hands-hand", "sine");
+          const scale = JAM._SCALES.blue;
+          const deg = Math.min(7, Math.max(0, ((1 - y) * 8) | 0));
+          tone.o.frequency.setTargetAtTime(
+            JAM._NOTE(48 + scale[deg % scale.length] +
+                      12 * (deg / scale.length | 0)),
+            ac.currentTime, 0.09);
+          tone.g.gain.setTargetAtTime(0.08, ac.currentTime, 0.1);
+          this.lastSeen[side] = now;
+        }
         if (deg !== (this.steps[side] ?? -1) &&
             now - (this.lastEmit[side] || 0) > 250) {
           this.steps[side] = deg;
@@ -69,12 +70,9 @@ JAM.register("hands", {
     // theremin watchdog: hand out of frame ~350ms -> tone fades out
     this.glideWd = setInterval(() => {
       const now = performance.now(), ac = JAM._actx();
-      for (const s of ["L", "R"]) {
-        if (!this.lastSeen[s]) continue;
-        const v = JAM._tone("hands-" + s);
-        if (v.g.gain.value > 0.01 && now - this.lastSeen[s] > 350)
-          v.g.gain.setTargetAtTime(0, ac.currentTime, 0.12);
-      }
+      const any = Math.max(this.lastSeen.L || 0, this.lastSeen.R || 0);
+      if (any && now - any > 350)
+        JAM._tone("hands-hand").g.gain.setTargetAtTime(0, ac.currentTime, 0.12);
     }, 200);
     JAM.hud("📷 hands on — slap the air: left=kick right=snare (rebind in matrix)");
   },
@@ -85,7 +83,7 @@ JAM.register("hands", {
     document.getElementById("cam").style.display = "none";
     this.landmarker?.close(); this.landmarker = null;
     clearInterval(this.glideWd);
-    JAM._toneDrop("hands-L"); JAM._toneDrop("hands-R");
+    JAM._toneDrop("hands-hand"); JAM._toneDrop("hands-L"); JAM._toneDrop("hands-R");
     this.lastY = { Left: null, Right: null };
     this.steps = {}; this.lastSeen = {}; this.lastEmit = {};
   },
