@@ -96,7 +96,7 @@ def merge_env(current: str, block: str) -> str:
     return "".join(out)
 
 
-def ada_surface() -> tuple[set[str], set[str]] | None:
+def ada_surface() -> tuple[set[str], dict[str, str]] | None:
     """Declared tool names + runner aliases, via ada-pi's tool-lint census."""
     tl = ADA_PI / "scripts/tool-lint.py"
     if not tl.is_file():
@@ -105,7 +105,7 @@ def ada_surface() -> tuple[set[str], set[str]] | None:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     surf = mod.collect_surface(ADA_PI)
-    return set(surf["declared"]), set(surf["aliases"])
+    return set(surf["declared"]), dict(surf["aliases"])
 
 
 def lint(profiles: dict[str, dict]) -> list[str]:
