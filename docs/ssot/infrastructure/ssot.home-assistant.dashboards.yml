@@ -237,16 +237,22 @@ instances:
           key, device='*', works from any browser; revocable via the Pair
           tab. Use push-dashboard.py, never .storage edits (a HA restart
           flushes .storage edits — learned 2026-09-23).
-  chaba_ai:
-    name: chaba-ai
+  ai:
+    name: ai                 # url_path "ai" — renamed from chaba-ai
+                             # 2026-10-12 (Tony: /ai/chaba pattern, mirrors
+                             # kk-ha /ai/kaewta). url_path is immutable in
+                             # HA — the rename was create-new + copy config +
+                             # delete-old, with allow_single_word:true.
     instance: tony-ha
     title: Chaba AI
     icon: mdi:robot-happy-outline
-    url: https://tony-ha.surf-thailand.com/chaba-ai/chatui
+    url: https://tony-ha.surf-thailand.com/ai/chaba
     require_admin: false
     created: 2026-10-12
-    default_panel: true   # system-wide: frontend system_data core.default_panel=chaba-ai
-    storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_ai
+    default_panel: true   # system-wide: frontend system_data core.default_panel=ai
+                          # (set via frontend/set_system_data 2026-10-12;
+                          # value corrected chaba-ai->ai after the rename)
+    storage_path: /home/tony/.config/home-assistant/.storage/lovelace.ai
     repo_snapshot: docs/home-assistant/dashboards/chaba-ai-current.json
     note: >-
       Sidebar dashboard (storage mode) created via websocket
@@ -255,9 +261,10 @@ instances:
       move, card ada-rebrand-chaba): markdown intro ("ชบา — household
       assistant") + ada-voice-card (title ชบา, instance tony,
       assistant_name Chaba, font_scale 1.6, button_size 100 — mirrors the
-      Kaewta AI card config) + ada-activity-card ("Live activity"). The two
-      original panel tabs are same-origin iframes resolved at the idc02
-      edge (see ssot.routes.yml tony-ha edge note): Chat
+      Kaewta AI card config) + ada-activity-card ("Live activity"). First
+      view path renamed ai->chaba in the /ai rename so the URL reads
+      /ai/chaba. The two panel tabs are same-origin iframes resolved at the
+      idc02 edge (see ssot.routes.yml tony-ha edge note): Chat
       (/chatui/chat.html -> /apps/ha/ada-tony/chat.html on idc03 :8002, card
       derives ws {base}/ws = ada-tony /ws) and CMS (/cms/ -> idc03 ada-pi-pwa
       root CMS = tony's ada-cms-pages). Verified through the edge: /chatui ->
