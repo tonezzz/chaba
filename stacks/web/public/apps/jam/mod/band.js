@@ -1,164 +1,205 @@
-/* jam mod: band — the "Auto Tune" act. A master clock plays a backing
-   groove (drums + bass + chords) and the player jams on top; the app
-   reads IMPLICIT feedback and adapts:
+/* jam mod: band — "AUTO TUNE" act. Plays a base-music track from the
+   percussion style library; your moves jam on top.
 
-     smile        -> like-signal: keep this style, sparkle stab, +energy
-     hand strikes -> +energy -> faster tempo, more fills
-     on-bar hits  -> fill reward at next bar boundary
-     swipe-L/R    -> previous/next style (voice: "band, change!")
-     lean         -> reserved for filter control
+   Tracks (swipe hand fast L/R to change):
+     Blues Jam · Metallica · Rock · Polyphia · Gary Moore · Queen
+     Funky · Electronic · EDM
 
-   Voices are reused from the core via JAM._v / JAM._actx / JAM._NOTE. */
+   The track ALWAYS plays while this module is on — that's the point
+   (module toggle = the off switch). Movement steers it:
+     strikes -> +energy -> faster + fills + call-and-response echo
+     swipe L/R -> previous/next track
+     arm-up R -> solo run, arm-up L -> bass run
+     smile -> sparkle stab (like-signal)
+   hand-move presence does NOT feed the band — presence = theremin only. */
 "use strict";
 JAM.register("band", {
-  timer: 0, bpm: 100, targetBpm: 100, style: 0, step: 0, nextT: 0,
-  energy: 0.0, hits: 0, soloUntil: 0, hudT: 0,
+  timer: 0, bpm: 100, style: 0, step: 0, nextT: 0,
+  energy: 0.55, hits: 0, soloUntil: 0, hudT: 0,
   echo: [], barStart: 0,
 
-  // per-16th-step patterns; bass values = blues-scale degrees (null = rest)
-  STYLES: [
-    { name: "lofi",  bpm: 82,  kick: [0, 7, 10],        snare: [4, 12],      hat: [2, 6, 10, 14],
-      bass: [0,null,0,null, 3,null,0,5, null,0,null,7, 3,null,null,null],
-      chordBars: 2 },
-    { name: "house", bpm: 118, kick: [0, 4, 8, 12],     snare: [4, 12],      hat: [2, 6, 10, 14],
-      bass: [0,null,0,3, null,0,5,null, 0,null,0,7, null,5,3,null],
-      chordBars: 4 },
-    { name: "funk",  bpm: 102, kick: [0, 6, 8, 14],     snare: [4, 12, 15],  hat: [0,2,4,6,8,10,12,14],
-      bass: [0,null,3,null, 5,null,0,7, null,3,null,5, 7,null,10,null],
-      chordBars: 4 },
-    { name: "rock",  bpm: 132, kick: [0, 3, 8, 11],     snare: [4, 12],      hat: [0,2,4,6,8,10,12,14],
-      bass: [0,0,3,null, 0,0,5,null, 0,0,7,null, 10,10,12,null],
-      chordBars: 2 },
+  /* per-16th-step drum grids (velocity 0..1) + swing + riff notes
+     {s:step, d:blues-scale degree, b:bend}. Ported from percussion library. */
+  TRACKS: [
+    { name: "Blues Jam", bpm: 84, swing: 0.16,
+      kick: [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],
+      snare:[0,0,0,0,1,0,0,0.3,0,0,0,0,1,0,0,0],
+      hat:  [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0],
+      riff: [{s:0,d:0,b:1},{s:4,d:3},{s:8,d:5,b:1},{s:12,d:4}] },
+    { name: "Metallica", bpm: 150, swing: 0,
+      kick: [1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0],
+      snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+      crash:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      riff: [{s:0,d:0},{s:1,d:0},{s:3,d:3},{s:6,d:0},{s:7,d:0},
+             {s:10,d:5},{s:12,d:4},{s:14,d:0}] },
+    { name: "Rock", bpm: 105, swing: 0,
+      kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+      tom:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+      crash:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      riff: [{s:0,d:0},{s:3,d:3},{s:6,d:0},{s:7,d:4},{s:10,d:5},{s:14,d:0}] },
+    { name: "Polyphia", bpm: 112, swing: 0,   // trap hats + virtuoso lead
+      kick: [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+      snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      hat:  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1],
+      shaker:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      riff: [{s:0,d:0},{s:2,d:6},{s:4,d:4},{s:6,d:6},{s:8,d:7},
+             {s:10,d:9},{s:12,d:11},{s:14,d:6}],
+      harmonize: true },
+    { name: "Gary Moore", bpm: 72, swing: 0.12,   // slow blues bends
+      kick: [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      snare:[0,0,0,0,0,0,0,0,0.7,0,0,0,0,0,0,0],
+      hat:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      crash:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      riff: [{s:0,d:0,b:1},{s:6,d:4,b:2},{s:12,d:5,b:1}],
+      leadSlow: true },
+    { name: "Queen", bpm: 96, swing: 0,           // stomp-stomp-clap feel
+      kick: [1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0],
+      clap: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:  [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+      crash:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      riff: [{s:0,d:0},{s:6,d:3},{s:8,d:5},{s:14,d:7}] },
+    { name: "Funky", bpm: 98, swing: 0.12,
+      kick: [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],
+      snare:[0,0,0.3,0,1,0,0.3,0,0,0,0.3,0,1,0,0.4,0],
+      hat:  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+      rim:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+      riff: [{s:0,d:0},{s:3,d:6},{s:7,d:3},{s:10,d:6},{s:14,d:4}] },
+    { name: "Electronic", bpm: 120, swing: 0,
+      kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      clap: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hat:  [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+      shaker:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+      riff: [{s:0,d:0},{s:4,d:0},{s:8,d:3},{s:12,d:4}] },
+    { name: "EDM", bpm: 128, swing: 0,
+      kick: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      clap: [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+      hat:  [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1],
+      crash:[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      tom:  [0,0,0,0,0,0,0,0,0,0,0,0,0,0.5,0.6,0.8],
+      riff: [{s:0,d:0},{s:4,d:3},{s:8,d:4},{s:12,d:6}] },
   ],
 
+  // grid name -> jam voice (ride/tamb map to closest)
+  VMAP: { kick: "kick", snare: "snare", hat: "hat", tom: "tom",
+          crash: "crash", clap: "clap", rim: "rim", shaker: "shaker",
+          ride: "hat", tamb: "shaker" },
+
+  degF(d, oct = 1) {
+    const sc = JAM._SCALES.blue;
+    return JAM._NOTE(45 + 12 * (oct + Math.floor(d / sc.length)) +
+                     sc[d % sc.length]);
+  },
+
   async init(J) {
-    // reset ALL musical state — a re-enabled band must start resting,
-    // not resume at old energy (was: instant full-tempo barrage on enable)
-    this.step = 0; this.energy = 0; this.hits = 0; this.echo = [];
-    this.soloUntil = 0;
-    this.bpm = this.targetBpm = this.STYLES[this.style].bpm;
+    this.step = 0; this.hits = 0; this.echo = []; this.soloUntil = 0;
+    this.energy = 0.55;
+    const tr = this.TRACKS[this.style];
+    this.bpm = tr.bpm;
     this.nextT = J._actx().currentTime + 0.1;
     this.timer = setInterval(() => this.tick(), 30);
-    const st = this.STYLES[this.style];
-    J.hud(`🎹 AUTO TUNE — "${st.name}" backing live · swipe hand fast L/R to change style · smile = you like it`);
+    J.hud(`🎹 "${tr.name}" playing — swipe hand fast L/R for tracks · drum to jam`);
   },
 
   setStyle(i) {
-    this.style = (i + this.STYLES.length) % this.STYLES.length;
-    const st = this.STYLES[this.style];
-    this.targetBpm = st.bpm * (0.5 + this.energy * 0.8);
-    JAM.hud(`🎹 style → ${st.name} (${st.bpm}bpm base)`);
-    JAM._v.riser(JAM._actx().currentTime, 0.3);
+    this.style = (i + this.TRACKS.length) % this.TRACKS.length;
+    const tr = this.TRACKS[this.style];
+    this.step = 0;                       // restart pattern on the bar
+    JAM.hud(`🎹 track → ${tr.name} (${tr.bpm}bpm)`);
+    JAM._v.riser(JAM._actx().currentTime, 0.25);
   },
 
-  // a fast run: toms down or lead arpeggio up — the "surprise"
   fill(t, spb) {
-    const v = JAM._v, scale = JAM._SCALES.blue, root = 57;
+    const v = JAM._v, scale = JAM._SCALES.blue;
     if (Math.random() < 0.5) {
-      for (let i = 0; i < 4; i++) v.tom(t + i * spb * 2, 0.7 - i * 0.12);
+      for (let i = 0; i < 4; i++) v.tom(t + i * spb * 2, 0.6 - i * 0.1);
     } else {
       this.soloUntil = t + 8 * spb;
       for (let i = 0; i < 8; i++)
-        v.bell(t + i * spb, JAM._NOTE(root + scale[(i * 2 + (Math.random() * 3 | 0)) % scale.length]),
-               0.28, spb * 2.5);
+        v.bell(t + i * spb, this.degF(i * 2, 1), 0.25);
     }
   },
 
   tick() {
-    const ac = JAM._actx(), v = JAM._v, st = this.STYLES[this.style];
-    const scale = JAM._SCALES.blue, root = 45;
-    this.bpm += (this.targetBpm - this.bpm) * 0.08;
-    this.energy *= 0.996;                     // activity decays
-    const spb = 60 / this.bpm / 4;            // 16th-note seconds
-    // presence alone (cap 0.25) stays UNDER the rest floor — a visible hand
-    // is silent; only real strikes (0.09 each) can wake the band
-    const rest = this.energy < 0.30;
-    const hot = this.energy > 0.4;
-    // throttled-tab guard: if the timer slept, nextT lags real time and the
-    // loop would fire hundreds of PAST-scheduled notes at once = scream.
-    // Drop the backlog — resume on the next real beat.
+    const ac = JAM._actx(), v = JAM._v, tr = this.TRACKS[this.style];
+    const spb = 60 / this.bpm / 4;
+    // energy only modulates tempo a little + gates fills — track always plays
+    const tempo = tr.bpm * (0.92 + Math.min(0.35, this.energy * 0.35));
+    this.bpm += (tempo - this.bpm) * 0.08;
+    this.energy *= 0.997;
+    // throttled-tab guard: drop backlog instead of replaying it
     if (this.nextT < ac.currentTime - 0.2) this.nextT = ac.currentTime;
     let guard = 0;
     while (this.nextT < ac.currentTime + 0.12 && guard++ < 32) {
-      const t = this.nextT, s16 = this.step % 16, bar = (this.step / 16) | 0;
-      if (!rest) {
-        if (st.kick.includes(s16))  v.kick(t, 0.85);
-        if (st.snare.includes(s16)) v.snare(t, 0.65);
-        if (st.hat.includes(s16))   v.hat(t, 0.35, s16 === 14 && bar % 2 === 1);
-        if (hot) {   // bass + chords join only when energy earned them
-          const b = st.bass[s16];
-          if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.45);
-          if (s16 === 0 && bar % st.chordBars === 0)
-            [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.24));
+      let t = this.nextT;
+      const s16 = this.step % 16, bar = (this.step / 16) | 0;
+      if (tr.swing && s16 % 2) t += spb * tr.swing;      // swing the off-16ths
+      // drum grid
+      for (const k in tr) {
+        const row = tr[k], fn = this.VMAP[k];
+        if (!fn || !Array.isArray(row) || !row[s16]) continue;
+        v[fn](t, (row[s16] < 1 ? row[s16] : 1) * 0.6);
+      }
+      if (s16 === 0) this.barStart = t;
+      // riff melody — the "song" part
+      for (const r of tr.riff || []) {
+        if (r.s !== s16) continue;
+        const f = this.degF(r.d, tr.leadSlow ? 1 : 2);
+        v.bell(t, f, tr.leadSlow ? 0.3 : 0.22, tr.leadSlow ? spb * 6 : spb * 2.5);
+        if (tr.harmonize) v.bell(t, this.degF(r.d + 2, 2), 0.14, spb * 2);
+      }
+      // strikes this bar -> fill next bar
+      if (s16 === 15) {
+        if (this.hits >= 3 || Math.random() < this.energy * 0.06)
+          this.fill(t + spb, spb);
+        const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
+        if (inBar.length >= 2 && this.energy > 0.55) {
+          const qs = [...new Set(inBar.map(t0 =>
+            Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
+            .sort((a, b) => a - b).slice(0, 8);
+          qs.forEach((q, i) =>
+            v.bell(t + spb + q * spb, this.degF((i * 2) % 12, 2), 0.2, spb * 2));
+          JAM.hud("🎹 echoing your riff ↩");
         }
-        if (s16 === 0) this.barStart = t;
-        // the feedback payoff: hits in this bar -> fill next bar;
-        // ambient surprise scales with energy
-        if (s16 === 15) {
-          const reward = this.hits >= 3;
-          const surprise = Math.random() < 0.02 + this.energy * 0.05;
-          if (reward || surprise) this.fill(t + spb, spb);
-          // call-and-response: YOUR rhythm echoed as a melody next bar
-          const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
-          if (inBar.length >= 2) {
-            const qs = [...new Set(inBar.map(t0 =>
-              Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
-              .sort((a, b) => a - b).slice(0, 8);
-            qs.forEach((q, i) =>
-              v.bell(t + spb + q * spb,
-                     JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, spb * 3));
-            JAM.hud("🎹 echoing your riff ↩");
-          }
-          this.echo = [];
-          this.hits = 0;
-        }
+        this.echo = []; this.hits = 0;
       }
       this.step++;
       this.nextT += spb;
     }
     const now = performance.now();
-    if (now - this.hudT > 2000) {
+    if (now - this.hudT > 2500) {
       this.hudT = now;
-      JAM.hud(rest
-        ? `🎹 ${st.name} · resting — move or drum to wake the band`
-        : `🎹 ${st.name} · ${this.bpm | 0}bpm · energy ${(this.energy * 100) | 0}% — move faster to speed it up`);
+      JAM.hud(`🎹 ${tr.name} · ${this.bpm | 0}bpm · drum to speed up · swipe = track`);
     }
   },
 
   onEvent(evt, val) {
-    // hand-move = presence only: capped UNDER the rest floor so a held
-    // hand can never wake the band — strikes alone push it hot.
-    if (evt.startsWith("hand-move")) {
-      this.energy = Math.min(0.25, this.energy + 0.002);
-      this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
-      return;
-    }
-    const w = (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
-               || evt === "jump") ? 0.09
-            : evt.startsWith("arm-up") ? 0.03 : 0;   // solo trigger ≠ energy pump
-    if (w) {
-      this.energy = Math.min(1, this.energy + w);
-      this.hits++;
-      this.echo.push(JAM._actx().currentTime);   // rhythm to echo
-      // more movement -> faster music
-      this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
-    }
-    if (evt === "swipe-L") this.setStyle(this.style - 1);
-    else if (evt === "swipe-R") this.setStyle(this.style + 1);
-    else if (evt === "arm-up-L") {
+    if (evt === "swipe-L") return this.setStyle(this.style - 1);
+    if (evt === "swipe-R") return this.setStyle(this.style + 1);
+    if (evt === "arm-up-L") {
       const t = JAM._actx().currentTime, spb = 60 / this.bpm / 4;
       for (let i = 0; i < 4; i++)
-        JAM._v.pluck(t + i * spb * 2, JAM._NOTE(36 + i * 3), 0.65);
-      JAM.hud("🎹 arm L → bass run");
-    } else if (evt === "arm-up-R") {
-      this.fill(JAM._actx().currentTime + 0.05, 60 / this.bpm / 4);
-      JAM.hud("🎹 arm R → solo run");
+        JAM._v.pluck(t + i * spb * 2, this.degF(i * 3, 0), 0.55);
+      return JAM.hud("🎹 arm L → bass run");
     }
-    else if (evt === "smile") {          // like-signal: reward the moment
-      this.energy = Math.min(1, this.energy + 0.06);
+    if (evt === "arm-up-R") {
+      this.fill(JAM._actx().currentTime + 0.05, 60 / this.bpm / 4);
+      return JAM.hud("🎹 arm R → solo run");
+    }
+    if (evt === "smile") {
       const t = JAM._actx().currentTime;
-      JAM._v.stab(t, [0, 3, 7, 10].map(s => JAM._NOTE(57 + s)), 0.3);
-      JAM.hud("🎹 🙂 heard — keeping this vibe");
+      JAM._v.stab(t, [0, 3, 7, 10].map(s => JAM._NOTE(57 + s)), 0.25);
+      return JAM.hud("🎹 🙂 heard");
+    }
+    // hand-move = presence only — never feeds the band
+    if (evt.startsWith("hand-move")) return;
+    if (evt.startsWith("hand-strike") || evt === "clap" || evt === "nod"
+        || evt === "jump") {
+      this.energy = Math.min(1, this.energy + 0.09);
+      this.hits++;
+      this.echo.push(JAM._actx().currentTime);
     }
   },
 
