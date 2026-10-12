@@ -52,6 +52,13 @@ edges:
   # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
   #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
   # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
+  # tony-ha.surf-thailand.com edge (idc02 caddy): Chaba AI dashboard tabs
+  #   redir /chatui -> /chatui/chat.html ; redir /cms -> /cms/
+  #   handle_path /chatui* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
+  #   (handle_path strips /chatui; chat card derives ws {base}/ws -> ada-tony
+  #    /ws on :8002 — no separate /ada-ws route needed for the tab)
+  #   /cms* + /api/cms* already proxied to idc03 root CMS (tony's own pages)
+  # 2026-10-12
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
