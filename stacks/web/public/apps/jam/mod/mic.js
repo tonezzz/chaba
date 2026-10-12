@@ -4,7 +4,7 @@
 "use strict";
 JAM.register("mic", {
   stream: null, node: null, analyser: null, raf: 0,
-  _prev: 0, _cool: 0,
+  _prev: 0, _cool: 0, _humT: 0, _humDeg: -1,
 
   async init() {
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -23,7 +23,8 @@ JAM.register("mic", {
       for (let i = 0; i < buf.length; i += 4) e += buf[i] * buf[i];
       e = Math.sqrt(e / (buf.length / 4));      // rms
       const now = performance.now();
-      if (e > 0.12 && e > this._prev * 2 && now > this._cool) {
+      // onset must rise OUT OF quiet — steady speaker feedback can't retrigger
+      if (e > 0.12 && this._prev < 0.04 && now > this._cool) {
         this._cool = now + 180;
         JAM.emit("clap", Math.min(1, e * 4));
         JAM.hud(`👏 clap e=${e.toFixed(2)}`);
@@ -36,9 +37,15 @@ JAM.register("mic", {
         if (tdata[i] > peak) { peak = tdata[i]; pi = i; }
       if (peak > 140 && e > 0.02 && e < 0.12) {  // humming range, not clap
         const f = pi * src.sampleRate / this.analyser.fftSize;
-        if (f > 60 && f < 1200)
-          JAM.emit("hum-note", Math.min(1, Math.log2(f / 80) / 4));
-      }
+        const deg = f > 60 && f < 1200 ? Math.min(1, Math.log2(f / 80) / 4) : -1;
+        // emit only on a NEW pitch, max 5/s — sustained sound = one note,
+        // not a 60fps note barrage (was the self-feeding scream source)
+        const dq = deg >= 0 ? Math.round(deg * 7) : -1;
+        if (dq >= 0 && dq !== this._humDeg && now - this._humT > 200) {
+          this._humT = now; this._humDeg = dq;
+          JAM.emit("hum-note", deg);
+        }
+      } else this._humDeg = -1;
     };
     loop();
     JAM.hud("🎤 mic on — clap = clap, hum = lead note (rebind in matrix)");

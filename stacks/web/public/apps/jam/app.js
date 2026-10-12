@@ -39,6 +39,15 @@ setInterval(() => {
   _muteEl.style.display =
     (S.ac && S.ac.state === "suspended") ? "flex" : "none";
 }, 500);
+// diag overlay: top event emitters — when it "screams", the HUD names it
+const _diag = document.createElement("div");
+_diag.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:98;" +
+  "font:11px ui-monospace,monospace;color:#4ade80;opacity:.75;white-space:pre";
+document.body.appendChild(_diag);
+setInterval(() => {
+  const top = Object.entries(JAM._ec || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  _diag.textContent = top.map(([k, n]) => `${k}×${n}`).join("  ");
+}, 1000);
 function noiseSrc(t, dur) {
   if (!S.noise) {
     const b = actx().createBuffer(1, S.ac.sampleRate * 1.2, S.ac.sampleRate);
@@ -327,6 +336,7 @@ const JAM = {
   },
 
   emit(evt, val) {
+    (this._ec ||= {})[evt] = (this._ec[evt] || 0) + 1;   // diag: who fires
     const tgt = this.bindings[evt];
     if (tgt) this.hit(tgt, val);
     for (const [n, m] of Object.entries(this.mods))
