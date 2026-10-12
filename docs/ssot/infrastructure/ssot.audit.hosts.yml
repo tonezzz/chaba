@@ -728,6 +728,12 @@ hosts:
         scope: user
         expected_state: active
         critical: false
+      - name: openjev-student.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: gemma-3-1b scorer container on tailnet :8779 — landed 2026-10-12 from idc03 (OPS-0524)
       - name: focus-dispatcher-safe-dispatch
         type: service
         scope: user
@@ -1609,8 +1615,9 @@ hosts:
       - name: openjev-student.service
         type: service
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
+        note: Parked 2026-10-12 — moved to tony-omen (OPS-0524); delete entry + unit after 24h rollback window
       - name: mddb-backup.timer
         type: timer
         scope: user
