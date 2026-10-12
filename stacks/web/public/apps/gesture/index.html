@@ -265,9 +265,11 @@ function loop() {
     st.uN = !fist ? (st.uN || 0) + 1 : 0;
     const fistOn = st.fN >= 3, fistOff = st.uN >= 2, pinchOn = st.pN >= 3;
 
+    const tipX = flipX ? 1 - lm[8].x : lm[8].x;
+    st.sx = st.sx === undefined ? tipX : st.sx + (tipX - st.sx) * 0.35;
     const base = () => ({
       type: 'gesture', hand,
-      x: flipX ? 1 - lm[8].x : lm[8].x,   // index tip
+      x: st.sx,                            // smoothed index tip
       y: lm[8].y,
       wx: flipX ? 1 - lm[0].x : lm[0].x,  // wrist (drag anchor)
       wy: lm[0].y,
@@ -279,9 +281,12 @@ function loop() {
     if (fistOn && !st.fist) { st.fist = true; send({ ...base(), action: 'fist_start' }); }
     if (fistOff && st.fist) { st.fist = false; send({ ...base(), action: 'fist_end' }); }
 
-    // swipe: open hand crossing >35% of frame in <350ms -> style change
-    const tipX = flipX ? 1 - lm[8].x : lm[8].x;
-    (st.xs ||= []).push([now, tipX]);
+    // swipe: open hand crossing >35% of frame in <350ms -> style change.
+    // Smoothed x (EMA) kills landmark flicker; a >150ms tracking gap
+    // clears the window — edge dropout+re-detect can't fake a swipe.
+    const lastXsT = st.xs?.length ? st.xs[st.xs.length - 1][0] : 0;
+    if (now - lastXsT > 150) (st.xs ||= []).length = 0;
+    (st.xs ||= []).push([now, st.sx]);
     while (st.xs.length && now - st.xs[0][0] > 350) st.xs.shift();
     if (st.xs.length > 3 && !st.fist && now - (st.swipeT || 0) > 700) {
       const dx = st.xs[st.xs.length - 1][1] - st.xs[0][1];
