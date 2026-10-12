@@ -70,8 +70,10 @@ JAM.register("band", {
     this.bpm += (this.targetBpm - this.bpm) * 0.08;
     this.energy *= 0.996;                     // activity decays
     const spb = 60 / this.bpm / 4;            // 16th-note seconds
-    const rest = this.energy < 0.10;          // asleep: play nothing, just keep time
-    const hot = this.energy > 0.4;            // presence alone = drums only
+    // presence alone (cap 0.25) stays UNDER the rest floor — a visible hand
+    // is silent; only real strikes (0.09 each) can wake the band
+    const rest = this.energy < 0.30;
+    const hot = this.energy > 0.4;
     // throttled-tab guard: if the timer slept, nextT lags real time and the
     // loop would fire hundreds of PAST-scheduled notes at once = scream.
     // Drop the backlog — resume on the next real beat.
@@ -124,9 +126,8 @@ JAM.register("band", {
   },
 
   onEvent(evt, val) {
-    // hand-move = presence only: tiny weight AND hard ceiling — a held hand
-    // can wake the band to a simmer but can NEVER drive it to full tilt.
-    // Only deliberate strikes/claps push energy hot.
+    // hand-move = presence only: capped UNDER the rest floor so a held
+    // hand can never wake the band — strikes alone push it hot.
     if (evt.startsWith("hand-move")) {
       this.energy = Math.min(0.25, this.energy + 0.002);
       this.targetBpm = this.STYLES[this.style].bpm * (0.5 + this.energy * 0.8);
