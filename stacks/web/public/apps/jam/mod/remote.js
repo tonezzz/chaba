@@ -15,6 +15,64 @@
 "use strict";
 JAM.register("remote", {
   ws: null, retry: 0, dots: {}, zones: null, zoneSig: "",
+  steps: {}, vx: null,
+
+  // iPhone mic -> relay -> here. Random rotating sci-fi chain:
+  // ring-mod + feedback delay + playback-rate wobble, preset swaps ~1.2s.
+  SCIFI: [
+    { name: "🤖 robot",     ring: 50,  rate: 1.0,  del: 0.18, wet: 0.9, dry: 0.1 },
+    { name: "👾 dalek",     ring: 75,  rate: 0.85, del: 0.24, wet: 1.0, dry: 0.0 },
+    { name: "🐿 chipmunk",  ring: 0,   rate: 1.55, del: 0.10, wet: 0.4, dry: 0.7 },
+    { name: "🌌 deep space",ring: 24,  rate: 0.72, del: 0.42, wet: 0.9, dry: 0.3 },
+    { name: "🛸 martian",   ring: 130, rate: 1.25, del: 0.15, wet: 0.8, dry: 0.2 },
+  ],
+
+  voiceChain() {
+    if (this.vx) return this.vx;
+    const ac = JAM._actx();
+    const input = ac.createGain(); input.gain.value = 0.9;
+    const ring = ac.createGain(); ring.gain.value = 0;
+    const carrier = ac.createOscillator(); carrier.frequency.value = 45;
+    carrier.connect(ring.gain); carrier.start();
+    const dry = ac.createGain(), wet = ac.createGain();
+    const delay = ac.createDelay(1), fb = ac.createGain();
+    delay.delayTime.value = 0.22; fb.gain.value = 0.35;
+    input.connect(ring); input.connect(dry);
+    ring.connect(wet); ring.connect(delay);
+    delay.connect(fb).connect(delay); delay.connect(wet);
+    dry.connect(ac.destination); wet.connect(ac.destination);
+    this.vx = { input, carrier, dry, wet, delay, preset: -1, swapT: 0, next: 0 };
+    return this.vx;
+  },
+
+  voice(m) {
+    const ac = JAM._actx(), vx = this.voiceChain();
+    // rotate the sci-fi preset on a timer — keeps it surprising
+    const now = performance.now();
+    if (now > vx.swapT) {
+      vx.swapT = now + 1200;
+      vx.preset = (vx.preset + 1 + (Math.random() * (this.SCIFI.length - 1) | 0))
+                  % this.SCIFI.length;
+      const p = this.SCIFI[vx.preset];
+      vx.carrier.frequency.value = Math.max(0.01, p.ring);
+      vx.rate = p.rate;
+      vx.wet.gain.value = p.ring ? p.wet : 0;
+      vx.dry.gain.value = p.dry;
+      vx.delay.delayTime.value = p.del;
+      JAM.hud(`🎙 sci-fi voice → ${p.name}`);
+    }
+    const bin = atob(m.pcm), n = bin.length >> 1;
+    const buf = ac.createBuffer(1, n, m.sr || 12000);
+    const f32 = buf.getChannelData(0);
+    for (let i = 0; i < n; i++)
+      f32[i] = ((bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8)) << 16 >> 16) / 32768;
+    const src = ac.createBufferSource();
+    src.buffer = buf; src.playbackRate.value = vx.rate || 1;
+    src.connect(vx.input);
+    const t = Math.max(ac.currentTime + 0.03, vx.next);
+    src.start(t);
+    vx.next = t + buf.duration / (vx.rate || 1);
+  },
 
   async init() {
     // per-hand cursors: L amber / R cyan; single-hand senders share "?"
@@ -81,6 +139,7 @@ JAM.register("remote", {
   onMsg(data) {
     let m; try { m = JSON.parse(data); } catch { return; }
     if (m.type === "peer") return;
+    if (m.type === "voice" && m.pcm) { this.voice(m); return; }
     // face/pose events ride as {type:"body", evt, val} — straight to the bus
     if (m.type === "body" && m.evt) {
       JAM.emit(m.evt, m.val ?? 1);
@@ -107,7 +166,13 @@ JAM.register("remote", {
       JAM.emit("clap", 1);
       JAM.hud("📱 pinch → " + (JAM.bindings["clap"] || "clap"));
     } else {
-      JAM.emit(`hand-move-${side}`, Math.max(0, Math.min(1, 1 - m.y)));
+      // note ladder, not machine-gun: a note fires only when the hand
+      // crosses into a new pitch zone (7 rungs)
+      const step = Math.min(6, Math.max(0, ((1 - m.y) * 7) | 0));
+      if (step !== (this.steps[side] ?? -1)) {
+        this.steps[side] = step;
+        JAM.emit(`hand-move-${side}`, step / 6);
+      }
     }
     this.paintZones();
   },
@@ -118,5 +183,7 @@ JAM.register("remote", {
     for (const k in this.dots) this.dots[k].remove();
     this.dots = {};
     this.zones && this.zones.remove(); this.zones = null; this.zoneSig = "";
+    if (this.vx) { try { this.vx.carrier.stop(); } catch {} this.vx = null; }
+    this.steps = {};
   },
 });

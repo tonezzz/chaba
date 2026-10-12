@@ -6,6 +6,7 @@
 JAM.register("hands", {
   stream: null, landmarker: null, raf: 0,
   lastY: { Left: null, Right: null }, lastT: { Left: 0, Right: 0 },
+  steps: {},
 
   async init() {
     const video = document.getElementById("cam");
@@ -44,8 +45,12 @@ JAM.register("hands", {
           JAM.hud(`✋ ${hand} strike v=${v.toFixed(2)}`);
         }
         this.lastY[hand] = y;
-        // continuous height -> note param (0 = low, 1 = high)
-        if (now % 3 < 1.5) JAM.emit(`hand-move-${hand[0]}`, 1 - y);
+        // note ladder: fire only when the hand crosses a pitch rung
+        const step = Math.min(6, Math.max(0, ((1 - y) * 7) | 0));
+        if (step !== (this.steps[hand] ?? -1)) {
+          this.steps[hand] = step;
+          JAM.emit(`hand-move-${hand[0]}`, step / 6);
+        }
       }
     };
     loop();

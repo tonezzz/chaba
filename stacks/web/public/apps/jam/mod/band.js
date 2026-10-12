@@ -13,6 +13,7 @@
 JAM.register("band", {
   timer: 0, bpm: 100, targetBpm: 100, style: 0, step: 0, nextT: 0,
   energy: 0.3, hits: 0, soloUntil: 0, hudT: 0,
+  echo: [], barStart: 0,
 
   // per-16th-step patterns; bass values = blues-scale degrees (null = rest)
   STYLES: [
@@ -75,12 +76,25 @@ JAM.register("band", {
       if (b != null) v.bass(t, JAM._NOTE(root + scale[b % scale.length]), 0.45);
       if (s16 === 0 && bar % st.chordBars === 0)
         v.stab(t, [0, 3, 7].map(s => JAM._NOTE(root + 12 + s)), 0.22);
+      if (s16 === 0) this.barStart = t;
       // the feedback payoff: hits in this bar -> fill next bar;
       // ambient surprise scales with energy
       if (s16 === 15) {
         const reward = this.hits >= 3;
         const surprise = Math.random() < 0.04 + this.energy * 0.08;
         if (reward || surprise) this.fill(t + spb, spb);
+        // call-and-response: YOUR rhythm echoed as a melody next bar
+        const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
+        if (inBar.length >= 2) {
+          const qs = [...new Set(inBar.map(t0 =>
+            Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
+            .sort((a, b) => a - b).slice(0, 8);
+          qs.forEach((q, i) =>
+            v.lead(t + spb + q * spb,
+                   JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, 0, spb * 2));
+          JAM.hud("🎹 echoing your riff ↩");
+        }
+        this.echo = [];
         this.hits = 0;
       }
       this.step++;
@@ -99,12 +113,24 @@ JAM.register("band", {
          || evt === "jump" || evt.startsWith("arm-up")) ? 0.09 : 0;
     if (w) {
       this.energy = Math.min(1, this.energy + w);
-      if (w >= 0.09) this.hits++;
+      if (w >= 0.09) {
+        this.hits++;
+        this.echo.push(JAM._actx().currentTime);   // rhythm to echo
+      }
       // more movement -> faster music
       this.targetBpm = this.STYLES[this.style].bpm * (0.85 + this.energy * 0.45);
     }
     if (evt === "swipe-L") this.setStyle(this.style - 1);
     else if (evt === "swipe-R") this.setStyle(this.style + 1);
+    else if (evt === "arm-up-L") {
+      const t = JAM._actx().currentTime, spb = 60 / this.bpm / 4;
+      for (let i = 0; i < 4; i++)
+        JAM._v.bass(t + i * spb * 2, JAM._NOTE(36 + i * 3), 0.6);
+      JAM.hud("🎹 arm L → bass run");
+    } else if (evt === "arm-up-R") {
+      this.fill(JAM._actx().currentTime + 0.05, 60 / this.bpm / 4);
+      JAM.hud("🎹 arm R → solo run");
+    }
     else if (evt === "smile") {          // like-signal: reward the moment
       this.energy = Math.min(1, this.energy + 0.2);
       const t = JAM._actx().currentTime;

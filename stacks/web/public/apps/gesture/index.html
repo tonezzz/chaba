@@ -87,6 +87,7 @@
   <button id="btn-hands" class="toggle on">Hands: on</button>
   <button id="btn-face" class="toggle on">Face: on</button>
   <button id="btn-pose" class="toggle on">Body: on</button>
+  <button id="btn-voice" class="toggle">🎤 voice</button>
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
 <div id="note">
@@ -396,6 +397,51 @@ $('btn-pinch').onclick = () => {
          wx: lm ? (flipX ? 1 - lm[0].x : lm[0].x) : 0.5,
          wy: lm ? lm[0].y : 0.5 });
 };
+/* ---------------- voice -> screen sci-fi FX ---------------- */
+// mic -> 12kHz mono PCM -> base64 JSON on the relay; the screen module
+// runs it through a random sci-fi chain there.
+let vStream = null, vCtx = null, vSrc = null, vProc = null;
+function b64FromI16(i16) {
+  const u8 = new Uint8Array(i16.buffer);
+  let s = '';
+  for (let i = 0; i < u8.length; i += 8192)
+    s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
+  return btoa(s);
+}
+$('btn-voice').onclick = async e => {
+  if (vStream) {
+    vStream.getTracks().forEach(t => t.stop());
+    vProc.disconnect(); vSrc.disconnect(); vCtx.close();
+    vStream = vCtx = vSrc = vProc = null;
+    e.target.classList.remove('on'); e.target.textContent = '🎤 voice';
+    return;
+  }
+  try {
+    vStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true } });
+    vCtx = new AudioContext();
+    vSrc = vCtx.createMediaStreamSource(vStream);
+    vProc = vCtx.createScriptProcessor(2048, 1, 1);
+    const ratio = vCtx.sampleRate / 12000;
+    let acc = [];
+    vProc.onaudioprocess = ev => {
+      const d = ev.inputBuffer.getChannelData(0);
+      for (let i = 0; i + 1 < d.length; i += ratio)
+        acc.push((d[i | 0] + d[(i | 0) + 1]) * 0.5);
+      while (acc.length >= 1200) {           // ~100ms chunks
+        const chunk = acc.splice(0, 1200), i16 = new Int16Array(chunk.length);
+        for (let j = 0; j < chunk.length; j++)
+          i16[j] = Math.max(-32768, Math.min(32767, chunk[j] * 32767 | 0));
+        send({ type: 'voice', sr: 12000, pcm: b64FromI16(i16) });
+      }
+    };
+    // ScriptProcessor must reach destination to run — through a silent gain
+    const mute = vCtx.createGain(); mute.gain.value = 0;
+    vSrc.connect(vProc); vProc.connect(mute).connect(vCtx.destination);
+    e.target.classList.add('on'); e.target.textContent = '🎤 voice ON';
+  } catch (err) { status('mic: ' + err.message, 'err'); }
+};
+
 $('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };
 
 connectWs();
