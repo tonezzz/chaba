@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ada Net — fun apps · ชบาเน็ต</title>
+<style>
+  body{font-family:system-ui;background:#0b0d10;color:#e8e8e8;margin:0;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;
+       padding:2rem 1rem;box-sizing:border-box}
+  h1{font-size:1.2rem;letter-spacing:.2em;font-weight:600}
+  h1 span{opacity:.6;font-size:.85rem;letter-spacing:.05em}
+  #grid{display:flex;flex-direction:column;gap:.9rem;width:100%;
+        max-width:420px;margin-top:1.5rem}
+  .card{display:flex;gap:.9rem;align-items:center;text-decoration:none;
+        color:inherit;background:#141a22;border:1px solid #2a3542;
+        border-radius:14px;padding:1rem}
+  .card:hover{border-color:#3af}
+  .card .ic{font-size:2rem}
+  .card b{display:block;font-size:.95rem}
+  .card small{opacity:.65;font-size:.75rem;line-height:1.4}
+  .tag{display:inline-block;font-size:.6rem;border:1px solid #2a3542;
+       border-radius:8px;padding:.1rem .4rem;margin-right:.3rem;opacity:.7}
+</style>
+</head>
+<body>
+<h1>ADA NET <span>fun apps · ชบาเน็ต</span></h1>
+<div id="grid">loading…</div>
+<script>
+fetch("fun.json").then(r => r.json()).then(d => {
+  document.getElementById("grid").innerHTML = d.apps.map(a => `
+    <a class="card" href="${a.path}">
+      <span class="ic">${a.icon}</span>
+      <span><b>${a.name} <span style="opacity:.6">${a.th || ""}</span></b>
+      <small>${a.desc}</small><br>
+      ${(a.tags || []).map(t => `<span class="tag">${t}</span>`).join("")}</span>
+    </a>`).join("");
+});
+</script>
+</body>
+</html>
