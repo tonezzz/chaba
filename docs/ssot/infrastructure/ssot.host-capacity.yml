@@ -86,6 +86,8 @@ procedure:
     - "audit-hosts.py --consolidate + health-monitor alerts (load>80%, disk) feed ops-health; a trigger event = a kanban card naming source host, target host, service list, verify steps."
     - "Move via the service's own stack (quadlet/install.sh per stacks/services/<svc>/) — never ad-hoc rsync."
     - "After the move: re-measure + update this file, verify the moved service's health lane, close the card with evidence."
+  capacity_adjust:
+    - "Full QA/QC/audit procedure: docs/kb/capacity-adjust.md — measure (3-day sustained, host-loads sampler) -> card with QA plan + ref-sweep -> move via stack -> QC (audit-hosts delta = intended only, route-health, 24h soak) -> audit (update this file + ssot.audit.hosts + evidence on card)."
   add_capacity:
     - "New host: provision OS + tailscale + podman; reachable by tailnet name."
     - "Bootstrap the dispatch runner: scripts/devin/install-devin-host.sh <host> (card runner-bootstrap-check covers verification)."
