@@ -62,6 +62,11 @@ instances:
     runtime: rootless podman
     network: podman (NOT host — dev isolation)
     container: ada-ha
+    netns_note: '127.0.0.1 inside the container is the container, not
+      tony-dell. Host services reachable only via host.containers.internal
+      (non-loopback bindings) or AddHost-pinned tailnet names;
+      loopback-bound host services (:8014) are unreachable entirely —
+      see docs/ssot/jobs/home-assistant/2026-10-12-ada-ha-loopback-ssh-probe.yml.'
     image: docker.io/homeassistant/home-assistant:stable
     port: 8125
     host_port: 127.0.0.1:8125

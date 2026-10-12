@@ -1,0 +1,106 @@
+title: ada-ha container loopback probes — ssh-refused spam + dead REST sensors
+subtitle: configuration.yaml cloned from host-net tony-ha assumed 127.0.0.1 ==
+  the host; inside the podman netns that is the container itself
+icon: 🔁
+id: 2026-10-12-ada-ha-loopback-ssh-probe
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-12"
+card: ada-ha-loopback-ssh-probe
+
+planning:
+  goal: |
+    Card asked for backend/tool_runner/screens.py to stop resolving the
+    display/screen host to 127.0.0.1 inside the ada-ha container, and to
+    silence the ~1/min "ssh: connect to host 127.0.0.1 port 22: Connection
+    refused" spam plus dead REST probes on :8799/:8014.
+
+investigation:
+  method: |
+    journalctl --user -u ada-ha on tony-dell showed the refused lines come
+    from homeassistant.components.rest.data and a raw ssh client — i.e. the
+    ada-ha Home Assistant *container* config, not ada-pi's tool_runner
+    (screens.py is not loaded inside this container at all; the card's
+    source-pin guessed the wrong layer). The ada-ha quadlet runs
+    Network=podman + PublishPort=127.0.0.1:8125:8123, and its config is a
+    clone of host-networked tony-ha, where 127.0.0.1 really was the host.
+  findings:
+    - id: spam-source
+      detail: >
+        The ~30s ssh-refused line was command_line switch usb_test_hub
+        (scan_interval 00:00:30) ssh'ing tony@127.0.0.1 for uhubctl. The
+        REST errors were rest: sensors on http://127.0.0.1:8799/state
+        (scan_interval 10) and http://127.0.0.1:8014/api/chaba/pending (20s).
+    - id: reachability-map
+      detail: >
+        Probed from inside the container: host.containers.internal
+        (169.254.1.2) reaches host services bound to non-loopback addrs —
+        :22 open (sshd 0.0.0.0), :8554 open (go2rtc *:8554); :8014 fails
+        (chaba-guest binds 127.0.0.1 only); 192.168.2.67:8126 LAN socat
+        fails (firewall); 100.75.102.88:8799 -> 200 (tony-omen cast-browser,
+        tailnet route via host NAT); https://tony-dell.taila0626a.ts.net:8123
+        -> 200 (tailnet-serve TLS -> tony-ha loopback; plain http -> 400).
+        tony-ha does NOT bind the LAN IP, so the old http://192.168.2.67:8123
+        desktop cameras were dead even before the netns question.
+    - id: ssh-key-ok
+      detail: >
+        ssh -i /config/.ssh/ha_id_ed25519 tony@host.containers.internal
+        'sudo -n /usr/sbin/uhubctl -l 2-1' executed on the host (uhubctl
+        itself reports "No compatible devices detected at location 2-1" —
+        same as the loopback path would; the transport now works).
+    - id: stale-tony-omen-hosts
+      detail: >
+        Container /etc/hosts carried "192.168.1.48 tony-omen" (stale LAN
+        addr, different subnet) — shell_command cast_host_cleanup ssh'ing
+        tony@tony-omen.taila0626a.ts.net was silently dead. Quadlet lacked
+        an AddHost pin for tony-omen.
+
+changes:
+  - file: /home/tony/.config/ada-ha/configuration.yaml (tony-dell, live)
+    detail: >
+      rtsp://127.0.0.1:8554 x5 -> rtsp://host.containers.internal:8554;
+      tony@127.0.0.1 x3 -> tony@host.containers.internal;
+      http://127.0.0.1:8799 x4 -> http://tony-omen.taila0626a.ts.net:8799;
+      http://192.168.2.67:8123 x3 -> https://tony-dell.taila0626a.ts.net:8123;
+      commented out chaba_guest_promote / chaba_guest_revoke /
+      chaba_ha_bridge_mint / chaba_guest_reissue rest_commands + the
+      "Chaba pending guests" rest sensor (chaba-guest is loopback-only on
+      the host — unreachable from the netns; re-enable needs a gw/tailnet
+      listener); http.trusted_proxies += 10.88.0.1 (podman gw) so host-side
+      proxies' X-Forwarded-For is honored again.
+      Backup: configuration.yaml.bak-loopback-20261012. Left uncommitted —
+      the daily snapshot committer picks it up.
+  - file: /home/tony/.config/containers/systemd/ada-ha.container (tony-dell, live)
+    detail: AddHost=tony-omen.taila0626a.ts.net:100.75.102.88 (fixes
+      cast_host_cleanup + name-based :8799 URLs).
+  - file: stacks/tony-dell/ada-ha/ada-ha.container (chaba repo mirror)
+    detail: same AddHost line — repo copy and live quadlet were identical
+      before this change.
+
+verification:
+  - >
+    python -m homeassistant --script check_config -c /config inside the
+    container -> exit 0
+  - >
+    systemctl --user restart ada-ha (daemon-reload for quadlet regen)
+  - >
+    journalctl --user -u ada-ha since new-container boot -> 0 ssh-refused
+    and 0 rest.data fetch errors (was ~2/min + 2 sensors x poll cadence)
+  - >
+    container curl http://tony-omen.taila0626a.ts.net:8799/state -> 200
+  - >
+    container nc host.containers.internal 22 / 8554 -> open
+
+notes:
+  - >
+    If :8014 chaba-guest calls are ever needed inside ada-ha, expose it on
+    the podman gateway (socat 10.88.0.1:8014 -> 127.0.0.1:8014) or a
+    tailnet/LAN listener — then uncomment the disabled blocks.
+  - >
+    Rule of thumb for this quadlet: services meant for the host resolve
+    via host.containers.internal only when they bind non-loopback addrs;
+    tailnet peers use the AddHost-pinned names; LAN addrs are unreachable.
+  - >
+    tony-ha's own config is untouched — it is host-networked and its
+    127.0.0.1 references are correct there.
