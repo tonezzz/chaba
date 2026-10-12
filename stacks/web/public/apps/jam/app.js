@@ -371,6 +371,12 @@ const JAM = {
   },
 
   loadBindings() {
+    // ?bind=0 — start with NO bindings: events reach mods (swipe etc.)
+    // but cannot trigger voices. Minimal-mode flag.
+    if (new URLSearchParams(location.search).get("bind") === "0") {
+      this.bindings = {};
+      return;
+    }
     const h = location.hash.match(/#cfg=([A-Za-z0-9_-]+)/);
     if (h) {
       try {
