@@ -35,6 +35,8 @@
     object-fit: cover; opacity: 0.55;
   }
   #overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* mirror = flip video AND skeleton together so they stay aligned */
+  #stage.mirror #cam, #stage.mirror #overlay { transform: scaleX(-1); }
   #hud {
     position: absolute; left: 10px; bottom: 10px; right: 10px;
     display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
@@ -68,7 +70,7 @@
   <span class="sub">ada_v2 rebuild · iPhone camera → TV screen</span>
 </header>
 <div id="status" class="warn">starting…</div>
-<div id="stage">
+<div id="stage" class="mirror">
   <video id="cam" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
   <div id="hud">
@@ -85,7 +87,7 @@
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
 <div id="note">
-  Rear camera is preferred. Point the index fingertip to move the cursor on the
+  Front camera faces you (mirrored like a selfie). Point the index fingertip to move the cursor on the
   screen page; pinch (thumb+index) clicks; a closed fist grabs and drags
   windows. iOS: camera needs HTTPS (ok here) and — in installed-PWA mode —
   camera permission may not persist; use plain Safari tab if denied.
@@ -110,7 +112,8 @@ const HAND_CONNECTIONS = [
 ];
 
 const $ = id => document.getElementById(id);
-const video = $('cam'), canvas = $('overlay'), ctx = canvas.getContext('2d');
+const video = $('cam'), canvas = $('overlay'), ctx = canvas.getContext('2d'),
+      stage = $('stage');
 const statusEl = $('status'), hudFps = $('hud-fps'), hudHand = $('hud-hand'),
       hudPose = $('hud-pose'), hudTx = $('hud-tx');
 
@@ -175,16 +178,31 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0))
 const folded = (lm, tip, mcp) => dist(lm[tip], lm[0]) < dist(lm[mcp], lm[0]);
 const fistOf = lm => folded(lm, 8, 5) && folded(lm, 12, 9) && folded(lm, 16, 13) && folded(lm, 20, 17); // thumb not counted
 
+/* landmark coords are normalized to the RAW video frame; the video shows
+   object-fit:cover (cropped). Map through the same cover crop so the
+   skeleton sits on the hand picture. Mirror is the CSS flip on
+   #cam + #overlay together — always draw in unmirrored space. */
+function coverMap(nx, ny) {
+  const vw = video.videoWidth || 1, vh = video.videoHeight || 1;
+  const sw = stage.clientWidth || 1, sh = stage.clientHeight || 1;
+  const s = Math.max(sw / vw, sh / vh);
+  return [nx * vw * s + (sw - vw * s) / 2,
+          ny * vh * s + (sh - vh * s) / 2];
+}
 function drawSkeleton(lm) {
   ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3;
   ctx.beginPath();
   for (const [a, b] of HAND_CONNECTIONS) {
-    ctx.moveTo(lm[a].x * canvas.width, lm[a].y * canvas.height);
-    ctx.lineTo(lm[b].x * canvas.width, lm[b].y * canvas.height);
+    const [x1, y1] = coverMap(lm[a].x, lm[a].y);
+    const [x2, y2] = coverMap(lm[b].x, lm[b].y);
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
   }
   ctx.stroke();
   ctx.fillStyle = '#e0f2fe';
-  for (const p of lm) { ctx.beginPath(); ctx.arc(p.x * canvas.width, p.y * canvas.height, 3, 0, 7); ctx.fill(); }
+  for (const p of lm) {
+    const [px, py] = coverMap(p.x, p.y);
+    ctx.beginPath(); ctx.arc(px, py, 3, 0, 7); ctx.fill();
+  }
 }
 
 function loop() {
@@ -193,7 +211,9 @@ function loop() {
   if (video.currentTime === lastVideoTime) return;
   lastVideoTime = video.currentTime;
 
-  if (canvas.width !== video.videoWidth) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
+  if (canvas.width !== stage.clientWidth || canvas.height !== stage.clientHeight) {
+    canvas.width = stage.clientWidth; canvas.height = stage.clientHeight;
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const res = landmarker.detectForVideo(video, performance.now());
@@ -238,7 +258,12 @@ function renderStatus() {
   status(wsOpen ? 'tracking · relay connected' : 'tracking · relay OFFLINE (retrying)', wsOpen ? 'ok' : 'err');
 }
 $('btn-start').onclick = () => startCamera().catch(e => status('camera/model: ' + e.message, 'err'));
-$('btn-flip').onclick = e => { flipX = !flipX; e.target.textContent = 'Mirror X: ' + (flipX ? 'on' : 'off'); e.target.classList.toggle('on', flipX); };
+$('btn-flip').onclick = e => {
+  flipX = !flipX;
+  e.target.textContent = 'Mirror X: ' + (flipX ? 'on' : 'off');
+  e.target.classList.toggle('on', flipX);
+  stage.classList.toggle('mirror', flipX);
+};
 $('btn-pinch').onclick = () => {
   const lm = lastLm;
   send({ type: 'gesture', action: 'pinch',
