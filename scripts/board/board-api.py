@@ -204,8 +204,8 @@ def card_path(cid: str) -> Path:
 # Card refs — human handle CAT-NNNN (Tony 2026-10-11). Slug stays the
 # canonical key (filename/API); ref is for voice/TG/display. Global
 # sequence in CARD_DIR/.ref-seq; allocated under the write flock so
-# multi-host creates can't collide.
-REF_SEQ = CARD_DIR / ".ref-seq"
+# multi-host creates can't collide. Resolved per-call, not at import —
+# selftest redirects CARD_DIR and must not touch the real .ref-seq.
 REF_RE = re.compile(r"^[A-Z]{3}-\d{4}$")
 REF_CATS = {
     "ada": "ADA", "voice": "ADA", "chat": "ADA",
@@ -259,7 +259,7 @@ def _ref_seed() -> int:
 
 def alloc_ref(cat: str) -> str:
     """Allocate the next global ref under the caller's write flock."""
-    seq = REF_SEQ
+    seq = CARD_DIR / ".ref-seq"
     if seq.exists():
         n = int(seq.read_text().strip() or 0)
     else:
@@ -289,13 +289,28 @@ def ref_cat(card: dict, body: dict) -> str:
 
 
 def load(p: Path) -> dict:
-    return yaml.safe_load(p.read_text()) or {}
+    d = yaml.safe_load(p.read_text()) or {}
+    if not isinstance(d, dict):
+        raise ValueError(f"card {p.name} is not a YAML mapping")
+    return d
 
 
 def save(p: Path, card: dict) -> None:
-    p.write_text(
-        yaml.safe_dump(card, allow_unicode=True, sort_keys=False, width=110)
-    )
+    """Serialize, verify the dump re-parses as a mapping, then land it
+    atomically. A card body that can't round-trip is refused BEFORE the
+    file is touched — refuse/rollback at write time, not a corrupted
+    card that kills render-board for the next N hours
+    (guard-card-yaml-syntax-validation-at-wri; 2026-10-11 incident:
+    3 malformed cards wedged the render loop 2.5h)."""
+    text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
+                          width=110)
+    if not isinstance(yaml.safe_load(text), dict):
+        raise ValueError(
+            f"refusing to write {p.name}: serialized card did not "
+            "re-parse as a mapping")
+    tmp = p.with_suffix(".yml.tmp")
+    tmp.write_text(text)
+    tmp.replace(p)  # atomic — a crash mid-write can't leave a torn card
 
 
 def comms_add(card: dict, frm: str, text: str) -> None:
@@ -1483,6 +1498,23 @@ def _selftest() -> None:
     assert any("re-spawned from report page" in m["text"]
                for m in c4["comms"])
     globals()["CARD_DIR"] = REPO / "docs/ssot/kanban/cards"
+
+    # save()/load() round-trip guard — a card body whose dump doesn't
+    # re-parse as a mapping is refused before the file is touched
+    # (guard-card-yaml-syntax-validation-at-wri)
+    gdir = tmp / "guard-cards"
+    gdir.mkdir()
+    gp = gdir / "g1.yml"
+    good = {"id": "g1", "title": "t", "column": "backlog",
+            "comms": [{"at": "x", "from": "devin", "text": "hi"}]}
+    save(gp, good)
+    assert load(gp) == good
+    assert not (gdir / "g1.yml.tmp").exists()  # tmp renamed, not left
+    rejects(lambda: save(gp, "not a mapping"), "did not re-parse")
+    rejects(lambda: save(gp, ["a", "b"]), "did not re-parse")
+    assert load(gp) == good            # refuse never clobbered the file
+    gp.write_text("- a\n- b\n")        # syntactically valid, wrong shape
+    rejects(lambda: load(gp), "not a YAML mapping")
 
     # write gate (card board-api-auth) — caller_identity is pure: fake
     # headers dict + peer ip stand in for a request

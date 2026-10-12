@@ -1,0 +1,65 @@
+title: Card-YAML guards — write-time validation, commit gate, render alert
+job: card-yaml-guards
+date: 2026-10-12
+runner: idc03 (dispatch worktree, repo=chaba)
+card: docs/ssot/kanban/cards/guard-card-yaml-syntax-validation-at-wri-a39362.yml
+summary: >-
+  Three cheap guards so a malformed kanban card can never again wedge the
+  board. Incident being closed out: 2026-10-11 ~12:45-15:10 three cards
+  carried YAML-invalid free text; chaba-board-render crashed every 60s for
+  ~2.5h while board-api writes kept landing — cards.json silently stale.
+
+shipped:
+  - >-
+    board-api write path (scripts/board/board-api.py): save() now
+    yaml.safe_loads its own safe_dump output and refuses BEFORE touching
+    the file when the result isn't a mapping; writes are atomic via
+    tmp+rename so a mid-write crash can't leave a torn card either.
+    load() rejects non-mapping YAML. Covers /card /comment /action
+    /request /respond /pipeline — they all funnel through save().
+  - >-
+    kanban-commit.sh sweep gate: after staging, every staged *.yml in the
+    generated dirs is yaml.safe_load'd; on a parse failure the sweep
+    refuses, files the ops-kanban-commit-guard alert card naming
+    file:line:col, and exits — same wedge-not-silent pattern as the
+    conflict-marker guard it sits beside.
+  - >-
+    ssot-validate-all.mjs exits nonzero when any file has errors. It
+    always reported them but exited 0, so the pre-commit `--staged` gate,
+    npm `check:ssot`, and the GitHub ssot.yml workflow (runs on every
+    docs/ssot/** push to master) could never actually fail. One
+    pre-existing violation fixed: jobs/ada/2026-10-11-scenario-spend-guard.yml
+    was missing `title`.
+  - >-
+    board-render-guard.py (new, ExecStart for chaba-board-render.service):
+    runs both renderers, counts consecutive failures in
+    /tmp/chaba-board-render-guard.json; on the 2nd nonzero run in a row it
+    upserts an ops-board-render-fail card (cms-auto style: stable id,
+    review column, note = failing renderer + stderr tail naming the
+    poisoned file). Same failure while open = no churn; changed failure =
+    new comms; recovery = auto-close, exactly the cms-auto-health loop.
+    Still exits nonzero so the unit stays failed in the journal.
+  - >-
+    tests/test-kanban-commit.sh gained section F (refuse bad card -> alert
+    -> recover). Fixture fix: A/B/C used to dirty ssot.kanban.yml by
+    appending bare text — i.e. the test relied on committing corrupt YAML,
+    the exact class this gate prevents. Appends are now comments.
+  - >-
+    board-api wart fixed: alloc_ref() read .ref-seq via a module-level
+    REF_SEQ frozen before the selftest redirects CARD_DIR, so --selftest
+    bumped the real counter file. Now resolved per-call.
+
+verify:
+  - python3 scripts/board/board-api.py --selftest
+  - python3 scripts/board/board-render-guard.py --selftest
+  - bash tests/test-kanban-commit.sh  (27 ok / 1 known parallel-writer race flake)
+  - >-
+    live guard run on this checkout: both renders rc=0, no alert card;
+    stubbed failing renderer: card on 2nd failure, dedupe on 3rd,
+    auto-close on recovery.
+
+deploy_notes: >-
+  chaba-board-render.service now ExecStarts
+  scripts/board/board-render-guard.py — deploy the unit together with
+  this commit or ExecStart 404s on hosts whose checkout predates it.
+  No service restarts needed on this worktree; nothing was deployed.

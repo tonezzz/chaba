@@ -3,5 +3,7 @@ Description=Re-render kanban board (index.html + cards.json) when cards change
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/render-board.py --if-changed
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/render-board2.py --if-changed
+# board-render-guard runs both renderers and tracks consecutive failures:
+# two nonzero runs in a row upserts an ops-board-render-fail card so a
+# wedged render loop is visible on the board instead of silently stale.
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-render-guard.py

@@ -108,6 +108,38 @@ if printf '%s\n' "$check" | grep -q 'conflict marker'; then
     exit 1
 fi
 
+# YAML syntax guard (card guard-card-yaml-syntax-validation-at-wri):
+# conflict-marker check above only catches <<<< shapes — a malformed card
+# without markers (hand edit, bad board-api write, broken merge resolution)
+# would commit fine here and then kill render-board + kanban-dispatch on
+# parse for everyone downstream (2026-10-11: board stale 2.5h). Refuse
+# instead; the alert card names the files so the wedge is never silent.
+yml_bad=$(python3 - <<'PY'
+import subprocess
+import yaml
+
+out = subprocess.run(
+    ["git", "diff", "--cached", "--name-only", "-z", "--diff-filter=ACM"],
+    capture_output=True, text=True).stdout
+for f in out.split("\0"):
+    if not f.endswith(".yml"):
+        continue
+    try:
+        yaml.safe_load(open(f, encoding="utf-8"))
+    except Exception as e:
+        mark = getattr(e, "problem_mark", None)
+        loc = f":{mark.line + 1}:{mark.column + 1}" if mark else ""
+        print(f"{f}{loc}: {getattr(e, 'problem', None) or str(e)[:100]}")
+PY
+)
+if [ -n "$yml_bad" ]; then
+    echo "kanban-commit: REFUSING to commit — YAML syntax errors staged:" >&2
+    printf '%s\n' "$yml_bad" >&2
+    files=$(printf '%s\n' "$yml_bad" | cut -d: -f1 | sort -u | paste -sd, -)
+    alert_card "yaml-syntax" "unparseable YAML staged in: $files"
+    exit 1
+fi
+
 git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
     commit -qm "board: live card updates ($(date '+%F %H:%M'))" || exit 1
 
