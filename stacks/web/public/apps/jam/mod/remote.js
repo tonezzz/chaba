@@ -71,7 +71,10 @@ JAM.register("remote", {
     const src = ac.createBufferSource();
     src.buffer = buf; src.playbackRate.value = vx.rate || 1;
     src.connect(vx.input);
-    const t = Math.max(ac.currentTime + 0.03, vx.next);
+    // clamp drift: silence gaps / bursts must not stack into the future
+    if (vx.next < ac.currentTime || vx.next > ac.currentTime + 0.4)
+      vx.next = ac.currentTime + 0.03;
+    const t = vx.next;
     src.start(t);
     vx.next = t + buf.duration / (vx.rate || 1);
   },
@@ -144,6 +147,10 @@ JAM.register("remote", {
     if (m.type === "voice" && m.pcm) { this.voice(m); return; }
     // face/pose events ride as {type:"body", evt, val} — straight to the bus
     if (m.type === "body" && m.evt) {
+      const now = performance.now();          // screen-side retrigger guard
+      if (now - (this.lastBody?.[m.evt] || 0) < 250 &&
+          !m.evt.startsWith("swipe") && m.evt !== "lean") return;
+      (this.lastBody ||= {})[m.evt] = now;
       JAM.emit(m.evt, m.val ?? 1);
       JAM.hud(`📱 ${m.evt} → ${JAM.bindings[m.evt] || "—"}`);
       return;

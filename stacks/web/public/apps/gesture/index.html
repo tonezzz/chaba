@@ -293,7 +293,12 @@ function loop() {
   /* ---------------- face ---------------- */
   // blendshapes -> smile/mouth/brow edges; nose-tip motion -> nod/shake.
   // Emits {type:"body", evt, val} — receivers map via their own bindings.
-  const bodyEmit = (evt, val = 1) => { send({ type: 'body', evt, val }); poses.push('!' + evt); };
+  const bodyEmit = (evt, val = 1) => {
+    // retrigger cooldown — stops blendshape/edge flapping screaming
+    if (now - (bodyEmit.last?.[evt] || 0) < 500) return;
+    (bodyEmit.last ||= {})[evt] = now;
+    send({ type: 'body', evt, val }); poses.push('!' + evt);
+  };
   const faceEdge = (evt, on) => {
     if (on && !faceState['e_' + evt]) bodyEmit(evt);
     faceState['e_' + evt] = on;
@@ -430,9 +435,14 @@ $('btn-voice').onclick = async e => {
         acc.push((d[i | 0] + d[(i | 0) + 1]) * 0.5);
       while (acc.length >= 1200) {           // ~100ms chunks
         const chunk = acc.splice(0, 1200), i16 = new Int16Array(chunk.length);
-        for (let j = 0; j < chunk.length; j++)
+        let rms = 0;
+        for (let j = 0; j < chunk.length; j++) {
           i16[j] = Math.max(-32768, Math.min(32767, chunk[j] * 32767 | 0));
-        send({ type: 'voice', sr: 12000, pcm: b64FromI16(i16) });
+          rms += chunk[j] * chunk[j];
+        }
+        // silence gate — no send unless loud; also breaks mic->screen->mic howl
+        if (rms / chunk.length > 0.0004)
+          send({ type: 'voice', sr: 12000, pcm: b64FromI16(i16) });
       }
     };
     // ScriptProcessor must reach destination to run — through a silent gain
