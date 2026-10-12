@@ -1,0 +1,74 @@
+title: rebuild-an-earlier-opencv-based-hand-gesture-recognition
+subtitle: 'Devin handoff spec: spec/20261010-092029-rebuild-an-earlier-opencv-based'
+icon: robot
+focus:
+  label: rebuild-an-earlier-opencv-based-hand-gesture-recognition
+  text: '# Dev-team review: yolo-gesture-spec
+
+
+    - verdict: **block**
+
+    - model: gemini-2.5-flash
+
+    - reviewed: 2026-10-10T09:20:29+00:00
+
+
+    ## Panel
+
+    - **security_privacy** — pass: The tool specification outlines a purely generative function with a
+    low-privilege policy, posing no apparent security or privacy risks. (The tool''s purpose is to generate
+    a specification document, not to perform actions or access sensitive data.; The `read` policy is appropriate
+    as the tool does not modify state or interact with sensitive resources.; Parameters are descriptive
+    and do not appear to contain or expose secrets.; The output is a structured JSON specification, not
+    system commands or executable code, mitigating risks from unverified input beyond content formatting.;
+    The mention of `tony-dell` is a descriptive label within the generated specification (`target_platform`),
+    not an attempt to read from or access ''Tony-only banks''. Thus, it does not violate the ''Tony-only
+    banks'' rule.; Honest failure behavior is defined as a structured error message, which aligns with
+    requirements.)
+
+    - **standards** — block: Spec missing required `timeout_s` field for `manifest.yml` entry. (The `manifest.yml`
+    entry for the tool must specify a `timeout_s` value, as explicitly stated in the tools.d contract
+    (docs/ada-tool-dev.md) and required for enforcing bounded timeouts. This specification only provides
+    the `policy` class (`read`) but omits `timeout_s`.; All other aspects of the specification align with
+    the `tools.d` contract and repo conventions, including naming (`ada_*`), parameter definitions, honest
+    results, and no apparent requirement for core-file edits.)
+
+    - **qa** — pass: Tool specification is clear, adheres to contract, and provides verifiable success
+    and failure signals. (**Unit Test Plan (mocked runner/GenAI):**; -   **Test Case 1: Basic successful
+    generation with required parameter and defaults.**;     -   **Input:** `use_case=''desktop navigation''`;     -   **Mock
+    GenAI:** Simulate a successful response returning a JSON string that conforms to the `Expected Result
+    Shape`. The content should reflect ''desktop navigation'' and the default `gesture_focus_areas` (''numeric_counting'',
+    ''basic_directional'') and `performance_priority` (''balance'').;     -   **Expected Output:** A Python
+    dictionary matching the `Expected Result Shape`, with specific sections like `use_case_summary` and
+    `recommended_gesture_set` reflecting the input and defaults.;     -   **Verification:** Assert that
+    the returned dictionary has the correct top-level keys (`spec_name`, `target_platform`, etc.) and
+    that content in fields like `use_case_summary` and `model_selection_criteria.performance_targets`
+    align with the provided input and default parameters.)
+
+    - **scope** — warn: Spec has extra optional parameters and premature configuration; scope can be cut
+    to minimal viable product. (The `gesture_focus_areas` parameter is optional with a default. For the
+    smallest thing that works, the tool can initially provide a standard or us
+
+
+    [truncated — full spec in bank doc spec/20261010-092029-rebuild-an-earlier-opencv-based]'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc spec/20261010-092029-rebuild-an-earlier-opencv-based)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: spec/20261010-092029-rebuild-an-earlier-opencv-based
+  renderer: render-handoff-inbox
+  date: '2026-10-12'
