@@ -67,6 +67,18 @@ Standard workflow for ending a session when the user asks to finish/close.
      own cadence, so a card without links/comms is invisible to reports.
    - If the work produced a report artifact, note the doc key/page in comms.
 
+6c. Artifact landing sweep (gate — do not skip)
+   - Enumerate every artifact this session produced: reports, analyses,
+     benchmark outputs, job results, datasets, generated files.
+   - For each, verify it landed in a durable home — CMS page (reports/
+     analyses, per cms-report standard), card comms (card outcomes), repo
+     file (code/docs), focus-inbox (parked ideas) — NOT chat-only, NOT /tmp
+     or a runtime that dies with the session.
+   - If any artifact has no durable home, land it now (publish the CMS page,
+     write the comms, park the inbox entry) before reporting close.
+   - In the close report, list artifacts and where each landed so the user
+     can audit the sweep.
+
 7. Park unfinished work in the kanban inbox
    - Anything still pending at close — deferred subtasks, follow-ups, "would be nice"
      items — must not die in the summary. File it in `docs/ssot/focus-inbox/` per the
