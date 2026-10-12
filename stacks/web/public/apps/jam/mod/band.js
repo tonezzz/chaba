@@ -67,35 +67,38 @@ JAM.register("band", {
     this.bpm += (this.targetBpm - this.bpm) * 0.08;
     this.energy *= 0.996;                     // activity decays
     const spb = 60 / this.bpm / 4;            // 16th-note seconds
+    const rest = this.energy < 0.06;          // asleep: play nothing, just keep time
     while (this.nextT < ac.currentTime + 0.12) {
       const t = this.nextT, s16 = this.step % 16, bar = (this.step / 16) | 0;
-      if (st.kick.includes(s16))  v.kick(t, 0.85);
-      if (st.snare.includes(s16)) v.snare(t, 0.65);
-      if (st.hat.includes(s16))   v.hat(t, 0.45, s16 === 14 && bar % 2 === 1);
-      const b = st.bass[s16];
-      if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.55);
-      if (s16 === 0 && bar % st.chordBars === 0)
-        [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.28));
-      if (s16 === 0) this.barStart = t;
-      // the feedback payoff: hits in this bar -> fill next bar;
-      // ambient surprise scales with energy
-      if (s16 === 15) {
-        const reward = this.hits >= 3;
-        const surprise = Math.random() < 0.04 + this.energy * 0.08;
-        if (reward || surprise) this.fill(t + spb, spb);
-        // call-and-response: YOUR rhythm echoed as a melody next bar
-        const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
-        if (inBar.length >= 2) {
-          const qs = [...new Set(inBar.map(t0 =>
-            Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
-            .sort((a, b) => a - b).slice(0, 8);
-          qs.forEach((q, i) =>
-            v.bell(t + spb + q * spb,
-                   JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, spb * 3));
-          JAM.hud("🎹 echoing your riff ↩");
+      if (!rest) {
+        if (st.kick.includes(s16))  v.kick(t, 0.85);
+        if (st.snare.includes(s16)) v.snare(t, 0.65);
+        if (st.hat.includes(s16))   v.hat(t, 0.45, s16 === 14 && bar % 2 === 1);
+        const b = st.bass[s16];
+        if (b != null) v.pluck(t, JAM._NOTE(root + scale[b % scale.length]), 0.55);
+        if (s16 === 0 && bar % st.chordBars === 0)
+          [0, 3, 7].forEach(d => v.organ(t, JAM._NOTE(root + 12 + d), 0.28));
+        if (s16 === 0) this.barStart = t;
+        // the feedback payoff: hits in this bar -> fill next bar;
+        // ambient surprise scales with energy
+        if (s16 === 15) {
+          const reward = this.hits >= 3;
+          const surprise = Math.random() < 0.04 + this.energy * 0.08;
+          if (reward || surprise) this.fill(t + spb, spb);
+          // call-and-response: YOUR rhythm echoed as a melody next bar
+          const inBar = this.echo.filter(t0 => t0 >= this.barStart && t0 <= t);
+          if (inBar.length >= 2) {
+            const qs = [...new Set(inBar.map(t0 =>
+              Math.min(15, Math.max(0, Math.round((t0 - this.barStart) / spb)))))]
+              .sort((a, b) => a - b).slice(0, 8);
+            qs.forEach((q, i) =>
+              v.bell(t + spb + q * spb,
+                     JAM._NOTE(57 + scale[(i * 2) % scale.length]), 0.3, spb * 3));
+            JAM.hud("🎹 echoing your riff ↩");
+          }
+          this.echo = [];
+          this.hits = 0;
         }
-        this.echo = [];
-        this.hits = 0;
       }
       this.step++;
       this.nextT += spb;
@@ -103,7 +106,9 @@ JAM.register("band", {
     const now = performance.now();
     if (now - this.hudT > 2000) {
       this.hudT = now;
-      JAM.hud(`🎹 ${st.name} · ${this.bpm | 0}bpm · energy ${(this.energy * 100) | 0}% — move faster to speed it up`);
+      JAM.hud(rest
+        ? `🎹 ${st.name} · resting — move or drum to wake the band`
+        : `🎹 ${st.name} · ${this.bpm | 0}bpm · energy ${(this.energy * 100) | 0}% — move faster to speed it up`);
     }
   },
 
