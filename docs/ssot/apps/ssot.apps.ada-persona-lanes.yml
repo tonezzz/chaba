@@ -3,7 +3,7 @@ subtitle: Per-persona backend lanes (kk-dev -> ada-kk). Mirrors the HA
   lanes model (ssot.home-assistant.lanes.yml) adapted to ada services.
 icon: 🚦
 version: 1
-last_updated: "2026-10-11"
+last_updated: "2026-10-12"
 
 # ---------------------------------------------------------------------------
 # A persona lane is a dev backend -> prod backend pair for ONE person.
@@ -36,6 +36,10 @@ instances:
     events: ada-ha-events-kk
     recall_summary: ada-ha-recall-summary-kk
     line_persona: kaewta       # reachable from the real LINE group
+    cms_catalog_prime: true    # ADA_CMS_CATALOG_PRIME=1 — session prime lists
+                               # CMS keys so she can find pages unprompted;
+                               # outside the chaba-rendered env block (survives
+                               # render-tool-profiles.py)
     tool_profile: kk           # persons.kk.tools in ssot.apps.ada-persons.yml
     identity_env: ADA_IDENTITY_INSTRUCTIONS   # Kaewta identity + feminine
       # register — overrides the default introduce-yourself-as-Ada block
@@ -53,11 +57,31 @@ instances:
     calendar_file: calendar-kk-dev.json    # separate test calendar
     events: ada-ha-events-kk-dev
     recall_summary: ada-ha-recall-summary-kk-dev
-    line_persona: null         # ws-direct only until a test group exists;
-                               # add kaewta-dev to LINE_NAME_BACKENDS + a
-                               # throwaway group for LINE e2e
+    line_persona: kaewta-cms   # reachable in the kk group via interview-room
+                               # pinning (see relay: below)
+    cms_catalog_prime: true    # same as prod — dev seeded first (2026-10-11)
     tool_profile: kk           # identical profile — same surface as prod
     status: planned            # card ada-kk-dev-lane
+
+relay:
+  persona_pins: |
+    Interview-room pinning (ada-pi 24d6e3d, ada-line-relay): mentioning a
+    persona in a room pins it; unaddressed messages follow the pin; another
+    mention (@kaewta/@ada/@chaba/kaewta-cms) switches. Pins are per-room and
+    in-memory — a relay restart falls back to LINE_DEFAULT_PERSONA, so
+    re-mention after a deploy. Replies carry [persona->sender] labels on
+    turns and [instance] labels on queued chat_send pushes.
+  lane_lock: |
+    LINE_LANE_LOCK=kk,kk-dev in line-bot.env (ada-pi 461debe): any chat_send
+    from a locked lane is rewritten to the lane's LINE group instead of
+    403-ing on a bad target — deterministic delivery until targeting
+    stabilises. Unlock per-lane when targeting is verified stable.
+  image_pipeline: |
+    chat_send image_url resolves relative paths against LINE_URL_BASE,
+    unwraps path-embedded https URLs, and caches fetched images on disk
+    (IMG_CACHE_DIR) so delivered images survive relay restarts (1c1b56b,
+    e2c40c4, 10084ea). Expired signed URLs (fbcdn etc.) still die at the
+    source — prefer durable /api/documents/ assets.
 
 ci:
   description: |
