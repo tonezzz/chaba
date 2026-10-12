@@ -56,6 +56,18 @@ print(f'ready in {time.time()-t:.1f}s  (drive-hit: {os.path.exists(TGZ)})')
 - **Job outputs** (reverse direction): `tar czf $CACHE/out-<ts>.tgz /tmp/results` —
   same cache doubles as the artifact handoff for `colab-burst`-style jobs.
 
+## Verified 2026-10-12
+
+- CIFAR-10 origin (`cs.toronto.edu`) caps ~60–80 kB/s/stream AND stalls mid-file
+  (froze at 94% on Colab; blackholed aria2 -x16 conns on tony-dell after ~100 MB).
+- Fast mirror: `https://data.brainchip.com/dataset-mirror/cifar10/cifar-10-python.tar.gz`
+  — 170 MB in 17.6 s (~9.7 MB/s), md5 `c58f30108f718f92721af3b95e74349a` matches official.
+- **Fleet→Drive path works without Colab-side mount**: `rclone copy` on tony-dell via the
+  `gdrive:` remote (~13.5 MiB/s up) — use when drive.mount OAuth can't complete in-session.
+- `drive.mount()` needs an interactive OAuth click in the cell output — cells executed
+  via the colab MCP proxy can hit `ValueError: mount failed`; run the mount cell manually
+  in the notebook if so.
+
 ## Rules of thumb
 
 - Always `download=False` / offline-load from the extracted LOCAL dir after rehydrate.
