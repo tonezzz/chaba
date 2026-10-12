@@ -100,6 +100,12 @@ persons:
         # is genAI and produces unsendable tailnet video). Write-only
         # asset hop, unlike the dropped vcast read tools.
         - page_snapshot
+        # conv_journal (2026-10-12): compiles the LINE relay's per-room
+        # journal + archived media into a kind=report CMS page — Tony's
+        # conversation/memory-report ask. Collection forced by
+        # ADA_CMS_COLLECTION at write time; reports are never
+        # site-published.
+        - conv_journal
       exclude:
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
@@ -331,6 +337,7 @@ bench_profiles:
       - ada_market_quote
       - ada_render_video
       - page_snapshot
+      - conv_journal
     exclude:
       - ada_memory_search
       - ada_remember
