@@ -88,10 +88,10 @@ persons:
         - speaker_profiles
         - voice_fx
         - set_facial_expression
-        # card lists capture_frame — merged into vcast_snapshot (its
-        # declared seat; capture_frame lives on as a runner alias)
-        - vcast_snapshot
-        - vcast_gesture
+        # vcast_snapshot/vcast_gesture dropped 2026-10-12 (Tony, security):
+        # they reach tony-dell's input-bridge — she could snapshot HIS
+        # screens incl. camwalls. No registered displays on a virtual
+        # home lane anyway. Re-add if a kk-ha bridge ever exists.
         - ada_market_quote
         - ada_render_video
       exclude:
@@ -101,6 +101,8 @@ persons:
         # warns on any declared tool in NEITHER list, so merges/renames
         # force a decision here instead of slipping through.
         - ada_resolve_action
+        - vcast_snapshot
+        - vcast_gesture
         - devin
         - devin_read
         - kanban
