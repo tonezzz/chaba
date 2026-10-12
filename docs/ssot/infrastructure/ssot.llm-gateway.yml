@@ -22,7 +22,16 @@ auth:
     clients take base_url=<base>/v1 + any virtual key. Gemini Live-API
     websockets do NOT route through the gateway — never set
     GOOGLE_GEMINI_BASE_URL on services that open Live sessions
-    (ada realtime voice).
+    (ada realtime voice). Ada's REST side-calls instead honor
+    ADA_GEMINI_REST_BASE_URL + ADA_GEMINI_REST_API_KEY (virtual key)
+    via backend/gemini_pool.py rest_client() — prod lanes use
+    LITELLM_KEY_ADA, dev lanes LITELLM_KEY_BENCH (2026-10-12).
+  live_keys: >-
+    GEMINI_API_KEY per ada env: prod voice lanes (ada-ha-tony, ada-kk,
+    ada-pi-pwa, ada-ha-michael, + relays sharing ada-ha-tony.env) run
+    the PAID key since 2026-10-12 — free tier dropped Live sessions
+    (~5 kills/3d, 1011 quota). Dev lanes (ada-dev, ada-kk-dev) stay
+    on the free key — bench/experiment traffic is disposable.
 
 budgets:
   proxy_cap: "$50 / 30d (litellm_settings.max_budget — absolute ceiling)"
