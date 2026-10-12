@@ -56,6 +56,9 @@ echo "$auth_json" | python3 -c "import json,sys; d=json.load(sys.stdin)['data'];
 
 # ── store 1: tony-dell (local) ─────────────────────────────────────
 [ -f "$STORE_LOCAL" ] || die "$STORE_LOCAL missing"
+# capture the outgoing fleet key before the merge — the ada-*.env sweep
+# below replaces only lines still holding it, sparing per-lane keys
+OLDKEY=$(grep -oE 'sk-or-v1-[A-Za-z0-9_-]+' "$STORE_LOCAL" | head -1 || true)
 NEWKEY="$KEY" F="$STORE_LOCAL" bash -c "$merge_script"
 say "✓ store 1: $STORE_LOCAL"
 
@@ -83,6 +86,35 @@ PYEOF
 } | ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST_OMEN" 'python3 -' \
   || die "sqlite update failed on omen"
 say "✓ store 4: omen openclaw sqlite"
+
+# ── ada backends on idc03: ada-*.env files also carry OR fallback keys
+#    (openrouter_provider.py degraded mode). Found stale 2026-10-12 —
+#    the 4-store set missed them and all ada OR fallbacks were 401.
+#    Sweep only files still holding the OLD fleet key so per-lane keys
+#    (e.g. kaewta-daily in ada-kk.env) survive rotations. ─────────────
+if [ -n "$OLDKEY" ]; then
+  { printf 'OLDKEY=%q\nNEWKEY=%q\n' "$OLDKEY" "$NEWKEY"; cat <<'SWEEP'
+for F in ~/.config/secrets/ada-*.env; do
+  [ -f "$F" ] || continue
+  if grep -qF "$OLDKEY" "$F"; then
+    sed -i "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=$NEWKEY|" "$F"
+    echo "swept $(basename "$F" .env)"
+  fi
+done
+SWEEP
+  } | ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST_IDC03" 'bash -s' \
+    | tee /tmp/or-swept-units.$$.txt >/dev/null
+  SWEPT=$(grep -oE 'swept [a-z-]+' /tmp/or-swept-units.$$.txt | awk '{print $2}' || true)
+  rm -f /tmp/or-swept-units.$$.txt
+  for u in $SWEPT; do
+    # try-restart: never starts a stopped lane (ada-ha-tony may be down)
+    ssh -o BatchMode=yes "$HOST_IDC03" "systemctl --user try-restart $u" \
+      && say "✓ try-restarted $u (swept env)"
+  done
+  [ -z "$SWEPT" ] && say "· no ada-*.env held the old key — nothing to sweep"
+else
+  say "· no prior OR key in $STORE_LOCAL — skipping ada-*.env sweep"
+fi
 
 # ── restarts (env-baked services only) ─────────────────────────────
 ssh -o BatchMode=yes "$HOST_OMEN"  'systemctl --user restart ghostroute-watcher' \
