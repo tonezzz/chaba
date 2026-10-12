@@ -51,24 +51,31 @@ providers:
   gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
   openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
+  colab: >-
+    ollama_chat/gemma3:12b @ http://127.0.0.1:11434 — ephemeral Colab T4 worker,
+    reverse-SSH'd onto idc03 loopback by scripts/colab/colab-serve-worker.ipynb
+    (keypair authorized on colabtun@idc03: nologin + permitopen :11434 only).
+    Deployed as model colab-gemma3, chain entry just before ollama-llama3.2 —
+    when the session dies the chains fall through, zero regression. First
+    verified end-to-end 2026-10-12.
 
 # canonical routing table — mirrors stacks/idc03/litellm/config.yaml
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
   tool-call:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users").
   summary:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: posture/cms/session summaries; lite is cheap and sufficient; ollama acceptable last resort.
   voice-aux:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: lightweight classify around the voice path (Live API itself stays direct).
   classify:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
   bench:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, llama3.2:3b@ollama]
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: benchmark traffic on its own virtual key — spend isolated by design. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
   vision:
     chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
