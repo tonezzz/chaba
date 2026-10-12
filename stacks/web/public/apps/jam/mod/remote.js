@@ -80,7 +80,14 @@ JAM.register("remote", {
 
   onMsg(data) {
     let m; try { m = JSON.parse(data); } catch { return; }
-    if (m.type === "peer" || m.type !== "gesture" || m.x === undefined) return;
+    if (m.type === "peer") return;
+    // face/pose events ride as {type:"body", evt, val} — straight to the bus
+    if (m.type === "body" && m.evt) {
+      JAM.emit(m.evt, m.val ?? 1);
+      JAM.hud(`📱 ${m.evt} → ${JAM.bindings[m.evt] || "—"}`);
+      return;
+    }
+    if (m.type !== "gesture" || m.x === undefined) return;
 
     // zones are positional: which half the strike lands in picks the drum.
     // hand label (when sent) only picks the cursor color.

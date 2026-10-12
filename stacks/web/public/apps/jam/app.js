@@ -202,7 +202,8 @@ const EVENTS = [
   "pad-kick","pad-snare","pad-hat","pad-tom","pad-clap","pad-crash",
   "pad-rim","pad-shaker",
   "hand-strike-L","hand-strike-R","hand-move-L","hand-move-R",
-  "clap","hum-note","nod","smile",
+  "clap","hum-note","nod","smile","shake","mouth","brow",
+  "lean","jump","arm-up-L","arm-up-R",
 ];
 const TARGETS = [
   "kick","snare","hat","tom","clap","crash","rim","shaker",
@@ -213,6 +214,8 @@ const DEFAULT_BINDINGS = {
   "hand-move-L": "lead-note", "hand-move-R": "bass-note",
   "clap": "clap", "hum-note": "lead-note",
   "nod": "crash", "smile": "chord-stab",
+  "shake": "scratch", "mouth": "airhorn", "jump": "riser",
+  "arm-up-L": "rim", "arm-up-R": "shaker",
 };
 const SCALES = { blue: [0,3,5,6,7,10], bright: [0,2,4,5,7,9,11],
                  tense: [0,2,3,5,7,8,11], calm: [0,2,4,6,7,9,11] };

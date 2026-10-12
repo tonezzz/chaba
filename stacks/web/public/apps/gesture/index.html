@@ -84,6 +84,9 @@
   <button id="btn-start">Start camera</button>
   <button id="btn-pinch">Send test pinch</button>
   <button id="btn-flip" class="toggle on">Mirror X: on</button>
+  <button id="btn-hands" class="toggle on">Hands: on</button>
+  <button id="btn-face" class="toggle on">Face: on</button>
+  <button id="btn-pose" class="toggle on">Body: on</button>
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
 <div id="note">
@@ -94,10 +97,13 @@
 </div>
 
 <script type="module">
-import { FilesetResolver, HandLandmarker } from '/apps/vendor/mediapipe/vision_bundle.mjs';
+import { FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker }
+  from '/apps/vendor/mediapipe/vision_bundle.mjs';
 
-const WASM_DIR  = '/apps/vendor/mediapipe/';
-const MODEL_URL = '/apps/vendor/mediapipe/hand_landmarker.task';
+const WASM_DIR   = '/apps/vendor/mediapipe/';
+const MODEL_HAND = '/apps/vendor/mediapipe/hand_landmarker.task';
+const MODEL_FACE = '/apps/vendor/mediapipe/face_landmarker.task';
+const MODEL_POSE = '/apps/vendor/mediapipe/pose_landmarker_lite.task';
 // ada_v2 constants (docs/kb/gesture-ui-options.md) — phone sends RAW
 // normalized coords; SENSITIVITY/LERP are applied screen-side.
 const PINCH_DIST   = 0.05;   // dist(lm4,lm8) normalized
@@ -117,10 +123,13 @@ const video = $('cam'), canvas = $('overlay'), ctx = canvas.getContext('2d'),
 const statusEl = $('status'), hudFps = $('hud-fps'), hudHand = $('hud-hand'),
       hudPose = $('hud-pose'), hudTx = $('hud-tx');
 
-let landmarker = null, stream = null;
+let landmarker = null, faceLm = null, poseLm = null, visionP = null, stream = null;
 let flipX = true;                    // mirror so the pointer matches the hand
 let lastVideoTime = -1, lastEmit = 0, txCount = 0;
 let handState = {}, lastLm = null;   // per-hand {pinch,fist} edge state
+const want = { hands: true, face: true, pose: true };
+const faceState = { y: null, x: null, t: 0, xs: [], nodT: 0, shakeT: 0 };
+const poseState = { y: null, t: 0, jumpT: 0, 'arm-up-L': false, 'arm-up-R': false };
 let frames = 0, fpsT = performance.now();
 
 function status(text, cls) { statusEl.textContent = text; statusEl.className = cls; }
@@ -142,13 +151,23 @@ function send(obj) {
 }
 
 /* ---------------- mediapipe ---------------- */
-async function initLandmarker() {
-  const vision = await FilesetResolver.forVisionTasks(WASM_DIR);
-  landmarker = await HandLandmarker.createFromOptions(vision, {
-    baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
-    runningMode: 'VIDEO',
-    numHands: 2,
-  });
+// three sensors, each toggleable — landmarkers init lazily per `want`
+async function initLandmarkers() {
+  const vision = await (visionP ||= FilesetResolver.forVisionTasks(WASM_DIR));
+  const jobs = [];
+  if (want.hands && !landmarker)
+    jobs.push(HandLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: MODEL_HAND, delegate: 'GPU' },
+      runningMode: 'VIDEO', numHands: 2 }).then(m => landmarker = m));
+  if (want.face && !faceLm)
+    jobs.push(FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: MODEL_FACE, delegate: 'GPU' },
+      runningMode: 'VIDEO', outputFaceBlendshapes: true }).then(m => faceLm = m));
+  if (want.pose && !poseLm)
+    jobs.push(PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: MODEL_POSE, delegate: 'GPU' },
+      runningMode: 'VIDEO', numPoses: 1 }).then(m => poseLm = m));
+  await Promise.all(jobs);
 }
 
 async function startCamera() {
@@ -165,9 +184,9 @@ async function startCamera() {
   }
   video.srcObject = stream;
   await video.play();
-  if (!landmarker) {
-    status('loading hand model…', 'warn');
-    await initLandmarker();
+  if ((want.hands && !landmarker) || (want.face && !faceLm) || (want.pose && !poseLm)) {
+    status('loading models (hands+face+pose)…', 'warn');
+    await initLandmarkers();
   }
   status('tracking', 'ok');
   requestAnimationFrame(loop);
@@ -216,17 +235,14 @@ function loop() {
   }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const res = landmarker.detectForVideo(video, performance.now());
+  const res = (want.hands && landmarker)
+    ? landmarker.detectForVideo(video, performance.now()) : { landmarks: [] };
   const hands = res.landmarks || [];
   frames++;
   const now = performance.now();
   if (now - fpsT > 1000) { hudFps.textContent = 'fps ' + frames; frames = 0; fpsT = now; }
-  hudHand.textContent = hands.length ? 'hands ' + hands.length : 'no hand';
-  if (!hands.length) {
-    hudPose.textContent = 'pose –';
-    handState = {};
-    return;
-  }
+  hudHand.textContent = want.hands
+    ? (hands.length ? 'hands ' + hands.length : 'no hand') : 'hands off';
 
   const seen = {}, poses = [];
   for (let i = 0; i < hands.length; i++) {
@@ -258,8 +274,83 @@ function loop() {
     if (now - lastEmit >= EMIT_MIN_MS) send(base());
   }
   if (now - lastEmit >= EMIT_MIN_MS) lastEmit = now;
-  hudPose.textContent = poses.join(' · ');
+  if (!hands.length) handState = {};
   for (const h in handState) if (!seen[h]) delete handState[h];
+
+  /* ---------------- face ---------------- */
+  // blendshapes -> smile/mouth/brow edges; nose-tip motion -> nod/shake.
+  // Emits {type:"body", evt, val} — receivers map via their own bindings.
+  const bodyEmit = (evt, val = 1) => { send({ type: 'body', evt, val }); poses.push('!' + evt); };
+  const faceEdge = (evt, on) => {
+    if (on && !faceState['e_' + evt]) bodyEmit(evt);
+    faceState['e_' + evt] = on;
+  };
+  if (want.face && faceLm) {
+    const fr = faceLm.detectForVideo(video, now);
+    const fl = fr.faceLandmarks?.[0];
+    const cats = fr.faceBlendshapes?.[0]?.categories || [];
+    const bv = n => cats.find(c => c.categoryName === n)?.score || 0;
+    if (fl) {
+      const nose = fl[4] || fl[1];
+      const dt = Math.max(1, now - faceState.t);
+      const vy = (nose.y - (faceState.y ?? nose.y)) / dt * 1000;
+      if (vy > 0.9 && now - faceState.nodT > 500) { faceState.nodT = now; bodyEmit('nod'); }
+      faceState.xs.push([now, flipX ? 1 - nose.x : nose.x]);
+      while (faceState.xs.length && now - faceState.xs[0][0] > 600) faceState.xs.shift();
+      let flips = 0, dir = 0;
+      for (let i = 1; i < faceState.xs.length; i++) {
+        const d = faceState.xs[i][1] - faceState.xs[i - 1][1];
+        if (Math.abs(d) > 0.004) {
+          const s = Math.sign(d);
+          if (dir && s !== dir) flips++;
+          dir = s;
+        }
+      }
+      if (flips >= 2 && now - faceState.shakeT > 700) { faceState.shakeT = now; bodyEmit('shake'); }
+      faceEdge('smile', bv('mouthSmileLeft') + bv('mouthSmileRight') > 0.9);
+      faceEdge('mouth', bv('jawOpen') > 0.45);
+      faceEdge('brow',  bv('browInnerUp') > 0.5);
+      faceState.y = nose.y; faceState.t = now;
+      const [px, py] = coverMap(nose.x, nose.y);
+      ctx.fillStyle = '#f472b6';
+      ctx.beginPath(); ctx.arc(px, py, 7, 0, 7); ctx.fill();
+    }
+  }
+
+  /* ---------------- body / pose ---------------- */
+  const POSE_CONNECTIONS = [[11,12],[11,13],[13,15],[12,14],[14,16],
+                            [11,23],[12,24],[23,24]];
+  const poseEdge = (evt, on) => {
+    if (on && !poseState[evt]) bodyEmit(evt);
+    poseState[evt] = on;
+  };
+  if (want.pose && poseLm) {
+    const pr = poseLm.detectForVideo(video, now);
+    const pl = pr.landmarks?.[0];
+    if (pl) {
+      const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+      const sh = mid(pl[11], pl[12]), hip = mid(pl[23], pl[24]);
+      // jump: hips move UP fast (y decreases); lean: continuous shoulder x
+      const dt = Math.max(1, now - poseState.t);
+      const vy = (hip.y - (poseState.y ?? hip.y)) / dt * 1000;
+      if (vy < -1.2 && now - poseState.jumpT > 800) { poseState.jumpT = now; bodyEmit('jump'); }
+      poseState.y = hip.y; poseState.t = now;
+      poseEdge('arm-up-L', pl[15].y < pl[11].y - 0.04);
+      poseEdge('arm-up-R', pl[16].y < pl[12].y - 0.04);
+      if (now - lastEmit >= EMIT_MIN_MS)
+        send({ type: 'body', evt: 'lean', val: Math.min(1, Math.max(0, flipX ? 1 - sh.x : sh.x)) });
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (const [a, b] of POSE_CONNECTIONS) {
+        const [x1, y1] = coverMap(pl[a].x, pl[a].y);
+        const [x2, y2] = coverMap(pl[b].x, pl[b].y);
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+      }
+      ctx.stroke();
+    }
+  }
+
+  hudPose.textContent = poses.join(' · ') || 'pose –';
 }
 
 /* ---------------- ui ---------------- */
@@ -275,6 +366,16 @@ $('btn-flip').onclick = e => {
   e.target.classList.toggle('on', flipX);
   stage.classList.toggle('mirror', flipX);
 };
+for (const [id, key, label] of [['btn-hands','hands','Hands'],
+                                ['btn-face','face','Face'],
+                                ['btn-pose','pose','Body']]) {
+  $(id).onclick = e => {
+    want[key] = !want[key];
+    e.target.textContent = label + ': ' + (want[key] ? 'on' : 'off');
+    e.target.classList.toggle('on', want[key]);
+    if (want[key]) initLandmarkers().catch(err => status('model: ' + err.message, 'err'));
+  };
+}
 $('btn-pinch').onclick = () => {
   const lm = lastLm;
   send({ type: 'gesture', action: 'pinch',
