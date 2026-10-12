@@ -68,7 +68,12 @@ JAM.register("band", {
     this.energy *= 0.996;                     // activity decays
     const spb = 60 / this.bpm / 4;            // 16th-note seconds
     const rest = this.energy < 0.06;          // asleep: play nothing, just keep time
-    while (this.nextT < ac.currentTime + 0.12) {
+    // throttled-tab guard: if the timer slept, nextT lags real time and the
+    // loop would fire hundreds of PAST-scheduled notes at once = scream.
+    // Drop the backlog — resume on the next real beat.
+    if (this.nextT < ac.currentTime - 0.2) this.nextT = ac.currentTime;
+    let guard = 0;
+    while (this.nextT < ac.currentTime + 0.12 && guard++ < 32) {
       const t = this.nextT, s16 = this.step % 16, bar = (this.step / 16) | 0;
       if (!rest) {
         if (st.kick.includes(s16))  v.kick(t, 0.85);
