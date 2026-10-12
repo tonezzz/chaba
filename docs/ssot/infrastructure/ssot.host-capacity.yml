@@ -10,18 +10,21 @@ hosts:
   tony_dell:
     role: lan-hub
     cpu_cores: 8
-    mem_gb: 14        # ~11G used — pressured
-    disk_gb: {total: 118, free: 19}   # DISK TIGHT — do not land new stateful services
+    mem_gb: 14        # ~10G used — pressured
+    disk_gb: {total: 118, free: 17}   # DISK TIGHT (<15% trigger) — do not land new stateful services
     gpu: none
     note: >-
       Household LAN hub — tony-ha (LAN-bound) + ada-ha (media/cast mounts).
-      kk-ha and michael-dev evacuated to idc03 2026-10-09.
+      kk-ha and michael-dev evacuated to idc03 2026-10-09; stale michael-dev
+      duplicate disabled on dell 2026-10-12 (deploy-card.sh retargeted idc03).
+      Tony's desktop duty moved to tony-macbook 2026-10-12 — devin-desktop
+      load follows.
   tony_omen:
-    role: gpu-dev
+    role: nest-gpu-lane    # was gpu-dev; dedicated Ada Nest host 2026-10-12 (card omen-dedicate-nest)
     cpu_cores: 12
-    mem_gb: 30        # ~17G used
-    disk_gb: {total: 98, free: 60}
-    gpu: yes
+    mem_gb: 30        # ~3G used — biggest fleet headroom
+    disk_gb: {total: 98, free: 59}
+    gpu: yes          # GTX1650 4GB — jev/nest serve+train lane, ollama :11434 (user svc, reinstalled 2026-10-12)
     note: heavy/ML workloads, development; power-hungry — prefer Colab for
       burst GPU.
   idc02:

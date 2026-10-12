@@ -64,7 +64,7 @@ deploy_to() {
   local host="$1" SSH WWW RES RESTART TEST_URL TEST_SSH
   case "$host" in
     michael-dev)
-      SSH=tony-dell; WWW=/home/tony/.config/michael-dev/www
+      SSH=idc03; WWW=/home/tony/.config/michael-dev/www
       RES=/home/tony/.config/michael-dev/.storage/lovelace_resources
       RESTART="systemctl --user restart michael-dev.service"
       TEST_URL="http://127.0.0.1:8124"; TEST_SSH=1 ;;
