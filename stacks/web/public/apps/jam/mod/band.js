@@ -12,7 +12,7 @@
 "use strict";
 JAM.register("band", {
   timer: 0, bpm: 100, targetBpm: 100, style: 0, step: 0, nextT: 0,
-  energy: 0.3, hits: 0, soloUntil: 0, hudT: 0,
+  energy: 0.0, hits: 0, soloUntil: 0, hudT: 0,
   echo: [], barStart: 0,
 
   // per-16th-step patterns; bass values = blues-scale degrees (null = rest)

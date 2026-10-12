@@ -436,7 +436,8 @@ const wantMods = new Set(
   (new URLSearchParams(location.search).get("mods") || "").split(",").filter(Boolean));
 for (const m of ["fx", "hands", "mic", "remote", "band"]) {
   const s = document.createElement("script");
-  s.src = "mod/" + m + ".js";
+  s.src = "mod/" + m + ".js?v=" +
+    (new URLSearchParams(location.search).get("v") || Date.now());
   s.onload = () => {
     if (wantMods.has(m)) {
       const btn = [...document.querySelectorAll("#mods .btn")]

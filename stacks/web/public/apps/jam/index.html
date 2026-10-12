@@ -55,6 +55,10 @@
 <details><summary>bindings matrix — tap a cell to rewire (events → sounds)</summary>
   <div id="matrix-wrap"></div>
 </details>
-<script src="app.js"></script>
+<script>
+  const _s = document.createElement("script");
+  _s.src = "app.js?v=" + (new URLSearchParams(location.search).get("v") || Date.now());
+  document.body.appendChild(_s);
+</script>
 </body>
 </html>
