@@ -68,6 +68,16 @@ TAG_RE = {t: re.compile(r"\[\s*%s\s*\]" % re.escape(t), re.I)
 SESSIONS_RE = re.compile(r"(\d+)\s+(?:[\w-]+\s+){0,3}sessions?", re.I)
 TIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
 
+# Ops close-gate (OPS-0521 drift-reconcile): a non-release card declaring a
+# `verify:` criterion may not sit in `done` without an evidence comms tag —
+# [verify] or any release-stage tag counts. Forward-only enforcement: cards
+# whose `updated` predates the gate are grandfathered (the 2026-10-11
+# ref-assignment sweep bumped `updated` fleet-wide, so a grace window on
+# that field can't distinguish "recently closed" from "recently touched").
+VERIFY_GATE_AFTER = datetime(2026, 10, 12)
+VERIFY_EVIDENCE_RE = re.compile(
+    r"\[\s*(verify|exp|alpha|beta|smoke|rc|prod)\s*\]", re.I)
+
 
 def load_bars(path: Path) -> dict:
     try:
@@ -188,10 +198,13 @@ def enforce_card(path: Path, bars: dict, now: datetime,
         card = yaml.safe_load(path.read_text()) or {}
     except Exception:
         return []
-    if not isinstance(card, dict) or not release_tracked(card):
+    if not isinstance(card, dict):
         return []
     col = card.get("column")
     actions = []
+
+    if not release_tracked(card):
+        return verify_gate(card, path, now, dry)
 
     if col == "review":
         if stamp_soak(card, bars, now):
@@ -226,6 +239,35 @@ def enforce_card(path: Path, bars: dict, now: datetime,
         path.write_text(yaml.safe_dump(card, sort_keys=False,
                                        allow_unicode=True, width=110))
     return actions
+
+
+def verify_gate(card: dict, path: Path, now: datetime,
+                dry: bool) -> list:
+    """Non-release done-gate: a card with a `verify:` criterion needs an
+    evidence comms tag before it may rest in done. Cards whose `updated`
+    is older than VERIFY_GRACE_DAYS are grandfathered (not re-bounced)."""
+    if card.get("column") != "done" or not str(card.get("verify") or "").strip():
+        return []
+    updated = parse_dt(card.get("updated"))
+    if updated is None or updated < VERIFY_GATE_AFTER:
+        return []
+    texts = [str(c.get("text") or "") if isinstance(c, dict) else str(c)
+             for c in card.get("comms") or []]
+    if any(VERIFY_EVIDENCE_RE.search(t) for t in texts):
+        return []
+    card["column"] = "doing"
+    card["updated"] = now.strftime("%Y-%m-%d %H:%M")
+    comms_add(
+        card, "chaba",
+        "[lifecycle] bounced done->doing — card declares a `verify:` "
+        "criterion but closed with no evidence comms. Re-close with a "
+        "[verify] note naming what was actually run, or amend `verify:` "
+        "if the criterion is obsolete.", now)
+    if not dry:
+        path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                       allow_unicode=True, width=110))
+    return [f"{card.get('id')}: bounced done->doing (verify field, no "
+            "evidence comms)"]
 
 
 def main() -> int:

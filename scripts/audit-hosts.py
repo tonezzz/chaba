@@ -3,14 +3,53 @@
 
 import argparse
 import datetime
+import fnmatch
 import os
 import re
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import yaml
+
+# Units in the user session that are desktop/OS plumbing, not fleet
+# services — unexpected-running skips these (host-level extras go in the
+# SSOT `allowed_running` list, fnmatch globs allowed).
+USER_SESSION_NOISE = re.compile(
+    r"^(init\.scope|session-.*|run-.*|app-.*|dbus\.service|at-spi-.*|"
+    r"gcr-ssh-agent.*|gnome-keyring.*|gpg-agent.*|gvfs-.*|mpris.*|"
+    r"pipewire.*|wireplumber.*|xdg-.*|filter-chain.*|plasma-.*|"
+    r"org\.gnome.*|org\.freedesktop.*|gsd-.*|evolution.*|tracker.*|"
+    r"ssh-agent.*|snap\..*|pk-.*|colord.*|obex.*|speech-dispatcher.*|"
+    r"kdeconnect.*|gnome-remote.*|rygel.*|systemd-.*|dconf\.service|"
+    r"localsearch.*|xfce4-notifyd.*|xfconfd.*|gnome-session-.*|"
+    r"chrome-remote-desktop-environment.*|podman-user-wait.*|"
+    r"screen-timeout-daemon.*|barriers\.service|devin-task-.*|"
+    r"[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service)$")
+
+# Podman/systemd hash-named transient units — a 40-64 hex name is never a
+# declared fleet service (matches in either scope).
+HASH_UNIT_RE = re.compile(r"^[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service$")
+
+# System-scope units are too numerous to whitelist — flag only units that
+# *look* fleet-managed (a stale fleet unit at system scope still surfaces).
+FLEET_SYS_RE = re.compile(
+    r"(chaba|ada[-_.]|home-?assist|michael|ollama|mddb|vcast|go2rtc|nest|jev|"
+    r"kanban|cms|mcp[-_.]|cloudflared|cast-|camwall|sunsynk|devin|litellm|"
+    r"openjev|caddy|rclone|notebooklm|workflows|yomi|obsidian|input-bridge|"
+    r"barrier|gods-eye|gev[-_.]|playwright|yolo|xmeye|vms|raceman|helm|"
+    r"node-red|dnsmasq|gesture|plug-watch|secrets-console|status-data|"
+    r"trade-api|websockify|xvfb|bserver|redis|postgres|weaviate)")
+
+# Failed units that are generic desktop/OS flakiness on essentially every
+# Linux host — never a fleet signal.
+FAILED_NOISE = re.compile(
+    r"^(apport.*|NetworkManager-wait-online.*|xdg-desktop-portal.*|"
+    r"xfce4-notifyd.*|snapd\..*|grub-initrd-fallback.*)$")
+
+ESCALATE_H = 12
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SSOT_DEFAULT = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.audit.hosts.yml"
@@ -277,6 +316,13 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         return [f"Failed to load SSOT: {e}"]
 
     host_ssot = ssot.get("hosts", {}).get(host, {})
+    if host_ssot.get("retired"):
+        return []   # out of the placement contract entirely
+    if observed.get("unreachable"):
+        if host_ssot.get("offline_ok"):
+            return []
+        return ["host unreachable via ssh — empty snapshot "
+                "(mark offline_ok/retired in ssot.audit.hosts.yml if intended)"]
     expected = host_ssot.get("expected_services", [])
     known_failed = {f["name"] for f in host_ssot.get("known_failed", [])}
     deltas = []
@@ -298,26 +344,88 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
                 if cfg.get("min_free_ram_mb") and mb < cfg["min_free_ram_mb"]:
                     deltas.append(f"free RAM {avail} below threshold {cfg['min_free_ram_mb']} MiB")
 
+    # `present` = unit listed in any state (failed counts — the failed-unit
+    # loop reports it separately). `running` = ACTIVE column is "active".
     active_user_units = {s["unit"] for s in observed.get("active_user_services", []) if "unit" in s}
     active_system_units = {s["unit"] for s in observed.get("active_system_services", []) if "unit" in s}
+    running_user = {s["unit"] for s in observed.get("active_user_services", [])
+                    if s.get("state") == "active" and "unit" in s}
+    running_sys = {s["unit"] for s in observed.get("active_system_services", [])
+                   if s.get("state") == "active" and "unit" in s}
+    expected_names = set()
     for exp in expected:
         exp_name = exp["name"]
+        expected_names.add(exp_name)
         exp_type = exp.get("type", "service")
         scope = exp.get("scope", "user")
-        active = active_system_units if scope == "system" else active_user_units
-        if _is_present(exp_name, exp_type, active):
+        present_in = active_system_units if scope == "system" else active_user_units
+        running_in = running_sys if scope == "system" else running_user
+        want = exp.get("expected_state") or "active"
+        present = _is_present(exp_name, exp_type, present_in)
+        running = _is_present(exp_name, exp_type, running_in)
+        if running and want in ("inactive", "absent"):
+            deltas.append(f"Declared-{want} service is running: {exp_name}")
+            continue
+        if present:
+            continue
+        if want in ("inactive", "absent"):
             continue
         if exp_name in known_failed:
             continue
         if exp.get("note", "").startswith("Currently disabled"):
             continue
+        if exp_name in observed.get("failed_user_services", []) or \
+                exp_name in observed.get("failed_system_services", []):
+            continue   # failed-units loop reports it — don't double-delta
         deltas.append(f"Expected service missing: {exp_name}")
 
+    absent_names = set()
+    for a in host_ssot.get("expected_absent", []):
+        name = a["name"] if isinstance(a, dict) else a
+        scope = a.get("scope", "user") if isinstance(a, dict) else "user"
+        absent_names.add(name)
+        if name in expected_names:
+            continue   # expected_state:absent on the service entry already covers it
+        running = running_sys if scope == "system" else running_user
+        if name in running:
+            note = a.get("note", "") if isinstance(a, dict) else ""
+            deltas.append(f"Declared-absent service still running: {name}"
+                          + (f" — {note}" if note else ""))
+        elif name in (active_system_units if scope == "system" else active_user_units):
+            deltas.append(f"Declared-absent unit tried to start (failed): {name}")
+
+    allow = [a if isinstance(a, str) else a.get("name", "")
+             for a in host_ssot.get("allowed_running", [])]
+    def allowed(unit):
+        return any(fnmatch.fnmatch(unit, p) for p in allow)
+
+    for s in observed.get("active_user_services", []):
+        unit, state = s.get("unit"), s.get("state")
+        if not unit or not unit.endswith(".service") or state != "active":
+            continue
+        if unit in expected_names or unit in absent_names or \
+                allowed(unit) or USER_SESSION_NOISE.match(unit) or \
+                HASH_UNIT_RE.match(unit):
+            continue
+        deltas.append(f"Unexpected running user service: {unit} "
+                      "(declare in expected_services, whitelist in "
+                      "allowed_running, or stop it)")
+    for s in observed.get("active_system_services", []):
+        unit, state = s.get("unit"), s.get("state")
+        if not unit or not unit.endswith(".service") or state != "active":
+            continue
+        if unit in expected_names or unit in absent_names or allowed(unit) \
+                or HASH_UNIT_RE.match(unit):
+            continue
+        if FLEET_SYS_RE.search(unit):
+            deltas.append(f"Unexpected fleet-looking system service: {unit}")
+
     for fail in observed.get("failed_user_services", []):
-        if fail not in known_failed and not fail.startswith("session-"):
+        if fail not in known_failed and not fail.startswith("session-") \
+                and not FAILED_NOISE.match(fail):
             deltas.append(f"Unexpected failed user service: {fail}")
     for fail in observed.get("failed_system_services", []):
-        if fail not in known_failed:
+        if fail not in known_failed and not FAILED_NOISE.match(fail):
             deltas.append(f"Unexpected failed system service: {fail}")
 
     oom = observed.get("oom_kills_24h") or {}
@@ -331,6 +439,117 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         )
 
     return deltas
+
+
+# ---------------------------------------------------------- kanban cards
+# audit-auto-<host> lifecycle mirrors scripts/board/runner-fleet-health.py:
+# deltas -> review card, clean -> auto-close, >=12h open -> priority bump,
+# retired/offline_ok hosts never get cards. Only enabled via --cards (the
+# chaba-system-report chain on tony-dell); ad-hoc runs never touch cards.
+
+CARDS_DIR = Path(os.environ.get(
+    "CHABA_AUDIT_CARDS_DIR",
+    str(REPO_ROOT / "docs" / "ssot" / "kanban" / "cards")))
+
+
+def _audit_card_path(host: str) -> Path:
+    safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in host)
+    return CARDS_DIR / f"audit-auto-{safe}.yml"
+
+
+def _load_card(path: Path) -> dict:
+    try:
+        return yaml.safe_load(path.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def emit_audit_card(host: str, deltas: list, host_ssot: dict) -> str:
+    """Upsert/close audit-auto-<host> from today's deltas."""
+    path = _audit_card_path(host)
+    today = time.strftime("%Y-%m-%d")
+    if not deltas:
+        card = _load_card(path)
+        if path.exists() and card.get("column") == "review" and \
+                card.get("generated") == "audit-hosts":
+            card["column"] = "done"
+            card["note"] = f"Auto-recovered {today}: audit clean."
+            card["updated"] = today
+            path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                           allow_unicode=True))
+            return "closed"
+        return "clean"
+    card = _load_card(path)
+    opened = card.get("updated") if card.get("column") == "review" else today
+    try:
+        age_h = (time.time() - time.mktime(
+            time.strptime(str(opened), "%Y-%m-%d"))) / 3600
+    except (ValueError, TypeError):
+        age_h = 0
+    card.update({
+        "id": f"audit-auto-{host}",
+        "title": f"Audit drift on `{host}`: {len(deltas)} delta(s) "
+                 "vs expected state",
+        "brief": ("Daily audit-hosts diff found service/placement drift "
+                  "on this host. Deltas become work: fix the drift, or "
+                  "fix the SSOT declaration (expected_services, "
+                  "expected_absent, allowed_running, known_failed)."),
+        "column": "review",
+        "review_kind": "triage",
+        "generated": "audit-hosts",
+        "program": "chaba-ci",
+        "area": "fleet-ops",
+        "priority": "high" if age_h >= ESCALATE_H else "medium",
+        "note": "\n".join(f"- {d}" for d in deltas)[:1400],
+        "help": ("ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml "
+                 f"hosts.{host}. A delta means declared != observed: "
+                 "either restore the expected state, or amend the SSOT so "
+                 "the declaration matches intent (this file IS the "
+                 "placement contract)."),
+        "updated": opened,
+    })
+    if path.exists() and card == _load_card(path):
+        return "unchanged"
+    path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                   allow_unicode=True))
+    return "updated"
+
+
+def sweep_audit_cards(audited: set, ssot: dict) -> int:
+    """Close audit-auto cards for hosts dropped from the audit fleet."""
+    n = 0
+    for path in CARDS_DIR.glob("audit-auto-*.yml"):
+        host = path.stem.removeprefix("audit-auto-")
+        if host in audited:
+            continue
+        card = _load_card(path)
+        if card.get("column") == "review" and \
+                card.get("generated") == "audit-hosts":
+            card["column"] = "done"
+            card["note"] = ("Auto-closed: host left the audit fleet "
+                            "(retired or removed from ssot.audit.hosts.yml).")
+            card["updated"] = time.strftime("%Y-%m-%d")
+            path.write_text(yaml.safe_dump(card, sort_keys=False,
+                                           allow_unicode=True))
+            n += 1
+    return n
+
+
+def audited_hosts(ssot_path: Path) -> list:
+    """Hosts to audit: SSOT `hosts:` entries minus retired ones."""
+    try:
+        ssot = yaml.safe_load(ssot_path.read_text()) or {}
+    except Exception:
+        return [h for h in HOSTS if h != "idc01"]
+    out = []
+    for h in HOSTS:
+        hs = ssot.get("hosts", {}).get(h)
+        if hs is None:  # not declared in audit SSOT — skip
+            continue
+        if hs.get("retired"):
+            continue
+        out.append(h)
+    return out
 
 
 def consolidate(output_dir: Path) -> int:
@@ -440,8 +659,13 @@ def consolidate(output_dir: Path) -> int:
 def main():
     parser = argparse.ArgumentParser(description="Snapshot a host's service and resource state")
     parser.add_argument("--host", choices=list(HOSTS))
+    parser.add_argument("--all", action="store_true",
+                        help="Audit every non-retired host declared in the SSOT")
     parser.add_argument("--consolidate", action="store_true",
                         help="Render the fleet L2 rollup instead of auditing a host")
+    parser.add_argument("--cards", action="store_true",
+                        help="Upsert/close audit-auto-<host> kanban cards "
+                             "(served-checkout runs only — tony-dell chain)")
     parser.add_argument("--ssot", type=Path, default=SSOT_DEFAULT)
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR_DEFAULT)
     parser.add_argument("--ssh", action="store_true", default=None,
@@ -453,27 +677,52 @@ def main():
 
     if args.consolidate:
         raise SystemExit(consolidate(args.output_dir))
+    if args.all:
+        rc = 0
+        for h in audited_hosts(args.ssot):
+            try:
+                rc |= run_one(h, args)
+            except Exception as e:
+                print(f"audit {h} crashed: {e}")
+                rc = 1
+        if args.cards:
+            n = sweep_audit_cards(set(audited_hosts(args.ssot)), None)
+            if n:
+                print(f"swept {n} stale audit-auto card(s)")
+        raise SystemExit(rc)
     if not args.host:
-        parser.error("--host is required unless --consolidate is given")
+        parser.error("--host or --all is required unless --consolidate is given")
+    raise SystemExit(run_one(args.host, args))
 
+
+def run_one(host: str, args) -> int:
     ssh = None
     if args.ssh:
         ssh = True
     elif args.no_ssh:
         ssh = False
 
-    observed = audit_host(args.host, ssh)
-    deltas = diff_against_ssot(args.host, observed, args.ssot)
+    observed = audit_host(host, ssh)
+    deltas = diff_against_ssot(host, observed, args.ssot)
     observed["deltas"] = deltas
 
     if args.save_to_ssot:
-        save_to_ssot(args.host, observed, args.ssot)
+        save_to_ssot(host, observed, args.ssot)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    report_path = args.output_dir / f"{args.host}-{ts}.yml"
+    report_path = args.output_dir / f"{host}-{ts}.yml"
     report_path.write_text(yaml.safe_dump(observed, sort_keys=False, allow_unicode=True))
-    emit_meta(args.host, observed, deltas, report_path, args.output_dir)
+    emit_meta(host, observed, deltas, report_path, args.output_dir)
+
+    if args.cards:
+        try:
+            ssot = yaml.safe_load(args.ssot.read_text()) or {}
+            host_ssot = ssot.get("hosts", {}).get(host, {})
+            rc = emit_audit_card(host, deltas, host_ssot)
+            print(f"audit-auto-{host}: {rc}")
+        except Exception as e:
+            print(f"audit-auto-{host}: card emit failed: {e}")
 
     print(f"Wrote report: {report_path}")
     print(f"Tailscale IP: {observed.get('tailscale_ip')}")
@@ -485,6 +734,7 @@ def main():
             print(f"  - {d}")
     else:
         print("No deltas against SSOT expected state.")
+    return 0
 
 
 def emit_meta(host: str, observed: dict, deltas: list[str],

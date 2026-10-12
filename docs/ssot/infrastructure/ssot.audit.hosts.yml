@@ -28,12 +28,20 @@ runner:
   output_dir: reports/audit-hosts
   ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml
   schedule: daily
-  note: "The runner writes per-host reports under reports/audit-hosts/ and prints
-    a
+  note: "The runner writes per-host reports under reports/audit-hosts/ AND
+    upserts audit-auto-<host> kanban cards (--cards, in the chaba-system-report
+    chain on tony-dell — OPS-0521 drift-reconcile). It does not overwrite this
+    SSOT file automatically; the user reviews the report and updates the
+    canonical expected state here.
 
-    delta summary. It does not overwrite this SSOT file automatically; the user
-
-    reviews the report and updates the canonical expected state here.
+    Per-host fields the diff enforces:
+      expected_services — must be running (expected_state: active|inactive|absent)
+      expected_absent   — must NOT be running (migrated/retired ghosts)
+      allowed_running   — fnmatch globs allowed to run undeclared
+      known_failed      — failed units that are tolerated/explained
+      offline_ok        — unreachable host is normal (laptops)
+      retired           — host out of the placement contract; not audited
+      oom_kills_tolerance, expected_resources — resource thresholds
 
     "
 hosts:
@@ -95,7 +103,7 @@ hosts:
       - name: michael-dev.service
         type: service
         scope: user
-        expected_state: inactive
+        expected_state: absent
         critical: false
         note: Currently disabled — migrated to idc03 2026-10-09 (verified
           active there, :8124 serving 200). Dell quadlet kept for manual
@@ -236,6 +244,56 @@ hosts:
           leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
+      # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
+      # were running but never declared ---
+      - {name: ada-ha.service, type: service, scope: user}
+      - {name: bserver.service, type: service, scope: user}
+      - {name: camera-panel.service, type: service, scope: user}
+      - {name: chaba-gemini-mic-test.service, type: service, scope: user}
+      - {name: chaba-guest-lan.service, type: service, scope: user}
+      - {name: chaba-guest.service, type: service, scope: user}
+      - {name: chaba-monitoring-dashboard.service, type: service, scope: user}
+      - {name: chaba-report-api.service, type: service, scope: user}
+      - {name: chaba-tunnel.service, type: service, scope: user}
+      - {name: dev-miniapp-v0.service, type: service, scope: user}
+      - {name: dnsmasq-postgre.service, type: service, scope: user}
+      - {name: gemini-ollama-proxy.service, type: service, scope: user}
+      - {name: gesture-relay.service, type: service, scope: user}
+      - {name: gev-gemini.service, type: service, scope: user}
+      - {name: gods-eye-view-api.service, type: service, scope: user}
+      - {name: google-home-mcp.service, type: service, scope: user}
+      - {name: ha-guest-lan.service, type: service, scope: user}
+      - {name: ha-live.service, type: service, scope: user}
+      - {name: ha-stall-watchdog.service, type: service, scope: user}
+      - {name: helm.service, type: service, scope: user}
+      - {name: mha-state-push.service, type: service, scope: user}
+      - {name: michael-ha-mcp-tunnel.service, type: service, scope: user}
+      - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
+      - {name: ms-playwright-ram-cache.service, type: service, scope: user}
+      - {name: nest-mgr.service, type: service, scope: user}
+      - {name: node-red.service, type: service, scope: user}
+      - {name: notebooklm-mcp.service, type: service, scope: user}
+      - {name: notebooklm-rest.service, type: service, scope: user}
+      - {name: npm-cache-ram-cache.service, type: service, scope: user}
+      - {name: playlive-omen-cdp-tunnel.service, type: service, scope: user}
+      - {name: plug-watch.service, type: service, scope: user}
+      - {name: raceman-php.service, type: service, scope: user}
+      - {name: raceman-web.service, type: service, scope: user}
+      - {name: rclone-gdrive.service, type: service, scope: user}
+      - {name: redis.service, type: service, scope: user}
+      - {name: status-data-api.service, type: service, scope: user}
+      - {name: trade-api.service, type: service, scope: user}
+      - {name: weaviate.service, type: service, scope: user}
+      - {name: web.service, type: service, scope: user}
+      - {name: websockify-macbook.service, type: service, scope: user}
+      - {name: websockify-vms-mn01.service, type: service, scope: user}
+      - {name: workflows-mcp.service, type: service, scope: user}
+      - {name: xvfb-99.service, type: service, scope: user}
+      - {name: yomi-api.service, type: service, scope: user}
+      - {name: yt-live-api.service, type: service, scope: user}
+    expected_absent: []   # michael-dev covered by expected_state: absent above
+    allowed_running:
+      - devin-task-*.service   # ephemeral dispatch session units
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
@@ -745,6 +803,43 @@ hosts:
         critical: false
         note: Polls tony-dell clipboard (text + image/*) every 1s into :0 —
           Barrier 2.4.0 relays text only. Runs ~/.local/bin/clip-sync tony-dell
+      # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
+      # were running but never declared ---
+      - {name: cast-browser.service, type: service, scope: user}
+      - {name: cast-shots-http.service, type: service, scope: user}
+      - {name: cast-stream-http.service, type: service, scope: user}
+      - {name: chaba-watch.service, type: service, scope: user}
+      - {name: cookie-bridge.service, type: service, scope: user}
+      - {name: gev-workspace.service, type: service, scope: user}
+      - {name: ghostroute-watcher.service, type: service, scope: user}
+      - {name: mcp-debug-cors.service, type: service, scope: user}
+      - {name: mddb-tunnel.service, type: service, scope: user}
+      - {name: ms-playwright-ram-cache.service, type: service, scope: user}
+      - {name: nest-mgr.service, type: service, scope: user}
+      - {name: ollama.service, type: service, scope: user, critical: true,
+         note: "nest-gpu-lane model host — kanban-brief calls :11434 phi3-gguf"}
+      - {name: open-jev.service, type: service, scope: user}
+      - {name: open-jev-student.service, type: service, scope: user}
+      - {name: playlived.service, type: service, scope: user}
+      - {name: puccinialin-ram-cache.service, type: service, scope: user}
+      - {name: rclone-gdrive.service, type: service, scope: user}
+      - {name: rika-watchdog.service, type: service, scope: user}
+      - {name: tailscale-connections.service, type: service, scope: user}
+      - {name: weaviate-embed-proxy.service, type: service, scope: user}
+      - {name: weaviate-search.service, type: service, scope: user}
+      # system-scope fleet units found live by the 2026-10-12 census
+      - {name: caddy-mddb.service, type: service, scope: system}
+      - {name: go2rtc-omen.service, type: service, scope: system}
+      - {name: yomi-api.service, type: service, scope: system}
+      - {name: yomi-process.service, type: service, scope: system,
+         note: failed at census — card tracks whether it should run or retire}
+    expected_absent:
+      - name: michael-dev.service
+        scope: user
+        note: ghost copy — real instance on idc03 since 2026-10-09; omen
+          copy disabled 2026-10-12 (container running since 2026-07-28)
+    allowed_running:
+      - barriers.service        # workstation KVM — flaps activating, not fleet
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
@@ -1064,6 +1159,7 @@ hosts:
     tailscale_ip: 100.77.76.112
     description: portable Linux dev/lab node — MacBookPro13,3, Ubuntu 26.04.1 since 2026-10-10 (was macOS)
     role: portable-lab
+    offline_ok: true   # laptop — sleeps/off-net is normal, not an outage
     tags:
       - linux
       - laptop
@@ -1080,6 +1176,11 @@ hosts:
         scope: system
         expected_state: active
         critical: false
+      # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
+      - {name: lid-blank-watch.service, type: service, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user}
+    allowed_running:
+      - devin-task-*.service    # ephemeral dispatch session units
     known_failed: []
     expected_resources:
       min_free_ram_mb: 500
@@ -1095,43 +1196,11 @@ hosts:
           is normal, not an outage.
         - "Fleet provisioned 2026-10-11: ~/CascadeProjects/{chaba,ada-pi} cloned from tony-dell checkouts (fleet-internal ssh origin — no GitHub creds needed; merge-sweep pulls runner branches). runner-agent.timer was already armed; hooks armed via install-hooks.sh; git identity Devin Fleet."
     deltas: []
-  tony-macbook:
-    tailscale_ip: 100.77.76.112
-    description: MacBookPro13,3 (2016 15") — Ubuntu 26.04.1 on internal NVMe;
-      travel/lab host. Installed 2026-10-10 (replaced macOS; user data backed
-      up to the tony-usb stick first — docs/kb/hardware-mn01-tony-usb.md).
-    role: portable
-    tags:
-      - laptop
-      - portable
-      - dev-host
-    expected_services:
-      - name: ssh
-        type: systemd
-        expected_state: enabled
-        critical: true
-      - name: tailscaled
-        type: systemd
-        expected_state: active
-        critical: true
-      - name: stick-announce
-        type: systemd
-        expected_state: enabled
-        critical: false
-        note: posts host_online ops-event at boot (LAN + tailnet IP)
-      - name: runner-agent.timer
-        type: systemd-user
-        expected_state: enabled
-        critical: false
-        note: 'dispatch lane — RUNNER_CAP=2, labels cpu,dev,portable
-          (installed 2026-10-10; claims unlabeled + cpu/dev/portable
-          cards via board-api)'
-    expected_resources:
-      min_free_ram_mb: 500
-      max_swap_used_percent: 80
-      max_root_disk_percent: 90
-      max_load_5m: 8.0
-    deltas: []
+  # 2026-10-12 (OPS-0521): the `tony-macbook` block below was merged into
+  # `macbook` — audit-hosts.py reads the `macbook` key; this duplicate used
+  # an older schema the diff never enforced. stick-announce didn't survive:
+  # not installed on the rebuilt Ubuntu host. Kept detail: install history +
+  # tony-usb backup pointer live in the `macbook` block description.
   mn01:
     tailscale_ip: 100.106.196.22
     description: Portable Ubuntu PC in mn-home
@@ -1183,6 +1252,15 @@ hosts:
       # jobs/infrastructure/2026-09-24-idc01-consolidation.yml), then to idc03
       # with the 2026-10-05/06 migration — unit files remain on mn01 disabled
       # as standby.
+      # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
+      - {name: google-home-mcp.service, type: service, scope: user}
+      - {name: mcp-link-monitor-mn.service, type: service, scope: user}
+      - {name: notebooklm-mcp.service, type: service, scope: user}
+      - {name: playwright-server.service, type: service, scope: user}
+      - {name: vms-snap.service, type: service, scope: user}
+      - {name: xmeye-vms.service, type: service, scope: user}
+      - {name: yolo-ipad-1.service, type: service, scope: user}
+      - {name: yolo-ipad-2.service, type: service, scope: user}
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -1368,82 +1446,18 @@ hosts:
         - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.646831+07:00
     deltas: []
   idc01:
+    retired: true   # 2026-10-12 — lease teardown pending (OPS-0520); ssh dead,
+                    # excluded from the daily audit fleet
     tailscale_ip: 100.74.146.0
-    description: "Public VPS — warm-DR node since the 2026-10-05/06 idc03
-      migration. Runs mddb-follower (read-only replica :11123/:11124),
-      standby caddy-edge (public IP answers, ada paths 502 by design — no
-      backends until failover), warm ada-pi-pwa. All other pre-migration units
-      (mddb leader, ada-ha-*, ollama, gemini-ollama-proxy, input-bridge,
-      mddb-panel, camwall-edge, obsidian-vault, vcast-headless@*, open-notebook*)
-      are MASKED — they must not appear active; unmasking mddb.service (the
-      retired leader data dir) is a split-brain hazard."
-    role: warm-dr
+    description: "RETIRED public VPS — ssh dead 2026-10-12. Was warm-DR node
+      since the 2026-10-05/06 idc03 migration (mddb-follower, standby
+      caddy-edge, warm ada-pi-pwa — all assumed lost with the host). Sole
+      item of value: frozen jev-corpus archive; live corpus is on idc03.
+      Rescue-or-cancel tracked on card idc01-teardown (OPS-0520)."
+    role: retired
     tags:
-      - public
-      - vps
-      - warm-dr
-      - mddb-follower
-    expected_services:
-      - name: ada-pi-pwa.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Warm-boot ada backend on 127.0.0.1:8001 — envs point at idc03 mddb
-          so a promoted stack works immediately (cold start ~181s)
-      - name: caddy-edge.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: Standby public edge — answers api.surf-thailand.com with pinned
-          synced cert; 502 on ada paths is CORRECT (backends off until failover)
-      - name: mddb-follower.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: "Read-only replication follower of idc03 leader
-          (100.74.146.0:11123 http / :11124 gRPC, quadlet
-          localhost/mddb:2.15.4-lsn, env-file ~/.config/secrets/mddb.env).
-          Data ~/.config/containers/mddb-follower/; the retired leader dir was
-          renamed data.leader-retired-20261006."
-      - name: tailscaled.service
-        type: service
-        scope: system
-        expected_state: active
-        critical: true
-      - name: log-shipper.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Hourly journald -> MDDB host-logs (leader on idc03)
-      - name: log-shipper-severe.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-      - name: chaba-repo-sync.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
-          2026-10-09 after checkout drifted 544 commits behind (audit finding)
-      # Masked warm-standby units (verified 2026-10-07): mddb.service (old
-      # leader), ada-ha-tony, ada-ha-michael, ollama, gemini-ollama-proxy,
-      # input-bridge, mddb-panel, camwall-edge, obsidian-vault,
-      # vcast-headless@2/@4, open-notebook*. Do NOT add them back as expected —
-      # masked units must stay inactive.
-      # Timers migrated to idc03: mddb-backup, obsidian-vault-backup,
-      # ada-memory-{sync,drift,gaps,distill}, ada-recall-canary,
-      # ada-scenario-*, ada-bench-casting, ada-embed-bench, cam-wall-*-vps,
-      # doc-mirror, news-flood, mddb-embed-probe, mddb-memory-standard,
-      # mddb-restart, ops-health-report, secrets-backup.
-    # Any OOM kill in the last 24h is a delta — the 2026-09-27 mddb crash
-    # loop (4 OOM kills in ~40min, resync-from-LSN0 amplification) must not
-    # pass silently. Raise only if a recurring OOM is accepted as known.
+      - retired
+    expected_services: []   # host retired — nothing may run there
     oom_kills_tolerance: 0
     known_failed: []
   idc03:
@@ -1727,6 +1741,17 @@ hosts:
         critical: false
         note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
           2026-10-09 after checkout drifted 190 commits behind (audit finding)
+      # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
+      - {name: ada-bankq-student.service, type: service, scope: user}
+      - {name: ada-kk.service, type: service, scope: user}
+      - {name: ada-kk-dev.service, type: service, scope: user}
+      - {name: ada-tg-relay-kk.service, type: service, scope: user}
+      - {name: kk-ha.service, type: service, scope: user}
+      - {name: litellm.service, type: service, scope: user}
+      - {name: litellm-db.service, type: service, scope: user}
+      - {name: michael-dev.service, type: service, scope: user, critical: true,
+         note: real instance — migrated from dell 2026-10-09, serves :8124}
+      - {name: nest-mgr.service, type: service, scope: user}
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
@@ -1847,6 +1872,11 @@ hosts:
         note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
           2026-10-09 after checkout drifted 1389 commits behind, breaking
           every repo-exec job on the host (audit finding)
+      # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
+      - {name: ada-lab.service, type: service, scope: user}
+      - {name: caddy-edge.service, type: service, scope: user}
+      - {name: camwall-edge.service, type: service, scope: user}
+      - {name: mddb-ops.service, type: service, scope: user}
     known_failed:
       - name: chaba-audit.service
         reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
