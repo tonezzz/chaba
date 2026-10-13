@@ -69,6 +69,11 @@ Body follows `cms-page-standard.md`: **Status** verdict line →
    demand-driven refresh is enough at member-lane volume.
 5. **Dedup at lookup** — `cms_read place <name>` before publish; merge
    into the existing page when found (keeps History in one place).
+6. **Unresolved = no page** — a bare-name ask that resolves to no
+   coords and no maps link publishes nothing; the lane answers with a
+   Google Maps search link (`place_report` returns `unresolved` +
+   `maps_url`) or asks for the place's link. A title-only page is worse
+   than none (the Cape Sports Center Langebaan miss, 2026-10-13).
 
 ## Coverage
 
