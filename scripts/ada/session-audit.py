@@ -844,6 +844,10 @@ def file_card(sig_row: dict, day: str, cards: list[dict]) -> str:
                  "document and close."),
         "note": ("Auto-filed by session-audit (dedup on card id "
                  f"{cid}); refiled only if the pattern persists."),
+        # review-lane contract up front — a card that reaches review
+        # without review_kind trips the ssot-optimize gate and stalls
+        # kanban-commit repo-wide (2026-10-13 incident).
+        "review_kind": "verify",
         "from": "devin",
     }
     try:

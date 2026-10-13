@@ -874,7 +874,8 @@ def do_create(body: dict, frm: str) -> dict:
         card["priority"] = pri
     if report:
         card["report"] = report
-    for key in ("program", "blocked_by"):
+    for key in ("program", "blocked_by", "review_kind",
+                "auto_done_when"):
         v = str(body.get(key) or "").strip()
         if v:
             card[key] = v[:120]
