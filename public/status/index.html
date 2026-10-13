@@ -32,7 +32,7 @@
 </table>
 <p class="foot">public read-only snapshot · refreshes every 5 min</p>
 <script>
-fetch("../data/fleet-status.json", {cache: "no-store"})
+fetch("data/fleet-status.json", {cache: "no-store"})
   .then(r => r.json())
   .then(d => {
     document.getElementById("stamp").textContent = "as of " + d.generated;
