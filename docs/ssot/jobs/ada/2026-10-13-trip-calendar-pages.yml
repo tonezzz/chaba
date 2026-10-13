@@ -1,0 +1,88 @@
+title: Trip-calendar CMS page family — generator + Ada tool
+id: 2026-10-13-trip-calendar-pages
+card: ada-trip-calendar-pages
+date: 2026-10-13
+status: shipped-chaba-pending-adapi
+summary: |
+  "Show my trip calendar" -> a cms-page-standard family: rollup
+  trip-<slug> (mermaid gantt + day table), daily leaves
+  trip-<slug>-<YYYY-MM-DD>, and trip-<slug>-qc coverage page. Generator
+  lives in this repo; the Ada-side tools.d wrapper is staged under
+  integrations/ada-pi/ pending an ada-pi session (dispatch worktrees
+  may not write outside their repo).
+
+deliverables:
+  - file: scripts/ada/trip-calendar.py
+    role: generator
+    detail: |
+      Merges CalendarService.list_events (ada-pi backend, lane-scoped
+      registry file) with LINE relay conv_journal archive context
+      (journal-<day>.jsonl per room under LINE_MEDIA_ARCHIVE_DIR).
+      Writes rollup/leaves/qc + regens reports-index. Re-execs under
+      ada-pi/.venv when ambient python lacks provider deps. --json for
+      tool callers.
+    args: "--slug <trip> --from/--to (inferred from matching calendar
+      event otherwise) --lane tony|kk|kk-dev --public --keywords --chat
+      --no-journal --dry-run --json"
+  - file: integrations/ada-pi/backend/tools.d/trip_calendar.py
+    role: ada tool (staged, NOT deployed)
+    detail: |
+      Shells the generator with the lane derived from
+      ADA_CMS_COLLECTION (ada-cms-pages->tony, -kk->kk, -kk-dev->kk-dev)
+      — lane binding by construction, same as conv_journal. public='yes'
+      requires confirmed='yes' (explicit-ask rule). Returns
+      rollup/view_url/public_url/leaf count.
+  - file: integrations/ada-pi/backend/tools.d/manifest.trip_calendar.yml
+    role: manifest entry (policy=read, secondary_allowed=true, timeout 120)
+  - file: integrations/ada-pi/backend/tool_guide.trip_calendar.yml
+    role: model usage guidance
+  - file: docs/ssot/apps/ssot.apps.ada-persons.yml
+    role: profile update
+    detail: |
+      trip_calendar added to persons.kk.tools.include,
+      bench_profiles.kk-cms-only, and kk-parity. Drift fix: kk-parity
+      also gained page_snapshot + conv_journal (persons.kk additions it
+      had missed — parity profile wasn't identical).
+
+lane_map:
+  tony:   {collection: ada-cms-pages,        calendar: "~/.config/ada/calendar.json",      instance: tony, tenant: tony-ha}
+  kk:     {collection: ada-cms-pages-kk,     calendar: "~/.config/ada/calendar-kk.json",   instance: kk,   tenant: kk-ha}
+  kk-dev: {collection: ada-cms-pages-kk-dev, calendar: "~/.config/ada/calendar-kk-dev.json", instance: kk,  tenant: null}
+
+meta_contract: |
+  All pages: kind=report, domain=personal, report_role=rollup|leaf|qc,
+  parent=reports-index|trip-<slug>, status=active, fresh_for=1d
+  (on-demand snapshot), confidence=high|medium|low per source health,
+  sources, timeline, generated_by=trip-calendar.py, instance=<lane>.
+  --public adds meta.public=true to rollup+leaves only (qc stays
+  internal); links inside pages go absolute
+  surf-thailand.com/<tenant>/<key>.html when public, else #/<slug>.
+
+verify:
+  dry_run: "synthetic + real renders reviewed (kk-dev, explicit span)"
+  live: |
+    2026-10-13 --slug capetown --from 2026-10-12 --to 2026-10-13
+    --keywords "เคปทาวน์,ทริป,africa" --lane kk-dev --json -> ok, 2
+    leaves, index_regen=true. Docs confirmed in ada-cms-pages-kk-dev
+    with correct roles/parents; reports-index rows present;
+    leaf carries real kk journal notes (Thai).
+  mermaid: |
+    Rollup body copied to ada-cms-pages/trip-capetown-devcheck,
+    screenshotted via playlived at
+    idc03.taila0626a.ts.net/cms/#/trip-capetown-devcheck — gantt renders
+    (crit span bar + axes). Devcheck page deleted after.
+  inference_fail: "unmatched slug without dates -> clean rc=2 error"
+
+gaps_and_notes:
+  - "kk google calendar (google-kk provider) is EMPTY — trip leaves show
+    journal context but 0 events until real events exist; tony lane read
+    currently 404s on one configured calendar (google provider, the
+    literal ${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME} entry — known
+    registry bug) which fails the whole aggregate read."
+  - "conv_journal has NO manifest.yml entry in ada-pi (b776e81) — its
+    DECLARATION is unreachable; trip_calendar ships with its manifest
+    snippet, add both when landing."
+  - "LINE/TG path returns public_url (surf-thailand.com/<tenant>/);
+    kk-dev has no public tenant so --public is a no-op there by design."
+  - "out of scope per card: FullCalendar grid, travel map, provider
+    writes. page_snapshot covers image-send to LINE rooms."
