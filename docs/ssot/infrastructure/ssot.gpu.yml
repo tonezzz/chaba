@@ -211,7 +211,10 @@ current_state:
     - /app/llama-server (2442 MB)
     - /opt/conda/bin/python3.11 (58 MB)
     - /opt/conda/bin/python (58 MB)
-  note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
+  note: "STALE 2026-10-13: the port-8001 llama router is gone — :8001 is now
+    the sensor-reader container (verified live: docker ps on tony-omen). The
+    omen llama lane is ollama on tailnet :11434 (phi3-gguf is mcp-llama's
+    DEFAULT_OLLAMA_MODEL). thai-legal/imagen2 GPU services not observed."
 
 embedding_offload:
   status: not_switched
@@ -254,7 +257,8 @@ monitoring:
 
   health_checks:
     gpu_services:
-      - thai-legal (http://tony-omen.local:8001/health)
+      - sensor-reader (http://tony-omen.local:8001/health — repurposed
+        2026-10-13; was the llama router)
       - imagen2 (http://tony-omen.local:8000/health)
       - txt2vid (container state: txt2vid-inference)
     use_case: Service availability monitoring

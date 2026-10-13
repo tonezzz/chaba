@@ -3,8 +3,15 @@
 Providers:
   openai_compat  POST {base_url}/chat/completions (ollama /v1, llama.cpp,
                  vllm — anything OpenAI-shaped). Returns usage tokens.
+  ssh_openai     same OpenAI-shaped call, but reached over ssh: cfg.ssh is
+                 the ssh prefix ("idc02", or "tony-dell ssh -o BatchMode=yes
+                 macbook" for a hop), cfg.base_url is the loopback URL ON
+                 THE REMOTE host. Payload goes over stdin; usage tokens
+                 survive the hop. No remote listener exposed off-loopback.
   gemini         POST generativelanguage/v1beta/{model}:generateContent.
                  Key from GEMINI_API_KEY or ~/.config/secrets/gemini-api-key.env.
+  ssh_cmd        opaque remote command: stdin=user text, stdout=reply text.
+                 No token usage (kept for non-HTTP runners like the T5 pipe).
   mock           offline echo — exercises the pipeline with no services
                  (used by the dry-run-dummy variant; --dry-run doesn't
                  need it, it skips providers entirely).
@@ -52,6 +59,46 @@ def chat(cfg, messages, timeout=60):
                 "prompt_tokens": 0, "completion_tokens": 0,
                 "ms": round((time.monotonic() - start) * 1000)}
 
+    if provider == "ssh_openai":
+        # OpenAI-compat endpoint on a remote loopback, reached via ssh:
+        #   ssh <cfg.ssh> curl --data-binary @- <base_url>/chat/completions
+        # cfg.ssh is everything after the local `ssh` (multi-hop chains are
+        # fine — e.g. "tony-dell ssh -o BatchMode=yes macbook" rides dell's
+        # macbook key). Header value carries no space so it survives the
+        # ssh arg re-join intact.
+        url = cfg["base_url"].rstrip("/") + "/chat/completions"
+        payload = json.dumps({"model": cfg["model"], "messages": messages,
+                              "temperature": 0, "stream": False,
+                              "max_tokens": 256})
+        r = None
+        for attempt in range(3):  # laptop sshd drops are transient — retry
+            r = subprocess.run(
+                f"ssh -o BatchMode=yes {cfg['ssh']} curl -sS --max-time "
+                f"{int(timeout)} -X POST {url} "
+                f"-H Content-Type:application/json --data-binary @-",
+                shell=True, input=payload, capture_output=True, text=True,
+                timeout=timeout + 30)
+            if r.returncode == 0:
+                break
+            if attempt < 2:
+                time.sleep(3)
+        if r.returncode != 0:
+            raise RuntimeError(f"ssh_openai rc={r.returncode}: "
+                               f"{r.stderr.strip()[:200]}")
+        body = json.loads(r.stdout)
+        if "choices" not in body:
+            raise RuntimeError(f"ssh_openai bad reply: "
+                               f"{r.stdout.strip()[:200]}")
+        msg = body["choices"][0]["message"]
+        text = msg.get("content") or msg.get("reasoning_content") or ""
+        usage = body.get("usage") or {}
+        return {
+            "text": text,
+            "prompt_tokens": usage.get("prompt_tokens"),
+            "completion_tokens": usage.get("completion_tokens"),
+            "ms": round((time.monotonic() - start) * 1000),
+        }
+
     if provider == "ssh_cmd":
         # Remote model runner: cfg.cmd is a shell command that reads the
         # user text on stdin and writes the reply on stdout (e.g.
@@ -71,7 +118,7 @@ def chat(cfg, messages, timeout=60):
         body = _post(
             cfg["base_url"].rstrip("/") + "/chat/completions",
             {"model": cfg["model"], "messages": messages,
-             "temperature": 0, "stream": False},
+             "temperature": 0, "stream": False, "max_tokens": 256},
             timeout)
         msg = body["choices"][0]["message"]
         # llama.cpp may put reasoning in reasoning_content; content wins

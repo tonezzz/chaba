@@ -27,8 +27,11 @@ raw fixture ──[optional polish model]──> sent text ──> downstream AI
   (fabrication detector — a tool call where none is expected is scored
   `fabricated`).
 - `variants.yml` — `{id, polish, downstream, host_labels}` per run. Providers:
-  `openai_compat` (ollama/llama.cpp /v1), `gemini` (generateContent, needs
-  `GEMINI_API_KEY` or `~/.config/secrets/gemini-api-key.env`), `mock`.
+  `openai_compat` (ollama/llama.cpp /v1), `ssh_openai` (same call over an
+  ssh prefix to a remote loopback server — incl. multi-hop like
+  `tony-dell ssh macbook`; token usage survives), `ssh_cmd` (opaque pipe,
+  no tokens), `gemini` (generateContent, needs `GEMINI_API_KEY` or
+  `~/.config/secrets/gemini-api-key.env`), `mock`.
 - `bench.py --variant <id>` — per fixture: tool_call match, entity
   preservation, polish similarity to gold, per-stage latency, **net tokens**
   (polish + downstream — the efficiency claim counts both). Writes
@@ -59,6 +62,29 @@ python3 scripts/micro-bench/bench.py --variant direct-llama32
 python3 scripts/micro-bench/bench.py --variant polish-llama32-llama32
 python3 scripts/micro-bench/report.py --card micro-ai-input-polish
 ```
+
+## Bench hosts (provisioned 2026-10-13)
+
+The spec'd polish lanes run llama.cpp b11583 + Llama-3.2-3B-Instruct
+Q4_K_M on loopback `:8114`, behind user unit `micro-bench-llama.service`:
+
+- `idc02` — CPU build, direct ssh from any tailnet runner.
+- `tony-macbook` — Vulkan build (Radeon Pro 450 / RADV + HD 530 via
+  `--fit`). Runners reach it through the dell hop
+  (`ssh tony-dell ssh macbook`); mn01 has no macbook key. Laptop — the
+  server is only expected up while benched.
+
+Both variants go through `provider: ssh_openai`, so no tailnet listener
+is opened. Start before a run:
+
+```
+ssh idc02 systemctl --user start micro-bench-llama
+ssh tony-dell ssh macbook systemctl --user start micro-bench-llama
+```
+
+Omen's lane is plain `openai_compat` to ollama `100.75.102.88:11434/v1`
+(phi3-gguf — the :8001 llama-router of ssot.gpu.yml is retired; the port
+now serves sensor-reader).
 
 ## Runner card (action.type=script)
 

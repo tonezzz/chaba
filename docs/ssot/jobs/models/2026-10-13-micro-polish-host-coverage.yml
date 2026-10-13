@@ -1,0 +1,74 @@
+title: micro-polish host coverage — omen/macbook/idc02 polish lanes benched
+subtitle: scripts/micro-bench spec'd hosts provisioned + measured vs direct baseline
+icon: flask
+version: 1
+
+card: micro-ai-input-polish
+date: 2026-10-13
+dispatch: 20261013-123825-build-scripts-micro-bench-clon
+
+question: |
+  Card spec requires polish variants on three hosts: "llama-router on
+  omen (existing), macbook Vulkan llama.cpp (host-roles offload lane),
+  idc02". Prior dispatches built the harness and benched idc03+gemini;
+  this run covers the three named hosts.
+
+provisioned: |
+  Two hosts had no model runtime — provisioned user-space, loopback-only:
+    idc02:        llama.cpp b11583 ubuntu-x64, Llama-3.2-3B-Instruct
+                  Q4_K_M gguf (unsloth, ~2GB), user unit
+                  micro-bench-llama.service on 127.0.0.1:8114. Linger
+                  already on. Start: ssh idc02 systemctl --user start
+                  micro-bench-llama.
+    tony-macbook: same model, ubuntu-vulkan-x64 build (Radeon Pro 450
+                  RADV + HD 530 visible; dGPU VRAM ~170MiB free under the
+                  desktop session, --fit assigns rest to CPU). Same unit
+                  name/port. loginctl enable-linger was applied. Runner
+                  access hops via tony-dell (mn01 holds no macbook key).
+  New harness provider `ssh_openai` (providers.py): OpenAI-shaped call
+  piped over ssh to a remote loopback llama-server — no tailnet
+  listeners opened, real usage tokens survive. Retries 3x on ssh-level
+  drops (macbook laptop sshd resets observed mid-run).
+  Doc fix: ssot.gpu.yml said "llama router on :8001" — that port has
+  been sensor-reader since before this run; the live omen lane is
+  ollama :11434 (phi3-gguf). Note corrected.
+
+measured: |
+  44 fixtures, downstream llama3.2:3b on idc03 ollama for all arms:
+                        direct  omen-phi3  idc02-l32  macbook-vulkan-l32
+  exact%                0.278   0.167      0.306      0.278 (38/44 ok*)
+  net tokens            276     657        464        463
+  total ms              5488    22066      8030       8669
+  fabricated            1       2          1          1
+  polish_ms             —       8513       2860       3291
+  *macbook: 6 transient ssh resets (laptop); ok-fixture stats unaffected.
+  phi3-gguf does not normalize at all (sim 0.21 — answers the utterance
+  instead of rewriting it, burns its 256-token cap every call).
+  llama32-as-polisher rewrites decently (sim ~0.49) but only +1 exact
+  on 27 noisy fixtures — the downstream recovers most mess itself.
+
+verdict: no-adopt-at-3b-tier
+aq_result: |
+  Adopt gate (match >= baseline AND net-token OR latency neutral):
+  - polish-omen-phi3-llama32:  REJECT — exact .278->.167, +139% tok, 4x slower
+  - polish-macbook-vulkan:     REJECT — exact parity .278, +68% tok, +58% lat
+  - polish-idc02-llama32:      SCOPE  — +1 exact on noisy cats only,
+                               clean/ambiguous unharmed; +68% net tokens,
+                               +46% latency. Marginal: one fixture.
+
+lane_fit: |
+  3B-class prompted polishers do not pay their token+latency tax at this
+  insertion point (llama3.2:3b downstream). Earlier rounds already showed
+  the same for idc03 llama and T5 correctors; the only SCOPE-level result
+  so far was a STRONG polisher (gemini-3.5-flash-lite, .556->.611 on
+  gemini downstream). Host placement (omen/idc02/macbook) does not change
+  the verdict — the polish quality ceiling is the model, not the host.
+  macbook Vulkan lane is provisioned and usable for future offload
+  probes (~3.3s polish latency incl. double ssh hop) but dGPU offload
+  is marginal while the desktop owns VRAM.
+
+artifacts:
+  - reports/micro-polish/LATEST.md (variant x metric + per-category + verdicts)
+  - reports/micro-polish/trend.md
+  - scripts/micro-bench/{variants.yml,providers.py,README.md}
+  - remote: idc02+tony-macbook ~/micro-bench/ + micro-bench-llama.service
