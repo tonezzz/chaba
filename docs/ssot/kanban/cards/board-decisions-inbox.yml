@@ -1,0 +1,77 @@
+id: board-decisions-inbox
+title: Board 'Needs Tony' surface — batch one-click approvals on open card asks
+column: done
+updated: 2026-10-13 21:12
+priority: medium
+tags:
+- kanban
+- ux
+- dispatch
+spec: 'Tony wants the batch-approval UX (like a multi-question popup) as a board feature: all cards with OPEN requests/asks
+  in one pass, one click each.
+
+  Mechanism already exists: cards carry requests[]/ask+options+suggested; render-board2.py renders ask + option
+  buttons -> POST /respond {id, request_id, answer}. Build the aggregate surface:
+
+  1. A ''Needs Tony'' section (top of board or ?decisions=1 view) listing every card with an open request — renders
+  the ask text, the card title/link, and its option buttons INLINE (suggested option highlighted with a star so
+  skimming = one click).
+
+  2. Click -> POST /respond (existing) -> remove the row on success, show answered state briefly. Free-text requests
+  keep the existing input box.
+
+  3. Count badge when zero open asks -> section collapses to ''no pending decisions''.
+
+  Reuse the existing button/handler code in render-board2.py (~lines 210-285) rather than new plumbing. Verify:
+  create a synthetic card with 2 open option-asks + 1 free-text ask, answer via the new surface, confirm responses
+  land on the card''s comms/request state.'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 ntax errors that fail `ssot-validate-all` (flagged in the card comment for cleanup). | devin-task-20261013-204708-tony-wants-the-batch-approval-.service:
+    Consumed 3min 53.317s CPU time over 22min 17.669s wall clock time, 674.4M memory peak.'
+  verified: true
+ref: KNB-0597
+comms:
+- at: 2026-10-13 20:46
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 20:47
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-13 20:47
+  from: chaba
+  text: started devin-task-20261013-204708-tony-wants-the-batch-approval- on tony-macbook (dispatch)
+- at: 2026-10-13 21:08
+  from: devin
+  text: 'done on dispatch/20261013-204708 (commit 7c004ee71): board2 gets a Needs Tony band under the tab row —
+    every open request + card-level ask as an inline row with the existing option buttons (★ suggested) / free-text
+    box. Click -> /respond -> row flashes ✓ then drops; pendingAns healing covers stale cards.json between renders;
+    ?decisions=1 deep-link + ny-pill scroll to it; empty -> "✓ no pending decisions". board-api now re-renders board2
+    on writes. Verified end-to-end: headless Chrome CDP against'
+- at: 2026-10-13 21:09
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ntax errors that fail `ssot-validate-all` (flagged in the card comment for cleanup).
+    | devin-task-20261013-204708'
+- at: 2026-10-13 21:09
+  from: chaba
+  text: 'session-end checkpoint cbcff17b: 1 leftover file(s) committed'
+- at: 2026-10-13 21:09
+  from: chaba
+  text: pushed dispatch/20261013-204708-tony-wants-the-batch-approval- to origin
+- at: 2026-10-13 21:09
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 21:09
+  from: chaba
+  text: auto-merged 1b9da216 (dispatch/20261013-204708-tony-wants-the-batch-approval-) → origin/master
+- at: 2026-10-13 21:12
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 21:12
+  note: verified — evidence checks green, closing itself

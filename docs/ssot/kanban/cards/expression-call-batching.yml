@@ -1,0 +1,20 @@
+id: expression-call-batching
+title: Batch/defer set_facial_expression — cosmetic calls re-bill full context per round
+column: backlog
+updated: 2026-10-13 21:39
+priority: medium
+tags:
+- ada
+- token-diet
+spec: 'Parent: live-session-token-diet (OPS-0509). set_facial_expression is NON_BLOCKING cosmetic but each call
+  still runs a billed tool round (~28k context resend). Worst observed: session f245275fde ran 234 expression calls
+  in one session. Options: (a) batch — let the model queue expressions inside the reply text and parse locally;
+  (b) throttle — cap expression calls per turn/minute (extends ADA_TOOL_CALL_BUDGET semantics); (c) fold into a
+  cheap text-mode side channel. Measure: calls/day and in-tokens/turn on ada-ha-tony before/after via usage.jsonl.'
+note: Filed by dispatch live-session-token-diet 2026-10-13. See docs/ssot/jobs/ada/2026-10-13-live-session-token-diet.yml
+  remaining_levers.
+ref: ADA-0601
+comms:
+- at: 2026-10-13 21:39
+  from: devin
+  text: card captured via board-api

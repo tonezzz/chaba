@@ -1,0 +1,13 @@
+id: ada-transcript-durability
+title: Persist session transcript incrementally / flush on SIGTERM
+column: backlog
+updated: 2026-10-13 21:40
+spec: 'Fleet restart at 21:24:11 killed active session 4585f3b060 mid-conversation; transcript never flushed (writes
+  only on clean close). Requirement: (1) append transcript lines incrementally to disk as turns complete, or (2)
+  SIGTERM handler that flushes before exit. Both cheap; incremental append is more robust against SIGKILL. Also
+  add drain grace to deploy-ada.sh so restarts wait for active ws sessions.'
+ref: ADA-0603
+comms:
+- at: 2026-10-13 21:40
+  from: tony
+  text: card captured via board-api

@@ -1,19 +1,25 @@
 id: ada-lazy-tool-schemas
 title: Lazy tool schemas — declare name+blurb only, fetch schema on demand
 column: backlog
-updated: 2026-10-13 18:32
+updated: 2026-10-13 21:24
 priority: medium
-spec: 'Pattern from tool-attention (arxiv 2604.21816) + vercel/ai lazy-tool PR + Cursor dynamic context discovery
-  (46.9% A/B reduction): ship each declaration as {name, <=300-char blurb, EMPTY params schema}; tool_runner validates
-  args against the real schema server-side and returns the existing tool_guide.yml usage hint on miss — the repair-feedback
-  path already exists. Est cut: the schema JSON of ~49 decls is a large share of the 27.8k floor; name+blurb-only
-  could drop floor to ~10-15k.
-
-  Risks to measure: more first-call arg errors while the model guesses shapes (watch audit-fail card rate); keep
-  full schemas for the top-10 hot tools (set_facial_expression 17k calls/7d, memory_search, cms_read).
-
-  Verify: context_growth.yaml ceiling+floor; compare first-turn in= before/after; count arg-error rate delta over
-  24h.'
+spec: "Pattern from tool-attention (arxiv 2604.21816) + vercel/ai lazy-tool PR + Cursor dynamic context discovery\
+  \ (46.9% A/B reduction): ship each declaration as {name, <=300-char blurb, EMPTY params schema}; tool_runner validates\
+  \ args against the real schema server-side and returns the existing tool_guide.yml usage hint on miss — the repair-feedback\
+  \ path already exists. Est cut: the schema JSON of ~49 decls is a large share of the 27.8k floor; name+blurb-only\
+  \ could drop floor to ~10-15k.\nRisks to measure: more first-call arg errors while the model guesses shapes (watch\
+  \ audit-fail card rate); keep full schemas for the top-10 hot tools (set_facial_expression 17k calls/7d, memory_search,\
+  \ cms_read).\nVerify: context_growth.yaml ceiling+floor; compare first-turn in= before/after; count arg-error\
+  \ rate delta over 24h.\n\nPromoted 2026-10-13. Concrete plan:\n1. Declared-surface split: full JSON schema retained\
+  \ for hot tools only\n   (set_facial_expression, memory_search, cms_read, control_entity,\n   calendar_read, cast_to_screen,\
+  \ cctv_wall, docs, kanban, chat_send);\n   all other decls ship {name, blurb, {type:object, properties:{}}}.\n\
+  2. tool_runner validates args against the real schema on every call;\n   miss -> return tool_guide.yml usage hint\
+  \ as the tool result so the\n   model self-repairs (path already exists). No new retry machinery.\n3. Deploy via\
+  \ deploy-ada.sh (gates: tool-lint + pytest) then restart\n   ada-ha-tony.\nBenchmark (the real number, record\
+  \ in comms):\n- first-turn in= on a fresh ada-ha-tony session BEFORE deploy\n  (baseline ~27.8k, from 18:25 restart\
+  \ journal) and AFTER.\n- trip scenario e2e: 'Call trip_calendar with slug smoke-nonexistent-trip\n  and dates\
+  \ 2030-01-01 to 2030-01-03' must still call with correct args.\n- context_growth.yaml must pass (55k ceiling +\
+  \ recall floor).\n- report arg-error/retry count on first cold-tool call vs today."
 note: Post-OPS-0583 measured floor is ~27.8k/turn on ada-ha-tony; decl count is no longer the driver — param JSON
   schemas are. Research-backed fix.
 ref: ADA-0586
@@ -21,3 +27,83 @@ comms:
 - at: 2026-10-13 18:32
   from: devin
   text: card captured via board-api
+- at: 2026-10-13 20:04
+  from: devin
+  text: 'promoted + queued (repo=ada-pi, pinned tony-dell). Pre-deploy baseline: first-turn in= ~27.8k on ada-ha-tony
+    (49-decl keep-list, measured 18:25 restart). OR function-calling demo on 10-13 proved the lazy flow self-organizes:
+    model elects load_tool_schema then calls with correct args. Benchmark = first-turn in= post-deploy + trip_calendar
+    scenario + arg-error count.'
+- at: 2026-10-13 20:06
+  from: chaba
+  text: dispatched 20261013-200555-pattern-from-tool-attention-ar on ada-pi
+- at: 2026-10-13 20:13
+  from: devin
+  text: 'attempt 2 running: baseline tests green (292 test_tool_runner+test_scenarios via genai stub). Design: builtin
+    decls extracted to module fn; lazy strip at connect() for non-hot tools (hot10 per card); runner validates args
+    vs real schema pre-gate and returns ok:false+usage+expected_args (repair path already exists). Deploy/push is
+    out of worktree scope — will leave merge+deploy-ada.sh as the operator step.'
+- at: 2026-10-13 20:34
+  from: devin
+  text: attempt 2 landed (commit 932550d on dispatch/20261013-200555). Wire decl JSON measured 63862 -> 27668 bytes
+    (-56.7%, ~ -9k tok est) — 10 hot tools keep full schemas (FULL_SCHEMA_TOOLS in realtime_provider, mirrored+lint-enforced
+    in ssot.tool-surface.yml lazy_schemas). Cold tools ship {name,blurb,empty obj schema}. ToolRunner validates
+    args vs real schema before gates; miss -> ok:false + tool_guide usage hint + expected_args. ADA_LAZY_SCHEMAS=0
+    kill switch, ADA_FULL_SCHEMA_TOOLS=csv extends. Veri
+- at: 2026-10-13 20:41
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 20:42
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): pushed dispatch/20261013-200555-pattern-from-tool-attention-ar to origin;
+    test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-13 20:42
+  from: chaba
+  text: pushed dispatch/20261013-200555-pattern-from-tool-attention-ar to origin
+- at: 2026-10-13 20:42
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-13 20:44
+  from: chaba
+  text: dispatched 20261013-204402-pattern-from-tool-attention-ar on ada-pi
+- at: 2026-10-13 21:02
+  from: devin
+  text: 'attempt 3: pulled attempt-2 commits into this worktree. Root cause of gate failure: bare test env lacks
+    google-genai/fastapi/pytest-asyncio — collection died on test_calendar_providers.py (first genai-touching file).
+    Fixing with committed tests/dep_stubs.py + conftest fallback async runner. Also found real regression: alias-implied
+    args (ada_daily_summary period=digest) hit SchemaError — exempting _ALIASES calls from _validate_call_args.'
+- at: 2026-10-13 21:13
+  from: devin
+  text: '[attempt 3] Merge-gate failure root-caused and fixed, on top of attempt 2 (932550d merged into this worktree).
+    Root cause: gate env runs a bare interpreter (no google-genai/fastapi/pytest-asyncio); attempt 2 local-green
+    relied on uncommitted gitignored .teststubs — test_calendar_providers.py died at collection. Fix: committed
+    tests/dep_stubs.py + conftest (duck-typed genai/fastapi stubs + async fallback, no-op when real deps exist).
+    Also fixed: _ALIASES calls skip real-schema arg validation (imp'
+- at: 2026-10-13 21:16
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 21:17
+  from: chaba
+  text: pushed dispatch/20261013-204402-pattern-from-tool-attention-ar to origin
+- at: 2026-10-13 21:17
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -k 'not slow' -x -q, 100.5s)
+- at: 2026-10-13 21:17
+  from: chaba
+  text: auto-merged eb89edbd (dispatch/20261013-204402-pattern-from-tool-attention-ar) → origin/main
+- at: 2026-10-13 21:22
+  from: devin
+  text: retry requested
+- at: 2026-10-13 21:24
+  from: chaba
+  text: dispatch parked after 3 attempts (policy retries_per_card=2) — re-queue to retry
+action:
+  type: dispatch
+  repo: ada-pi
+  host: tony-dell
+  status: held
+  attempts: 3
+  last_failure: 20261013-204402-pattern-from-tool-attention-ar finished (inactive) — see `devin-dispatch logs 20261013-204402-pattern-from-tool-attention-ar`
+  task_id: 20261013-204402-pattern-from-tool-attention-ar
+claim:
+  since: 2026-10-13 20:44
+review_kind: verify

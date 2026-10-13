@@ -1,7 +1,7 @@
 id: micro-ai-input-polish
 title: 'micro-ai input polish: small local model normalizes user input for each receiving AI'
-column: backlog
-updated: 2026-10-12 17:27
+column: done
+updated: 2026-10-13 20:43
 brief: 'Hypothesis (Tony 2026-10-11): a small local model sits in front of each receiving AI and rewrites raw user
   input (ASR errors, Thai/Eng mix, fragments) into the format that AI performs best on — better accuracy AND fewer
   downstream tokens. Bench-first per model-eval procedure; adopt only on measured gain.'
@@ -23,8 +23,12 @@ spec: "Build scripts/micro-bench/ cloning the scripts/voice-bench/ harness patte
   \ point only if\nmatch-rate >= baseline AND net-token OR latency cost is neutral-or-better. If it only\nhelps\
   \ on ASR-class input, deploy scoped to that lane — not a universal layer."
 action:
-  type: manual
-  status: queued
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 Report rendered to `reports/micro-polish/LATEST.md` + trend, board comment posted. | devin-task-20261013-123825-build-scripts-micro-bench-clon.service:
+    Consumed 1min 14.317s CPU time over 1h 2min 36.461s wall clock time, 172.2M memory peak.'
+  verified: true
 ref: BEN-0465
 comms:
 - at: 2026-10-11 16:49
@@ -103,6 +107,50 @@ comms:
   from: tony
   text: 'answered asr-lane-scope: typed-relays — text/relay lanes first (LINE/TG/PWA) — deployable now, bench applies
     directly (recommended)'
+- at: 2026-10-13 19:38
+  from: devin
+  text: 'zombie-sweep: was queued since 10-08/10-12 but type=manual — kanban-dispatch only claims type=dispatch,
+    so it starved silently. Converted action.type manual→dispatch on the served checkout; next drain picks it up.'
+- at: 2026-10-13 19:38
+  from: mn01
+  text: claimed
+- at: 2026-10-13 19:38
+  from: chaba
+  text: started devin-task-20261013-123825-build-scripts-micro-bench-clon on mn01 (dispatch)
+- at: 2026-10-13 19:40
+  from: devin
+  text: 'dispatch 20261013-123825 on mn01: harness already landed (bb9a3ab2 +3 follow-ups); this run adds the spec''d
+    variant hosts (omen llama-router, macbook Vulkan, idc02) + re-verifies fixtures/bench/report'
+- at: 2026-10-13 20:38
+  from: devin
+  text: "micro-bench: micro-bench report (2026-10-13 13:38 UTC): 4 variant(s) benched\n- **polish-idc02-llama32-llama32**\
+    \ vs `direct-llama32` → **SCOPE — helps noisy lanes only (+1 exact on 27 noisy fixtures), clean/ambiguous lanes\
+    \ unharmed**\n  exact 0.278 → 0.306, downstream-tok 275.77 → net-tok 464.09, total 5487.55ms → 8029.73ms, fabricated\
+    \ 1 → 1\n- **polish-macbook-vulkan-llama32-llama32** vs `direct-llama32` → **REJECT (no match-rate gain)**\n\
+    \  exact 0.278 → 0.278, downstream-tok 275.77 → net-tok 463.3"
+- at: 2026-10-13 20:40
+  from: devin
+  text: 'host-coverage run done (dispatch 20261013-123825, mn01): provisioned llama.cpp b11583 + Llama-3.2-3B on
+    idc02 (cpu) and tony-macbook (vulkan, dell-ssh hop; unit micro-bench-llama.service, off when idle) + new ssh_openai
+    provider. Bench 44fx x4: omen-phi3 REJECT (.278->.167, +139% tok), macbook REJECT (parity, +68% tok), idc02
+    SCOPE (+1 exact noisy only). Gate: no 3B polisher pays its tax at the llama32 insertion point — consistent with
+    earlier rounds; strong-polisher SCOPE (gemini) remains the o'
+- at: 2026-10-13 20:41
+  from: mn01
+  text: 'finished (ok): exit=0 Report rendered to `reports/micro-polish/LATEST.md` + trend, board comment posted.
+    | devin-task-20261013-123825-b'
+- at: 2026-10-13 20:41
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 20:41
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-13 20:43
+  from: chaba
+  text: 'merge-sweep: merged f12a2ede (dispatch/20261013-123825-build-scripts-micro-bench-clon from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-123825-build-scripts-micro-bench-clon.md)
+    — auto-closed'
 requests:
 - id: insertion-point
   ask: Where should the first bench target the polish layer? ASR has the messiest input and clearest expected win.
@@ -136,3 +184,9 @@ requests:
   suggested: typed-relays
   escalated_at: 2026-10-12 09:30
   answer: typed-relays — text/relay lanes first (LINE/TG/PWA) — deployable now, bench applies directly (recommended)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 20:43
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-123825-build-scripts-micro-bench-clon.md

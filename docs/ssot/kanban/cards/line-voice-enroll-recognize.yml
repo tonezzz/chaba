@@ -1,0 +1,90 @@
+id: line-voice-enroll-recognize
+title: LINE voice enrollment + recognition — send clips, know the boss's voice
+column: done
+updated: 2026-10-13 20:59
+priority: high
+tags:
+- ada-pi
+- line-relay
+- speaker-id
+- voice
+- kk
+spec: 'Tony 2026-10-13: users send a few voice clips over LINE/TG to enroll; the lane then recognizes who is speaking
+  on voice messages (boss recognition). TODAY: relay already archives audio to ~/.local/share/ada-voice-corpus/line/<caller>/<ts>.m4a;
+  speaker_id.py has ECAPA-TDNN embeddings, multi-print profiles, centroid+threshold (0.45), speaker_samples/ keep-audio.
+  GAP: all match/enroll paths require a LIVE session voice buffer — file input does not exist (speaker_profiles
+  match failed on LINE session 2026-10-13 19:41). BUILD: (1) backend/speaker_id.py — embed_file(path) [ffmpeg ->
+  pcm16 16k -> _compute_embedding], match_file(path) -> {match, score, all_scores}, enroll_from_file(path,name,person).
+  (2) line_relay.py audio branch — after _archive_media run match_file; append context line to the turn ''[voice:
+  speaker=<name-or-unknown> score=0.xx]'' so the persona names the speaker + can route person_entity -> scoped bank
+  (completes MEM-0572 identity leg). Unknown speaker -> enroll offer. (3) ENROLL FLOW — persona says ''send me 2-3
+  short clips''; relay saves each under voice-corpus/<caller>/; after N clips enroll_from_file per clip bound to
+  the caller''s person (LINE user id -> person map exists in env callers). Confirmation line back: ''enrolled <name>,
+  3 prints''. (4) speaker_profiles tool gains action=''match_file''|''enroll_file'' path= for ops/testing. (5) BOSS
+  RULE — person.tony recognized on any member lane gets owner-tier identity (full-access) per persons.yml roles;
+  document threshold + spoofing caveat in tool guide. VERIFY: ffmpeg decode m4a->embed ok on idc03; send KK clip
+  -> relay log shows speaker=kk score>0.45; enroll roundtrip: 3 clips -> match recognizes 4th. RAILS: ada-pi only;
+  pytest + tool-lint in worktree; no push/deploy — hand to deploy-ada.sh.'
+ref: ADA-0593
+comms:
+- at: 2026-10-13 19:49
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 19:51
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 19:51
+  from: idc03
+  text: claimed
+- at: 2026-10-13 19:51
+  from: chaba
+  text: started devin-task-20261013-195111-tony-2026-10-13-users-send-a-f on idc03 (dispatch)
+- at: 2026-10-13 19:59
+  from: devin
+  text: '[run] exploring done — building file-input speaker-id (embed_file/match_file/enroll_from_file via PyAV,
+    no ffmpeg binary on idc03), relay voice ctx + enroll-on-clips, tool actions, boss-rule elevation. Verifying
+    in a worktree copy of ada-pi; drop-ins land in integrations/ada-pi/.'
+- at: 2026-10-13 20:10
+  from: devin
+  text: '[done-pending-deploy] file-input speaker ID built+verified on clean copy of idc03 checkout: speaker_id
+    gains decode_audio_file (PyAV->PCM16 16k)/embed_file/match_file/enroll_from_file; line_relay scores every archived
+    clip, tags persona turns [voice: speaker=X score=Y], runs enroll-on-clips bound to caller person.*; speaker_profiles
+    gains match_file+enroll_file; boss rule: fresh identified {full:true} speaker keeps owner-tier on member lanes
+    (stale labels no-elevate). Gates green: tool-lint clea'
+- at: 2026-10-13 20:11
+  from: idc03
+  text: 'finished (ok): exit=0 d on LINE m4a (channel codec) — resolved by enrolling from LINE clips, which this
+    flow bootstraps. | devin-task-2'
+- at: 2026-10-13 20:11
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 20:11
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-13 20:13
+  from: chaba
+  text: 'merge-sweep: merged 2300025b (dispatch/20261013-195111-tony-2026-10-13-users-send-a-f from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-195111-tony-2026-10-13-users-send-a-f.md)
+    — auto-closed'
+- at: 2026-10-13 20:59
+  from: devin
+  text: 'LIVE EVIDENCE 20:57 ICT — Kaewta (session c68d126c9c) already tried both missing paths on a forwarded voice
+    clip: (1) speaker_profiles action=alias name=person.unknown -> failed, no file-input actions exist; (2) doc_read
+    on the audio -> failed, LINE audio archives to ~/.local/share/ada-voice-corpus/<caller>/ NOT /relay-img/arch/
+    — match_file must read voice-corpus too, or archive audio into a doc_read-reachable root. (3) NEW EDGE — a FORWARDED
+    clip saves under the FORWARDER''s caller dir (user-to'
+action:
+  type: dispatch
+  status: done
+  runner: idc03
+  result: 'exit=0 d on LINE m4a (channel codec) — resolved by enrolling from LINE clips, which this flow bootstraps.
+    | devin-task-20261013-195111-tony-2026-10-13-users-send-a-f.service: Consumed 3min 17.804s CPU time, 830.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 20:13
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-195111-tony-2026-10-13-users-send-a-f.md

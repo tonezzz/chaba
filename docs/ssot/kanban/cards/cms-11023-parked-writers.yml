@@ -1,0 +1,27 @@
+id: cms-11023-parked-writers
+title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
+column: backlog
+updated: 2026-10-13 19:52
+brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
+  kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
+  more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
+  ops-health-report.service (MDDB_BASE_URL env -> ops-health page), dell flood-alert.service + ada-flood-news.service
+  (env -> flood-report), omen ada-pi-orch-bench.service (--mddb -> bench-orch). Parked collections still accept
+  writes (proof: ada-cms-pages on :11023 g'
+priority: medium
+tags:
+- cms
+- mddb
+- migration
+spec: 'Sweep every unit/env/script arg that pins MDDB_BASE_URL or --mddb to :11023 AND writes migrated collections
+  (ada-cms-*, chaba-*, kb-*, documents, infrastructure-ssot, devin-kb). For pure-cms producers repoint env/arg to
+  :11027; for mixed ones keep :11023 and add MDDB_CMS_URL=:11027 (_base() routing). Candidates found 2026-10-13:
+  jev-bench.service + ops-health-report.service (idc03), flood-alert.service + ada-flood-news.service (tony-dell),
+  ada-pi-orch-bench.service (tony-omen), plus chaba-audit-full.service (dell, check what it writes). Then complete
+  the migration plan: delete parked collections on :11023 after the rollback window — until then any un-migrated
+  writer silently publishes into a dead letterbox, which is exactly how the nest-* staleness cards happened.'
+ref: MEM-0594
+comms:
+- at: 2026-10-13 19:52
+  from: devin
+  text: card captured via board-api

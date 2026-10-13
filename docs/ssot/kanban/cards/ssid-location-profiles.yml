@@ -1,8 +1,8 @@
 id: ssid-location-profiles
 title: 'location profiles: TONY-WIFI_2.4G missing from home SSIDs; document the auto-detect model'
-column: backlog
+column: done
 review_kind: decision
-updated: 2026-10-11 20:53
+updated: 2026-10-13 19:37
 brief: 'mcp-health auto-detects home vs mobile profile by Wi-Fi SSID (ssot.health.yml). Home list only had TONY-WIFI/TONY-WIFI_5G
   — tony-macbook on TONY-WIFI_2.4G would misdetect as mobile at home. Also: no written procedure explains the location
   model (SSID detect + tailnet-only + GNOME monitors.xml auto-save).'
@@ -31,7 +31,7 @@ requests:
   answer: mobile — keep mobile (recommended)
 action:
   type: self
-  status: queued
+  status: done
 comms:
 - at: 2026-10-11 15:05
   from: tony
@@ -56,3 +56,11 @@ comms:
 - at: 2026-10-11 20:53
   from: tony
   text: queued for processing
+- at: 2026-10-13 19:37
+  from: devin
+  text: closed by devin
+- at: 2026-10-13 19:37
+  from: devin
+  text: 'zombie-sweep close: (1) TONY-WIFI_2.4G already in profiles.home.ssids (ssot.health.yml:15, served checkout
+    verified). (2) mnhome no-entry recorded as decision. (3) location model posted to SYS-0452 comms. Type=self
+    card sat queued — self/manual cards never claim; closed.'

@@ -1,7 +1,7 @@
 id: text-lane-provider-routing
 title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
 column: backlog
-updated: 2026-10-13 18:32
+updated: 2026-10-13 19:23
 priority: medium
 spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
   use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
@@ -19,3 +19,10 @@ comms:
 - at: 2026-10-13 18:32
   from: devin
   text: card captured via board-api
+- at: 2026-10-13 19:23
+  from: devin
+  text: 'AMENDED SPEC (Tony-confirmed 2026-10-13): the deliverable is (a) — extend OpenRouterTextProvider with chat-completions
+    tools support so text lanes keep tools off the Live paid path. Concretely: (1) pass the session''s declared
+    surface to the OR provider as OpenAI-style tools[] (name+blurb+schema — reuse the lazy-schema decls when ada-lazy-tool-schemas
+    lands); (2) implement the call/result loop — OR returns tool_calls -> run via tool_runner -> append tool result
+    message -> re-request (bounded, ~4 '

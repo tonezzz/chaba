@@ -1,0 +1,19 @@
+id: michael-lane-context-window
+title: 'ada-ha-michael: same context-window bump — floor ~28.9k vs trigger 32k violates policy ratio'
+column: backlog
+updated: 2026-10-13 21:39
+priority: low
+tags:
+- ada
+- token-diet
+spec: 'Same fix as live-session-token-diet (OPS-0509) on the michael lane: measured floor ~28.9k makes default ADA_CONTEXT_TRIGGER_TOKENS=32000
+  / TARGET=24000 violate ssot.tokens.policy.yml (>=1.7x / >=1.25x floor). Set ~49000/37000 in ~/.config/secrets/ada-ha-michael.env
+  on idc03 + restart ada-ha-michael. Lower priority — michael lane burns far less than tony (134M/day). Verify via
+  /proc/<MainPID>/environ + one-turn scenario-live smoke.'
+note: Filed by dispatch live-session-token-diet 2026-10-13. Rotation (ADA_CONTEXT_TURN_BUDGET=45000) will preempt
+  compression — same rotation-bounded behaviour as tony lane, documented in the job doc.
+ref: ADA-0602
+comms:
+- at: 2026-10-13 21:39
+  from: devin
+  text: card captured via board-api

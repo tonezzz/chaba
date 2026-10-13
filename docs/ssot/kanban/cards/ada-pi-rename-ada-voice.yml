@@ -1,0 +1,33 @@
+id: ada-pi-rename-ada-voice
+title: 'rename ada-pi repo/lane to ada-voice (condition met: additions ~130x original)'
+column: backlog
+updated: 2026-10-13 20:14
+spec: 'Tony-approved rename — original import was 13 files/974 LOC; now 661 files/~128k LOC, +232k insertions, and
+  nothing ever ran on a Pi. Rename repo + all references.
+
+
+  Rename map (all must land together):
+
+  1. GitHub repo tonezzz/ada-pi -> ada-voice (rename keeps redirects).
+
+  2. Every checkout dir ~/CascadeProjects/ada-pi -> ada-voice on tony-dell (edit), idc02 (staging), idc03 (PROD
+  — deploy-only!), tony-omen, tony-macbook, mn01 + any live dispatch-wt-* worktrees. git remote set-url everywhere.
+
+  3. Dispatch layer: repos.conf on EVERY host + dispatch_repos.py BUILTIN_REPOS + REPO_TESTS key ada-pi->ada-voice;
+  card action.repo values use the name — sweep queued/running cards first.
+
+  4. SSOT/docs sweep: AGENTS.md (both repos), docs/ssot/* (~ada-pi mentions), chaba scripts hardcoding the path
+  (report-ada-debug, kk-bench-env, deploy-ada.sh install path, bench tools), systemd services on idc02/idc03 if
+  any unit references the dir.
+
+  5. Verify: dispatch claim on renamed repo, deploy-ada.sh green run, tool-lint + pytest on prod checkout.
+
+
+  SEQUENCING GATE: run only when zero ada-pi dispatches in flight (ada-lazy-tool-schemas is running now — this card
+  waits for a quiet window). Options: (a) one big sweep commit + host-by-host dir rename [recommended]; (b) keep
+  dir name, rename repo only — cheaper but leaves the Pi lie in paths.'
+ref: ADA-0596
+comms:
+- at: 2026-10-13 20:14
+  from: devin
+  text: card captured via board-api

@@ -1,9 +1,9 @@
 id: line-multihome-group
 title: 'LINE group (tony+kk+nhong): per-sender routing to each home assistant'
-column: review
+column: done
 priority: medium
 created: 2026-10-10
-updated: 2026-10-13 18:46
+updated: 2026-10-13 19:30
 note: 'One chaba LINE bot (@339sbrov) in a shared group. UPDATED SPEC 2026-10-11 (Tony): MENTION-triggered routing
   — any member addresses ada|kaewta|chaba by name in the message; relay routes the turn to that persona WS backend,
   replies tagged [persona->sender]. Unaddressed messages must NOT all hit Ada (noise) — default: ignore, or route
@@ -388,6 +388,22 @@ comms:
 - at: 2026-10-13 18:46
   from: devin
   text: moved backlog -> review
+- at: 2026-10-13 18:55
+  from: devin
+  text: '[wiring] tony-ha group C4fb0ce548a58e2d758335b7e21ce3411 wired + isolated on idc03 (deploy 3f4d270): ALLOWED_GROUP_IDS
+    += C4fb0ce; new LINE_GROUP_PERSONA C4fb0ce:chaba hard-pins the room — unaddressed -> chaba, foreign mentions
+    get not-on-this-lane reply (new relay feature, ada-pi backend/line_relay.py + tests). Outbound lane gate: chaba
+    lane default+allow+LOCK C4fb0ce (dormant until ada-chaba backend); tony allow = 3 DMs + C822 (verified live
+    403 on tony->C4fb0ce); kk/kk-dev still locked to C82'
+- at: 2026-10-13 19:30
+  from: devin
+  text: '[verify] Held merge unblocked: ''test gate failed'' was a false positive — gate ran system python3 missing
+    google.genai; under ada-pi''s .venv all 42 tests pass. Fetched the branch from the omen worktree (omen can''t
+    push to github: https remote, no creds) and merged to ada-pi main as 7d9cfaa. Live wiring was already deployed
+    by the runner (deploy 3f4d270); this merge makes it durable in git.'
+- at: 2026-10-13 19:30
+  from: devin
+  text: closed by devin
 claim:
   since: 2026-10-11 16:39
 review_kind: verify

@@ -1,7 +1,7 @@
 id: gemini-paid-spend-cap
 title: 'Gemini paid keys: hard $10/mo spend cap + confirm separate GCP projects'
 column: backlog
-updated: 2026-10-13 17:45
+updated: 2026-10-13 19:37
 priority: high
 tags:
 - ops
@@ -17,6 +17,7 @@ spec: 'Residual of gemini-prepaid-depleted-20261013 (all 4 paid keys 402 simulta
   lane storm can still starve the fleet. Trail: docs/ssot/jobs/infrastructure/2026-10-13-gemini-prepaid-depleted.yml'
 action:
   type: manual
+  status: idle
 ref: OPS-0575
 comms:
 - at: 2026-10-13 15:38
@@ -34,6 +35,15 @@ comms:
 - at: 2026-10-13 17:45
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 18:49
+  from: devin
+  text: 'Tony answered 17:45: split-and-cap — separate GCP projects + $10/mo hard cap each. Queueing for dispatch.'
+- at: 2026-10-13 18:49
+  from: devin
+  text: queued for processing
+- at: 2026-10-13 19:37
+  from: devin
+  text: put on hold
 requests:
 - id: post-top-up-hard-stop-isolation-check-in-68a504
   ask: 'Post-top-up hard stop + isolation check. In AI Studio (aistudio.google.com -> Spend / API keys): are chaba-paid
@@ -56,4 +66,3 @@ requests:
   suggested: split-and-cap
   answer: 'split-and-cap — Separate projects + $10/mo cap each — true isolation AND hard stop; one lane storm can
     never starve the fleet. Cost: billing setup per project in console.'
-awaiting_action: true

@@ -1,7 +1,7 @@
 id: live-session-token-diet
 title: Live session token diet — 134M text-in/day on ada-ha-tony
-column: backlog
-updated: 2026-10-13 16:19
+column: review
+updated: 2026-10-13 21:43
 ref: OPS-0509
 comms:
 - at: 2026-10-12 16:17
@@ -19,3 +19,74 @@ comms:
   text: 'Dispatched as OPS-0583 (tony-lane-tool-profile): persons.tony.tools keep-list — kk''s 24-tool base + tony-lane
     additions from 7d call logs (~40 tools vs ~110 declared now). Expected: ~31k -> ~22k input/turn static baseline
     on ada-ha-tony.'
+- at: 2026-10-13 21:27
+  from: devin
+  text: 'Fresh numbers confirm this is the spend: usage.jsonl on idc03 shows ~130M text-in/day avg (peak 177M),
+    ~$260/week est — 98% of total burn. in:out ~300:1 = context resends, not audio. Also from tony-lane-tool-profile
+    job doc: measured floor ~27.8k in/turn on ada-ha-tony; ADA_CONTEXT_TRIGGER_TOKENS=32000 is ~1.15x floor (policy
+    wants >=1.7x) — bumping trigger/target to ~47k/35k restores the ratio and delays compression. Both levers in
+    scope.'
+- at: 2026-10-13 21:27
+  from: devin
+  text: queued for processing
+- at: 2026-10-13 21:28
+  from: chaba
+  text: dispatched 20261013-212811-live-session-token-diet-134m-t on chaba
+- at: 2026-10-13 21:30
+  from: devin
+  text: attempt 2 reading card trail — scoping to the context-window lever (ADA_CONTEXT_TRIGGER/TARGET 32k/24k ->
+    ~47k/35k on ada-ha-tony, restoring >=1.7x floor ratio)
+- at: 2026-10-13 21:40
+  from: devin
+  text: 'Add scope item — ledger hygiene: tests writing to the LIVE usage ledger. Found 2026-10-13 ~22:xx: test_context_budget.py''s
+    session_id ''t-ctx'' wrote ~0.57M in of fake usage rows into data/usage.jsonl on idc03 (74% of that hour''s
+    traffic). usage_tracker writes a fixed path; tests should point at a tmp ledger. Evidence integrity matters
+    since this ledger is the diet work''s measurement base.'
+- at: 2026-10-13 21:40
+  from: devin
+  text: 'APPLIED live on idc03: ada-ha-tony.env + ADA_CONTEXT_TRIGGER_TOKENS=47000 / TARGET=35000 (was default 32k/24k
+    vs 27.8k floor — policy ratio restored 1.69x/1.26x). Service restarted, /proc env + 1-turn ws smoke verified
+    (in=18139, healthy). Nuance documented: trigger now sits above the 45k rotation budget, so compression is effectively
+    bypassed — the lane is rotation-bounded by design (kills the near-floor churn->unmoor->storm path). Follow-ups
+    filed: ADA-0601 expression batching, ADA-0602 michae'
+- at: 2026-10-13 21:41
+  from: devin
+  text: 'LINE-specific waste found (2026-10-13): relay sessions run FULL voice config — voice=Kore, video=high,
+    and generate audio out (~200-600 audio-out tokens/turn, 400-600kB audio bytes) that line_relay discards — it
+    only ships [text]. Add scope: text-only modality for relay/headless sessions (or strip audio response modality
+    when the client is a text relay). Sessions also re-prime ~28k context on every 300s idle close/reopen.'
+- at: 2026-10-13 21:42
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 21:42
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): pushed dispatch/20261013-212811-live-session-token-diet-134m-t to origin;
+    test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 21:42
+  from: chaba
+  text: pushed dispatch/20261013-212811-live-session-token-diet-134m-t to origin
+- at: 2026-10-13 21:42
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 21:42
+  from: idc03
+  text: claimed
+- at: 2026-10-13 21:42
+  from: chaba
+  text: started devin-task-20261013-214231-live-session-token-diet-134m-t on idc03 (dispatch)
+- at: 2026-10-13 21:43
+  from: devin
+  text: '[dispatch] picked up on idc03 — measuring post-keep-list burn, checking remaining levers (expression batching
+    / prime slimming / smoke-lane retarget)'
+action:
+  type: dispatch
+  status: running
+  attempts: 1
+  result: 20261013-212811-live-session-token-diet-134m-t finished (inactive) — see `devin-dispatch logs 20261013-212811-live-session-token-diet-134m-t`
+  verified: false
+  last_failure: 'pushed dispatch/20261013-212811-live-session-token-diet-134m-t to origin; test gate failed — merge
+    held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+  runner: idc03
+claim:
+  since: 2026-10-13 21:28
+review_kind: verify

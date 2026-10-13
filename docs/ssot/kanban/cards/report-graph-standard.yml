@@ -2,7 +2,7 @@ id: report-graph-standard
 title: 'Report graph: apply L0-L3 memory-level standard to all nodes'
 brief: A sweep found the health and report pages don't all follow the agreed layered format. Standardizing them
   is in progress — nothing needed unless a question appears.
-column: backlog
+column: done
 review_kind: verify
 program: chaba-ci
 priority: high
@@ -19,11 +19,17 @@ spec: 'Sweep findings + standard to apply: (1) STATUS VOCAB finalized in ssot.re
   timer/producer lands with its node+meta in the same commit; cadence is enforced by stale detection via report-watch.
   (5) CONSUMER — report-watch flags are the review queue; optional: auto-close healed items, --json for CI gate.'
 action:
-  type: manual
-  status: queued
-updated: 2026-10-08 21:20
+  type: dispatch
+  status: done
+  runner: tony-omen
+  sweep:
+    stale_running: 2026-10-13 19:42
+    session_gone: 2026-10-13 19:43
+  result: 'exit=0 tch-outcome-20261013-193828-sweep-findings-standard-to-app.md`; board comms posted. | devin-task-20261013-193828-sweep-findings-standard-to-app.service:
+    Consumed 2min 46.081s CPU time over 13min 18.755s wall clock time, 1001.8M memory peak.'
+  verified: true
+updated: 2026-10-13 19:58
 claim:
-  session: devin
   since: 2026-10-07 14:45
 comms:
 - at: 2026-10-07 14:45
@@ -55,4 +61,51 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0224'
+- at: 2026-10-13 19:38
+  from: devin
+  text: 'zombie-sweep: was queued since 10-08/10-12 but type=manual — kanban-dispatch only claims type=dispatch,
+    so it starved silently. Converted action.type manual→dispatch on the served checkout; next drain picks it up.'
+- at: 2026-10-13 19:38
+  from: tony-omen
+  text: claimed
+- at: 2026-10-13 19:38
+  from: chaba
+  text: started devin-task-20261013-193828-sweep-findings-standard-to-app on tony-omen (dispatch)
+- at: 2026-10-13 19:42
+  from: chaba
+  text: 'merge-sweep: devin-task-devin no longer active on tony-omen but card still says running — sweeping its
+    branch'
+- at: 2026-10-13 19:42
+  from: devin
+  text: 'sweep-apply pass started. Already landed on master: unreachable status + offline_ok + report-feed remote-meta
+    (90df7b8a), cms-report-reflect for systemwide-assessment (d6eead8b), idc01 SSOT cleanup incl. overnight-assessment
+    probes (KNB-0148, done). Applying now: finalized status_enum + contract/conventions docs in ssot.reports.yml,
+    fleet.children idc01 cleanup, dormant as a real resolve status, report-watch self-computed staleness + auto-heal
+    + --json CI gate.'
+- at: 2026-10-13 19:42
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-devin on tony-omen — if the work was never pushed
+    it may be gone'
+- at: 2026-10-13 19:51
+  from: devin
+  text: 'standard applied on dispatch branch (6d41aaf04, not pushed): status_enum finalized in ssot.reports.yml
+    (unreachable=target-side, dormant added, untracked demoted to derived), contract+conventions documented (own_meta/remote_pushback/offline_ok/dormant/same_commit/cadence_enforcement),
+    audit-hosts/idc01 dropped from fleet.children, resolve_node emits dormant + meta precedes observe:remote so
+    push-back makes remote producers observable. report-watch: self-computed staleness (was dead code — produc'
+- at: 2026-10-13 19:53
+  from: tony-omen
+  text: 'finished (ok): exit=0 tch-outcome-20261013-193828-sweep-findings-standard-to-app.md`; board comms posted.
+    | devin-task-20261013-193828-'
+- at: 2026-10-13 19:54
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 19:58
+  from: chaba
+  text: 'merge-sweep: merged 6ee6cd49 (dispatch/20261013-193828-sweep-findings-standard-to-app from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-193828-sweep-findings-standard-to-app.md)
+    — auto-closed'
 ref: KNB-0224
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 19:58
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-193828-sweep-findings-standard-to-app.md

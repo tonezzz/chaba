@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: backlog
-updated: 2026-10-11 08:35
+updated: 2026-10-13 19:37
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -36,29 +36,30 @@ comms:
   text: ref-addressable check — posted via SYS-0452 (resolves to tony-macbook-restore-enroll)
 - at: 2026-10-11 15:10
   from: devin
-  text: 'ONBOARDING RUN (on-host session). DONE: ssh mesh both directions (pubkey pushed to
-    dell/omen/idc02/idc03/mn01, hostkeys scanned, self-auth; macbook removed from ssh-mesh-sync
-    EXCLUDE + added to host-capacity hosts); install-hooks.sh armed; node v22.20.0 user-space;
-    devin-dispatch+watch+prune + repos.conf; runner-agent enrolled cap2 cpu,dev,portable in
-    runner_fleet; ~/.config/devin/mcp_config.json = 19 servers satellite-style (command-type
-    re-exec on dell over ssh, URL-type direct, mddb repointed idc01->idc03 — also fixed dell''s
-    stale entry); session scripts + hygiene timers (cleanup/session-prune/dispatch-watch/
-    dispatch-prune) + watchdog cron; ~/.config/secrets seeded (ha-michael-dev.env);
-    playlive-macbook-tunnel on dell disabled (dead CDP target, per rejoin job). PENDING-TONY:
-    `devin auth login` (session tokens don''t port — CLI says not-logged-in on identical
-    creds), TONY-WIFI join, ufw, CRD pairing code (card tony-macbook-crd). PENDING-WORK:
-    podman for container tasks, KK files restore still untouched. Standard procedure now
-    lives at docs/kb/new-host-onboarding.md (procedures id: new-host).'
+  text: 'ONBOARDING RUN (on-host session). DONE: ssh mesh both directions (pubkey pushed to dell/omen/idc02/idc03/mn01,
+    hostkeys scanned, self-auth; macbook removed from ssh-mesh-sync EXCLUDE + added to host-capacity hosts); install-hooks.sh
+    armed; node v22.20.0 user-space; devin-dispatch+watch+prune + repos.conf; runner-agent enrolled cap2 cpu,dev,portable
+    in runner_fleet; ~/.config/devin/mcp_config.json = 19 servers satellite-style (command-type re-exec on dell
+    over ssh, URL-type direct, mddb repointed idc01->idc03 — also fixed dell''s stale entry); session scripts +
+    hygiene timers (cleanup/session-prune/dispatch-watch/ dispatch-prune) + watchdog cron; ~/.config/secrets seeded
+    (ha-michael-dev.env); playlive-macbook-tunnel on dell disabled (dead CDP target, per rejoin job). PENDING-TONY:
+    `devin auth login` (session tokens don''t port — CLI says not-logged-in on identical creds), TONY-WIFI join,
+    ufw, CRD pairing code (card tony-macbook-crd). PENDING-WORK: podman for container tasks, KK files restore still
+    untouched. Standard procedure now lives at docs/kb/new-host-onboarding.md (procedures id: new-host).'
 - at: 2026-10-11 16:30
   from: devin
-  text: 'VERIFY PASS on the 15:10 onboarding claims + extras. Verified live: node v22.20.0,
-    runner-agent.timer firing clean, all ssh edges OK (dell/omen/idc02/idc03/mn01), mcp_config
-    present (19 servers). ADDED: michael-ha ssh edge (root user + macbook key appended to
-    add-on authorized_keys — verified `ha` host reachable); github deploy key for this host +
-    origin repointed to git@github.com (previously only a non-pushable dell-checkout remote);
-    removed a stray duplicate ~/.codeium/windsurf/mcp_config.json (real config is
-    ~/.config/devin/mcp_config.json); HK SoundSticks 4 BT paired+trusted+verified-as-sink;
-    dock MST displays verified (PHL 276E7 + DELL P2425H both enabled 1080p, layout in
-    monitors.xml). STILL TONY: devin auth login (interactive), ufw (sudo), TONY-WIFI when
+  text: 'VERIFY PASS on the 15:10 onboarding claims + extras. Verified live: node v22.20.0, runner-agent.timer firing
+    clean, all ssh edges OK (dell/omen/idc02/idc03/mn01), mcp_config present (19 servers). ADDED: michael-ha ssh
+    edge (root user + macbook key appended to add-on authorized_keys — verified `ha` host reachable); github deploy
+    key for this host + origin repointed to git@github.com (previously only a non-pushable dell-checkout remote);
+    removed a stray duplicate ~/.codeium/windsurf/mcp_config.json (real config is ~/.config/devin/mcp_config.json);
+    HK SoundSticks 4 BT paired+trusted+verified-as-sink; dock MST displays verified (PHL 276E7 + DELL P2425H both
+    enabled 1080p, layout in monitors.xml). STILL TONY: devin auth login (interactive), ufw (sudo), TONY-WIFI when
     off-dock.'
+- at: 2026-10-13 19:37
+  from: devin
+  text: 'location model (from ssid-location-profiles): host location auto-detected via SSID profiles in ssot.health.yml
+    (home: TONY-WIFI/_5G/_2.4G). mnhome needs NO entry — mn01 LAN != tony-dell local, all access stays tailnet (decision,
+    not a fix). Displays: monitors.xml auto-persists per monitor-set (Philips 276E7 + Dell P2425H docked verified
+    10-11) — nothing manual to save.'
 ref: SYS-0452

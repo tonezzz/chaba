@@ -1,0 +1,26 @@
+id: cms-lab-eval
+title: 'cms-lab: trial Ghost+Directus+Strapi+Payload on idc02'
+column: doing
+updated: 2026-10-13 21:34
+brief: 'Four GitHub CMSs side-by-side in ~/cms-lab on idc02, tailnet-only :8301-8304. Eval rubric: author a Thai
+  shop report in each UI, then create the same via API (agent path) — measures fit for the kk place_report flow.
+  Teardown: docker compose down -v + rm -rf ~/cms-lab.'
+priority: medium
+tags:
+- cms
+- kanban
+spec: 'ghost :8301 (dev-mode SQLite, ghost:6-alpine), directus :8302 (+postgres:16), strapi :8303 (npx create-strapi
+  scaffold, node:22), payload :8304 (npx create-payload-app blank+sqlite, node:22). Verify: all four admin UIs reachable
+  on tailnet; one manual post + one API write each. Tailnet-only — no public DNS until evaluated.'
+ref: KNB-0600
+comms:
+- at: 2026-10-13 21:16
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 21:34
+  from: devin
+  text: '[exp] All 4 CMSs installed + verified on idc02 (podman-compose, rootless — host has podman, not docker;
+    podman-compose 1.0.6 installed via apt). URLs (tailnet-only): Ghost http://idc02.taila0626a.ts.net:8301/ghost
+    (200), Directus http://idc02.taila0626a.ts.net:8302 (302→/admin), Strapi http://idc02.taila0626a.ts.net:8303/admin
+    (200), Payload http://idc02.taila0626a.ts.net:8304/admin (200). Stack: ~/cms-lab/{docker-compose.yml,.env(chmod600)}.
+    Ghost6-alpine dev-mode sqlite; Directus11+postgres16 '

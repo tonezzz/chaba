@@ -1,7 +1,7 @@
 id: place-report-empty-page
 title: place_report publishes title-only stub when no coords/maps link resolves
-column: review
-updated: 2026-10-13 18:42
+column: done
+updated: 2026-10-13 19:30
 priority: low
 spec: 'place-cape-sports-center-langebaan-259487 in ada-cms-pages-kk is just # Cape Sports Center Langebaan — no
   map, no links, no body. place_report should refuse to publish (or render a honest unresolved state) when it has
@@ -107,6 +107,21 @@ comms:
 - at: 2026-10-13 18:42
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''merge-conflict-2''] block close)'
+- at: 2026-10-13 19:30
+  from: devin
+  text: 'answered merge-conflict-2: Superseded — the conflicting 154051 branch was abandoned; the fix landed via
+    dispatch/20261013-182803 (merged 40f0603c). Verified: place_report empty-guard + tests merged to master.'
+- at: 2026-10-13 19:30
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 19:30
+  from: devin
+  text: '[verify] Guard is live in master: place_report.py refuses bare-name publish (no coords/maps URL) — 20-line
+    patch + test_place_report_drop.py merged + passing (42/42 incl. calendar providers under ada-pi venv). Stale
+    merge-conflict request resolved.'
+- at: 2026-10-13 19:30
+  from: devin
+  text: closed by devin
 review_kind: verify
 claim: {}
 requests:
@@ -122,6 +137,8 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261013-154051-place-cape-sports-center-lange: 2 commit(s) conflict with
     origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261013-154051-place-cape-sports-center-lange
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-13 18:28
   from: chaba
+  answer: 'Superseded — the conflicting 154051 branch was abandoned; the fix landed via dispatch/20261013-182803
+    (merged 40f0603c). Verified: place_report empty-guard + tests merged to master.'

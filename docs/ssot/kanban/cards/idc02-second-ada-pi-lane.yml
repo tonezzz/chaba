@@ -1,0 +1,22 @@
+id: idc02-second-ada-pi-lane
+title: Provision idc02 as second ada-pi dispatch lane
+column: backlog
+updated: 2026-10-13 21:08
+priority: medium
+tags:
+- dispatch
+- infra
+- ada-pi
+spec: 'Goal: a VPS-grade fallback runner for ada-pi dispatches so tony-dell isn''t single-point. idc02 already ran
+  5 ada-pi dispatches + has runner-agent.timer (audit.hosts.yml). Steps: (a) give idc02 a distinctive label in RUNNER_LABELS
+  (e.g. ''vps''/''staging'') in its runner-agent/kanban-dispatch unit env; (b) verify ~/CascadeProjects/ada-pi checkout
+  on idc02 has working push remote (fleet-internal ssh origin) + dispatch-wt worktree flow; (c) canary: queue a
+  trivial ada-pi card with action.labels matching the new label, confirm claim->run->merge->test-gate end-to-end;
+  (d) update ssot.audit.hosts.yml + this card comms with result. Dell stays canonical edit point — this is a failover
+  lane, not a second source of truth.'
+ref: OPS-0599
+comms:
+- at: 2026-10-13 21:08
+  from: devin
+  text: 'Carded from Devin session. Tony: "let''s see how it works and if we should add more" — report outcome,
+    don''t auto-expand to other hosts.'

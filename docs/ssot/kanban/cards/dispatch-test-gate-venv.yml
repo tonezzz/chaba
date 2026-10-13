@@ -1,0 +1,65 @@
+id: dispatch-test-gate-venv
+title: Dispatch test gate uses system python — prefer repo .venv (false merge holds)
+column: done
+updated: 2026-10-13 20:13
+priority: medium
+tags:
+- kanban
+- dispatch
+- dispatch-sweeper
+spec: 'scripts/board/dispatch_repos.py DEFAULT_TEST_CMD = ''python3 -m pytest tests -x -q'' runs system python;
+  ada-pi''s repo gate does too. When the repo-under-test needs its own .venv deps (google.genai etc.) the gate false-fails
+  and holds the merge — observed 2026-10-13 line-multihome dispatch (42/42 green under ada-pi .venv). Fix: resolve
+  the test interpreter per repo — use <checkout>/.venv/bin/python -m pytest when present, fall back to system python3.
+  ada-pi worktrees have no .venv: point at the canonical checkout''s venv (~/CascadeProjects/ada-pi/.venv on the
+  runner host) or document venv resolution in dispatch_repos TEST_CMDS. Verify with a synthetic held-merge scenario.'
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  sweep:
+    stale_running: 2026-10-13 20:12
+  verified: true
+ref: KNB-0595
+comms:
+- at: 2026-10-13 20:02
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 20:03
+  from: tony-omen
+  text: claimed
+- at: 2026-10-13 20:03
+  from: chaba
+  text: started devin-task-20261013-200311-scripts-board-dispatch-repos-p on tony-omen (dispatch)
+- at: 2026-10-13 20:06
+  from: devin
+  text: 'investigating — confirmed on tony-omen: ada-pi .venv has pytest+google.genai, system python3 has pytest
+    only (no genai); chaba venv/ has NO pytest so resolution must probe import pytest, not just existence. Implementing
+    interpreter resolution in dispatch_repos.py + synthetic held-merge test.'
+- at: 2026-10-13 20:11
+  from: devin
+  text: 'done — dispatch_repos.run_test_gate now resolves the interpreter per repo: first {worktree, canonical checkout,
+    repos.conf path}/{.venv,venv} python that can import pytest wins, else system python3; REPO_TESTS python pin
+    = escape hatch. Live check on omen: ada-pi → ~/CascadeProjects/ada-pi/.venv/bin/python, chaba → python3 (its
+    venv has no pytest, probe correctly rejects it). Synthetic held-merge test reproduces the incident: red-under-system
+    → green-under-venv → merge lands. tests/board: 109 pa'
+- at: 2026-10-13 20:12
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-200311-scripts-board-dispatch-repos-p no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-13 20:13
+  from: chaba
+  text: 'merge-sweep: merged f3aedb4d (dispatch/20261013-200311-scripts-board-dispatch-repos-p from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-200311-scripts-board-dispatch-repos-p.md)
+    — auto-closed'
+- at: 2026-10-13 20:13
+  from: chaba
+  text: 'session-end checkpoint 801b7a79: 2 leftover file(s) committed'
+- at: 2026-10-13 20:13
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 20:13
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-200311-scripts-board-dispatch-repos-p.md

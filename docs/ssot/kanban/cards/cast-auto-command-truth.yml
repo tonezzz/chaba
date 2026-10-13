@@ -1,0 +1,57 @@
+id: cast-auto-command-truth
+title: 'Command-truth: 32 unattributed device state change(s)'
+brief: A watched device changed state with no allowlisted commander — attribute it
+  (logbook context, unit, automation, device-side schedule) then either fix the commander
+  or add it to ssot.command-truth.yml allowed_commanders.
+column: review
+review_kind: triage
+generated: command-truth
+program: chaba-ci
+area: ha-ops
+priority: high
+note: '- UNEXPLAINED: media_player.tony_tv on->unavailable at 10-13 00:13 (quiet-hours,
+  no commander)
+
+  - UNEXPLAINED: media_player.tony_tv on->on at 10-13 02:31 (quiet-hours, no commander)
+
+  - UNEXPLAINED: media_player.tony_tv on->unavailable at 10-13 03:00 (quiet-hours,
+  no commander)
+
+  - UNEXPLAINED: media_player.tony_tv on->on at 10-13 03:00 (quiet-hours, no commander)
+
+  - UNEXPLAINED: media_player.tony_tv on->unavailable at 10-13 17:15
+
+  - UNEXPLAINED: media_player.tony_tv on->on at 10-13 17:18
+
+  - UNEXPLAINED: media_player.tony_tv on->unavailable at 10-13 17:45
+
+  - UNEXPLAINED: media_player.tony_tv on->on at 10-13 17:46
+
+  - UNEXPLAINED: media_player.tony_tv on->unavailable at 10-13 18:30
+
+  - UNEXPLAINED: media_player.tony_tv on->on at 10-13 18:31
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->idle at 10-12 23:11 (quiet-hours,
+  no commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->off at 10-12 23:16 (quiet-hours, no
+  commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->unavailable at 10-13 00:14 (quiet-hours,
+  no commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->off at 10-13 02:31 (quiet-hours, no
+  commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->unavailable at 10-13 03:00 (quiet-hours,
+  no commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->off at 10-13 03:00 (quiet-hours, no
+  commander)
+
+  - UNEXPLAINED: media_player.tony_tv_cast off->idle at 10-13 03:20 (quiet-hours,
+  no comma'
+help: 'config: docs/ssot/infrastructure/ssot.command-truth.yml. context.user_id =
+  HA user/API caller; parent_id = automation/script run; neither = device-side schedule,
+  integration poll, or LAN chatter.'
+updated: '2026-10-13'

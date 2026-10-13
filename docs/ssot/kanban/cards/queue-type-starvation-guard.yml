@@ -1,0 +1,18 @@
+id: queue-type-starvation-guard
+title: queue verb on non-dispatch cards starves silently — warn or auto-convert
+column: backlog
+updated: 2026-10-13 19:38
+spec: 'zombie-sweep 2026-10-13 found 6 cards queued for days with zero claims: board-api /action do=queue sets status=queued
+  on cards whose action.type is manual/devin/self, but kanban-dispatch only claims type=dispatch — silent forever
+  starvation, no skip log line either.
+
+
+  Fix options (pick in-session): (a) board-api do_queue warns or converts type→dispatch when queueing a non-dispatch
+  card; (b) kanban-dispatch prints a skip reason for non-dispatch queued cards AND a daily sweep card reports starved
+  queued>24h (ties into queue-management procedure proposal). Both cheap; (b) alone gives observability without
+  changing queue semantics.'
+ref: OPS-0592
+comms:
+- at: 2026-10-13 19:38
+  from: devin
+  text: card captured via board-api

@@ -1,0 +1,13 @@
+id: systemone-cmdlane-timeouts
+title: voice.command_lane systemone calls timing out (~30s, every 30-90s)
+column: backlog
+updated: 2026-10-13 21:40
+spec: 'ada-ha-tony journal 2026-10-13 evening: voice.command_lane systemone call failed: timed out, repeatedly ~every
+  30-90s through 21:19-21:22 (before the fleet restart). bankq :8791 and jev :8778 both return 200 now — intermittent
+  load/latency not outage. Investigate: what queues onto command_lane, whether timeouts pile up retries (retry-storm
+  burn on the voice-burn ledger), and whether a circuit breaker + longer timeout is warranted.'
+ref: OPS-0605
+comms:
+- at: 2026-10-13 21:40
+  from: tony
+  text: card captured via board-api
