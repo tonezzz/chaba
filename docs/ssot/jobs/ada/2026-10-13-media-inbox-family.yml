@@ -1,0 +1,67 @@
+# SSOT Job: media-inbox page family — media-inbox-report card
+# Dispatch worktree dispatch-wt-20261013-110658-*. Deployed + verified live
+# on idc03 (timers firing, scenario suite green).
+
+title: Media inbox — per-item leaves + 3-tier dedup + extract cache
+subtitle: docs/kb/media-inbox-standard.md implemented end-to-end on idc03
+icon: inbox
+status: done
+project: chaba + ada-pi
+owner: devin-dispatch
+started: "2026-10-13"
+card: media-inbox-report
+
+findings: |
+  Lane attribution model (not spelled out in the standard): a manifest
+  line belongs to the RECEIVING persona's lane — the relay stamps
+  `persona` (and `caller`) at ingest, the generator maps persona->lane
+  (ada/chaba->tony, kaewta->kk, kaewta-cms->kk-dev). Legacy lines without
+  persona fall back to MEDIA_INBOX_CHATS (the lane's chat ids); on idc03
+  that is kk's family group C822026077530a29620b5041bd1a955c5, so the 2
+  pre-existing manifest lines landed in ada-cms-pages-kk.
+  mddb-cms on idc03 binds the TAILNET ip (100.102.134.91:11027), not
+  loopback — timer env must use the tailnet address (first unit render
+  used 127.0.0.1 and failed; fixed).
+
+changes: |
+  chaba:
+    scripts/ada/media-inbox-update.py (NEW) — manifest.jsonl -> media-inbox
+      rollup + media-<mid> receipt leaves + media-inbox-qc per lane;
+      T1 mid-fold (redeliveries noted), T2 sha256 duplicate_of, external
+      *-extract leaves never touched; --dry-run/--json; reports-index regen.
+    scripts/ada/media-inbox-fixture.py (NEW) — mifix-* seed/teardown for
+      the live scenario (files + manifest lines + one generator run).
+    ssot.jobs.yml + systemd/generated/idc03/media-inbox-update-{tony,kk}.*
+      — two 15m systemd timers beside the relay + mddb-cms.
+    ssot.procedures.yml — media-inbox status defined -> verified.
+  ada-pi (origin/main 6148f64 -> d166794):
+    backend/line_relay.py — _archive_media manifest lines carry
+      sha256/size/file_name/persona/caller; journal entries carry
+      message_id (image/file/video/text in-entries).
+    backend/tools.d/doc_read.py — canonical-mid resolution via manifest
+      sha256 (T2 redirect, result carries duplicate_of), media-<mid>-extract
+      leaf as the T3 cache (hit -> return stored text, miss -> extract +
+      write leaf into the lane's CMS collection).
+    tests/scenarios-live/media_inbox.yaml (NEW) — 5 turns: T1 one-leaf,
+      T2 duplicate_of, T3 extract-then-cache, dup-mid redirect.
+
+deploy: |
+  chaba: origin/master 8f494c1a + 415f5782; ~/CascadeProjects/chaba pulled
+  on idc03. ada-pi: deploy-ada.sh idc03 (main @ d166794) — all 7 services
+  restarted active. Timers installed to ~/.config/systemd/user + enabled:
+  media-inbox-update-{tony,kk}.timer (OnUnitActiveSec=15min).
+  Manual service runs verified:
+    media-inbox[tony]: 3 leaves + rollup + qc (3 items, 1 dup, 1 redelivery)
+    media-inbox[kk]:   2 leaves + rollup + qc (legacy group-chat lines)
+
+verify: |
+  scripts/scenario-live.py tests/scenarios-live/media_inbox.yaml on idc03
+  vs ada-ha-tony :8002 — PASS (0 failed expectations):
+    T1: media-mifix-a leaf shows '1 extra manifest line — LINE transport
+        retry, one leaf kept'
+    T2: media-mifix-b duplicate_of -> media-mifix-a
+    T3: doc_read #1 extracts TEST-9917 + writes media-mifix-a-extract;
+        doc_read #2 returns cached leaf (no Gemini spend)
+    dup: doc_read on mifix-b returns media-mifix-a-extract + duplicate_of
+  NOTE: cleanup needs MDDB_BASE_URL=http://100.102.134.91:11027/v1 (cms
+  plane is tailnet-bound, not localhost).
