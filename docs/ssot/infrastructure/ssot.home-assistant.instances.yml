@@ -23,6 +23,18 @@ instances:
     dashboards:
       tony-test:
         ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+    secrets:
+      # per-instance store model (2026-10-13): the instance OWNS its lane
+      # secrets; the shared ada-pi-pwa admin pool retires with :8001.
+      lane: ada-ha-tony            # voice backend on idc03 :8002 (Chaba persona)
+      store: "idc03:~/.config/secrets/tony-ha/"
+      files:
+        backend.env: "ADA_API_KEYS admin:… (lane-own admin, minted per lane) + provider keys — consumed by ada-ha-tony.service"
+        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
+      household: "/home/tony/.config/home-assistant/household.yml  # canonical, in HA config dir — people/rooms/roles of this home"
+      native: "/home/tony/.config/home-assistant/secrets.yaml      # HA !secret store — stays native per instance"
+      legacy_to_migrate: "mn01:~/.config/secrets/ada-ha-tony.{env,keys.json}"
+      status: planned
     status: active
 
   michael-dev:
@@ -95,6 +107,14 @@ instances:
           (client_name tony-devin, jwt_key-signed iss=<id>) — the stored
           token field is NOT the JWT itself. Snapshot:
           docs/home-assistant/dashboards/ada-ha-chaba-home-current.json.
+      chaba-ai:
+        note: >-
+          Storage dashboard (url_path chaba-ai, title "Chaba AI") — the
+          ada-ha assistant surface. Tabs: [chaba-ai, calendar] — calendar
+          appended 2026-10-13 (last tab, Tony request, same Google Calendar
+          iframe embed as chaba-home's calendar tab). Auth via refresh-token
+          exchange at 127.0.0.1:8125/auth/token — normal refresh tokens
+          need their stored client_id passed back in the grant.
       chaba-nest:
         note: >-
           Storage dashboard (url_path chaba-nest, created 2026-10-08 via
@@ -128,6 +148,17 @@ instances:
           filter param, ada-pi 29c738e). HA has no nested tabs — subview
           drill-down is the minimal native pattern. Runbook:
           chaba_nest_dashboard in ssot.home-assistant.howto.yml.
+    secrets:
+      # Ada lab instance — no voice backend yet; dir reserved so its
+      # future lane follows the model instead of the shared pool.
+      lane: ada-ha-ada             # future backend (port unallocated)
+      store: "tony-dell:~/.config/secrets/ada-ha/"
+      files:
+        backend.env: "ADA_API_KEYS admin:… + provider keys"
+        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
+      household: "/home/tony/.config/ada-ha/household.yml"
+      native: "/home/tony/.config/ada-ha/secrets.yaml"
+      status: planned
     status: active
     note: 'created 2026-10-06 by a parallel session — see card
       tony-ha-split-ada-dev'
@@ -161,8 +192,11 @@ instances:
       the assistant URL reads /ai/kaewta, mirroring tony-ha /ai/chaba;
       url_path is immutable so it was create+copy+delete with
       allow_single_word:true, both users' defaultPanel/panelOrder patched
-      during a container restart). Tabs: [kaewta, chatui, cms] — chatui/cms
-      are panel views iframing /chatui/chat.html + /cms/ on the same vhost;
+      during a container restart). Tabs: [kaewta, chatui, cms, calendar] —
+      calendar added 2026-10-13 (last tab, Tony request): panel iframe of
+      the shared Google Calendar embed (tonezzzz@gmail.com primary +
+      en.th#holiday, ctz Asia/Bangkok) — same view config as ada-ha
+      chaba-home's calendar tab (HOM-0456). chatui/cms
       idc02 routes /chatui* (prefix-stripped -> ada-kk :8007 chat card),
       /cms* + /api/cms* (-> ada-kk CMS miniapp; lane key required).
       GOTCHA: HA 2026.8 migrates http: to .storage/http on first boot with
@@ -170,6 +204,19 @@ instances:
       .storage/http stable block instead (trusted_proxies must include the
       podman bridge subnet — ssot.values.yml::paths.podman_bridge_subnet —
       because tailscale serve enters the podman bridge via the gw IP).
+    secrets:
+      # kk-ha was the FIRST per-instance lane (2026-10-09): ada-kk :8007
+      # already has own admin key + own keys file — formalize into the
+      # shared convention.
+      lane: ada-kk                 # backend on idc03 :8007 (Kaewta persona)
+      store: "idc03:~/.config/secrets/kk-ha/"
+      files:
+        backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-kk.service"
+        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only (today: ada-ha-kk-keys.json)"
+      household: "/home/tony/.config/kk-ha/household.yml"
+      native: "/home/tony/.config/kk-ha/secrets.yaml"
+      legacy_to_migrate: "idc03:~/.config/secrets/ada-ha-kk-keys.json (flat file → kk-ha/keys.json)"
+      status: planned
     status: active
 
   michael-ha:
@@ -192,6 +239,28 @@ instances:
       tony-test:
         ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
         note: Live tony-test dashboard is stored in .storage/lovelace.tony_test on michael-ha.
+      house-calendar:
+        note: >-
+          Standalone sidebar dashboard (url_path house-calendar, created
+          2026-10-13 via lovelace/dashboards/create, Tony request "same
+          calendar tab for michael-ha") — single panel view with the shared
+          Google Calendar iframe (tonezzzz@gmail.com + en.th#holiday,
+          Asia/Bangkok). michael-ha has no `ai` assistant dashboard and its
+          default Overview runs root `strategy: original-states`
+          (auto-generated; views are ignored while strategy is set), so a
+          tab could not be appended there — a separate dashboard was the
+          non-destructive equivalent. To fold it into Overview instead,
+          the strategy must first be converted to explicit views.
+    secrets:
+      lane: ada-ha-michael         # backend on idc03 :8003 (Ada persona)
+      store: "idc03:~/.config/secrets/michael-ha/"
+      files:
+        backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-ha-michael.service"
+        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
+      household: "michael-ha:~/.homeassistant/household.yml   # canonical on the HA host itself"
+      native: "michael-ha:~/.homeassistant/secrets.yaml"
+      legacy_to_migrate: "mn01:~/.config/secrets/ada-ha-michael.{env,keys.json}"
+      status: planned
     status: active
 
 status:
