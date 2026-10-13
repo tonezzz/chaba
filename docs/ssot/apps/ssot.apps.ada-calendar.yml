@@ -9,7 +9,7 @@ sections:
       - label: Provider-agnostic tools
         text: "Gemini-visible tools (calendar_*, tasks_*, plan_day) never name a provider. backend/calendar_providers.py defines CalendarProvider/TasksProvider protocols and normalized CalendarEvent/Task models; adapters normalize each service."
       - label: Registry-driven
-        text: "The calendar: block below is rendered to ~/.config/ada/calendar.json by scripts/ada/render-calendar-providers.py (ADA_CALENDAR_FILE overrides). Same pattern as memory banks: instances: + status: filter per ADA_INSTANCE_ID; unknown adapter on an active provider fails loudly."
+        text: "The calendar: block below is rendered by scripts/ada/render-calendar-providers.py — default to ~/.config/ada/calendar.json (all providers; ADA_CALENDAR_FILE overrides). --instance <lane> renders the lane file declared in calendar.lanes (calendar-<instance>.json) filtered to providers whose instances: name the lane, with write: resolved per lane. Same pattern as memory banks: instances: + status: filter per ADA_INSTANCE_ID; unknown adapter on an active provider fails loudly."
       - label: Aggregate reads, routed writes
         text: "read: aggregate fans out list calls across active providers and merges; write: names the default write provider. Explicit 'provider:calendar_id' overrides both. Events are never replicated between providers — aggregation is the sync model."
       - label: Qualified ids
@@ -21,11 +21,13 @@ sections:
       - label: OAuth client
         text: "Reuses the Desktop-app client in ~/.config/secrets/google_credentials.json — project gen-lang-client-0694401188, the same project as GEMINI_API_KEY. Calendar API + Tasks API must be enabled on that project."
       - label: Token file
-        text: "Per-ada refresh token at ~/.config/secrets/ada-google-calendar-token.json (override ADA_GOOGLE_TOKEN_FILE or per-provider token_file). Minted by scripts/ada/google-calendar-auth.py; scopes: calendar.readonly, calendar.events, tasks."
+        text: "Per-identity refresh tokens: shared/tony at ~/.config/secrets/ada-google-calendar-token.json, members at ada-google-<svc>-token-<member>.json (chmod 600; override ADA_GOOGLE_TOKEN_FILE or per-provider token_file). Minted by scripts/ada/google-calendar-auth.py — --member derives the filename; scopes: calendar.readonly, calendar.events, tasks."
+      - label: Member onboarding (manual-paste)
+        text: "--manual prints the consent URL with a dead-localhost redirect — the member opens it on her phone, signs in as herself, and pastes the address-bar URL back (runbook member_google_onboard). Google's device flow is unusable: its endpoint rejects Calendar/Tasks scopes."
       - label: Consent screen
-        text: "OAuth consent screen must be Publishing status=production — 'Testing' status expires refresh tokens after 7 days."
+        text: "OAuth consent screen must be Publishing status=production — 'Testing' status expires refresh tokens after 7 days AND only whitelisted test-user accounts may consent at all (members get Error 403 access_denied). Published-but-unverified shows a 'Google hasn't verified this app' warning the member clicks through (Advanced -> Go to app)."
       - label: API key is not auth
-        text: "GEMINI_API_KEY identifies the project for billing only; it can never read user calendar data. Calendar/Tasks require OAuth."
+        text: "GEMINI_API_KEY identifies the project for billing only; it can never read user calendar data. Calendar/Tasks require OAuth. Optional per-member GEMINI_API_KEY_<member> (e.g. GEMINI_API_KEY_KK in gemini-keys.env) gives own free quota — unrelated to calendar identity."
   - title: Tool Contract
     icon: "🛠️"
     layout: list
@@ -63,15 +65,15 @@ sections:
       - label: backend/realtime_provider.py
         text: "function_declarations + instruction paragraph (calendar workflow playbook)."
       - label: scripts/ada/google-calendar-auth.py
-        text: "One-time consent flow + --check verifier + --host scp to runtime hosts."
+        text: "One-time consent flow (loopback or --manual paste-back for member phones) + --check verifier + --host scp; --member derives the per-member token filename."
       - label: scripts/ada/render-calendar-providers.py
-        text: "SSOT -> ~/.config/ada/calendar.json renderer (--host, --check), same shape as render-memory-banks.py."
+        text: "SSOT -> ~/.config/ada/calendar.json renderer (--host, --check), same shape as render-memory-banks.py. --instance <lane> renders the lane's own file (calendar.lanes.<lane>.file) with providers filtered to that lane and per-lane write."
   - title: Runbooks
     icon: "📖"
     layout: list
     items:
       - label: ssot.ada.howto.yml
-        text: "google_calendar_reauth, add_calendar_provider, calendar_tool_debug live in the ada howto SSOT."
+        text: "google_calendar_reauth, member_google_onboard, add_calendar_provider, calendar_tool_debug live in the ada howto SSOT."
   - title: Known Issues
     icon: "⚠️"
     layout: list
@@ -86,6 +88,21 @@ sections:
 calendar:
   read: aggregate
   write: google
+  # Per-lane registry files (card member-own-google-account):
+  # render-calendar-providers.py --instance <lane> filters providers: to the
+  # entries whose instances: name the lane, resolves write: from here, and
+  # writes ~/.config/ada/<file>. 'lanes' is a render-time key — it never
+  # appears in the rendered JSON.
+  lanes:
+    tony:
+      file: calendar.json          # equivalent to the default render
+      write: google
+    kk:
+      file: calendar-kk.json
+      write: google-kk             # her own identity — writes land on HER account
+    # kk-dev keeps its hand-maintained calendar-kk-dev.json (separate test
+    # calendar) until a google-kk-dev provider is declared — rendering
+    # --instance kk-dev fails loudly rather than clobber it with an empty set.
   providers:
     google:
       adapter: google
@@ -114,6 +131,38 @@ calendar:
         - c25a2f285322ac7f96b097b588a9132058955cd72baa046f533ce88ec7ae8184@group.calendar.google.com  # Noble A - Event
       default_calendar: primary
       task_list: "@default"
+      token_file: ~/.config/secrets/ada-google-calendar-token.json
+    google-kk:
+      adapter: google
+      title: Google Calendar + Tasks (Kaewta's own account)
+      instances: [kk]
+      status: planned              # flip to active once her token is minted +
+                                   # --check verified (member_google_onboard)
+      tasks: true
+      # Her own account's calendars. 'primary' should be the 'kk member
+      # calendar' surfaced as 1c408592… in the shared embed; if --check
+      # --member kk lists it under a different calid, add that id here.
+      calendars:
+        - primary
+      default_calendar: primary
+      task_list: "@default"
+      token_file: ~/.config/secrets/ada-google-calendar-token-kk.json
+    google-household:
+      adapter: google
+      title: Shared household calendars (read layer via Tony's token)
+      instances: [kk]              # extend as more member lanes onboard
+      status: active
+      tasks: false
+      # Hybrid read-provider: the household layer stays visible on member
+      # lanes via Tony's token until each member's own account is granted
+      # sharing directly. Writes never default here (lanes.<lane>.write) —
+      # read_only declares intent; explicit 'google-household:<calid>'
+      # targeting still routes until ada-pi enforces the flag (follow-up).
+      read_only: true
+      calendars:
+        - 4cf4e59c577d638143c46808598d1e1f794f1d26260c62944eb7b6f977eea95d@group.calendar.google.com  # tony-ha household
+        - family00576230129484617118@group.calendar.google.com           # Family
+        - en.th#holiday@group.v.calendar.google.com                      # Holidays in Thailand
       token_file: ~/.config/secrets/ada-google-calendar-token.json
     icloud:
       adapter: caldav

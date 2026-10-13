@@ -1,0 +1,84 @@
+title: Member-own Google identity for ada lanes (manual-paste OAuth + per-member tokens)
+id: 2026-10-13-member-google-identity
+card: member-own-google-account
+date: 2026-10-13
+status: shipped-chaba-pending-tony-oauth
+summary: |
+  Member lanes (ada-kk, future member nodes) should act under the
+  member's OWN Google identity instead of Tony's token. Google's device
+  flow is unusable here (the device authorization endpoint rejects
+  Calendar/Tasks scopes — limited-input whitelist only), so the member
+  onboarding path is manual-paste: she opens the consent URL on her
+  phone, signs in, Google redirects to a dead http://localhost URL, and
+  she sends the address-bar URL back for the code exchange.
+
+deliverables:
+  - file: scripts/ada/google-calendar-auth.py
+    role: auth tool patch
+    detail: |
+      New --manual mode: prints the auth URL with
+      redirect_uri=http://localhost (unregistered loopback allowed for
+      installed/desktop clients), accepts the pasted redirect URL OR a
+      bare code, handles error= params, exchanges with the same
+      redirect_uri. New --member/--service: token filename convention
+      ada-google-<svc>-token[-<member>].json (memberless = existing
+      shared/tony file, unchanged). --host scp now uses the output
+      basename so member tokens land under their own name.
+  - file: scripts/ada/render-calendar-providers.py
+    role: lane-aware renderer
+    detail: |
+      New --instance <lane>: filters providers: to entries whose
+      instances: names the lane, resolves write: from the new
+      calendar.lanes map, writes ~/.config/ada/<lanes file or
+      calendar-<instance>.json>. Fails loudly when a lane has no
+      providers or a lane write: names a missing provider. 'lanes' is a
+      render-time key stripped from output. --host scp uses the lane
+      filename.
+  - file: docs/ssot/apps/ssot.apps.ada-calendar.yml
+    role: registry + prose
+    detail: |
+      calendar.lanes {tony, kk} (+ kk-dev comment); providers google-kk
+      (status planned until token minted, tasks true, calendars
+      [primary]) and google-household (status active, read_only true,
+      Tony's token, household+Family+holiday cals — the hybrid
+      read-provider keeping the shared layer on member lanes).
+      Auth-model prose documents per-member tokens, manual-paste
+      onboarding, Testing-mode test-user whitelist, and the
+      GEMINI_API_KEY_<member> quota-vs-identity split.
+  - file: docs/ssot/infrastructure/ssot.ada.howto.yml
+    role: runbook
+    detail: |
+      New member_google_onboard runbook (publish consent screen ->
+      --manual --member mint -> --check -> declare providers -> render
+      lane file -> calendar-smoke verify). google_calendar_reauth notes
+      --manual for no-browser reauth and the per-identity token naming.
+
+tony_actions:
+  - "Publish the OAuth consent screen on project gen-lang-client-0694401188
+    (console -> APIs & Services -> OAuth consent screen -> Publish app).
+    While in Testing, refresh tokens die in 7 days AND members cannot
+    consent unless whitelisted as test users."
+  - "With Kaewta's phone: python3 scripts/ada/google-calendar-auth.py
+    --manual --member kk --host idc03, send her the URL over LINE, paste
+    the dead-localhost redirect she sends back."
+  - "python3 scripts/ada/google-calendar-auth.py --check --member kk —
+    confirm her calendars; adjust google-kk.calendars if the kk member
+    calendar (1c408592…) isn't 'primary'."
+  - "Flip google-kk status to active, then render:
+    python3 scripts/ada/render-calendar-providers.py --instance kk --host idc03"
+  - "Verify on the lane: ADA_CALENDAR_FILE=~/.config/ada/calendar-kk.json
+    ADA_INSTANCE_ID=kk python3 scripts/ada/calendar-smoke.py, then a live
+    calendar_read/calendar_write from ada-kk. Gemini is untouched —
+    OAuth tokens are identity; the API key stays a project credential."
+
+notes:
+  - "google-kk.calendars: [primary] is the best-guess default — the kk
+    member calendar surfaced as 1c408592…@group.calendar.google.com in
+    the shared embed; --check lists her real calids if primary misses it."
+  - "read_only: true on google-household is declared intent — default
+    writes go to google-kk, but an explicit 'google-household:<calid>'
+    target still routes until ada-pi enforces the flag (ada-pi follow-up)."
+  - "kk-dev keeps its hand-maintained calendar-kk-dev.json until a
+    google-kk-dev provider (separate test calendar) is declared."
+  - "GEMINI_API_KEY_KK is already live (card kk-gemini-key) — optional
+    per-member AI Studio keys are quota/billing, never calendar identity."
