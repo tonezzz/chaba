@@ -1,0 +1,106 @@
+title: LINE tool reply routing — answers stay in the originating chat
+subtitle: A persona's chat_send inside a turn used to fall through to the lane
+  default room or the owner's DM; sessions now bind the originating chat and a
+  bare send answers in-context
+icon: route
+
+planning:
+  goal: |
+    Card line-tool-reply-routing-answers-leave-th-5c73e7: LINE tool replies
+    left the originating chat. Root cause: chat_send posts a bare /send to
+    the relay, which resolved the target as _recent_chat[instance] ->
+    LINE_LANE_DEFAULT[instance] -> first allowed user. _recent_chat was
+    written keyed by persona name (kaewta) but read keyed by
+    ADA_INSTANCE_ID (kk) — a dead map — so bare sends landed in the lane
+    default room or the owner's DM. Fix: relay hands the originating chat
+    to the backend at ws connect (&chat_id=), the runner records it in a
+    per-session registry (SESSION_CHAT), and chat_send defaults `to` to it.
+    /send also records each delivery under the instance key so the
+    fallback map is keyed the way readers query it.
+  scope: |
+    ada-pi only, staged as drop-in patches in integrations/ada-pi/ (drop 6).
+    No push/deploy from this worktree — hand to deploy-ada.sh on idc03.
+    Pair card line-delivery-send-actual-images: image sends share the same
+    /send path, so they inherit the in-context rule automatically.
+  success_criteria:
+    - Relay ws connect carries &chat_id=<originating chat> for DM and room
+      sessions
+    - chat_send with empty to= on a bound session posts to the originating
+      chat; explicit to= still wins; LINE_LANE_ALLOW/LOCK still gate it
+    - /send keys _recent_chat by ADA_INSTANCE_ID on delivery
+    - ada-pi suite green + tool-lint clean on the patched tree
+  risks:
+    - Bound chat outside lane allowlist -> denied, not rerouted (intended;
+      the gate vets the bound target like any other)
+    - Unbound sessions (voice, PWA, pre-patch relays) -> identical old
+      behavior, `to=""` falls back through the existing chain
+  resources:
+    - /tmp clone of tonezzz/ada-pi @ 98c8e26 as diff base
+    - integrations/ada-pi/ staged-drop convention (drops 1-5)
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: line-delivery-send-actual-images-not-jus-652ad3 (same /send path)
+      file: docs/ssot/kanban/cards/line-delivery-send-actual-images-not-jus-652ad3.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-13T21:58:00
+  steps:
+    - id: 1
+      label: Reproduce routing logic — read line_relay.py, chat.py, pwa_server /ws
+      status: completed
+      notes: |
+        Found the dead map: _recent_chat written keyed by persona name in
+        _deliver_turn, read keyed by ADA_INSTANCE_ID in /send. Bare
+        chat_send -> lane default / first allowed user.
+    - id: 2
+      label: Patch relay + backend + pwa_server + tg_relay
+      status: completed
+      notes: |
+        ChatSession.chat_id -> &chat_id= on ws URL; SESSION_CHAT registry +
+        session_chat_id() in tool_runner/common; _chat_send_run defaults to=
+        per channel; pwa_server binds/unbinds on ws connect/teardown; /send
+        records _recent_chat[inst] on delivery; tg_relay gets the same
+        &chat_id= (same bug class).
+    - id: 3
+      label: Tests — ada-pi tests/test_line_reply_context.py + chaba-side drop test
+      status: completed
+      notes: |
+        9 new ada-pi tests (registry semantics, payload defaulting, ws URL,
+        /send instance keying); chaba tests/ada/test_line_reply_routing.py
+        verifies patch-apply + behavior on a clean ada-pi copy.
+    - id: 4
+      label: Verify — ada-pi suite + tool-lint on patched tree
+      status: completed
+      notes: |
+        pytest tests/ 1365 passed / 4 skipped; test_line_relay_group 28/28;
+        test_tool_runner 274/274; tool-lint clean.
+
+results:
+  deliverables:
+    - integrations/ada-pi/backend/line_relay.reply-routing.patch
+    - integrations/ada-pi/backend/tool_runner.reply-routing.patch
+    - integrations/ada-pi/backend/tg_relay.reply-routing.patch
+    - integrations/ada-pi/backend/test_line_relay_group.reply-routing.patch
+    - integrations/ada-pi/pwa_server.reply-routing.patch
+    - integrations/ada-pi/tests/test_line_reply_context.py
+    - integrations/ada-pi/README.md (Drop 6 — install + contract)
+    - tests/ada/test_line_reply_routing.py (chaba-side gate)
+  metrics:
+    ada_pi_base: 98c8e26
+    ada_pi_tests: "1365 passed, 4 skipped"
+    chaba_tests: "7 passed (ADA_PI=<checkout>)"
+    tool_lint: clean
+  outcome: |
+    Staged drop ready for install on the idc03 ada-pi checkout + deploy-ada.sh.
+    After deploy, restart ada-line-relay, ada-tg-relay and the lane backends —
+    pwa_server carries the binding side.
+  next_steps:
+    - Install on tony-dell ~/CascadeProjects/ada-pi per README drop 6, deploy
+      via deploy-ada.sh on idc03, restart ada-line-relay + ada-tg-relay +
+      lane units
+    - Live verify: kk asks kaewta in room C822 a question that triggers a
+      chat_send (place_report link) — answer lands in C822, not the DM
+    - Sibling card line-delivery-send-actual-images inherits the routing rule
+      (same /send); image payload work is separate

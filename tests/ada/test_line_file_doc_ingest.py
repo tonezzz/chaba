@@ -254,14 +254,21 @@ class TestRelayPatch:
         src = tmp_path / "backend"
         src.mkdir()
         target = src / "line_relay.py"
-        target.write_bytes(
-            (ADA_PI / "backend/line_relay.py").read_bytes())
+        raw = (ADA_PI / "backend/line_relay.py").read_bytes()
+        target.write_bytes(raw)
         r = subprocess.run(
             ["git", "apply", "--check", str(PATCH)],
             cwd=tmp_path, capture_output=True, text=True)
-        assert r.returncode == 0, f"patch no longer applies: {r.stderr}"
-        subprocess.run(["git", "apply", str(PATCH)],
-                       cwd=tmp_path, check=True)
+        if r.returncode != 0:
+            # Drop already merged upstream (deployed + pushed to ada-pi
+            # main) — the staged patch is a record copy and can't apply
+            # over its own content. Detect by the feature marker.
+            assert b'_MEDIA_INBOUND = ("file", "video")' in raw, (
+                f"patch no longer applies and feature not upstream: "
+                f"{r.stderr}")
+        else:
+            subprocess.run(["git", "apply", str(PATCH)],
+                           cwd=tmp_path, check=True)
         monkeypatch.setenv("LINE_MEDIA_ARCHIVE_DIR",
                            str(tmp_path / "arch"))
         monkeypatch.setenv("LINE_IMG_CACHE_DIR", str(tmp_path / "img"))
