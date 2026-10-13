@@ -227,6 +227,29 @@ banks:
     person_scope: person.testo_2
     key_scope: [testo, user-testo]   # his keys route here even without voice ID
     speaker_name: KK
+  personal-tony:
+    title: Tony private memory
+    description: Tony's person-scoped private memory. On the kk lane an
+      identified Tony must scope HERE, not to the lane-default personal bank
+      (ada-ha-bank-personal-kk) — the missing scope is why "my car" returned
+      KK's CR-V (MEM-0572, 2026-10-13). Served on the tony and kk instances
+      so both lanes can resolve person.tony to his own bank; writes stay
+      owner-only via
+      the person_scope foreign-write guard.
+    scope: person
+    instances: [tony, kk]
+    mddb_collection: ada-ha-bank-personal-tony
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
+    person_scope: person.tony
+    key_scope: [user-tonezzzz, tg-tony]
+    instances_readonly: {kk-dev: kk, tony-dev: tony, ada-dev: tony}
   tony-projects:
     title: Tony project notes
     description: Tony-only project and infrastructure notes
