@@ -293,8 +293,10 @@ audits:
     description: >
       Live HTTP probes for every type:http service declared in
       ssot.health.*.yml (unique URLs, declared expected_status + timeout).
-      Timeout retries once at 2x before failing. Also checks TLS cert
-      expiry (<30d warn, <7d fail). HEALTH_PROFILE selects the profile set.
+      Timeout retries once at 2x before failing (skipped for `severity: warn`
+      services — a non-fatal probe never fails the rollup and is not
+      re-probed). Also checks TLS cert expiry (<30d warn, <7d fail).
+      HEALTH_PROFILE selects the profile set.
     last_run:
     last_result:
 

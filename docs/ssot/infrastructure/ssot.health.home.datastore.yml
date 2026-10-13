@@ -97,12 +97,18 @@ services:
     url: http://idc03:11023/v1/stats
     expected_status: 200
     timeout: 60
+    severity: warn
     category: datastore
     profiles:
       - home
       - mobile
     note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing.
-      /v1/stats walks the full catalog and routinely takes ~30s — timeout 60 is required.
+      /v1/stats walks every key in docs/rev/idxmeta plus a per-collection
+      checksum pass — ~1.6M keys on the 8.1GB DB, ~30s warm and >60s under
+      write churn or cold page cache (measured 2026-10-13). severity=warn so a
+      slow stats walk can't fail the rollup; liveness is covered by mddb-api
+      /health. Root fix belongs in mddbd (bucket Stats().KeyN + cached
+      checksums) — see reports/2026-10-13-mddb-stats-perf.md.
     recovery_actions:
       - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
       - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
@@ -115,11 +121,14 @@ services:
     url: http://idc03:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
+    severity: warn
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing
+    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing.
+      Normally <1s; stalls only when the server is saturated (e.g. a concurrent
+      /v1/stats walk). severity=warn — liveness stays fatal via mddb-api.
     recovery_actions:
       - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
       - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"
@@ -132,11 +141,14 @@ services:
     url: http://idc03:11023/metrics
     expected_status: 200
     timeout: 5
+    severity: warn
     category: datastore
     profiles:
       - home
       - mobile
-    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing
+    note: MDDB leader on idc03 (tailnet-only). Direct port access, bypasses Caddy routing.
+      Diagnostics endpoint, normally <1s; stalls only under server-wide load.
+      severity=warn — liveness stays fatal via mddb-api.
     recovery_actions:
       - "Check MDDB service: ssh idc03 systemctl --user status mddb.service"
       - "Restart MDDB: ssh idc03 systemctl --user restart mddb.service"

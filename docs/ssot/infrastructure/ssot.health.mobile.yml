@@ -262,12 +262,14 @@ services:
     url: http://idc03:11023/v1/stats
     expected_status: 200
     timeout: 60
+    severity: warn
     category: datastore
     profiles:
       - home
       - mobile
     note: Direct port access for stats endpoint, bypasses Caddy routing. /v1/stats
-      routinely takes ~30s on the leader — timeout 60 is required.
+      walks ~1.6M keys on the 8.1GB DB — ~30s warm, >60s under load; severity=warn
+      so a slow stats walk can't fail the rollup.
     recovery_actions:
       - "Check MDDB container: ssh idc03 'podman ps | grep mddb'"
       - "Restart MDDB: ssh idc03 'systemctl --user restart mddb'"
@@ -279,6 +281,7 @@ services:
     url: http://idc03:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
+    severity: warn
     category: datastore
     profiles:
       - home
@@ -295,6 +298,7 @@ services:
     url: http://idc03:11023/metrics
     expected_status: 200
     timeout: 5
+    severity: warn
     category: datastore
     profiles:
       - home
