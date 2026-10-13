@@ -1,7 +1,7 @@
 id: macbook-suspend-dgpu-wedge
 title: 'tony-macbook: S3 (deep) suspend wedges amdgpu+Thunderbolt on resume — screen dead, host alive'
-column: backlog
-updated: 2026-10-11 22:11
+column: done
+updated: 2026-10-13 18:46
 brief: '2026-10-11 15:52 suspend entry (deep) → on resume pcieports stuck in D3cold ("device inaccessible") + thunderbolt
   tb_cfg_read WARN storm → 15:56 amdgpu SMU mailbox dead, fw reload failed, GPU Recovery Failed -22 → display pipe
   dead, host stayed up (ssh/power-key worked until force-off ~16:01). Known MBP13,3-on-Linux disease: Alpine Ridge
@@ -130,3 +130,7 @@ comms:
     polls /proc/acpi/button/lid/LID0/state; on close -> Mutter PowerSaveMode=3 (all outputs off), on open -> =0.
     Docked lid-close stays logind-ignored (no suspend); undocked still s2idles. Also ssh-force-DPMS on tony-dell
     greeter display (Xorg :1, gdm auth /run/user/60578/.mu'
+- at: 2026-10-13 18:46
+  from: devin
+  text: moved backlog -> done
+claim: {}

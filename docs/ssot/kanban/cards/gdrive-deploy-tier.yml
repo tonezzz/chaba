@@ -1,8 +1,8 @@
 id: gdrive-deploy-tier
 title: 'gdrive for push/deploy? verdict: no for transport, yes as cold artifact tier'
-column: backlog
+column: done
 review_kind: decision
-updated: 2026-10-12 20:48
+updated: 2026-10-13 18:46
 brief: 'Tony asked whether gdrive could carry push+deploy. Analysis: no for git transport (no atomic refs/locking
   over rclone, reintroduces sync-race class git-safe-pull was built to kill, adds a third-party repo copy) and no
   for deploy trigger (deploy = scp+restart+verify+flock+confirm gates, not file-arrival; all targets already on
@@ -69,3 +69,7 @@ comms:
 - at: 2026-10-12 20:48
   from: tony
   text: closed by tony
+- at: 2026-10-13 18:46
+  from: devin
+  text: moved backlog -> done
+claim: {}

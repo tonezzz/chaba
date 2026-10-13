@@ -2,10 +2,10 @@ id: memory-lane-policy
 title: Memory lane policy — household vs private banks, dev never writes prod memory
 brief: Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory,
   Tony gets his private banks, and staging/test traffic can't pollute production memory.
-column: doing
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-13 06:30
+updated: 2026-10-13 18:46
 program: ha-lanes
 metric: 'Bank registry carries an env/provenance rule: writes from non-prod contexts land only in a scratch bank;
   household members get general/home/people/purchase + own personal bank and nothing Tony-private; `home` bank made
@@ -79,4 +79,8 @@ comms:
   from: chaba
   text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
     Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-10-13 18:46
+  from: devin
+  text: moved doing -> done
 ref: MEM-0345
+claim: {}
