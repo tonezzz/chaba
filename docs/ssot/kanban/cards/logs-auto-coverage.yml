@@ -1,20 +1,36 @@
 id: logs-auto-coverage
 title: Log coverage gaps
-column: done
+column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
-priority: high
-note: 'Coverage clean 2026-10-10: all 7 expected hosts ship both journals.'
-help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps usually mean `journalctl --user`
-  isn't permitted for the ssh login.
-updated: '2026-10-10'
+priority: medium
+note: 'Expected log sources vs what actually ships:
+
+
+  - `idc01` — ok [local]; shipped 3/3 matched
+
+  - `idc02` — ok [local]; shipped 26/26 matched
+
+  - `idc03` — ok [local]; shipped 107/107 matched
+
+  - `mn01` — silent 3h [local]; shipped 7/7 matched
+
+  - `tony-dell` — ok [local]; shipped 1111/1111 matched
+
+  - `tony-omen` — ok [local]; shipped 341/341 matched
+
+  - `michael-ha` — ok [ha-cli-ssh]; shipped 2/2 matched'
+help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
+  usually mean `journalctl --user` isn't permitted for the ssh login.
+updated: '2026-10-14'
 comms:
 - at: 2026-10-04 14:16
   from: devin
-  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen is intentional digest
-    sizing; only-sys-journal on idc01/idc02 = other journal namespaces unreadable by the shipper user. Recommend:
-    leave as accepted limitation, or bump cap if digests feel thin.'
+  text: 'Triage: gaps are known shipper design limits — 500-line scan cap on mn01/dell/omen
+    is intentional digest sizing; only-sys-journal on idc01/idc02 = other journal
+    namespaces unreadable by the shipper user. Recommend: leave as accepted limitation,
+    or bump cap if digests feel thin.'
 - at: 2026-10-04 17:58
   from: tony
   text: closed by Tony
@@ -38,6 +54,6 @@ comms:
   text: 'ref assigned: OPS-0295'
 action:
   status: done
-brief: 'The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the
-  card.'
+brief: 'The log digest flagged something worth a look: Log coverage gaps. Read the
+  note, then fix it or close the card.'
 ref: OPS-0295
