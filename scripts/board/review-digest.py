@@ -46,7 +46,8 @@ def main() -> int:
             rep = f" → {c['report']}" if c.get("report") else ""
             review.append(f"{ref} · {c.get('title') or cid}{rep}")
         open_reqs = [r for r in c.get("requests") or []
-                     if r.get("status") not in ("answered", "closed", "done")
+                     if isinstance(r, dict)
+                     and r.get("status") not in ("answered", "closed", "done")
                      and r.get("to", "tony") == "tony"]
         if open_reqs and c.get("column") != "done":
             asks.append(cid)

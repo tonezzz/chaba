@@ -145,6 +145,8 @@ def mine_comms(cards: list[dict]) -> tuple[list[dict], int]:
         cid = c.get("id") or c.get("_file", "")[:-4]
         status = col_status.get(c.get("column"), "pending")
         for cm in c.get("comms") or []:
+            if not isinstance(cm, dict):
+                continue
             if (cm.get("from") or "").lower() != "tony":
                 continue
             text = _clean(cm.get("text"))

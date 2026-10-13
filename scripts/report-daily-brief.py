@@ -300,7 +300,8 @@ def new_cards(cards: list[dict], start, end,
         return out, "git"
     out = []
     for c in cards:
-        stamps = [_parse_card_ts(e.get("at")) for e in c.get("comms") or []]
+        stamps = [_parse_card_ts(e.get("at")) for e in c.get("comms") or []
+                  if isinstance(e, dict)]
         stamps = [s for s in stamps if s]
         first = min(stamps) if stamps else _parse_card_ts(c.get("updated"))
         if first and start <= first <= end:
@@ -314,6 +315,8 @@ def open_requests(cards: list[dict]) -> list[dict]:
     out = []
     for c in cards:
         for r in c.get("requests") or []:
+            if not isinstance(r, dict):
+                r = {"status": "open", "ask": str(r)}
             if r.get("status") == "open":
                 out.append({"card": c.get("id"), "ask": r.get("ask", ""),
                             "card_updated": _parse_card_ts(c.get("updated"))})
@@ -396,6 +399,8 @@ def decisions_made(cards: list[dict], start, end) -> list[dict]:
         if not (upd and start <= upd <= end):
             continue
         for r in c.get("requests") or []:
+            if not isinstance(r, dict):
+                continue
             if r.get("status") in ("answered", "done") or r.get("answered"):
                 ans = r.get("answer")
                 out.append({"card": c.get("id"),
@@ -426,6 +431,8 @@ def notable_replies(cards: list[dict], start, end,
     out = []
     for c in cards:
         for e in c.get("comms") or []:
+            if not isinstance(e, dict):
+                continue
             fr = str(e.get("from", "")).lower()
             if fr == "tony" or fr in noise or fr.startswith("auto"):
                 continue
