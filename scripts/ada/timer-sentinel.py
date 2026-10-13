@@ -40,7 +40,7 @@ STATE_DIR = Path(os.environ.get(
 STATE = STATE_DIR / "state.json"
 HEARTBEAT = STATE_DIR / "sentinel-heartbeat.json"
 SWEEP_STALE_MIN = 30
-ACTOR = "timer-sentinel"
+ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 
 # timers whose silence must always card — the load-bearing ones
 CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
@@ -86,7 +86,7 @@ def fire(card_id, title, body, dry_run, open_ids):
     if not dry_run:
         api("card", {"id": card_id, "title": title, "column": "backlog",
                      "priority": "high", "from": ACTOR,
-                     "tags": ["timer-alert", "auto"],
+                     "tags": ["timer-alert", "auto", "by:timer-sentinel"],
                      "note": body})
     print(f"CARD {card_id}: {body[:80]}")
 
