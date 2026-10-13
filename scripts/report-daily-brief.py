@@ -383,7 +383,8 @@ def tony_comms(cards: list[dict], start, end) -> list[dict]:
             if not _is_ask(text):
                 continue
             agents = [x for x in comms
-                      if str(x.get("from", "")).lower() != "tony"]
+                      if isinstance(x, dict)
+                      and str(x.get("from", "")).lower() != "tony"]
             outcome = (agents[-1].get("text") or "")[:90] if agents else ""
             out.append({"card": c.get("id"), "ask": text[:110],
                         "at": at, "column": c.get("column"),
@@ -418,7 +419,7 @@ def unreplied_loops(cards: list[dict]) -> list[dict]:
     for c in cards:
         if c.get("column") == "done":
             continue
-        comms = c.get("comms") or []
+        comms = [e for e in (c.get("comms") or []) if isinstance(e, dict)]
         if (comms and str(comms[-1].get("from", "")).lower() == "tony"
                 and _is_ask(comms[-1].get("text") or "")):
             out.append({"card": c.get("id"), "column": c.get("column"),
