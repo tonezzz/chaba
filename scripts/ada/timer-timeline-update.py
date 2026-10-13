@@ -405,8 +405,9 @@ def main():
     except Exception as e:
         print(f"warn: reports-index regen failed ({e})", file=sys.stderr)
 
+    n_hosts = sum(1 for d in sweep["hosts"].values() if d["ok"])
     print(f"timer-timeline published — {sum(len(d['timers']) for d in sweep['hosts'].values())} timers, "
-          f"{collect_ms}ms, {ok_hosts} hosts")
+          f"{collect_ms}ms, {n_hosts}/{len(sweep['hosts'])} hosts")
     return 0
 
 
