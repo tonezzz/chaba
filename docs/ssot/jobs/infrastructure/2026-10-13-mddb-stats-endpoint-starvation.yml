@@ -1,0 +1,69 @@
+id: 2026-10-13-mddb-stats-endpoint-starvation
+title: mddb :11023 stats/metrics health probes starve under full-DB walks — audit made non-fatal
+date: "2026-10-13"
+domain: infrastructure
+card: fix-mddb-stats-timeout-overnight
+linked_cards:
+  - mddb-stats-o1-counts        # root fix: O(1) stats counters (mddb fork)
+  - timer-alert-tony-dell-overnight-assessment  # alert card that fired
+actor: devin (dispatch worktree dispatch/20261013-174724-two-tracks-investigate-both-a-, attempt 3)
+status: done
+
+track_a_findings:
+  summary: >
+    /metrics + /v1/stats on the idc03 mddb leader did not hang because the
+    service was down — mddb was reachable and /v1/vector-stats answered in
+    540ms during the same probe window. The failures are endpoint-level
+    contention: /v1/stats is an O(full-DB) walk over an 8.2GB mddb.db
+    (~1.6M keys + per-collection checksums) and while it runs it starves
+    the sibling probes.
+  evidence:
+    - "reports/ORCHESTRATION.json run 2026-10-12T19:00Z (02:00 +07): health_snapshot rc=1, duration 109.9s; mddb-stats 'timeout after 60000ms' (60s + 2x retry), mddb-metrics 'timeout after 5000ms' (5s + 10s retry), mddb-vector-stats ok at 540ms."
+    - "Live re-measure 2026-10-13 ~17:50 +07: /health 16ms, /metrics 2.5s (already over the 2s SLOW_MS warn line), /v1/vector-stats 425-526ms, /v1/stats 0.9-1.0s warm."
+    - "DB: /home/tony/.config/containers/mddb/data/mddb.db = 8.2G, mddb.binlog = 99M (rotates ~270MB a few times/day, follower-bounded)."
+    - "journalctl mddb.service was silent 22:38→02:31 (no errors) — the process was not crashed, just endpoint-starved."
+  recurring_amplifier: >
+    mddb-backup.timer fires 02:30 nightly on idc03 (mddb-backup.sh → native
+    /v1/backup → snapshot + integrity check). The 2026-10-13 run read all
+    8.3GB in ~13 min (02:31:01→02:44:00, cpu=126s). This window does NOT
+    overlap the 02:00 health_snapshot today, but any probe that lands in it
+    hits the same starvation — it explains other slow nights and will keep
+    producing sporadic warn-level timeouts.
+  root_cause: >
+    Real perf bug in mddb: stats endpoints do linear work against the whole
+    DB inside the serving path with no isolation from cheap probes. First
+    /v1/stats of the night on a cold page cache exceeds the 60s declared
+    timeout; concurrent /metrics then exceeds 5s+10s. Root fix is carded
+    separately (mddb-stats-o1-counts — O(1) counters in the mddb fork).
+
+track_b_fix:
+  mechanism: >
+    scripts/audits/http-health-audit.mjs now honors a per-service
+    `severity: warning` field in the health SSOTs. Failures on such
+    services (unreachable, timeout after 2x retry, wrong status, cert <7d)
+    are recorded as warns tagged "(non-fatal)" instead of issues, so the
+    audit still reports them but exits 0. Default stays error — the flag is
+    opt-in per service. Check entries now carry a `severity` field.
+  applied_to:
+    - mddb-stats       (http://idc03:11023/v1/stats, timeout 60)
+    - mddb-metrics     (http://idc03:11023/metrics, timeout 5)
+    - mddb-vector-stats (http://idc03:11023/v1/vector-stats, timeout 5)
+  rationale: >
+    All three are diagnostic endpoints on the same 8.2GB DB, not liveness —
+    mddb-api /health remains the fatal check, so a genuinely dead mddb still
+    fails the audit. A slow stats endpoint timing out should warn, not fail
+    the whole nightly health_snapshot step (which feeds the
+    overnight-assessment rollup + timer-alert card).
+  files_changed:
+    - scripts/audits/http-health-audit.mjs
+    - docs/ssot/infrastructure/ssot.health.home.datastore.yml
+    - docs/ssot/infrastructure/ssot.health.mobile.yml
+  verification:
+    - "live run: node scripts/audits/http-health-audit.mjs → exit 0, ok=true, 86 checks, 0 issues; mddb-stats/metrics/vector-stats entries carry severity=warning."
+    - "fixture test: temp health file with dead 127.0.0.1 endpoints — error-severity failure → issue + exit 1; warning-severity failure → warn '(non-fatal)' + exit 0."
+    - "node scripts/ssot-validate-all.mjs: both edited health files valid."
+
+notes:
+  - "ssot.audit.yml already rates the whole http-health audit severity_on_fail: warning for run.mjs; the overnight DAG calls the script directly and keys on its exit code — the per-service flag is what makes that path non-fatal."
+  - "health_snapshot step already has on_fail: continue in ssot.orchestration.overnight.yml, but rc=1 still marked the run ok:false and fed the timer alert."
+  - "Pre-existing unrelated ssot-validate errors remain: jobs/ada/2026-10-13-tony-lane-tool-profile.yml, jobs/infrastructure/2026-10-13-omen-timer-pack-fixes.yml."

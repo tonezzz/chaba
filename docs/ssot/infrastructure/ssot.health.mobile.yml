@@ -262,12 +262,16 @@ services:
     url: http://idc03:11023/v1/stats
     expected_status: 200
     timeout: 60
+    severity: warning
     category: datastore
     profiles:
       - home
       - mobile
     note: Direct port access for stats endpoint, bypasses Caddy routing. /v1/stats
       routinely takes ~30s on the leader — timeout 60 is required.
+      severity warning (2026-10-13) — O(full DB) walk over 8.2GB; cold cache or
+      backup-window I/O exceeds any sane timeout; a slow stats endpoint warns,
+      liveness stays fatal via mddb-api /health. Root fix tracked in mddb-stats-o1-counts.
     recovery_actions:
       - "Check MDDB container: ssh idc03 'podman ps | grep mddb'"
       - "Restart MDDB: ssh idc03 'systemctl --user restart mddb'"
@@ -279,11 +283,14 @@ services:
     url: http://idc03:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
+    severity: warning
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for vector stats endpoint, bypasses Caddy routing
+    note: Direct port access for vector stats endpoint, bypasses Caddy routing.
+      severity warning (2026-10-13) — same contention class as mddb-stats;
+      liveness stays fatal via mddb-api /health.
     recovery_actions:
       - "Check MDDB container: ssh idc03 'podman ps | grep mddb'"
       - "Restart MDDB: ssh idc03 'systemctl --user restart mddb'"
@@ -295,11 +302,15 @@ services:
     url: http://idc03:11023/metrics
     expected_status: 200
     timeout: 5
+    severity: warning
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for metrics endpoint, bypasses Caddy routing
+    note: Direct port access for metrics endpoint, bypasses Caddy routing.
+      severity warning (2026-10-13) — starves under concurrent /v1/stats walks
+      and the 02:30 backup integrity check — timed out in the 2026-10-13
+      overnight health_snapshot; liveness stays fatal via mddb-api /health.
     recovery_actions:
       - "Check MDDB container: ssh idc03 'podman ps | grep mddb'"
       - "Restart MDDB: ssh idc03 'systemctl --user restart mddb'"

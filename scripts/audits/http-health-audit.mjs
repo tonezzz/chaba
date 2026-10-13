@@ -11,6 +11,10 @@
  * Classification:
  *  - issue: unreachable, timeout, wrong status, cert <7d/invalid
  *  - warn:  slow response (>2s), redirect when expecting 200, cert <30d
+ *  - A service may declare `severity: warning` in the health SSOT: its
+ *    failures are then recorded as warns and never fail the run. Use for
+ *    legitimately slow diagnostic endpoints (e.g. mddb /v1/stats) whose
+ *    liveness is already covered by a separate fatal /health check.
  *
  * Output: JSON {ok, checks, issues, warns}. Exit 1 on any issue.
  * Env: HEALTH_PROFILE (default "home") filters services by `profiles`.
@@ -70,6 +74,7 @@ function collectServices() {
         expected: s.expected_status ?? 200,
         timeoutMs: (s.timeout ?? 5) * 1000,
         host: s.host,
+        severity: s.severity === "warning" ? "warning" : "error",
       });
     }
   }
@@ -78,7 +83,15 @@ function collectServices() {
   const byUrl = new Map();
   for (const s of services) {
     const prev = byUrl.get(s.url);
-    if (!prev || s.timeoutMs > prev.timeoutMs) byUrl.set(s.url, s);
+    const winner = !prev || s.timeoutMs > prev.timeoutMs ? s : prev;
+    byUrl.set(s.url, {
+      ...winner,
+      // a "warning" mark on any declaration of the same URL wins
+      severity:
+        prev?.severity === "warning" || s.severity === "warning"
+          ? "warning"
+          : "error",
+    });
   }
   return [...byUrl.values()];
 }
@@ -137,6 +150,12 @@ async function main() {
     async (svc) => {
       const r = await probe(svc);
       const label = `${svc.id} (${svc.url})`;
+      // severity "warning" demotes failures to warns: still reported, but the
+      // run stays green (a slow stats endpoint is not an outage).
+      const flag = (msg) =>
+        svc.severity === "warning"
+          ? warns.push(`${msg} (non-fatal)`)
+          : issues.push(msg);
       if (r.error) {
         if (/timeout/.test(r.error)) {
           // A timeout may be a slow-but-healthy endpoint (declared timeouts
@@ -152,12 +171,19 @@ async function main() {
               ok: true,
               status: retry.status,
               duration_ms: retry.durationMs,
+              severity: svc.severity,
             });
             return;
           }
         }
-        issues.push(`${label}: ${r.error}`);
-        checks.push({ id: svc.id, url: svc.url, ok: false, error: r.error });
+        flag(`${label}: ${r.error}`);
+        checks.push({
+          id: svc.id,
+          url: svc.url,
+          ok: false,
+          error: r.error,
+          severity: svc.severity,
+        });
         return;
       }
       let ok = true;
@@ -165,7 +191,7 @@ async function main() {
         if (r.status >= 300 && r.status < 400 && svc.expected === 200) {
           warns.push(`${label}: redirects (HTTP ${r.status}) — declared 200`);
         } else {
-          issues.push(`${label}: HTTP ${r.status}, expected ${svc.expected}`);
+          flag(`${label}: HTTP ${r.status}, expected ${svc.expected}`);
           ok = false;
         }
       }
@@ -174,7 +200,7 @@ async function main() {
       }
       if (r.certDays !== null) {
         if (r.certDays < CERT_FAIL_DAYS) {
-          issues.push(`${label}: TLS cert expires in ${r.certDays}d`);
+          flag(`${label}: TLS cert expires in ${r.certDays}d`);
           ok = false;
         } else if (r.certDays < CERT_WARN_DAYS) {
           warns.push(`${label}: TLS cert expires in ${r.certDays}d`);
@@ -187,6 +213,7 @@ async function main() {
         status: r.status,
         duration_ms: r.durationMs,
         cert_days: r.certDays,
+        severity: svc.severity,
       });
     },
     CONCURRENCY
