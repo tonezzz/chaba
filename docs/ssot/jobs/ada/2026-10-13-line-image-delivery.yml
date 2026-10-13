@@ -1,0 +1,74 @@
+title: LINE delivery — send actual images, not just text links
+id: 2026-10-13-line-image-delivery
+card: line-delivery-send-actual-images-not-jus-652ad3
+ref: ADA-0608
+date: 2026-10-13
+status: shipped-chaba-pending-adapi
+summary: |
+  "ส่งรูปรถของผมให้หน่อย" (LINE journal 2026-10-13 21:35) produced a
+  reply whose text carried a drive.google.com share link — LINE got a
+  text link, not an image. Root cause: drive search hands the model a
+  webViewLink (HTML viewer, not bytes) and line_relay only extracted
+  image candidates from cast_url/image_url/url tool-result keys —
+  never the reply text, never Drive links, never drive_get's media_url.
+  The drop adds three relay-side mechanisms so image-bearing refs
+  become real LINE `image` messages on every outbound path.
+
+deliverables:
+  - file: integrations/ada-pi/backend/line_relay.image-delivery.patch
+    role: relay patch (staged, NOT deployed — vs ada-pi main @ bb4c172)
+    detail: |
+      (a) _resolve_doc_media: drive share links mint /v1/drive/media/
+      fetch URLs via doc-archive POST /v1/drive/media-token (env
+      DOC_ARCHIVE_API_KEY already present in ada-ha-tony.env); relative
+      /v1/drive/media/ paths resolve against DOC_ARCHIVE_URL. Runs
+      inside _image_msgs' try so mint failure is non-fatal.
+      (b) _mine_image_urls + _mined_msgs: scan reply and /send text for
+      image-bearing refs (image extensions, Drive links,
+      /v1/drive/media/, /relay-img/), dedupe vs structured tool images,
+      upgrade to real image messages — silent on failure,
+      LINE_TEXT_IMG_MINE=0 killswitch. Wired into the four reply paths
+      (text turn, inbound image, inbound file/video, generic final)
+      and /send.
+      (c) _images_from accepts media_url when mimeType is image/* —
+      drive_get on an image auto-attaches the photo to the reply.
+  - file: integrations/ada-pi/backend/tool_guide.image-delivery.patch
+    role: model guidance
+    detail: |
+      chat_send image_url= wants a real image file or Drive link —
+      never a CMS page/view_url. drive_get returns a castable
+      media_url; pass webViewLink or media_url to image_url=.
+  - file: integrations/ada-pi/backend/realtime_provider.image-delivery.patch
+    role: tool schema description update
+  - file: tests/ada/test_line_image_delivery.py
+    role: chaba-side verification (18 tests, stubbed httpx/websockets)
+  - file: tests/ada/test_line_file_doc_ingest.py
+    role: harness fix
+    detail: |
+      The drop-2 patch is merged upstream (ada-pi 6148f64) so it can
+      never apply again; the fixture now detects merged-marker presence
+      and exercises the upstream file directly. Also stubs
+      httpx/websockets — same as the new test — since the scratch venv
+      lacks them.
+
+verification:
+  - "pytest tests/ada/ — 72 passed (venv: .cache/venv, httpx+websockets installed)"
+  - "patched line_relay.py compiles; helpers exercised against stub http"
+  - "e2e check on idc03: POST /v1/drive/media-token mints a URL that
+     returns the real 4.5MB JPEG (verified 2026-10-13)"
+  - "no false positives: page/map/PDF links stay text-only (tests)"
+
+install:
+  - "apply the three patches to a pristine ada-pi checkout (README Drop 6)"
+  - "tool-lint + pytest gates via deploy-ada.sh; restart ada-line-relay"
+  - "env: DOC_ARCHIVE_API_KEY already carried by ada-line-relay unit;
+     LINE_TEXT_IMG_MINE=0 disables text mining"
+
+residuals:
+  - minted media URLs are short-lived but fetched immediately and
+    re-hosted via /relay-img/ — TTL only gates the initial fetch
+  - LINE batch cap stays 5 messages; extra links remain text
+  - video/document delivery unchanged — LINE can't fetch tailnet URLs
+    (card ada-render-video-line-unsendable); this drop is images only
+  - paired card line-tool-reply-routing-answers-leave-th-5c73e7 is a
+    separate routing fix (session drops at 21:46 same journal)
