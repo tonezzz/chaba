@@ -1,0 +1,17 @@
+# manifest.yml snippet — append under tools: (backend/tools.d/manifest.yml)
+#
+# trip-calendar (2026-10-13, chaba card ada-trip-calendar-pages):
+# 'show my trip calendar' — shells chaba scripts/ada/trip-calendar.py,
+# which writes the trip-<slug> rollup + daily leaf + qc page family into
+# this lane's CMS collection (lane binding by ADA_CMS_COLLECTION, same
+# construction as conv_journal). read policy: generation is an internal
+# CMS write, reversible; the OFF-tailnet step (public='yes') is gated
+# in-module on confirmed= like cms_publish_page's public flag.
+# secondary_allowed: members ask for their own trip pages on their lane.
+# 120s — Google list_events chunked scan + N page writes.
+tools:
+  trip_calendar:
+    module: trip_calendar
+    policy: read
+    secondary_allowed: true
+    timeout_s: 120

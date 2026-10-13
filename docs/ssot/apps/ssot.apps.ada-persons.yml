@@ -106,6 +106,13 @@ persons:
         # ADA_CMS_COLLECTION at write time; reports are never
         # site-published.
         - conv_journal
+        # trip_calendar (2026-10-13, card ada-trip-calendar-pages):
+        # 'show my trip calendar' — shells chaba
+        # scripts/ada/trip-calendar.py, writes the trip-<slug>
+        # rollup+leaf+qc family into this lane's collection, returns
+        # the rollup link. public='yes' gated on confirmed (same rule
+        # as cms_publish_page) → surf-thailand.com share URL for LINE.
+        - trip_calendar
       exclude:
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
@@ -338,6 +345,7 @@ bench_profiles:
       - ada_render_video
       - page_snapshot
       - conv_journal
+      - trip_calendar
     exclude:
       - ada_memory_search
       - ada_remember
@@ -399,6 +407,12 @@ bench_profiles:
       - set_facial_expression
       - ada_market_quote
       - ada_render_video
+      # 2026-10-13 drift fix: persons.kk gained page_snapshot +
+      # conv_journal + trip_calendar after kk-parity was written —
+      # parity means identical, so they belong here too.
+      - page_snapshot
+      - conv_journal
+      - trip_calendar
     exclude:
       - ada_resolve_action
       - vcast_snapshot
