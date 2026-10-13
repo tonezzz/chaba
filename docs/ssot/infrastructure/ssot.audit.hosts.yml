@@ -244,6 +244,16 @@ hosts:
           leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
+      - name: chaba-jobs.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: "1min — drives scripts/job-dispatcher.py for dispatch:dispatcher
+          jobs in ssot.jobs.yml (yomi-update-active, mcp-debug-h3-sync,
+          tony-dell-health-snapshot, network-scan-tony). Was found disabled
+          2026-10-13 with no audit trail (OPS-0531) — a disabled tick here
+          silently starves every dispatcher job, so expected_state is critical"
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
       - {name: ada-ha.service, type: service, scope: user}

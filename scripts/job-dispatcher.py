@@ -12,6 +12,7 @@ import argparse
 import fcntl
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -82,6 +83,16 @@ def main():
                 continue
             t0 = time.time()
             try:
+                # stale-name pre-clean: if a previous run was timeout-killed
+                # mid `podman run`, the client died before --rm could fire and
+                # the dead container keeps the name -> every later run exits
+                # 125 forever (incident OPS-0531, 2026-10-13)
+                if "podman" in cmd:
+                    for cname in re.findall(r"--name[ =]([\w.:-]+)", cmd):
+                        subprocess.run(
+                            ["podman", "rm", "-f", cname],
+                            capture_output=True, timeout=15,
+                        )
                 r = subprocess.run(
                     cmd,
                     shell=True,
