@@ -100,7 +100,7 @@ def scan_lane(lane: str, unit: str, days: int) -> dict:
     days_map = defaultdict(lambda: {
         "sessions": 0, "failed": 0, "fallback": 0,
         "minutes": 0.0, "fallback_min": 0.0, "turns": 0,
-        "callers": defaultdict(int)})
+        "callers": defaultdict(int), "hours": defaultdict(int)})
     rows = []
     for sid, s in sess.items():
         if not s["open"]:
@@ -118,6 +118,9 @@ def scan_lane(lane: str, unit: str, days: int) -> dict:
         d["sessions"] += 1
         d["turns"] += s["turns"]
         d["callers"][s["caller"]] += 1
+        # habit profile — session opens bucketed by 3h local hour band;
+        # tunes LINE_IDLE_SESSION_S day/night boundary (LINE_NIGHT_HOURS)
+        d["hours"][int(s["open"][11:13]) // 3] += 1
         if s["pfail"]:
             d["failed"] += 1
         if s["fallback"]:
@@ -177,6 +180,21 @@ def render(lanes: dict, window_days: int) -> str:
                           ("fallback", r["fallback"])) if on) or "-"
         out.append(f"| {r['day']} | {r['lane']} | {r['session']} | "
                    f"{r['minutes']:.1f} | {r['turns']} | {flags} |")
+    # habit profile — sessions by 3h open-hour band, all days merged;
+    # quiet bands are the candidates for LINE_NIGHT_HOURS
+    bands = ["00-02", "03-05", "06-08", "09-11", "12-14", "15-17",
+             "18-20", "21-23"]
+    out += ["\n## Habit profile — session opens by hour band (all days)\n",
+            "| lane | " + " | ".join(bands) + " |",
+            "|---|" + "---|" * len(bands)]
+    merged = defaultdict(lambda: defaultdict(int))
+    for lane, data in lanes.items():
+        for d in data["days"].values():
+            for band, n in d["hours"].items():
+                merged[lane][band] += n
+    for lane in sorted(merged):
+        out.append("| " + lane + " | " + " | ".join(
+            str(merged[lane].get(b, 0)) for b in range(len(bands))) + " |")
     out.append(
         f"\n_Total: {totals['min']:.0f} connected min, "
         f"{int(totals['fail'])} failed connects, last {window_days}d. "
