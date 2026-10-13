@@ -1,9 +1,9 @@
 From bbb90f194c7e38e1a43e11af4402c28e5f9ec80e Mon Sep 17 00:00:00 2001
 From: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
 Date: Tue, 13 Oct 2026 06:48:29 +0700
-Subject: [PATCH] =?UTF-8?q?fix(ada):=20tool-call=20failure=20surface=20?=
- =?UTF-8?q?=E2=80=94=20one=20pass=20over=20the=202026-10-10=20audit-fail?=
- =?UTF-8?q?=20cluster?=
+Subject: [PATCH 1/2] =?UTF-8?q?fix(ada):=20tool-call=20failure=20surface?=
+ =?UTF-8?q?=20=E2=80=94=20one=20pass=20over=20the=202026-10-10=20audit-fai?=
+ =?UTF-8?q?l=20cluster?=
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -296,6 +296,279 @@ index 57d4f1f..95b3615 100644
          resp = await client.aio.models.generate_content(
              model=model,
              contents=str(query),
+-- 
+2.43.0
+
+
+From 9ff1bf96ebf87533b3a6abe43f1e62b2f9f0fd54 Mon Sep 17 00:00:00 2001
+From: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+Date: Tue, 13 Oct 2026 15:38:01 +0700
+Subject: [PATCH 2/2] =?UTF-8?q?fix(ada):=20tool-call=20failure=20surface?=
+ =?UTF-8?q?=20part=202=20=E2=80=94=20calendar=20fan-out=20+=20deferred=20n?=
+ =?UTF-8?q?otify?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+calendar_read (audit-fail-calendar-read, still firing 2026-10-13):
+a dead/mis-shared calendar id in the registry (the literal
+\${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME} script-bug calendar, 404 on
+every GET) raised CalendarError inside GoogleCalendar.list_events and
+sank the whole aggregate read — every agenda prefetch and calendar_read
+failed. Now a per-calendar miss collects into provider.errors which
+CalendarService folds into the result's errors[] (degrade, don't fail);
+only an all-calendars failure still raises, and CalendarAuthError stays
+loud mid-fan-out.
+
+chat_send / /api/notify lane ('deferred notify send failed: NoneType'):
+notify_or_defer queued a context note on a provider with no live Gemini
+session (ws registered, connect never ran or already closed); the drain
+then crashed on _session.send_client_content. notify_or_defer and
+_send_context_note now raise RuntimeError('provider is not connected')
+like every other send path — /api/notify already retries that exact
+error for the connecting window, then reports delivered:false.
+
+Tests: 3 google-adapter cases (partial 404 degrade, all-dead raise,
+mid-fan-out 401 stays loud), 2 service cases (intra-provider errors
+surface on hit and empty days), 1 provider test (notify_or_defer +
+_send_context_note raise unconnected). 76 calendar/provider tests pass,
+207 tool_runner tests pass (ADA_INSTANCE_ID=tony; unset run shows only
+the pre-existing env-dependent CalendarGate failure).
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
+---
+ backend/calendar_providers.py    |  8 +++-
+ backend/google_calendar.py       | 19 +++++++-
+ backend/realtime_provider.py     |  4 ++
+ tests/test_calendar_providers.py | 74 ++++++++++++++++++++++++++++++++
+ tests/test_provider_events.py    | 12 ++++++
+ 5 files changed, 115 insertions(+), 2 deletions(-)
+
+diff --git a/backend/calendar_providers.py b/backend/calendar_providers.py
+index 525aad9..fd9f6ab 100644
+--- a/backend/calendar_providers.py
++++ b/backend/calendar_providers.py
+@@ -322,6 +322,7 @@ class CalendarService:
+ 
+         events: list[dict[str, Any]] = []
+         failures: list[tuple[str, BaseException]] = []
++        partial: list[str] = []  # intra-provider misses — report, don't fail
+         results = await asyncio.gather(
+             *(p.list_events(start, end, query=query) for p, _ in targets),
+             return_exceptions=True,
+@@ -330,6 +331,11 @@ class CalendarService:
+             if isinstance(res, Exception):
+                 failures.append((p.name, res))
+                 continue
++            # Providers that fan out internally (google over N calendars)
++            # report per-target misses on .errors — degrade like a failed
++            # provider would, without feeding _raise_untrustworthy.
++            for err in getattr(p, "errors", None) or ():
++                partial.append(f"{p.name}: {err}")
+             for ev in res:
+                 if cal is not None and ev.calendar != cal:
+                     continue
+@@ -342,7 +348,7 @@ class CalendarService:
+             "end": end.isoformat(),
+             "timezone": str(self.tz),
+             "events": events,
+-            "errors": [f"{n}: {e}" for n, e in failures],
++            "errors": partial + [f"{n}: {e}" for n, e in failures],
+         }
+ 
+     async def freebusy(self, day: str | None = "today", days: int = 1) -> dict[str, Any]:
+diff --git a/backend/google_calendar.py b/backend/google_calendar.py
+index c4b8eda..bc34a89 100644
+--- a/backend/google_calendar.py
++++ b/backend/google_calendar.py
+@@ -78,6 +78,11 @@ class GoogleCalendarProvider:
+         self.task_list = task_list or DEFAULT_TASK_LIST
+         self.has_tasks = has_tasks
+         self.timeout = timeout
++        # Per-call partial failures from the last list_events fan-out
++        # (e.g. one dead/mis-shared calendar id out of N). CalendarService
++        # folds these into the result's errors[] after each call — the
++        # attribute is re-assigned per call, never appended.
++        self.errors: list[str] = []
+         self._client = client
+         self._creds: dict[str, Any] | None = None
+         self._access_token: str | None = None
+@@ -169,6 +174,7 @@ class GoogleCalendarProvider:
+         self, start: datetime, end: datetime, query: str | None = None,
+     ) -> list[CalendarEvent]:
+         events: list[CalendarEvent] = []
++        failures: list[str] = []
+         for calid in self.calendars:
+             params: dict[str, Any] = {
+                 "timeMin": start.isoformat(),
+@@ -179,9 +185,20 @@ class GoogleCalendarProvider:
+             }
+             if query:
+                 params["q"] = query
+-            data = await self._req("GET", f"{CAL_API}/calendars/{_q(calid)}/events", params=params)
++            try:
++                data = await self._req("GET", f"{CAL_API}/calendars/{_q(calid)}/events", params=params)
++            except CalendarAuthError:
++                raise  # a dead token poisons every call — keep it loud
++            except CalendarError as exc:
++                # One deleted/mis-shared calendar id must not sink the
++                # other N — surface it via .errors instead of raising.
++                failures.append(f"{calid}: {exc}")
++                continue
+             for item in (data or {}).get("items", []):
+                 events.append(self._norm_event(item, calid))
++        if failures and len(failures) == len(self.calendars):
++            raise CalendarError("; ".join(failures))
++        self.errors = failures
+         return events
+ 
+     async def create_event(
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 9d9d7c1..1278093 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -4452,6 +4452,8 @@ class GeminiLiveProvider(RealtimeProvider):
+         # Always queue: a mid-turn context send can be dropped by the API
+         # even before audio starts (tool-call phase). If no turn is open,
+         # a short timer flushes; otherwise the next turn boundary drains.
++        if self._session is None:
++            raise RuntimeError("provider is not connected")
+         self._pending_notifications.append(framed)
+         if not self._flush_scheduled:
+             self._flush_scheduled = True
+@@ -4479,6 +4481,8 @@ class GeminiLiveProvider(RealtimeProvider):
+     async def _send_context_note(self, text: str) -> None:
+         """Append context WITHOUT triggering a response (turn_complete=False)
+         — the note lands in session state for later reference only."""
++        if self._session is None:
++            raise RuntimeError("provider is not connected")
+         async with self._send_lock:
+             await self._session.send_client_content(
+                 turns=types.Content(
+diff --git a/tests/test_calendar_providers.py b/tests/test_calendar_providers.py
+index e204535..1d3e7c7 100644
+--- a/tests/test_calendar_providers.py
++++ b/tests/test_calendar_providers.py
+@@ -45,6 +45,7 @@ class FakeProvider:
+         self.tasks = tasks or []
+         self.fail = fail
+         self.fail_exc = fail_exc
++        self.errors = []
+         self.deleted = []
+         self.created = []
+         self.completed = []
+@@ -195,6 +196,28 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
+         self.assertEqual(len(out["errors"]), 1)
+         self.assertIn("icloud", out["errors"][0])
+ 
++    async def test_intra_provider_errors_surface_without_failing(self):
++        # A provider that succeeded but reports per-target misses on
++        # .errors (e.g. one dead calendar out of N on the google adapter)
++        # degrades: errors[] carries them but the read still returns.
++        a = FakeProvider("google", events=[_ev("x", "2026-09-22T09:00:00+07:00")])
++        a.errors = ["dead-cal@group.calendar.google.com: not found"]
++        svc = CalendarService({"google": a}, tz=TZ)
++        out = await svc.list_events(day="2026-09-22")
++        self.assertEqual(len(out["events"]), 1)
++        self.assertEqual(len(out["errors"]), 1)
++        self.assertIn("dead-cal", out["errors"][0])
++
++    async def test_intra_provider_errors_empty_day_stays_ok(self):
++        # Same degrade on a legitimately empty day — a dead calendar is
++        # config drift, not 'unreachable'.
++        a = FakeProvider("google")
++        a.errors = ["dead-cal@group.calendar.google.com: not found"]
++        svc = CalendarService({"google": a}, tz=TZ)
++        out = await svc.list_events(day="2026-09-22")
++        self.assertEqual(out["events"], [])
++        self.assertEqual(len(out["errors"]), 1)
++
+     # -- google-token-loud-fail: empty must mean empty, not unreachable --
+ 
+     async def test_genuinely_empty_stays_ok(self):
+@@ -426,6 +449,57 @@ class GoogleAdapterTests(unittest.IsolatedAsyncioTestCase):
+         url = client.request.call_args.args[1]
+         self.assertIn("tasks.googleapis.com", url)
+ 
++    async def test_one_dead_calendar_degrades(self):
++        """One 404 calendar id out of N yields the live calendars' events
++        plus a .errors entry — registry drift must not sink the read
++        (audit-fail-calendar-read: a dead script-created calid 404'd the
++        whole aggregate for months)."""
++        client = AsyncMock(spec=httpx.AsyncClient)
++        client.post.return_value = _resp(200, {"access_token": "t", "expires_in": 3600})
++        client.request.side_effect = [
++            _resp(200, {"items": [
++                {"id": "e1", "summary": "standup",
++                 "start": {"dateTime": "2026-09-22T09:00:00+07:00"},
++                 "end": {"dateTime": "2026-09-22T09:30:00+07:00"}}]}),
++            _resp(404, {}),
++        ]
++        p = GoogleCalendarProvider(
++            name="google", token_file="/tmp/x.json",
++            calendars=["primary", "dead@group.calendar.google.com"], client=client)
++        p._creds = {"client_id": "c", "client_secret": "s", "refresh_token": "r"}
++        events = await p.list_events(
++            datetime(2026, 9, 22, tzinfo=TZ), datetime(2026, 9, 23, tzinfo=TZ))
++        self.assertEqual([e.id for e in events], ["primary/e1"])
++        self.assertEqual(len(p.errors), 1)
++        self.assertIn("dead@group", p.errors[0])
++
++    async def test_all_calendars_dead_still_raises(self):
++        client = AsyncMock(spec=httpx.AsyncClient)
++        client.post.return_value = _resp(200, {"access_token": "t", "expires_in": 3600})
++        client.request.return_value = _resp(404, {})
++        p = GoogleCalendarProvider(
++            name="google", token_file="/tmp/x.json",
++            calendars=["a@x", "b@x"], client=client)
++        p._creds = {"client_id": "c", "client_secret": "s", "refresh_token": "r"}
++        with self.assertRaises(CalendarError):
++            await p.list_events(
++                datetime(2026, 9, 22, tzinfo=TZ), datetime(2026, 9, 23, tzinfo=TZ))
++
++    async def test_auth_error_mid_fanout_stays_loud(self):
++        client = AsyncMock(spec=httpx.AsyncClient)
++        client.post.return_value = _resp(200, {"access_token": "t", "expires_in": 3600})
++        client.request.side_effect = [
++            _resp(200, {"items": []}),
++            _resp(401, {}),
++        ]
++        p = GoogleCalendarProvider(
++            name="google", token_file="/tmp/x.json",
++            calendars=["primary", "b@x"], client=client)
++        p._creds = {"client_id": "c", "client_secret": "s", "refresh_token": "r"}
++        with self.assertRaises(CalendarAuthError):
++            await p.list_events(
++                datetime(2026, 9, 22, tzinfo=TZ), datetime(2026, 9, 23, tzinfo=TZ))
++
+ 
+ class SessionInstructionTests(unittest.IsolatedAsyncioTestCase):
+     """The Gemini Live session config must carry current local time — the
+diff --git a/tests/test_provider_events.py b/tests/test_provider_events.py
+index d168cb0..0a38e77 100644
+--- a/tests/test_provider_events.py
++++ b/tests/test_provider_events.py
+@@ -125,6 +125,18 @@ class ProviderEventTests(unittest.IsolatedAsyncioTestCase):
+         self.assertIn("session_resumption_update", source)
+         self.assertIn("message.go_away", source)
+ 
++    async def test_notify_or_defer_requires_live_session(self) -> None:
++        """A deferred note on a dead/never-connected provider used to
++        queue silently and then crash the drain ('NoneType' has no
++        'send_client_content'). The enqueue must fail loudly instead so
++        /api/notify can retry then report delivered:false."""
++        provider = GeminiLiveProvider()
++        with self.assertRaises(RuntimeError):
++            await provider.notify_or_defer("heads up")
++        self.assertEqual(provider._pending_notifications, [])
++        with self.assertRaises(RuntimeError):
++            await provider._send_context_note("note")
++
+     async def test_usage_metadata_emits_usage_event(self) -> None:
+         provider = GeminiLiveProvider()
+         provider._session = UsageMetadataSession(provider)
 -- 
 2.43.0
 

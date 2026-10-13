@@ -31,7 +31,7 @@ sections:
     layout: list
     items:
       - label: Reads (ungated)
-        text: "calendar_list_calendars, calendar_list_events, calendar_freebusy, tasks_list, plan_day — NON_BLOCKING, partial results include per-provider errors list."
+        text: "calendar_list_calendars, calendar_list_events, calendar_freebusy, tasks_list, plan_day — NON_BLOCKING, partial results include per-provider errors list (the google adapter also degrades per-calendar: one dead/mis-shared calid lands in errors[] instead of sinking the read — added 2026-10-13 after the e468a444 404 storm)."
       - label: Writes (confirmed=true)
         text: "calendar_create_event, calendar_delete_event, tasks_add, tasks_complete — in CALENDAR_WRITE_TOOLS; _check_calendar_write_allowed requires confirmed=true and honors ADA_READ_ONLY."
       - label: Dispatch

@@ -33,10 +33,25 @@ changes:
     selftest: "fixture updated (real fail + owner-gate acl + usage samples); PASS."
 
   ada_pi_patch:  # NOT landed — repo edit point is tony-dell; deploy gate is explicit
-    branch: "dispatch/20261013-ada-tool-call-failure-surface @ bbb90f1 (local to
+    branch: "dispatch/20261013-ada-tool-call-failure-surface @ 9ff1bf9 (local to
       idc02's ada-pi clone — NOT pushed; durable copy at
-      docs/kb/patches/ada-pi-tool-call-failure-surface-20261013.patch, `git am` on
-      tony-dell's ~/CascadeProjects/ada-pi)"
+      docs/kb/patches/ada-pi-tool-call-failure-surface-20261013.patch — a 2-commit
+      mbox, `git am` on tony-dell's ~/CascadeProjects/ada-pi applies both; base
+      6257dde vs origin/main ~192 behind, git-am 3-way should still take it)"
+    fixes_round2:  # added 2026-10-13 ~15:45 after live journal verification
+      google_list_events: "per-calendar miss (deleted/mis-shared calid 404)
+        collects into provider.errors instead of raising — the e468a444 storm
+        class can't sink an aggregate read again; all-calendars-fail still
+        raises, CalendarAuthError stays loud mid-fan-out"
+      calendar_service: "drains provider.errors into result errors[] —
+        degrade like a failed provider, but NOT into _raise_untrustworthy
+        (empty-day + dead-cal stays ok:true, it's config drift not outage)"
+      notify_or_defer: "non-urgent path raised no error when _session was
+        None — queued a note the drain then crashed on ('NoneType' has no
+        'send_client_content', the chat_send notify-lane signature). Now
+        raises 'provider is not connected' like every other send path;
+        /api/notify already retries that exact error then reports
+        delivered:false"
     fixes:
       cctv_wall: "action= defaults 'start' (schema doesn't require it) — kills
         'missing 1 required positional argument' TypeError"
@@ -58,7 +73,16 @@ changes:
     verification: "py_compile clean; tool-lint unchanged (59 warnings, no new
       debt); unittest suites: edited-area tests pass; only pre-existing
       env-dependent CalendarPlanMergeAlias failures remain (ADA_INSTANCE_ID
-      unset on runner, identical on unmodified main)."
+      unset on runner, identical on unmodified main). Round 2: 76
+      calendar/provider + 207 tool_runner tests pass under
+      ADA_INSTANCE_ID=tony (6 new tests incl. dead-calendar degrade,
+      all-dead raise, mid-fan-out 401 loud, unconnected notify raise);
+      git am of the mbox reproduces the branch tree exactly."
+    live_evidence: "2026-10-13 idc03 ada-ha-tony journal: last e468a444
+      googleapis 404 at 11:29:03 — the re-rendered calendar.json landed at
+      11:29 (SSOT fix 15204342, dead script-bug calendar dropped); every
+      fan-out since = 15/15 HTTP 200. calendar_read live-green. Deferred-
+      notify NoneType seen 00:37+06:37 today — patched, needs deploy."
 
 per_signature_verdicts:
   ada_camera_snapshot: "usage — 'no traffic camera matched rama9'; error already
@@ -71,12 +95,19 @@ per_signature_verdicts:
     was misclassified fail/high."
   ada_remember: "fail stays — 'memory_cap' evidence is thin; next audit run
     produces clearer evidence via the new classes."
-  calendar_read: "usage — 'list' isn't a read action; enum already declared."
+  calendar_read: "usage for 'list' arg + REAL bug underneath: dead e468a444
+    calid (script-created, Google-side name literal
+    '${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME}') 404'd every agenda prefetch —
+    367x/12h. SSOT dropped it (15204342), idc03 registry re-rendered 11:29,
+    journal verified 15/15 200s since. Fan-out resilience patched (round 2)."
   cast_to_screen: "fail stays (unparsed ok:false) — downtime noise collapses
     into the storm card next time."
   cctv_wall: "fixed — action default 'start'."
   chat_send: "config — photos picker 501 needs GPHOTO_REFRESH_TOKEN on idc03
-    (already done on board / separate gphoto-auth workstream)."
+    (already done on board / separate gphoto-auth workstream). Second lane:
+    'deferred notify send failed: NoneType' — notify_or_defer queued on a
+    dead/never-connected provider; now raises 'provider is not connected'
+    (round 2 patch)."
   cms_edit: "usage — 'no such page' already guides to cms_publish_page."
   cms_publish_page: "usage — lang enum already declared; done on board."
   cms_read: "usage — slug guesses now get did_you_mean[] in the patch."
