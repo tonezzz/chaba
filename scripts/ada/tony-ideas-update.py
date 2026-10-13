@@ -558,7 +558,8 @@ def main():
     items = comm_rows + inbox_rows + dec_rows + out_rows
 
     comm_total = sum(1 for c in cards for cm in (c.get("comms") or [])
-                     if (cm.get("from") or "").lower() == "tony")
+                     if isinstance(cm, dict)
+                     and (cm.get("from") or "").lower() == "tony")
     stats = {
         "comms_total": comm_total, "comms_dropped": dropped,
         "comms_kept": len(comm_rows),
