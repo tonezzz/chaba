@@ -254,6 +254,23 @@ hosts:
           tony-dell-health-snapshot, network-scan-tony). Was found disabled
           2026-10-13 with no audit trail (OPS-0531) — a disabled tick here
           silently starves every dispatcher job, so expected_state is critical"
+      - name: timer-timeline-update.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: "15min — fleet timer census -> JSONL ledger + CMS pages
+          (timer-timeline rollup, per-host leaves, qc). This is the shared
+          timer memory; a disabled unit here blinds the whole system"
+      - name: timer-sentinel.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: "10min — independent watchdog (NOT via chaba-jobs). Reads
+          timer-timeline state.json and fires timer-alert-* kanban cards
+          on disabled/missing/failing expected timers, unreachable hosts,
+          or a stale sweep"
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
       - {name: ada-ha.service, type: service, scope: user}

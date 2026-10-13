@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer sentinel scan every 10 min (independent of chaba-jobs dispatcher)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+Unit=timer-sentinel.service
+
+[Install]
+WantedBy=timers.target

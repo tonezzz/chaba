@@ -1,0 +1,7 @@
+[Unit]
+Description=Timer timeline sweep — collect fleet timers, ledger, publish CMS pages
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-timeline-update.py
+TimeoutStartSec=300

@@ -1,0 +1,7 @@
+[Unit]
+Description=Timer sentinel — independent watchdog firing kanban cards on suspicious timer state
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-sentinel.py
+TimeoutStartSec=120

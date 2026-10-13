@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer timeline sweep every 15 min
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=15min
+Unit=timer-timeline-update.service
+
+[Install]
+WantedBy=timers.target
