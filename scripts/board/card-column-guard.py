@@ -8,12 +8,14 @@ while the stash's stale `column:` field at the top merges "cleanly" —
 closed cards silently come back as review/doing (6+ observed waves,
 card git-autostash-column-guard).
 
-Fix: after every pull, for every TRACKED card file, the committed HEAD
-column wins over whatever the pop merged in. Surgical — the stash's
-other content (a session's uncommitted comms edits) still lands; only
-the column field is forced to the record's truth. Uncommitted column
-changes are exactly the bug class; the column belongs to the committed
-card, so there is no legitimate casualty.
+Fix: after every pull, for every TRACKED card file, decide the column
+from the card's own comm trail first — a legit board-api move appends
+`moved <old> -> <new>` / `closed by <frm>` / `(column -> <new>)`, and
+that intent beats BOTH the stash residue and the committed HEAD (a
+fresh uncommitted move must survive a pull; reverting it silently
+eats user actions — observed 2026-10-13, four doing->done moves
+reverted mid-flight). When no move/close comm exists, the committed
+HEAD column wins over whatever the pop merged in, as before.
 
 Exit always 0 — a failed guard must never block a pull.
 Usage: card-column-guard.py [repo-dir]
@@ -25,6 +27,32 @@ from pathlib import Path
 
 CARDS_GLOB = "docs/ssot/kanban/cards/*.yml"
 COL_RE = re.compile(r"^(column:\s*)(\S+)", re.M)
+# comm texts that assert a column, in evaluation order. The LAST match
+# in the file wins — comms are append-only, so it reflects latest intent.
+COMM_COL = [
+    (re.compile(r"put on hold"), "backlog"),
+    (re.compile(r"queued for processing|re-queued|requeued"), "backlog"),
+    (re.compile(r"moved \S+ -> (\w+)"), None),   # group 1
+    (re.compile(r"\(column -> (\w+)\)"), None),  # merge-sweep marker
+    (re.compile(r"closed by \w+"), "done"),
+    (re.compile(r"claimed"), "doing"),
+]
+VALID = {"backlog", "doing", "review", "done"}
+
+
+def comm_target_column(text: str) -> str | None:
+    """Column asserted by the last column-asserting comm, else None."""
+    target = None
+    for m in re.finditer(r"text:\s*(.*)", text):
+        t = m.group(1)
+        for pat, fixed in COMM_COL:
+            mm = pat.search(t)
+            if mm:
+                col = mm.group(1) if fixed is None else fixed
+                if col in VALID:
+                    target = col
+                break
+    return target
 
 
 def head_column(repo: Path, path: str) -> str | None:
@@ -58,9 +86,15 @@ def main() -> int:
         except OSError:
             continue
         m = COL_RE.search(text)
-        if not m or m.group(2) == want:
+        if not m:
             continue
         was = m.group(2)
+        if was == want:
+            continue
+        # A worktree column asserted by the card's own comm trail is a
+        # fresh uncommitted move — keep it. Anything else is stash residue.
+        if comm_target_column(text) == was:
+            continue
         text = text[:m.start(2)] + want + text[m.end(2):]
         try:
             p.write_text(text, encoding="utf-8")
