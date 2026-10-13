@@ -3,7 +3,7 @@ subtitle: Per-persona backend lanes (kk-dev -> ada-kk). Mirrors the HA
   lanes model (ssot.home-assistant.lanes.yml) adapted to ada services.
 icon: 🚦
 version: 1
-last_updated: "2026-10-12"
+last_updated: "2026-10-13"
 
 # ---------------------------------------------------------------------------
 # A persona lane is a dev backend -> prod backend pair for ONE person.
@@ -110,10 +110,20 @@ relay:
     re-mention after a deploy. Replies carry [persona->sender] labels on
     turns and [instance] labels on queued chat_send pushes.
   lane_lock: |
-    LINE_LANE_LOCK=kk,kk-dev in line-bot.env (ada-pi 461debe): any chat_send
-    from a locked lane is rewritten to the lane's LINE group instead of
-    403-ing on a bad target — deterministic delivery until targeting
-    stabilises. Unlock per-lane when targeting is verified stable.
+    LINE_LANE_LOCK=kk,kk-dev,chaba in line-bot.env (ada-pi 461debe): any
+    chat_send from a locked lane is rewritten to the lane's LINE group
+    instead of 403-ing on a bad target — deterministic delivery until
+    targeting stabilises. LINE_LANE_ALLOW also allowlists tony (tony's,
+    nhong's, kk's DMs + C822) so ada-ha cannot push into the tony-ha group
+    (verified 403 live). Unlock per-lane when targeting is verified stable.
+  group_persona: |
+    LINE_GROUP_PERSONA=<group>:<persona> (ada-pi 3f4d270) hard-pins a room
+    to one lane — unlike the soft interview-room pin it survives restarts,
+    routes unaddressed messages to the room persona, and answers foreign
+    mentions with "isn't on this lane" instead of a foreign backend turn.
+    Groups: C822026077530a29620b5041bd1a955c5 = kk-ha shared multihome
+    (mention-routed, unaddressed -> LINE_DEFAULT_PERSONA=kaewta);
+    C4fb0ce548a58e2d758335b7e21ce3411 = tony-ha (pinned chaba, 2026-10-13).
   image_pipeline: |
     chat_send image_url resolves relative paths against LINE_URL_BASE,
     unwraps path-embedded https URLs, and caches fetched images on disk
