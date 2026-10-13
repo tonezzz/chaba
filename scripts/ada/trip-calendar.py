@@ -554,6 +554,13 @@ async def async_main() -> int:
                    or (f"https://surf-thailand.com/{lane['tenant']}/"
                        if lane["tenant"] else ""))
     use_public_links = args.public and bool(public_base)
+    # --public on a lane with no tenant (kk-dev) must not flag the pages
+    # — a flag without a publish lane is a lie waiting for a TENANTS
+    # entry to appear.
+    want_public = args.public and bool(public_base)
+    if args.public and not want_public:
+        print(f"warn: --public ignored — lane {lane_name} has no public "
+              "tenant", file=sys.stderr)
 
     kws = words(slug) + [k.strip().lower()
                          for k in args.keywords.split(",") if k.strip()]
@@ -691,13 +698,13 @@ async def async_main() -> int:
                       f"Trip {title} {d0}→{d1} — {len(days)}d, "
                       f"{len(unique_events(day_events))} events",
                       "rollup", "reports-index", lane_name, sources,
-                      now_utc, args.public, confidence))
+                      now_utc, want_public, confidence))
     for key, t, body, i, d in leaves:
         publish(collection, key, body, now_utc,
                 page_meta(key, t, f"Day {i} {d.isoformat()} — "
                           f"{len(day_events.get(d, []))} events",
                           "leaf", f"trip-{slug}", lane_name, sources,
-                          now_utc, args.public, confidence))
+                          now_utc, want_public, confidence))
     publish(collection, f"trip-{slug}-qc", qc_body, now_utc,
             page_meta(f"trip-{slug}-qc", f"Trip — {title} — QC",
                       f"QC/coverage for trip-{slug} family "
@@ -726,8 +733,8 @@ async def async_main() -> int:
         "span_source": span_source,
         "view_url": f"{view_base}#/trip-{slug}",
         "public_url": (f"{public_base}trip-{slug}.html"
-                       if args.public and public_base else ""),
-        "public_flagged": bool(args.public),
+                       if want_public and public_base else ""),
+        "public_flagged": bool(want_public),
         "index_regen": idx_ok, "errors": cal_errors,
     }
     if args.json:
