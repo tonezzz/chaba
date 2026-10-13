@@ -1,7 +1,7 @@
 id: umbrella-fix-ada-tool-call-failure-surfa-48054d
 title: 'Umbrella: fix Ada tool-call failure surface (18 audit-fail-* cards)'
-column: review
-updated: 2026-10-13 07:24
+column: done
+updated: 2026-10-13 15:27
 priority: high
 note: 'The 2026-10-12 colab backlog triage (ada-cms-pages/backlog-triage-2026-10-12) found 18 audit-fail-* cards
   dominating high-pri ada — all the same failure class (Ada tool calls failing in session audit). Fix as ONE pass,
@@ -67,21 +67,53 @@ comms:
   text: '2026-10-13 sweep: 18 leaf cards folded (no 12h recurrence). Still failing: calendar_read (367x googleapis
     404 — likely API/URL-level, not auth), chat_send notify lane (6x). Also noted: ada-live-canary free-key 1011s
     continue (expected).'
+- at: 2026-10-13 15:25
+  from: tony
+  text: 'answered land-the-ada-pi-patch-git-am-reports-ada-615a5b: land + deploy to ada-ha-tony'
+- at: 2026-10-13 15:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 15:25
+  from: tony
+  text: retry requested
+- at: 2026-10-13 15:25
+  from: tony
+  text: moved review -> doing
+- at: 2026-10-13 15:25
+  from: idc02
+  text: claimed
+- at: 2026-10-13 15:26
+  from: chaba
+  text: started devin-task-20261013-152601-umbrella-fix-ada-tool-call-fai on idc02 (dispatch)
+- at: 2026-10-13 15:26
+  from: devin
+  text: '[run] re-dispatched on idc02 — verifying state (audit fix is on master, ada-pi patch still gated on open
+    request); investigating the 2 still-failing sigs from 07:24 sweep (calendar_read, chat_send notify)'
+- at: 2026-10-13 15:27
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-063523-umbrella-fix-ada-tool-call-fai no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-13 15:27
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-063523-umbrella-fix-ada-tool-call-fai already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261013-063523-umbrella-fix-ada-tool-call-fai.md) — auto-closed'
 action:
   type: dispatch
   status: done
-  runner: idc02
-  result: 'exit=0 s/ada/2026-10-13-ada-tool-call-failure-surface.yml`, committed as 112657f2 on the dispatch branch.
-    | devin-task-20261013-063523-umbrella-fix-ada-tool-call-fai.service: Consumed 3min 14.872s CPU time, 521.6M
-    memory peak, 0B memory swap peak.'
-  verified: true
   sweep:
     close_held: 2026-10-13 06:57
+    stale_running: 2026-10-13 15:27
+  last_failure: 'exit=0 s/ada/2026-10-13-ada-tool-call-failure-surface.yml`, committed as 112657f2 on the dispatch
+    branch. | devin-task-20261013-063523-umbrella-fix-ada-tool-call-fai.service: Consumed 3min 14.872s CPU time,
+    521.6M memory peak, 0B memory swap peak.'
+  attempts: 1
+  runner: idc02
+  verified: true
 requests:
 - id: land-the-ada-pi-patch-git-am-reports-ada-615a5b
   ask: Land the ada-pi patch? git am reports/ada-tool-call-failure-surface-20261013/0001-*.patch on tony-dell:~/CascadeProjects/ada-pi,
     push, deploy-ada.sh on idc03 (deploy needs explicit approval).
-  status: open
+  status: answered
   at: 2026-10-13 06:52
   from: devin
   options:
@@ -89,5 +121,10 @@ requests:
   - land only (no deploy)
   - hold — review the patch first
   suggested: land + deploy to ada-ha-tony
+  answer: land + deploy to ada-ha-tony
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 15:27
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-063523-umbrella-fix-ada-tool-call-fai.md

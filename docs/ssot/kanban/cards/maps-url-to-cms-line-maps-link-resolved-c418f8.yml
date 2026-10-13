@@ -1,0 +1,28 @@
+id: maps-url-to-cms-line-maps-link-resolved-c418f8
+title: 'maps-url-to-cms: LINE maps link -> resolved place -> public CMS report -> link reply (kk lane)'
+column: backlog
+updated: 2026-10-13 15:28
+help: 'kk lane = ada-ha-bank-personal-kk / ada-cms-pages-kk on idc03. Tools in ada-pi backend/tools.d + tool_runner;
+  deploy via scripts/deploy-ada.sh. Public pages: chaba.h3.gizmo-thailand.com/kk-ha/<slug>.html'
+ref: KNB-0574
+comms:
+- at: 2026-10-13 15:15
+  from: devin
+  text: 'Spec from Tonezzz group evidence (command-lane-corpus): directive 2026-10-12 ''shop report becomes a web
+    page sent straight back - ask once get answer''. Group sends maps.app.goo.gl / google.com/maps/place URLs to
+    Kaewta asking ''is this shop still open'', ''what about this spot'', ''summarize this place'' (Waterfall Safari
+    Lodge etc). Repeated ''send me the link'' requests failed (send-link-in-LINE bug).
+
+
+    Build: (1) maps URL extractor/resolver tool in kk lane - expand short URL, parse place/coords, Nomin'
+- at: 2026-10-13 15:28
+  from: devin
+  text: '[done-verify] place_report tool shipped + live-verified end to end.
+
+
+    Built: ada-pi backend/tools.d/place_report.py (e24b14d, deployed on idc03 ada-kk) — expands maps.app.goo.gl/google.com/maps
+    links, resolves name+coords (+Nominatim enrich, no key), publishes meta.public CMS page via cms_publish_page,
+    returns public_url. Registered manifest.yml + tool_guide + coverage_debt; lint clean; in kk lane ADA_INCLUDED_TOOLS.
+
+
+    Lane env: ADA_CMS_PUBLIC_BASE=https://chaba.h3.gizmo-thailand.com/kk-ha/ set in'
