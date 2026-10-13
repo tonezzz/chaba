@@ -120,6 +120,14 @@ persons:
         # installed first (integrations/ada-pi/README.md); include it
         # only when rendering env files for a lane that has it.
         - doc_read
+        # place_report (2026-10-13, card maps-url-to-cms): LINE maps
+        # link or place name -> resolved place -> meta.public CMS page
+        # -> public_url for the chat reply (kk 'is this shop still
+        # open' flow, KNB-0574). Deployed on idc03 ada-kk (ada-pi
+        # e24b14d); the lane env also carries ADA_CMS_PUBLIC_BASE=
+        # https://chaba.h3.gizmo-thailand.com/kk-ha/ — hand-set, not
+        # rendered (the managed block covers INCLUDED/EXCLUDED only).
+        - place_report
       exclude:
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
@@ -354,6 +362,10 @@ bench_profiles:
       - conv_journal
       - trip_calendar
       - doc_read
+      # place_report (2026-10-13): cms producer — maps link/name ->
+      # public place page; exercises the publish path the bench cares
+      # about. Needs the ada-pi drop installed on the lane.
+      - place_report
     exclude:
       - ada_memory_search
       - ada_remember
@@ -423,6 +435,10 @@ bench_profiles:
       - conv_journal
       - trip_calendar
       - doc_read
+      # place_report (2026-10-13): persons.kk gained it same-day —
+      # parity means identical, so it belongs here too. The dev lane's
+      # env also needs ADA_CMS_PUBLIC_BASE for public_url to resolve.
+      - place_report
     exclude:
       - ada_resolve_action
       - vcast_snapshot

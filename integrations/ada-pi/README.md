@@ -1,12 +1,15 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Three drops live here:
+chaba dispatches. Four drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
    (2026-10-13)
 3. calendar create dedup — card `calendar-write-idempotency` (2026-10-13)
+4. `place_report` — card `maps-url-to-cms-line-maps-link-resolved-c418f8`
+   (2026-10-13) — **already deployed** (ada-pi `074c7a8`+`e24b14d`); this
+   drop is the repo-of-record copy
 
 ---
 
@@ -170,3 +173,70 @@ double-invoke wrote the same kk-ha event twice 1s apart
 - Same title+start on a different calendar is not a duplicate.
 - Verified against a /tmp clone of ada-pi `main` @ `d166794`:
   `tests/test_calendar_providers.py` 49/49 pass, `tool-lint` clean.
+
+---
+
+## Drop 4 — place_report (LINE maps link → public place page → link reply)
+
+Card `maps-url-to-cms-line-maps-link-resolved-c418f8` (KNB-0574, Tonezzz
+group directive 2026-10-12): members paste `maps.app.goo.gl` /
+`google.com/maps` links in LINE asking "ร้านนี้ยังอยู่มั้ย" — one ask
+should return a durable page link. Built and deployed directly in the
+ada-pi repo on the same day; this drop stages the record copy.
+
+**Status: DEPLOYED** — ada-pi `main` @ `074c7a8` (tool+manifest+guide+
+coverage_debt) + `e24b14d` (token-stripping/name cleanup); live on
+idc03 `ada-kk` since 2026-10-13 15:26; first real pages already on
+`chaba.h3.gizmo-thailand.com/kk-ha/`. Verified end-to-end: LINE reply
+POSTs 200, publisher timer shipped the pages (HTTP 200).
+
+### Files (staged copies — byte-identical to deployed)
+
+- `backend/tools.d/place_report.py` — the tool.
+- `backend/tools.d/manifest.place_report.yml` — merge under `tools:`.
+- `backend/tool_guide.place_report.yml` — append to `tool_guide.yml`.
+
+### Install (only for a fresh ada-pi checkout / rebuild)
+
+1. `cp <chaba>/integrations/ada-pi/backend/tools.d/place_report.py
+   <ada-pi>/backend/tools.d/place_report.py`
+2. Merge `manifest.place_report.yml`'s `place_report:` block into
+   `<ada-pi>/backend/tools.d/manifest.yml` under `tools:`.
+3. Append `tool_guide.place_report.yml` to `<ada-pi>/backend/tool_guide.yml`.
+4. Add `place_report` to the ada-pi `coverage_debt` list in
+   `docs/ssot/ssot.tool-surface.yml` (no scenario exists — debt, like
+   ada-pi `074c7a8` did).
+5. Lane env: `place_report` in `ADA_INCLUDED_TOOLS` (rendered —
+   `docs/ssot/apps/ssot.apps.ada-persons.yml` already carries it) AND
+   hand-set `ADA_CMS_PUBLIC_BASE=https://chaba.h3.gizmo-thailand.com/kk-ha/`
+   in `~/.config/secrets/ada-kk.env` — the managed block doesn't cover
+   it; without it `_cms_public_base()` falls back to the
+   `surf-thailand.com/<tenant>-ha/` derivation, not the h3 Plesk site.
+6. Gates: `python3 scripts/tool-lint.py`, `pytest tests/ -x -q` —
+   deploy-ada.sh runs both; restart the lane unit after the env edit.
+
+### Contract
+
+- `place_report(url?, place?, ask?, lang?)` — expands maps shortlinks,
+  parses `/place/<name>`/`!3d!4d` coords, Nominatim reverse/search
+  enrich (no key), strips leading plus-code/house-number tokens from
+  Google share strings, publishes `meta.public` markdown via
+  `cms_publish_page` (domain `places`, `fresh_for=30d`), returns
+  `{ok, slug, name, address, coords, resolved_url, publish{public_url}}`.
+- Public pages land on `chaba.h3.gizmo-thailand.com/<tenant>/` via
+  tony-dell's `cms-h3-publish.timer` (~15min cadence) — tell the user
+  the link goes live within ~15min, or share the Google Maps link
+  when they need it NOW (the tool's own note says this).
+- Doc shape per `docs/kb/lane-place-reports.md` (card procedure
+  `place-report`).
+
+### Known gap — no dedup
+
+The tool always publishes a fresh page keyed `place-<name>-<sha1(name|
+coords)[:6]>`. Same place under different name spellings ⇒ duplicate
+pages (observed: three `place-*jj-j-bistro*` pages in `ada-cms-pages-kk`
+from the first live day). `lane-place-reports.md` rule 5 wants
+cms_read-before-publish dedup; the tool doesn't do it and the
+tool_guide doesn't tell the model to. Follow-up: teach the tool (or the
+guide) to look up `place-<slug>`/name first and merge into the existing
+page — keep History in one place.

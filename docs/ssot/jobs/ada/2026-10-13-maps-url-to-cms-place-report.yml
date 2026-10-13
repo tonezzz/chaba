@@ -1,0 +1,100 @@
+title: maps-url-to-cms — LINE maps link -> resolved place -> public CMS report -> link reply (kk lane)
+id: 2026-10-13-maps-url-to-cms-place-report
+card: maps-url-to-cms-line-maps-link-resolved-c418f8
+ref: KNB-0574
+date: 2026-10-13
+status: shipped-and-staged
+summary: |
+  Tonezzz group members paste maps.app.goo.gl / google.com/maps links to
+  Kaewta asking "ร้านนี้ยังอยู่มั้ย" / "สรุปที่นี่หน่อย"; Tony's
+  directive (2026-10-12): 'shop report becomes a web page sent straight
+  back — ask once get answer'. Prior dispatch built and deployed the
+  ada-pi half (place_report tool, ada-pi 074c7a8+e24b14d, live on idc03
+  ada-kk since 15:26); THIS dispatch staged the chaba-side record:
+  integrations/ada-pi drop, persons/bench tool profiles, tests, this
+  doc. Verified live end to end — real place pages already served on
+  chaba.h3.gizmo-thailand.com/kk-ha/ via cms-h3-publish.timer.
+
+flow: |
+  LINE msg with maps URL -> place_report(url, ask, lang) ->
+  expand shortlink + parse /place/<name>|!3d!4d coords ->
+  Nominatim reverse/search enrich (no key) -> meta.public markdown page
+  via cms_publish_page (collection ada-cms-pages-kk, domain places,
+  fresh_for 30d) -> public_url returned -> model sends it in the reply.
+  cms-h3-publish.timer on tony-dell (~15min) renders meta.public docs
+  into the chaba.h3 branch -> Plesk static site.
+
+deliverables:
+  - file: integrations/ada-pi/backend/tools.d/place_report.py
+    role: ada tool (staged record copy — byte-identical sha256 to idc03 deployed)
+    detail: |
+      place_report(url?, place?, ask?, lang?) — _parse_maps_url pulls
+      /place/<name> + !3d!4d/@coords; _strip_code_tokens removes leading
+      plus-code/house-number tokens from Google share strings;
+      Nominatim reverse (coords) or search (name) enriches; publishes
+      via runner.cms_publish_page(public='true', domain='places');
+      returns {ok, slug, name, address, coords, resolved_url,
+      publish{public_url,view_url}}. ADA_PLACE_REPORT_NOMINATIM /
+      ADA_PLACE_REPORT_UA env seams.
+  - file: integrations/ada-pi/backend/tools.d/manifest.place_report.yml
+    role: manifest fragment (policy=read, secondary_allowed, timeout 60)
+  - file: integrations/ada-pi/backend/tool_guide.place_report.yml
+    role: model usage guidance (send public_url; privacy gate)
+  - file: integrations/ada-pi/README.md
+    role: Drop 4 install/contract/known-gap docs
+  - file: docs/ssot/apps/ssot.apps.ada-persons.yml
+    role: profile update
+    detail: |
+      place_report added to persons.kk.tools.include,
+      bench_profiles.kk-cms-only and kk-parity. ADA_CMS_PUBLIC_BASE is
+      NOT render-managed — it was hand-set on idc03 ada-kk.env
+      (https://chaba.h3.gizmo-thailand.com/kk-ha/); noted in the profile
+      comments so a re-render doesn't silently drop the requirement.
+  - file: tests/ada/test_place_report_drop.py
+    role: in-worktree verification (15 tests)
+    detail: |
+      Pure helpers (url parse, code-token strip, short-name, slug,
+      page body) + run() end-to-end with fake httpx.AsyncClient and
+      fake runner.cms_publish_page: maps-URL flow, url-in-ask
+      extraction, name-only search path, no-input/publish-failure/
+      expand-failure honest errors, manifest+guide fragment sanity.
+
+verify:
+  worktree: "pytest tests/ada/test_place_report_drop.py -> 15 passed"
+  deployed: |
+    idc03: tools.d/place_report.py sha256 01f7eb4c (== staged);
+    ada-kk.env ADA_INCLUDED_TOOLS ends ...doc_read,place_report and
+    ADA_CMS_PUBLIC_BASE=https://chaba.h3.gizmo-thailand.com/kk-ha/;
+    ada-kk.service restarted 15:26 after env write 15:20.
+  live: |
+    cms-h3-publish log 15:23/15:26 wrote place-3302-pqrj-452-jj-j-*,
+    place-j-bistro-*, place-jj-j-bistro-*, place-waterfall-safari-lodge-*
+    under public/kk-ha/ -> pushed to chaba.h3; HTTP 200 on
+    https://chaba.h3.gizmo-thailand.com/kk-ha/place-waterfall-safari-lodge-6fd9c6.html
+    and the tenant index. LINE reply POSTs 200 at 15:30-15:31.
+
+install_runbook: integrations/ada-pi/README.md — Drop 4 section
+
+gaps_and_notes:
+  - "NO DEDUP: slug = place-<name>-<sha1(name|coords)[:6]> — same place
+    under different name spellings produced three jj-j-bistro pages on
+    day one. lane-place-reports.md rule 5 wants cms_read-before-publish;
+    neither the tool nor tool_guide enforces it. Needs a follow-up
+    card: tool-side lookup (or guide instructing cms_read first)."
+  - "count_cap comment in ada-pi ssot.tool-surface.yml is stale
+    ('103 builtin + 9 tools.d' vs actual 37+14=51 declared) — cosmetic;
+    place_report went into coverage_debt, no cap bump needed (51 < 112)."
+  - "ada-kk-dev.env has NO place_report and NO ADA_CMS_PUBLIC_BASE —
+    intentional for now; kk-parity render adds the tool but the dev
+    lane needs the PUBLIC_BASE line hand-set or public_url falls back
+    to the surf-thailand.com derivation (dead end for h3-published
+    pages)."
+  - "ada-pi cms.py _cms_public_base() default derives
+    surf-thailand.com/<tenant>-ha/ but the live publish lane is chaba.h3
+    (cms-h3-publish.timer). The default is wrong for the h3 flow — every
+    lane that wants public place pages needs the env override. Worth a
+    card if a second lane is added."
+  - "send-link-in-LINE miss that motivated this card: reply path
+    verified working (200s on /v2/bot/message/reply during the live
+    test); the tool contract puts the URL in the model's spoken/text
+    reply rather than a structured send — no separate link-send step."
