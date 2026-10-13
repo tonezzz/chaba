@@ -10,10 +10,11 @@ TimeoutStartSec=900
 # L1: refresh per-host snapshots+meta; L2: fleet rollup; L3: system overview.
 # Remote hosts audited over SSH; unreachable hosts still emit a delta meta.
 ExecStart=/bin/bash -c '\
-  cd /home/tony/CascadeProjects/chaba && \
+  cd /home/tony/CascadeProjects/chaba-tony-dell && \
   /usr/bin/python3 scripts/audit-hosts.py --all --cards || true; \
   /usr/bin/python3 scripts/audit-hosts.py --consolidate; \
+  /usr/bin/python3 scripts/home-assistant/command-truth.py --cards || true; \
   /usr/bin/python3 scripts/report-system.py'
-WorkingDirectory=/home/tony/CascadeProjects/chaba
-StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/system-report.log
-StandardError=append:/home/tony/CascadeProjects/chaba/logs/system-report.log
+WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
+StandardOutput=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
+StandardError=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
