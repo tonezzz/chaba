@@ -2,7 +2,7 @@ title: Ada Person Registry & Lifecycle Standard
 subtitle: One declaration per known human — identity bindings, banks, control, persona — rendered into memory-banks.json
 icon: account-group
 version: 1
-last_updated: "2026-10-09"
+last_updated: "2026-10-13"
 
 overview:
   purpose: |
@@ -47,6 +47,88 @@ persons:
     persona: {language: auto, tone: direct, verbosity: brief,
               formality: casual, proactiveness: proactive}
     prefs_doc: person/tony/prefs
+    tools:
+      # Per-persona tool profile (card tony-lane-tool-profile, 2026-10-13).
+      # USAGE-EVIDENCED, not kk-parity: same keep-list mechanism as
+      # persons.kk.tools, but the tony lane keeps the home-control /
+      # casting / ops surface its 7d function_call log proves it uses —
+      # copying kk's list verbatim would silently strip Chaba's home
+      # control. Measured 2026-10-13: ~51 emitted seat decls (aliases
+      # emit nothing) at ~0.5k tok each -> first-turn input ~28.9k full
+      # surface, ~27.8k on this 49-decl keep-list (OPS-0583).
+      instance: tony
+      env_file: ada-ha-tony.env
+      host: idc03
+      include:
+        # kk-parity core — memory / cms / comms / calendar / persona.
+        # conv_journal deliberately absent: the tools.d module exists but
+        # was never manifest-enabled (b776e81) — undeclared names warn
+        # stale in the lint. Re-add here (and to persons.kk) once the
+        # manifest enables it.
+        - ada_memory_search
+        - ada_remember
+        - ada_forget
+        - ada_session_recall
+        - cms_read
+        - cms_publish_page
+        - cms_edit
+        - chat_send
+        - calendar_read
+        - calendar_write
+        - plan_day
+        - tasks
+        - web_search
+        - ada_persona
+        - speaker_profiles
+        - voice_fx
+        - set_facial_expression
+        - ada_market_quote
+        - ada_render_video
+        - page_snapshot
+        - trip_calendar
+        - doc_read
+        - place_report
+        # tony-lane additions — evidenced by ada-ha-tony function_call
+        # logs (7d: get_rk600_weather ~1507, cast_to_screen ~814) plus the
+        # admin/ops surface this lane's owner sessions exercise.
+        - get_rk600_weather
+        - get_home_state
+        - home_search
+        - control_entity
+        - ada_resolve_action
+        - ha_confidence
+        - cast_to_screen
+        - cctv_wall
+        - ada_camera_snapshot
+        - vcast_snapshot
+        # vcast_gesture kept (unlike persons.kk): the kk exclusion guards
+        # HER lane from reaching tony-dell's input-bridge — on Tony's own
+        # lane it is his own capability, and smoke-tier scenario
+        # tool_merge_display calls it hourly against ada-ha-tony.
+        - vcast_gesture
+        - tv_action
+        - gev_command
+        - docs
+        - drive
+        - kanban
+        - devin
+        - devin_read
+        - ada_device_acl
+        - ada_member_keys
+        - ada_enroll_speaker
+        - ada_ops
+        - percussion
+        - yt
+        - ada_look
+        - ada_track_device
+      exclude:
+        # Deliberate drops (declared-surface complement). Both have live
+        # fallbacks on this lane: get_home_state answers entity/domain
+        # state reads, home_search covers device/event search. Observed
+        # usage before the cut: home_status ~30 calls/3d, home_history ~7
+        # — if owner sessions miss them, re-adding is one line here.
+        - home_status
+        - home_history
 
   kk:
     label: KK
@@ -100,12 +182,11 @@ persons:
         # is genAI and produces unsendable tailnet video). Write-only
         # asset hop, unlike the dropped vcast read tools.
         - page_snapshot
-        # conv_journal (2026-10-12): compiles the LINE relay's per-room
-        # journal + archived media into a kind=report CMS page — Tony's
-        # conversation/memory-report ask. Collection forced by
-        # ADA_CMS_COLLECTION at write time; reports are never
-        # site-published.
-        - conv_journal
+        # conv_journal dropped 2026-10-13 (lint stale-name): the tools.d
+        # module exists but was never manifest-enabled (commit b776e81
+        # added backend/tools.d/conv_journal.py without a manifest.yml
+        # entry), so it was never declared or offered at runtime. Re-add
+        # to include once ada-pi's tools.d/manifest.yml enables it.
         # trip_calendar (2026-10-13, card ada-trip-calendar-pages):
         # 'show my trip calendar' — shells chaba
         # scripts/ada/trip-calendar.py, writes the trip-<slug>
@@ -359,7 +440,8 @@ bench_profiles:
       - ada_market_quote
       - ada_render_video
       - page_snapshot
-      - conv_journal
+      # conv_journal removed 2026-10-13 — never manifest-enabled in
+      # ada-pi (see persons.kk note); undeclared at runtime.
       - trip_calendar
       - doc_read
       # place_report (2026-10-13): cms producer — maps link/name ->
@@ -428,11 +510,11 @@ bench_profiles:
       - ada_market_quote
       - ada_render_video
       # 2026-10-13 drift fix: persons.kk gained page_snapshot +
-      # conv_journal + trip_calendar after kk-parity was written —
+      # trip_calendar after kk-parity was written —
       # parity means identical, so they belong here too. (doc_read
-      # likewise, same day — card line-file-doc-ingest.)
+      # likewise, same day — card line-file-doc-ingest. conv_journal was
+      # dropped same-day — never manifest-enabled, undeclared at runtime.)
       - page_snapshot
-      - conv_journal
       - trip_calendar
       - doc_read
       # place_report (2026-10-13): persons.kk gained it same-day —
