@@ -32,13 +32,31 @@ runbooks:
     steps:
       - "Confirm the consent screen is published (Testing status = tokens die in 7 days): console.cloud.google.com -> project gen-lang-client-0694401188 -> OAuth consent screen"
       - "Confirm Google Calendar API and Google Tasks API are enabled on that project"
-      - "Run: python3 scripts/ada/google-calendar-auth.py --host mn01 (opens a browser; approve with the Google account)"
+      - "Run: python3 scripts/ada/google-calendar-auth.py --host mn01 (opens a browser; approve with the Google account). No browser on the consenting side? --manual prints the URL and takes the pasted redirect back."
       - "Verify: python3 scripts/ada/google-calendar-auth.py --check"
       - "No service restart needed — the adapter re-reads the token file on the next call"
     note: |
-      The token file is per-ada (ada-google-calendar-token.json); the OAuth
-      client (google_credentials.json) is shared with the Drive backup — do
+      The token file is per-identity (memberless = shared/tony token
+      ada-google-calendar-token.json; members get the -<member> suffix —
+      see member_google_onboard); the OAuth client
+      (google_credentials.json) is shared with the Drive backup — do
       not overwrite it.
+
+  member_google_onboard:
+    purpose: Give a member lane (ada-kk etc.) its own Google identity — her calendar/tasks under her account, shared household calendars still readable via the hybrid read-provider.
+    steps:
+      - "Prereq — publish the OAuth consent screen on project gen-lang-client-0694401188 (console.cloud.google.com -> APIs & Services -> OAuth consent screen -> Publish app). Testing status = 7-day refresh expiry AND members get Error 403 access_denied unless whitelisted as test users. Published-but-unverified shows 'Google hasn't verified this app' — she clicks Advanced -> Go to <app>."
+      - "Mint the member token: python3 scripts/ada/google-calendar-auth.py --manual --member <m> --host <ada-host>. Send the printed URL to the member (LINE works); she opens it on her phone, signs in as herself, approves; the browser lands on a dead localhost page — she copies the address-bar URL and sends it back to paste. Device flow is NOT an alternative: Google's device endpoint rejects Calendar/Tasks scopes."
+      - "Verify: python3 scripts/ada/google-calendar-auth.py --check --member <m> — lists the calendars visible to HER account; copy any needed calids into the google-<m> provider's calendars: list (the kk member calendar surfaced as 1c408592… may not be 'primary')."
+      - "Declare: in ssot.apps.ada-calendar.yml set google-<m> status: active, extend google-household instances: with the lane, and set lanes.<lane> = {file: calendar-<instance>.json, write: google-<m>}."
+      - "Render the lane registry: python3 scripts/ada/render-calendar-providers.py --instance <lane> --host <ada-host> — writes ~/.config/ada/calendar-<instance>.json. Confirm the lane env sets ADA_CALENDAR_FILE to that path."
+      - "Verify on the lane: ADA_CALENDAR_FILE=~/.config/ada/calendar-<instance>.json ADA_INSTANCE_ID=<lane> python3 scripts/ada/calendar-smoke.py — her calendars + the household layer listed, no errors; then a live calendar_read/calendar_write on the lane."
+    note: |
+      No service restart for the registry — the adapter re-reads the file
+      per call (env changes DO need a restart). GEMINI_API_KEY_<member>
+      (own free quota) is optional and unrelated: the API key is a project
+      billing credential; OAuth tokens are the identity. Per-member files:
+      ada-google-<svc>-token-<member>.json (chmod 600).
 
   add_calendar_provider:
     purpose: Add a calendar/tasks provider (e.g. iCloud via CalDAV) to ada.
