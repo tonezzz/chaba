@@ -97,7 +97,34 @@ real_name_deployments:
 
 proof_lanes:
   ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
-  chaba: "scripts/litellm/daily-ledger.py + gateway-bench; session-report.py honors GEMINI_BASE_URL override."
+  chaba: "scripts/litellm/daily-ledger.py + gateway-bench; the whole report/extract/distill chain honors GEMINI_BASE_URL via scripts/ada/gemini_rest.py (2026-10-13, card gateway-batch-opt-in-for-report-extract-aee7d7)."
+
+batch_opt_in:
+  how: >-
+    Pure env — no code. Set GEMINI_BASE_URL to the gateway base
+    (http://100.102.134.91:4000, bare host or .../v1beta both normalize)
+    and GEMINI_API_KEY to a virtual key (LITELLM_KEY_CHABA for chaba
+    batch jobs). Every chain script then hits the routed
+    /v1beta/models/<model>:generateContent endpoint (x-goog-api-key
+    carries the virtual key), so model aliasing, ordered fallbacks, and
+    the per-key spend ledger apply. Real model names
+    (gemini-3.5-flash-lite) get the real-name fallback chains — no
+    job-class rename needed.
+  covers:
+    - scripts/ada/session-report.py        (transcript -> session report; export-transcripts.py --backfill inherits env)
+    - scripts/ada/rollup-summaries.py      (session -> daily/weekly/monthly rollups; SDK dropped for shared REST helper)
+    - scripts/ada/memory-distill.py        (summaries -> memory drafts; memory-distill-benchmark.py rides the same _gen)
+    - scripts/ada/distill-devin-bank.py    (devin sessions -> weekly rollups -> developer-item extract)
+  not_covered: >-
+    Probes/key-management stay direct by design: gemini-wallet-watch.py,
+    secrets-inventory-cms.py, scenario-provider-gate.py. Bench lanes use
+    their own LITELLM_KEY_BENCH. report-distill.py is deterministic (no
+    LLM). devin-extract-sessions.sh is nlm/NotebookLM, not Gemini.
+  enable_example: >-
+    job env_file (e.g. devin-bank-distill on idc02): add
+    GEMINI_BASE_URL=http://100.102.134.91:4000 and point GEMINI_API_KEY
+    at LITELLM_KEY_CHABA (~/.config/secrets/litellm-keys.env on idc03).
+    Default remains direct-Google — opt-in per job.
 
 verification:
   - curl -sf http://100.102.134.91:4000/health/liveliness

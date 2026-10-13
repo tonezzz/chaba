@@ -1,0 +1,52 @@
+# SSOT Job: Gateway batch opt-in for the report/extract/distill chain
+# Card: gateway-batch-opt-in-for-report-extract-aee7d7. Built 2026-10-13
+# by devin dispatch (mn01). The batch LLM scripts now share one
+# generateContent helper that honors GEMINI_BASE_URL — pointing it at
+# the LiteLLM gateway on idc03 is a pure env change per job.
+
+title: Gateway batch opt-in — report/extract/distill chain via LiteLLM
+subtitle: shared gemini_rest helper + GEMINI_BASE_URL env switch — direct-Google stays the default — 2026-10-13
+icon: litellm
+card: gateway-batch-opt-in-for-report-extract-aee7d7
+
+changes:
+  file: scripts/ada/gemini_rest.py
+  items:
+    - "NEW shared caller: generate() (text, 429/5xx backoff, fast-fail other HTTP) + generate_json() (JSON mode); endpoint normalizes bare-host and /v1beta-suffixed GEMINI_BASE_URL; auth = x-goog-api-key (works for Google keys and LiteLLM virtual keys)"
+  file: scripts/ada/memory-distill.py
+  items:
+    - "_gen() now delegates to gemini_rest.generate — honors GEMINI_BASE_URL; drops inline requests code"
+  file: scripts/ada/distill-devin-bank.py
+  items:
+    - "same — weekly-rollup, merge, and extract_developer_items passes all route via the helper"
+  file: scripts/ada/rollup-summaries.py
+  items:
+    - "summarize() moved off google-genai async SDK onto gemini_rest.generate — same env knobs, one less dependency"
+  file: scripts/ada/session-report.py
+  items:
+    - "gemini_json() delegates to gemini_rest.generate_json (was urllib one-shot honoring GEMINI_BASE_URL without /v1beta normalization; gains retry + bare-host/v1beta forms). Keeps its ada-pi-pwa.env key fallback"
+  file: docs/ssot/infrastructure/ssot.llm-gateway.yml
+  items:
+    - "batch_opt_in section: recipe (GEMINI_BASE_URL=gateway + GEMINI_API_KEY=LITELLM_KEY_CHABA), coverage list, explicit non-coverage (probes/bench/report-distill/devin-extract)"
+
+behavior:
+  default: unchanged — GEMINI_BASE_URL unset = direct https://generativelanguage.googleapis.com with the job's own Google key
+  opt_in: >-
+    per job env — GEMINI_BASE_URL=http://100.102.134.91:4000 +
+    GEMINI_API_KEY=<LITELLM_KEY_* virtual key>. Traffic then counts
+    against that key's budget in the spend ledger and falls back
+    paid->free->openrouter->ollama per the routing table.
+  free_riders: >-
+    memory-distill-benchmark.py imports memory-distill._gen;
+    export-transcripts.py --backfill spawns session-report.py — both
+    inherit the env with no code change.
+
+verification:
+  - "python3 -m py_compile on all touched scripts — clean"
+  - "endpoint()/via_gateway() unit-checked for direct, bare-host gateway, and /v1beta-suffixed forms"
+  - "curl POST http://100.102.134.91:4000/v1beta/models/gemini-3.5-flash-lite:generateContent with x-goog-api-key — LiteLLM auth layer answers (401 on bogus key), proving the routed Gemini endpoint shape"
+  - "NOT run end-to-end with a real virtual key — litellm-keys.env lives on idc03, not on this runner; first enabled job is the proof"
+
+followups:
+  - "flip a batch job onto the gateway deliberately (e.g. devin-bank-distill env_file on idc02) — deploy-gated, needs an explicit decision"
+  - "yt-vtt-translate.py / yt-vtt-dub.py (ops pipeline) make the same direct calls — same opt-in applies if wanted"
