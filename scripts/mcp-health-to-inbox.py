@@ -9,7 +9,7 @@ import yaml
 from datetime import datetime
 from pathlib import Path
 
-REPO = Path("/home/tony/CascadeProjects/chaba-tony-dell")  # served checkout — kanban-commit watches this repo
+REPO = Path(__file__).resolve().parent.parent  # whichever checkout runs the job — drafts land next to the other inbox items it produces
 CLIENT = REPO / "scripts" / "mcp-health-client.py"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 HEALTH_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.health.yml"

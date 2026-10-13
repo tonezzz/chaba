@@ -9,6 +9,6 @@ Description=Poll GitHub Actions runs; write focus-inbox alerts on new failures
 
 [Service]
 Type=oneshot
-TimeoutStartSec=120
+TimeoutStartSec=300
 WorkingDirectory=%h/CascadeProjects/chaba
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/audits/gh-runs-watch.py --git

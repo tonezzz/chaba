@@ -1,0 +1,106 @@
+# SSOT Job: fix-omen-timer-pack — four tony-omen timer failures (dispatch 2026-10-13)
+# Handoff: devin-dispatch worktree dispatch-wt-20261013-090402-fix-each-verify-with-a-manual-
+title: Omen timer pack — fix four failing user timers, verify by manual service run
+subtitle: focus-dispatcher-overnight, michael-dev-parity, ada-gh-runs-watch, ada-pi-orch-bench
+icon: wrench
+
+context:
+  trigger: timer-sentinel filed timer-alert-tony-omen-* cards for each service.
+  host: tony-omen (work done from mn01 dispatch worktree; fixed files deployed
+    into ~/CascadeProjects/chaba on omen for verification — the same content
+    lands permanently when this branch merges).
+
+fixes:
+  - service: focus-dispatcher-overnight
+    root_cause: |
+      NOT a validation failure. scripts/mcp-health-to-inbox.py hardcoded
+      REPO=/home/tony/CascadeProjects/chaba-tony-dell, which does not exist
+      on omen -> FileNotFoundError rc=1. overnight-focus-review.py then hit
+      its post-validation `if rc:` gate and printed "aborting: SSOT
+      validation failed" — a misattributed abort that skipped the whole
+      dispatcher pipeline even though validation passed.
+    changes:
+      - scripts/mcp-health-to-inbox.py — REPO now resolves from __file__
+        (whichever checkout runs the job) instead of the hardcoded dell path.
+      - scripts/overnight-focus-review.py — abort gate now checks only the
+        ssot-validate-all step rc; pre-validation step failures warn and
+        continue (their rc still rolls into the final exit code/status file).
+    evidence: |
+      Manual `systemctl --user start focus-dispatcher-overnight.service` on
+      omen 2026-10-13 16:17 (+07): Result=success rc=0 in 44s. All 9 steps
+      rc=0; created 6 health inbox drafts, validated 2233 files / 0 errors,
+      focus-dispatcher --sub-agent + --advance ran, "[overnight] completed".
+
+  - service: michael-dev-parity
+    root_cause: |
+      scripts/home-assistant/mirror-sweep.py retried websockets
+      ConnectionClosed twice then re-raised; the michael-dev ws (via the
+      idc03 tailnet serve proxy) closes mid-request with 1000 (OK), so the
+      audit died with a ConnectionClosedOK traceback every run.
+    changes:
+      - get_dashboard(): retries 2 -> 4 with incremental backoff.
+      - main(): persistent ConnectionClosed -> print skip line, clean exit 0.
+    evidence: |
+      Manual run 16:17: Result=success rc=0. ws still closes 1000 after 4
+      retries (~6s) so the audit is skipped, not crashed.
+    follow_up: |
+      The 1000 close itself is server/proxy-side — if the audit stays
+      skipped, investigate the ws path to idc03:8124 (tailnet serve or HA
+      closing post-auth). Separate issue from this crash fix.
+
+  - service: ada-gh-runs-watch
+    root_cause: |
+      gh on omen stores its token in the desktop keyring (hosts.yml has no
+      oauth_token). In a headless systemd context the secret-service lookup
+      blocks, so every `gh run list` hung to the 60s subprocess timeout;
+      2 repos x 60s ~= TimeoutStartSec=120 -> systemd TERM'd mid-run.
+      (`gh auth status` also reports the stored token invalid.)
+    changes:
+      - scripts/audits/gh-runs-watch.py — resolve GH_TOKEN from env or
+        ~/.config/secrets/github-mcp{,-new}.env and pass it to every gh
+        call (GH_TOKEN bypasses keyring auth entirely); per-call timeout
+        60s -> 90s via GH_RUNS_WATCH_TIMEOUT; poll errors non-fatal (exit 0,
+        meta.yml status=error) so one slow poll can't fail the unit.
+      - systemd/ada-gh-runs-watch.service — TimeoutStartSec 120 -> 300.
+    evidence: |
+      Manual run 16:16: rc=0, both repos polled in ~2s (was 60s+ each),
+      0 errors; 25 historical CI failures surfaced, all deduped against
+      existing open inbox alerts.
+    follow_up: |
+      github-mcp.env GITHUB_ACCESS_TOKEN is valid; github-mcp-new.env
+      token is 401 (rotation never completed?) and the keyring token is
+      invalid — `gh auth login` still needed for interactive gh use.
+
+  - service: ada-pi-orch-bench
+    root_cause: |
+      The installed unit was the pre-2026-10-09 version: unbounded
+      orch-bench exec (no --sets/--limit/--timeout) under
+      TimeoutStartSec=5400. An unbounded all-sets run (~150 gemma-3-4b
+      calls at 30-140s each on CPU) can't finish in 90m -> SIGTERM
+      status=15 at exactly 06:00:40 (Mon 04:30 start + 90m).
+    changes:
+      - Reinstalled systemd/ada-pi-orch-bench.service on omen (bounded:
+        --sets golden,hard --limit 30 --timeout 240, TimeoutStartSec=7200).
+      - ssot.jobs.yml job entry: timeout 90m -> 2h, real exec list + cwd
+        added; note documents that the hand unit carries ExecStartPre/Post
+        (open-jev lifecycle) and is the deployed source of truth —
+        render-jobs.py can't express pre/post hooks yet.
+      - systemd/generated/tony_omen/ada-pi-orch-bench.service regenerated
+        (now carries the real ExecStarts + WorkingDirectory; still no
+        pre/post — stub, do not install over the hand unit).
+    evidence: |
+      Manual `systemctl --user start ada-pi-orch-bench.service` 16:16:
+      ExecStartPre brought open-jev + open-jev-student up healthy, bench
+      run in progress under the 2h cap (result recorded on the card).
+
+verification: |
+  All four verified by manual `systemctl --user start <unit>` on tony-omen
+  rather than waiting for the next timer tick; journals quoted on each
+  timer-alert-* card.
+
+related_cards:
+  - timer-alert-tony-omen-focus-dispatcher-overnight
+  - timer-alert-tony-omen-michael-dev-parity
+  - timer-alert-tony-omen-ada-gh-runs-watch
+  - timer-alert-tony-omen-ada-pi-orch-bench
+  - fix-omen-timer-pack

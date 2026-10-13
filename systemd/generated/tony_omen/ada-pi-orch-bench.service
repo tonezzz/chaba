@@ -3,5 +3,7 @@ Description=Nest topology bench + nest-bench CMS trend refresh (job:ada-pi-orch-
 
 [Service]
 Type=oneshot
-TimeoutStartSec=5400
-ExecStart=tests/bench/orch-bench.py --student 100.75.102.88:8778 --heavy 100.75.102.88:8777 --mddb + --report-cms, then nest-bench-update.py --force
+TimeoutStartSec=7200
+ExecStart=%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778 --heavy http://100.75.102.88:8777 --sets golden,hard --limit 30 --timeout 240 --mddb http://100.102.134.91:11023/v1 --report-cms --corpus-out %h/.local/share/ada/orch-corpus.jsonl --stats-out %h/.local/share/ada/orch-router-stats.jsonl
+ExecStart=/usr/bin/python3 scripts/nest-bench-update.py --force
+WorkingDirectory=%h/CascadeProjects/ada-pi

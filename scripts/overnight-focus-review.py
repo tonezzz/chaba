@@ -68,11 +68,13 @@ def main():
         rc |= run(["scripts/mcp-health-to-inbox.py"], steps)
     rc |= run(["scripts/registry-drafts.py"], steps)
     rc |= run(["scripts/improvements-triage.py"], steps)
-    rc |= run(["node", "scripts/ssot-validate-all.mjs"], steps)
     if rc:
+        print("[overnight] warning: pre-validation step(s) failed — continuing to validation", file=sys.stderr)
+    val_rc = run(["node", "scripts/ssot-validate-all.mjs"], steps)
+    if val_rc:
         print("[overnight] aborting: SSOT validation failed", file=sys.stderr)
-        _write_status(started, rc, steps)
-        return rc
+        _write_status(started, rc | val_rc, steps)
+        return rc | val_rc
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"], steps)
     rc |= run(["scripts/focus-dispatcher.py", "--advance"], steps)
     if os.environ.get("OVERNIGHT_PROCESS_READY") == "1":
