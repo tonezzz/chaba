@@ -1,7 +1,7 @@
 id: kk-gemini-key
 title: Kaewta gets her own Gemini key (KK lane off fleet pool)
-column: backlog
-updated: 2026-10-13 08:40
+column: done
+updated: 2026-10-13 15:05
 brief: 'Tony ask 2026-10-12: add KK own Gemini. DONE: LITELLM_KEY_KK minted ($5/30d) and live in ada-kk.env ADA_GEMINI_REST_API_KEY
   — her REST side-calls are metered/budgeted separately now; gemini-keys.env gained GEMINI_API_KEY_KK slot; gemini-tier
   on idc03 now re-asserts the kk key as ada-kk.env primary after any fleet free|paid|hybrid switch. BLOCKED: Live
@@ -39,6 +39,16 @@ comms:
   text: '2026-10-13: confirmed live impact — ada-kk sessions degrade to OpenRouter on free-key 1011s (journal 08:34).
     Symptom partially masked: OpenRouter fallback now injects _now_context (ada-pi 1716db7) so degraded replies
     know date/time. Root cause unchanged — she still needs a paid key or pool lane for Live quality.'
+- at: 2026-10-13 15:05
+  from: devin
+  text: 'VERIFIED DONE 2026-10-13: kaewta-paid key (…bheg) is live in gemini-keys.env GEMINI_API_KEY_KK + ada-kk.env
+    GEMINI_API_KEY — direct probe HTTP 200 on gemini-3.5-flash-lite, ada-kk active, 0 quota/error lines in journal.
+    REST already on LITELLM_KEY_KK. gemini-tier status shows per-persona map (tony/michael/kk) — fleet switches
+    preserve it. CAVEAT: cannot verify via API that the key is in a separate GCP project (your chosen new-project
+    option) — the 10-13 prepaid-depleted event showed all paid key'
+- at: 2026-10-13 15:05
+  from: devin
+  text: closed by devin
 requests:
 - id: kk-live-key-mint-which-project
   ask: Mint Kaewta's own Gemini Live key in AI Studio (https://aistudio.google.com/apikey), then drop the raw key
@@ -60,4 +70,5 @@ requests:
   suggested: new-project
   answer: 'new-project — New billed GCP project — true quota/spend-cap isolation: tony-lane storms can never starve
     Kaewta (quota+caps are per-project). Cost: one-time billing setup in console.'
-awaiting_action: true
+action:
+  status: done
