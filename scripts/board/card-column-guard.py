@@ -34,24 +34,71 @@ COMM_COL = [
     (re.compile(r"queued for processing|re-queued|requeued"), "backlog"),
     (re.compile(r"moved \S+ -> (\w+)"), None),   # group 1
     (re.compile(r"\(column -> (\w+)\)"), None),  # merge-sweep marker
+    (re.compile(r"finished \(ok"), "review"),    # runner do_finish
+    (re.compile(r"bounced \w+->(\w+)"), None),   # lifecycle-check / verify gate
     (re.compile(r"closed by \w+"), "done"),
     (re.compile(r"claimed"), "doing"),
 ]
 VALID = {"backlog", "doing", "review", "done"}
 
 
+TS_RE = re.compile(r"(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})")
+
+
+def _ts(s: str) -> float | None:
+    """Parse 'YYYY-MM-DD HH:MM' (local) or ISO-8601 (any tz) to epoch."""
+    import datetime
+    s = s.strip().strip("'\"")
+    try:
+        if "T" in s:
+            return datetime.datetime.fromisoformat(s).timestamp()
+        m = TS_RE.search(s)
+        if m:
+            return datetime.datetime.fromisoformat(
+                m.group(1) + "T" + m.group(2)).timestamp()
+    except ValueError:
+        return None
+    return None
+
+
 def comm_target_column(text: str) -> str | None:
-    """Column asserted by the last column-asserting comm, else None."""
+    """Column asserted by the latest column-asserting event, else None.
+
+    Events: comm `text:` lines (each paired with its own `at:`) and an
+    `auto_close:` block (kanban-act's mark_done — asserts done). Latest
+    timestamp wins so a stale auto_close at EOF can't beat a newer move.
+    """
+    best_ts = -1.0
     target = None
-    for m in re.finditer(r"text:\s*(.*)", text):
-        t = m.group(1)
+    last_at = None
+    pending_auto_close = False
+    for line in text.splitlines():
+        m_at = re.match(r"\s*-?\s*at:\s*(.*)", line)
+        if m_at:
+            ts = _ts(m_at.group(1))
+            if pending_auto_close:
+                # the `at:` inside an auto_close block asserts done
+                if ts is not None and ts >= best_ts:
+                    best_ts, target = ts, "done"
+                pending_auto_close = False
+            last_at = ts
+            continue
+        if re.match(r"auto_close:", line):
+            pending_auto_close = True
+            continue
+        if not re.match(r"\s*-?\s*text:", line):
+            continue
+        t = line.split("text:", 1)[1]
+        ev_col = None
         for pat, fixed in COMM_COL:
             mm = pat.search(t)
             if mm:
                 col = mm.group(1) if fixed is None else fixed
                 if col in VALID:
-                    target = col
+                    ev_col = col
                 break
+        if ev_col and last_at is not None and last_at >= best_ts:
+            best_ts, target = last_at, ev_col
     return target
 
 
