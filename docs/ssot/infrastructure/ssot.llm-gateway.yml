@@ -71,6 +71,9 @@ job_classes:
   voice-aux:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: lightweight classify around the voice path (Live API itself stays direct).
+  chat:
+    chain: [gemini-3.5-flash@paid, gemini-3.5-flash@free, gemini-3.5-flash@openrouter, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
+    note: "ada text-mode sessions (ADA_TEXT_MODEL) — full 3.5-flash for voice/text quality parity; lite only as downstream fallback. Added 2026-10-13; virtual keys need 'chat' added to models allowlist."
   classify:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
