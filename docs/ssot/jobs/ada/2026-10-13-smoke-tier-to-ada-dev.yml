@@ -1,0 +1,71 @@
+date: 2026-10-13
+domain: ada
+job: smoke-tier-to-ada-dev
+cards: [live-session-token-diet, bench-off-paid-lanes]
+refs: [OPS-0509, BEN-0573]
+host: idc03
+summary: >
+  Retargeted the hourly ada-scenario-smoke tier from ada-ha-tony
+  (paid Gemini lane, :8002) to ada-dev (free Gemini lane, :8005).
+  caller=admin sessions were ~78% of ada-ha-tony's remaining input-token
+  burn (7.38M of 9.45M on 2026-10-13).
+
+burn_context:
+  ada-ha-tony_2026-10-12: 3595 turns / 116.3M input tokens (~134M/day figure on card)
+  ada-ha-tony_2026-10-13_to_2150: 306 turns / 9.45M input tokens
+    - already ~92% down after _cap_tool_result (OPS-0509 dep 0a1eb4d),
+      ADA_TOOL_CALL_BUDGET=10, 49-decl keep-list (OPS-0583), lazy tool
+      schemas (ada-pi 932550d — first-turn in= ~18.1k, was ~27.8k)
+    - by caller: admin 7.38M (78%), user-tonezzzz 1.13M, ha-* 0.94M
+  top_tool_today: set_facial_expression 163/320 tony-lane calls (51%)
+    - batched-round lever is carded ADA-0601 (expression-call-batching)
+
+change:
+  file_repo: stacks/services/ada-scenario-runner/ada-scenario-smoke.container
+  file_live: ~/.config/containers/systemd/ada-scenario-smoke.container
+  diff:
+    - 'ADA_LIVE_URL: ws://127.0.0.1:8002/ws -> ws://127.0.0.1:8005/ws'
+    - 'EnvironmentFile: ada-ha-tony.env -> ada-dev.env (runner admin key
+       + free GEMINI key context)'
+    - 'keys volume: ada-ha-tony-keys.json -> ada-ha-dev-keys.json'
+    - 'ExecCondition gate: --unit ada-ha-tony -> --unit ada-dev
+       --env-file ada-dev.env'
+    - 'After += ada-dev.service'
+  also_installed: >
+    Copying the repo quadlet live closed pre-existing drift — the live
+    file lacked the spend-ledger ExecStopPost and the shell-wrapped
+    ExecCondition the repo already carried.
+
+verification:
+  - 'gate --dry-run --unit ada-dev: ok (active, live key = free lane,
+    no dunning)'
+  - 'manual `systemctl --user start ada-scenario-smoke` 21:49: admin
+    sessions opened on ada-dev (:8005), zero ws connects on ada-ha-tony'
+  - 'manual scenario-live date_echo vs :8005 -> PASS (3 turns, 6 tool
+    calls) at ~22:05'
+  caveat: >
+    The 21:49 verification run scored 2 fail + 2 infra then the suite
+    outage sentinel recorded the rest skip-quota — the two infra
+    scenarios hit transient ws 403s while ada-dev was ~3min post-restart
+    (started 21:46). Not a systemic auth problem: date_echo passes clean
+    post-warmup, and After=ada-dev.service + the suite retry absorb most
+    of the race. If 22:00+ runs still sentinel-trip, look at
+    _parse_keys/websocket_authorized warmup ordering on ada-dev.
+
+remaining_paid_lane_consumers:
+  - 'weekly tiers ada-scenario-{memory,reports,tools,casting,cms,
+    research}.service still target :8002 + ada-ha-tony.env (~234 admin
+    turns each on their run day) — left as-is: several suites are
+    lane-coupled (casting needs VCAST/HA actuation ada-dev lacks). Needs
+    a per-suite dev-safe audit before retargeting; flagged on BEN-0573.'
+  - 'ada-scenario-full.container (manual runs) — same consideration.'
+  - 'no paid-lane canary exists today (ada-live-canary probes the FREE
+    key hourly). BEN-0573 item 3 wants <=1 paid connect/day; real user
+    traffic is the de-facto probe — left as a decision note, not built.'
+
+notes:
+  - ada-dev GEMINI_API_KEY sha-matches GEMINI_API_KEY_FREE in
+    gemini-keys.env (verified by scenario-provider-gate free-lane check)
+  - ada-dev is the lab instance (127.0.0.1:8005, ADA_INSTANCE_ID=dev);
+    scenario smoke already writes shared MDDB/CMS test pages from any
+    lane — unchanged behavior.
