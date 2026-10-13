@@ -40,7 +40,7 @@ MDDB_CMS = os.environ.get(
 MDDB_CMS = MDDB_CMS.removesuffix("/v1").removesuffix("/")
 _CMS_COLS = ("ada-cms-", "chaba-", "kb-")
 _CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
-              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+              "ada-scenario", "ada-session-audit", "ada-tool-profile", "ssot"}
 
 
 def _base(payload):

@@ -63,7 +63,7 @@ MDDB_CMS = os.environ.get(
     "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 _CMS_COLS = ("ada-cms-", "chaba-", "kb-")
 _CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
-              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+              "ada-scenario", "ada-session-audit", "ada-tool-profile", "ssot"}
 
 
 def _base(payload):
