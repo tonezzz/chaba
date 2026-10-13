@@ -112,7 +112,9 @@ instances:
           Storage dashboard (url_path chaba-ai, title "Chaba AI") — the
           ada-ha assistant surface. Tabs: [chaba-ai, calendar] — calendar
           appended 2026-10-13 (last tab, Tony request, same Google Calendar
-          iframe embed as chaba-home's calendar tab). Auth via refresh-token
+          iframe embed as chaba-home's calendar tab); srcs extended same day:
+          + tony-ha household (4cf4e59c…) + Family (family0057…) group
+          calendars. Auth via refresh-token
           exchange at 127.0.0.1:8125/auth/token — normal refresh tokens
           need their stored client_id passed back in the grant.
       chaba-nest:
@@ -195,7 +197,8 @@ instances:
       during a container restart). Tabs: [kaewta, chatui, cms, calendar] —
       calendar added 2026-10-13 (last tab, Tony request): panel iframe of
       the shared Google Calendar embed (tonezzzz@gmail.com primary +
-      en.th#holiday, ctz Asia/Bangkok) — same view config as ada-ha
+      en.th#holiday + tony-ha household + Family, ctz Asia/Bangkok) —
+      same view config as ada-ha
       chaba-home's calendar tab (HOM-0456). chatui/cms
       idc02 routes /chatui* (prefix-stripped -> ada-kk :8007 chat card),
       /cms* + /api/cms* (-> ada-kk CMS miniapp; lane key required).
@@ -244,8 +247,8 @@ instances:
           Standalone sidebar dashboard (url_path house-calendar, created
           2026-10-13 via lovelace/dashboards/create, Tony request "same
           calendar tab for michael-ha") — single panel view with the shared
-          Google Calendar iframe (tonezzzz@gmail.com + en.th#holiday,
-          Asia/Bangkok). michael-ha has no `ai` assistant dashboard and its
+          Google Calendar iframe (tonezzzz@gmail.com + en.th#holiday +
+          tony-ha household + Family, Asia/Bangkok). michael-ha has no `ai` assistant dashboard and its
           default Overview runs root `strategy: original-states`
           (auto-generated; views are ignored while strategy is set), so a
           tab could not be appended there — a separate dashboard was the
