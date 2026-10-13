@@ -1,0 +1,74 @@
+title: mddb :11023 /v1/stats + /metrics timeout — perf bug + audit non-fatal severity
+subtitle: health_snapshot rc=1 root-caused to O(all-keys) stats walk; audit gains per-service severity=warn
+icon: database
+
+context:
+  trigger: "kanban card fix-mddb-stats-timeout-overnight — reports/ORCHESTRATION.json
+    on chaba-tony-dell (run 2026-10-10T07:39Z): step health_snapshot rc=1;
+    mddb-stats timeout after 60000ms, mddb-vector-stats + mddb-metrics timeout
+    after 5000ms."
+  runner: tony-omen (dispatch worktree dispatch/20261013-155842)
+  alert_card: timer-alert-tony-dell-overnight-assessment
+
+track_a_perf_bug:
+  mechanism: "mddbd handleStats (services/mddbd/http_handlers_meta.go:399 in the
+    mddb fork ~/CascadeProjects/mddb) cursor-walks EVERY key in buckets docs
+    (153,396), rev (626,388), idxmeta (825,528) — ~1.6M keys — doing
+    strings.Split(string(k)) per key inside one bbolt read tx, then calls
+    collectionChecksum() per collection: 57 extra read txs each prefix-walking
+    that collection's docs with crc32 over key+value. O(total keys) +
+    O(docs x 2) work per request on an 8.1GB DB."
+  measured:
+    - "2026-10-13 live :11023 — /v1/stats: >60s (conn died ~63s) / 28.6s /
+      16.3s / 0.95s across four calls — variance tracks page-cache warmth and
+      write contention."
+    - "/v1/vector-stats 427-494ms, /metrics 600-908ms when the server is idle."
+    - "Reproduced the incident: while a /v1/stats walk ran (16.3s), concurrent
+      /metrics + /v1/vector-stats probes timed out at 5s — the stats walk
+      starves sibling requests of CPU/IO; readers don't block at bbolt level
+      (DBView is a shared restoreMu.RLock)."
+  incident_context: "2026-10-10 14:39 window also had ~1.6GB binlog rotations
+    every ~15min, TTL cleanups, and failing embed retries (ollama proxy 502s)
+    — the stats walk landed on an already-loaded box."
+  side_effect: "each stats call pins a long-lived bbolt read tx -> old pages
+    can't be reclaimed -> contributes to the freelist/RSS growth the weekly
+    mddb-restart.timer exists to bound."
+  not_the_cms_split: ":11027 (mddb-cms) split off chaba content, but :11023
+    still holds 149k docs / 57 collections / 8.1GB including ada-cms-* —
+    the walk cost didn't shrink."
+  root_fix_owner: "mddb fork (outside this repo) — follow-up card
+    mddb-stats-o1-counts: serve counts from maintained per-collection
+    counters or Bucket.Stats().KeyN where possible, cache the response
+    (~60s TTL) and/or make checksums async/cached. Until then the endpoint
+    is expensive by design; do not point pollers at it."
+
+track_b_audit_fix:
+  change: "http-health-audit.mjs now honors `severity: warn` per service —
+    probe failures (timeout/unreachable/wrong status/cert<7d) report as warns
+    instead of issues, and the 2x timeout retry is skipped for non-fatal
+    services (re-walking a heavy endpoint doubles DB load for no verdict
+    change). Any duplicate declaration of the same URL without severity
+    keeps the probe fatal (conservative merge)."
+  applied_to: "mddb-stats, mddb-vector-stats, mddb-metrics in
+    ssot.health.home.datastore.yml AND the duplicated entries in
+    ssot.health.mobile.yml. Liveness stays fatal via mddb-api /health."
+  files:
+    - scripts/audits/http-health-audit.mjs
+    - docs/ssot/infrastructure/ssot.health.home.datastore.yml
+    - docs/ssot/infrastructure/ssot.health.mobile.yml
+    - docs/ssot/infrastructure/ssot.audit.yml (description)
+
+verify:
+  commands:
+    - "node scripts/audits/http-health-audit.mjs -> rc=0, 80/80 ok"
+    - "synthetic dead port + severity:warn -> warn only, rc=0; same dead port
+      without severity -> issue, rc=1 (mechanism verified both directions)"
+  caveat: "mddb-stats can still exceed its 60s timeout under load — now lands
+    as a visible warn in the report instead of a step failure."
+
+followups:
+  - "mddb-stats-o1-counts (carded): fix handleStats in the mddb fork —
+    counts via maintained counters/Bucket.Stats, cached checksums or
+    response cache; the walk does not scale."
+  - "Optional: give /v1/stats a faster cheap mode (?collections_only=1) for
+    vector-reindex.py which only needs collection names."
