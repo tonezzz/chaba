@@ -259,9 +259,28 @@ class TestRelayPatch:
         r = subprocess.run(
             ["git", "apply", "--check", str(PATCH)],
             cwd=tmp_path, capture_output=True, text=True)
-        assert r.returncode == 0, f"patch no longer applies: {r.stderr}"
-        subprocess.run(["git", "apply", str(PATCH)],
-                       cwd=tmp_path, check=True)
+        if r.returncode != 0:
+            # Once the drop lands upstream the patch can never apply
+            # again — the file itself is already the merged result.
+            merged = "_MEDIA_INBOUND" in target.read_text()
+            assert merged, (f"patch no longer applies and feature "
+                            f"markers are absent: {r.stderr}")
+        else:
+            subprocess.run(["git", "apply", str(PATCH)],
+                           cwd=tmp_path, check=True)
+        for name in ("httpx", "websockets"):
+            stub = pytypes.ModuleType(name)
+
+            class _Any:
+                def __init__(self, *a, **k):
+                    pass
+
+                def __call__(self, *a, **k):
+                    return _Any()
+
+            stub.AsyncClient = _Any
+            stub.connect = _Any
+            monkeypatch.setitem(sys.modules, name, stub)
         monkeypatch.setenv("LINE_MEDIA_ARCHIVE_DIR",
                            str(tmp_path / "arch"))
         monkeypatch.setenv("LINE_IMG_CACHE_DIR", str(tmp_path / "img"))

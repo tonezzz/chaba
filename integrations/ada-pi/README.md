@@ -1,7 +1,7 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Six drops live here:
+chaba dispatches. Seven drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -14,6 +14,9 @@ chaba dispatches. Six drops live here:
    `line-voice-enroll-recognize` (2026-10-13)
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
    (ADA-0607, 2026-10-13)
+6. LINE image delivery — Drive share links and image URLs inside reply
+   text become real LINE image messages — card
+   `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
 
 ---
 
@@ -447,3 +450,87 @@ effect on the next ada-memory-gaps timer run (mn01, Sun 09:30).
   the real `MemoryMixin.ada_memory_search` under a stub common,
   `_doc_to_hit` include_inactive flag, and the three provider gates
   exercised via ast-extracted methods from the patched source.
+## Drop 7 — LINE image delivery (real images, not text links)
+
+Card `line-delivery-send-actual-images-not-jus-652ad3` (Tony 2026-10-13):
+"ส่งรูปรถของผมให้หน่อย" produced a reply whose text contained a
+`drive.google.com/file/d/...` share link — LINE delivered a text link,
+not an image. Root cause: `drive action='search'` hands the model a
+`webViewLink` (an HTML viewer, not bytes) and the relay only looked at
+`cast_url`/`image_url`/`url` tool-result keys — never the reply text,
+never Drive links, never `drive_get`'s `media_url`.
+
+### Files
+
+- `backend/line_relay.image-delivery.patch` — unified diff vs ada-pi
+  `main` @ `bb4c172`. Three mechanisms, all in the relay so they cover
+  turn replies, inbound-media replies, and `/send` (chat_send):
+
+  1. `_resolve_doc_media(url)` — inside `_image_msgs`'s try: Drive share
+     links (`file/d/`, `open?id=`, `uc?id=`, `docs/<app>/d/`) mint a
+     `/v1/drive/media/<id>?t=` fetch URL via doc-archive's
+     `POST /v1/drive/media-token` (relay env already carries
+     `DOC_ARCHIVE_API_KEY`); host-relative `/v1/drive/media/` paths
+     resolve against `DOC_ARCHIVE_URL` instead of `LINE_URL_BASE`.
+  2. `_mine_image_urls(text)` + `_mined_msgs(text, seen)` — scan
+     reply/send text for image-bearing refs (image file extensions,
+     Drive links, `/v1/drive/media/`, `/relay-img/`), dedupe against
+     structured tool images, and upgrade to real LINE `image` messages.
+     Mined failures are silent — the link stays in the text message
+     either way. `LINE_TEXT_IMG_MINE=0` disables.
+  3. `_images_from` — a result's `media_url` counts as an image
+     candidate when its `mimeType` starts `image/` (drive_get reads);
+     `/v1/` host-relative URLs are accepted.
+
+- `backend/tool_guide.image-delivery.patch` — `chat_send` guide now
+  says `image_url` wants a real image file or a Drive link (never a CMS
+  page/view_url), and the `drive` guide notes that `drive_get` returns
+  a castable `media_url` — pass `webViewLink` or `media_url` to
+  `chat_send image_url=`.
+- `backend/realtime_provider.image-delivery.patch` — the `image_url`
+  schema description mentions Drive share links and warns against
+  constructing CMS asset URLs.
+- `tests/ada/test_line_image_delivery.py` (this repo) — 18 tests:
+  mining (Thai-text Drive link, image ext, media/relay-img paths,
+  markdown, dedupe+cap, non-image rejection), resolution (mint,
+  open/uc spellings, relative base, no-key error), `_image_msgs`
+  end-to-end + silent mode, `_images_from` media_url gating.
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && for p in line_relay.image-delivery \
+   tool_guide.image-delivery realtime_provider.image-delivery; do \
+   git apply <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   — based on `main` @ `bb4c172` (2026-10-13); if a hunk no longer
+   applies, re-dispatch rather than hand-merging.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both. Restart `ada-line-relay`.
+3. Env: `DOC_ARCHIVE_API_KEY` must be set for the relay (already in
+   `ada-ha-tony.env` per the unit's EnvironmentFile). Without it Drive
+   share links stay plain text — everything else still works.
+   `LINE_TEXT_IMG_MINE=0` reverts to pre-patch behavior.
+
+### Contract
+
+- A reply or `chat_send` text containing a Drive share link / image URL
+  / `/v1/drive/media/` / `/relay-img/` ref delivers BOTH the text (link
+  included) and real `image` message(s), capped by LINE's 5-msg batch
+  (text + up to 3 structured images + mined remainder).
+- `drive_get` on an image auto-attaches the photo to the reply —
+  no `chat_send` needed.
+- A bad link never breaks the send: mined-image failures are silent,
+  structured-image failures keep the existing "(image failed)" text.
+- False-positive discipline: page URLs, maps links, PDFs, and other
+  non-image refs stay text-only — verified by tests + a content-type
+  check at fetch time (`_image_msgs` requires an image/* response).
+
+### Notes / residual
+
+- Minted media URLs are short-lived (doc-archive token); they are
+  fetched immediately and re-hosted via `/relay-img/` for LINE, so the
+  TTL only gates the initial fetch, not delivery.
+- LINE's reply API takes max 5 messages — `msgs[:5]` cap unchanged;
+  with many links the tail stays text.
+- Pairing note: card `line-tool-reply-routing-answers-leave-th-5c73e7`
+  is a separate fix (session dropped twice at 21:46 in the same
+  journal); this patch only touches delivery, not routing.
