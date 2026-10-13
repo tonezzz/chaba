@@ -59,6 +59,8 @@ edges:
   #    /ws on :8002 — no separate /ada-ws route needed for the tab)
   #   /cms* + /api/cms* already proxied to idc03 root CMS (tony's own pages)
   # 2026-10-12
+  #   /ada-ws/tony/* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
+  #   (voice card same-origin lane; missing route 404'd the card 2026-10-13)
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
