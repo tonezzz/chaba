@@ -93,9 +93,10 @@ jobs:
   on_calendar: Sun *-*-* 02:00:00
   persistent: true
   timeout: 1h
-  exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
+  exec: '%h/CascadeProjects/chaba/scripts/audits/run-and-ship.sh %h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
   note: migrated tony_dell -> idc02 2026-10-04 (node via ~/.n/bin/node symlink; PATH env needed — runner spawns
-    bare `node` children)
+    bare `node` children). run-and-ship wraps run.mjs and rsyncs report metas to the served checkout —
+    reports/* is gitignored so satellite metas never propagate via git (added 2026-10-14).
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-audit-full
@@ -105,7 +106,7 @@ jobs:
   on_calendar: Sun *-*-1..7 03:00:00
   persistent: true
   timeout: 2h
-  exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs --full'
+  exec: '%h/CascadeProjects/chaba/scripts/audits/run-and-ship.sh %h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs --full'
   note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement as chaba-audit. Verified
     run 2026-10-04 (~3min) — same core failures as dell (security-audit, standardization dup cms-pages, code-quality);
     idc02-only env gaps — no host caddy/docker binaries, no devin mcp_config, http-health checks dell-localhost
