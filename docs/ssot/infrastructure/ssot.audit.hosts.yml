@@ -1298,6 +1298,10 @@ hosts:
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: lid-blank-watch.service, type: service, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # --- 2026-10-13: fleet-standard zram swap (same zram-swap.service as
+      #     tony-dell: 8G zstd, prio 100 ahead of /swap.img; /tmp tmpfs is
+      #     Ubuntu default here, no unit needed) ---
+      - {name: zram-swap.service, type: service, scope: system}
     allowed_running:
       - devin-task-*.service    # ephemeral dispatch session units
     known_failed: []
