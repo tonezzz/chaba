@@ -1,0 +1,21 @@
+id: capacity-move-michael-dev
+title: 'capacity: move michael-dev HA node idc03 -> idc02'
+column: doing
+updated: 2026-10-13 08:03
+brief: 'Next move under capacity-adjust procedure. idc03 co-locates two HA nodes with Ada backends+MDDB; member/dev
+  nodes without LAN deps prefer idc02/idc03 per placement policy — idc02 has 11.9G/220G free and is the designated
+  relief valve. michael-dev chosen before kk-ha: dev lane, lower blast radius. Stateful move: HA config dir + .storage,
+  needs maintenance window. Same QA plan as OPS-0524.'
+priority: medium
+spec: 'Move michael-dev HA instance idc03:8124 -> idc02:8124. Phases: (0) snapshot config dir size + fresh caps;
+  (1) ref-sweep on :8124 / 100.102.134.91:8124 — find ada-ha-michael HASS_URL, MCP, relay refs; (2) rsync config
+  to idc02, install unit, start, verify :8124 + websocket auth; (3) repoint callers, park idc03 unit 24h; (4) audit
+  delta = intended only; update ssot.audit.hosts + instances SSOT.'
+ref: OPS-0529
+comms:
+- at: 2026-10-13 06:34
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 08:03
+  from: tony
+  text: moved backlog -> doing

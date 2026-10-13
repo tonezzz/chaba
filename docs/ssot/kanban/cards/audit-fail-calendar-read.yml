@@ -1,7 +1,8 @@
 id: audit-fail-calendar-read
 title: 'Ada session audit: fail:calendar_read (1d seen)'
-column: backlog
-updated: 2026-10-13 05:30
+column: review
+review_kind: verify
+updated: 2026-10-13 07:23
 brief: 'Recurring session-audit signature ''fail:calendar_read'': calendar_read -> fail — 4x on 2026-10-12, seen
   on 1 day(s).'
 priority: high
@@ -25,3 +26,14 @@ comms:
 - at: 2026-10-13 05:30
   from: devin
   text: card captured via board-api
+- at: 2026-10-13 06:50
+  from: devin
+  text: usage — action='list' isn't a read action; enum already declared. Now classified usage/medium — no same-day
+    storm card (umbrella ADA-0525).
+- at: 2026-10-13 06:50
+  from: tony
+  text: moved backlog -> review
+- at: 2026-10-13 07:23
+  from: devin
+  text: '2026-10-13 sweep: STILL FAILING — 367x googleapis calendar/v3 404 in last 12h of ada-ha-tony journal. Kept
+    open; siblings folded under umbrella-48054d.'

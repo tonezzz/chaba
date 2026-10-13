@@ -1,7 +1,7 @@
 id: audit-fail-ada-enroll-speaker
 title: 'Ada session audit: fail:ada_enroll_speaker (1d seen)'
-column: doing
-updated: 2026-10-13 06:01
+column: done
+updated: 2026-10-13 07:21
 brief: 'Recurring session-audit signature ''fail:ada_enroll_speaker'': ada_enroll_speaker -> fail — 3x on 2026-10-10,
   seen on 1 day(s).'
 priority: high
@@ -41,6 +41,21 @@ comms:
   from: devin
   text: child of umbrella ADA-0525 (fix Ada tool-call failure surface) — do NOT run as a separate card; root cause
     + fix tracked there, close this when that fix verifies this tool
+- at: 2026-10-13 06:50
+  from: devin
+  text: acl — who='guest' only works on CHABA_MEMORY instances; ada-pi patch strips 'guest' from the declared enum
+    on non-guest instances + audit reclassifies gate denials as acl/info (umbrella ADA-0525).
+- at: 2026-10-13 06:50
+  from: tony
+  text: moved doing -> review
+- at: 2026-10-13 07:21
+  from: devin
+  text: '2026-10-13 sweep: no recurrence in last 12h of ada-ha-tony journal (low-call tools may simply be uncalled
+    — audit re-files on next failure). Folded into umbrella-fix-ada-tool-call-failure-surfa-48054d which tracks
+    the tool-call failure surface.'
+- at: 2026-10-13 07:21
+  from: tony
+  text: closed by tony
 ref: ADA-0442
 action:
   status: done

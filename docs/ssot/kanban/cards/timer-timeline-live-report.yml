@@ -1,0 +1,38 @@
+id: timer-timeline-live-report
+title: Timer timeline — live CMS report + independent sentinel
+column: done
+updated: 2026-10-13 08:09
+priority: high
+tags:
+- ops
+- cms
+- timers
+spec: '1. scripts/ada/timer-timeline-update.py — ssh-collects systemctl timer state per host (dell,omen,mn01,idc02,idc03,macbook),
+  appends JSONL ledger on dell, publishes timer-timeline rollup + timer-timeline-<host> leaves + timer-timeline-qc
+  into ada-cms-pages. Own 15min timer.
+
+  2. scripts/ada/timer-sentinel.py — independent 10min timer (NOT via chaba-jobs dispatcher). Reads state.json,
+  fires timer-alert-<host>-<timer> kanban cards on: expected timer disabled/missing, service failed, host unreachable,
+  sweep stale >30min. Dedup: comments on existing open card.
+
+  3. Both timers declared in ssot.audit.hosts same commit.'
+note: 'Live CMS timeline of every fleet timer + independent watchdog. Born from OPS-0531 (chaba-jobs.timer silently
+  disabled 2d). Approved decisions: 15min refresh, rollup+per-host leaves, separate QC report, sentinel cards only
+  on suspicious.'
+ref: OPS-0532
+comms:
+- at: 2026-10-13 08:03
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 08:09
+  from: devin
+  text: 'SHIPPED + verified live. Scripts: scripts/ada/timer-timeline-update.py (15min timer, ssh-sweeps 6 hosts,
+    JSONL ledger at ~/.local/share/chaba/timer-timeline/ledger.jsonl on dell) + scripts/ada/timer-sentinel.py (10min
+    timer, independent of chaba-jobs). CMS: timer-timeline rollup + 6 host leaves + timer-timeline-qc in ada-cms-pages.
+    First sweep: 195 timers, 140 ok / 23 failing / 30 off — sentinel fired 26 real timer-alert-* cards (dedup verified:
+    2nd run comments not duplicates). Synthetic inject'
+- at: 2026-10-13 08:09
+  from: devin
+  text: closed by devin
+action:
+  status: done

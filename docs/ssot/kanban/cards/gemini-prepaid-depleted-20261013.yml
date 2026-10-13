@@ -1,0 +1,28 @@
+id: gemini-prepaid-depleted-20261013
+title: Gemini prepaid credits depleted — ALL paid keys 402 (fleet on free rollback)
+column: backlog
+updated: 2026-10-13 08:47
+priority: high
+tags:
+- ops
+- billing
+- gemini
+- blocks-voice
+spec: '2026-10-13: all four paid Gemini keys return HTTP 402 prepayment credits depleted (chaba-paid/ada-paid/kaewta-paid/infra
+  PAID — same billing pool). Verified by direct probe on gemini-3.5-flash-lite. Impact: Live voice dead on all prod
+  lanes until rollback; gateway REST survives via paid->free->OR fallback chain. Applied gemini-tier free (all lane
+  direct keys = ada-free, verified HTTP 200). ROLLBACK: once Tony tops up prepaid at ai.studio/projects, run ~/.local/bin/gemini-tier
+  paid on idc03 to restore per-persona keys. NOTE: 3-key per-persona isolation is real only if keys live in SEPARATE
+  projects — all four shared one billing pool today; check project split when topping up.'
+ref: OPS-0561
+comms:
+- at: 2026-10-13 08:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 08:47
+  from: devin
+  text: 'Resolved 2026-10-13 ~08:55Z: Tony topped up prepaid credit (+$20). All 5 keys probed HTTP 200 on gemini-3.5-flash-lite
+    (ada-paid 5c31, chaba-paid 126e, kaewta-paid 6046, infra-PAID 22f9, ada-free db20). gemini-tier paid re-applied
+    — persona mapping live, services restarted. OPEN: Tony wants a hard $10 stop — recommend ai.studio/spend monthly
+    cap on the paid project(s); LiteLLM virtual-key budgets already cap gateway traffic per alias but NOT direct-path/Live
+    calls.'

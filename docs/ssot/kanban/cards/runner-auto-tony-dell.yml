@@ -18,7 +18,7 @@ help: 'Per-check fixes:
 
   - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
   that host''s repos.conf.'
-updated: 2026-10-12 22:16
+updated: 2026-10-13 07:23
 review_kind: triage
 action:
   status: done
@@ -69,5 +69,12 @@ comms:
 - at: 2026-10-12 22:16
   from: tony
   text: closed by tony
+- at: 2026-10-13 07:23
+  from: devin
+  text: '2026-10-13 sweep: two repos behind. sunsynk-power-flow-card: on local branch sunsynk (a84b9b6 battery3/4
+    feature work + untracked src/cards/ss2-card.ts) — main is 256 behind origin/main but the feature branch carries
+    live work; NOT force-reset. Decision needed: rebase sunsynk onto origin/main, or point bootstrap check at the
+    branch actually used. gods-eye-view: no checkout on tony-dell at all (only stale dispatch-wt-* dirs) — bootstrap
+    repo list may be stale.'
 claim: {}
 ref: OPS-0407

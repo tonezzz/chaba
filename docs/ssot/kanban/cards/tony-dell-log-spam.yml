@@ -1,0 +1,29 @@
+id: tony-dell-log-spam
+title: 'tony-dell disk: log spam from update-cam-frame + mcp-link-monitor (~1.4G/day)'
+column: done
+updated: 2026-10-13 08:04
+brief: 'dell / is 87% used, 16.1G free, growth 1.2GiB/day => ~13 days to full. Root cause found: /var/log grows
+  ~1.4G/day — yesterday syslog.1=718M. Top talkers: update-cam-frame.service 176k lines/day (cam frame fetch on
+  a very frequent timer, logs every activation) and mcp-link-monitor.service 10.5k journal lines/hour (~250k/day,
+  currently activating state). Fix options: (a) StandardOutput=null or LogRateLimit on both user units — logs add
+  no value per-run; (b) journald SystemMaxUse cap; (c) slow the cam timer. Recommend (a)+(b). Not auto-fixed: changing
+  service logging on the prod host mid-session '
+priority: high
+ref: OPS-0530
+comms:
+- at: 2026-10-13 06:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 07:43
+  from: devin
+  text: '[done] 2026-10-13 07:55. Root causes were deeper than volume: (1) mcp-link-monitor crash-looped on a 0-byte
+    drift-state json (disk-pressure truncation from Oct 5) — 22,077 restarts; file quarantined, service now active
+    NRestarts=0, script patched for corrupt-state resilience + atomic writes (edb4acf83). (2) update-cam-frame ran
+    every 5s logging every activation — StandardOutput=null drop-in added, ~176k->~9k lines/day. Bonus finding:
+    cam frame jpg stale since Sep 24 — ip_cam_65_low upstream dead'
+- at: 2026-10-13 08:04
+  from: tony
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

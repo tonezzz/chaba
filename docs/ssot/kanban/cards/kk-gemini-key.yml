@@ -1,7 +1,7 @@
 id: kk-gemini-key
 title: Kaewta gets her own Gemini key (KK lane off fleet pool)
 column: backlog
-updated: 2026-10-12 22:30
+updated: 2026-10-13 08:40
 brief: 'Tony ask 2026-10-12: add KK own Gemini. DONE: LITELLM_KEY_KK minted ($5/30d) and live in ada-kk.env ADA_GEMINI_REST_API_KEY
   — her REST side-calls are metered/budgeted separately now; gemini-keys.env gained GEMINI_API_KEY_KK slot; gemini-tier
   on idc03 now re-asserts the kk key as ada-kk.env primary after any fleet free|paid|hybrid switch. BLOCKED: Live
@@ -34,6 +34,11 @@ comms:
   from: devin
   text: ada-kk.env has GEMINI_API_KEY (shared) + OPENROUTER_API_KEY; no KK-specific key minted yet (slot reserved
     in llm-gateway SSOT).
+- at: 2026-10-13 08:40
+  from: devin
+  text: '2026-10-13: confirmed live impact — ada-kk sessions degrade to OpenRouter on free-key 1011s (journal 08:34).
+    Symptom partially masked: OpenRouter fallback now injects _now_context (ada-pi 1716db7) so degraded replies
+    know date/time. Root cause unchanged — she still needs a paid key or pool lane for Live quality.'
 requests:
 - id: kk-live-key-mint-which-project
   ask: Mint Kaewta's own Gemini Live key in AI Studio (https://aistudio.google.com/apikey), then drop the raw key

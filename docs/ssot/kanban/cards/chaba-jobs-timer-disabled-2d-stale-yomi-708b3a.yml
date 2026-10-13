@@ -1,0 +1,27 @@
+id: chaba-jobs-timer-disabled-2d-stale-yomi-708b3a
+title: chaba-jobs.timer disabled ~2d — stale yomi container blocked dispatcher (FIXED 2026-10-13)
+column: done
+updated: 2026-10-13 07:14
+priority: medium
+note: 'Found during overnight sweep: chaba-jobs.service failed since Sun 08:51, timer present but DISABLED — 4 interval
+  jobs silently not running ~2 days (yomi-update-active 900s, mcp-debug-h3-sync 600s, tony-dell-health-snapshot
+  300s, network-scan-tony 900s). ROOT CAUSE: stale podman container yomi-update-active (exited 1, Sat 16:17) held
+  the name -> every dispatcher run exited 1. No card/journal evidence the disable was deliberate. FIXED: podman
+  rm stale container -> service clean -> timer re-enabled'
+ref: OPS-0531
+comms:
+- at: 2026-10-13 06:42
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 07:14
+  from: devin
+  text: 'RESOLVED (bc4259e45): (1) Tony confirmed he did not disable the timer — unexplained drift, recorded. (2)
+    hardening shipped: job-dispatcher.py now ''podman rm -f'' pre-cleans every --name''d container in a job command
+    before running, so a timeout-killed client can no longer brick future runs via name-lock. (3) timer management:
+    chaba-jobs.timer now declared expected_state:active critical in ssot.audit.hosts tony_dell — daily drift-reconcile
+    flags it if disabled again. On Tony''s architecture question'
+- at: 2026-10-13 07:14
+  from: tony
+  text: closed by tony
+action:
+  status: done

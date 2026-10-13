@@ -1,7 +1,7 @@
 id: umbrella-fix-ada-tool-call-failure-surfa-48054d
 title: 'Umbrella: fix Ada tool-call failure surface (18 audit-fail-* cards)'
-column: backlog
-updated: 2026-10-12 23:28
+column: review
+updated: 2026-10-13 07:24
 priority: high
 note: 'The 2026-10-12 colab backlog triage (ada-cms-pages/backlog-triage-2026-10-12) found 18 audit-fail-* cards
   dominating high-pri ada — all the same failure class (Ada tool calls failing in session audit). Fix as ONE pass,
@@ -13,3 +13,81 @@ comms:
 - at: 2026-10-12 23:28
   from: devin
   text: card captured via board-api
+- at: 2026-10-13 06:35
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 06:35
+  from: idc02
+  text: claimed
+- at: 2026-10-13 06:35
+  from: chaba
+  text: started devin-task-20261013-063523-umbrella-fix-ada-tool-call-fai on idc02 (dispatch)
+- at: 2026-10-13 06:36
+  from: devin
+  text: '[run] picked up on idc02 dispatch wt — triaging all 18 signatures against ada-pi tool_runner + session-audit.py
+    in one pass'
+- at: 2026-10-13 06:52
+  from: devin
+  text: '[done] one-pass fix complete — trail: docs/ssot/jobs/ada/2026-10-13-ada-tool-call-failure-surface.yml
+
+    AUDIT-SIDE (this worktree, scripts/ada/session-audit.py, selftest PASS): owner-gate/''blocked:<guard>'' denials
+    reclassified fail->acl (never card); model arg rejections get a new ''usage'' class (medium — no same-day storm
+    cards); >=3 same-day storm sigs now file ONE audit-storm-<day> card. Would have turned 2026-10-10 into 1 card.
+
+    ADA-PI PATCH (local branch dispatch/20261013-ada-tool-call-failure-'
+- at: 2026-10-13 06:52
+  from: devin
+  text: 'raised request land-the-ada-pi-patch-git-am-reports-ada-615a5b: Land the ada-pi patch? git am reports/ada-tool-call-failure-surface-20261013/0001-*.patch
+    on tony-dell:~/CascadeProjects'
+- at: 2026-10-13 06:52
+  from: devin
+  text: '[correction] patch path is docs/kb/patches/ada-pi-tool-call-failure-surface-20261013.patch (reports/ is
+    gitignored — docs/kb/patches/ is the versioned convention)'
+- at: 2026-10-13 06:54
+  from: idc02
+  text: 'finished (ok): exit=0 s/ada/2026-10-13-ada-tool-call-failure-surface.yml`, committed as 112657f2 on the
+    dispatch branch. | devin-task-2'
+- at: 2026-10-13 06:54
+  from: chaba
+  text: 'session-end checkpoint 0fb28fcf: 1 leftover file(s) committed'
+- at: 2026-10-13 06:54
+  from: chaba
+  text: pushed dispatch/20261013-063523-umbrella-fix-ada-tool-call-fai to origin
+- at: 2026-10-13 06:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 06:54
+  from: chaba
+  text: auto-merged f4f9281d (dispatch/20261013-063523-umbrella-fix-ada-tool-call-fai) → origin/master
+- at: 2026-10-13 06:57
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''land-the-ada-pi-patch-git-am-r''] block close)'
+- at: 2026-10-13 07:24
+  from: devin
+  text: '2026-10-13 sweep: 18 leaf cards folded (no 12h recurrence). Still failing: calendar_read (367x googleapis
+    404 — likely API/URL-level, not auth), chat_send notify lane (6x). Also noted: ada-live-canary free-key 1011s
+    continue (expected).'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 s/ada/2026-10-13-ada-tool-call-failure-surface.yml`, committed as 112657f2 on the dispatch branch.
+    | devin-task-20261013-063523-umbrella-fix-ada-tool-call-fai.service: Consumed 3min 14.872s CPU time, 521.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-13 06:57
+requests:
+- id: land-the-ada-pi-patch-git-am-reports-ada-615a5b
+  ask: Land the ada-pi patch? git am reports/ada-tool-call-failure-surface-20261013/0001-*.patch on tony-dell:~/CascadeProjects/ada-pi,
+    push, deploy-ada.sh on idc03 (deploy needs explicit approval).
+  status: open
+  at: 2026-10-13 06:52
+  from: devin
+  options:
+  - land + deploy to ada-ha-tony
+  - land only (no deploy)
+  - hold — review the patch first
+  suggested: land + deploy to ada-ha-tony
+review_kind: verify
+claim: {}

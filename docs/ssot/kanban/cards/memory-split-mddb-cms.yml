@@ -1,0 +1,28 @@
+id: memory-split-mddb-cms
+title: 'memory-split: chaba content collections -> new mddb-cms :11027'
+column: doing
+updated: 2026-10-13 08:18
+brief: 'Isolate chaba CMS/report content from ada memory banks. Today both live in mddb primary :11023 (8.2G) —
+  a cms flood can stall ada recall, and write-scoping is doc-rule only. Plan: new mddb-cms instance on idc03 :11027
+  (same image, own db, ollama embed) holds chaba collections (ada-cms-pages[522 docs], ada-cms-pages-kk, ada-cms-automation,
+  chaba-*, ada-tools, ada-scenario, ada-session-audit, ada-tool-profile). ada-ha-*/personal/devin banks stay on
+  :11023. Repoints: chaba scripts default MDDB :11023->11027; 3 mixed scripts get MDDB_CMS_URL; ada-pi mddb_client
+  gains cms-plane routing (mirrors exi'
+priority: high
+ref: MEM-0545
+comms:
+- at: 2026-10-13 08:07
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 08:18
+  from: devin
+  text: 'exec+evidence 2026-10-13 — memory-split shipped
+
+
+    mddb-cms :11027 (idc03, localhost/mddb:2.15.4-lsn, same embed via :11435) healthy; 3,535 docs migrated across
+    12 collections, 0 failures: ada-cms-pages 522, infrastructure-ssot 2,849, kb-* ~400, documents 275, chaba-archive/docs
+    54, ada-cms-pages-kk 10, ada-cms-automation 64, devin-kb 9, ada-session-audit 39.
+
+
+    routing: ada-pi mddb_client cms-plane patch (e4f3846) deployed — all 6 ada units restarted with MDDB_CMS_URL;
+    collection-aware split: ada-c'

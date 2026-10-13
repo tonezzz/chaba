@@ -1,0 +1,78 @@
+id: line-file-doc-ingest
+title: LINE file/doc ingest — archive + doc_read tool (PDF tickets, docs)
+column: done
+updated: 2026-10-13 10:27
+priority: high
+tags:
+- ada-pi
+- line-relay
+- tools
+- kaewta
+spec: 'Tony 2026-10-13: sent Kaewta a PDF trip ticket — she never sees it. LINE type:file messages have NO handler
+  in line_relay.py; _MIME_EXT maps audio/video only so docs would archive as .bin.\n\nBUILD:\n1. line_relay.py:
+  handle inbound type=file (and any unhandled media type) — fetch via existing api-data.line.me content endpoint
+  -> _archive_media (already generic) + journal event with kind=file; extend _MIME_EXT with application/pdf:.pdf
+  + common doc types (docx, xlsx, txt, csv). Surface to the lane session as a document-received turn (e.g. synthetic
+  text turn: "[document received: <name> <mime> <archived-url>]").\n2. New tool backend/tools.d/doc_read.py: doc_read(path_or_url,
+  prompt?) — resolves archived media path or relay-img URL, reads bytes, passes to the lane genai client as inline
+  PDF/doc part (gemini ingests PDFs natively — no new deps) with an extraction prompt; returns structured result.
+  Keep it generic (any doc), prompt arg lets the caller say what to pull (booking refs, flight legs, dates).\n3.
+  kk/kk-dev ADA_INCLUDED_TOOLS += doc_read after deploy (allowlisted lanes).\n\nVERIFY: send a file-type LINE message
+  to kk-dev in a test room (or unit-test the handler + tool with a fixture PDF); doc_read returns fields; journal
+  records it.\nRAILS: pytest + tool-lint in worktree, no push/deploy.'
+ref: DEV-0565
+comms:
+- at: 2026-10-13 10:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 10:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 10:05
+  from: devin
+  text: Dispatched 2026-10-13 10:05 → ada-pi worktree 20261013-100510. Ada-pi-only scope.
+- at: 2026-10-13 10:06
+  from: chaba
+  text: dispatched 20261013-100558-tony-2026-10-13-sent-kaewta-a- on chaba
+- at: 2026-10-13 10:11
+  from: devin
+  text: 'attempt 2 (chaba worktree): attempt 1 left a partial line_relay.py diff in ada-pi wt 20261013-100510 (media
+    branch only, no tool/tests). Delivering as an integrations/ada-pi drop: line_relay patch (file+video), doc_read
+    tool + manifest/guide/scenario, ssot.tool-surface count_cap patch, kk/kk-dev profile includes. In-worktree pytest.'
+- at: 2026-10-13 10:16
+  from: devin
+  text: 'DONE (attempt 2, chaba wt): complete drop staged under integrations/ada-pi/ — line_relay.file-doc-ingest.patch
+    (file+video ingest → arch URL + kind=file journal + [document received] turn, _MIME_EXT doc types), tools.d/doc_read.py
+    + manifest/guide/scenario, ssot.tool-surface count_cap 111→112 patch, persons.kk + kk-cms-only + kk-parity tool
+    includes. Verified: 14 new pytest (37/37 dir pass), patch git-apply --check clean vs ada-pi@1716db7, handle_event
+    simulated end-to-end. Install runbook: inte'
+- at: 2026-10-13 10:17
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 10:18
+  from: chaba
+  text: pushed dispatch/20261013-100558-tony-2026-10-13-sent-kaewta-a- to origin
+- at: 2026-10-13 10:18
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 19.7s)
+- at: 2026-10-13 10:18
+  from: chaba
+  text: auto-merged 3eb9de69 (dispatch/20261013-100558-tony-2026-10-13-sent-kaewta-a-) → origin/master
+- at: 2026-10-13 10:27
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261013-100558-tony-2026-10-13-sent-kaewta-a-
+  result: 20261013-100558-tony-2026-10-13-sent-kaewta-a- finished (inactive) — see `devin-dispatch logs 20261013-100558-tony-2026-10-13-sent-kaewta-a-`
+  verified: true
+claim:
+  since: 2026-10-13 10:06
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 10:27
+  note: verified — evidence checks green, closing itself
