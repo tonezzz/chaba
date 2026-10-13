@@ -71,7 +71,7 @@ def get_json(url, token):
     return json.load(urllib.request.urlopen(req, context=ctx, timeout=15))
 
 
-async def get_dashboard(url, token, retries=2):
+async def get_dashboard(url, token, retries=4):
     ws_url = url.replace("http", "ws", 1) + "/api/websocket"
     for attempt in range(retries):
         try:
@@ -97,6 +97,7 @@ async def get_dashboard(url, token, retries=2):
         except websockets.exceptions.ConnectionClosed:
             if attempt + 1 == retries:
                 raise
+            await asyncio.sleep(1 + attempt)
 
 
 def collect_entities(obj, out):
@@ -129,7 +130,12 @@ def main():
     if not ha_token:
         sys.exit("no ha token (set HA_TOKEN or token file)")
 
-    cfg = asyncio.run(get_dashboard(DEV_URL, dev_token))
+    try:
+        cfg = asyncio.run(get_dashboard(DEV_URL, dev_token))
+    except websockets.exceptions.ConnectionClosed as e:
+        print(f"[mirror-sweep] michael-dev websocket closed "
+              f"({e}) after retries — audit skipped this run")
+        return
     entities = set()
     collect_entities(cfg, entities)
 

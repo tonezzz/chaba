@@ -30,9 +30,44 @@ REPORTS_DIR = REPO_ROOT / "reports" / "gh-runs"
 TIMELINE = Path(os.environ.get(
     "CHABA_REPORTS_DIR", Path.home() / "var" / "chaba" / "reports")) / "timeline.jsonl"
 DEFAULT_REPOS = "tonezzz/chaba,tonezzz/ada-pi"
+GH_TIMEOUT = int(os.environ.get("GH_RUNS_WATCH_TIMEOUT", "90"))
+# gh on omen stores its token in the desktop keyring — in a headless
+# systemd/ssh context the secret-service lookup blocks and every `gh`
+# call hangs until the subprocess timeout (2026-10-13: every poll died
+# at 60s and systemd TERM'd the unit). GH_TOKEN bypasses keyring auth
+# entirely, so resolve one from env or the github-mcp secrets files.
+TOKEN_FILES = ("github-mcp.env", "github-mcp-new.env")
+TOKEN_KEYS = ("GH_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
+              "GITHUB_PERSONAL_ACCESS_TOKEN")
 
 FIELDS = ("databaseId", "workflowName", "conclusion", "status",
           "headBranch", "createdAt", "displayTitle", "url")
+
+
+def resolve_gh_token():
+    for k in ("GH_TOKEN", "GITHUB_TOKEN"):
+        if os.environ.get(k):
+            return os.environ[k]
+    secrets = Path.home() / ".config" / "secrets"
+    for fname in TOKEN_FILES:
+        try:
+            for line in (secrets / fname).read_text().splitlines():
+                if "=" not in line or line.lstrip().startswith("#"):
+                    continue
+                k, v = line.split("=", 1)
+                if k.strip() in TOKEN_KEYS and v.strip():
+                    return v.strip().strip('"').strip("'")
+        except OSError:
+            continue
+    return None
+
+
+def gh_env():
+    env = dict(os.environ)
+    token = resolve_gh_token()
+    if token:
+        env["GH_TOKEN"] = token
+    return env
 
 
 def gh_runs(repo):
@@ -40,7 +75,8 @@ def gh_runs(repo):
         out = subprocess.run(
             ["gh", "run", "list", "-R", repo, "--limit", "25",
              "--json", ",".join(FIELDS)],
-            capture_output=True, text=True, timeout=60)
+            capture_output=True, text=True, timeout=GH_TIMEOUT,
+            env=gh_env())
     except (OSError, subprocess.TimeoutExpired) as e:
         print(f"warn: gh run list {repo}: {e}", file=sys.stderr)
         return None
@@ -184,6 +220,10 @@ def main():
                     help="print what would be alerted, write nothing")
     args = ap.parse_args()
 
+    if not resolve_gh_token():
+        print("warn: no GH_TOKEN in env or ~/.config/secrets/github-mcp*.env"
+              " — gh may hang on keyring auth", file=sys.stderr)
+
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     seen = load_state()
     failures, errors = [], 0
@@ -230,7 +270,11 @@ def main():
                 print("pushed alert commit")
             except subprocess.CalledProcessError as e:
                 print(f"warn: git push failed: {e}", file=sys.stderr)
-    return 1 if errors else 0
+    # Poll errors are transient/non-fatal — the timer alert fired for a
+    # single slow gh call. meta.yml records status=error for the timeline.
+    if errors:
+        print(f"warn: {errors} repo poll(s) failed this run", file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":
