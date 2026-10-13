@@ -80,10 +80,17 @@ Duplicates arrive three different ways; each tier answers a different
 |---|---|---|---|
 | **T1 transport** | LINE webhook redelivery (retry/timeout) | `message_id` | Archive write is already idempotent (`dest.exists()` → no rewrite). Generator groups manifest lines by `message_id` → **one leaf per mid**, extra manifest lines noted on the leaf, not new leaves. |
 | **T2 content** | Human resends the same file (new messageId) | `sha256` of archived bytes | A resend is a real second event — it GETS a leaf (someone resent it on purpose), but the leaf carries `duplicate_of: media-<first-mid>` and the rollup `dup` column shows `↳ <first-mid>`. Extraction redirects: `doc_read` on a dup mid returns the first mid's extract leaf. |
-| **T3 extraction** | "Read it again" / re-asks | extract leaf existence | `doc_read` checks for `media-<mid>-extract` **before** calling Gemini. Exists → return stored fields, no spend, answer cites the leaf. Missing → extract, write the leaf, return. The leaf IS the cache — the model never decides whether to re-extract, the tool does. |
+| **T3 extraction** | "Read it again" / re-asks | extract leaf + normalized ask | `doc_read` checks `media-<mid>-extract` **before** calling Gemini. A bare "read it" returns the stored default extraction. A **different ask** ("what's the hotel?" vs "what's the flight?" vs "translate it") appends a new `## Extraction — <ask>` section to the same leaf — extractions accumulate, each labeled with the question asked. The leaf is the cache; the tool decides, not the model. |
 
 Tier order matters: T1 is free and always-on; T2 costs a hash (cheap —
 bytes already on disk); T3 is where the money is saved.
+
+**The "asked differently" rule:** extraction results are per-ask, not
+per-file — the same PDF legitimately yields different answers to different
+questions, and that's not a duplication bug. The cache key is
+`(message_id, normalized ask)`; identical re-asks hit the cache, new
+angles append a section. What stays single: one receipt leaf per mid, one
+extract leaf per mid (sections inside it grow).
 
 ## 4. Who writes what (single-writer)
 
