@@ -372,6 +372,8 @@ def tony_comms(cards: list[dict], start, end) -> list[dict]:
     for c in cards:
         comms = c.get("comms") or []
         for e in comms:
+            if not isinstance(e, dict):
+                continue
             if str(e.get("from", "")).lower() != "tony":
                 continue
             at = _parse_card_ts(e.get("at"))
