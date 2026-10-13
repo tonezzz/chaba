@@ -42,9 +42,12 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import json
+import os
 import re
 import sys
 import tempfile
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -55,6 +58,17 @@ CARD_DIR_REL = Path("docs/ssot/kanban/cards")
 GENERATED_REL = Path("docs/ssot")
 LOCK = Path("/tmp/board-api.lock")
 ALERT_CARD_ID = "ops-local-conflict-guard"
+SERVED = Path(os.environ.get(
+    "CHABA_SERVED_CHECKOUT", "~/CascadeProjects/chaba-tony-dell")
+).expanduser()
+# Card mutations outside the served checkout must go through board-api
+# (write-path split 2026-10-11) — direct file writes here are
+# pre-commit-blocked on satellites and race the pull upstream-wins
+# resolution, silently dropping the flag (card ops-local-conflict-guard).
+BOARD_API_BASES = (
+    [os.environ["BOARD_API"].rstrip("/")] if os.environ.get("BOARD_API")
+    else ["http://127.0.0.1:8787",
+          "https://tony-dell.taila0626a.ts.net/apps/board-api"])
 TZ = timezone(timedelta(hours=7))
 
 CONFLICT_RE = re.compile(
@@ -222,6 +236,34 @@ def merge_cards(canonical: dict, conflict: dict) -> tuple[dict, list]:
 
 
 # ------------------------------------------------------------- flagging
+def _api_post(base: str, path: str, body: dict,
+              timeout: float = 8.0) -> bool:
+    req = urllib.request.Request(
+        base + path, data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return 200 <= r.status < 300
+    except Exception:
+        return False
+
+
+def flag_via_api(cid: str | None, text: str) -> bool:
+    """Flag through board-api (the sanctioned write path): comms + move
+    to review. Returns True when the flag landed."""
+    card_id = cid or ALERT_CARD_ID
+    for base in BOARD_API_BASES:
+        if not _api_post(base, "/comment",
+                         {"id": card_id, "from": "chaba", "text": text}):
+            continue
+        if not _api_post(base, "/action",
+                         {"id": card_id, "do": "move",
+                          "column": "review"}):
+            continue
+        return True
+    return False
+
+
 def flag_card(card_dir: Path, cid: str | None, text: str,
               dry: bool) -> None:
     """Flag a failed reconcile: comms + column=review on the canonical
@@ -229,6 +271,15 @@ def flag_card(card_dir: Path, cid: str | None, text: str,
     mirrors kanban-commit.sh's alert_card."""
     if dry:
         print(f"  [dry] flag {cid or ALERT_CARD_ID}: {text[:120]}")
+        return
+    if flag_via_api(cid, text) or (
+            cid and flag_via_api(None, f"{cid}: {text}")):
+        return
+    if REPO.resolve() != SERVED.resolve():
+        print(f"reconcile: flag for {cid or ALERT_CARD_ID} could not reach "
+              f"board-api and this checkout is not the served one — "
+              f"flag lost locally, surfacing on stderr only",
+              file=sys.stderr)
         return
     target = card_dir / f"{cid}.yml" if cid else \
         card_dir / f"{ALERT_CARD_ID}.yml"
@@ -447,29 +498,39 @@ def _selftest() -> None:
         assert any("auto-reconciled" in c["text"]
                    for c in out["comms"])
 
-    # orphan conflict: file stays, alert card flagged in review
-    with tempfile.TemporaryDirectory() as td:
-        d = Path(td) / CARD_DIR_REL
-        d.mkdir(parents=True)
-        (d / "gone.yml.local-conflict-20261010-090000").write_text(
-            yaml.safe_dump(card()))
-        assert run(Path(td), dry=False) == 1
-        assert (d / "gone.yml.local-conflict-20261010-090000").exists()
-        alert = load(d / f"{ALERT_CARD_ID}.yml")
-        assert alert["column"] == "review" and alert["comms"]
+    # flag file-write is the served-checkout fallback only — simulate it:
+    # stub the api lane off and point SERVED at this repo so flag_card
+    # takes the file path deterministically
+    real_flag_api, real_served = flag_via_api, SERVED
+    globals()["flag_via_api"] = lambda cid, text: False
+    globals()["SERVED"] = REPO
+    try:
+        # orphan conflict: file stays, alert card flagged in review
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td) / CARD_DIR_REL
+            d.mkdir(parents=True)
+            (d / "gone.yml.local-conflict-20261010-090000").write_text(
+                yaml.safe_dump(card()))
+            assert run(Path(td), dry=False) == 1
+            assert (d / "gone.yml.local-conflict-20261010-090000").exists()
+            alert = load(d / f"{ALERT_CARD_ID}.yml")
+            assert alert["column"] == "review" and alert["comms"]
 
-    # unparseable conflict: stays, canonical flagged
-    with tempfile.TemporaryDirectory() as td:
-        d = Path(td) / CARD_DIR_REL
-        d.mkdir(parents=True)
-        (d / "t.yml").write_text(yaml.safe_dump(card(column="doing")))
-        (d / "t.yml.local-conflict-20261010-090000").write_text(
-            "a: [unclosed\n")
-        assert run(Path(td), dry=False) == 1
-        assert (d / "t.yml.local-conflict-20261010-090000").exists()
-        out = load(d / "t.yml")
-        assert out["column"] == "review" and \
-            any("unresolved" in c["text"] for c in out["comms"])
+        # unparseable conflict: stays, canonical flagged
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td) / CARD_DIR_REL
+            d.mkdir(parents=True)
+            (d / "t.yml").write_text(yaml.safe_dump(card(column="doing")))
+            (d / "t.yml.local-conflict-20261010-090000").write_text(
+                "a: [unclosed\n")
+            assert run(Path(td), dry=False) == 1
+            assert (d / "t.yml.local-conflict-20261010-090000").exists()
+            out = load(d / "t.yml")
+            assert out["column"] == "review" and \
+                any("unresolved" in c["text"] for c in out["comms"])
+    finally:
+        globals()["flag_via_api"] = real_flag_api
+        globals()["SERVED"] = real_served
 
     print("reconcile-local-conflicts: selftest OK")
 
