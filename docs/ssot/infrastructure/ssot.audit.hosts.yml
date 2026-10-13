@@ -961,8 +961,8 @@ hosts:
       - barriers.service        # workstation KVM — flaps activating, not fleet
     known_failed:
       - name: arp-inventory-scan.service
-        reason: Exits 2 when network conflicts/duplicates are detected, by design
-        action: review-focus-inbox-alert
+        reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
+        action: investigate
       - name: weaviate-index.service
         reason: Weaviate indexing queue; may fail while waiting for remote or GPU
         action: review-focus-inbox-alert
@@ -985,8 +985,8 @@ hosts:
         reason: Backup service failing; investigate
         action: investigate
       - name: chaba-audit-watchdog.service
-        reason: "Exits 1 when the audit suite is stale or red — the exit code IS the alert signal; resolves once underlying suites pass"
-        action: review-underlying-audits
+        reason: "Pre-OPS-0581 finding-reporter (exited 1 when the audit suite was stale/red); since 2026-10-13 exits 0 on completed checks — findings via focus-inbox + chaba-events (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
+        action: investigate
       - name: mcp-health-snapshot.service
         reason: "Snapshot completes successfully then exits nonzero after killing the mcp-health probe — exit-code quirk, work succeeds"
         action: fix-exit-code
@@ -1909,34 +1909,34 @@ hosts:
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
-        reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — exit code is the review signal, not a crash"
+        reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — RESIDUAL finding-reporter under the 2026-10-13 exit-code contract (docs/kb/timer-expectations.md); migrate when next touched"
         action: review-sync-conflicts
       - name: ada-scenario-smoke.service
-        reason: "Live-scenario smoke suite — failures are the test signal (skips cleanly when a weekly suite holds the :8199 session lock)"
+        reason: "Live-scenario smoke suite — RESIDUAL finding-reporter (quadlet runs scenario-report.py directly, bypassing scenario-suite-run.sh, so exit 1 on scenario failures persists); migrate to the timer-expectations contract on the ada-pi side — failures are the test signal (skips cleanly when a weekly suite holds the :8199 session lock)"
         action: review-scenario-results
       - name: ada-scenario-memory.service
-        reason: "Weekly scenario suite — scenario failures are the test signal (exit 1); since 2026-10-09 the suite queues on :8199 via scenario-suite-run.sh instead of refusing"
+        reason: "Weekly scenario suite — pre-OPS-0581 the benchmark's exit 1 (scenario failures) passed through; since 2026-10-13 scenario-suite-run.sh exits 0 when the suite completes (marker '**Score:') — findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md). A fresh failure is a real crash or lock abandonment"
         action: review-scenario-results
       - name: ada-scenario-cms.service
-        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        reason: "Weekly scenario suite — exits 0 on completed runs since 2026-10-13 (scenario-suite-run.sh translates benchmark exit-1-with-report); findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md)"
         action: review-scenario-results
       - name: ada-scenario-reports.service
-        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        reason: "Weekly scenario suite — exits 0 on completed runs since 2026-10-13 (scenario-suite-run.sh translates benchmark exit-1-with-report); findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md)"
         action: review-scenario-results
       - name: ada-scenario-tools.service
-        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        reason: "Weekly scenario suite — exits 0 on completed runs since 2026-10-13 (scenario-suite-run.sh translates benchmark exit-1-with-report); findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md)"
         action: review-scenario-results
       - name: ada-scenario-research.service
-        reason: "Weekly scenario suite — scenario failures are the test signal; queues on :8199 (scenario-suite-run.sh)"
+        reason: "Weekly scenario suite — exits 0 on completed runs since 2026-10-13 (scenario-suite-run.sh translates benchmark exit-1-with-report); findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md)"
         action: review-scenario-results
       - name: ada-scenario-casting.service
-        reason: "Casting suite — runs daily via ada-bench-casting OnSuccess + Sat timer; currently hangs to TimeoutStartSec (ada-scenario-casting-hang card); queues on :8199"
+        reason: "Casting suite — runs daily via ada-bench-casting OnSuccess + Sat timer; currently hangs to TimeoutStartSec (ada-scenario-casting-hang card); exits 0 on completed runs since 2026-10-13 via scenario-suite-run.sh (docs/kb/timer-expectations.md)"
         action: review-scenario-results
       - name: mddb-memory-standard.service
-        reason: "Exits 1 by design when the memory-standard sweep finds breaches — sends an ops event + HA notification; the exit code IS the alert"
-        action: review-breach-journal
+        reason: "Pre-OPS-0581 finding-reporter (exited 1 on breaches — real breaches confirmed 2026-10-13, journal tail only hid them because violations print above ~30 stat lines); since 2026-10-13 exits 0 on completed sweeps — findings via ops-event + HA notify + a trailing verdict line (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
+        action: investigate
       - name: mddb-vector-reindex.service
-        reason: "Exits 1 when any collection's embed pass errors (e.g. remote-closed on ada-cms-pages/host-logs) even though the bulk reindex completed"
+        reason: "Exits 1 when any collection's embed pass errors (e.g. remote-closed on ada-cms-pages/host-logs) even though the bulk reindex completed — RESIDUAL finding-reporter under the 2026-10-13 exit-code contract (docs/kb/timer-expectations.md); migrate when next touched"
         action: investigate-partial-embed-failures
       - name: cam-wall-pull-vps.service
         reason: "Deliberately stopped during the 2026-10 cam-wall pipeline rework alongside go2rtc (journal shows explicit Stopped, not a crash)"
@@ -2052,10 +2052,10 @@ hosts:
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
     known_failed:
       - name: chaba-audit.service
-        reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
+        reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
       - name: chaba-audit-full.service
-        reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
+        reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
 related_files:
   - scripts/audit-hosts.py

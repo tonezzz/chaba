@@ -5,6 +5,9 @@
  * last run had no error-severity failures. Writes a focus-inbox alert when
  * the suite is stale or failing, and auto-resolves the alert when healthy.
  * Run daily via chaba-audit-watchdog.timer (independent of the suite itself).
+ * Exit-code contract (docs/kb/timer-expectations.md): exits 0 on every
+ * completed check — the focus-inbox alert + event are the finding signal,
+ * not the exit code.
  */
 import { existsSync, statSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
@@ -86,7 +89,7 @@ if (!summary) {
     "Audit suite not running",
     "No readable reports/audits/summary.json — the audit runner has never produced a summary on this host. Re-run: node scripts/audits/run.mjs"
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 if (ageDays > MAX_AGE_DAYS) {
@@ -100,7 +103,7 @@ if (ageDays > MAX_AGE_DAYS) {
     "Audit suite stale",
     `Last audit summary is ${ageDays.toFixed(1)}d old (max ${MAX_AGE_DAYS}d). Check chaba-audit.timer on mn01.`
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 // Fresh summary — resolve any staleness alert.
@@ -125,7 +128,7 @@ if (summary.ok === false) {
     "Audit suite failing",
     `Error-severity audits failing: ${failed || "unknown"}. Report: reports/audits/summary.md`
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 // Suite ran recently and is green — clear any leftover failure alert.

@@ -69,10 +69,13 @@ def main() -> int:
     notes: list[str] = []
 
     # 1. lifecycle bars per bank
-    for coll in _list_banks():
+    banks = _list_banks()
+    unreadable = 0
+    for coll in banks:
         try:
             docs = _docs(coll)
         except Exception as exc:
+            unreadable += 1
             violations.append(f"{coll}: unreadable ({exc})")
             continue
         status = {}
@@ -169,6 +172,10 @@ def main() -> int:
         print(f"ops write failed: {exc}", file=sys.stderr)
 
     print(md)
+    # Tail-echo the verdict — violations print at the top of the report and
+    # the ~30 stat lines push them out of a journal tail, which made the
+    # 2026-10-13 breach look like a silent exit-1 (OPS-0581).
+    print(f"verdict: {verdict} ({len(violations)} violation(s))")
     if notify and violations:
         try:
             req = urllib.request.Request(
@@ -182,7 +189,14 @@ def main() -> int:
             urllib.request.urlopen(req, timeout=15).read()
         except Exception as exc:
             print(f"notify failed: {exc}", file=sys.stderr)
-    return 0 if verdict == "PASS" else 1
+    # Exit-code contract (docs/kb/timer-expectations.md): a completed sweep
+    # exits 0 on PASS or VIOLATION — the ops-event doc + /api/notify are the
+    # finding signal. Non-zero only when the run itself did not complete.
+    if banks and unreadable == len(banks):
+        print(f"all {unreadable} bank(s) unreadable — no verdict produced, "
+              f"treating as failed run (MDDB down?)", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
