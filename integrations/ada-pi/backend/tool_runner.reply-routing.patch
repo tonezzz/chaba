@@ -1,0 +1,51 @@
+diff --git a/backend/tool_runner/chat.py b/backend/tool_runner/chat.py
+index cf3757c..9b9e447 100644
+--- a/backend/tool_runner/chat.py
++++ b/backend/tool_runner/chat.py
+@@ -234,9 +234,16 @@ class ChatMixin:
+             else:
+                 summary_bits.append(f"unknown channel '{svc}'")
+                 continue
++            # In-context default: a bare chat_send answers in the chat
++            # the turn came from (session ?chat_id= binding), not the
++            # lane's default room — an explicit to= still wins.
++            to_eff = str(to or "").strip()
++            if not to_eff:
++                to_eff = session_chat_id(
++                    self, "telegram" if svc in ("telegram", "tg") else svc)
+             payload = {"text": text, "image_url": url,
+-                       "caption": text or cam, "to": to,
+-                       "chat_id": to,
++                       "caption": text or cam, "to": to_eff,
++                       "chat_id": to_eff,
+                        "instance": os.environ.get(
+                            "ADA_INSTANCE_ID", "")}
+             if audio_b64 and svc in ("line", "telegram", "tg"):
+diff --git a/backend/tool_runner/common.py b/backend/tool_runner/common.py
+index 3cc834d..a58908b 100644
+--- a/backend/tool_runner/common.py
++++ b/backend/tool_runner/common.py
+@@ -301,6 +301,23 @@ _CALLER_VERIFIED_AFFIRM: contextvars.ContextVar = contextvars.ContextVar(
+ _CALLER_SESSION: contextvars.ContextVar = contextvars.ContextVar(
+     "ada_caller_session", default=None)
+ 
++# Session -> originating chat binding for relay channels (line/telegram).
++# pwa_server binds ?chat_id= at ws connect and unbinds at teardown;
++# chat_send reads it through the per-call session contextvar so a tool
++# send fired inside a turn lands in the chat that asked — not the lane's
++# default room or the owner's DM (card line-tool-reply-routing).
++SESSION_CHAT: dict[str, dict[str, str]] = {}
++
++
++def session_chat_id(runner: Any, channel: str) -> str:
++    """Originating relay chat for this call's session, or "" when the
++    session isn't bound to a chat on `channel` (voice/pwa, other relay)."""
++    sid = _CALLER_SESSION.get() or getattr(runner, "session_id", None)
++    bound = SESSION_CHAT.get(str(sid or "")) or {}
++    if bound.get("channel") != channel:
++        return ""
++    return str(bound.get("chat_id") or "")
++
+ CMS_COLLECTION = os.environ.get("ADA_CMS_COLLECTION", "ada-cms-pages")
+ CMS_FORMATS = {"markdown", "html", "yaml", "slides"}
+ # Per-page automation registry: one doc per CMS slug holding the switches

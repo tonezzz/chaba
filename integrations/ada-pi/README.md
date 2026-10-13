@@ -1,7 +1,7 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Seven drops live here:
+chaba dispatches. Eight drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -14,9 +14,11 @@ chaba dispatches. Seven drops live here:
    `line-voice-enroll-recognize` (2026-10-13)
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
    (ADA-0607, 2026-10-13)
-6. LINE image delivery — Drive share links and image URLs inside reply
+7. LINE image delivery — Drive share links and image URLs inside reply
    text become real LINE image messages — card
    `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
+8. reply-context routing — LINE sends bind to the originating chat —
+   card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13)
 
 ---
 
@@ -534,3 +536,93 @@ never Drive links, never `drive_get`'s `media_url`.
 - Pairing note: card `line-tool-reply-routing-answers-leave-th-5c73e7`
   is a separate fix (session dropped twice at 21:46 in the same
   journal); this patch only touches delivery, not routing.
+## Drop 8 — reply-context routing (answers stay in the originating chat)
+
+Card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13):
+a persona's `chat_send` inside a LINE turn left the originating chat —
+the tool queued a bare `/send`, and the relay resolved the target as
+`_recent_chat[instance]` → `LINE_LANE_DEFAULT[instance]` → first allowed
+user. `_recent_chat` was written keyed by *persona name* (`kaewta`) but
+read keyed by `ADA_INSTANCE_ID` (`kk`) — a dead map — so every bare send
+landed in the lane default room or the owner's DM. Two lanes deep it was
+worse: `kk` answering in room C822 while Tony DMed her could cross-post.
+
+The fix binds each backend session to the chat it was opened for; a bare
+`chat_send` then answers in-context, and explicit `to=` still wins.
+
+### Files
+
+- `backend/line_relay.reply-routing.patch` — `backend/line_relay.py`.
+  `ChatSession` gains `chat_id`; `ensure()` adds `&chat_id=<chat>` to the
+  ws URL; `_session()`/`_deliver_turn()`/image path thread the room or DM
+  chat through; `/send` records each delivered target under the instance
+  key so `_recent_chat` (read keyed by `ADA_INSTANCE_ID`) is warm and
+  correctly keyed. Module docstring documents the contract.
+- `backend/tool_runner.reply-routing.patch` —
+  `backend/tool_runner/common.py` + `backend/tool_runner/chat.py`. New
+  `SESSION_CHAT` registry (session_id -> {channel, chat_id}) and
+  `session_chat_id(runner, channel)` — reads `_CALLER_SESSION` first
+  (the race-free per-call var), falls back to `runner.session_id`.
+  `_chat_send_run` fills `to`/`chat_id` from the binding when `to` is
+  empty, per channel — a LINE-bound id never feeds a telegram send.
+- `pwa_server.reply-routing.patch` — `/ws` reads `?chat_id=`; binds
+  `SESSION_CHAT[session_id]` when `channel` + `chat_id` are both present;
+  pops it in session teardown.
+- `backend/tg_relay.reply-routing.patch` — same `&chat_id=` on the
+  Telegram ws connect (same bug class; the binding is channel-agnostic).
+- `backend/test_line_relay_group.reply-routing.patch` — `_FakeSession`
+  accepts the new `chat_id` kwarg.
+- `tests/test_line_reply_context.py` — NEW, 9 tests: registry semantics
+  (channel isolation, unbound → ""), chat_send payload (bare → bound
+  chat, explicit `to=` wins, unbound → ""), ws URL binding, group skey →
+  room chat, `/send` records `_recent_chat[inst]` and reuses it.
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && for p in \
+   <chaba>/integrations/ada-pi/backend/line_relay.reply-routing.patch \
+   <chaba>/integrations/ada-pi/backend/tool_runner.reply-routing.patch \
+   <chaba>/integrations/ada-pi/backend/tg_relay.reply-routing.patch \
+   <chaba>/integrations/ada-pi/backend/test_line_relay_group.reply-routing.patch \
+   <chaba>/integrations/ada-pi/pwa_server.reply-routing.patch; do
+   git apply "$p"; done` — based on `main` @ `98c8e26`; if a hunk no
+   longer applies, re-dispatch rather than hand-merging.
+2. `cp <chaba>/integrations/ada-pi/tests/test_line_reply_context.py
+   tests/test_line_reply_context.py`
+3. Gates: `python3 scripts/tool-lint.py`,
+   `.venv/bin/python -m pytest tests/ -x -q` — deploy-ada.sh runs both;
+   restart `ada-line-relay`, `ada-tg-relay`, and the lane backends
+   (pwa_server carries the binding).
+4. No env or dependency changes.
+
+### Contract
+
+- Every relay-opened backend session carries `?chat_id=<originating
+  chat>`; the backend binds it to `session_id` for the session's life.
+- `chat_send` (incl. absorbed photo/doc sub-flows) with empty `to` on a
+  bound session posts `to=<originating chat>`; on an unbound session it
+  sends `to=""` exactly as before (lane default / allowed-user chain).
+- Explicit `to=` unchanged and still wins; `LINE_LANE_ALLOW`/`LOCK` vet
+  the bound target like any other — a bound chat outside the lane's
+  allowlist is denied, not silently rerouted.
+- `/send` now keys `_recent_chat` by `ADA_INSTANCE_ID` on every
+  delivery — context-free sends (proactive, track watches) land on the
+  lane's last *actual* chat instead of the owner-DM fallback.
+
+### Verified
+
+- ada-pi `main` @ `98c8e26` + patches: `pytest tests/` 1365 passed /
+  4 skipped, `tool-lint` clean.
+- Chaba side: `tests/ada/test_line_reply_routing.py` — patch applies,
+  patched files compile, patched relay puts `chat_id` on the ws URL and
+  `_session` carries it, `/send` keys `_recent_chat` by instance,
+  `session_chat_id` resolves per-channel. Run with
+  `ADA_PI=<ada-pi checkout>`.
+
+### Residual
+
+- Context-free sends still follow the fallback chain (recent chat → lane
+  default → first allowed user) — intended for proactive turns; card
+  `line-proactive-persona` owns explicit member addressing.
+- `_recent_chat` also gets persona-keyed writes in `_deliver_turn` —
+  kept (harmless); readers are instance-keyed only.
