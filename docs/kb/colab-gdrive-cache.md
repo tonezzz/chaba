@@ -68,6 +68,20 @@ print(f'ready in {time.time()-t:.1f}s  (drive-hit: {os.path.exists(TGZ)})')
   via the colab MCP proxy can hit `ValueError: mount failed`; run the mount cell manually
   in the notebook if so.
 
+## Per-host pull rates (2026-10-13, same 80 MB range of the brainchip tarball)
+
+| host | MB/s | note |
+|---|---|---|
+| idc01 | 14.7 | VPS hosts peer best — fastest download leg in the fleet |
+| idc03 | 14.5 | same |
+| idc02 | 9.8 | |
+| tony-dell | 3.9–9.7 | variable (home fiber) |
+| Colab → toronto origin | ~0.07 | origin-limited, stalls mid-file |
+
+For "download X → Drive" jobs prefer an **idc host as the fetch leg** (≈4–14×
+home speeds), then push to Drive from wherever `rclone gdrive:` lives
+(today: tony-dell; rclone not yet provisioned on idc hosts).
+
 ## Rules of thumb
 
 - Always `download=False` / offline-load from the extracted LOCAL dir after rehydrate.
