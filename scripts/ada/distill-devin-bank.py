@@ -22,7 +22,9 @@ Usage:
   distill-devin-bank.py --week 2026W38     # one week only
   distill-devin-bank.py --max-weeks 4      # backlog in batches
   distill-devin-bank.py --keep-sources     # write rollups, don't supersede
-Env: GEMINI_API_KEY (required), ADA_MEMORY_MDDB_URL, ADA_SUMMARY_MODEL
+Env: GEMINI_API_KEY (required), ADA_MEMORY_MDDB_URL, ADA_SUMMARY_MODEL,
+     GEMINI_BASE_URL (set to the LiteLLM gateway to route via it — see
+     scripts/ada/gemini_rest.py)
 """
 
 from __future__ import annotations
@@ -42,6 +44,8 @@ _spec = importlib.util.spec_from_file_location(
 )
 ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
+
+import gemini_rest
 
 COLLECTION = "ada-ha-bank-devin-tony"
 DEVELOPER_COLLECTION = "ada-ha-bank-developer-tony"
@@ -135,36 +139,7 @@ def update_meta(mddb: "ada_sync.Mddb", collection: str, key: str,
 
 
 def _gen(prompt: str) -> str | None:
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        print("GEMINI_API_KEY not set — cannot distill")
-        return None
-    import time
-    import requests
-    for attempt in range(4):
-        try:
-            r = requests.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{MODEL}:generateContent",
-                headers={"x-goog-api-key": key},
-                json={"contents": [{"parts": [{"text": prompt}]}]},
-                timeout=120,
-            )
-            if r.status_code == 429 or r.status_code >= 500:
-                wait = 20 * (attempt + 1)
-                print(f"  gemini {r.status_code} — retrying in {wait}s")
-                time.sleep(wait)
-                continue
-            r.raise_for_status()
-            parts = (r.json().get("candidates") or [{}])[0].get(
-                "content", {}).get("parts") or []
-            text = "".join(p.get("text", "") for p in parts).strip()
-            return text or None
-        except requests.RequestException as exc:
-            wait = 20 * (attempt + 1)
-            print(f"  gemini call failed ({exc}) — retrying in {wait}s")
-            time.sleep(wait)
-    return None
+    return gemini_rest.generate(prompt, MODEL)
 
 
 def chunk_sessions(sdocs: list[dict]) -> list[list[dict]]:

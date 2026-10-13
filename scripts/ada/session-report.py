@@ -16,6 +16,8 @@ original language; this report is the canonical English index layer.
 Usage:
   session-report.py TRANSCRIPT.md [--out reports/] [--emit-session-log FILE]
   GEMINI_API_KEY read from env or ~/.config/secrets/ada-pi-pwa.env
+  GEMINI_BASE_URL override routes via the LiteLLM gateway (virtual key
+  as GEMINI_API_KEY) — see scripts/ada/gemini_rest.py
   Model: $ADA_REPORT_MODEL (default gemini-3.5-flash-lite)
 """
 
@@ -25,8 +27,9 @@ import argparse
 import json
 import os
 import sys
-import urllib.request
 from pathlib import Path
+
+import gemini_rest
 
 DEFAULT_MODEL = os.environ.get("ADA_REPORT_MODEL", "gemini-3.5-flash-lite")
 SECRETS = Path.home() / ".config/secrets/ada-pi-pwa.env"
@@ -87,25 +90,7 @@ def _load_key() -> str | None:
 
 
 def gemini_json(prompt: str, model: str, key: str) -> dict:
-    base = os.environ.get(
-        "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com").rstrip("/")
-    url = (f"{base}/v1beta/models/"
-           f"{model}:generateContent?key={key}")
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "response_mime_type": "application/json",
-            "temperature": 0.2,
-        },
-    }
-    req = urllib.request.Request(
-        url, data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        data = json.loads(resp.read())
-    text = data["candidates"][0]["content"]["parts"][0]["text"]
-    return json.loads(text)
+    return gemini_rest.generate_json(prompt, model, key=key)
 
 
 def main() -> int:

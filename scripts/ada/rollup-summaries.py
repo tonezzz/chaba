@@ -16,7 +16,9 @@ the backup timer so rollups are captured in backups/ada-memory/.
 Usage:
   rollup-summaries.py              # roll up all instances
   rollup-summaries.py --instance tony --dry-run
-Env: GEMINI_API_KEY (summarizer), ADA_MEMORY_MDDB_URL, ADA_SUMMARY_MODEL
+Env: GEMINI_API_KEY (summarizer), ADA_MEMORY_MDDB_URL, ADA_SUMMARY_MODEL,
+     GEMINI_BASE_URL (set to the LiteLLM gateway to route via it — see
+     scripts/ada/gemini_rest.py)
 """
 
 from __future__ import annotations
@@ -37,34 +39,20 @@ _spec = importlib.util.spec_from_file_location(
 ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
 
+import gemini_rest
+
 MODEL = os.environ.get("ADA_SUMMARY_MODEL", "gemini-3.5-flash-lite")
 
 
 def summarize(texts: list[str], label: str) -> str | None:
-    if not os.environ.get("GEMINI_API_KEY"):
-        print("GEMINI_API_KEY not set — cannot summarize")
-        return None
-    import asyncio
-    try:
-        from google import genai
-        joined = "\n\n".join(f"- {t}" for t in texts)
-        prompt = (
-            f"Session summaries for {label}:\n{joined}\n\n"
-            "Summarize what happened across these sessions in two to four "
-            "sentences. Keep concrete facts, decisions, and requests; drop "
-            "small talk."
-        )
-
-        async def _gen() -> str | None:
-            resp = await genai.Client(
-                api_key=os.environ["GEMINI_API_KEY"]
-            ).aio.models.generate_content(model=MODEL, contents=prompt)
-            return (resp.text or "").strip() or None
-
-        return asyncio.run(_gen())
-    except Exception as exc:
-        print(f"summarize({label}) failed: {exc}")
-        return None
+    joined = "\n\n".join(f"- {t}" for t in texts)
+    prompt = (
+        f"Session summaries for {label}:\n{joined}\n\n"
+        "Summarize what happened across these sessions in two to four "
+        "sentences. Keep concrete facts, decisions, and requests; drop "
+        "small talk."
+    )
+    return gemini_rest.generate(prompt, MODEL)
 
 
 def docs_by_kind(docs: list[dict], kind: str) -> list[dict]:
