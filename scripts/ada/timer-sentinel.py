@@ -54,7 +54,7 @@ def api(path, payload=None, timeout=30):
     req = urllib.request.Request(
         f"{BOARD_API}/{path}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=timeout))
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
 def open_card_ids():
