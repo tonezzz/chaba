@@ -1,0 +1,29 @@
+id: bench-off-paid-lanes
+title: Move hourly benchmark/smoke traffic off paid Gemini lanes
+column: backlog
+updated: 2026-10-13 13:34
+priority: high
+spec: 'Goal: automated probes never bill a paid project again.
+
+
+  1. Point the hourly scenario smoke tier + ada-live-canary at ada-dev (free key) or ada-kk-dev — dev lanes exist
+  exactly for this. Scenario runner needs a --target/base-url flag or env so suites can address 127.0.0.1:8005 instead
+  of the prod lane.
+
+  2. Gate: only the release-s4 [smoke] dev-twin gate may touch a prod lane, and only when a card explicitly requests
+  it.
+
+  3. Keep one paid-lane canary minimal (1 connect/day is enough to detect dunning) — current cadence over-fires.
+
+  4. Accept: spend-ledger shows <20% of daily turns from caller=admin on ada-ha-tony/ada-kk; suites still run hourly
+  on the dev lane.'
+note: '2026-10-13 spend analysis: ~$2.81 of todays ~$5.60 burn was ada-ha-tony admin-keyed scenario smoke + canary
+  sessions running over the PAID Live lane after gemini-tier paid flipped prod. Benchmarks previously rode free
+  quota.'
+help: 'evidence: journalctl -u ada-ha-tony --since 2026-10-13 — 90/94 sessions caller=admin with cast_to_screen/set_facial_expression
+  scenario turns at ~30k input/turn.'
+ref: BEN-0573
+comms:
+- at: 2026-10-13 13:34
+  from: devin
+  text: card captured via board-api
