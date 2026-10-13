@@ -65,6 +65,31 @@
   incident bundle), `journalctl -b -1 -o short-precise`,
   `~/incidents/*/journal-*.txt` from capture bundles.
 
+## Battery fault → SMC PROCHOT 800MHz lock (incident 2026-10-13)
+
+- **Symptom**: all 8 cores pinned at exactly 800MHz — even under full
+  load, temps normal (59°C), intel_pstate healthy (max 3.5GHz allowed,
+  turbo on, powersave governor). OS not clamping → hardware pin.
+- **Root cause**: battery degraded — `CHARGE_FULL` 3,873 mAh vs design
+  6,669 mAh (**58% of design at only 87 cycles**), gauge contradicting
+  itself (`STATUS=Full` + `CAPACITY=45` + `CURRENT_NOW=0`). SMC sees a
+  battery it doesn't trust → asserts external PROCHOT → CPU honors it →
+  hard 800MHz floor. Classic MacBook battery-fault lock.
+- **Workaround (applied, works)**: clear BD PROCHOT bit 0 of MSR `0x1FC`
+  on all cores — CPU then ignores the *external* signal (internal
+  thermal protection unaffected):
+  `rdmsr 0x1FC` → `0x24005d`; `sudo wrmsr -a 0x1FC 0x24005c` → clocks
+  unlocked immediately.
+- **Persistence**: MSR clears on reboot AND suspend/resume →
+  `bdprochot-off.service` (oneshot, multi-user.target) +
+  `/usr/lib/systemd/system-sleep/99-bdprochot` (post hook). Files staged
+  at `/tmp/bdprochot/`; install commands in the card/comms. If SMC
+  re-asserts mid-session (watch for snap-back), add a 5-min timer.
+- **Real fix**: battery replacement. This host's battery is dying —
+  workaround keeps CPU usable but the pack keeps degrading.
+- Requires `msr-tools` (`apt install msr-tools`) + `modprobe msr`.
+- **Verify anytime**: `cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq`
+
 ## Fleet role
 
 - Portable dev/lab host — same standard as any onboarded fleet node:
