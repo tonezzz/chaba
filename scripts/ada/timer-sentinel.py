@@ -91,6 +91,16 @@ def fire(card_id, title, body, dry_run, open_ids):
     print(f"CARD {card_id}: {body[:80]}")
 
 
+def _recent(last_us, now, hours=48):
+    """A failed Result is sticky — only card it if the last run was
+    recent (or the service sits in `failed` right now, handled by the
+    caller). Ancient one-off failures shouldn't card forever."""
+    if not last_us:
+        return False
+    age = now.timestamp() - last_us / 1e6
+    return age < hours * 3600
+
+
 def expected_timers():
     """{host: {timer_name: expected_state}} from audit census."""
     try:
@@ -179,14 +189,18 @@ def main():
                         f"`{name}.timer` on `{host}` declared in audit "
                         f"census but unit is absent. See CMS "
                         f"`timer-timeline`."))
-                if t.get("failed_now") or t.get("result") in (
-                        "failed", "exit-code", "timeout"):
+                if t.get("failed_now") or (
+                        t.get("result") in ("failed", "exit-code",
+                                            "timeout") and
+                        _recent(t.get("last_us"), now)):
+                    when = t.get("last") or "?"
                     findings.append((
                         cid, f"Timer {name} on {host} failing",
-                        f"Last run of `{name}.service` on `{host}` "
-                        f"result={t.get('result')} — investigate journal: "
-                        f"`journalctl --user -u {name}.service` on the "
-                        f"host. See CMS `timer-timeline-{host}`."))
+                        f"Last run ({when}) of `{name}.service` on "
+                        f"`{host}` result={t.get('result')} — "
+                        f"investigate journal: `journalctl --user -u "
+                        f"{name}.service` on the host. See CMS "
+                        f"`timer-timeline-{host}`."))
 
     # synthetic fault for verification runs
     if args.inject:
