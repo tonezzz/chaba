@@ -624,6 +624,39 @@ jobs:
   exec:
   - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/review-digest.py
   note: Tony request 2026-10-11 — single summary card listing review pile + open requests, refreshed every 15m.
+- id: media-inbox-update-tony
+  name: Media inbox page family (tony lane)
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/media-inbox-update.py --lane tony
+  env:
+    MDDB_BASE_URL: http://127.0.0.1:11027/v1
+    LINE_MEDIA_ARCHIVE_DIR: '%h/.local/share/ada/line-media'
+  note: 'card media-inbox-report — manifest.jsonl -> media-inbox rollup + media-<mid>
+    receipt leaves + media-inbox-qc on ada-cms-pages. Lane attribution: manifest
+    persona field (relay stamps it at ingest) -> lane personas {ada,chaba}; legacy
+    lines without persona need MEDIA_INBOX_CHATS (unset here — tony DMs arrive with
+    persona stamped by the new relay; pre-upgrade lines go to kk via her group chat).
+    Runs beside the relay + mddb-cms on idc03.'
+- id: media-inbox-update-kk
+  name: Media inbox page family (kk lane)
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/media-inbox-update.py --lane kk
+  env:
+    MDDB_BASE_URL: http://127.0.0.1:11027/v1
+    LINE_MEDIA_ARCHIVE_DIR: '%h/.local/share/ada/line-media'
+    MEDIA_INBOX_CHATS: C822026077530a29620b5041bd1a955c5
+  note: 'card media-inbox-report — kk twin of media-inbox-update-tony on
+    ada-cms-pages-kk. MEDIA_INBOX_CHATS = the family group (LINE_LANE_DEFAULT[kk])
+    — files arriving there before the relay wrote persona land in her inbox;
+    kaewta-persona lines land there by attribution.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

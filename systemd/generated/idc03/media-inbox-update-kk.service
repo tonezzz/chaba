@@ -1,0 +1,10 @@
+[Unit]
+Description=Media inbox page family (kk lane) (job:media-inbox-update-kk, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/media-inbox-update.py --lane kk
+Environment="MDDB_BASE_URL=http://127.0.0.1:11027/v1"
+Environment="LINE_MEDIA_ARCHIVE_DIR=%h/.local/share/ada/line-media"
+Environment="MEDIA_INBOX_CHATS=C822026077530a29620b5041bd1a955c5"
