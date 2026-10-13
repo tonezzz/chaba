@@ -216,8 +216,16 @@ def render_leaf(it: dict, now: dt.datetime) -> str:
     L = [f"# Media — {_md_escape(name)} · {_when(it['ts'])}\n",
          f"{_md_escape(it['sender'])} sent {it['kind']} "
          f"`{_md_escape(name)}` on {_when(it['ts'])} "
-         f"via chat `{it['chat_id']}`.\n",
-         "## Receipt\n",
+         f"via chat `{it['chat_id']}`.\n"]
+    url = it["url"]
+    if it["kind"] == "image":
+        # linked image: CMS renders a > img as a thumbnail, click -> full
+        L += ["## Preview\n", f"[![{_md_escape(name)}]({url})]({url})\n"]
+    elif it["kind"] in ("video", "audio"):
+        spec = json.dumps({"url": url, "type": it["kind"],
+                           "caption": name})
+        L += ["## Preview\n", f"```media\n{spec}\n```\n"]
+    L += ["## Receipt\n",
          "| field | value |", "|---|---|",
          f"| sender | {_md_escape(it['sender'])} |",
          f"| chat | `{it['chat_id']}` |",
@@ -256,15 +264,20 @@ def render_rollup(items: list[dict], existing: set[str], now: dt.datetime,
         if day != cur_day:
             cur_day = day
             L += [f"\n## {day}\n",
-                  "| when | sender | file | kind | dup | leaf | extract |",
-                  "|---|---|---|---|---|---|---|"]
+                  "| when | sender | file | kind | preview | dup | leaf | "
+                  "extract |",
+                  "|---|---|---|---|---|---|---|---|"]
         name = _md_escape(it["file_name"] or it["mid"])
         dup = it.get("duplicate_of")
         dup_s = (f"↳ [`{dup[:12]}`](#/{leaf_key(dup)})" if dup else "—")
         ext = extract_key(it["mid"])
         ext_s = f"[extract](#/{ext})" if ext in existing else "—"
+        # linked image -> leaf; CMS renders a > img as a small thumb
+        prev = (f"[![{name}]({it['url']})](#/{leaf_key(it['mid'])})"
+                if it["kind"] == "image" else "—")
         L.append(f"| {it['ts'].astimezone(ICT):%H:%M} | "
                  f"{_md_escape(it['sender'])} | {name} | {it['kind']} | "
+                 f"{prev} | "
                  f"{dup_s} | [{leaf_key(it['mid'])}](#/{leaf_key(it['mid'])})"
                  f" | {ext_s} |")
     if not shown:

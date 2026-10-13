@@ -39,6 +39,13 @@ manifest line:
 
 <One line: who sent what, when, over which chat.>
 
+## Preview
+[![<fileName>](<relay-img URL>)](<relay-img URL>)   # image — linked thumb,
+                                                   # click = full size
+```media {url, type: video|audio, caption} ```      # video/audio — inline
+                                                   # player, no thumb
+(absent for file/other kinds — nothing to show)
+
 ## Receipt
 | field | value |
 |---|---|
