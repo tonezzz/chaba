@@ -506,6 +506,10 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
             return blocked
     card["column"] = col
     card.pop("awaiting_action", None)  # a manual move is triage too
+    if col == "review":
+        # every review card needs a close-out contract or the ssot-optimize
+        # gate fails commits repo-wide (same rule do_finish enforces)
+        card.setdefault("review_kind", "verify")
     if col == "done":
         card.setdefault("action", {})["status"] = "done"
         card.setdefault("claim", {}).pop("session", None)
