@@ -1,7 +1,7 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Four drops live here:
+chaba dispatches. Five drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -10,6 +10,8 @@ chaba dispatches. Four drops live here:
 4. `place_report` — card `maps-url-to-cms-line-maps-link-resolved-c418f8`
    (2026-10-13) — **already deployed** (ada-pi `074c7a8`+`e24b14d`); this
    drop is the repo-of-record copy
+5. file-input speaker ID + LINE enroll-on-clips + boss rule — card
+   `line-voice-enroll-recognize` (2026-10-13)
 
 ---
 
@@ -255,3 +257,117 @@ cms_read-before-publish dedup; the tool doesn't do it and the
 tool_guide doesn't tell the model to. Follow-up: teach the tool (or the
 guide) to look up `place-<slug>`/name first and merge into the existing
 page — keep History in one place.
+
+---
+
+## Drop 5 — file-input speaker ID (LINE voice enroll + recognize + boss rule)
+
+Card `line-voice-enroll-recognize` (Tony 2026-10-13): members send a few
+voice clips over LINE to enroll; the lane then recognizes who is
+speaking on voice messages (boss recognition — completes the MEM-0572
+identity leg). Gap closed: every match/enroll path previously required a
+LIVE session voice buffer; file input did not exist (a `speaker_profiles
+match` on a LINE session 2026-10-13 19:41 failed for exactly this).
+
+### Files
+
+- `backend/speaker_id.file-input.patch` — `backend/speaker_id.py`.
+  New `decode_audio_file()` (PyAV → PCM16 mono 16k, ffmpeg-CLI fallback,
+  `ADA_SPEAKER_FILE_MAX_S` cap, default 120s), `embed_file(path)`,
+  `match_file(path)` → `{match, score, all_scores, best, ha_person…}`
+  reusing the same threshold+margin+media-pool logic
+  (`_identify_scored_core` gained an optional `emb=` so the embedding
+  computes once), and `enroll_from_file(path, name, person)` — `person`
+  normalizes `user-kk`/`kk`/`person.kk`. Same guards as `enroll()`:
+  EnrollConflict on a foreign-profile match, own-voice check on merge.
+  `score_audio` shares the new `_rank_scores` helper.
+- `backend/line_relay.voice-enroll-recognize.patch` —
+  `backend/line_relay.py`. Every saved clip is scored via
+  `match_file` (env `LINE_VOICE_MATCH=0` disables); the persona turn
+  gets a `[voice: speaker=<name|unknown> score=0.xx person=…]` context
+  line. Unknown voice on a caller-mapped lane arms the enroll-on-clips
+  flow (`LINE_VOICE_ENROLL=1` default, `LINE_VOICE_ENROLL_CLIPS=3`,
+  `LINE_VOICE_ENROLL_TTL_S=900`): each subsequent clip becomes one
+  voiceprint bound to the caller's `person.*`; completion acks
+  `enrolled <name>, 3 prints`. A recognized voice (any profile) closes
+  the pending flow; an EnrollConflict disarms it loudly. New env vars
+  documented in the module header.
+- `backend/speaker_profiles.file-actions.patch` —
+  `backend/tools.d/speaker_profiles.py`. New `action='match_file'`
+  (read-tier, `path=`) and `action='enroll_file'` (mutating — same
+  `_may_mutate` gate as re-enroll: full-access identity or the profile
+  bound to the caller's own person.*). `person=` resolves through HA
+  like `alias` does.
+- `backend/tool_runner.boss-rule.patch` —
+  `backend/tool_runner/__init__.py`. Boss rule: a positively-identified
+  speaker whose person policy is `{full: true}` (persons.yml
+  `role: admin`, i.e. person.tony) keeps owner-tier on ANY lane —
+  `_speaker_is_owner_tier()` feeds both `_is_secondary_turn` (not
+  secondary) and `policy_identity` (resolves to the speaker's own
+  identity). Stale labels (SPEAKER_STALE_S) don't elevate.
+- `backend/tool_guide.speaker-profiles-file.patch` —
+  `backend/tool_guide.yml`. Documents match_file/enroll_file, the 0.45
+  threshold + 0.05 margin, the boss rule, and the spoofing caveat (a
+  voiceprint is evidence, not authentication — replay/similar-voice
+  residual).
+- `backend/test_line_relay_group.voice-ack.patch` —
+  `tests/test_line_relay_group.py`. The saved-clip ack is now
+  speaker-aware; the old literal "Saved Ns voice clip to the corpus."
+  expectation becomes the enroll offer.
+- `tests/test_speaker_file_input.py` — NEW FILE, 30 tests: decode
+  (real WAV via PyAV, resample/cap/too-short/ffmpeg fallback),
+  `_person_entity`, match_file hit+miss, enroll roundtrip (3 clips →
+  4th matches), `_voice_context` strings, relay arm→enroll→confirm
+  flow, tool actions incl. the mutation gate, and the boss rule
+  (elevation, stale-label, fail-closed).
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && for p in speaker_id.file-input \
+   line_relay.voice-enroll-recognize speaker_profiles.file-actions \
+   tool_runner.boss-rule tool_guide.speaker-profiles-file \
+   test_line_relay_group.voice-ack; do git apply \
+   <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   — based on the idc03 checkout @2026-10-13; if a hunk no longer
+   applies, re-dispatch the card rather than hand-merging.
+2. `cp <chaba>/integrations/ada-pi/tests/test_speaker_file_input.py
+   tests/test_speaker_file_input.py`
+3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; restart `ada-line-relay`
+   (the voice-match + enroll flow) along with the normal units.
+4. No new dependencies — decode uses the already-pinned `av` package
+   (bundled ffmpeg libs; idc03 has no ffmpeg binary).
+
+### Contract
+
+- Voice clip arrives → archived to `voice-corpus/<caller>/` (unchanged)
+  → `match_file` → persona turn tagged
+  `[voice: speaker=KK score=0.62 person=person.kk]`; the persona names
+  the speaker and can route `person_entity` → scoped bank.
+- Unknown + mapped caller → offer text ("send me 2-3 short clips") +
+  armed pending enrollment; each clip enrolls one print under the
+  caller's person; acks progress; final `enrolled <name>, N prints`.
+- `speaker_profiles action='match_file' path=<clip>` /
+  `action='enroll_file' path=<clip> name=<profile> person=<p>` for
+  ops/testing and persona-driven enrollment.
+- Boss rule: person.tony recognized on any member lane keeps
+  owner-tier identity per persons.yml `role: admin` ({full: true} in
+  person/control policies). Recognition threshold stays
+  `ADA_SPEAKER_THRESHOLD` (default 0.45) + 0.05 margin — documented
+  with the spoofing caveat in the tool guide.
+- Verified on a clean copy of the idc03 ada-pi checkout:
+  `tool-lint` clean, `pytest tests/` 1360 passed incl. the 30 new
+  tests; `decode_audio_file` verified against real LINE corpus m4a
+  clips on idc03.
+
+### Notes / residual
+
+- LINE m4a clips of already-enrolled speakers score LOWER than
+  live-mic captures (channel codec + whole-clip embedding). The two
+  2026-10-13 user-kk corpus clips score below threshold — expected to
+  resolve once callers enroll FROM LINE clips (channel-matched
+  prints), which is exactly what the enroll flow bootstraps.
+- The pending enroll is in-memory per relay process — a restart mid-
+  flow just re-arms on the next unknown clip.
+- The `[voice:]` context line is attribution for the persona, not an
+  auth upgrade for the LINE lane — lane rights stay caller-keyed.

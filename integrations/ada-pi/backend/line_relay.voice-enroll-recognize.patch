@@ -1,0 +1,279 @@
+--- a/backend/line_relay.py
++++ b/backend/line_relay.py
+@@ -38,6 +38,18 @@
+     LINE_VOICE_TRANSCRIBE      — "1" transcribes clips (faster-whisper) and
+                                  routes the transcript like a text turn
+     LINE_WHISPER_MODEL         — default base
++    LINE_VOICE_ENROLL          — default 1: an unknown speaker on a
++                                 caller-mapped lane arms a pending
++                                 enrollment — the next
++                                 LINE_VOICE_ENROLL_CLIPS clips become
++                                 voiceprints under the caller's person
++    LINE_VOICE_ENROLL_CLIPS    — default 3 prints to complete enrollment
++    LINE_VOICE_ENROLL_TTL_S    — default 900s before a pending enrollment
++                                 expires
++    LINE_VOICE_MATCH           — default 1: score every saved clip with
++                                 speaker_id.match_file; the persona's
++                                 turn gets a [voice: speaker=..] context
++                                 line
+     LINE_VOICE_DM_MIRROR       — default 1: group voice ack/transcript is
+                                  also pushed to the speaker's DM lane
+     LINE_WEBHOOK_LISTEN        — host:port, default 127.0.0.1:8912
+@@ -73,25 +85,7 @@
+ CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET", "")
+ ADA_WS_URL = os.environ.get("ADA_WS_URL", "ws://127.0.0.1:8002/ws")
+ ADA_API_KEY = os.environ.get("ADA_API_KEY", "")
+-def _idle_session_s() -> float:
+-    """Idle-close threshold, time-of-day aware.
+-
+-    LINE_IDLE_SESSION_S        day threshold, seconds (default 300)
+-    LINE_IDLE_SESSION_S_NIGHT  night threshold (default: same as day)
+-    LINE_NIGHT_HOURS           local window "HH-HH" (default 23-07) — last
+-                               message of the night should not hold a Live
+-                               session open; reconnect+prime next morning is
+-                               cheaper than a long tail.
+-    """
+-    day = float(os.environ.get("LINE_IDLE_SESSION_S", "300"))
+-    night = float(os.environ.get("LINE_IDLE_SESSION_S_NIGHT", str(day)))
+-    if night == day:
+-        return day
+-    lo_s, hi_s = os.environ.get("LINE_NIGHT_HOURS", "23-07").split("-", 1)
+-    h = datetime.now().hour
+-    lo, hi = int(lo_s), int(hi_s)
+-    in_night = (h >= lo or h < hi) if lo > hi else (lo <= h < hi)
+-    return night if in_night else day
++IDLE_SESSION_S = float(os.environ.get("LINE_IDLE_SESSION_S", "600"))
+ 
+ LINE_LISTEN = os.environ.get("LINE_WEBHOOK_LISTEN", "127.0.0.1:8912")
+ LINE_PATH = os.environ.get("LINE_WEBHOOK_PATH", "/webhook/line")
+@@ -331,6 +325,82 @@
+ 
+ _whisper_model = None
+ 
++# Enroll-on-clips (card line-voice-enroll-recognize): after an unknown
++# speaker's clip, the next VOICE_ENROLL_CLIPS clips from the same caller
++# become voiceprints — the "send me 2-3 short clips" flow.
++VOICE_ENROLL_CLIPS = int(os.environ.get("LINE_VOICE_ENROLL_CLIPS", "3"))
++VOICE_ENROLL_TTL_S = float(os.environ.get("LINE_VOICE_ENROLL_TTL_S", "900"))
++
++
++def _speaker_id() -> Any:
++    """Shared ECAPA voiceprint store — lazy like _transcribe so the
++    relay still starts when speechbrain/model files are missing."""
++    from backend.speaker_id import SpeakerIdentifier
++    return SpeakerIdentifier.get()
++
++
++def _match_voice_file(path) -> dict:
++    """speaker_id.match_file over a saved clip; {} on any failure —
++    voice recognition must never break the archive/turn path."""
++    try:
++        return _speaker_id().match_file(str(path)) or {}
++    except Exception as exc:
++        logger.info("voice match %s failed: %s", path, exc)
++        return {}
++
++
++def _enroll_voice_file(path, name, person=None) -> dict:
++    """speaker_id.enroll_from_file; {'error': ...} on failure."""
++    try:
++        return _speaker_id().enroll_from_file(
++            str(path), name, person=person) or {}
++    except Exception as exc:
++        logger.info("voice enroll %s as %s failed: %s", path, name, exc)
++        return {"error": str(exc),
++                "matched_profile": getattr(exc, "matched", None)}
++
++
++def _corpus_slug(caller: str | None, label: str, user_id: str) -> str:
++    """The voice-corpus subdirectory for a sender — same rule
++    _save_voice_clip uses, shared with the enroll-pending map."""
++    return re.sub(r"[^A-Za-z0-9_-]+", "-",
++                  caller or label or user_id).strip("-").lower() \
++        or "unknown"
++
++
++def _caller_person(caller: str | None) -> str | None:
++    """LINE_USER_CALLERS key -> person.* entity guess ('user-kk' ->
++    'person.kk'). The profile enroll path normalizes the same way."""
++    if not caller:
++        return None
++    slug = re.sub(r"^user-", "", caller).strip()
++    return f"person.{slug}" if slug else None
++
++
++def _voice_context(match: dict, pending: dict | None = None,
++                   enrolled: str | None = None) -> str:
++    """'[voice: speaker=KK score=0.62 person=person.kk]' — the turn
++    context line so the persona names the speaker and can route
++    person_entity -> scoped bank. 'speaker=unknown' plus an armed
++    pending enrollment invites the 2-3-clip enroll offer."""
++    if enrolled:
++        return (f"[voice: speaker={enrolled} just-enrolled "
++                f"prints>={VOICE_ENROLL_CLIPS}]")
++    name = match.get("match")
++    if name:
++        ctx = (f"[voice: speaker={name} "
++               f"score={match.get('score', 0):.2f}")
++        if match.get("ha_person"):
++            ctx += f" person={match['ha_person']}"
++        return ctx + "]"
++    best = match.get("best")
++    ctx = f"[voice: speaker=unknown score={match.get('score', 0):.2f}"
++    if best:
++        ctx += f" best={best}@{match.get('best_score', 0):.2f}"
++    if pending:
++        ctx += f" enroll-armed:{pending['got']}/{VOICE_ENROLL_CLIPS}"
++    return ctx + "]"
++
+ 
+ def _transcribe(path) -> str:
+     """Free-first voice transcription — faster-whisper locally, model via
+@@ -483,6 +553,11 @@
+         self._room_pin: dict[str, str] = {}
+         self._names: dict[str, str] = {}  # userId -> display label cache
+         self._refused: dict[tuple[str, str], float] = {}
++        # Pending enroll-on-clips: corpus slug -> {name, person, got,
++        # armed_at}. Armed when an unknown speaker's clip arrives on a
++        # caller-mapped lane; each later clip adds one print until
++        # VOICE_ENROLL_CLIPS land or the TTL lapses.
++        self._enroll_pending: dict[str, dict] = {}
+ 
+     def _verify(self, body: bytes, signature: str) -> bool:
+         mac = hmac.new(CHANNEL_SECRET.encode(), body, hashlib.sha256)
+@@ -816,9 +891,7 @@
+             label: str) -> tuple[Path, int]:
+         """Save an audio clip into the local voice corpus + one manifest
+         line — the same rule tg_relay applies. Returns (path, secs)."""
+-        slug = re.sub(r"[^A-Za-z0-9_-]+", "-",
+-                      caller or label or user_id).strip("-").lower() \
+-            or "unknown"
++        slug = _corpus_slug(caller, label, user_id)
+         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+         ext = _MIME_EXT.get(mime, ".m4a")
+         dest_dir = VOICE_CORPUS_DIR / slug
+@@ -877,11 +950,92 @@
+                 chat_id, "Couldn't save that clip — try again.",
+                 reply_token=reply_token)
+             return
+-        transcript = await asyncio.get_running_loop().run_in_executor(
+-            None, _transcribe, clip)
++        loop = asyncio.get_running_loop()
++        # Speaker ID over the saved file — the boss-recognition leg
++        # (card line-voice-enroll-recognize). Best-effort: {} leaves the
++        # clip behaving like it always did.
++        match = (await loop.run_in_executor(None, _match_voice_file, clip)
++                 if os.environ.get("LINE_VOICE_MATCH", "1") != "0"
++                 else {})
++        slug = _corpus_slug(caller, label, user_id)
++        pend = self._enroll_pending.get(slug)
++        if pend and time.monotonic() - pend["armed_at"] \
++                > VOICE_ENROLL_TTL_S:
++            logger.info("enroll pending for %s expired", slug)
++            self._enroll_pending.pop(slug, None)
++            pend = None
++        enrolled: str | None = None
++        enroll_note = ""
++        if match.get("match"):
++            # A recognized voice closes any open enrollment — the flow
++            # learned enough (match == pending name) or a different
++            # enrolled speaker was the one talking.
++            self._enroll_pending.pop(slug, None)
++            pend = None
++        elif os.environ.get("LINE_VOICE_ENROLL", "1") == "0":
++            pend = None
++        elif pend is not None:
++            res = await loop.run_in_executor(
++                None, _enroll_voice_file, clip, pend["name"],
++                pend.get("person"))
++            if res.get("error"):
++                if res.get("matched_profile"):
++                    # Foreign enrolled voice on this caller's clip —
++                    # refuse + disarm; never poison another profile.
++                    self._enroll_pending.pop(slug, None)
++                    pend = None
++                    enroll_note = (
++                        f" — that clip matched {res['matched_profile']}, "
++                        "enrollment stopped")
++                # other errors: keep the pending window open
++            else:
++                pend["got"] = int(res.get("samples") or pend["got"] + 1)
++                if pend["got"] >= VOICE_ENROLL_CLIPS:
++                    enrolled = str(res.get("name") or pend["name"])
++                    self._enroll_pending.pop(slug, None)
++                    logger.info("enroll complete: %s (%d prints)",
++                                enrolled, pend["got"])
++                    pend = None
++        elif caller:
++            # Unknown voice on a caller-mapped lane — arm the "send me
++            # 2-3 short clips" flow; the caller key binds the person.
++            pend = {"name": re.sub(r"^user-", "", caller),
++                    "person": _caller_person(caller),
++                    "got": 0, "armed_at": time.monotonic()}
++            self._enroll_pending[slug] = pend
++            logger.info("enroll armed for %s (%s)", slug, pend["person"])
++        voice_ctx = _voice_context(match, pend, enrolled)
++        transcript = await loop.run_in_executor(None, _transcribe, clip)
+         if transcript:
+             await self.send_text(chat_id, f'\U0001f399 "{transcript}"',
+                                  reply_token=reply_token)
++            if enrolled:
++                await self.send_text(
++                    chat_id,
++                    f"enrolled {enrolled}, {VOICE_ENROLL_CLIPS} prints")
++        elif enrolled:
++            await self.send_text(
++                chat_id, f"enrolled {enrolled}, {VOICE_ENROLL_CLIPS} "
++                "prints",
++                reply_token=reply_token)
++        elif match.get("match"):
++            who = match.get("display_name") or match["match"]
++            await self.send_text(
++                chat_id, f"Saved {duration}s voice clip — {who} "
++                f"({match.get('score', 0):.0%}).",
++                reply_token=reply_token)
++        elif pend is not None and pend["got"]:
++            await self.send_text(
++                chat_id, f"Saved {duration}s voice clip — learning "
++                f"this voice ({pend['got']}/{VOICE_ENROLL_CLIPS} "
++                f"prints{enroll_note}).",
++                reply_token=reply_token)
++        elif caller:
++            await self.send_text(
++                chat_id, f"Saved {duration}s voice clip — I don't "
++                "recognize this voice yet; send me 2-3 short clips "
++                f"and I'll learn it.{enroll_note}",
++                reply_token=reply_token)
+         else:
+             await self.send_text(
+                 chat_id, f"Saved {duration}s voice clip to the corpus.",
+@@ -920,7 +1074,8 @@
+             else (user_id, persona)
+         await self._deliver_turn(
+             skey, chat_id, user_id, persona, persona_url, caller, label,
+-            f"[LINE group from {label}] {turn}" if is_group else turn,
++            f"[LINE group from {label}] {turn} {voice_ctx}"
++            if is_group else f"{turn} {voice_ctx}",
+             is_group, None)
+ 
+     async def handle_event(self, ev: dict[str, Any]) -> None:
+@@ -1138,16 +1293,15 @@
+             logger.warning("user %s reply send failed: %s", user_id, exc)
+ 
+     async def sweeper(self) -> None:
+-        """Close WS sessions idle longer than _idle_session_s() so Ada's
++        """Close WS sessions idle longer than IDLE_SESSION_S so Ada's
+         session-end (summary, extraction) runs."""
+         while True:
+             await asyncio.sleep(30)
+             now = time.monotonic()
+-            idle_s = _idle_session_s()
+             for uid, sess in list(self.sessions.items()):
+                 if sess.ws is not None and \
+-                        now - sess.last_active > idle_s:
+-                    logger.info("user %s idle close (idle_s=%s)", uid, idle_s)
++                        now - sess.last_active > IDLE_SESSION_S:
++                    logger.info("user %s idle close", uid)
+                     await sess.close()
+             for nonce, hit in list(self._imgs.items()):
+                 ts = hit[1]
