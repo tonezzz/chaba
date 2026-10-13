@@ -109,7 +109,8 @@ jobs:
   note: migrated tony_dell -> idc02 2026-10-04; first-Sunday full run, same PATH requirement as chaba-audit. Verified
     run 2026-10-04 (~3min) — same core failures as dell (security-audit, standardization dup cms-pages, code-quality);
     idc02-only env gaps — no host caddy/docker binaries, no devin mcp_config, http-health checks dell-localhost
-    gpu-queue/playlived-dell.
+    gpu-queue/playlived-dell. Findings fixed in 35c0cb1a; manual --full rerun 2026-10-13 all-pass (5 warning-severity
+    findings only).
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
 - id: chaba-system-report
@@ -422,8 +423,10 @@ jobs:
   persistent: true
   timeout: 30m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/distill-devin-bank.py
-  env_file: '%h/.config/secrets/gemini-api-key.env'
-  note: migrated tony_dell -> idc02 2026-10-04; gemini key provisioned to idc02 secrets
+  env_file: '%h/.config/secrets/chaba-paid.env'
+  note: migrated tony_dell -> idc02 2026-10-04; env_file repointed 2026-10-13 to chaba-paid.env
+    (per-persona key split — old shared gemini-api-key.env key went stale/401 after rotation,
+    file kept as alias for legacy consumers like micro-bench)
 - id: kanban-sync
   name: Kanban <-> CMS sync (xmatch)
   host: tony_dell
