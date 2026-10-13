@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-overnight-assessment
 title: Timer overnight-assessment on tony-dell failing
-column: backlog
-updated: 2026-10-13 15:24
+column: done
+updated: 2026-10-13 18:25
 priority: high
 tags:
 - timer-alert
@@ -193,3 +193,29 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-13 02:02) of `overnight-assessment.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u overnight-assessment.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:34
+  from: devin
+  text: '[still suspicious] Last run (10-13 02:02) of `overnight-assessment.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u overnight-assessment.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:41
+  from: devin
+  text: '[cause-found] health_snapshot step failed because mddb primary on idc03 (11023) accepted TCP but never
+    answered — wedged event loop. Restarted mddb 15:34; after ~2min DB verify it is healthy again (200). Should
+    heal on next run; leave open until confirmed.'
+- at: 2026-10-13 15:44
+  from: devin
+  text: '[still suspicious] Last run (10-13 02:02) of `overnight-assessment.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u overnight-assessment.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:58
+  from: devin
+  text: 'Root cause found + dispatched under fix-mddb-stats-timeout-overnight: health_snapshot step fails because
+    mddb:11023 /metrics + /v1/stats time out (5s/60s) — all other endpoints healthy. Real mddb perf issue.'
+- at: 2026-10-13 18:24
+  from: devin
+  text: RESOLVED — Fix merged (mddb stats/metrics -> severity:warning, non-fatal; http-health-audit verified exit
+    0, 86 checks). Tonight's 02:00 run confirms end-to-end; sentinel will re-fire if not.
+- at: 2026-10-13 18:25
+  from: devin
+  text: closed by devin
+action:
+  status: done

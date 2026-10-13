@@ -1,0 +1,127 @@
+id: place-report-empty-page
+title: place_report publishes title-only stub when no coords/maps link resolves
+column: review
+updated: 2026-10-13 18:42
+priority: low
+spec: 'place-cape-sports-center-langebaan-259487 in ada-cms-pages-kk is just # Cape Sports Center Langebaan — no
+  map, no links, no body. place_report should refuse to publish (or render a honest unresolved state) when it has
+  no coords and no resolvable maps URL; a bare name ask should fall back to a search/maps link or say it needs one.
+  Repro: ask kk lane ขอแผนที่ <place> with no URL.'
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0  card: redeploy the staged `place_report.py`/`tool_guide` to ada-pi on idc03, and delete/supersede
+    the existing bare page in `ada-cms-pages-kk`. | devin-task-20261013-182803-place-cape-sports-center-lange.service:
+    Consumed 20.632s CPU time.'
+  runner: idc02
+  verified: true
+  sweep:
+    close_held: 2026-10-13 18:42
+ref: KNB-0576
+comms:
+- at: 2026-10-13 15:40
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 15:40
+  from: idc03
+  text: claimed
+- at: 2026-10-13 15:40
+  from: chaba
+  text: started devin-task-20261013-154051-place-cape-sports-center-lange on idc03 (dispatch)
+- at: 2026-10-13 15:41
+  from: devin
+  text: '[doing] dispatch started — locating place_report code path'
+- at: 2026-10-13 15:51
+  from: devin
+  text: '[done-verify] Fix staged as ada-pi drop 4 (integrations/ada-pi/, patch vs e24b14d): place_report now refuses
+    to publish when it has no coords AND no usable maps URL — returns ok:false + maps_search_url (google.com/maps/search
+    link) + instruction to ask for the real maps link. resolved_url only counts real maps pages now (consent walls
+    / non-maps landings no longer leak onto pages). Verified on /tmp clone: 8 new unit tests pass, full suite 1335/1-skip,
+    tool-lint clean. LIVE DOC REPAIRED: place-ca'
+- at: 2026-10-13 15:52
+  from: idc03
+  text: 'finished (ok): exit=0 ace-report-unresolved-guard.yml`, board comms posted, everything committed on the
+    dispatch branch. | devin-task-2'
+- at: 2026-10-13 15:52
+  from: chaba
+  text: 'auto-merge conflicts: integrations/ada-pi/README.md — card stays in review for manual resolution'
+- at: 2026-10-13 15:57
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-154051-place-cape-sports-center-lange conflicts with origin/master: integrations/ada-pi/README.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-13 15:57
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261013-154051-place-cape-sports-center-lange:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-13 18:26
+  from: tony
+  text: 'answered merge-conflict: yes'
+- at: 2026-10-13 18:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 18:27
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 18:27
+  from: idc02
+  text: claimed
+- at: 2026-10-13 18:28
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-154051-place-cape-sports-center-lange conflicts with origin/master: integrations/ada-pi/README.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-13 18:28
+  from: chaba
+  text: started devin-task-20261013-182803-place-cape-sports-center-lange on idc02 (dispatch)
+- at: 2026-10-13 18:28
+  from: chaba
+  text: 'raised request merge-conflict-2: merge-sweep can''t land dispatch/20261013-154051-place-cape-sports-center-lange:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-13 18:30
+  from: devin
+  text: '[doing] Root cause confirmed in staged place_report.py: bare place= ask + Nominatim miss -> name set, coords+resolved_url
+    empty -> publishes title-only page. Fix: refuse publish when no coords and no resolved_url, return maps/search
+    fallback link for the chat reply. Patch + tests + docs in worktree now.'
+- at: 2026-10-13 18:32
+  from: devin
+  text: '[done-verify] Fix staged: run() now refuses publish when resolution has no coords AND no resolved_url —
+    returns {ok:false, unresolved:true, maps_url(google maps/search fallback), error} instead of a title-only page;
+    tool_guide tells model to send the search link / ask for a maps URL. tests/ada/test_place_report_drop.py 17
+    passed (2 new: Nominatim miss + down). Trail: docs/ssot/jobs/ada/2026-10-13-place-report-empty-guard.yml + lane-place-reports.md
+    rule 6. NOT deployed — staged place_report.py/t'
+- at: 2026-10-13 18:33
+  from: idc02
+  text: 'finished (ok): exit=0  card: redeploy the staged `place_report.py`/`tool_guide` to ada-pi on idc03, and
+    delete/supersede the existing b'
+- at: 2026-10-13 18:33
+  from: chaba
+  text: 'session-end checkpoint adf375be: 7 leftover file(s) committed'
+- at: 2026-10-13 18:33
+  from: chaba
+  text: pushed dispatch/20261013-182803-place-cape-sports-center-lange to origin
+- at: 2026-10-13 18:33
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 18:33
+  from: chaba
+  text: auto-merged 40f0603c (dispatch/20261013-182803-place-cape-sports-center-lange) → origin/master
+- at: 2026-10-13 18:42
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''merge-conflict-2''] block close)'
+review_kind: verify
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261013-154051-place-cape-sports-center-lange: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261013-154051-place-cape-sports-center-lange
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-13 15:57
+  from: chaba
+  answer: 'yes'
+- id: merge-conflict-2
+  ask: 'merge-sweep can''t land dispatch/20261013-154051-place-cape-sports-center-lange: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261013-154051-place-cape-sports-center-lange
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-13 18:28
+  from: chaba

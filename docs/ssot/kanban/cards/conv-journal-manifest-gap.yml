@@ -1,0 +1,18 @@
+id: conv-journal-manifest-gap
+title: conv_journal tools.d module never manifest-enabled — dead code since b776e81
+column: backlog
+updated: 2026-10-13 16:39
+priority: medium
+spec: 'backend/tools.d/conv_journal.py (LINE journal -> kind=report CMS page, committed b776e81 2026-10-12) has
+  no entry in backend/tools.d/manifest.yml, so it is never declared or offered at runtime — persons.kk.tools listed
+  it in include but the lint flagged it stale and it was removed 2026-10-13 (card tony-lane-tool-profile). If the
+  tool is meant to be live for kk/tony lanes, add the manifest entry (module: conv_journal, policy: read, timeout
+  ~120s) and re-add conv_journal to persons.kk.tools.include in docs/ssot/apps/ssot.apps.ada-persons.yml. If deliberately
+  disabled, delete or comment the module.'
+note: Found by render-tool-profiles.py --lint during tony-lane-tool-profile dispatch 2026-10-13 — the stale-name
+  tripwire caught it, working as designed.
+ref: OPS-0584
+comms:
+- at: 2026-10-13 16:39
+  from: tony
+  text: card captured via board-api

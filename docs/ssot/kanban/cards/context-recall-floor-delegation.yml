@@ -1,0 +1,22 @@
+id: context-recall-floor-delegation
+title: context_growth floor broken lane-general — model delegates planted-fact recall to memory tools instead of
+  live context
+column: backlog
+updated: 2026-10-13 16:46
+priority: medium
+spec: 'context_growth.yaml turn 11 (what was my appointment code) fails on BOTH ada-ha-tony AND ada-ha-michael (control,
+  no keep-list) — reproducible 3x. Mechanism: system instruction ~realtime_provider.py:1138 routes recall questions
+  to memory tools first; model calls ada_session_recall(scope=sessions), gets a PAST-sessions summary, and parrots
+  it (tony lane) or flatly claims no code was given (michael lane) — despite the planted fact sitting in uncompressed
+  live context (~30k<32k trigger) and the tool result warning answer the CURRENT request first. Either tighten the
+  instruction (live-context questions answered from context BEFORE memory tools; session_recall is for PAST sessions),
+  or adjust the scenario expectation. Ceiling passes fine; floor is the failing half. Found during card tony-lane-tool-profile
+  dispatch; pre-existing, NOT caused by the keep-list (2-decl strip verified via control run).'
+note: 'Also observed same-run: ada-ha-tony default ADA_CONTEXT_TRIGGER_TOKENS=32000/target=24000 vs measured ~27.8k
+  static floor — trigger ~1.15x baseline (policy wants >=1.7x), target below floor. Per-lane window tuning worth
+  folding in.'
+ref: OPS-0585
+comms:
+- at: 2026-10-13 16:46
+  from: tony
+  text: card captured via board-api

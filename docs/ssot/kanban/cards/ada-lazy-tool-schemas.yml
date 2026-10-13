@@ -1,0 +1,23 @@
+id: ada-lazy-tool-schemas
+title: Lazy tool schemas — declare name+blurb only, fetch schema on demand
+column: backlog
+updated: 2026-10-13 18:32
+priority: medium
+spec: 'Pattern from tool-attention (arxiv 2604.21816) + vercel/ai lazy-tool PR + Cursor dynamic context discovery
+  (46.9% A/B reduction): ship each declaration as {name, <=300-char blurb, EMPTY params schema}; tool_runner validates
+  args against the real schema server-side and returns the existing tool_guide.yml usage hint on miss — the repair-feedback
+  path already exists. Est cut: the schema JSON of ~49 decls is a large share of the 27.8k floor; name+blurb-only
+  could drop floor to ~10-15k.
+
+  Risks to measure: more first-call arg errors while the model guesses shapes (watch audit-fail card rate); keep
+  full schemas for the top-10 hot tools (set_facial_expression 17k calls/7d, memory_search, cms_read).
+
+  Verify: context_growth.yaml ceiling+floor; compare first-turn in= before/after; count arg-error rate delta over
+  24h.'
+note: Post-OPS-0583 measured floor is ~27.8k/turn on ada-ha-tony; decl count is no longer the driver — param JSON
+  schemas are. Research-backed fix.
+ref: ADA-0586
+comms:
+- at: 2026-10-13 18:32
+  from: devin
+  text: card captured via board-api

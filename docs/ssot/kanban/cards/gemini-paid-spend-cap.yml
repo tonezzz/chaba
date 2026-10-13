@@ -1,0 +1,59 @@
+id: gemini-paid-spend-cap
+title: 'Gemini paid keys: hard $10/mo spend cap + confirm separate GCP projects'
+column: backlog
+updated: 2026-10-13 17:45
+priority: high
+tags:
+- ops
+- billing
+- gemini
+- isolation
+spec: 'Residual of gemini-prepaid-depleted-20261013 (all 4 paid keys 402 simultaneously — ONE shared prepaid pool).
+  Two Tony-side console items: (a) set a hard monthly spend cap ($10/mo recommended) at ai.studio/spend on the paid
+  project(s) — LiteLLM virtual-key budgets cap gateway REST per alias but Live/direct-path calls bypass the gateway
+  entirely, so only a project-level cap hard-stops Live burn; (b) confirm whether chaba-paid / ada-paid / kaewta-paid
+  live in SEPARATE billed GCP projects — per-persona key isolation is real only if projects differ (quota + caps
+  are per-project); API probes cannot verify project membership, console check needed. If all in one project, one
+  lane storm can still starve the fleet. Trail: docs/ssot/jobs/infrastructure/2026-10-13-gemini-prepaid-depleted.yml'
+action:
+  type: manual
+ref: OPS-0575
+comms:
+- at: 2026-10-13 15:38
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 15:38
+  from: devin
+  text: 'raised request post-top-up-hard-stop-isolation-check-in-68a504: Post-top-up hard stop + isolation check.
+    In AI Studio (aistudio.google.com -> Spend / API keys): are chaba-paid / ada-pa'
+- at: 2026-10-13 17:45
+  from: tony
+  text: 'answered post-top-up-hard-stop-isolation-check-in-68a504: split-and-cap — Separate projects + $10/mo cap
+    each — true isolation AND hard stop; one lane storm can never starve the fleet. Cost: billing setup per project
+    in console.'
+- at: 2026-10-13 17:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: post-top-up-hard-stop-isolation-check-in-68a504
+  ask: 'Post-top-up hard stop + isolation check. In AI Studio (aistudio.google.com -> Spend / API keys): are chaba-paid
+    / ada-paid / kaewta-paid in separate billed GCP projects, and should I assume a $10/mo cap gets set? Pick the
+    strategy you want:'
+  status: answered
+  at: 2026-10-13 15:38
+  from: devin
+  options:
+  - id: split-and-cap
+    label: 'Separate projects + $10/mo cap each — true isolation AND hard stop; one lane storm can never starve
+      the fleet. Cost: billing setup per project in console.'
+  - id: shared-with-cap
+    label: Keep all keys in one project, set single $10/mo cap — simplest (one console step) but shared pool = shared
+      fate (today proved it).
+  - id: no-cap-monitor
+    label: No hard cap — rely on LiteLLM ledger + scenario provider-gate; risk a repeat fleet-wide voice outage.
+  - id: already-done
+    label: Already split + capped during the top-up — agents re-verify and close.
+  suggested: split-and-cap
+  answer: 'split-and-cap — Separate projects + $10/mo cap each — true isolation AND hard stop; one lane storm can
+    never starve the fleet. Cost: billing setup per project in console.'
+awaiting_action: true

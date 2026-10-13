@@ -1,0 +1,80 @@
+id: timer-finding-reporter-semantics
+title: Finding-reporter jobs exit nonzero -> sentinel can't tell finding from crash
+column: done
+updated: 2026-10-13 16:28
+priority: medium
+tags:
+- timers
+- sentinel
+- design
+- dispatch
+spec: 'Affected: arp-inventory-scan (exit1 + writes focus-inbox alert), chaba-audit-watchdog, mddb-memory-standard
+  (exit1 after printing stats — unclear if breach or bug), chaba-audit-full, ada-scenario-* x5, ada-recall-canary.
+
+  Standardize one of two ways (pick, document in docs/kb/timer-expectations.md):
+
+  A) job exits 0 on a completed run regardless of findings; findings go to report file/focus-inbox/kanban. Sentinel
+  only alerts on real crashes. Preferred.
+
+  B) declare kind: finding-reporter in ssot.audit.hosts so sentinel classifies exit-1 as ''finding: see report''
+  (yellow) not red alert.
+
+  Also investigate mddb-memory-standard specifically: its exit-1 has no breach/error text in the journal tail —
+  determine whether a breach fired silently or the exit is a bug.'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261013-160436-affected-arp-inventory-scan-ex.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261013-160436-affected-arp-inventory-scan-ex.service:
+    No such file or directory'
+  verified: true
+note: 'Design flaw surfaced by timer-sentinel: ~10 jobs exit 1 to mean ''I found something'' — indistinguishable
+  from a crash.'
+ref: OPS-0581
+comms:
+- at: 2026-10-13 16:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 16:04
+  from: idc02
+  text: claimed
+- at: 2026-10-13 16:04
+  from: chaba
+  text: started devin-task-20261013-160436-affected-arp-inventory-scan-ex on idc02 (dispatch)
+- at: 2026-10-13 16:11
+  from: devin
+  text: 'Investigated: all affected units confirmed finding-reporters (completed run + exit 1 on findings). mddb-memory-standard
+    exit-1 = REAL breach (12 violations: draft_ratio/stale drafts + one transient vector-search 400); the "no breach
+    text in journal tail" was output ordering — violations print first, ~30 stat lines push them out of tail view.
+    Picking option A (preferred): jobs exit 0 on completed runs; findings stay on their own channels. Implementing
+    now.'
+- at: 2026-10-13 16:19
+  from: devin
+  text: 'Done — option A implemented on branch dispatch/20261013-160436-affected-arp-inventory-scan-ex (a3fa229e
+    + outcome doc). Contract: exit 0 on completed run, findings on own channels, nonzero = crash only. Converted:
+    arp-inventory-scan, chaba-audit-watchdog, run.mjs (chaba-audit + -full), memory-standard (+trailing verdict
+    line + all-banks-down exit-1), recall-canary (+ops-event emit on miss + total-outage exit-1), scenario suites
+    via scenario-suite-run.sh (marker-based: exit1+**Score: -> 0, exit1-'
+- at: 2026-10-13 16:20
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261013-160436-affected-arp-inventory-scan-ex.service:
+    Failed to ope'
+- at: 2026-10-13 16:20
+  from: chaba
+  text: pushed dispatch/20261013-160436-affected-arp-inventory-scan-ex to origin
+- at: 2026-10-13 16:20
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 16:20
+  from: chaba
+  text: auto-merged 34a2f999 (dispatch/20261013-160436-affected-arp-inventory-scan-ex) → origin/master
+- at: 2026-10-13 16:28
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 16:28
+  note: verified — evidence checks green, closing itself

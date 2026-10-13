@@ -1,0 +1,74 @@
+id: fix-idc02-timer-pack
+title: 'idc02 timer pack: bank-distill gemini 401 + audit-full findings'
+column: done
+updated: 2026-10-13 16:27
+priority: high
+tags:
+- timers
+- ops
+- dispatch
+spec: '1. devin-bank-distill — Gemini 401 Unauthorized calling gemini-3.5-flash-lite, all 4 chunks failed (Sun).
+  Check which key/env the job loads — likely stale after the per-persona key split (chaba-paid/ada-paid/kaewta-paid
+  envs). Verify model name exists too. Fix env path or key reference; verify one distill run.
+
+  2. chaba-audit-full — audit suite ran fine but found real findings: security-audit, caddy, standardization errors.
+  Read reports/audits/summary.json on idc02, fix the actual findings or file one card per failing audit. Do NOT
+  just suppress the exit code.
+
+  Linked cards: timer-alert-idc02-{devin-bank-distill,chaba-audit-full}.'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261013-160425-1-devin-bank-distill-gemini-40.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261013-160425-1-devin-bank-distill-gemini-40.service:
+    No such file or directory'
+  verified: true
+note: Timer-sentinel triage 2026-10-13. Two jobs on idc02.
+ref: OPS-0580
+comms:
+- at: 2026-10-13 16:03
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 16:04
+  from: idc02
+  text: claimed
+- at: 2026-10-13 16:04
+  from: chaba
+  text: started devin-task-20261013-160425-1-devin-bank-distill-gemini-40 on idc02 (dispatch)
+- at: 2026-10-13 16:04
+  from: devin
+  text: '[devin] session started on idc02 worktree; investigating devin-bank-distill (Gemini 401) and chaba-audit-full
+    findings'
+- at: 2026-10-13 16:23
+  from: devin
+  text: '[done] 2026-10-13: (1) devin-bank-distill — stale pre-split key in gemini-api-key.env caused 401s; provisioned
+    chaba-paid.env on idc02, repointed EnvironmentFile (ssot.jobs.yml + render-jobs), legacy file now a symlink.
+    Verified: probe 200 on gemini-3.5-flash-lite + live service run exit 0, weeks W37-W41 distilled. (2) chaba-audit-full
+    — Oct-4 findings already fixed in 35c0cb1a; fresh run.mjs --full now all-pass (5 warnings only). Both timer-alert
+    cards closed with evidence. Outcome file + commi'
+- at: 2026-10-13 16:24
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261013-160425-1-devin-bank-distill-gemini-40.service:
+    Failed to ope'
+- at: 2026-10-13 16:24
+  from: chaba
+  text: 'session-end checkpoint ad5c3b53: 1 leftover file(s) committed'
+- at: 2026-10-13 16:24
+  from: chaba
+  text: pushed dispatch/20261013-160425-1-devin-bank-distill-gemini-40 to origin
+- at: 2026-10-13 16:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 16:24
+  from: chaba
+  text: auto-merged 23c6d8b8 (dispatch/20261013-160425-1-devin-bank-distill-gemini-40) → origin/master
+- at: 2026-10-13 16:27
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 16:27
+  note: verified — evidence checks green, closing itself

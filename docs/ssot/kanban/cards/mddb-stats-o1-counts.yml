@@ -1,0 +1,23 @@
+id: mddb-stats-o1-counts
+title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
+column: backlog
+updated: 2026-10-13 16:15
+priority: medium
+tags:
+- mddb
+- perf
+- idc03
+spec: 'handleStats (services/mddbd/http_handlers_meta.go:399, fork ~/CascadeProjects/mddb) cursor-walks every key
+  in docs (153k), rev (626k), idxmeta (826k) — strings.Split(string(k)) per key in one read tx — then collectionChecksum()
+  per collection (57 extra read txs prefix-walking all docs w/ crc32). On the 8.1GB idc03 DB the endpoint takes
+  0.9s warm to >60s under load, starves sibling requests (concurrent /metrics and /v1/vector-stats timed out during
+  the 2026-10-10 nightly audit, reproduced 2026-10-13), and pins a long bbolt read tx that contributes to the freelist/RSS
+  growth mddb-restart.timer exists to bound. Options: (a) maintain per-collection counters in a small bucket updated
+  on write (counts become O(1)); (b) cache the whole stats response ~60s; (c) make per-collection checksums async/cached
+  or drop them. Evidence + repro: chaba repo docs/ssot/jobs/infrastructure/2026-10-13-mddb-stats-timeout.yml. Audit-side
+  mitigation already landed (severity:warn on the three diagnostics endpoints) — this card is the real fix.'
+ref: MEM-0582
+comms:
+- at: 2026-10-13 16:15
+  from: devin
+  text: card captured via board-api

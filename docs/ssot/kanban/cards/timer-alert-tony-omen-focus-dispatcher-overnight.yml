@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on tony-omen failing
-column: backlog
-updated: 2026-10-13 15:24
+column: done
+updated: 2026-10-13 18:23
 priority: high
 tags:
 - timer-alert
@@ -193,3 +193,29 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-13 03:00) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-10-13 15:34
+  from: devin
+  text: '[still suspicious] Last run (10-13 03:00) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-10-13 15:44
+  from: devin
+  text: '[still suspicious] Last run (10-13 03:00) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-10-13 16:04
+  from: devin
+  text: 'Dispatched under fix-omen-timer-pack (bug: passes validation then aborts)'
+- at: 2026-10-13 16:18
+  from: devin
+  text: '[fixed+verified] Root cause was NOT the validator: mcp-health-to-inbox.py hardcoded REPO=/home/tony/CascadeProjects/chaba-tony-dell
+    (does not exist on omen) -> FileNotFoundError rc=1, then overnight-focus-review.py aborted at the validation
+    gate with the misleading msg. Fixes: (1) mcp-health-to-inbox.py now resolves REPO from __file__ (works on any
+    checkout); (2) overnight-focus-review.py now gates the abort only on the validation step rc — earlier step failures
+    warn and continue. Manual run on '
+- at: 2026-10-13 18:23
+  from: devin
+  text: 'RESOLVED — Verified fixed: mcp-health-to-inbox REPO path resolved; manual run 44s all 9 steps rc=0.'
+- at: 2026-10-13 18:23
+  from: devin
+  text: closed by devin
+action:
+  status: done

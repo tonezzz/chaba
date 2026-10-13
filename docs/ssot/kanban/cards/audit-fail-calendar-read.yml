@@ -2,7 +2,7 @@ id: audit-fail-calendar-read
 title: 'Ada session audit: fail:calendar_read (1d seen)'
 column: done
 review_kind: verify
-updated: 2026-10-13 15:25
+updated: 2026-10-13 15:40
 brief: 'Recurring session-audit signature ''fail:calendar_read'': calendar_read -> fail — 4x on 2026-10-12, seen
   on 1 day(s).'
 priority: high
@@ -40,6 +40,12 @@ comms:
 - at: 2026-10-13 15:25
   from: tony
   text: moved review -> done
+- at: 2026-10-13 15:40
+  from: devin
+  text: 'VERIFIED live-fixed 2026-10-13: dead calid e468a444 (the literal ${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME}
+    script-bug calendar) 404''d every agenda prefetch — last 404 at 11:29:03 when the re-rendered registry landed
+    (SSOT fix 15204342). Journal since = 15/15 calendars HTTP 200. Residual fan-out fragility (one dead calid sinks
+    the read) patched in the ada-pi mbox v2 — degrades into errors[] after deploy.'
 action:
   status: done
 claim: {}

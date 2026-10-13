@@ -1,7 +1,7 @@
 id: calendar-write-idempotency
 title: 'calendar_write: dedup identical creates (double-write bug)'
 column: done
-updated: 2026-10-13 11:42
+updated: 2026-10-13 15:40
 priority: medium
 spec: 'calendar_create_event in backend/tool_runner/calendar.py has no idempotency check — a retry/double-invoke
   created two identical kk-ha events 1s apart (ทริปแอฟริกาใต้ BKK-CPT 2027-01-02, deleted the dup 2026-10-13). Same
@@ -50,6 +50,12 @@ comms:
 - at: 2026-10-13 11:42
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-13 15:40
+  from: devin
+  text: 'Root cause detail from kk lane 2026-10-13: first calendar_write was correctly denied (self-asserted confirmed
+    stripped), model restated + got real yes, then BOTH the confirm_token replay AND the confirmed=true resend executed
+    — two events 1s apart. The token path and the confirmed-resend path must be mutually exclusive; also dedupe
+    (title,start) same-day before create.'
 review_kind: verify
 claim: {}
 auto_close:

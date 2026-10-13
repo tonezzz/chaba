@@ -1,7 +1,7 @@
 id: gemini-prepaid-depleted-20261013
 title: Gemini prepaid credits depleted — ALL paid keys 402 (fleet on free rollback)
-column: backlog
-updated: 2026-10-13 08:47
+column: done
+updated: 2026-10-13 15:41
 priority: high
 tags:
 - ops
@@ -26,3 +26,47 @@ comms:
     — persona mapping live, services restarted. OPEN: Tony wants a hard $10 stop — recommend ai.studio/spend monthly
     cap on the paid project(s); LiteLLM virtual-key budgets already cap gateway traffic per alias but NOT direct-path/Live
     calls.'
+- at: 2026-10-13 15:33
+  from: devin
+  text: '[done-verify] Credit restored, verified live 2026-10-13 ~23:2x: both paid keys (B7MQ shared pool, bheg
+    kk) return HTTP 200 on real generateContent calls; free key alive but congested. Separately, the actual burner
+    is now gated: ExecCondition scenario-provider-gate on ada-scenario-smoke refuses paid-lane runs unconditionally
+    (verified ''Skipped due to exec-condition'' x2), and fails closed on unknown/unmarked keys (f6a6716bd). Top-up
+    no longer re-arms the burn.'
+- at: 2026-10-13 15:33
+  from: devin
+  text: queued for processing
+- at: 2026-10-13 15:33
+  from: mn01
+  text: claimed
+- at: 2026-10-13 15:33
+  from: chaba
+  text: started devin-task-20261013-083350-2026-10-13-all-four-paid-gemin on mn01 (dispatch)
+- at: 2026-10-13 15:34
+  from: devin
+  text: 'dispatch picked up: verifying current key/tier state + writing runbook trail for prepaid-depleted incident
+    and the open $10 hard-stop item'
+- at: 2026-10-13 15:37
+  from: devin
+  text: closed by devin
+- at: 2026-10-13 15:38
+  from: devin
+  text: '[verify] 2026-10-13 ~15:45 ICT via idc03: gemini-tier status shows persona map live (tony=chaba-paid 0MDA,
+    michael=ada-paid ppiw, kk=kaewta-paid bheg, infra=B7MQ, dev lanes=free); all 5 keys re-probed HTTP 200 on real
+    generateContent calls. Trail doc: docs/ssot/jobs/infrastructure/2026-10-13-gemini-prepaid-depleted.yml; dunning-procedure
+    updated with gemini-tier rollback step + live probe model. OPEN Tony-side items moved to follow-up card gemini-paid-spend-cap
+    (OPS-0575) w/ request: $10/mo hard'
+- at: 2026-10-13 15:40
+  from: chaba
+  text: 'session-end checkpoint 755283e7: 3 leftover file(s) committed'
+- at: 2026-10-13 15:41
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 15:41
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+action:
+  type: dispatch
+  status: done
+  runner: mn01

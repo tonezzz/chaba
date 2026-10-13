@@ -1,7 +1,7 @@
 id: guard-card-yaml-syntax-validation-at-wri-a39362
 title: 'Guard: card-YAML syntax validation at write time — render died 2.5h on 3 malformed cards'
 column: backlog
-updated: 2026-10-12 23:12
+updated: 2026-10-13 15:41
 brief: '2026-10-11 ~12:45-15:10: chaba-board-render crashed every 60s on yaml.scanner errors. Three cards had YAML-invalid
   free text (ada-secret-drop unindented continuation; voice-degrade-tiers + scenario-spend-guard list items containing
   key: and >N sequences). cards.json went stale silently — board page showed 2.5h-old data while API writes kept
@@ -70,6 +70,12 @@ comms:
   text: 'merge-sweep: merged 10d706da (dispatch/20261012-223345-two-cheap-guards-both-small-1- from idc03) -> origin/master
     — marked verified (exit_code=0; outcome doc dispatch-outcome-20261012-223345-two-cheap-guards-both-small-1-.md)
     — auto-closed'
+- at: 2026-10-13 15:41
+  from: devin
+  text: '[evidence+1] 2026-10-13: stt-omen-large-v3 had requests:/comms: as bare strings (valid YAML, wrong shape)
+    — killed daily-brief, review-digest, tony-ideas timers for days until manual sweep. Syntax validation alone
+    misses this; the guard needs shape checks too (requests/comms entries must be dicts). Readers now isinstance-guarded,
+    but writer-side validation is still the right fix.'
 review_kind: verify
 claim: {}
 auto_close:

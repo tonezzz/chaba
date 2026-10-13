@@ -1,16 +1,28 @@
 id: runner-auto-tony-macbook
 title: Runner host `tony-macbook` fails 1 dispatch bootstrap check(s)
-brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand
-  dispatch cards. Read the note, fix on the host, close the card.
+brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note,
+  fix on the host, close the card.
 column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Auto-recovered 2026-10-13: all bootstrap checks pass.'
+note: 'Failing: probe failed: Connection closed by 100.77.76.112 port 22.'
 help: 'Per-check fixes:
 
-  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
-  Check tailscale + sshd + the key on the host.'
-updated: '2026-10-13'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
+  the key on the host.'
+updated: 2026-10-13 15:26
+action:
+  status: done
+claim: {}
+comms:
+- at: 2026-10-13 15:26
+  from: tony
+  text: moved review -> done
+- at: 2026-10-13 15:28
+  from: chaba
+  text: 'auto-reconciled runner-auto-tony-macbook.yml.local-conflict-20261013-152837: note: ''Auto-recovered 2026-10-13:
+    all bootstrap checks pass.'' -> ''Failing: probe failed: Connection closed by 100.77.76.112 port 22.'' (conflict);
+    +1 comms'

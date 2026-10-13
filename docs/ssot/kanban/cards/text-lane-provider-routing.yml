@@ -1,0 +1,21 @@
+id: text-lane-provider-routing
+title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
+column: backlog
+updated: 2026-10-13 18:32
+priority: medium
+spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
+  use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
+  caching (OR/Anthropic-style cache hits bill ~10%). Voice/chatui-voice stays on Live.
+
+  Expected: LINE/TG turn cost drops to near-zero on free OR models; Live paid burn shrinks to actual voice sessions.
+
+  Caveat: degraded mode lacks tools? OpenRouterTextProvider is text-only — audit which tools the relays actually
+  need (chat_send, cms_read, memory) and confirm the OR provider can drive function calls; if not, gate routing
+  to sessions that dont need tools, or extend the provider.'
+note: Live API has NO context caching (confirmed official forum) and bills audio-rate context every turn; text channels
+  never need audio in/out yet pay it anyway.
+ref: OPS-0587
+comms:
+- at: 2026-10-13 18:32
+  from: devin
+  text: card captured via board-api

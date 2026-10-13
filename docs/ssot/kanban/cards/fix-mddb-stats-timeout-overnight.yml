@@ -1,0 +1,113 @@
+id: fix-mddb-stats-timeout-overnight
+title: 'overnight-assessment fails: mddb :11023 /metrics + /v1/stats time out'
+column: done
+updated: 2026-10-13 17:58
+priority: high
+tags:
+- mddb
+- ops
+- dispatch
+spec: 'Two tracks, investigate both:
+
+  A) mddb :11023 (primary plane, idc03) /metrics + /v1/stats hang — why? DB size/lock/slow query since the CMS split
+  to :11027? Check service logs, /v1/vector-stats timing (540ms — slow), sqlite/collection file sizes. This is a
+  REAL perf bug, not just a red dashboard.
+
+  B) If the endpoints are legitimately slow (stats over a large DB), the audit script should mark them non-fatal
+  or raise their timeout — a stats endpoint timing out shouldn''t fail the whole nightly rollup. Fix in scripts/audits/http-health-audit.mjs
+  or its config.
+
+  Evidence: reports/ORCHESTRATION.json on chaba-tony-dell (step health_snapshot rc=1, stdout tail has both timeouts).
+  Alert card timer-alert-tony-dell-overnight-assessment linked.'
+action:
+  type: dispatch
+  status: done
+  sweep:
+    dirty: 1
+  last_failure: 'exit=0 o-tracks-investigate-both-a-.md`; nothing committed or pushed. | devin-task-20261013-155842-two-tracks-investigate-both-a-.service:
+    Consumed 2min 13.471s CPU time over 18min 6.599s wall clock time, 2.6G memory peak, 458.4M memory swap peak.'
+  attempts: 2
+  runner: tony-dell
+  task_id: 20261013-174724-two-tracks-investigate-both-a-
+  result: 20261013-174724-two-tracks-investigate-both-a- finished (inactive) — see `devin-dispatch logs 20261013-174724-two-tracks-investigate-both-a-`
+  verified: true
+note: 'Root-caused 2026-10-13 during timer-alert triage: the overnight job''s health_snapshot step (scripts/audits/http-health-audit.mjs)
+  exits 1 because http://idc03:11023/metrics times out at 5s and /v1/stats at 60s. Every other endpoint is 200.'
+ref: MEM-0578
+comms:
+- at: 2026-10-13 15:58
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 15:58
+  from: tony-omen
+  text: claimed
+- at: 2026-10-13 15:58
+  from: chaba
+  text: started devin-task-20261013-155842-two-tracks-investigate-both-a- on tony-omen (dispatch)
+- at: 2026-10-13 15:59
+  from: devin
+  text: '[devin] picked up — investigating track A (mddb :11023 /metrics + /v1/stats hang on idc03) and track B
+    (audit timeout policy).'
+- at: 2026-10-13 16:16
+  from: devin
+  text: '[devin] done. Track A: real perf bug — /v1/stats walks ~1.6M keys (docs 153k + rev 626k + idxmeta 826k)
+    + 57 per-collection checksum re-walks on the 8.1GB DB; measured 0.9s warm to >60s under load, and while it ran
+    it starved concurrent /metrics + /v1/vector-stats probes (reproduced live — that is what killed the Oct-10 health_snapshot,
+    compounded by ~1.6GB binlog rotations + embed-retry storm). Root fix carded as mddb-stats-o1-counts (MEM-0582).
+    Track B: http-health-audit.mjs now honors per-ser'
+- at: 2026-10-13 16:19
+  from: tony-omen
+  text: 'finished (ok): exit=0 o-tracks-investigate-both-a-.md`; nothing committed or pushed. | devin-task-20261013-155842-two-tracks-investigat'
+- at: 2026-10-13 16:19
+  from: chaba
+  text: 'session-end checkpoint 513db4b3: 3 leftover file(s) committed'
+- at: 2026-10-13 16:19
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 16:27
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261013-155842-two-tracks-investigate-both-a- on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-13 17:47
+  from: tony
+  text: retry requested
+- at: 2026-10-13 17:47
+  from: chaba
+  text: dispatched 20261013-174724-two-tracks-investigate-both-a- on chaba
+- at: 2026-10-13 17:53
+  from: devin
+  text: '[devin] attempt 3 picked up on chaba. Track A re-verified live: last night mddb was REACHABLE at 02:00
+    (vector-stats 540ms) but /v1/stats walked the cold 8.2GB DB >60s and starved /metrics (5s+10s retry). Separate
+    recurring amplifier: mddb-backup.timer @02:30 integrity-checks the whole DB for ~13min. Track B: implementing
+    per-service severity:warning in http-health-audit.mjs + marking the 3 mddb diagnostic endpoints.'
+- at: 2026-10-13 17:56
+  from: devin
+  text: '[devin] done (attempt 3, chaba). A: not an outage — /v1/stats O(8.2GB) walk starves /metrics; 02:30 backup
+    integrity-check (13min) is recurring amplifier; root fix=mddb-stats-o1-counts. B: http-health-audit.mjs now
+    honors per-service severity:warning; applied to mddb-stats/metrics/vector-stats — failures warn (non-fatal),
+    exit 0; mddb-api stays fatal. Verified live + fixture. Committed 59d6367c3; trail docs/ssot/jobs/infrastructure/2026-10-13-mddb-stats-endpoint-starvation.yml'
+- at: 2026-10-13 17:57
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 17:57
+  from: chaba
+  text: pushed dispatch/20261013-174724-two-tracks-investigate-both-a- to origin
+- at: 2026-10-13 17:57
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 17:57
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261013-174724-two-tracks-investigate-both-a- not in origin/master
+    — close will block until merged'
+- at: 2026-10-13 17:58
+  from: chaba
+  text: 'merge-sweep: merged d6fae9c5 (dispatch/20261013-174724-two-tracks-investigate-both-a- from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-174724-two-tracks-investigate-both-a-.md)
+    — auto-closed'
+review_kind: verify
+claim:
+  since: 2026-10-13 17:47
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 17:58
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-174724-two-tracks-investigate-both-a-.md

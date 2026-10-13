@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-reports
 title: Timer ada-scenario-reports on idc03 failing
-column: backlog
-updated: 2026-10-13 15:24
+column: done
+updated: 2026-10-13 18:24
 priority: high
 tags:
 - timer-alert
@@ -194,3 +194,29 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-09 17:29) of `ada-scenario-reports.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-10-13 15:34
+  from: devin
+  text: '[still suspicious] Last run (10-09 17:29) of `ada-scenario-reports.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-10-13 15:44
+  from: devin
+  text: '[still suspicious] Last run (10-09 17:29) of `ada-scenario-reports.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-scenario-reports.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-10-13 16:05
+  from: devin
+  text: Covered by timer-finding-reporter-semantics — exit1 means the suite found policy violations, not a crash.
+    Reclassify rather than 'fix'.
+- at: 2026-10-13 16:18
+  from: devin
+  text: '[triage 2026-10-13] exit-code was the job''s finding signal, not a crash — standardized under OPS-0581
+    (card timer-finding-reporter-semantics, branch dispatch/20261013-160436-affected-arp-inventory-scan-ex): job
+    now exits 0 on completed runs, findings on their own channels. After the fix deploys (repo-sync; idc03 wrapper
+    needs install.sh re-run), a fresh nonzero = real crash. Verify next run green, then close.'
+- at: 2026-10-13 18:24
+  from: devin
+  text: 'RESOLVED — Contract shipped: suite wrapper maps exit-1-with-report to 0; real crashes still alert.'
+- at: 2026-10-13 18:24
+  from: devin
+  text: closed by devin
+action:
+  status: done

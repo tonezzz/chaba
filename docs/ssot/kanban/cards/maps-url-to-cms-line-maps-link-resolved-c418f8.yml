@@ -1,7 +1,7 @@
 id: maps-url-to-cms-line-maps-link-resolved-c418f8
 title: 'maps-url-to-cms: LINE maps link -> resolved place -> public CMS report -> link reply (kk lane)'
 column: backlog
-updated: 2026-10-13 15:28
+updated: 2026-10-13 15:42
 help: 'kk lane = ada-ha-bank-personal-kk / ada-cms-pages-kk on idc03. Tools in ada-pi backend/tools.d + tool_runner;
   deploy via scripts/deploy-ada.sh. Public pages: chaba.h3.gizmo-thailand.com/kk-ha/<slug>.html'
 ref: KNB-0574
@@ -26,3 +26,48 @@ comms:
 
 
     Lane env: ADA_CMS_PUBLIC_BASE=https://chaba.h3.gizmo-thailand.com/kk-ha/ set in'
+- at: 2026-10-13 15:28
+  from: devin
+  text: queued for processing
+- at: 2026-10-13 15:28
+  from: tony-omen
+  text: claimed
+- at: 2026-10-13 15:28
+  from: chaba
+  text: started devin-task-20261013-152850-maps-url-to-cms-line-maps-link on tony-omen (dispatch)
+- at: 2026-10-13 15:35
+  from: devin
+  text: 'picked up — verified live state: place_report.py deployed on idc03 ada-kk (e24b14d), ADA_INCLUDED_TOOLS+ADA_CMS_PUBLIC_BASE
+    set, LINE replies flowing, chaba.h3 pages live (place-waterfall-safari-lodge 200). Chaba-side gap: drop not
+    staged in integrations/ada-pi and persons SSOT lacks place_report — staging now.'
+- at: 2026-10-13 15:37
+  from: devin
+  text: put on hold
+- at: 2026-10-13 15:37
+  from: devin
+  text: moved backlog -> review
+- at: 2026-10-13 15:38
+  from: devin
+  text: 'chaba-side staged + committed (b100cee6d on dispatch branch): integrations/ada-pi Drop 4 (tool byte-identical
+    to idc03 e24b14d deploy, manifest+guide fragments, README install section); persons.kk/kk-cms-only/kk-parity
+    includes now carry place_report (render matches live ada-kk.env); job doc docs/ssot/jobs/ada/2026-10-13-maps-url-to-cms-place-report.yml;
+    15-test suite passes; ssot-validate 2241 files 0 errors. GAP for follow-up: no dedup — 3 place-*jj-j-bistro*
+    pages on day one; lane-place-repor'
+- at: 2026-10-13 15:41
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-13 15:42
+  from: chaba
+  text: 'merge-sweep: merged 110e2872 (dispatch/20261013-152850-maps-url-to-cms-line-maps-link from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-152850-maps-url-to-cms-line-maps-link.md)
+    — auto-closed'
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 15:42
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-152850-maps-url-to-cms-line-maps-link.md

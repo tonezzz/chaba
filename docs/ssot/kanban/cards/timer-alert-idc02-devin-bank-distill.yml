@@ -1,7 +1,7 @@
 id: timer-alert-idc02-devin-bank-distill
 title: Timer devin-bank-distill on idc02 failing
-column: backlog
-updated: 2026-10-13 15:25
+column: done
+updated: 2026-10-13 16:21
 priority: high
 tags:
 - timer-alert
@@ -193,3 +193,26 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-11 10:29) of `devin-bank-distill.service` on `idc02` result=exit-code —
     investigate journal: `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-10-13 15:35
+  from: devin
+  text: '[still suspicious] Last run (10-11 10:29) of `devin-bank-distill.service` on `idc02` result=exit-code —
+    investigate journal: `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-10-13 15:44
+  from: devin
+  text: '[still suspicious] Last run (10-11 10:29) of `devin-bank-distill.service` on `idc02` result=exit-code —
+    investigate journal: `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-10-13 16:04
+  from: devin
+  text: Dispatched under fix-idc02-timer-pack (gemini 401)
+- at: 2026-10-13 16:21
+  from: devin
+  text: '[fixed] 2026-10-13: root cause = stale pre-split Gemini key in ~/.config/secrets/gemini-api-key.env (idc02)
+    — 401 on every chunk. Provisioned chaba-paid.env (gemini-tony-paid persona, env-format) on idc02, repointed
+    EnvironmentFile via ssot.jobs.yml + render-jobs, gemini-api-key.env kept as symlink for micro-bench fallback.
+    Verified: direct probe HTTP 200 on gemini-3.5-flash-lite; systemctl start devin-bank-distill.service → exit
+    0, weeks 2026W37-W41 all distilled.'
+- at: 2026-10-13 16:21
+  from: devin
+  text: closed by devin
+action:
+  status: done

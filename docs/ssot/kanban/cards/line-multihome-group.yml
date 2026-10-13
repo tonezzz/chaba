@@ -3,7 +3,7 @@ title: 'LINE group (tony+kk+nhong): per-sender routing to each home assistant'
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-10-12 22:27
+updated: 2026-10-13 18:39
 note: 'One chaba LINE bot (@339sbrov) in a shared group. UPDATED SPEC 2026-10-11 (Tony): MENTION-triggered routing
   — any member addresses ada|kaewta|chaba by name in the message; relay routes the turn to that persona WS backend,
   replies tagged [persona->sender]. Unaddressed messages must NOT all hit Ada (noise) — default: ignore, or route
@@ -18,13 +18,14 @@ action:
   repo: ada-pi
   status: done
   attempts: 1
-  result: 'exit=0 d + ada-chaba :8008 provisioning), documented in the outcome and posted to the board. | devin-task-20261012-221507-line-group-tony-kk-nhong-per-s.service:
-    Consumed 1min 8.075s CPU time over 10min 58.749s wall clock time, 324.4M memory peak.'
+  result: 'exit=0 ane-multihome-routing.md`, and `chaba:` stays empty until ada-chaba :8008 is provisioned. | devin-task-20261013-182818-line-group-tony-kk-nhong-per-s.service:
+    Consumed 1min 23.196s CPU time over 9min 16.105s wall clock time, 1G memory peak.'
   last_failure: 'session-end checkpoint 2aa8ed49: 7 leftover file(s) committed; pushed dispatch/20261011-163937-line-group-tony-kk-nhong-per-s
     to origin; test gate failed — merge held: tests/test_calendar_providers.py'
-  runner: tony-macbook
   sweep:
     session_gone: 2026-10-12 22:27
+  runner: tony-omen
+  verified: false
 links:
 - backend/line_relay.py
 - docs/kb/msg-lane-multihome-routing.md
@@ -95,10 +96,11 @@ requests:
     so it is a pure env addition when known. (2) user-nhong key mint: which backend keys file(s) should hold it
     — every backend nhong may address (ada/kaewta/chaba), or only chaba? Mint is outside-worktree (POST /api/auth/keys
     on each backend) so it lands in the kb runbook unless you want it done live.'
-  status: open
+  status: answered
   at: 2026-10-11 16:57
   from: devin
   escalated_at: 2026-10-12 05:00
+  answer: 'yes'
 comms:
 - at: 2026-10-11 16:38
   from: devin
@@ -345,6 +347,44 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261011-165356-line-group-tony-kk-nhong-per-s on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-13 18:26
+  from: tony
+  text: 'answered two-open-config-items-1-chaba-persona-ba-5b4657: yes'
+- at: 2026-10-13 18:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 18:27
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 18:28
+  from: tony-omen
+  text: claimed
+- at: 2026-10-13 18:28
+  from: chaba
+  text: started devin-task-20261013-182818-line-group-tony-kk-nhong-per-s on tony-omen (dispatch)
+- at: 2026-10-13 18:32
+  from: devin
+  text: 'attempt 4: prior work is merged and verified. Found 2 gaps to close in-tree: (1) unmapped room members
+    can write the room persona pin before the auth check — a stranger mention reroutes everyone''s unaddressed follow-ups;
+    (2) no API to enrol the SAME caller key value on each persona backend (create_key mints random per-backend values,
+    relay sends one string to all backends) — adding auth.import_key + tests + doc/runbook fixes.'
+- at: 2026-10-13 18:37
+  from: devin
+  text: 'attempt 4 done (in-worktree). Fixed unmapped-member room-pin write (noise-rule bypass), added auth.import_key
+    so the SAME caller key value can be enrolled on each persona backend (per-backend ha_person/apps tier) — the
+    documented create_key-per-backend mint could never work. Docs + job yml updated; 54/54 touched tests pass, lint
+    clean. Ops remaining on idc03: relay unit env (LINE_ALLOWED_GROUP_IDS/LINE_NAME_BACKENDS/LINE_USER_CALLERS),
+    user-nhong mint once + import_key on ada-kk — runbook in doc'
+- at: 2026-10-13 18:39
+  from: tony-omen
+  text: 'finished (ok): exit=0 ane-multihome-routing.md`, and `chaba:` stays empty until ada-chaba :8008 is provisioned.
+    | devin-task-20261013-1'
+- at: 2026-10-13 18:39
+  from: chaba
+  text: 'session-end checkpoint 5cc91190: 7 leftover file(s) committed'
+- at: 2026-10-13 18:39
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
 claim:
   since: 2026-10-11 16:39
 review_kind: verify

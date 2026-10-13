@@ -1,0 +1,15 @@
+id: timer-alert-cards-auto-close-on-next-gre-723ebc
+title: 'timer-alert cards: auto-close on next green run (reconcile, not accumulate)'
+column: backlog
+updated: 2026-10-13 15:41
+ref: KNB-0577
+comms:
+- at: 2026-10-13 15:41
+  from: devin
+  text: 'Problem observed in 2026-10-13 backlog sweep: 30+ timer-alert-* cards sat in backlog — several were already
+    healed (mddb-embed-probe Result=success) or shared one root cause (str-entry bug killed 3 dell report timers).
+    Alerts file but never resolve, so the backlog fills with ghosts.
+
+
+    Spec: alert cards carry the unit name in the id (timer-alert-<host>-<unit>). Add a reconcile step (in audit-hosts
+    or a small sweeper): for each open timer-alert card, check systemctl Result — if the unit''s last run '

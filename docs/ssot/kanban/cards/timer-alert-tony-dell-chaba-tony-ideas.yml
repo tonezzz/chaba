@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-tony-ideas
 title: Timer chaba-tony-ideas on tony-dell failing
-column: backlog
-updated: 2026-10-13 15:24
+column: done
+updated: 2026-10-13 15:58
 priority: high
 tags:
 - timer-alert
@@ -197,3 +197,24 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-13 15:00) of `chaba-tony-ideas.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-tony-ideas.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:34
+  from: devin
+  text: '[still suspicious] Last run (10-13 15:00) of `chaba-tony-ideas.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-tony-ideas.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:40
+  from: devin
+  text: '[fixed-verify] Root cause: card stt-omen-large-v3 carried a bare-string requests entry; scripts iterating
+    requests/comms with .get() crashed on it. Card normalized on dell; isinstance guards added in report-daily-brief.py
+    / review-digest.py / tony-ideas-update.py (master d19ba5cff+). All three services re-run live -> Result=success.'
+- at: 2026-10-13 15:44
+  from: devin
+  text: '[still suspicious] Last run (10-13 15:30) of `chaba-tony-ideas.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-tony-ideas.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 15:58
+  from: devin
+  text: RECOVERED — verified Result=success 15:39-15:45 (fixed by concurrent edits). Closing.
+- at: 2026-10-13 15:58
+  from: devin
+  text: closed by devin
+action:
+  status: done

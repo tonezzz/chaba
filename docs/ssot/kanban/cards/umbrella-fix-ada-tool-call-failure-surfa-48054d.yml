@@ -1,7 +1,7 @@
 id: umbrella-fix-ada-tool-call-failure-surfa-48054d
 title: 'Umbrella: fix Ada tool-call failure surface (18 audit-fail-* cards)'
 column: done
-updated: 2026-10-13 15:27
+updated: 2026-10-13 15:43
 priority: high
 note: 'The 2026-10-12 colab backlog triage (ada-cms-pages/backlog-triage-2026-10-12) found 18 audit-fail-* cards
   dominating high-pri ada — all the same failure class (Ada tool calls failing in session audit). Fix as ONE pass,
@@ -97,6 +97,22 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261013-063523-umbrella-fix-ada-tool-call-fai already in origin/master — marked
     verified (exit_code=0; outcome doc dispatch-outcome-20261013-063523-umbrella-fix-ada-tool-call-fai.md) — auto-closed'
+- at: 2026-10-13 15:39
+  from: devin
+  text: '[verify] calendar_read live-GREEN: last e468a444 googleapis 404 in ada-ha-tony journal = 11:29:03, right
+    when the re-rendered calendar.json landed; every fan-out since = 15/15 HTTP 200. Separately found + patched
+    2 residual bugs in the ada-pi patch (now v2 @ 9ff1bf9, same file, 2-commit mbox — git am applies both): (1)
+    google list_events per-calendar 404 raised and sank the whole aggregate — now degrades into errors[], all-dead
+    still raises, auth stays loud; (2) deferred notify queued on dead/No'
+- at: 2026-10-13 15:43
+  from: chaba
+  text: pushed dispatch/20261013-152601-umbrella-fix-ada-tool-call-fai to origin
+- at: 2026-10-13 15:43
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 15:43
+  from: chaba
+  text: auto-merged 18b5487c (dispatch/20261013-152601-umbrella-fix-ada-tool-call-fai) → origin/master
 action:
   type: dispatch
   status: done

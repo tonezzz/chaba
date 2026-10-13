@@ -1,0 +1,165 @@
+id: tony-lane-tool-profile
+title: Define tony-lane keep-list tool profile (same mechanism as kk-ha), render + measure token cut
+column: done
+updated: 2026-10-13 18:31
+priority: high
+spec: 'GOAL: give ada-ha-tony a per-persona keep-list the SAME WAY kk-ha has one (persons.kk.tools in docs/ssot/apps/ssot.apps.ada-persons.yml
+  -> render-tool-profiles.py -> ADA_INCLUDED_TOOLS managed block). Tony asked ''same tool set as kk-ha'' — the MECHANISM,
+  not the literal 24 tools: kk''s list deliberately strips all home control/casting (security boundary), and ada-ha-tony''s
+  7-day call log shows heavy use of tools kk''s list lacks. Copying it verbatim would silently kill Chaba''s home
+  control — that is NOT the intent.
+
+
+  DO:
+
+  1. Add persons.tony.tools {instance: tony, env_file: ada-ha-tony.env, host: idc03} in ssot.apps.ada-persons.yml.
+
+  2. include: = kk''s 24-tool list PLUS the tony-lane additions evidenced by ada-ha-tony function_call logs (7d):
+  get_rk600_weather(1507), get_home_state, home_search, control_entity, ada_resolve_action, ha_confidence, cast_to_screen(814),
+  cctv_wall, ada_camera_snapshot, vcast_snapshot, tv_action, gev_command, docs, drive, kanban, devin, devin_read,
+  ada_device_acl, ada_member_keys, ada_enroll_speaker, ada_ops, percussion, yt, ada_look, ada_track_device, cms_edit
+  already in kk list. Reconcile every name against the real declared surface (tool-lint collect_surface + _ALIASES)
+  — use DECLARED seat names, absorbed names resolve via aliases.
+
+  3. exclude: = the complement (deliberate drops — lint requires every declared tool covered by include OR exclude).
+
+  4. Run render-tool-profiles.py --lint; fix stale names.
+
+  5. --apply to idc03 ada-ha-tony.env + systemctl --user restart ada-ha-tony.
+
+  6. MEASURE: open a fresh ws session, read first ''usage turn in='' before vs after — target <= ~23k (from ~31k).
+  Report both numbers in card comms.
+
+  7. REGRESSION: tests/scenarios-live/context_growth.yaml must still pass ceiling+floor; run a quick live smoke
+  — cast_to_screen + control_entity + a memory recall all still resolve.
+
+  8. Update docs/ssot/ssot.tokens.policy.yml baseline number + ssot.apps.ada-persons.yml comment noting tony-lane
+  profile is usage-evidenced (not kk-parity).
+
+
+  WATCH-OUT: the scenario smoke suite runs admin sessions on this lane testing tools like cast_to_screen/set_facial_expression
+  — both stay in the keep-list. If a scenario-tested tool got excluded, either keep it or note the scenario needs
+  retargeting (BEN-0573 moves smoke to ada-dev anyway).'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - ada
+  - cpu
+  - small
+  status: done
+  result: 'exit=0 6-10-13-tony-lane-tool-profile.yml`, tokens.policy baseline updated with measured per-lane floors.
+    | devin-task-20261013-161957-goal-give-ada-ha-tony-a-per-pe.service: Consumed 4min 19.699s CPU time, 467.2M
+    memory peak, 0B memory swap peak.'
+  sweep:
+    close_held: 2026-10-13 17:13
+    stale_running: 2026-10-13 18:28
+  runner: idc03
+  verified: true
+note: 'Spend driver 2026-10-13: ada-ha-tony declares ~110 tools (only 2 excluded) -> ~31k input/turn static baseline
+  vs ada-kk ~17k on 24 tools. ~$2.81/day on this lane alone.'
+ref: OPS-0583
+comms:
+- at: 2026-10-13 16:18
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 16:19
+  from: idc03
+  text: claimed
+- at: 2026-10-13 16:19
+  from: chaba
+  text: started devin-task-20261013-161957-goal-give-ada-ha-tony-a-per-pe on idc03 (dispatch)
+- at: 2026-10-13 16:27
+  from: devin
+  text: '[dispatch] picked up on idc03 — surface reconciled (51 declared). Plan: include = kk 24 minus stale conv_journal
+    (module exists but never manifest-enabled, b776e81) + 25 tony-lane additions + vcast_gesture (smoke-tier tool_merge_display
+    calls it hourly on this lane). exclude = home_status + home_history only. Measuring baseline now.'
+- at: 2026-10-13 16:43
+  from: devin
+  text: '[dispatch] APPLIED: persons.tony.tools (49 include / 2 exclude: home_status+home_history) -> managed block
+    in ada-ha-tony.env, restarted, verified 49 tools live in env. LINT CLEAN (0 warns — also cleared kk stale conv_journal:
+    module exists but was never manifest-enabled, filed OPS-0584). MEASURE: first-turn in= 28874 -> 27828/27859
+    (~27.8k, -1.0k only). The ~23k target rested on a ~110-decl premise — real emitted surface is ~51 seats @ ~0.5k
+    tok each (aliases are dispatch-time, emit nothing; st'
+- at: 2026-10-13 16:46
+  from: devin
+  text: 'raised request keep-list-applied-49-tools-live-first-tu-baa418: Keep-list applied: 49 tools live, first-turn
+    in 28.9k->27.8k (-1.0k). ~23k unreachable as spec-d: real surface is 51 sea'
+- at: 2026-10-13 16:48
+  from: devin
+  text: '[dispatch] DONE-staged (commit 16a66d7 on dispatch branch, no push). FINAL: persons.tony.tools live on
+    ada-ha-tony (49 include/2 exclude, env verified, service restarted). First-turn in= 28874 -> ~27.8k (-1.0k).
+    Lint clean. Smoke PASS (cast_to_screen+control_entity+memory recall). context_growth: ceiling PASS / floor FAIL
+    x2 — but CONTROL on ada-ha-michael (no keep-list) fails identically => pre-existing lane-general bug (OPS-0585),
+    NOT this change. Also carded OPS-0584 conv_journal manifest gap'
+- at: 2026-10-13 16:49
+  from: idc03
+  text: 'finished (ok): exit=0 6-10-13-tony-lane-tool-profile.yml`, tokens.policy baseline updated with measured
+    per-lane floors. | devin-task-2'
+- at: 2026-10-13 16:49
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 16:49
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-13 16:58
+  from: chaba
+  text: 'merge-sweep: merged 7a0addc3 (dispatch/20261013-161957-goal-give-ada-ha-tony-a-per-pe from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-161957-goal-give-ada-ha-tony-a-per-pe.md)
+    — held in review (open request(s) [''keep-list-applied-49-tools-liv''] block close)'
+- at: 2026-10-13 17:13
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''keep-list-applied-49-tools-liv''] block close)'
+- at: 2026-10-13 18:25
+  from: tony
+  text: 'answered keep-list-applied-49-tools-live-first-tu-baa418: yes'
+- at: 2026-10-13 18:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 18:26
+  from: tony
+  text: queued for processing
+- at: 2026-10-13 18:26
+  from: idc03
+  text: claimed
+- at: 2026-10-13 18:27
+  from: chaba
+  text: started devin-task-20261013-182701-goal-give-ada-ha-tony-a-per-pe on idc03 (dispatch)
+- at: 2026-10-13 18:28
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-161957-goal-give-ada-ha-tony-a-per-pe no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-13 18:28
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-161957-goal-give-ada-ha-tony-a-per-pe already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261013-161957-goal-give-ada-ha-tony-a-per-pe.md) — auto-closed'
+- at: 2026-10-13 18:29
+  from: devin
+  text: '[dispatch] answer yes -> Option A accepted (keep 49-decl keep-list, ~27.8k floor, zero capability loss)
+    — recording decision, no profile change. Re-verified live post-18:25 restart: managed block in ada-ha-tony.env,
+    49 names in running process env, lint clean, last fresh-session first-turn in=27892/27931. Deeper cuts remain
+    available (B ~24.5-26k / C ~23k) if spend priority changes — one-line SSOT edits.'
+- at: 2026-10-13 18:31
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 18:31
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+requests:
+- id: keep-list-applied-49-tools-live-first-tu-baa418
+  ask: 'Keep-list applied: 49 tools live, first-turn in 28.9k->27.8k (-1.0k). ~23k unreachable as spec-d: real surface
+    is 51 seats @~0.5k tok, not ~110. Options: A★ keep 49 (~27.8k, zero capability loss) | B also drop percussion,voice_fx,ada_render_video,speaker_profiles,ada_market_quote,ada_ops
+    (~24.5-26k; zero smoke impact, 0-10 uses/3d each) | C aggressive cut into cctv_wall/gev_command/ada_enroll_speaker/yt/tv_action
+    (~23k; breaks ~50 weekly-tier scenario cases on this lane). Which?'
+  status: answered
+  at: 2026-10-13 16:46
+  from: devin
+  answer: 'yes'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 18:28
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-161957-goal-give-ada-ha-tony-a-per-pe.md
