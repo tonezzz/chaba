@@ -138,9 +138,11 @@ def write_gap(collection: str, bank: str, scope: str, queries: list[str],
     key = f"gap/{today}-{subject[4:]}"
     sample = "\n".join(f'- "{q}"' for q in sorted(set(queries))[:8])
     body = (
-        f"# Knowledge gap in the {bank} bank\n\n"
+        f"# DRAFT — unanswered-question gap in the {bank} bank "
+        "(auto-generated, unverified)\n\n"
         f"Ada could not answer these questions ({len(queries)} miss(es) "
         f"in the last {since}):\n\n{sample}\n\n"
+        "This is a draft hypothesis, not a confirmed fact. "
         "Fill in the answer below, then promote to the bank with "
         "consolidate-memory.py — or delete this note if out of scope.\n"
     )
