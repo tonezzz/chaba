@@ -129,9 +129,65 @@ variants:
     notes: "Baseline for the gemini-downstream variant — same receiving
       model so polish-vs-direct deltas are apples-to-apples."
 
-  # --- future: omen phi3-gguf (ollama :11434/v1, currently unreachable from
-  #     macbook), macbook Vulkan llama.cpp server (host-roles offload lane),
-  #     a bigger polisher (llama3.1:8b) as the quality ceiling ---
+  # --- spec'd host coverage (card micro-ai-input-polish): llama-router on
+  #     omen (existing), macbook Vulkan llama.cpp (host-roles offload lane),
+  #     idc02. All pair against direct-llama32 — same downstream ---
+
+  - id: polish-omen-phi3-llama32
+    polish:
+      provider: openai_compat
+      base_url: http://100.75.102.88:11434/v1
+      model: phi3-gguf:latest
+      prompt: normalize_v1
+      gate: lang_preserve
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "Spec's 'llama-router on omen': the :8001 router was replaced —
+      the existing omen lane is ollama :11434 (phi3-gguf is mcp-llama's
+      DEFAULT_OLLAMA_MODEL). Phi-3-mini 3.8B polish -> llama3.2:3b idc03.
+      lang_preserve gate on (3B-class polishers drift languages)."
+
+  - id: polish-idc02-llama32-llama32
+    polish:
+      provider: ssh_openai
+      ssh: idc02
+      base_url: http://127.0.0.1:8114
+      model: llama-3.2-3b-instruct
+      prompt: normalize_v1
+      gate: lang_preserve
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "Same Llama-3.2-3B Q4_K_M as the idc03 baseline, served by
+      llama.cpp b11583 CPU on idc02 (user unit micro-bench-llama.service,
+      loopback :8114 — start: ssh idc02 systemctl --user start
+      micro-bench-llama). Isolates host cost: identical model/prompt, so
+      deltas vs polish-llama32-llama32 are pure llama.cpp-vs-ollama +
+      VPS-CPU behavior."
+
+  - id: polish-macbook-vulkan-llama32-llama32
+    polish:
+      provider: ssh_openai
+      ssh: tony-dell ssh -o BatchMode=yes macbook
+      base_url: http://127.0.0.1:8114
+      model: llama-3.2-3b-instruct
+      prompt: normalize_v1
+      gate: lang_preserve
+    downstream:
+      provider: openai_compat
+      base_url: http://100.102.134.91:11434/v1
+      model: llama3.2:3b
+    host_labels: []
+    notes: "host-roles offload lane: llama.cpp b11583 VULKAN on tony-macbook
+      (Radeon Pro 450 / RADV, -ngl 99 clamped by --fit). mn01 has no macbook
+      key — ssh hops via tony-dell (dell holds the macbook key). User unit
+      micro-bench-llama.service on the macbook, loopback :8114; laptop —
+      server only runs while benched."
 
   - id: dry-run-dummy
     polish: null
