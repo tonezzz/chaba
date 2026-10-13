@@ -12,7 +12,7 @@ overview:
 
 config:
   version: 1
-  last_updated: "2026-10-05"
+  last_updated: "2026-10-13"
   maintainer: tony
   status: active
   origin: >
@@ -98,14 +98,75 @@ meta_schema:
     extra: free-form map for node-specific details (deltas, counts, scores)
 
 status_enum:
+  # Finalized 2026-10-13 (card report-graph-standard sweep).
+  # `unreachable` is target-side — the producer ran fine but the host /
+  # endpoint it audits did not answer; producer-side crashes are `error`,
+  # never `unreachable`.
   ok: generated within cadence; no findings
   delta: generated; findings present (observed != expected)
-  stale: last_run older than the node's declared cadence
-  error: generator failed or meta unreadable
+  error: generator failed or meta unreadable (producer-side failure)
+  stale: meta.generated_at older than the node's declared cadence —
+    observed by report-watch / resolve_node, never self-declared
   missing: declared node with no meta and no artifacts
-  untracked: artifacts exist but no meta.yml yet (legacy producer)
-  remote: declared active, artifacts live off-repo — not observable locally
-  planned: registered but generator not built yet — informational, not an alarm
+  unreachable: target-side — generator ran, its audit target did not
+    answer (host off tailnet, endpoint down); `offline_ok` nodes exempt
+  planned: registered but generator not built yet (registry state
+    field=planned) — informational, not an alarm
+  remote: observe:remote — artifacts live off this checkout; meta is
+    pushed back to the served checkout (see contract.remote_pushback)
+  dormant: arg-required generators (generator contains '<…>') or nodes
+    that have never run — exempt from `missing` until the first run
+    produces meta
+
+derived_statuses:
+  description: >
+    Observed states computed by scripts/lib/report.py::resolve_node —
+    not part of the producer-writable contract vocab.
+  untracked: artifacts exist but no meta.yml yet (legacy producer —
+    benign-warn; the fix is always "make the producer write meta")
+
+contract:
+  description: >
+    Producer obligations — how a node earns `ok` instead of drifting to
+    missing/untracked. Finalized 2026-10-13 (card report-graph-standard).
+  rules:
+    own_meta: >
+      Every producer writes its own meta.yml at run end via
+      scripts/lib/report.py::write_meta() — or `report.py emit` for
+      shell producers. run-node.py augments, never originates: it stamps
+      inputs_at + extra.run_node_rc and resolves pending entries on top
+      of the meta the producer wrote. A node with no meta after a
+      run-node execution means the producer broke the contract.
+    remote_pushback: >
+      observe:remote producers run off the served checkout — they push
+      their meta back to it (scp into the served checkout's reports/)
+      so system-report and report-watch see fresh state. Reference impl:
+      scripts/chaba/render-report-feed.py. CMS-published reports
+      (producer = Ada writing ada-cms-pages) use the reflector instead:
+      scripts/ada/cms-report-reflect.py mirrors page -> meta + artifact
+      snapshot via chaba-cms-reflect.timer.
+    offline_ok: >
+      Hosts that legitimately leave the tailnet (laptops, travel nodes)
+      declare `offline_ok: true` — report-watch tolerates `unreachable`
+      for them. Servers never get it.
+    dormant: >
+      Generators needing an argument (registry `generator` containing
+      '<…>') and `state: planned` nodes are dormant — exempt from
+      `missing` until the first real run produces meta.
+    same_commit: >
+      A new timer/producer lands with its node registration + meta
+      wiring in the same commit — an untracked producer is a bug in the
+      commit, not a backlog item.
+    cadence_enforcement: >
+      Cadence lives in the registry; enforcement is report-watch's stale
+      detection (meta.generated_at vs node.cadence), not producer
+      self-reporting. Producers write ok|delta; `stale` is observed.
+    consumer: >
+      report-watch flags are the review queue — error/missing/stale flag
+      immediately, delta/unreachable after DELTA_GRACE_H, and items
+      auto-close (focus.status: processed) when the node heals.
+      `report-watch.py --json` is the CI gate: non-zero exit while any
+      node sits in a flag-worthy state.
 
 timeline:
   path: ~/var/chaba/reports/timeline.jsonl
@@ -295,7 +356,6 @@ nodes:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
       - audit-hosts/mn01
-      - audit-hosts/idc01
       - audit-hosts/idc03
       - audit-hosts/macbook
       - health-monitor
@@ -622,6 +682,7 @@ plan:
     - kanban L2 node (2026-10-05): scripts/board/kanban-stats.py rides kanban-sync.timer, writes reports/kanban/{meta.yml,kanban-stats.yml} + apps/system-report/data/kanban.md, mirrored to the served checkout
     - bounded surfaces machinery (2026-10-09): scripts/lib/bounded.py extracted from render-memory.py (both pipelines share helpers); system-report is the pilot wired node — limits/overflow_order declared, sections shed with in-place markers, meta.extra.chars + shed recorded; report-watch flags extra.chars > hard as an informational 'overrun' focus item
     - chaba-nest L2 node (2026-10-08): scripts/ada/nest-overview.py (3rd ExecStart of chaba-kanban-brief.service, 30 min) probes lane /health+/metrics, writes reports/nest/{nest-overview.yml,meta.*.yml} — lane, brain, bench child metas + the domain meta + timeline event
+    - report-graph-standard applied (2026-10-13): status_enum finalized (unreachable target-side, dormant for arg-required/never-run; untracked demoted to a derived observed state); contract + conventions documented; report-watch computes staleness itself, auto-closes healed flags, and gained --json/--dry-run as the CI gate; audit-hosts/idc01 dropped from fleet.children (node retired 2026-10-07, idc01 SSOT cleanup KNB-0148); systemwide-assessment meta contract closed by cms-report-reflect.py (chaba-cms-reflect.timer)
   next_steps:
     - roll limits/suppress/dedupe/empty onto other rendered nodes as their producers get wired through scripts/lib/bounded.py (per-node follow-ups)
     - ada-memory-report L2 renderer (memory-suite + recall-canary)
