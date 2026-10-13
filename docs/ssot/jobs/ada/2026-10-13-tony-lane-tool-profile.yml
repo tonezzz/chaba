@@ -20,14 +20,17 @@ profile:
   include: 49   # kk-parity core (23, minus stale conv_journal) + 26 tony-lane
   exclude: 2    # home_status, home_history — live fallbacks via get_home_state/home_search
   notes:
-    - vcast_gesture kept (kk drops it): the kk exclusion guards HER lane
+    - >-
+      vcast_gesture kept (kk drops it): the kk exclusion guards HER lane
       from tony-dell's input-bridge; on Tony's own lane it is his
       capability, and smoke-tier tool_merge_display calls it hourly
       against ada-ha-tony.
-    - conv_journal dropped from persons.kk include too (lint stale):
+    - >-
+      conv_journal dropped from persons.kk include too (lint stale):
       tools.d module exists but was never manifest-enabled (b776e81) —
       never declared at runtime. Follow-up card OPS-0584.
-    - home_status (~30 calls/3d) + home_history (~7) observed used but
+    - >-
+      home_status (~30 calls/3d) + home_history (~7) observed used but
       deliberately dropped per card spec — get_home_state/home_search
       are the fallbacks; re-adding is one SSOT line.
 
@@ -79,13 +82,17 @@ findings:
       Pre-existing, lane-general instruction-routing bug. Card OPS-0585.
 
 verification:
-  - render-tool-profiles.py --lint: 0 warnings (51 declared all covered)
-  - smoke scenario: cast_to_screen + control_entity (no-op set on
+  - >-
+    render-tool-profiles.py --lint: 0 warnings (51 declared all covered)
+  - >-
+    smoke scenario: cast_to_screen + control_entity (no-op set on
     input_boolean.cast_powered_by_us) + ada_memory_search all resolve
     and return sane payloads — PASS
-  - context_growth ceiling PASS / floor FAIL (see findings; control run
+  - >-
+    context_growth ceiling PASS / floor FAIL (see findings; control run
     on ada-ha-michael, lane without the keep-list, to attribute cause)
-  - ada-ha-tony active post-restart; tools.d loaded 14 manifest tools
+  - >-
+    ada-ha-tony active post-restart; tools.d loaded 14 manifest tools
     (confirms conv_journal absence)
 
 artifacts:
