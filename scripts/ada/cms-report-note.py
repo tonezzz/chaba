@@ -14,7 +14,7 @@ Usage:
   cms-report-note.py <slug> --note "…" --lang th
 
 Env:
-  MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+  MDDB_BASE_URL   default http://100.102.134.91:11027/v1
   TASK_ID         stamped on the note line; falls back to basename(TASK_DIR)
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
 MDDB = os.environ.get("MDDB_BASE_URL",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 WRITTEN_BY = "cms-report-note.py"
 BLOCK_BEGIN = "<!-- session-log:auto -->"

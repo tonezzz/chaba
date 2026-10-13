@@ -30,7 +30,7 @@ starboard-tracker-update.py (ada-cms-automation registry gating,
 managed block, meta contract).
 
 Env:
-    MDDB_BASE_URL        default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL        default http://100.102.134.91:11027/v1
     REPO                 default = this checkout root
     KANBAN_BRIEF_LLM_URL e.g. http://tony-omen:11434/v1 (optional)
     KANBAN_BRIEF_LLM_MODEL  default gemma3:4b
@@ -55,7 +55,7 @@ import yaml
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "kanban-brief"

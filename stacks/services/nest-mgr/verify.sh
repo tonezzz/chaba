@@ -4,7 +4,7 @@
 set -uo pipefail
 HOSTS=("$@")
 [ ${#HOSTS[@]} -eq 0 ] && HOSTS=(idc03 tony-omen tony-dell)
-MDDB="${MDDB_BASE_URL:-http://100.102.134.91:11023/v1}"
+MDDB="${MDDB_BASE_URL:-http://100.102.134.91:11027/v1}"
 PY='import json;d=json.load(open("/home/tony/.local/share/nest/manager-state.json"));n=d.get("nodes",{});a=sorted(k for k,v in n.items() if v.get("adopted"));print(f"   state: {len(n)} nodes, {len(a)} adopted {a}")'
 rc_all=0
 

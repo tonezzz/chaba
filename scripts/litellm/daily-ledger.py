@@ -18,7 +18,7 @@ import urllib.request
 
 GW = os.environ.get("LITELLM_URL", "http://100.102.134.91:4000").rstrip("/")
 MASTER = os.environ.get("LITELLM_MASTER_KEY", "")
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1")
 PAGE_KEY = "llm-gateway-spend-ledger"
 
 SQL = """

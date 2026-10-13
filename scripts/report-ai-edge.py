@@ -41,7 +41,7 @@ LAYER = "L2-domain"
 OUT_DIR = REPO / "reports" / "ai-edge"
 META = REPO / "reports" / "meta.ai-edge.yml"
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 CMS_SLUG = "ai-edge-report"
 
 # Nest watchlist — keywords that make a paper/repo relevant to us

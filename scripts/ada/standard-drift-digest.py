@@ -19,7 +19,7 @@ Publishes en+th to ada-cms-pages, same contract as kanban-brief.py
 ssot.apps.cms-reports.yml).
 
 Env:
-    MDDB_BASE_URL     default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL     default http://100.102.134.91:11027/v1
     REPO              default = this checkout root
     ADA_PI            default ~/CascadeProjects/ada-pi (lint source)
 
@@ -46,7 +46,7 @@ CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 ADA_PI = Path(os.environ.get("ADA_PI", Path.home() / "CascadeProjects"
                             / "ada-pi"))
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "standard-drift"

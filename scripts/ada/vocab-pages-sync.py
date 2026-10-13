@@ -23,6 +23,17 @@ import urllib.request
 from datetime import datetime, timezone
 
 MDDB = "http://100.102.134.91:11023/v1"
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(body):
+    c = str((body or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
 
 # person -> (personal-bank collection, cms page slug)
 PEOPLE = {
@@ -41,7 +52,7 @@ LINE_RE = re.compile(r"^-\s+(.+?)\s*→\s*(.+?)\s*—\s*(\d{4}-\d{2}-\d{2})(?:\s
 
 def api(path, body=None, method="POST"):
     req = urllib.request.Request(
-        f"{MDDB}{path}",
+        f"{_base(body)}{path}",
         data=json.dumps(body).encode() if body is not None else None,
         method=method if body is None else "POST",
         headers={"content-type": "application/json"},

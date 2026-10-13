@@ -31,7 +31,7 @@ RUNBOOK = REPO / "docs/kb/ha-ada-isolation.md"
 DEPLOY_SH = REPO.parent / "ada-pi/scripts/deploy-ada.sh"
 if not DEPLOY_SH.exists():
     DEPLOY_SH = REPO / "../ada-pi/scripts/deploy-ada.sh"
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 INDEX_SLUG = "ha-ada-isolation"
 RUNBOOK_REF = "docs/kb/ha-ada-isolation.md"

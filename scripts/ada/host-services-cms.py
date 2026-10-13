@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 AUDIT = REPO / "scripts" / "audit-hosts.py"
 DUMPS = REPO / "reports" / "audit-hosts"
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 ICT = timezone(timedelta(hours=7))
 SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8"]

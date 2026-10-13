@@ -12,7 +12,7 @@ read via HTTP (dogfoods the service; no DB creds in this script).
 
 Env:
     TRADE_API       default http://127.0.0.1:9002
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
     YAHOO_RANGE     default 2mo (lookback for stock deltas)
 
 Usage:
@@ -30,7 +30,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 TRADE = os.environ.get("TRADE_API", "http://127.0.0.1:9002").rstrip("/")
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 YAHOO_RANGE = os.environ.get("YAHOO_RANGE", "2mo")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"

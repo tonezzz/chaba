@@ -34,7 +34,7 @@ Usage:
     nest-mgr.py --once --dry-run   full cycle, state file only, no CMS write
 
 Env:
-    MDDB_BASE_URL     default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL     default http://100.102.134.91:11027/v1
     NEST_TOPOLOGIES   topologies.yml path
                       (default ~/CascadeProjects/ada-pi/tests/bench/topologies.yml)
     NEST_CARDS_DIR    kanban cards dir scanned for `nest_nodes:` claims
@@ -58,7 +58,7 @@ from pathlib import Path
 
 ICT = timezone(timedelta(hours=7))
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 

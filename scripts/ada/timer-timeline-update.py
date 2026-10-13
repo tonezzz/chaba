@@ -13,7 +13,7 @@ Health:  ok = enabled+armed · late = next-fire already past-due
          failing = service in failed state · off = disabled/missing unit
 
 Env:
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
     REPO            default = this checkout root
     TT_HOSTS        comma-sep host list override
     TT_STATE_DIR    default ~/.local/share/chaba/timer-timeline
@@ -35,7 +35,7 @@ from pathlib import Path
 
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "timer-timeline"

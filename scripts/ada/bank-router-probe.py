@@ -35,6 +35,18 @@ import urllib.request
 
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027")
+MDDB_CMS = MDDB_CMS.removesuffix("/v1").removesuffix("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
 
 # Banks assigned to instance 'tony' — mirrors the live registry
 # (~/.config/ada/memory-banks.json on idc03, read 2026-10-08). Speaker
@@ -81,7 +93,7 @@ QUERIES = [
 
 def _post(path: str, payload: dict, timeout: float = 30.0) -> dict:
     req = urllib.request.Request(
-        MDDB + path, data=json.dumps(payload).encode(),
+        _base(payload) + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
 

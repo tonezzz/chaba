@@ -14,7 +14,7 @@ Publishes en+th to ada-cms-pages, updates the ada-cms-automation
 registry doc. Stdlib only — same contract as market-report-update.py.
 
 Env:
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
     YT_MEDIA_CACHE  default ~/.cache/yt-live-media
     YT_SUBS_CACHE   default ~/.cache/yt-live-subs
 
@@ -34,7 +34,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 MCACHE = Path(os.environ.get(
     "YT_MEDIA_CACHE", os.path.expanduser("~/.cache/yt-live-media")))
 SCACHE = Path(os.environ.get(

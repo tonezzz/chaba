@@ -55,6 +55,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 MDDB = (os.environ.get("MDDB_OPS_URL")
         or os.environ.get("MDDB_BASE_URL")
         or "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
 USAGE_LOG = Path(os.environ.get(
     "ADA_USAGE_LOG",
     "~/CascadeProjects/ada-pi/data/usage.jsonl")).expanduser()
@@ -87,7 +98,7 @@ CACHED_RATE_FRACTION = 0.25
 
 def _post(path: str, payload: dict, timeout: int = 60):
     req = urllib.request.Request(
-        f"{MDDB}/{path.lstrip('/')}", data=json.dumps(payload).encode(),
+        f"{_base(payload)}/{path.lstrip('/')}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)

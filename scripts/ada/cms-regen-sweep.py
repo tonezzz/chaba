@@ -19,7 +19,7 @@ are MDDB-writable, so treat cmd as untrusted input.
 Writes back last_run / last_status / last_duration_s / last_count.
 
 Env:
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
     REPO            default = this checkout root
 
 Usage:
@@ -41,7 +41,7 @@ from pathlib import Path
 
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 REGISTRY = "ada-cms-automation"
 # cmd allowlist: a repo-relative script under scripts/ + plain-token args
 CMD_RE = re.compile(r"^scripts/[a-zA-Z0-9_./-]+\.(py|sh)$")

@@ -39,7 +39,7 @@ import report as rlib  # noqa: E402
 import yaml  # noqa: E402
 
 MDDB = os.environ.get("MDDB_BASE_URL",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 META_FIELDS = ("summary", "domain", "fresh_for", "confidence")
 

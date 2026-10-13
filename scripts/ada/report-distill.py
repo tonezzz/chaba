@@ -59,6 +59,19 @@ from pathlib import Path
 
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
+
+
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 REPO = Path(os.environ.get(
@@ -100,7 +113,7 @@ _VOLATILE_RX = re.compile(
 
 def _post(path: str, payload: dict, timeout: int = 60):
     req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        f"{_base(payload)}/{path}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
@@ -488,7 +501,7 @@ def regen_reports_index() -> bool:
     docs/ssot/infrastructure/ssot.cms.yml)."""
     sys.path.insert(0, str(REPO / "scripts"))
     from lib.cms_index import regen_reports_index as _regen
-    return _regen(MDDB, "report-distill.py", collection=COLLECTION)
+    return _regen(MDDB_CMS, "report-distill.py", collection=COLLECTION)
 
 
 # ----------------------------------------------------------------- main

@@ -24,7 +24,7 @@ Usage:
     cms-ia-normalize.py --key cam-dohweb-bang-pu-sukhumvit-out --apply
 
 Env:
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
 """
 import argparse
 import json
@@ -35,7 +35,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 DEAD_STATUS = {"superseded", "archived", "retracted", "expired"}
 # Dead twins -> canonical page. dohweb cams: same PER_* DOH streams the

@@ -1735,6 +1735,12 @@ hosts:
         expected_state: inactive
         critical: false
         note: Parked 2026-10-12 — moved to tony-omen (OPS-0524); delete entry + unit after 24h rollback window
+      - name: mddb-cms.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Chaba content plane on tailnet :11027 (MEM-0545) — hosts ada-cms-*/chaba-*/kb-* collections split off mddb primary
       - name: mddb-backup.timer
         type: timer
         scope: user

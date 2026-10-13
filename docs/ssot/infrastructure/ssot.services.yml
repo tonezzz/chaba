@@ -122,6 +122,26 @@ tony-dell:
       - mddb.service
       - gemini-ollama-proxy.service
       - mddb-embed-probe.timer  # idc03, 15min — vector-search canary + embed-queue
+  mddb-cms:
+    container: mddb-cms
+    image: localhost/mddb:2.15.4-lsn
+    runtime: rootless podman
+    network: host
+    port: 11027 (API)
+    host_port: 100.102.134.91:11027
+    host: idc03
+    data_volume: /home/tony/.config/containers/mddb-cms/data
+    quadlet:
+      container_unit: ~/.config/containers/systemd/mddb-cms.container
+    note: >-
+      Chaba content plane (MEM-0545, 2026-10-13) — ada-cms-*, chaba-*,
+      kb-*, documents, infrastructure-ssot, devin-kb collections moved off
+      the primary so content writes can't stall ada memory recall.
+      Writers: chaba scripts via MDDB_BASE_URL/:11027 defaults or
+      MDDB_CMS_URL in mixed scripts; ada backends route by collection
+      via mddb_client cms-plane (MDDB_CMS_URL env). Embedding same as
+      primary (ollama :11435). Old collections on :11023 parked — delete
+      after rollback window.
         # saturation tripwire (queue.depth/dropped from /v1/vector-stats ->
         # ada-ops events). Thresholds EMBED_QUEUE_WARN_DEPTH=500 /
         # EMBED_QUEUE_CRIT_DEPTH=3000. See docs/ssot/jobs/infrastructure/

@@ -40,13 +40,24 @@ META = REPO / "reports" / "meta.ada-debug.yml"
 PERSONS_YML = REPO / "docs" / "ssot" / "apps" / "ssot.apps.ada-persons.yml"
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
 CMS_SLUG = "ada-debug-report"
 DAYS = 30
 
 
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
+
+
 def _mddb(path: str, payload: dict, timeout: int = 20):
     req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        f"{_base(payload)}/{path}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
     try:
         return json.load(urllib.request.urlopen(req, timeout=timeout))
@@ -161,7 +172,7 @@ def publish_cms(md: str, summary: str) -> bool:
           timeout=60)
     try:
         from lib.cms_index import regen_reports_index
-        regen_reports_index(MDDB, written_by="report-ada-debug.py")
+        regen_reports_index(MDDB_CMS, written_by="report-ada-debug.py")
     except Exception as e:
         print(f"warn: reports-index regen failed ({e})", file=sys.stderr)
     return True

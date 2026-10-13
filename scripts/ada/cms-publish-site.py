@@ -22,7 +22,7 @@ Usage:
   cms-publish-site.py --all
 
 Env:
-  MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+  MDDB_BASE_URL   default http://100.102.134.91:11027/v1
   CMS_SITE_ROOT   default ~/.config/containers/caddy/data/www (idc02 edge
                   caddy-edge webroot, mounted as /data,Z/www in-container)
 """
@@ -36,7 +36,7 @@ import urllib.request
 from pathlib import Path
 
 MDDB = os.environ.get("MDDB_BASE_URL",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11027/v1").rstrip("/")
 SITE_ROOT = Path(os.environ.get(
     "CMS_SITE_ROOT",
     os.path.expanduser("~/.config/containers/caddy/data/www")))

@@ -12,7 +12,7 @@ Publishes en+th to ada-cms-pages, updates the ada-cms-automation
 registry doc. Stdlib only — same contract as market-report-update.py.
 
 Env:
-    MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+    MDDB_BASE_URL   default http://100.102.134.91:11027/v1
     REPO            default = this checkout root
 
 Usage:
@@ -37,7 +37,7 @@ REPO = Path(os.environ.get("REPO") or
 CARD = REPO / "docs/ssot/kanban/cards/starboard-windsurf-catalogs.yml"
 MANIFEST = REPO / "reports/starboard-catalogs/catalogs.yml"
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "starboard-catalogs"

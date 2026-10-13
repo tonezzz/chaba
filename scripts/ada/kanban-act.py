@@ -64,6 +64,19 @@ REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
+
+
 OPS_COLLECTION = "ada-ha-events-tony"
 MAX_ACTS = int(os.environ.get("KANBAN_ACT_MAX", "5"))
 
@@ -201,7 +214,7 @@ def gate_hold_reason(c: dict) -> str | None:
 
 def _post(path, payload, timeout=30):
     req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        f"{_base(payload)}/{path}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 

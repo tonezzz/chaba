@@ -17,7 +17,7 @@ Usage:
   kb-page-sync.py --dry-run <slug>     # preview without writing
 
 Env:
-  MDDB_BASE_URL   default http://100.102.134.91:11023/v1
+  MDDB_BASE_URL   default http://100.102.134.91:11027/v1
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ from pathlib import Path
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 sys.path.insert(0, str(REPO / "scripts"))
 MDDB = os.environ.get("MDDB_BASE_URL",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 WRITTEN_BY = "kb-page-sync.py"
 KB_DIR = REPO / "docs" / "kb"

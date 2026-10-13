@@ -57,6 +57,19 @@ INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 DECISIONS = REPO / "docs/ssot/ssot.focus.decisions.yml"
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
+
+
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "tony-ideas"
@@ -288,7 +301,7 @@ def _post(path, payload, timeout=60, retries=3):
     for attempt in range(retries):
         try:
             req = urllib.request.Request(
-                f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+                f"{_base(payload)}/{path}", data=json.dumps(payload).encode(),
                 headers={"Content-Type": "application/json"})
             return json.load(urllib.request.urlopen(req, timeout=timeout))
         except Exception as e:

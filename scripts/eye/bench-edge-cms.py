@@ -41,6 +41,17 @@ import cms_index  # noqa: E402
 
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
+_CMS_COLS = ("ada-cms-", "chaba-", "kb-")
+_CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
+              "ada-scenario", "ada-session-audit", "ada-tool-profile"}
+
+
+def _base(payload):
+    c = str((payload or {}).get("collection", ""))
+    return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
+            else MDDB)
 PUBLIC = Path(os.environ.get(
     "EYE_PUBLIC",
     str(Path.home()
@@ -60,7 +71,7 @@ _JSON_FENCE = re.compile(r"```json\s*(\{.*?\})\s*```", re.S)
 
 def mddb_post(path: str, payload: dict, timeout: float = 30):
     req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        f"{_base(payload)}/{path}", data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 

@@ -27,7 +27,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 INDEX_SLUG = "secrets-inventory"
 

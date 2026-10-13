@@ -94,6 +94,8 @@ except ImportError:  # pragma: no cover - dell has PyYAML
 HOME = Path.home()
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+MDDB_CMS = os.environ.get(
+    "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 REPORTS_COLLECTION = "ada-ha-scenario-reports"
 PAGE_COLLECTION = "ada-cms-pages"
@@ -1032,8 +1034,8 @@ def publish_page(md: str, day: str, sessions: list[dict],
                  findings: list[dict], surfaced: list[dict]) -> str:
     h = hashlib.sha256(md.encode()).hexdigest()[:16]
     try:
-        old = post(f"{MDDB}/get", {"collection": PAGE_COLLECTION,
-                                   "key": PAGE_SLUG, "lang": "en"})
+        old = post(f"{MDDB_CMS}/get", {"collection": PAGE_COLLECTION,
+                                       "key": PAGE_SLUG, "lang": "en"})
     except Exception:
         old = {}
     meta = {k: (v if isinstance(v, list) else [str(v)])
@@ -1063,8 +1065,8 @@ def publish_page(md: str, day: str, sessions: list[dict],
     meta.setdefault("valid_from", [day])
     for k in ("superseded_by", "superseded_at", "archived_at"):
         meta.pop(k, None)
-    post(f"{MDDB}/add", {"collection": PAGE_COLLECTION, "key": PAGE_SLUG,
-                         "lang": "en", "contentMd": md, "meta": meta})
+    post(f"{MDDB_CMS}/add", {"collection": PAGE_COLLECTION, "key": PAGE_SLUG,
+                             "lang": "en", "contentMd": md, "meta": meta})
     return "written"
 
 

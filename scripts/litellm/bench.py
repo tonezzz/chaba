@@ -25,7 +25,7 @@ GW_KEY = os.environ.get("LITELLM_KEY") or os.environ.get("LITELLM_KEY_BENCH", ""
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY_PAID", "")
 OR_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OR_BASE = os.environ.get("OPENROUTER_BASE", "https://openrouter.ai/api/v1")
-MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
+MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1")
 
 CHAT_CLASSES = ["tool-call", "summary", "voice-aux", "classify", "bench"]
 N_CALLS = int(os.environ.get("BENCH_N", "5"))
