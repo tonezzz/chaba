@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-kanban-commit
 title: Timer kanban-commit on tony-dell failing
-column: backlog
-updated: 2026-10-13 10:53
+column: done
+updated: 2026-10-13 11:02
 priority: high
 tags:
 - timer-alert
@@ -86,3 +86,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-13 10:45) of `kanban-commit.service` on `tony-dell` result=exit-code —
     investigate journal: `journalctl --user -u kanban-commit.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-13 11:02
+  from: devin
+  text: 'VERIFIED FIXED — root cause: review card audit-fail-calendar-read had no review_kind/auto_done_when ->
+    ssot-optimize gate aborted every kanban-commit since 07:23, stalling ALL board persistence. Added review_kind:verify
+    to the card + board-api now accepts review_kind/auto_done_when at create + session-audit stamps it on spawn.
+    Commit green, pushing.'
+- at: 2026-10-13 11:02
+  from: devin
+  text: closed by devin
+action:
+  status: done

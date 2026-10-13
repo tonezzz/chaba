@@ -1,0 +1,26 @@
+id: media-inbox-report
+title: Media inbox page family — per-item leaves + dedup + extract cache
+column: doing
+updated: 2026-10-13 11:06
+priority: medium
+spec: 'Per docs/kb/media-inbox-standard.md: (1) scripts/ada/media-inbox-update.py — manifest.jsonl -> media-inbox
+  rollup + media-<mid> receipt leaves + media-inbox-qc, mirrors house-timeline-update.py, --dry-run, reports-index
+  regen, per-lane collection; (2) relay: sha256 field on manifest lines + message_id on journal entries; (3) doc_read:
+  check media-<mid>-extract leaf before extracting (T3 cache), write it after, redirect on T2 dup (sha256 match
+  -> duplicate_of); (4) timer per lane 15m; (5) live scenario: dup mid -> one leaf, same bytes twice -> duplicate_of,
+  doc_read twice -> second reads leaf. Deploy via deploy-ada.sh + chaba checkout pull on idc03.'
+action:
+  type: dispatch
+  status: running
+  runner: idc02
+ref: KNB-0568
+comms:
+- at: 2026-10-13 11:06
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 11:06
+  from: idc02
+  text: claimed
+- at: 2026-10-13 11:06
+  from: chaba
+  text: started devin-task-20261013-110658-per-docs-kb-media-inbox-standa on idc02 (dispatch)
