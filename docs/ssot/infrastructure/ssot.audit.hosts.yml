@@ -1848,6 +1848,14 @@ hosts:
         note: Hourly :17 — 1 minimal Live connect on FREE key, ledgers to
           ~/.local/share/ada-live-canary.jsonl; maps free-tier ceiling
           for the scenario-budget ramp (2026-10-12)
+      - name: gemini-wallet-watch.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly :47 — ~1-token probe on PAID key; on depletion/recovery
+          transition LINE /send to tony DM + kk group (2026-10-13); state
+          ~/.local/share/ada/gemini-wallet-watch.json
       - name: ops-health-report.timer
         type: timer
         scope: user
