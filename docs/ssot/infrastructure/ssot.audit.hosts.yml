@@ -301,6 +301,57 @@ hosts:
       - {name: xvfb-99.service, type: service, scope: user}
       - {name: yomi-api.service, type: service, scope: user}
       - {name: yt-live-api.service, type: service, scope: user}
+      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
+      - {name: ada-flood-news.timer, type: timer, scope: user}
+      - {name: ada-market-report.timer, type: timer, scope: user}
+      - {name: audit-cast.timer, type: timer, scope: user}
+      - {name: barrier-client-watchdog.timer, type: timer, scope: user}
+      - {name: cam-frame-refresh.timer, type: timer, scope: user}
+      - {name: cam-wall-cms.timer, type: timer, scope: user}
+      - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
+      - {name: chaba-cached-videos.timer, type: timer, scope: user}
+      - {name: chaba-cms-reflect.timer, type: timer, scope: user}
+      - {name: chaba-cms-regen.timer, type: timer, scope: user}
+      - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
+      - {name: chaba-kanban-brief.timer, type: timer, scope: user}
+      - {name: chaba-nag.timer, type: timer, scope: user}
+      - {name: chaba-report-watch.timer, type: timer, scope: user}
+      - {name: chaba-review-digest.timer, type: timer, scope: user}
+      - {name: chaba-route-health.timer, type: timer, scope: user}
+      - {name: chaba-standard-drift.timer, type: timer, scope: user}
+      - {name: chaba-starboard-tracker.timer, type: timer, scope: user}
+      - {name: chaba-system-report.timer, type: timer, scope: user}
+      - {name: chaba-tony-ideas.timer, type: timer, scope: user}
+      - {name: daily-brief.timer, type: timer, scope: user}
+      - {name: devin-dispatch-prune.timer, type: timer, scope: user}
+      - {name: devin-dispatch-watch.timer, type: timer, scope: user}
+      - {name: devin-session-prune.timer, type: timer, scope: user}
+      - {name: devin-summaries-sync.timer, type: timer, scope: user}
+      - {name: flood-alert.timer, type: timer, scope: user}
+      - {name: focus-dispatcher-overnight.timer, type: timer, scope: user}
+      - {name: ha-auth-watch.timer, type: timer, scope: user}
+      - {name: ha-config-backup.timer, type: timer, scope: user}
+      - {name: kanban-sync.timer, type: timer, scope: user}
+      - {name: log-shipper.timer, type: timer, scope: user}
+      - {name: log-shipper-mha.timer, type: timer, scope: user}
+      - {name: log-shipper-severe.timer, type: timer, scope: user}
+      - {name: log-shipper-severe-mha.timer, type: timer, scope: user}
+      - {name: mcp-debug-h3-sync.timer, type: timer, scope: user}
+      - {name: mddb-standby-pull.timer, type: timer, scope: user}
+      - {name: network-scan-tony.timer, type: timer, scope: user}
+      - {name: ops-percussion.timer, type: timer, scope: user}
+      - {name: overnight-assessment.timer, type: timer, scope: user}
+      - {name: session-audit.timer, type: timer, scope: user}
+      - {name: staleness-sentinel.timer, type: timer, scope: user}
+      - {name: tony-dell-health-snapshot.timer, type: timer, scope: user}
+      - {name: tony-dell-mcp-health.timer, type: timer, scope: user}
+      - {name: tony-dell-monitor.timer, type: timer, scope: user}
+      - {name: update-cam-frame.timer, type: timer, scope: user}
+      - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
+      - {name: yomi-backup.timer, type: timer, scope: user}
+      - {name: yomi-mddb-digest.timer, type: timer, scope: user}
+      - {name: yomi-update-active.timer, type: timer, scope: user}
+      - {name: yomi-update-all.timer, type: timer, scope: user}
     expected_absent: []   # michael-dev covered by expected_state: absent above
     allowed_running:
       - devin-task-*.service   # ephemeral dispatch session units
@@ -849,6 +900,37 @@ hosts:
       - {name: yomi-api.service, type: service, scope: system}
       - {name: yomi-process.service, type: service, scope: system,
          note: failed at census — card tracks whether it should run or retire}
+      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
+      - {name: ada-gh-runs-watch.timer, type: timer, scope: user}
+      - {name: ada-pi-orch-bench.timer, type: timer, scope: user}
+      - {name: ada-review-refresh.timer, type: timer, scope: user}
+      - {name: apps-health-sync.timer, type: timer, scope: user}
+      - {name: chaba-audit.timer, type: timer, scope: user}
+      - {name: chaba-audit-watchdog.timer, type: timer, scope: user}
+      - {name: chaba-kb-audit.timer, type: timer, scope: user}
+      - {name: chaba-mn01-sync.timer, type: timer, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
+      - {name: devin-dispatch-watch.timer, type: timer, scope: user}
+      - {name: focus-dispatcher.timer, type: timer, scope: user}
+      - {name: focus-dispatcher-overnight.timer, type: timer, scope: user}
+      - {name: ha-fabric-cms.timer, type: timer, scope: user}
+      - {name: log-shipper.timer, type: timer, scope: user}
+      - {name: log-shipper-severe.timer, type: timer, scope: user}
+      - {name: mcp-health-snapshot.timer, type: timer, scope: user}
+      - {name: michael-dev-parity.timer, type: timer, scope: user}
+      - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
+      - {name: open-jev-leash.timer, type: timer, scope: user}
+      - {name: report-ai-edge.timer, type: timer, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: secrets-collect.timer, type: timer, scope: user}
+      - {name: ssh-canary.timer, type: timer, scope: user}
+      - {name: ssh-mesh-sync.timer, type: timer, scope: user}
+      - {name: ssot-mddb-sync.timer, type: timer, scope: user}
+      - {name: staleness-sentinel.timer, type: timer, scope: user}
+      - {name: wake-screens.timer, type: timer, scope: user}
+      - {name: wayback-save-gta.timer, type: timer, scope: user}
+      - {name: weaviate-index.timer, type: timer, scope: user}
+      - {name: weekly-digest.timer, type: timer, scope: user}
     expected_absent:
       - name: michael-dev.service
         scope: user
@@ -1277,6 +1359,14 @@ hosts:
       - {name: xmeye-vms.service, type: service, scope: user}
       - {name: yolo-ipad-1.service, type: service, scope: user}
       - {name: yolo-ipad-2.service, type: service, scope: user}
+      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
+      - {name: ada-standby-sync.timer, type: timer, scope: user}
+      - {name: chaba-repo-sync.timer, type: timer, scope: user}
+      - {name: devin-dispatch-watch.timer, type: timer, scope: user}
+      - {name: log-shipper.timer, type: timer, scope: user}
+      - {name: log-shipper-severe.timer, type: timer, scope: user}
+      - {name: mn01-canary.timer, type: timer, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user}
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -1777,6 +1867,16 @@ hosts:
       - {name: michael-dev.service, type: service, scope: user, critical: true,
          note: real instance — migrated from dell 2026-10-09, serves :8124}
       - {name: nest-mgr.service, type: service, scope: user}
+      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
+      - {name: ada-memory-distill.timer, type: timer, scope: user}
+      - {name: ada-memory-drift.timer, type: timer, scope: user}
+      - {name: ada-memory-gaps.timer, type: timer, scope: user}
+      - {name: ada-recall-canary.timer, type: timer, scope: user}
+      - {name: cam-wall-cms-vps.timer, type: timer, scope: user}
+      - {name: cert-sync.timer, type: timer, scope: user}
+      - {name: mddb-memory-standard.timer, type: timer, scope: user}
+      - {name: mddb-restart.timer, type: timer, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user}
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
@@ -1902,6 +2002,25 @@ hosts:
       - {name: caddy-edge.service, type: service, scope: user}
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
+      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
+      - {name: ada-flood-news.timer, type: timer, scope: user}
+      - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
+      - {name: camwall-render-check.timer, type: timer, scope: user}
+      - {name: chaba-audit.timer, type: timer, scope: user}
+      - {name: chaba-audit-full.timer, type: timer, scope: user}
+      - {name: chaba-kb-audit.timer, type: timer, scope: user}
+      - {name: chaba-system-report.timer, type: timer, scope: user}
+      - {name: cms-publish-site.timer, type: timer, scope: user}
+      - {name: devin-bank-distill.timer, type: timer, scope: user}
+      - {name: jev-bench.timer, type: timer, scope: user}
+      - {name: jev-retrain.timer, type: timer, scope: user}
+      - {name: log-shipper.timer, type: timer, scope: user}
+      - {name: log-shipper-severe.timer, type: timer, scope: user}
+      - {name: mddb-lab-pull.timer, type: timer, scope: user}
+      - {name: mddb-watchdog.timer, type: timer, scope: user}
+      - {name: report-distill.timer, type: timer, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
     known_failed:
       - name: chaba-audit.service
         reason: "Exits nonzero when the audit suite has error findings — findings tracked in card fix-idc02-audit-suite"
