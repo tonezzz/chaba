@@ -235,15 +235,26 @@ def write_inbox_alert(host, scan, fixes, dry_run=False):
 
 def _load_drift_state():
     if DRIFT_STATE_FILE.exists():
-        with open(DRIFT_STATE_FILE) as f:
-            return json.load(f)
+        try:
+            with open(DRIFT_STATE_FILE) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            # corrupt/truncated state (crash or disk-full mid-write) — keep a
+            # copy for forensics and start clean rather than crash-looping
+            corrupt = DRIFT_STATE_FILE.with_suffix(".json.corrupt")
+            try:
+                DRIFT_STATE_FILE.replace(corrupt)
+            except OSError:
+                pass
     return {"tailscale_ips": {}, "local_ip": None}
 
 
 def _save_drift_state(state):
     DRIFT_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(DRIFT_STATE_FILE, "w") as f:
+    tmp = DRIFT_STATE_FILE.with_suffix(".json.tmp")
+    with open(tmp, "w") as f:
         json.dump(state, f, indent=2)
+    tmp.replace(DRIFT_STATE_FILE)
 
 
 def write_drift_inbox(host, kind, expected, actual):
