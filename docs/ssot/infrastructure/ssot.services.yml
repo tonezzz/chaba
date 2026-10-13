@@ -980,7 +980,7 @@ mn01:
     env_file: "~/.config/secrets/ada-ha-tony.env"
     edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — same admin keys; issued-keys file synced from mn01 2026-09-23 (re-sync after key churn). idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: idc03
@@ -992,7 +992,19 @@ mn01:
     env_file: "~/.config/secrets/ada-ha-michael.env"
     edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys; idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — per-instance store model 2026-10-13: lane secrets owned by michael-ha at idc03:~/.config/secrets/michael-ha/ (own admin key + keys.json; legacy mn01 ada-ha-michael.{env,keys.json} migrate in). idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
+  ada-kk:
+    service: ada-kk.service
+    host: idc03
+    port: 8007
+    host_port: 127.0.0.1:8007
+    purpose: Kaewta lane — voice/chat/cms backend for kk-ha (Kaewta persona)
+    status: active (created 2026-10-09 with kk-ha member node)
+    tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk/"
+    env_file: "~/.config/secrets/ada-kk.env"
+    edge: "kk-ha.surf-thailand.com public edge via idc02 (/chatui* prefix-stripped, /cms* + /api/cms*); tailnet /apps/ha/ada-kk mount"
+    upstream_ha: "http://127.0.0.1:8126/ (kk-ha podman, same host)"
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py, ADA_INSTANCE_ID=kk. FIRST per-instance lane: own admin key + own issued-keys file (ada-ha-kk-keys.json) — the model ssot.home-assistant.instances.yml secrets: blocks now generalize to all lanes; store dir convention idc03:~/.config/secrets/kk-ha/. Gemini: own paid key kaewta-paid.env (gemini-ada-kk) under `gemini-tier paid`; REST side-calls via LITELLM_KEY_KK virtual key."
   ada-dev:
     service: ada-dev.service
     host: idc03
