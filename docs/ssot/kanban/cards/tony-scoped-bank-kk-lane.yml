@@ -1,0 +1,23 @@
+id: tony-scoped-bank-kk-lane
+title: personal-tony scoped bank — Tony on kk lane reads KK personal bank as his own
+column: backlog
+updated: 2026-10-13 13:25
+priority: high
+tags:
+- ada-pi
+- memory
+- privacy
+- kk
+spec: 'Tony 2026-10-13 root cause of the CR-V mixup: memory-banks.json registry has person-scoped banks for person.kk
+  / person.nhong / person.testo_2 but NONE for person.tony. On the kk lane, default personal bank renders to ada-ha-bank-personal-kk
+  — so an unidentified or person.tony speaker on kk lane falls back to the LANE default = KK personal bank. Asking
+  "my car" searched KK data and returned her CR-V. FIX: add bank spec personal-tony (mddb_collection ada-ha-bank-personal-tony
+  — collection exists), person_scope: person.tony, key_scope: [user-tonezzzz, tony LINE/TG identities] in ssot.apps.ada-memory-banks.yml
+  → render-memory-banks.py → memory-banks.json on idc03 → restart lanes. VERIFY: as Tony on kk lane ask "my car"
+  → must NOT return KK CR-V; ada_memory_search bank=personal hits personal-tony only. RISK CHECK: person-scope banks
+  reject foreign writes — ensure key_scope covers all Tony identities on LINE/TG relays.'
+ref: MEM-0572
+comms:
+- at: 2026-10-13 13:25
+  from: tony
+  text: card captured via board-api

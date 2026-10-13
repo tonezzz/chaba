@@ -1,0 +1,23 @@
+id: map-embed-tool
+title: map_embed tool — Google Maps POI+route on CMS pages
+column: backlog
+updated: 2026-10-13 13:25
+priority: medium
+tags:
+- ada-pi
+- tools
+- cms
+- maps
+spec: 'Tony 2026-10-13: wants map tools to show maps with POI and route (e.g. southafrica trip pages). RESEARCH
+  DONE: (1) Google Maps Embed API — FREE + unlimited, iframe, modes: directions (origin/dest/waypoints — route)
+  + place/search (POI pins). Needs one API key. (2) Maps Static API — 10k/mo free then $2/1k, markers + path=enc:polyline
+  → frozen map IMAGE, ideal for report pages + media blocks + media-host archival. Route polyline needs Routes API
+  (10k/mo free). (3) Google My Maps — free no-key curated multi-POI maps, share-embed iframe, but manual authoring
+  only (no API). RECOMMENDED: new tools.d tool map_embed(places[], route{origin,dest,waypoints}, kind=interactive|static)
+  → builds embed/static URL → cms_publish_page/cms_edit. GATE: needs GOOGLE_MAPS_API_KEY (Google Cloud project,
+  enable Maps Embed + Static APIs; billing acct required but usage free at household scale).'
+ref: DEV-0571
+comms:
+- at: 2026-10-13 13:25
+  from: tony
+  text: card captured via board-api
