@@ -1,7 +1,7 @@
 id: media-inbox-report
 title: Media inbox page family — per-item leaves + dedup + extract cache
 column: doing
-updated: 2026-10-13 11:06
+updated: 2026-10-13 11:13
 priority: medium
 spec: 'Per docs/kb/media-inbox-standard.md: (1) scripts/ada/media-inbox-update.py — manifest.jsonl -> media-inbox
   rollup + media-<mid> receipt leaves + media-inbox-qc, mirrors house-timeline-update.py, --dry-run, reports-index
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-13 11:06
   from: chaba
   text: started devin-task-20261013-110658-per-docs-kb-media-inbox-standa on idc02 (dispatch)
+- at: 2026-10-13 11:13
+  from: devin
+  text: 'spec doc found on master (merged in). Plan settled: (1) media-inbox-update.py mirrors trip-calendar.py
+    LANES+publish path, lane=persona on manifest lines (legacy lines fall back to MEDIA_INBOX_CHATS); (2) relay
+    adds sha256/file_name/size/persona/caller + journal message_id; (3) doc_read canonical-mid extract cache; (4)
+    two idc03 15m timers via ssot.jobs.yml; (5) fixture+live yaml. Deploy: ada-pi main push + deploy-ada.sh, chaba
+    pull on idc03 + unit install.'
