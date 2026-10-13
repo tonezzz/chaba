@@ -1,7 +1,7 @@
 id: line-tool-reply-routing-answers-leave-th-5c73e7
 title: LINE tool reply routing — answers leave the originating chat
 column: doing
-updated: 2026-10-13 21:46
+updated: 2026-10-13 21:58
 priority: high
 tags:
 - ada
@@ -25,7 +25,27 @@ comms:
 - at: 2026-10-13 21:46
   from: chaba
   text: started devin-task-20261013-214634-line-tool-reply-routing-answer on tony-omen (dispatch)
+- at: 2026-10-13 21:57
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-214634-line-tool-reply-routing-answer no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-13 21:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-10-13 21:58
+  from: chaba
+  text: dispatched 20261013-215816-line-tool-reply-routing-answer on chaba
 action:
   type: dispatch
   status: running
-  runner: tony-omen
+  sweep:
+    stale_running: 2026-10-13 21:57
+  verified: false
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261013-215816-line-tool-reply-routing-answer
+claim:
+  session: 20261013-215816-line-tool-reply-routing-answer
+  since: 2026-10-13 21:58

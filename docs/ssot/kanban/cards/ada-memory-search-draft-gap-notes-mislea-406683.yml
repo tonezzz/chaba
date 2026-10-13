@@ -1,7 +1,7 @@
 id: ada-memory-search-draft-gap-notes-mislea-406683
 title: 'ada_memory_search: draft ''gap'' notes mislead the model as facts'
-column: doing
-updated: 2026-10-13 21:47
+column: review
+updated: 2026-10-13 22:00
 priority: medium
 tags:
 - ada
@@ -21,7 +21,39 @@ comms:
 - at: 2026-10-13 21:47
   from: chaba
   text: started devin-task-20261013-214712-ada-memory-search-draft-gap-no on tony-macbook (dispatch)
+- at: 2026-10-13 21:58
+  from: devin
+  text: 'root cause: draft surfacing is by design, but ada_memory_search results flagged drafts only via JSON fields
+    — the bank-recall path tags [unverified draft] in-band, the tool path did not. Found 3 more leaks: include_inactive
+    returns drafts unflagged; draft could satisfy the confident-hit recall gate (0.55 surface vs 0.6 gate); dead-turn
+    fallback spoke hits[0] verbatim. Fix staged as ada-pi drop-in patches (4 files) + gap-note body self-identifies
+    + 8-test chaba suite, all passing. Not deployed — '
+- at: 2026-10-13 21:58
+  from: devin
+  text: 'done (staged, not deployed): 4 git-apply patches vs ada-pi 1bd0bf2 in integrations/ada-pi/backend/ (drop
+    6) — draft hits now framed [UNVERIFIED DRAFT] in-band, include_inactive flags drafts, confident-gate + dead-turn
+    paths ignore draft/unverified hits. Chaba side: memory-gap-report body self-identifies; tests/ada/test_draft_hit_frame.py
+    8/8 PASS; trail at docs/ssot/jobs/ada/2026-10-13-ada-memory-search-draft-gap.yml. Needs: install on tony-dell
+    ada-pi + deploy-ada.sh (explicit approval per poli'
+- at: 2026-10-13 22:00
+  from: tony-macbook
+  text: 'finished (ok): exit=0 a-pi and running `deploy-ada.sh` still needs explicit approval per the deploy policy.
+    | devin-task-20261013-21471'
+- at: 2026-10-13 22:00
+  from: chaba
+  text: pushed dispatch/20261013-214712-ada-memory-search-draft-gap-no to origin
+- at: 2026-10-13 22:00
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 22:00
+  from: chaba
+  text: auto-merged 94ad6a3d (dispatch/20261013-214712-ada-memory-search-draft-gap-no) → origin/master
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 a-pi and running `deploy-ada.sh` still needs explicit approval per the deploy policy. | devin-task-20261013-214712-ada-memory-search-draft-gap-no.service:
+    Consumed 1min 8.285s CPU time over 11min 29.866s wall clock time, 782.2M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
