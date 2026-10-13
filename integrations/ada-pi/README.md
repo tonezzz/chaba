@@ -184,13 +184,20 @@ group directive 2026-10-12): members paste `maps.app.goo.gl` /
 should return a durable page link. Built and deployed directly in the
 ada-pi repo on the same day; this drop stages the record copy.
 
-**Status: DEPLOYED** — ada-pi `main` @ `074c7a8` (tool+manifest+guide+
-coverage_debt) + `e24b14d` (token-stripping/name cleanup); live on
-idc03 `ada-kk` since 2026-10-13 15:26; first real pages already on
+**Status: DEPLOYED, then patched here (2026-10-13, card
+place-report-empty-page)** — ada-pi `main` @ `074c7a8` (tool+manifest+
+guide+coverage_debt) + `e24b14d` (token-stripping/name cleanup); live
+on idc03 `ada-kk` since 2026-10-13 15:26; first real pages already on
 `chaba.h3.gizmo-thailand.com/kk-ha/`. Verified end-to-end: LINE reply
-POSTs 200, publisher timer shipped the pages (HTTP 200).
+POSTs 200, publisher timer shipped the pages (HTTP 200). **The staged
+`place_report.py`/`tool_guide` below now carry the empty-page guard and
+are AHEAD of the deployed copy** — redeploy per Install to land it.
 
-### Files (staged copies — byte-identical to deployed)
+### Files (staged copies)
+
+`place_report.py` and `tool_guide` carry the 2026-10-13 empty-page
+guard and are ahead of the deployed ada-pi copies; the manifest
+fragment is still byte-identical.
 
 - `backend/tools.d/place_report.py` — the tool.
 - `backend/tools.d/manifest.place_report.yml` — merge under `tools:`.
@@ -223,6 +230,14 @@ POSTs 200, publisher timer shipped the pages (HTTP 200).
   Google share strings, publishes `meta.public` markdown via
   `cms_publish_page` (domain `places`, `fresh_for=30d`), returns
   `{ok, slug, name, address, coords, resolved_url, publish{public_url}}`.
+- **Unresolved guard** (2026-10-13, card `place-report-empty-page`):
+  a bare `place=` that Nominatim can't pin down has neither coords nor
+  a maps link — publishing there produced title-only pages
+  (`place-cape-sports-center-langebaan-*`). `run()` now returns
+  `{ok:false, unresolved:true, name, maps_url, error}` and publishes
+  nothing; `maps_url` is a `maps/search/?api=1&query=<name>` fallback
+  for the chat reply. A `url=` that resolved to a real maps link still
+  publishes even with no coords — that page carries a working link.
 - Public pages land on `chaba.h3.gizmo-thailand.com/<tenant>/` via
   tony-dell's `cms-h3-publish.timer` (~15min cadence) — tell the user
   the link goes live within ~15min, or share the Google Maps link

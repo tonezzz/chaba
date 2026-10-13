@@ -1,0 +1,60 @@
+title: place_report empty-page guard — unresolved asks refuse publish, return maps search link
+id: 2026-10-13-place-report-empty-guard
+card: place-report-empty-page
+date: 2026-10-13
+status: fixed-in-worktree (staged ahead of deployed ada-pi)
+summary: |
+  place-cape-sports-center-langebaan-259487 landed in ada-cms-pages-kk
+  as a literal '# Cape Sports Center Langebaan' page — no map, no
+  links, no body. Root cause: a bare place= ask ("ขอแผนที่ <place>",
+  no url) goes through _resolve's name-only Nominatim search; on a
+  miss it returns {name, coords:'', resolved_url:''}, and run()'s only
+  gate was `not name and not coords` — so it published a title-only
+  meta.public page. Fix: run() now refuses to publish when there is no
+  coords AND no resolved_url, returning {ok:false, unresolved:true,
+  name, maps_url, error} where maps_url is a google.com/maps/search
+  fallback the model sends in chat (or it asks for the place's maps
+  link). A url= that expanded to a real maps link still publishes with
+  no coords — that page carries a working link, not an empty shell.
+
+repro: |
+  kk lane: member sends "ขอแผนที่ Cape Sports Center Langebaan" with no
+  URL -> place_report(place=..., ask=...) -> Nominatim search misses
+  (South African venue) -> previously published title-only page.
+
+deliverables:
+  - file: integrations/ada-pi/backend/tools.d/place_report.py
+    role: guard
+    detail: |
+      New branch in run() after the name/coords checks: `not coords and
+      not resolved_url` -> no publish, returns unresolved:true +
+      maps_url (maps/search/?api=1&query=<name>) + model-facing error
+      instructing to send the link or ask for a maps URL. DECLARATION
+      description updated to state the behavior.
+  - file: integrations/ada-pi/backend/tool_guide.place_report.yml
+    role: model guidance — unresolved:true means no page exists; send
+      maps_url and/or ask for a maps link; never claim a page when
+      ok is false.
+  - file: tests/ada/test_place_report_drop.py
+    role: 2 new tests (17 total) — Nominatim-miss and Nominatim-down
+      bare-name asks assert pub_calls==[] + maps_url fallback.
+  - file: integrations/ada-pi/README.md
+    role: Drop 4 status/contract updated — staged copy now ahead of
+      deployed; unresolved behavior documented.
+  - file: docs/kb/lane-place-reports.md
+    role: rule 6 added — "Unresolved = no page" as the standing
+      truthfulness contract for place dossiers.
+
+verify:
+  worktree: ".venv-dispatch/bin/python -m pytest tests/ada/test_place_report_drop.py -> 17 passed"
+
+follow_ups:
+  - "DEPLOY: staged place_report.py + tool_guide are ahead of live
+    ada-pi (idc03 ada-kk). Land via cp + deploy-ada.sh gates + lane
+    restart — a prod deploy step, not done from this worktree."
+  - "CLEANUP: the bare page place-cape-sports-center-langebaan-259487
+    (and any other title-only place-* siblings) still sits in
+    ada-cms-pages-kk — delete or mark superseded on the live side."
+  - "Still open from the original drop: no dedup (same place under
+    different name spellings -> duplicate pages); kk-places tool
+    blocked on a GCP Maps Platform key (card kk-places-tool)."

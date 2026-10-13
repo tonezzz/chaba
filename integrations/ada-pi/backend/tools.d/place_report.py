@@ -35,7 +35,10 @@ DECLARATION = {
     "name": "place_report",
     "description": (
         "Turn a Google Maps link or place name into a public CMS report "
-        "page (map image + links); returns public_url to send in chat."),
+        "page (map image + links); returns public_url to send in chat. "
+        "If the place resolves to neither coordinates nor a maps link, "
+        "no page is published — a maps_url search link comes back to "
+        "send instead."),
     "parameters": {
         "type": "object",
         "properties": {
@@ -259,6 +262,21 @@ async def run(runner: Any, **args: Any) -> dict[str, Any]:
                 "error": "the link resolved but carried no place name "
                          "or coordinates — ask the user for the place "
                          "name instead of the bare link"}
+    if not resolved["coords"] and not resolved["resolved_url"]:
+        # Bare-name asks Nominatim can't pin down would publish a page
+        # that is literally just '# <name>' — worse than no page. Hand
+        # back a search link the model can send instead.
+        q = urllib.parse.quote_plus(resolved["name"] or place)
+        return {"ok": False,
+                "unresolved": True,
+                "name": resolved["name"] or place,
+                "maps_url": "https://www.google.com/maps/search/"
+                            f"?api=1&query={q}",
+                "error": "the place did not resolve to coordinates or "
+                         "a maps link, so NO page was published. Send "
+                         "the maps_url search link in chat so the "
+                         "member can pin the right spot, or ask them "
+                         "to paste the place's Google Maps link"}
     title, content = _page(resolved, ask, lang)
     slug = _slug_for(runner, resolved["name"], resolved["coords"])
     summary = (f"Place report: {resolved['name'] or resolved['coords']} — "

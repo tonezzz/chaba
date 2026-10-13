@@ -242,6 +242,38 @@ def test_run_no_name_no_coords_errors(monkeypatch):
     assert not out["ok"] and "no place name" in out["error"]
 
 
+def test_run_unresolved_place_refuses_publish(monkeypatch):
+    """Bare place= ask + Nominatim miss (the Cape Sports Center
+    Langebaan page): nothing mappable -> no page, unresolved +
+    maps/search fallback link."""
+    mod = _load()
+    _patch_httpx(monkeypatch, mod, [
+        ("nominatim", _Resp(payload=[])),
+    ])
+    runner = _Runner()
+    out = asyncio.run(mod.run(
+        runner, place="Cape Sports Center Langebaan",
+        ask="ขอแผนที่", lang="th"))
+    assert not out["ok"] and out["unresolved"]
+    assert runner.pub_calls == []  # the bug was a title-only publish
+    assert out["maps_url"].startswith(
+        "https://www.google.com/maps/search/?api=1&query=")
+    assert "Cape+Sports+Center+Langebaan" in out["maps_url"]
+    assert "NO page was published" in out["error"]
+
+
+def test_run_unresolved_place_nominatim_down_still_honest(monkeypatch):
+    """Nominatim throwing on the name search lands on the same
+    unresolved path — no publish, fallback link."""
+    mod = _load()
+    _patch_httpx(monkeypatch, mod, [])  # every GET raises
+    runner = _Runner()
+    out = asyncio.run(mod.run(runner, place="Some Unfindable Cafe"))
+    assert not out["ok"] and out["unresolved"]
+    assert runner.pub_calls == []
+    assert "maps/search" in out["maps_url"]
+
+
 def test_run_expand_failure_reports(monkeypatch):
     mod = _load()
     _patch_httpx(monkeypatch, mod, [])  # every GET raises
