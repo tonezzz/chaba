@@ -1,4 +1,5 @@
 date: 2026-10-13
+title: Smoke tier retarget to ada-dev
 domain: ada
 job: smoke-tier-to-ada-dev
 cards: [live-session-token-diet, bench-off-paid-lanes]
@@ -12,7 +13,8 @@ summary: >
 
 burn_context:
   ada-ha-tony_2026-10-12: 3595 turns / 116.3M input tokens (~134M/day figure on card)
-  ada-ha-tony_2026-10-13_to_2150: 306 turns / 9.45M input tokens
+  ada-ha-tony_2026-10-13_to_2150: >-
+    306 turns / 9.45M input tokens
     - already ~92% down after _cap_tool_result (OPS-0509 dep 0a1eb4d),
       ADA_TOOL_CALL_BUDGET=10, 49-decl keep-list (OPS-0583), lazy tool
       schemas (ada-pi 932550d — first-turn in= ~18.1k, was ~27.8k)
@@ -43,14 +45,14 @@ verification:
     sessions opened on ada-dev (:8005), zero ws connects on ada-ha-tony'
   - 'manual scenario-live date_echo vs :8005 -> PASS (3 turns, 6 tool
     calls) at ~22:05'
-  caveat: >
-    The 21:49 verification run scored 2 fail + 2 infra then the suite
-    outage sentinel recorded the rest skip-quota — the two infra
-    scenarios hit transient ws 403s while ada-dev was ~3min post-restart
-    (started 21:46). Not a systemic auth problem: date_echo passes clean
-    post-warmup, and After=ada-dev.service + the suite retry absorb most
-    of the race. If 22:00+ runs still sentinel-trip, look at
-    _parse_keys/websocket_authorized warmup ordering on ada-dev.
+  - caveat: >
+      The 21:49 verification run scored 2 fail + 2 infra then the suite
+      outage sentinel recorded the rest skip-quota — the two infra
+      scenarios hit transient ws 403s while ada-dev was ~3min post-restart
+      (started 21:46). Not a systemic auth problem: date_echo passes clean
+      post-warmup, and After=ada-dev.service + the suite retry absorb most
+      of the race. If 22:00+ runs still sentinel-trip, look at
+      _parse_keys/websocket_authorized warmup ordering on ada-dev.
 
 remaining_paid_lane_consumers:
   - 'weekly tiers ada-scenario-{memory,reports,tools,casting,cms,
