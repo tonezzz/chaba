@@ -6,7 +6,9 @@ focus-inbox item when a node needs a human/agent:
 
   error   — generator crashed (immediate)
   missing — declared node never produced meta (immediate)
-  stale   — past cadence (immediate — stale is already a lag)
+  stale   — meta.generated_at older than the node's cadence (immediate —
+            stale is already a lag). Computed HERE: producers write
+            ok|delta; cadence enforcement is the consumer's job.
   delta   — findings present AND unchanged >24h (a delta that never
             clears is a finding nobody looked at; fresh deltas are
             routine drift — audit-hosts is delta most of the time)
@@ -14,14 +16,21 @@ focus-inbox item when a node needs a human/agent:
             (informational: a rendered surface outgrew its budget —
             focus-inbox note, never a page)
 
-One inbox item per node while the bad state persists (dedupe by slug);
-state.json records when each bad state was first seen.
+One inbox item per node while the bad state persists (dedupe by slug,
+only unprocessed items count); state.json records when each bad state
+was first seen. Flags auto-close (focus.status: processed) when the
+node heals — the inbox stays a review queue, not an archive.
 
 Also re-probes `expected_goals` on done kanban cards every GOAL_PROBE_H
 hours — a pass at close proves nothing about next month; regressions
 raise a `report-watch-goal-rot-<card>` inbox item.
 
-Usage: report-watch.py [--quiet]
+Usage: report-watch.py [--quiet] [--json] [--dry-run] [--gate]
+  --json    machine-readable report of every node + flags on stdout
+  --dry-run compute everything, write nothing (no inbox items, no heal
+            flips, no card requeue, no state.json)
+  --gate    exit 1 while any node sits in a flag-worthy state — the CI
+            gate (e.g. `report-watch.py --json --dry-run --gate`)
 """
 import fcntl
 import json
@@ -50,6 +59,7 @@ try:
     import goals as goallib  # scripts/lib/goals.py — expected_goals checks
 except Exception:  # pragma: no cover - re-probe optional
     goallib = None
+import report as rlib  # scripts/lib/report.py — cadence + artifact helpers
 
 
 def meta_path(node: dict) -> Path | None:
@@ -76,16 +86,58 @@ def slug(node_id: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", node_id.lower()).strip("-")
 
 
-def inbox_exists(node_id: str) -> bool:
-    tag = f"report-watch-{slug(node_id)}"
+def _item_tag(raw: str) -> str:
+    """Inbox filename substring for a flag — 'x-overrun'/'goal-rot-x'
+    become report-watch-x-overrun / report-watch-goal-rot-x."""
+    return raw if raw.startswith("report-watch-") \
+        else f"report-watch-{slug(raw)}"
+
+
+def open_item(raw: str) -> Path | None:
+    """First OPEN (unprocessed) inbox file carrying this flag's tag.
+    Items already flipped to focus.status processed/archived don't
+    count — a healed flag that rots again must re-flag, not stay muted."""
+    tag = _item_tag(raw)
     if not INBOX.is_dir():
-        return False
-    for p in INBOX.iterdir():
-        if p.name.startswith(("processed", "archived")):
+        return None
+    for p in sorted(INBOX.iterdir()):
+        if not p.is_file() or p.name.startswith(("processed", "archived")):
             continue
-        if tag in p.name:
-            return True
-    return False
+        # a node flag must not match its own overrun item — the slug is a
+        # strict prefix (report-watch-<nid>-overrun contains the tag)
+        if "-overrun" not in tag and "-overrun" in p.name:
+            continue
+        if tag not in p.name:
+            continue
+        try:
+            doc = yaml.safe_load(p.read_text()) or {}
+        except Exception:
+            continue
+        st = str((doc.get("focus") or {}).get("status") or "draft")
+        if st in ("processed", "archived", "completed"):
+            continue
+        return p
+    return None
+
+
+def heal_item(raw: str, reason: str, dry_run: bool) -> str | None:
+    """Auto-close an open flag whose condition cleared — the item's own
+    text promises 'clears once the node reports ok'. Returns the healed
+    filename for reporting, None when nothing was open."""
+    p = open_item(raw)
+    if not p:
+        return None
+    if not dry_run:
+        try:
+            doc = yaml.safe_load(p.read_text()) or {}
+            foc = doc.setdefault("focus", {})
+            foc["status"] = "processed"
+            foc["processed_reason"] = reason
+            p.write_text(yaml.safe_dump(doc, sort_keys=False,
+                                        allow_unicode=True, width=120))
+        except Exception:
+            return None
+    return p.name
 
 
 def make_item(node: dict, status: str, summary: str, since: str) -> dict:
@@ -220,7 +272,8 @@ def rot_requeue(card_path: Path, cid: str, failed: list) -> bool:
         return False
 
 
-def probe_done_goals(state: dict, now, quiet: bool) -> list[str]:
+def probe_done_goals(state: dict, now, quiet: bool, dry_run: bool,
+                     healed: list) -> list[str]:
     """Re-probe expected_goals on done cards — a pass at close proves
     nothing about next month. Due when neither report-watch's own probe
     nor the card's pipeline.verify result is younger than GOAL_PROBE_H.
@@ -259,59 +312,105 @@ def probe_done_goals(state: dict, now, quiet: bool) -> list[str]:
                   + (f" FAIL: {', '.join(r['id'] for r in failed[:4])}"
                      if failed else ""))
         if not failed:
+            h = heal_item(f"goal-rot-{slug(cid)}",
+                          f"healed — expected_goals probe passed "
+                          f"{now.strftime('%Y-%m-%d %H:%M')}", dry_run)
+            if h:
+                healed.append(h)
             continue
         # on_goal_rot: requeue — loop the regression back into the board
         # instead of an inbox item: stamp the failure evidence on the
         # card (flock protocol, same as kanban-dispatch) then requeue via
         # the API so comms + column transition stay consistent.
-        if card.get("on_goal_rot") == "requeue" and rot_requeue(
-                p, cid, failed):
+        if card.get("on_goal_rot") == "requeue" and not dry_run \
+                and rot_requeue(p, cid, failed):
             if not quiet:
                 print(f"goal-rot {cid}: requeued")
             continue
-        if inbox_exists(f"goal-rot-{slug(cid)}"):
+        if open_item(f"goal-rot-{slug(cid)}"):
             continue
-        fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
-                 f"report-watch-goal-rot-{slug(cid)}.yml")
-        (INBOX / fname).write_text(yaml.safe_dump(
-            make_goalrot_item(cid, failed),
-            sort_keys=False, allow_unicode=True, width=120))
+        if not dry_run:
+            fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
+                     f"report-watch-goal-rot-{slug(cid)}.yml")
+            (INBOX / fname).write_text(yaml.safe_dump(
+                make_goalrot_item(cid, failed),
+                sort_keys=False, allow_unicode=True, width=120))
         if not quiet:
             print(f"flagged goal-rot {cid}")
     return probed
 
 
+def node_status(node: dict, now) -> dict:
+    """Observed status for one registry node — the consumer's view.
+
+    Producers write ok|delta|error|unreachable; this function derives the
+    rest: `stale` from generated_at vs the node's declared cadence (the
+    cadence_enforcement contract — producers never self-declare stale),
+    `untracked`/`missing`/`dormant` for meta-less nodes."""
+    mp = meta_path(node)
+    meta, meta_state = {}, "absent"
+    if mp and mp.is_file():
+        try:
+            meta = yaml.safe_load(mp.read_text()) or {}
+            meta_state = "ok"
+        except Exception:
+            meta_state = "unreadable"
+    gen = str(node.get("generator") or "")
+    dormant = gen.lstrip().startswith("planned") or "<" in gen
+
+    if node.get("state") == "planned":
+        status = "planned"     # registered intent, generator not built
+    elif meta_state == "unreadable":
+        status = "error"
+    elif meta_state == "ok":
+        status = meta.get("status") or "ok"
+    elif mp is None:
+        status = None  # no meta declared — nothing to observe
+    elif rlib.latest_artifact(node.get("output"),
+                              node.get("artifact_pattern")):
+        status = "untracked"   # artifacts but no meta — legacy producer
+    elif node.get("observe") == "remote":
+        status = "remote"      # meta lives off this checkout (push-back)
+    elif dormant:
+        status = "dormant"     # arg-required / planned — exempt pre-run
+    else:
+        status = "missing"
+
+    # stale is observed, never self-declared: a fresh-once meta that
+    # stopped landing reads stale once generated_at outlives cadence
+    if status in ("ok", "delta"):
+        cadence_s = rlib.parse_cadence(node.get("cadence"))
+        age_h = _iso_age_h(meta.get("generated_at"), now)
+        if cadence_s and age_h is not None and age_h * 3600 > cadence_s:
+            status = "stale"
+
+    # offline_ok nodes tolerate unreachable (laptops sleep, travel
+    # hosts leave the tailnet); an unreachable server still flags
+    offline_ok = bool(node.get("offline_ok"))
+    return {"status": status, "meta": meta, "meta_path": mp,
+            "summary": str(meta.get("summary") or ""),
+            "generated_at": meta.get("generated_at"),
+            "dormant": dormant, "offline_ok": offline_ok}
+
+
 def main() -> int:
-    quiet = "--quiet" in sys.argv
+    as_json = "--json" in sys.argv
+    # --json stdout is the machine contract — keep chatter off it
+    quiet = "--quiet" in sys.argv or as_json
+    dry_run = "--dry-run" in sys.argv
+    gate = "--gate" in sys.argv
     reg = yaml.safe_load(REGISTRY.read_text())
     nodes = reg.get("nodes") or []
     state = load_state()
     now = datetime.now(timezone(timedelta(hours=7)))
     now_s = now.strftime("%Y-%m-%d %H:%M:%S +07")
 
-    created = []
+    created, healed, report_rows, active = [], [], [], []
     for node in nodes:
         nid = node["id"]
-        mp = meta_path(node)
-        meta = {}
-        if mp and mp.is_file():
-            try:
-                meta = yaml.safe_load(mp.read_text()) or {}
-            except Exception:
-                pass
-        status = meta.get("status") or ("missing" if mp else None)
-        summary = str(meta.get("summary") or "")
-        # dormant nodes: "planned —" generators or arg-required tools
-        # (e.g. card-pipeline <card-id>) — declared intent, not failures;
-        # they produce meta on their first real run
-        gen = str(node.get("generator") or "")
-        if status == "missing" and (gen.lstrip().startswith("planned")
-                                    or "<" in gen):
-            continue
-        # offline_ok nodes tolerate unreachable (laptops sleep, travel
-        # hosts leave the tailnet); an unreachable server still flags
-        if status == "unreachable" and node.get("offline_ok"):
-            continue
+        obs = node_status(node, now)
+        status = obs["status"]
+        meta = obs["meta"]
 
         # overrun — informational only: the rendered surface's recorded
         # char count exceeded its declared hard limit. Independent of
@@ -319,19 +418,28 @@ def main() -> int:
         # the status flags.
         hard = (node.get("limits") or {}).get("hard")
         chars = (meta.get("extra") or {}).get("chars")
-        if (isinstance(hard, (int, float)) and not isinstance(hard, bool)
+        over = (isinstance(hard, (int, float)) and not isinstance(hard, bool)
                 and isinstance(chars, (int, float)) and not isinstance(chars, bool)
-                and chars > hard):
-            oid = f"{nid}-overrun"
-            if not inbox_exists(oid):
-                fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
-                         f"report-watch-{slug(oid)}.yml")
-                (INBOX / fname).write_text(yaml.safe_dump(
-                    make_overrun_item(node, chars, hard),
-                    sort_keys=False, allow_unicode=True, width=120))
+                and chars > hard)
+        oid = f"{nid}-overrun"
+        if over:
+            if not open_item(oid):
                 created.append(f"{nid}=overrun")
+                if not dry_run:
+                    fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
+                             f"report-watch-{slug(oid)}.yml")
+                    (INBOX / fname).write_text(yaml.safe_dump(
+                        make_overrun_item(node, chars, hard),
+                        sort_keys=False, allow_unicode=True, width=120))
             if not quiet:
                 print(f"overrun {nid}: {int(chars):,} chars > hard {int(hard):,}")
+        else:
+            h = heal_item(oid, f"healed — rendered surface back under "
+                               f"the {int(hard):,}-char limit", dry_run) \
+                if isinstance(hard, (int, float)) \
+                and not isinstance(hard, bool) else None
+            if h:
+                healed.append(h)
 
         key = slug(nid)
         prev = state.get(key) or {}
@@ -343,30 +451,53 @@ def main() -> int:
         flag = False
         if status in BAD_NOW:
             flag = True
-        elif status in BAD_SUSTAINED:
+        elif status in BAD_SUSTAINED and not (status == "unreachable"
+                                              and obs["offline_ok"]):
             try:
                 seen = datetime.strptime(first_seen, "%Y-%m-%d %H:%M:%S %z")
                 flag = (now - seen) > timedelta(hours=DELTA_GRACE_H)
             except Exception:
                 flag = False
-        if not flag or inbox_exists(nid):
-            continue
+        report_rows.append({
+            "node": nid, "status": status, "first_seen": first_seen,
+            "flagged": flag, "generated_at": obs["generated_at"],
+            "summary": obs["summary"][:160]})
+        if flag:
+            active.append(f"{nid}={status}")
+            if not open_item(nid):
+                created.append(f"{nid}={status}")
+                if not dry_run:
+                    fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
+                             f"report-watch-{key}.yml")
+                    (INBOX / fname).write_text(yaml.safe_dump(
+                        make_item(node, status, obs["summary"],
+                                  first_seen),
+                        sort_keys=False, allow_unicode=True, width=120))
+                if not quiet:
+                    print(f"flagged {nid} ({status}, since {first_seen})")
+        else:
+            h = heal_item(nid, f"healed — node reports {status} "
+                               f"({now.strftime('%Y-%m-%d %H:%M')})",
+                          dry_run)
+            if h:
+                healed.append(h)
 
-        fname = (f"{now.strftime('%Y-%m-%d-%H%M%S')}-"
-                 f"report-watch-{key}.yml")
-        (INBOX / fname).write_text(yaml.safe_dump(
-            make_item(node, status, summary, first_seen),
-            sort_keys=False, allow_unicode=True, width=120))
-        created.append(f"{nid}={status}")
-        if not quiet:
-            print(f"flagged {nid} ({status}, since {first_seen})")
-
-    probed = probe_done_goals(state, now, quiet)
-    save_state(state)
-    print(f"report-watch: {len(nodes)} nodes, {len(created)} flagged"
-          + (f" ({', '.join(created)})" if created else "")
-          + f", {len(probed)} goal-probes")
-    return 0
+    probed = probe_done_goals(state, now, quiet, dry_run, healed)
+    if not dry_run:
+        save_state(state)
+    summary = (f"report-watch: {len(nodes)} nodes, {len(created)} flagged"
+               + (f" ({', '.join(created)})" if created else "")
+               + f", {len(healed)} healed, {len(probed)} goal-probes")
+    if as_json:
+        print(json.dumps({
+            "at": now.isoformat(timespec="seconds"),
+            "nodes": report_rows,
+            "flagged": created, "active_flags": active,
+            "healed": healed, "goal_probes": probed,
+            "dry_run": dry_run}, indent=1))
+    else:
+        print(summary)
+    return 1 if (gate and active) else 0
 
 
 if __name__ == "__main__":

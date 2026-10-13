@@ -26,9 +26,13 @@ REPORTS_ROOT = Path(
 ).expanduser()
 TIMELINE_PATH = REPORTS_ROOT / "timeline.jsonl"
 
+# Contract vocab (ssot.reports.yml status_enum): ok, delta, error, stale,
+# missing, unreachable, planned, remote, dormant. `untracked` is a derived
+# observed state — resolve_node emits it for artifacts-without-meta; it is
+# not part of the producer contract vocabulary.
 STATUSES = (
     "ok", "delta", "stale", "error", "unreachable",
-    "missing", "untracked", "remote", "planned",
+    "missing", "untracked", "remote", "planned", "dormant",
 )
 
 _CADENCE_UNITS = {"m": 60, "h": 3600, "d": 86400, "w": 604800}
@@ -279,7 +283,7 @@ def resolve_node(node: dict) -> dict:
     Precedence: registry `state: planned` -> planned; meta.yml present ->
     its status (stale overrides ok/delta when past cadence); observe=remote
     -> remote; artifacts present without meta -> untracked (or stale);
-    otherwise missing.
+    arg-required generators that never ran -> dormant; otherwise missing.
     """
     out = {
         "id": node.get("id"),
@@ -293,9 +297,6 @@ def resolve_node(node: dict) -> dict:
     }
     if node.get("state") == "planned":
         out["status"] = "planned"
-        return out
-    if node.get("observe") == "remote":
-        out["status"] = "remote"
         return out
 
     meta_path = _resolve_repo_path(node.get("meta"))
@@ -327,6 +328,17 @@ def resolve_node(node: dict) -> dict:
         out["status"] = "stale" if _is_stale(out["last_run"], cadence) else "untracked"
         return out
 
+    # remote — observe:remote node whose meta never got pushed back to
+    # this checkout; the push-back contract exists precisely so a remote
+    # producer becomes observable (a pushed meta resolves above instead)
+    if node.get("observe") == "remote":
+        out["status"] = "remote"
+        return out
+
+    # dormant — generators that need an argument (e.g. `card-pipeline.py
+    # <card-id>`) are exempt until the first real run produces meta
+    if "<" in str(node.get("generator") or ""):
+        out["status"] = "dormant"
     return out
 
 
