@@ -4,8 +4,9 @@
 Binds 127.0.0.1:8787 on tony-dell; Caddy proxies /apps/board-api/* here
 (prefix stripped). Each request edits the card YAML in the *served*
 checkout (chaba-tony-dell — the web container bind-mounts that tree),
-then re-runs render-board.py so cards.json + index.html refresh
-immediately. Git persistence is handled by kanban-commit.timer.
+then re-runs render-board.py (+ render-board2.py --if-changed) so both
+views' cards.json + index.html refresh immediately. Git persistence is
+handled by kanban-commit.timer.
 
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
@@ -113,6 +114,7 @@ import board_notify as bn
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 RENDER = REPO / "scripts/render-board.py"
+RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
@@ -1062,6 +1064,12 @@ def render() -> None:
         fcntl.flock(rl, fcntl.LOCK_EX)
         subprocess.run(
             [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
+        )
+        # tabs view too — a /respond answered on board2 must drop off its
+        # needs-tony band on the next poll, not a render-guard tick later
+        subprocess.run(
+            [sys.executable, str(RENDER2), "--if-changed"],
+            cwd=REPO, timeout=60, check=False
         )
 
 

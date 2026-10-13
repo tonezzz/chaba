@@ -1,0 +1,61 @@
+title: Board decisions inbox — batch-approval band on board2
+subtitle: Every open request/ask across all cards, one inline row each, on the tabs view
+icon: inbox
+version: 1
+
+card: board-decisions-inbox
+date: 2026-10-13
+dispatch: 20261013-204708-tony-wants-the-batch-approval-
+
+summary: |
+  Tony wanted the batch-approval UX — answer every pending decision in one
+  pass, one click each — on the board. The classic view (render-board.py)
+  already had the needs-you band; board2 (the tabs view) only counted open
+  requests in a pill that jumped to the review tab. This job ports the
+  aggregate surface to board2: a "Needs Tony" band under the tab row lists
+  every open request AND card-level ask across all cards with the same
+  inline option buttons / free-text inputs as the detail pane.
+
+deliverables:
+  - scripts/render-board2.py — needs-you band between tabs and the
+    sidebar/detail split. nyItems() collects open requests + card-level
+    asks; nyItemHtml renders card title (click jumps to the card's tab +
+    detail), ask text, and controls. Option buttons reuse the existing
+    markup (now reqAnswerHtml, shared with reqHtml) — suggested option
+    carries ★ + emerald highlight. Card-level asks render via
+    askAnswerHtml/askHtml (ported from classic; also added to the detail
+    pane, which previously ignored ask:). Collapse toggle persists to
+    localStorage b2-ny-collapsed; empty state shows "✓ no pending
+    decisions". ?decisions=1 deep-link and the ny-pill both expand +
+    scroll to the band.
+  - one binder wireReq() for all .rq-*/.ask-* controls (band + detail
+    pane) — elements now carry data-id so band rows resolve their own
+    card instead of borrowing the selected card's id.
+  - optimistic removal — markAnswered mutates DATA + pendingAns records
+    the answer so a stale cards.json poll can't resurrect the row
+    (board2's json only regens on a render tick — now also on writes,
+    see below); the row flashes "✓ answered" ~1.6s then drops.
+  - scripts/board/board-api.py — render() now also runs
+    render-board2.py --if-changed after render-board.py so a /respond
+    answered on board2 is gone from the band on the next poll.
+  - docs/ssot/kanban/ssot.kanban.yml — page_standard.needs_you_band.board2
+    documents the band + parity notes.
+
+decisions:
+  - band (top of board) over a separate view — always visible on every
+    tab; ?decisions=1 covers the deep-link case from the spec
+  - decisions only — no stale-review/failed-dispatch nags (classic band
+    already carries those); keeps the row list purely actionable
+  - pendingAns healing instead of trusting the next poll — board2's
+    cards.json lags writes until a render runs; entries confirm-drop or
+    expire after 10min
+
+verify: |
+  python3 scripts/render-board2.py                       # regen OK
+  node --check on extracted <script>                     # JS parses
+  python3 scripts/board/board-api.py --selftest          # ok
+  # E2E (this session, headless Chrome CDP + local board-api:8788):
+  # synthetic card with 2 option-asks + 1 free-text + 1 card-level ask:
+  # all 4 answered via the band (click/input), landed in requests[].answer
+  # + ask.answer + comms; band counted 6->2 (2 pre-existing real asks
+  # remain), row flashed ✓ then dropped; zero-state + pill verified.

@@ -70,6 +70,7 @@ def main():
     .row.active {{ border-color:#0a84ff !important; background:#1e2b4d; }}
     .row:hover {{ background:#1c2a4a; }}
     .badge {{ font-size:10px; padding:1px 5px; border-radius:4px; }}
+    #ny-body {{ max-height:34vh; overflow-y:auto; }}
     #detail pre {{ white-space:pre-wrap; }}
     @media (max-width: 860px) {{
       #sidebar {{ width:100% !important; }}
@@ -78,7 +79,7 @@ def main():
     }}
   </style>
 </head>
-<body class="bg-bg text-slate-100 min-h-screen">
+<body class="bg-bg text-slate-100 min-h-screen flex flex-col" style="height:100vh">
   <nav class="bg-card border-b border-slate-700 px-4 py-3 flex items-center gap-3">
     <a href="/apps/" class="text-sky-400 hover:text-sky-300">&larr; Apps</a>
     <span class="text-slate-500">|</span>
@@ -93,7 +94,9 @@ def main():
 
   <div class="flex gap-2 px-3 pt-2 flex-wrap" id="tabs"></div>
 
-  <div class="flex gap-3 p-3" style="height:calc(100vh - 120px)">
+  <div id="needs-you" class="px-3"></div>
+
+  <div class="flex gap-3 p-3 flex-1 min-h-0">
     <div id="sidebar" class="flex flex-col gap-2 shrink-0" style="width:320px;min-width:240px">
       <input id="q" type="search" placeholder="Filter cards…"
         class="bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm w-full">
@@ -109,6 +112,13 @@ let DATA = null, tab = localStorage.getItem('b2-tab') || 'review';
 let queries = JSON.parse(localStorage.getItem('b2-queries') || '{{}}');
 let sel = localStorage.getItem('b2-sel') || null;
 let autoOpen = JSON.parse(localStorage.getItem('b2-auto') || '{{}}');
+let nyCollapsed = false;
+try {{ nyCollapsed = localStorage.getItem('b2-ny-collapsed') === '1'; }} catch (e) {{}}
+// 'cardId|reqId' -> {{answer, at}} — answers posted this session, replayed
+// onto stale polls until the served cards.json regen confirms them
+const pendingAns = {{}};
+// same keys — row shows "✓ answered" briefly before dropping off the band
+const nyFlash = {{}};
 const AUTO_RE = /^(cms|logs|gev|vcast|disk)-auto-|-auto-health$/;
 
 const TABS = [
@@ -131,15 +141,31 @@ function matchQ(c, q) {{
   const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
   return q.toLowerCase().split(/\\s+/).every(w => hay.includes(w));
 }}
+// card-level ask — one standing decision per card, schema
+// ask: {{question, options[]}} (board-structured-responses). Option
+// buttons post {{id, option: N}}; the Other input posts {{id, text}} —
+// both to /respond with no request_id.
+function askOf(c) {{
+  const a = c.ask;
+  if (a && typeof a === 'object') return a;
+  if (a) return {{question: String(a)}};
+  return null;
+}}
+function askOpen(c) {{
+  const a = askOf(c);
+  return !!(a && a.question && a.status !== 'answered');
+}}
+function optLabel(o) {{ return typeof o === 'string' ? o : (o.label || o.id); }}
 function needYou(c) {{
-  return (c.requests||[]).filter(r => r.status !== 'answered');
+  return (c.requests||[]).filter(r => r.status !== 'answered').length
+       + (askOpen(c) ? 1 : 0);
 }}
 
 function badgeHtml(c) {{
   let b = '';
   const p = (c.priority||'').toLowerCase();
   if (p === 'high') b += `<span class="badge bg-red-800/80 text-red-100">high</span> `;
-  const ny = needYou(c).length;
+  const ny = needYou(c);
   if (ny) b += `<span class="badge bg-amber-800/80 text-amber-100">❓${{ny}}</span> `;
   const lab = c.lab || {{}};
   if (lab.review_by) {{
@@ -168,9 +194,10 @@ function renderTabs() {{
   const counts = {{}};
   for (const c of DATA.cards) counts[c.column||'backlog'] = (counts[c.column||'backlog']||0)+1;
   counts.lab = DATA.cards.filter(isLab).length;
-  let ny = 0; for (const c of DATA.cards) ny += needYou(c).length;
+  let ny = 0; for (const c of DATA.cards) ny += needYou(c);
   const el = document.getElementById('ny-pill');
-  if (ny) {{ el.textContent = ny + ' need you'; el.classList.remove('hidden'); }}
+  el.textContent = ny + ' need you';
+  el.classList.toggle('hidden', !ny);
   document.getElementById('tabs').innerHTML = TABS.map(t =>
     `<button class="tab text-xs px-3 py-1.5 rounded bg-slate-800/70 hover:bg-slate-700 ${{t.id===tab?'active':''}}" data-tab="${{t.id}}">` +
     `${{t.title}} <span class="opacity-70">${{counts[t.id]||0}}</span></button>`).join('');
@@ -203,28 +230,221 @@ function renderList() {{
   document.querySelectorAll('.board-card').forEach(r => r.onclick = () => select(r.dataset.id));
   const selEl = document.querySelector(`.board-card[data-id="${{CSS.escape(sel||'')}}"]`);
   if (selEl) selEl.classList.add('active');
+  renderNeedsYou();
   renderDetail();
+  wireReq();
+}}
+
+// answer controls shared by the detail pane and the needs-tony band —
+// every element carries data-id so one binder (wireReq) works for both
+function reqAnswerHtml(c, r) {{
+  const opts = r.options || [];
+  if (opts.length) {{
+    let h = '<div class="flex flex-wrap gap-1.5 mt-1.5 ml-4">';
+    for (const o of opts) {{
+      const lbl = typeof o === 'string' ? o : (o.label || o.id);
+      const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
+      const sug = r.suggested && (r.suggested === val || r.suggested === lbl || (typeof o !== 'string' && r.suggested === o.id));
+      h += `<button class="rq-opt text-xs ${{sug?'bg-emerald-800 hover:bg-emerald-700 ring-1 ring-emerald-400 font-semibold':'bg-amber-800/70 hover:bg-amber-700'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{sug?'★ ':''}}${{esc(lbl)}}</button>`;
+    }}
+    h += `<input class="rq-in flex-1 min-w-[100px] bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="other…">`;
+    h += `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}">↵</button></div>`;
+    return h;
+  }}
+  return `<div class="flex gap-1.5 mt-1.5 ml-4"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
+         `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}">Answer</button></div>`;
 }}
 
 function reqHtml(c, r) {{
   let h = `<div class="mt-2"><div class="text-amber-300 text-sm">❓ ${{esc(r.ask)}}</div>`;
   if (r.status === 'answered') return h + `<div class="text-emerald-300 text-sm ml-4">→ ${{esc(r.answer)}}</div></div>`;
-  const opts = r.options || [];
-  if (opts.length) {{
-    h += '<div class="flex flex-wrap gap-1.5 mt-1.5 ml-4">';
-    for (const o of opts) {{
-      const lbl = typeof o === 'string' ? o : (o.label || o.id);
-      const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
-      const sug = r.suggested && (r.suggested === val || r.suggested === lbl || (typeof o !== 'string' && r.suggested === o.id));
-      h += `<button class="rq-opt text-xs ${{sug?'bg-emerald-800 hover:bg-emerald-700 ring-1 ring-emerald-400 font-semibold':'bg-amber-800/70 hover:bg-amber-700'}} rounded px-2 py-1" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{sug?'★ ':''}}${{esc(lbl)}}</button>`;
-    }}
-    h += `<input class="rq-in flex-1 min-w-[100px] bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="other…">`;
-    h += `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">↵</button></div>`;
-  }} else {{
-    h += `<div class="flex gap-1.5 mt-1.5 ml-4"><input class="rq-in flex-1 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-rq="${{esc(r.id)}}" placeholder="your answer…">` +
-         `<button class="rq-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-rq="${{esc(r.id)}}">Answer</button></div>`;
+  return h + reqAnswerHtml(c, r) + '</div>';
+}}
+
+function askAnswerHtml(c) {{
+  const a = askOf(c) || {{}};
+  const opts = a.options || [];
+  const sug = a.suggested || '';
+  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === `${{o.id}} — ${{o.label || ''}}`)));
+  let h = '<div class="flex flex-wrap gap-1.5 mt-1.5 ml-4">';
+  opts.forEach((o, i) => {{
+    const s = isSug(o);
+    h += `<button class="ask-opt text-xs ${{s ? 'bg-emerald-800 hover:bg-emerald-700 ring-1 ring-emerald-400 font-semibold' : 'bg-amber-800/70 hover:bg-amber-700'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-opt="${{i}}">${{s ? '★ ' : ''}}${{esc(optLabel(o))}}</button>`;
+  }});
+  h += `<input class="ask-in flex-1 min-w-[100px] bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${{esc(c.id)}}" placeholder="other…">` +
+       `<button class="ask-btn text-xs bg-slate-700 hover:bg-slate-600 rounded px-2" data-id="${{esc(c.id)}}">↵</button></div>`;
+  return h;
+}}
+
+function askHtml(c) {{
+  const a = askOf(c);
+  if (!a) return '';
+  let h = `<div class="mt-2"><div class="text-amber-300 text-sm">❓ ${{esc(a.question)}}</div>`;
+  if (a.status === 'answered') return h + `<div class="text-emerald-300 text-sm ml-4">→ ${{esc(a.answer || '')}}</div></div>`;
+  return h + askAnswerHtml(c) + '</div>';
+}}
+
+// 'Needs Tony' band — every open request/ask across all cards in one
+// pass. Rows carry the same controls as the detail pane; a click posts
+// /respond, flashes "✓ answered", then the row drops (board-decisions-inbox).
+function nyItems() {{
+  const items = [];
+  for (const c of (DATA ? DATA.cards : [])) {{
+    for (const r of c.requests || [])
+      // nyFlash rows just answered this session stay mounted so the
+      // "✓ answered" state is visible before the row drops
+      if (r.status !== 'answered' || nyFlash[c.id + '|' + r.id])
+        items.push({{c, r}});
+    if (askOpen(c) || nyFlash[c.id + '|ask']) items.push({{c, ask: true}});
   }}
-  return h + '</div>';
+  return items;
+}}
+
+function nyItemHtml(it) {{
+  const c = it.c;
+  const key = c.id + '|' + (it.ask ? 'ask' : it.r.id);
+  const head = `<button class="ny-card text-xs font-medium text-sky-300 hover:text-sky-200 underline underline-offset-2" data-id="${{esc(c.id)}}">${{esc(c.title || c.id)}}</button>` +
+    `<span class="text-[10px] text-slate-500">${{esc(c.id)}} · ${{esc(c.column || 'backlog')}}</span>`;
+  if (nyFlash[key])
+    return `<div class="border border-emerald-700/50 rounded p-2 bg-emerald-950/30">` +
+      `<div class="flex items-baseline gap-2 flex-wrap">${{head}}</div>` +
+      `<div class="text-xs text-emerald-300 mt-1">✓ ${{esc(it.ask ? askOf(c).question : it.r.ask)}} → ${{esc((pendingAns[key] || {{}}).answer || '')}}</div></div>`;
+  const askLine = `<div class="text-xs text-amber-200 mt-1">❓ ${{esc(it.ask ? askOf(c).question : it.r.ask)}}</div>`;
+  const ctrl = it.ask ? askAnswerHtml(c) : reqAnswerHtml(c, it.r);
+  return `<div class="border border-amber-700/40 rounded p-2 bg-amber-950/30">` +
+    `<div class="flex items-baseline gap-2 flex-wrap">${{head}}</div>${{askLine}}${{ctrl}}</div>`;
+}}
+
+function renderNeedsYou() {{
+  const el = document.getElementById('needs-you');
+  // preserve in-progress free-text answers + focus across the poll tick
+  const vals = {{}};
+  let focus = null;
+  el.querySelectorAll('.rq-in,.ask-in').forEach(i => {{
+    const k = i.dataset.id + '|' + (i.dataset.rq || 'ask');
+    vals[k] = i.value;
+    if (document.activeElement === i) focus = k;
+  }});
+  const items = nyItems();
+  if (!items.length) {{
+    el.innerHTML = '<div class="text-[11px] text-slate-600 italic pb-1">✓ no pending decisions</div>';
+    return;
+  }}
+  const n = items.filter(it => !nyFlash[it.c.id + '|' + (it.ask ? 'ask' : it.r.id)]).length;
+  el.innerHTML =
+    `<div class="bg-amber-900/40 border border-amber-600/60 rounded mb-1">` +
+    `<button id="ny-toggle" class="w-full text-left px-2.5 py-1.5 text-amber-100 text-sm flex items-center gap-2">` +
+    `<span id="ny-caret">${{nyCollapsed ? '▸' : '▾'}}</span>` +
+    `<b>Needs Tony — ${{n}} open decision${{n === 1 ? '' : 's'}}</b>` +
+    `<span class="ml-auto text-[10px] text-amber-200/60">★ = suggested, one click</span></button>` +
+    `<div id="ny-body" class="px-2.5 pb-2.5 space-y-2${{nyCollapsed ? ' hidden' : ''}}">` +
+    items.map(nyItemHtml).join('') + '</div></div>';
+  document.getElementById('ny-toggle').onclick = () => {{
+    nyCollapsed = !nyCollapsed;
+    try {{ localStorage.setItem('b2-ny-collapsed', nyCollapsed ? '1' : '0'); }} catch (e) {{}}
+    document.getElementById('ny-body').classList.toggle('hidden', nyCollapsed);
+    document.getElementById('ny-caret').textContent = nyCollapsed ? '▸' : '▾';
+  }};
+  el.querySelectorAll('.rq-in,.ask-in').forEach(i => {{
+    const k = i.dataset.id + '|' + (i.dataset.rq || 'ask');
+    if (k in vals) {{
+      i.value = vals[k];
+      if (focus === k) {{ i.focus(); i.setSelectionRange(i.value.length, i.value.length); }}
+    }}
+  }});
+}}
+
+// record a successful /respond: flag it so stale polls can't resurrect
+// the row, update the in-memory copy, flash the band row, then drop it
+function markAnswered(cid, rid, answer) {{
+  const key = cid + '|' + rid;
+  pendingAns[key] = {{answer, at: Date.now()}};
+  nyFlash[key] = true;
+  const c = DATA && DATA.cards.find(x => x.id === cid);
+  if (c) {{
+    if (rid === 'ask') {{
+      const a = askOf(c);
+      if (a) {{ a.status = 'answered'; a.answer = answer; }}
+    }} else {{
+      const r = (c.requests || []).find(x => String(x.id) === String(rid));
+      if (r) {{ r.status = 'answered'; r.answer = answer; }}
+    }}
+  }}
+  toast('answer saved: ' + answer);
+  renderTabs(); renderList();
+  setTimeout(() => {{ delete nyFlash[key]; renderNeedsYou(); wireReq(); }}, 1600);
+}}
+
+// cards.json regen lags a /respond write by up to a render tick — replay
+// locally recorded answers onto stale reads; drop confirmed/expired keys
+function healPending() {{
+  const t = Date.now();
+  for (const [k, v] of Object.entries(pendingAns)) {{
+    const i = k.indexOf('|');
+    const c = DATA.cards.find(x => x.id === k.slice(0, i));
+    const rid = k.slice(i + 1);
+    let confirmed = false;
+    if (c) {{
+      if (rid === 'ask') {{
+        const a = askOf(c);
+        if (a && a.status === 'answered') confirmed = true;
+        else if (a) {{ a.status = 'answered'; a.answer = v.answer; }}
+      }} else {{
+        const r = (c.requests || []).find(x => String(x.id) === rid);
+        if (r && r.status === 'answered') confirmed = true;
+        else if (r) {{ r.status = 'answered'; r.answer = v.answer; }}
+      }}
+    }}
+    if (confirmed || t - v.at > 10 * 60e3) delete pendingAns[k];
+  }}
+}}
+
+// one binder for every request/ask control — band rows and the detail
+// pane share markup (.rq-*/.ask-* with data-id), so this binds both.
+// onclick assignment is idempotent: safe to re-run after every render.
+function wireReq() {{
+  document.querySelectorAll('.rq-opt').forEach(b => b.onclick = async e => {{
+    e.stopPropagation();
+    const r = await api('/respond', {{id: b.dataset.id, request_id: b.dataset.rq, answer: b.dataset.val}});
+    if (r && r.ok === false) {{ toast(r.error || 'refused'); return; }}
+    markAnswered(b.dataset.id, b.dataset.rq, b.dataset.val);
+  }});
+  document.querySelectorAll('.rq-btn').forEach(b => b.onclick = async e => {{
+    e.stopPropagation();
+    const inp = b.parentElement.querySelector('.rq-in');
+    if (!inp || !inp.value.trim()) return;
+    const r = await api('/respond', {{id: b.dataset.id, request_id: b.dataset.rq, answer: inp.value.trim()}});
+    if (r && r.ok === false) {{ toast(r.error || 'refused'); return; }}
+    markAnswered(b.dataset.id, b.dataset.rq, inp.value.trim());
+  }});
+  document.querySelectorAll('.ask-opt').forEach(b => b.onclick = async e => {{
+    e.stopPropagation();
+    const r = await api('/respond', {{id: b.dataset.id, option: Number(b.dataset.opt)}});
+    if (r && r.ok === false) {{ toast(r.error || 'refused'); return; }}
+    markAnswered(b.dataset.id, 'ask', b.textContent.trim().replace(/^★ /, ''));
+  }});
+  document.querySelectorAll('.ask-btn').forEach(b => b.onclick = async e => {{
+    e.stopPropagation();
+    const inp = b.parentElement.querySelector('.ask-in');
+    if (!inp || !inp.value.trim()) return;
+    const r = await api('/respond', {{id: b.dataset.id, text: inp.value.trim()}});
+    if (r && r.ok === false) {{ toast(r.error || 'refused'); return; }}
+    markAnswered(b.dataset.id, 'ask', inp.value.trim());
+  }});
+  document.querySelectorAll('.rq-in,.ask-in').forEach(inp => inp.onkeydown = e => {{
+    if (e.key !== 'Enter') return;
+    e.stopPropagation();
+    const b = inp.parentElement.querySelector('.rq-btn,.ask-btn');
+    if (b) b.click();
+  }});
+  // card-title link in a band row — jump to the card's tab + detail pane
+  document.querySelectorAll('.ny-card').forEach(b => b.onclick = () => {{
+    const c = DATA && DATA.cards.find(x => x.id === b.dataset.id);
+    if (c) {{ tab = isLab(c) ? 'lab' : (c.column || 'backlog'); localStorage.setItem('b2-tab', tab); }}
+    sel = b.dataset.id; localStorage.setItem('b2-sel', sel);
+    history.replaceState(null, '', '#tab=' + tab + '&card=' + sel);
+    renderTabs(); renderList();
+  }});
 }}
 
 function field(label, v) {{
@@ -255,6 +475,7 @@ function renderDetail() {{
     `<div class="text-[15px] leading-snug text-sky-50 whitespace-pre-wrap">${{esc(c.brief)}}</div></div>`;
   if ((c.lab||{{}}).hypothesis) h += field('🧪 hypothesis', c.lab.hypothesis) + field('metric', c.lab.metric) + field('outcome', c.lab.outcome);
   h += field('note', c.note) + field('spec', c.spec) + field('verify', c.verify) + field('help', c.help);
+  if (askOf(c)) h += askHtml(c);
   for (const r of (c.requests||[])) h += reqHtml(c, r);
   const log = (c.comms||[]).slice(-20);
   if (log.length) {{
@@ -275,22 +496,15 @@ function renderDetail() {{
     const r = await api('/action', {{id: c.id, do: 'move', column: e.target.value}});
     toast(r.ok === false ? (r.error || 'refused') : 'moved'); await load();
   }};
-  document.querySelectorAll('.rq-opt').forEach(b => b.onclick = async () => {{
-    const r = await api('/respond', {{id: c.id, request_id: b.dataset.rq, answer: b.dataset.val}});
-    toast('answer saved'); await load();
-  }});
-  document.querySelectorAll('.rq-btn').forEach(b => b.onclick = async () => {{
-    const inp = b.parentElement.querySelector('.rq-in');
-    if (!inp.value.trim()) return;
-    await api('/respond', {{id: c.id, request_id: b.dataset.rq, answer: inp.value.trim()}});
-    toast('answer saved'); await load();
-  }});
+  // .rq-*/.ask-* controls (detail pane AND needs-tony band) are bound
+  // once at the end of renderList via wireReq() — data-id carries the card
   document.getElementById('cm-btn').onclick = async () => {{
     const inp = document.getElementById('cm');
     if (!inp.value.trim()) return;
     await api('/comment', {{id: c.id, from: 'tony', text: inp.value.trim()}});
     toast('comment added'); await load();
   }};
+  wireReq(); // select() reaches renderDetail without renderList — bind here too
 }}
 
 function select(id) {{
@@ -320,17 +534,27 @@ document.getElementById('q').oninput = (e) => {{
   renderList();
 }};
 document.getElementById('ny-pill').onclick = () => {{
-  tab = 'review'; localStorage.setItem('b2-tab','review'); renderTabs(); renderList();
+  nyCollapsed = false;
+  renderNeedsYou(); wireReq();
+  document.getElementById('needs-you').scrollIntoView({{behavior:'smooth', block:'start'}});
 }};
+// ?decisions=1 deep-link (report/notifier surfaces) — open the band once
+let decisionsLink = new URLSearchParams(location.search).has('decisions');
 
 async function load() {{
   try {{
     const r = await fetch('cards.json?t=' + Date.now(), {{cache:'no-store'}});
     DATA = await r.json();
+    healPending();
     document.getElementById('gen').textContent = 'v' + (DATA.page_version||'') + ' · ' + (DATA.generated||'');
     const m = location.hash.match(/tab=(\\w+)/); if (m) tab = m[1];
     const cm = location.hash.match(/card=([\\w-]+)/); if (cm) sel = cm[1];
     renderTabs(); renderList();
+    if (decisionsLink) {{
+      decisionsLink = false; nyCollapsed = false;
+      renderNeedsYou(); wireReq();
+      document.getElementById('needs-you').scrollIntoView({{block:'start'}});
+    }}
   }} catch (e) {{ document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-red-500'; }}
 }}
 load(); setInterval(load, POLL);
