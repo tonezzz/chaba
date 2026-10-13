@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>chaba fleet status</title>
+<meta http-equiv="refresh" content="300">
+<style>
+  :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #e2e8f0; background: #0b1220; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 1.25rem; max-width: 46rem; margin-inline: auto; }
+  h1 { font-size: 1.35rem; letter-spacing: -.02em; margin: .5rem 0 1rem; }
+  .stamp { color: #94a3b8; font-size: .82rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid #1e293b; }
+  th { color: #94a3b8; font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .dot { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; margin-right: .5rem; }
+  .up { background: #22c55e; box-shadow: 0 0 .5rem #22c55e88; }
+  .down { background: #ef4444; box-shadow: 0 0 .5rem #ef444488; }
+  .foot { margin-top: 1.2rem; color: #64748b; font-size: .8rem; }
+  .err { color: #f87171; font-size: .82rem; }
+</style>
+</head>
+<body>
+<h1>chaba fleet</h1>
+<p class="stamp" id="stamp">loading…</p>
+<table>
+  <thead><tr><th>host</th><th>load</th><th>mem</th><th>disk free</th><th>uptime</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<p class="foot">public read-only snapshot · refreshes every 5 min</p>
+<script>
+fetch("../data/fleet-status.json", {cache: "no-store"})
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById("stamp").textContent = "as of " + d.generated;
+    const tb = document.getElementById("rows");
+    for (const [name, h] of Object.entries(d.hosts)) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = h.ok
+        ? `<td><span class="dot up"></span>${name}</td>
+           <td class="num">${h.load1}</td><td class="num">${h.mem}</td>
+           <td class="num">${h.disk_free_gb}G</td><td>${h.uptime}</td>`
+        : `<td><span class="dot down"></span>${name}</td>
+           <td colspan="4" class="err">${h.error || "unreachable"}</td>`;
+      tb.appendChild(tr);
+    }
+  })
+  .catch(() => { document.getElementById("stamp").textContent = "status data unavailable"; });
+</script>
+</body>
+</html>
