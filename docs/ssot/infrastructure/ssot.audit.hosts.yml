@@ -354,6 +354,10 @@ hosts:
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: log-shipper-severe-mha.timer, type: timer, scope: user}
       - {name: mcp-debug-h3-sync.timer, type: timer, scope: user}
+      - {name: mcp-debug-cors.service, type: service, scope: user,
+         note: ":9100 live-data source for h3 sync — dead = frozen site (found down 2026-10-13)"}
+      - {name: cms-h3-publish.timer, type: timer, scope: user,
+         note: "15min — publishes meta.public CMS pages + status JSON to chaba.h3 branch -> Plesk"}
       - {name: mddb-standby-pull.timer, type: timer, scope: user}
       - {name: network-scan-tony.timer, type: timer, scope: user}
       - {name: ops-percussion.timer, type: timer, scope: user}
