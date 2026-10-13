@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>chaba.h3 cms — public pages</title>
+<style>
+  :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #e2e8f0; background: #0b1220; }
+  body { margin: 0; padding: 1.25rem; max-width: 46rem; margin-inline: auto; }
+  h1 { font-size: 1.35rem; letter-spacing: -.02em; margin: .5rem 0 .25rem; }
+  .stamp { color: #94a3b8; font-size: .82rem; margin-bottom: 1rem; }
+  input#q { width: 100%; padding: .6rem .8rem; border: 1px solid #334155; border-radius: .6rem; background: #0f172a; color: #e2e8f0; font-size: .95rem; margin-bottom: 1.2rem; }
+  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: #7dd3fc; margin: 1.4rem 0 .4rem; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li a { display: block; padding: .6rem .4rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; text-decoration: none; }
+  li a:hover { background: #111c30; }
+  li a .t { color: #94a3b8; font-size: .78rem; margin-left: .5rem; }
+  .foot { margin-top: 1.4rem; color: #64748b; font-size: .8rem; }
+</style>
+</head>
+<body>
+<h1>chaba.h3 cms</h1>
+<p class="stamp" id="stamp">loading…</p>
+<input id="q" placeholder="filter pages…" oninput="render()">
+<div id="list"></div>
+<p class="foot">public pages only (meta.public opt-in) · snapshot refreshed ~15min</p>
+<script>
+let pages = [];
+fetch("index.json", {cache: "no-store"})
+  .then(r => r.json())
+  .then(d => {
+    pages = d.pages || [];
+    document.getElementById("stamp").textContent =
+      d.pages.length + " pages · as of " + d.generated;
+    render();
+  })
+  .catch(() => { document.getElementById("stamp").textContent = "index unavailable"; });
+
+function render() {
+  const q = document.getElementById("q").value.toLowerCase();
+  const byTenant = {};
+  for (const p of pages) {
+    if (q && !p.title.toLowerCase().includes(q)) continue;
+    (byTenant[p.tenant] ||= []).push(p);
+  }
+  document.getElementById("list").innerHTML =
+    Object.entries(byTenant).map(([t, ps]) =>
+      `<h2>${t}</h2><ul>` + ps.map(p =>
+        `<li><a href="../${p.url}">${p.title}<span class="t">${p.lang}</span></a></li>`
+      ).join("") + "</ul>").join("") || "<p class='foot'>no matches</p>";
+}
+</script>
+</body>
+</html>
