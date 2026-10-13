@@ -1734,7 +1734,9 @@ hosts:
         scope: user
         expected_state: inactive
         critical: false
-        note: Parked 2026-10-12 — moved to tony-omen (OPS-0524); delete entry + unit after 24h rollback window
+        note: Parked 2026-10-12 — moved to tony-omen (OPS-0524); removal
+          scheduled via openjev-student-cleanup.timer 2026-10-13 23:35
+          (24h mark), then flip this entry to absent
       - name: mddb-cms.service
         type: service
         scope: user
