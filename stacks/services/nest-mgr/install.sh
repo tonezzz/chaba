@@ -16,7 +16,8 @@ for host in "${HOSTS[@]}"; do
     install -m 0755 nest-mgr.py ~/.local/share/nest/nest-mgr.py
     install -m 0644 nest-mgr.service ~/.config/systemd/user/nest-mgr.service
     systemctl --user daemon-reload
-    systemctl --user enable --now nest-mgr.service
+    systemctl --user enable nest-mgr.service
+    systemctl --user restart nest-mgr.service
   else
     ssh -o BatchMode=yes -o ConnectTimeout=8 "$host" \
       'mkdir -p ~/.local/share/nest ~/.config/systemd/user'
@@ -25,7 +26,8 @@ for host in "${HOSTS[@]}"; do
     ssh -o BatchMode=yes "$host" \
       'chmod 0755 ~/.local/share/nest/nest-mgr.py &&
        systemctl --user daemon-reload &&
-       systemctl --user enable --now nest-mgr.service'
+       systemctl --user enable nest-mgr.service &&
+       systemctl --user restart nest-mgr.service'
   fi
   echo "   installed + started"
 done
