@@ -40,3 +40,49 @@ Dispatcher job commands that `podman run --name X` get a pre-clean
 (`podman rm -f X`) in `job-dispatcher.py` — a timeout-killed client
 leaves the name behind and `--rm` never fires; one crash used to brick
 a recurring job forever.
+
+## Exit-code contract (OPS-0581, decided 2026-10-13)
+
+A timer job's exit code means exactly one thing: **did the run
+complete?**
+
+- **exit 0** — the job ran to completion, regardless of what it found.
+  Findings (audit failures, breaches, missed canaries, new network
+  devices, scenario failures) travel on their own channels: report
+  files, `docs/ssot/focus-inbox/`, ops-event docs, CMS pages, kanban
+  cards.
+- **non-zero** — the job did NOT complete: unhandled crash, timeout,
+  missing dependency, lock contention that prevented the run, usage
+  error. Only this alerts the timer-sentinel (red `timer-alert-*` card).
+
+Rejected alternative (kind: finding-reporter in ssot.audit.hosts.yml +
+sentinel reclassifies exit-1 as yellow "see report"): keeps two
+meanings on one code, every new consumer must learn the kind map, and
+a `failed` unit still looks identical to a crash in systemctl /
+journald. Exit 0 = success is the contract every tool already
+understands.
+
+Rules:
+
+- Finding-reporters MUST have a durable findings channel *before*
+  switching to exit 0 — check the report file / focus-inbox writer /
+  ops-event emit exists, don't just flip the code.
+- Wrappers MAY translate a child tool's legacy "exit 1 = findings"
+  into the contract, but only when they can prove the run completed
+  (e.g. `scenario-suite-run.sh` greps the benchmark's final-report
+  `**Score:` marker — exit 1 without it stays nonzero as a real crash).
+- `known_failed` entries for converted jobs are retained one cycle as
+  rollout cover; a fresh failure after conversion is a real crash.
+
+Converted 2026-10-13 (were red-alerting the sentinel on findings):
+`arp-inventory-scan` (tony-omen), `chaba-audit-watchdog` (tony-omen),
+`chaba-audit` + `chaba-audit-full` (`run.mjs`, idc02/tony-dell),
+`mddb-memory-standard` (idc03), `ada-recall-canary` (idc03),
+`ada-scenario-{research,cms,memory,reports,tools,casting}` (idc03, via
+`scenario-suite-run.sh` — needs `install.sh` re-run or the wrapper
+copied to `~/.local/share/ada-scenario-runner/` on idc03 to deploy).
+
+Residual finding-reporters still on exit-nonzero-on-findings (migrate
+when next touched, or fix on the ada-pi side): `ada-memory-sync`,
+`mddb-vector-reindex`, `ada-scenario-smoke` + `ada-scenario-full`
+(quadlets — bypass the wrapper).

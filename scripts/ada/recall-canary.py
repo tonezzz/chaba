@@ -4,7 +4,9 @@
 Runs the same retrieval path ada_memory_search uses (per-bank
 /v1/vector-search, threshold 0.45, status=active filter on writable
 banks), then checks whether the expected doc surfaces in the aggregated
-top-N. Exits non-zero if any canary misses — usable as a weekly
+top-N. Misses emit one ops-event doc to ada-ha-events-<instance> and a
+summary line; the run exits 0 whenever it completes — exit code is not the
+finding signal (docs/kb/timer-expectations.md). Usable as a weekly
 correctness metric (see ssot.apps.ada-memory-progress.yml).
 
   recall-canary.py                # human report
@@ -17,6 +19,7 @@ import json
 import os
 import sys
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -24,18 +27,21 @@ import yaml
 MDDB = os.environ.get(
     "ADA_MEMORY_MDDB_URL", "http://100.102.134.91:11023/v1"
 ).rstrip("/")
+INSTANCE = os.environ.get("ADA_INSTANCE_ID", "tony")
+OPS_COLLECTION = f"ada-ha-events-{INSTANCE}"
 BANKS_FILE = Path(os.environ.get(
     "ADA_MEMORY_BANKS_FILE", "~/.config/ada/memory-banks.json"
 )).expanduser()
 CANARY = Path(__file__).with_suffix(".yml")
 THRESHOLD = float(os.environ.get("ADA_BANK_SEARCH_THRESHOLD", "0.45"))
+ERRORS: list[str] = []
 
 
 def load_banks() -> dict:
     """bank name -> {collection, writable} from the rendered registry.
     {instance} expands like backend/memory_banks.MemoryBankRegistry —
     via ADA_INSTANCE_ID (default 'tony')."""
-    inst = os.environ.get("ADA_INSTANCE_ID", "tony")
+    inst = INSTANCE
     data = json.loads(BANKS_FILE.read_text())
     banks = data.get("banks") or data
     out = {}
@@ -61,6 +67,7 @@ def vector_search(coll: str, query: str, writable: bool) -> list[dict]:
         with urllib.request.urlopen(req, timeout=20) as r:
             results = json.loads(r.read()).get("results") or []
     except Exception as e:
+        ERRORS.append(f"{coll}: {e}")
         print(f"    ! {coll}: vector-search failed: {e}", file=sys.stderr)
         return []
     return [(it.get("document") or {}) | {"score": it.get("score")}
@@ -88,6 +95,34 @@ def matched(doc: dict, c: dict) -> bool:
     if c.get("expect_any"):
         return True
     return False
+
+
+def emit_misses(report: dict) -> None:
+    """Write one ops-event doc when any canary missed — the durable finding
+    channel (same ada-ha-events pattern as memory-standard.py). Best-effort:
+    a failed emit must not fail the run."""
+    misses = [r for r in report["results"] if not r["ok"]]
+    if not misses:
+        return
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    md = (f"recall-canary MISS — {now}\n\n"
+          f"{report['pass']}/{report['total']} canaries pass "
+          f"({report['pass_rate']:.0%})\n\n"
+          + "\n".join(f"- MISS: {r['q']}" for r in misses))
+    try:
+        req = urllib.request.Request(
+            f"{MDDB}/add", data=json.dumps({
+                "collection": OPS_COLLECTION,
+                "key": f"ops-recall-canary-{now.replace(':', '')}",
+                "lang": "en", "contentMd": md,
+                "meta": {"kind": ["ops-event"], "type": ["recall_canary"],
+                         "instance": [INSTANCE], "verdict": ["MISS"],
+                         "ts": [now]}}).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=20).read()
+        print(f"ops-event emitted: {len(misses)} miss(es)")
+    except Exception as exc:
+        print(f"ops-event emit failed: {exc}", file=sys.stderr)
 
 
 def main() -> int:
@@ -133,7 +168,14 @@ def main() -> int:
           f"({report['pass_rate']:.0%})")
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=2) + "\n")
-    return 0 if report["pass"] == report["total"] else 1
+    emit_misses(report)
+    # Zero passes plus search errors = no verdict produced (e.g. MDDB
+    # unreachable) — that's an incomplete run, not a finding.
+    if report["pass"] == 0 and ERRORS:
+        print(f"no canary could be verified ({len(ERRORS)} search "
+              f"error(s)) — treating as failed run", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

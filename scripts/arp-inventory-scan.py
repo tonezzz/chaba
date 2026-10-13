@@ -603,11 +603,10 @@ def main():
     if should_alert(results) and not args.dry_run and not args.no_focus:
         write_focus_inbox(results, ts)
 
-    # Return non-zero only on real conflicts/duplicates so systemd can alert if desired
-    if results["duplicate_macs"] or results["conflict"]:
-        sys.exit(2)
-    if results["new_devices"] or results["new_ip_for_known_device"] or results["mac_changed"]:
-        sys.exit(1)
+    # Exit-code contract (docs/kb/timer-expectations.md): a completed scan
+    # exits 0 regardless of findings — findings travel via the report and
+    # the focus-inbox alert. Non-zero is reserved for runs that did not
+    # complete (unhandled exceptions, timeouts).
     sys.exit(0)
 
 

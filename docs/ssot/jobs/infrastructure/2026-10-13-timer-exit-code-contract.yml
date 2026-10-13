@@ -1,0 +1,64 @@
+# SSOT Job Lifecycle: timer finding-reporter exit-code contract
+# Card: timer-finding-reporter-semantics (OPS-0581). ~10 fleet jobs
+# exited 1 to mean "I found something" — the timer-sentinel could not
+# tell a completed run-with-findings from a crash, so every finding
+# fired a red timer-alert-* kanban card.
+
+title: Timer jobs exit 0 on completed runs — findings never ride the exit code
+subtitle: Option A standardized 2026-10-13 — sentinel nonzero now means crash only
+icon: shield
+
+planning:
+  goal: |
+    Restore meaning to the systemd unit result: a timer job that ran to
+    completion exits 0 no matter what it found; nonzero is reserved for
+    runs that did not complete. Findings travel on their own channels
+    (report file, focus-inbox, ops-event, CMS page, kanban).
+  scope: |
+    Converted (this worktree):
+      - scripts/arp-inventory-scan.py        (tony-omen; was exit 1/2 on findings)
+      - scripts/audit-watchdog.mjs           (tony-omen; was exit 1 on stale/red suite)
+      - scripts/audits/run.mjs               (idc02 chaba-audit + chaba-audit-full)
+      - scripts/ada/memory-standard.py       (idc03 mddb-memory-standard; was exit 1 on breach)
+      - scripts/ada/recall-canary.py         (idc03; was exit 1 on miss, journal-only)
+      - stacks/services/ada-scenario-runner/scenario-suite-run.sh
+        (idc03 ada-scenario-{research,cms,memory,reports,tools,casting};
+         translates benchmark exit-1-with-final-report -> 0 via "**Score:" marker)
+    Docs: docs/kb/timer-expectations.md (contract), ssot.audit.hosts.yml
+    known_failed reasons, ada-scenario-runner README, ssot.procedures.yml
+    trigger.
+    Out of scope / residual finding-reporters: ada-memory-sync,
+    mddb-vector-reindex, ada-scenario-smoke + ada-scenario-full quadlets
+    (bypass the wrapper — need an ada-pi-side fix).
+  alternatives: |
+    B (rejected): declare kind: finding-reporter in ssot.audit.hosts.yml
+    and have the sentinel reclassify exit-1 as yellow "finding: see
+    report". Rejected because it keeps two meanings on one code, every
+    new consumer must learn the kind map, and a `failed` unit still looks
+    identical to a crash in systemctl/journald. Exit 0 = success is the
+    contract every tool already understands.
+
+findings:
+  mddb_memory_standard: |
+    The 2026-10-13 exit-1 WAS a real breach, not a silent-fire or a bug.
+    Journal (idc03, 06:37 + 12:37 runs) shows `memory-standard VIOLATION`
+    with 12 violations: draft_ratio developer-tony 17.0x, devin-handoff
+    2.8x, personal-nhong 9.0x, oldest-draft >7d on 8 banks, plus one
+    transient `vector-search probe failed: HTTP 400` (verified the probe
+    works now — momentary API error, possibly during an mddb restart).
+    The card's "no breach/error text in journal tail" was output
+    ordering: violations print at the top of the report and ~30 stat
+    note-lines push them out of a tail view. memory-standard.py now
+    tail-echoes `verdict: VIOLATION (N violation(s))` as the last stdout
+    line so tails always show it.
+  deploy_notes: |
+    Scripts land on hosts via chaba-repo-sync after merge. The scenario
+    wrapper does NOT — it runs self-contained from
+    ~/.local/share/ada-scenario-runner/ on idc03 (by design); deploy =
+    re-run stacks/services/ada-scenario-runner/install.sh on idc03 or
+    copy scenario-suite-run.sh there.
+  verification:
+    - 'recall-canary.py live run: 9/12 pass, 3 misses -> ops-event doc emitted, exit 0'
+    - 'memory-standard.py live run: VIOLATION (11) -> ops-event + verdict line, exit 0'
+    - 'scenario-suite-run.sh stub tests: exit1+marker -> 0; exit1-no-marker (crash) -> 1; exit0 -> 0'
+    - 'ssot-validate-all.mjs: 2242 files, 0 errors'

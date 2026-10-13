@@ -251,7 +251,10 @@ async function main() {
     console.error(
       `Some audits failed (error severity: ${hardFailed.map((r) => r.name).join(", ")}). See reports/audits/summary.json`
     );
-    process.exit(1);
+    // Completed run — findings already reported via summary.json/md + the
+    // focus-inbox alert. Exit 0 so the timer-sentinel only alerts on real
+    // crashes (docs/kb/timer-expectations.md). summary.ok is the verdict.
+    process.exit(0);
   }
 }
 

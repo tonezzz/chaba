@@ -34,7 +34,11 @@ per-scenario driver uses :8198.
   waits up to 30 min for :8199 to become bindable and re-queues on a
   lost bind race, so a transient holder delays instead of dropping the
   run. Probe = actual bind (connect-probes are unreliable against the
-  backlog-1 listener).
+  backlog-1 listener). The wrapper also normalizes the benchmark's
+  exit-1-on-failures to the timer exit-code contract (exit 0 on a
+  completed run — detected via the `**Score:` final-report marker);
+  findings live in `ada-ha-scenario-reports` + the `auto-report` page
+  (docs/kb/timer-expectations.md).
 - Weekly slots sit at `:55` — past the smoke worst case (`:00` start +
   45 min `TimeoutStartSec` + kill margin ≈ `:47`) and past the daily
   casting chain (`02:00` + 2 h cap = free by `04:00`). A suite that
