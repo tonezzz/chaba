@@ -1,0 +1,181 @@
+diff --git a/backend/line_relay.py b/backend/line_relay.py
+index c273bfc..3e3e270 100644
+--- a/backend/line_relay.py
++++ b/backend/line_relay.py
+@@ -32,6 +32,13 @@ Env:
+                                  persona; mentions of other personas get a
+                                  "isn't on this lane" reply instead of a
+                                  foreign backend turn
++    LINE_PERSONA_INSTANCE      — "<persona>:<instance>,..." join between
++                                 personas and backends' ADA_INSTANCE_ID so
++                                 a lane's bare chat_send resolves the room
++                                 it is answering. Backends self-announce
++                                 their id in the ws 'ready' hello (that
++                                 wins); env is the fallback for relays
++                                 talking to backends that do not announce
+     LINE_VOICE_CORPUS_DIR      — default ~/.local/share/ada-voice-corpus/line;
+                                  audio clips from enrolled senders land here
+                                  (local only — like tg_relay's voice rule)
+@@ -69,6 +76,11 @@ Env:
+ Replies go out via /message/reply using the event's replyToken (free, but
+ single-use and short-lived); if that fails the relay falls back to
+ /message/push so the user still gets Ada's answer.
++
++In-context sends (card line-tool-reply-routing): a session's ws connect
++carries ?origin_chat=<chatId> so a bare chat_send replies in the room
++the turn came from; the recent-chat map (keyed by persona AND instance)
++is the fallback for sessions with no origin pin.
+ """
+ from __future__ import annotations
+ 
+@@ -259,6 +271,23 @@ def _group_persona() -> dict[str, str]:
+     return out
+ 
+ 
++def _persona_instances() -> dict[str, str]:
++    """LINE_PERSONA_INSTANCE="ada:tony,kaewta:kk" -> {persona:
++    ADA_INSTANCE_ID}. The /send API is addressed by instance id while
++    turns route by persona name — this join lets 'reply in this room'
++    find the chat the lane is actually answering in. The backend's
++    'ready' hello announces the same id live and wins when it arrives;
++    the env map covers pre-connect lookups and older backends."""
++    out: dict[str, str] = {}
++    for part in os.environ.get("LINE_PERSONA_INSTANCE", "").split(","):
++        if ":" in part:
++            name, inst = part.split(":", 1)
++            name, inst = name.strip().lower(), inst.strip()
++            if name and inst:
++                out[name] = inst
++    return out
++
++
+ def _mention_persona(text: str) -> str | None:
+     """First configured persona name addressed in the text — word-bounded,
+     case-insensitive, optional leading '@'. Returns the canonical
+@@ -496,10 +525,12 @@ class ChatSession:
+ 
+     def __init__(self, user_id: str, relay: "LineRelay",
+                  ws_url: str | None = None,
+-                 caller: str | None = None) -> None:
++                 caller: str | None = None,
++                 chat_id: str = "") -> None:
+         self.user_id = user_id
+         self.ws_url = ws_url or ADA_WS_URL
+         self.caller = caller  # LINE_USER_CALLERS name; None -> default key
++        self.chat_id = chat_id  # the chat this session serves
+         self.relay = relay
+         self.ws = None
+         self._rx_task: asyncio.Task | None = None
+@@ -512,6 +543,11 @@ class ChatSession:
+             return
+         url = (f"{self.ws_url}?api_key={_key_by_name(self.caller)}"
+                "&channel=line")
++        # In-context rule (card line-tool-reply-routing): pin the chat
++        # this session serves so the backend's bare chat_send replies
++        # in the same room instead of a lane default.
++        if self.chat_id:
++            url += f"&origin_chat={self.chat_id}"
+         # ada-text-mode-sessions: LINE_TEXT_MODE routes text chats to the
+         # REST text provider — no Live session, metered per call.
+         if os.environ.get("LINE_TEXT_MODE", "").strip().lower() in (
+@@ -530,6 +566,12 @@ class ChatSession:
+                     msg = json.loads(raw)
+                 except json.JSONDecodeError:
+                     continue
++                # The backend's 'ready' hello carries its ADA_INSTANCE_ID
++                # — learn persona->instance so /send's instance-keyed room
++                # default joins without a LINE_PERSONA_INSTANCE env.
++                if msg.get("type") == "ready":
++                    self.relay._learn_instance(
++                        self.ws_url, str(msg.get("instance") or ""))
+                 await self._current.put(msg)
+         except Exception as exc:
+             logger.info("user %s ws reader ended: %s", self.user_id, exc)
+@@ -608,8 +650,14 @@ class LineRelay:
+         self._imgs: dict[str, tuple[bytes, float, str]] = {}
+         # Most recent chat a turn was delivered into — the default target
+         # for /send when 'to' is empty. The old fallback (first allowed
+-        # user) pushed persona sends into the owner's DM.
++        # user) pushed persona sends into the owner's DM. Keyed under
++        # BOTH the persona name and its ADA_INSTANCE_ID — tool sends
++        # address lanes by instance, not persona (the old persona-only
++        # key meant a send from instance 'tony' never found persona
++        # 'ada's room).
+         self._recent_chat: dict[str, tuple[str, float]] = {}
++        # ws_url -> ADA_INSTANCE_ID learned from 'ready' hellos.
++        self._ws_instance: dict[str, str] = {}
+         # Interview-room pins: room chat_id -> last-mentioned persona.
+         self._room_pin: dict[str, str] = {}
+         self._names: dict[str, str] = {}  # userId -> display label cache
+@@ -950,12 +998,41 @@ class LineRelay:
+             "owner can whitelist it in LINE_USER_CALLERS.",
+             reply_token=reply_token)
+ 
++    def _learn_instance(self, ws_url: str, instance: str) -> None:
++        """Bind a persona's ws_url to the ADA_INSTANCE_ID its backend
++        announced in 'ready' — live self-report, wins over env config."""
++        instance = instance.strip()
++        if instance and self._ws_instance.get(ws_url) != instance:
++            logger.info("backend %s announced instance %s",
++                        ws_url, instance)
++            self._ws_instance[ws_url] = instance
++
++    def _persona_instance(self, persona: str) -> str | None:
++        """The ADA_INSTANCE_ID behind a persona name — the backend's own
++        'ready' announcement first, LINE_PERSONA_INSTANCE as the
++        configured fallback."""
++        url = _name_backends().get(persona)
++        if url and url in self._ws_instance:
++            return self._ws_instance[url]
++        return _persona_instances().get(persona)
++
++    def _note_recent(self, persona: str, chat_id: str) -> None:
++        """Record the chat a turn delivered into — the /send default when
++        a lane doesn't name a target. Keyed under the persona AND its
++        instance alias so a chat_send's instance= lookup finds it."""
++        now = time.monotonic()
++        self._recent_chat[persona] = (chat_id, now)
++        inst = self._persona_instance(persona)
++        if inst:
++            self._recent_chat[inst] = (chat_id, now)
++
+     def _session(self, skey: Any, user_id: str, persona_url: str,
+-                 caller: str | None) -> ChatSession:
++                 caller: str | None, chat_id: str = "") -> ChatSession:
+         sess = self.sessions.get(skey)
+-        if sess is None or sess.ws_url != persona_url:
++        if sess is None or sess.ws_url != persona_url \
++                or sess.chat_id != chat_id:
+             sess = ChatSession(user_id, self, ws_url=persona_url,
+-                               caller=caller)
++                               caller=caller, chat_id=chat_id)
+             self.sessions[skey] = sess
+         return sess
+ 
+@@ -966,8 +1043,9 @@ class LineRelay:
+                             reply_token: str | None) -> None:
+         """One text turn to a persona backend; reply tagged
+         [persona->sender] in rooms."""
+-        self._recent_chat[persona] = (chat_id, time.monotonic())
+-        sess = self._session(skey, user_id, persona_url, caller)
++        self._note_recent(persona, chat_id)
++        sess = self._session(skey, user_id, persona_url, caller,
++                             chat_id=chat_id)
+         disp = _display_name(persona, turn_text)
+         try:
+             reply, images = await sess.send_turn(turn_text)
+@@ -1288,7 +1366,13 @@ class LineRelay:
+             return
+         skey = (chat_id, user_id, persona) if is_group \
+             else (user_id, persona)
+-        sess = self._session(skey, user_id, persona_url, caller)
++        sess = self._session(skey, user_id, persona_url, caller,
++                             chat_id=chat_id)
++        # Origin record for /send: every routed turn (text, image, file)
++        # makes this chat the lane's default reply target — the old code
++        # only noted audio-transcript turns, so a bare chat_send fell
++        # through to the lane default / owner's DM.
++        self._note_recent(persona, chat_id)
+         await self._mark_read(ev)
+         if mtype == "image":
+             try:

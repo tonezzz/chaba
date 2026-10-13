@@ -1,0 +1,100 @@
+title: "LINE tool reply routing — answers leave the originating chat"
+subtitle: "origin_chat session pin + persona/instance dual-key recent-room + ready-hello instance learn"
+icon: 💬
+context:
+  card: line-tool-reply-routing-answers-leave-th-5c73e7 (ref ADA-0606, high)
+  pairs_with: line-delivery-send-actual-images-not-jus-652ad3 (ADA-0608) —
+    "fix routing semantics; image sends must respect the same in-context
+    rule" — drop 8 lands on top of drop 7 and verified co-applicable.
+  worktree: dispatch-wt-20261013-221900-line-tool-reply-routing-answer (chaba)
+  ada_pi_base: "ada-pi main @ 98c8e26 (fresh clone); patches authored on a
+    tree with drops 5–7 applied, verified clean on pristine 98c8e26 too"
+  attempt: 2 (first tony-omen run produced no commits — swept; retried here)
+
+root_cause_summary:
+  break_1_key_mismatch: "_recent_chat (the /send 'reply in this room'
+    default) was keyed by PERSONA name ('ada', 'kaewta') but /send looks
+    it up by ADA_INSTANCE_ID ('tony', 'kk') — the get always missed.
+    Only instance 'chaba' (persona name == instance name) accidentally
+    worked."
+  break_2_never_written: "_recent_chat was written only inside
+    _deliver_turn, which runs only for voice-transcript turns. Plain
+    text / image / file turns never recorded their chat, so the
+    recent-room fallback was empty for the common case and sends fell
+    through to LINE_LANE_DEFAULT or next(iter(_allowed_users())) — the
+    owner's DM. Both breaks compound: even when a voice turn did write,
+    it wrote under the wrong key."
+
+changes:
+  ada_pi_drops:  # integrations/ada-pi/backend/*.patch — NOT landed, install per README Drop 8
+    line_relay: "ChatSession gains chat_id; ensure() appends
+      ?origin_chat=<chatId> to the ws connect. _reader learns
+      persona->instance from the backend's 'ready' hello
+      (_ws_instance, self-report wins over env). _persona_instance() =
+      learned first, LINE_PERSONA_INSTANCE env fallback.
+      _note_recent() records (persona AND instance) -> chat; called on
+      every routed path — _deliver_turn plus the handle_event session
+      point covering text/image/file."
+    pwa_server: "'ready' frames (initial + provider-reconnect) carry
+      instance=ADA_INSTANCE_ID (env read — no ada_instance_id() raise
+      path). voice_socket stashes ?origin_chat= into
+      tool_runner.session_origin[session_id] (getattr-guarded for
+      partial applies) and pops it at session close."
+    tool_runner: "session_origin dict on the runner (__init__).
+      _chat_send_run resolves the calling session's origin via the
+      _CALLER_SESSION ContextVar (create_task propagates context —
+      race-free across concurrent sessions) and sends chat_id =
+      to or origin in the /send payload. Explicit to= always wins."
+
+routing_resolution_order:
+  - "explicit to=/chat_id= (id or resolvable name) — unchanged"
+  - "origin_chat pin — the chat the session answered (new, exact)"
+  - "_recent_chat[instance] — last chat the lane delivered into, 600s
+    (now actually reachable via persona/instance dual-key)"
+  - "LINE_LANE_DEFAULT[inst] — configured lane room"
+  - "next(iter(_allowed_users())) — owner DM last resort (unchanged)"
+  - "LINE_LANE_LOCK rewrite + LINE_LANE_ALLOW 403 gate still run after
+    resolution — an origin pin cannot carry a send outside the lane"
+
+deliberately_not_done:
+  name_dm_rewrite: "to=<member display name> still resolves to that
+    member's DM — the tool_guide contract ('set it only to send
+    somewhere else') treats it as intended; rewriting to the room
+    would break person-directed sends."
+  multi_room_recency: "two rooms on the same instance inside 600s with
+    NO origin pin still picks the most recent — the origin_chat pin
+    removes this for LINE sessions; notify/voice sessions keep the
+    fallback chain by design."
+  tg_relay: "Telegram /send has no lane/instance layer (chat_id int or
+    first allowed chat) — different, simpler contract; out of scope."
+  track_device: "ada_track_device pushes carry no to/instance → owner
+    DM — device alerts are not room replies; intentional."
+
+verify:
+  chaba_side: "tests/ada/test_line_reply_routing.py — 22 tests: env
+    parse, dual-key _note_recent, ready-hello learn (wins over env),
+    ?origin_chat= in connect URL, session rebind, END-TO-END /send via
+    the real route handler (stubbed Starlette/uvicorn) covering
+    recent-room / origin-pin / owner-DM / lane-allow-403, and the
+    ast-extracted _chat_send_run payload (origin fills empty to,
+    explicit to wins). pytest tests/ada/ → 102 passed."
+  ada_pi_side: "git apply --check all 3 patches vs pristine 98c8e26 —
+    clean; also authored/verified on a tree with drops 5–7 applied —
+    clean either install order. After install: scripts/tool-lint.py +
+    .venv/bin/python -m pytest tests/ -x -q (deploy-ada.sh gates), then
+    restart ada-line-relay AND the lane backends (the ready/origin_chat
+    handshake needs both sides)."
+  live_probe: "in a group room: ask ada something that triggers
+    chat_send (e.g. 'send me a photo of X'); journal dir=out entry
+    must land in the room's chat id, not the owner DM. Optional:
+    LINE_PERSONA_INSTANCE=\"ada:tony,kaewta:kk,chaba:chaba\" in
+    line-bot.env covers pre-connect lookups."
+
+followups:
+  - "install drop on tony-dell ada-pi checkout + deploy via
+    deploy-ada.sh on idc03 (explicit approval per AGENTS deploy policy
+    — NOT done from this dispatch). Restart ada-line-relay + lane
+    backends."
+  - "watch LINE journal: dir=out chat_id should equal the inbound chat
+    for bare sends; 'backend <url> announced instance <id>' log lines
+    confirm the learn."

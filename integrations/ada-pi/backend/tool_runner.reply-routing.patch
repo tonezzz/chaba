@@ -1,0 +1,43 @@
+diff --git a/backend/tool_runner/__init__.py b/backend/tool_runner/__init__.py
+index b6c5b63..9817af9 100644
+--- a/backend/tool_runner/__init__.py
++++ b/backend/tool_runner/__init__.py
+@@ -65,6 +65,11 @@ class ToolRunner(
+         # Voice session that invoked the current tool call; the realtime
+         # provider sets this so memory writes carry provenance.
+         self.session_id: str | None = None
++        # Per-session LINE origin chat (card line-tool-reply-routing):
++        # pwa_server records the relay's ?origin_chat= pin keyed by
++        # session_id; chat_send resolves it via the _CALLER_SESSION
++        # ContextVar so a bare send lands in the room being answered.
++        self.session_origin: dict[str, str] = {}
+         # HA person entity of the current speaker (set by the realtime
+         # provider from speaker ID). Used to route personal memory to the
+         # speaker's person-scoped bank instead of the instance default.
+diff --git a/backend/tool_runner/chat.py b/backend/tool_runner/chat.py
+index cf3757c..774b474 100644
+--- a/backend/tool_runner/chat.py
++++ b/backend/tool_runner/chat.py
+@@ -223,6 +223,13 @@ class ChatMixin:
+                 summary_bits.append(f"voice: tts error ({exc})")
+         elif say_text:
+             summary_bits.append("voice: line/telegram only — skipped")
++        # In-context rule (card line-tool-reply-routing): an empty
++        # 'to' means 'the chat this session is replying in' — the
++        # relay pins ?origin_chat= at ws connect and pwa_server
++        # stashes it per session_id; the relay's recent-room map
++        # covers sessions carrying no origin pin.
++        _sid = _CALLER_SESSION.get() or self.session_id
++        origin = getattr(self, "session_origin", {}).get(_sid or "", "")
+         for svc in relays:
+             svc = svc.strip()
+             if svc == "line":
+@@ -236,7 +243,7 @@ class ChatMixin:
+                 continue
+             payload = {"text": text, "image_url": url,
+                        "caption": text or cam, "to": to,
+-                       "chat_id": to,
++                       "chat_id": to or origin,
+                        "instance": os.environ.get(
+                            "ADA_INSTANCE_ID", "")}
+             if audio_b64 and svc in ("line", "telegram", "tg"):

@@ -1,7 +1,7 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Seven drops live here:
+chaba dispatches. Eight drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -14,9 +14,12 @@ chaba dispatches. Seven drops live here:
    `line-voice-enroll-recognize` (2026-10-13)
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
    (ADA-0607, 2026-10-13)
-6. LINE image delivery — Drive share links and image URLs inside reply
+7. LINE image delivery — Drive share links and image URLs inside reply
    text become real LINE image messages — card
    `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
+8. LINE reply routing — bare `chat_send` replies stay in the originating
+   chat — card `line-tool-reply-routing-answers-leave-th-5c73e7`
+   (ADA-0606, 2026-10-13)
 
 ---
 
@@ -534,3 +537,94 @@ never Drive links, never `drive_get`'s `media_url`.
 - Pairing note: card `line-tool-reply-routing-answers-leave-th-5c73e7`
   is a separate fix (session dropped twice at 21:46 in the same
   journal); this patch only touches delivery, not routing.
+
+---
+
+## Drop 8 — LINE reply routing (answers stay in the originating chat)
+
+Card `line-tool-reply-routing-answers-leave-th-5c73e7` (Tony 2026-10-13,
+ADA-0606): a bare `chat_send` — the documented "reply in this room"
+path — left the originating chat, landing in the lane default room or
+the owner's DM. Two mechanism breaks in `backend/line_relay.py`:
+
+1. `_recent_chat` (the /send default target) was keyed by **persona**
+   name (`ada`, `kaewta`) while the payload's `instance` field carries
+   `ADA_INSTANCE_ID` (`tony`, `kk`) — the lookup never matched.
+2. `_recent_chat` was written only inside `_deliver_turn`, which runs
+   only for voice-transcript turns — text/image/file turns never
+   recorded their chat at all, so the recent-room fallback was almost
+   always empty and sends fell through to `LINE_LANE_DEFAULT` or
+   `next(iter(_allowed_users()))` (the owner's DM).
+
+### Files
+
+- `backend/line_relay.reply-routing.patch` — three layers, each safe
+  alone:
+  1. `?origin_chat=<chatId>` on the session's ws connect pins the chat
+     the session serves (`ChatSession.chat_id`, passed through
+     `_session()`); pwa_server stashes it per `session_id` and
+     `chat_send` puts it in the `/send` payload's `chat_id` — an exact
+     origin binding immune to recency races and multi-room overlap.
+  2. The backend's `ready` hello now carries `instance`
+     (`ADA_INSTANCE_ID`); the relay learns persona→instance per ws_url
+     and keys `_recent_chat` under **both** names
+     (`LINE_PERSONA_INSTANCE` env remains as the configured fallback
+     for pre-connect lookups and backends that don't announce).
+  3. `_note_recent()` runs on **every** routed turn path — text, image,
+     file/video, and audio transcripts — not just `_deliver_turn`.
+- `pwa_server.reply-routing.patch` — `ready` frames carry `instance`;
+  `voice_socket` records `tool_runner.session_origin[session_id]` from
+  `?origin_chat=` and pops it at session close.
+- `backend/tool_runner.reply-routing.patch` — `session_origin` dict on
+  the runner; `_chat_send_run` resolves the calling session's origin
+  via the `_CALLER_SESSION` ContextVar (race-free across concurrent
+  sessions) and puts `to or origin` in `chat_id`. An explicit `to`/
+  `chat_id` always wins — `to=กุ้ง` still means a DM.
+- `tests/ada/test_line_reply_routing.py` (this repo) — 22 tests: env
+  parse, dual-key recording, ready-hello learning (wins over env),
+  `?origin_chat=` in the connect URL, session rebind, end-to-end /send
+  through the real route handler (stubbed Starlette/uvicorn) covering
+  recent-room, origin-pin, owner-DM fallback, and lane-allow gating,
+  plus the chat_send payload path via ast-extracted `_chat_send_run`.
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && for p in line_relay.reply-routing \
+   pwa_server.reply-routing tool_runner.reply-routing; do \
+   git apply <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   — authored vs `main` @ `98c8e26` with drops 5–7 applied; verified to
+   also apply on a pristine `98c8e26` (hunks don't overlap the earlier
+   drops), so install order vs other drops is free.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both. Restart `ada-line-relay`
+   AND the lane backends (`ada-ha-tony`, `ada-kk`, `ada-chaba`) — the
+   `ready` hello + `origin_chat` handshake needs both sides.
+3. Env (optional): `LINE_PERSONA_INSTANCE="ada:tony,kaewta:kk,
+   chaba:chaba"` in `line-bot.env` covers pre-connect lookups and any
+   backend too old to announce; once a backend connects, its `ready`
+   self-report wins anyway.
+
+### Contract
+
+- A bare `chat_send` from a LINE session lands in the chat that session
+  is answering — via the exact `origin_chat` pin first, the
+  instance-keyed recent-room map second, `LINE_LANE_DEFAULT` third,
+  owner DM last (unchanged last resort).
+- Explicit targets are untouched: a real `to=`/`chat_id=` always wins;
+  `to=<member name>` still DMs that member.
+- Lane gates still apply after resolution: `LINE_LANE_LOCK` rewrites,
+  `LINE_LANE_ALLOW` refuses out-of-lane sends (403, surfaces as a
+  chat_send failure note — never a silent redirect).
+- Older backends (no `instance` in `ready`, ignores `origin_chat`) work
+  with `LINE_PERSONA_INSTANCE` alone; older relays ignore the new
+  payload fields. Backward compatible both directions.
+
+### Notes / residual
+
+- Recent-room is still "last chat the lane answered in (600s)" when no
+  origin pin exists — same instance in two rooms within the window
+  picks the most recent. The `origin_chat` pin removes this ambiguity
+  for LINE sessions; notify-spawned or voice sessions have no origin
+  and keep the fallback chain.
+- `ada_track_device` pushes carry no `to`/`instance` → owner DM by
+  design (device alerts are not room replies).

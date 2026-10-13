@@ -1,0 +1,60 @@
+diff --git a/pwa_server.py b/pwa_server.py
+index dd08f40..0a253a9 100644
+--- a/pwa_server.py
++++ b/pwa_server.py
+@@ -1102,6 +1102,17 @@ async def voice_socket(ws: WebSocket) -> None:
+         "client": ws.client.host if ws.client else None,
+         "ws": ws,
+     }
++    # Relay origin pin (card line-tool-reply-routing): LINE sessions
++    # carry ?origin_chat=<chatId> — the room the session answers — so a
++    # bare chat_send lands back in that chat, not the relay's lane
++    # default. Keyed by session_id; chat_send reads it through the
++    # per-call session ContextVar. getattr-guarded: the runner-side
++    # map lands in the same drop but a partial apply must not break
++    # ws connect.
++    _origin_map = getattr(tool_runner, "session_origin", None)
++    if _origin_map is not None:
++        _origin_map[session_id] = (
++            ws.query_params.get("origin_chat") or "").strip()
+     # Text mode (ada-text-mode-sessions): ?mode=text or a caller named in
+     # ADA_TEXT_ONLY_CALLERS gets the REST text provider — no Gemini Live
+     # session at all (relay text no longer rents realtime audio minutes).
+@@ -1353,9 +1364,13 @@ async def voice_socket(ws: WebSocket) -> None:
+                 await _on_speaker(sim_name, 0.99)
+     # Send 'ready' as soon as Gemini is live; reconnect-context lookup and
+     # memory priming can stall on MDDB, so they run in the background.
+-    # session_id included so /api/notify can target this exact session.
++    # session_id included so /api/notify can target this exact session;
++    # 'instance' lets the LINE relay learn this backend's ADA_INSTANCE_ID
++    # for persona->instance send routing (card line-tool-reply-routing).
+     try:
+-        await ws.send_text(json.dumps({"type": "ready", "session": session_id}))
++        await ws.send_text(json.dumps({
++            "type": "ready", "session": session_id,
++            "instance": os.environ.get("ADA_INSTANCE_ID", "")}))
+     except Exception:
+         return
+     asyncio.create_task(
+@@ -1762,7 +1777,10 @@ async def voice_socket(ws: WebSocket) -> None:
+                                 new_provider,
+                                 reconnect=(0.0, tail),
+                                 conversation=conversation)
+-                        await ws.send_text(json.dumps({"type": "ready", "session": session_id}))
++                        await ws.send_text(json.dumps({
++                            "type": "ready", "session": session_id,
++                            "instance": os.environ.get(
++                                "ADA_INSTANCE_ID", "")}))
+                         logger.info("session=%s provider reconnected (resumed=%s)", session_id, bool(handle))
+                         break
+                     except Exception as exc:
+@@ -1857,6 +1875,9 @@ async def voice_socket(ws: WebSocket) -> None:
+             with suppress(Exception):
+                 await _mark_session_end(conversation, session_id)
+         _live_sessions.pop(session_id, None)
++        _origin_map = getattr(tool_runner, "session_origin", None)
++        if _origin_map is not None:
++            _origin_map.pop(session_id, None)
+         if CHABA_MODE:
+             chaba.sessions.pop(session_id, None)
+         logger.info("session=%s closed", session_id)
