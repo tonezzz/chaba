@@ -1,0 +1,248 @@
+diff --git a/backend/calendar_providers.py b/backend/calendar_providers.py
+index 525aad9..1d1276b 100644
+--- a/backend/calendar_providers.py
++++ b/backend/calendar_providers.py
+@@ -35,8 +35,9 @@ import asyncio
+ import json
+ import logging
+ import os
++import unicodedata
+ from dataclasses import asdict, dataclass
+-from datetime import date, datetime, time, timedelta
++from datetime import date, datetime, time, timedelta, timezone
+ from pathlib import Path
+ from typing import Any, Protocol, runtime_checkable
+ from zoneinfo import ZoneInfo
+@@ -171,6 +172,45 @@ def _parse_when(value: str, tz: ZoneInfo) -> datetime | date:
+     return dt
+ 
+ 
++def _norm_title(title: str) -> str:
++    """Dedup comparison key for titles — NFC + casefold + collapsed
++    whitespace, so '  Trip' == 'trip' and Thai combining sequences compare
++    equal across normalization forms."""
++    return " ".join(
++        unicodedata.normalize("NFC", str(title)).casefold().split())
++
++
++def _event_start(value: str, tz: ZoneInfo) -> datetime | date | None:
++    """Parse a provider-returned ISO start (RFC3339 or bare date); naive
++    datetimes get local tz. None on junk — unparseable rows can never
++    dedup-match."""
++    v = str(value or "").strip()
++    if not v:
++        return None
++    try:
++        return date.fromisoformat(v)
++    except ValueError:
++        pass
++    try:
++        dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
++    except ValueError:
++        return None
++    if dt.tzinfo is None:
++        dt = dt.replace(tzinfo=tz)
++    return dt
++
++
++def _dedup_start_key(value: datetime | date | None) -> str | None:
++    """Canonical start key for dedup: dates compare by day, datetimes by
++    absolute instant ('+07:00' vs 'Z' spellings of the same instant match).
++    None for unparseable input — never equals a real key."""
++    if value is None:
++        return None
++    if not isinstance(value, datetime):
++        return f"day:{value.isoformat()}"
++    return f"at:{value.astimezone(timezone.utc).isoformat()}"
++
++
+ class CalendarService:
+     """Aggregating facade over the providers configured for this instance."""
+ 
+@@ -399,13 +439,52 @@ class CalendarService:
+         location: str | None = None,
+     ) -> dict[str, Any]:
+         provider, calid = self._write_provider(calendar)
++        start_when = _parse_when(start, self.tz)
++        end_when = _parse_when(end, self.tz)
++        dup = await self._find_duplicate(provider, calid, title, start_when)
++        if dup is not None:
++            return dup
+         ev = await provider.create_event(
+-            calid, title, _parse_when(start, self.tz), _parse_when(end, self.tz),
++            calid, title, start_when, end_when,
+             notes=notes, location=location,
+         )
+         ev.id = _qualify(provider.name, ev.id)
+         return asdict(ev)
+ 
++    async def _find_duplicate(
++        self, provider: Any, calid: str | None,
++        title: str, start: datetime | date,
++    ) -> dict[str, Any] | None:
++        """Idempotent-create guard (card calendar-write-idempotency): a
++        retried or double-invoked create must not mint a second identical
++        event — 2026-10-13 a model retry wrote the same kk-ha event twice,
++        1s apart. Lists the target calendar's day window and returns the
++        existing event as {..., dedup: True, existing: <qualified id>}
++        when normalized title + start match. A failed list propagates
++        (same loud-fail rule as the reads): a blind create is exactly how
++        the double-write happened."""
++        day = start.astimezone(self.tz).date() if isinstance(start, datetime) else start
++        ws, we = day_range(day, 1, self.tz)
++        target_cal = calid or getattr(provider, "default_calendar", None)
++        want_title = _norm_title(title)
++        want_start = _dedup_start_key(start)
++        for ev in await provider.list_events(ws, we):
++            if target_cal is not None and ev.calendar != target_cal:
++                continue
++            if _norm_title(ev.title) != want_title:
++                continue
++            parsed = _event_start(ev.start, self.tz)
++            if ev.all_day and isinstance(parsed, datetime):
++                parsed = parsed.date()
++            if _dedup_start_key(parsed) != want_start:
++                continue
++            ev.id = _qualify(provider.name, ev.id)
++            out = asdict(ev)
++            out["dedup"] = True
++            out["existing"] = out["id"]
++            return out
++        return None
++
+     async def delete_event(self, event_id: str) -> str:
+         pname, raw = split_qualified(event_id)
+         await self._provider(pname).delete_event(raw)
+diff --git a/backend/tool_runner/calendar.py b/backend/tool_runner/calendar.py
+index 3a838be..30de8e7 100644
+--- a/backend/tool_runner/calendar.py
++++ b/backend/tool_runner/calendar.py
+@@ -111,6 +111,10 @@ class CalendarMixin:
+         location: str | None = None,
+         calendar: str | None = None,
+     ) -> dict[str, Any]:
++        """Create is idempotent (card calendar-write-idempotency): the
++        service dedups on normalized title+start within the target
++        calendar's day window and returns {dedup: true, existing: <id>}
++        instead of writing a copy."""
+         return await self._calendar_svc().create_event(
+             str(title), str(start), str(end),
+             calendar=str(calendar) if calendar else None,
+diff --git a/tests/test_calendar_providers.py b/tests/test_calendar_providers.py
+index 8819ee2..c780a4a 100644
+--- a/tests/test_calendar_providers.py
++++ b/tests/test_calendar_providers.py
+@@ -65,11 +65,13 @@ class FakeProvider:
+ 
+     async def create_event(self, calendar, title, start, end, notes=None, location=None):
+         self.created.append((calendar, title, start, end))
+-        return CalendarEvent(
++        ev = CalendarEvent(
+             id=f"{calendar or 'primary'}/new1", title=title,
+             start=str(start), end=str(end), provider=self.name,
+             calendar=calendar or "primary",
+         )
++        self.events.append(ev)
++        return ev
+ 
+     async def delete_event(self, raw_id):
+         self.deleted.append(raw_id)
+@@ -286,6 +288,72 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
+         self.assertEqual(b.created[0][0], "home")
+         self.assertEqual(len(a.created), 0)
+ 
++    # -- calendar-write-idempotency: a retried/doubled create must not
++    #    mint a second identical event --
++
++    async def test_create_dedup_returns_existing(self):
++        a = FakeProvider("google", events=[
++            _ev("dentist", "2026-09-23T14:00:00+07:00")])
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        out = await svc.create_event(
++            "dentist", "2026-09-23T14:00:00", "2026-09-23T15:00:00")
++        self.assertTrue(out["dedup"])
++        self.assertEqual(out["existing"], "google:primary/dentist")
++        self.assertEqual(out["id"], "google:primary/dentist")
++        self.assertEqual(len(a.created), 0)
++
++    async def test_create_dedup_normalizes_title_and_instant(self):
++        # Same event with padded/mixed-case title and the same instant in
++        # UTC spelling — still a duplicate.
++        a = FakeProvider("google", events=[
++            _ev("  Dentist ", "2026-09-23T07:00:00+00:00")])
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        out = await svc.create_event(
++            "dentist", "2026-09-23T14:00:00+07:00", "2026-09-23T15:00:00")
++        self.assertTrue(out["dedup"])
++        self.assertEqual(len(a.created), 0)
++
++    async def test_create_dedup_all_day(self):
++        ev = _ev("trip", "2027-01-02")
++        ev.all_day = True
++        a = FakeProvider("google", events=[ev])
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        out = await svc.create_event("trip", "2027-01-02", "2027-01-03")
++        self.assertTrue(out["dedup"])
++        self.assertEqual(len(a.created), 0)
++
++    async def test_create_dedup_scopes_to_target_calendar(self):
++        # Same title+start on a *different* calendar is not a duplicate.
++        a = FakeProvider("google", events=[
++            _ev("dentist", "2026-09-23T14:00:00+07:00", cal="home")])
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        out = await svc.create_event(
++            "dentist", "2026-09-23T14:00:00", "2026-09-23T15:00:00",
++            calendar="google:primary")
++        self.assertNotIn("dedup", out)
++        self.assertEqual(len(a.created), 1)
++        self.assertEqual(a.created[0][0], "primary")
++
++    async def test_create_no_match_still_creates(self):
++        a = FakeProvider("google", events=[
++            _ev("dentist", "2026-09-23T09:00:00+07:00"),
++            _ev("lunch", "2026-09-23T14:00:00+07:00")])
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        out = await svc.create_event(
++            "dentist", "2026-09-23T14:00:00", "2026-09-23T15:00:00")
++        self.assertNotIn("dedup", out)
++        self.assertEqual(len(a.created), 1)
++
++    async def test_create_dedup_read_failure_is_loud(self):
++        # The dedup list failing must not silently fall through to a blind
++        # create — that is how the original double-write happened.
++        a = FakeProvider("google", fail=True)
++        svc = CalendarService({"google": a}, write="google", tz=TZ)
++        with self.assertRaises(CalendarError):
++            await svc.create_event(
++                "dentist", "2026-09-23T14:00:00", "2026-09-23T15:00:00")
++        self.assertEqual(len(a.created), 0)
++
+     async def test_delete_routes_by_qualified_id(self):
+         a = FakeProvider("google")
+         b = FakeProvider("icloud")
+@@ -570,6 +638,25 @@ class CalendarGateTests(unittest.IsolatedAsyncioTestCase):
+         self.assertIn("google", out["error"])
+         self.assertNotIn("events", out)
+ 
++    async def test_create_double_invoke_dedups(self):
++        # calendar-write-idempotency end-to-end: two identical confirmed
++        # creates (the model retry that wrote the kk-ha dup) yield one
++        # provider write; the second returns the existing event.
++        runner = self._runner()
++        provider = FakeProvider("fake")
++        runner._calendar = CalendarService(
++            {"fake": provider}, write="fake", tz=TZ)
++        runner._calendar_loaded = True
++        args = {"action": "create", "title": "dentist",
++                "start": "2026-09-23T14:00", "end": "2026-09-23T15:00",
++                "confirmed": True}
++        first = await runner.execute("calendar_write", dict(args))
++        second = await runner.execute("calendar_write", dict(args))
++        self.assertNotIn("dedup", first)
++        self.assertTrue(second.get("dedup"), second)
++        self.assertEqual(second.get("existing"), first.get("id"))
++        self.assertEqual(len(provider.created), 1)
++
+     async def test_genuinely_empty_day_is_ok_true(self):
+         runner = self._runner()
+         runner._calendar = CalendarService(

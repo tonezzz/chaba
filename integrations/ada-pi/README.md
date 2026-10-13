@@ -1,11 +1,12 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Two drops live here:
+chaba dispatches. Three drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
    (2026-10-13)
+3. calendar create dedup — card `calendar-write-idempotency` (2026-10-13)
 
 ---
 
@@ -111,3 +112,61 @@ docs as `.bin`. This drop is the full ingest + read path.
 - Verified in-worktree by `tests/ada/test_line_file_doc_ingest.py`
   (chaba side): resolution confinement, archive round-trip, fake-gemini
   extraction, patch-applies + patched-file `handle_event` simulation.
+
+---
+
+## Drop 3 — calendar create dedup (idempotent writes)
+
+Card `calendar-write-idempotency` (Tony 2026-10-13): a model retry /
+double-invoke wrote the same kk-ha event twice 1s apart
+(ทริปแอฟริกาใต้ BKK-CPT 2027-01-02). Same failure class as
+`ada-tool-retry-storm` — the write path had no idempotency check.
+
+### Files
+
+- `backend/calendar_providers.create-dedup.patch` — unified diff vs
+  ada-pi `main` @ `d166794`. Touches three files:
+  - `backend/calendar_providers.py` — `CalendarService.create_event`
+    now calls `_find_duplicate` first: resolves the write provider +
+    target calid, lists that calendar's day window, and on a normalized
+    title + identical-start match returns the existing event as
+    `{..., dedup: true, existing: <qualified id>}` instead of creating.
+    New helpers: `_norm_title` (NFC + casefold + collapsed whitespace —
+    Thai combining sequences compare equal), `_event_start` (tolerant
+    RFC3339/bare-date parse, `Z`-safe), `_dedup_start_key` (dates compare
+    by day, datetimes by absolute instant so `+07:00`/`Z` spellings
+    match). A failed dedup list propagates — same loud-fail rule as the
+    reads; a blind create is exactly how the double-write happened.
+  - `backend/tool_runner/calendar.py` — docstring on
+    `calendar_create_event` noting the service-level dedup.
+  - `tests/test_calendar_providers.py` — 7 new tests: dedup hit,
+    title/instant normalization, all-day, different-calendar scope,
+    no-match still creates, dedup-read failure is loud (no blind write),
+    and an end-to-end `calendar_write` double-invoke through
+    `ToolRunner.execute` (one provider write, second call returns
+    `dedup: true`). `FakeProvider.create_event` now reflects creates
+    into `list_events` (models real provider state).
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && git apply <chaba>/integrations/ada-pi/backend/calendar_providers.create-dedup.patch`
+   — base `d166794`; if it no longer applies cleanly, re-dispatch the
+   card rather than hand-merging hunks.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both. No service restart beyond
+   the normal deploy (the guard lives in the tool path).
+3. Placement note: the guard sits in `CalendarService.create_event`, not
+   the `tool_runner/calendar.py` wrapper named in the card — every write
+   path (`calendar_write` action=create, the absorbed
+   `calendar_create_event` alias, future non-tool callers) funnels
+   there, and it's the only layer that already knows the resolved
+   target calendar.
+
+### Contract
+
+- Identical create (same calendar, normalized title equal, same start
+  instant/day) → returns the *existing* event dict plus `dedup: true`
+  and `existing: <provider:calid/eid>`; no new event is written.
+- Same title+start on a different calendar is not a duplicate.
+- Verified against a /tmp clone of ada-pi `main` @ `d166794`:
+  `tests/test_calendar_providers.py` 49/49 pass, `tool-lint` clean.
