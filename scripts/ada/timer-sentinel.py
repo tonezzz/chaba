@@ -46,6 +46,9 @@ ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
             "timer-timeline-update", "timer-sentinel"}
 
+# hosts that are EXPECTED to be off regularly — unreachable ≠ suspicious
+OPTIONAL_HOSTS = {"tony-macbook"}
+
 
 def api(path, payload=None, timeout=30):
     if payload is None:
@@ -163,7 +166,7 @@ def main():
         host_ok = sweep.get("host_ok") or {}
         timers = sweep.get("timers") or {}
         for host, ok in host_ok.items():
-            if not ok:
+            if not ok and host not in OPTIONAL_HOSTS:
                 findings.append((
                     f"timer-alert-host-{host}",
                     f"Timer sweep cannot reach {host}",
