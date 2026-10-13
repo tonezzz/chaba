@@ -226,6 +226,8 @@ sections:
         text: "ADA_BANK_SEARCH_THRESHOLD (0.45) — bank + summary vector hit floor. ADA_BANK_UPDATE_THRESHOLD (0.85) — ada_remember dedupe/correct-in-place floor. ADA_RECALL_SLOW_AFTER_S (10) — filler-speech delay before NotebookLM completes."
       - label: Summarization
         text: "ADA_SUMMARY_MODEL (gemini-3.5-flash-lite), ADA_SUMMARY_MAX_TRANSCRIPT_CHARS (8000), GEMINI_API_KEY (required for rolling/session summaries + rollup job)."
+      - label: Context window / budgets
+        text: "ADA_CONTEXT_TRIGGER_TOKENS (default 32000) / ADA_CONTEXT_TARGET_TOKENS (default 24000) — sliding-window compression; per-lane floors in ssot.tokens.policy.yml (ada-ha-tony env: 47000/35000 since 2026-10-13). ADA_CONTEXT_TURN_BUDGET (45000) — per-turn input ceiling that schedules session rotation; it preempts compression whenever trigger > budget. ADA_TOOL_CALL_BUDGET (20; ada-ha-tony/ada-kk run 10) — max tool calls per session. ADA_ACTUATION_BUDGET (6)."
       - label: Logging / misc
         text: "ADA_LOG_DIR, ADA_LOG_LEVEL (INFO), ADA_LOG_MAX_BYTES, ADA_LOG_BACKUPS, ADA_HABIT_DB. Vision: ADA_VISION_BACKEND (auto), ADA_VIDEO_MODE (activity), ADA_HAILO_MODEL_DIR / _DETECTION_HEF / _POSE_HEF / _ROTATE_*. Gemini Live: GEMINI_LIVE_MODEL / _VOICE / _INSTRUCTIONS / GEMINI_VIDEO_RESOLUTION / GEMINI_POSTURE_MODEL. External: MDDB_BASE_URL, NOTEBOOKLM_NOTEBOOK_ID(S_JSON), GOOGLE_API_KEY."
 config:

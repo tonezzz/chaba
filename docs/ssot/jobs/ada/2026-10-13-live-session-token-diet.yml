@@ -1,0 +1,86 @@
+title: Live session token diet — context-window trigger/target bump on ada-ha-tony
+date: 2026-10-13
+card: live-session-token-diet          # OPS-0509
+dispatch: dispatch-wt-20261013-212811-live-session-token-diet-134m-t
+status: shipped-live   # env applied + ada-ha-tony restarted on idc03
+
+summary: |
+  Second lever of the token-diet card (first lever was the tony-lane
+  tool keep-list, OPS-0583). ada-ha-tony ran the code defaults
+  ADA_CONTEXT_TRIGGER_TOKENS=32000 / ADA_CONTEXT_TARGET_TOKENS=24000
+  against a measured ~27.8k static floor — trigger ~1.15x floor (policy:
+  >= ~1.7x) and target BELOW floor, so every compression event was a
+  max-trim fired almost every turn once real history existed
+  (ssot.tokens.policy.yml gentle-compression-window violation).
+  Set 47000/35000 in ~/.config/secrets/ada-ha-tony.env on idc03 and
+  restarted the service.
+
+burn_profile:
+  source: idc03 ~/CascadeProjects/ada-pi/data/usage.jsonl (all lanes on host)
+  last_24h: ~20.9M text-in / 0.09M out (~228:1) — context resends dominate
+  7d_avg: ~130M text-in/day, peak 177M (prior comms), ~$260/week est
+  signature: >-
+    tool-call storms re-bill ~28k context per round
+    (worst session f245275fde — 234x set_facial_expression + 118x get_rk600)
+  per_turn_histogram_24h: |
+    25-35k band = 424 turns (compression churn keeps sessions pinned at
+    floor+margin). Tail of 39 turns >=55k — sessions that outran the
+    45k rotation budget (rotate-when-idle never went idle, or non-live
+    sources); worth a look but not this card.
+
+config_change:
+  env_file: ~/.config/secrets/ada-ha-tony.env on idc03
+  added:
+    ADA_CONTEXT_TRIGGER_TOKENS: "47000"   # 1.69x floor 27.8k
+    ADA_CONTEXT_TARGET_TOKENS:  "35000"   # 1.26x floor
+  unchanged:
+    ADA_CONTEXT_TURN_BUDGET: "45000"      # rotation ceiling (code default)
+  backup: ~/.config/secrets/ada-ha-tony.env.bak-20261013 on idc03
+
+rotation_interplay:
+  finding: |
+    A policy-compliant trigger (>=47.3k at floor 27.8k) necessarily sits
+    ABOVE the ~45k rotation budget — the two policies collide at any
+    floor >= ~26.5k. With 47k/35k set, compression effectively never
+    fires on this lane: sessions grow unimpeded to 45k, then rotate.
+    That IS the diet: zero mid-sequence trims (the unmoor->storm path)
+    in exchange for a bounded 27.8k->45k sawtooth and a clean reconnect.
+  alternative_not_taken: |
+    Raising ADA_CONTEXT_TURN_BUDGET to ~55k would let compression fire
+    at 47k->35k and keep rotation as the emergency ceiling — preserves
+    more continuity per session but sits closer to the ~78k degradation
+    point and holds a higher mean context (~41k vs ~36k). Revisit only
+    if rotation churn becomes audible (greeting after ~17k of context).
+
+remaining_levers:
+  - id: ada-lazy-tool-schemas     # ADA-0586, carded
+    detail: name+blurb-only decls; schemas are now the floor driver (~27.8k).
+  - id: expression-tool-batching  # NOT yet carded at time of writing
+    detail: set_facial_expression is NON_BLOCKING cosmetic — batch/defer
+      so cosmetic calls don't re-bill the window as full rounds.
+  - id: session-turn-age-caps     # NOT yet carded
+    detail: cap session age/turns so long-idle sessions don't grow the
+      resumption tail; rotation already bounds per-turn input.
+  - id: michael-lane-same-fix     # follow-up
+    detail: ada-ha-michael floor ~28.9k also violates the ratio on
+      defaults 32k/24k — same env bump (~49000/37000) when its lane
+      burns enough to matter.
+
+verification:
+  - >-
+    /proc/<MainPID>/environ on idc03 shows ADA_CONTEXT_TRIGGER_TOKENS=47000,
+    ADA_CONTEXT_TARGET_TOKENS=35000 after `systemctl --user restart
+    ada-ha-tony.service` — service active.
+  - >-
+    1-turn scenario-live smoke against ws://127.0.0.1:8002/ws: PASS,
+    first turn in=18139 (text channel leaner than the 27.8k voice floor;
+    under the trigger either way — no regression).
+  - >-
+    notebooklm-rest-api.env carries no ADA_CONTEXT_* (loads second in the
+    unit — would have silently overridden).
+
+artifacts:
+  - ~/.config/secrets/ada-ha-tony.env on idc03            (LIVE)
+  - docs/ssot/ssot.tokens.policy.yml                      (per-lane floors + rotation collision note)
+  - docs/ssot/apps/ssot.apps.ada_ha.yml                   (env surface: context-window/budget vars)
+  - docs/ssot/jobs/ada/2026-10-13-live-session-token-diet.yml (this file)

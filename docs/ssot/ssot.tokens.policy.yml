@@ -56,12 +56,20 @@ policies:
     status: accepted
     rule: |
       context_window_compression.sliding_window must keep:
-        trigger_tokens >= ~1.7x static baseline   (currently 32000)
-        target_tokens  >= ~1.25x static baseline  (currently 24000)
-      Tunable via ADA_CONTEXT_TRIGGER_TOKENS / ADA_CONTEXT_TARGET_TOKENS.
+        trigger_tokens >= ~1.7x static baseline
+        target_tokens  >= ~1.25x static baseline
+      Code defaults are 32000/24000; lanes override per their measured
+      floor via ADA_CONTEXT_TRIGGER_TOKENS / ADA_CONTEXT_TARGET_TOKENS
+      in the instance env file. Per-lane floors (2026-10-13): tony
+      ~27.8k -> env 47000/35000 on ada-ha-tony; michael ~28.9k (defaults
+      violate the ratio — same fix pending); kk ~17k (defaults OK).
       A trigger near the baseline compresses almost every turn; a target
       below it forces aggressive trimming — both unmoor the model
-      mid-sequence.
+      mid-sequence. NOTE at floor >= ~26.5k a compliant trigger exceeds
+      the ~45k rotation budget (ADA_CONTEXT_TURN_BUDGET), so rotation
+      preempts compression entirely — the window becomes
+      rotation-bounded, which is the intended behaviour on ada-ha-tony
+      (card live-session-token-diet).
     applies_to:
       - backend/realtime_provider.py connect config
     rationale: |

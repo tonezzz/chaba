@@ -21,7 +21,7 @@ planning:
     - LINE voice clip -> relay tags persona turn '[voice: speaker=<name|unknown> score=0.xx person=...]'
     - Enroll roundtrip: 3 clips under voice-corpus/<caller>/ -> 4th clip matches
     - speaker_profiles gains match_file (read) + enroll_file (mutating, _may_mutate gate)
-    - Boss rule: fresh positively-identified {full: true} speaker keeps owner-tier on member lanes; stale labels don't elevate
+    - "Boss rule: fresh positively-identified {full: true} speaker keeps owner-tier on member lanes; stale labels don't elevate"
     - Deploy gates green: tool-lint clean, pytest tests/ all pass
   risks:
     - LINE m4a channel codec lowers cosine scores vs live-mic prints ->
@@ -30,7 +30,7 @@ planning:
     - Replay/similar-voice spoofing residual -> documented caveat in
       tool_guide; recognition is evidence, not authentication
     - Owner-tier elevation on false positive -> requires fresh positive
-      identify (not stale label) AND {full: true} policy — narrow surface
+      identify (not stale label) AND {full:true} policy — narrow surface
   resources:
     - ~/CascadeProjects/ada-pi (idc03 production checkout as diff base)
     - ~/.local/share/ada-voice-corpus/line/user-kk/*.m4a real clips
@@ -89,11 +89,11 @@ processing:
     - label: In-memory pending enroll keyed on caller
       rationale: Relay-process scope is enough; restart just re-arms on next unknown clip
       alternatives_considered: Persisted pending state — overkill for a 15min TTL flow
-    - label: Owner-tier by {full: true} policy, not person name
+    - label: Owner-tier by {full:true} policy, not person name
       rationale: Policy-driven per persons.yml roles — same elevation applies to any future admin person, and stale labels can't elevate
       alternatives_considered: Hardcode person.tony — narrower and drifts from persons.yml
     - label: Patches staged in chaba integrations/ada-pi, not applied to live checkout
-      rationale: Card rails: no push/deploy — hand to deploy-ada.sh; idc03 checkout is deploy-only, tony-dell is the edit point
+      rationale: "Card rails: no push/deploy — hand to deploy-ada.sh; idc03 checkout is deploy-only, tony-dell is the edit point"
       alternatives_considered: Direct commit to tony-dell checkout — outside worktree sandbox
   changes:
     - file: integrations/ada-pi/backend/speaker_id.file-input.patch
@@ -137,7 +137,7 @@ report:
     every archived clip, tags persona turns [voice: ...], and runs an
     enroll-on-clips flow bound to the caller's person.*; speaker_profiles
     gains match_file/enroll_file; boss rule elevates a fresh positively-
-    identified {full: true} speaker (person.tony) to owner-tier on member
+    identified {full:true} speaker (person.tony) to owner-tier on member
     lanes. All deploy gates green (tool-lint clean, 1360 tests + 30 new).
     Staged as 6 patches + 1 new test file in integrations/ada-pi — pending
     apply on tony-dell edit point + deploy-ada.sh.
