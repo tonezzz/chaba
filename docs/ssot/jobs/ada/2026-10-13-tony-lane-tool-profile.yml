@@ -1,0 +1,95 @@
+title: Tony-lane persona keep-list — persons.tony.tools rendered to ada-ha-tony.env
+date: 2026-10-13
+card: tony-lane-tool-profile
+dispatch: dispatch-wt-20261013-161957-goal-give-ada-ha-tony-a-per-pe
+status: shipped-live   # env block applied + ada-ha-tony restarted on idc03
+
+summary: |
+  ada-ha-tony gets the same per-persona keep-list mechanism as ada-kk
+  (persons.<p>.tools -> render-tool-profiles.py -> ADA_INCLUDED_TOOLS
+  managed block) — but usage-EVIDENCED, not kk-parity. kk's list
+  deliberately strips all home control/casting as a security boundary;
+  the tony lane keeps that surface because its 7d function_call log
+  proves it (get_rk600_weather ~1507, cast_to_screen ~814).
+  Copying kk's list verbatim would have silently killed Chaba's home
+  control.
+
+profile:
+  instance: tony
+  env_file: ada-ha-tony.env   # ~/.config/secrets/ on idc03
+  include: 49   # kk-parity core (23, minus stale conv_journal) + 26 tony-lane
+  exclude: 2    # home_status, home_history — live fallbacks via get_home_state/home_search
+  notes:
+    - vcast_gesture kept (kk drops it): the kk exclusion guards HER lane
+      from tony-dell's input-bridge; on Tony's own lane it is his
+      capability, and smoke-tier tool_merge_display calls it hourly
+      against ada-ha-tony.
+    - conv_journal dropped from persons.kk include too (lint stale):
+      tools.d module exists but was never manifest-enabled (b776e81) —
+      never declared at runtime. Follow-up card OPS-0584.
+    - home_status (~30 calls/3d) + home_history (~7) observed used but
+      deliberately dropped per card spec — get_home_state/home_search
+      are the fallbacks; re-adding is one SSOT line.
+
+measurement:
+  method: fresh ws session per run (scenario-live.py, one text turn),
+          first 'usage turn in=' from journalctl -u ada-ha-tony
+  before: 28874            # session e4b034876b, full 51-decl surface
+  after:  27828, 27859     # sessions 7d3f190767/ac8e385b96, 49-decl keep-list
+  delta:  ~-1046/turn (-3.6%)
+  target_missed: |
+    Card targeted <=~23k on a "~110 declared tools" premise. The real
+    emitted surface is ~51 declared SEATS at ~0.5k input tokens each —
+    alias names are dispatch-time mappings (_ALIASES in tool_runner/
+    common.py), they emit no declaration and cost nothing. The ~110
+    figure traces to the stale count_cap comment "103 builtin + 9
+    tools.d" in ada-pi ssot.tool-surface.yml — that was the PRE-merge
+    surface; merges absorbed builtin names into ~37 seats (+14 tools.d).
+    A usage-evidenced keep-list only had 2 seats to drop, hence ~1k.
+    Reaching ~23k would need ~10 more exclusions (~0.5k each) — a
+    capability-vs-spend decision for Tony, not a lint fix.
+  cost_model: |
+    ~0.52k input tokens per declared seat per turn. 10 dropped seats
+    ≈ 5.2k/turn ≈ 520k/day at ~100 turns/day ≈ most of the lane's
+    static bill — but each dropped seat is a capability Tony loses.
+
+findings:
+  - id: context-floor-vs-trigger
+    detail: |
+      ada-ha-tony runs default ADA_CONTEXT_TRIGGER_TOKENS=32000 /
+      TARGET=24000 against a ~27.8k measured floor — trigger is ~1.15x
+      baseline (policy wants >=1.7x) and target sits BELOW the floor.
+      During context_growth, per-turn input climbed 28.6k->31.7k in 10
+      turns; any real conversation reaches compression almost at once.
+      Worth revisiting trigger/target per lane now that floors are
+      measured (bumping to ~47k/35k restores the policy ratio).
+  - id: context-growth-floor
+    detail: |
+      context_growth.yaml floor failed twice identically on ada-ha-tony:
+      turn 11 'what was my appointment code' delegates to
+      ada_session_recall (system instruction ~L1138 routes recall
+      questions to memory tools first), which returns a PAST-sessions
+      summary; the model parrots it instead of reading 4471 from live
+      context — despite the tool output warning "answer the CURRENT
+      request first". Ceiling (input_tokens_below 55k) passed every
+      turn; floor (recall) failed. Mechanism unrelated to the 2-decl
+      strip — CONTROL RUN on ada-ha-michael (full 51-decl surface, no
+      keep-list) fails the same turn: that model flatly claims "no
+      appointment code was given" with the fact in live context.
+      Pre-existing, lane-general instruction-routing bug. Card OPS-0585.
+
+verification:
+  - render-tool-profiles.py --lint: 0 warnings (51 declared all covered)
+  - smoke scenario: cast_to_screen + control_entity (no-op set on
+    input_boolean.cast_powered_by_us) + ada_memory_search all resolve
+    and return sane payloads — PASS
+  - context_growth ceiling PASS / floor FAIL (see findings; control run
+    on ada-ha-michael, lane without the keep-list, to attribute cause)
+  - ada-ha-tony active post-restart; tools.d loaded 14 manifest tools
+    (confirms conv_journal absence)
+
+artifacts:
+  - docs/ssot/apps/ssot.apps.ada-persons.yml  (persons.tony.tools; kk stale fix)
+  - docs/ssot/ssot.tokens.policy.yml          (measured per-lane baselines)
+  - ~/.config/secrets/ada-ha-tony.env on idc03 (managed block, LIVE)
+  - card OPS-0584 conv-journal-manifest-gap   (tools.d dead code)

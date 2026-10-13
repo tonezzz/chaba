@@ -27,12 +27,18 @@ policies:
     status: accepted
     rule: |
       The static context floor (system instructions + tool declarations +
-      pinned context) is ~19k input tokens, paid on EVERY turn of every
-      session. Tool declarations are the largest controllable share —
-      keep the declared surface at the tool-lint target (~38 tools,
-      hard cap 109). Prefer aliases and action-param tools over
-      one-tool-per-action; prefer on-demand detail (tool returns schema)
-      over inlining docs into instructions.
+      pinned context) is paid on EVERY turn of every session. Measured
+      first-turn input, ada-ha-tony 2026-10-13: ~27.8k on the 49-decl
+      persona keep-list (was ~28.9k on the full 51-decl surface);
+      ada-kk ~17k on 24 decls. Tool declarations are the largest
+      controllable share — ~0.5k input tokens per declared seat, and
+      alias names are dispatch-time only (they emit no declaration and
+      cost nothing). Keep the declared surface at the tool-lint target
+      (~38 tools, hard cap 112). Prefer aliases and action-param tools
+      over one-tool-per-action; prefer on-demand detail (tool returns
+      schema) over inlining docs into instructions; use persona
+      keep-lists (persons.<p>.tools -> ADA_INCLUDED_TOOLS) on dedicated
+      lanes to strip seats a persona never uses.
     applies_to:
       - backend/realtime_provider.py (instruction assembly)
       - backend/tool_runner/ (declaration surface)
