@@ -1,0 +1,12 @@
+# tool_guide.yml snippet — append at top level (backend/tool_guide.yml)
+
+doc_read: >-
+  path_or_url takes the /relay-img/arch/<chat>/<file> URL verbatim from a
+  '[document received]' note, an archive-relative <chat>/<file> name, or
+  an img-cache nonce — never an arbitrary filesystem path (reads are
+  confined to the LINE media roots). prompt= says what to pull: 'booking
+  refs and flight legs' beats 'summarize'. Fails honest on >15 MiB files
+  (split or conv_journal instead) and on paths outside the archive —
+  don't retry with a different root, tell the user the file isn't in the
+  archive. PDF/CSV/TXT extract natively; docx/xlsx work but tables can
+  come back loose — ask for the specific fields.

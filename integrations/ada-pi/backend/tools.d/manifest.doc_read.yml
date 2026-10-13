@@ -1,0 +1,16 @@
+# manifest.yml snippet — append under tools: (backend/tools.d/manifest.yml)
+#
+# line-file-doc-ingest (2026-10-13, chaba card line-file-doc-ingest):
+# read side of the relay's file-message ingest — resolves the
+# /relay-img/arch/ URL from a '[document received]' turn (or an
+# archive-relative path), passes the bytes to gemini_pool as an inline
+# part with the caller's extraction prompt. read policy: confined to
+# the LINE media roots, no writes. secondary_allowed: members (Kaewta)
+# trigger it on their lane — the trip-ticket case this card fixes.
+# 60s — multi-page PDF inline ingest + generate can exceed 20s.
+tools:
+  doc_read:
+    module: doc_read
+    policy: read
+    secondary_allowed: true
+    timeout_s: 60

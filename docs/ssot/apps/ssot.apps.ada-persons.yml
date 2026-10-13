@@ -113,6 +113,13 @@ persons:
         # the rollup link. public='yes' gated on confirmed (same rule
         # as cms_publish_page) → surf-thailand.com share URL for LINE.
         - trip_calendar
+        # doc_read (2026-10-13, card line-file-doc-ingest): reads a
+        # document LINE archived from a 'document received' note
+        # (the trip-ticket PDF case) — inline to the lane gemini pool,
+        # confined to the LINE media roots. Needs the ada-pi drop
+        # installed first (integrations/ada-pi/README.md); include it
+        # only when rendering env files for a lane that has it.
+        - doc_read
       exclude:
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
@@ -346,6 +353,7 @@ bench_profiles:
       - page_snapshot
       - conv_journal
       - trip_calendar
+      - doc_read
     exclude:
       - ada_memory_search
       - ada_remember
@@ -409,10 +417,12 @@ bench_profiles:
       - ada_render_video
       # 2026-10-13 drift fix: persons.kk gained page_snapshot +
       # conv_journal + trip_calendar after kk-parity was written —
-      # parity means identical, so they belong here too.
+      # parity means identical, so they belong here too. (doc_read
+      # likewise, same day — card line-file-doc-ingest.)
       - page_snapshot
       - conv_journal
       - trip_calendar
+      - doc_read
     exclude:
       - ada_resolve_action
       - vcast_snapshot
