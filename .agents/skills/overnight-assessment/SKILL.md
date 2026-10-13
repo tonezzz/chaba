@@ -62,6 +62,16 @@ Comprehensive overnight assessment leveraging existing Chaba monitoring infrastr
 - Check resource utilization patterns
 - Analyze response time trends
 
+### 9. Session-output QC (devin-session-audit)
+
+- Run the `devin-session-audit` skill on session summaries newer than
+  `~/.local/share/devin/session-audit-marker`
+- Verify every produced artifact (report, analysis, job output) landed in a
+  durable home — CMS page, card comms, repo commit, or focus-inbox
+- File `audit-miss-*` cards via board-api for each unlanded artifact
+- The assessment's own report lands under reports/ AND a CMS page —
+  eat our own cooking (artifact-landing rule)
+
 ## Output Format
 
 Generate comprehensive markdown report with:
