@@ -22,6 +22,7 @@ Consumers:
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -406,8 +407,29 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # missing pytest (same convention as the merge guard); a suite timeout
 # counts as a failure — the alternative is merging a tree the suite can't
 # even finish on. KANBAN_TESTGATE=0 disables the gate entirely.
+#
+# Interpreter resolution (card dispatch-test-gate-venv — the 2026-10-13
+# line-multihome incident: ada-pi's suite needs google.genai from its
+# .venv, system python3 lacks it, the gate went red 42/42-green-under-
+# venv and held a good merge). A command that starts with `python`/
+# `python3` gets that token replaced with the resolved interpreter —
+# the first candidate that can actually `import pytest`:
+#
+#   1. REPO_TESTS[repo]["python"] — explicit pin (escape hatch)
+#   2. <tree under test>/{.venv,venv}/bin/python[3]
+#   3. <canonical checkout>/{.venv,venv}/bin/python[3] — the linked
+#      worktree's git-common parent; dispatch worktrees carry no .venv
+#      of their own, this is where ada-pi's lives
+#   4. <repos.conf path>/{.venv,venv}/bin/python[3]
+#   5. "" — command keeps system python3
+#
+# The probe is `import pytest`, not mere existence: chaba's venv/ has
+# no pytest and must NOT win over a pytest-capable system python, else
+# the gate silently fail-opens there. Non-python commands (make, npm)
+# are left untouched.
 DEFAULT_TEST_CMD = "python3 -m pytest tests -x -q"
 DEFAULT_TEST_TIMEOUT = 240
+VENV_DIRS = (".venv", "venv")  # checkout venv conventions in use
 REPO_TESTS = {
     "chaba": {"command": DEFAULT_TEST_CMD, "timeout": 240},
     "ada-pi": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
@@ -415,7 +437,7 @@ REPO_TESTS = {
     # Unlisted repos get the default command — but only when the merged
     # tree actually carries a tests/ dir (run_test_gate skips otherwise),
     # so "others: none" holds in practice. {"command": None} opts a repo
-    # out explicitly.
+    # out explicitly; {"python": <path>} pins the interpreter.
 }
 
 # pytest failure names: `FAILED tests/x.py::test_y - ...` (-r summary) or
@@ -425,16 +447,76 @@ _FAILED_HEADER_RE = re.compile(r"^_{3,}\s+(.+?)\s+_{3,}\s*$", re.M)
 
 
 def test_gate_config(repo_name: str) -> dict:
-    """Resolved {command, timeout} for a repo's merge test gate; {} when
-    the repo is opted out (command: None)."""
+    """Resolved {command, timeout, python?} for a repo's merge test gate;
+    {} when the repo is opted out (command: None)."""
     ent = REPO_TESTS.get(repo_name or "")
     if ent is None:
         ent = {"command": DEFAULT_TEST_CMD,
                "timeout": DEFAULT_TEST_TIMEOUT}
     if not ent.get("command"):
         return {}
-    return {"command": ent["command"],
-            "timeout": int(ent.get("timeout") or DEFAULT_TEST_TIMEOUT)}
+    cfg = {"command": ent["command"],
+           "timeout": int(ent.get("timeout") or DEFAULT_TEST_TIMEOUT)}
+    if ent.get("python"):
+        cfg["python"] = ent["python"]
+    return cfg
+
+
+def _venv_python_candidates(wt: Path, repo_name: str):
+    """Checkout venv pythons that could own the repo's test deps,
+    best-first: the tree under test, the canonical checkout (a linked
+    worktree's git-common parent — dispatch worktrees have no .venv of
+    their own), then the repos.conf-declared path."""
+    dirs: list[Path] = []
+    for d in (wt, _repo_root(Path(wt)),
+              (repos().get(repo_name or "") or {}).get("path")):
+        if d:
+            d = Path(d)
+            if d not in dirs:
+                dirs.append(d)
+    for d in dirs:
+        for vd in VENV_DIRS:
+            for bn in ("python", "python3"):
+                p = d / vd / "bin" / bn
+                if p.is_file() and os.access(p, os.X_OK):
+                    yield p
+
+
+def _has_pytest(py: Path) -> bool:
+    return sh([str(py), "-c", "import pytest"],
+              timeout=20).returncode == 0
+
+
+def gate_python(wt: Path, repo_name: str, cfg: dict) -> str:
+    """Interpreter for a `python3 -m pytest` test command; "" keeps the
+    system python3 already in the command. An explicit REPO_TESTS
+    "python" pin wins when it exists; otherwise the first checkout venv
+    whose python can import pytest."""
+    pin = cfg.get("python")
+    if pin:
+        p = Path(pin).expanduser()
+        if p.is_file() and os.access(p, os.X_OK):
+            return str(p)
+    for p in _venv_python_candidates(wt, repo_name):
+        if _has_pytest(p):
+            return str(p)
+    return ""
+
+
+_PY_LEAD_RE = re.compile(r"^\s*python[\d.]*(?=\s)")  # python, python3, python3.11
+
+
+def _resolve_gate_cmd(cmd: str, wt: Path, repo_name: str,
+                      cfg: dict) -> tuple:
+    """Swap the command's leading python token for the resolved
+    interpreter. (resolved_cmd, python) — python is "" when the command
+    isn't python-led or no venv qualified."""
+    if not _PY_LEAD_RE.match(cmd):
+        return cmd, ""
+    py = gate_python(wt, repo_name, cfg)
+    if not py:
+        return cmd, ""
+    return _PY_LEAD_RE.sub(shlex.quote(py), cmd, count=1), py
 
 
 def run_test_gate(wt: Path, repo_name: str) -> dict:
@@ -452,29 +534,31 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     if not (Path(wt) / "tests").is_dir():
         return {"ran": False, "ok": True,
                 "skipped": "no tests/ dir in merged tree"}
+    cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
+    interp = py or ("python3" if _PY_LEAD_RE.match(cmd) else None)
     timeout = int(cfg["timeout"])
     t0 = time.time()
     try:
         r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
                            capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
-        return {"ran": True, "ok": False, "command": cmd,
+        return {"ran": True, "ok": False, "command": cmd, "python": interp,
                 "failed": [f"suite timeout ({timeout}s)"],
                 "error": f"test gate timed out after {timeout}s"}
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
     if r.returncode != 0 and re.search(
             r"No module named .?pytest|command not found", out):
-        return {"ran": False, "ok": True, "command": cmd,
+        return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "pytest unavailable — fail-open"}
     if r.returncode == 5:
-        return {"ran": False, "ok": True, "command": cmd,
+        return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "no tests collected"}
     if r.returncode == 0:
-        return {"ran": True, "ok": True, "command": cmd,
+        return {"ran": True, "ok": True, "command": cmd, "python": interp,
                 "elapsed": round(time.time() - t0, 1)}
     failed = _FAILED_SUMMARY_RE.findall(out) or _FAILED_HEADER_RE.findall(out)
     tail = [ln for ln in out.splitlines() if ln.strip()][-2:]
-    return {"ran": True, "ok": False, "command": cmd,
+    return {"ran": True, "ok": False, "command": cmd, "python": interp,
             "failed": failed[:8] or tail or ["pytest exited nonzero"]}
 
 

@@ -30,6 +30,14 @@ import dispatch_repos as dr  # noqa: E402
 TID = "20990101-000000-test-close-out"
 
 
+def _pytest_on(*bins: str) -> bool:
+    """All listed interpreters can import pytest."""
+    return all(
+        subprocess.run([b, "-c", "import pytest"],
+                       capture_output=True).returncode == 0
+        for b in bins)
+
+
 def git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["git", "-C", str(repo), *args], capture_output=True, text=True)
@@ -385,6 +393,114 @@ class Case(unittest.TestCase):
         self.assertTrue(r["ok"])
         self.assertFalse(r["ran"])
         self.assertIn("no tests", r["skipped"])
+
+    # ----------------------------------------- venv interpreter gate
+    # Card dispatch-test-gate-venv — the 2026-10-13 line-multihome
+    # incident: ada-pi's suite is green only under the checkout's .venv
+    # (google.genai etc.); system python3 went red and held a good merge.
+    # The gate now resolves the interpreter per repo: an explicit
+    # REPO_TESTS "python" pin, then the first {tree under test, canonical
+    # checkout, repos.conf path}/{.venv,venv}/bin/python[3] that can
+    # `import pytest`, else system python3. A venv WITHOUT pytest must
+    # not win — chaba's venv/ has none, and picking it would silently
+    # fail-open the gate.
+
+    def _pin_repos_conf(self):
+        """Hermetic repo table — point 'chaba' at the fixture checkout so
+        venv resolution never touches real host paths."""
+        conf = Path(os.environ["DISPATCH_DIR"]) / "repos.conf"
+        conf.parent.mkdir(parents=True, exist_ok=True)
+        conf.write_text(f"chaba {self.main} master\n")
+
+    def _make_venv(self, root: Path, shim: str) -> Path:
+        """Create <root>/.venv/bin/python from a shell shim body."""
+        py = root / ".venv" / "bin" / "python"
+        py.parent.mkdir(parents=True, exist_ok=True)
+        py.write_text(shim)
+        py.chmod(0o755)
+        return py
+
+    @unittest.skipUnless(_pytest_on("python3", sys.executable),
+                         "pytest not installed")
+    def test_gate_venv_python_unholds_merge(self):
+        """The incident e2e: a suite red under system python (missing
+        dep) goes green under the canonical checkout's .venv — the
+        merge must land instead of being held."""
+        self._pin_repos_conf()
+        commit(self.wt, "tests/test_venvdep.py",
+               "import venv_only_dep\n"
+               "def test_dep():\n"
+               "    assert venv_only_dep.answer == 42\n",
+               "dep test")
+        # the held-merge half: with no venv resolvable, system python3
+        # cannot import the dep — the suite is red, exactly what held
+        # the line-multihome merge
+        r = dr.run_test_gate(self.wt, "chaba")
+        self.assertFalse(r["ok"], r)
+        self.assertTrue(r["command"].startswith("python3 "), r)
+        self.assertTrue(any("venvdep" in f for f in r["failed"]), r)
+        # the canonical checkout's .venv carries the dep. A shell shim
+        # stands in for the venv python (real venvs are symlink +
+        # pyvenv.cfg; the gate only needs an executable that can import
+        # pytest and see the dep).
+        lib = self.tmp / "venvlib"
+        lib.mkdir()
+        (lib / "venv_only_dep.py").write_text("answer = 42\n")
+        py = self._make_venv(
+            self.main,
+            "#!/bin/sh\n"
+            f"export PYTHONPATH={lib}\n"
+            f'exec "{sys.executable}" "$@"\n')
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res)
+        self.assertEqual(res["tests"]["python"], str(py))
+        self.assertIn(".venv/bin/python", res["tests"]["command"])
+        self.assertTrue(
+            self.remote_has("master", "tests/test_venvdep.py"))
+
+    def test_gate_skips_venv_without_pytest(self):
+        """A venv whose python can't import pytest must not win —
+        otherwise the gate fail-opens and stops testing entirely."""
+        self._pin_repos_conf()
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        # -S drops site-packages: the shim runs but `import pytest` fails
+        self._make_venv(self.main,
+                        "#!/bin/sh\nexec python3 -S \"$@\"\n")
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertEqual(res["tests"]["python"], "python3")
+        self.assertTrue(
+            res["tests"]["command"].startswith("python3 "),
+            res["tests"])
+
+    def test_gate_prefers_tree_venv_over_checkout(self):
+        """Order: the tree under test's own venv outranks the canonical
+        checkout's."""
+        self._pin_repos_conf()
+        # `-c` probes exit 0 without needing a real pytest — this test
+        # only checks candidate order, it never runs the gate.
+        shim = '#!/bin/sh\n[ "$1" = "-c" ] && exit 0\nexec python3 "$@"\n'
+        wt_py = self._make_venv(self.wt, shim)
+        self._make_venv(self.main, shim)
+        py = dr.gate_python(self.wt, "chaba",
+                            dr.test_gate_config("chaba"))
+        self.assertEqual(py, str(wt_py))
+
+    def test_resolve_gate_cmd_pin_and_nonpython(self):
+        """An explicit REPO_TESTS "python" pin wins without probing;
+        non-python commands pass through untouched."""
+        pin = self.tmp / "pinbin" / "python"
+        pin.parent.mkdir()
+        pin.write_text("#!/bin/sh\nexec python3 \"$@\"\n")
+        pin.chmod(0o755)
+        cfg = {"python": str(pin)}
+        cmd, py = dr._resolve_gate_cmd(
+            "python3 -m pytest tests -k x -q", self.wt, "chaba", cfg)
+        self.assertEqual(py, str(pin))
+        self.assertEqual(cmd, f"{pin} -m pytest tests -k x -q")
+        cmd, py = dr._resolve_gate_cmd("make test", self.wt, "chaba", cfg)
+        self.assertEqual((cmd, py), ("make test", ""))
 
     @unittest.skipUnless(
         subprocess.run(["python3", "-c", "import pytest"],
