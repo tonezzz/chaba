@@ -1,0 +1,64 @@
+id: jobs/nest/2026-10-13-nest-mgr-mddb-cms-cutover
+title: nest-mgr daemons were publishing to retired mddb :11023 — installed copy lagged repo port fix
+card: cms-nest-stale-investigation
+date: 2026-10-13
+runner: tony-dell
+status: done
+
+# ---------------------------------------------------------------------------
+# Alert cards cms-auto-nest-tony-dell / -tony-omen / -idc03 reported the
+# nest-<host> automations ~11.5h stale (interval 15m). Root cause was NOT a
+# dead daemon and NOT a bad threshold — it was split-brain across the
+# MEM-0545 mddb content-plane split.
+# ---------------------------------------------------------------------------
+
+symptoms:
+  - "ada-cms-automation/nest-<host> last_run frozen ~2026-10-13T01:0x UTC on
+     mddb-cms :11027 — addedAt == updatedAt, i.e. a one-time copy, never
+     written again"
+  - "nest-mgr.service active on all three hosts, ticking every ~64s, CPU
+     sane — not crashed, not hung (hrtimer_nanosleep between ticks)"
+  - "journal bursts of 'tick error: Connection refused' ~15:34-15:40 +07 on
+     ALL hosts simultaneously = a brief :11023 outage window, not the cause"
+
+root_cause:
+  - "~/.local/share/nest/nest-mgr.py on dell/omen/idc03 still defaulted
+     MDDB_BASE_URL=http://100.102.134.91:11023/v1 (old mddb primary)"
+  - "repo stacks/services/nest-mgr/nest-mgr.py was already fixed to :11027 —
+     install.sh was never re-run after the port change"
+  - "install.sh used `systemctl --user enable --now` — a no-op on an
+     already-running unit, so even re-running it would not have picked up
+     the new script (verified: PID unchanged, 'active since Oct 10')"
+  - "daemon kept publishing happily to :11023 all day (its copy of the
+     registry doc showed last_run=12:23Z — fresh); only the CMS-facing
+     :11027 copies froze"
+
+fix:
+  - "install.sh tony-dell tony-omen idc03 (installs :11027 repo copy)"
+  - "systemctl --user restart nest-mgr.service on all three (the missing
+     step — --now does not restart)"
+  - "install.sh patched: enable + explicit restart, both local and ssh
+     paths, so re-installs actually take effect"
+  - "verified: :11027 registry last_run + ada-cms-pages meta.updated =
+     2026-10-13T12:33Z on all three hosts"
+
+threshold_audit:
+  verdict: sane
+  detail: >-
+    cms-auto-health.py judges stale at one interval + GRACE_S(30m) —
+    ~45m for a 15m job — with a page-freshness rescue (fresh ada-cms-pages
+    updatedAt overrides a stale registry doc). Both signals were genuinely
+    stale on the serving backend here; the alert was a true positive.
+    No threshold change needed. Cards auto-close (column=done) on the next
+    kanban-sync run which executes cms-auto-health every 15m.
+
+lessons:
+  - "after the MEM-0545 mddb split, any long-lived script with a hardcoded
+     :11023 default is a ticking stale-page: audit other daemons/timers for
+     the same pattern (installed copies under ~/.local/share vs repo
+     stacks/services/)"
+  - "`enable --now` is not a restart — install scripts for running daemons
+     need explicit `restart`"
+  - "python print() to stdout is block-buffered under systemd: 'published'
+     lines never reached the journal while stderr 'tick error' did — logs
+     alone can mislead about whether a loop is running"
