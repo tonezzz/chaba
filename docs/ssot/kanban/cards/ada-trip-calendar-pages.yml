@@ -1,7 +1,7 @@
 id: ada-trip-calendar-pages
 title: Trip calendar page family — generator + Ada tool (rollup/daily-leaf/QC)
 column: done
-updated: 2026-10-13 10:05
+updated: 2026-10-13 10:56
 priority: high
 tags:
 - ada-pi
@@ -83,6 +83,11 @@ comms:
   text: 'Re-dispatched 10:05 → 20261013-100508 (first dispatch died on a permission rejection — it was asked to
     write to the chaba repo, outside its ada-pi worktree scope; nothing was written). Re-scoped: everything in ada-pi
     (backend/trip_pages.py + tools.d/trip_calendar.py + tests), chaba read-only for the cms-page-standard spec.'
+- at: 2026-10-13 10:56
+  from: devin
+  text: '[prod] deployed 2026-10-13 — ada-pi 6148f64 + chaba generator on idc03 checkout. trip_calendar armed on
+    ada-kk/ada-kk-dev; denylist lanes get it by default. Generator dry-run verified end-to-end (provider load, journal
+    scan, mermaid gantt, 22-day span). Pages render once real dates/slug supplied.'
 action:
   type: dispatch
   status: done

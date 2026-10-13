@@ -1,7 +1,7 @@
 id: capacity-move-openjev-student
 title: Move openjev-student (gemma-3-1b scorer, 4.5GB RSS) idc03 -> tony-omen
 column: done
-updated: 2026-10-13 06:01
+updated: 2026-10-13 10:55
 priority: medium
 tags:
 - capacity
@@ -67,5 +67,10 @@ comms:
 - at: 2026-10-13 06:01
   from: devin
   text: 'VERIFIED: openjev-student.service active on tony-omen since 22:55 (OPS-0524). idc03 unit parked for rollback.'
+- at: 2026-10-13 10:55
+  from: devin
+  text: 'soak status 2026-10-13 10:55 ICT: destination verified — omen container Up 12h, NRestarts 0, /health 200
+    (binds tailnet :8779, not loopback — noted). 24h soak close scheduled: openjev-student-cleanup.timer on idc03
+    fires 23:35 (stop+disable+rm quadlet+daemon-reload); audit entry flips to absent then.'
 action:
   status: done
