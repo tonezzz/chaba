@@ -44,6 +44,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.request
@@ -145,6 +146,13 @@ def load_usage(path: Path, days: int) -> dict[str, dict]:
                 continue
             b = out.setdefault(day.isoformat(), _new_day())
             src = str(rec.get("source") or "unknown")
+            # skip synthetic rows — unit tests write session_ids like
+            # "t-ctx" into the shared ledger unless the test env isolates
+            # ADA_USAGE_LOG; real live session ids are 10-hex.
+            sid = str(rec.get("session_id") or "")
+            if src == "live" and sid and \
+                    not re.fullmatch(r"[0-9a-f]{10}", sid):
+                continue
             b["sources"][src] += 1
             b["in"] += int(rec.get("in", 0) or 0)
             b["out"] += int(rec.get("out", 0) or 0)
