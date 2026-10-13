@@ -1,0 +1,74 @@
+title: calendar_write idempotency — dedup identical creates
+id: 2026-10-13-calendar-write-idempotency
+card: calendar-write-idempotency
+date: 2026-10-13
+status: shipped-chaba-pending-adapi
+summary: |
+  A model retry / double-invoke of calendar create wrote two identical
+  kk-ha events 1s apart (ทริปแอฟริกาใต้ BKK-CPT 2027-01-02; Tony deleted
+  the dup 2026-10-13). Same class as ada-tool-retry-storm — the write
+  path had no idempotency check. Fix is staged as an ada-pi drop-in
+  patch: CalendarService.create_event now lists the target calendar's
+  day window first and returns the existing event as
+  {dedup: true, existing: <id>} on a normalized title + identical-start
+  match instead of writing a copy.
+
+placement_decision: |
+  The card names backend/tool_runner/calendar.py, but the guard landed
+  one layer down in CalendarService.create_event: every write path —
+  calendar_write action=create, the absorbed calendar_create_event
+  alias, and any future non-tool caller — funnels through it, and it is
+  the only layer that already knows the resolved (provider, calid)
+  write target. tool_runner/calendar.py gets a docstring pointer only.
+
+deliverables:
+  - file: integrations/ada-pi/backend/calendar_providers.create-dedup.patch
+    role: ada-pi patch (vs main @ d166794, 3 files, +173/-3)
+    detail: |
+      backend/calendar_providers.py: create_event -> _find_duplicate
+      (provider.list_events over the day window of the requested start,
+      filtered to the target calid or provider default_calendar). Match
+      = _norm_title equal (NFC + casefold + collapsed whitespace, so
+      Thai combining sequences compare across normalization forms) AND
+      _dedup_start_key equal (bare dates compare by day; datetimes by
+      absolute instant — '+07:00' vs 'Z' spellings of the same instant
+      match). Hit returns the existing event dict + dedup:true +
+      existing:<qualified id>. A failed dedup list propagates — same
+      loud-fail rule as the reads; a blind create is how the bug
+      happened.
+      backend/tool_runner/calendar.py: docstring noting the service
+      dedup.
+      tests/test_calendar_providers.py: 7 new tests + FakeProvider
+      reflects creates into list_events.
+  - file: integrations/ada-pi/README.md
+    role: Drop 3 install runbook
+
+verify:
+  adapi_clone: >
+    /tmp clone of tonezzz/ada-pi @ d166794 with patch applied —
+    tests/test_calendar_providers.py 49/49 pass (7 new: dedup hit,
+    title/instant normalization, all-day, different-calendar scope,
+    no-match still creates, dedup-read failure loud / no blind write,
+    end-to-end calendar_write double-invoke through ToolRunner.execute);
+    scripts/tool-lint.py clean.
+  live: |
+    After apply + deploy: create an event via calendar_write, then
+    repeat the identical call — second returns the same event id with
+    dedup:true and no new event appears in calendar_read.
+
+install_runbook: integrations/ada-pi/README.md — Drop 3 section
+
+gaps_and_notes:
+  - "Dedup window is the start's local day only — a dup with a
+    different start (even 1 minute off) is a legitimately distinct
+    event per the card's identical-title+start rule."
+  - "Compare is title+start only, not end/notes — deliberate per spec;
+    a retry with a tweaked title is a new event."
+  - "Companion fix already landed in chaba: commit 15204342 dropped the
+    dead e468a444 literal-name calendar from
+    docs/ssot/apps/ssot.apps.ada-calendar.yml (it 404'd every aggregate
+    list_events on the tony lane — which would have made this dedup
+    read raise, per the loud-fail rule)."
+  - "Not deployed: the patch must be git-applied in an ada-pi worktree
+    and run through deploy-ada.sh's gates; dispatch instructions say no
+    pushes from this session."
