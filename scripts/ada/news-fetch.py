@@ -170,8 +170,9 @@ def main():
     if not feeds:
         sys.exit(f"no feed matched --feed {args.feed!r}")
 
-    wp = None if args.dry_run else WP(**{k[3:].lower(): v for k, v in
-                                         load_wp_env(ENV_PATH).items()})
+    env = load_wp_env(ENV_PATH)
+    wp = None if args.dry_run else WP(env["WP_SITE_URL"], env["WP_APP_USER"],
+                                    env["WP_APP_PASSWORD"])
     cutoff = datetime.now(timezone.utc) - timedelta(hours=args.since_hours)
     total_new = total_dup = 0
 
