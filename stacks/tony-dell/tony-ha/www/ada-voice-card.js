@@ -695,8 +695,11 @@ class AdaVoiceCard extends HTMLElement {
         if (ev.text) avcSpeak(ev.text);
         break;
       case "error":
-        this._line.textContent = `Error: ${ev.message || ev.type}`;
-        avcLog("error", ev.message || ev.type);
+        this._line.textContent = ev.stage === "provider_connect"
+          ? `Upstream provider refused: ${ev.message}`
+          : `Error: ${ev.message || ev.type}`;
+        avcLog("error", `${ev.stage || ev.type}: ${ev.message || ""}`);
+        if (ev.stage) this._state = "error";
         break;
     }
     this._render();
@@ -743,6 +746,7 @@ class AdaVoiceCard extends HTMLElement {
       };
       this._socket.onerror = () => { this._line.textContent = "WebSocket error"; };
       this._socket.onclose = async (e) => {
+        avcLog("ws", `close code=${e.code}${e.reason ? ` reason=${e.reason}` : ""}`);
         // never reached the session — try the next endpoint candidate
         if (!this._wsReady && this._wsCandIdx + 1 < this._wsCandidates.length) {
           this._wsCandIdx += 1;
@@ -751,6 +755,11 @@ class AdaVoiceCard extends HTMLElement {
           this._setStatus("Retrying via alternate route…");
           this._connect(true);
           return;
+        }
+        // abnormal close with no error frame — keep the code visible so
+        // "just stopped" is diagnosable (e.g. 1011 = upstream/provider error)
+        if (e.code !== 1000 && e.code !== 4401 && this._state !== "error") {
+          this._line.textContent = `Disconnected (code ${e.code}${e.reason ? ` — ${e.reason}` : ""})`;
         }
         if (e.code === 4401 && !this._mintRetried) {
           // Key revoked or bound to another device — re-mint and retry once.
