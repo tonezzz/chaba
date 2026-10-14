@@ -61,6 +61,7 @@ _RE_OPEN = re.compile(
 _RE_CLOSE = re.compile(r"session=(\w+) closed")
 _RE_PFAIL = re.compile(r"session=(\w+) provider connect failed")
 _RE_FALLBACK = re.compile(r"session=(\w+) degraded to openrouter fallback")
+_RE_TEXTMODE = re.compile(r"session=(\w+) text-mode provider")
 _RE_TURN = re.compile(r"session=(\w+) chat text turn")
 _RE_TS = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})")
 
@@ -83,7 +84,7 @@ def scan_lane(lane: str, unit: str, days: int) -> dict:
     callers{}}} plus per-session rows for the jsonl ledger."""
     sess = defaultdict(lambda: {"open": None, "close": None, "caller": "?",
                                 "pfail": False, "fallback": False,
-                                "turns": 0})
+                                "text": False, "turns": 0})
     for ts, ln in _journal(unit, days):
         if (m := _RE_OPEN.search(ln)):
             sess[m.group(1)]["open"] = ts
@@ -94,12 +95,15 @@ def scan_lane(lane: str, unit: str, days: int) -> dict:
             sess[m.group(1)]["pfail"] = True
         elif (m := _RE_FALLBACK.search(ln)):
             sess[m.group(1)]["fallback"] = True
+        elif (m := _RE_TEXTMODE.search(ln)):
+            sess[m.group(1)]["text"] = True
         elif (m := _RE_TURN.search(ln)):
             sess[m.group(1)]["turns"] += 1
 
     days_map = defaultdict(lambda: {
         "sessions": 0, "failed": 0, "fallback": 0,
-        "minutes": 0.0, "fallback_min": 0.0, "turns": 0,
+        "minutes": 0.0, "fallback_min": 0.0, "text_min": 0.0,
+        "turns": 0,
         "callers": defaultdict(int), "hours": defaultdict(int)})
     rows = []
     for sid, s in sess.items():
@@ -126,11 +130,17 @@ def scan_lane(lane: str, unit: str, days: int) -> dict:
         if s["fallback"]:
             d["fallback"] += 1
             d["fallback_min"] += dur
+        elif s["text"]:
+            # mode=text — REST text provider, no billed Live minutes.
+            # Row stays for auditability; minutes tracked separately so
+            # watchers score billed time, not session wall-time.
+            d["text_min"] += dur
         else:
             d["minutes"] += dur
         rows.append({"day": day, "lane": lane, "session": sid,
                      "caller": s["caller"], "open": s["open"],
                      "close": s["close"], "minutes": round(dur, 2),
+                     "mode": "text" if s["text"] else "live",
                      "provider_failed": s["pfail"],
                      "fallback": s["fallback"], "turns": s["turns"]})
     return {"days": days_map, "rows": rows}
@@ -153,8 +163,8 @@ def render(lanes: dict, window_days: int) -> str:
            "this spend. Minutes are wall-clock session time (billing floor); "
            "provider-failed connects bill ~nothing but mark retry storms.\n",
            "| day | lane | sessions | connected | provider-fail | "
-           "live min | fallback min | top caller |",
-           "|---|---|---|---|---|---|---|---|"]
+           "live min | fallback min | text min | top caller |",
+           "|---|---|---|---|---|---|---|---|---|"]
     totals = defaultdict(float)
     for lane, data in lanes.items():
         for day in sorted(data["days"], reverse=True):
@@ -165,7 +175,7 @@ def render(lanes: dict, window_days: int) -> str:
             out.append(
                 f"| {day} | {lane} | {d['sessions']} | {conn} | "
                 f"{d['failed']} | {live_min:.1f} | {d['fallback_min']:.1f} | "
-                f"{caller} |")
+                f"{d['text_min']:.1f} | {caller} |")
             totals["min"] += live_min
             totals["fail"] += d["failed"]
     out += ["\n## Top sessions (window)\n",
@@ -177,7 +187,8 @@ def render(lanes: dict, window_days: int) -> str:
     for r in all_rows:
         flags = ",".join(x for x, on in
                          (("provider-fail", r["provider_failed"]),
-                          ("fallback", r["fallback"])) if on) or "-"
+                          ("fallback", r["fallback"]),
+                          ("text", r.get("mode") == "text")) if on) or "-"
         out.append(f"| {r['day']} | {r['lane']} | {r['session']} | "
                    f"{r['minutes']:.1f} | {r['turns']} | {flags} |")
     # habit profile — sessions by 3h open-hour band, all days merged;

@@ -47,6 +47,10 @@ def lane_minutes(day: str) -> dict:
                     e = json.loads(line)
                 except ValueError:
                     continue
+                # mode=text rows are REST-provider sessions — free-tier
+                # text, not billed Live minutes. Only live rows count.
+                if e.get("mode") == "text":
+                    continue
                 lane = e.get("lane") or "?"
                 per[lane] = per.get(lane, 0.0) + float(e.get("minutes") or 0)
     except FileNotFoundError:
