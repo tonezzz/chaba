@@ -12,8 +12,9 @@ site:
   public_base: https://boards.surf-thailand.com/wp
   origin_base: https://boards.h3.gizmo-thailand.com/wp
   # Permalinks: /index.php/%postname%/ (Plesk vhost has no rewrite for
-  # plain permalinks). Canonical front page is /wp/index.php — /wp/
-  # 301-loops to itself (known origin quirk, 2026-10-14).
+  # plain permalinks). Bare /wp|/wp/ used to 301-loop to itself (WP
+  # canonical vs PATH_INFO) — fixed at the idc02 caddy edge with an
+  # exact-path redir to /wp/index.php (2026-10-14).
   rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost
   app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
 
