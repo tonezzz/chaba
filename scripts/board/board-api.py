@@ -787,8 +787,15 @@ def do_request(card: dict, body: dict) -> str:
            "at": now(), "from": frm}
     if to != "tony":
         req["to"] = to  # absent = tony
-    if body.get("options"):
-        req["options"] = body["options"]
+    opts = body.get("options")
+    if not opts and to == "tony":
+        # never emit a buttonless tony-facing request — it renders as an
+        # open ask with no way to answer (2026-10-15 complaint). A
+        # generic gate is better than a dead card; emitters that know
+        # the real choices should pass them explicitly.
+        opts = ["proceed", "hold"]
+    if opts:
+        req["options"] = opts
     sug = str(body.get("suggested") or "").strip()
     if sug:
         valid = set()

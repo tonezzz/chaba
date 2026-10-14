@@ -476,8 +476,15 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
     if dry:
         print(f"  [dry] request {cid}/{rid}: {ask[:120]}")
         return
+    # merge-conflict asks always carry the same decision shape — without
+    # options the board renders an open request with no buttons (the
+    # "cards without decision buttons" complaint 2026-10-15).
+    opts = ["let devin resolve the conflict and land it ★",
+            "drop this dispatch — re-dispatch fresh from current main",
+            "hold the card"]
     r = api_post("/request", {"id": cid, "from": "chaba",
-                              "ask": ask, "request_id": rid})
+                              "ask": ask, "request_id": rid,
+                              "options": opts, "suggested": opts[0]})
     if not r.get("error"):
         return
     def add(c):
@@ -485,6 +492,7 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
         if any(x.get("id") == rid for x in reqs):
             return False
         reqs.append({"id": rid, "ask": ask, "status": "open",
+                     "options": opts, "suggested": opts[0],
                      "at": now(), "from": "chaba"})
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba",

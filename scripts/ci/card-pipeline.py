@@ -227,10 +227,16 @@ class ApiSink(Sink):
         if not r.get("ok"):
             print(f"warn: /comment failed: {r.get('error')}", file=sys.stderr)
 
-    def request(self, cid: str, ask: str, request_id: str) -> None:
+    def request(self, cid: str, ask: str, request_id: str,
+                options: list | None = None) -> None:
+        # never raise a buttonless request — an open ask with no options
+        # renders as a dead card (2026-10-15 complaint). Callers may pass
+        # real choices; otherwise the generic proceed/hold gate applies.
         r = self._post("/request", {"id": cid, "ask": ask,
                                     "request_id": request_id,
-                                    "from": ACTOR})
+                                    "from": ACTOR,
+                                    "options": options or ["proceed",
+                                                           "hold"]})
         if not r.get("ok") and "duplicate" not in str(r.get("error")):
             print(f"warn: /request failed: {r.get('error')}", file=sys.stderr)
 
