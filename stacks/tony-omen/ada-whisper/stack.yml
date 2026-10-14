@@ -1,0 +1,30 @@
+id: ada-whisper
+host: tony-omen
+description: >-
+  Whisper STT endpoint for msg-lane voice notes — faster-whisper large-v3
+  int8_float16 on the GTX 1650, ffmpeg->numpy decode (no PyAV). Binds
+  0.0.0.0:8790; POST /transcribe (multipart file or raw body) -> {text,
+  language, elapsed_s, device}; GET /health. Lazy-loads the model and
+  unloads after WHISPER_IDLE_S=300s idle to honor the ssot.gpu
+  one-workload policy; evicts ollama models via keep_alive=0 when VRAM is
+  short, then CPU int8 as degraded fallback. Consumers: ada-tg-relay,
+  ada-tg-relay-kk (TG_WHISPER_URL) and ada-line-relay (LINE_WHISPER_URL)
+  on idc03, each with local small/medium fallback when omen is down.
+verify: >-
+  curl -sf http://tony-omen:8790/health | grep -q '"ok": *true'
+requires:
+  - "tool:ffmpeg — audio decode"
+  - "gpu:tony-omen GTX 1650 — large-v3 int8_float16 ~1.9GB VRAM while warm"
+state:
+  - "~/apps/ada-whisper/whisper_server.py — deployed from scripts/ada/whisper_server.py"
+  - "~/.venvs/ada-whisper — faster-whisper 1.2.1 + ctranslate2 4.8.2 + nvidia-*-cu12"
+  - "~/.cache/huggingface/hub/models--Systran--faster-whisper-large-v3 — model cache"
+restore: >-
+  Recreate ~/.venvs/ada-whisper (pip install faster-whisper==1.2.1
+  ctranslate2==4.8.2 fastapi 'uvicorn[standard]' nvidia-cublas-cu12
+  nvidia-cudnn-cu12), copy scripts/ada/whisper_server.py to
+  ~/apps/ada-whisper/, install this unit to ~/.config/systemd/user/,
+  systemctl --user enable --now ada-whisper.
+related_cards: [stt-omen-large-v3, tg-relay-whisper-pin]
+status: deployed
+deployed: 2026-10-14
