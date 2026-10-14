@@ -84,6 +84,7 @@ persons:
         - set_facial_expression
         - ada_market_quote
         - ada_render_video
+        - ada_render_image
         - page_snapshot
         - trip_calendar
         - doc_read
@@ -175,7 +176,10 @@ persons:
         # screens incl. camwalls. No registered displays on a virtual
         # home lane anyway. Re-add if a kk-ha bridge ever exists.
         - ada_market_quote
-        - ada_render_video
+        - ada_render_image
+        # ada_render_video dropped 2026-10-14 (Tony): video is
+        # owner-only (Veo ~$1+/clip) — lives on persons.tony only,
+        # env-gated ADA_RENDER_VIDEO_OPEN=1 on ada-ha-tony.
         # page_snapshot (2026-10-12): renders a page URL to a sendable
         # PNG via playlived — the deterministic plan/diagram renderer
         # (kk asked for an easy-read trip-plan image; ada_render_video
@@ -438,7 +442,7 @@ bench_profiles:
       - voice_fx
       - set_facial_expression
       - ada_market_quote
-      - ada_render_video
+      - ada_render_image
       - page_snapshot
       # conv_journal removed 2026-10-13 — never manifest-enabled in
       # ada-pi (see persons.kk note); undeclared at runtime.
@@ -508,7 +512,7 @@ bench_profiles:
       - voice_fx
       - set_facial_expression
       - ada_market_quote
-      - ada_render_video
+      - ada_render_image
       # 2026-10-13 drift fix: persons.kk gained page_snapshot +
       # trip_calendar after kk-parity was written —
       # parity means identical, so they belong here too. (doc_read
