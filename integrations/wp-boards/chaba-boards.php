@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.1
+ * Version: 0.3.2
  */
 
 if (!defined('ABSPATH')) exit;
@@ -21,7 +21,7 @@ add_action('init', function () {
     $common = [
         'public'              => true,   // permalinks resolve; status gates who sees
         'show_in_rest'        => true,   // fleet writers create via REST
-        'supports'            => ['title', 'editor', 'author', 'custom-fields', 'thumbnail'],
+        'supports'            => ['title', 'editor', 'author', 'custom-fields', 'thumbnail', 'comments'],
         'has_archive'         => false,
         'menu_icon'           => 'dashicons-index-card',
         'show_in_menu'        => true,
