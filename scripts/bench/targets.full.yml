@@ -1,0 +1,50 @@
+# Full matrix — run on demand:
+#   python3 scripts/bench/model-speed.py --targets scripts/bench/targets.full.yml --runs 5
+# Cell availability depends on which models are pulled on each host;
+# failures are recorded per-cell, not fatal to the run.
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3:0.6b
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: llama3.2:1b
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: llama3.2:3b
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: phi3            # small (3.8B, 2.2GB — GPU-resident)
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen2.5:7b      # small — partial GPU offload on 4GB VRAM
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: gemma3:12b      # medium — CPU-offload ceiling probe
+- host_tag: idc03
+  provider: ollama
+  base_url: http://100.102.134.91:11434
+  model: llama3.2:3b
+- host_tag: idc02
+  provider: ssh_openai
+  ssh: idc02
+  remote_port: 8114
+  remote_proc: llama-server
+  model: bench           # Llama-3.2-3B Q4_K_M on llama.cpp
+- host_tag: tony-macbook
+  provider: ssh_openai
+  ssh: tony-macbook
+  remote_port: 8114
+  remote_proc: llama-server
+  model: bench           # same 3B on llama.cpp-vulkan
+- host_tag: tony-dell
+  provider: ssh_openai
+  ssh: tony-dell
+  remote_port: 8114
+  remote_proc: llama-server
+  model: bench

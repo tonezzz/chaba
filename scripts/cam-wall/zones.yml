@@ -7,6 +7,10 @@
 #                       into each manifest + data/zones.json for the web tier.
 #   cam-wall-cms.py   — page titles/areas, CMS meta tags (zone_tab,
 #                       zone_group, zone_site), DVR device -> area.
+#                       CAMWALL_ZONE_GROUPS filters publish to an
+#                       allowlist of `group:` values — the kk lane runs
+#                       =public so Kaewta's collection (ada-cms-pages-kk)
+#                       carries traffic walls only, no private footage.
 #   ada-pi pwa/cms    — the CMS sidebar reads the propagated copies
 #                       (manifest fields / data/zones.json / page meta);
 #                       it does NOT parse this file.
@@ -15,7 +19,8 @@
 #   group: private|public — the privacy boundary. Display labels (Security,
 #     Traffic) live in `tabs` and are keyed BY group unless a zone sets an
 #     explicit `tab:`. A zone absent from this file classifies as
-#     `unsorted` — visible on the sidebar, never silently guessed.
+#     `unsorted` — visible on the sidebar, never silently guessed, and
+#     excluded from the kk lane's public-only publish filter.
 #   site: compound grouping (noble estate vs tony-house vs bangkok).
 #   cams: [label, kind, key, *alt_urls] — kind is vms|go2rtc|jpeg|youtube|hls.
 #   registry_group: pull roster comes from frigate/cameras.json cams whose

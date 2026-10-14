@@ -1,7 +1,7 @@
 # ada-pi drop-ins
 
 Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
-chaba dispatches. Eight drops live here:
+chaba dispatches. Nine drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -626,3 +626,46 @@ The fix binds each backend session to the chat it was opened for; a bare
   `line-proactive-persona` owns explicit member addressing.
 - `_recent_chat` also gets persona-keyed writes in `_deliver_turn` —
   kept (harmless); readers are instance-keyed only.
+
+---
+
+## Drop 9 — whisper-url transcription (STT endpoint on omen GPU)
+
+Card `stt-omen-large-v3` (2026-10-14) — **already deployed** (ada-pi
+`daa0e0a`); these patches are the repo-of-record copy.
+
+- `backend/tg_relay.whisper-url.patch` — `TG_WHISPER_URL` remote
+  endpoint first (httpx multipart POST, 120s), local faster-whisper as
+  fallback; `_decode_audio` goes ffmpeg/imageio-ffmpeg -> 16kHz f32
+  numpy, PyAV only as last resort (av stays pinned `>=14,<16`).
+- `backend/line_relay.whisper-url.patch` — same shape with
+  `LINE_WHISPER_URL`/`LINE_WHISPER_MODEL`/`LINE_VOICE_TRANSCRIBE`.
+- `backend/requirements.txt` gained `faster-whisper==1.2.1` +
+  `imageio-ffmpeg` (bundled ffmpeg binary — idc03 has no system ffmpeg).
+
+### Install (ada-pi worktree)
+
+1. `cd <ada-pi> && git apply <chaba>/integrations/ada-pi/backend/tg_relay.whisper-url.patch && git apply <chaba>/integrations/ada-pi/backend/line_relay.whisper-url.patch`
+   — based on `main` @ `cbbc072`.
+2. `pip install faster-whisper==1.2.1 "av>=14,<16" imageio-ffmpeg`
+3. Env: `TG_WHISPER_URL=http://tony-omen:8790/transcribe` in
+   telegram-bot.env + telegram-kk-bot.env; `LINE_WHISPER_URL=...` in
+   line-bot.env (inert until `LINE_VOICE_TRANSCRIBE=1`).
+4. Restart `ada-tg-relay`, `ada-tg-relay-kk`, `ada-line-relay`.
+5. Endpoint side: `stacks/tony-omen/ada-whisper/` (systemd --user unit,
+   dedicated `~/.venvs/ada-whisper` with nvidia-*-cu12 libs).
+
+### Verified
+
+- idc03: `_transcribe()` remote path -> `สวัสดีครับ วันนี้เป็นไงบ้าง`
+  (4s); dead-URL -> local medium fallback -> same text.
+- omen: `/transcribe` th 3.7s warm / 17.9s cold-load; model unloads
+  after WHISPER_IDLE_S freeing ~1.9GB VRAM.
+
+### Residual
+
+- LINE voice transcription remains disarmed (`LINE_VOICE_TRANSCRIBE`
+  unset) — arming it is a behavior change the card left open.
+- While whisper is warm (~5min after a clip), phi3 reloads into
+  partial CPU offload on the 4GB GTX 1650 — the intended GPU-citizen
+  tradeoff (ssot.gpu one-workload policy).

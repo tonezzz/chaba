@@ -1,0 +1,84 @@
+{
+  "_comment": "news-fetch.py feed map — WordPress `news` CPT ingestion. Each feed: {name, url, categories: [wp category slugs], tags: [wp tag names], require: <regex on title+excerpt, optional>, max_items}. Dedup is by deterministic slug n-<md5(link)> looked up in WP — no local ledger. flood/* feeds reuse the Google News query URLs from flood-news-feeds.json; WP news items complement (not duplicate) the CMS flood situation pages.",
+  "feeds": [
+    {
+      "name": "bangkokpost-thailand",
+      "url": "https://www.bangkokpost.com/rss/data/thailand.xml",
+      "categories": ["thailand"],
+      "tags": ["bangkokpost", "en"]
+    },
+    {
+      "name": "bangkokpost-world",
+      "url": "https://www.bangkokpost.com/rss/data/world.xml",
+      "categories": ["world"],
+      "tags": ["bangkokpost", "en"]
+    },
+    {
+      "name": "bangkokpost-business",
+      "url": "https://www.bangkokpost.com/rss/data/business.xml",
+      "categories": ["finance", "markets"],
+      "tags": ["bangkokpost", "en"]
+    },
+    {
+      "name": "thethaiger",
+      "url": "https://thethaiger.com/feed",
+      "categories": ["thailand"],
+      "tags": ["thethaiger", "en"]
+    },
+    {
+      "name": "khaosod-english",
+      "url": "https://www.khaosodenglish.com/feed/",
+      "categories": ["thailand"],
+      "tags": ["khaosod", "en"]
+    },
+    {
+      "name": "gn-flood-bangkok-th",
+      "url": "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E&hl=th&gl=TH&ceid=TH:th",
+      "categories": ["disaster", "flood", "thailand", "bangkok"],
+      "tags": ["google-news", "th"],
+      "require": "น้ำท่วม|อุทกภัย|น้ำล้น|น้ำเอ่อ|ระบายน้ำ|เขื่อน|flood|inundat|overflow"
+    },
+    {
+      "name": "gn-flood-bangkok-en",
+      "url": "https://news.google.com/rss/search?q=flooding%20Bangkok%20OR%20%22Bang%20Phli%22&hl=en-US&gl=TH&ceid=TH:en",
+      "categories": ["disaster", "flood", "thailand", "bangkok"],
+      "tags": ["google-news", "en"],
+      "require": "flood|inundat|overflow|น้ำท่วม"
+    },
+    {
+      "name": "gn-flood-bangphli",
+      "url": "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%9E%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th",
+      "categories": ["disaster", "flood", "thailand"],
+      "tags": ["google-news", "th", "bang-phli"],
+      "require": "น้ำท่วม|อุทกภัย|น้ำล้น|flood|inundat"
+    },
+    {
+      "name": "gn-flood-samutprakan",
+      "url": "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A1%E0%B8%B8%E0%B8%97%E0%B8%A3%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3&hl=th&gl=TH&ceid=TH:th",
+      "categories": ["disaster", "flood", "thailand"],
+      "tags": ["google-news", "th", "samut-prakan"],
+      "require": "น้ำท่วม|อุทกภัย|น้ำล้น|flood|inundat"
+    },
+    {
+      "name": "gn-flood-chaophraya-dam",
+      "url": "https://news.google.com/rss/search?q=%E0%B9%80%E0%B8%82%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B9%80%E0%B8%88%E0%B9%89%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B8%A2%E0%B8%B2%20%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B2%E0%B8%A2%E0%B8%99%E0%B9%89%E0%B8%B3&hl=th&gl=TH&ceid=TH:th",
+      "categories": ["disaster", "flood", "thailand", "provinces"],
+      "tags": ["google-news", "th", "chao-phraya"],
+      "require": "เขื่อน|ระบายน้ำ|น้ำท่วม|dam|flood|discharge"
+    },
+    {
+      "name": "gn-flood-pattaya-rayong",
+      "url": "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%9E%E0%B8%B1%E0%B8%97%E0%B8%A2%E0%B8%B2%20OR%20%E0%B8%A3%E0%B8%B0%E0%B8%A2%E0%B8%AD%E0%B8%87&hl=th&gl=TH&ceid=TH:th",
+      "categories": ["disaster", "flood", "thailand", "east"],
+      "tags": ["google-news", "th", "pattaya", "rayong"],
+      "require": "น้ำท่วม|อุทกภัย|น้ำล้น|flood|inundat"
+    },
+    {
+      "name": "gn-flood-east-en",
+      "url": "https://news.google.com/rss/search?q=flooding%20Pattaya%20OR%20Rayong%20OR%20Chonburi&hl=en-US&gl=TH&ceid=TH:en",
+      "categories": ["disaster", "flood", "thailand", "east"],
+      "tags": ["google-news", "en", "pattaya", "rayong", "chonburi"],
+      "require": "flood|inundat|overflow"
+    }
+  ]
+}

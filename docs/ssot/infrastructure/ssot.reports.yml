@@ -604,6 +604,19 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.nest-bench.yml
     children: []
+  - id: model-bench
+    layer: L1-producer
+    purpose: Fleet model-speed matrix — per (host x model) TTFT/decode tok/s,
+      plus llama.cpp RPC multi-host POC evidence (rpc-*.json)
+    generator: scripts/bench/model-speed.py (job model-bench, tony_omen, Sun 05:15)
+    cadence: 7d
+    output: reports/model-bench
+    artifact_pattern: "*-*.json"
+    meta: reports/model-bench/meta.model-bench.yml
+    references:
+      - docs/ssot/infrastructure/ssot.model-tiers.yml
+      - docs/kb/model-fleet-benchmark-plan.md
+    children: []
   - id: chaba-nest
     layer: L2-domain
     purpose: Nest compound-AI domain — live lane health + decision/escalation

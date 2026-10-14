@@ -281,6 +281,155 @@ def _gantt_label(t: str) -> str:
     return re.sub(r"[:,;#]", " ", str(t)).strip()[:60] or "event"
 
 
+
+
+# ---------- WordPress public surface (2026-10-14 retarget) ----------
+
+def _wp_env() -> dict:
+    env = {}
+    try:
+        with open(os.path.expanduser("~/.config/secrets/wp-boards.env")) as fh:
+            for ln in fh:
+                ln = ln.strip()
+                if "=" in ln and not ln.startswith("#"):
+                    k, _, v = ln.partition("=")
+                    env[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return env
+
+
+def _wp_post(path: str, payload: dict | None, env: dict) -> tuple[int, dict]:
+    import base64
+    import urllib.error
+    base = env["WP_SITE_URL"].rstrip("/")
+    import urllib.parse as _up
+    url = f"{base}/index.php?rest_route=" + _up.quote(
+        "/wp/v2/" + path.lstrip("/"), safe="/")
+    body = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=body, method="POST")
+    auth = base64.b64encode(
+        f"{env['WP_APP_USER']}:{env['WP_APP_PASSWORD']}".encode()).decode()
+    req.add_header("Authorization", f"Basic {auth}")
+    req.add_header("User-Agent", "Mozilla/5.0 Chrome/126.0")
+    if body:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read())
+        except Exception:
+            return e.code, {}
+
+
+def _md_to_html(md: str) -> str:
+    """Minimal md -> html: headings, links, code fences, paras, lists."""
+    out, in_code, buf = [], False, []
+    in_list = False
+    def flush():
+        nonlocal buf
+        if buf:
+            out.append("<p>" + "<br>".join(buf) + "</p>")
+            buf = []
+    def close_list():
+        nonlocal in_list
+        if in_list:
+            out.append("</ul>"); in_list = False
+    def inl(t: str) -> str:
+        t = (t.replace("&", "&amp;").replace("<", "&lt;")
+             .replace(">", "&gt;"))
+        t = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)",
+                   r'<img src="\2" alt="\1" style="max-width:100%"/>', t)
+        t = re.sub(r"\[([^\]]+)\]\(([^)]+)\)",
+                   r'<a href="\2">\1</a>', t)
+        return t
+    for ln in md.split("\n"):
+        t = ln.rstrip()
+        if t.strip().startswith("```"):
+            if in_code:
+                out.append("</pre>"); in_code = False
+            else:
+                flush(); close_list(); out.append("<pre>"); in_code = True
+            continue
+        if in_code:
+            out.append(t.replace("&", "&amp;").replace("<", "&lt;")
+                       .replace(">", "&gt;"))
+            continue
+        m = re.match(r"^(#{1,3})\s+(.*)", t)
+        if m:
+            flush(); close_list()
+            lvl = len(m.group(1)) + 1
+            out.append(f"<h{lvl}>{inl(m.group(2))}</h{lvl}>")
+            continue
+        m = re.match(r"^[-*]\s+(.*)", t)
+        if m:
+            flush()
+            if not in_list:
+                out.append("<ul>"); in_list = True
+            out.append("<li>" + inl(m.group(1)) + "</li>")
+            continue
+        close_list()
+        buf.append(inl(t))
+    flush(); close_list()
+    return "\n".join(out)
+
+
+_LANE_PERSON = {"kk": "kk", "kk-dev": "kk", "nhong": "nhong"}
+
+
+def wp_publish_rollup(title: str, body_md: str, lane_name: str,
+                    slug: str = "", leaves: list | None = None) -> str:
+    leaves = leaves or []
+    """Post the trip rollup to boards.surf-thailand.com; returns URL."""
+    env = _wp_env()
+    if not all(env.get(k) for k in
+               ("WP_SITE_URL", "WP_APP_USER", "WP_APP_PASSWORD")):
+        print("warn: wp-boards.env missing — rollup not posted to WP",
+              file=sys.stderr)
+        return ""
+    person = _LANE_PERSON.get(lane_name, "tony")
+    code, tags = _wp_post("tags", {"name": person}, env)
+    person_tag = tags.get("id") if code in (200, 201) else None
+    if not person_tag:
+        import urllib.parse as _up
+        url = (env["WP_SITE_URL"].rstrip("/") + "/index.php?rest_route="
+               + _up.quote("/wp/v2/tags", safe="/") + "&slug=" + person)
+        import base64
+        req = urllib.request.Request(url)
+        auth = base64.b64encode(
+            f"{env['WP_APP_USER']}:{env['WP_APP_PASSWORD']}".encode()).decode()
+        req.add_header("Authorization", f"Basic {auth}")
+        req.add_header("User-Agent", "Mozilla/5.0 Chrome/126.0")
+        try:
+            found = json.loads(urllib.request.urlopen(req, timeout=30).read())
+            person_tag = found[0]["id"] if found else None
+        except Exception:
+            person_tag = None
+    code, res = _wp_post("trip", {
+        "title": f"Trip — {title}", "content": _md_to_html(body_md),
+        "status": "publish", "slug": f"trip-{slug}",
+        "tags": [t for t in (person_tag,) if t]}, env)
+    if code not in (200, 201):
+        print(f"warn: WP post failed {code}", file=sys.stderr)
+        return ""
+    parent_id = res.get("id")
+    link = res.get("link") or ""
+    link = re.sub(r"^http://", "https://", link)
+    link = re.sub(r"^https://boards\.h3\.gizmo-thailand\.com",
+                  "https://boards.surf-thailand.com", link)
+    # children: one trip child per day leaf (qc stays internal CMS)
+    for key, t, body, _i, _d in leaves:
+        c, _r = _wp_post("trip", {
+            "title": t, "content": _md_to_html(body),
+            "status": "publish", "slug": key, "parent": parent_id,
+            "tags": [x for x in (person_tag,) if x]}, env)
+        if c not in (200, 201):
+            print(f"warn: WP child {key} failed {c}", file=sys.stderr)
+    return link
+
+
 def link_for(key: str, public_base: str, use_public: bool) -> str:
     if use_public and public_base:
         return f"{public_base}{key}.html"
@@ -698,13 +847,13 @@ async def async_main() -> int:
                       f"Trip {title} {d0}→{d1} — {len(days)}d, "
                       f"{len(unique_events(day_events))} events",
                       "rollup", "reports-index", lane_name, sources,
-                      now_utc, want_public, confidence))
+                      now_utc, False, confidence))
     for key, t, body, i, d in leaves:
         publish(collection, key, body, now_utc,
                 page_meta(key, t, f"Day {i} {d.isoformat()} — "
                           f"{len(day_events.get(d, []))} events",
                           "leaf", f"trip-{slug}", lane_name, sources,
-                          now_utc, want_public, confidence))
+                          now_utc, False, confidence))
     publish(collection, f"trip-{slug}-qc", qc_body, now_utc,
             page_meta(f"trip-{slug}-qc", f"Trip — {title} — QC",
                       f"QC/coverage for trip-{slug} family "
@@ -722,6 +871,11 @@ async def async_main() -> int:
         print(f"warn: reports-index regen failed ({exc})",
               file=sys.stderr)
 
+    wp_url = ""
+    if want_public:
+        wp_url = wp_publish_rollup(title, rollup_body, lane_name,
+                                   slug=slug, leaves=leaves)
+
     view_base = os.environ.get(
         "ADA_CMS_BASE", "https://idc03.taila0626a.ts.net/cms/")
     result = {
@@ -732,8 +886,7 @@ async def async_main() -> int:
         "span": [d0.isoformat(), d1.isoformat()], "title": title,
         "span_source": span_source,
         "view_url": f"{view_base}#/trip-{slug}",
-        "public_url": (f"{public_base}trip-{slug}.html"
-                       if want_public and public_base else ""),
+        "public_url": wp_url,
         "public_flagged": bool(want_public),
         "index_regen": idx_ok, "errors": cal_errors,
     }

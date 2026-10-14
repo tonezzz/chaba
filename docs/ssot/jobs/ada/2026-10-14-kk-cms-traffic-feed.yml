@@ -1,0 +1,85 @@
+title: kk CMS traffic feed — public cam dossiers into ada-cms-pages-kk
+id: 2026-10-14-kk-cms-traffic-feed
+card: ada-kk-cms-traffic
+date: 2026-10-14
+status: shipped-live-timer-pending
+summary: |
+  Kaewta's CMS now carries traffic-cam awareness: the existing
+  cam-wall-cms generator gained lane env knobs (COLLECTION +
+  CAMWALL_ZONE_GROUPS) and a second timer lane publishes only
+  zones.yml group:public zones into ada-cms-pages-kk. She reads them
+  via cms_read like every other page; freshness is meta.fresh_for +
+  meta.updated + the page's own "manifest as of / Ns ago" lines —
+  she can and must quote ages, never claim live from a stale frame.
+
+deliverables:
+  - file: scripts/cam-wall/cam-wall-cms.py
+    role: generator (lane-scoped)
+    detail: |
+      New env knobs — COLLECTION (default ada-cms-pages) selects the
+      MDDB collection; CAMWALL_ZONE_GROUPS (comma/space allowlist of
+      zones.yml `group:` values, empty = all zones) filters the
+      publish set right after manifest load. Filtered lanes still run
+      the full lifecycle: the zone:-source boundary in
+      _successor_for keeps a public-only lane from superseding
+      private-zone docs even inside a shared collection.
+      Dedup/notify state files are per-lane (_cms-pub-hash-kk.json,
+      _cms-notify-state-kk.json) so lanes can share CAMWALL_DATA.
+      regen_reports_index now receives collection=COLLECTION.
+  - file: systemd/cam-wall-cms-kk.service
+    role: timer unit (tony-dell, pending install)
+    detail: |
+      COLLECTION=ada-cms-pages-kk CAMWALL_ZONE_GROUPS=public. Same
+      ExecStart path as cam-wall-cms.service (the manifests live on
+      tony-dell). No ADA_NOTIFY_* env — her lane does not ping
+      Tony's Ada on wall transitions.
+  - file: systemd/cam-wall-cms-kk.timer
+    role: schedule — *:7/15:00 (offsets dell :0/15, vps :2/15)
+  - file: tests/camwall/test_cam_wall_cms.py
+    role: KkLaneTest — public-only publish set, all writes to
+      ada-cms-pages-kk, foreign-zone doc untouched, no dvr-wall.
+  - file: docs/ssot/apps/ssot.apps.camwall.yml + ssot.cms.yml +
+      scripts/cam-wall/zones.yml header
+    role: docs — lanes/env knobs recorded in the producers contract.
+
+policy:
+  boundary: |
+    zones.yml `group:` is the privacy boundary. private (vms-noble-*,
+    tony-house) never reaches her collection; zones absent from
+    zones.yml classify 'unsorted' and are likewise excluded by the
+    =public filter. Tony answered the card request 2026-10-12:
+    "public-only — traffic/rama9/burapha/chonburi/dohweb, zero
+    private footage on her lane". Noble coverage needs an explicit
+    policy exception (a card request), not a code change.
+  notify: no ADA_NOTIFY_* on the kk unit — wall transitions for her
+    lane are silent (her collection, her pages; Tony's Ada is not
+    pinged for her walls).
+
+first_run:
+  at: 2026-10-14T15:27Z
+  how: dispatch worktree on idc02 — manifests for the five public
+    zones fetched over the tailnet (/apps/camwall/data/<zone>/
+    manifest-<zone>.json) then a real generator run with the kk env.
+  result: 5 camwall-* walls + 43 cam-* dossiers + cctv-walls +
+    reports-index regenerated in ada-cms-pages-kk (en+th). Verified
+    live via MDDB get/search; real live counts and honest down/stale
+    states (e.g. traffic 6/11 live, several hls sources down).
+  caveat: image/montage URLs are tailnet (tony-dell.ts.net) — pages
+    are meta.public=unset so they stay tailnet-only by default.
+
+install_pending: |
+  The timer units are in-repo only; enabling them is a live-host step
+  on tony-dell after this worktree merges into the served checkout:
+    cp systemd/cam-wall-cms-kk.{service,timer} ~/.config/systemd/user/
+    systemctl --user daemon-reload
+    systemctl --user enable --now cam-wall-cms-kk.timer
+  Until then her pages are a one-shot snapshot (they'll go ⚠STALE
+  past fresh_for=1h — the index honestly flags that).
+
+read_path:
+  cms_read: ada-kk resolves ada-cms-pages-kk via cms_collection in
+    ssot.apps.ada-persona-lanes.yml; cms_catalog_prime lists the new
+    keys unprompted at session start.
+  freshness: meta.fresh_for=1h + meta.updated + page-state lines
+    (live / stale — last frame Ns ago / down — no frame on record).
+    reports-index carries the ⚠STALE flag past TTL.

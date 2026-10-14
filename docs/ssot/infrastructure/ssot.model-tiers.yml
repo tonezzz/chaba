@@ -1,0 +1,113 @@
+title: Model Size Tiers + Fleet Fit Registry
+subtitle: Q4_K_M footprint decides the tier; per-host capability ceiling for inference placement
+icon: layers
+version: 1
+last_updated: "2026-10-14"
+card: model-fleet-benchmark
+plan: docs/kb/model-fleet-benchmark-plan.md
+
+overview:
+  purpose: |
+    One registry mapping model SIZE (not marketing params) to the hosts that
+    can hold it. ssot.model-routing.yml decides WHICH lane a call takes;
+    this file decides WHERE a model of a given size can physically run.
+    Benchmark evidence lives in reports/model-bench/ (node: model-bench).
+  rule: |
+    Tier by Q4_K_M memory footprint — that is what decides fit. A "small"
+    model on a 4GB-VRAM GPU is one that fits in ~3.5GB. Param count is
+    indicative only (dense vs MoE vs multimodal shift footprint a lot).
+
+tiers:
+  micro:
+    params: "<1B"
+    q4_mem_gb: "<=1"
+    examples: [gemma3:270m, smollm2:135m, smollm2:360m, qwen3:0.6b]
+    role: classifiers, routers, tag extractors, embed-adjacent tasks
+  tiny:
+    params: "1-3B"
+    q4_mem_gb: "1-2.5"
+    examples: [llama3.2:1b, llama3.2:3b, phi3.5-mini, Llama-3.2-3B-Instruct-Q4_K_M.gguf]
+    role: short transforms, polish, cheap chat, tool-call attempts
+  small:
+    params: "3-9B"
+    q4_mem_gb: "3-6.5"
+    examples: [llama3.1:8b, qwen2.5:7b, mistral:7b, phi3, hermes3:8b]
+    role: summaries, digests, routine vision describes, agent loops (8b class)
+  medium:
+    params: "9-30B"
+    q4_mem_gb: "7-20"
+    examples: [gemma3:12b, phi4:14b, gemma-3-27b-it-Q4_K_M (16.5G), qwen2.5:32b (19G)]
+    role: heavier reasoning, quality summaries — needs RAM headroom or >8GB VRAM
+  large:
+    params: "30-70B"
+    q4_mem_gb: "20-45"
+    examples: [qwen2.5:32b+, llama3.3:70b (43G), Qwen3-32B-Q4_K_M (19.8G)]
+    role: batch-grade reasoning; interactive use needs GPU/aggregate RAM this fleet lacks
+  superlarge:
+    params: ">70B"
+    q4_mem_gb: ">45"
+    examples: [llama3.1:405b, deepseek-r1:671b]
+    role: out of scope for this fleet
+
+hosts:
+  tony-omen:
+    compute: i7-9750H 6c/12t @2.6GHz (cgroup cap ~9), 30GB RAM, GTX 1650 4GB (3.7GB usable, CUDA cc7.5)
+    gpu_resident: micro..tiny (small fits only with partial CPU offload — phi3 2.2GB proven)
+    cpu_ceiling: medium comfortable; large barely (70B Q2 ~28G in 30G RAM, ~1 tok/s)
+    runtime: "ollama :11434 (systemd user unit, CUDA enabled); llama.cpp b11583 @ ~/model-bench"
+    role: primary local inference host + GPU dispatch lane
+  tony-dell:
+    compute: 8c, 14GB RAM (~4G free — HA+apps host, busy)
+    gpu_resident: none
+    cpu_ceiling: micro..tiny only (RAM ceiling, don't starve HA)
+    runtime: llama.cpp b11583 @ ~/model-bench (provisioned 2026-10-14)
+    role: benchmark only — not an inference host
+  tony-macbook:
+    compute: i7-6700HQ 4c/8t, 16GB RAM (~3G free under desktop), Radeon Pro 450 2GB Vulkan
+    gpu_resident: micro Vulkan (dGPU VRAM owned by desktop session — marginal)
+    cpu_ceiling: tiny
+    runtime: "llama.cpp b11583-vulkan @ ~/micro-bench, micro-bench-llama.service :8114 loopback"
+    role: offload lane for small jobs; reachable via tailscale ssh only
+  idc01:
+    compute: VPS (warm DR)
+    cpu_ceiling: micro..tiny
+    role: DR — do not host inference
+  idc02:
+    compute: 4vCPU, 16GB RAM (~10G free)
+    cpu_ceiling: tiny..small; medium RAM-fits but slow
+    runtime: "llama.cpp b11583 @ ~/micro-bench, micro-bench-llama.service :8114 loopback"
+    role: batch/offload candidate, RPC peer (has RAM headroom)
+  idc03:
+    compute: 4vCPU, 16GB RAM (~8G free) — PRIMARY PUBLIC VPS, busy
+    cpu_ceiling: micro..tiny
+    runtime: "ollama :11434 bound to tailnet IP (llama3.2:3b, nomic-embed, moondream)"
+    role: serves t0/t1 routing lanes; benchmark allowed, new model hosting is not
+  mn01:
+    compute: mini PC (offline at last check)
+    cpu_ceiling: micro..tiny
+    role: Ada standby; legacy
+  colab-t4:
+    compute: ephemeral T4 15GB VRAM
+    gpu_resident: up to medium (gemma3:12b proven)
+    role: burst overflow only — no persistence
+
+multi_host:
+  verdict_source: reports/model-bench/rpc-poc-20261014.json (measured 2026-10-14)
+  approaches:
+    llama_rpc:
+      how: ggml-rpc-server per peer; main node streams tensors at load, splits layers; activations cross network per token
+      measured:
+        3b_lan_50_50: 8.29 tg tok/s (vs 9.81 local) — -15%
+        3b_tailscale_50_50: 6.90 tg tok/s, jittery
+        3b_fully_remote_dell_lan: 8.83 tg tok/s (remote CPU faster than omen's capped i7)
+        27b_tailscale_24pct: 0.87 tg tok/s (vs 1.25 local) — under batch gate
+      verdict: batch-only emergency tool; fit-one-host wins for 27B-class
+    exo: same physics (network-bound decode), nicer UX — not tested
+    vllm_tp: needs NVLink-class interconnect — dead on tailscale, skip
+    petals: public swarm — not for private workloads
+    fit_one_host: 70B Q2_K ~28GB fits omen RAM — degraded but simpler than sharding
+  physics: |
+    Each generated token sends activations host->host: sequential,
+    latency-additive, bandwidth-thin. Sharding across slow links only wins
+    when the alternative is "can't run at all".
+  decision_gate: "<2 tok/s decode -> fleet sharding is batch-only; >5 tok/s -> consider a large-lane in the gateway"
