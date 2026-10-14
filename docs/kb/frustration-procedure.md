@@ -52,6 +52,37 @@ In promise position these are hedges, not evidence — if used, the claim
 is unverified and must be labelled so: "should", "expected to",
 "in theory", "normally", "the code says", "I believe".
 
+## Verification methods used 2026-10-15 — the repeatable kit
+
+Claim under test: "the smoke suite runs text-mode, not billed Gemini Live."
+Three independent methods; each answers a different layer of the claim.
+
+**M1 — client argv (intent).** `pgrep -af scenario-live.py` while the
+suite runs — the actual spawned command must carry `--text`. This is
+the check that caught the wrong-file patch: the leaf driver accepted
+`--text` but the suite runner never passed it. *Lesson: verify the
+caller's argv, not the callee's flag.*
+
+**M2 — server-side routing.** `journalctl -u ada-dev` for the session:
+the ws accept line carries `mode=text` in the URL;
+`pwa_server: session=X text-mode provider` + `openrouter_provider:
+text mode` lines vs `voice.provider: session=X Gemini Live session
+connected` for a Live one. *Lesson: the server names which provider
+it routed to — independent of what the client asked for.*
+
+**M3 — billed-token accounting.** Live sessions emit
+`voice.provider: session=X usage turn ... in_by_modality={...
+'audio': N}` — the Live API's own billed-token report; a text session
+emits zero `Gemini Live|usage turn` lines (tested 00:28 on session
+65b2207996: count=0). *Lesson: for a cost claim, count the billing
+events themselves — closest layer to the invoice short of AI Studio.*
+
+Companion scoreboard: `voice-burn-ledger.py` now tags rows
+`mode: text|live` (a text session used to log minutes
+indistinguishably from a Live one) and `burn-watch.py` alerts only on
+live rows. Before that fix, "0 ledger entries" did NOT mean "0
+sessions" — the ledger counted all /ws wall-time.
+
 ## When a promise breaks
 
 1. Say so plainly and first — before the new claim.
