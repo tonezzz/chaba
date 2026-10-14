@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.0
+ * Version: 0.3.1
  */
 
 if (!defined('ABSPATH')) exit;
@@ -64,13 +64,19 @@ add_action('init', function () {
         'report'   => ['report_type', 'period', 'source_key'],
         'xlate'    => ['source_post', 'source_lang', 'target_lang', 'engine', 'status', 'chars'],
         'cam'      => ['camera_id', 'captured_at', 'kind', 'stream_url'],
-        // render_job — one post per local/cloud render request; enough fields
-        // to spot regressions and compare settings across runs.
-        'render_job' => ['prompt', 'negative_prompt', 'model', 'model_file',
-                         'size_px', 'steps', 'sampler', 'cfg_scale', 'seed',
-                         'duration_s', 'vae_s', 'host', 'backend', 'status',
-                         'requested_by', 'source', 'output_url', 'rating',
-                         'error'],
+        // render_job — one post per local/cloud render request, image AND
+        // video (kind). Enough fields to spot regressions, compare settings
+        // across runs, and track per-render cost. Image rows use the diffusion
+        // params; video rows use secs/aspect/res/ref_url/operation/est_cost.
+        // duration_s = wall-clock render time; secs = output clip length.
+        // parent_job/chain_index link Veo extension chains (extend support).
+        'render_job' => ['kind', 'prompt', 'negative_prompt', 'model',
+                         'model_file', 'size_px', 'steps', 'sampler',
+                         'cfg_scale', 'seed', 'duration_s', 'secs', 'vae_s',
+                         'aspect', 'res', 'ref_url', 'operation',
+                         'est_cost_usd', 'parent_job', 'chain_index',
+                         'host', 'backend', 'status', 'requested_by',
+                         'source', 'output_url', 'rating', 'error'],
         // news — feed provenance; dedup rides the deterministic slug
         // (n-<md5(link)>) so no GUID index is needed.
         'news'     => ['source_feed', 'source_url', 'published_at'],
@@ -107,7 +113,7 @@ function chaba_cpt_admin_columns(string $type): array {
         'report'     => ['report_type' => 'Type', 'period' => 'Period', 'source_key' => 'Source'],
         'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
         'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
-        'render_job' => ['status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'duration_s' => 'Secs', 'backend' => 'Backend', 'requested_by' => 'By'],
+        'render_job' => ['kind' => 'Kind', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'backend' => 'Backend', 'est_cost_usd' => 'Est$', 'requested_by' => 'By'],
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
     ];
     return $cols[$type] ?? [];
