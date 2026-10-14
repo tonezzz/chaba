@@ -6,10 +6,11 @@ WP is the filing cabinet; this script (idc03, systemd timer) is the analyst.
 Parents carry the `synthesis` category + `digest`/`sources:N` tags; raw
 children keep their desk categories and source tags.
 
-Clustering: char-trigram Jaccard on normalized title+lead text — language
-agnostic (works on Thai, which has no word boundaries). Union-find merge,
-threshold --sim (default 0.30). Items already parented keep their parent
-and can pull new members into that cluster.
+Clustering: embedding cosine similarity (ollama-nomic-embed via LiteLLM —
+local, free; catches Thai paraphrases) over title+lead. Union-find merge,
+threshold --sim (default 0.80). Falls back to char-4-gram containment
+when embeddings are unavailable. Items already parented keep their
+parent and can pull new members into that cluster.
 
 LLM: gemini-3.5-flash-lite via scripts/ada/gemini_rest.py. Key from
 GEMINI_API_KEY env, else ~/.config/secrets/mddb-gemini.env or
@@ -127,20 +128,51 @@ def norm(s):
                   html.unescape(s or ""))).strip().lower()
 
 
-def trigrams(s):
+def trigram_fallback(s):
     s = re.sub(r"\s+", " ", s)
-    return {s[i:i+3] for i in range(len(s) - 2)} if len(s) > 2 else {s}
+    return {s[i:i+4] for i in range(len(s) - 3)} if len(s) > 3 else {s}
 
 
-def jaccard(a, b):
-    return len(a & b) / len(a | b) if a and b else 0.0
+def _load_litellm():
+    env = _load_env(os.path.expanduser("~/.config/secrets/mddb-gemini.env"))
+    return env.get("LITELLM_URL"), env.get("LITELLM_KEY")
+
+
+def embed(texts, url, key):
+    """OpenAI-style embeddings via LiteLLM (ollama-nomic-embed — local, free)."""
+    req = urllib.request.Request(
+        url.rstrip("/") + "/embeddings",
+        data=json.dumps({"model": "ollama-nomic-embed",
+                         "input": texts}).encode(),
+        headers={"Authorization": f"Bearer {key}",
+                 "Content-Type": "application/json"})
+    d = json.loads(urllib.request.urlopen(req, timeout=120).read())
+    return [x["embedding"] for x in d["data"]]
+
+
+def cos(a, b):
+    import math
+    return (sum(x * y for x, y in zip(a, b))
+            / (math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))))
 
 
 def cluster(items, threshold):
-    """Union-find over trigram-Jaccard similarity of title+lead."""
-    sigs = [trigrams(norm(f"{p['title']['rendered']} "
-                        f"{p['content']['rendered'][:600]}"))
-            for p in items]
+    """Union-find over embedding cosine similarity of title+lead.
+    Embeddings catch same-story paraphrases (Thai included) that literal
+    overlap misses; ollama-nomic-embed keeps it free/local."""
+    texts = [norm(p["title"]["rendered"]) for p in items]
+    try:
+        url, key = _load_litellm()
+        embs = embed(texts, url, key)
+        sim = lambda a, b: cos(embs[a], embs[b])
+    except Exception as e:
+        print(f"warn: embeddings unavailable ({e}) — ngram fallback",
+              file=sys.stderr)
+        sigs = [trigram_fallback(t) for t in texts]
+        def sim(a, b):
+            return len(sigs[a] & sigs[b]) / min(len(sigs[a]), len(sigs[b])) \
+                if sigs[a] and sigs[b] else 0.0
+        threshold = min(threshold, 0.40)
     parent = list(range(len(items)))
 
     def find(x):
@@ -156,7 +188,7 @@ def cluster(items, threshold):
 
     for i in range(len(items)):
         for j in range(i + 1, len(items)):
-            if jaccard(sigs[i], sigs[j]) >= threshold:
+            if sim(i, j) >= threshold:
                 union(i, j)
     groups = {}
     for i in range(len(items)):
@@ -204,7 +236,9 @@ def render_content(topic, brief, diffs, members):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hours", type=float, default=36)
-    ap.add_argument("--sim", type=float, default=0.30)
+    ap.add_argument("--sim", type=float, default=0.85,
+                    help="cosine threshold for embedding clustering "
+                         "(ngram fallback uses containment ≤0.40)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
