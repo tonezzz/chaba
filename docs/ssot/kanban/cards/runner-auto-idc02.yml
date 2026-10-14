@@ -2,16 +2,21 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
-column: done
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: medium
-note: 'Auto-recovered 2026-10-14: all bootstrap checks pass.'
+priority: high
+note: 'Failing: ~/.local/bin/devin-dispatch sha ea6eeacada0ae660 != repo e5b401a3f212a9ca
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; no mddb-fork checkout — host
+  can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host can''t
+  take action.repo=gods-eye-view cards; devin: /home/tony/.local/bin/devin (devin
+  3000.10.35 (dfa4a2d6)).'
 help: 'Per-check fixes:
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host
-  — reclone it or drop it from that host''s repos.conf.'
+  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
+  && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
 updated: '2026-10-14'
 review_kind: triage
 action:
