@@ -54,13 +54,19 @@ post_types:
                Video: secs (clip len)/aspect/res/ref_url/operation/
                est_cost_usd/parent_job/chain_index (Veo extend chains).
                est_cost_usd is a published-price estimate, not invoice truth."
-  news:        "news feed items — has_archive + standard taxonomies — meta: source_feed/source_url/published_at"
+  news:        "news feed items + distilled digests — hierarchical: digest
+             parents own raw source items as children; has_archive +
+             category/post_tag — meta: source_feed/source_url/published_at"
 
 taxonomy_axes:
   category: "broad topic axis — curated, hierarchical. News desks live
             2026-10-14: thailand{bangkok,east,provinces} world tech
-            finance{gold,markets} disaster{flood,weather} family-news (ids 9-21)"
-  post_tag: person axis (tony|kk|nhong) + fine keywords (krabi, southafrica)
+            finance{gold,markets} disaster{flood,weather} family-news (ids 9-21)
+            + synthesis (34) marks distilled digest parents (vs raw items)"
+  post_tag: "person axis (tony|kk|nhong) + fine keywords (krabi, southafrica).
+            News items: source (bangkokpost, thethaiger, khaosod, google-news),
+            lang (en|th), geo (bang-phli, rayong). Digests add:
+            digest, sources:N (coverage breadth)"
   rule: one type axis = the CPT itself; never duplicate type as a tag
         (place-report/trip tags retired 2026-10-14)
 
@@ -100,6 +106,14 @@ writers:
                   Categories/tags mapped per feed; flood Google-News queries
                   land under disaster>flood + thailand region cats.
                   Archive: /wp/news/ (live 2026-10-14, ~120 seeded items)"
+  news_digest:    "scripts/ada/news-digest.py on idc03 — wp-news-digest.timer
+                  at :20 hourly (after fetch). Embedding clusters
+                  (ollama-nomic-embed via LiteLLM, free/local) over titles,
+                  cosine 0.85 union-find; gemini-3.5-flash-lite writes
+                  topic/brief/coverage-diffs JSON per multi-source cluster;
+                  parent post 'Digest — {topic}' gets synthesis cat +
+                  digest/sources:N tags, members reparented via post_parent.
+                  Digest list: /wp/category/synthesis/"
   # Writer access caveat (2026-10-14): POSTs through the PUBLIC edge
   # (boards.surf-thailand.com) hit CF 1010 bot-check on bare/script UAs —
   # fleet writers use origin_base (boards.h3.gizmo-thailand.com) directly.
