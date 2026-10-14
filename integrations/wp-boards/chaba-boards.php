@@ -49,7 +49,7 @@ add_action('init', function () {
             $extra['has_archive'] = true;
             $extra['taxonomies']  = ['category', 'post_tag'];
         }
-        register_post_type($slug, $common + $extra);
+        register_post_type($slug, array_merge($common, $extra));
     }
 });
 
