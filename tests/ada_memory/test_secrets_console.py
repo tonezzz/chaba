@@ -2,8 +2,8 @@
 locally (SECRETS_LOCAL_HOST=test trickery avoided by calling the remote
 scripts directly on tmp files), parity logic, vault roundtrip, auth gates.
 
-Run with the ada-pi venv (fastapi + cryptography needed):
-  /home/tony/CascadeProjects/ada-pi/.venv/bin/python -m pytest tests/ada_memory/test_secrets_console.py
+Run with the ada-voice venv (fastapi + cryptography needed):
+  /home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests/ada_memory/test_secrets_console.py
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ def run_script(script: str, args: list[str], stdin: str = "") -> dict:
     return json.loads(r.stdout)
 
 
-# Deps live in the ada-pi/secrets venv; a bare repo python (e.g. the
+# Deps live in the ada-voice/secrets venv; a bare repo python (e.g. the
 # dispatch close_out test gate) skips instead of erroring at collection.
 _SERVER_DEPS = {"httpx", "uvicorn", "fastapi", "pydantic", "cryptography"}
 try:

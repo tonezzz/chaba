@@ -1317,7 +1317,7 @@ hosts:
       notes:
         - Ubuntu 26.04.1 verified over ssh macbook 2026-10-11; laptop — sleeps/off-net
           is normal, not an outage.
-        - "Fleet provisioned 2026-10-11: ~/CascadeProjects/{chaba,ada-pi} cloned from tony-dell checkouts (fleet-internal ssh origin — no GitHub creds needed; merge-sweep pulls runner branches). runner-agent.timer was already armed; hooks armed via install-hooks.sh; git identity Devin Fleet."
+        - "Fleet provisioned 2026-10-11: ~/CascadeProjects/{chaba,ada-voice} cloned from tony-dell checkouts (fleet-internal ssh origin — no GitHub creds needed; merge-sweep pulls runner branches). runner-agent.timer was already armed; hooks armed via install-hooks.sh; git identity Devin Fleet."
     deltas: []
   # 2026-10-12 (OPS-0521): the `tony-macbook` block below was merged into
   # `macbook` — audit-hosts.py reads the `macbook` key; this duplicate used
@@ -1924,7 +1924,7 @@ hosts:
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — RESIDUAL finding-reporter under the 2026-10-13 exit-code contract (docs/kb/timer-expectations.md); migrate when next touched"
         action: review-sync-conflicts
       - name: ada-scenario-smoke.service
-        reason: "Live-scenario smoke suite — RESIDUAL finding-reporter (quadlet runs scenario-report.py directly, bypassing scenario-suite-run.sh, so exit 1 on scenario failures persists); migrate to the timer-expectations contract on the ada-pi side — failures are the test signal (skips cleanly when a weekly suite holds the :8199 session lock)"
+        reason: "Live-scenario smoke suite — RESIDUAL finding-reporter (quadlet runs scenario-report.py directly, bypassing scenario-suite-run.sh, so exit 1 on scenario failures persists); migrate to the timer-expectations contract on the ada-voice side — failures are the test signal (skips cleanly when a weekly suite holds the :8199 session lock)"
         action: review-scenario-results
       - name: ada-scenario-memory.service
         reason: "Weekly scenario suite — pre-OPS-0581 the benchmark's exit 1 (scenario failures) passed through; since 2026-10-13 scenario-suite-run.sh exits 0 when the suite completes (marker '**Score:') — findings via ada-ha-scenario-reports + auto-report (docs/kb/timer-expectations.md). A fresh failure is a real crash or lock abandonment"

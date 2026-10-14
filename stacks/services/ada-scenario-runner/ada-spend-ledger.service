@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=%h/CascadeProjects/ada-pi
+WorkingDirectory=%h/CascadeProjects/ada-voice
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/spend-ledger.py

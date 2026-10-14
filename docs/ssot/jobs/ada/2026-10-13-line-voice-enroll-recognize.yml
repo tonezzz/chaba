@@ -14,7 +14,7 @@ planning:
     tool actions, and the boss rule (person.tony recognized on any member lane
     keeps owner-tier identity per persons.yml roles).
   scope: |
-    ada-pi only (staged as drop-in patches in integrations/ada-pi/). No
+    ada-voice only (staged as drop-in patches in integrations/ada-voice/). No
     push/deploy from this worktree — hand to deploy-ada.sh.
   success_criteria:
     - PyAV/ffmpeg decode of LINE m4a clips to PCM16 16k embedding on idc03
@@ -35,9 +35,9 @@ planning:
       Owner-tier elevation on false positive -> requires fresh positive
       identify (not stale label) AND {full: true} policy — narrow surface
   resources:
-    - ~/CascadeProjects/ada-pi (idc03 production checkout as diff base)
+    - ~/CascadeProjects/ada-voice (idc03 production checkout as diff base)
     - ~/.local/share/ada-voice-corpus/line/user-kk/*.m4a real clips
-    - PyAV av 15.1.0 already pinned in ada-pi .venv
+    - PyAV av 15.1.0 already pinned in ada-voice .venv
   owner: devin (dispatch)
   estimated_duration: 1 session
   related_focus:
@@ -95,35 +95,35 @@ processing:
     - label: "Owner-tier by {full: true} policy, not person name"
       rationale: Policy-driven per persons.yml roles — same elevation applies to any future admin person, and stale labels can't elevate
       alternatives_considered: Hardcode person.tony — narrower and drifts from persons.yml
-    - label: Patches staged in chaba integrations/ada-pi, not applied to live checkout
+    - label: Patches staged in chaba integrations/ada-voice, not applied to live checkout
       rationale: "Card rails: no push/deploy — hand to deploy-ada.sh; idc03 checkout is deploy-only, tony-dell is the edit point"
       alternatives_considered: Direct commit to tony-dell checkout — outside worktree sandbox
   changes:
-    - file: integrations/ada-pi/backend/speaker_id.file-input.patch
+    - file: integrations/ada-voice/backend/speaker_id.file-input.patch
       summary: file decode/embed/match/enroll API (198 diff lines)
-    - file: integrations/ada-pi/backend/line_relay.voice-enroll-recognize.patch
+    - file: integrations/ada-voice/backend/line_relay.voice-enroll-recognize.patch
       summary: voice match + [voice:] context + enroll-on-clips flow (279 lines)
-    - file: integrations/ada-pi/backend/speaker_profiles.file-actions.patch
+    - file: integrations/ada-voice/backend/speaker_profiles.file-actions.patch
       summary: match_file/enroll_file tool actions (174 lines)
-    - file: integrations/ada-pi/backend/tool_runner.boss-rule.patch
+    - file: integrations/ada-voice/backend/tool_runner.boss-rule.patch
       summary: owner-tier elevation for identified full-access speaker (58 lines)
-    - file: integrations/ada-pi/backend/tool_guide.speaker-profiles-file.patch
+    - file: integrations/ada-voice/backend/tool_guide.speaker-profiles-file.patch
       summary: file actions + threshold/margin + boss rule + spoofing caveat docs (41 lines)
-    - file: integrations/ada-pi/backend/test_line_relay_group.voice-ack.patch
+    - file: integrations/ada-voice/backend/test_line_relay_group.voice-ack.patch
       summary: ack expectation -> enroll offer (15 lines)
-    - file: integrations/ada-pi/tests/test_speaker_file_input.py
+    - file: integrations/ada-voice/tests/test_speaker_file_input.py
       summary: NEW — 30 tests for decode/match/enroll/relay/tool/boss-rule
-    - file: integrations/ada-pi/README.md
+    - file: integrations/ada-voice/README.md
       summary: Drop 5 documented (files, install, contract, residuals)
 
 followup:
   verification:
-    - "Apply patches to tony-dell ada-pi edit point, run deploy gates (tool-lint + pytest -x -q), deploy via ~/.local/bin/deploy-ada.sh"
+    - "Apply patches to tony-dell ada-voice edit point, run deploy gates (tool-lint + pytest -x -q), deploy via ~/.local/bin/deploy-ada.sh"
     - "Live: send KK a LINE voice clip -> journal/relay log shows [voice: speaker=KK score>0.45] on the persona turn"
     - "Live: unknown member sends 3 clips -> 'enrolled <name>, 3 prints' ack; 4th clip matches"
     - "Live: Tony voice on kk lane -> owner-tier tools reachable (boss rule)"
   rollback_plan:
-    - "git revert the ada-pi landing commit; or LINE_VOICE_MATCH=0 env to disable relay-side matching without rollback"
+    - "git revert the ada-voice landing commit; or LINE_VOICE_MATCH=0 env to disable relay-side matching without rollback"
   handoff:
     - "deploy-ada.sh flow on idc03 (tony-dell edit point -> commit+push -> deploy)"
   deferred:
@@ -135,14 +135,14 @@ report:
   completed_at: 2026-10-13T22:30:00
   summary: |
     File-input speaker ID built and verified on a clean copy of the idc03
-    ada-pi checkout: decode_audio_file (PyAV->PCM16 16k), embed_file,
+    ada-voice checkout: decode_audio_file (PyAV->PCM16 16k), embed_file,
     match_file (same 0.45+0.05 scoring), enroll_from_file; LINE relay scores
     every archived clip, tags persona turns [voice: ...], and runs an
     enroll-on-clips flow bound to the caller's person.*; speaker_profiles
     gains match_file/enroll_file; boss rule elevates a fresh positively-
     identified {full: true} speaker (person.tony) to owner-tier on member
     lanes. All deploy gates green (tool-lint clean, 1360 tests + 30 new).
-    Staged as 6 patches + 1 new test file in integrations/ada-pi — pending
+    Staged as 6 patches + 1 new test file in integrations/ada-voice — pending
     apply on tony-dell edit point + deploy-ada.sh.
   metrics:
     - "tests: 1360 passed, 31 subtests (30 new tests)"
@@ -150,12 +150,12 @@ report:
     - "patches: 6 unified diffs, all dry-run clean vs idc03 checkout"
   links:
     - title: Drop 5 install runbook
-      url: integrations/ada-pi/README.md
+      url: integrations/ada-voice/README.md
     - title: kanban card
       url: docs/ssot/kanban/cards/line-voice-enroll-recognize.yml
   kb_review:
     - "LINE m4a clips of live-mic-enrolled speakers score below 0.45 — channel codec matters; enroll channel-matched prints"
     - "av (PyAV) bundles ffmpeg libs — no system ffmpeg needed for m4a decode on idc03"
   lessons_learned:
-    - "The ada-pi source lives outside the dispatch worktree; a .cache verify copy + patch files back into integrations/ works cleanly within the sandbox"
+    - "The ada-voice source lives outside the dispatch worktree; a .cache verify copy + patch files back into integrations/ works cleanly within the sandbox"
     - "_is_secondary_turn fail-open for stale labels means stale voice labels keep lane-owner rights but never elevate — test the policy_identity path, not just secondary classification"

@@ -24,8 +24,8 @@ import json
 import os
 import sys
 
-# repo checkout of ada-pi on this host — registry/env decide everything else
-ADA_PI = os.environ.get("ADA_PI_DIR", os.path.expanduser("~/CascadeProjects/ada-pi"))
+# repo checkout of ada-voice on this host — registry/env decide everything else
+ADA_PI = os.environ.get("ADA_PI_DIR", os.path.expanduser("~/CascadeProjects/ada-voice"))
 sys.path.insert(0, ADA_PI)
 
 

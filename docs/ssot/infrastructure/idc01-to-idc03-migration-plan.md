@@ -49,12 +49,12 @@ Unused images to NOT migrate: open_notebook 1.77 G, surrealdb, golang 912 M, old
 
 | Unit | Listen | App dir / venv | Env (secrets) | Dropin |
 |---|---|---|---|---|
-| ada-pi-pwa | lo :8001 | `~/CascadeProjects/ada-pi` + `.venv` | ada-pi-pwa.env, notebooklm-rest-api.env | waits on mddb /health |
+| ada-pi-pwa | lo :8001 | `~/CascadeProjects/ada-voice` + `.venv` | ada-pi-pwa.env, notebooklm-rest-api.env | waits on mddb /health |
 | ada-ha-tony | lo :8002 | same | ada-ha-tony.env, notebooklm | same |
 | ada-ha-michael | lo :8003 | same | ada-ha-michael.env, notebooklm | same |
 | ada-dev | lo :8005 | same | ada-dev.env, notebooklm | **running but unit `disabled`** (lab instance — decide migrate or retire) |
-| ada-line-relay | lo :8912 | ada-pi `backend.line_relay` | ada-ha-tony.env, line-bot.env | owns ชบา bot's only webhook slot |
-| ada-tg-relay | lo :8911 | ada-pi `backend.tg_relay` | ada-ha-tony.env, telegram-bot.env | |
+| ada-line-relay | lo :8912 | ada-voice `backend.line_relay` | ada-ha-tony.env, line-bot.env | owns ชบา bot's only webhook slot |
+| ada-tg-relay | lo :8911 | ada-voice `backend.tg_relay` | ada-ha-tony.env, telegram-bot.env | |
 | obsidian-vault | lo :8004 | `~/CascadeProjects/chaba-vault/apps/obsidian/server.py`, `~/jobenv` venv | obsidian.env | Ada Memory Vault web app |
 | doc-archive | **tailnet :11025** ⚠ | `~/.local/share/doc-archive` venv, stacks/idc01/doc-archive | doc-archive.env | undocumented listener — not in security SSOT |
 | jev-student | tailnet :8778 | `~/CascadeProjects/open-jev` venv, `serve:app` | — | distilbert confirm-gate; models `~/jev-student` (2.6 G, 5 ckpts) |
@@ -100,13 +100,13 @@ System timers: stock + podman-auto-update only.
 | `~/mddb-backups` | 17 G | partial — retention keeps last 4+4 anyway; rsync latest 2–4 only |
 | podman `ollama-data` volume | ~3.8 G | yes (or `ollama pull` fresh — models are public) |
 | `~/jev-student` | 2.6 G | `ckpt` (deployed) + `ckpt-v2-20261002`; older ckpts optional |
-| `~/CascadeProjects/ada-pi` | 1.7 G | yes (clean repo + .venv — rebuild venv instead of rsync if faster) |
+| `~/CascadeProjects/ada-voice` | 1.7 G | yes (clean repo + .venv — rebuild venv instead of rsync if faster) |
 | `~/CascadeProjects/open-jev` | 1.2 G | yes |
 | `~/CascadeProjects/chaba` | 385 M | yes |
 | `~/CascadeProjects/chaba-vault` | 125 M | yes — **41 dirty files; reconcile/commit before rsync** |
 | `~/.local/share/ada` | 508 M | yes (audio 501 M, transcripts, jev corpus, events) |
 | `~/.local/share/doc-archive` | 77 M | yes (venv + state) |
-| `~/.local/share/{camwall,input-bridge,ada-pi}` | ~25 M | yes |
+| `~/.local/share/{camwall,input-bridge,ada-voice}` | ~25 M | yes |
 | `~/.config/secrets/` (17 env files) | 76 K | yes — full dir + `~/.config/camwall.env`, `~/.ssh/camwall-push` |
 | `~/apps/input-bridge`, `~/mddb-panel/server.js`, `~/mddb-backup.sh`, `~/obsidian-vault-backup.sh`, `~/jobenv`, `~/.venvs/camwall`, `~/chaba-scripts`, `~/obsidian-backups` | ~70 M | yes |
 | open-notebook-backups 69 M + retire-archive 24 M + `obsidian-app-retired tar` | ~95 M | **retire/archive** — approved-retired service residue; cold-copy or drop |
@@ -137,7 +137,7 @@ Legend: **M** = migrate, **R** = retire/drop, **A** = needs Tony approval.
 | 2 | `~/.config/secrets` + all env files | **M** — rsync first, everything needs them | 0 |
 | 3 | gemini-ollama-proxy | **M** — small, mddb embed dep | 2 |
 | 4 | ollama + models | **M** — phi3/nomic/moondream; can re-pull instead of copying | 0 |
-| 5 | ada-pi repo + venv; ada-pi-pwa, ada-ha-tony, ada-ha-michael | **M** — core Ada | 1 healthy (dropins block on mddb), 2 |
+| 5 | ada-voice repo + venv; ada-pi-pwa, ada-ha-tony, ada-ha-michael | **M** — core Ada | 1 healthy (dropins block on mddb), 2 |
 | 6 | ada-line-relay, ada-tg-relay | **M** — webhook target is domain → safe before DNS flip (both ends live briefly) | 5 |
 | 7 | obsidian-vault + chaba-vault + obsidian-vault-backup timer | **M** | 2, chaba-vault reconcile (A if dirty files ambiguous) |
 | 8 | input-bridge + vcast-headless@2,@4 | **M** — fix :3010 wildcard→tailnet bind | 2, secrets |
@@ -175,7 +175,7 @@ Global safety: **idc01 stays fully running until soak passes** — every item's 
 |---|---|---|---|
 | mddb | run `mddb:2.15.4-blrotate`/allowlist fork on idc03 as `role=follower, leader=idc01:11024`; when converged, promote idc03 to leader (role=wr), repoint idc02 follower's leader addr to idc03:11024 | `/health`, `/v1/stats` docs count parity, follower lag=0 | keep idc01 leader untouched until promotion verified; if follower fails, drop idc03 container — zero impact |
 | secrets | rsync `~/.config/secrets`, `camwall.env`, ssh keys | file count + perms 600 | n/a (copy only) |
-| ada-pi stack | rsync repo (+ rebuild .venv), install units+dropins, start on idc03 loopback | curl :8001-8003 /health tailnet-side | services still live on idc01 |
+| ada-voice stack | rsync repo (+ rebuild .venv), install units+dropins, start on idc03 loopback | curl :8001-8003 /health tailnet-side | services still live on idc01 |
 | relays | start on idc03; webhooks still hit idc01 via DNS until flip | relay logs ok | stop idc03 units |
 | ollama | `podman pull` image + `ollama pull` models (or `podman volume export`→import) | `ollama list` + test embed | n/a |
 | input-bridge/vcast | rsync `~/apps/input-bridge`, fix `INPUT_BRIDGE_BIND=<idc03-tailnet-ip>`, start @2/@4 | :3010 on tailnet only; displays reconnect | old instance still up |

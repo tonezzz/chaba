@@ -4,7 +4,7 @@ Date: 2026-09-27 · goal: stable, repeatable evaluation KK can test for real
 
 ## What exists now (live)
 
-- **51 live scenarios** in `ada-pi/tests/scenarios-live/` covering memory,
+- **51 live scenarios** in `ada-voice/tests/scenarios-live/` covering memory,
   CMS, cast, devin ledger, speaker-ID, docs, persona, recall.
 - **`scripts/scenario-report.py`** — suite runner; writes one doc per
   scenario into `ada-ha-scenario-reports` (never pollutes memory search),

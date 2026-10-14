@@ -80,7 +80,7 @@ curl -s http://127.0.0.1:8795/v1/ledger | python3 -m json.tool
 Tests: `python3 -m unittest tests.nest_io.test_nest_io` from the repo
 root.
 
-## Integration points (ada-pi side, not this repo)
+## Integration points (ada-voice side, not this repo)
 
 The PWA/backend adopts the fabric incrementally: fire `POST /v1/inputs`
 on every utterance (text or STT result), then route the reply through

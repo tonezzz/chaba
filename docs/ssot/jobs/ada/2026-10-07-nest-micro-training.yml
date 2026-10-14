@@ -12,7 +12,7 @@ goal: >
   promotion gate that ends in a human-approved shadow deploy.
 
 delivered:
-  - ada-pi tests/bench/suites.yml (branch dispatch/20261007-211928-1-nest-micro-training): >
+  - ada-voice tests/bench/suites.yml (branch dispatch/20261007-211928-1-nest-micro-training): >
       Per-specialist tier registry. Four specialists (confirm-gate,
       tool-routing, memory-bank, dispatch-triage) mapped to domains.yml
       kinds; each gets golden (frozen, never trained on), hard (rotates
@@ -20,14 +20,14 @@ delivered:
       resolved to orch-bench --sets names. Rotation policy (into_hard /
       into_golden / into_adversarial) + the promotion gate + bench
       invocation live in the same file.
-  - ada-pi tests/bench/orch-adv-{confirm,tool}-cases.jsonl: >
+  - ada-voice tests/bench/orch-adv-{confirm,tool}-cases.jsonl: >
       Seeded adversarial tiers — 21 confirm rows (meta-references,
       imperative bait, relayed/Thai affirmations, slang negation,
       trailing negation, short-form positives) and 14 tool rows
       (recall-vs-search traps, multistep first-action ordering,
       memory-op phrasing, no-tool idioms). Immediately discriminating:
       champ jev-student-v5 scores 12/21 on adv-confirm vs 10/10 golden.
-  - ada-pi tests/bench/topologies.yml `models:` + `lanes:` sections: >
+  - ada-voice tests/bench/topologies.yml `models:` + `lanes:` sections: >
       Model registry — task, checkpoint, corpus version, bench scores,
       status (train|shadow|prod|retired). jev-student-v5 is the first
       entry (status prod, live-measured golden 10/10 hard 27/35
@@ -36,12 +36,12 @@ delivered:
       tony-omen GTX1650 (distilbert FT, 1b LoRA via 4-bit), colab-mcp
       burst (bigger runs, jev/*-colab.ipynb), idc01 cold batch
       (post-retirement role + pre-migration corpus archive).
-  - ada-pi tests/bench/orch-bench.py --suite flag: >
+  - ada-voice tests/bench/orch-bench.py --suite flag: >
       Expands a suites.yml specialist to its non-spec tier sets; narrows
       the default 'all' so `--suite confirm-gate` runs exactly
       golden+hard+adv-confirm (66 cases). Unknown suite -> exit 2 with
       the registry keys.
-  - ada-pi scripts/{train,serve}-jev-student.py: JEV_OUT / JEV_CKPT env
+  - ada-voice scripts/{train,serve}-jev-student.py: JEV_OUT / JEV_CKPT env
       knobs so the loop can version candidate checkpoints and serve them
       on a scratch port without touching ~/jev-student/ckpt.
   - chaba scripts/ada/nest-train-loop.py: >
@@ -83,7 +83,7 @@ key_decisions:
      arbiter-label pass is the next iteration.'
 
 verify:
-  - 'cd ada-pi && python3 tests/bench/orch-bench.py --suite confirm-gate
+  - 'cd ada-voice && python3 tests/bench/orch-bench.py --suite confirm-gate
      --structure student --student http://100.102.134.91:8778'
   - 'python3 scripts/ada/nest-train-loop.py --harvest-only --no-publish'
   - 'mddb ada-ha-scenario-reports key bench/train-<ts> — one doc per run'
@@ -93,8 +93,8 @@ notes:
      has a trained incumbent; the student choice head is a stub. The
      multi-question successor is a gemma-3-1b LoRA on the colab lane
      (recipe: CMS jev-unsloth-finetune).'
-  - 'ada-pi changes are on dispatch branch
+  - 'ada-voice changes are on dispatch branch
      dispatch/20261007-211928-1-nest-micro-training in worktree
-     dispatch-wt-20261007-211928-1-task-suites-per-specialist-ada-pi —
-     merge to ada-pi main to make --suite/suites.yml live on the prod
+     dispatch-wt-20261007-211928-1-task-suites-per-specialist-ada-voice —
+     merge to ada-voice main to make --suite/suites.yml live on the prod
      checkout.'

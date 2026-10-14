@@ -2,8 +2,8 @@
 public bank-visibility filtering, and the /api/graph vault+MDDB merge.
 
 MDDB is pointed at a dead port so graph tests exercise the vault-only
-fallback without network. Run with the ada-pi venv:
-  /home/tony/CascadeProjects/ada-pi/.venv/bin/python -m pytest tests/ada_memory/test_obsidian_app.py
+fallback without network. Run with the ada-voice venv:
+  /home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests/ada_memory/test_obsidian_app.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from unittest import mock
 REPO = Path(__file__).resolve().parents[2]
 SERVER = REPO / "apps/obsidian/server.py"
 
-# Deps live in the ada-pi venv; a bare repo python (e.g. the dispatch
+# Deps live in the ada-voice venv; a bare repo python (e.g. the dispatch
 # close_out test gate) skips instead of erroring at collection.
 _SERVER_DEPS = {"httpx", "uvicorn", "fastapi", "pydantic"}
 
@@ -44,7 +44,7 @@ def load_server(vault: Path, deploy: str = "tailnet", api_key: str = ""):
         except ModuleNotFoundError as e:
             if (e.name or "").split(".")[0] in _SERVER_DEPS:
                 raise unittest.SkipTest(
-                    f"needs ada-pi venv: {e.name}") from e
+                    f"needs ada-voice venv: {e.name}") from e
             raise
     return mod
 

@@ -4,7 +4,7 @@ subtitle: >
   efficientdet_lite0 in-browser, ?bench=N). This session closed the gaps:
   a real MDDB write lane, xmeye/camwall sources, a detections publisher,
   the bench-edge CMS generator, a cast script + runbook, and the ada_look
-  ada-pi handoff spec.
+  ada-voice handoff spec.
 icon: eye
 
 planning:
@@ -17,9 +17,9 @@ planning:
     confirm-gate authority model.
   scope: >
     chaba repo only — stacks/web/public/apps/eye/, ssot.routes.yml,
-    render-routes.py, scripts/eye/, docs/runbooks/, systemd/. ada-pi
+    render-routes.py, scripts/eye/, docs/runbooks/, systemd/. ada-voice
     (tool manifest + tool_runner) is a different checkout — spec shipped
-    here, implementation deferred to an ada-pi dispatch.
+    here, implementation deferred to an ada-voice dispatch.
 
 processing:
   status: completed
@@ -95,7 +95,7 @@ processing:
       notes: >
         Read side shipped in this repo: eye/latest doc in
         ada-ha-scenario-reports (see step 3). The tool itself lives in
-        ada-pi (tools/*.yml manifest + tool_runner) — out-of-worktree, so
+        ada-voice (tools/*.yml manifest + tool_runner) — out-of-worktree, so
         the implementation is a ready-to-apply spec in decisions below +
         a board note on the card.
 
@@ -106,7 +106,7 @@ decisions:
       (vendored tasks-vision, 4.4MB vs 12MB, no vendored-onnxruntime
       dependency chain in this repo). Kept.
     alternatives_considered: >
-      onnxruntime-web + yolov8n-int8 + JS NMS — viable (ada-pi vendors
+      onnxruntime-web + yolov8n-int8 + JS NMS — viable (ada-voice vendors
       onnxruntime-web already) but heavier first-load and unproven here.
   - label: MDDB via a dedicated same-origin edge route, not a guessed path
     rationale: >
@@ -117,7 +117,7 @@ decisions:
     alternatives_considered: >
       Full /v1 proxy (wider attack surface — search/get over LAN);
       report-api/board-api reuse (fixed-purpose services, not doc
-      writers); ada-pi-pwa endpoint (would need a code change in ada-pi).
+      writers); ada-pi-pwa endpoint (would need a code change in ada-voice).
   - label: ada_look reads a fixed doc, never scans
     rationale: >
       One GET on ada-ha-scenario-reports/eye:latest — deterministic, cheap,
@@ -126,11 +126,11 @@ decisions:
     alternatives_considered: >
       append-only detection log docs (history no one asked for; write
       amplification + re-embedding cost per frame); ada-eye dedicated
-      bank (needs ADA_MEMORY_BANKS_FILE registration on ada-pi side —
+      bank (needs ADA_MEMORY_BANKS_FILE registration on ada-voice side —
       extra moving part for one doc).
 
 handoff_ada_look:
-  # Ready-to-apply ada-pi spec (repo out of scope for this worktree).
+  # Ready-to-apply ada-voice spec (repo out of scope for this worktree).
   # tools/eye.yml manifest entry:
   declaration: |
     name: ada_look
@@ -171,7 +171,7 @@ needs_approval:
     eye-mddb and vms-snap routes are dead until then); then rsync of
     stacks/web/public/apps/eye changes
   - install systemd/bench-edge-cms.{service,timer} on tony-dell
-  - ada-pi: apply the ada_look manifest + runner (separate repo/dispatch)
+  - ada-voice: apply the ada_look manifest + runner (separate repo/dispatch)
   - first live TV verify: scripts/eye/cast-eye.sh tv 4 — hijacks omen ws4
 
 deferred:
@@ -196,4 +196,4 @@ report:
     the display) and the omen workspace->HLS lane for the real TV;
     runbook documents verify-after-act and failure modes. Phase 4: the
     eye/latest contract + ready-to-apply ada_look manifest/runner spec;
-    ada-pi implementation is a follow-up dispatch on that repo.
+    ada-voice implementation is a follow-up dispatch on that repo.

@@ -213,7 +213,7 @@ jobs:
   exec:
   - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/standard-drift-digest.py
   note: card standard-drift-digest — deterministic drift signals (stale generated reports past their own fresh_for,
-    board drift, ada-pi tool-lint violations) -> managed block on CMS standard-drift (en+th). Hourly tick; the ada-cms-automation
+    board drift, ada-voice tool-lint violations) -> managed block on CMS standard-drift (en+th). Hourly tick; the ada-cms-automation
     registry entry self-gates publishing to 6h. The flywheel feedback page — one digest to review instead of scattered
     fires. Added 2026-10-10.
 - id: ada-pi-orch-bench
@@ -223,7 +223,7 @@ jobs:
   on_calendar: Mon *-*-* 04:30
   persistent: true
   timeout: 2h
-  cwd: '%h/CascadeProjects/ada-pi'
+  cwd: '%h/CascadeProjects/ada-voice'
   exec:
   - '%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778
     --heavy http://100.75.102.88:8777 --sets golden,hard --limit 30 --timeout 240 --mddb http://100.102.134.91:11023/v1
@@ -242,12 +242,12 @@ jobs:
   on_calendar: hourly
   persistent: true
   timeout: 10m
-  exec: /usr/bin/python3 %h/CascadeProjects/ada-pi/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1
+  exec: /usr/bin/python3 %h/CascadeProjects/ada-voice/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1
     --report-cms
   note: retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target). jev-student confirm-gate serves /v1/systemone
     on idc03 tailnet :8778; MDDB writes go to the idc03 leader :11023 (idc02 local :11023 is a read-only follower).
     Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by nest-overview.py
-    (chaba-nest L2). Bench script lives in the ada-pi checkout on idc02. Unit was hand-installed 2026-10-01; now
+    (chaba-nest L2). Bench script lives in the ada-voice checkout on idc02. Unit was hand-installed 2026-10-01; now
     rendered from this manifest.
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
@@ -618,8 +618,8 @@ jobs:
   on_failure: ada-report-fail@%p.service
   note: nightly bank->report promotion per ssot.apps.ada-cms-reports.yml distill_jobs — refreshes every <domain>-digest
     page (kind:report, full meta_contract incl. supersedes; health domain carries the v1 bank-delta template). Registered
-    2026-10-06 (card report-distill-v1). Same idc02 04:00 slot as the hand-installed ada-pi prototype timer — installing
-    this unit retires the ~/CascadeProjects/ada-pi copy (git pull the chaba checkout first so the script exists).
+    2026-10-06 (card report-distill-v1). Same idc02 04:00 slot as the hand-installed ada-voice prototype timer — installing
+    this unit retires the ~/CascadeProjects/ada-voice copy (git pull the chaba checkout first so the script exists).
     On idc02 it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot (03:30); the SSOT 'after ada-scenario-*
     timers' note targets idc03, whose scenario timers are weekly, not nightly.
 - id: chaba-review-digest

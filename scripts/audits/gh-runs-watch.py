@@ -29,7 +29,7 @@ STATE_FILE = Path(os.environ.get(
 REPORTS_DIR = REPO_ROOT / "reports" / "gh-runs"
 TIMELINE = Path(os.environ.get(
     "CHABA_REPORTS_DIR", Path.home() / "var" / "chaba" / "reports")) / "timeline.jsonl"
-DEFAULT_REPOS = "tonezzz/chaba,tonezzz/ada-pi"
+DEFAULT_REPOS = "tonezzz/chaba,tonezzz/ada-voice"
 GH_TIMEOUT = int(os.environ.get("GH_RUNS_WATCH_TIMEOUT", "90"))
 # gh on omen stores its token in the desktop keyring — in a headless
 # systemd/ssh context the secret-service lookup blocks and every `gh`

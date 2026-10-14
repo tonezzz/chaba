@@ -61,7 +61,7 @@ The image is built on tony-dell from `mddb-fork` `feat/vector-algorithms`
 requires approval.** Expect the NoFreelistSync open-rescan downtime
 (~2.5 min measured for a 3.4 GB DB on a fresh file; the live DB with its
 hot freelist may differ — plan for a few minutes of mddb unavailability;
-ada-pi/tools will error during it).
+ada-voice/tools will error during it).
 
 ```bash
 # 1. ship the image

@@ -1,7 +1,7 @@
 # CMS page automation — per-page switches & knobs for Ada
 
 Status: **P0 + P1 implemented.** P0 lives in this worktree; P1 lives in
-the ada-pi worktree `ada-pi-wt-cms-automation` (branch
+the ada-voice worktree `ada-pi-wt-cms-automation` (branch
 `feat/cms-automation-tool`, commit dae8194 — `cms_automation` tool,
 `cms_publish_page` schema stamping, `/api/cms/pages/{slug}/regenerate`
 endpoint, PWA Regenerate button). P2 remains planned.
@@ -88,7 +88,7 @@ its registry doc from the effective config + state.
   back to defaults rather than crashing the run.
 - `--force` bypasses `interval_min` for manual runs (still honors `enabled`).
 
-### 4. Ada tool surface (P1 — ada-pi repo)
+### 4. Ada tool surface (P1 — ada-voice repo)
 
 One `cctv_wall`-style tool, added to `CMS_WRITE_TOOLS` (confirm-gated):
 
@@ -109,7 +109,7 @@ cms_automation(
 - `enable`/`disable` — sugar over `set enabled=`.
 - `run` — implemented as `run_now=true` on the registry doc (queue
   semantics); the worker executes on its next pass and self-clears.
-  Chosen over subprocessing the runner from ada-pi: no co-located chaba
+  Chosen over subprocessing the runner from ada-voice: no co-located chaba
   checkout on the ada host is guaranteed, no shell surface is exposed to
   the tool layer, and MDDB revision history records the request. Latency
   between click and regeneration is bounded by the dispatcher timer —
@@ -123,7 +123,7 @@ last_verified) at write time so new pages arrive already conformant.
 
 ### 5. Scenario + verify
 
-- ada-pi `tests/scenarios/*.yaml`: `cms_automation_toggle` — enable→set→
+- ada-voice `tests/scenarios/*.yaml`: `cms_automation_toggle` — enable→set→
   disable→run_now cycle against FakeMddb.
 - Live: flip `enabled` on a scratch page via the tool, watch the timer run
   skip it, `last_status` stays stale; re-enable, see `run_now` fire.

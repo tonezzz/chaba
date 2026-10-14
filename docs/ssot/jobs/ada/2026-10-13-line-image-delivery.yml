@@ -15,8 +15,8 @@ summary: |
   become real LINE `image` messages on every outbound path.
 
 deliverables:
-  - file: integrations/ada-pi/backend/line_relay.image-delivery.patch
-    role: relay patch (staged, NOT deployed — vs ada-pi main @ bb4c172)
+  - file: integrations/ada-voice/backend/line_relay.image-delivery.patch
+    role: relay patch (staged, NOT deployed — vs ada-voice main @ bb4c172)
     detail: |
       (a) _resolve_doc_media: drive share links mint /v1/drive/media/
       fetch URLs via doc-archive POST /v1/drive/media-token (env
@@ -32,20 +32,20 @@ deliverables:
       and /send.
       (c) _images_from accepts media_url when mimeType is image/* —
       drive_get on an image auto-attaches the photo to the reply.
-  - file: integrations/ada-pi/backend/tool_guide.image-delivery.patch
+  - file: integrations/ada-voice/backend/tool_guide.image-delivery.patch
     role: model guidance
     detail: |
       chat_send image_url= wants a real image file or Drive link —
       never a CMS page/view_url. drive_get returns a castable
       media_url; pass webViewLink or media_url to image_url=.
-  - file: integrations/ada-pi/backend/realtime_provider.image-delivery.patch
+  - file: integrations/ada-voice/backend/realtime_provider.image-delivery.patch
     role: tool schema description update
   - file: tests/ada/test_line_image_delivery.py
     role: chaba-side verification (18 tests, stubbed httpx/websockets)
   - file: tests/ada/test_line_file_doc_ingest.py
     role: harness fix
     detail: |
-      The drop-2 patch is merged upstream (ada-pi 6148f64) so it can
+      The drop-2 patch is merged upstream (ada-voice 6148f64) so it can
       never apply again; the fixture now detects merged-marker presence
       and exercises the upstream file directly. Also stubs
       httpx/websockets — same as the new test — since the scratch venv
@@ -59,7 +59,7 @@ verification:
   - "no false positives: page/map/PDF links stay text-only (tests)"
 
 install:
-  - "apply the three patches to a pristine ada-pi checkout (README Drop 6)"
+  - "apply the three patches to a pristine ada-voice checkout (README Drop 6)"
   - "tool-lint + pytest gates via deploy-ada.sh; restart ada-line-relay"
   - "env: DOC_ARCHIVE_API_KEY already carried by ada-line-relay unit;
      LINE_TEXT_IMG_MINE=0 disables text mining"

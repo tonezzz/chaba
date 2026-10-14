@@ -33,7 +33,7 @@ Mirror what report-api got today (`REPORT_API_BIND=0.0.0.0` +
 - board-api: `BOARD_API_BIND` + `BOARD_API_TOKEN` envs. `Authorization:
   Bearer <token>` → identity `'svc:ada'`; Caddy route unchanged for
   humans. Token in `~/.config/secrets/` on both hosts, never in repo.
-- ada-pi: new tool group `kanban` (`backend/tools.d/kanban.py` +
+- ada-voice: new tool group `kanban` (`backend/tools.d/kanban.py` +
   manifest):
   - `kanban_list(column?)` — titles+ids, capped
   - `kanban_read(id)` — full card incl. comms
@@ -76,7 +76,7 @@ over-close.
 ## 5. Build order
 
 1. board-api: `BOARD_API_BIND`/`BOARD_API_TOKEN` (copy report-api's gate)
-2. ada-pi `tools.d/kanban.py` + manifest + instructions stanza
+2. ada-voice `tools.d/kanban.py` + manifest + instructions stanza
    (authority matrix in §3, compressed)
 3. token in secrets on idc03 + tony-dell; env wiring
 4. `kanban_review` live scenario — she triages one seeded card:

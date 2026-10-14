@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shared ada-cms-pages/reports-index regeneration.
 
-The canonical regen lives in ada-pi (tool_runner._cms_reports_index) and
+The canonical regen lives in ada-voice (tool_runner._cms_reports_index) and
 fires on Ada's own cms tool writes; raw /v1/add writers never trigger it,
 so in-repo generators that publish pages call this instead. One render,
 one filter set: superseded / archived / retracted / expired docs are never

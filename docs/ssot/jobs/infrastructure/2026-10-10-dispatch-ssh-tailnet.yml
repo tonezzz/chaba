@@ -23,10 +23,10 @@ planning:
       - Doc corrections: runbook ada-devin-handoff-workflow.md, learning
         ssot.learning.ada-devin-dispatch.2026-09-24.yml, job note
         2026-09-22-ada-devin-dispatch.yml
-      - Sibling card for the ada-pi half (ADA_DEVIN_DISPATCH_HOST default
-        lives in ada-pi/backend/devin_dispatch.py — outside this worktree)
+      - Sibling card for the ada-voice half (ADA_DEVIN_DISPATCH_HOST default
+        lives in ada-voice/backend/devin_dispatch.py — outside this worktree)
     Out of scope:
-      - Editing ada-pi directly (separate repo, separate dispatch)
+      - Editing ada-voice directly (separate repo, separate dispatch)
       - Deliberately LAN-bound listeners (Caddy :8125/:8126 guest proxies,
         Chromecast media URLs) — LAN is correct there
   success_criteria:
@@ -93,13 +93,13 @@ processing:
         jobs/ada/2026-09-22-ada-devin-dispatch.yml step-5 note tagged
         superseded (history preserved).
     - id: 4
-      label: ada-pi sibling card
+      label: ada-voice sibling card
       status: done
       notes: |
         The actual `ssh 192.168.2.67` Ada dispatch call lives in
-        ada-pi backend/devin_dispatch.py (ADA_DEVIN_DISPATCH_HOST default)
+        ada-voice backend/devin_dispatch.py (ADA_DEVIN_DISPATCH_HOST default)
         + tools.d/devin.py — outside this worktree. Filed card
-        ada-dispatch-tailnet-target (repo ada-pi, queued) with the spec
+        ada-dispatch-tailnet-target (repo ada-voice, queued) with the spec
         and verification evidence.
   decisions:
     - label: Tailnet short name `tony-dell`, not FQDN or raw IP
@@ -130,7 +130,7 @@ followup:
     - 'Set EVENT_SSH=tony-dell-lan (or the IP) in the environment — all
       defaults are env-overridable; git revert the commit for the code.'
   handoff:
-    - 'ada-pi half: card ada-dispatch-tailnet-target (queued, repo ada-pi)'
+    - 'ada-voice half: card ada-dispatch-tailnet-target (queued, repo ada-voice)'
     - 'Deployed ~/.local/bin copies on each host need the repo sync
       (scripts are installed by copy) — happens on next install/sync pass'
   deferred:
@@ -149,7 +149,7 @@ report:
     auth with no interactive check. Flipped all six chaba-side ssh-to-dell
     defaults (canary alerts, dispatch outcome events, job-run fallback) to
     `tony-dell`, corrected the runbook + learning + job docs, and filed
-    ada-dispatch-tailnet-target for the ada-pi client-side default
+    ada-dispatch-tailnet-target for the ada-voice client-side default
     (ADA_DEVIN_DISPATCH_HOST) which lives outside this worktree.
   lessons:
     - Defaults that alert on a path must not depend on that path —

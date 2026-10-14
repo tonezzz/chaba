@@ -23,7 +23,7 @@ context:
     ada-cms-pages docs were cam-generated, and the old code hard-DELETED
     legacy keys, losing operational history. fresh_for was the bare
     string "600" — the index stale() parser only understands h/d/m
-    suffixes, so cam pages could never flag ⚠STALE. ada-pi's
+    suffixes, so cam pages could never flag ⚠STALE. ada-voice's
     _cms_reports_index and report-daily-brief each had private index
     renders that didn't filter lifecycle status.
 
@@ -109,7 +109,7 @@ notes:
     scan (~1-2 calls at current size) plus GETs only for keys that left
     the publish set.
   - >-
-    ada-pi's tool_runner._cms_reports_index still filters only by kind —
+    ada-voice's tool_runner._cms_reports_index still filters only by kind —
     superseded kind:page docs in the 7d retention window can surface via
-    that path until ada-pi adopts the same EXCLUDED_STATUS gate.
+    that path until ada-voice adopts the same EXCLUDED_STATUS gate.
     in-repo regens (brief + cam-wall) are clean.

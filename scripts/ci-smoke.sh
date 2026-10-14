@@ -7,7 +7,7 @@
 set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ADA_PI="/home/tony/CascadeProjects/ada-pi"
+ADA_PI="/home/tony/CascadeProjects/ada-voice"
 SUMMARY=()
 PASS=0
 

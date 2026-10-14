@@ -66,7 +66,7 @@ STATE = Path(os.environ.get(
 SECRETS = Path(os.environ.get(
     "SECRETS_DIR", "~/.config/secrets")).expanduser()
 SCENARIOS_DIR = Path(os.environ.get(
-    "ADA_PI_DIR", "~/CascadeProjects/ada-pi")).expanduser() / \
+    "ADA_PI_DIR", "~/CascadeProjects/ada-voice")).expanduser() / \
     "tests" / "scenarios-live"
 
 # Dunning evidence in the backend journal. 'provider (re)connect failed'

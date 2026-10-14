@@ -122,7 +122,7 @@ MDDB_URL = os.environ.get('GEV_MDDB_URL', 'http://100.102.134.91:11023/v1')
 OPS_COLLECTION = os.environ.get('GEV_OPS_COLLECTION', 'gev-ops-events')
 
 # Compact copy of Ada's _CONFIRM_RE + negation veto (keep in sync —
-# ada-pi backend/realtime_provider.py).
+# ada-voice backend/realtime_provider.py).
 _CONFIRM_RE = re.compile(
     r"\b(yes|yeah|yep|yup|confirm(ed)?|go ahead|do it|sure|okay?|"
     r"approved?|proceed|absolutely|mhm|uh huh|sounds good)\b|"

@@ -28,7 +28,7 @@ tiers:
       Answer "what's this card / what's running" from live state. No writes.
     mechanisms:
       - 'GET /apps/board-api/cards — compact live board payload'
-      - 'ada_board_write action=read (ada-pi backend/tools.d/ada_board_write.py)'
+      - 'ada_board_write action=read (ada-voice backend/tools.d/ada_board_write.py)'
       - 'CMS kanban-brief page — kanban-brief.py Eisenhower mirror, 30m timer'
       - 'MDDB semantic search over synced card/ssot docs'
     status: live
@@ -74,7 +74,7 @@ tiers:
     gap: >-
       ada_board_write does not yet expose action=request — the endpoint
       exists and accepts from:ada, but the tool only wraps
-      comment/respond/read/create. One-action patch in ada-pi
+      comment/respond/read/create. One-action patch in ada-voice
       tools.d/ada_board_write.py; safe to ship (endpoint + notify already
       proven by devin/dispatch usage). Also (board-structured-responses,
       2026-10-07): the tool's respond requires request_id client-side, so
@@ -112,7 +112,7 @@ tiers:
 
 # ---------------------------------------------------------------------------
 # Educate-vs-educated standard — generalizes the education_correction
-# scenario (ada-pi tests/scenarios-live/education_correction.yaml, smoke
+# scenario (ada-voice tests/scenarios-live/education_correction.yaml, smoke
 # tier, tools+gate suites).
 # ---------------------------------------------------------------------------
 educate_standard:
@@ -211,7 +211,7 @@ audit:
     correction behavior shows as a metric drop, not a surprise in prod.
 
 open_items:
-  - 'ada_board_write: add action=request -> POST /request (T2 gap, ada-pi)'
+  - 'ada_board_write: add action=request -> POST /request (T2 gap, ada-voice)'
   - 'card-judgment corpus: mine closed cards'' comms for decided cases
      (stale-alert flags, raise-vs-act calls) — first batch ≥50 cases'
   - 'T3 shadow mode: after corpus exists, run Ada''s proposed actions

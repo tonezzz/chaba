@@ -2,7 +2,7 @@
 /*
  * Ada CMS page structure and naming audit.
  * Validates every document in the MDDB `ada-cms-pages` collection against the
- * page contract enforced by ada-pi's cms_* tools (backend/tool_runner.py):
+ * page contract enforced by ada-voice's cms_* tools (backend/tool_runner.py):
  *   - slug (= doc key): ^[a-z0-9][a-z0-9_-]{0,63}$, convention prefers hyphens
  *   - meta.kind includes "page" (required for cms_list_pages visibility)
  *   - meta.slug matches the doc key

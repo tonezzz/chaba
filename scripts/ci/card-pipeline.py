@@ -61,7 +61,7 @@ GENERATED_PREFIXES = (
     "stacks/web/public/apps/board/",
     "reports/ci/",
 )
-WHITELIST_REPOS = {"chaba", "ada-pi", "sunsynk-card"}
+WHITELIST_REPOS = {"chaba", "ada-voice", "sunsynk-card"}
 
 
 def now() -> str:

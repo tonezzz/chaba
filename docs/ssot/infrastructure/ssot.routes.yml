@@ -114,12 +114,12 @@ routes:
   - {id: gev-token,        kind: proxy,  path: /apps/gev/token,        strip: /apps/gev/token, upstream: "127.0.0.1:8790", owner: gev}
   - {id: gesture-live,     kind: proxy,  path: /apps/gesture-live/*,   ws: true, upstream: "100.68.142.13:8794", owner: gesture, custom: true, verify: {get: "/health", expect: 200}, note: "ws fan-out relay — /ws plus /health on the same port; no static side"}
   - {id: gesture,          kind: static, path: /apps/gesture/*,        owner: gesture, custom: true, verify: {get: "/", expect: 200}, note: "controller + screen pages; /screen rewrites to screen.html"}
-  - {id: ada-tony,         kind: proxy,  path: /apps/ha/ada-tony/*,    upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi, verify: {get: "/", expect: 200}}
-  - {id: ada-michael,      kind: proxy,  path: /apps/ha/ada-michael/*, upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-pi}
-  - {id: ada-ha-tony-legacy,  kind: alias, path: /apps/ada_ha_tony*,   target: "/apps/ha/ada-tony{uri}", owner: ada-pi}
-  - {id: ada-ha-michael-legacy, kind: alias, path: /apps/ada_ha_michael*, target: "/apps/ha/ada-michael{uri}", owner: ada-pi}
-  - {id: ada-ha-legacy,    kind: alias,  path: /apps/ada_ha*,          target: "/apps/ha/ada{uri}", owner: ada-pi}
-  - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-pi}
+  - {id: ada-tony,         kind: proxy,  path: /apps/ha/ada-tony/*,    upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-voice, verify: {get: "/", expect: 200}}
+  - {id: ada-michael,      kind: proxy,  path: /apps/ha/ada-michael/*, upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-voice}
+  - {id: ada-ha-tony-legacy,  kind: alias, path: /apps/ada_ha_tony*,   target: "/apps/ha/ada-tony{uri}", owner: ada-voice}
+  - {id: ada-ha-michael-legacy, kind: alias, path: /apps/ada_ha_michael*, target: "/apps/ha/ada-michael{uri}", owner: ada-voice}
+  - {id: ada-ha-legacy,    kind: alias,  path: /apps/ada_ha*,          target: "/apps/ha/ada{uri}", owner: ada-voice}
+  - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-voice}
   - {id: ha-index,         kind: alias,  path: /apps/ha,            target: "/apps/ha/", owner: chaba}
   - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-dell.taila0626a.ts.net:8123/", owner: tony-ha}
   - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc03.taila0626a.ts.net:8124/", owner: michael-ha}
@@ -142,7 +142,7 @@ routes:
   - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "127.0.0.1:8092", owner: chaba, custom: true, note: "docs-site route set + / root fallthrough"}
   - {id: map,              kind: static, path: /apps/map/*,            owner: chaba}
   - {id: camwall,          kind: proxy,  path: /apps/camwall/*,        strip: /apps/camwall, upstream: ["http://100.102.134.91:8380", "http://100.123.163.11:8380"], lb: least_conn, owner: camwall}
-  - {id: gemini-mic,       kind: proxy,  path: /api/gemini-mic/*,      strip: /api/gemini-mic, upstream: "100.68.142.13:3009", owner: ada-pi}
+  - {id: gemini-mic,       kind: proxy,  path: /api/gemini-mic/*,      strip: /api/gemini-mic, upstream: "100.68.142.13:3009", owner: ada-voice}
   - {id: yomi,             kind: proxy,  path: /api/yomi/*,            upstream: "100.68.142.13:3000", owner: yomi}
   - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.68.142.13:8084", owner: weaviate}
   - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.68.142.13:3001", owner: gpu}

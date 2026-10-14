@@ -8,7 +8,7 @@ category: operations
 status: verified
 last_verified: 2026-10-06
 verification_method: exercised live against the tailnet deployment on screen 6 (vcast-real headless Chromium, idc02) — full sequence automated in stacks/web/input-bridge/gev-cast-verify.mjs, 14/14 PASS
-scope: vcast displays (input-bridge relay on idc01), /apps/gev/ nav casts, ada-pi cast_to_screen displaced-content contract (feafff7), shared /apps/sw.js purge
+scope: vcast displays (input-bridge relay on idc01), /apps/gev/ nav casts, ada-voice cast_to_screen displaced-content contract (feafff7), shared /apps/sw.js purge
 owner: tony
 related:
   [
@@ -43,7 +43,7 @@ weaker evidence.
 | Relay registry | `GET /api/input-bridge/displays` | screen's `state:"nav"`, `state_detail` contains the GEV url **and** `pN:frame-ok` — `frame-ok` is set by the iframe's own `onload`, i.e. the page actually rendered (not just accepted). `frame-loading` = not done yet, keep polling. |
 | GEV remote registry | `GET /apps/gev-cmd/command/health` | `remotes[]` contains `{screen:N, pane:P}` — the GEV page itself connected to the gev-gemini bridge as a passive remote (`?remote=1`). Its absence proves GEV is *not* on that screen even if other state lies. |
 
-`vcast_list` in ada-pi surfaces `/displays`; `vcast_snapshot` surfaces the
+`vcast_list` in ada-voice surfaces `/displays`; `vcast_snapshot` surfaces the
 `/frame` path below.
 
 ## The snapshot contract for nav casts
@@ -59,9 +59,9 @@ Polling note: `GET /frame` answers `404 {"error":"frame not ready"}` until
 the display's POST lands — keep polling, don't treat the first 404 as the
 answer.
 
-## Displaced-content tool contract (ada-pi feafff7)
+## Displaced-content tool contract (ada-voice feafff7)
 
-Cross-repo contract — the detection side lives in ada-pi
+Cross-repo contract — the detection side lives in ada-voice
 `tool_runner.cast_to_screen`/`cctv_wall`; the ground truths live here.
 
 - When a cast **over-writes** a pane whose current content is a GEV

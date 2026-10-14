@@ -1,5 +1,5 @@
 """Unit tests for the line-tool-reply-routing drop staged under
-integrations/ada-pi/ (card line-tool-reply-routing-answers-leave-th-5c73e7,
+integrations/ada-voice/ (card line-tool-reply-routing-answers-leave-th-5c73e7,
 2026-10-13).
 
 The bug: a persona's chat_send inside a LINE turn had no notion of the
@@ -16,8 +16,8 @@ deliveries under the instance key so the fallback map is readable again.
 Chaba-side coverage (the ada-pi-side suite is tests/test_line_reply_context.py
 in the drop):
 
-- every patch in the drop applies cleanly to a live ada-pi checkout
-  (ADA_PI env or ~/CascadeProjects/ada-pi) and the patched files compile;
+- every patch in the drop applies cleanly to a live ada-voice checkout
+  (ADA_PI env or ~/CascadeProjects/ada-voice) and the patched files compile;
 - the patched line_relay actually carries chat_id onto the ws URL and
   through _session();
 - the patched tool_runner resolves session_chat_id correctly.
@@ -36,9 +36,9 @@ from unittest import mock
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-DROP = REPO / "integrations" / "ada-pi"
+DROP = REPO / "integrations" / "ada-voice"
 ADA_PI = Path(os.environ.get(
-    "ADA_PI", str(Path.home() / "CascadeProjects/ada-pi")))
+    "ADA_PI", str(Path.home() / "CascadeProjects/ada-voice")))
 
 PATCHES = [
     DROP / "backend/line_relay.reply-routing.patch",
@@ -51,16 +51,16 @@ NEW_FILES = [DROP / "tests/test_line_reply_context.py"]
 
 NEEDS_ADA_PI = pytest.mark.skipif(
     not (ADA_PI / "backend/line_relay.py").is_file(),
-    reason="no ada-pi checkout to apply the patch against")
+    reason="no ada-voice checkout to apply the patch against")
 
 
 def _clean_checkout(tmp_path: Path) -> Path:
-    """Copy ada-pi into tmp so patches apply without touching the real
+    """Copy ada-voice into tmp so patches apply without touching the real
     checkout — only the files the drop touches need to exist, but a
     whole-tree copy keeps relative paths honest (backend/, tests/,
     pwa_server.py at root)."""
     import shutil
-    src = tmp_path / "ada-pi"
+    src = tmp_path / "ada-voice"
     for rel in ("backend", "tests"):
         shutil.copytree(ADA_PI / rel, src / rel,
                         ignore=shutil.ignore_patterns("__pycache__"))

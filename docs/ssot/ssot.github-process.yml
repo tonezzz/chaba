@@ -7,7 +7,7 @@ meta:
   status: active
   created: 2026-10-09
   author: "devin (requested: tony)"
-  scope: tonezzz/chaba + tonezzz/ada-pi — the two GitHub repos
+  scope: tonezzz/chaba + tonezzz/ada-voice — the two GitHub repos
   intent: >
     Hands-off: trunk-based flow stays (maintainer + dispatch sessions push
     directly to the default branch). GitHub-side settings only guard
@@ -16,12 +16,12 @@ meta:
 policy:
   default_branch:
     chaba: master
-    ada-pi: main
+    ada-voice: main
     model: >
       Trunk-based. Direct pushes are allowed — dispatch checkpoints and
       merge-into-HEAD commits are the normal flow.
   protection:
-    applies_to: [chaba/master, ada-pi/main]
+    applies_to: [chaba/master, ada-voice/main]
     force_push: blocked
     branch_deletion: blocked
     required_checks: none  # CI is observational; gating would stall dispatch
@@ -38,7 +38,7 @@ policy:
     body: ".github/PULL_REQUEST_TEMPLATE.md (Summary + Test plan; chaba also carries Card:)"
   known_drift:
     - >
-      ada-pi dispatch merges produce 'Merge branch dispatch/...' commits on
+      ada-voice dispatch merges produce 'Merge branch dispatch/...' commits on
       main — tolerated until dispatch learns rebase+ff. chaba/master keeps
       its local pre-push ff-only gate as the enforcement layer.
 

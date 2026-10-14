@@ -9,11 +9,11 @@ secrets:
   - "~/.config/secrets/ada-pi-pwa.env — MDDB_BASE_URL, provider keys"
   - "~/.config/secrets/notebooklm-rest-api.env — notebooklm env"
 requires:
-  - "tool:python3 — uvicorn from ~/CascadeProjects/ada-pi/.venv"
+  - "tool:python3 — uvicorn from ~/CascadeProjects/ada-voice/.venv"
   - "tcp:100.102.134.91:11023 — mddb leader (self)"
   - "tcp:100.102.134.91:11434 — ollama (self, embeddings)"
 state:
-  - "~/CascadeProjects/ada-pi — app code + .venv"
+  - "~/CascadeProjects/ada-voice — app code + .venv"
 restore: >-
   Standby on idc01: same unit installed, envs already point at idc03.
   systemctl --user start ada-pi-pwa there (~181s warm boot).

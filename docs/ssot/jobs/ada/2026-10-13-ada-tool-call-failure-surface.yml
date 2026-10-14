@@ -1,5 +1,5 @@
 title: "umbrella fix: Ada tool-call failure surface (18 audit-fail-* cards)"
-subtitle: "One pass over the 2026-10-10 cluster — audit-side reclass + ada-pi patch"
+subtitle: "One pass over the 2026-10-10 cluster — audit-side reclass + ada-voice patch"
 icon: 🔧
 context:
   card: umbrella-fix-ada-tool-call-failure-surfa-48054d (ref ADA-0525)
@@ -34,9 +34,9 @@ changes:
 
   ada_pi_patch:  # NOT landed — repo edit point is tony-dell; deploy gate is explicit
     branch: "dispatch/20261013-ada-tool-call-failure-surface @ 9ff1bf9 (local to
-      idc02's ada-pi clone — NOT pushed; durable copy at
+      idc02's ada-voice clone — NOT pushed; durable copy at
       docs/kb/patches/ada-pi-tool-call-failure-surface-20261013.patch — a 2-commit
-      mbox, `git am` on tony-dell's ~/CascadeProjects/ada-pi applies both; base
+      mbox, `git am` on tony-dell's ~/CascadeProjects/ada-voice applies both; base
       6257dde vs origin/main ~192 behind, git-am 3-way should still take it)"
     fixes_round2:  # added 2026-10-13 ~15:45 after live journal verification
       google_list_events: "per-calendar miss (deleted/mis-shared calid 404)
@@ -89,7 +89,7 @@ per_signature_verdicts:
     guides keywords/lat-lon. reclassified; done already on board."
   ada_enroll_speaker: "acl — who='guest' on non-chaba instance; enum stripped in
     patch + acl reclass."
-  ada_member_keys: "obsolete — tool no longer on the ada-pi surface (removed
+  ada_member_keys: "obsolete — tool no longer on the ada-voice surface (removed
     tools.d era); 'can't invite user-scratch-member' was scenario traffic."
   ada_memory_search: "acl — secondary-speaker owner gate is intended privacy;
     was misclassified fail/high."
@@ -131,7 +131,7 @@ per_signature_verdicts:
   web_search: "fixed — provider aliases + enum; grounded model bumped."
 
 open_gate:
-  - "ada-pi patch (bbb90f1) must be `git am`'d on tony-dell's ada-pi checkout,
+  - "ada-voice patch (bbb90f1) must be `git am`'d on tony-dell's ada-voice checkout,
       pushed, and deployed via deploy-ada.sh on idc03 — requires explicit
       approval (deploy policy)."
   - "chat_send photos picker needs GPHOTO_REFRESH_TOKEN configured on idc03
@@ -140,7 +140,7 @@ open_gate:
       copy refreshes via install-session-audit.sh / its timer path."
 
 verify:
-  - "after ada-pi deploy + one clean audit day: none of the 18 signatures
+  - "after ada-voice deploy + one clean audit day: none of the 18 signatures
       refile audit-fail-* cards; a staged outage produces one audit-storm-*
       card instead of N."
   - "live spot-checks: 'show the rama9 wall' (cctv_wall no-arg action),

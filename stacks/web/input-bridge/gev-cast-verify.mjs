@@ -16,7 +16,7 @@
 //      then carries the live iframe src (with screen/pane params), which
 //      is itself the evidence. A JPEG frame also passes.
 //
-// Then it exercises the displaced-content contract (ada-pi feafff7): a
+// Then it exercises the displaced-content contract (ada-voice feafff7): a
 // camwall nav over-writing the GEV pane must remove the GEV remote and
 // flip the display state — that state read is what cast_to_screen turns
 // into a "displaced" note + split/PiP suggestion. The suggested
@@ -203,7 +203,7 @@ check("displaced: state read shows camwall, not GEV", !!onWall,
 const displaced = await poll(15000, async () =>
   (await gevRemote()) ? null : true);
 check("displaced: GEV remote gone after overwrite", !!displaced,
-  "ada-pi feafff7 turns this read into the displaced note + split/PiP hint");
+  "ada-voice feafff7 turns this read into the displaced note + split/PiP hint");
 
 // --- REMEDIATE: the suggested split/PiP layout --------------------------------
 await pub({ type: "layout", panes: 2, mode: "pip" });

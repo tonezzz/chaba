@@ -12,7 +12,7 @@ Collectors:
                   updated + meta.fresh_for has lapsed
   board_drift     doing cards stale >STALE_DOING_DAYS, cards with open
                   requests, review pile size
-  tool_debt       ada-pi scripts/tool-lint.py --json violations by rule
+  tool_debt       ada-voice scripts/tool-lint.py --json violations by rule
 
 Publishes en+th to ada-cms-pages, same contract as kanban-brief.py
 (ada-cms-automation registry gating, managed block, meta contract —
@@ -21,7 +21,7 @@ ssot.apps.cms-reports.yml).
 Env:
     MDDB_BASE_URL     default http://100.102.134.91:11027/v1
     REPO              default = this checkout root
-    ADA_PI            default ~/CascadeProjects/ada-pi (lint source)
+    ADA_PI            default ~/CascadeProjects/ada-voice (lint source)
 
 Usage:
     standard-drift-digest.py            # gated by registry interval
@@ -44,7 +44,7 @@ import yaml
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 CARDS_DIR = REPO / "docs/ssot/kanban/cards"
 ADA_PI = Path(os.environ.get("ADA_PI", Path.home() / "CascadeProjects"
-                            / "ada-pi"))
+                            / "ada-voice"))
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
@@ -54,7 +54,7 @@ BLOCK_BEGIN = "<!-- standard-drift:auto -->"
 BLOCK_END = "<!-- /standard-drift:auto -->"
 BLOCK_RE = re.compile(re.escape(BLOCK_BEGIN) + r".*?" +
                       re.escape(BLOCK_END), re.S)
-SOURCES = ["ada-cms-pages", "docs/ssot/kanban/cards", "ada-pi tool-lint"]
+SOURCES = ["ada-cms-pages", "docs/ssot/kanban/cards", "ada-voice tool-lint"]
 ICT = timezone(timedelta(hours=7))
 STALE_DOING_DAYS = 3
 MAX_ROWS = 15
@@ -177,7 +177,7 @@ def board_drift(cards: list[dict], now: datetime) -> dict:
 
 
 def tool_debt() -> dict:
-    """ada-pi tool-lint violations by rule — the surface-debt signal."""
+    """ada-voice tool-lint violations by rule — the surface-debt signal."""
     py = ADA_PI / ".venv" / "bin" / "python"
     if not py.exists():
         py = "python3"

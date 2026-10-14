@@ -7,11 +7,11 @@
 # pushed, or deployed.
 
 title: speaker-id-owner-rebind — correction rebinds/clears the ACL label
-subtitle: ada-pi speaker session — user dispute re-scores the buffered voice; owner-gated denials re-verify first
+subtitle: ada-voice speaker session — user dispute re-scores the buffered voice; owner-gated denials re-verify first
 icon: microphone
 
 status: implemented-uncommitted   # tests green; awaiting commit/PR/deploy decision
-project: ada-pi
+project: ada-voice
 card: docs/ssot/kanban/cards/speaker-id-owner-rebind.yml
 owner: devin-dispatch
 started: "2026-10-10"
@@ -27,7 +27,7 @@ incident: |
   there was no code path that un-pinned a disputed label.
 
 decision: |
-  Three-layer fix, all in ada-pi backend + pwa_server:
+  Three-layer fix, all in ada-voice backend + pwa_server:
 
   1) NON_OWNER_MIN_CONF floor (backend/speaker_id.py, env
      ADA_SPEAKER_NON_OWNER_MIN_CONF, default 0.70): a *new* non-owner
@@ -111,7 +111,7 @@ verification:
     branch (verified via git stash), unrelated to this change.
   - >-
     Runner: .venv/bin/python -m pytest tests/ -q
-    (host python lacks google-genai; use the ada-pi checkout venv).
+    (host python lacks google-genai; use the ada-voice checkout venv).
 
 notes:
   - >-

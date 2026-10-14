@@ -396,7 +396,7 @@ class Case(unittest.TestCase):
 
     # ----------------------------------------- venv interpreter gate
     # Card dispatch-test-gate-venv — the 2026-10-13 line-multihome
-    # incident: ada-pi's suite is green only under the checkout's .venv
+    # incident: ada-voice's suite is green only under the checkout's .venv
     # (google.genai etc.); system python3 went red and held a good merge.
     # The gate now resolves the interpreter per repo: an explicit
     # REPO_TESTS "python" pin, then the first {tree under test, canonical

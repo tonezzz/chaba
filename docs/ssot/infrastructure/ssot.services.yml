@@ -977,7 +977,7 @@ mn01:
     host_port: 0.0.0.0:8001
     purpose: Ada Pi PWA local assistant for mn-home
     status: planned
-    note: "Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access."
+    note: "Could mirror tony-dell ada-voice for local RK600/weather, HA, and PWA access."
   ada-pi-pwa:
     service: ada-pi-pwa.service
     host: idc03
@@ -987,7 +987,7 @@ mn01:
     status: active on idc03 (migrated tony-dell -> idc01 2026-09-23 -> idc03 2026-10-06); retired on tony-dell
     tailnet_url: "https://idc03.taila0626a.ts.net/"
     env_file: "~/.config/secrets/ada-pi-pwa.env"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui, then idc01 -> idc03; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. idc01 keeps a warm-boot copy (ada-pi-pwa.service runs but is not the primary). Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui, then idc01 -> idc03; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. idc01 keeps a warm-boot copy (ada-pi-pwa.service runs but is not the primary). Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
     host: idc03
@@ -1001,7 +1001,7 @@ mn01:
     env_file: "~/.config/secrets/ada-ha-tony.env"
     edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: idc03
@@ -1013,7 +1013,7 @@ mn01:
     env_file: "~/.config/secrets/ada-ha-michael.env"
     edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — per-instance store model 2026-10-13: lane secrets owned by michael-ha at idc03:~/.config/secrets/michael-ha/ (own admin key + keys.json; legacy mn01 ada-ha-michael.{env,keys.json} migrate in). idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — per-instance store model 2026-10-13: lane secrets owned by michael-ha at idc03:~/.config/secrets/michael-ha/ (own admin key + keys.json; legacy mn01 ada-ha-michael.{env,keys.json} migrate in). idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
   ada-kk:
     service: ada-kk.service
     host: idc03
@@ -1025,7 +1025,7 @@ mn01:
     env_file: "~/.config/secrets/ada-kk.env"
     edge: "kk-ha.surf-thailand.com public edge via idc02 (/chatui* prefix-stripped, /cms* + /api/cms*); tailnet /apps/ha/ada-kk mount"
     upstream_ha: "http://127.0.0.1:8126/ (kk-ha podman, same host)"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py, ADA_INSTANCE_ID=kk. FIRST per-instance lane: own admin key + own issued-keys file (ada-ha-kk-keys.json) — the model ssot.home-assistant.instances.yml secrets: blocks now generalize to all lanes; store dir convention idc03:~/.config/secrets/kk-ha/. Gemini: own paid key kaewta-paid.env (gemini-ada-kk) under `gemini-tier paid`; REST side-calls via LITELLM_KEY_KK virtual key."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py, ADA_INSTANCE_ID=kk. FIRST per-instance lane: own admin key + own issued-keys file (ada-ha-kk-keys.json) — the model ssot.home-assistant.instances.yml secrets: blocks now generalize to all lanes; store dir convention idc03:~/.config/secrets/kk-ha/. Gemini: own paid key kaewta-paid.env (gemini-ada-kk) under `gemini-tier paid`; REST side-calls via LITELLM_KEY_KK virtual key."
   ada-dev:
     service: ada-dev.service
     host: idc03
@@ -1037,7 +1037,7 @@ mn01:
     domain: dev
     upstream_ha: none — all HOME_ASSISTANT_* vars removed; HA/camera/actuation tools excluded
     excluded_tools: "get_habit_status, report_habit_observation, control_entity, control_cover, press_button, control_media_player, tv_action, gev_command, cctv_snapshot, cctv_wall, ada_camera_snapshot, get_home_state, list_home_devices, search_home_devices, ada_ha_* (full set)"
-    banks: "dev-scratch (ada-ha-bank-dev-scratch) per ssot.apps.ada-memory-banks.yml — the sole write target for dev/staging instances; prod banks mount read-only via instances_readonly once ada-pi supports it (card ada-memory-dev-lane-runtime). Live registry also carried hand-added dev-lab/dev-bench/dev-dispatch (ada-dev-*) — drift vs SSOT, dropped on next render; collections stay in MDDB."
+    banks: "dev-scratch (ada-ha-bank-dev-scratch) per ssot.apps.ada-memory-banks.yml — the sole write target for dev/staging instances; prod banks mount read-only via instances_readonly once ada-voice supports it (card ada-memory-dev-lane-runtime). Live registry also carried hand-added dev-lab/dev-bench/dev-dispatch (ada-dev-*) — drift vs SSOT, dropped on next render; collections stay in MDDB."
     note: "ADA_INSTANCE_ID=dev; shares the ada-ha-tony ADA_API_KEY; exclusion strips tool declarations (model can't see them) — /api/tools still lists all server-side. Live-verified 2026-09-28: asked to write tony-projects, it correctly answered 'available banks are dev bench, dev dispatch, dev lab'. First scenario run: memory_confirm_gate ws://127.0.0.1:8005/ws."
   google-home-mcp:
     service: google-home-mcp.service

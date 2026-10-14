@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync per-host Ada runtime state from a source host to standby hosts:
-#   ~/.local/share/ada-pi/speaker_profiles.json   (voiceprints + person bindings)
+#   ~/.local/share/ada-voice/speaker_profiles.json   (voiceprints + person bindings)
 #   ~/.config/secrets/ada-ha-<inst>-keys.json     (issued device keys)
 #
 # Usage: sync-ada-state.sh <src-host> <dst-host> [<dst-host>...]
@@ -14,7 +14,7 @@ if [[ -z "$src" || $# -lt 1 ]]; then
 fi
 
 FILES=(
-  ".local/share/ada-pi/speaker_profiles.json"
+  ".local/share/ada-voice/speaker_profiles.json"
   ".config/secrets/ada-ha-tony-keys.json"
   ".config/secrets/ada-ha-michael-keys.json"
 )

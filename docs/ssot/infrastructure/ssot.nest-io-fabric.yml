@@ -18,7 +18,7 @@ related:
 
 # ---------------------------------------------------------------------------
 # v1 scope: the daemon in stacks/services/nest-io/ runs next to ada-pi-pwa
-# on idc03 (loopback :8795). ada-pi adopts it incrementally: POST /v1/inputs
+# on idc03 (loopback :8795). ada-voice adopts it incrementally: POST /v1/inputs
 # per utterance (or dry_run:true consult), POST /v1/respond for the reply.
 # Nothing in the fabric replaces the ws session — it remains the default
 # channel and always gets reply_text back.
@@ -136,7 +136,7 @@ lanes:
 ops:
   state: ~/.local/share/nest/io-fabric/fabric-state.json + queues
   bind: 'NEST_IO_BIND/NEST_IO_PORT — 127.0.0.1:8795 default (loopback;
-         ada-pi calls same-host; open to tailnet IP if remote surfaces
+         ada-voice calls same-host; open to tailnet IP if remote surfaces
          need direct ingest)'
   offline: 'NEST_IO_OFFLINE=1 — record-only, zero egress (dev + tests)'
   metrics: 'GET /metrics — requests/inputs/deliveries counters +
@@ -148,14 +148,14 @@ verify:
   - python3 nest-io.py --selftest (always offline — zero egress)
   - python3 -m unittest tests.nest_io.test_nest_io (29 tests)
   - ./verify.sh idc03 — unit + /health + selftest
-  - "card verify (needs ada-pi integration): speak on PWA, no TV
+  - "card verify (needs ada-voice integration): speak on PWA, no TV
     session -> answer speaks on living-room TV; tier lands right;
     tablet co-listens without stealing"
 
 open_questions:
   - >-
-    Who calls the fabric? ada-pi pwa_server adopts /v1/inputs + /v1/respond
-    (ada-pi repo, separate card/dispatch). Until then the daemon is live
+    Who calls the fabric? ada-voice pwa_server adopts /v1/inputs + /v1/respond
+    (ada-voice repo, separate card/dispatch). Until then the daemon is live
     and testable via curl.
   - >-
     Cold -> bank write policy: MDDB_COLD currently opt-in writing

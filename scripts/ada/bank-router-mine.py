@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""bank-router-mine.py — mine ada_memory_search calls from ada-pi journals.
+"""bank-router-mine.py — mine ada_memory_search calls from ada-voice journals.
 
 Pairs `function_call received` / `function_call result` lines for
 ada_memory_search and emits one JSONL corpus row per completed call:
@@ -160,7 +160,7 @@ def telemetry_stats(data: list[dict]) -> None:
 
 
 def _parse_ts(s: str) -> datetime:
-    # ada-pi log timestamp inside the journal line: "2026-10-06 10:00:06,779"
+    # ada-voice log timestamp inside the journal line: "2026-10-06 10:00:06,779"
     return datetime.strptime(s, "%Y-%m-%d %H:%M:%S,%f")
 
 

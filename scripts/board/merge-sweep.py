@@ -75,11 +75,11 @@ comms/requests go through board-api when reachable (notify + render),
 else direct YAML under /tmp/board-api.lock; all other card mutations
 (stamps) are locked YAML writes. Git merges only ever happen inside the
 per-repo served checkout map (MERGE_SWEEP_TARGETS) — chaba ->
-~/CascadeProjects/chaba-tony-dell, ada-pi -> ~/CascadeProjects/ada-pi,
+~/CascadeProjects/chaba-tony-dell, ada-voice -> ~/CascadeProjects/ada-voice,
 anything else -> its repos.conf path.
 
 Env: CHABA_REPO (cards checkout), MERGE_SWEEP_TARGETS
-("chaba=/p,ada-pi=/q"), MERGE_SWEEP_HOSTS ("tony-omen,mn01"),
+("chaba=/p,ada-voice=/q"), MERGE_SWEEP_HOSTS ("tony-omen,mn01"),
 BOARD_API, ZOMBIE_AGE_H, ZOMBIE_IDLE_MIN.
 Usage: merge-sweep.py [--dry-run]
 """
@@ -121,7 +121,7 @@ RENDER = CHABA_REPO / "scripts" / "render-board.py"
 # push to origin — the working tree converges via kanban-commit's
 # safe-pull instead of being merged under its feet.
 SERVED = {"chaba": "~/CascadeProjects/chaba-tony-dell",
-          "ada-pi": "~/CascadeProjects/ada-pi"}
+          "ada-voice": "~/CascadeProjects/ada-voice"}
 for pair in os.environ.get("MERGE_SWEEP_TARGETS", "").split(","):
     if "=" in pair:
         k, v = pair.split("=", 1)

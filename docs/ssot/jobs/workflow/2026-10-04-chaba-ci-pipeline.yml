@@ -40,19 +40,19 @@ deliverables:
   - "docs/ssot/kanban/ssot.kanban.yml — card_schema pipeline + benchmark fields; write_path /pipeline"
   - docs/ssot/infrastructure/ssot.reports.yml — ci-pipeline L1 node (reports/ci/)
   - docs/ssot/infrastructure/ssot.quality.yml — card-pipeline lane + 3 registry entries
-  - demo: tts-artifact-clean opted in (repo ada-pi), fixture tests/fixtures/tts-artifact-clean-transcript.txt
+  - demo: tts-artifact-clean opted in (repo ada-voice), fixture tests/fixtures/tts-artifact-clean-transcript.txt
 
 demo_run:
   card: tts-artifact-clean
   artifact: reports/ci/tts-artifact-clean-20261004-203950.json
   result: "plan=pass structure=pass develop=delegated audit=pass(8 checks/9 files) benchmark=blocked(before=2)"
   requests_raised:
-    - implement in ada-pi (cross-repo develop gate)
+    - implement in ada-voice (cross-repo develop gate)
     - re-run --stages benchmark after fix lands (after measurement)
   notes: >
     before=2 counted real artifact lines in the fixture built from the
     card's observed transcript (519088cb6d). after is honestly pending —
-    the TTS sanitize fix lives in ada-pi, outside this worktree.
+    the TTS sanitize fix lives in ada-voice, outside this worktree.
 
 verification:
   selftest: "python3 scripts/board/board-api.py --selftest && python3 scripts/ci/card-pipeline.py --selftest -> both 'selftest ok'"
@@ -61,4 +61,4 @@ verification:
 
 followups:
   - deploy board-api /pipeline to the live service (served checkout chaba-tony-dell) — until then ApiSink falls back to a pipeline-status comms line
-  - dispatch tts-artifact-clean against ada-pi to satisfy the develop request, then re-run --stages benchmark
+  - dispatch tts-artifact-clean against ada-voice to satisfy the develop request, then re-run --stages benchmark

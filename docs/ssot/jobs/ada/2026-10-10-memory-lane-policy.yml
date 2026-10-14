@@ -36,9 +36,9 @@ planning:
       decided: "2026-10-10"
       choice: >
         Dispatch worktree is chaba-only; memory_banks.py/memory_ops.py live
-        in the ada-pi repo. The registry change is forward-compatible —
+        in the ada-voice repo. The registry change is forward-compatible —
         unknown keys are ignored by the current loader, so dev instances
-        just see dev-scratch until the ada-pi patch lands. Follow-up card
+        just see dev-scratch until the ada-voice patch lands. Follow-up card
         ada-memory-dev-lane-runtime carries the exact patch spec.
     - id: env-marker-on-bank
       decided: "2026-10-10"
@@ -73,7 +73,7 @@ planning:
 deliverables:
   - docs/ssot/apps/ssot.apps.ada-memory-banks.yml   # home writable; +dev-scratch; instances_readonly x24; allow-list updates; prose
   - docs/ssot/apps/ssot.apps.ada-memory-schema.yml  # meta_schema.env field
-  - docs/ssot/kanban/cards/ada-memory-dev-lane-runtime.yml  # ada-pi follow-up, queued
+  - docs/ssot/kanban/cards/ada-memory-dev-lane-runtime.yml  # ada-voice follow-up, queued
   - docs/ssot/infrastructure/ssot.services.yml      # ada-dev banks line -> dev-scratch + drift note
   - docs/ssot/apps/ssot.apps.ada-memory.yml         # Instances section covers kk + dev lane
   - docs/ssot/apps/ssot.apps.ada_ha.yml             # ADA_INSTANCE_ID env doc lists dev IDs
@@ -87,8 +87,8 @@ execution:
     tools. ssot-validate-all.mjs passes.
   not_done: |
     Live deploy not touched: render to idc03/tony-dell + service restarts
-    need explicit approval. ada-pi runtime patch is card
-    ada-memory-dev-lane-runtime (queued, repo: ada-pi). Until it lands,
+    need explicit approval. ada-voice runtime patch is card
+    ada-memory-dev-lane-runtime (queued, repo: ada-voice). Until it lands,
     instances_readonly is inert — a dev instance sees only its assigned
     banks (dev-scratch), which already satisfies "dev never writes prod".
 
@@ -99,6 +99,6 @@ residual_risks:
   - "ada-ha-bank-dev-scratch collection doesn't exist in MDDB yet — created
      lazily on first write; memory-banks audit will warn 'declared but
      missing' until then"
-  - "env:staging only stamped once the ada-pi patch lands; existing
+  - "env:staging only stamped once the ada-voice patch lands; existing
      ada-dev-lab/bench/dispatch docs carry no env meta — filter by
      collection name for historical dev docs"

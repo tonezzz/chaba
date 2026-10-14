@@ -40,7 +40,11 @@ except Exception:  # executor optional — a declared goal set then blocks
 # $DISPATCH_DIR/repos.conf (repo copy: scripts/devin/dispatch-repos.conf).
 BUILTIN_REPOS = {
     "chaba": ("~/CascadeProjects/chaba", "master"),
-    "ada-pi": ("~/CascadeProjects/ada-pi", "main"),
+    "ada-voice": ("~/CascadeProjects/ada-voice", "main"),
+    # legacy alias for cards/dispatches still naming the pre-rename repo
+    # (kanban ada-pi-rename-ada-voice, 2026-10-14) — retire once no card
+    # carries action.repo: ada-pi
+    "ada-pi": ("~/CascadeProjects/ada-voice", "main"),
     "sunsynk-card": ("~/CascadeProjects/sunsynk-power-flow-card", "main"),
     "mddb-fork": ("~/CascadeProjects/mddb-fork", "main"),
     "gods-eye-view": ("~/gods-eye-view", "main"),
@@ -409,7 +413,7 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # even finish on. KANBAN_TESTGATE=0 disables the gate entirely.
 #
 # Interpreter resolution (card dispatch-test-gate-venv — the 2026-10-13
-# line-multihome incident: ada-pi's suite needs google.genai from its
+# line-multihome incident: ada-voice's suite needs google.genai from its
 # .venv, system python3 lacks it, the gate went red 42/42-green-under-
 # venv and held a good merge). A command that starts with `python`/
 # `python3` gets that token replaced with the resolved interpreter —
@@ -419,7 +423,7 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 #   2. <tree under test>/{.venv,venv}/bin/python[3]
 #   3. <canonical checkout>/{.venv,venv}/bin/python[3] — the linked
 #      worktree's git-common parent; dispatch worktrees carry no .venv
-#      of their own, this is where ada-pi's lives
+#      of their own, this is where ada-voice's lives
 #   4. <repos.conf path>/{.venv,venv}/bin/python[3]
 #   5. "" — command keeps system python3
 #
@@ -432,6 +436,9 @@ DEFAULT_TEST_TIMEOUT = 240
 VENV_DIRS = (".venv", "venv")  # checkout venv conventions in use
 REPO_TESTS = {
     "chaba": {"command": DEFAULT_TEST_CMD, "timeout": 240},
+    "ada-voice": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
+               "timeout": 300},
+    # legacy alias — same suite for cards still saying repo: ada-pi
     "ada-pi": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
                "timeout": 300},
     # Unlisted repos get the default command — but only when the merged

@@ -3,7 +3,7 @@
 Card: `ha-michael-worktree-sync`. Session: `dispatch-wt-20261005-132701`.
 Scope: dispatch-whitelisted repos in the HA/michael lanes — **chaba**
 (HA/michael stacks + ops SSOT) and **sunsynk-power-flow-card** (the HA card).
-ada-pi and mddb-fork are the Ada/memory lanes — inventoried, not touched.
+ada-voice and mddb-fork are the Ada/memory lanes — inventoried, not touched.
 
 ## chaba — 16 dispatch worktrees at audit time
 
@@ -67,7 +67,7 @@ was only `dispatch-outcome.md` / stale `ssot.kanban.yml` scratch.
   rebase WIP, or verify+land the WIP snapshot — plus `npm run build` /
   `tsc --noEmit` before deploy.
 
-## ada-pi (Ada lane — inventory only, not acted on)
+## ada-voice (Ada lane — inventory only, not acted on)
 
 - 4 dispatch worktrees, all branches fully merged → removable any time:
   100603-cms-tool-group, 105014-cms-first-answers, 122233-tts-output-leaks,

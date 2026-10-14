@@ -1,7 +1,7 @@
 ---
 title: Gesture UI — ada_v2 complete implementation reference + YOLO assessment
 description: Full rebuild reference for the ada_v2 "Minority Report" hand-gesture UI — every constant, state machine, DOM contract, and edge case extracted from the archived source — plus the YOLO feasibility assessment and revival checklist
-tags: [gesture, mediapipe, yolo, ada_v2, ada-pi, computer-vision, hand-tracking]
+tags: [gesture, mediapipe, yolo, ada_v2, ada-voice, computer-vision, hand-tracking]
 created: 2026-09-25
 updated: 2026-09-25
 category: architecture
@@ -14,7 +14,7 @@ search_keywords:
     minority report ui,
     yolo gesture recognition,
     ada_v2 gesture,
-    hand tracking ada-pi,
+    hand tracking ada-voice,
     rebuild gesture ui,
     hand landmarker task file,
   ]
@@ -277,12 +277,12 @@ class labels; the ada_v2 UX needs continuous 21-point landmark geometry
 - Latency — browser WASM/WebGPU MediaPipe runs ~60 fps locally; a server
   round-trip adds 30-100 ms, felt immediately in a pointer UI.
 - In-browser YOLO (TFJS/ONNX.js) is heavier than MediaPipe WASM.
-- On Pi-class hardware (ada-pi): YOLO won't hit interactive rates on CPU;
+- On Pi-class hardware (ada-voice): YOLO won't hit interactive rates on CPU;
   MediaPipe TFLite gets ~15-30 fps on Pi 5, or needs the Hailo AI HAT.
 
 ## Recommendation
 
-1. **Keep MediaPipe** if reviving for ada-pi/PWA — or bump to `tasks-vision`
+1. **Keep MediaPipe** if reviving for ada-voice/PWA — or bump to `tasks-vision`
    WebGPU delegate, or `GestureRecognizer` (prebuilt classes: closed fist,
    open palm, point-up, thumbs up/down, victory). The feature was dropped for
    product reasons, not because it failed.
@@ -300,7 +300,7 @@ Net: YOLO can do gesture *recognition*; ada_v2 was a landmark-driven
 right primitive. YOLO is the answer only if the goal shifts to room-scale,
 discrete, multi-person gestures.
 
-## Rebuild checklist (ada-pi / PWA)
+## Rebuild checklist (ada-voice / PWA)
 
 1. Vendor `hand_landmarker.task` + tasks-vision WASM locally (no CDN
    dependency; version-lock both to the same release).
@@ -312,7 +312,7 @@ discrete, multi-person gestures.
 4. Recreate the DOM contract: popup ids, `data-drag-handle`, snap target
    selector, cursor div, Hand toggle button, settings (sensitivity + flip).
 5. Decide persistence: ada_v2 kept `camera_flipped` in backend settings.json —
-   in ada-pi pick the equivalent (HA input_boolean / PWA localStorage /
+   in ada-voice pick the equivalent (HA input_boolean / PWA localStorage /
    backend settings file).
 6. Improve on it: add dwell-click or N-of-M pinch voting, second-hand support
    (`numHands: 2`), `GestureRecognizer` for extra vocabulary, wake-word-style

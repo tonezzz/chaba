@@ -291,7 +291,7 @@ def lanes_md(lane_rs: list[dict]) -> list[str]:
             f"{(r.get('ts') or '?')[:16]} |")
     lines.append(
         "\n*Lane bench: `nest-train-loop.py lane-bench --lane <name> "
-        "--model <onnx-dir>` — registry: ada-pi "
+        "--model <onnx-dir>` — registry: ada-voice "
         "tests/bench/topologies.yml `lanes:`.*\n")
     return lines
 

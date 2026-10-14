@@ -18,7 +18,7 @@ planning:
     /send also records each delivery under the instance key so the
     fallback map is keyed the way readers query it.
   scope: |
-    ada-pi only, staged as drop-in patches in integrations/ada-pi/ (drop 6).
+    ada-voice only, staged as drop-in patches in integrations/ada-voice/ (drop 6).
     No push/deploy from this worktree — hand to deploy-ada.sh on idc03.
     Pair card line-delivery-send-actual-images: image sends share the same
     /send path, so they inherit the in-context rule automatically.
@@ -28,15 +28,15 @@ planning:
     - chat_send with empty to= on a bound session posts to the originating
       chat; explicit to= still wins; LINE_LANE_ALLOW/LOCK still gate it
     - /send keys _recent_chat by ADA_INSTANCE_ID on delivery
-    - ada-pi suite green + tool-lint clean on the patched tree
+    - ada-voice suite green + tool-lint clean on the patched tree
   risks:
     - Bound chat outside lane allowlist -> denied, not rerouted (intended;
       the gate vets the bound target like any other)
     - Unbound sessions (voice, PWA, pre-patch relays) -> identical old
       behavior, `to=""` falls back through the existing chain
   resources:
-    - /tmp clone of tonezzz/ada-pi @ 98c8e26 as diff base
-    - integrations/ada-pi/ staged-drop convention (drops 1-5)
+    - /tmp clone of tonezzz/ada-voice @ 98c8e26 as diff base
+    - integrations/ada-voice/ staged-drop convention (drops 1-5)
   owner: devin (dispatch)
   estimated_duration: 1 session
   related_focus:
@@ -64,14 +64,14 @@ processing:
         records _recent_chat[inst] on delivery; tg_relay gets the same
         &chat_id= (same bug class).
     - id: 3
-      label: Tests — ada-pi tests/test_line_reply_context.py + chaba-side drop test
+      label: Tests — ada-voice tests/test_line_reply_context.py + chaba-side drop test
       status: completed
       notes: |
-        9 new ada-pi tests (registry semantics, payload defaulting, ws URL,
+        9 new ada-voice tests (registry semantics, payload defaulting, ws URL,
         /send instance keying); chaba tests/ada/test_line_reply_routing.py
-        verifies patch-apply + behavior on a clean ada-pi copy.
+        verifies patch-apply + behavior on a clean ada-voice copy.
     - id: 4
-      label: Verify — ada-pi suite + tool-lint on patched tree
+      label: Verify — ada-voice suite + tool-lint on patched tree
       status: completed
       notes: |
         pytest tests/ 1365 passed / 4 skipped; test_line_relay_group 28/28;
@@ -79,13 +79,13 @@ processing:
 
 results:
   deliverables:
-    - integrations/ada-pi/backend/line_relay.reply-routing.patch
-    - integrations/ada-pi/backend/tool_runner.reply-routing.patch
-    - integrations/ada-pi/backend/tg_relay.reply-routing.patch
-    - integrations/ada-pi/backend/test_line_relay_group.reply-routing.patch
-    - integrations/ada-pi/pwa_server.reply-routing.patch
-    - integrations/ada-pi/tests/test_line_reply_context.py
-    - integrations/ada-pi/README.md (Drop 6 — install + contract)
+    - integrations/ada-voice/backend/line_relay.reply-routing.patch
+    - integrations/ada-voice/backend/tool_runner.reply-routing.patch
+    - integrations/ada-voice/backend/tg_relay.reply-routing.patch
+    - integrations/ada-voice/backend/test_line_relay_group.reply-routing.patch
+    - integrations/ada-voice/pwa_server.reply-routing.patch
+    - integrations/ada-voice/tests/test_line_reply_context.py
+    - integrations/ada-voice/README.md (Drop 6 — install + contract)
     - tests/ada/test_line_reply_routing.py (chaba-side gate)
   metrics:
     ada_pi_base: 98c8e26
@@ -93,11 +93,11 @@ results:
     chaba_tests: "7 passed (ADA_PI=<checkout>)"
     tool_lint: clean
   outcome: |
-    Staged drop ready for install on the idc03 ada-pi checkout + deploy-ada.sh.
+    Staged drop ready for install on the idc03 ada-voice checkout + deploy-ada.sh.
     After deploy, restart ada-line-relay, ada-tg-relay and the lane backends —
     pwa_server carries the binding side.
   next_steps:
-    - Install on tony-dell ~/CascadeProjects/ada-pi per README drop 6, deploy
+    - Install on tony-dell ~/CascadeProjects/ada-voice per README drop 6, deploy
       via deploy-ada.sh on idc03, restart ada-line-relay + ada-tg-relay +
       lane units
     - "Live verify: kk asks kaewta in room C822 a question that triggers a

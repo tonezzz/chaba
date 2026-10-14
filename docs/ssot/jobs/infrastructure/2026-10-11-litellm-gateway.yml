@@ -67,7 +67,7 @@ proof_lanes:
   chaba: "session-report.py via GEMINI_BASE_URL + LITELLM_KEY_CHABA verified end-to-end; bench/ledger scripts are standing chaba jobs on the gateway"
 
 open_decisions:
-  - "Full ada service cutover (ada-dev/ada-ha-*): GOOGLE_GEMINI_BASE_URL is global — it would also reroute Gemini Live-API websockets, which LiteLLM does not proxy. Needs per-client base_url in ada-pi (genai.Client(http_options=...)) before voice-bearing services can migrate. Board request raised."
+  - "Full ada service cutover (ada-dev/ada-ha-*): GOOGLE_GEMINI_BASE_URL is global — it would also reroute Gemini Live-API websockets, which LiteLLM does not proxy. Needs per-client base_url in ada-voice (genai.Client(http_options=...)) before voice-bearing services can migrate. Board request raised."
   - "mddb's gemini-ollama-proxy could front through litellm for spend visibility — deliberate hold: extra hop + it already hard-fails correctly on vector-space grounds."
   - "litellm-ledger.timer enablement post-merge: systemctl --user enable --now litellm-ledger.timer"
 

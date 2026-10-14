@@ -56,7 +56,7 @@ def load_env_file(path: Path) -> dict:
 STATIC_HOSTS = {
     "idc01", "idc02", "idc03", "mn01", "kk-macbook",
     "tony-dell", "tony-omen", "tony-ha", "tony-dev", "michael-ha", "michael-dev",
-    "ada-pi", "homeassistant",
+    "ada-voice", "homeassistant",
 }
 IPV4_RE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
 DOMAIN_RE = re.compile(r"\b[\w.-]+\.(?:ts\.net|local|lan)\b")

@@ -165,7 +165,7 @@ def repos_table():
     if not table:
         table = {"chaba": {"path": str(HOME / "CascadeProjects/chaba"),
                            "branch": "master"},
-                 "ada-pi": {"path": str(HOME / "CascadeProjects/ada-pi"),
+                 "ada-voice": {"path": str(HOME / "CascadeProjects/ada-voice"),
                             "branch": "main"},
                  "sunsynk-card": {"path": str(HOME /
                     "CascadeProjects/sunsynk-power-flow-card"),

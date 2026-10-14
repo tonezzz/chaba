@@ -199,7 +199,7 @@ persons:
         # module exists but was never manifest-enabled (commit b776e81
         # added backend/tools.d/conv_journal.py without a manifest.yml
         # entry), so it was never declared or offered at runtime. Re-add
-        # to include once ada-pi's tools.d/manifest.yml enables it.
+        # to include once ada-voice's tools.d/manifest.yml enables it.
         # trip_calendar (2026-10-13, card ada-trip-calendar-pages):
         # 'show my trip calendar' — shells chaba
         # scripts/ada/trip-calendar.py, writes the trip-<slug>
@@ -210,14 +210,14 @@ persons:
         # doc_read (2026-10-13, card line-file-doc-ingest): reads a
         # document LINE archived from a 'document received' note
         # (the trip-ticket PDF case) — inline to the lane gemini pool,
-        # confined to the LINE media roots. Needs the ada-pi drop
-        # installed first (integrations/ada-pi/README.md); include it
+        # confined to the LINE media roots. Needs the ada-voice drop
+        # installed first (integrations/ada-voice/README.md); include it
         # only when rendering env files for a lane that has it.
         - doc_read
         # place_report (2026-10-13, card maps-url-to-cms): LINE maps
         # link or place name -> resolved place -> meta.public CMS page
         # -> public_url for the chat reply (kk 'is this shop still
-        # open' flow, KNB-0574). Deployed on idc03 ada-kk (ada-pi
+        # open' flow, KNB-0574). Deployed on idc03 ada-kk (ada-voice
         # e24b14d); the lane env also carries ADA_CMS_PUBLIC_BASE=
         # https://chaba.h3.gizmo-thailand.com/kk-ha/ — hand-set, not
         # rendered (the managed block covers INCLUDED/EXCLUDED only).
@@ -338,7 +338,7 @@ tool_profiles:
   lint: |
     A deploy-time warning (render-tool-profiles.py --lint, also run
     inside --apply): for every profiled instance, any tool DECLARED in
-    ada-pi's surface (scripts/tool-lint.py collect_surface — builtins +
+    ada-voice's surface (scripts/tool-lint.py collect_surface — builtins +
     tools.d) that sits in NEITHER include: nor exclude: is uncovered —
     a merge/rename slipped past the profile. Names that resolve only
     through the runner alias table are accepted (they name a declared
@@ -460,12 +460,12 @@ bench_profiles:
       - ada_render_image
       - page_snapshot
       # conv_journal removed 2026-10-13 — never manifest-enabled in
-      # ada-pi (see persons.kk note); undeclared at runtime.
+      # ada-voice (see persons.kk note); undeclared at runtime.
       - trip_calendar
       - doc_read
       # place_report (2026-10-13): cms producer — maps link/name ->
       # public place page; exercises the publish path the bench cares
-      # about. Needs the ada-pi drop installed on the lane.
+      # about. Needs the ada-voice drop installed on the lane.
       - place_report
     exclude:
       - ada_memory_search
@@ -571,7 +571,7 @@ bench_profiles:
       - percussion
 
 open_questions:
-  - "persona overrides need the ada-pi hook — session instructions
+  - "persona overrides need the ada-voice hook — session instructions
     currently compose globally; per-person tone/language/verbosity is
     the code change this registry enables (card ada-person-registry)."
   - "role admin persons (only tony today) may read bank_write personal

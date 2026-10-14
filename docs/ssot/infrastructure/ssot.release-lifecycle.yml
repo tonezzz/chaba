@@ -9,7 +9,7 @@ overview:
     Every feature/fix travels the same six-stage path and leaves evidence
     at each gate. The stages are orthogonal to the two HA lanes
     (household tony-dev->tony-ha, private ada-dev->ada-ha) and apply to
-    HA config, card bundles, ada-pi backend, and scripts equally.
+    HA config, card bundles, ada-voice backend, and scripts equally.
     The point is the feedback loops: every stage writes back to the
     kanban card — capture acks, experiment results, scenario scores,
     soak findings, parity diffs, post-deploy health — so a stalled or
@@ -48,7 +48,7 @@ stages:
 
   s2_alpha:
     label: Alpha / self-verify
-    where: "dev twin of the target lane (ada-dev :8128 or tony-dev :8127); ada-dev lane for ada-pi"
+    where: "dev twin of the target lane (ada-dev :8128 or tony-dev :8127); ada-dev lane for ada-voice"
     entry: experiment passed; change deployed to the dev twin
     exit_gate: >-
       relevant live scenario(s) pass 2 consecutive runs; tool-lint /
@@ -94,7 +94,7 @@ stages:
 
   s5_production:
     label: Production
-    where: "tony-ha :8123 (household) or ada-ha :8125 (private); ada-pi prod on idc03"
+    where: "tony-ha :8123 (household) or ada-ha :8125 (private); ada-voice prod on idc03"
     entry: s4 approval granted in-session
     exit_gate: >-
       promote script ran with --confirm; post-deploy smoke within 30min;
