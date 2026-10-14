@@ -255,7 +255,11 @@ producers:
   recommended_meta: [summary, fresh_for, report_role, zone_tab,
                      zone_site, sources, links]
   list:
-    cam-wall-cms:      cctv domain + zone_tab/zone_group/zone_site meta
+    cam-wall-cms:      cctv domain + zone_tab/zone_group/zone_site meta —
+                       also runs the kk lane (cam-wall-cms-kk.timer) with
+                       COLLECTION=ada-cms-pages-kk + CAMWALL_ZONE_GROUPS=
+                       public; per-lane dedup/notify state files
+                       (_cms-pub-hash-kk.json etc.)
     report-distill:    "'-digest' pages, report_role=digest"
     bench-edge-cms:    bench domain
     kanban-cms:        dev-kanban page

@@ -270,6 +270,83 @@ class CamWallCmsTest(unittest.TestCase):
             ["active"])
 
 
+class KkLaneTest(unittest.TestCase):
+    """kk/Kaewta lane (card ada-kk-cms-traffic): COLLECTION=ada-cms-pages-kk
+    + CAMWALL_ZONE_GROUPS=public — only zones.yml group:public zones emit
+    pages, every write lands in her collection, and private-zone docs are
+    never touched (the zone:-source boundary)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        data = Path(self.tmp.name)
+        zones = {
+            "vms-noble-a": [
+                {"key": "guard-view", "label": "Guard View",
+                 "dev": "noble-a", "ch": 2, "ok": True, "ts": NOW},
+            ],
+            "rama9": [{"key": "petchaburi-rd", "label": "Petchaburi Rd",
+                       "ok": True, "ts": NOW}],
+            "traffic": [{"key": "doh-vibhavadi", "label": "Vibhavadi",
+                         "ok": True, "ts": NOW}],
+        }
+        for z, cams in zones.items():
+            zd = data / z
+            zd.mkdir()
+            (zd / f"manifest-{z}.json").write_text(json.dumps(
+                {"updated": NOW, "cams": cams}))
+        os.environ["CAMWALL_DATA"] = str(data)
+        os.environ["MDDB_BASE_URL"] = "http://fake-mddb/v1"
+        os.environ["COLLECTION"] = "ada-cms-pages-kk"
+        os.environ["CAMWALL_ZONE_GROUPS"] = "public"
+        os.environ.pop("ADA_NOTIFY_KEY", None)
+
+        sys.path.insert(0, str(SCRIPT.parent))
+        spec = importlib.util.spec_from_file_location("cam_wall_cms", SCRIPT)
+        self.mod = importlib.util.module_from_spec(spec)
+        sys.modules["cam_wall_cms"] = self.mod
+        spec.loader.exec_module(self.mod)
+
+        self.db = FakeMDDB()
+        self._patch = mock.patch.object(
+            urllib.request, "urlopen", side_effect=self.db.handle)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self.tmp.cleanup()
+        os.environ.pop("COLLECTION", None)
+        os.environ.pop("CAMWALL_ZONE_GROUPS", None)
+
+    def test_public_only_publish(self):
+        gen = {"generated_by": ["cam-wall-cms"]}
+        # a private-zone dossier parked in HER collection — the zone:-
+        # source boundary must leave it alone (she may keep Noble pages
+        # if a future policy exception ever lands)
+        self.db.seed("cam-noble-a-guard-view",
+                     meta=_meta(updated=_iso(NOW - 30 * DAY),
+                                sources=["zone:vms-noble-a"], **gen))
+        self.assertEqual(self.mod.main(), 0)
+        g = lambda k, l="en": self.db.docs[(k, l)]["meta"]
+
+        # public zones published; private zone absent entirely
+        for k in ("camwall-rama9", "camwall-traffic",
+                  "cam-rama9-petchaburi-rd", "cam-traffic-doh-vibhavadi",
+                  "cctv-walls"):
+            self.assertEqual(g(k)["status"], ["active"], k)
+            self.assertEqual(g(k)["zone_group"], ["public"], k)
+        self.assertNotIn(("camwall-noble-a", "en"), self.db.docs)
+        self.assertNotIn(("dvr-wall", "en"), self.db.docs)
+
+        # every write went to her collection
+        cols = {b["collection"] for name, b in self.db.calls
+                if name == "add"}
+        self.assertEqual(cols, {"ada-cms-pages-kk"})
+
+        # the foreign-zone page stayed active — never superseded by a
+        # lane that doesn't publish its zone
+        self.assertEqual(g("cam-noble-a-guard-view")["status"], ["active"])
+
+
 class IndexLibTest(unittest.TestCase):
     """scripts/lib/cms_index.py — the shared reports-index render."""
 

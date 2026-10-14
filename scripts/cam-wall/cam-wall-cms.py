@@ -26,6 +26,17 @@ keys are domain=cctv, which lands in the 'Cameras' nav section; the CMS
 viewer splits Security/Traffic on meta.zone_tab and walls-vs-cams on
 meta.page_role. Keep those fields populated — never hand a page a zone
 the manifests no longer own (dedup fights, cms-ia-reorg).
+
+Lane env knobs (card ada-kk-cms-traffic):
+  COLLECTION           target MDDB collection (default ada-cms-pages;
+                       ada-cms-pages-kk for the kk/Kaewta lane)
+  CAMWALL_ZONE_GROUPS  comma/space allowlist of zones.yml `group:` values
+                       — "public" emits only public zones (traffic walls,
+                       never private estate footage). Empty = every zone.
+A lane is defined by its collection + group filter; the zone:-source
+boundary in the lifecycle pass already keeps it from touching pages
+whose zones it does not publish. Per-lane dedup/notify state files are
+suffixed with the collection tag so lanes can share CAMWALL_DATA.
 """
 
 from __future__ import annotations
@@ -46,7 +57,9 @@ DATA = Path(os.environ.get(
     "CAMWALL_DATA",
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))
 BASE = "https://tony-dell.taila0626a.ts.net/apps/camwall"
-COLLECTION = "ada-cms-pages"
+COLLECTION = os.environ.get("COLLECTION", "ada-cms-pages")
+GROUP_FILTER = {g for g in os.environ.get(
+    "CAMWALL_ZONE_GROUPS", "").replace(",", " ").split() if g}
 GENERATOR = "cam-wall-cms"
 # fresh_for feeds the reports-index ⚠STALE flag — must be a parseable TTL
 # ('1h'/'30m'/'1d'); bare seconds like the old "600" never evaluated, so
@@ -216,7 +229,10 @@ def http_get(url: str, timeout: float = 15) -> dict:
 
 # publish dedup: MDDB writes re-embed the doc, so we only POST when the
 # rendered markdown actually changed (per-key sha256 of content).
-PUB_HASH = DATA / "_cms-pub-hash.json"
+# The hash file is per-collection — two lanes sharing CAMWALL_DATA must
+# not suppress each other's writes into their own collections.
+_LANE = COLLECTION.removeprefix("ada-cms-pages").lstrip("-")
+PUB_HASH = DATA / f"_cms-pub-hash{'-' + _LANE if _LANE else ''}.json"
 try:
     _pub_hash: dict[str, str] = json.loads(PUB_HASH.read_text())
 except Exception:
@@ -560,7 +576,8 @@ def regen_reports_index() -> None:
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
         from lib.cms_index import regen_reports_index as _regen
-        _regen(MDDB, written_by=GENERATOR, instance=GENERATOR)
+        _regen(MDDB, written_by=GENERATOR, instance=GENERATOR,
+               collection=COLLECTION)
     except Exception as exc:
         print(f"reports-index regen failed: {exc}", file=sys.stderr)
 
@@ -900,7 +917,8 @@ NOTIFY_URL = os.environ.get(
     "ADA_NOTIFY_URL", "https://idc03.taila0626a.ts.net/api/notify")
 NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
     "ADA_API_KEY", "")
-NOTIFY_STATE = DATA / "_cms-notify-state.json"
+NOTIFY_STATE = DATA / \
+    f"_cms-notify-state{'-' + _LANE if _LANE else ''}.json"
 
 
 def notify_ada(text: str) -> None:
@@ -973,6 +991,11 @@ def main() -> int:
             continue
         zones[zone] = {"manifest": man,
                        "state": zstate.get(zone) or {}}
+    if GROUP_FILTER:
+        zones = {z: m for z, m in zones.items()
+                 if zone_cls(z)["group"] in GROUP_FILTER}
+        print(f"zone group filter {sorted(GROUP_FILTER)} -> "
+              f"{sorted(zones)} · collection {COLLECTION}")
     ok = True
     # group cams by canonical slug — one dossier per physical camera
     cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
