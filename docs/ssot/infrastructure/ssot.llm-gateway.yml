@@ -93,6 +93,9 @@ job_classes:
   vision:
     chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
     note: ada ADA_VISION_* default reroutes here (ADA_VISION_BASE_URL=<base>/v1).
+  image:
+    chain: [gemini-3.1-flash-image@paid, gemini-3.1-flash-lite-image@paid, google/gemini-3.1-flash-image@openrouter]
+    note: "ada_render_image gen+edit (nano-banana). Paid-only upstream — no free tier. Added 2026-10-13 (card ada-render-image-v2); virtual keys need 'image' in models allowlist. gemini-2.5-flash-image retired upstream 2026-10-11."
   embedding:
     chain: [gemini-embedding-2@openrouter, gemini-embedding-2@paid]
     note: "768d gemini space ONLY — OR-Vertex ≡ direct (cosine 1.000). ollama/nomic-embed-text is a different space; never chain it silently (would poison mddb retrieval)."
@@ -101,6 +104,8 @@ real_name_deployments:
   gemini-2.5-flash: [paid, free, openrouter]   # DEAD upstream 2026-10-11 — Google retired; kept only for stale callers
   gemini-2.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]  # DEAD upstream — same retirement
   gemini-3.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]  # the live Gemini on both keys (verified 2026-10-11)
+  gemini-3.1-flash-image: [paid, openrouter]  # nano-banana-2 gen+edit — paid-only
+  gemini-3.1-flash-lite-image: [paid]         # image-class fallback leg
   gemini-embedding-2: [paid, openrouter]
   openrouter_note: "OR key over limit 2026-10-11 (Key limit exceeded) — all or-* legs fail until rotate-or-key.sh cycles it"
   note: callers sending real model names get the same ordered chains — migrating ada = env change only.

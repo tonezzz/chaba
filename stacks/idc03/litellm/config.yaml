@@ -83,6 +83,21 @@ model_list:
       model: ollama_chat/gemma3:12b
       api_base: http://127.0.0.1:11434
 
+  # ── image gen/edit (nano-banana) — paid-only upstreams, no free ──
+  - model_name: gemini-3.1-flash-image
+    litellm_params:
+      model: gemini/gemini-3.1-flash-image
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: gemini-3.1-flash-lite-image
+    litellm_params:
+      model: gemini/gemini-3.1-flash-lite-image
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: or-gemini-3.1-flash-image
+    litellm_params:
+      model: openrouter/google/gemini-3.1-flash-image
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
   # ── embeddings — gemini vector space ONLY ────────────────────────
   # OR-Vertex and direct Gemini produce identical 768d vectors
   # (cosine 1.000, verified by embed-bench). ollama/nomic-embed-text
@@ -126,6 +141,10 @@ model_list:
     litellm_params:
       model: gemini/gemini-3.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: image
+    litellm_params:
+      model: gemini/gemini-3.1-flash-image
+      api_key: os.environ/GEMINI_API_KEY_PAID
   - model_name: vision
     litellm_params:
       model: openrouter/google/gemma-4-31b-it:free
@@ -150,6 +169,8 @@ router_settings:
     - gemini-2.5-flash-lite: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - classify: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - bench: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]
+    - gemini-3.1-flash-image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]
     - vision: [ollama-moondream]
     - embedding: [gemini-embedding-2]
     - gemini-embedding-2: [or-gemini-embedding-2]
