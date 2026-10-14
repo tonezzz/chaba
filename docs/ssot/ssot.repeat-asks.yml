@@ -1,0 +1,48 @@
+# Repeat-ask register — times Tony had to ask for the same thing again.
+#
+# Purpose: durable evidence of recurring asks. A request that dies in chat is a
+# process failure; a request that has to be repeated N times is a counted,
+# visible process failure. Agents MUST check this register when Tony flags a
+# repeat ("how many times have I asked...", "why do I keep seeing...", "again?")
+# and increment the entry with the date + card/bug reference.
+#
+# Entries: one per recurring topic. count = times Tony explicitly (re)asked.
+# Keep history: each recurrence gets a dated line so the trend is visible.
+version: 1
+title: Repeat-ask register — counted recurrences of Tony's requests
+description: "Durable count of times Tony had to re-ask the same thing.
+  Agents increment on recurrence; see header comment for rules."
+topics:
+  - id: decision-buttons
+    topic: "Tony-facing decisions surfaced without clickable option buttons"
+    count: 4
+    status: fixed-2026-10-15
+    notes: "Emitters raised requests without options (merge-sweep, card-pipeline);
+      board-api now auto-attaches [proceed,hold] to tony-facing asks; renderers
+      patched for queue-fallback lie. Guard is API-level; YAML-bypass emitters
+      still possible — invariant test pending."
+    history:
+      - {at: "2026-10-14", ask: "update cards with option buttons", cards: []}
+      - {at: "2026-10-14", ask: "scan all cards and add decision requests", cards: []}
+      - {at: "2026-10-15", ask: "Where is my decision buttons? cards without it", cards: [OPS-0688]}
+      - {at: "2026-10-15", ask: "cards came back or never move — this cards with button", cards: [OPS-0688]}
+  - id: recall-aid-suggestions
+    topic: "Short recommendation/recall text on decision options so Tony can answer from memory"
+    count: 1
+    status: open
+    notes: "Asked literally 2026-10-15 (was only interpretation of
+      decision-assist duty before). Options have `d` descriptions + ★ suggested
+      — emitters must actually fill them, not just the fallback pair."
+    history:
+      - {at: "2026-10-15", ask: "literally requested — start counting", cards: []}
+  - id: stale-card-actions
+    topic: "Cards showing action buttons that contradict real state (queue on done work, never-move after answer)"
+    count: 2
+    status: open
+    notes: "render-board.py:402-403 else-fallback draws 'Queue' on every card
+      without action.type incl. doing/done. Answered requests never auto-act
+      (40+ untriaged). Same root class as decision-buttons: UI affordances that
+      don't reflect state."
+    history:
+      - {at: "2026-10-15", ask: "board looks suspicious — cards came back or never move", cards: [OPS-0688]}
+      - {at: "2026-10-15", ask: "ADA-0643 in Doing — why does it have the queue button", cards: [KNB-*]}

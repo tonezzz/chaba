@@ -463,7 +463,7 @@ function renderDetail() {{
     <div class="text-xs text-slate-500 mt-0.5">${{esc(c.id)}} · ${{esc(c.column||'backlog')}} ${{c.priority?'· '+esc(c.priority):''}}</div>
     <div class="mt-1">${{badgeHtml(c)}}</div></div>
     <div class="flex flex-col gap-1 items-end shrink-0">
-      ${{!['queued','running','done'].includes(a.status||'idle') ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}}
+      ${{!['queued','running','done'].includes(a.status||'idle') && (a.type || !['doing','done','verified','review'].includes(c.column||'')) ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}}
       ${{c.column !== 'done' ? `<button class="act text-xs bg-emerald-800 hover:bg-emerald-700 rounded px-2.5 py-1" data-do="close">✓ close</button>`:''}}
       <select class="mv text-xs bg-slate-800 border border-slate-700 rounded px-2 py-1">
         <option value="">move to…</option>

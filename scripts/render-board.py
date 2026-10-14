@@ -399,7 +399,7 @@ function actBtns(c, inModal) {{
     h += `<button class="abtn text-xs bg-red-800 hover:bg-red-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="retry">↺ Retry</button>`;
   else if (a.type)
     h += `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue">${{esc(a.button || '▶ Start')}}</button>`;
-  else
+  else if (!['doing','done','verified','review'].includes(c.column || 'backlog'))
     h += `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Queue</button>`;
   if (inModal && st !== 'done' && (c.column || '') !== 'done')
     h += `<button class="abtn text-xs bg-emerald-800 hover:bg-emerald-700 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="close">✔ Close</button>`;
