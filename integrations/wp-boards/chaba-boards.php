@@ -2,10 +2,11 @@
 /**
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
- *              contact, reminder, bench, report) + member-post translation.
- *              All CPTs are REST-writable (show_in_rest) so the fleet writers
- *              can create them via App Password.
- * Version: 0.1.0
+ *              contact, reminder, bench, report, render_job) + member-post
+ *              translation. All CPTs are REST-writable (show_in_rest) so the
+ *              fleet writers can create them via App Password. Meta keys are
+ *              registered REST-writable AND shown as admin list columns.
+ * Version: 0.2.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -33,6 +34,7 @@ add_action('init', function () {
         'report'   => ['Report',   'Reports',   'dashicons-media-document'],
         'xlate'    => ['Translation','Translations','dashicons-translation'],
         'cam'      => ['Cam',       'Cams',      'dashicons-camera'],
+        'render_job' => ['Render Job','Render Jobs','dashicons-format-image'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         register_post_type($slug, $common + [
@@ -54,6 +56,13 @@ add_action('init', function () {
         'report'   => ['report_type', 'period', 'source_key'],
         'xlate'    => ['source_post', 'source_lang', 'target_lang', 'engine', 'status', 'chars'],
         'cam'      => ['camera_id', 'captured_at', 'kind', 'stream_url'],
+        // render_job — one post per local/cloud render request; enough fields
+        // to spot regressions and compare settings across runs.
+        'render_job' => ['prompt', 'negative_prompt', 'model', 'model_file',
+                         'size_px', 'steps', 'sampler', 'cfg_scale', 'seed',
+                         'duration_s', 'vae_s', 'host', 'backend', 'status',
+                         'requested_by', 'source', 'output_url', 'rating',
+                         'error'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -70,6 +79,46 @@ add_action('init', function () {
         }
     }
 });
+
+// ============================================================================
+// Admin list columns — registered meta is invisible in wp-admin without
+// these; the CPT tables used to show only Title/Date ("fields show empty").
+// First N meta keys per type become sortable-enough display columns.
+// ============================================================================
+
+function chaba_cpt_admin_columns(string $type): array {
+    static $cols = [
+        'asset'      => ['model' => 'Model', 'vendor' => 'Vendor', 'purchase_date' => 'Purchased', 'warranty_until' => 'Warranty'],
+        'expense'    => ['amount' => 'Amount', 'currency' => 'Cur', 'vendor' => 'Vendor', 'paid_by' => 'Paid by', 'receipt_date' => 'Date'],
+        'contact'    => ['role' => 'Role', 'phone' => 'Phone', 'line_id' => 'LINE'],
+        'reminder'   => ['due_date' => 'Due', 'assignee' => 'Assignee'],
+        'bench'      => ['suite' => 'Suite', 'run_id' => 'Run', 'pass_count' => 'Pass', 'fail_count' => 'Fail', 'duration_s' => 'Secs'],
+        'report'     => ['report_type' => 'Type', 'period' => 'Period', 'source_key' => 'Source'],
+        'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
+        'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
+        'render_job' => ['status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'duration_s' => 'Secs', 'backend' => 'Backend', 'requested_by' => 'By'],
+    ];
+    return $cols[$type] ?? [];
+}
+
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job'] as $_t) {
+    add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
+        $extra = [];
+        foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
+            $extra["chaba_$k"] = $label;
+        }
+        // keep checkbox+title up front, date at the end
+        $head = array_intersect_key($cols, ['cb' => 1, 'title' => 1]);
+        $tail = array_intersect_key($cols, ['date' => 1]);
+        return $head + $extra + $tail;
+    });
+    add_action("manage_{$_t}_posts_custom_column", function ($col, $post_id) {
+        if (str_starts_with($col, 'chaba_')) {
+            echo esc_html((string) get_post_meta($post_id, substr($col, 6), true));
+        }
+    }, 10, 2);
+}
+unset($_t);
 
 // ============================================================================
 // Member-post translation (TH<->EN) via Gemini — off unless CHABA_LLM_KEY set.

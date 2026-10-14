@@ -33,7 +33,7 @@ post_types:
                  show_in_rest=true (watchers read `modified` anonymously)"
   timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
   attachment:    media library; images attach to trip posts via post_parent
-  # chaba-boards plugin CPTs (v0.1.0, integrations/wp-boards/chaba-boards.php) —
+  # chaba-boards plugin CPTs (v0.2.0, integrations/wp-boards/chaba-boards.php) —
   # public + show_in_rest, private-status posts are member-only like /chat/line/*.
   # NOT YET DEPLOYED on live (verified 2026-10-14: /wp/v2/types registers only
   # post/page/place/trip/ops-event/timeline_block; plugin is in local dev).
@@ -43,6 +43,9 @@ post_types:
   reminder:    "member-visible dated reminders — meta: due_date/assignee"
   bench:       "ada-pi benchmark/suite run results — meta: suite/run_id/pass_count/fail_count/duration_s/commit"
   report:      "report/digest publications — meta: report_type/period/source_key"
+  xlate:       "member-post translation records (TH<->EN via Gemini, private) — meta: source_post/source_lang/target_lang/engine/status/chars"
+  cam:         "camera captures — meta: camera_id/captured_at/kind/stream_url"
+  render_job:  "local/cloud render requests — meta: prompt/model/steps/sampler/cfg/seed/duration_s/host/backend/status/output_url/rating/error"
 
 taxonomy_axes:
   category: broad topic axis (travel, home, family-news) — curated, hierarchical
