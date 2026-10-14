@@ -24,25 +24,35 @@ auth:
     GOOGLE_GEMINI_BASE_URL on services that open Live sessions
     (ada realtime voice). Ada's REST side-calls instead honor
     ADA_GEMINI_REST_BASE_URL + ADA_GEMINI_REST_API_KEY (virtual key)
-    via backend/gemini_pool.py rest_client() — prod lanes use
-    LITELLM_KEY_ADA, dev lanes LITELLM_KEY_BENCH (2026-10-12).
+    via backend/gemini_pool.py rest_client() — per-lane keys since
+    2026-10-14: ada-ha-tony + ada-pi-pwa on LITELLM_KEY_CHABA,
+    ada-ha-michael on LITELLM_KEY_MICHAEL, ada-kk on LITELLM_KEY_KK,
+    dev lanes on LITELLM_KEY_BENCH, mddb-gemini.env on
+    LITELLM_KEY_MDDB. LITELLM_KEY_ADA is now an unused spare.
   live_keys: >-
     GEMINI_API_KEY per ada env: prod voice lanes (ada-ha-tony, ada-kk,
     ada-pi-pwa, ada-ha-michael, + relays sharing ada-ha-tony.env) run
     the PAID key since 2026-10-12 — free tier dropped Live sessions
     (~5 kills/3d, 1011 quota). Dev lanes (ada-dev, ada-kk-dev) stay
     on the free key — bench/experiment traffic is disposable.
-    Per-lane keys: GEMINI_API_KEY_KK slot reserved in gemini-keys.env
-    (2026-10-12, card kk-gemini-key) — once minted, ada-kk.env primary
-    leaves the fleet pool and gemini-tier re-asserts it after every
-    fleet switch; paid still rides GEMINI_API_KEY_2 as her spillover.
+    Per-lane keys (all live since 2026-10-13): GEMINI_API_KEY_TONY
+    -> ada-ha-tony + ada-pi-pwa, GEMINI_API_KEY_KK -> ada-kk (card
+    kk-gemini-key, kaewta-paid project), GEMINI_API_KEY_MICHAEL ->
+    ada-ha-michael, GEMINI_API_KEY_PAID -> mddb-gemini infra,
+    GEMINI_API_KEY_FREE -> ada-dev + ada-kk-dev. gemini-tier
+    preserves persona slots across fleet switches.
 
 budgets:
   proxy_cap: "$50 / 30d (litellm_settings.max_budget — absolute ceiling)"
   keys:
-    LITELLM_KEY_ADA: "$10 / 30d — ada side-tool traffic"
-    LITELLM_KEY_CHABA: "$5 / 30d — chaba scripts/jobs"
-    LITELLM_KEY_BENCH: "$2 / 30d — benchmark runs"
+    LITELLM_KEY_ADA: "$10 / 30d — SPARE since 2026-10-14 (was shared
+      tony/michael/pwa/mddb; all moved to per-lane keys)"
+    LITELLM_KEY_CHABA: "$5 / 30d — tony lane REST (ada-ha-tony +
+      ada-pi-pwa) + chaba batch jobs"
+    LITELLM_KEY_MICHAEL: "$5 / 30d — michael lane REST (minted 2026-10-14)"
+    LITELLM_KEY_MDDB: "$10 / 30d — gemini-ollama-proxy + ada-embed-bench
+      (minted 2026-10-14; was riding LITELLM_KEY_ADA)"
+    LITELLM_KEY_BENCH: "$2 / 30d — benchmark runs + dev lanes"
     LITELLM_KEY_KK: "$5 / 30d — kk lane side-tools (minted 2026-10-12, wired into ada-kk.env ADA_GEMINI_REST_API_KEY)"
   note: OR weekly key rotation (rotate-or-key.sh) also updates OPENROUTER_API_KEY in mddb-gemini.env — mounted into the litellm container; restart litellm after rotation.
 
