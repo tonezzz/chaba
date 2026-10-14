@@ -159,3 +159,35 @@ add_action('add_meta_boxes', function () {
 add_action('save_post_post', function ($post_id) {
     if (isset($_POST['chaba_retranslate'])) delete_post_meta($post_id, '_chaba_translation');
 }, 5);
+
+// ============================================================================
+// Member-gated media delivery — /wp/v2/chaba/media/<id> streams an attachment
+// only to logged-in members (read cap). Content-only images attached to private
+// posts should be referenced by this endpoint instead of the direct uploads URL.
+// NOTE: direct wp-content/uploads/ URLs stay public-by-URL until a docroot-level
+// deny is added (Plesk: protected directory on uploads/, or nginx rule) —
+// this endpoint is the access-controlled path, not a full block.
+// ============================================================================
+
+add_action('rest_api_init', function () {
+    register_rest_route('chaba/v1', '/media/(?P<id>\d+)', [
+        'methods'             => 'GET',
+        'permission_callback' => function () { return is_user_logged_in(); },
+        'callback'            => function ($req) {
+            $id = (int) $req['id'];
+            if (get_post_type($id) !== 'attachment') {
+                return new WP_Error('bad_id', 'not an attachment', ['status' => 404]);
+            }
+            $path = get_attached_file($id);
+            if (!$path || !file_exists($path)) {
+                return new WP_Error('missing', 'file not found', ['status' => 404]);
+            }
+            $mime = get_post_mime_type($id) ?: 'application/octet-stream';
+            nocache_headers();
+            header('Content-Type: ' . $mime);
+            header('Content-Length: ' . filesize($path));
+            readfile($path);
+            exit;
+        },
+    ]);
+});
