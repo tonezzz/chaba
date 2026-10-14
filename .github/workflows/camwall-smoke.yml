@@ -48,3 +48,15 @@ jobs:
           MDDB_BASE_URL: http://127.0.0.1:1/v1
           VCAST_API: http://127.0.0.1:1
         run: python3 cam-wall-cms.py --dry-run
+      # member-lane path: CAMWALL_GROUPS=public + COLLECTION override —
+      # the fixture zone is absent from zones.yml so the filtered run
+      # must emit zero pages and still exit clean
+      - name: cam-wall-cms --dry-run (kk public lane)
+        working-directory: scripts/cam-wall
+        env:
+          CAMWALL_DATA: /tmp/cwtest/data
+          MDDB_BASE_URL: http://127.0.0.1:1/v1
+          VCAST_API: http://127.0.0.1:1
+          COLLECTION: ada-cms-pages-kk
+          CAMWALL_GROUPS: public
+        run: python3 cam-wall-cms.py --dry-run

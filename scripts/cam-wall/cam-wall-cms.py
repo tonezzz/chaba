@@ -26,6 +26,14 @@ keys are domain=cctv, which lands in the 'Cameras' nav section; the CMS
 viewer splits Security/Traffic on meta.zone_tab and walls-vs-cams on
 meta.page_role. Keep those fields populated — never hand a page a zone
 the manifests no longer own (dedup fights, cms-ia-reorg).
+
+Lanes: the same script feeds member lanes via env. COLLECTION picks the
+MDDB collection (default ada-cms-pages; the kk lane runs
+COLLECTION=ada-cms-pages-kk) and CAMWALL_GROUPS restricts which
+zones.yml groups may emit pages (e.g. "public" — private/unsorted zones
+and any cam whose device classifies outside the set are never written).
+Group-filtered lanes don't notify and keep per-collection dedup/notify
+state files, so the lanes can't stomp each other's publish hash.
 """
 
 from __future__ import annotations
@@ -46,7 +54,16 @@ DATA = Path(os.environ.get(
     "CAMWALL_DATA",
     str(Path.home() / "CascadeProjects/chaba-tony-dell/stacks/web/public/apps/camwall/data")))
 BASE = "https://tony-dell.taila0626a.ts.net/apps/camwall"
-COLLECTION = "ada-cms-pages"
+# Card ada-kk-cms-traffic: COLLECTION names the target MDDB collection —
+# the kk lane runs COLLECTION=ada-cms-pages-kk so Kaewta's cms_read sees
+# traffic dossiers without touching Tony's ada-cms-pages corpus.
+COLLECTION = os.environ.get(
+    "COLLECTION", os.environ.get("CAMWALL_COLLECTION", "ada-cms-pages"))
+# CAMWALL_GROUPS=public limits emitted pages to zones.yml group:public
+# zones — zones absent from zones.yml classify 'unsorted' and are
+# excluded too, so an unregistered zone can't leak onto a member lane.
+GROUPS = {g.strip() for g in
+          os.environ.get("CAMWALL_GROUPS", "").split(",") if g.strip()}
 GENERATOR = "cam-wall-cms"
 # fresh_for feeds the reports-index ⚠STALE flag — must be a parseable TTL
 # ('1h'/'30m'/'1d'); bare seconds like the old "600" never evaluated, so
@@ -215,8 +232,12 @@ def http_get(url: str, timeout: float = 15) -> dict:
 
 
 # publish dedup: MDDB writes re-embed the doc, so we only POST when the
-# rendered markdown actually changed (per-key sha256 of content).
-PUB_HASH = DATA / "_cms-pub-hash.json"
+# rendered markdown actually changed (per-key sha256 of content). The
+# file is per-collection: a second lane (e.g. ada-cms-pages-kk) sharing
+# DATA would otherwise overwrite the main lane's hashes every run and
+# force a full republish + re-embed each cycle.
+_LANE = "" if COLLECTION == "ada-cms-pages" else f"-{COLLECTION}"
+PUB_HASH = DATA / f"_cms-pub-hash{_LANE}.json"
 try:
     _pub_hash: dict[str, str] = json.loads(PUB_HASH.read_text())
 except Exception:
@@ -331,7 +352,10 @@ def mddb_add(key: str, md: str, title: str, lang: str = "en",
         "kind": ["page"], "attribute": ["page"], "bank": ["cms"],
         "slug": [key], "subject": [key], "title": [title],
         "format": ["markdown"], "lang": [lang],
-        "domain": ["cctv"], "scope": ["tony"], "status": ["active"],
+        "domain": ["cctv"], "scope": ["tony" if COLLECTION == "ada-cms-pages"
+                                      else COLLECTION.removeprefix(
+                                          "ada-cms-pages-")],
+        "status": ["active"],
         "source": ["api"], "generated_by": [GENERATOR],
         "written_by": [GENERATOR],
         # cms-audit R1: generated pages must name their inputs
@@ -560,7 +584,8 @@ def regen_reports_index() -> None:
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
         from lib.cms_index import regen_reports_index as _regen
-        _regen(MDDB, written_by=GENERATOR, instance=GENERATOR)
+        _regen(MDDB, written_by=GENERATOR, instance=GENERATOR,
+               collection=COLLECTION)
     except Exception as exc:
         print(f"reports-index regen failed: {exc}", file=sys.stderr)
 
@@ -637,9 +662,14 @@ def detections_timeline(zone: str, lang: str = "en",
 
 def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
     s = zstate.get("settings") or {}
-    live = [c for c in man["cams"] if c.get("ok")]
-    stale = [c for c in man["cams"] if not c.get("ok") and c.get("ts")]
-    dead = [c for c in man["cams"] if not c.get("ok") and not c.get("ts")]
+    # same cam-level group guard as the dossier pass — a private-device
+    # cam in a public zone's manifest stays off the member-lane roster
+    cams = [c for c in man["cams"]
+            if not GROUPS or zone_meta.cam_classify(
+                zone, c, ZMETA)["group"] in GROUPS]
+    live = [c for c in cams if c.get("ok")]
+    stale = [c for c in cams if not c.get("ok") and c.get("ts")]
+    dead = [c for c in cams if not c.get("ok") and not c.get("ts")]
     age = int(time.time() - man.get("updated", 0))
     det_span, det_top = detections_tail(zone)
     state_word = {"live": _t(lang, "live", "ออนไลน์"),
@@ -652,7 +682,7 @@ def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
            if c.get("ts") else "")
         + (f" · {c['err']}" if c.get("err") else "")
         + " |"
-        for c in man["cams"])
+        for c in cams)
     det_block = ""
     if det_top:
         det_block = (
@@ -671,7 +701,7 @@ def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
 
 - **{_t(lang, 'Wall URL', 'ลิงก์กำแพง')}**: `{BASE}/?zone={zone}` ({_t(lang, 'cast via', 'ฉายด้วย')} `cctv_wall zone={zone} screen=N`)
 - **{_t(lang, 'Refresh', 'การรีเฟรช')}**: {_t(lang, 'enabled' if zstate.get('enabled') else 'off (warm thumbs only)', 'เปิด' if zstate.get('enabled') else 'ปิด (ภาพค้างไว้เท่านั้น)')} · {_t(lang, 'interval', 'ทุก')} {s.get('interval', 'default')}s
-- **{_t(lang, 'Status', 'สถานะ')}**: {len(live)}/{len(man['cams'])} {_t(lang, 'cams live', 'กล้องออนไลน์')} · {len(stale)} {_t(lang, 'stale', 'ภาพเก่า')} · {len(dead)} {_t(lang, 'dead', 'ดับ')} · {_t(lang, 'manifest', 'ข้อมูลอายุ')} {age}s
+- **{_t(lang, 'Status', 'สถานะ')}**: {len(live)}/{len(cams)} {_t(lang, 'cams live', 'กล้องออนไลน์')} · {len(stale)} {_t(lang, 'stale', 'ภาพเก่า')} · {len(dead)} {_t(lang, 'dead', 'ดับ')} · {_t(lang, 'manifest', 'ข้อมูลอายุ')} {age}s
 - **{_t(lang, 'Effects', 'เอฟเฟกต์')}**: {', '.join(s.get('effects') or ['none'])}
 
 {_t(lang, 'Controls, status-card standard and Ada usage → `cctv-walls` '
@@ -855,7 +885,10 @@ def index_page(zones: dict[str, dict], lang: str = "en") -> str:
     rows = []
     for zone, m in sorted(zones.items()):
         man = m["manifest"]
-        live = sum(1 for c in man["cams"] if c.get("ok"))
+        cams = [c for c in man["cams"]
+                if not GROUPS or zone_meta.cam_classify(
+                    zone, c, ZMETA)["group"] in GROUPS]
+        live = sum(1 for c in cams if c.get("ok"))
         age = int(time.time() - man.get("updated", 0))
         st = m["state"]
         eff = (st.get("settings") or {}).get("effects") or []
@@ -864,7 +897,7 @@ def index_page(zones: dict[str, dict], lang: str = "en") -> str:
         rows.append(
             f"| [{zone}]({BASE}/?zone={zone}) | "
             f"![{zone}]({BASE}/data/{zone}/montage.jpg) | "
-            f"{live}/{len(man['cams'])} | "
+            f"{live}/{len(cams)} | "
             f"{_t(lang, en_st, th_st)} · {age}s | "
             f"{', '.join(eff) or '—'} |")
     return f"""# CCTV / traffic camera walls
@@ -900,7 +933,7 @@ NOTIFY_URL = os.environ.get(
     "ADA_NOTIFY_URL", "https://idc03.taila0626a.ts.net/api/notify")
 NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
     "ADA_API_KEY", "")
-NOTIFY_STATE = DATA / "_cms-notify-state.json"
+NOTIFY_STATE = DATA / f"_cms-notify-state{_LANE}.json"
 
 
 def notify_ada(text: str) -> None:
@@ -959,7 +992,7 @@ def main() -> int:
         print(f"relay unreachable: {exc}", file=sys.stderr)
         state = {"zones": {}}
     zstate = state.get("zones") or {}
-    zones: dict[str, dict] = {}
+    all_zones: dict[str, dict] = {}
     for zdir in sorted(DATA.iterdir()):
         if not zdir.is_dir():
             continue
@@ -971,14 +1004,26 @@ def main() -> int:
             man = json.loads(mf.read_text())
         except Exception:
             continue
-        zones[zone] = {"manifest": man,
-                       "state": zstate.get(zone) or {}}
+        all_zones[zone] = {"manifest": man,
+                           "state": zstate.get(zone) or {}}
+    # CAMWALL_GROUPS limits which zones publish on this lane; lifecycle
+    # ownership stays over the full roster so a zone leaving the group
+    # (reclassified private, say) still gets its member-lane pages
+    # superseded -> cctv-walls instead of lingering 'active' but stale.
+    zones = ({z: m for z, m in all_zones.items()
+              if zone_cls(z)["group"] in GROUPS} if GROUPS else all_zones)
     ok = True
     # group cams by canonical slug — one dossier per physical camera
     cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for zone, m in zones.items():
         cls = zone_cls(zone)
         for c in m["manifest"].get("cams") or []:
+            # cam-level guard: a cam whose DVR device classifies outside
+            # the group set never earns a dossier on this lane, even if
+            # a filtered-in zone's manifest lists it
+            if GROUPS and zone_meta.cam_classify(
+                    zone, c, ZMETA)["group"] not in GROUPS:
+                continue
             cam_groups.setdefault(cam_slug(zone, c), []).append(
                 (zone, c, m["manifest"]))
     cam_pages = len(cam_groups)
@@ -990,15 +1035,15 @@ def main() -> int:
     # content crosses ARCHIVE_DAYS flip to kind:archive. Both passes run
     # off one collection listing, before publishing so the new pages pick
     # up their supersedes links in the same cycle.
-    has_dev = any(c.get("dev") for m in zones.values()
-                  for c in m["manifest"].get("cams") or [])
+    has_dev = any(c.get("dev") for es in cam_groups.values()
+                  for _, c, _ in es)
     current = {wall_key(z) for z in zones} | set(cam_groups)
     if zones:
         current.add("cctv-walls")
     if has_dev:
         current.add("dvr-wall")
     docs = collection_docs() if zones else []
-    n_sup = supersede_stale_pages(docs, current, zones)
+    n_sup = supersede_stale_pages(docs, current, all_zones)
     links = supersede_links(docs)
     n_arch = archive_superseded(docs)
     # A page whose key is back in the publish set revives — force the
@@ -1088,12 +1133,17 @@ def main() -> int:
                 page_role="index",
                 supersedes=links.get("cctv-walls"),
                 force="cctv-walls" in revive)
-        notify_transitions(zones)
+        # only the unfiltered lane notifies — a member lane's traffic
+        # walls flapping must not ping Tony's Ada
+        if not GROUPS:
+            notify_transitions(zones)
     if not DRY:
         # lifecycle marks + this run's pages changed the corpus — the
         # index only stays honest if it regenerates in the same cycle
         regen_reports_index()
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
+          f"[{COLLECTION}{':' + ','.join(sorted(GROUPS)) if GROUPS
+                        else ''}] "
           f"{'ok' if ok else 'ERR'} · superseded {n_sup} "
           f"archived {n_arch}")
     return 0

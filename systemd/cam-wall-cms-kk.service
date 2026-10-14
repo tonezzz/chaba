@@ -1,0 +1,11 @@
+[Unit]
+Description=cam-wall CMS generator (kk lane) — public-zone camwall-*/cam-* pages into ada-cms-pages-kk
+[Service]
+Type=oneshot
+# Kaewta's lane: group:public zones only (zones.yml) -> traffic, rama9,
+# burapha, chonburi, dohweb. vms-noble-* and tony-house are group:private
+# and never emit pages here (card ada-kk-cms-traffic).
+Environment=COLLECTION=ada-cms-pages-kk
+Environment=CAMWALL_GROUPS=public
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/cam-wall/cam-wall-cms.py
+TimeoutStartSec=300

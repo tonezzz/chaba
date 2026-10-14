@@ -56,6 +56,8 @@ sections:
         text: "backend/vms_camera.py stale_snapshot() + realtime_provider._camera_snapshot fallback; follow-up frame text marks '(STALE — last known frame)'. vision sidecar describes stale frames identically."
       - label: CMS
         text: "scripts/cam-wall/cam-wall-cms.py (15min timer) → ada-cms-pages 'camwall-<area>' + 'cctv-walls' index + detection timeline table."
+      - label: CMS kk lane
+        text: "Same script, systemd/cam-wall-cms-kk.{service,timer} (15min, *:4/15): COLLECTION=ada-cms-pages-kk CAMWALL_GROUPS=public → Kaewta's lane gets camwall-{traffic,rama9,burapha,chonburi,dohweb} + cam-* dossiers only. Group filter is zones.yml-driven (private/unsorted zones and out-of-group device cams never emit); per-collection _cms-pub-hash/-notify state files; filtered lanes don't notify. Card ada-kk-cms-traffic."
       - label: Shim
         text: "mn01 vms-snap.py:8377 — channel select + 3 attach rounds + watchdog restart on 3 consecutive no-video; channels.json coordinate map."
       - label: Traffic shim

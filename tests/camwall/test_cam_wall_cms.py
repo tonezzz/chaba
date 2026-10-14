@@ -270,6 +270,116 @@ class CamWallCmsTest(unittest.TestCase):
             ["active"])
 
 
+class CamWallCmsGroupsTest(unittest.TestCase):
+    """CAMWALL_GROUPS + COLLECTION — the member-lane feed (card
+    ada-kk-cms-traffic): only zones.yml group:public zones publish, and
+    stale private-zone pages in the target collection still retract."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        data = Path(self.tmp.name)
+        zones = {
+            # private zone + its dev cams — must emit nothing
+            "vms-noble-a": [
+                {"key": "guard-view", "label": "Guard View",
+                 "dev": "noble-a", "ch": 2, "ok": True, "ts": NOW},
+            ],
+            # public zones — publish normally
+            "rama9": [{"key": "petchaburi-rd", "label": "Petchaburi Rd",
+                       "ok": True, "ts": NOW},
+                      # private-device cam inside a public zone — the
+                      # cam-level guard must drop it from dossier+roster
+                      {"key": "stray-dev-cam", "label": "Stray",
+                       "dev": "noble-a", "ch": 9, "ok": True, "ts": NOW}],
+            # absent from zones.yml -> 'unsorted' -> excluded
+            "testzone": [{"key": "cam-one", "label": "Cam One",
+                          "ok": True, "ts": NOW}],
+        }
+        for z, cams in zones.items():
+            zd = data / z
+            zd.mkdir()
+            (zd / f"manifest-{z}.json").write_text(json.dumps(
+                {"updated": NOW, "cams": cams}))
+        os.environ["CAMWALL_DATA"] = str(data)
+        os.environ["MDDB_BASE_URL"] = "http://fake-mddb/v1"
+        os.environ["COLLECTION"] = "ada-cms-pages-kk"
+        os.environ["CAMWALL_GROUPS"] = "public"
+        os.environ.pop("ADA_NOTIFY_KEY", None)
+        os.environ.pop("ADA_API_KEY", None)
+
+        sys.path.insert(0, str(SCRIPT.parent))
+        spec = importlib.util.spec_from_file_location(
+            "cam_wall_cms_kk", SCRIPT)
+        self.mod = importlib.util.module_from_spec(spec)
+        sys.modules["cam_wall_cms_kk"] = self.mod
+        spec.loader.exec_module(self.mod)
+
+        self.db = FakeMDDB()
+        self._patch = mock.patch.object(
+            urllib.request, "urlopen", side_effect=self.db.handle)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self.tmp.cleanup()
+        for v in ("COLLECTION", "CAMWALL_GROUPS"):
+            os.environ.pop(v, None)
+
+    def test_public_only_publish(self):
+        gen = {"generated_by": ["cam-wall-cms"]}
+        # stale private-zone page already in the kk collection — must be
+        # retracted (superseded -> cctv-walls), not left 'active'
+        self.db.seed("cam-noble-a-guard-view",
+                     meta=_meta(updated=_iso(NOW - 30 * DAY),
+                                sources=["zone:vms-noble-a"], **gen))
+        # foreign zone — not in zones.yml at all — stays untouched
+        self.db.seed("cam-vpslane-x",
+                     meta=_meta(updated=_iso(NOW - 30 * DAY),
+                                sources=["zone:vpslane"], **gen))
+        self.assertEqual(self.mod.main(), 0)
+        g = lambda k, l="en": self.db.docs[(k, l)]["meta"]
+
+        written = {k for (k, l) in self.db.docs if l == "en"}
+        # public zone pages + shared index landed…
+        self.assertIn("camwall-rama9", written)
+        self.assertIn("cam-rama9-petchaburi-rd", written)
+        self.assertIn("cctv-walls", written)
+        # …and nothing private/unsorted/dev leaked
+        for banned in ("camwall-noble-a", "camwall-vms-noble-a",
+                       "cam-noble-a-stray-dev-cam",
+                       "cam-rama9-stray-dev-cam",
+                       "camwall-testzone", "cam-testzone-cam-one",
+                       "dvr-wall"):
+            self.assertNotIn(banned, written)
+
+        # private-zone leftovers retract to the index; foreign lane is
+        # not ours to touch
+        self.assertEqual(g("cam-noble-a-guard-view")["status"],
+                         ["superseded"])
+        self.assertEqual(g("cam-noble-a-guard-view")["superseded_by"],
+                         ["cctv-walls"])
+        self.assertEqual(g("cam-vpslane-x")["status"], ["active"])
+
+        # lane meta: kk scope + public zone tag + the kk collection on
+        # every /add call
+        self.assertEqual(g("camwall-rama9")["scope"], ["kk"])
+        self.assertEqual(g("camwall-rama9")["zone_group"], ["public"])
+        adds = [b for p, b in self.db.calls if p == "add"]
+        self.assertTrue(adds)
+        self.assertTrue(all(b["collection"] == "ada-cms-pages-kk"
+                            for b in adds))
+
+        # the private dev cam is absent from the wall roster too —
+        # its label/key never render on a member lane
+        wall_md = self.db.docs[("camwall-rama9", "en")]["contentMd"]
+        self.assertIn("petchaburi-rd", wall_md)
+        self.assertNotIn("stray-dev-cam", wall_md)
+
+        # per-collection dedup state — no stomping the main lane's file
+        self.assertTrue((Path(os.environ["CAMWALL_DATA"])
+                         / "_cms-pub-hash-ada-cms-pages-kk.json").exists())
+
+
 class IndexLibTest(unittest.TestCase):
     """scripts/lib/cms_index.py — the shared reports-index render."""
 

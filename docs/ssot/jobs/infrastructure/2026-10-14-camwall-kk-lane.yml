@@ -1,0 +1,86 @@
+title: camwall — kk lane publishes public-zone dossiers to ada-cms-pages-kk
+subtitle: >-
+  cam-wall-cms.py gained lane env knobs (COLLECTION + CAMWALL_GROUPS) so a
+  second 15-min timer feeds Kaewta's CMS collection with only zones.yml
+  group:public zones — traffic/rama9/burapha/chonburi/dohweb walls +
+  per-cam dossiers; private (vms-noble-*, tony-house) and unsorted zones
+  never emit pages on the member lane.
+icon: camera
+id: 2026-10-14-camwall-kk-lane
+status: done
+owner: devin-dispatch
+project: chaba
+card: ada-kk-cms-traffic
+started: "2026-10-14"
+completed: "2026-10-14"
+
+context:
+  user_request: >
+    Tony asked: structure Kaewta CMS to include traffic cam awareness,
+    answers truthful. Pattern = cam-wall-cms (generates cam-*/camwall-*
+    dossiers Ada READS — data, not camera access). Tony answered the
+    scope request: public-only — traffic/rama9/burapha/chonburi/dohweb,
+    zero private footage on her lane.
+
+design:
+  env: >
+    COLLECTION selects the MDDB collection (default ada-cms-pages;
+    CAMWALL_COLLECTION also accepted). CAMWALL_GROUPS is a
+    comma-separated zones.yml group allowlist — e.g. "public". Empty =
+    all zones (default lane unchanged).
+  filtering: >
+    Zone level: only zones whose zone_meta.classify().group is in
+    CAMWALL_GROUPS publish. Cam level: a cam whose DVR device classifies
+    outside the set is dropped from dossiers AND the wall roster —
+    private-device cams can't ride a public zone's manifest onto a
+    member lane. Zones absent from zones.yml are 'unsorted' => excluded.
+  lifecycle: >
+    Supersede/archive ownership scans the FULL manifest roster, not the
+    filtered set — a zone reclassified out of the group has its stale
+    member-lane pages retracted (superseded -> cctv-walls) instead of
+    lingering 'active' but stale.
+  isolation: >
+    _cms-pub-hash.json and _cms-notify-state.json are per-collection
+    suffixed (main lane keeps the legacy names); without that the two
+    timers would overwrite each other's dedup map and force a full
+    republish + re-embed every cycle. Group-filtered lanes skip
+    notify_transitions — member-lane wall flaps must not ping Tony's
+    Ada. reports-index regenerates inside the target collection.
+  meta: >
+    scope derives from the collection (ada-cms-pages-kk -> kk);
+    zone_group/zone_tab/zone_site still stamped, fresh_for=1h so
+    cms_read answers can state freshness truthfully.
+
+units:
+  systemd/cam-wall-cms-kk.service: >
+    COLLECTION=ada-cms-pages-kk CAMWALL_GROUPS=public, same DATA dir +
+    script path as the main lane (tony-dell checkout).
+  systemd/cam-wall-cms-kk.timer: "*:4/15 — offset from main (*:0/15) and
+    vps (*:2/15) lanes."
+  install: >
+    On tony-dell after merge: cp systemd/cam-wall-cms-kk.{service,timer}
+    ~/.config/systemd/user/ && systemctl --user daemon-reload &&
+    systemctl --user enable --now cam-wall-cms-kk.timer. Expected first
+    run writes camwall-{traffic,rama9,burapha,chonburi,dohweb},
+    cam-<zone>-* dossiers, cctv-walls + reports-index into
+    ada-cms-pages-kk.
+
+verify:
+  - "tests/camwall/test_cam_wall_cms.py::CamWallCmsGroupsTest —
+    public-only publish set, private/unsorted/dev-cam exclusion,
+    stale private doc retracted to cctv-walls, per-lane pub-hash file."
+  - "CAMWALL_GROUPS=public COLLECTION=ada-cms-pages-kk --dry-run over an
+    8-zone fixture wrote only camwall-{burapha,chonburi,dohweb,rama9,
+    traffic} + 5 cams + cctv-walls."
+  - "Default lane (no env) unchanged: all zones + dvr-wall publish."
+  - "Live check after install: mddb /v1/search collection
+    ada-cms-pages-kk returns camwall-traffic; Kaewta cms_read sees
+    fresh_for=1h + updated stamps."
+
+notes:
+  - "vms-noble-* stays group:private by answered policy (card request
+    noble-vms-cams-are-group-private-in-zone-baf2cb). A Noble exception
+    needs an explicit zones.yml reclass or a new scoped group — do NOT
+    just widen CAMWALL_GROUPS."
+  - "Timer files are in-repo only; the live enable on tony-dell is a
+    post-merge deploy step."
