@@ -69,7 +69,7 @@ class WP:
         self._tags = None
 
     def api(self, route, data=None):
-        u = f"{self.base}/index.php?rest_route={urllib.parse.quote(route, safe='/&')}"
+        u = f"{self.base}/index.php?rest_route={urllib.parse.quote(route, safe='/&=')}"
         body = json.dumps(data).encode() if data is not None else None
         req = urllib.request.Request(u, data=body, headers=self.h,
                                      method="POST" if data else "GET")
