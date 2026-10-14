@@ -27,6 +27,14 @@ post_types:
                  show_in_rest=true (watchers read `modified` anonymously)"
   timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
   attachment:    media library; images attach to trip posts via post_parent
+  # chaba-boards plugin CPTs (v0.1.0, integrations/wp-boards/chaba-boards.php) —
+  # public + show_in_rest, private-status posts are member-only like /chat/line/*:
+  asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor"
+  expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date"
+  contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role"
+  reminder:    "member-visible dated reminders — meta: due_date/assignee"
+  bench:       "ada-pi benchmark/suite run results — meta: suite/run_id/pass_count/fail_count/duration_s/commit"
+  report:      "report/digest publications — meta: report_type/period/source_key"
 
 taxonomy_axes:
   category: broad topic axis (travel, home, family-news) — curated, hierarchical
@@ -43,6 +51,12 @@ title_standard:
   trip:        "Trip — {title}"           # children: "{Trip} — day {i} {date}"
   ops-event:   "ops-{host} (heartbeats) | ⚠ {code} {chat_id} (anomalies)"
   timeline_block: "Timeline — {lane}"
+  asset:       "Asset — {name}"
+  expense:     "Expense — {vendor} {date}"
+  contact:     "Contact — {name}"
+  reminder:    "Reminder — {title}"
+  bench:       "Bench — {suite} {run_id}"
+  report:      "Report — {title}"
   pages:       bare names (Tony, KK, Chat, Line, Ops)
 
 writers:
