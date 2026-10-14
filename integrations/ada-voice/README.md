@@ -1,24 +1,38 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Eight drops live here:
+chaba dispatches. Eight drops lived here; as of the 2026-10-14 ada-voice
+rename sweep (card `ada-pi-rename-ada-voice`) **all but Drop 3 have landed
+in ada-voice `main`** — their patch files and the chaba-side apply-tests
+(`tests/ada/test_draft_hit_frame.py`, `test_line_reply_routing.py`,
+`test_line_image_delivery.py`, `test_line_file_doc_ingest.py`) were retired
+then, since verifying "the patch still applies" is moot once the content is
+upstream. The staged non-patch copies (tools.d/*, tool_guide.*.yml,
+manifest.*.yml, tests/*) are kept as the repo-of-record record of what each
+drop delivered; upstream evolves from here.
 
-1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
+1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13) — **landed**
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
-   (2026-10-13)
+   (2026-10-13) — **landed**
 3. calendar create dedup — card `calendar-write-idempotency` (2026-10-13)
+   — **STILL STAGED, NOT APPLIED** — `calendar_providers.create-dedup.patch`
+   has drifted vs current ada-voice `main`; regenerate or hand-apply before
+   it can land (the double-write guard is not live upstream yet)
 4. `place_report` — card `maps-url-to-cms-line-maps-link-resolved-c418f8`
-   (2026-10-13) — **already deployed** (ada-voice `074c7a8`+`e24b14d`); this
-   drop is the repo-of-record copy
+   (2026-10-13) — **deployed** (ada-voice `074c7a8`+`e24b14d`); staged copy
+   carried the later empty-page guard — check upstream parity before relying
+   on either copy
 5. file-input speaker ID + LINE enroll-on-clips + boss rule — card
-   `line-voice-enroll-recognize` (2026-10-13)
+   `line-voice-enroll-recognize` (2026-10-13) — **landed**
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
-   (ADA-0607, 2026-10-13)
+   (ADA-0607, 2026-10-13) — **landed**
 7. LINE image delivery — Drive share links and image URLs inside reply
    text become real LINE image messages — card
-   `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
+   `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13) — **landed**
 8. reply-context routing — LINE sends bind to the originating chat —
    card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13)
+   — **landed** (upstream moved `SESSION_CHAT`/`session_chat_id` into
+   `backend/tool_runner/common.py`, hence the old chat.py patch went stale)
 
 ---
 

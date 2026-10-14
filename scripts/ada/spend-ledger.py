@@ -17,7 +17,7 @@ Output:
   * ada-cms-pages/spend-ledger  kind:report, domain:ops — a rolling
     14-day table. domain=ops makes it a member of the nightly
     ops-digest, so the ledger line lands in the CMS ops rollup without
-    fighting the 15-min ops-health page (full-regen, ada-pi-owned).
+    fighting the 15-min ops-health page (full-regen, ada-voice-owned).
   * ada-ha-scenario-reports/report/spend-<date>  daily snapshot doc —
     the ledger survives page rewrites; ops collection has no embedder so
     /add is cheap.
