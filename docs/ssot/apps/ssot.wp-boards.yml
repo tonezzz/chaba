@@ -34,7 +34,9 @@ post_types:
   timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
   attachment:    media library; images attach to trip posts via post_parent
   # chaba-boards plugin CPTs (v0.1.0, integrations/wp-boards/chaba-boards.php) —
-  # public + show_in_rest, private-status posts are member-only like /chat/line/*:
+  # public + show_in_rest, private-status posts are member-only like /chat/line/*.
+  # NOT YET DEPLOYED on live (verified 2026-10-14: /wp/v2/types registers only
+  # post/page/place/trip/ops-event/timeline_block; plugin is in local dev).
   asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor"
   expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date"
   contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role"
@@ -85,3 +87,15 @@ watchdog:
   watcher:   idc02 wp-watch.timer -> WP 200 + heartbeat<10min -> board-api comment
   trigger:   line-chat-timeline.path (PathChanged glob on journals +
              ops-events.jsonl) -> near-real-time timeline updates
+
+static_site:
+  # www.surf-thailand.com/<tenant>/ — static HTML rendered from
+  # ada-cms-pages[-tenant] docs carrying meta.public by
+  # scripts/ada/cms-publish-site.py (idc02 caddy-edge webroot).
+  status: dormant
+  # Dormant since 2026-10-14 (KNB-0657): member-facing content lives on
+  # boards WP now; 0 public-flagged docs remain in ada-cms-pages(-kk) and
+  # stale trip/place/post copies were superseded with moved_to links.
+  # The script is kept — re-enable by setting meta.public on a page and
+  # running cms-publish-site.py --tenant <lane>. Webroot retains only
+  # per-tenant index + kk-ha/moved-to-boards.html redirect notice.
