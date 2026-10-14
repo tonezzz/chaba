@@ -10,9 +10,12 @@ LANES = {
     "kk-ha":   ("C822026077530a29620b5041bd1a955c5", 35),
     "tony-ha": ("C4fb0ce548a58e2d758335b7e21ce3411", 69),
     "ada-ha":  ("Cb754717565d4cee5eab43a0e848654a2", 77),
+    "ops":     (None, 108),   # relay/fleet anomaly stream
 }
+OPS_SUPPRESS_MIN = 15  # collapse repeats of (code, chat_id)
 MEDIA_ROOT = os.path.expanduser("~/.local/share/ada/line-media")
 STATE = os.path.join(MEDIA_ROOT, "wp-timeline-state.json")
+OPS_EVENTS = os.path.join(MEDIA_ROOT, "ops-events.jsonl")
 MAX_ITEMS = 200
 
 env = {}
@@ -81,11 +84,63 @@ def upload_media(path):
     print("  media upload FAIL", orig, s, res, file=sys.stderr)
     return None
 
+
+def load_ops_events():
+    """ops-events.jsonl -> [(rec, count)] newest-last, suppressing
+    repeats of (code, chat_id) within OPS_SUPPRESS_MIN minutes."""
+    out = []
+    if not os.path.exists(OPS_EVENTS):
+        return out
+    for ln in open(OPS_EVENTS):
+        try:
+            d = json.loads(ln)
+        except Exception:
+            continue
+        if d.get("kind") != "ops":
+            continue
+        if out:
+            prev, n = out[-1]
+            if (prev.get("code") == d.get("code")
+                    and prev.get("chat_id") == d.get("chat_id")):
+                try:
+                    gap = (datetime.fromisoformat(d["ts"])
+                           - datetime.fromisoformat(prev["ts"])).total_seconds()
+                    if gap < OPS_SUPPRESS_MIN * 60:
+                        out[-1] = (d, n + 1)
+                        continue
+                except Exception:
+                    pass
+        out.append((d, 1))
+    return out
+
+def ops_item(rec, count):
+    try:
+        dt = datetime.fromisoformat(rec.get("ts", ""))
+        date_s = dt.strftime("%d %b %H:%M")
+    except Exception:
+        date_s = (rec.get("ts") or "")[:16]
+    bits = [rec.get("code", "ops")]
+    if count > 1:
+        bits.append(f"×{count}")
+    for k in ("chat_id", "user_id", "http", "detail"):
+        v = rec.get(k)
+        if v:
+            bits.append(f"{k}={v}")
+    sev = rec.get("severity", "warn")
+    color = {"error": "#b3261e", "warn": "#a05a00", "info": "#1967d2"}.get(sev, "#5f6368")
+    desc = (f'<span style="color:{color};font-weight:600">{"⚠" if sev != "info" else "ℹ"} '
+            f'{esc(" · ".join(str(b) for b in bits))}</span>')
+    return {"icon": ICON, "date": date_s, "label": "ops",
+            "description": desc, "isAddTinyEditor": False}
+
+ops_events = load_ops_events()
+
 for lane, (chat_id, post_id) in LANES.items():
-    chat_dir = os.path.join(MEDIA_ROOT, chat_id)
+    chat_dir = (os.path.join(MEDIA_ROOT, chat_id)
+                if chat_id else None)
     # collect messages from all journals for this lane
     msgs = []
-    if os.path.isdir(chat_dir):
+    if chat_dir and os.path.isdir(chat_dir):
         for fn in sorted(os.listdir(chat_dir)):
             if not fn.startswith("journal-"): continue
             for line in open(os.path.join(chat_dir, fn)):
@@ -101,11 +156,17 @@ for lane, (chat_id, post_id) in LANES.items():
     msgs = list(reversed(msgs[-MAX_ITEMS:]))  # newest on top
 
     def find_media(mid):
-        if not mid or not os.path.isdir(chat_dir): return None
+        if not mid or not chat_dir or not os.path.isdir(chat_dir): return None
         for f in os.listdir(chat_dir):
             if f.startswith(str(mid) + "."):
                 return os.path.join(chat_dir, f)
         return None
+
+    lane_ops = []
+    for rec, n in ops_events:
+        cid = rec.get("chat_id")
+        if lane == "ops" or (chat_id and cid == chat_id):
+            lane_ops.append(ops_item(rec, n))
 
     items = []
     for d in msgs:
@@ -139,6 +200,11 @@ for lane, (chat_id, post_id) in LANES.items():
         if not desc: continue
         items.append({"icon": ICON, "date": date_s, "label": sender,
                       "description": desc, "isAddTinyEditor": False})
+
+    # merge lane ops entries by date desc alongside chat items
+    def _it_ts(it):
+        return it.get("date", "")
+    items = sorted(items + lane_ops, key=_it_ts, reverse=True)
 
     content = ("<!-- wp:tlgb/b-timeline-block " +
                json.dumps({"timelines": items, "type": "vertical",
