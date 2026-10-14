@@ -9,8 +9,7 @@ from datetime import datetime
 LANES = {
     "kk-ha":   ("C822026077530a29620b5041bd1a955c5", 35),
     "tony-ha": ("C4fb0ce548a58e2d758335b7e21ce3411", 69),
-    # ada-ha: pending — Tony is creating the LINE group; add (chat_id, post_id) once
-    #         the first journal lands under line-media/<chat_id>/
+    "ada-ha":  ("Cb754717565d4cee5eab43a0e848654a2", 77),
 }
 MEDIA_ROOT = os.path.expanduser("~/.local/share/ada/line-media")
 STATE = os.path.join(MEDIA_ROOT, "wp-timeline-state.json")
