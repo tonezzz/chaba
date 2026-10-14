@@ -2,11 +2,12 @@
 /**
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
- *              contact, reminder, bench, report, render_job) + member-post
- *              translation. All CPTs are REST-writable (show_in_rest) so the
+ *              contact, reminder, bench, report, xlate, cam, render_job, news)
+ *              + member-post translation + member-gated media endpoint.
+ *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.2.0
+ * Version: 0.3.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -35,13 +36,20 @@ add_action('init', function () {
         'xlate'    => ['Translation','Translations','dashicons-translation'],
         'cam'      => ['Cam',       'Cams',      'dashicons-camera'],
         'render_job' => ['Render Job','Render Jobs','dashicons-format-image'],
+        'news'     => ['News',      'News',      'dashicons-rss'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
-        register_post_type($slug, $common + [
+        $extra = [
             'label'      => $plural,
             'menu_icon'  => $icon,
             'rest_base'  => $slug,
-        ]);
+        ];
+        // news is a public feed surface: archive + standard taxonomies.
+        if ($slug === 'news') {
+            $extra['has_archive'] = true;
+            $extra['taxonomies']  = ['category', 'post_tag'];
+        }
+        register_post_type($slug, $common + $extra);
     }
 });
 
@@ -63,6 +71,9 @@ add_action('init', function () {
                          'duration_s', 'vae_s', 'host', 'backend', 'status',
                          'requested_by', 'source', 'output_url', 'rating',
                          'error'],
+        // news — feed provenance; dedup rides the deterministic slug
+        // (n-<md5(link)>) so no GUID index is needed.
+        'news'     => ['source_feed', 'source_url', 'published_at'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -97,11 +108,12 @@ function chaba_cpt_admin_columns(string $type): array {
         'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
         'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
         'render_job' => ['status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'duration_s' => 'Secs', 'backend' => 'Backend', 'requested_by' => 'By'],
+        'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
