@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.2
+ * Version: 0.3.3
  */
 
 if (!defined('ABSPATH')) exit;
@@ -44,10 +44,14 @@ add_action('init', function () {
             'menu_icon'  => $icon,
             'rest_base'  => $slug,
         ];
-        // news is a public feed surface: archive + standard taxonomies.
+        // news is a public feed surface: archive + standard taxonomies +
+        // hierarchical so distilled cluster posts can parent raw feed items.
         if ($slug === 'news') {
-            $extra['has_archive'] = true;
-            $extra['taxonomies']  = ['category', 'post_tag'];
+            $extra['has_archive']  = true;
+            $extra['hierarchical'] = true;
+            $extra['taxonomies']   = ['category', 'post_tag'];
+            $extra['supports']     = array_merge($common['supports'],
+                                                 ['page-attributes']);
         }
         register_post_type($slug, array_merge($common, $extra));
     }
