@@ -41,6 +41,17 @@ remaining:
   - "cards still carrying action.repo: ada-pi resolve via the alias — sweep them to ada-voice opportunistically (board-api has no field-edit endpoint; alias carries them)"
   - "retire compat symlinks + ada-pi alias lines once the board has no ada-pi repo references"
 
+attempt2_resolution:   # dispatch 20261014-222613 (tony-macbook) — auto-retry after the merge held
+  merge_gate: "test_draft_hit_frame::test_patches_apply_and_compile held the sweep merge — the staged drops had all LANDED upstream during the day, so the patches no longer applied. Retired 4 apply-tests + 20 landed patches; kept calendar_providers.create-dedup.patch (staged, never applied, now drifted — real gap, see below). Merged-tree suite verified green on tony-dell replica: 223 passed, 37 skipped."
+  checkouts_done: "dell + idc02 renamed during attempt-1 tail (verified: all 5 reachable hosts show real ada-voice dir + ada-pi symlink, zero ada dispatches in flight)"
+  deploy_verify: "idc03 ~/.local/bin/deploy-ada.sh green: fetch+ff to 8eaab27, tool-lint clean, 1467 tests pass, 8 services restarted+active; dell got the fresh install + pull to origin/main"
+  card_sweep: "action.repo ada-pi -> ada-voice on 88 cards (comms/history untouched)"
+  claim_verify: "dispatch_repos.repos() on dell resolves ada-voice AND legacy ada-pi alias -> ~/CascadeProjects/ada-voice; first organic claim will close the observed-claim item (tracked on ada-voice-rename-cleanup)"
+  still_open:
+    - "mn01 unreachable (ssh timeout) — still has real ada-pi dir; rename-ada-voice.sh run mn01 when back (tracked: ada-voice-rename-cleanup)"
+    - "compat shim retirement (symlinks + alias lines) after board is clean — ada-voice-rename-cleanup"
+    - "calendar_providers.create-dedup.patch drifted and was NEVER applied upstream — the double-write guard from calendar-write-idempotency is not live; needs regeneration or hand-apply on ada-voice"
+
 gotchas:
   - "test_claim_order / patch-apply tests were already red on master before this change — staged integrations/ drop patches drifted vs evolved ada-voice sources (memory.py:206, line_relay.py:42, chat.py:234)"
   - "docs/ada-memory, docs/assessments, docs/kb/archive, dispatch-outcome-*, backups/ deliberately left as-is — dated records keep the name that was true at the time"
