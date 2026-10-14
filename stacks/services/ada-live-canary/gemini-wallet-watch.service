@@ -1,0 +1,11 @@
+[Unit]
+Description=Gemini prepaid wallet watch — 1-token REST probe on PAID key
+After=network-online.target
+
+[Service]
+Type=oneshot
+# ~1 input + 1 output token per run (~$0). Alerts LINE on depleted /
+# recovered transitions. Exit 1 while depleted so the unit Result
+# reflects the wallet (timer-alert card, auto-closed on recovery).
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/gemini-wallet-watch.py --env-file %h/.config/secrets/gemini-keys.env --key-var GEMINI_API_KEY_PAID
+TimeoutStartSec=60

@@ -1778,7 +1778,9 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Hourly smoke tier of the live-scenario suite
+        note: "Hourly smoke tier — targets ada-dev :8005 (FREE key) since
+          2026-10-13; provider-gate ExecCondition refuses paid lanes
+          (bench-off-paid-lanes)"
       - name: ada-scenario-research.timer
         type: timer
         scope: user
@@ -1787,38 +1789,45 @@ hosts:
         note: "Weekly Mon 05:55. Units from stacks/services/ada-scenario-runner/;
           weeklies queue on the :8199 suite lock via scenario-suite-run.sh
           (<=30m waits + refused-bind re-queue) — schedule collision fix
-          2026-10-09, card fix-scenario-schedule-collision."
+          2026-10-09, card fix-scenario-schedule-collision.
+          bench-off-paid-lanes (2026-10-14): research/cms/reports target
+          ada-dev :8005 (FREE key); memory/tools/casting stay on prod but
+          park unless a prod-allow-<suite> sentinel authorizes the run."
       - name: ada-scenario-cms.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Weekly Tue 05:55 — see ada-scenario-research.timer note
+        note: Weekly Tue 05:55 — see ada-scenario-research.timer note (dev lane)
       - name: ada-scenario-memory.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Weekly Wed 05:55 — see ada-scenario-research.timer note
+        note: "Weekly Wed 05:55 — lane-coupled; parked on prod unless a
+          prod-allow-memory sentinel authorizes (bench-off-paid-lanes)"
       - name: ada-scenario-reports.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Weekly Thu 05:55 — see ada-scenario-research.timer note
+        note: Weekly Thu 05:55 — see ada-scenario-research.timer note (dev lane)
       - name: ada-scenario-tools.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Weekly Fri 05:55 — see ada-scenario-research.timer note
+        note: "Weekly Fri 05:55 — lane-coupled; parked on prod unless a
+          prod-allow-tools sentinel authorizes (bench-off-paid-lanes)"
       - name: ada-scenario-casting.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
         note: "Weekly Sat 05:55 — also runs daily via ada-bench-casting
-          OnSuccess. KNOWN ISSUE (2026-10-09): every observed run hits the
+          OnSuccess. Lane-coupled: parked on prod unless a
+          prod-allow-casting sentinel authorizes (bench-off-paid-lanes).
+          KNOWN ISSUE (2026-10-09): every observed run hits the
           full TimeoutStartSec producing no results — hangs on first
           scenario; follow-up card ada-scenario-casting-hang."
       - name: ada-bench-casting.timer
@@ -1849,15 +1858,24 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Hourly :17 — 1 minimal Live connect on FREE key, ledgers to
+        note: "Hourly :17 — 1 minimal Live connect on FREE key, ledgers to
           ~/.local/share/ada-live-canary.jsonl; maps free-tier ceiling
-          for the scenario-budget ramp (2026-10-12)
+          for the scenario-budget ramp (2026-10-12). Unit files:
+          stacks/services/ada-live-canary/"
+      - name: ada-live-canary-paid.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Daily 06:12 — 1 minimal Live connect on PAID key
+          (bench-off-paid-lanes: exactly 1 connect/day detects dunning;
+          ledger ~/.local/share/ada-live-canary-paid.jsonl)"
       - name: gemini-wallet-watch.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Hourly :47 — ~1-token probe on PAID key; on depletion/recovery
+        note: Hourly :47 — ~1-token REST probe on PAID key; on depletion/recovery
           transition LINE /send to tony DM + kk group (2026-10-13); state
           ~/.local/share/ada/gemini-wallet-watch.json
       - name: ops-health-report.timer

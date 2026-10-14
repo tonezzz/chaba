@@ -12,6 +12,11 @@ Live sessions + aux calls cost" before the next billing surprise:
     verify both against ai.google.dev pricing when it drifts.
   * ws churn from journald: 'client connected' + 'provider reconnected'
     per ada-ha-* unit — the connect volume that multiplies into spend.
+  * caller share from journald: 'session=N client connected (caller=X)'
+    + 'session=N chat text turn' -> turns per caller per unit per day.
+    Card bench-off-paid-lanes acceptance: <20% of daily turns from
+    caller=admin on the paid persona lanes (admin = benchmark/probe
+    key); crossing it emits a throttled warn.
 
 Output:
   * ada-cms-pages/spend-ledger  kind:report, domain:ops — a rolling
@@ -82,6 +87,14 @@ KEEP_DAYS = 14
 
 UNITS = ["ada-ha-tony", "ada-ha-michael", "ada-dev", "ada-pi-pwa",
          "ada-kk"]
+# Paid persona lanes (per-persona paid keys since 2026-10-13, see
+# ssot.llm-gateway.yml live_keys). Admin-caller turn share is rendered
+# and tripwired only on these.
+PAID_UNITS = ["ada-ha-tony", "ada-ha-michael", "ada-kk", "ada-pi-pwa"]
+
+RX_SESS_OPEN = re.compile(
+    r"session=(\w+) client connected \(caller=([^\)]+)\)")
+RX_SESS_TURN = re.compile(r"session=(\w+) chat text turn")
 
 # Mirror of backend/usage_tracker.py RATES_PER_MILLION (USD/1M tokens,
 # Sept-2026 Flash-Live audio + Flash-Lite). Keep in sync — last verified
@@ -185,17 +198,36 @@ def _est_cost(b: dict) -> float:
     return round(cost / 1_000_000, 4)
 
 
-def journal_connects(unit: str, since: str, until: str) -> dict[str, int]:
+def journal_connects(unit: str, since: str, until: str) -> dict:
     try:
         out = subprocess.run(
             ["journalctl", "--user", "-u", unit, "--since", since,
              "--until", until, "--no-pager", "-o", "cat"],
             capture_output=True, text=True, timeout=60).stdout
     except Exception:
-        return {"ws": -1, "upstream": -1}
-    ws = sum(1 for l in out.splitlines() if "client connected" in l)
-    up = sum(1 for l in out.splitlines() if "provider reconnected" in l)
-    return {"ws": ws, "upstream": up}
+        return {"ws": -1, "upstream": -1, "turns": -1,
+                "caller_turns": {}}
+    ws = 0
+    up = 0
+    sess_caller: dict[str, str] = {}
+    sess_turns: dict[str, int] = defaultdict(int)
+    for l in out.splitlines():
+        if "client connected" in l:
+            ws += 1
+            m = RX_SESS_OPEN.search(l)
+            if m:
+                sess_caller[m.group(1)] = m.group(2)
+        elif "provider reconnected" in l:
+            up += 1
+        else:
+            m = RX_SESS_TURN.search(l)
+            if m:
+                sess_turns[m.group(1)] += 1
+    caller_turns: dict[str, int] = defaultdict(int)
+    for sid, n in sess_turns.items():
+        caller_turns[sess_caller.get(sid, "?")] += n
+    return {"ws": ws, "upstream": up, "turns": sum(caller_turns.values()),
+            "caller_turns": dict(caller_turns)}
 
 
 def journal_day(unit: str, day: datetime.date) -> dict[str, int]:
@@ -236,22 +268,31 @@ def maybe_emit(state: dict, key: str, payload: dict) -> None:
         print(f"  ledger: event failed: {exc}", file=sys.stderr)
 
 
-def render(rows: list[dict], churn: dict[str, dict[str, dict]]) -> str:
+def render(rows: list[dict], churn: dict[str, dict[str, dict]],
+           paid_units: set[str]) -> str:
     now = datetime.datetime.now().astimezone()
     lines = [f"# Spend ledger — {now:%Y-%m-%d %H:%M}", "",
              "Daily Live-session + aux-call burn for the ada-* backends. "
              "est $ uses the usage_tracker rate table "
              "(Flash-Live audio $3/$12, text $0.30/$0.60 per 1M); "
              "ws = 'client connected' journal lines, up = upstream "
-             "provider reconnects.", "",
+             "provider reconnects, admin% = share of the lane's turns "
+             "from caller=admin sessions (benchmark/probe traffic — "
+             "bench-off-paid-lanes wants it <20% on paid lanes).", "",
              "| date | live sessions | turns | aux calls | tokens in/out"
              " | ws/up connects | est $ |",
              "|---|---|---|---|---|---|---|"]
     for r in rows:
-        churn_s = " ".join(
-            f"{u.replace('ada-ha-', '').replace('ada-', '')}:"
-            f"{c.get('ws', 0)}/{c.get('upstream', 0)}"
-            for u, c in sorted((churn.get(r["date"]) or {}).items()))
+        cells = []
+        for u, c in sorted((churn.get(r["date"]) or {}).items()):
+            cell = (f"{u.replace('ada-ha-', '').replace('ada-', '')}:"
+                    f"{c.get('ws', 0)}/{c.get('upstream', 0)}")
+            t = c.get("turns", -1)
+            if u in paid_units and t and t > 0:
+                admin = (c.get("caller_turns") or {}).get("admin", 0)
+                cell += f" admin{round(100 * admin / t)}%"
+            cells.append(cell)
+        churn_s = " ".join(cells)
         lines.append(
             f"| {r['date']} | {r['live_sessions']} | {r['turns']} "
             f"| {r['aux_calls']} | {r['in']:,}/{r['out']:,} "
@@ -262,6 +303,9 @@ def render(rows: list[dict], churn: dict[str, dict[str, dict]]) -> str:
               "## Tripwires", "",
               f"- warn when est $/day > ${os.environ.get('SPEND_WARN_USD', '2.0')}"
               f" or live sessions/day > {os.environ.get('SPEND_WARN_SESSIONS', '300')}",
+              f"- warn when caller=admin share of a paid lane's daily "
+              f"turns > {os.environ.get('SPEND_ADMIN_WARN_PCT', '20')}% "
+              "(bench-off-paid-lanes acceptance)",
               "- reconnect churn warn lives in scenario-provider-gate.py "
               "(runs before every smoke tier)",
               "",
@@ -329,6 +373,9 @@ def main() -> int:
                          "columns (older rows keep their last numbers)")
     ap.add_argument("--usage-log", type=Path, default=USAGE_LOG)
     ap.add_argument("--units", default=",".join(UNITS))
+    ap.add_argument("--paid-units", default=",".join(PAID_UNITS),
+                    help="units where caller=admin turn share is "
+                         "rendered and tripwired")
     ap.add_argument("--no-journal", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--out", type=Path, default=LOCAL_OUT)
@@ -361,7 +408,8 @@ def main() -> int:
                      "tool_use": b["tool_use"], "est_usd": _est_cost(b),
                      "sources": dict(b["sources"])})
 
-    body = render(rows, churn)
+    paid = {u.strip() for u in args.paid_units.split(",") if u.strip()}
+    body = render(rows, churn, paid)
     if args.dry_run:
         print(body)
         return 0
@@ -409,6 +457,33 @@ def main() -> int:
                 "confidence": 0.7,
                 "body": (f"{today}: {r['live_sessions']} live sessions "
                          f"(>{warn_sessions}/day), ~${r['est_usd']:.2f} est")})
+    # bench-off-paid-lanes acceptance tripwire: caller=admin turn share
+    # on a paid lane must stay under SPEND_ADMIN_WARN_PCT (default 20%).
+    # admin = the benchmark/probe key — scenario suites, canaries and
+    # ad-hoc probes all ride it, so this catches any probe regressing
+    # back onto a billing lane.
+    warn_pct = float(os.environ.get("SPEND_ADMIN_WARN_PCT", "20"))
+    min_turns = int(os.environ.get("SPEND_ADMIN_MIN_TURNS", "5"))
+    for u, c in (churn.get(today) or {}).items():
+        if u not in paid:
+            continue
+        t = c.get("turns", -1)
+        if t < min_turns:
+            continue
+        admin = (c.get("caller_turns") or {}).get("admin", 0)
+        pct = 100 * admin / t
+        if pct > warn_pct:
+            maybe_emit(state, f"spend-admin:{u}:{today}", {
+                "title": f"spend ledger: admin turn-share on {u} "
+                         "over threshold",
+                "category": "ada-scenario", "source": "spend-ledger",
+                "severity": "warn", "requires_response": False,
+                "confidence": 0.8,
+                "body": (f"{today}: {u} turns {admin}/{t} from "
+                         f"caller=admin ({pct:.0f}% > {warn_pct}%) — "
+                         "a probe or suite is billing the paid lane; "
+                         "check ADA_LIVE_URL targets + prod-allow "
+                         "sentinels (bench-off-paid-lanes)")})
     return 0
 
 

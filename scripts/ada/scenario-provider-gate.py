@@ -42,6 +42,14 @@ SECRETS_DIR, ADA_PI_DIR, GATE_STATE_FILE. Stdlib only — host python3.
 
   --dry-run   probe and print the verdict, write nothing, exit by verdict
   --report    force MDDB skip-reporting even when the verdict is 'ok'
+
+Paid-lane override (card bench-off-paid-lanes): prod persona lanes
+(ada-ha-tony/ada-ha-michael/ada-kk/ada-pi-pwa — per-persona PAID keys)
+are card-requested only. --paid-allow-file names a one-shot sentinel
+file whose first line is the authorizing card id; a fresh sentinel
+(< --paid-allow-max-age hours) downgrades a paid-lane/unknown verdict
+to ok. Quota-dead still gates regardless — an authorized run against a
+dead provider is still pointless burn.
 """
 
 from __future__ import annotations
@@ -192,8 +200,11 @@ def maybe_emit(state: dict, key: str, min_gap_s: float, payload: dict) -> None:
     _save_state(state)
 
 
-def smoke_scenarios(scenarios_dir: Path) -> list[str]:
-    """Smoke-tier scenario names — flat name:/tier: fields, no yaml dep."""
+def tier_scenarios(scenarios_dir: Path, tier: str) -> list[str]:
+    """Scenario names carrying `tier: <tier>` — flat name:/tier: fields,
+    no yaml dep. Benchmark suites (memory/tools/...) are grouped in
+    benchmark.yml, not the yaml tier field, so non-yaml tiers return []
+    and only the summary doc gets written — still an honest trail."""
     names = []
     try:
         paths = sorted(scenarios_dir.glob("*.yaml"))
@@ -204,8 +215,8 @@ def smoke_scenarios(scenarios_dir: Path) -> list[str]:
             text = p.read_text()
         except OSError:
             continue
-        tier = RX_YAML_TIER.search(text)
-        if (tier.group(1) if tier else "full") != "smoke":
+        t = RX_YAML_TIER.search(text)
+        if (t.group(1) if t else "full") != tier:
             continue
         name = RX_YAML_NAME.search(text)
         names.append(name.group(1) if name else p.stem)
@@ -235,26 +246,48 @@ def report_skip(mddb: str, scenario: str, status: str, tier: str,
         "contentMd": body, "meta": meta, "ttl": REPORT_TTL_S})
 
 
-def report_gate_summary(mddb: str, verdict: dict, names: list[str]) -> bool:
+def report_gate_summary(mddb: str, verdict: dict, names: list[str],
+                        tier: str) -> bool:
     now = datetime.datetime.now()
-    key = f"report/smoke-gate-{now.strftime('%Y%m%d-%H%M%S')}"
+    key = f"report/{tier}-gate-{now.strftime('%Y%m%d-%H%M%S')}"
     meta = {
         "kind": ["report"], "subject": ["scenario-gate"],
-        "scenario": ["smoke-gate"], "status": [verdict["status"]],
-        "tier": ["smoke"], "runs": ["0"],
+        "scenario": [f"{tier}-gate"], "status": [verdict["status"]],
+        "tier": [tier], "runs": ["0"],
         "last_verified": [now.date().isoformat()],
         "valid_until": [
             (now.date() + datetime.timedelta(days=14)).isoformat()],
     }
-    lines = [f"# smoke-gate — {verdict['status']}", "",
+    lines = [f"# {tier}-gate — {verdict['status']}", "",
              f"- verdict: **{verdict['status']}** — {verdict['reason']}"]
     for k, v in verdict.get("checks", {}).items():
         lines.append(f"- {k}: {v}")
     lines.append("")
-    lines.append(f"Recorded `skip` on {len(names)} smoke scenarios.")
+    lines.append(f"Recorded `skip` on {len(names)} {tier} scenarios.")
     return _post(f"{mddb}/add", {
         "collection": COLLECTION, "key": key, "lang": "en",
         "contentMd": "\n".join(lines), "meta": meta, "ttl": REPORT_TTL_S})
+
+
+def check_paid_allow(path: Path | None, max_age_h: float) -> str:
+    """'' or the authorizing card id. The sentinel is a file a human/agent
+    drops to authorize ONE prod-lane run (release s4/s5 post-deploy
+    smoke, card-requested prod verification — bench-off-paid-lanes).
+    First line = the card id (logged, never treated as secret). Expired
+    or unreadable files do not authorize."""
+    if not path:
+        return ""
+    try:
+        st = path.stat()
+        age_h = (datetime.datetime.now().timestamp() - st.st_mtime) / 3600
+        if age_h > max_age_h:
+            print(f"  gate: paid-allow sentinel {path.name} expired "
+                  f"({age_h:.0f}h > {max_age_h:.0f}h) — ignored")
+            return ""
+        card = path.read_text().splitlines()[0].strip()
+        return card or "(unnamed-card)"
+    except OSError:
+        return ""
 
 
 def check_unit_active(unit: str) -> tuple[bool, str]:
@@ -350,7 +383,17 @@ def main() -> int:
                     help="backend unit the smoke tier targets")
     ap.add_argument("--window", type=int, default=70,
                     help="journal window (minutes) for the quota probe")
-    ap.add_argument("--tier", default="smoke")
+    ap.add_argument("--tier", default="smoke",
+                    help="tier/suite label for logs, the gate summary doc "
+                         "and per-scenario skip docs (yaml `tier:` match)")
+    ap.add_argument("--paid-allow-file", type=Path, default=None,
+                    help="one-shot sentinel authorizing a prod/paid-lane "
+                         "run — first line is the requesting card id "
+                         "(card bench-off-paid-lanes: prod lanes are "
+                         "card-requested only). Consumed by the suite "
+                         "wrapper, not the gate.")
+    ap.add_argument("--paid-allow-max-age", type=float, default=168.0,
+                    help="hours a paid-allow sentinel stays valid")
     ap.add_argument("--scenarios-dir", type=Path, default=SCENARIOS_DIR)
     ap.add_argument("--env-file", type=Path,
                     default=SECRETS / "ada-ha-tony.env",
@@ -378,6 +421,13 @@ def main() -> int:
     checks["unit_active"] = f"{args.unit}={active_detail}"
 
     lane, lane_detail = check_free_lane(args.unit)
+    paid_card = check_paid_allow(args.paid_allow_file,
+                                 args.paid_allow_max_age)
+    if lane in ("paid-lane", "unknown") and paid_card:
+        lane = "ok"
+        lane_detail = (f"paid lane authorized by card {paid_card} "
+                       f"({args.paid_allow_file.name}); "
+                       f"lane check was: {lane_detail}")
     checks["free_lane"] = lane_detail
 
     quota, quota_detail = check_quota(args.unit, args.window)
@@ -427,7 +477,7 @@ def main() -> int:
         return 0
 
     # report path — skip verdicts always; 'ok' only under --report
-    names = smoke_scenarios(args.scenarios_dir)
+    names = tier_scenarios(args.scenarios_dir, args.tier)
     report_status = REPORT_STATUSES.get(status, status if status != "ok"
                                         else "pass")
     verdict = {"status": report_status if status != "ok" else "ok",
@@ -439,22 +489,22 @@ def main() -> int:
             for name in names:
                 if report_skip(mddb, name, report_status, args.tier, reason):
                     written += 1
-            report_gate_summary(mddb, verdict, names)
+            report_gate_summary(mddb, verdict, names, args.tier)
             print(f"  gate: recorded {report_status} on "
                   f"{written}/{len(names)} scenarios -> {mddb}")
             maybe_emit(state, f"gate:{status}", GATE_WARN_MIN_S, {
-                "title": f"scenario smoke gated: {status}",
+                "title": f"scenario {args.tier} gated: {status}",
                 "category": "ada-scenario",
                 "source": "scenario-provider-gate",
                 "severity": "warn",
-                "body": (f"hourly smoke tier skipped — {reason}. "
+                "body": (f"{args.tier} tier skipped — {reason}. "
                          f"{len(names)} scenarios recorded "
                          f"{report_status}, zero sessions opened."),
                 "requires_response": False,
                 "confidence": 0.9,
             })
         elif args.report:
-            report_gate_summary(mddb, verdict, names)
+            report_gate_summary(mddb, verdict, names, args.tier)
     if status == "ok" and args.daily_budget > 0 and not args.dry_run:
         allowed = state.setdefault("allowed_runs", [])
         allowed.append(today)

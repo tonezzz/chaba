@@ -17,6 +17,14 @@ Exec=--tier full
 [Service]
 Type=oneshot
 RemainAfterExit=no
+# Bench-off-paid-lanes (BEN-0573): full tier is manual + prod-lane —
+# card-requested only. Authorize ONE run with
+#   echo <card-id> > ~/.local/share/ada-scenario-runner/prod-allow-full
+# then systemctl --user start ada-scenario-full. The gate (1) verifies
+# the sentinel (<7d old) and provider health; (2) consumes the sentinel
+# so it cannot silently re-arm. Both ExecConditions run in order.
+ExecCondition=/bin/sh -c 'G=%h/CascadeProjects/chaba/scripts/ada/scenario-provider-gate.py; [ -f "$G" ] || exit 1; exec /usr/bin/python3 "$G" --unit ada-ha-tony --env-file %h/.config/secrets/ada-ha-tony.env --tier full --paid-allow-file %h/.local/share/ada-scenario-runner/prod-allow-full'
+ExecCondition=/bin/rm -f %h/.local/share/ada-scenario-runner/prod-allow-full
 TimeoutStartSec=3600
 
 [Install]
