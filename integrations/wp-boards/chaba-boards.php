@@ -31,6 +31,7 @@ add_action('init', function () {
         'reminder' => ['Reminder', 'Reminders', 'dashicons-bell'],
         'bench'    => ['Benchmark','Benchmarks','dashicons-chart-line'],
         'report'   => ['Report',   'Reports',   'dashicons-media-document'],
+        'xlate'    => ['Translation','Translations','dashicons-translation'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         register_post_type($slug, $common + [
@@ -50,6 +51,10 @@ add_action('init', function () {
         'reminder' => ['due_date', 'assignee'],
         'bench'    => ['suite', 'run_id', 'pass_count', 'fail_count', 'duration_s', 'commit'],
         'report'   => ['report_type', 'period', 'source_key'],
+        'xlate'    => ['source_post', 'source_lang', 'target_lang', 'engine', 'status', 'chars'],
+        // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
+        'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
+        'trip'     => ['start_date', 'end_date', 'travellers'],
     ];
     foreach ($meta as $type => $keys) {
         foreach ($keys as $k) {
@@ -105,6 +110,26 @@ add_action('save_post_post', function ($post_id, $post, $update) {
     if (is_wp_error($resp)) return;
     $data = json_decode(wp_remote_retrieve_body($resp), true);
     $out  = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    if (trim($out) === '') return;
+
+    $job = [
+        'post_title'  => sprintf('Xlate — %s (%s→%s)',
+            $post->post_title, $has_thai ? 'th' : 'en', $has_thai ? 'en' : 'th'),
+        'post_type'   => 'xlate',
+        'post_status' => 'private',
+    ];
+    $jmeta = [
+        'source_post' => (string) $post_id,
+        'source_lang' => $has_thai ? 'th' : 'en',
+        'target_lang' => $has_thai ? 'en' : 'th',
+        'engine'      => 'gemini',
+        'chars'       => (string) mb_strlen($src),
+        'status'      => trim($out) === '' ? 'error' : 'ok',
+    ];
+    $jid = wp_insert_post($job);
+    if ($jid && !is_wp_error($jid)) {
+        foreach ($jmeta as $k => $v) update_post_meta($jid, $k, $v);
+    }
     if (trim($out) === '') return;
 
     update_post_meta($post_id, '_chaba_translation', $out);
