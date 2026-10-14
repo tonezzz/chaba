@@ -12,7 +12,7 @@ Renders the "show my trip calendar" ask as a cms-page-standard
   trip-<slug>-qc            qc     — leaf coverage / meta / staleness
 
 Inputs (merged):
-  * CalendarService (ada-pi backend.calendar_providers) events, loaded
+  * CalendarService (ada-voice backend.calendar_providers) events, loaded
     from the lane's rendered registry file — same read path as
     calendar-smoke.py.
   * LINE relay conv_journal archive (journal-<day>.jsonl per room under
@@ -28,7 +28,7 @@ Lanes (--lane):
 Env:
   MDDB_BASE_URL           default http://100.102.134.91:11027/v1
   REPO                    default = this checkout root
-  ADA_PI_DIR              default ~/CascadeProjects/ada-pi
+  ADA_PI_DIR              default ~/CascadeProjects/ada-voice
   LINE_MEDIA_ARCHIVE_DIR  default ~/.local/share/ada/line-media
   ADA_CMS_BASE            viewer base for view_url in --json output
   ADA_CMS_PUBLIC_BASE     public base override (else tenant-derived)
@@ -54,7 +54,7 @@ REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 ADA_PI_DIR = Path(os.environ.get(
-    "ADA_PI_DIR", os.path.expanduser("~/CascadeProjects/ada-pi")))
+    "ADA_PI_DIR", os.path.expanduser("~/CascadeProjects/ada-voice")))
 ARCHIVE_DIR = Path(os.environ.get(
     "LINE_MEDIA_ARCHIVE_DIR",
     os.path.expanduser("~/.local/share/ada/line-media")))
@@ -119,9 +119,9 @@ def words(slug: str) -> list[str]:
 # ---------- calendar service ----------
 
 def ensure_runtime():
-    """Re-exec under ada-pi's venv when the ambient python lacks the
+    """Re-exec under ada-voice's venv when the ambient python lacks the
     provider deps (httpx). The CalendarService path is optional — when
-    ada-pi isn't installed the script still renders journal-only pages,
+    ada-voice isn't installed the script still renders journal-only pages,
     but when it IS installed it should actually work."""
     try:
         import httpx  # noqa: F401
@@ -140,9 +140,9 @@ def ensure_runtime():
 
 
 def load_service(lane: dict):
-    """CalendarService from ada-pi; None when ada-pi/registry absent."""
+    """CalendarService from ada-voice; None when ada-voice/registry absent."""
     if not (ADA_PI_DIR / "backend" / "calendar_providers.py").is_file():
-        return None, f"ada-pi checkout not found at {ADA_PI_DIR}"
+        return None, f"ada-voice checkout not found at {ADA_PI_DIR}"
     if str(ADA_PI_DIR) not in sys.path:
         sys.path.insert(0, str(ADA_PI_DIR))
     try:

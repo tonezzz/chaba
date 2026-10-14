@@ -1,5 +1,5 @@
 title: Ada How-To Runbooks
-subtitle: Step-by-step procedures for ada-pi tools, calendar providers, and memory banks
+subtitle: Step-by-step procedures for ada-voice tools, calendar providers, and memory banks
 
 prerequisites:
   - ssot: ssot.apps.ada-calendar.yml
@@ -11,7 +11,7 @@ runbooks:
   add_ada_tool:
     purpose: Add a new Gemini Live tool to ada — all three layers must move together.
     steps:
-      - "Add the method to ToolRunner in ada-pi/backend/tool_runner.py (async, simple typed args)"
+      - "Add the method to ToolRunner in ada-voice/backend/tool_runner.py (async, simple typed args)"
       - "If it mutates anything, add its name to the right gate set (CONTROL_TOOLS / MEMORY_WRITE_TOOLS / CALENDAR_WRITE_TOOLS) and give it a confirmed arg"
       - "Add a function_declaration in backend/realtime_provider.py — description written as WHEN to use it, parameters_json_schema with additionalProperties: false"
       - "Extend the instruction paragraph in GeminiLiveProvider.__init__ with the workflow (call order, confirm protocol, which tool family to prefer)"
@@ -61,7 +61,7 @@ runbooks:
   add_calendar_provider:
     purpose: Add a calendar/tasks provider (e.g. iCloud via CalDAV) to ada.
     steps:
-      - "Write the adapter in ada-pi/backend/<provider>_calendar.py implementing CalendarProvider (and TasksProvider if it has tasks)"
+      - "Write the adapter in ada-voice/backend/<provider>_calendar.py implementing CalendarProvider (and TasksProvider if it has tasks)"
       - "Register the adapter name in CalendarService._build (backend/calendar_providers.py)"
       - "Add the provider block under calendar.providers in ssot.apps.ada-calendar.yml (adapter, instances, status: active, secrets pointer)"
       - "Store credentials under ~/.config/secrets/ on the ada host"

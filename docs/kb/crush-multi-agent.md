@@ -41,7 +41,7 @@ Keep provider creds global, but put `permissions.allowed_tools`, MCP servers, an
 ```
 
 **Never edit `~/.config/crush/crush.json` from an automated run** — treat it like
-the ada-pi deploy rule: snapshot-first. If a run must touch global config, use a
+the ada-voice deploy rule: snapshot-first. If a run must touch global config, use a
 temp config dir via `XDG_CONFIG_HOME` override instead.
 
 ## Gotchas carried from the lab

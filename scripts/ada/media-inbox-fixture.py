@@ -2,7 +2,7 @@
 """media-inbox-fixture.py — seed/teardown the media-inbox test fixture.
 
 Creates the archive files + manifest lines the media_inbox live scenario
-(tests/scenarios-live/media_inbox.yaml in ada-pi) asserts against:
+(tests/scenarios-live/media_inbox.yaml in ada-voice) asserts against:
 
   mifix-a.txt + mifix-a.txt  two manifest lines, SAME mid  -> T1 transport
                             dedup: one leaf, redeliveries noted on it

@@ -50,7 +50,7 @@ mechanism: |
   The pause is ~90% remote query-embedding, NOT the N-bank fan-out.
   - Embedding is server-side inside mddb handleVectorSearch
     (services/mddbd/vector_handlers.go: s.Embedding.Embed per request).
-  - Every text-query vector-search call embeds; ada-pi fires one per
+  - Every text-query vector-search call embeds; ada-voice fires one per
     bank in parallel => up to 23 remote calls/fan-out; dedup+cache
     bring it to ~7–12 actual proxy calls.
   - mddb has a text-keyed query-embed cache (persistent, observed
@@ -98,7 +98,7 @@ implications_for_router: |
     repeats ~0.02s => overall p50 lands ~0.5-0.7s vs today's 1.33s).
 
 phase_1_delivered: |
-  ada-pi worktree ada-wt-bank-router, branch dispatch/20261008-bank-router
+  ada-voice worktree ada-wt-bank-router, branch dispatch/20261008-bank-router
   (commit 3a29d78, NOT pushed):
   - instrumentation: memory_ops._timed_bank_docs + 'memory_search
     timing' / 'memory_search tool timing' greppable log lines
@@ -132,7 +132,7 @@ open_items: |
     answer quality, not just latency.
 
 blocked_on: |
-  Deploy of the instrumentation (push ada-pi branch + deploy-ada.sh on
+  Deploy of the instrumentation (push ada-voice branch + deploy-ada.sh on
   idc03) needs Tony's approval — then ~24h of 'memory_search timing'
   rows lands the production split per the card. Meanwhile the 7-day
   journal numbers above already answer the phase-0 question.

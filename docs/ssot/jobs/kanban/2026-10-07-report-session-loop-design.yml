@@ -21,7 +21,7 @@ context: >
   session with TASK_RAILS; /respond already pushes answers into running
   sessions (board-answer-live-session); ada_board_write posts from=ada
   comms; cms_get_page/cms_note_update read+write ada-cms-pages; the CMS
-  viewer (ada-pi pwa/cms) is iframed in chaba-admin/chaba-cms*. Gaps
+  viewer (ada-voice pwa/cms) is iframed in chaba-admin/chaba-cms*. Gaps
   found: POST /card can't file an armed card (no spec/action/report); CMS
   viewer key is read-only so spawn needs a `dispatch` key capability;
   only /respond reaches a running session — comments don't; Ada has no
@@ -50,11 +50,11 @@ delivered:
       report fixtures; smoke tier.
   - Sub-cards (docs/ssot/kanban/cards/, all idle — Start queues each):
       report-loop-spawn-api        chaba  — /card fields + queue + on_exists
-      report-loop-spawn-ui         ada-pi — CMS button + /api/cms/spawn + dispatch key cap
+      report-loop-spawn-ui         ada-voice — CMS button + /api/cms/spawn + dispatch key cap
       report-loop-session-rails    chaba  — REPORT_RAILS + cms-report-note.py + board badge
       report-loop-comment-delivery chaba  — /comment → answers.jsonl for running cards
-      report-loop-ada-opinion      ada-pi — opinion instructions + card-by-report lookup
-      report-loop-bench            ada-pi — install scenario; corpus accrues
+      report-loop-ada-opinion      ada-voice — opinion instructions + card-by-report lookup
+      report-loop-bench            ada-voice — install scenario; corpus accrues
       scenario-report-opinion      —      probe card (fixture, report=dev-kanban)
 
 key_decisions:

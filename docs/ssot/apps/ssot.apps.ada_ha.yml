@@ -18,17 +18,17 @@ sections:
     icon: "⚙️"
     layout: list
     items:
-      - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
+      - label: /home/tony/CascadeProjects/ada-voice/pwa_server.py
         text: Shared FastAPI backend. Static PWA served from /pwa; dynamic API routes under /api/home-assistant/.
-      - label: /home/tony/CascadeProjects/ada-pi/pwa/chat/
+      - label: /home/tony/CascadeProjects/ada-voice/pwa/chat/
         text: 'Text chat page at {base}/chat/ sharing the same /ws endpoint: sends {"type":"text","text":...} frames (routed to provider.send_text_turn, 4000-char cap), renders assistant_transcript_delta/user_transcript bubbles, and plays PCM replies with a Voice on/off toggle. Same device-key auth (api_key param, session cookie, redeem redirect param). Each /ws connection owns its own Gemini Live provider session — chat and voice clients do NOT share context.'
-      - label: /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+      - label: /home/tony/CascadeProjects/ada-voice/backend/realtime_provider.py
         text: Gemini Live client with function calling. Speech barge-in enabled (START_OF_ACTIVITY_INTERRUPTS).
-      - label: /home/tony/CascadeProjects/ada-pi/backend/home_assistant.py
+      - label: /home/tony/CascadeProjects/ada-voice/backend/home_assistant.py
         text: REST and websocket client for HA states, control, history, logbook, event transitions, power summary, and dashboard tab extraction.
-      - label: /home/tony/CascadeProjects/ada-pi/backend/event_recorder.py
+      - label: /home/tony/CascadeProjects/ada-voice/backend/event_recorder.py
         text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
-      - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
+      - label: /home/tony/CascadeProjects/ada-voice/backend/instance.py
         text: "ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start."
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
         text: Runs uvicorn on 127.0.0.1:8002 on idc03 with env /home/tony/.config/secrets/ada-ha-tony.env (mn01 + idc01 units exist as stopped/masked standby).
@@ -109,7 +109,7 @@ sections:
       - label: get_dashboard_tab
         text: Read the named tony-test dashboard tab and report displayed devices.
       - label: ada_session_recall
-        text: "MDDB-first recall: per-instance MDDB collections serve cached/tiered summaries instantly; NotebookLM via notebooklm-rest is the deep-recall/archive path for explicit detail requests or low MDDB confidence (~26s, runs in background). Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03. Michael: memory only."
+        text: "MDDB-first recall: per-instance MDDB collections serve cached/tiered summaries instantly; NotebookLM via notebooklm-rest is the deep-recall/archive path for explicit detail requests or low MDDB confidence (~26s, runs in background). Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-voice/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03. Michael: memory only."
       - label: ada_decision_check
         text: "Voice entry to the purchase-verification pipeline (backend/decision_check.py). Args {product, url?, mode: quick|deep} — product is the listing text/details the user dictated or pasted. NON_BLOCKING: returns 'checking' instantly, engine runs in background (~30-60s), verdict arrives via send_text_turn; a slow filler keeps the user informed. Results persist as kind=check docs (caller=voice) + chaba-admin event. Image input stays on the Check panel; criteria via ada_remember to the 'purchase' bank; past checks via ada_memory_search."
   - title: Navigation
@@ -171,7 +171,7 @@ sections:
     layout: list
     items:
       - label: Shared repo
-        text: Both /apps/ada_pi and /apps/ha/ada use the same ada-pi code; changes affect both unless managed.
+        text: Both /apps/ada_pi and /apps/ha/ada use the same ada-voice code; changes affect both unless managed.
       - label: Barge-in echo
         text: iPad/iPhone speaker echo can cause false barge-in in very loud environments; headphones are the reliable fix.
   - title: Development Roadmap

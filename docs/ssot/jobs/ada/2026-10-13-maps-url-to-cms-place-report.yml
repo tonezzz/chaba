@@ -9,9 +9,9 @@ summary: |
   Kaewta asking "ร้านนี้ยังอยู่มั้ย" / "สรุปที่นี่หน่อย"; Tony's
   directive (2026-10-12): 'shop report becomes a web page sent straight
   back — ask once get answer'. Prior dispatch built and deployed the
-  ada-pi half (place_report tool, ada-pi 074c7a8+e24b14d, live on idc03
+  ada-voice half (place_report tool, ada-voice 074c7a8+e24b14d, live on idc03
   ada-kk since 15:26); THIS dispatch staged the chaba-side record:
-  integrations/ada-pi drop, persons/bench tool profiles, tests, this
+  integrations/ada-voice drop, persons/bench tool profiles, tests, this
   doc. Verified live end to end — real place pages already served on
   chaba.h3.gizmo-thailand.com/kk-ha/ via cms-h3-publish.timer.
 
@@ -25,7 +25,7 @@ flow: |
   into the chaba.h3 branch -> Plesk static site.
 
 deliverables:
-  - file: integrations/ada-pi/backend/tools.d/place_report.py
+  - file: integrations/ada-voice/backend/tools.d/place_report.py
     role: ada tool (staged record copy — byte-identical sha256 to idc03 deployed)
     detail: |
       place_report(url?, place?, ask?, lang?) — _parse_maps_url pulls
@@ -36,11 +36,11 @@ deliverables:
       returns {ok, slug, name, address, coords, resolved_url,
       publish{public_url,view_url}}. ADA_PLACE_REPORT_NOMINATIM /
       ADA_PLACE_REPORT_UA env seams.
-  - file: integrations/ada-pi/backend/tools.d/manifest.place_report.yml
+  - file: integrations/ada-voice/backend/tools.d/manifest.place_report.yml
     role: manifest fragment (policy=read, secondary_allowed, timeout 60)
-  - file: integrations/ada-pi/backend/tool_guide.place_report.yml
+  - file: integrations/ada-voice/backend/tool_guide.place_report.yml
     role: model usage guidance (send public_url; privacy gate)
-  - file: integrations/ada-pi/README.md
+  - file: integrations/ada-voice/README.md
     role: Drop 4 install/contract/known-gap docs
   - file: docs/ssot/apps/ssot.apps.ada-persons.yml
     role: profile update
@@ -73,7 +73,7 @@ verify:
     https://chaba.h3.gizmo-thailand.com/kk-ha/place-waterfall-safari-lodge-6fd9c6.html
     and the tenant index. LINE reply POSTs 200 at 15:30-15:31.
 
-install_runbook: integrations/ada-pi/README.md — Drop 4 section
+install_runbook: integrations/ada-voice/README.md — Drop 4 section
 
 gaps_and_notes:
   - "NO DEDUP: slug = place-<name>-<sha1(name|coords)[:6]> — same place
@@ -81,7 +81,7 @@ gaps_and_notes:
     day one. lane-place-reports.md rule 5 wants cms_read-before-publish;
     neither the tool nor tool_guide enforces it. Needs a follow-up
     card: tool-side lookup (or guide instructing cms_read first)."
-  - "count_cap comment in ada-pi ssot.tool-surface.yml is stale
+  - "count_cap comment in ada-voice ssot.tool-surface.yml is stale
     ('103 builtin + 9 tools.d' vs actual 37+14=51 declared) — cosmetic;
     place_report went into coverage_debt, no cap bump needed (51 < 112)."
   - "ada-kk-dev.env has NO place_report and NO ADA_CMS_PUBLIC_BASE —
@@ -89,7 +89,7 @@ gaps_and_notes:
     lane needs the PUBLIC_BASE line hand-set or public_url falls back
     to the surf-thailand.com derivation (dead end for h3-published
     pages)."
-  - "ada-pi cms.py _cms_public_base() default derives
+  - "ada-voice cms.py _cms_public_base() default derives
     surf-thailand.com/<tenant>-ha/ but the live publish lane is chaba.h3
     (cms-h3-publish.timer). The default is wrong for the h3 flow — every
     lane that wants public place pages needs the env override. Worth a

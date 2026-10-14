@@ -12,7 +12,7 @@ planning:
     commits in the report.
   scope: |
     - worktrees() gains branch resolution + ancestry check per worktree.
-    - Base ref resolves master -> main -> origin/master -> origin/main (ada-pi
+    - Base ref resolves master -> main -> origin/master -> origin/main (ada-voice
       worktrees default to main, not master).
     - Report: new 'branch'/'unmerged' columns, 'Stranded commits' section, warning,
       and unmerged_worktrees in the JSON summary.
@@ -45,7 +45,7 @@ processing:
     - meta.branch preferred when it still resolves; HEAD branch is the fallback so a
       stale meta entry cannot mask what is actually checked out.
     - Detached HEAD falls back to checking HEAD itself against the base.
-    - Base falls back to main/origin-* because ada-pi worktrees have no master;
+    - Base falls back to main/origin-* because ada-voice worktrees have no master;
       rows that resolve no base report '?' rather than a false '0'.
   changes:
     - file: scripts/devin/devin-precleanup-check.py

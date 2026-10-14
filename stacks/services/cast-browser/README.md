@@ -2,7 +2,7 @@
 
 Persistent headless Chromium (`channel: chrome`) + Playwright that turns voice
 commands into TV actions. Reached via `POST :8799/cmd` (tailnet) — Ada's
-`tv_action` tool calls it directly (see ada-pi `home_assistant.py`); the legacy
+`tv_action` tool calls it directly (see ada-voice `home_assistant.py`); the legacy
 path went through HA `rest_command.tv_action` (fire-and-forget — the response
 was discarded, which is why clicks used to look successful when they weren't).
 
@@ -52,4 +52,4 @@ Ada tv_action  ->  POST 100.75.102.88:8799/cmd
   with a dead page (e.g. `chrome-error://` after DNS failure) every command
   keeps failing until something navs away.
 - The error channel works end-to-end now: cast-browser `{err:...}` →
-  ada-pi raises → Ada says it failed instead of claiming success.
+  ada-voice raises → Ada says it failed instead of claiming success.

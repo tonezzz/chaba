@@ -83,6 +83,6 @@ Converted 2026-10-13 (were red-alerting the sentinel on findings):
 copied to `~/.local/share/ada-scenario-runner/` on idc03 to deploy).
 
 Residual finding-reporters still on exit-nonzero-on-findings (migrate
-when next touched, or fix on the ada-pi side): `ada-memory-sync`,
+when next touched, or fix on the ada-voice side): `ada-memory-sync`,
 `mddb-vector-reindex`, `ada-scenario-smoke` + `ada-scenario-full`
 (quadlets — bypass the wrapper).

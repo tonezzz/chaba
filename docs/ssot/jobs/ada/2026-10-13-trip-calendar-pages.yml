@@ -8,23 +8,23 @@ summary: |
   trip-<slug> (mermaid gantt + day table), daily leaves
   trip-<slug>-<YYYY-MM-DD>, and trip-<slug>-qc coverage page. Generator
   lives in this repo; the Ada-side tools.d wrapper is staged under
-  integrations/ada-pi/ pending an ada-pi session (dispatch worktrees
+  integrations/ada-voice/ pending an ada-voice session (dispatch worktrees
   may not write outside their repo).
 
 deliverables:
   - file: scripts/ada/trip-calendar.py
     role: generator
     detail: |
-      Merges CalendarService.list_events (ada-pi backend, lane-scoped
+      Merges CalendarService.list_events (ada-voice backend, lane-scoped
       registry file) with LINE relay conv_journal archive context
       (journal-<day>.jsonl per room under LINE_MEDIA_ARCHIVE_DIR).
       Writes rollup/leaves/qc + regens reports-index. Re-execs under
-      ada-pi/.venv when ambient python lacks provider deps. --json for
+      ada-voice/.venv when ambient python lacks provider deps. --json for
       tool callers.
     args: "--slug <trip> --from/--to (inferred from matching calendar
       event otherwise) --lane tony|kk|kk-dev --public --keywords --chat
       --no-journal --dry-run --json"
-  - file: integrations/ada-pi/backend/tools.d/trip_calendar.py
+  - file: integrations/ada-voice/backend/tools.d/trip_calendar.py
     role: ada tool (staged, NOT deployed)
     detail: |
       Shells the generator with the lane derived from
@@ -32,9 +32,9 @@ deliverables:
       — lane binding by construction, same as conv_journal. public='yes'
       requires confirmed='yes' (explicit-ask rule). Returns
       rollup/view_url/public_url/leaf count.
-  - file: integrations/ada-pi/backend/tools.d/manifest.trip_calendar.yml
+  - file: integrations/ada-voice/backend/tools.d/manifest.trip_calendar.yml
     role: manifest entry (policy=read, secondary_allowed=true, timeout 120)
-  - file: integrations/ada-pi/backend/tool_guide.trip_calendar.yml
+  - file: integrations/ada-voice/backend/tool_guide.trip_calendar.yml
     role: model usage guidance
   - file: docs/ssot/apps/ssot.apps.ada-persons.yml
     role: profile update
@@ -79,7 +79,7 @@ gaps_and_notes:
     currently 404s on one configured calendar (google provider, the
     literal ${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME} entry — known
     registry bug) which fails the whole aggregate read."
-  - "conv_journal has NO manifest.yml entry in ada-pi (b776e81) — its
+  - "conv_journal has NO manifest.yml entry in ada-voice (b776e81) — its
     DECLARATION is unreachable; trip_calendar ships with its manifest
     snippet, add both when landing."
   - "LINE/TG path returns public_url (surf-thailand.com/<tenant>/);

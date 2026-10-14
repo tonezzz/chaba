@@ -20,7 +20,7 @@ investigation:
   method: |
     journalctl --user -u ada-ha on tony-dell showed the refused lines come
     from homeassistant.components.rest.data and a raw ssh client — i.e. the
-    ada-ha Home Assistant *container* config, not ada-pi's tool_runner
+    ada-ha Home Assistant *container* config, not ada-voice's tool_runner
     (screens.py is not loaded inside this container at all; the card's
     source-pin guessed the wrong layer). The ada-ha quadlet runs
     Network=podman + PublishPort=127.0.0.1:8125:8123, and its config is a

@@ -8,7 +8,7 @@ category: operations
 status: verified
 last_verified: 2026-09-27
 verification_method: verified against live system — this document was itself produced by a dispatched session (task 20260927-215428) launched from spec extract-2026-09-27-fd98e6e49c-0 through exactly this pipeline
-scope: Ada voice/PWA instances (mn01, idc01) dispatching to devin-dispatch hosts (tony-dell primary, tony-omen); repos chaba, ada-pi, sunsynk-card
+scope: Ada voice/PWA instances (mn01, idc01) dispatching to devin-dispatch hosts (tony-dell primary, tony-omen); repos chaba, ada-voice, sunsynk-card
 owner: tony
 related:
   [
@@ -80,7 +80,7 @@ spec must be self-contained.
   - `kind` — `note` | `fact` | `procedure`
   - `status` — `draft`/`active` render into the inbox; dead states
     (`retracted`, `superseded`, `archived`, `done`, `answered`) remove it
-  - `repo` / `applies_to` — whitelist `{chaba, ada-pi, sunsynk-card}`,
+  - `repo` / `applies_to` — whitelist `{chaba, ada-voice, sunsynk-card}`,
     default `chaba`; becomes the inbox `branch`
   - `priority`, `tags` — carried through
 - **Key conventions**:

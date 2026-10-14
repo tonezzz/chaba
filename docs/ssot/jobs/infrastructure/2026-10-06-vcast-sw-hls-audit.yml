@@ -15,7 +15,7 @@ planning:
   scope: >
     stacks/web/public/apps/vcast/ (index.html, pair.html, sw.js,
     manifest.json), stacks/web/input-bridge/server.mjs lastCast replay.
-    The cast_interrupt_gate scenario itself lives in ada-pi (different
+    The cast_interrupt_gate scenario itself lives in ada-voice (different
     repo) — verified the repo-side contract it depends on.
   success_criteria:
     - SW never serves a stale bundle while the edge is reachable
@@ -110,8 +110,8 @@ processing:
         pending/pair-info/claim/paired/registered (claim->registered
         82-165ms), play + pane-1 image delivery, capture lease
         set/get/clear, interrupt cast delivered while a lease is active
-        (the gate is in ada-pi tool_runner, not the relay — the scenario
-        itself runs in the ada-pi suite), stop, and lastCast replay after
+        (the gate is in ada-voice tool_runner, not the relay — the scenario
+        itself runs in the ada-voice suite), stop, and lastCast replay after
         a ws flap. flap-check: 7/7 PASS, no regression. Live verify:
         relay /health ok (7 screens registered); manual image cast to
         screen 7 (vcast-real, idle lab display) -> state=image in <8s,
@@ -168,14 +168,14 @@ followup:
     - "node vcast-flap-check.mjs -> exit 0"
     - "DevTools on a vcast client: sw.js vcast-v3 active, only vcast-v3 in Cache Storage"
     - "Live: POST /api/input-bridge/pub {screen:N,msg:{type:'play',url:...m3u8}} -> kill the producer -> state becomes hls-retry -> restart producer -> state returns to playing"
-    - "ada-pi: scenario-live.py cast_interrupt_gate.yaml — the gate itself is Ada-side (ada-pi repo); this work only touched the contracts it consumes"
+    - "ada-voice: scenario-live.py cast_interrupt_gate.yaml — the gate itself is Ada-side (ada-voice repo); this work only touched the contracts it consumes"
   rollback_plan: >
     git revert the commit on this dispatch branch; the live relay on idc01
     keeps the OLD server.mjs until the quadlet is updated — the page-side
     fixes are independent and safe to keep either way.
   handoff:
     - "Deploy step is NOT done (dispatch mode): pages land on next chaba sync to ~/CascadeProjects/chaba-tony-dell/stacks/web/public; server.mjs needs the idc01 quadlet image/content updated + restart to take effect"
-    - "cast_interrupt_gate scenario run belongs to the ada-pi suite (vcast-scenarios card) — repo-side contract verified here"
+    - "cast_interrupt_gate scenario run belongs to the ada-voice suite (vcast-scenarios card) — repo-side contract verified here"
   deferred:
     - "A deliberately-killed-producer live HLS test on a lab screen (needs a controlled HLS endpoint; documented as manual verification above)"
 
@@ -203,5 +203,5 @@ report:
     empty-room early return. Verified: vcast-cast-check.mjs 15/15,
     vcast-flap-check.mjs 7/7, live image cast+stop round-trip on screen
     7, relay healthy. cast_interrupt_gate's Ada-side gate lives in
-    ada-pi; the /capture lease contract it depends on is exercised by the
+    ada-voice; the /capture lease contract it depends on is exercised by the
     new check.

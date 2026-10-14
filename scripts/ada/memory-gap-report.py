@@ -8,7 +8,7 @@ on the next sync-ada-memory-to-mddb.py --export-inbox run for human
 review — closing the loop from "questions Ada couldn't answer" back into
 capture. See docs/ada-memory/tony-projects/knowledge-circle.md.
 
-ada-pi logs (conversation_memory.py):
+ada-voice logs (conversation_memory.py):
   bank recall '<bank>': miss q="<json-escaped question>" (top scores=[...])
   (older builds logged no q= field — counted but not clustered)
 

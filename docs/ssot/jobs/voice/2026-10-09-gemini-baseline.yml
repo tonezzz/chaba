@@ -19,7 +19,7 @@ path_notes:
     stacks/web/gemini-mic-test/server.mjs drives. The google-genai SDK path
     (aio.live.connect + send_realtime_input audio=Blob) connected fine on
     this host but every audio turn was silently dropped (no VAD events, no
-    model turn) on BOTH genai 2.29.0 and ada-pi's pinned 2.23.0 — text turns
+    model turn) on BOTH genai 2.29.0 and ada-voice's pinned 2.23.0 — text turns
     on the same session answered normally. Root cause not pinned; bench
     uses raw ws (adapters.py:gemini_live). gev-gemini bridge.py uses the SDK
     and may currently be equally deaf — worth a live-check run.

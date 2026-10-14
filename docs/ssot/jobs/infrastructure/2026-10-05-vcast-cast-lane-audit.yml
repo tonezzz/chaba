@@ -12,7 +12,7 @@ planning:
     cast-browser.service + cast-desktop@N + cast-shots-http on tony-omen;
     cast-browser-proxy :8799, cast-ha-panel.timer/cast-ha-selected.sh,
     audit-cast.timer, yt-live-api :8791 on tony-dell; input-bridge relay
-    + /capture leases on idc01; ada-pi cast tools (cast_to_screen,
+    + /capture leases on idc01; ada-voice cast tools (cast_to_screen,
     ada_camera_snapshot, tv_action) on ada-ha-tony.
   success_criteria:
     - All lane services active and answering
@@ -27,7 +27,7 @@ planning:
       recorded here and in the card comms
   resources:
     - ssh tony-omen / idc01 (tailnet)
-    - ada-pi checkout on idc01 + ~/.config/secrets/ada-ha-tony.env
+    - ada-voice checkout on idc01 + ~/.config/secrets/ada-ha-tony.env
     - input-bridge relay http://100.74.146.0:3010
   owner: devin (dispatch)
   estimated_duration: 1 session

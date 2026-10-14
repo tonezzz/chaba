@@ -28,7 +28,7 @@ doc owns detection; this owns delivery.
                 suite score must not regress vs prior run
                 ↓
 6. PROD        explicit same-session approval. Always.
-                ada-pi → deploy-ada.sh (idc03; snapshots dirty trees)
+                ada-voice → deploy-ada.sh (idc03; snapshots dirty trees)
                 HA    → promote-michael.sh / promote-tony.sh
                 infra → stack units + SSOT update in same commit
                 ↓
@@ -43,7 +43,7 @@ doc owns detection; this owns delivery.
 | Repo | Edit point | Stage | Prod | Gate |
 |---|---|---|---|---|
 | chaba | any worktree | this host | master + served checkout | commit hooks |
-| ada-pi | tony-dell | idc02 (scenarios) | idc03 via deploy-ada.sh | tools suite green |
+| ada-voice | tony-dell | idc02 (scenarios) | idc03 via deploy-ada.sh | tools suite green |
 | sunsynk card | worktree | michael-dev | michael-ha/tony-ha | promote-*.sh + approval |
 
 ## Scenario benchmarks — the QA muscle

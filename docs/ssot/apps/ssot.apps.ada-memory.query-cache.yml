@@ -22,7 +22,7 @@ phase0_measurement:
   # experiments/query-cache-phase0 in this repo — analyze.py replays the
   # corpus chronologically; results.json has the full distribution.
   corpus:
-    source: ada-pi tests/bench/bankq-corpus-20261008.jsonl
+    source: ada-voice tests/bench/bankq-corpus-20261008.jsonl
     rows: 1366
     window: "2026-10-06 .. 2026-10-08 (~48h, 684 sessions, all Tony-owned)"
     mined_from: "'memory_search tool timing' journal lines (card nest-bank-router)"
@@ -123,9 +123,9 @@ policy:
       per-entry eviction needed.
     external_writers: >
       Pipelines that write bank collections WITHOUT going through
-      ada-pi (CMS regen, SSOT sync) cannot bump the stamp — TTL is the
+      ada-voice (CMS regen, SSOT sync) cannot bump the stamp — TTL is the
       only guard there. That is why cms/kb classes get hours-scale TTLs
-      while curated banks (always bumped via ada-pi) get days.
+      while curated banks (always bumped via ada-voice) get days.
   ttl_per_bank_class:
     curated: 604800    # 7d — writable memory banks; version-stamp guarded
     cms: 21600         # 6h — cms + ops-scenarios; regen churns, external writes
@@ -134,7 +134,7 @@ policy:
     override_env: ADA_QCACHE_TTLS (JSON map)
 
 implementation:
-  module: backend/query_cache.py (ada-pi, branch dispatch/20261008-152527-nest-query-cache)
+  module: backend/query_cache.py (ada-voice, branch dispatch/20261008-152527-nest-query-cache)
   store:
     class: AdaQueryCache
     fields: "{nq, bank_scope, speaker_scope, covers[], bank_versions(json), payload(json), bank_class, stored_at, ttl_s, hits_count, exhaustive} + query_vec (BYO vector)"

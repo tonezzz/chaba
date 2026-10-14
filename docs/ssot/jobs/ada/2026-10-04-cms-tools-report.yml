@@ -25,8 +25,8 @@ context: |
 scope_ambiguity: |
   "all tools" is ambiguous — pick one (or do one page per surface with an
   index). Candidates, cheapest first:
-    a) Ada's tool suite — ada-pi backend tool declarations (the set Ada
-       can call; most operationally useful to Tony/Ada). Source: ada-pi
+    a) Ada's tool suite — ada-voice backend tool declarations (the set Ada
+       can call; most operationally useful to Tony/Ada). Source: ada-voice
        repo backend/tools + ada-ha-* instances.
     b) Devin MCP tools — the 18 configured MCP servers' tool lists
        (mcp_list_tools per server). Large and volatile.
@@ -42,12 +42,12 @@ generator_template: |
   file). A tools-report generator (e.g. scripts/ada/tools-report.py)
   should:
     1. Enumerate tools with name + one-line description from the chosen
-       source (for Ada tools: ada-pi's tool registry/declarations).
+       source (for Ada tools: ada-voice's tool registry/declarations).
     2. Render: H1 "# Ada Tools", อัปเดตล่าสุด line, one managed block
        <!-- tools:auto --> ... <!-- /tools:auto --> with a ## section per
        group (or a flat list of * **name** — description), provenance
        footer "*Generated {ts} by `tools-report.py` in {d}s · sources:
-       ada-pi tool declarations*".
+       ada-voice tool declarations*".
     3. Stamp meta: generated_by, sources, report_role=leaf, updated,
        last_verified. Optionally add an ada-cms-automation registry doc
        (kind=command generator) so the page gets a Regenerate button.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # mn01-canary.sh — nightly standby-verification for mn01 (Ada standby + burst lane).
-# Verifies: ada-pi checkout freshness, .venv import smoke, secrets presence,
+# Verifies: ada-voice checkout freshness, .venv import smoke, secrets presence,
 # mddb REST reachability, idc03 ada services (the things mn01 stands by for),
 # tailscale up. Emits a chaba-admin event via EVENT_SSH (ssh tony-dell over
 # tailnet — survives LAN partitioning).
@@ -8,7 +8,7 @@
 set -uo pipefail
 
 EVENT_SSH="${EVENT_SSH:-tony-dell}"
-ADA_REPO="${ADA_REPO:-$HOME/CascadeProjects/ada-pi}"
+ADA_REPO="${ADA_REPO:-$HOME/CascadeProjects/ada-voice}"
 MDDB_URL="${MDDB_URL:-http://100.102.134.91:11023}"
 
 fails=()
@@ -18,26 +18,26 @@ fail() { echo "FAIL $1"; fails+=("$1"); }
 # 1. tailscale up
 tailscale status >/dev/null 2>&1 && ok "tailscale" || fail "tailscale down"
 
-# 2. ada-pi checkout tracks origin/main (stale standby = useless standby)
+# 2. ada-voice checkout tracks origin/main (stale standby = useless standby)
 if git -C "$ADA_REPO" rev-parse --verify HEAD >/dev/null 2>&1; then
     local_head=$(git -C "$ADA_REPO" rev-parse HEAD)
     remote_head=$(git -C "$ADA_REPO" ls-remote origin main 2>/dev/null | cut -f1)
     if [ -z "$remote_head" ]; then
-        fail "ada-pi: cannot reach origin (network?)"
+        fail "ada-voice: cannot reach origin (network?)"
     elif [ "$local_head" = "$remote_head" ]; then
-        ok "ada-pi @ ${local_head:0:7} (current)"
+        ok "ada-voice @ ${local_head:0:7} (current)"
     else
-        fail "ada-pi behind origin (local ${local_head:0:7} != remote ${remote_head:0:7})"
+        fail "ada-voice behind origin (local ${local_head:0:7} != remote ${remote_head:0:7})"
     fi
 else
-    fail "ada-pi checkout missing at $ADA_REPO"
+    fail "ada-voice checkout missing at $ADA_REPO"
 fi
 
 # 3. .venv import smoke — the process must actually start
 if (cd "$ADA_REPO" && ./.venv/bin/python3 -c "import backend.tool_runner") 2>/dev/null; then
-    ok "ada-pi venv imports"
+    ok "ada-voice venv imports"
 else
-    fail "ada-pi venv/import broken"
+    fail "ada-voice venv/import broken"
 fi
 
 # 4. secrets present + non-empty

@@ -10,7 +10,7 @@
 // Also measures claim->registered and pub->play latency — the vcast-app
 // card metric is pair->play <10s on a fresh device.
 //
-// The capture-lease section is the repo-side contract for the ada-pi
+// The capture-lease section is the repo-side contract for the ada-voice
 // cast_interrupt_gate scenario: the relay itself never gates interrupts
 // (Ada's tool_runner reads /capture before casting); here we prove the
 // lease API the gate depends on works and that delivery is unaffected.

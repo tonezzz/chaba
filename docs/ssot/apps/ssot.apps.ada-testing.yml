@@ -7,7 +7,7 @@ sections:
     layout: list
     items:
       - label: Offline engine
-        text: tests/scenario_engine.py + tests/test_scenarios.py (ada-pi). Every tests/scenarios/*.yaml runs deterministically against an in-memory FakeMddb + real ToolRunner + ConversationMemory — no network, no Gemini.
+        text: tests/scenario_engine.py + tests/test_scenarios.py (ada-voice). Every tests/scenarios/*.yaml runs deterministically against an in-memory FakeMddb + real ToolRunner + ConversationMemory — no network, no Gemini.
       - label: Live driver
         text: scripts/scenario-live.py + tests/scenarios-live/*.yaml. Replays scripted text/audio turns against a running /ws endpoint and checks ws trace events (tool_call/tool_result/speaker/speaker_unrecognized). LLM phrasing varies — live expectations are deliberately soft.
       - label: Why two tiers
@@ -113,9 +113,9 @@ sections:
     layout: list
     items:
       - label: Offline suite
-        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python -m unittest tests.test_scenarios -v"
+        text: "cd ~/CascadeProjects/ada-voice && .venv/bin/python -m unittest tests.test_scenarios -v"
       - label: Live suite
-        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/<name>.yaml --url ws://127.0.0.1:8003/ws --api-key \"$ADA_API_KEY\" -v (8002=tony, 8003=michael on idc03; services bind loopback — run on the host)"
+        text: "cd ~/CascadeProjects/ada-voice && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/<name>.yaml --url ws://127.0.0.1:8003/ws --api-key \"$ADA_API_KEY\" -v (8002=tony, 8003=michael on idc03; services bind loopback — run on the host)"
       - label: Speaker sim (text tier)
         text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment_sim.yaml — no audio needed, works anywhere"
       - label: Speaker audio tier
@@ -135,7 +135,7 @@ sections:
       - label: scripts/ada/memory-distill-*
         text: "memory-distill-scenarios.yml (11 fixtures) + memory-distill-benchmark.py — baseline 2026-09-22: 100%/100%."
       - label: Known gaps
-        text: Live greeting text not asserted verbatim. ada-pi suite not wired into test-ssot-kb-memory.sh. No judge-model response-quality pass yet. No machine-readable result artifact for historical comparison.
+        text: Live greeting text not asserted verbatim. ada-voice suite not wired into test-ssot-kb-memory.sh. No judge-model response-quality pass yet. No machine-readable result artifact for historical comparison.
   - title: Assessment Tools (proposed)
     icon: "🧰"
     layout: list

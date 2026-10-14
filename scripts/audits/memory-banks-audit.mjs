@@ -172,7 +172,7 @@ async function probeMetaUpdate() {
     if (r.status !== 200 || /error|not found/i.test(r.body)) {
       warn(
         `PATCH /v1/update broken (status ${r.status}: ${r.body.slice(0, 120)}) — ` +
-          "ada-pi correct-in-place writes silently fail; supersede must re-add"
+          "ada-voice correct-in-place writes silently fail; supersede must re-add"
       );
     } else {
       note("PATCH /v1/update works");
@@ -355,7 +355,7 @@ async function main() {
     note(`${SUMMARIES_DIR} not present on this host; skipping devin sync freshness`);
   }
 
-  // --- PATCH /v1/update probe: ada-pi's correct-in-place writes depend on
+  // --- PATCH /v1/update probe: ada-voice's correct-in-place writes depend on
   // it. Self-cleaning probe doc in the scratch `test` collection. ---
   await probeMetaUpdate();
 

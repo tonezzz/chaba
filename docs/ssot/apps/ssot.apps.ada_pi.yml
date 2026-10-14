@@ -16,11 +16,11 @@ sections:
     icon: "⚙️"
     layout: list
     items:
-      - label: chaba/stacks/web/public/apps/ada-pi/
+      - label: chaba/stacks/web/public/apps/ada-voice/
         text: Static PWA files (index.html, app.js, manifest.json, static assets).
       - label: chaba/stacks/web/Caddyfile.tony-omen
         text: Caddy vhost for tony-omen exposing /apps/ada_pi/ on port 8082.
-      - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
+      - label: /home/tony/CascadeProjects/ada-voice/pwa_server.py
         text: FastAPI backend that re-uses backend/realtime_provider for Gemini Live.
       - label: /home/tony/.config/systemd/user/ada-pi-pwa.service
         text: User systemd unit running uvicorn on port 8000.
@@ -45,7 +45,7 @@ sections:
       - label: "pwa/ root + app.js (voice PWA)"
         text: "Served by every pwa_server instance at /. Only remaining launcher is the ada-keys-card Voice popup (redeem link lands on /redeem/{token} then redirects to the PWA root with the raw key). Redundant with custom:ada-voice-card."
       - label: "pwa/chat/ — RETIRED 2026-09-24"
-        text: "Removed (ada-pi 8065e91, deployed; /chat/ → 404). Superseded by the HA-native ada-chat-card on chaba-home/chat; keys-card Text opens the HA tab instead of the ui=chat redeem popup. ui=chat redeem links minted earlier now 404 — acceptable (single-use, all HA surfaces repointed)."
+        text: "Removed (ada-voice 8065e91, deployed; /chat/ → 404). Superseded by the HA-native ada-chat-card on chaba-home/chat; keys-card Text opens the HA tab instead of the ui=chat redeem popup. ui=chat redeem links minted earlier now 404 — acceptable (single-use, all HA surfaces repointed)."
       - label: "pwa/cms/"
         text: "CMS pages browser. Consumed by the chaba-admin ada-pages iframe tab (cms-viewer key passed in the URL query). Retirement candidate — remove the tab when a native CMS surface exists or the feature is dropped."
       - label: "pwa/guest/"
@@ -56,14 +56,14 @@ sections:
         text: "PWA install metadata for the standalone app — dies with the root mount."
       - label: "/redeem/{token}"
         text: "One-time redeem → session cookie + 302 to dest/ with the raw key in the query string. Still needed for QR pairing of non-HA consumers (guest chat key, cms-viewer) and headless keys; HA-native browsers self-mint via script.ada_voice_key and never touch it."
-      - label: "Static /apps/ada-pi/ (dash) snapshot"
-        text: "stacks/web/public/apps/ada-pi/ is a frozen static copy served by Caddy file_server — no WS/API proxying, so it's a broken shell. Pure cleanup candidate."
+      - label: "Static /apps/ada-voice/ (dash) snapshot"
+        text: "stacks/web/public/apps/ada-voice/ is a frozen static copy served by Caddy file_server — no WS/API proxying, so it's a broken shell. Pure cleanup candidate."
       - label: "LAN exposure — resolved 2026-09-23"
         text: "ada-pi-pwa previously bound 0.0.0.0:8001 on tony-dell (full PWA on plain-HTTP LAN). Service moved to idc01 (loopback + tailnet-only serve); the tony-dell unit is stopped+disabled."
       - label: "Backend routes that must stay"
         text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/speakers/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
       - label: "backend/tools.d drop-in tools (added 2026-09-30)"
-        text: "New tools ship as one module + one manifest.yml line under backend/tools.d/ — no tool_runner/realtime_provider edits. Module contract: DECLARATION dict + async run(runner, **args). Manifest sets policy (read|confirmed|owner_only), secondary_allowed (default deny), timeout_s. Authoring standard + ship flow: ada-pi docs/ada-tool-dev.md; loader: backend/tools_loader.py; reference tool: ada_mddb_health."
+        text: "New tools ship as one module + one manifest.yml line under backend/tools.d/ — no tool_runner/realtime_provider edits. Module contract: DECLARATION dict + async run(runner, **args). Manifest sets policy (read|confirmed|owner_only), secondary_allowed (default deny), timeout_s. Authoring standard + ship flow: ada-voice docs/ada-tool-dev.md; loader: backend/tools_loader.py; reference tool: ada_mddb_health."
       - label: "devteam pipeline (added 2026-09-30)"
         text: "ada_devteam_review (owner_only tools.d tool) runs backend/devteam.py: draft spec -> parallel expert panel (security_privacy/standards/qa/scope, each pass|warn|block) -> revised spec -> persists kind=spec-review doc to devin-handoff for dispatch. Model: DEVTEAM_MODEL env (ada-dev uses gemini-3.5-flash-lite — the shared free-tier gemini-2.5-flash bucket is only 20 req/day); 429/503 retried bounded. Bar scenario: tests/scenarios-live/devteam_review.yaml (full tier). Verified live on ada-dev 2026-09-30: QA expert correctly BLOCKED a spec missing its test plan."
   - title: Testing
@@ -71,7 +71,7 @@ sections:
     layout: list
     items:
       - label: unit
-        text: "tests/ in ada-pi — unittest discover (no pytest dep). Memory/tool tests use AsyncMock MDDB; session-config tests assert the live Gemini config."
+        text: "tests/ in ada-voice — unittest discover (no pytest dep). Memory/tool tests use AsyncMock MDDB; session-config tests assert the live Gemini config."
       - label: offline scenarios
         text: "tests/scenarios/*.yaml — declarative seed+steps+expect files run by tests/scenario_engine.py against ToolRunner with an in-memory FakeMddb (keyword-overlap vector stand-in). Covers recall, confirmed writes, supersede, draft visibility, access control, query expansion."
       - label: live scenarios
@@ -89,7 +89,7 @@ sections:
       - label: rview not migrated
         text: The old /apps/rview 443 mapping is gone; rview can be fixed separately later.
       - label: Mid-response replays — fixed 2026-09-24
-        text: "Gemini Live stream aborts server-side (close 1008, ~11 in 3 days on ada-ha-tony incl. bursts of 3 in 6 min on one session); reconnect via session_resumption made Gemini REPLAY the interrupted response — user heard stop+respeak. Fixed in ada-pi e58504d (deployed): pwa_server suppresses the heard prefix after resume (swallow matching audio+deltas until replay catches up, bail on divergence). Still open: what triggers the 1008s — possible self-inflicted aborts from send_client_content text turns (e.g. UNRECOGNIZED_SPEAKER_NOTE) landing mid-turn."
+        text: "Gemini Live stream aborts server-side (close 1008, ~11 in 3 days on ada-ha-tony incl. bursts of 3 in 6 min on one session); reconnect via session_resumption made Gemini REPLAY the interrupted response — user heard stop+respeak. Fixed in ada-voice e58504d (deployed): pwa_server suppresses the heard prefix after resume (swallow matching audio+deltas until replay catches up, bail on divergence). Still open: what triggers the 1008s — possible self-inflicted aborts from send_client_content text turns (e.g. UNRECOGNIZED_SPEAKER_NOTE) landing mid-turn."
       - label: Ambient/foreign noise behavior
         text: "Mic audio always streams; server VAD (START_SENSITIVITY_LOW) can treat TV/foreign speech as a turn (barge-in risk). Speaker-ID fires speaker_unrecognized + injects a system note; person_policies sandbox unknown speakers (general+home banks, light-only control). Verified by tests/scenarios-live/ambient_foreign_voice.yaml: she declines politely and offers enrollment without acting."
   - title: RK600-07B Data Logger + RK900 Weather Sensor
@@ -107,7 +107,7 @@ sections:
       - label: Ada Pi tool
         text: "get_rk600_weather in backend/realtime_provider.py returns the local RK900 weather via the RK600-07B logger"
       - label: Data source
-        text: "ada-pi reads sensor.rk600_* from the configured Home Assistant instance (HOME_ASSISTANT_URL)"
+        text: "ada-voice reads sensor.rk600_* from the configured Home Assistant instance (HOME_ASSISTANT_URL)"
       - label: SSOT registry
         text: "Documented in ssot.mac-address-registry.michael.yml as michael-rk600-weather and ssot.ip-address-registry.michael.yml on the michael-xiaomi-192.168.31.0-24 network"
 config:

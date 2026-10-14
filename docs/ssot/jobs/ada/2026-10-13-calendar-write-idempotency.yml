@@ -7,7 +7,7 @@ summary: |
   A model retry / double-invoke of calendar create wrote two identical
   kk-ha events 1s apart (ทริปแอฟริกาใต้ BKK-CPT 2027-01-02; Tony deleted
   the dup 2026-10-13). Same class as ada-tool-retry-storm — the write
-  path had no idempotency check. Fix is staged as an ada-pi drop-in
+  path had no idempotency check. Fix is staged as an ada-voice drop-in
   patch: CalendarService.create_event now lists the target calendar's
   day window first and returns the existing event as
   {dedup: true, existing: <id>} on a normalized title + identical-start
@@ -22,8 +22,8 @@ placement_decision: |
   write target. tool_runner/calendar.py gets a docstring pointer only.
 
 deliverables:
-  - file: integrations/ada-pi/backend/calendar_providers.create-dedup.patch
-    role: ada-pi patch (vs main @ d166794, 3 files, +173/-3)
+  - file: integrations/ada-voice/backend/calendar_providers.create-dedup.patch
+    role: ada-voice patch (vs main @ d166794, 3 files, +173/-3)
     detail: |
       backend/calendar_providers.py: create_event -> _find_duplicate
       (provider.list_events over the day window of the requested start,
@@ -40,12 +40,12 @@ deliverables:
       dedup.
       tests/test_calendar_providers.py: 7 new tests + FakeProvider
       reflects creates into list_events.
-  - file: integrations/ada-pi/README.md
+  - file: integrations/ada-voice/README.md
     role: Drop 3 install runbook
 
 verify:
   adapi_clone: >
-    /tmp clone of tonezzz/ada-pi @ d166794 with patch applied —
+    /tmp clone of tonezzz/ada-voice @ d166794 with patch applied —
     tests/test_calendar_providers.py 49/49 pass (7 new: dedup hit,
     title/instant normalization, all-day, different-calendar scope,
     no-match still creates, dedup-read failure loud / no blind write,
@@ -56,7 +56,7 @@ verify:
     repeat the identical call — second returns the same event id with
     dedup:true and no new event appears in calendar_read.
 
-install_runbook: integrations/ada-pi/README.md — Drop 3 section
+install_runbook: integrations/ada-voice/README.md — Drop 3 section
 
 gaps_and_notes:
   - "Dedup window is the start's local day only — a dup with a
@@ -69,6 +69,6 @@ gaps_and_notes:
     docs/ssot/apps/ssot.apps.ada-calendar.yml (it 404'd every aggregate
     list_events on the tony lane — which would have made this dedup
     read raise, per the loud-fail rule)."
-  - "Not deployed: the patch must be git-applied in an ada-pi worktree
+  - "Not deployed: the patch must be git-applied in an ada-voice worktree
     and run through deploy-ada.sh's gates; dispatch instructions say no
     pushes from this session."

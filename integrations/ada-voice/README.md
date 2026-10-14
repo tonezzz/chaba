@@ -1,6 +1,6 @@
-# ada-pi drop-ins
+# ada-voice drop-ins
 
-Staged files for the **ada-pi repo** (`tonezzz/ada-pi`), produced by
+Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
 chaba dispatches. Eight drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
@@ -8,7 +8,7 @@ chaba dispatches. Eight drops live here:
    (2026-10-13)
 3. calendar create dedup — card `calendar-write-idempotency` (2026-10-13)
 4. `place_report` — card `maps-url-to-cms-line-maps-link-resolved-c418f8`
-   (2026-10-13) — **already deployed** (ada-pi `074c7a8`+`e24b14d`); this
+   (2026-10-13) — **already deployed** (ada-voice `074c7a8`+`e24b14d`); this
    drop is the repo-of-record copy
 5. file-input speaker ID + LINE enroll-on-clips + boss rule — card
    `line-voice-enroll-recognize` (2026-10-13)
@@ -27,16 +27,16 @@ chaba dispatches. Eight drops live here:
 The generator half (`scripts/ada/trip-calendar.py`) lives in THIS repo;
 these files are the Ada-side surface.
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cp integrations/ada-pi/backend/tools.d/trip_calendar.py
-   <ada-pi>/backend/tools.d/trip_calendar.py`
+1. `cp integrations/ada-voice/backend/tools.d/trip_calendar.py
+   <ada-voice>/backend/tools.d/trip_calendar.py`
 2. Merge `backend/tools.d/manifest.trip_calendar.yml`'s `trip_calendar:`
-   block into `<ada-pi>/backend/tools.d/manifest.yml` under `tools:`.
+   block into `<ada-voice>/backend/tools.d/manifest.yml` under `tools:`.
    (Note: `conv_journal` is also missing a manifest entry on
    b776e81-era checkouts — add both while there.)
 3. Append `backend/tool_guide.trip_calendar.yml` to
-   `<ada-pi>/backend/tool_guide.yml`.
+   `<ada-voice>/backend/tool_guide.yml`.
 4. Tool profiles already updated in this repo —
    `docs/ssot/apps/ssot.apps.ada-persons.yml` adds `trip_calendar` to
    `persons.kk.tools.include`, `bench_profiles.kk-cms-only` and
@@ -69,7 +69,7 @@ docs as `.bin`. This drop is the full ingest + read path.
 
 ### Files
 
-- `backend/line_relay.file-doc-ingest.patch` — unified diff vs ada-pi
+- `backend/line_relay.file-doc-ingest.patch` — unified diff vs ada-voice
   `main` @ `1716db7`. Adds doc mimes to `_MIME_EXT` (pdf, doc/docx,
   xls/xlsx, csv, txt) and a `_MEDIA_INBOUND = ("file", "video")` branch
   in `handle_event`: fetch via the api-data content endpoint →
@@ -84,24 +84,24 @@ docs as `.bin`. This drop is the full ingest + read path.
 - `tests/scenarios-live/doc_read.yaml` — coverage (lint bars new tools
   without a scenario reference).
 - `docs/ssot/ssot.tool-surface.count_cap.patch` — count_cap 111→112
-  (must land in the same ada-pi commit — the ratchet).
+  (must land in the same ada-voice commit — the ratchet).
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && git apply <chaba>/integrations/ada-pi/backend/line_relay.file-doc-ingest.patch`
+1. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/line_relay.file-doc-ingest.patch`
    — base `1716db7`; if it no longer applies cleanly, re-dispatch the
    card rather than hand-merging hunks.
-2. `cp <chaba>/integrations/ada-pi/backend/tools.d/doc_read.py backend/tools.d/doc_read.py`
+2. `cp <chaba>/integrations/ada-voice/backend/tools.d/doc_read.py backend/tools.d/doc_read.py`
 3. Merge `manifest.doc_read.yml`'s `doc_read:` block into
    `backend/tools.d/manifest.yml` under `tools:`.
 4. Append `tool_guide.doc_read.yml` to `backend/tool_guide.yml`.
-5. `cp <chaba>/integrations/ada-pi/tests/scenarios-live/doc_read.yaml tests/scenarios-live/`
-6. `git apply <chaba>/integrations/ada-pi/docs/ssot/ssot.tool-surface.count_cap.patch`
+5. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/doc_read.yaml tests/scenarios-live/`
+6. `git apply <chaba>/integrations/ada-voice/docs/ssot/ssot.tool-surface.count_cap.patch`
 7. Tool profiles already updated in this repo —
    `docs/ssot/apps/ssot.apps.ada-persons.yml` adds `doc_read` to
    `persons.kk.tools.include`, `bench_profiles.kk-cms-only` and
    `kk-parity`. Re-run `scripts/ada/render-tool-profiles.py` for
-   `ada-kk.env` / `ada-kk-dev.env` on idc03 **after** the ada-pi deploy
+   `ada-kk.env` / `ada-kk-dev.env` on idc03 **after** the ada-voice deploy
    (the env allowlist names a tool that must exist first, or
    tool-lint/persons-lint flags it undeclared).
 8. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
@@ -137,7 +137,7 @@ double-invoke wrote the same kk-ha event twice 1s apart
 ### Files
 
 - `backend/calendar_providers.create-dedup.patch` — unified diff vs
-  ada-pi `main` @ `d166794`. Touches three files:
+  ada-voice `main` @ `d166794`. Touches three files:
   - `backend/calendar_providers.py` — `CalendarService.create_event`
     now calls `_find_duplicate` first: resolves the write provider +
     target calid, lists that calendar's day window, and on a normalized
@@ -159,9 +159,9 @@ double-invoke wrote the same kk-ha event twice 1s apart
     `dedup: true`). `FakeProvider.create_event` now reflects creates
     into `list_events` (models real provider state).
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && git apply <chaba>/integrations/ada-pi/backend/calendar_providers.create-dedup.patch`
+1. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/calendar_providers.create-dedup.patch`
    — base `d166794`; if it no longer applies cleanly, re-dispatch the
    card rather than hand-merging hunks.
 2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
@@ -180,7 +180,7 @@ double-invoke wrote the same kk-ha event twice 1s apart
   instant/day) → returns the *existing* event dict plus `dedup: true`
   and `existing: <provider:calid/eid>`; no new event is written.
 - Same title+start on a different calendar is not a duplicate.
-- Verified against a /tmp clone of ada-pi `main` @ `d166794`:
+- Verified against a /tmp clone of ada-voice `main` @ `d166794`:
   `tests/test_calendar_providers.py` 49/49 pass, `tool-lint` clean.
 
 ---
@@ -191,10 +191,10 @@ Card `maps-url-to-cms-line-maps-link-resolved-c418f8` (KNB-0574, Tonezzz
 group directive 2026-10-12): members paste `maps.app.goo.gl` /
 `google.com/maps` links in LINE asking "ร้านนี้ยังอยู่มั้ย" — one ask
 should return a durable page link. Built and deployed directly in the
-ada-pi repo on the same day; this drop stages the record copy.
+ada-voice repo on the same day; this drop stages the record copy.
 
 **Status: DEPLOYED, then patched here (2026-10-13, card
-place-report-empty-page)** — ada-pi `main` @ `074c7a8` (tool+manifest+
+place-report-empty-page)** — ada-voice `main` @ `074c7a8` (tool+manifest+
 guide+coverage_debt) + `e24b14d` (token-stripping/name cleanup); live
 on idc03 `ada-kk` since 2026-10-13 15:26; first real pages already on
 `chaba.h3.gizmo-thailand.com/kk-ha/`. Verified end-to-end: LINE reply
@@ -205,23 +205,23 @@ are AHEAD of the deployed copy** — redeploy per Install to land it.
 ### Files (staged copies)
 
 `place_report.py` and `tool_guide` carry the 2026-10-13 empty-page
-guard and are ahead of the deployed ada-pi copies; the manifest
+guard and are ahead of the deployed ada-voice copies; the manifest
 fragment is still byte-identical.
 
 - `backend/tools.d/place_report.py` — the tool.
 - `backend/tools.d/manifest.place_report.yml` — merge under `tools:`.
 - `backend/tool_guide.place_report.yml` — append to `tool_guide.yml`.
 
-### Install (only for a fresh ada-pi checkout / rebuild)
+### Install (only for a fresh ada-voice checkout / rebuild)
 
-1. `cp <chaba>/integrations/ada-pi/backend/tools.d/place_report.py
-   <ada-pi>/backend/tools.d/place_report.py`
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/place_report.py
+   <ada-voice>/backend/tools.d/place_report.py`
 2. Merge `manifest.place_report.yml`'s `place_report:` block into
-   `<ada-pi>/backend/tools.d/manifest.yml` under `tools:`.
-3. Append `tool_guide.place_report.yml` to `<ada-pi>/backend/tool_guide.yml`.
-4. Add `place_report` to the ada-pi `coverage_debt` list in
+   `<ada-voice>/backend/tools.d/manifest.yml` under `tools:`.
+3. Append `tool_guide.place_report.yml` to `<ada-voice>/backend/tool_guide.yml`.
+4. Add `place_report` to the ada-voice `coverage_debt` list in
    `docs/ssot/ssot.tool-surface.yml` (no scenario exists — debt, like
-   ada-pi `074c7a8` did).
+   ada-voice `074c7a8` did).
 5. Lane env: `place_report` in `ADA_INCLUDED_TOOLS` (rendered —
    `docs/ssot/apps/ssot.apps.ada-persons.yml` already carries it) AND
    hand-set `ADA_CMS_PUBLIC_BASE=https://chaba.h3.gizmo-thailand.com/kk-ha/`
@@ -328,16 +328,16 @@ match` on a LINE session 2026-10-13 19:41 failed for exactly this).
   flow, tool actions incl. the mutation gate, and the boss rule
   (elevation, stale-label, fail-closed).
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && for p in speaker_id.file-input \
+1. `cd <ada-voice> && for p in speaker_id.file-input \
    line_relay.voice-enroll-recognize speaker_profiles.file-actions \
    tool_runner.boss-rule tool_guide.speaker-profiles-file \
    test_line_relay_group.voice-ack; do git apply \
-   <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   <chaba>/integrations/ada-voice/backend/$p.patch; done`
    — based on the idc03 checkout @2026-10-13; if a hunk no longer
    applies, re-dispatch the card rather than hand-merging.
-2. `cp <chaba>/integrations/ada-pi/tests/test_speaker_file_input.py
+2. `cp <chaba>/integrations/ada-voice/tests/test_speaker_file_input.py
    tests/test_speaker_file_input.py`
 3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
    tests/ -x -q` — deploy-ada.sh runs both; restart `ada-line-relay`
@@ -362,7 +362,7 @@ match` on a LINE session 2026-10-13 19:41 failed for exactly this).
   person/control policies). Recognition threshold stays
   `ADA_SPEAKER_THRESHOLD` (default 0.45) + 0.05 margin — documented
   with the spoofing caveat in the tool guide.
-- Verified on a clean copy of the idc03 ada-pi checkout:
+- Verified on a clean copy of the idc03 ada-voice checkout:
   `tool-lint` clean, `pytest tests/` 1360 passed incl. the 30 new
   tests; `decode_audio_file` verified against real LINE corpus m4a
   clips on idc03.
@@ -420,12 +420,12 @@ Chaba-side companion (this repo, same card):
 doc can't mislead even where it reaches a reader without meta. Takes
 effect on the next ada-memory-gaps timer run (mn01, Sun 09:30).
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && for p in tool_runner.memory.draft-hit-frame \
+1. `cd <ada-voice> && for p in tool_runner.memory.draft-hit-frame \
    memory_ops.draft-include-inactive realtime_provider.draft-hit-gates \
    tool_guide.draft-hit-frame; do git apply \
-   <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   <chaba>/integrations/ada-voice/backend/$p.patch; done`
    — base `1bd0bf2` (verified `git apply --check` clean on that tree);
    if a hunk no longer applies, re-dispatch rather than hand-merging.
 2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
@@ -464,7 +464,7 @@ never Drive links, never `drive_get`'s `media_url`.
 
 ### Files
 
-- `backend/line_relay.image-delivery.patch` — unified diff vs ada-pi
+- `backend/line_relay.image-delivery.patch` — unified diff vs ada-voice
   `main` @ `bb4c172`. Three mechanisms, all in the relay so they cover
   turn replies, inbound-media replies, and `/send` (chat_send):
 
@@ -498,11 +498,11 @@ never Drive links, never `drive_get`'s `media_url`.
   open/uc spellings, relative base, no-key error), `_image_msgs`
   end-to-end + silent mode, `_images_from` media_url gating.
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && for p in line_relay.image-delivery \
+1. `cd <ada-voice> && for p in line_relay.image-delivery \
    tool_guide.image-delivery realtime_provider.image-delivery; do \
-   git apply <chaba>/integrations/ada-pi/backend/$p.patch; done`
+   git apply <chaba>/integrations/ada-voice/backend/$p.patch; done`
    — based on `main` @ `bb4c172` (2026-10-13); if a hunk no longer
    applies, re-dispatch rather than hand-merging.
 2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
@@ -577,17 +577,17 @@ The fix binds each backend session to the chat it was opened for; a bare
   chat, explicit `to=` wins, unbound → ""), ws URL binding, group skey →
   room chat, `/send` records `_recent_chat[inst]` and reuses it.
 
-### Install (ada-pi worktree)
+### Install (ada-voice worktree)
 
-1. `cd <ada-pi> && for p in \
-   <chaba>/integrations/ada-pi/backend/line_relay.reply-routing.patch \
-   <chaba>/integrations/ada-pi/backend/tool_runner.reply-routing.patch \
-   <chaba>/integrations/ada-pi/backend/tg_relay.reply-routing.patch \
-   <chaba>/integrations/ada-pi/backend/test_line_relay_group.reply-routing.patch \
-   <chaba>/integrations/ada-pi/pwa_server.reply-routing.patch; do
+1. `cd <ada-voice> && for p in \
+   <chaba>/integrations/ada-voice/backend/line_relay.reply-routing.patch \
+   <chaba>/integrations/ada-voice/backend/tool_runner.reply-routing.patch \
+   <chaba>/integrations/ada-voice/backend/tg_relay.reply-routing.patch \
+   <chaba>/integrations/ada-voice/backend/test_line_relay_group.reply-routing.patch \
+   <chaba>/integrations/ada-voice/pwa_server.reply-routing.patch; do
    git apply "$p"; done` — based on `main` @ `98c8e26`; if a hunk no
    longer applies, re-dispatch rather than hand-merging.
-2. `cp <chaba>/integrations/ada-pi/tests/test_line_reply_context.py
+2. `cp <chaba>/integrations/ada-voice/tests/test_line_reply_context.py
    tests/test_line_reply_context.py`
 3. Gates: `python3 scripts/tool-lint.py`,
    `.venv/bin/python -m pytest tests/ -x -q` — deploy-ada.sh runs both;
@@ -611,13 +611,13 @@ The fix binds each backend session to the chat it was opened for; a bare
 
 ### Verified
 
-- ada-pi `main` @ `98c8e26` + patches: `pytest tests/` 1365 passed /
+- ada-voice `main` @ `98c8e26` + patches: `pytest tests/` 1365 passed /
   4 skipped, `tool-lint` clean.
 - Chaba side: `tests/ada/test_line_reply_routing.py` — patch applies,
   patched files compile, patched relay puts `chat_id` on the ws URL and
   `_session` carries it, `/send` keys `_recent_chat` by instance,
   `session_chat_id` resolves per-channel. Run with
-  `ADA_PI=<ada-pi checkout>`.
+  `ADA_PI=<ada-voice checkout>`.
 
 ### Residual
 

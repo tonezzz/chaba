@@ -201,7 +201,7 @@ Same corpus, same topic map, different writers — measure who distills
 better:
 
 - **Split**: Devin takes `host-operations` + `network-topology`
-  (structured/JSON-heavy); Gemini (via the ada-pi summarizer or direct
+  (structured/JSON-heavy); Gemini (via the ada-voice summarizer or direct
   API on the same sources) takes `reorg-methodology` +
   `docker-practices` + `deployment-procedures` (prose-heavy).
 - **Rubric** (per report):

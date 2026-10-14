@@ -44,7 +44,7 @@ key_decisions:
   - 'Gap found and recorded, not fixed here: ada_board_write wraps
      comment/respond/read/create but NOT the /request endpoint — Ada can
      answer requests yet cannot raise them via the tool. One-action patch
-     in ada-pi; endpoint + notify path already proven.'
+     in ada-voice; endpoint + notify path already proven.'
   - 'Ladder order is durability-then-reach: board_request first (persistent,
      quiet), ntfy last (external SaaS, works off-tailnet). yomi/LINE parked
      — session invalid since 2026-10-05.'
@@ -52,11 +52,11 @@ key_decisions:
 verify: |
   test -f docs/ssot/infrastructure/ssot.ada-participation.yml
   grep -q card-judgment docs/ssot/infrastructure/ssot.nest-bench*.yml \
-      ../ada-pi/tests/bench/topologies.yml
+      ../ada-voice/tests/bench/topologies.yml
   node scripts/ssot-validate-all.mjs   # 1617/1617 valid this run
 
 open_items:
-  - 'ada-pi: ada_board_write action=request -> POST /request (T2 gap)'
+  - 'ada-voice: ada_board_write action=request -> POST /request (T2 gap)'
   - 'card-judgment corpus: mine done cards'' comms for decided cases —
      first batch ≥50; until then the domain stays status: spec'
   - 'T3 shadow mode runner — score Ada''s would-be actions, execute none'

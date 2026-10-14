@@ -19,7 +19,7 @@ A nest node is any of:
 - a systemd **user unit** matching `jev|student|bankq|nest|serve-*.py|openjev`
   (unit name, Description, or ExecStart — covers quadlet-generated units
   like `openjev-student.service`)
-- a **`serves:`/`lanes:`** entry in `~/CascadeProjects/ada-pi/tests/bench/topologies.yml`
+- a **`serves:`/`lanes:`** entry in `~/CascadeProjects/ada-voice/tests/bench/topologies.yml`
   whose host resolves here (hostname, `*.taila0626a.ts.net`, tailnet IP,
   or loopback)
 - a live **`/metrics`** endpoint on a known nest port (fixed list — no

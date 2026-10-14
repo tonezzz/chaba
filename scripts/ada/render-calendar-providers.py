@@ -3,7 +3,7 @@
 
 Reads the machine-readable `calendar:` block from
 docs/ssot/apps/ssot.apps.ada-calendar.yml and writes it to
-~/.config/ada/calendar.json (ADA_CALENDAR_FILE default) so ada-pi
+~/.config/ada/calendar.json (ADA_CALENDAR_FILE default) so ada-voice
 services can load it without a YAML dependency.
 
 Lane rendering (--instance): member lanes keep their own registry file

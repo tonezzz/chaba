@@ -12,13 +12,13 @@ planning:
   goal: >
     Prove and codify that a GEV cast is only "done" after a state read —
     relay registry state (vcast_list surface) plus the gev-gemini remote
-    registry — and document the displaced-content contract (ada-pi feafff7)
+    registry — and document the displaced-content contract (ada-voice feafff7)
     and the apps-v6 stale-cache behavior.
   scope: >
     stacks/web/public/apps/{gev,vcast}/, stacks/web/input-bridge
     (gev-cast-verify.mjs check script), stacks/tony-dell/gev-gemini
     (/command/health remote registry), docs on the displaced-content tool
-    contract (docs/runbooks/vcast-gev-verify-after-act.md). The ada-pi
+    contract (docs/runbooks/vcast-gev-verify-after-act.md). The ada-voice
     tool_runner side of the contract (feafff7) is a different repo —
     verified here via the ground truths it reads, not re-implemented.
   success_criteria:
@@ -29,7 +29,7 @@ planning:
     - Split/PiP remediation exercised live
     - /apps/sw.js purge + vcast-* namespace checks wired into the script
   risks:
-    - Lab screens 6-9 shared with ada-pi live scenarios — cast to a screen
+    - Lab screens 6-9 shared with ada-voice live scenarios — cast to a screen
       marked connected+idle and restore to idle afterwards (done)
     - GEV is heavy under SwiftShader — frame-ok polls need real timeouts
   resources:
@@ -130,7 +130,7 @@ followup:
     - New files only; revert the commit. No live state mutated beyond a restored lab screen.
   handoff:
     - Deploy drift to resolve: live serves vcast sw.js CACHE_NAME=vcast-v2 while master has the v3 rework (2026-10-06 sw-hls-audit). Live checkout needs a pull — flagged on the gev-screens card; not deployed here per dispatch rules.
-    - ada-pi side already shipped (feafff7): cast_to_screen displaced note + split/PiP suggestion keys off these same reads.
+    - ada-voice side already shipped (feafff7): cast_to_screen displaced note + split/PiP suggestion keys off these same reads.
   deferred:
     - Per-client apps-v6 purge proof needs a browser that ran a caching generation — the self-heal code path is verified by source + deploy diff, the end-to-end client purge is hard to stage from a fresh context.
 
@@ -144,7 +144,7 @@ report:
     (state=nav + p0:frame-ok) AND the gev-gemini remote registration
     ({screen,pane}) before passing, accept the nav-mode snapshot contract
     (uncapturable-iframe whose detail is the live iframe src), displace
-    with camwall (both ground truths flip — this is what ada-pi turns
+    with camwall (both ground truths flip — this is what ada-voice turns
     into the displaced note + split/PiP suggestion), remediate with a
     real pip layout, restore to idle. Runbook
     docs/runbooks/vcast-gev-verify-after-act.md documents the

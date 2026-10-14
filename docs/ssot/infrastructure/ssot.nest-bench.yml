@@ -10,12 +10,12 @@ card: docs/ssot/kanban/cards/nest-collective-bench.yml
 related:
   - docs/ssot/infrastructure/ssot.ada-participation.yml   # T3 gate consumer
   - docs/ssot/infrastructure/ssot.nest-brains.yml         # corpus brains
-  - ../ada-pi/tests/bench/topologies.yml                  # structure registry
-  - ../ada-pi/tests/bench/orch-bench.py                   # structure scorer
+  - ../ada-voice/tests/bench/topologies.yml                  # structure registry
+  - ../ada-voice/tests/bench/orch-bench.py                   # structure scorer
 
 # ---------------------------------------------------------------------------
 # Bench model: a DOMAIN is a case set with known-good outcomes; a TOPOLOGY
-# (ada-pi tests/bench/topologies.yml) is the compound-AI structure being
+# (ada-voice tests/bench/topologies.yml) is the compound-AI structure being
 # scored against the domain. Iteration loop (nest-collective-bench card):
 #   bench run -> misses -> corpus grows -> next run measures whether the
 #   topology change earned its cpu-seconds.
@@ -23,7 +23,7 @@ related:
 
 domains:
   confirm-gate:
-    corpus: 'ada-pi jev-bench.py CONFIRM_CASES + orch-hard-cases.jsonl'
+    corpus: 'ada-voice jev-bench.py CONFIRM_CASES + orch-hard-cases.jsonl'
     status: live
     scorer: orch-bench.py
     measures: >-
@@ -32,7 +32,7 @@ domains:
     feeds: 'jev-corpus via --corpus-out (retrain loop merge-corpus.py)'
 
   voice-utterance:
-    corpus: ada-pi tests/bench/voice-bench*.py
+    corpus: ada-voice tests/bench/voice-bench*.py
     status: live
     measures: 'wake-word / utterance handling per model'
 

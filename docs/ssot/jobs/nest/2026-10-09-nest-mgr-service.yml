@@ -28,7 +28,7 @@ discovery:
     - "systemd user units matching jev|student|bankq|nest|serve-*.py|openjev
        (name, Description, or ExecStart/unit-file contents — covers
        quadlet-generated units). Live units claim shared endpoints first."
-    - "serves:/lanes: entries in ~/CascadeProjects/ada-pi/tests/bench/
+    - "serves:/lanes: entries in ~/CascadeProjects/ada-voice/tests/bench/
        topologies.yml resolving to this host (hostname, ts-name, ts-ip,
        loopback)"
     - "live /metrics on the fixed known-port list {8777,8778,8779,8791,8878}
@@ -53,7 +53,7 @@ report:
     15-min publish + immediate republish on state-change fingerprint +
     run_now honored from the ada-cms-automation/nest-<host> registry doc
     (the CMS regenerate button queues run_now; the daemon clears it —
-    no CMS_COMMAND_GENERATORS allowlist change needed in ada-pi)
+    no CMS_COMMAND_GENERATORS allowlist change needed in ada-voice)
   registry: >-
     ada-cms-automation/nest-<host> seeded with generator
     {kind: service, name: nest-mgr} + last_run writeback
@@ -82,8 +82,8 @@ notes:
      reports after the leash kills them; the report is honest, not
      alarming (leash is the intended controller)."
   - "run_now path: cms_automation('run') sets run_now in the registry doc;
-     nest-mgr polls it each 60s tick — self-clearing, no ada-pi deploy
-     needed (the ada-pi allowlist lives behind origin/main on idc03)."
+     nest-mgr polls it each 60s tick — self-clearing, no ada-voice deploy
+     needed (the ada-voice allowlist lives behind origin/main on idc03)."
 next:
   - "Tony accepts the 3 PROPOSED tiles → --accept <slug> + --apply pushes
      them to /chaba-nest"

@@ -2,7 +2,7 @@ title: place_report empty-page guard — unresolved asks refuse publish, return 
 id: 2026-10-13-place-report-empty-guard
 card: place-report-empty-page
 date: 2026-10-13
-status: fixed-in-worktree (staged ahead of deployed ada-pi)
+status: fixed-in-worktree (staged ahead of deployed ada-voice)
 summary: |
   place-cape-sports-center-langebaan-259487 landed in ada-cms-pages-kk
   as a literal '# Cape Sports Center Langebaan' page — no map, no
@@ -23,7 +23,7 @@ repro: |
   (South African venue) -> previously published title-only page.
 
 deliverables:
-  - file: integrations/ada-pi/backend/tools.d/place_report.py
+  - file: integrations/ada-voice/backend/tools.d/place_report.py
     role: guard
     detail: |
       New branch in run() after the name/coords checks: `not coords and
@@ -31,14 +31,14 @@ deliverables:
       maps_url (maps/search/?api=1&query=<name>) + model-facing error
       instructing to send the link or ask for a maps URL. DECLARATION
       description updated to state the behavior.
-  - file: integrations/ada-pi/backend/tool_guide.place_report.yml
+  - file: integrations/ada-voice/backend/tool_guide.place_report.yml
     role: model guidance — unresolved:true means no page exists; send
       maps_url and/or ask for a maps link; never claim a page when
       ok is false.
   - file: tests/ada/test_place_report_drop.py
     role: 2 new tests (17 total) — Nominatim-miss and Nominatim-down
       bare-name asks assert pub_calls==[] + maps_url fallback.
-  - file: integrations/ada-pi/README.md
+  - file: integrations/ada-voice/README.md
     role: Drop 4 status/contract updated — staged copy now ahead of
       deployed; unresolved behavior documented.
   - file: docs/kb/lane-place-reports.md
@@ -50,7 +50,7 @@ verify:
 
 follow_ups:
   - "DEPLOY: staged place_report.py + tool_guide are ahead of live
-    ada-pi (idc03 ada-kk). Land via cp + deploy-ada.sh gates + lane
+    ada-voice (idc03 ada-kk). Land via cp + deploy-ada.sh gates + lane
     restart — a prod deploy step, not done from this worktree."
   - "CLEANUP: the bare page place-cape-sports-center-langebaan-259487
     (and any other title-only place-* siblings) still sits in

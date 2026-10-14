@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render the kanban board: ssot.kanban.yml + cards/*.yml -> cards.json + index.html.
 
-Layout follows the CMS page standard (ada-pi/pwa/cms/index.html):
+Layout follows the CMS page standard (ada-voice/pwa/cms/index.html):
 nav bar with EN/ไทย toggle + refresh, filterable card sidebar, main
 board pane, italic provenance footer. Document-first: edit a card file,
 re-run this script, commit.

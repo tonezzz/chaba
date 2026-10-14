@@ -25,7 +25,7 @@ context:
     unrelated "snapshot"/"camera UI" hits). The real lineage lives in this
     repo: stacks/web/public/cameras.json + frigate/cameras.json registry
     (DOH/iTIC/Longdo/Windy sources) -> cam-wall-pull.py hls/jpeg/youtube
-    pull kinds -> ada-pi backend/traffic_camera.py (Longdo feed snap). The
+    pull kinds -> ada-voice backend/traffic_camera.py (Longdo feed snap). The
     missing piece was an on-demand HTTP shim matching vms-snap's contract;
     that is what was built.
   prior_dispatches: >-
@@ -57,14 +57,14 @@ processing:
     - >-
       Searched chaba0 (git clone + grep; also docs/kb/archive/chaba0
       distillations): no camera implementation found — premise corrected,
-      real sources are in chaba registry + ada-pi traffic_camera.py.
+      real sources are in chaba registry + ada-voice traffic_camera.py.
     - >-
       Surveyed existing surface: cam-wall-pull.py TRAFFIC_ZONE_MAP
       generates traffic/burapha/chonburi zones from frigate/cameras.json;
-      ada-pi merged traffic_camera into ada_camera_snapshot(source=traffic)
+      ada-voice merged traffic_camera into ada_camera_snapshot(source=traffic)
       (tools-merge-camera card). Gap = no on-demand HTTP snap endpoint.
     - >-
-      Built traffic-snap.py porting the ada-pi Longdo fallback chain
+      Built traffic-snap.py porting the ada-voice Longdo fallback chain
       (imgurl jpeg -> vdourl mjpeg first-frame -> hls ffmpeg) plus the
       cam-wall-pull hls/ffmpeg + alt_urls logic.
     - >-
@@ -98,7 +98,7 @@ followup:
     ~/.local/share/traffic-cam/; deleting the stack dir reverts the repo.
   notes: >-
     Ada-side wiring (ada_camera_snapshot source=traffic -> this shim) is
-    an ada-pi change — documented in README, intentionally not done from a
+    an ada-voice change — documented in README, intentionally not done from a
     chaba worktree. DOH 180.180.242.207:1935 was connection-refused during
     testing (camerai1 direct-hls cams unaffected); alt_urls failover is
     the designed mitigation.

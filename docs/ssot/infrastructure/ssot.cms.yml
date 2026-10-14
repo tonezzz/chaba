@@ -12,7 +12,7 @@ overview:
     families land sorted instead of sprawling.
   boundary: >
     Governs the MDDB ada-cms-pages collection and everything that reads
-    or writes it: ada-pi cms tools + pwa/cms viewer, scripts/ada/*.py
+    or writes it: ada-voice cms tools + pwa/cms viewer, scripts/ada/*.py
     producers, scripts/cam-wall/cam-wall-cms.py, scripts/lib/cms_index.py.
     Report-page meta fields (summary/fresh_for/confidence/…) live in
     docs/ssot/apps/ssot.apps.cms-reports.yml — this file owns identity
@@ -118,7 +118,7 @@ meta:
 nav:
 
   description: >
-    Section structure for the CMS viewer (ada-pi pwa/cms) and the grouped
+    Section structure for the CMS viewer (ada-voice pwa/cms) and the grouped
     reports-index. Sections are DERIVED from meta — viewers must not
     match on slug prefixes. Derivation order: report_role=digest →
     digests; else kind=report → reports; else domain → section via
@@ -244,7 +244,7 @@ lifecycle:
     ada-cms-pages/reports-index regenerates grouped by nav section
     (section heading + table per section). Producers that write pages
     via raw /v1/add call scripts/lib/cms_index.py regen_reports_index;
-    ada-pi's cms tools call the same-shape render inside tool_runner.
+    ada-voice's cms tools call the same-shape render inside tool_runner.
 
 producers:
   registry: >
@@ -260,5 +260,5 @@ producers:
     bench-edge-cms:    bench domain
     kanban-cms:        dev-kanban page
     host-services-cms: "'services-*' pages, infra domain"
-    cms_publish_page:  ada-pi tool — domain arg, see ssot.cms.yml
+    cms_publish_page:  ada-voice tool — domain arg, see ssot.cms.yml
     cms-audit.py:      cms-audit-report, meta domain

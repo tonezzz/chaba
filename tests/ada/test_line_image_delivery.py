@@ -1,5 +1,5 @@
 """Unit tests for the line image-delivery drop staged under
-integrations/ada-pi/ (card line-delivery-send-actual-images-not-jus-652ad3,
+integrations/ada-voice/ (card line-delivery-send-actual-images-not-jus-652ad3,
 2026-10-13).
 
 Driver: LINE journal 2026-10-13 21:35 — Tony asked "ส่งรูปรถของผมให้หน่อย",
@@ -14,9 +14,9 @@ and (c) auto-attach a drive_get image via media_url when mimeType is
 image/*.
 
 Same harness as test_line_file_doc_ingest: the unified diff is applied to
-a copy of the ada-pi source (ADA_PI env or ~/CascadeProjects/ada-pi),
+a copy of the ada-voice source (ADA_PI env or ~/CascadeProjects/ada-voice),
 compiled, and its helpers exercised with stubbed http. Skips when no
-ada-pi checkout is reachable (the patch is what ships, not the file).
+ada-voice checkout is reachable (the patch is what ships, not the file).
 """
 
 from __future__ import annotations
@@ -34,14 +34,14 @@ from unittest import mock
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-DROP = REPO / "integrations" / "ada-pi"
+DROP = REPO / "integrations" / "ada-voice"
 PATCHES = [
     DROP / "backend" / "line_relay.image-delivery.patch",
     DROP / "backend" / "tool_guide.image-delivery.patch",
     DROP / "backend" / "realtime_provider.image-delivery.patch",
 ]
 ADA_PI = Path(os.environ.get("ADA_PI",
-                             str(Path.home() / "CascadeProjects/ada-pi")))
+                             str(Path.home() / "CascadeProjects/ada-voice")))
 
 DRIVE_LINK = ("https://drive.google.com/file/d/"
               "1ZewCBQsfsS95C6QmytqsuZyVXtbxVJSc/view?usp=drivesdk")
@@ -50,7 +50,7 @@ JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 800
 
 @pytest.fixture()
 def patched(tmp_path, monkeypatch):
-    """Apply all three drop patches to a scratch ada-pi copy and import
+    """Apply all three drop patches to a scratch ada-voice copy and import
     line_relay with httpx/websockets stubbed (not installed here)."""
     src = tmp_path / "backend"
     src.mkdir()

@@ -3,7 +3,7 @@
 
 Self-contained read-only pass — same token file the Ada calendar service
 uses (~/.config/secrets/ada-google-calendar-token.json), refresh-token
-flow inline so this repo doesn't depend on ada-pi internals. Personal-tier
+flow inline so this repo doesn't depend on ada-voice internals. Personal-tier
 data — local only.
 
 Usage:
