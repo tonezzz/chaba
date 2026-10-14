@@ -89,6 +89,10 @@ persons:
         - trip_calendar
         - doc_read
         - place_report
+        # wp_post (2026-10-14): LINE ask -> boards.surf-thailand.com post —
+        # the public member surface; tony keeps cms writers alongside for
+        # internal reports (unlike persons.kk where they were removed).
+        - wp_post
         # tony-lane additions — evidenced by ada-ha-tony function_call
         # logs (7d: get_rk600_weather ~1507, cast_to_screen ~814) plus the
         # admin/ops surface this lane's owner sessions exercise.
@@ -156,8 +160,13 @@ persons:
         - ada_forget
         - ada_session_recall
         - cms_read
-        - cms_publish_page
-        - cms_edit
+        # cms_publish_page/cms_edit dropped 2026-10-14 (Tony): the public
+        # member surface moved to WordPress — wp_post writes to
+        # boards.surf-thailand.com, so the CMS writers stayed only as a
+        # wrong-system trap (Kaewta sent a board request to the internal
+        # CMS twice). cms_read stays: media-* receipts and recall docs
+        # still live in ada-cms-pages-kk.
+        - wp_post
         - chat_send
         # Calendar/tasks un-excluded 2026-10-11: her own calendar-kk.json +
         # kk-ha task list are live (ADA_CALENDAR_FILE) — the cross-lane leak
@@ -219,6 +228,12 @@ persons:
         # ADA_EXCLUDED_TOOLS alongside the allowlist; the deploy lint
         # warns on any declared tool in NEITHER list, so merges/renames
         # force a decision here instead of slipping through.
+        # cms_publish_page/cms_edit dropped 2026-10-14 — internal CMS
+        # writes stay off the member lane; wp_post owns the public path.
+        - cms_publish_page
+        - cms_edit
+        # ada_render_video — owner-only (Veo ~$1+/clip), persons.tony only.
+        - ada_render_video
         - ada_resolve_action
         - vcast_snapshot
         - vcast_gesture
