@@ -1,0 +1,103 @@
+title: Model fleet benchmark + multi-host large-model POC
+subtitle: 6-tier registry, model-speed harness, fleet matrix run, llama.cpp RPC split measured on LAN + tailscale
+icon: flask
+version: 1
+
+card: model-fleet-benchmark
+date: 2026-10-14
+dispatch: 20261014-185806-model-fleet-benchmark-multi-ho
+runner: tony-omen
+
+plan: |
+  docs/kb/model-fleet-benchmark-plan.md (approved defaults used — section-6
+  open decisions taken as- default model list, idc VPS included as bench cells,
+  POC target 27B, harness driven from wherever runs it via ssh+REST)
+
+built: |
+  - docs/ssot/infrastructure/ssot.model-tiers.yml — 6-tier registry (micro..superlarge)
+    tiered by Q4_K_M footprint, per-host capability ceiling, multi_host verdicts.
+  - scripts/bench/model-speed.py — one harness, fixed 3-prompt suite
+    (short_qa / gen500 / thai), providers ollama|openai|ssh_openai, records
+    TTFT + decode tok/s + server VmHWM + warm-vs-cold -> reports/model-bench/*.json
+    + meta.model-bench.yml (L1 node `model-bench` added to ssot.reports.yml).
+  - scripts/bench/targets.{weekly,full}.yml — cell lists; weekly job
+    `model-bench` added to ssot.jobs.yml (Sun 05:15 on tony_omen, cheap tiers).
+  - llama.cpp b11583 replicated to tony-omen + tony-dell (~/model-bench/);
+    idc02 + tony-macbook already had it from the micro-polish job.
+  - Models pulled on omen ollama: qwen3:0.6b, llama3.2:1b, llama3.2:3b,
+    qwen2.5:7b, gemma3:12b (phi3 preexisting). GGUFs on omen:
+    Llama-3.2-3B Q4_K_M (2.0G) + gemma-3-27b-it Q4_K_M (15.4GiB, unsloth).
+
+measured_matrix: |
+  decode tok/s, median (reports/model-bench/*.json):
+    omen  qwen3:0.6b   36.1  (micro; TTFT inflated — thinking-phase preamble)
+    omen  llama3.2:1b  75.4  GPU-resident
+    omen  llama3.2:3b  47.0  GPU-resident
+    omen  phi3         17.2  GPU-resident (2.2G in 3.7G VRAM)
+    omen  qwen2.5:7b    8.5  partial GPU offload — small ceiling reached
+    omen  gemma3:12b    3.2  medium = CPU-offload, batch-grade only
+    idc03 llama3.2:3b   7.2  4vCPU VPS CPU
+    idc02 L3.2-3B cpp   8.3  llama.cpp, 4vCPU
+    macbk L3.2-3B cpp   8.9  vulkan build (CPU-side decode dominates)
+    dell  smollm2:135m 115.8 tg (llama-bench, -t4; micro tier CPU)
+
+poc_rpc: |
+  llama.cpp ggml-rpc-server per peer on loopback, reached via ssh -L
+  forwards (no tailnet/LAN listeners). Main node = omen, -t 6; model file
+  on main only, tensors stream to peers at load.
+
+    model        config                          pp tok/s   tg tok/s
+    3B           local omen                         30.0      9.81
+    3B           omen+dell LAN 50/50                 33.9      8.29
+    3B           omen+dell tailscale 50/50           36.1      6.90 (+/-2.7)
+    3B           fully-remote dell via LAN          41.9      8.83
+    27B          local omen                          3.40      1.25
+    27B          omen+idc02 tailscale 24/76          3.06      0.87
+    27B          omen+idc02 tailscale 50/50     crashed — rpc-server OOM
+                  (idc02 had ~5G free not ~10; 'Remote RPC server crashed')
+    27B          omen+dell LAN 24/76            aborted — ~4G shard into
+                  dell's ~4.5G free starved sshd (loadavg >60); killed
+                  immediately, dell recovered unharmed.
+
+  Links: omen->dell 15-16 MB/s both paths (omen is on wifi; tailscale rides
+  the same physical hop direct — 'LAN' vs 'tailscale' to a same-LAN peer is
+  nearly identical). omen->idc02 ~67ms RTT internet path.
+
+verdict: sharding-batch-only
+decision_gate: |
+  Plan gate: <2 tok/s decode -> batch-only; >5 -> large-lane candidate.
+  - 27B split over tailscale: 0.87 tok/s — UNDER local 1.25 already-slow
+    baseline. Splitting to a remote VPS strictly loses for 27B-class.
+  - 3B split over LAN: -15% decode — sharding is cheap-ish on LAN but
+    pointless: the model already fits everywhere.
+  - The only RPC win observed is placement, not sharding: fully-remote 3B on
+    dell ran 8.8 tok/s (dell's 8c CPU beats omen's cgroup-capped i7).
+  - Conclusion: no large-lane in the gateway. For >RAM models, the honest
+    answer stays "fit one host or don't run it" — 70B Q2_K on omen
+    (~1 tok/s CPU) beats any sharded config this fleet's links can carry.
+
+surprises: |
+  - RPC peer RAM ceiling is binding and unforgiving: rpc-server dies hard
+    mid-stream (main aborts with gdb dump); free-RAM check before each run.
+  - Dell is NOT a safe shard peer during HA duty — ~4.5G free is margin, not
+    headroom. Its sshd starved under the stream (recovered after kill).
+  - qwen3:0.6b 'TTFT' includes its thinking preamble (first visible token
+    ~6-12s); harness reports it as-is — noted, not a bug in the host.
+  - peak_rss_mb in first-run artifacts read the ollama parent (41MB) not the
+    runner child — fixed in model-speed.py (_find_server_pid follows
+    children); later runs report real server RSS.
+
+artifacts:
+  - reports/model-bench/*.json + meta.model-bench.yml
+  - reports/model-bench/rpc-poc-20261014.json
+  - docs/ssot/infrastructure/ssot.model-tiers.yml
+  - docs/ssot/infrastructure/ssot.reports.yml (model-bench node)
+  - docs/ssot/infrastructure/ssot.jobs.yml (model-bench job)
+  - scripts/bench/{model-speed.py, targets.weekly.yml, targets.full.yml}
+  - "CMS page ada-cms-pages:model-fleet-benchmark"
+  - "remote state — idc02/tony-macbook ggml-rpc-server stopped after run; tony-dell ~/model-bench left provisioned (17M tar + smollm2 gguf)"
+
+left_running: |
+  ggml-rpc-server instances were stopped on dell/idc02/macbook at session end
+  and the ssh -L tunnels torn down. micro-bench-llama.service returned to
+  inactive on idc02/macbook (pre-existing state).
