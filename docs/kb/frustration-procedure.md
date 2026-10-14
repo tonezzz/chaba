@@ -55,7 +55,11 @@ is unverified and must be labelled so: "should", "expected to",
 ## Verification methods used 2026-10-15 — the repeatable kit
 
 Claim under test: "the smoke suite runs text-mode, not billed Gemini Live."
-Three independent methods; each answers a different layer of the claim.
+Five independent methods; each answers a different layer of the claim.
+Full 5-method pass re-run on session 5540bb5f19 (2026-10-15 00:34):
+argv --text ✓ · text-mode provider ✓ · 0 usage-turn lines ✓ ·
+spend-ledger unchanged (3 live / $0.33) ✓ · 0 external sockets ✓ ·
+ledger row mode=text.
 
 **M1 — client argv (intent).** `pgrep -af scenario-live.py` while the
 suite runs — the actual spawned command must carry `--text`. This is
@@ -76,6 +80,23 @@ it routed to — independent of what the client asked for.*
 emits zero `Gemini Live|usage turn` lines (tested 00:28 on session
 65b2207996: count=0). *Lesson: for a cost claim, count the billing
 events themselves — closest layer to the invoice short of AI Studio.*
+
+**M4 — independent spend accounting.** `~/.local/share/ada-review/
+spend-ledger.jsonl` (written by `scripts/ada/spend-ledger.py`) counts
+live-sourced turns + est_usd from a separate journal parse — not the
+voice-burn ledger. A text session adds zero live_sessions/turns.
+Baseline 2026-10-15: 3 live sessions, 20 turns, est $0.33 — unchanged
+through the evening's text runs. (2026-10-14 for scale: 561 live
+sessions, est $51.51.)
+
+**M5 — network egress shape.** `ss -tnp | grep pid=<ada-svc-pid>`
+during a session: a Live session must hold a persistent outbound wss
+to Google (`generativelanguage.googleapis.com`) for its whole life;
+a text session holds zero external sockets — only transient REST calls
+(verified 00:35 on ada-dev pid 3632643: 5 conns, all tailnet/loopback,
+0 external during session 5540bb5f19). *Lesson: the transport is
+visible at the socket layer — billed audio needs a held connection;
+REST text does not.*
 
 Companion scoreboard: `voice-burn-ledger.py` now tags rows
 `mode: text|live` (a text session used to log minutes
