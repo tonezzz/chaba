@@ -285,8 +285,8 @@ def render_host_leaf(host, data, now):
         for f in data["failed"]:
             L.append(f"- `{f}`")
     if data["journal"]:
-        L.append("\n## Journal tail (24h)\n\n```\n")
-        L += data["journal"][-60:]
+        L.append("\n## Journal tail (24h, newest first)\n\n```\n")
+        L += list(reversed(data["journal"]))[:60]
         L.append("```")
     return "\n".join(L)
 
