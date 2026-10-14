@@ -24,7 +24,7 @@ type: runbook
   probe script) — compare against ssot.token-tools.yml `current_state`
 - If `mcp-tool-filtering` is deployed: verify allowlists still match
   real usage (tools the agent needed but couldn't call = allowlist bug)
-- Check `ssot.tokens.policy.yml` numbers still match ada-pi code
+- Check `ssot.tokens.policy.yml` numbers still match ada-voice code
   (trigger 32k / target 24k / rotation 45k / decl cap)
 - Update `maintenance.last_reviewed` in ssot.token-tools.yml
 

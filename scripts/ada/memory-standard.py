@@ -17,7 +17,7 @@ from datetime import datetime
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
 INSTANCE = os.environ.get("ADA_INSTANCE_ID", "tony")
 OPS_COLLECTION = f"ada-ha-events-{INSTANCE}"
-PROFILES = os.path.expanduser("~/.local/share/ada-pi/speaker_profiles.json")
+PROFILES = os.path.expanduser("~/.local/share/ada-voice/speaker_profiles.json")
 NOTIFY_URL = os.environ.get(
     "ADA_NOTIFY_URL", "http://127.0.0.1:8002/api/notify")
 NOTIFY_KEY = os.environ.get("ADA_API_KEY", "")

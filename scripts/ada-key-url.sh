@@ -3,15 +3,15 @@
 # The key is read from the service env file on its host — never stored here.
 # With --qr, mints a one-time redeem URL instead (burns on use, expires in
 # ADA_REDEEM_TTL_S) — a leaked QR/screenshot is useless after one scan.
-# Usage: ada-key-url.sh <tony|michael|ada-pi>   (add --qr to render a QR code)
+# Usage: ada-key-url.sh <tony|michael|ada-voice>   (add --qr to render a QR code)
 set -euo pipefail
 
 instance="${1:-}"; want_qr="${2:-}"
 case "$instance" in
   tony)    host=idc03;     env_name=ada-ha-tony.env;    base=https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ ;;
   michael) host=idc03;     env_name=ada-ha-michael.env; base=https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ ;;
-  ada-pi)  host=idc03;     env_name=ada-pi-pwa.env;     base=https://idc03.taila0626a.ts.net/ ;;
-  *) echo "usage: $0 <tony|michael|ada-pi> [--qr]" >&2; exit 2 ;;
+  ada-voice)  host=idc03;     env_name=ada-pi-pwa.env;     base=https://idc03.taila0626a.ts.net/ ;;
+  *) echo "usage: $0 <tony|michael|ada-voice> [--qr]" >&2; exit 2 ;;
 esac
 
 key="$(ssh "$host" "grep -oP '(?<=^ADA_API_KEY=).*' ~/.config/secrets/$env_name")"

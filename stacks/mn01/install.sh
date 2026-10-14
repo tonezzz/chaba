@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="${PROJECT_DIR:-$HOME/CascadeProjects/ada-pi}"
+PROJECT_DIR="${PROJECT_DIR:-$HOME/CascadeProjects/ada-voice}"
 CHABA_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 mkdir -p "$HOME/.config/systemd/user"
@@ -11,7 +11,7 @@ mkdir -p "$HOME/.config/secrets"
 
 # 1. Ensure Ada Pi repo is present and venv is ready
 if [[ ! -d "$PROJECT_DIR/.git" ]]; then
-    git clone https://github.com/tonezzz/ada-pi.git "$PROJECT_DIR"
+    git clone https://github.com/tonezzz/ada-voice.git "$PROJECT_DIR"
 fi
 
 cd "$PROJECT_DIR"

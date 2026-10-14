@@ -18,7 +18,7 @@ WHAT="${1:?usage: ada-key-swap.sh <free|paid|test|RAW_KEY>}"
 
 case "$WHAT" in
   test)
-    ssh "$HOST" 'cd ~/CascadeProjects/ada-pi && set -a && source ~/.config/secrets/ada-ha-tony.env && set -a &&
+    ssh "$HOST" 'cd ~/CascadeProjects/ada-voice && set -a && source ~/.config/secrets/ada-ha-tony.env && set -a &&
       .venv/bin/python -c "
 import os,asyncio
 async def t():

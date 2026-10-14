@@ -48,7 +48,7 @@ Scenario reports ride with ops — they're run output, not user memory.
 
 ## Code changes
 
-**ada-pi `backend/mddb_client.py`** — add a second client:
+**ada-voice `backend/mddb_client.py`** — add a second client:
 
 ```python
 MDDB_OPS_URL = os.environ.get("MDDB_OPS_URL") or MDDB_BASE_URL
@@ -105,7 +105,7 @@ dead weight — pick the policy when we see growth).
 ## Migration steps
 
 1. **Stand up mddb-ops** on idc02 (quadlet, no embeddings, tailnet :11025)
-2. **Ship the client change** to ada-pi staging on idc02 — run
+2. **Ship the client change** to ada-voice staging on idc02 — run
    `camera_describe` + a scenario against ada-lab; verify ops writes
    land on 11025 and bank reads still hit the leader
 3. **Set `MDDB_OPS_URL=http://100.123.163.11:11025/v1`** in ada-ha env
@@ -140,7 +140,7 @@ the writers' sources (logs, events regenerate).
 - No live replication between leader and ops (the OOM lesson)
 - tony-dell follows only the leader — it doesn't need telemetry
 
-## Read replica split (2026-10-06, ada-pi `backend/mddb_client.py`)
+## Read replica split (2026-10-06, ada-voice `backend/mddb_client.py`)
 
 A third routing layer for the idc01 read-only follower (`mode:"read"`,
 binds `100.74.146.0:11123`, gRPC replication from leader `:11024`):

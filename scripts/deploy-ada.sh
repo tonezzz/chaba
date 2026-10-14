@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy ada-pi to a runtime host. Runtime checkouts are read-only consumers
+# Deploy ada-voice to a runtime host. Runtime checkouts are read-only consumers
 # of origin/main — this fails fast instead of merging or hiding divergence.
 #
 #   - branch must be main, tracking origin/main, tree clean
@@ -88,7 +88,7 @@ for host in "${hosts[@]}"; do
 set -euo pipefail
 # Args arrive comma-joined (ssh arg joining makes space-separated lists unsafe).
 IFS=',' read -ra svcs <<< "$1"; IFS=',' read -ra prts <<< "$2"; force="${3:-}"
-cd "$HOME/CascadeProjects/ada-pi"
+cd "$HOME/CascadeProjects/ada-voice"
 
 branch=$(git branch --show-current)
 [[ "$branch" == main ]] || { echo "FAIL: on branch $branch (expected main)"; exit 1; }
@@ -104,7 +104,7 @@ before=$(git rev-parse HEAD)
 git fetch -q origin
 git pull --ff-only -q || {
   echo "FAIL: cannot fast-forward — local commits diverged from origin/main."
-  echo "  inspect: ssh <host> 'cd ~/CascadeProjects/ada-pi && git log --oneline origin/main..HEAD'"
+  echo "  inspect: ssh <host> 'cd ~/CascadeProjects/ada-voice && git log --oneline origin/main..HEAD'"
   exit 1
 }
 after=$(git rev-parse HEAD)

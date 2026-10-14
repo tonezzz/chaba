@@ -721,7 +721,7 @@ def publish_cms(md: str, edition: str, summary: str,
 def regen_reports_index() -> bool:
     """Refresh ada-cms-pages/reports-index after publishing.
 
-    The canonical regen (ada-pi tool_runner._cms_reports_index) only fires
+    The canonical regen (ada-voice tool_runner._cms_reports_index) only fires
     on Ada's own cms tool writes — raw /v1/add never triggers it, and the
     whole point of the brief is that the index is fresh at 07:05 after a
     quiet night. Shared render lives in scripts/lib/cms_index.py (same

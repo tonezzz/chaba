@@ -1,6 +1,6 @@
 # Ada memory recall — Weaviate assessment + tiered-recall design
 
-Date: 2026-09-27 · bench: `ada-pi/tests/bench_recall.py`
+Date: 2026-09-27 · bench: `ada-voice/tests/bench_recall.py`
 
 ## Measured latency (idc01 localhost / tailnet)
 
@@ -128,5 +128,5 @@ pipeline** (voice profiles) — unrelated to mddb embeddings.
 
 ## Effort estimate
 
-L0 index producer + injection: ~half day in ada-pi + one session-end test.
+L0 index producer + injection: ~half day in ada-voice + one session-end test.
 Weaviate corpus tool: separate small tool, optional second phase.

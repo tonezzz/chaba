@@ -13,7 +13,7 @@ summary:
     ci-test-gate) ran every repo's suite under system `python3`. Repos
     whose tests need their own venv deps false-failed and held good
     merges — observed on the 2026-10-13 line-multihome dispatch to
-    ada-pi: 42/42 green under `~/CascadeProjects/ada-pi/.venv`, red
+    ada-voice: 42/42 green under `~/CascadeProjects/ada-voice/.venv`, red
     under system python3 (no google.genai), merge held.
   - |
     run_test_gate now resolves the interpreter per repo before running a
@@ -34,11 +34,11 @@ summary:
     interpreter that ran, and `command` records the resolved command so
     held-merge comms show which python produced the failure.
   - |
-    ada-pi needs no pin: its canonical checkout `~/CascadeProjects/
-    ada-pi` owns `.venv` (pytest + google.genai present), so resolution
+    ada-voice needs no pin: its canonical checkout `~/CascadeProjects/
+    ada-voice` owns `.venv` (pytest + google.genai present), so resolution
     lands there automatically on any runner whose repos.conf (or the
     BUILTIN_REPOS fallback) maps the name. Hosts with a differently
-    located env can set REPO_TESTS["ada-pi"]["python"].
+    located env can set REPO_TESTS["ada-voice"]["python"].
     dispatch-repos.conf's header documents the resolution for operators.
 
 operator_notes:
@@ -48,8 +48,8 @@ operator_notes:
     red-holds on a real failure rather than silently passing. Fix is to
     refresh the canonical checkout's venv, not to pin around it.
   - |
-    Verified live on tony-omen: ada-pi resolves to
-    `~/CascadeProjects/ada-pi/.venv/bin/python -m pytest tests -k 'not
+    Verified live on tony-omen: ada-voice resolves to
+    `~/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not
     slow' -x -q`; chaba resolves to system `python3 -m pytest tests -x
     -q` because its `venv/` lacks pytest (probe correctly skips it).
 

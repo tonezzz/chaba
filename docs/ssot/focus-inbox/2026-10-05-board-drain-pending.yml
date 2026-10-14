@@ -6,19 +6,19 @@ focus:
   label: Board drain tail
   text: |
     Remaining items after the board-API hardening session: armed idle cards
-    waiting for queue slots, review-column verification, the ada-pi tool-card
+    waiting for queue slots, review-column verification, the ada-voice tool-card
     serial lane, blocked/external items, and physical tasks only Tony can do.
   priority: medium
   status: draft
   tags: [kanban, board, dispatch, ops]
   missing_info:
-    - ada-pi tool cards serialize on tool_runner.py/realtime_provider.py —
+    - ada-voice tool cards serialize on tool_runner.py/realtime_provider.py —
       queue one at a time as each merges; do not run the lane in parallel
     - flood-hub-integration blocked on Google waitlist approval (external)
     - mddb stop on idc01 at 21:00 was unattributed — watch for recurrence
   safe_to_parallel:
     value: false
-    reason: ada-pi lane must serialize; chaba-lane cards can overlap
+    reason: ada-voice lane must serialize; chaba-lane cards can overlap
   subtasks:
     - label: Queue remaining armed idle cards as dispatch slots free
       status: not_started

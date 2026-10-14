@@ -7,7 +7,7 @@ with the scenario suite.
 
 ## 1. Measure the baseline
 
-- Scenarios are yaml under ada-pi `tests/scenarios/` (unit-tier) and
+- Scenarios are yaml under ada-voice `tests/scenarios/` (unit-tier) and
   `tests/scenarios-live/` (drives real backends). Format: `TOUR_STANDARD.md`.
 - Run: `scripts/scenario-benchmark.py --suite <suite>` on idc03 — writes a
   `kind: benchmark` doc to `ada-ha-scenario-reports` + the auto-report page.

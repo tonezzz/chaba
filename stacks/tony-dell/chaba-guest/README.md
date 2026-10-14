@@ -1,6 +1,6 @@
 # chaba-guest — guest assistant + HA auto-login on tony-dell
 
-The guest-facing Chaba assistant: `ada-pi` `pwa_server.py` running with
+The guest-facing Chaba assistant: `ada-voice` `pwa_server.py` running with
 `CHABA_MEMORY=1` (file-backed public memory, no MDDB) plus two LAN-only
 listeners so visitors' phones can reach it.
 
@@ -19,7 +19,7 @@ With Caddy + XFF, guests keep their LAN IPs and get normal login.
 
 ## Deploy steps (tony-dell) — all handled by `deploy.sh`
 
-1. **ada-pi checkout** at `~/CascadeProjects/ada-pi` (venv from
+1. **ada-voice checkout** at `~/CascadeProjects/ada-voice` (venv from
    `backend/requirements.txt`).
 2. **Chaba worktree** — `~/CascadeProjects/chaba-tony-dell-worktrees/master`
    (detached at origin/master; the `chaba-tony-dell` checkout is on a feature

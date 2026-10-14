@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage-2: per-session report from an Ada voice transcript (one LLM call).
 
-Consumes a raw transcript .md (written by ada-pi conversation_memory.py)
+Consumes a raw transcript .md (written by ada-voice conversation_memory.py)
 and produces a structured JSON report that serves two consumers:
 
   memory feed : report["memory_block"] — a compact "## date session" entry

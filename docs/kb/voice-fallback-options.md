@@ -3,7 +3,7 @@
 Researched 2026-10-08. Trigger: Gemini Live becomes unavailable
 (outage, quota, deprecation, pricing). Consumers: GEV voice controller
 (`gev-gemini` bridge, ws://127.0.0.1:8789, 16kHz PCM + tool calls +
-camera frames) and Ada (`ada-pi/backend/realtime_provider.py`).
+camera frames) and Ada (`ada-voice/backend/realtime_provider.py`).
 
 ## Existing seams
 
@@ -54,7 +54,7 @@ unless Thai TTS is solved separately.
 
 | Layer | Choice | Effort |
 |---|---|---|
-| Insurance adapter | Gemini-protocol → OpenAI-Realtime events in gev-gemini; second `RealtimeProvider` in ada-pi | medium, once |
+| Insurance adapter | Gemini-protocol → OpenAI-Realtime events in gev-gemini; second `RealtimeProvider` in ada-voice | medium, once |
 | Hosted fallback | OpenAI Realtime through the adapter | paid, instant |
 | Offline fallback | HF speech-to-speech on idc02/omen + local LLM | medium, no recurring cost |
 | Deferred | Moshi / frameworks | revisit when open S2S gains tool use |

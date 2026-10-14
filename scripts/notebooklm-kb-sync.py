@@ -297,12 +297,12 @@ def build_chunks(workdir):
     merged.extend(chunk_items("meta/AGENTS", agents, workdir))
     merged.extend(chunk_items("meta/README", readme, workdir))
 
-    # Also sync the separate ada-pi repo's docs so the chaba KB covers its
+    # Also sync the separate ada-voice repo's docs so the chaba KB covers its
     # architecture and integrations (e.g. the RK600 weather station).
-    ada_pi = Path.home() / "CascadeProjects" / "ada-pi"
+    ada_pi = Path.home() / "CascadeProjects" / "ada-voice"
     ada_pi_readme = [ada_pi / "README.md"] if (ada_pi / "README.md").exists() else []
     ada_pi_docs = sorted((ada_pi / "docs").rglob("*.md")) if (ada_pi / "docs").exists() else []
-    merged.extend(chunk_items("ada-pi", ada_pi_readme + ada_pi_docs, workdir))
+    merged.extend(chunk_items("ada-voice", ada_pi_readme + ada_pi_docs, workdir))
 
     # Other high-signal READMEs that live outside docs/.
     more_docs = []

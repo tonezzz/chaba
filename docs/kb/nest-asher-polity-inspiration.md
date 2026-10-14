@@ -22,7 +22,7 @@ many narrow minds, coordinated, kept on leashes.
 
 | Asher concept | Nest implementation | Where |
 |---|---|---|
-| Earth Central / AI hegemony | Chaba orchestration layer; L0–L3 capability tiers | ada-pi `tests/bench/topologies.yml` |
+| Earth Central / AI hegemony | Chaba orchestration layer; L0–L3 capability tiers | ada-voice `tests/bench/topologies.yml` |
 | Lesser persona for a job | Dispatch sessions; L0 rules / L1 student specialists | `ssot.jobs`, dispatch pipeline |
 | Tuned persona + telemetry leash | Shadow-deploy posture: a scorer observes & reports, never enforces until promoted; epoch fencing on brains | `ssot.nest-training.yml`, `ssot.nest-brains.yml` |
 | Reprogram lesser minds at will | `nest-train-loop.py` train→bench→promote; promotion gated by a human-approved board request | `ssot.nest-training.yml` |

@@ -50,7 +50,7 @@ _spec.loader.exec_module(ada_sync)
 # Repo -> (relevance 0-30, why). Repos not listed fall back to heuristics.
 PROJECT_MAP = {
     "chaba": (30, "main infra/SSOT repo"),
-    "ada-pi": (30, "Ada voice assistant core"),
+    "ada-voice": (30, "Ada voice assistant core"),
     "sunsynk-power-flow-card": (28, "HA dashboard card in production"),
     "trade": (24, "trading project"),
     "trading-terminal": (24, "trading project (fork)"),

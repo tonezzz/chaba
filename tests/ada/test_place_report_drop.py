@@ -1,8 +1,8 @@
 """Unit tests for the place_report drop staged under
-integrations/ada-pi/ (card maps-url-to-cms-line-maps-link-resolved-c418f8,
+integrations/ada-voice/ (card maps-url-to-cms-line-maps-link-resolved-c418f8,
 2026-10-13).
 
-The tool is already deployed on idc03 ada-kk (ada-pi 074c7a8+e24b14d) —
+The tool is already deployed on idc03 ada-kk (ada-voice 074c7a8+e24b14d) —
 this suite guards the STAGED copy: pure helpers parse Google Maps URL
 shapes and clean Google share strings, and run() is driven end-to-end
 with a fake httpx.AsyncClient (maps expand + Nominatim) and a fake
@@ -20,7 +20,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
-DROP = REPO / "integrations" / "ada-pi"
+DROP = REPO / "integrations" / "ada-voice"
 TOOL = DROP / "backend" / "tools.d" / "place_report.py"
 MANIFEST = DROP / "backend" / "tools.d" / "manifest.place_report.yml"
 GUIDE = DROP / "backend" / "tool_guide.place_report.yml"

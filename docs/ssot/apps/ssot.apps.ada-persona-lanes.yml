@@ -103,21 +103,21 @@ instances:
 
 relay:
   persona_pins: |
-    Interview-room pinning (ada-pi 24d6e3d, ada-line-relay): mentioning a
+    Interview-room pinning (ada-voice 24d6e3d, ada-line-relay): mentioning a
     persona in a room pins it; unaddressed messages follow the pin; another
     mention (@kaewta/@ada/@chaba/kaewta-cms) switches. Pins are per-room and
     in-memory — a relay restart falls back to LINE_DEFAULT_PERSONA, so
     re-mention after a deploy. Replies carry [persona->sender] labels on
     turns and [instance] labels on queued chat_send pushes.
   lane_lock: |
-    LINE_LANE_LOCK=kk,kk-dev,chaba in line-bot.env (ada-pi 461debe): any
+    LINE_LANE_LOCK=kk,kk-dev,chaba in line-bot.env (ada-voice 461debe): any
     chat_send from a locked lane is rewritten to the lane's LINE group
     instead of 403-ing on a bad target — deterministic delivery until
     targeting stabilises. LINE_LANE_ALLOW also allowlists tony (tony's,
     nhong's, kk's DMs + C822) so ada-ha cannot push into the tony-ha group
     (verified 403 live). Unlock per-lane when targeting is verified stable.
   group_persona: |
-    LINE_GROUP_PERSONA=<group>:<persona> (ada-pi 3f4d270) hard-pins a room
+    LINE_GROUP_PERSONA=<group>:<persona> (ada-voice 3f4d270) hard-pins a room
     to one lane — unlike the soft interview-room pin it survives restarts,
     routes unaddressed messages to the room persona, and answers foreign
     mentions with "isn't on this lane" instead of a foreign backend turn.
@@ -133,7 +133,7 @@ relay:
 
 ci:
   description: |
-    Standard CI for a persona lane. Every ada-pi change ships to all
+    Standard CI for a persona lane. Every ada-voice change ships to all
     instances at once (deploy-ada.sh) — "promotion" is a verification
     order, not a separate build. The dev instance is the tripwire:
     scenarios run against it before prod restarts.

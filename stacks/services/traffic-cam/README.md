@@ -40,7 +40,7 @@ cameras"). `CAMERAS_JSON` env / `--cameras-json` overrides. Cams with
 Fetch fallbacks: registry hls tries `hls_url` then every `alt_urls`;
 longdo tries `imgurl` → `vdourl` mjpeg first-frame → `hls_url`.
 Dead-cam stubs (43B "not found", ~3KB "No sengnal" jpeg) are rejected by
-an 8KB minimum — the same heuristic as `cam-wall-pull.py` and ada-pi's
+an 8KB minimum — the same heuristic as `cam-wall-pull.py` and ada-voice's
 `backend/traffic_camera.py` (which this service ports).
 
 ## Install
@@ -53,15 +53,15 @@ an 8KB minimum — the same heuristic as `cam-wall-pull.py` and ada-pi's
 ```
 
 The unit (`traffic-snap.service`) binds the host's tailscale IP only —
-tailnet-reachable from idc01/idc02/ada-pi, not LAN-public. Override with
+tailnet-reachable from idc01/idc02/ada-voice, not LAN-public. Override with
 `TRAFFIC_SNAP_BIND` / `TRAFFIC_SNAP_PORT` env when running by hand.
 
 ## Integration points
 
-- **Ada** — ada-pi `backend/traffic_camera.py` does the equivalent fetch
+- **Ada** — ada-voice `backend/traffic_camera.py` does the equivalent fetch
   in-process today; pointing `ada_camera_snapshot(source=traffic)` at this
   shim (`GET /snap?ch=…`) would centralize resolution + caching. Track as
-  an ada-pi follow-up, not part of this repo.
+  an ada-voice follow-up, not part of this repo.
 - **cam-wall** — `scripts/cam-wall/cam-wall-pull.py` already generates the
   `traffic`/`burapha`/`chonburi` zones from the same registry and keeps
   last-good thumbs; this shim is for *on-demand* snaps, walls keep their
@@ -74,7 +74,7 @@ tailnet-reachable from idc01/idc02/ada-pi, not LAN-public. Override with
 
 - `chaba0` (archived predecessor repo) contains no camera code — the
   traffic-cam lineage starts in this repo: cameras.json registry →
-  cam-wall-pull hls/jpeg/youtube kinds → ada-pi `traffic_camera` → this
+  cam-wall-pull hls/jpeg/youtube kinds → ada-voice `traffic_camera` → this
   shim.
 - DOH Wowza upstreams refuse connections intermittently (observed
   2026-10-05: `180.180.242.207:1935` refused + the itic `pass/` proxy

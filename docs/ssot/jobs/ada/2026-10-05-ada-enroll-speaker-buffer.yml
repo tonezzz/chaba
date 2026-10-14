@@ -7,11 +7,11 @@
 # ada_enroll_speaker still returned 'not enough audio buffered'.
 
 title: ada_enroll_speaker — "not enough audio buffered"
-subtitle: frontend capture verified clean; the enrollment buffer is starved server-side (ada-pi)
+subtitle: frontend capture verified clean; the enrollment buffer is starved server-side (ada-voice)
 icon: microphone
 
-status: diagnosed   # chaba-side observability shipped; root-cause fix belongs in ada-pi
-project: chaba + ada-pi
+status: diagnosed   # chaba-side observability shipped; root-cause fix belongs in ada-voice
+project: chaba + ada-voice
 owner: devin-dispatch
 started: "2026-10-05"
 completed: "2026-10-05"
@@ -32,7 +32,7 @@ context: |
     is OPEN: getUserMedia -> 2048-frame ScriptProcessor -> box
     downsample to 16 kHz Int16 -> ws.send(). Verified by read-through;
     no conditional drop other than intentional mute/auto-mute zeros.
-  - Enrollment buffering is entirely server-side: ada-pi
+  - Enrollment buffering is entirely server-side: ada-voice
     backend/speaker_id.py SpeakerSession._recent (30 s rolling tail of
     fed audio, ADA_SPEAKER_RECENT_S) + _pending_voice (voiced chunks
     accrued while unrecognized) -> enroll_from_buffer. See
@@ -40,7 +40,7 @@ context: |
     after the 09-28 fixes 242b387/272e253).
 
 root_cause_candidates: |
-  Ordered by likelihood. All are in ada-pi (pwa_server.py /
+  Ordered by likelihood. All are in ada-voice (pwa_server.py /
   speaker_id.py / realtime_provider.py) — that repo is OUTSIDE this
   dispatch worktree, so the fixes below are specified, not applied.
 
@@ -91,7 +91,7 @@ chaba_fixes:
       ada-pi-side.
 
 ada_pi_recommendations: |
-  For a follow-up dispatch against ~/CascadeProjects/ada-pi (could not
+  For a follow-up dispatch against ~/CascadeProjects/ada-voice (could not
   be edited from this worktree):
 
   1) Narrow the echo gate: feed() should still append received audio to
@@ -126,7 +126,7 @@ verification:
     enrolled — <name>"; both appear in the Live activity feed.
   - >-
     Root cause is verified by an ada-pi-side check (this dispatch had no
-    ada-pi worktree access): re-run
+    ada-voice worktree access): re-run
     scripts/scenario-live.py tests/scenarios-live/speaker_enrollment.yaml
     on idc01 — if the buffer starves while audio streams, the
     response_active gate is the regression.
@@ -150,5 +150,5 @@ notes:
     pwa/enroll.html + /api/speakers/enroll (guest clip upload) is the
     server-side alternate enrollment path — candidate for a future
     card-side "record clip -> upload" enrollment button, but its request
-    contract is not documented in this repo; confirm in ada-pi
+    contract is not documented in this repo; confirm in ada-voice
     pwa/guest/guest.js before wiring.

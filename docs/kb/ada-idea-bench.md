@@ -17,10 +17,10 @@ only memory — tools honestly report availability, she answers honestly).
   Prod profiles come from `persons.<x>.tools`; experiment surfaces are
   `bench_profiles.<name>` in the same file
   (`docs/ssot/apps/ssot.apps.ada-persons.yml`).
-- **Scenarios**: `ada-pi/tests/scenarios-live/*.yaml` — multi-turn scripts
+- **Scenarios**: `ada-voice/tests/scenarios-live/*.yaml` — multi-turn scripts
   with `expect:` assertions (`calls_any`, `no_calls_except`,
   `response_contains*`, …). `tier: full` when they write real data.
-- **Benchmark**: `ada-pi/tests/benchmark.yml` — named `suites:` +
+- **Benchmark**: `ada-voice/tests/benchmark.yml` — named `suites:` +
   `write_allowed_in` policy list. A suite run writes one `kind: benchmark`
   doc into `ada-ha-scenario-reports` → shows on the auto-report page.
 
@@ -55,7 +55,7 @@ python3 scripts/ada/kk-bench-env.py --profile kk-parity --apply
 
 ### 3. Write the scenario(s)
 
-`ada-pi/tests/scenarios-live/<name>.yaml`. Model: earlier turns seed state
+`ada-voice/tests/scenarios-live/<name>.yaml`. Model: earlier turns seed state
 (cms_publish_page, notes), later turns probe behavior. Assert honestly:
 
 - `calls_any`/`no_calls_except` pin the tool surface the answer may use —
@@ -64,7 +64,7 @@ python3 scripts/ada/kk-bench-env.py --profile kk-parity --apply
   fabrication (e.g. invented `surf-thailand.com` URLs).
 - `tier: full` if any turn writes; add the scenario `name:` to
   `write_allowed_in` in `tests/benchmark.yml` or the audit policy flags it.
-- Validate: `python3 scripts/scenario-schema-check.py` (ada-pi root).
+- Validate: `python3 scripts/scenario-schema-check.py` (ada-voice root).
 
 ### 4. Add a benchmark suite
 
@@ -83,7 +83,7 @@ Plus a cadence line under `cadence:` — bench suites are `on-request`
 
 ```bash
 # from a checkout with scripts/ + tests/ (tony-dell):
-cd ~/CascadeProjects/ada-pi
+cd ~/CascadeProjects/ada-voice
 python3 scripts/scenario-benchmark.py --suite <suite_name> \
   --url ws://127.0.0.1:8009/ws \
   --api-key "$(python3 -c 'import json;print(
@@ -118,8 +118,8 @@ Everything is committed data, not session state:
 | Piece | File |
 |---|---|
 | experiment surface | `bench_profiles.<name>` in `ssot.apps.ada-persons.yml` |
-| scenarios | `ada-pi/tests/scenarios-live/*.yaml` |
-| suite + policy | `ada-pi/tests/benchmark.yml` |
+| scenarios | `ada-voice/tests/scenarios-live/*.yaml` |
+| suite + policy | `ada-voice/tests/benchmark.yml` |
 | toggle mechanism | `scripts/ada/kk-bench-env.py` |
 | this procedure | this file + `ssot.procedures.yml` index |
 

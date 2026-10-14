@@ -7,7 +7,7 @@
 #   llm-burn.sh keys        virtual-key registry (alias, models, budget)
 #
 # Lane/tool resolution rides the x-litellm-tags headers gemini_pool emits
-# (ada-pi >= 6f98a95) — rows predating that show lane=untagged.
+# (ada-voice >= 6f98a95) — rows predating that show lane=untagged.
 set -euo pipefail
 MODE="${1:-3}"
 DB="podman exec litellm-db psql -U litellm -d litellm -t -A -F'|'"

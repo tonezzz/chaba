@@ -20,8 +20,8 @@
 set -u
 SUITE="${1:?usage: scenario-suite-run.sh <suite>}"
 LOCK_PORT=8199
-BENCH="$HOME/CascadeProjects/ada-pi/scripts/scenario-benchmark.py"
-PY="$HOME/CascadeProjects/ada-pi/.venv/bin/python"
+BENCH="$HOME/CascadeProjects/ada-voice/scripts/scenario-benchmark.py"
+PY="$HOME/CascadeProjects/ada-voice/.venv/bin/python"
 
 free() {
     "$PY" -c 'import socket,sys

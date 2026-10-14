@@ -3,7 +3,7 @@
 
 Measures the wall-time split of ada_memory_search bank='all' fan-out by
 replaying the exact request shape against the production mddb, WITHOUT
-touching ada-pi: per-bank POST /v1/vector-search, run the same way
+touching ada-voice: per-bank POST /v1/vector-search, run the same way
 memory_ops.memory_search does (asyncio.gather over every bank).
 
 Two arms split embed vs index time:

@@ -17,7 +17,7 @@ sections:
       - label: registry
         text: Bank registry defined in SSOT — banks, assignment, write policies, note test bank.
       - label: runtime
-        text: ada-pi loads the registry, resolves collections, exposes write/recall tools.
+        text: ada-voice loads the registry, resolves collections, exposes write/recall tools.
       - label: deploy
         text: Registry rendered to ~/.config/ada/memory-banks.json on mn01 + tony-dell; services restarted; isolation verified.
 
@@ -34,7 +34,7 @@ milestones:
       - { task: "Seed ada-ha-bank-note-tony test doc + verify (1 doc, 2 revisions — update path works)", status: done, date: "2026-09-19" }
       - { task: "Re-sync SSOT to MDDB (local mirror 127.0.0.1:11023, 381 files)", status: done, date: "2026-09-19" }
   - id: runtime
-    title: ada-pi runtime
+    title: ada-voice runtime
     status: done
     items:
       - { task: "backend/memory_banks.py — load registry, filter by ADA_INSTANCE_ID, expand {instance}", status: done, date: "2026-09-20" }
@@ -52,7 +52,7 @@ milestones:
     title: Deploy & verify
     status: done
     items:
-      - { task: "Push ada-pi changes to origin/main (949b17a), then scripts/deploy-ada.sh", status: done, date: "2026-09-20" }
+      - { task: "Push ada-voice changes to origin/main (949b17a), then scripts/deploy-ada.sh", status: done, date: "2026-09-20" }
       - { task: "Deploy to mn01 (ada-ha-tony :8002, ada-ha-michael :8003 — michael needed manual restart)", status: done, date: "2026-09-20" }
       - { task: "Deploy to tony-dell (ada-pi-pwa :8001)", status: done, date: "2026-09-20" }
       - { task: "Verify note + tony-projects absent from michael's /api/memory/banks (4 banks; 'note' tool call errors correctly)", status: done, date: "2026-09-20" }
@@ -96,7 +96,7 @@ milestones:
       - { task: "ADA_* env surface consolidated into ssot.apps.ada_ha.yml 'Environment surface' section (identity/auth/safety/recall/summary/logging groups)", status: done, date: "2026-09-20" }
       - { task: "chaba-admin Events tab: chaba-events-card + chaba-event-log.py feed (24h), shared filter via input_text, logbook toggle, producers wired (ada_pair_*, deploy-ada)", status: done, date: "2026-09-20" }
       - { task: "Architecture assessment written (docs/assessments/ada-memory-architecture-assessment.md); bank statuses flipped planned→active", status: done, date: "2026-09-20" }
-      - { task: "Assessment recs landed: personal/ pre-commit guard, memory-health-check.py + timer (NLM auth + inbox-age → chaba-events, deduped), all timers in audit SSOT, session_id provenance on writes (ada-pi 08114fa), MDDB backup mirror to mn01 + RTO doc, audit-watchdog→chaba-events, cast_cleanup continue_on_error fix", status: done, date: "2026-09-20" }
+      - { task: "Assessment recs landed: personal/ pre-commit guard, memory-health-check.py + timer (NLM auth + inbox-age → chaba-events, deduped), all timers in audit SSOT, session_id provenance on writes (ada-voice 08114fa), MDDB backup mirror to mn01 + RTO doc, audit-watchdog→chaba-events, cast_cleanup continue_on_error fix", status: done, date: "2026-09-20" }
       - { task: "devin bank (ada-ha-bank-devin-tony) + kb-* banks wired read-only; sync-devin-summaries.py backfills history_*.md; read-only banks skip status filter", status: done, date: "2026-09-20" }
       - { task: "Auto-distill: session close extracts <=5 candidate facts -> bank docs status=draft -> inbox export -> consolidate flips to active (ADA_EXTRACT_CANDIDATES)", status: done, date: "2026-09-20" }
   - id: knowledge-circle
@@ -112,11 +112,11 @@ milestones:
       - { task: "scripts/ada/memory-gap-report.py — cluster journal misses -> status=draft gap notes -> inbox review", status: done, date: "2026-09-21" }
       - { task: "scripts/ada/memory-staleness-sweep.py — stale-doc iPhone approve/deny via devin_confirmation flow (--apply consumes verdicts)", status: done, date: "2026-09-21" }
       - { task: "Timers: ada-memory-gaps Sun 09:30 (mn01), ada-memory-staleness Sun 10:00 + -apply daily 08:30 (tony-omen), registered in ssot.audit.hosts.yml", status: done, date: "2026-09-21" }
-      - { task: "Deployed ada-pi c82388f to all 3 services; registry re-rendered to mn01+tony-dell", status: done, date: "2026-09-21" }
+      - { task: "Deployed ada-voice c82388f to all 3 services; registry re-rendered to mn01+tony-dell", status: done, date: "2026-09-21" }
       - { task: "Incident: devin-bank backup dumped a session transcript holding live GEMINI_API_KEY+HA token; purged from unpushed history, backup routing fixed (devin+recall summaries -> private, secret-scan quarantine)", status: done, date: "2026-09-21" }
       - { task: "Canary recall set: scripts/ada/recall-canary.py + .yml — 10 known-answer questions over real banks, same vector-search path as ada_memory_search", status: done, date: "2026-09-22", note: "baseline 4/10 -> 10/10 after /v1/vector-reindex (force) on 6 stale ada-ha-bank-* collections — pre-alias embeddings were invisible to gemini-embedded queries. Weekly ada-recall-canary.timer installed on idc01. Remaining corpus gap: inbox vault-only docs awaiting review" }
       - { task: "MDDB primary migrated tony-dell -> idc01 (mddb.service + gemini-ollama-proxy quadlets, tailnet-only 100.102.134.91:11023/9000/11024); all consumers repointed; nightly mddb-backup.timer on idc01 + mddb-backup-pull.timer on tony-omen; mddb-panel on idc01:3002", status: done, date: "2026-09-22" }
-      - { task: "Session context awareness (ada-pi c749f45 on main): transcript archive to ADA_TRANSCRIPT_DIR, _session_context_tail injects agenda+tasks+proposals, _extract_actions -> ada-ha-actions-{instance}, ada_resolve_action tool", status: done, date: "2026-09-22", note: "243 tests pass; deployed c749f45 to idc01+mn01+tony-dell, banks registry rendered to idc01+mn01 (17 banks)" }
+      - { task: "Session context awareness (ada-voice c749f45 on main): transcript archive to ADA_TRANSCRIPT_DIR, _session_context_tail injects agenda+tasks+proposals, _extract_actions -> ada-ha-actions-{instance}, ada_resolve_action tool", status: done, date: "2026-09-22", note: "243 tests pass; deployed c749f45 to idc01+mn01+tony-dell, banks registry rendered to idc01+mn01 (17 banks)" }
       - { task: "Docs coverage: scripts/sync-docs-to-mddb.py syncs devin-kb repo + uncovered chaba docs/** trees; new banks devin-kb + chaba-docs registered (read-only, tony)", status: done, date: "2026-09-22", note: "49 docs synced; vector search verification blocked by gemini-embedding rate limit + mddb HNSW panic on nil vectors during ingest burst" }
       - { task: "scripts/ada/export-transcripts.py — pulls ~/.local/share/ada/transcripts from ada hosts to ~/.local/share/ada-review/ (local-only, never committed) for Devin session audits", status: done, date: "2026-09-22" }
       - { task: "Open: rotate GEMINI_API_KEY + HOME_ASSISTANT_TOKEN (transcript docs redacted on idc01 2026-09-22 — tokens still live until rotated)", status: pending, note: "scripts/ada/rotate-ada-secrets.sh ready — fingerprint-matched updates across mn01/tony-dell/idc01 envs + restarts; needs new values from AI Studio + HA profile UI" }
@@ -151,7 +151,7 @@ milestones:
       - { task: "tool_call/tool_result ProviderEvents forwarded to ws clients (drives live scenario assertions)", status: done, date: "2026-09-22" }
       - { task: "Scenario testing: tests/scenarios/*.yaml offline (FakeMddb) + tests/scenarios-live/*.yaml via scripts/scenario-live.py; michael-technician live run PASSED on :8003", status: done, date: "2026-09-22" }
       - { task: "Michael NotebookLM groups completed: infra/apps/kb/ops notebooks created + added to ada-michael key scope (NOTEBOOKLM_REST_KEY_SCOPES)", status: done, date: "2026-09-22" }
-      - { task: "Deployed ada-pi 8182b89 to mn01 (both services healthy); pushed a83f80d", status: done, date: "2026-09-22" }
+      - { task: "Deployed ada-voice 8182b89 to mn01 (both services healthy); pushed a83f80d", status: done, date: "2026-09-22" }
       - { task: "Seeded michael notebooks: Infra 5 / Ops 5 / KB 3 / Apps 3 sources from shared ssot-summaries + kb runbooks; verified via chat/ask on Infra", status: done, date: "2026-09-22" }
 
   - id: session-review
@@ -159,10 +159,10 @@ milestones:
     status: done
     items:
       - { task: "L0->L1->L2 stack: raw transcripts (private) -> session-report.py Gemini reports + rolling session-memory.md -> focus-rollup.py digest + focus-index", status: done, date: "2026-09-24" }
-      - { task: "L1 written live at session end by ada-pi conversation_memory (a142760); export-transcripts.py pulls transcripts+reports+memory+events.md and is the single refresh entry point (--backfill idempotent)", status: done, date: "2026-09-24" }
+      - { task: "L1 written live at session end by ada-voice conversation_memory (a142760); export-transcripts.py pulls transcripts+reports+memory+events.md and is the single refresh entry point (--backfill idempotent)", status: done, date: "2026-09-24" }
       - { task: "L1.5 ops layer: journal-report.py -> session-ops.jsonl (tools/errors/latency/tokens/aborts/suggestions/memory-writes/ext-writes/restarts) merged into reports + '## ops' block in digest", status: done, date: "2026-09-25" }
       - { task: "L1.5b host sweep: host-report.py -> host-ops.jsonl (restarts/counters/err-lines/oom/unit-fails/disk per host) rendered as '## hosts' block; parallel ssh sweeps w/ reachability probe; transcript-dump lines excluded from signal counts", status: done, date: "2026-09-25" }
-      - { task: "Ops findings fixed: agenda prefetch 4s->12s timeout + repr(exc) logging (ada-pi ed7f689); HABIT_TOOLS exclusion group strips dead habit tools+instructions on non-hardware instances (0a60195, env set on all 3 idc01 units)", status: done, date: "2026-09-25" }
+      - { task: "Ops findings fixed: agenda prefetch 4s->12s timeout + repr(exc) logging (ada-voice ed7f689); HABIT_TOOLS exclusion group strips dead habit tools+instructions on non-hardware instances (0a60195, env set on all 3 idc01 units)", status: done, date: "2026-09-25" }
       - { task: "Host findings: warp-taskbar crash-loop (6.6k restarts/48h, counter 10051) disabled on idc01; open-notebook-surreal ghost cleared on tony-dell; tony-dell disk 83% (13.4G reclaimable docker images)", status: done, date: "2026-09-25" }
       - { task: "Backfill complete: all real transcripts have L1 reports (65 reports, 90 focus threads); Gemini 503 window recovered", status: done, date: "2026-09-25" }
       - { task: "ada-review-refresh.timer on tony-omen — daily 08:45 + Persistent, runs export-transcripts.py (units in chaba/systemd/, first run verified 27s)", status: done, date: "2026-09-25" }

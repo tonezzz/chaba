@@ -6,7 +6,7 @@ title: Media inbox — per-item leaves + 3-tier dedup + extract cache
 subtitle: docs/kb/media-inbox-standard.md implemented end-to-end on idc03
 icon: inbox
 status: done
-project: chaba + ada-pi
+project: chaba + ada-voice
 owner: devin-dispatch
 started: "2026-10-13"
 card: media-inbox-report
@@ -34,7 +34,7 @@ changes: |
     ssot.jobs.yml + systemd/generated/idc03/media-inbox-update-{tony,kk}.*
       — two 15m systemd timers beside the relay + mddb-cms.
     ssot.procedures.yml — media-inbox status defined -> verified.
-  ada-pi (origin/main 6148f64 -> d166794):
+  ada-voice (origin/main 6148f64 -> d166794):
     backend/line_relay.py — _archive_media manifest lines carry
       sha256/size/file_name/persona/caller; journal entries carry
       message_id (image/file/video/text in-entries).
@@ -47,7 +47,7 @@ changes: |
 
 deploy: |
   chaba: origin/master 8f494c1a + 415f5782; ~/CascadeProjects/chaba pulled
-  on idc03. ada-pi: deploy-ada.sh idc03 (main @ d166794) — all 7 services
+  on idc03. ada-voice: deploy-ada.sh idc03 (main @ d166794) — all 7 services
   restarted active. Timers installed to ~/.config/systemd/user + enabled:
   media-inbox-update-{tony,kk}.timer (OnUnitActiveSec=15min).
   Manual service runs verified:

@@ -1,7 +1,7 @@
 ---
 title: Jev + Weaviate architecture assessment — decision tiers, measured
 description: Reconciles the live Jev pilot (open-jev gemma-3-4b on tony-omen, /v1/systemone), the 3-backend model benchmark (open-jev 83% vs Gemini-via-OR 57%), the existing Ada→GEV gev_command path, and MDDB/Weaviate roles — into a tiered architecture with a concrete benchmark/reporting plan
-tags: [jev, systemone, open-jev, weaviate, mddb, gev, openrouter, architecture, benchmarks, ada-pi]
+tags: [jev, systemone, open-jev, weaviate, mddb, gev, openrouter, architecture, benchmarks, ada-voice]
 created: 2026-09-28
 updated: 2026-09-28
 category: architecture
@@ -97,7 +97,7 @@ All emit `kind: benchmark` docs → `ada-ha-scenario-reports` →
 
 | bench | status | next step |
 |---|---|---|
-| `jev-bench` (18 decisions) | script at `/tmp/jev-bench.py` on tony-omen | commit to `ada-pi/tests/bench/`, emit benchmark doc, grow cases from weekly transcripts |
+| `jev-bench` (18 decisions) | script at `/tmp/jev-bench.py` on tony-omen | commit to `ada-voice/tests/bench/`, emit benchmark doc, grow cases from weekly transcripts |
 | `embed-bench` | exists (`gemini-or-embedding-benchmark` page) | weekly timer + OR spend readout |
 | **retrieval bench** (new) | — | same queries × MDDB-semantic vs Weaviate-hybrid → recall@5 + latency; decides Weaviate's scope |
 | scenario suites | hourly smoke + suites | unchanged — they ARE the regression net for tier-1 changes |

@@ -3,7 +3,7 @@
 
 Reads the machine-readable `banks:` block from
 docs/ssot/apps/ssot.apps.ada-memory-banks.yml and writes it to
-~/.config/ada/memory-banks.json (ADA_MEMORY_BANKS_FILE default) so ada-pi
+~/.config/ada/memory-banks.json (ADA_MEMORY_BANKS_FILE default) so ada-voice
 services can load it without a YAML dependency.
 
 Usage:

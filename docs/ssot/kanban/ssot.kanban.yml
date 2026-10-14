@@ -106,7 +106,7 @@ card_schema:
            — both via runner-agent"
     status: "idle | queued | running | done | failed"
     button: "label override (default ▶ Start / ↺ Retry / ✔ Close)"
-    repo: "chaba | ada-pi | sunsynk-card | mddb-fork — devin-dispatch
+    repo: "chaba | ada-voice | sunsynk-card | mddb-fork — devin-dispatch
            whitelist ($DISPATCH_DIR/repos.conf: name path default_branch)"
     host: "optional — pin the card to one host's dispatcher (e.g. idc01
            for mddb work). Unpinned = first eligible host under cap."
@@ -217,7 +217,7 @@ card_schema:
   # kanban-sync: review requires [exp]+[alpha] comms tags; done requires
   # [exp alpha beta smoke rc prod] + the beta soak bar; shortfalls bounce
   # the card back to doing with a comms note naming the missing gate.
-  release: "lane/track name (e.g. tony|ada|michael|ada-pi) — opt into the
+  release: "lane/track name (e.g. tony|ada|michael|ada-voice) — opt into the
     release-lifecycle comms-tag gates"
   soak_until: "YYYY-MM-DD HH:MM — stamped by lifecycle-check.py the first
     time a release card is seen in review (= entry + bars.beta.soak_hours).
@@ -304,7 +304,7 @@ execution:
                  5. test gate (card ci-test-gate) — the repo's fast suite
                     runs INSIDE the merged worktree before anything
                     pushes (dispatch_repos.run_test_gate; per-repo
-                    REPO_TESTS table: chaba `pytest tests`, ada-pi
+                    REPO_TESTS table: chaba `pytest tests`, ada-voice
                     `pytest tests -k 'not slow'`, others default to
                     `python3 -m pytest tests -x -q` but only when the
                     merged tree has a tests/ dir). A red suite or a
@@ -470,7 +470,7 @@ update_path:
 
 page_standard:
   layout: cms-full
-  reference: ada-pi/pwa/cms/index.html
+  reference: ada-voice/pwa/cms/index.html
   needs_you_band:
     # Rendered above the columns by render-board.py (cards.json is the only
     # input — detection is page-side JS, no API surface added).

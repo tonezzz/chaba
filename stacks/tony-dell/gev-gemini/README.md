@@ -34,7 +34,7 @@ Model proposes, bridge enforces — same posture as Ada's provider:
 - **Confirm gate**: `GEV_CONFIRM_TOOLS` (default `clear_annotations,control_cctv`)
   plus `annotate_map` with `persist=true` require the user's last utterance
   (input audio transcription, or the typed-turn text) to affirm — same
-  regex + negation/question vetoes as ada-pi's `_user_confirmed`. Blocked
+  regex + negation/question vetoes as ada-voice's `_user_confirmed`. Blocked
   calls get a synthetic `tool_response` telling the model to ask first.
 - **Ops events**: guard interventions POST to MDDB (`GEV_MDDB_URL`,
   `GEV_OPS_COLLECTION`=`gev-ops-events`) so they show in the digest.

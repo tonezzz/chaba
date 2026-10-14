@@ -2,7 +2,7 @@
 """Ada bank-recall drift report — parses ada-ha service journals for recall
 hit/miss lines and emits a chaba-events entry when quality drifts.
 
-ada-pi logs:
+ada-voice logs:
   bank recall '<bank>': N hit(s), scores=[0.71, ...]      -> hit
   bank recall '<bank>': miss (top scores=[...])           -> miss (escalated)
 

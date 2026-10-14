@@ -1,0 +1,53 @@
+# SSOT Job: ada-pi -> ada-voice repo/lane rename
+# Card: ada-pi-rename-ada-voice. Tony-approved 2026-10-14 21:27
+# (condition met: import was 13 files/974 LOC -> 661 files/~128k LOC,
+# nothing ever ran on a Pi). Executed by devin dispatch
+# 20261014-220238 (tony-dell), option (a): one sweep + host-by-host.
+
+title: ada-pi -> ada-voice rename — repo, checkouts, dispatch layer
+subtitle: "the Pi lie is gone: GitHub + 5 hosts renamed; symlink bridge keeps everything live"
+icon: rename
+card: ada-pi-rename-ada-voice
+
+what_landed:
+  github: "tonezzz/ada-pi -> tonezzz/ada-voice (gh api PATCH; old name redirects for git+web)"
+  ada_voice_repo: "branch dispatch/20261014-ada-voice-self-sweep merged to main (6fa8e9b) — 60 files, bare ada-pi -> ada-voice; compounds (ada-pi-pwa, card/task slugs) and upstream nazirlouis/ada-pi preserved"
+  chaba_sweep: "307 files on dispatch branch dispatch/20261014-220238-* — scripts, stacks, systemd templates, SSOT, AGENTS.md, tests; integrations/ada-pi git-mv'd to integrations/ada-voice; kanban cards left to the API/alias path"
+  checkouts:
+    renamed: [tony-dell, idc02, idc03, tony-omen, tony-macbook]
+    # tony-dell + idc02 cleared the quiet gate between attempt 1 (22:23)
+    # and attempt 2 (~22:55) — status now shows real ada-voice dir +
+    # ada-pi back-link + zero ada in-flight on every reachable host.
+    unreachable: [mn01]                # ssh timeout (both attempts) — run when back
+  dispatch_layer:
+    - "BUILTIN_REPOS + REPO_TESTS: canonical ada-voice + legacy ada-pi alias -> ~/CascadeProjects/ada-voice"
+    - "devin-dispatch.sh fallback map: same dual entries"
+    - "dispatch-repos.conf template + live ~/.local/share/devin-dispatch/repos.conf on dell+macbook: ada-voice line + ada-pi legacy alias (hosts without the file use BUILTIN)"
+  systemd_units_patched:
+    idc03: 23   # ada-ha-tony/michael, ada-pi-pwa, ada-dev, relays, ada-kk, scenario/bench/report jobs
+    tony-omen: 3
+    others: "patched automatically per host by the script at rename time"
+
+mechanics:
+  compat_bridges:
+    forward: "ada-voice -> ada-pi created BEFORE the mv (staged 22:10) so merged sweep code resolved while dir was still ada-pi"
+    back:    "ada-pi -> ada-voice left after each mv — in-flight dispatches, un-patched units and stale scripts keep resolving; retire when clean"
+  worktree_fixups: "every ~/CascadeProjects/*/.git file containing the old path is sed-rewritten (covers dispatch-wt-* AND ada-wt-*)"
+  no_restart_needed: "running units keep their inode; patched unit files + daemon-reload take effect on next natural restart"
+  script: "scripts/devin/rename-ada-voice.sh — status | run <host|all> [--force]; quiet-gated per host (refuses while an ada-pi/ada-voice devin-task meta lacks exit_code)"
+
+verified:   # attempt 2 (dispatch 20261014-224101, idc03)
+  - "fleet status: every reachable host = real ada-voice dir + ada-pi compat symlink, zero ada dispatches in flight (gate met)"
+  - "dispatch resolution: BUILTIN_REPOS + REPO_TESTS answer ada-voice (canonical) and ada-pi (legacy alias) -> ~/CascadeProjects/ada-voice; devin-dispatch.sh + dispatch-repos.conf carry both"
+  - "deploy-ada.sh green on idc03: installed copy == canonical, fetch+ff at 8eaab27, tool-lint clean, pytest 1467 passed, all 8 ada services restarted active (ada-ha-tony/michael, ada-pi-pwa, ada-dev, ada-kk-dev, ada-kk, line/tg relays)"
+  - "no systemd unit on idc03 references CascadeProjects/ada-pi (23 patched in attempt 1)"
+  - "live cards swept: 6 non-done cards moved action.repo ada-pi -> ada-voice; 91 done cards keep the old name (history; alias resolves anyway)"
+
+remaining:
+  - "mn01: ssh timed out — run rename-ada-voice.sh run mn01 when reachable (stacks/mn01 units reference the dir)"
+  - "retire compat symlinks + ada-pi alias lines once the board has no ada-pi repo references"
+
+gotchas:
+  - "test_claim_order / patch-apply tests were already red on master before this change — staged integrations/ drop patches drifted vs evolved ada-voice sources (memory.py:206, line_relay.py:42, chat.py:234)"
+  - "docs/ada-memory, docs/assessments, docs/kb/archive, dispatch-outcome-*, backups/ deliberately left as-is — dated records keep the name that was true at the time"
+  - "systemd unit NAMES keep ada-pi-pwa/ada-pi-orch-bench — renaming units was out of scope; only dir references inside them changed"

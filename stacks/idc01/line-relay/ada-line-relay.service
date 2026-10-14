@@ -4,10 +4,10 @@ After=network.target ada-ha-tony.service
 
 [Service]
 Type=simple
-WorkingDirectory=%h/CascadeProjects/ada-pi
+WorkingDirectory=%h/CascadeProjects/ada-voice
 EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
 EnvironmentFile=%h/.config/secrets/line-bot.env
-ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python -m backend.line_relay
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python -m backend.line_relay
 Restart=on-failure
 RestartSec=10
 

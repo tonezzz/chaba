@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Roll per-session summaries up into daily/weekly/monthly docs.
 
-Substrate: ada-pi writes kind=session-summary docs
+Substrate: ada-voice writes kind=session-summary docs
 (session-<date>-<sid>) into ada-ha-recall-summary-<instance> at session
 close. This job aggregates them into:
 
