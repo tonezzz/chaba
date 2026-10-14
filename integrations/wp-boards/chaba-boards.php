@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.3
+ * Version: 0.3.4
  */
 
 if (!defined('ABSPATH')) exit;
@@ -55,6 +55,53 @@ add_action('init', function () {
         }
         register_post_type($slug, array_merge($common, $extra));
     }
+});
+
+// ============================================================================
+// Public-host canonicalization — the Caddy edge proxies with
+// Host=boards.h3.gizmo-thailand.com so the Plesk vhost matches, but WP builds
+// some URLs (wp-admin canonical, list-table sort/pagination) straight from
+// $_SERVER['HTTP_HOST'] — bypassing every URL filter below. When the request
+// demonstrably came through the public edge (X-Forwarded-Host), rewrite the
+// server vars at plugin-load time — before any URL is generated — so emitted
+// links carry the public host. Direct origin hits are left untouched.
+if (!headers_sent()) { header('X-Chaba-Env: v034 fwd=' . ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? '-') . ' host=' . ($_SERVER['HTTP_HOST'] ?? '-')); }
+if (($_SERVER['HTTP_X_FORWARDED_HOST'] ?? '') === 'boards.surf-thailand.com') {
+    $_SERVER['HTTP_HOST']   = 'boards.surf-thailand.com';
+    $_SERVER['SERVER_NAME'] = 'boards.surf-thailand.com';
+}
+
+// ============================================================================
+// Public-host rewrite — wp-config on the Plesk origin pins WP_SITEURL/WP_HOME
+// to boards.h3.gizmo-thailand.com, which overrides the DB options and leaks
+// the origin host into generated URLs (admin sort/pagination links, rel=
+// canonical, REST _links, attachment URLs). The public edge is
+// boards.surf-thailand.com; rewrite every URL-emitting filter so generated
+// links always carry the public host. (The edge already rewrites redirect
+// Location headers; this fixes URLs embedded in HTML.)
+// ============================================================================
+add_action('init', function () {
+    $from = 'https://boards.h3.gizmo-thailand.com';
+    $to   = 'https://boards.surf-thailand.com';
+    $swap = function ($url) use ($from, $to) {
+        return is_string($url) ? str_replace($from, $to, $url) : $url;
+    };
+    foreach (['admin_url', 'site_url', 'home_url', 'rest_url', 'login_url',
+              'logout_url', 'lostpassword_url', 'register_url',
+              'includes_url', 'content_url', 'plugins_url', 'network_site_url',
+              'post_link', 'page_link', 'post_type_link', 'attachment_link',
+              'term_link', 'get_pagenum_link', 'the_permalink', 'feed_link',
+              'author_link', 'day_link', 'month_link', 'year_link',
+              'wp_get_attachment_url'] as $f) {
+        add_filter($f, $swap, 20);
+    }
+    // upload_dir returns an array, not a string
+    add_filter('upload_dir', function ($d) use ($from, $to) {
+        foreach (['url', 'baseurl'] as $k) {
+            if (!empty($d[$k])) $d[$k] = str_replace($from, $to, $d[$k]);
+        }
+        return $d;
+    }, 20);
 });
 
 // REST-writable meta — fleet writers set these via the `meta` field.

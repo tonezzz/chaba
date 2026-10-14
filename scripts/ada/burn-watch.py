@@ -22,7 +22,8 @@ import urllib.request
 
 LEDGER = os.path.expanduser("~/.local/share/ada/voice-burn")
 STATE = os.path.expanduser("~/.local/share/ada/burn-watch-state.json")
-BOARD_API = os.environ.get("BOARD_API", "http://tony-dell:8787")
+BOARD_API = os.environ.get("BOARD_API",
+                           "http://tony-dell/apps/board-api")
 CARD = os.environ.get("BURN_WATCH_CARD", "ada-gemini-live-spend-cap")
 
 # Lane → max Live-min/day before alerting. Test lanes run text-mode
