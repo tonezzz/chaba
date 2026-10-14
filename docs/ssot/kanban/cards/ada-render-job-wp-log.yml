@@ -1,0 +1,58 @@
+id: ada-render-job-wp-log
+title: 'ada_render_video: auto-write render_job records to WP boards'
+column: review
+updated: 2026-10-14 22:15
+spec: 'Each ada_render_video call should land one render_job post on WP boards so renders are visible + cost-trackable.
+  Plugin v0.3.1 is live: render_job now carries kind=video + video meta (secs/aspect/res/ref_url/operation/est_cost_usd/parent_job/chain_index).
+  Implement in backend/tools.d/ada_render_video.py using backend/wp_client.py (create_post(..., post_type=''render_job''))
+  — same auth as wp_post (wp-boards.env on the backend host). Fields: kind=''video''; title ''Render — {prompt-short}
+  {YYYY-MM-DD}'' per title_standard; prompt, model, secs, aspect, ref_url, operation (Veo op name — resume dedup
+  key), duration_s (wall-clock), host, backend=''veo'', status ok|error, output_url=video_url, source=''ada_render_video'',
+  requested_by=lane/user if known, error msg on failure. est_cost_usd: published-price estimate from model+secs+probed
+  res (veo-3.1-fast ~$0.10/s 720p, ~$0.12/s 1080p) — it''s an estimate, document it as such. Write on SUCCESS and
+  on FAILURE (status/error meta). Best-effort: wrap in try/except, log only — WP write must never fail the render
+  or block _finish. Skip silently when wp_boards env is absent on that host. Verify: tool-lint + pytest green via
+  merge gate; add a unit test stubbing wp_client.create_post asserting the render_job payload shape.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 each-ada-render-video-call-sho.md`. No commits or pushes made. | devin-task-20261014-215906-each-ada-render-video-call-sho.service:
+    Consumed 2min 20.493s CPU time over 14min 57.475s wall clock time, 1.5G memory peak, 13.3M memory swap peak.'
+ref: ADA-0673
+comms:
+- at: 2026-10-14 21:05
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-14 21:58
+  from: devin
+  text: queued for processing
+- at: 2026-10-14 21:58
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-14 21:59
+  from: chaba
+  text: started devin-task-20261014-215906-each-ada-render-video-call-sho on tony-macbook (dispatch)
+- at: 2026-10-14 21:59
+  from: devin
+  text: 'starting: exploring ada_render_video + wp_client'
+- at: 2026-10-14 22:13
+  from: devin
+  text: 'done: render_job WP logging in ada_render_video (meta per spec, fire-and-forget, silent-skip w/o env).
+    31/31 file tests, full suite 1420 green, tool-lint clean. Trail: docs/ssot/jobs/ada/2026-10-14-render-job-wp-log.yml'
+- at: 2026-10-14 22:15
+  from: tony-macbook
+  text: 'finished (ok): exit=0 each-ada-render-video-call-sho.md`. No commits or pushes made. | devin-task-20261014-215906-each-ada-render-video'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'session-end checkpoint 59d91b51: 5 leftover file(s) committed'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+review_kind: verify
+claim: {}

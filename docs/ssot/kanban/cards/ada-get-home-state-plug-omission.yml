@@ -1,0 +1,70 @@
+id: ada-get-home-state-plug-omission
+title: get_home_state drops plugs from all_plugs — switch.plakkaaaef_local (coffee plug) invisible
+column: done
+updated: 2026-10-14 22:15
+brief: 'kk-ha session 183e9c8d7e: home_search''s full entity list includes switch.plakkaaaef_local (''ปลั๊กกาแฟ
+  (Coffee plug)'', state off, available) but get_home_state''s all_plugs returned only switch.plug_tv. Kaewta then
+  truthfully-claimed ''not in the list'' because the summarized tool hid it. Find the all_plugs filter and include
+  every available switch.plug*/plak* — or at least stop dropping real plugs.'
+priority: medium
+tags:
+- ada
+- tools
+- kk
+- bug
+spec: 'Repro (live, ada-kk 2026-10-13 23:19:37): get_home_state result {''person'':''not_home'',''plugs_on'':[],''all_plugs'':{''switch.plug_tv'':{''name'':''ปลั๊กทีวี
+  (TV plug)'',''state'':''off''}},''ok'':True} while a same-session home_search listed switch.plakkaaaef_local available+off
+  and switch.plug_tv. Expected: all_plugs contains plakkaaaef_local too. Find get_home_state''s plug-selection logic
+  (backend tools), identify why plakkaaaef_local is filtered (name pattern? availability? domain scoping?), fix,
+  add a unit test asserting a plug entity named plak* survives the summary. Report the filter cause.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: tony-omen
+  result: 'exit=0 a/2026-10-14-get-home-state-plug-discovery.yml`; nothing committed, pushed, or deployed. | devin-task-20261014-215517-repro-live-ada-kk-2026-10-13-2.service:
+    Consumed 2min 1.841s CPU time over 9min 25.105s wall clock time, 1.5G memory peak.'
+  verified: true
+ref: ADA-0677
+comms:
+- at: 2026-10-14 21:54
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 21:55
+  from: tony-omen
+  text: claimed
+- at: 2026-10-14 21:55
+  from: chaba
+  text: started devin-task-20261014-215517-repro-live-ada-kk-2026-10-13-2 on tony-omen (dispatch)
+- at: 2026-10-14 22:04
+  from: devin
+  text: 'Root cause: get_home_state all_plugs comes from snapshot(), which only listed HOME_ASSISTANT_HOME_PLUGS
+    (ada-kk env = switch.plug_tv only) — config whitelist, not availability/name/domain. Fix: snapshot() now unions
+    configured plugs with discovered switch.(plug|plak|usb_test_hub) entities (new shared HOME_PLUG_ENTITY_RE; safety
+    classifier now imports it). office_lights pinned to configured list so discovered plugs cant trip the habit.
+    Unit test added. 1415 tests pass, tool-lint clean.'
+- at: 2026-10-14 22:07
+  from: tony-omen
+  text: 'finished (ok): exit=0 a/2026-10-14-get-home-state-plug-discovery.yml`; nothing committed, pushed, or deployed.
+    | devin-task-20261014-21'
+- at: 2026-10-14 22:08
+  from: chaba
+  text: 'session-end checkpoint 383fe188: 6 leftover file(s) committed'
+- at: 2026-10-14 22:08
+  from: chaba
+  text: pushed dispatch/20261014-215517-repro-live-ada-kk-2026-10-13-2 to origin
+- at: 2026-10-14 22:08
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -k 'not slow' -x -q, 142.3s)
+- at: 2026-10-14 22:09
+  from: chaba
+  text: auto-merged 7ac73e2c (dispatch/20261014-215517-repro-live-ada-kk-2026-10-13-2) → origin/main
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:15
+  note: verified — evidence checks green, closing itself

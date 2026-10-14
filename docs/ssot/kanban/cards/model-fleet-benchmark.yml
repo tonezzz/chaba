@@ -1,7 +1,7 @@
 id: model-fleet-benchmark
 title: Model fleet benchmark + multi-host large-model POC
-column: backlog
-updated: 2026-10-14 06:11
+column: done
+updated: 2026-10-14 21:59
 note: 'Plan for review: docs/kb/model-fleet-benchmark-plan.md — 6-tier size table (micro to superlarge), per-host
   fit map, model-speed harness, llama.cpp RPC multi-host POC for 27B+. Open decisions in doc section 6.'
 ref: BEN-0630
@@ -9,3 +9,158 @@ comms:
 - at: 2026-10-14 06:11
   from: devin
   text: card captured via board-api
+- at: 2026-10-14 18:48
+  from: devin
+  text: 'raised request model-list: Model list per tier — keep defaults in plan §1 or swap?'
+- at: 2026-10-14 18:48
+  from: devin
+  text: 'raised request idc-scope: Benchmark the idc VPS CPUs too (micro/small only, predictably slow — the value
+    is a hard do-not-host number)?'
+- at: 2026-10-14 18:48
+  from: devin
+  text: 'raised request poc-target: Multi-host RPC POC target — 27B (smallest no-GPU-fits case) or straight to 70B?'
+- at: 2026-10-14 18:48
+  from: devin
+  text: 'raised request driver-host: Driver host — dell drives remotes over ssh+ollama REST (no installs) OK?'
+- at: 2026-10-14 18:51
+  from: tony
+  text: 'answered model-list: defaults — keep defaults'
+- at: 2026-10-14 18:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 18:51
+  from: tony
+  text: 'answered idc-scope: yes — yes — measure them'
+- at: 2026-10-14 18:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 18:51
+  from: tony
+  text: 'answered poc-target: 27b — gemma3:27b first'
+- at: 2026-10-14 18:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 18:51
+  from: tony
+  text: 'answered driver-host: dell — yes, dell drives'
+- at: 2026-10-14 18:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 18:57
+  from: devin
+  text: queued for processing
+- at: 2026-10-14 18:58
+  from: tony-omen
+  text: claimed
+- at: 2026-10-14 18:58
+  from: chaba
+  text: started devin-task-20261014-185806-model-fleet-benchmark-multi-ho on tony-omen (dispatch)
+- at: 2026-10-14 18:58
+  from: devin
+  text: '[doing] dispatch picked up on tony-omen. Building tier registry + model-speed harness first, then matrix
+    runs and llama.cpp RPC POC.'
+- at: 2026-10-14 19:39
+  from: devin
+  text: '[warn] 27B RPC shard test to tony-dell saturated its ~4G free RAM — killed the stream immediately; dell
+    sshd slow to answer while swap settles. 3B split over LAN measured 8.3 tok/s (vs 9.8 local). Continuing POC
+    against idc02 instead of dell.'
+- at: 2026-10-14 20:07
+  from: devin
+  text: 'POC measured: 3B 50/50 split omen+dell = 8.3 tok/s LAN / 6.9 tok/s tailscale vs 9.8 local. 27B omen+idc02
+    tailscale = 0.87 tok/s vs 1.25 local — below the batch gate; fit-one-host wins. Matrix cells landing under reports/model-bench/.'
+- at: 2026-10-14 20:31
+  from: devin
+  text: '[done] All 5 deliverables landed: ssot.model-tiers.yml registry, scripts/bench/model-speed.py + weekly
+    job model-bench, fleet matrix (omen GPU <=3B 47-75 tok/s, 7B 8.5, 12B 3.2; remote CPU cells 7-9), RPC POC (3B
+    LAN 8.3 vs 9.8; 27B tailscale 0.87 vs 1.25 -> batch-only, no large-lane), CMS page + job yaml + routing evidence.
+    Artifacts: reports/model-bench/ + docs/ssot/jobs/models/2026-10-14-model-fleet-bench.yml'
+- at: 2026-10-14 20:31
+  from: devin
+  text: moved doing -> review
+- at: 2026-10-14 20:34
+  from: tony-omen
+  text: 'finished (ok): exit=0  passes 2350/2350, all remote servers/tunnels cleaned up. | devin-task-20261014-185806-model-fleet-benchmark-mult'
+- at: 2026-10-14 20:34
+  from: chaba
+  text: 'session-end checkpoint 6756e0a0: 1 leftover file(s) committed'
+- at: 2026-10-14 20:34
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
+- at: 2026-10-14 20:43
+  from: chaba
+  text: 'merge-sweep: fetch tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-185806-model-fleet-benchmark-multi-ho
+    HEAD failed — runner down or worktree gone?'
+- at: 2026-10-14 21:59
+  from: chaba
+  text: 'merge-sweep: merged 7886aacc (dispatch/20261014-185806-model-fleet-benchmark-multi-ho from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-185806-model-fleet-benchmark-multi-ho.md)
+    — auto-closed'
+requests:
+- id: model-list
+  ask: Model list per tier — keep defaults in plan §1 or swap?
+  status: answered
+  at: 2026-10-14 18:48
+  from: devin
+  options:
+  - id: defaults
+    label: keep defaults
+  - id: qwen3
+    label: swap to qwen3 family (better Thai)
+  - id: custom
+    label: comment my own list
+  suggested: defaults
+  answer: defaults — keep defaults
+- id: idc-scope
+  ask: Benchmark the idc VPS CPUs too (micro/small only, predictably slow — the value is a hard do-not-host number)?
+  status: answered
+  at: 2026-10-14 18:48
+  from: devin
+  options:
+  - id: 'yes'
+    label: yes — measure them
+  - id: 'no'
+    label: no — skip VPS legs
+  suggested: 'yes'
+  answer: yes — yes — measure them
+- id: poc-target
+  ask: Multi-host RPC POC target — 27B (smallest no-GPU-fits case) or straight to 70B?
+  status: answered
+  at: 2026-10-14 18:48
+  from: devin
+  options:
+  - id: 27b
+    label: gemma3:27b first
+  - id: 70b
+    label: go straight to 70B
+  - id: both
+    label: 27b then 70b if viable
+  suggested: 27b
+  answer: 27b — gemma3:27b first
+- id: driver-host
+  ask: Driver host — dell drives remotes over ssh+ollama REST (no installs) OK?
+  status: answered
+  at: 2026-10-14 18:48
+  from: devin
+  options:
+  - id: dell
+    label: yes, dell drives
+  - id: other
+    label: different driver — comment
+  suggested: dell
+  answer: dell — yes, dell drives
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0  passes 2350/2350, all remote servers/tunnels cleaned up. | devin-task-20261014-185806-model-fleet-benchmark-multi-ho.service:
+    Consumed 1h 27min 48.165s CPU time over 1h 33min 41.933s wall clock time, 22G memory peak, 9.8G memory swap
+    peak.'
+  verified: true
+  sweep:
+    fetch_failed: 2026-10-14 20:43
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 21:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-185806-model-fleet-benchmark-multi-ho.md

@@ -1,0 +1,108 @@
+id: ada-error-truthfulness-narration
+title: Ada must explain every error truthfully aloud — never gloss tool failures or silent reconnects
+column: done
+updated: 2026-10-14 22:15
+brief: 'kk-ha session 183e9c8d7e (2026-10-13 23:17 ICT, Tony) showed the pattern: (1) ada_enroll_speaker SchemaError
+  narrated as ''never mind'' instead of ''the enroll call was rejected''; (2) Gemini stream died and reconnected
+  resumed=False — full context wipe, never said aloud — which directly caused the next failure (she forgot she''d
+  already found+offed the coffee plug); (3) web_search fired with {} args (SchemaError) narrated as ''can''t find
+  the data''. SchemaError results already carry a `usage` hint — she ignores it.'
+priority: high
+tags:
+- ada
+- voice
+- truthfulness
+- kk
+spec: 'Session evidence (idc03 journal, session=183e9c8d7e, ada-kk 23:17-23:20 ICT 2026-10-13):
+
+
+  - 23:17:41 web_search args={} -> SchemaError missing ''query''. She said ''can''t find gold price data'' — hid
+  that the call never ran.
+
+  - 23:18:41 ada_enroll_speaker args={person:''person.tony'', who:''speaker''} -> SchemaError missing ''name'',
+  unknown ''person''. Narrated as ''just wanted to say never mind''.
+
+  - 23:19:17 provider stream ended 1000; 23:19:23 reconnect resumed=False -> context wiped silently; she then contradicted
+  herself on the coffee plug.
+
+  - ada_memory_search returned degraded:true — never mentioned.
+
+
+  Do:
+
+  1. Narration rule in the persona/system instructions (ada-pi + Ada parity where she mirrors): every tool result
+  with ok:false/error/degraded:true MUST be said aloud in plain terms — what was attempted + why it failed, in one
+  clause, then continue. Never ''never mind''. If the call was malformed, say ''I made a bad call, retrying'' and
+  RETRY with corrected args (the SchemaError `usage` field tells you the shape).
+
+  2. On provider reconnect with resumed=False, say aloud that the connection reset and recent context may have been
+  lost. Where the resume path exists, prefer it.
+
+  3. SchemaError retry policy: same-tool retry with corrected args is allowed ONCE per turn (bounded — no retry
+  storms); second failure narrates the real error.
+
+  4. HYPOTHESIS TO CHECK: empty-args/wrong-arg calls on kk lane (web_search {}, enroll_speaker {person:...}, earlier
+  trip_calendar {}) may be the lazy-schema arg-shape regression — cold tools strip parameter schemas so the model
+  guesses args. If lazy decls are confirmed as cause, prefer the known fix (retain arg NAMES/property keys in lazy
+  declarations, drop only types/enums) and note it; if this session predates lazy schemas being active on ada-kk,
+  say so.
+
+  5. Verify: add/extend a scenario (tests/scenarios-live/) that injects a tool failure (e.g. enroll_speaker with
+  bad args on a dev lane) and asserts the reply narrates the failure (response_contains_any covering ''fail|error|couldn\''t|ล้มเหลว|ไม่สำเร็จ'').
+  Run it on kk-dev if Gemini cap allows, else describe the harness check.
+
+
+  Report: which instructions file(s) changed, whether lazy-schema was the arg-shape cause, scenario name + result.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: idc03
+  sweep:
+    stale_running: 2026-10-14 22:14
+  result: 'exit=0 ice: No such file or directory | devin-task-20261014-215458-session-evidence-idc03-journal.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261014-215458-session-evidence-idc03-journal.service:
+    No such file or directory'
+  verified: true
+ref: ADA-0676
+comms:
+- at: 2026-10-14 21:54
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 21:54
+  from: idc03
+  text: claimed
+- at: 2026-10-14 21:54
+  from: chaba
+  text: started devin-task-20261014-215458-session-evidence-idc03-journal on idc03 (dispatch)
+- at: 2026-10-14 22:07
+  from: devin
+  text: 'done: narration rules in DEFAULT_ADA_INSTRUCTIONS (covers live+text lanes), context_reset directive on
+    resumed=False reconnect, SchemaError retry bound (2nd miss -> no_retry), new scenario tool_error_narration.yaml.
+    Lazy-schema v1 confirmed as arg-shape cause; arg-names fix already in tree.'
+- at: 2026-10-14 22:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-215458-session-evidence-idc03-journal no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-14 22:14
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261014-215458-session-evidence-idc03-journal.service:
+    Failed to ope'
+- at: 2026-10-14 22:14
+  from: chaba
+  text: 'session-end checkpoint 09db0973: 9 leftover file(s) committed'
+- at: 2026-10-14 22:14
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'merge-sweep: merged afc38ee0 (dispatch/20261014-215458-session-evidence-idc03-journal from idc03) -> origin/main
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-215458-session-evidence-idc03-journal.md)
+    — auto-closed'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:15
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-215458-session-evidence-idc03-journal.md

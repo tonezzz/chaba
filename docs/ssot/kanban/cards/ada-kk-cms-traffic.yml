@@ -1,7 +1,7 @@
 id: ada-kk-cms-traffic
 title: kk-ha CMS traffic feed — public cam dossiers into ada-cms-pages-kk
 column: backlog
-updated: 2026-10-12 17:27
+updated: 2026-10-14 22:08
 spec: 'Tony asked: structure Kaewta CMS to include traffic cam awareness, answers truthful. Pattern = cam-wall-cms
   (generates cam-*/camwall-* dossiers Ada READS — data, not camera access). Build: (1) zone-group filter on cam-wall-cms.py
   (or kk wrapper) so only zones.yml group:public zones emit pages; (2) timer run with COLLECTION=ada-cms-pages-kk
@@ -24,6 +24,25 @@ comms:
 - at: 2026-10-12 17:27
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:07
+  from: tony
+  text: 'raised request kk-ha-cms-traffic-feed-next-action-bde23a: kk-ha CMS traffic feed — next action?'
+- at: 2026-10-14 21:27
+  from: tony
+  text: 'answered kk-ha-cms-traffic-feed-next-action-bde23a: queue for dispatch ★'
+- at: 2026-10-14 21:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:02
+  from: chaba
+  text: dispatched 20261014-220109-tony-asked-structure-kaewta-cm on chaba
+- at: 2026-10-14 22:08
+  from: devin
+  text: 'attempt 2 running: adding CAMWALL_GROUPS=public zone/cam filter + COLLECTION env to cam-wall-cms.py, per-collection
+    state files, kk systemd timer pair, tests'
 requests:
 - id: noble-vms-cams-are-group-private-in-zone-baf2cb
   ask: Noble VMS cams are group:private in zones.yml. Scope kk-ha cam feed to public zones only, or add a Noble
@@ -36,4 +55,24 @@ requests:
   - include-noble — KK household lives at Noble, scoped exception for vms-noble-* only
   suggested: public-only — traffic/rama9/burapha/chonburi/dohweb, zero private footage on her lane
   answer: public-only — traffic/rama9/burapha/chonburi/dohweb, zero private footage on her lane
-awaiting_action: true
+- id: kk-ha-cms-traffic-feed-next-action-bde23a
+  ask: kk-ha CMS traffic feed — next action?
+  status: answered
+  at: 2026-10-14 21:07
+  from: tony
+  options:
+  - queue for dispatch ★
+  - hold
+  - close — superseded by WP cam dossiers
+  suggested: queue for dispatch ★
+  answer: queue for dispatch ★
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261014-220109-tony-asked-structure-kaewta-cm
+claim:
+  session: 20261014-220109-tony-asked-structure-kaewta-cm
+  since: 2026-10-14 22:02

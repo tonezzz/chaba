@@ -1,7 +1,7 @@
 id: line-tool-reply-routing-answers-leave-th-5c73e7
 title: LINE tool reply routing — answers leave the originating chat
-column: review
-updated: 2026-10-13 22:42
+column: done
+updated: 2026-10-14 11:49
 priority: high
 tags:
 - ada
@@ -104,6 +104,15 @@ comms:
   text: 'auto-merge conflicts: integrations/ada-pi/README.md, integrations/ada-pi/backend/line_relay.reply-routing.patch,
     integrations/ada-pi/backend/tool_runner.reply-routing.patch, tests/ada/test_line_reply_routing.py — card stays
     in review for manual resolution'
+- at: 2026-10-14 11:49
+  from: devin
+  text: 'DEPLOYED 2026-10-14: Drop 8 applied to ada-pi edit point (dell), pushed 8f8f488, deploy-ada.sh green —
+    1410 pass, all 8 services active incl relays. One regression caught+fixed: Drop 8 added chat_id kwarg to ChatSession();
+    Drop 5''s _FakeSession stub in test_speaker_file_input.py needed the kwarg — fixed. Live check: next cross-lane
+    chat_send should land in the originating chat.'
+- at: 2026-10-14 11:49
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
   status: done

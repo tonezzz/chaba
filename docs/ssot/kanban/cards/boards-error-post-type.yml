@@ -1,0 +1,41 @@
+id: boards-error-post-type
+title: 'wp-boards: error post type — auto-posted tool failures + truthful-explanation loop'
+column: backlog
+updated: 2026-10-14 21:55
+brief: 'Tony''s idea from the kk-ha audit: prepare errors in boards with post types so Kaewta explains each truthfully.
+  Design: an `ops_error` (or `error`) CPT in chaba-boards plugin — auto-created by a small writer that watches ada
+  ops-events/tool failures per lane; meta: lane/session_id/tool/error_type/raw_result; Kaewta comments her plain-language
+  explanation on each; Tony reviews pairs (raw error vs explanation). Private status like other member CPTs. This
+  is the REVIEW layer — the in-conversation honesty fix is card ada-error-truthfulness-narration (ADA-0676).'
+priority: low
+tags:
+- wp-boards
+- ada
+- design
+spec: 'Design + build in integrations/wp-boards/chaba-boards.php (v0.3.2 live). Proposed:
+
+  - CPT `ops_error`: private, REST-writable meta: lane (kk|tony|michael), session_id, tool, error_type (schema_error|runtime_error|silent_reconnect|stale_result|phantom_claim|degraded_result),
+  raw_result (json), transcript_ref, occurred_at.
+
+  - Title convention: ''Err — {lane} {tool} {date}'' per title_conventions style in ssot.wp-boards.yml.
+
+  - Writer: new small script on idc03 (e.g. scripts/ada/ops-error-posts.py) tails journald/ops-events per lane,
+  dedups by session+tool+ts, POSTs via WP app password to origin_base (boards.h3 — public edge 1010s script UAs,
+  per writers caveat).
+
+  - Review loop: comments enabled on the CPT (already in supports); Kaewta or Devin posts the truthful explanation
+  as a comment; Tony marks resolved via a meta flag or comment. Optional later: nudge Ada to explain within N hours
+  via a board request.
+
+  - FluentBoards assessed_plugins note in ssot.wp-boards.yml says member-kanban is viable if wanted — but ops_error
+  as a CPT keeps it in wp/v2 watcher reach.
+
+  Seed rows from session 183e9c8d7e: enroll_speaker schema-error (kk), silent reconnect (kk), web_search empty-args
+  (kk).'
+note: 'Origin: kk-ha transcript audit 2026-10-14 (session 183e9c8d7e). Sibling cards: ada-error-truthfulness-narration
+  (in-voice fix), ada-get-home-state-plug-omission, ada-control-entity-phantom-ok.'
+ref: ADA-0679
+comms:
+- at: 2026-10-14 21:55
+  from: tony
+  text: card captured via board-api

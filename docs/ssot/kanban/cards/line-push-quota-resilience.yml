@@ -1,0 +1,105 @@
+id: line-push-quota-resilience
+title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
+column: backlog
+updated: 2026-10-14 21:24
+priority: high
+tags:
+- line
+- relay
+- ops
+spec: '2026-10-14 17:12: two queued chat_send deliveries to kk-ha group (apology text, then image+caption) failed
+  with LINE 429 {"message":"You have reached your monthly limit."}. The OA free-plan push quota is exhausted — every
+  proactive/queued send (no fresh replyToken) burns it, and nothing reached KK.
+
+
+  Facts: relay already prefers /message/reply with the event replyToken and falls back to push — so inbound-triggered
+  replies are free, but ALL chat_send/proactive deliveries are push and metered. Quota hit mid-month; reset is monthly.
+
+
+  Proposed fixes (pick at impl):
+
+  1. 429-monthly fallback: when push returns monthly-limit, park the outbound payload (durable queue) and deliver
+  it as /reply on the user''s next inbound event (fresh token) — or relay a heads-up text via the next free reply.
+
+  2. Proactive-send audit: count push vs reply per day in the ops ledger so quota burn is visible before the wall.
+
+  3. Reduce push usage: batch queued sends / prefer replying in-turn instead of background chat_send where latency
+  allows.
+
+  4. Plan decision for Tony: free tier is too small for a household bot with proactive delivery — LINE OA paid plan
+  or per-member OA split is an option. Spend gate — Tony''s call.'
+ref: OPS-0651
+comms:
+- at: 2026-10-14 17:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 17:55
+  from: devin
+  text: 'Implemented + deployed aee7713. LINE_PARKED_DIR (~/.local/share/ada/line-parked/<chat>.jsonl): push 429
+    -> park; next inbound replyToken flushes parked ahead of the turn reply (merged, 5-bubble cap, overflow re-parks;
+    reply failure restores the batch). Verified live: Kaewta re-sent the parked apology + Suntory render to kk-ha
+    group at 17:52 — both pushes 429d and 4 msgs parked in C822026077530a29620b5041bd1a955c5.jsonl; they will ride
+    KK next inbound automatically. Remaining from the card: push/'
+- at: 2026-10-14 17:56
+  from: devin
+  text: 'Implemented + deployed aee7713. LINE_PARKED_DIR (~/.local/share/ada/line-parked/<chat>.jsonl): push 429
+    -> park; next inbound replyToken flushes parked ahead of the turn reply (merged, 5-bubble cap, overflow re-parks;
+    reply failure restores the batch). Verified live: Kaewta re-sent the apology + Suntory render to kk-ha group
+    at 17:52 — both pushes 429 and 4 msgs parked in C822026077530a29620b5041bd1a955c5.jsonl; they ride KK next inbound
+    automatically. Remaining: push/reply accounting, batching '
+- at: 2026-10-14 17:56
+  from: devin
+  text: 'Implemented + deployed aee7713. LINE_PARKED_DIR (~/.local/share/ada/line-parked/<chat>.jsonl): push 429
+    -> park; next inbound replyToken flushes parked ahead of the turn reply (merged, 5-bubble cap, overflow re-parks;
+    reply failure restores the batch). Verified live: Kaewta re-sent the apology + Suntory render to kk-ha group
+    at 17:52 — both pushes 429 and 4 msgs parked; they ride KK next inbound automatically. Remaining: push/reply
+    accounting, batching habit, paid-plan decision (Tony).'
+- at: 2026-10-14 17:57
+  from: devin
+  text: 'Implemented + deployed aee7713. LINE_PARKED_DIR (~/.local/share/ada/line-parked/<chat>.jsonl): push 429
+    -> park; next inbound replyToken flushes parked ahead of the turn reply (merged, 5-bubble cap, overflow re-parks;
+    reply failure restores the batch). Verified live: Kaewta re-sent the apology + Suntory render to kk-ha group
+    at 17:52 — both pushes 429 and 4 msgs parked; they ride KK next inbound automatically. Remaining: push/reply
+    accounting, batching habit, paid-plan decision (Tony).'
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request line-oa-plan-after-the-quota-wall-2f8c81: LINE OA plan after the quota wall?'
+- at: 2026-10-14 19:52
+  from: tony
+  text: 'answered line-oa-plan-after-the-quota-wall-2f8c81: stay free — parked queue covers it ★'
+- at: 2026-10-14 19:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:06
+  from: tony
+  text: 'raised request card-state-now-that-parked-queue-is-depl-ee58ac: Card state now that parked-queue is deployed?'
+- at: 2026-10-14 21:24
+  from: tony
+  text: 'answered card-state-now-that-parked-queue-is-depl-ee58ac: keep open — push/reply accounting tail remains
+    ★'
+- at: 2026-10-14 21:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: line-oa-plan-after-the-quota-wall-2f8c81
+  ask: LINE OA plan after the quota wall?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - stay free — parked queue covers it ★
+  - upgrade to paid plan
+  - decide after a month of parked-queue data
+  suggested: stay free — parked queue covers it ★
+  answer: stay free — parked queue covers it ★
+- id: card-state-now-that-parked-queue-is-depl-ee58ac
+  ask: Card state now that parked-queue is deployed?
+  status: answered
+  at: 2026-10-14 21:06
+  from: tony
+  options:
+  - keep open — push/reply accounting tail remains ★
+  - close — parked queue shipped and verified
+  suggested: keep open — push/reply accounting tail remains ★
+  answer: keep open — push/reply accounting tail remains ★
+awaiting_action: true

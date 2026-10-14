@@ -1,0 +1,69 @@
+id: local-image-lane-sd-server-on-omen-litel-b45572
+title: local-image-lane — sd-server on omen + LiteLLM 'local_image' model + ada tool wiring
+column: doing
+updated: 2026-10-14 22:10
+priority: medium
+spec: '{''goal'': "Ada can request a local image render: tool -> LiteLLM ''local_image'' -> sd-server on tony-omen
+  -> PNG to media/CMS/LINE", ''done'': [''sd.cpp built on tony-omen (CPU-only, ~/stable-diffusion.cpp/build/bin/{sd-cli,sd-server})'',
+  ''SDXL-Lightning 4-step Q4 (2.4GB) at ~/models/sd/ — measured 1024px in 599s (394s sample + 202s VAE)'', ''First
+  render verified good; delivered to tony-ha /ai/chaba picture card; CMS page local-image-gen''], ''remaining'':
+  [''sd-server as systemd user svc on omen (127.0.0.1:<port>, CPU-only env, model autoload)'', "litellm config.yaml:
+  model_name local_image -> http://tony-omen:<port> (custom upstream — check sd-server''s API shape vs chat/completions;
+  may need a thin adapter since sd-server is img-only)", ''ada tool ada_render_image gains provider=local option
+  (card ada-render-image-v2 context)'', "wall-time SLO + queueing: ~10min/img, single-slot — tool must tell caller
+  ''rendering, deliver via chat_send when done''", ''optional: GTX1650 partial offload benchmark when Nest idle'']}'
+ref: OPS-0658
+comms:
+- at: 2026-10-14 18:24
+  from: devin
+  text: Built working pieces in-session per Tony's 'yes'; card carries the productization tail.
+- at: 2026-10-14 21:07
+  from: tony
+  text: 'raised request productize-local-image-as-an-ada-render-58e79c: Productize local_image as an ada_render_image
+    backend?'
+- at: 2026-10-14 21:26
+  from: tony
+  text: 'answered productize-local-image-as-an-ada-render-58e79c: yes — wire as model option ★'
+- at: 2026-10-14 21:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 22:00
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:01
+  from: tony-omen
+  text: claimed
+- at: 2026-10-14 22:01
+  from: chaba
+  text: started devin-task-20261014-220156-goal-ada-can-request-a-local-i on tony-omen (dispatch)
+- at: 2026-10-14 22:06
+  from: devin
+  text: '[progress] sd-server probe on omen: sdxl-lightning GGUF loads standalone via -m (CLIP+UNet+VAE embedded),
+    listening OK. Exposes OpenAI /v1/images/generations (sync) + native async /sdcpp/v1/img_gen + jobs/{id} (queue_position,
+    preview). Binding tailnet IP 100.75.102.88:8399 not loopback — card says 127.0.0.1 but idc03 litellm must reach
+    it; tailnet-only still keeps it off LAN. 512px/4-step validation job in flight; writing ada_render_image provider=local
+    (async submit -> pending -> bg chat_send '
+- at: 2026-10-14 22:10
+  from: devin
+  text: '[done-on-omen] sd-server.service installed+enabled+active (~/.config/systemd/user, tailnet 100.75.102.88:8399
+    — not 127.0.0.1 so idc03/litellm can reach it; still LAN-dark). Verified /v1/models=sd-cpp-local; real tool
+    submit returned pending+job in ~4s; a 1024px validation render is in flight. ada_render_image gains provider=local
+    + job= resume on the dispatch branch (22/22 tests, lint clean) — submits async sdcpp job, polls 45s, then background
+    task pushes the PNG via chat_send. PENDING on chab'
+requests:
+- id: productize-local-image-as-an-ada-render-58e79c
+  ask: Productize local_image as an ada_render_image backend?
+  status: answered
+  at: 2026-10-14 21:07
+  from: tony
+  options:
+  - yes — wire as model option ★
+  - keep as manual lane only
+  - hold
+  suggested: yes — wire as model option ★
+  answer: yes — wire as model option ★
+action:
+  type: dispatch
+  repo: ada-pi
+  status: running
+  runner: tony-omen

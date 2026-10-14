@@ -1,0 +1,143 @@
+id: chaba-boards-plugin-deploy
+title: 'chaba-boards WP plugin: finish + deploy — 6 CPTs specced in SSOT not registered on live'
+column: done
+updated: 2026-10-14 22:16
+priority: medium
+tags:
+- wp-boards
+- plugin
+spec: 'Found during KNB-0657 audit 2026-10-14: ssot.wp-boards.yml documents asset/expense/contact/reminder/bench/report
+  CPTs (chaba-boards v0.1.0, integrations/wp-boards/chaba-boards.php) but live WP registers only post/page/place/trip/ops-event/timeline_block
+  — the plugin exists only in local dev (/tmp/chaba-boards/chaba-boards.php, Tony editing). SSOT updated to say
+  NOT YET DEPLOYED.
+
+
+  To finish: (a) land the plugin source in a repo home (integrations/wp-boards/chaba-boards.php or its own plugin
+  dir — currently /tmp only, fragile); (b) install+activate on boards WP (upload zip or copy into wp-content/plugins
+  via Plesk/sftp — check wp-boards deploy procedure); (c) verify /wp/v2/types registers all six CPTs + a sample
+  post per type; (d) flip the SSOT NOT YET DEPLOYED marker. Also pending in-tree: chaba-translate.php sits in /tmp
+  alongside it — same landing question applies.'
+ref: KNB-0659
+comms:
+- at: 2026-10-14 18:28
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request deploy-chaba-boards-v0-3-0-to-live-wp-wh-a1fb32: Deploy chaba-boards v0.3.0 to live WP when?'
+- at: 2026-10-14 19:53
+  from: tony
+  text: 'answered deploy-chaba-boards-v0-3-0-to-live-wp-wh-a1fb32: when you say ready — it is your WIP ★'
+- at: 2026-10-14 19:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 19:54
+  from: devin
+  text: 'Hierarchy design (Tony 2026-10-14 — CPTs support hierarchy for structured reports):
+
+
+    Constraint: post_parent is same-type only; cross-type links stay meta/taxonomy.
+
+
+    hierarchical=true + ''page-attributes'' support on:
+
+    - report — parent=rollup slug (media-inbox-kk), children=period leaves ({parent}/{date}); replaces flat rollup+leaves;
+    QC child or parent meta
+
+    - render_job — parent=batch/prompt-set, children=variants (seed+prompt on parent; preview->winner->hi-res workflow)
+
+    - cam — parent=camera, ch'
+- at: 2026-10-14 21:05
+  from: tony
+  text: 'raised request deploy-order-hierarchy-first-or-ship-v0-9e68c6: Deploy order — hierarchy first or ship v0.3.0
+    as-is?'
+- at: 2026-10-14 21:26
+  from: tony
+  text: 'answered deploy-order-hierarchy-first-or-ship-v0-9e68c6: add hierarchy first (v0.4), then deploy once ★'
+- at: 2026-10-14 21:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 22:00
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:01
+  from: idc03
+  text: claimed
+- at: 2026-10-14 22:01
+  from: chaba
+  text: started devin-task-20261014-220127-found-during-knb-0657-audit-20 on idc03 (dispatch)
+- at: 2026-10-14 22:05
+  from: devin
+  text: '[progress] Verified live state: plugin already deployed — chaba-boards v0.3.3 ACTIVE on boards WP (matches
+    integrations/wp-boards/chaba-boards.php md5). All 10 CPTs registered in /wp/v2/types. news=133 posts, render_job=1;
+    asset/expense/contact/reminder/bench/report/xlate/cam empty. Now seeding one private sample per the six core
+    CPTs to verify REST write path.'
+- at: 2026-10-14 22:08
+  from: devin
+  text: '[done] Card was largely complete already: plugin committed at integrations/wp-boards/chaba-boards.php AND
+    live as v0.3.3 active (verified via /wp/v2/plugins). All 10 CPTs in /wp/v2/types. This session: seeded private
+    REST samples for the 6 core CPTs (ids 266-271, meta round-trip OK), bumped SSOT comment to v0.3.3 + verification
+    note, wrote trail doc docs/ssot/jobs/infrastructure/2026-10-14-chaba-boards-plugin-deploy-verify.yml. chaba-translate.php
+    no longer exists in /tmp — its translate hooks a'
+- at: 2026-10-14 22:14
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261014-220127-found-during-knb-0657-audit-20.service:
+    Failed to ope'
+- at: 2026-10-14 22:14
+  from: chaba
+  text: 'session-end checkpoint 0d79b402: 1 leftover file(s) committed'
+- at: 2026-10-14 22:14
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-14 22:14
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-220127-found-during-knb-0657-audit-20 no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-14 22:16
+  from: chaba
+  text: 'merge-sweep: merged da26370b (dispatch/20261014-220127-found-during-knb-0657-audit-20 from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-220127-found-during-knb-0657-audit-20.md)
+    — auto-closed'
+requests:
+- id: deploy-chaba-boards-v0-3-0-to-live-wp-wh-a1fb32
+  ask: Deploy chaba-boards v0.3.0 to live WP when?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - when you say ready — it is your WIP ★
+  - now — install + activate immediately
+  - after webchat lane lands (bundle the deploy)
+  suggested: when you say ready — it is your WIP ★
+  answer: when you say ready — it is your WIP ★
+- id: deploy-order-hierarchy-first-or-ship-v0-9e68c6
+  ask: Deploy order — hierarchy first or ship v0.3.0 as-is?
+  status: answered
+  at: 2026-10-14 21:05
+  from: tony
+  options:
+  - add hierarchy first (v0.4), then deploy once ★
+  - deploy v0.3.0 now; hierarchy in a follow-up
+  suggested: add hierarchy first (v0.4), then deploy once ★
+  answer: add hierarchy first (v0.4), then deploy once ★
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc03
+  result: 'exit=0 ice: No such file or directory | devin-task-20261014-220127-found-during-knb-0657-audit-20.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261014-220127-found-during-knb-0657-audit-20.service:
+    No such file or directory'
+  sweep:
+    stale_running: 2026-10-14 22:15
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:16
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-220127-found-during-knb-0657-audit-20.md

@@ -1,7 +1,7 @@
 id: ada-render-image-v2
 title: Rebuild ada_render_image on gemini-3.1-flash-image (gen+edit, kk lane)
 column: doing
-updated: 2026-10-14 11:41
+updated: 2026-10-14 13:16
 priority: high
 tags:
 - ada
@@ -28,3 +28,10 @@ comms:
     kk-dev, ha-tony). Verified on kk-dev Live path: ''watercolor longtail boat'' -> tool fired -> POST /v1beta/models/image:generateContent
     200 -> 731KB PNG -> image_url serves 200 -> she chat_send''d it herself. img_render_* scenarios flipped to smoke,
     needs_tools-gated; 1401 te'
+- at: 2026-10-14 13:16
+  from: devin
+  text: 'Video demo live: 8s 1080p render-vid-20261014-131111-08c4e8.mp4 (35.6MB, verified 1920x1080+audio) delivered
+    to kk group via relay link. Fixed en route: (1) Veo ref image must be bytesBase64Encoded not inlineData (400
+    otherwise); (2) /frame publish hop dies on multi-MB clips — video now publishes via LINE_MEDIA_ARCHIVE_DIR/renders
+    -> /relay-img/arch/renders/ (no size cap, durable), /frame fallback. res= param: 720p default, 1080p landscape-only.
+    GAP left: relay /send has no native videoMessage —'

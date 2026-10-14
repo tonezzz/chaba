@@ -1,0 +1,82 @@
+id: ada-control-entity-phantom-ok
+title: control_entity returns ok:true for nonexistent entity (switch.coffee_plug) — phantom actuation
+column: done
+updated: 2026-10-14 22:13
+brief: 'kk-ha session 183e9c8d7e 23:17:28: control_entity(entity_id=''switch.coffee_plug'', action=turn_off) returned
+  {''ok'': True, ''output'': "Turned off switch.coffee_plug: {''entity_id'': ''switch.coffee_plug'', ''state'':
+  ''off''}"} — but switch.coffee_plug is NOT in the entity list (real plug = switch.plakkaaaef_local). Either it
+  silently resolved to a different entity or faked success; either way the model then told the user a plug was off.
+  Actuation tools must never return ok for an entity that doesn''t exist or wasn''t actually switched.'
+priority: high
+tags:
+- ada
+- tools
+- bug
+- kk
+spec: 'Repro evidence (idc03 journal): function_call result name=control_entity {''ok'': True, ''output'': "Turned
+  off switch.coffee_plug: {''entity_id'': ''switch.coffee_plug'', ''state'': ''off''}"} — while home_search''s list
+  has NO switch.coffee_plug (coffee plug = switch.plakkaaaef_local). Investigate control_entity: does it fuzzy-resolve
+  ''coffee_plug'' to something else, does it hit a stub/mock path on the kk lane, or does the HA call succeed against
+  a ghost entity? Fix so that: unknown entity_id -> ok:false with available close-matches listed; a real turn_off
+  verifies post-call state actually == ''off''. Add a scenario/unit test for nonexistent-entity control_entity returning
+  ok:false + naming the closest match. Report the resolver path found.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: idc02
+  result: 'exit=0 `/`main.py` `set_power` REST endpoints still echo without verification — out of this card''s scope.
+    | devin-task-20261014-215603-repro-evidence-idc03-journal-f.service: Consumed 1min 10.870s CPU time, 166.0M
+    memory peak, 0B memory swap peak.'
+  verified: true
+ref: ADA-0678
+comms:
+- at: 2026-10-14 21:55
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 21:55
+  from: idc02
+  text: claimed
+- at: 2026-10-14 21:56
+  from: chaba
+  text: started devin-task-20261014-215603-repro-evidence-idc03-journal-f on idc02 (dispatch)
+- at: 2026-10-14 22:00
+  from: devin
+  text: 'Repro found: control_entity -> ha_client.set_power POSTs /api/services/switch/turn_off; HA 200s ghost entity_ids
+    and set_power echoes the REQUESTED state back — no fuzzy resolve, no stub; the ok:true is fabricated. Fixing:
+    existence pre-check (404 -> ok:false + close matches) + post-call state verify for on/off.'
+- at: 2026-10-14 22:08
+  from: devin
+  text: 'Done in worktree: control_entity prechecks entity existence via GET /api/states (404 -> ok:false + close_matches,
+    would have named switch.plakkaaaef_local); on/off now verifies post-call state==target (new state_target kind).
+    398 unit + 19 scenario tests OK, tool-lint clean. Not committed/deployed.'
+- at: 2026-10-14 22:08
+  from: devin
+  text: 'Done in worktree: control_entity prechecks entity existence via GET /api/states (404 -> ok:false + close_matches,
+    would have named switch.plakkaaaef_local); on/off now verifies post-call state==target. 398 unit + 19 scenario
+    tests OK, tool-lint clean. Not committed/deployed.'
+- at: 2026-10-14 22:10
+  from: idc02
+  text: 'finished (ok): exit=0 `/`main.py` `set_power` REST endpoints still echo without verification — out of this
+    card''s scope. | devin-task-2'
+- at: 2026-10-14 22:10
+  from: chaba
+  text: 'session-end checkpoint b022e9df: 8 leftover file(s) committed'
+- at: 2026-10-14 22:10
+  from: chaba
+  text: pushed dispatch/20261014-215603-repro-evidence-idc03-journal-f to origin
+- at: 2026-10-14 22:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-14 22:11
+  from: chaba
+  text: auto-merged 246fb58b (dispatch/20261014-215603-repro-evidence-idc03-journal-f) → origin/main
+- at: 2026-10-14 22:13
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:13
+  note: verified — evidence checks green, closing itself

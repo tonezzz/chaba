@@ -1,0 +1,15 @@
+id: board-card-action-buttons
+title: 'Board UI: card action buttons (Queue / Hold / Close) on card rows'
+column: backlog
+updated: 2026-10-14 22:13
+priority: medium
+spec: 'Board currently renders option buttons only on requests/asks. Tonight showed the gap: queueing an approved
+  card needed an ssh+curl /action call. Add a compact action row on each card (detail view + maybe row hover): [Queue]
+  [Hold] [Close] calling POST /action {id, do}. Queue should prompt repo when action.repo unset (default chaba).
+  Reuse existing /respond toast+load pattern in render-board.py. Lives in scripts/render-board.py + render-board2.py
+  on tony-dell.'
+ref: KNB-0680
+comms:
+- at: 2026-10-14 22:13
+  from: tony
+  text: card captured via board-api

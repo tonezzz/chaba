@@ -1,7 +1,7 @@
 id: ada-transcript-durability
 title: Persist session transcript incrementally / flush on SIGTERM
-column: backlog
-updated: 2026-10-13 21:40
+column: done
+updated: 2026-10-14 22:15
 spec: 'Fleet restart at 21:24:11 killed active session 4585f3b060 mid-conversation; transcript never flushed (writes
   only on clean close). Requirement: (1) append transcript lines incrementally to disk as turns complete, or (2)
   SIGTERM handler that flushes before exit. Both cheap; incremental append is more robust against SIGKILL. Also
@@ -11,3 +11,82 @@ comms:
 - at: 2026-10-13 21:40
   from: tony
   text: card captured via board-api
+- at: 2026-10-14 17:08
+  from: devin
+  text: 'Third incident of the same wound, 2026-10-14 14:36: KK sent a Suntory reference photo to kk-ha (ada-kk).
+    Her session was mid-turn; the photo queued behind it and dispatched as an image turn at 14:36:03. At 14:36:12
+    a targeted restart (systemd stop of ada-kk + ada-kk-dev + ada-dev + ada-line-relay — NOT the default deploy-ada
+    service set) killed the in-flight turn. Relay surfaced its honest fallback: "Couldnt pass that photo to kaewta
+    — try again." She then answered the caption blind as a text sp'
+- at: 2026-10-14 21:05
+  from: tony
+  text: 'raised request third-mid-turn-restart-kill-queue-the-dr-b1fcf2: Third mid-turn-restart kill — queue the
+    drain/grace implementation?'
+- at: 2026-10-14 21:27
+  from: tony
+  text: 'answered third-mid-turn-restart-kill-queue-the-dr-b1fcf2: queue for dispatch ★'
+- at: 2026-10-14 21:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:00
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-14 22:00
+  from: chaba
+  text: started devin-task-20261014-220023-fleet-restart-at-21-24-11-kill on tony-macbook (dispatch)
+- at: 2026-10-14 22:00
+  from: devin
+  text: exploring worktree — locating transcript writer + deploy script
+- at: 2026-10-14 22:10
+  from: devin
+  text: 'done on dispatch branch ad11f44: per-turn transcript append (durable_transcript on /ws sessions, SIGKILL-safe),
+    /api/health active_sessions, deploy-ada.sh drain grace ADA_DRAIN_S=45s, 3 new tests. no venv in worktree — pytest
+    runs at deploy gate.'
+- at: 2026-10-14 22:11
+  from: devin
+  text: 'done on dispatch branch ad11f44: per-turn transcript append (durable_transcript on /ws sessions, SIGKILL-safe),
+    /api/health active_sessions, deploy-ada.sh drain grace ADA_DRAIN_S=45s, 3 new tests. no venv in worktree — pytest
+    runs at deploy gate.'
+- at: 2026-10-14 22:12
+  from: tony-macbook
+  text: 'finished (ok): exit=0 g out on the second attempt; the outcome file has the full record. | devin-task-20261014-220023-fleet-restart-at-'
+- at: 2026-10-14 22:12
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-14 22:12
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-14 22:15
+  from: chaba
+  text: 'merge-sweep: merged ac5bfea5 (dispatch/20261014-220023-fleet-restart-at-21-24-11-kill from tony-macbook)
+    -> origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-220023-fleet-restart-at-21-24-11-kill.md)
+    — auto-closed'
+requests:
+- id: third-mid-turn-restart-kill-queue-the-dr-b1fcf2
+  ask: Third mid-turn-restart kill — queue the drain/grace implementation?
+  status: answered
+  at: 2026-10-14 21:05
+  from: tony
+  options:
+  - queue for dispatch ★
+  - hold
+  suggested: queue for dispatch ★
+  answer: queue for dispatch ★
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 g out on the second attempt; the outcome file has the full record. | devin-task-20261014-220023-fleet-restart-at-21-24-11-kill.service:
+    Consumed 36.351s CPU time over 11min 23.977s wall clock time, 241.1M memory peak, 4.8M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:15
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-220023-fleet-restart-at-21-24-11-kill.md

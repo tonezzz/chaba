@@ -1,7 +1,7 @@
 id: ada-pi-rename-ada-voice
 title: 'rename ada-pi repo/lane to ada-voice (condition met: additions ~130x original)'
 column: backlog
-updated: 2026-10-13 20:14
+updated: 2026-10-14 22:10
 spec: 'Tony-approved rename — original import was 13 files/974 LOC; now 661 files/~128k LOC, +232k insertions, and
   nothing ever ran on a Pi. Rename repo + all references.
 
@@ -31,3 +31,45 @@ comms:
 - at: 2026-10-13 20:14
   from: devin
   text: card captured via board-api
+- at: 2026-10-14 21:07
+  from: tony
+  text: 'raised request condition-met-rename-ada-pi-repo-lane-to-893b96: Condition met — rename ada-pi repo/lane
+    to ada-voice now?'
+- at: 2026-10-14 21:27
+  from: tony
+  text: 'answered condition-met-rename-ada-pi-repo-lane-to-893b96: yes — queue the rename ★'
+- at: 2026-10-14 21:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:02
+  from: chaba
+  text: dispatched 20261014-220238-tony-approved-rename-original- on chaba
+- at: 2026-10-14 22:10
+  from: devin
+  text: 'attempt 2: gate not met — 8 ada-pi dispatches in flight across all hosts (idc02,idc03,omen,macbook,dell).
+    Doing the zero-risk half now: GH rename, compat symlinks, repos.conf+remote updates, chaba sweep, ada-pi self-sweep
+    branch, per-host quiet-gated rename script + runbook.'
+requests:
+- id: condition-met-rename-ada-pi-repo-lane-to-893b96
+  ask: Condition met — rename ada-pi repo/lane to ada-voice now?
+  status: answered
+  at: 2026-10-14 21:07
+  from: tony
+  options:
+  - yes — queue the rename ★
+  - hold
+  suggested: yes — queue the rename ★
+  answer: yes — queue the rename ★
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261014-220238-tony-approved-rename-original-
+claim:
+  session: 20261014-220238-tony-approved-rename-original-
+  since: 2026-10-14 22:02

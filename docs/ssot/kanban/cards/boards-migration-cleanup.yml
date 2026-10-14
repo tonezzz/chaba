@@ -1,0 +1,34 @@
+id: boards-migration-cleanup
+title: Boards migration cleanup — supersede stale CMS copies, drop test pages, dormant static path
+column: review
+updated: 2026-10-14 18:28
+priority: medium
+tags:
+- wp-boards
+- cms
+- cleanup
+spec: 'From Tony 2026-10-14 audit: (a) supersede stale trip-*/place-*/southafrica-* docs in ada-cms-pages-kk with
+  moved_to: WP permalinks; (b) delete static test pages kk-site-test.html + www-site-smoke.html from idc02 webroot;
+  (c) fold media-inbox receipt display into ADA-0650 activity CPT; (d) mark the static publish path (cms-publish-site.py
+  -> www.<tenant>) dormant — 0 public-flagged docs remain.'
+ref: KNB-0657
+comms:
+- at: 2026-10-14 18:17
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 18:22
+  from: devin
+  text: 'Done 2026-10-14: (a) 15 stale docs in ada-cms-pages-kk superseded with moved_to WP permalinks — place-*x4,
+    trip-southafrica*, southafrica-*, sa-beach-photos, flood-status, hello-world, kk-ha-site-flow, kk-ha-home (banner
+    prepended, content preserved; kk-car-report + reports-index kept — no WP twin until asset/report CPTs ship).
+    (b) deleted kk-site-test.html + www-site-smoke.html from idc02 webroot — only index + moved-to-boards notice
+    remain. (c) media-inbox fold-in noted on ADA-0650. (d) static'
+- at: 2026-10-14 18:23
+  from: tony
+  text: moved backlog -> review
+- at: 2026-10-14 18:28
+  from: devin
+  text: 'Follow-on finding: the six chaba-boards CPTs (asset/expense/contact/reminder/bench/report) are specced
+    in ssot.wp-boards.yml but NOT registered on live WP — /wp/v2/types shows only post/page/place/trip/ops-event/timeline_block.
+    Plugin is local-dev only (/tmp/chaba-boards/chaba-boards.php). SSOT now carries a NOT YET DEPLOYED marker; landing
+    work carded as chaba-boards-plugin-deploy.'

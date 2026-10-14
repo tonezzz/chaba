@@ -1,0 +1,137 @@
+id: wp-activity-cpt-timeline-links
+title: 'WP boards: activity/incident CPT for tool events — timeline links instead of duplicates'
+column: backlog
+updated: 2026-10-14 22:09
+priority: medium
+tags:
+- wp-boards
+- ada
+- reports
+spec: 'Tony 2026-10-14: add an incident/activity post type to boards WP so tool executions (image render, video
+  render, translate, etc.) become durable items, and point the timeline at these items so nothing is stored twice.
+
+
+  Recommended shape (not yet decided — see requests):
+
+  - New CPT `activity` (chaba-boards plugin v0.2) rather than reusing `report` (digests/period-based) or `ops-event`
+  (infra heartbeats). Title: "Activity — {tool} {lane} {date}".
+
+  - Meta: tool, lane, status(ok|failed|blocked), model, cost_usd, artifact_url, ref_url, prompt_excerpt, session_id/chat_id,
+  duration_s. Failed/blocked calls land too — that IS the incident report.
+
+  - Writer: ada-pi tool_runner post-call hook for an allowlist (ada_render_image, ada_render_video, translate/vision
+  tools) POSTs via WP app password (~/.config/secrets/wp-boards.env); failures recorded by the same hook so killed/refused
+  turns (e.g. 2026-10-14 14:36 restart-mid-turn) leave durable evidence, not just a journal line.
+
+  - Timeline dedupe: line-chat-timeline.py already rebuilds timeline_block from journals — journal entries that
+  produced an activity post get the post id/url (via artifact_url match or an event_id the relay stamps into the
+  journal) and render a link/embed instead of re-inlining the media.
+
+  - Privacy: member-visible per lane like /chat/line/* (private status), artifact media already public-by-URL under
+  /relay-img/arch/ — same caveat as uploads/.
+
+
+  Decisions for Tony (default ★): CPT name `activity` ★ vs `incident` vs reuse `report`; emitters = renders+translate
+  first ★ vs all tools; per-lane private ★ vs one shared feed.'
+ref: ADA-0650
+comms:
+- at: 2026-10-14 17:08
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 17:56
+  from: devin
+  text: 'Clean public URLs shipped (2026-10-14). Public /wp/<path> URLs no longer show index.php — verified live:
+    /wp/tony/ /wp/kk/ /wp/place/ /wp/trip/ /wp/tag/kk/ /wp/hello-world/ CPT singles+children all 200 at clean paths;
+    WP-emitted /wp/index.php/<p> links 301 to clean (1 hop); canonical Location host rewritten h3->surf at edge;
+    /wp/wp-login.php, /wp/wp-json/*, ?rest_route= all work. Implementation: WP keeps permalink_structure /index.php/%%postname%%/
+    (only mode the Plesk vhost resolves — no try_fi'
+- at: 2026-10-14 18:22
+  from: devin
+  text: 'Fold-in from KNB-0657 audit (2026-10-14): ada-cms-pages-kk holds 34 media-* receipt leaves + media-inbox/media-inbox-qc
+    rollups written by media-inbox-update-{kk,tony} timers — the dedup/QC data is useful but the display lives nowhere
+    members can see it. When the activity CPT lands, media receipts should be activity items (type: media_receipt,
+    meta: mid/mime/size/source_chat/dup flag) with the rollup replaced by a WP archive view. Keep the MDDB receipts
+    as the write-truth for QC until then.'
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request cpt-name-for-tool-event-records-e1f701: CPT name for tool-event records?'
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request which-tools-emit-activity-records-first-da7400: Which tools emit activity records first?'
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request visibility-model-for-activity-items-db0422: Visibility model for activity items?'
+- at: 2026-10-14 19:52
+  from: tony
+  text: 'answered cpt-name-for-tool-event-records-e1f701: activity (records all tool events; status field marks
+    incidents) ★'
+- at: 2026-10-14 19:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 19:52
+  from: tony
+  text: 'answered which-tools-emit-activity-records-first-da7400: renders + translate only ★'
+- at: 2026-10-14 19:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 19:52
+  from: tony
+  text: 'answered visibility-model-for-activity-items-db0422: per-lane private (member sees own lane) ★'
+- at: 2026-10-14 19:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 19:55
+  from: devin
+  text: 'Design update — activity is hierarchical from day one (KNB-0659): parent=session/turn (chat context), children=tool
+    events (render/translate/...). Timeline links the parent once; tool events nest under it instead of polluting
+    the top-level feed. Fits the media_receipt fold-in too — media-* receipts can be children of the turn/chat that
+    carried them.'
+- at: 2026-10-14 20:52
+  from: devin
+  text: 'news CPT pipeline LIVE + verified (2026-10-14 eve): chaba-boards v0.3.0 deployed via plugin-editor (zip
+    overwrite hit Plesk quirks); fixed a real bug found in verification — common+extra union dropped per-type overrides
+    (menu_icon/has_archive), now array_merge. /wp/v2/types/news: archive=true, rss icon, cat+tag taxonomies. Category
+    tree via REST: thailand{bangkok,east,provinces} world tech finance{gold,markets} disaster{flood,weather} family-news.
+    scripts/ada/news-fetch.py + news-feeds.json on i'
+- at: 2026-10-14 22:09
+  from: devin
+  text: 'news synthesis layer LIVE (2026-10-14): chaba-boards v0.3.3 — news CPT hierarchical; parents = distilled
+    stories, children = raw feed items. scripts/ada/news-digest.py on idc03, wp-news-digest.timer at :20 (after
+    fetch at :00). Clustering = ollama-nomic-embed via LiteLLM (free/local), title cosine 0.85 union-find; gemini-3.5-flash-lite
+    writes topic+brief+coverage-diffs per multi-source cluster. Parents get synthesis cat + digest/sources:N tags.
+    First run: 7 digests from 100 items, 25 reparented '
+requests:
+- id: cpt-name-for-tool-event-records-e1f701
+  ask: CPT name for tool-event records?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - activity (records all tool events; status field marks incidents) ★
+  - incident (failures only)
+  - reuse report CPT
+  suggested: activity (records all tool events; status field marks incidents) ★
+  answer: activity (records all tool events; status field marks incidents) ★
+- id: which-tools-emit-activity-records-first-da7400
+  ask: Which tools emit activity records first?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - renders + translate only ★
+  - all tools
+  - renders only
+  suggested: renders + translate only ★
+  answer: renders + translate only ★
+- id: visibility-model-for-activity-items-db0422
+  ask: Visibility model for activity items?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - per-lane private (member sees own lane) ★
+  - one shared feed
+  - public
+  suggested: per-lane private (member sees own lane) ★
+  answer: per-lane private (member sees own lane) ★
+awaiting_action: true

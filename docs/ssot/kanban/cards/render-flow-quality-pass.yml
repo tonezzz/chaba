@@ -1,0 +1,97 @@
+id: render-flow-quality-pass
+title: Render flow quality pass — vision self-check, iterate-on-last, multi-ref, aspect intent
+column: doing
+updated: 2026-10-14 22:06
+priority: medium
+tags:
+- ada
+- render
+- quality
+spec: 'From Tony 2026-10-14: what else can we improve in the render flow for quality. Concrete items:
+
+  1. Iterate-on-last: remember the session''s last rendered artifact so "make it warmer / change the text" auto-feeds
+  it as ref_url instead of a fresh reroll (biggest UX win — edits preserve composition).
+
+  2. Vision self-check: after a render, one cheap vision pass comparing output vs ask; retry once on obvious miss
+  (garbled text, wrong subject). ~$0.004/turn cost.
+
+  3. Multi-ref: gemini-3.1-flash-image accepts multiple reference images — ref_url is single today; take ref_urls[]
+  for "combine these photos" asks.
+
+  4. Aspect intent: map asks like "1920px landing page" to the right canvas — real landing pages are TALL; either
+  warn that gen is capped at fixed aspects or compose per-section renders. Landing pages specifically: image gen
+  yields a picture OF a page, not a page — if the member wants usable HTML the flow should be render hero assets
+  + code a page (different tool path).
+
+  5. Delivery fidelity: LINE re-encodes images; consider attaching the arch URL for the original-quality file on
+  big renders (2K/4K) so members can grab full res.
+
+  6. Transient retry: one automatic retry on gateway/429-vs-quota transient failures before surfacing an error.
+
+  Depends on OPS-0651 (delivery path) being sane for #5 to matter.'
+ref: ADA-0652
+comms:
+- at: 2026-10-14 17:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request which-quality-item-to-build-first-dc5d96: Which quality item to build first?'
+- at: 2026-10-14 19:53
+  from: tony
+  text: 'answered which-quality-item-to-build-first-dc5d96: iterate-on-last (ref_url continuity) ★'
+- at: 2026-10-14 19:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:06
+  from: tony
+  text: 'raised request queue-the-iterate-on-last-vision-self-ch-98c00c: Queue the iterate-on-last + vision self-check
+    build?'
+- at: 2026-10-14 21:26
+  from: tony
+  text: 'answered queue-the-iterate-on-last-vision-self-ch-98c00c: queue for dispatch ★'
+- at: 2026-10-14 21:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 21:59
+  from: idc02
+  text: claimed
+- at: 2026-10-14 21:59
+  from: chaba
+  text: started devin-task-20261014-215937-from-tony-2026-10-14-what-else on idc02 (dispatch)
+- at: 2026-10-14 22:06
+  from: devin
+  text: 'scoped: all 6 items land in tools.d/ada_render_image.py + tool_guide + tests. last-render stored as render-dir
+    path keyed by runner.context.session_id; self-check via gemini_pool on flash-lite; transient retry wraps generate
+    (quota errors excluded — pool already rotates). implementing now.'
+requests:
+- id: which-quality-item-to-build-first-dc5d96
+  ask: Which quality item to build first?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - iterate-on-last (ref_url continuity) ★
+  - vision self-check + retry
+  - all of it
+  - multi-ref arrays
+  suggested: iterate-on-last (ref_url continuity) ★
+  answer: iterate-on-last (ref_url continuity) ★
+- id: queue-the-iterate-on-last-vision-self-ch-98c00c
+  ask: Queue the iterate-on-last + vision self-check build?
+  status: answered
+  at: 2026-10-14 21:06
+  from: tony
+  options:
+  - queue for dispatch ★
+  - hold for now
+  suggested: queue for dispatch ★
+  answer: queue for dispatch ★
+action:
+  type: dispatch
+  repo: ada-pi
+  status: running
+  runner: idc02

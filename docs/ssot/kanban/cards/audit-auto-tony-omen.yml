@@ -1,8 +1,7 @@
 id: audit-auto-tony-omen
 title: 'Audit drift on `tony-omen`: 2 delta(s) vs expected state'
-brief: 'Daily audit-hosts diff found service/placement drift on this host. Deltas
-  become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent,
-  allowed_running, known_failed).'
+brief: 'Daily audit-hosts diff found service/placement drift on this host. Deltas become work: fix the drift, or
+  fix the SSOT declaration (expected_services, expected_absent, allowed_running, known_failed).'
 column: review
 review_kind: triage
 generated: audit-hosts
@@ -12,7 +11,11 @@ priority: high
 note: '- Unexpected failed user service: chaba-mn01-sync.service
 
   - Unexpected failed system service: yomi-process.service'
-help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.tony-omen. A delta
-  means declared != observed: either restore the expected state, or amend the SSOT
-  so the declaration matches intent (this file IS the placement contract).'
-updated: '2026-10-13'
+help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.tony-omen. A delta means declared != observed:
+  either restore the expected state, or amend the SSOT so the declaration matches intent (this file IS the placement
+  contract).'
+updated: 2026-10-14 18:42
+comms:
+- at: 2026-10-14 18:42
+  from: tony
+  text: verified

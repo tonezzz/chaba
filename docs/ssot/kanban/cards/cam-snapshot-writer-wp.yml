@@ -1,0 +1,17 @@
+id: cam-snapshot-writer-wp
+title: 'cam snapshot writer: go2rtc frames -> WP cam CPT'
+column: backlog
+updated: 2026-10-14 19:02
+priority: medium
+note: 'chaba-boards plugin ACTIVE on boards (v0.2.0, CPTs verified + asset write sanity passed). Build the cam recorder:
+  timer on tony-dell (go2rtc aggregator host) -> per cam in ~/.config/go2rtc/go2rtc.yaml GET http://<host>:1984/api/frame.jpeg?src=<cam>
+  -> upload media via WP REST -> create private cam post (title Cam - <id> <ts>, meta camera_id/captured_at/kind=live/stream_url,
+  featured_image=frame). Retention: purge cam posts+media older than 7d each run. Also seed kind=live directory
+  posts for sso'
+help: 'Prereq DONE: plugin active, REST writes verified. Writer is fleet-side (private frames cannot reach Plesk).
+  Ref: scripts/ada/line-chat-timeline.py for the WP api() pattern + wp-boards.env creds.'
+ref: MED-0660
+comms:
+- at: 2026-10-14 19:02
+  from: devin
+  text: card captured via board-api

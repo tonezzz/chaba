@@ -1,0 +1,17 @@
+id: wp-comment-sync-suggestion-inbox
+title: 'wp-comment-sync: member comments -> agent suggestion lanes'
+column: backlog
+updated: 2026-10-14 21:16
+priority: medium
+note: 'Member comments on boards posts are the cheap comms channel (Tony call 2026-10-14). Build scripts/ada/wp-comment-sync.py
+  on idc03 + timer (15min): poll GET /wp/v2/comments?after=<cursor> -> route by post type (memory-mirror -> Ada
+  suggestion queue; asset/place/trip -> agent applies correction to the record; cam/bench/render_job -> digest only)
+  -> reply in-thread via REST as ack -> mark comment meta _processed=1 for dedup. Cursor in state file. Comments
+  are SUGGESTIONS only — never write MDDB dir'
+help: api() pattern in scripts/ada/line-chat-timeline.py; creds wp-boards.env on idc03; comment meta needs register_meta
+  for comment object or use a separate processed-ids set in the state file (simpler — skip comment meta).
+ref: OPS-0674
+comms:
+- at: 2026-10-14 21:16
+  from: devin
+  text: card captured via board-api

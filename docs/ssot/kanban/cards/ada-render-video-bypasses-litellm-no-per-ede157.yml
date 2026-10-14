@@ -1,0 +1,67 @@
+id: ada-render-video-bypasses-litellm-no-per-ede157
+title: ada_render_video bypasses LiteLLM — no per-lane spend metering
+column: doing
+updated: 2026-10-14 22:11
+priority: medium
+tags:
+- spend
+- metering
+- video
+- gateway
+spec: 'ada_render_video calls generativelanguage.googleapis.com directly (predictLongRunning + operation polling
+  via ADA_GEMINI_API_BASE/GEMINI_API_KEY), so Veo spend (~$0.15/sec, ~$1.20/8s clip) bills the lane''s AI Studio
+  key but never appears in the LiteLLM spend ledger — unlike ada_render_image which routes through the ''image''
+  class. Options: (a) route video through a LiteLLM ''video'' class if the proxy supports predictLongRunning + operation
+  polling passthrough (verify upstream support first); (b) meter in-tool — log estimated spend (secs * rate) into
+  the local spend-ledger.jsonl at submit time; (c) accept and document the gap. Recommendation: (b) as the cheap
+  reliable path, (a) if LiteLLM proxying works. Context: video is now owner-only (ADA_RENDER_VIDEO_OPEN, ada-ha-tony
+  only) so exposure is small, but the ledger hole is real if it ever opens wider.'
+ref: ADA-0646
+comms:
+- at: 2026-10-14 12:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 21:07
+  from: tony
+  text: 'raised request how-should-ada-render-video-be-metered-ac2542: How should ada_render_video be metered?'
+- at: 2026-10-14 21:25
+  from: tony
+  text: 'answered how-should-ada-render-video-be-metered-ac2542: route through LiteLLM ledger ★'
+- at: 2026-10-14 21:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 22:00
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:01
+  from: tony-omen
+  text: claimed
+- at: 2026-10-14 22:01
+  from: chaba
+  text: started devin-task-20261014-220118-ada-render-video-calls-generat on tony-omen (dispatch)
+- at: 2026-10-14 22:01
+  from: devin
+  text: 'Starting: exploring ada_render_video vs ada_render_image paths and spend-ledger conventions in worktree.'
+- at: 2026-10-14 22:11
+  from: devin
+  text: 'Done: option (b) implemented — Veo submit logs est spend (secs*rate) to usage.jsonl, so ada_usage_summary
+    est_cost_usd covers video. Option (a) verified upstream (LiteLLM /gemini passthrough does predictLongRunning+polling+download);
+    tool is now gateway-ready via ADA_GEMINI_API_BASE=<proxy>/gemini + ADA_RENDER_VIDEO_API_KEY (download URI rewrite
+    included). 31/31 video tests, tool-lint clean. Note: fast rate is actually $0.10/s@720p now, not $0.15. Trail:
+    docs/ssot/jobs/ada/2026-10-14-render-vide'
+requests:
+- id: how-should-ada-render-video-be-metered-ac2542
+  ask: How should ada_render_video be metered?
+  status: answered
+  at: 2026-10-14 21:07
+  from: tony
+  options:
+  - route through LiteLLM ledger ★
+  - keep direct; log usage locally
+  suggested: route through LiteLLM ledger ★
+  answer: route through LiteLLM ledger ★
+action:
+  type: dispatch
+  repo: ada-pi
+  status: running
+  runner: tony-omen

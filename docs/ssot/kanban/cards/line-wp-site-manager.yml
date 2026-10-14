@@ -1,7 +1,7 @@
 id: line-wp-site-manager
 title: LINE-driven WordPress site maintenance (customer via LINE chat)
 column: backlog
-updated: 2026-10-14 11:40
+updated: 2026-10-14 16:46
 brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
   drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
   WP itself not serving yet — Plesk default page).'
@@ -48,3 +48,38 @@ comms:
     CPT id=35 REST-driven; line-chat-timeline.py syncs LINE journal -> timelines[] idempotently (196 items, 13 media
     uploads); systemd user timer every 5min on idc03. Verified: anonymous 404, rendered timelines=196 via REST.
     Caveat: media files remain public-by-U'
+- at: 2026-10-14 14:07
+  from: devin
+  text: 'Permalinks fixed (2026-10-14): Tony switched WP to post-name; nginx lacks rewrites so set structure to
+    /index.php/%postname%/ via options-general + fixed home option h3->surf (siteurl was already surf). Now /wp/index.php/tony/
+    etc. resolve 200, REST intact, generated links all on public domain, page content links migrated. wp_post tag_archive
+    updated (09bdf91, deployed). Residual: ugly ?tag=/?cat= canonicals still 301 to h3 (origin-side, cosmetic).
+    Pure /wp/tony/ paths still 404 until Plesk ngin'
+- at: 2026-10-14 14:39
+  from: devin
+  text: '[done] CMS→WP retarget shipped (ada-pi 81e2760 + chaba 82452fcd1). place_report now posts to boards.surf-thailand.com
+    via shared backend/wp_client.py (tags person+place-report, live public link — verified end-to-end, WP post 66
+    Ao Nang 200). trip_calendar --public posts the rollup to WP (person+trip tags) instead of CMS meta.public —
+    verified live, smoke post trashed after test. cms_publish_page/cms_edit dropped from kk lane profile (explicit
+    excludes); tony lane keeps them for internal reports.'
+- at: 2026-10-14 16:16
+  from: devin
+  text: '[watcher idc02] WP front page unreachable: HTTP Error 301: The HTTP server returned a redirect error that
+    would lead to an infinite loop.
+
+    The last 30x error message was:
+
+    Moved Permanently (checked 2026-10-14T09:16:27+00:00Z)'
+- at: 2026-10-14 16:18
+  from: devin
+  text: '[done] CPT restructure + watchdog v1. trip CPT now hierarchical — SA trip is one parent + 4 children at
+    /trip/trip-southafrica/<child>/ (all 200). ops-event CPT registered (non-queryable, REST). Generators updated:
+    trip-calendar publishes parent+day children (live family test verified + trashed); place_report → place CPT
+    (ada-pi 844b968, verified post 107 in /place/ archive + trashed). Watchdog v1: wp-heartbeat.timer on idc03 stamps
+    ops-event heartbeat every 5min; wp-watch.timer on idc02 checks '
+- at: 2026-10-14 16:46
+  from: devin
+  text: '[done] ops-event stream live: line_relay emits structured ops events (group_joined/unallowed_group/unauthorized_user/reply_failed/push_failed/turn_failed/relay_started)
+    to ops-events.jsonl (ada-pi ff08dce, deployed). line-chat-timeline.py renders them as ⚠ items — chat-scoped
+    events on that chat''s timeline, all events on new private /chat/ops/ page (timeline_block 108). line-chat-timeline.path
+    (PathChanged glob) makes it ~3s real-time; 5min timer remains as sweeper. Verified: test event → sync i'

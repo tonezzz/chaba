@@ -13,7 +13,7 @@ note: 'Veo (predictLongRunning on generativelanguage) for short clips. Same rend
   spend log + owner_only policy.'
 help: 'gen: longRunningPredict on generativelanguage.googleapis.com; send: same /frame URL + tg sendVideo/line videoMessage
   (both relays handle images today — video message types may need a small extension)'
-updated: 2026-10-08 18:20
+updated: 2026-10-14 21:05
 spec: 'ada_render_video(prompt, ref_url?, secs, aspect) via Veo predictLongRunning on generativelanguage — async
   op, poll until done (the long-poll shape needs a background task or bounded wait ~60-120s), then same artifact->URL
   hop as ada_render_image. Same render tool group. Verify: stubbed unit test; live scenario produces a playable
@@ -68,6 +68,10 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0215'
+- at: 2026-10-14 21:05
+  from: devin
+  text: 'Render logging wired to WP boards: render_job CPT extended to video (kind/secs/aspect/res/operation/est_cost_usd/chain
+    fields) — plugin v0.3.1 live, verified REST schema. Auto-write dispatched as ADA-0673.'
 claim: {}
 review_kind: verify
 auto_done_when:

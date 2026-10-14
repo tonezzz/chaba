@@ -1,7 +1,7 @@
 id: gev-upstream-sync
 title: 'GEV upstream sync — rebase fork onto bilawalsidhu main (817 commits: v0.2.1, Street View, voice-core)'
 column: done
-updated: 2026-10-14 09:13
+updated: 2026-10-14 17:37
 brief: Upstream bilawalsidhu/gods-eye-view moved 817 commits past our fork base (v0.2.0/v0.2.1 releases, Google
   Street View, Mapillary, Director family, voice-core refactor + ChatGPT OAuth, tool-catalog, ~50 data-source fixes
   incl. trackpad pinch-zoom). Our fork carries 7 local commits (Gemini Live voice, ?remote=1, capture_frame, Nominatim
@@ -142,6 +142,13 @@ comms:
 - at: 2026-10-14 09:13
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-14 17:37
+  from: devin
+  text: 'DEPLOYED to live. Bundle 8e88cc564 staged into stacks/web/public/apps/gev (index-Bd5DfCi5.js) + tools.json
+    regen in same commit; served checkout pulled; gev-gemini + gods-eye-view-api restarted, /command/health ok.
+    Post-deploy guards: gev_sw_stale_cache PASS, gev_mute_no_leak PASS on new bundle. Gaps: (1) voice path unverifiable
+    while Gemini Live capped (ADA-0632); (2) move_camera zoom/fly motions + in-page tour splice were bundle-only,
+    dropped by rebuild — external gev-tour.mjs still works; sou'
 claim:
   since: 2026-10-14 07:54
 review_kind: verify

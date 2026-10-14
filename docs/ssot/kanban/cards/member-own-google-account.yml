@@ -1,7 +1,7 @@
 id: member-own-google-account
 title: Member uses own Google account — OAuth token + optional own Gemini key
 column: done
-updated: 2026-10-13 19:33
+updated: 2026-10-14 18:42
 priority: medium
 spec: 'Let each member lane act under their own Google identity. Pieces: (1) PATCH scripts/ada/google-calendar-auth.py
   with manual-paste mode (member opens auth URL on phone, signs in, Google redirects to unreachable localhost URL,
@@ -67,6 +67,9 @@ comms:
 - at: 2026-10-13 19:33
   from: tony
   text: closed by tony
+- at: 2026-10-14 18:42
+  from: tony
+  text: 'answered code-ssot-done-worktree-branch-your-part-942708: done —'
 requests:
 - id: code-ssot-done-worktree-branch-your-part-942708
   ask: 'Code+SSOT done (worktree branch). Your part: (1) publish the OAuth consent screen on project gen-lang-client-0694401188
@@ -74,7 +77,7 @@ requests:
     scripts/ada/google-calendar-auth.py --manual --member kk --host idc03, LINE her the URL, paste back the dead-localhost
     redirect; (3) --check --member kk, then flip google-kk status to active and render: render-calendar-providers.py
     --instance kk --host idc03. Runbook: member_google_onboard in ssot.ada.howto.yml.'
-  status: open
+  status: answered
   options:
   - id: done
   - id: blocked
@@ -82,5 +85,6 @@ requests:
   suggested: done
   at: 2026-10-13 19:01
   from: devin
+  answer: done —
 review_kind: verify
 claim: {}

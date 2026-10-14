@@ -1,0 +1,17 @@
+id: wp-usage-pull-render-plesk-worker
+title: usage timeline as Plesk pull-render worker (CPU to Plesk)
+column: backlog
+updated: 2026-10-14 19:02
+priority: low
+note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
+  in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
+  in chaba-boards plugin (or companion) runs via Plesk Scheduled Task, pulls the feed, buckets into report CPT entries
+  or a usage timeline_block; (c) worker writes ops-event heartbeat each run; idc02 wp-watch verifies freshness (alert
+  path independent of watched host). All bucketing'
+help: 'Pattern ref: watchdog topology in ssot.wp-boards.yml. Feed must carry only aggregates (no raw session data)
+  since it crosses the public edge. Plesk cron needs Tony one-time setup in panel.'
+ref: OPS-0661
+comms:
+- at: 2026-10-14 19:02
+  from: devin
+  text: card captured via board-api

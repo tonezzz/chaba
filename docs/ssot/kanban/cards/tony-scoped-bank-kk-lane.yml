@@ -1,7 +1,7 @@
 id: tony-scoped-bank-kk-lane
 title: personal-tony scoped bank — Tony on kk lane reads KK personal bank as his own
 column: backlog
-updated: 2026-10-13 21:18
+updated: 2026-10-14 21:07
 priority: high
 tags:
 - ada-pi
@@ -28,3 +28,24 @@ comms:
     restarted. Verified: kk instance personal_bank_name(person.tony)=personal-tony (was falling through to personal-kk
     — the my-car bug); person.kk unaffected. Note: banks_for_person read-fanout on kk still lists foreign scoped
     banks — household read-visibility of member private b'
+- at: 2026-10-14 11:42
+  from: devin
+  text: 'Done — shipped 7a65cf4ac. personal-tony registered (person.tony, keys [user-tonezzzz, tg-tony], ada-ha-bank-personal-tony,
+    instances [tony,kk]), rendered+restarted on idc03, verified: kk lane personal_bank_name(person.tony)=personal-tony.
+    Complementary leg: ADA-0593 voice recognition now live (match_file) so Tony''s voice on any lane resolves person.tony.
+    Remaining open note on MEM-0572 thread: banks_for_person read-fanout includes foreign scoped banks — ACL tightening
+    is a separate decision.'
+- at: 2026-10-14 21:07
+  from: tony
+  text: 'raised request personal-tony-bank-shipped-verified-clos-01fdc0: personal-tony bank shipped + verified —
+    close?'
+requests:
+- id: personal-tony-bank-shipped-verified-clos-01fdc0
+  ask: personal-tony bank shipped + verified — close?
+  status: open
+  at: 2026-10-14 21:07
+  from: tony
+  options:
+  - close ★
+  - keep open
+  suggested: close ★

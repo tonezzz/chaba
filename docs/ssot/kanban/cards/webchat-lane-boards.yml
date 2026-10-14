@@ -1,0 +1,95 @@
+id: webchat-lane-boards
+title: Webchat lane on boards WP — LINE/TG-style chat screen talking to the real Ada lanes
+column: backlog
+updated: 2026-10-14 22:09
+priority: medium
+tags:
+- wp-boards
+- ada
+- webchat
+spec: 'Tony 2026-10-14: a chat screen like TG/LINE on the boards website; he will test when ready. Surveyed WP plugins
+  + GitHub (AI Engine/EasyIT/Kaddora/Chatzio all call a raw OpenAI-compatible endpoint — loses persona/memory/tools/journal;
+  Chatwoot et al are human-agent consoles). Bespoke widget wins because the backend already exists.
+
+
+  Design: ~200-line JS chat panel (LINE-style bubbles) on a private WP page under /chat/ tree; opens ws to the member''s
+  ada lane (ws://lane/ws?api_key=<member key>&channel=web&chat_id=web-<member>&mode=text) or a thin POST /api/chat
+  shim; assistant_transcript_delta streams bubbles; tool results with image_url/video_url render inline. Turns journal
+  with channel=web so the timeline picks them up like LINE/TG turns.
+
+
+  Backend gaps to fill: (a) web channel accepted on the ws path — relay-style lane routing or direct per-lane connect;
+  (b) member auth — reuse /api/auth invite+redeem flow (member clicks link -> key bound to lane/person); (c) WP
+  page hosting the widget (private status like /chat/line/*); (d) outbound push on web is free — solves the LINE
+  quota problem for proactive sends (OPS-0651 pattern).'
+ref: ADA-0655
+comms:
+- at: 2026-10-14 18:10
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 19:49
+  from: tony
+  text: 'raised request member-auth-model-for-the-webchat-lane-c824c0: Member auth model for the webchat lane?'
+- at: 2026-10-14 19:53
+  from: tony
+  text: 'answered member-auth-model-for-the-webchat-lane-c824c0: invite+redeem per member (reuses /api/auth flow)
+    ★'
+- at: 2026-10-14 19:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:06
+  from: tony
+  text: 'raised request auth-model-decided-queue-the-webchat-bui-1de58a: Auth model decided — queue the webchat
+    build?'
+- at: 2026-10-14 21:27
+  from: tony
+  text: 'answered auth-model-decided-queue-the-webchat-bui-1de58a: queue for dispatch ★'
+- at: 2026-10-14 21:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-14 21:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:00
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 22:01
+  from: chaba
+  text: dispatched 20261014-220023-tony-2026-10-14-a-chat-screen- on ada-pi
+- at: 2026-10-14 22:09
+  from: devin
+  text: 'survey done: ws path already takes channel+chat_id+mode=text, invite+redeem exists. Building: ada-webchat-card
+    widget, webchat push endpoint + parked flush (OPS-0651 pattern), chat_send channel=web, wp_chat_page tool, CORS
+    env gate for invite redeem from boards origin.'
+requests:
+- id: member-auth-model-for-the-webchat-lane-c824c0
+  ask: Member auth model for the webchat lane?
+  status: answered
+  at: 2026-10-14 19:49
+  from: tony
+  options:
+  - invite+redeem per member (reuses /api/auth flow) ★
+  - WP login -> lane key mapping
+  - open link per member (no login)
+  suggested: invite+redeem per member (reuses /api/auth flow) ★
+  answer: invite+redeem per member (reuses /api/auth flow) ★
+- id: auth-model-decided-queue-the-webchat-bui-1de58a
+  ask: Auth model decided — queue the webchat build?
+  status: answered
+  at: 2026-10-14 21:06
+  from: tony
+  options:
+  - queue for dispatch ★
+  - hold for now
+  suggested: queue for dispatch ★
+  answer: queue for dispatch ★
+action:
+  type: dispatch
+  repo: ada-pi
+  status: running
+  attempts: 1
+  task_id: 20261014-220023-tony-2026-10-14-a-chat-screen-
+  runner: tony-dell
+claim:
+  session: 20261014-220023-tony-2026-10-14-a-chat-screen-
+  since: 2026-10-14 22:01

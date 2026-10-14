@@ -1,7 +1,7 @@
 id: line-delivery-send-actual-images-not-jus-652ad3
 title: 'LINE delivery: send actual images, not just text links'
-column: review
-updated: 2026-10-13 22:32
+column: done
+updated: 2026-10-14 19:09
 priority: high
 tags:
 - ada
@@ -78,14 +78,72 @@ comms:
     green (tool-lint clean, 1386 pass on dell / 1390 on idc03), pushed 02c5058, deploy-ada.sh complete — all 8 services
     active incl ada-line-relay. Live check pending: next reply containing a Drive link/image URL should arrive as
     a real LINE image message. LINE_TEXT_IMG_MINE=0 reverts if misbehaving.'
+- at: 2026-10-14 11:43
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-214700-line-delivery-send-actual-imag conflicts with origin/master: integrations/ada-pi/README.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-14 11:43
+  from: chaba
+  text: 'raised request merge-conflict-3: merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-14 17:47
+  from: chaba
+  text: 'merge-sweep: landing devin-task-20261013-214700-line-delivery-send-actual-imag failed: worktree add: Command
+    ''[''git'', ''-C'', ''/home/tony/CascadeProjects/chaba-tony-dell'', ''worktree'', ''add'', ''--detach'', ''/tmp/merge-sweep-rnmxjc_o'',
+    ''origin/master'']'' timed out after 60 seconds'
+- at: 2026-10-14 17:47
+  from: chaba
+  text: 'merge-sweep: landing devin-task-20261013-214700-line-delivery-send-actual-imag failed: worktree add: Command
+    ''[''git'', ''-C'', ''/home/tony/CascadeProjects/chaba-tony-dell'', ''worktree'', ''add'', ''--detach'', ''/tmp/merge-sweep-rnmxjc_o'',
+    ''origin/master'']'' timed out after 60 seconds'
+- at: 2026-10-14 18:42
+  from: tony
+  text: queued for processing
+- at: 2026-10-14 18:42
+  from: idc02
+  text: claimed
+- at: 2026-10-14 18:43
+  from: chaba
+  text: started devin-task-20261014-184300-line-delivery-send-actual-imag on idc02 (dispatch)
+- at: 2026-10-14 18:43
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-214700-line-delivery-send-actual-imag no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-14 18:45
+  from: devin
+  text: 'VERIFIED live on idc03 (2026-10-14): patched relay running (_mine_image_urls/_resolve_doc_media/_mined_msgs
+    in deployed line_relay.py). Journal since deploy shows 7 real image deliveries to C8220260… [text,image,text]
+    at 12:39/12:40/12:57/12:58/17:13/17:33/17:52 + 1 [video,text] at 14:09 — LINE now gets actual image messages.
+    Mining path confirmed firing: a /relay-img/arch/renders/*.mp4 ref was mined, fetched, content-type rejected
+    (video/mp4, not an image) and silently dropped to [text]-only pe'
+- at: 2026-10-14 18:45
+  from: devin
+  text: closed by devin
+- at: 2026-10-14 18:45
+  from: chaba
+  text: 'session-end checkpoint fcd9507e: 1 leftover file(s) committed'
+- at: 2026-10-14 18:45
+  from: chaba
+  text: pushed dispatch/20261014-184300-line-delivery-send-actual-imag to origin
+- at: 2026-10-14 18:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-14 18:45
+  from: chaba
+  text: auto-merged 54557ddb (dispatch/20261014-184300-line-delivery-send-actual-imag) → origin/master
+- at: 2026-10-14 19:09
+  from: tony
+  text: 'answered merge-conflict-3: merge-by-hand — merge by hand (README conflict only — devin can do it)'
 action:
   type: dispatch
   status: done
-  runner: idc02
   result: 'exit=0  dispatch branch — not pushed, not deployed; install per the README then restart `ada-line-relay`.
     | devin-task-20261013-214700-line-delivery-send-actual-imag.service: Consumed 1min 43.088s CPU time, 273.4M
     memory peak, 0B memory swap peak.'
-  verified: false
+  sweep:
+    merge_err: 2026-10-14 17:47
+    stale_running: 2026-10-14 18:43
+  runner: idc02
 review_kind: verify
 claim: {}
 requests:
@@ -105,4 +163,19 @@ requests:
   answer: merged manually (duplicate of merge-conflict — already resolved)
   at: 2026-10-13 22:28
   from: chaba
-awaiting_action: true
+- id: merge-conflict-3
+  ask: 'merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261013-214700-line-delivery-send-actual-imag
+    by hand, or retry/abandon the card.'
+  status: answered
+  options:
+  - id: merge-by-hand
+    label: merge by hand (README conflict only — devin can do it)
+  - id: retry
+    label: retry merge-sweep
+  - id: abandon
+    label: abandon (drop the branch work)
+  suggested: merge-by-hand
+  at: 2026-10-14 11:43
+  from: chaba
+  answer: merge-by-hand — merge by hand (README conflict only — devin can do it)
