@@ -11,11 +11,16 @@ last_updated: "2026-10-14"
 site:
   public_base: https://boards.surf-thailand.com/wp
   origin_base: https://boards.h3.gizmo-thailand.com/wp
-  # Permalinks: /index.php/%postname%/ (Plesk vhost has no rewrite for
-  # plain permalinks). Bare /wp|/wp/ used to 301-loop to itself (WP
-  # canonical vs PATH_INFO) — fixed at the idc02 caddy edge with an
-  # exact-path redir to /wp/index.php (2026-10-14).
-  rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost
+  # Permalinks: /index.php/%postname%/ — required: the Plesk vhost has no
+  # try_files and no PATH_INFO for arbitrary paths, so this is the only
+  # structure under which every route (pages, posts, CPT singles+archives,
+  # taxonomies) resolves. Public URLs are still clean — idc02 caddy-edge
+  # rewrites /wp/<path> internally to /wp/index.php/<path> and 301s
+  # WP-emitted /wp/index.php/<path> links back to /wp/<path>; Location
+  # headers get boards.h3 -> boards.surf-thailand.com host rewrite
+  # (2026-10-14). Caveat: HTML <link>/canonical hrefs still show
+  # index.php — clicks land clean via the edge bounce.
+  rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost; /wp/wp-json/* is edge-rewritten to index.php and also works
   app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
 
 post_types:
