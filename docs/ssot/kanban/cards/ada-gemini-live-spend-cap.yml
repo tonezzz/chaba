@@ -1,0 +1,50 @@
+id: ada-gemini-live-spend-cap
+title: Gemini Live refusing sessions — monthly spending cap hit (ada voice down)
+column: backlog
+updated: 2026-10-14 08:27
+priority: high
+tags:
+- ada
+- gemini
+- incident
+spec: 'Every voice /ws connect on ada-ha-tony fails at provider connect since at least 06:28 Oct14: google.genai
+  raises 1011 ''Your project has exceeded its monthly spending cap. Please go to AI Studio at https://ai.studio/spend''.
+  pid 2994215 (started 06:15:40). Text lanes (LINE/TG relays, openrouter) unaffected — voice sessions dead until
+  cap lifts or project changes. The quota circuit-breaker (ada-gemini-quota-breaker, done) behaves correctly: single
+  clean 1011, no reconnect storm. Distinct from ada-gemini-free-tier-quota (that was free-tier 20/day 429s on generateContent;
+  this is the paid Live-API monthly cap).'
+ref: ADA-0632
+comms:
+- at: 2026-10-14 06:29
+  from: devin
+  text: Found while re-verifying ada-lazy-tool-schemas post-deploy — voice sessions can't start at all. Verified
+    live 06:28.
+- at: 2026-10-14 06:29
+  from: devin
+  text: 'raised request ada-voice-is-dead-until-the-gemini-proje-9be96b: Ada voice is dead until the Gemini project
+    spend cap is resolved. Which way?'
+- at: 2026-10-14 07:55
+  from: devin
+  text: 'Context for the decision: bench-off-paid-lanes (backlog) already aims to move the hourly smoke tier off
+    paid Gemini lanes — if smoke traffic was billing the capped project, that card is part of the fix, not just
+    the cap raise. Worth checking which project key the smoke tier uses before raising the cap.'
+- at: 2026-10-14 08:27
+  from: devin
+  text: 'RESOLVED upstream — per-lane key migration (ssot.llm-gateway.yml: ada-ha-tony now on GEMINI_API_KEY_TONY,
+    kaewta-paid for KK, etc.) lifted the cap; verified live 08:20: fresh voice session connected + responded, first-turn
+    in=18,590. The ''which way'' request is effectively answered by the rekey — recommend close. bench-off-paid-lanes
+    still matters so bench traffic doesn''t burn the new lane keys.'
+requests:
+- id: ada-voice-is-dead-until-the-gemini-proje-9be96b
+  ask: Ada voice is dead until the Gemini project spend cap is resolved. Which way?
+  status: open
+  at: 2026-10-14 06:29
+  from: devin
+  options:
+  - id: raise
+    label: Raise cap in AI Studio (spend)
+  - id: wait
+    label: Wait for monthly rollover
+  - id: rekey
+    label: Point ada at a different paid project key
+  suggested: raise

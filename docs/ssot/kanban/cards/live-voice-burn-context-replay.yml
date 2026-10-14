@@ -1,0 +1,21 @@
+id: live-voice-burn-context-replay
+title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
+column: backlog
+updated: 2026-10-14 06:16
+note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
+
+
+  Burn shape: 310 sessions, ~45.7M in / ~300K out. **~85% of input is TEXT, not audio** — context/system-prompt
+  replay on every turn, not speech. Median session 40s / 89K in-tok; reconnect churn re-primes ~16K text each connect.
+
+
+  Per-lane attribution (session_ids via journald):
+
+  - ada-dev      1381 turns  28.7M in  (~63% — bench/dev lane is the whale)
+
+  - TEST-POLLUTION (t-ctx)  4.7M — unit tests writing real usage.jsonl rows;'
+ref: ADA-0631
+comms:
+- at: 2026-10-14 06:16
+  from: devin
+  text: card captured via board-api

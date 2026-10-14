@@ -1,7 +1,7 @@
 id: cms-lab-eval
 title: 'cms-lab: trial Ghost+Directus+Strapi+Payload on idc02'
 column: doing
-updated: 2026-10-13 21:34
+updated: 2026-10-14 06:32
 brief: 'Four GitHub CMSs side-by-side in ~/cms-lab on idc02, tailnet-only :8301-8304. Eval rubric: author a Thai
   shop report in each UI, then create the same via API (agent path) — measures fit for the kk place_report flow.
   Teardown: docker compose down -v + rm -rf ~/cms-lab.'
@@ -24,3 +24,17 @@ comms:
     (200), Directus http://idc02.taila0626a.ts.net:8302 (302→/admin), Strapi http://idc02.taila0626a.ts.net:8303/admin
     (200), Payload http://idc02.taila0626a.ts.net:8304/admin (200). Stack: ~/cms-lab/{docker-compose.yml,.env(chmod600)}.
     Ghost6-alpine dev-mode sqlite; Directus11+postgres16 '
+- at: 2026-10-14 06:15
+  from: devin
+  text: '[exp] Admin access done — tony@tonezzz.dev is admin on all 4, same password, live logins verified: ghost
+    POST session->201, directus /auth/login->200, strapi /admin/login->200, payload /api/users/login->200. Creds
+    file: ~/cms-lab/admin-credentials.txt (chmod 600) on idc02 — ''ssh idc02 cat ~/cms-lab/admin-credentials.txt''.
+    Note for API clients: Ghost 6.69 needs Accept-Version v6.69 header; setup endpoint moved to /ghost/api/admin/authentication/setup/
+    (old /setup/ 404s).'
+- at: 2026-10-14 06:32
+  from: devin
+  text: '[exp] Agent/API leg complete — same Thai shop report seeded into all 4 via API: Directus (REST: collection+item,
+    3 calls, easiest), Ghost (session auth needs security__staffDeviceVerification=false without SMTP; post published,
+    public URL live), Strapi (4 hops: login→content-type-builder→api-token→write, schema via API triggers restart),
+    Payload (code-first: added src/collections/ShopReports.ts + restart → REST write; schema-in-git is the most
+    agent-native). Strapi eval token saved as STRAPI_EVA'

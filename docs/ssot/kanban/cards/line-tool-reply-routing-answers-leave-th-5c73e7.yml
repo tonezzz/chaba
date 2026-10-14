@@ -1,7 +1,7 @@
 id: line-tool-reply-routing-answers-leave-th-5c73e7
 title: LINE tool reply routing — answers leave the originating chat
-column: doing
-updated: 2026-10-13 21:58
+column: review
+updated: 2026-10-13 22:42
 priority: high
 tags:
 - ada
@@ -36,16 +36,88 @@ comms:
 - at: 2026-10-13 21:58
   from: chaba
   text: dispatched 20261013-215816-line-tool-reply-routing-answer on chaba
+- at: 2026-10-13 22:15
+  from: devin
+  text: 'root cause found + patched (ada-pi drop 6): bare chat_send had no originating-chat context — relay /send
+    fell back to _recent_chat (written persona-keyed, read instance-keyed = dead map) then lane default / owner
+    DM. Fix: relay passes &chat_id= on ws connect, backend binds it per session (SESSION_CHAT), chat_send defaults
+    to= to it; /send now keys _recent_chat by instance. ada-pi suite 1365 green + tool-lint clean; chaba-side drop
+    test 7/7. Staged patches + install steps in integrations/ada-pi/R'
+- at: 2026-10-13 22:17
+  from: devin
+  text: 'DONE (attempt 2). Staged ada-pi drop 6 committed: reply-context binding — relay sends &chat_id= on ws connect,
+    SESSION_CHAT binds it per session, chat_send defaults to= to the originating chat (explicit to= wins, lane allow/lock
+    still gate). Also fixed the dead _recent_chat map (persona-keyed writes vs instance-keyed reads) and gave tg_relay
+    the same binding. Deliverables: 5 patches + tests/test_line_reply_context.py under integrations/ada-pi/, README
+    drop-6 install steps, chaba gate tests/ada/t'
+- at: 2026-10-13 22:18
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-13 22:18
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): pushed dispatch/20261013-215816-line-tool-reply-routing-answer to origin;
+    auto-merge conflicts: integrations/ada-pi/README.md, tests/ada/test_line_file_doc_ingest.py — card stays in
+    review for manual resolution'
+- at: 2026-10-13 22:18
+  from: chaba
+  text: pushed dispatch/20261013-215816-line-tool-reply-routing-answer to origin
+- at: 2026-10-13 22:18
+  from: chaba
+  text: 'auto-merge conflicts: integrations/ada-pi/README.md, tests/ada/test_line_file_doc_ingest.py — card stays
+    in review for manual resolution'
+- at: 2026-10-13 22:18
+  from: idc02
+  text: claimed
+- at: 2026-10-13 22:19
+  from: chaba
+  text: started devin-task-20261013-221900-line-tool-reply-routing-answer on idc02 (dispatch)
+- at: 2026-10-13 22:19
+  from: devin
+  text: dispatch retry picked up on idc02 — investigating LINE reply routing
+- at: 2026-10-13 22:28
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261013-214634-line-tool-reply-routing-answer on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-13 22:37
+  from: devin
+  text: 'Merge rescued 2026-10-13 ~23:5x: first dispatch (idc02 214634) lost its worktree — merge-sweep was right,
+    work was gone; second dispatch (chaba 215816) pushed its branch. Same Drop-numbering conflict (its README claimed
+    Drop 6) — merged as Drop 8, also fixed an unquoted yaml list item in the job doc that blocked commit. Staged
+    in integrations/ada-pi pending next deploy-ada.sh run on idc03 (needs relay + lane-unit restarts — pwa_server
+    carries the binding).'
+- at: 2026-10-13 22:40
+  from: devin
+  text: 'DONE (staged, not deployed): root cause was twofold — _recent_chat keyed by persona while /send looks up
+    by ADA_INSTANCE_ID, and it was only written on voice-transcript turns. Drop 8 fixes routing: ?origin_chat= session
+    pin + ready-hello instance learn + dual-key recent-room on every turn path. 3 patches (line_relay/pwa_server/tool_runner),
+    102 tests green, applies on pristine 98c8e26 and over drops 5-7. Install per integrations/ada-pi/README.md Drop
+    8; restart ada-line-relay + lane backends.'
+- at: 2026-10-13 22:42
+  from: idc02
+  text: 'finished (ok): exit=0 ada.sh on idc03, restart `ada-line-relay` plus the lane backends (the handshake needs
+    both sides). | devin-task-2'
+- at: 2026-10-13 22:42
+  from: chaba
+  text: pushed dispatch/20261013-221900-line-tool-reply-routing-answer to origin
+- at: 2026-10-13 22:42
+  from: chaba
+  text: 'auto-merge conflicts: integrations/ada-pi/README.md, integrations/ada-pi/backend/line_relay.reply-routing.patch,
+    integrations/ada-pi/backend/tool_runner.reply-routing.patch, tests/ada/test_line_reply_routing.py — card stays
+    in review for manual resolution'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     stale_running: 2026-10-13 21:57
+    session_gone: 2026-10-13 22:28
   verified: false
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
-  runner: tony-dell
+  last_failure: 'pushed dispatch/20261013-215816-line-tool-reply-routing-answer to origin; auto-merge conflicts:
+    integrations/ada-pi/README.md, tests/ada/test_line_file_doc_ingest.py — card stays in review for manual resolution'
   attempts: 1
-  task_id: 20261013-215816-line-tool-reply-routing-answer
+  result: 'exit=0 ada.sh on idc03, restart `ada-line-relay` plus the lane backends (the handshake needs both sides).
+    | devin-task-20261013-221900-line-tool-reply-routing-answer.service: Consumed 1min 21.395s CPU time, 245.8M
+    memory peak, 0B memory swap peak.'
+  runner: idc02
 claim:
-  session: 20261013-215816-line-tool-reply-routing-answer
   since: 2026-10-13 21:58
+review_kind: verify

@@ -1,7 +1,7 @@
 id: ada-text-mode-sessions
 title: 'Text-mode sessions: relay text off Gemini Live'
 column: doing
-updated: 2026-10-13 21:41
+updated: 2026-10-13 22:51
 brief: 'LINE/TG text chats currently open full Gemini Live sessions (~250 min/day on kk lane, billing realtime rates).
   Build a text provider path: Gemini REST via gemini_pool (metered LiteLLM per-lane keys) as primary, real tool
   loop with lane-filtered function_declarations, OpenRouter retained as fallback. pwa_server ?mode=text + ADA_TEXT_ONLY_CALLERS;
@@ -34,3 +34,8 @@ comms:
     repointed to 3.5-flash-lite); ada+kk virtual keys now allow chat. Verified /v1/chat/completions model=chat ->
     x-litellm-model-name gemini/gemini-3.5-flash, $0.0003/call metered. TRACE: 21:24:11 fleet restart that killed
     session 4585f3b060 = tony-omen ssh dispatch agent (2 sshd sess'
+- at: 2026-10-13 22:51
+  from: devin
+  text: '22:35 image smoke PASS: paid gemini-3.5-flash both hops, plate read correctly (TONE-4242). Follow-ups fixed:
+    set_facial_expression intercepted like Live (5689cb1); aux/post-session calls were 403ing raw model names vs
+    alias-only keys — gemini_pool translates to class aliases now, summary 200s + daily rollup regenerated (b0c5f47).'

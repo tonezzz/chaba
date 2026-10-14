@@ -1,0 +1,30 @@
+id: ada-render-image-v2
+title: Rebuild ada_render_image on gemini-3.1-flash-image (gen+edit, kk lane)
+column: doing
+updated: 2026-10-14 11:41
+priority: high
+tags:
+- ada
+- media-gen
+- kk
+- gateway
+spec: 'KK asked in kk-ha for photo manipulation + generation (ADA-0471 note: kk car photo asset). Original ada_render_image
+  (card nano-banana-image, dispatch 20261006-111525, a76d804) never landed on main — only scenario files merged;
+  tool file absent. Also targets retired gemini-2.5-flash-image. Rebuild: tools.d drop-in ada_render_image(prompt,
+  ref_url?, aspect?) -> gemini-3.1-flash-image via gemini_pool REST (new ''image'' LiteLLM class, paid->lite fallback,
+  per-lane keys) -> ADA_RENDER_DIR -> traffic_camera.publish_relay -> image_url (relays auto-attach). ref_url takes
+  /relay-img/arch/... URLs so ''edit the photo I sent'' works. Add ''image'' to kk/chaba/bench key allowlists +
+  tool to kk/tony lane surfaces. Verify: img_render_gen + img_render_ref_edit scenarios on kk-dev, then live kk
+  test. Supersedes ADA-0471 (per-lane paid keys landed 2026-10-13).'
+ref: ADA-0643
+comms:
+- at: 2026-10-14 11:31
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 11:41
+  from: devin
+  text: 'DONE + deployed d8a7b0f..d62276b. Rebuilt ada_render_image on gemini-3.1-flash-image (gen + ref-edit; 2.5-flash-image
+    retired). Gateway ''image'' class live (paid->lite->OR); kk/bench/ada keys allowlisted; lane envs updated (kk,
+    kk-dev, ha-tony). Verified on kk-dev Live path: ''watercolor longtail boat'' -> tool fired -> POST /v1beta/models/image:generateContent
+    200 -> 731KB PNG -> image_url serves 200 -> she chat_send''d it herself. img_render_* scenarios flipped to smoke,
+    needs_tools-gated; 1401 te'

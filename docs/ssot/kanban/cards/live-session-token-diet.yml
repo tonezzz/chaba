@@ -1,7 +1,7 @@
 id: live-session-token-diet
 title: Live session token diet — 134M text-in/day on ada-ha-tony
-column: review
-updated: 2026-10-13 21:43
+column: done
+updated: 2026-10-14 06:39
 ref: OPS-0509
 comms:
 - at: 2026-10-12 16:17
@@ -78,15 +78,56 @@ comms:
   from: devin
   text: '[dispatch] picked up on idc03 — measuring post-keep-list burn, checking remaining levers (expression batching
     / prime slimming / smoke-lane retarget)'
+- at: 2026-10-13 22:08
+  from: devin
+  text: '[dispatch attempt2] Burn decomposed: 10-12 = 116M in/day; today ~9.45M (-92% after caps+keep-list+lazy
+    schemas, floor now ~18k). Admin callers = 7.38M/78% of what remains -> retargeted ada-scenario-smoke to ada-dev
+    :8005 (FREE key, sha-verified), live + verified: hourly run lands sessions on dev, zero ws connects on :8002.
+    Projected lane total ~2-3M/day. Expression batching stays with ADA-0601. Committed on dispatch branch (a883196),
+    no push; job doc docs/ssot/jobs/ada/2026-10-13-smoke-tier-to-a'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261013-214231-live-session-token-diet-134m-t no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-13 22:13
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261013-214231-live-session-token-diet-134m-t.service:
+    Failed to ope'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'merge-sweep: merged 664d84a4 (dispatch/20261013-214231-live-session-token-diet-134m-t from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261013-214231-live-session-token-diet-134m-t.md)
+    — auto-closed'
+- at: 2026-10-14 06:39
+  from: devin
+  text: 'VERIFIED outcome 2026-10-14: paid spend 00:00-06:00 BKK = ~$0.26 total (michael Live 0.27M ~$0.10 + gateway
+    REST $0.16). Free-lane retarget absorbed 21.8M scenario burn at $0; LINE text sessions moved off Live to gateway
+    chat alias; lazy schemas cut first-turn floor 27.8k->18.1k (-35%). vs the ~$35/day Live-era baseline this stack
+    is the intended end state.'
 action:
   type: dispatch
-  status: running
+  status: done
   attempts: 1
-  result: 20261013-212811-live-session-token-diet-134m-t finished (inactive) — see `devin-dispatch logs 20261013-212811-live-session-token-diet-134m-t`
-  verified: false
+  result: 'exit=0 ice: No such file or directory | devin-task-20261013-214231-live-session-token-diet-134m-t.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261013-214231-live-session-token-diet-134m-t.service:
+    No such file or directory'
+  verified: true
   last_failure: 'pushed dispatch/20261013-212811-live-session-token-diet-134m-t to origin; test gate failed — merge
     held: tests/ada/test_line_file_doc_ingest.py::TestRelayPatch::test_file_event_archives_and_turns'
   runner: idc03
+  sweep:
+    stale_running: 2026-10-13 22:13
 claim:
   since: 2026-10-13 21:28
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 22:13
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-214231-live-session-token-diet-134m-t.md

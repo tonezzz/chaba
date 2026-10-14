@@ -1,0 +1,50 @@
+id: line-wp-site-manager
+title: LINE-driven WordPress site maintenance (customer via LINE chat)
+column: backlog
+updated: 2026-10-14 11:40
+brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
+  drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
+  WP itself not serving yet — Plesk default page).'
+priority: medium
+tags:
+- cms
+- line
+- experiment
+spec: 'P0: WP live on Plesk boards site + verify WP REST /wp-json reachable. P1: mint a WP Application Password
+  (revocable, API-scoped — NOT the admin password; do not send master creds into LINE where they persist in history/Yomi
+  index). P2: read-only Ada tool — list posts/pages, preview draft. P3: write ops — create/update post via LINE
+  request, confirm-before-publish. Open Q: which lane (tony/ada-ha) fronts it, and does the customer get a dedicated
+  group?'
+ref: OPS-0640
+comms:
+- at: 2026-10-14 08:31
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-14 08:53
+  from: devin
+  text: 'Decisions from Tony: (1) WP + webboard surfaces live in the TONY-HA house — no new Ada persona; tony LINE
+    lane drives it via backend tools. (2) Credentials plan: NOT split-creds-across-chats (ineffective — both chats
+    sit in LINE history + Yomi index). Preferred = Option A, identity-based: customer LINE user ID -> site mapping,
+    backend holds a revocable WP Application Password; customer never sees credentials. Option B fallback = per-customer
+    app password sent in chat (revocable). Option C = magi'
+- at: 2026-10-14 10:27
+  from: devin
+  text: '[verified 2026-10-14] wp_post landed for real — ada-pi aa41e24 -> idc03 via deploy-ada.sh (8 services active,
+    1394 tests + lint pass). Prior session claims of pages/posts were unverified: site actually had only sample-page
+    + hello-world. Now real: front page = Boards home (page 2, set via REST settings), member pages ?page_id=10
+    tony / =11 kk / =12 nhong, tag feeds ?tag=<person> (plain permalinks — no /tag/ or pretty post URLs). Posts
+    6,7,9 live incl. LINE-archive media -> WP media library -> ht'
+- at: 2026-10-14 11:08
+  from: devin
+  text: '[verified 2026-10-14] Public-page migration phase 1 done per Tony scope (publish pages only): all 12 unique
+    public docs in ada-cms-pages-kk -> WP posts tagged kk+cms-migrated, th+en combined, all 200 live: flood-status?p=20
+    hello-world?p=21 kk-ha-site-flow?p=22 place-3302pqrj?p=23 place-cape-sports?p=24 place-jj-bistro?p=25 place-waterfall?p=26
+    satrip-plan-img?p=27 satrip-summary?p=28 trip-southafrica?p=29 trip-flight?p=30 trip-plan-img?p=31. Archive:
+    boards.surf-thailand.com/wp/?tag=cms-migrate'
+- at: 2026-10-14 11:40
+  from: devin
+  text: 'WP chat timeline shipped (2026-10-14): kk+nhong editor accounts (ids 2,3; creds in ~/.config/secrets/wp-boards-users.env
+    on idc03); private page tree chat>line>kk-ha (page_id 34); timeline-block-block plugin installed+active; timeline_block
+    CPT id=35 REST-driven; line-chat-timeline.py syncs LINE journal -> timelines[] idempotently (196 items, 13 media
+    uploads); systemd user timer every 5min on idc03. Verified: anonymous 404, rendered timelines=196 via REST.
+    Caveat: media files remain public-by-U'

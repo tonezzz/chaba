@@ -1,0 +1,151 @@
+id: gev-upstream-sync
+title: 'GEV upstream sync — rebase fork onto bilawalsidhu main (817 commits: v0.2.1, Street View, voice-core)'
+column: done
+updated: 2026-10-14 09:13
+brief: Upstream bilawalsidhu/gods-eye-view moved 817 commits past our fork base (v0.2.0/v0.2.1 releases, Google
+  Street View, Mapillary, Director family, voice-core refactor + ChatGPT OAuth, tool-catalog, ~50 data-source fixes
+  incl. trackpad pinch-zoom). Our fork carries 7 local commits (Gemini Live voice, ?remote=1, capture_frame, Nominatim
+  fallback, Thai flood layers, clean-view fix). Rebase onto upstream and re-validate the Gemini bridge surface.
+priority: high
+program: gev
+tags:
+- gev
+- upstream-sync
+- dispatch
+spec: 'Rebase the tonezzz/gods-eye-view fork onto upstream bilawalsidhu/main and re-validate the Gemini voice bridge
+  surface.
+
+
+  Context (verified 2026-10-14):
+
+  - Checkout: ~/gods-eye-view on tony-dell. Remotes were RENAMED today: origin = https://github.com/tonezzz/gods-eye-view
+  (our fork, pushable — worktree base comes from here), upstream = https://github.com/bilawalsidhu/gods-eye-view.
+  `git fetch upstream` first.
+
+  - Our main = 7 commits ahead of the fork base (upstream 7596522 -> ours 0b5a37a): Gemini Live voice switch (src/voice/gevGeminiRealtime.js
+  etc), mic gain fix, ?remote=1 passive remote-control listener, Nominatim geocode fallback + early remote channel
+  + capture_frame, Thai Flood Hub inundation layers (src/data/local_data/flood_inundation/*, localLayers), sorted
+  registry order, clean-view CSS fix.
+
+  - upstream/main HEAD = 132b9e9 (~817 commits): v0.2.0+v0.2.1, Google Street View, Mapillary, Director family,
+  voice-core refactor (#837) + ChatGPT Realtime OAuth (#621), tool-catalog (#896), Google 3D access tokens, many
+  data-source fixes, trackpad pinch-zoom.
+
+  - Files changed on BOTH sides (conflict candidates): index.html (ours +109 / upstream +14), src/voice/gevActions.js
+  (ours +7 / upstream +2424 — they rewrote the tool surface), src/locations.js (+45/+775), src/data/layerState.js
+  (+3/+652) + layerState.test.mjs (+2/+1475), src/data/localLayers.js (+40/+4), src/logoGaze.js (+1/+38), src/main.js
+  (+1/+17), vite.config.js (+8/+3).
+
+  - Our Gemini voice is mostly in files upstream never touched (gevGeminiRealtime.js); the real conflict is the
+  WIRING in index.html/main.js/gevActions.js — re-attach our hooks onto their voice-core.
+
+
+  Do:
+
+  1. From the dispatch worktree (already cut from origin/main = our fork main): git fetch upstream; create the sync
+  on your dispatch branch via `git merge upstream/main` (merge preferred over rebase here — our commits are few
+  but the rewrites are deep; a merge keeps conflict resolution reviewable in one commit).
+
+  2. Resolve conflicts keeping OUR voice architecture: Gemini Live via gevGeminiRealtime.js, ?remote=1 passive listener,
+  capture_frame, Nominatim fallback, flood-inundation layers. Do NOT adopt upstream''s OpenAI/ChatGPT realtime —
+  the gev-gemini bridge (quadlet on tony-dell) is the production voice path.
+
+  3. npm install if package.json changed; npm test. EXPECTED pre-existing failures (baseline today): 2 schema-pin
+  guards — radioMarkup.test.mjs ''no unchanged Realtime tool definition drifts silently'' and firstRunExperience.test.mjs
+  ''voice TOOL SCHEMA is byte-identical to main''. These pin GEV_REALTIME_TOOLS byte-for-byte; upstream''s tool-catalog
+  changes will trip them regardless. Per the tests'' own comments, re-derive the digest/pin and record in the commit
+  message which tools moved. All OTHER tests must pass (baseline: 2704 pass / 2 fail / 1 skip).
+
+  4. Regenerate the bridge tools snapshot: node ~/CascadeProjects/chaba/stacks/tony-dell/gev-gemini/tools-check.mjs
+  --write against the merged vite.config.js. KNOWN WRINKLE: the committed tools.json currently carries bundle-side
+  move_camera zoom/fly motions (enum zoom/stop, amount param, extra directions) that were never committed to source
+  — baseline tools-check FAILS on exactly this. Decide in the merge: if upstream''s new camera tools cover those
+  motions, take upstream and regen clean; if our motions are still needed, add them to GEV_REALTIME_TOOLS in vite.config.js
+  first, then regen. State which you chose and why in the report.
+
+  5. npm run build must succeed. Do NOT stage or deploy the bundle into chaba (stacks/web/public/apps/gev) — that''s
+  a separate step after Tony reviews.
+
+  6. Push your dispatch branch to origin (the fork). Do not merge to main yourself — the merge guard handles it.
+
+
+  Report back: conflict files + how resolved, npm test delta vs baseline, tools-check outcome, whether gevGeminiRealtime
+  still binds cleanly to upstream''s new voice-core (this is the key risk — if their refactor removed the hooks
+  we attach to, say so explicitly rather than shimming silently), build success.
+
+
+  DO NOT: push to upstream, touch gods-eye-view-api/gev-gemini services, edit or deploy into the chaba checkout,
+  run live-check.py (Gemini Live is spend-capped — ADA-0632).'
+action:
+  type: dispatch
+  repo: gods-eye-view
+  host: tony-dell
+  status: done
+  last_failure: 'start failed: unknown repo ''gods-eye-view'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+  attempts: 2
+  runner: tony-dell
+  task_id: 20261014-075418-rebase-the-tonezzz-gods-eye-vi
+  result: 20261014-075418-rebase-the-tonezzz-gods-eye-vi finished (inactive) — see `devin-dispatch logs 20261014-075418-rebase-the-tonezzz-gods-eye-vi`
+  verified: true
+note: 'Upstream-sync assessment 2026-10-14: upstream +817 commits (HEAD 132b9e9, PR #1120). Baseline measured pre-merge:
+  npm test 2704/2fail/1skip (the 2 = deliberate schema-pin guards), bridge-check 13/13, tools-check FAIL (bundle-side
+  move_camera drift — source never got those enum/param additions), gev_sw_stale_cache + gev_mute_no_leak PASS,
+  gev_ws_tool_roundtrip + gev_tools_regen INFRA-blocked (Gemini Live monthly cap, ADA-0632 — bridge ws closes clean
+  without greeting; voice-path re-verification w'
+ref: MED-0638
+comms:
+- at: 2026-10-14 07:51
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 07:51
+  from: tony-omen
+  text: claimed
+- at: 2026-10-14 07:51
+  from: tony-omen
+  text: 'finished (failed): start failed: unknown repo ''gods-eye-view'' (allowed: sunsynk-card ada-pi mddb-fork
+    chaba)'
+- at: 2026-10-14 07:53
+  from: devin
+  text: retry requested
+- at: 2026-10-14 07:53
+  from: devin
+  text: Requeued with action.host=tony-dell — tony-omen claimed the first time and its repos.conf lacks gods-eye-view
+    (checkout only exists on dell). Pinned so only the dell drain can claim it.
+- at: 2026-10-14 07:54
+  from: chaba
+  text: dispatched 20261014-075418-rebase-the-tonezzz-gods-eye-vi on gods-eye-view
+- at: 2026-10-14 07:54
+  from: devin
+  text: started on tony-dell worktree; fetching upstream and merging upstream/main into dispatch branch
+- at: 2026-10-14 09:04
+  from: devin
+  text: 'DONE — merge commit baaa09d pushed to origin dispatch/20261014-075418-rebase-the-tonezzz-gods-eye-vi. 9
+    conflict files resolved keeping Gemini Live (gevGeminiRealtime bound at src/app/tools.js; OpenAI path not adopted),
+    ?remote=1 + capture_frame, flood layers (tokens 3/4/5), keyless geocode via upstream fallback chain. npm test
+    under node24: 6344 pass / 0 fail / 1 skip (node22 shows 4 AbortSignal-timeout artifacts; engines now require
+    >=24). tools-check: PASS, 30 decls regenerated — move_camera '
+- at: 2026-10-14 09:06
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-14 09:06
+  from: chaba
+  text: 'session-end checkpoint e6dc1648: 2 leftover file(s) committed'
+- at: 2026-10-14 09:06
+  from: chaba
+  text: pushed dispatch/20261014-075418-rebase-the-tonezzz-gods-eye-vi to origin
+- at: 2026-10-14 09:06
+  from: chaba
+  text: 'test gate skipped: no tests/ dir in merged tree'
+- at: 2026-10-14 09:06
+  from: chaba
+  text: auto-merged f1a2a773 (dispatch/20261014-075418-rebase-the-tonezzz-gods-eye-vi) → origin/main
+- at: 2026-10-14 09:13
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+claim:
+  since: 2026-10-14 07:54
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 09:13
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,19 @@
+id: line-voice-msg-archive
+title: Archive LINE voice messages (khun Kung audio -> voice corpus)
+column: backlog
+updated: 2026-10-14 10:55
+priority: medium
+tags:
+- line
+- voice
+- ada
+spec: 'Tony via kk-ha chat 2026-10-14 08:30: khun Kung asked kaewta if she can record his voice; Tony asked Devin
+  to build a function to save voice/audio files Kung sends in LINE. Likely shape: extend line_relay inbound audio
+  handling to archive m4a/audio bytes like _archive_media does for images (durable /relay-img or voice-corpus path
+  + journal entry), then expose to the model (send_audio_turn or voice-profile registration). Check existing VOICE_CORPUS_DIR
+  plumbing in line_relay.py (~line 1041) first — may already partially exist.'
+ref: ADA-0642
+comms:
+- at: 2026-10-14 10:55
+  from: devin
+  text: card captured via board-api

@@ -1,7 +1,7 @@
 id: ada-lazy-tool-schemas
 title: Lazy tool schemas — declare name+blurb only, fetch schema on demand
-column: backlog
-updated: 2026-10-13 21:24
+column: done
+updated: 2026-10-14 08:27
 priority: medium
 spec: "Pattern from tool-attention (arxiv 2604.21816) + vercel/ai lazy-tool PR + Cursor dynamic context discovery\
   \ (46.9% A/B reduction): ship each declaration as {name, <=300-char blurb, EMPTY params schema}; tool_runner validates\
@@ -96,14 +96,53 @@ comms:
 - at: 2026-10-13 21:24
   from: chaba
   text: dispatch parked after 3 attempts (policy retries_per_card=2) — re-queue to retry
+- at: 2026-10-14 06:12
+  from: devin
+  text: 'Tony asked to apply manually — discovered it''s ALREADY live: attempt 3''s (204402) work merged as 932550d+0352396
+    via eb89edb and deployed with tonight''s 02c5058 push. FULL_SCHEMA_TOOLS = the card''s hot-10 verbatim; declared_tool_schemas()
+    keeps the real contract runner-side; ADA_LAZY_SCHEMAS/ADA_FULL_SCHEMA_TOOLS kill-switch+csv knobs in. Partial
+    verify: first-turn in=18.1k on ada-ha-tony (session 6e56298780, 21:36) vs ~27.8k floor = -35%. Remaining checks:
+    trip_calendar arg-shape scenario + 24h'
+- at: 2026-10-14 06:13
+  from: devin
+  text: moved backlog -> review
+- at: 2026-10-14 06:28
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-204402-pattern-from-tool-attention-ar already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261013-204402-pattern-from-tool-attention-ar.md) — auto-closed'
+- at: 2026-10-14 06:29
+  from: devin
+  text: '[verify] merged eb89edbd -> deployed on idc03 (tool-lint clean, 1360 tests pass). First-turn in= post-strip:
+    18,139 (21:36) and 18,604 (23:19, organic session) vs pre-deploy floor 27.4-28.4k -> ~-9.5k/turn (-34%). tony-voice
+    wire dump: 49 decls, 39 lazy-stripped, 32.2kB (was ~64k). One 37.9k outlier = context-heavy session (prime 2.9k),
+    not decl cost.'
+- at: 2026-10-14 06:29
+  from: devin
+  text: '[verify] trip_calendar live smoke: REGRESSION — 2/2 sessions called trip_calendar {} with empty args (cold
+    decl has no arg names on wire). Server returned ok:false + tool_guide usage hint as designed, but Gemini Live
+    did NOT retry — narrated ''missing trip name'' instead. No schema-fetch tool on the wire to elect. Fix options:
+    (a) ADA_FULL_SCHEMA_TOOLS+=arg-heavy tools; (b) lazy decls keep arg NAMES only (properties keys, no types/enums)
+    — keeps most savings, gives the model the shape; (c) expose '
+- at: 2026-10-14 08:27
+  from: devin
+  text: '[verify complete] Full loop closed: merged eb89edbd, deployed, first-turn floor verified ~28k -> ~18-20k
+    on ada-ha-tony (-30%). Regression found in verify (cold tools called with {}) -> fixed via ADA-0639 (arg names
+    kept) -> re-verified live: correct args + real result. Residual: model variance remains (one phantom-claim flake;
+    cold-tool arg guesses are now shape-guided but unvalidated client-side). 24h arg-error delta worth watching
+    in next audit.'
 action:
   type: dispatch
   repo: ada-pi
   host: tony-dell
-  status: held
+  status: done
   attempts: 3
   last_failure: 20261013-204402-pattern-from-tool-attention-ar finished (inactive) — see `devin-dispatch logs 20261013-204402-pattern-from-tool-attention-ar`
   task_id: 20261013-204402-pattern-from-tool-attention-ar
+  verified: true
 claim:
   since: 2026-10-13 20:44
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 06:28
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-204402-pattern-from-tool-attention-ar.md

@@ -1,0 +1,88 @@
+id: ada-lazy-schemas-arg-names
+title: 'Lazy decls: keep arg names + required (fix cold-tool empty-args regression)'
+column: done
+updated: 2026-10-14 08:27
+priority: high
+tags:
+- ada
+- dispatch
+- regression
+spec: 'Follow-up to ada-lazy-tool-schemas post-deploy verify. REGRESSION: on the voice lane the model calls cold
+  tools with {} — 2/2 live sessions called trip_calendar {} with slug+dates given verbatim in the prompt; server
+  returned ok:false + usage hint (repair path works) but Gemini Live did NOT retry and told the user ''missing trip
+  name''. All 39 lazy-stripped decls have zero arg names on the wire; no schema-fetch tool exists for the model
+  to elect.
+
+
+  FIX (option b from the verify comment): in backend/realtime_provider.py _apply_lazy_schemas, for non-hot tools
+  keep the property KEYS and the required list — strip only per-property type/description/enum and any nested schema
+  bulk. Wire shape: {"type":"object","properties":{"slug":{},"start":{},"end":{}},"required":["slug"]}. Hot-10 FULL_SCHEMA_TOOLS
+  unchanged. ADA_LAZY_SCHEMAS=0 / ADA_FULL_SCHEMA_TOOLS kill switches unchanged.
+
+
+  Measure: wire decl bytes before/after — must stay far under the pre-lazy ~64k; target <=~38k for tony-voice lane
+  (empty-schema floor was 27.7k; arg names only add keys).
+
+
+  Verify: pytest + tool-lint green via merge gate; unit test asserting a cold decl keeps properties keys + required
+  but no type/enum; assert hot tools keep full schemas; assert the {} case still validates server-side (unknown/missing
+  args -> SchemaError + usage hint). Live e2e deferred — Gemini Live spend cap blocks voice sessions (ada-gemini-live-spend-cap).'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  runner: idc03
+  result: 'exit=0 asking for a trip calendar should show the model filling `slug`/`start`/`end` instead of emitting
+    `{}`. | devin-task-20261014-075520-follow-up-to-ada-lazy-tool-sch.service: Consumed 27.764s CPU time, 263.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+ref: ADA-0639
+comms:
+- at: 2026-10-14 07:55
+  from: devin
+  text: Carded from ada-lazy-tool-schemas verify — regression is live but muted while voice is down (spend cap).
+    Option (b) recommended over env whack-a-mole (a) and building a fetch tool (c).
+- at: 2026-10-14 07:55
+  from: idc03
+  text: claimed
+- at: 2026-10-14 07:55
+  from: chaba
+  text: started devin-task-20261014-075520-follow-up-to-ada-lazy-tool-sch on idc03 (dispatch)
+- at: 2026-10-14 07:57
+  from: devin
+  text: 'in progress: _apply_lazy_schemas now keeps property keys + required (arg-name skeleton); tests+ssot updated;
+    measuring wire bytes next'
+- at: 2026-10-14 07:58
+  from: devin
+  text: 'done: cold decls now ship arg-name skeleton {type:object,properties:{slug:{}},required:[...]} — wire 67447->33265B
+    (v1 empty was 29155; target <=~38k). tool-lint clean, 54/54 unit tests pass incl trip_calendar wire pin + {}
+    SchemaError. Live e2e deferred on gemini-live spend cap.'
+- at: 2026-10-14 08:04
+  from: idc03
+  text: 'finished (ok): exit=0 asking for a trip calendar should show the model filling `slug`/`start`/`end` instead
+    of emitting `{}`. | devin-t'
+- at: 2026-10-14 08:04
+  from: chaba
+  text: 'session-end checkpoint d17a25f4: 5 leftover file(s) committed'
+- at: 2026-10-14 08:04
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-14 08:13
+  from: chaba
+  text: 'merge-sweep: merged 64072333 (dispatch/20261014-075520-follow-up-to-ada-lazy-tool-sch from idc03) -> origin/main
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-075520-follow-up-to-ada-lazy-tool-sch.md)
+    — auto-closed'
+- at: 2026-10-14 08:27
+  from: devin
+  text: '[verify] deployed 6407233 on idc03 (tool-lint clean, 1394 tests). Live voice smoke on ada-ha-tony: trip_calendar
+    called with CORRECT args — {slug:''smoke-nonexistent-trip'',start:''2030-01-01'',end:''2030-01-03''} -> ok:true,
+    real page family generated. Empty-args regression FIXED. First-turn in= 19,761 on this build (~+1.2k for arg
+    names vs empty-schema floor; still ~-30% vs pre-lazy 28k). Flake note: one session phantom-claimed ''tried and
+    hit error'' WITHOUT calling — no call on the wire; matches exi'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 08:13
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-075520-follow-up-to-ada-lazy-tool-sch.md

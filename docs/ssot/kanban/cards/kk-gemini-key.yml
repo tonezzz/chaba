@@ -1,7 +1,7 @@
 id: kk-gemini-key
 title: Kaewta gets her own Gemini key (KK lane off fleet pool)
 column: done
-updated: 2026-10-13 15:05
+updated: 2026-10-14 08:02
 brief: 'Tony ask 2026-10-12: add KK own Gemini. DONE: LITELLM_KEY_KK minted ($5/30d) and live in ada-kk.env ADA_GEMINI_REST_API_KEY
   — her REST side-calls are metered/budgeted separately now; gemini-keys.env gained GEMINI_API_KEY_KK slot; gemini-tier
   on idc03 now re-asserts the kk key as ada-kk.env primary after any fleet free|paid|hybrid switch. BLOCKED: Live
@@ -49,6 +49,13 @@ comms:
 - at: 2026-10-13 15:05
   from: devin
   text: closed by devin
+- at: 2026-10-14 08:02
+  from: devin
+  text: '[wiring] REST billing fully split per lane (2026-10-14): minted LITELLM_KEY_MICHAEL ($5/30d) + LITELLM_KEY_MDDB
+    ($10/30d). Rewired: ada-ha-tony + ada-pi-pwa -> LITELLM_KEY_CHABA, ada-ha-michael -> MICHAEL, mddb-gemini.env
+    -> MDDB (was riding KEY_ADA — mddb REST spend is no longer inside adas bucket). Dev lanes stay BENCH, ada-kk
+    stays KK, LITELLM_KEY_ADA now unused spare. All 4 lanes verified HTTP 200 at gateway; services restarted. Live
+    keys were already per-persona (TONY/KK/MICHAEL/PAID/FREE s'
 requests:
 - id: kk-live-key-mint-which-project
   ask: Mint Kaewta's own Gemini Live key in AI Studio (https://aistudio.google.com/apikey), then drop the raw key

@@ -1,0 +1,22 @@
+id: scenario-sessions-hitting-ada-ha-tony-in-4d180d
+title: Scenario sessions hitting ada-ha-tony instead of ada-dev free lane
+column: backlog
+updated: 2026-10-14 06:33
+priority: high
+tags:
+- ada
+- scenario
+- cost
+- routing
+ref: ADA-0633
+comms:
+- at: 2026-10-14 06:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 06:33
+  from: devin
+  text: 'CORRECTION on card premise (same-hour data): the 00-06 usage actually landed where it should — 21.54M of
+    21.81M went to ada-dev (the free lane; its key = ada-free.env, distinct from tony''s 0MDA key). Smoke retarget
+    IS working. The 102 admin connects on ada-ha-tony produced ZERO usage events — open/close churn without turns
+    (relay/backend restart window ~06:11), not scenario turns. Repurpose the card: why do admin sessions still CONNECT
+    to ada-ha-tony at 6.6s intervals during suite windows, and w'

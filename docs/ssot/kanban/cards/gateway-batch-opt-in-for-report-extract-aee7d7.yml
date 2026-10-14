@@ -1,0 +1,65 @@
+id: gateway-batch-opt-in-for-report-extract-aee7d7
+title: Gateway batch opt-in for report/extract/distill chain
+column: done
+updated: 2026-10-13 22:42
+priority: low
+tags:
+- litellm
+- cost
+- batch
+ref: KNB-0611
+comms:
+- at: 2026-10-13 22:33
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-13 22:33
+  from: devin
+  text: queued for processing
+- at: 2026-10-13 22:33
+  from: mn01
+  text: claimed
+- at: 2026-10-13 22:33
+  from: chaba
+  text: started devin-task-20261013-153331-gateway-batch-opt-in-for-repor on mn01 (dispatch)
+- at: 2026-10-13 22:41
+  from: devin
+  text: '[progress] chain wired: new scripts/ada/gemini_rest.py shared caller; memory-distill, distill-devin-bank,
+    rollup-summaries, session-report all honor GEMINI_BASE_URL (default direct Google; gateway = env-only opt-in).
+    benchmark+backfill ride along free. ssot.llm-gateway.yml gains batch_opt_in recipe; job trail written. Verified:
+    compile clean, endpoint normalization unit-checked, gateway /v1beta route answers auth-layer 401 with virtual-key
+    shape. Not flipping any live job — opt-in stays off by d'
+- at: 2026-10-13 22:41
+  from: devin
+  text: '[done] committed 3db9f667 + outcome on dispatch branch. Opt-in recipe: GEMINI_BASE_URL=http://100.102.134.91:4000
+    + GEMINI_API_KEY=LITELLM_KEY_CHABA per job env — covered: session-report, rollup-summaries, memory-distill (+benchmark),
+    distill-devin-bank, export-transcripts --backfill. Direct Google stays default; flipping a live job (e.g. devin-bank-distill
+    env_file) is the deploy-gated follow-up.'
+- at: 2026-10-13 22:42
+  from: mn01
+  text: 'finished (ok): exit=0 ommitted as `3db9f667`+`5d6a3a9e` on the dispatch branch with progress posted to
+    the card. | devin-task-20261013-'
+- at: 2026-10-13 22:42
+  from: chaba
+  text: pushed dispatch/20261013-153331-gateway-batch-opt-in-for-repor to origin
+- at: 2026-10-13 22:42
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-13 22:42
+  from: chaba
+  text: auto-merged 69e2af2d (dispatch/20261013-153331-gateway-batch-opt-in-for-repor) → origin/master
+- at: 2026-10-13 22:42
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 ommitted as `3db9f667`+`5d6a3a9e` on the dispatch branch with progress posted to the card. | devin-task-20261013-153331-gateway-batch-opt-in-for-repor.service:
+    Consumed 39.762s CPU time over 8min 36.277s wall clock time, 247.9M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-13 22:42
+  note: verified — evidence checks green, closing itself

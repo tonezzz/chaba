@@ -1,0 +1,28 @@
+id: ada-line-caption-coalesce
+title: LINE photo+caption coalesce window (line_relay)
+column: doing
+updated: 2026-10-14 06:12
+priority: medium
+tags:
+- ada
+- line
+- relay
+- text-mode
+spec: 'kk-home 22:25-22:28: photo sent, then caption ''translate please'' 87s later while the image turn was in-flight
+  -> caption answered standalone (''please send the image''); user resent the same photo; two replies landed back-to-back
+  = ''2 answers in one post''. LINE has no native photo caption - users send photo then type caption. Implement:
+  when an image event arrives, hold the turn briefly (LINE_IMAGE_CAPTION_WAIT_S, ~8s) for a text from the same (chat,user)
+  routed to the same persona; if one arrives merge it as the image caption and answer once. Deliver to the caption
+  event''s replyToken when merged.'
+ref: ADA-0629
+comms:
+- at: 2026-10-14 06:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-14 06:12
+  from: devin
+  text: 'Implemented+deployed d8a7b0f. LINE_IMAGE_CAPTION_WAIT_S=8s: image turn holds for a same-sender/same-persona
+    text, merges it as caption, replies once on the caption''s replyToken. Harness-verified: photo+''translate this''
+    -> single merged turn ''[via LINE group from Tonezzz] Photo caption: translate this'' -> one reply; photo alone
+    -> generic prompt after window; album resend releases prior waiter. Also note: the 22:28 double-reply trace
+    confirmed root cause was photo sent twice (same sha256) after r'

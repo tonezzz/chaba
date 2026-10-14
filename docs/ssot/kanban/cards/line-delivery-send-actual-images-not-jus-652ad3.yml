@@ -1,7 +1,7 @@
 id: line-delivery-send-actual-images-not-jus-652ad3
 title: 'LINE delivery: send actual images, not just text links'
-column: doing
-updated: 2026-10-13 21:48
+column: review
+updated: 2026-10-13 22:32
 priority: high
 tags:
 - ada
@@ -29,7 +29,80 @@ comms:
   from: devin
   text: 'investigating: card has no spec — pairing with line-tool-reply-routing (running on tony-omen). Pulling
     ada-pi source into worktree to patch line_relay image delivery (staged-drop convention).'
+- at: 2026-10-13 22:06
+  from: devin
+  text: 'done (staged): ada-pi Drop 6 — line_relay patch mints Drive media URLs via doc-archive + mines image links
+    in reply/send text into real LINE image msgs (silent-fail, LINE_TEXT_IMG_MINE=0); tool_guide + schema updated.
+    tests/ada 72 passed vs main@bb4c172. Install per integrations/ada-pi/README.md Drop 6; restart ada-line-relay.
+    Pairs with routing card line-tool-reply-routing.'
+- at: 2026-10-13 22:08
+  from: idc02
+  text: 'finished (ok): exit=0  dispatch branch — not pushed, not deployed; install per the README then restart
+    `ada-line-relay`. | devin-task-2'
+- at: 2026-10-13 22:08
+  from: chaba
+  text: pushed dispatch/20261013-214700-line-delivery-send-actual-imag to origin
+- at: 2026-10-13 22:08
+  from: chaba
+  text: 'auto-merge conflicts: integrations/ada-pi/README.md — card stays in review for manual resolution'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-214700-line-delivery-send-actual-imag conflicts with origin/master: integrations/ada-pi/README.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-13 22:13
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-13 22:15
+  from: devin
+  text: 'answered merge-conflict: merged manually'
+- at: 2026-10-13 22:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-13 22:15
+  from: devin
+  text: 'Merge rescued 2026-10-13 ~23:1x: README.md conflict was both drops claiming ''Drop 6'' — draft-hit-frame
+    landed first, image delivery renumbered to Drop 7. Rebased onto upstream, pushed a8078571d + ff15504ac. Drop
+    stays staged in integrations/ada-pi pending deploy-ada.sh on idc03.'
+- at: 2026-10-13 22:28
+  from: chaba
+  text: 'merge-sweep: dispatch/20261013-214700-line-delivery-send-actual-imag conflicts with origin/master: integrations/ada-pi/README.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-13 22:28
+  from: chaba
+  text: 'raised request merge-conflict-2: merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-13 22:32
+  from: devin
+  text: 'DEPLOYED 2026-10-13 ~23:4x: applied Drop 7 patches (+ Drops 5/6 same landing) to ada-pi edit point, gates
+    green (tool-lint clean, 1386 pass on dell / 1390 on idc03), pushed 02c5058, deploy-ada.sh complete — all 8 services
+    active incl ada-line-relay. Live check pending: next reply containing a Drive link/image URL should arrive as
+    a real LINE image message. LINE_TEXT_IMG_MINE=0 reverts if misbehaving.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0  dispatch branch — not pushed, not deployed; install per the README then restart `ada-line-relay`.
+    | devin-task-20261013-214700-line-delivery-send-actual-imag.service: Consumed 1min 43.088s CPU time, 273.4M
+    memory peak, 0B memory swap peak.'
+  verified: false
+review_kind: verify
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261013-214700-line-delivery-send-actual-imag
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-13 22:13
+  from: chaba
+  answer: merged manually
+- id: merge-conflict-2
+  ask: 'merge-sweep can''t land dispatch/20261013-214700-line-delivery-send-actual-imag: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-pi/README.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261013-214700-line-delivery-send-actual-imag
+    by hand, or retry/abandon the card.'
+  status: answered
+  answer: merged manually (duplicate of merge-conflict — already resolved)
+  at: 2026-10-13 22:28
+  from: chaba
+awaiting_action: true
