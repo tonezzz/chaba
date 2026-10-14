@@ -14,9 +14,11 @@ what_landed:
   ada_voice_repo: "branch dispatch/20261014-ada-voice-self-sweep merged to main (6fa8e9b) — 60 files, bare ada-pi -> ada-voice; compounds (ada-pi-pwa, card/task slugs) and upstream nazirlouis/ada-pi preserved"
   chaba_sweep: "307 files on dispatch branch dispatch/20261014-220238-* — scripts, stacks, systemd templates, SSOT, AGENTS.md, tests; integrations/ada-pi git-mv'd to integrations/ada-voice; kanban cards left to the API/alias path"
   checkouts:
-    renamed: [tony-omen, tony-macbook, idc03]
-    pending_gate: [tony-dell, idc02]   # ada dispatches in flight at run time
-    unreachable: [mn01]                # ssh timeout — run when back
+    renamed: [tony-dell, idc02, idc03, tony-omen, tony-macbook]
+    # tony-dell + idc02 cleared the quiet gate between attempt 1 (22:23)
+    # and attempt 2 (~22:55) — status now shows real ada-voice dir +
+    # ada-pi back-link + zero ada in-flight on every reachable host.
+    unreachable: [mn01]                # ssh timeout (both attempts) — run when back
   dispatch_layer:
     - "BUILTIN_REPOS + REPO_TESTS: canonical ada-voice + legacy ada-pi alias -> ~/CascadeProjects/ada-voice"
     - "devin-dispatch.sh fallback map: same dual entries"
@@ -34,11 +36,15 @@ mechanics:
   no_restart_needed: "running units keep their inode; patched unit files + daemon-reload take effect on next natural restart"
   script: "scripts/devin/rename-ada-voice.sh — status | run <host|all> [--force]; quiet-gated per host (refuses while an ada-pi/ada-voice devin-task meta lacks exit_code)"
 
+verified:   # attempt 2 (dispatch 20261014-224101, idc03)
+  - "fleet status: every reachable host = real ada-voice dir + ada-pi compat symlink, zero ada dispatches in flight (gate met)"
+  - "dispatch resolution: BUILTIN_REPOS + REPO_TESTS answer ada-voice (canonical) and ada-pi (legacy alias) -> ~/CascadeProjects/ada-voice; devin-dispatch.sh + dispatch-repos.conf carry both"
+  - "deploy-ada.sh green on idc03: installed copy == canonical, fetch+ff at 8eaab27, tool-lint clean, pytest 1467 passed, all 8 ada services restarted active (ada-ha-tony/michael, ada-pi-pwa, ada-dev, ada-kk-dev, ada-kk, line/tg relays)"
+  - "no systemd unit on idc03 references CascadeProjects/ada-pi (23 patched in attempt 1)"
+  - "live cards swept: 6 non-done cards moved action.repo ada-pi -> ada-voice; 91 done cards keep the old name (history; alias resolves anyway)"
+
 remaining:
-  - "run rename-ada-voice.sh on tony-dell + idc02 once their ada dispatches drain (was 1 each at 22:15)"
-  - "mn01: ssh timed out — rerun when reachable (stacks/mn01 units reference the dir)"
-  - "verify (card): dispatch claim on ada-voice repo, ~/.local/bin/deploy-ada.sh re-installed from renamed checkout + green idc03 run, tool-lint + pytest on prod checkout"
-  - "cards still carrying action.repo: ada-pi resolve via the alias — sweep them to ada-voice opportunistically (board-api has no field-edit endpoint; alias carries them)"
+  - "mn01: ssh timed out — run rename-ada-voice.sh run mn01 when reachable (stacks/mn01 units reference the dir)"
   - "retire compat symlinks + ada-pi alias lines once the board has no ada-pi repo references"
 
 gotchas:
