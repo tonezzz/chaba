@@ -379,7 +379,9 @@ def _md_to_html(md: str) -> str:
 _LANE_PERSON = {"kk": "kk", "kk-dev": "kk", "nhong": "nhong"}
 
 
-def wp_publish_rollup(title: str, body_md: str, lane_name: str) -> str:
+def wp_publish_rollup(title: str, body_md: str, lane_name: str,
+                    slug: str = "", leaves: list | None = None) -> str:
+    leaves = leaves or []
     """Post the trip rollup to boards.surf-thailand.com; returns URL."""
     env = _wp_env()
     if not all(env.get(k) for k in
@@ -405,19 +407,27 @@ def wp_publish_rollup(title: str, body_md: str, lane_name: str) -> str:
             person_tag = found[0]["id"] if found else None
         except Exception:
             person_tag = None
-    code, tr = _wp_post("tags", {"name": "trip"}, env)
-    trip_tag = tr.get("id") if code in (200, 201) else None
-    code, res = _wp_post("posts", {
+    code, res = _wp_post("trip", {
         "title": f"Trip — {title}", "content": _md_to_html(body_md),
-        "status": "publish",
-        "tags": [t for t in (person_tag, trip_tag) if t]}, env)
+        "status": "publish", "slug": f"trip-{slug}",
+        "tags": [t for t in (person_tag,) if t]}, env)
     if code not in (200, 201):
         print(f"warn: WP post failed {code}", file=sys.stderr)
         return ""
+    parent_id = res.get("id")
     link = res.get("link") or ""
     link = re.sub(r"^http://", "https://", link)
-    return re.sub(r"^https://boards\.h3\.gizmo-thailand\.com",
+    link = re.sub(r"^https://boards\.h3\.gizmo-thailand\.com",
                   "https://boards.surf-thailand.com", link)
+    # children: one trip child per day leaf (qc stays internal CMS)
+    for key, t, body, _i, _d in leaves:
+        c, _r = _wp_post("trip", {
+            "title": t, "content": _md_to_html(body),
+            "status": "publish", "slug": key, "parent": parent_id,
+            "tags": [x for x in (person_tag,) if x]}, env)
+        if c not in (200, 201):
+            print(f"warn: WP child {key} failed {c}", file=sys.stderr)
+    return link
 
 
 def link_for(key: str, public_base: str, use_public: bool) -> str:
@@ -863,7 +873,8 @@ async def async_main() -> int:
 
     wp_url = ""
     if want_public:
-        wp_url = wp_publish_rollup(title, rollup_body, lane_name)
+        wp_url = wp_publish_rollup(title, rollup_body, lane_name,
+                                   slug=slug, leaves=leaves)
 
     view_base = os.environ.get(
         "ADA_CMS_BASE", "https://idc03.taila0626a.ts.net/cms/")
