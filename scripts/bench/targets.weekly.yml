@@ -1,0 +1,25 @@
+# Weekly cheap-tier refresh — job `model-bench` in ssot.jobs.yml.
+# Micro + tiny cells only; remote endpoints ride ssh to loopback listeners
+# (no tailnet exposure). Full matrix: targets.full.yml.
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3:0.6b
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: llama3.2:1b
+- host_tag: tony-omen
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: llama3.2:3b
+- host_tag: idc03
+  provider: ollama
+  base_url: http://100.102.134.91:11434
+  model: llama3.2:3b
+- host_tag: idc02
+  provider: ssh_openai
+  ssh: idc02
+  remote_port: 8114
+  remote_proc: llama-server
+  model: bench

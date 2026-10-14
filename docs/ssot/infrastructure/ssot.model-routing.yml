@@ -73,6 +73,17 @@ current_migrations:
     caution: 20s cold CPU inference on 4vCPU — warm after first call;
       acceptable for 'what do you see' cam probes, not for realtime turns.
 
+bench_evidence:
+  measured: "2026-10-14 — reports/model-bench/, docs/ssot/jobs/models/2026-10-14-model-fleet-bench.yml"
+  size_tiers: docs/ssot/infrastructure/ssot.model-tiers.yml
+  notes: |
+    omen GPU ceiling measured: llama3.2:3b 47 tok/s GPU-resident; qwen2.5:7b
+    drops to 8.5 (partial offload); gemma3:12b 3.2 (CPU-offload batch-grade).
+    Multi-host RPC sharding benched (llama.cpp rpc): 27B over tailscale
+    0.87 tok/s < 1.25 local — below the <2 tok/s batch gate; NO large-lane
+    added to the gateway. Fully-remote placement (3B on a stronger remote
+    CPU over LAN, 8.8 tok/s) is the only useful RPC mode found.
+
 policy:
   - New callers declare their tier in the card/PR description.
   - A service may not burn t3 quota for a t1-able job (embedding the
