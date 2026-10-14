@@ -32,6 +32,7 @@ add_action('init', function () {
         'bench'    => ['Benchmark','Benchmarks','dashicons-chart-line'],
         'report'   => ['Report',   'Reports',   'dashicons-media-document'],
         'xlate'    => ['Translation','Translations','dashicons-translation'],
+        'cam'      => ['Cam',       'Cams',      'dashicons-camera'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         register_post_type($slug, $common + [
@@ -52,6 +53,7 @@ add_action('init', function () {
         'bench'    => ['suite', 'run_id', 'pass_count', 'fail_count', 'duration_s', 'commit'],
         'report'   => ['report_type', 'period', 'source_key'],
         'xlate'    => ['source_post', 'source_lang', 'target_lang', 'engine', 'status', 'chars'],
+        'cam'      => ['camera_id', 'captured_at', 'kind', 'stream_url'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
