@@ -98,8 +98,23 @@ class WP:
             ids.append(self._tags[key])
         return ids
 
-    def slug_exists(self, slug):
-        return bool(self.api(f"/wp/v2/news&slug={slug}&per_page=1"))
+    def slug_lookup(self, slug):
+        r = self.api(f"/wp/v2/news&slug={slug}&per_page=1")
+        return r[0]["id"] if isinstance(r, list) and r else None
+
+
+CONTENT_NS = "{http://purl.org/rss/1.0/modules/content/}encoded"
+MEDIA_NS = "{http://search.yahoo.com/mrss/}content"
+BLOCK_RE = re.compile(
+    r"<(script|style|iframe|form|object|embed|noscript)[^>]*>.*?</\1>",
+    re.I | re.S)
+ONATTR_RE = re.compile(r'\s+on\w+="[^"]*"|\s+on\w+=\'[^\']*\'', re.I)
+
+
+def scrub_html(s):
+    """Publisher-supplied HTML: drop active markup, keep structure."""
+    s = BLOCK_RE.sub("", s or "")
+    return ONATTR_RE.sub("", s).strip()
 
 
 def strip_html(s):
@@ -124,11 +139,15 @@ def fetch_items(url, timeout=25):
             except (TypeError, ValueError):
                 pass
         src = it.find("source")
+        ce = it.find(CONTENT_NS)
+        media = it.find(MEDIA_NS)
         items.append({
             "title": (it.findtext("title") or "").strip(),
             "link": (it.findtext("link") or "").strip(),
             "pub": pub,
             "desc": strip_html(it.findtext("description")),
+            "body": scrub_html(ce.text) if ce is not None else "",
+            "image": media.get("url", "") if media is not None else "",
             "source": (src.text or "").strip() if src is not None else "",
         })
     ns = {"a": ATOM[1:-1]}
@@ -151,6 +170,8 @@ def fetch_items(url, timeout=25):
             "pub": pub,
             "desc": strip_html(it.findtext(f"{ATOM}summary")
                                or it.findtext(f"{ATOM}content")),
+            "body": scrub_html(it.findtext(f"{ATOM}content")),
+            "image": "",
             "source": "",
         })
     return items
@@ -162,6 +183,9 @@ def main():
     ap.add_argument("--feed", help="only this feed name")
     ap.add_argument("--since-hours", type=float, default=48)
     ap.add_argument("--max-items", type=int, default=15)
+    ap.add_argument("--update", action="store_true",
+                    help="PATCH existing posts when the feed now carries "
+                         "richer content (content:encoded/image)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -170,18 +194,20 @@ def main():
     if not feeds:
         sys.exit(f"no feed matched --feed {args.feed!r}")
 
-    env = load_wp_env(ENV_PATH)
-    wp = None if args.dry_run else WP(env["WP_SITE_URL"], env["WP_APP_USER"],
-                                    env["WP_APP_PASSWORD"])
+    if args.dry_run:
+        wp = None
+    else:
+        env = load_wp_env(ENV_PATH)
+        wp = WP(env["WP_SITE_URL"], env["WP_APP_USER"], env["WP_APP_PASSWORD"])
     cutoff = datetime.now(timezone.utc) - timedelta(hours=args.since_hours)
-    total_new = total_dup = 0
+    total_new = total_dup = total_upd = 0
 
     for f in feeds:
         name = f["name"]
         rx = re.compile(f["require"], re.I) if f.get("require") else None
         cap = f.get("max_items", args.max_items)
         items = fetch_items(f["url"])
-        kept, new, dup = 0, 0, 0
+        kept, new, dup, upd = 0, 0, 0, 0
         for it in items:
             if kept >= cap:
                 break
@@ -194,38 +220,48 @@ def main():
             kept += 1
             slug = "n-" + hashlib.md5(it["link"].encode()).hexdigest()
             if args.dry_run:
-                print(f"  [{name}] {it['title'][:80]} -> {slug[:14]}…")
-                continue
-            if wp.slug_exists(slug):
-                dup += 1
+                body_len = len(it["body"]) if it["body"] else len(it["desc"])
+                print(f"  [{name}] {it['title'][:80]} -> {slug[:14]}… body={body_len}ch")
                 continue
             src = it["source"] or name
             pub_s = it["pub"].isoformat(timespec="seconds") if it["pub"] else ""
+            body = it["body"][:20000] if it["body"] else f"<p>{html.escape(it['desc'][:1500])}</p>"
+            img = (f"<p><img src=\"{html.escape(it['image'])}\" alt=\"\" "
+                   f"loading=\"lazy\"></p>\n") if it["image"] else ""
             content = (
-                f"<p>{html.escape(it['desc'][:1500])}</p>\n"
+                img + body + "\n"
                 f"<p class=\"chaba-news-src\">Source: "
                 f"<a href=\"{html.escape(it['link'])}\">{html.escape(src)}</a>"
                 f" · {html.escape(name)}"
                 + (f" · {html.escape(pub_s)}" if pub_s else "") + "</p>")
+            existing = wp.slug_lookup(slug)
+            if existing and not args.update:
+                dup += 1
+                continue
             try:
-                wp.api("/wp/v2/news", {
-                    "title": it["title"][:200],
-                    "slug": slug,
-                    "status": "publish",
-                    "content": content,
-                    "categories": wp.cat_ids(f.get("categories", [])),
-                    "tags": wp.tag_ids(f.get("tags", [])),
-                    "meta": {"source_feed": name,
-                             "source_url": it["link"],
-                             "published_at": pub_s},
-                })
-                new += 1
+                if existing:
+                    wp.api(f"/wp/v2/news/{existing}", {"content": content})
+                    upd += 1
+                else:
+                    wp.api("/wp/v2/news", {
+                        "title": it["title"][:200],
+                        "slug": slug,
+                        "status": "publish",
+                        "content": content,
+                        "categories": wp.cat_ids(f.get("categories", [])),
+                        "tags": wp.tag_ids(f.get("tags", [])),
+                        "meta": {"source_feed": name,
+                                 "source_url": it["link"],
+                                 "published_at": pub_s},
+                    })
+                    new += 1
             except Exception as e:
-                print(f"  warn: insert failed for {slug}: {e}", file=sys.stderr)
-        print(f"{name}: {new} new, {dup} dup, {kept} kept of {len(items)}")
+                print(f"  warn: write failed for {slug}: {e}", file=sys.stderr)
+        print(f"{name}: {new} new, {upd} upd, {dup} dup, {kept} kept of {len(items)}")
         total_new += new
+        total_upd += upd
         total_dup += dup
-    print(f"total: {total_new} new, {total_dup} dup")
+    print(f"total: {total_new} new, {total_upd} upd, {total_dup} dup")
 
 
 if __name__ == "__main__":
