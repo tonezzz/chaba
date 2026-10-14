@@ -50,7 +50,9 @@ post_types:
   news:        "news feed items — has_archive + standard taxonomies — meta: source_feed/source_url/published_at"
 
 taxonomy_axes:
-  category: broad topic axis (travel, home, family-news) — curated, hierarchical
+  category: "broad topic axis — curated, hierarchical. News desks live
+            2026-10-14: thailand{bangkok,east,provinces} world tech
+            finance{gold,markets} disaster{flood,weather} family-news (ids 9-21)"
   post_tag: person axis (tony|kk|nhong) + fine keywords (krabi, southafrica)
   rule: one type axis = the CPT itself; never duplicate type as a tag
         (place-report/trip tags retired 2026-10-14)
@@ -83,6 +85,12 @@ writers:
   line-chat-timeline.py: timeline_block rebuilds (journal+ops-events)
   render_job:     "OPS-0658 local_image lane / manual — one record per render
                   (first: id 117, sdxl-lightning test 2026-10-14)"
+  news_fetch:     "scripts/ada/news-fetch.py + news-feeds.json on idc03 —
+                  wp-news-fetch.timer hourly; RSS/Atom -> news CPT, dedup by
+                  slug n-<md5(link)> via ?slug= lookup (no local ledger).
+                  Categories/tags mapped per feed; flood Google-News queries
+                  land under disaster>flood + thailand region cats.
+                  Archive: /wp/news/ (live 2026-10-14, ~120 seeded items)"
   # Writer access caveat (2026-10-14): POSTs through the PUBLIC edge
   # (boards.surf-thailand.com) hit CF 1010 bot-check on bare/script UAs —
   # fleet writers use origin_base (boards.h3.gizmo-thailand.com) directly.
