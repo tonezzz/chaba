@@ -1,0 +1,61 @@
+title: chaba-boards plugin — deploy verification + sample seed
+subtitle: KNB-0657 audit follow-up — confirms plugin is live v0.3.3 and REST-writable
+icon: check
+version: 1
+
+card: chaba-boards-plugin-deploy
+date: 2026-10-14
+dispatch: 20261014-220127-found-during-knb-0657-audit-20
+
+summary: |
+  KNB-0657 audit found ssot.wp-boards.yml documenting CPTs that live WP
+  didn't register; the plugin existed only in /tmp. By the time this
+  dispatch ran, the gap was already closed: the plugin is committed at
+  integrations/wp-boards/chaba-boards.php (v0.3.3, md5-identical to the
+  /tmp working copy) and ACTIVE on boards WP — /wp/v2/plugins reports
+  chaba-boards 0.3.3, and all 10 CPTs (asset, expense, contact, reminder,
+  bench, report, xlate, cam, render_job, news) appear in /wp/v2/types.
+  /tmp/deployed-plugin.php is a stale v0.3.0 snapshot, not what's live.
+
+actions_taken:
+  - >-
+    Verified deployed version via /wp/v2/plugins (context=edit):
+    chaba-boards 0.3.3 active — matches repo HEAD exactly.
+  - >-
+    Verified all 10 CPTs present in /wp/v2/types; news is hierarchical
+    (v0.3.3 feature), confirming live is not the v0.3.0 snapshot.
+  - >-
+    Seeded one PRIVATE sample post per the six core CPTs via REST app
+    password, meta written + read back correctly — ids:
+    asset=266 expense=267 contact=268 reminder=269 bench=270 report=271.
+    Existing content: news=133 posts, render_job=1 (id 117). xlate and cam
+    remain unseeded — xlate rows are auto-written by the translate hook,
+    cam awaits its writer.
+  - >-
+    Updated ssot.wp-boards.yml comment: version 0.3.2 -> 0.3.3, added
+    verified-2026-10-14 line + note that standalone chaba-translate.php is
+    retired (TH<->EN translation merged into chaba-boards: xlate CPT +
+    save_post_post Gemini call, lines ~145-234).
+
+rest_access_notes:
+  # boards WP quirks that bite scripted access (verified this session):
+  - REST rides index.php?rest_route=  — extra query args go on & not ?
+    (rest_route=/wp/v2/asset&per_page=1 works; embedding ?404s everything).
+  - /wp/v2/types listing is public; /wp/v2/plugins needs context=edit +
+    app-password auth (admin user in ~/.config/secrets/wp-boards.env).
+  - That env file has shell-special chars in the password — parse it, do
+    NOT `source` it in bash (sourcing executes fragments of the password).
+  - >-
+    Write path: POST /wp/v2/<cpt> with status=private + meta{...} works
+    for all six core CPTs; registered meta is REST-writable as designed.
+  - Use origin_base boards.h3.gizmo-thailand.com — the public edge
+    bot-checks bare/script UAs (documented caveat in ssot.wp-boards.yml).
+
+result: verified-live
+verification: |
+  curl -s -u "$WP_APP_USER:$WP_APP_PASSWORD" \
+    "$WP_ORIGIN/index.php?rest_route=/wp/v2/plugins&context=edit" | jq .
+  # -> chaba-boards/chaba-boards | 0.3.3 | active
+  GET /wp/v2/types -> includes asset,expense,contact,reminder,bench,report,
+                    xlate,cam,render_job,news
+  GET /wp/v2/asset&status=any -> id 266 etc.

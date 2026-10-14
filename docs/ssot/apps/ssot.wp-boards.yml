@@ -33,11 +33,17 @@ post_types:
                  show_in_rest=true (watchers read `modified` anonymously)"
   timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
   attachment:    media library; images attach to trip posts via post_parent
-  # chaba-boards plugin CPTs (v0.3.2, integrations/wp-boards/chaba-boards.php) —
+  # chaba-boards plugin CPTs (v0.3.3, integrations/wp-boards/chaba-boards.php) —
   # public + show_in_rest, private-status posts are member-only like /chat/line/*.
   # LIVE since 2026-10-14 — deployed via wp-admin plugin editor ajax
   # (edit-theme-plugin-file; admin creds on omen secrets dir). v0.2.0 added
   # admin list columns so registered meta actually displays in wp-admin.
+  # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
+  # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
+  # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
+  # path. The old standalone /tmp/chaba-translate.php is retired — its
+  # TH<->EN translation hooks merged into this plugin (xlate CPT +
+  # save_post_post Gemini call).
   asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor"
   expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date"
   contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role"
