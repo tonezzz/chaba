@@ -1,0 +1,67 @@
+title: WP Boards — Member Info Surface
+subtitle: boards.surf-thailand.com — post types, taxonomy axes, title standard, watchdog topology
+version: 1
+last_updated: "2026-10-14"
+
+# ssot.wp-boards — WordPress member-info surface (boards.surf-thailand.com)
+#
+# The public member-facing site for Tony/KK/Nhong. WP owns member-facing
+# content only; ops dashboards, provider accounting, and secrets stay in
+# MDDB/CMS or internal infra.
+site:
+  public_base: https://boards.surf-thailand.com/wp
+  origin_base: https://boards.h3.gizmo-thailand.com/wp
+  # Permalinks: /index.php/%postname%/ (Plesk vhost has no rewrite for
+  # plain permalinks). Canonical front page is /wp/index.php — /wp/
+  # 301-loops to itself (known origin quirk, 2026-10-14).
+  rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost
+  app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
+
+post_types:
+  post:          member posts from LINE asks (wp_post) — free-form human titles
+  page:          member pages + private chat tree (/chat/line/*)
+  place:         place_report output — hierarchical=false, archive /place/
+  trip:          "trip_calendar output — hierarchical: parent=rollup,
+                 children=day leaves+flight pages; archive /trip/"
+  ops-event:     "heartbeats + anomaly records — publicly_queryable=false,
+                 show_in_rest=true (watchers read `modified` anonymously)"
+  timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
+  attachment:    media library; images attach to trip posts via post_parent
+
+taxonomy_axes:
+  category: broad topic axis (travel, home, family-news) — curated, hierarchical
+  post_tag: person axis (tony|kk|nhong) + fine keywords (krabi, southafrica)
+  rule: one type axis = the CPT itself; never duplicate type as a tag
+        (place-report/trip tags retired 2026-10-14)
+
+title_standard:
+  # Machine-generated content carries a "<Kind> — <name>" prefix so mixed
+  # feeds (tag archives, REST lists) stay self-describing. Member-authored
+  # posts keep free-form titles — do not prefix them.
+  post:        free-form (member voice)
+  place:       "Place — {name}"
+  trip:        "Trip — {title}"           # children: "{Trip} — day {i} {date}"
+  ops-event:   "ops-{host} (heartbeats) | ⚠ {code} {chat_id} (anomalies)"
+  timeline_block: "Timeline — {lane}"
+  pages:       bare names (Tony, KK, Chat, Line, Ops)
+
+writers:
+  wp_post:        post  + person tag            # LINE "ลงเว็บ/เว็บบอร์ด" asks
+  place_report:   place + person tag            # maps links / place names
+  trip_calendar:  trip parent+children + person # --public flag
+  line-chat-timeline.py: timeline_block rebuilds (journal+ops-events)
+
+privacy:
+  private_pages: /chat/line/* + /chat/ops — require editor login to view
+  caveat: media files under wp-content/uploads/ are public-by-URL even on
+          private pages (WP serves the file, not the page). True media
+          privacy needs a protected-downloads plugin — not installed.
+
+watchdog:
+  # monitor does the work on idc03; watcher verifies from idc02; alert
+  # path must not depend on the watched component (board-api via
+  # ssh tony-dell, not a WP write).
+  heartbeat: idc03 wp-heartbeat.timer -> POST ops-event heartbeat-idc03 (5min)
+  watcher:   idc02 wp-watch.timer -> WP 200 + heartbeat<10min -> board-api comment
+  trigger:   line-chat-timeline.path (PathChanged glob on journals +
+             ops-events.jsonl) -> near-real-time timeline updates
