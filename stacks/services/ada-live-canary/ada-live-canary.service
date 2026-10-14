@@ -1,0 +1,10 @@
+[Unit]
+Description=Gemini Live canary — 1 minimal connect on FREE key (hourly)
+After=network-online.target
+
+[Service]
+Type=oneshot
+# One connect per run; verdict ledger -> ~/.local/share/ada-live-canary.jsonl
+# ada-voice venv carries google-genai.
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/gemini-live-canary.py --env-file %h/.config/secrets/gemini-keys.env --key-var GEMINI_API_KEY_FREE
+TimeoutStartSec=60

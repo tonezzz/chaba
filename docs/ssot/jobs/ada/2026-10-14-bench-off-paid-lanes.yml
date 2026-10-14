@@ -1,0 +1,91 @@
+date: 2026-10-14
+title: Bench traffic off paid Gemini lanes — repo-side lane policy
+domain: ada
+job: bench-off-paid-lanes
+cards: [bench-off-paid-lanes]
+refs: [BEN-0573]
+host: idc03
+summary: >
+  Repo-side build-out of "automated probes never bill a paid project":
+  dev-safe weekly suites retargeted to ada-dev (FREE key), lane-coupled
+  suites parked behind a one-shot card-request sentinel, a new
+  daily paid-lane canary unit set, and the spend-ledger now measures
+  caller=admin turn share per lane (the card's acceptance metric).
+
+lane_map:
+  paid_prod: "ada-ha-tony :8002, ada-ha-michael :8003, ada-kk :8007,
+    ada-pi-pwa :8001 — per-persona paid keys (ssot.llm-gateway.yml)"
+  free_dev: "ada-dev :8005, ada-kk-dev :8009 — GEMINI_API_KEY_FREE"
+
+change:
+  - 'scripts/ada/scenario-provider-gate.py: new --paid-allow-file
+    (fresh sentinel downgrades paid-lane/unknown to ok; quota-dead still
+    gates) + --paid-allow-max-age (default 168h); per-tier summary docs
+    report/<tier>-gate-<ts> and tier-parameterized events.'
+  - 'stacks/services/ada-scenario-runner/scenario-suite-run.sh: paid-lane
+    guard — ADA_LIVE_URL port not in {8005,8009} => park (exit 0, zero
+    sessions) unless sentinel prod-allow-<suite> exists; consumed on use.'
+  - 'ada-scenario-{research,cms,reports}.service: retargeted to
+    ws://127.0.0.1:8005/ws + ada-dev.env + ada-ha-dev-keys.json +
+    gate ExecCondition --unit ada-dev. Suite audit vs tests/benchmark.yml:
+    research/cms/reports exercise research/CMS/report tools that dev
+    still exposes; first runs may surface per-scenario gaps (missing
+    key_name in ada-ha-dev-keys.json, tools the dev exclusion strips) —
+    fix by moving that scenario or extending the dev keyring, NOT by
+    pointing the suite back at prod.'
+  - 'ada-scenario-{memory,tools,casting}.service: still :8002 but now
+    ExecCondition-gated on prod-allow-{memory,tools,casting} — they need
+    person-keyed banks / HA+VCAST actuation ada-dev lacks. Weekly +
+    daily-02:00-casting timers now park at zero spend.'
+  - 'ada-scenario-full.container: same card-request gate
+    (prod-allow-full; second ExecCondition consumes it).'
+  - 'stacks/services/ada-live-canary/ NEW: ada-live-canary.timer
+    (hourly :17 FREE — existing behavior, now repo-tracked),
+    ada-live-canary-paid.timer (daily 06:12 PAID — card item 3: 1
+    connect/day), gemini-wallet-watch.{service,timer} (hourly :47,
+    ~1-token REST + LINE alerts — kept hourly deliberately: not a Live
+    connect, ~$0.000007/day, and it is the only depletion->LINE path).
+    Flip its OnCalendar to daily if "one canary" should include it.'
+  - 'scripts/ada/spend-ledger.py: journal now parses session/caller +
+    per-session turns; spend-ledger page shows admin% per paid lane and
+    warns (once/day/unit) when caller=admin share > SPEND_ADMIN_WARN_PCT
+    (default 20) — acceptance #4 is self-checking.'
+
+item_status:
+  1_smoke_and_canary_on_dev: >-
+    DONE — smoke quadlet was already retargeted live on idc03
+    (2026-10-13 job smoke-tier-to-ada-dev); ada-live-canary was already
+    FREE-keyed. The runner needs no new flag: scenario-benchmark.py
+    accepts --url and reads ADA_LIVE_URL env; this changeset uses the env.
+  2_prod_gate: >-
+    DONE in-repo — every prod-pointing suite + the full tier now refuse
+    without a prod-allow-<suite> sentinel carrying a card id.
+  3_paid_canary_minimal: 'DONE in-repo — ada-live-canary-paid.timer =
+    1 connect/day on the paid key.'
+  4_accept_metric: 'DONE in-repo — spend-ledger renders+trips on
+    admin-turn share; still needs one real day post-apply to show <20%.'
+
+apply_on_idc03:
+  - 'cd ~/CascadeProjects/chaba && git pull --ff-only (after this branch
+    merges) — or rsync the changed files.'
+  - 'cd stacks/services/ada-scenario-runner && ./install.sh'
+  - 'cd stacks/services/ada-live-canary && ./install.sh'
+  - 'verify: systemctl --user cat ada-scenario-tools | grep paid-allow;
+    systemctl --user list-timers | grep -E "scenario|canary|wallet"'
+  - 'verify park: systemctl --user start ada-scenario-tools — expect
+    "start condition failed" (gate) or the wrapper parked line.'
+  - 'verify sentinel: echo <card> > ~/.local/share/ada-scenario-runner/
+    prod-allow-tools && start ada-scenario-tools — runs once, sentinel
+    consumed.'
+
+known_gaps:
+  - 'scenario-report.py honors per-scenario url: — a yaml hardcoding a
+    paid ws URL bypasses ADA_LIVE_URL. Today only
+    michael_infra_interrogation.yaml carries url: (:8003, not in a
+    scheduled suite). Runner-side refuse-on-paid or a scenario lint is
+    an ada-voice repo change (edit point tony-dell) — flagged on card.'
+  - 'preflight-bench.sh (ada-bench-casting) content not audited — if it
+    opens Live sessions on prod it needs the same sentinel. Review on
+    apply.'
+  - 'ada-embed-bench rides LITELLM_KEY_MDDB (gateway, $10/30d cap) —
+    bounded, not a Live lane; left as-is.'

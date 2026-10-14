@@ -9,8 +9,9 @@ ops-only, never reachable via ada_memory_search).
 
 - `smoke` — safe subset (`tier: smoke` in the yaml): connect/greet, memory
   read/write to own bank, ACL-deny probes. No actuation turns. Hourly via
-  `ada-scenario-smoke.timer`.
-- `full` — everything including actuation scenarios. Manual only.
+  `ada-scenario-smoke.timer` on **ada-dev (:8005, FREE key)**.
+- `full` — everything including actuation scenarios. Manual only, and
+  card-requested for the prod lane (see lane policy below).
 - Weekly benchmark suites (`ada-scenario-{research,cms,memory,reports,
   tools,casting}.timer`, Mon–Sat 05:55): run
   `scripts/scenario-benchmark.py --suite <name>` from
@@ -18,8 +19,48 @@ ops-only, never reachable via ada_memory_search).
   write one `kind: benchmark` doc to `ada-ha-scenario-reports` for trend
   tracking plus a `benchmark-<suite>` CMS page. Not containers — use the
   repo venv directly.
+  - `research` / `cms` / `reports` target **ada-dev (:8005)** — they only
+    need research/CMS/report tools the dev lane still exposes.
+  - `memory` / `tools` / `casting` are lane-coupled (person-keyed banks,
+    HA/actuation tool surface) and stay pointed at prod — parked by
+    default per the lane policy below.
 - `ada-bench-casting.timer` (daily 02:00) — preflight gate; on success
   chains into `ada-scenario-casting.service` via `OnSuccess`.
+
+## Lane policy — automated probes never bill a paid project
+
+(card `bench-off-paid-lanes`, 2026-10-14) Prod persona lanes —
+ada-ha-tony :8002, ada-ha-michael :8003, ada-kk :8007, ada-pi-pwa :8001 —
+each bill a per-persona **paid** Gemini key; the dev lanes
+(ada-dev :8005, ada-kk-dev :8009) ride the FREE key. Two controls keep
+scheduled traffic off the paid keys:
+
+1. **`scenario-provider-gate.py` ExecCondition** on every suite —
+   sha-compares the target unit's `GEMINI_API_KEY` against
+   `gemini-keys.env`; a PAID (or unmarked) key fails the run before a
+   single session opens, and quota-dead providers are skipped too.
+2. **Paid-lane guard in `scenario-suite-run.sh`** — the wrapper checks
+   `ADA_LIVE_URL`'s port: :8005/:8009 proceed, anything else is treated
+   as paid and the run parks (`exit 0`, zero sessions, journal trail).
+
+**Card-requested prod runs** (the release s4/s5 gate — the only path
+allowed to touch a prod lane): authorize one run with a one-shot
+sentinel, then start the unit:
+
+```bash
+echo <card-id> > ~/.local/share/ada-scenario-runner/prod-allow-<suite>
+systemctl --user start ada-scenario-<suite>   # consumes the sentinel
+```
+
+The gate honors a sentinel for up to 7 days (`--paid-allow-max-age`) and
+still refuses when the provider is quota-dead. `ada-scenario-full` uses
+`prod-allow-full` the same way. Known footgun: `scenario-report.py`
+honors a per-scenario `url:` override — a yaml hardcoding a paid ws URL
+bypasses `ADA_LIVE_URL`; keep `url:` fields off paid lanes in smoke/weekly
+scenarios.
+
+Canary probes live in `stacks/services/ada-live-canary/` — free key
+hourly, paid key **once daily** (1 connect/day detects dunning).
 
 ## Scheduling / locking
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=Gemini Live canary — 1 minimal connect on PAID key (daily)
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Card bench-off-paid-lanes: exactly 1 paid-lane connect/day — enough to
+# detect dunning (402/1011) or a dead Live model without measurable burn.
+# Separate ledger so free-lane ceiling data stays unpolluted.
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/gemini-live-canary.py --env-file %h/.config/secrets/gemini-keys.env --key-var GEMINI_API_KEY_PAID --ledger %h/.local/share/ada-live-canary-paid.jsonl
+TimeoutStartSec=60

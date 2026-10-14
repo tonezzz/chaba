@@ -23,6 +23,37 @@ LOCK_PORT=8199
 BENCH="$HOME/CascadeProjects/ada-voice/scripts/scenario-benchmark.py"
 PY="$HOME/CascadeProjects/ada-voice/.venv/bin/python"
 
+# Paid-lane guard (card bench-off-paid-lanes, 2026-10-14): automated
+# suites run on FREE dev lanes only — ada-dev :8005 / ada-kk-dev :8009.
+# The prod persona lanes (:8001 ada-pi-pwa, :8002 ada-ha-tony, :8003
+# ada-ha-michael, :8007 ada-kk) bill per-persona paid Gemini keys; a
+# suite may target them only when a card explicitly asks (release s4/s5
+# prod verification): drop a sentinel file
+#   $SENTINEL_DIR/prod-allow-<suite>   (first line = card id)
+# and the run consumes it (one-shot). Any other/unknown target is
+# treated as paid — a new lane is parked until classified here.
+SENTINEL_DIR="${ADA_SCENARIO_STATE:-$HOME/.local/share/ada-scenario-runner}"
+SENTINEL="$SENTINEL_DIR/prod-allow-$SUITE"
+url="${ADA_LIVE_URL:-}"
+port="${url##*:}"; port="${port%%/*}"
+case " $port " in
+  *" 8005 "*|*" 8009 "*) ;;                      # free dev lanes — proceed
+  *)
+    if [ -f "$SENTINEL" ]; then
+        card="$(head -n1 "$SENTINEL" | tr -d '[:space:]')"
+        rm -f "$SENTINEL"
+        echo "prod-lane run for suite $SUITE authorized by card " \
+             "${card:-unknown} — sentinel consumed (one-shot)"
+    else
+        echo "suite $SUITE targets a paid lane " \
+             "(${ADA_LIVE_URL:-unset — benchmark default :8002}) — parked, " \
+             "zero sessions opened (bench-off-paid-lanes)."
+        echo "  to authorize one prod run:  echo <card-id> > $SENTINEL"
+        echo "  to retarget to dev lane:    ADA_LIVE_URL=ws://127.0.0.1:8005/ws"
+        exit 0
+    fi ;;
+esac
+
 free() {
     "$PY" -c 'import socket,sys
 s=socket.socket()

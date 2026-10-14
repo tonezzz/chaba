@@ -8,6 +8,14 @@ EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
 Environment=PYTHONUNBUFFERED=1
+# Bench-off-paid-lanes (BEN-0573): tools is lane-coupled (HA/actuation
+# tools excluded on ada-dev) so it stays pointed at prod — but prod
+# lanes are card-requested only. The gate parks the suite unless a
+# fresh one-shot sentinel exists:
+#   echo <card-id> > %h/.local/share/ada-scenario-runner/prod-allow-tools
+# then start the unit — the wrapper consumes the sentinel for one run.
+# Missing gate script fails CLOSED here (that is the point).
+ExecCondition=/bin/sh -c 'G=%h/CascadeProjects/chaba/scripts/ada/scenario-provider-gate.py; [ -f "$G" ] || exit 1; exec /usr/bin/python3 "$G" --unit ada-ha-tony --env-file %h/.config/secrets/ada-ha-tony.env --tier tools --paid-allow-file %h/.local/share/ada-scenario-runner/prod-allow-tools'
 # Wrapper queues behind the :8199 suite lock (<=30m wait + refused-bind
 # retries) instead of dropping the run — see scenario-suite-run.sh.
 ExecStart=%h/.local/share/ada-scenario-runner/scenario-suite-run.sh tools
