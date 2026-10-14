@@ -9,7 +9,7 @@ focus:
     Done. Summary of what I found and did:
 
 
-    **Audit finding:** `tricky-roadway` ended claiming "Both shipped" (ada-pi `a7af56e`, chaba `d2b58255`)
+    **Audit finding:** `tricky-roadway` ended claiming "Both shipped" (ada-voice `a7af56e`, chaba `d2b58255`)
     — but **neither commit exists**: not in local clones, not on `origin`, not on idc01. The live-verified
     changes (idc01 quadlets carrying `ADA_HOST`) have since been wiped by redeploys from clean checkouts.
     The rest of the memory.yml stack (immediate, recent-events, timeline, events, ada-events, digests,
@@ -22,7 +22,7 @@ focus:
     merges the chaba-guest store''s `~/.local/share/chaba/events.md` into the local store so the `events`
     section sees both writers. Runs in the daily `ada-review-refresh.timer` path.
 
-    - `scripts/chaba/render-memory.py` — new `--profile NAME` filter; repairs ada-pi''s deployed `render-memory.py
+    - `scripts/chaba/render-memory.py` — new `--profile NAME` filter; repairs ada-voice''s deployed `render-memory.py
     --profile guest` fallback call which currently dies on argparse.
 
     - `docs/ssot/chaba/ssot.chaba.memory.yml` — `events` section documents the merge path.

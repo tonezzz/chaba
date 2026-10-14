@@ -175,7 +175,7 @@ def note(slug: str, text: str, lang: str = "en",
                   "lang": doc.get("lang") or lang,
                   "contentMd": body, "meta": meta}, timeout=60)
     if regen:
-        # raw /v1/add never triggers ada-pi's _cms_reports_index — regen
+        # raw /v1/add never triggers ada-voice's _cms_reports_index — regen
         # here like report-daily-brief.py/cam-wall-cms.py do.
         from lib.cms_index import regen_reports_index
         regen_reports_index(MDDB, written_by=WRITTEN_BY)

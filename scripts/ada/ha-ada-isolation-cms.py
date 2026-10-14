@@ -9,7 +9,7 @@ and Devin read the same picture.
 Sources (declared, not hand-written — ssot.reports.yml L1->L2):
   - docs/kb/ha-ada-isolation.md                        (canonical standard)
   - ssh idc03: env-key hashes, systemd unit caps        (live drift probes)
-  - ssh idc03 + ada-pi venv: HA auth/current_user       (token identity)
+  - ssh idc03 + ada-voice venv: HA auth/current_user       (token identity)
   - scripts/deploy-ada.sh                               (deploy membership)
 
 Usage:
@@ -28,9 +28,9 @@ from pathlib import Path
 
 REPO = Path(os.environ.get("CHABA_REPO", "/home/tony/CascadeProjects/chaba"))
 RUNBOOK = REPO / "docs/kb/ha-ada-isolation.md"
-DEPLOY_SH = REPO.parent / "ada-pi/scripts/deploy-ada.sh"
+DEPLOY_SH = REPO.parent / "ada-voice/scripts/deploy-ada.sh"
 if not DEPLOY_SH.exists():
-    DEPLOY_SH = REPO / "../ada-pi/scripts/deploy-ada.sh"
+    DEPLOY_SH = REPO / "../ada-voice/scripts/deploy-ada.sh"
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 INDEX_SLUG = "ha-ada-isolation"
@@ -116,7 +116,7 @@ def probe_envs():
 
 def probe_user(env_file):
     return _ssh_json("idc03",
-                     "~/CascadeProjects/ada-pi/.venv/bin/python - "
+                     "~/CascadeProjects/ada-voice/.venv/bin/python - "
                      f"~/.config/secrets/{env_file}",
                      input_text=REMOTE_USER_PROBE, timeout=30)
 
@@ -235,7 +235,7 @@ WHATIF = [
      "non-admin svc token + allowlisted domains + logbook attribution"),
     ("Ada HA token leak / rotation", "owner token = full prod admin; revocation breaks co-users",
      "svc token only; revoke kills Ada and nothing else"),
-    ("Bad ada-pi deploy", "every backend restarts onto broken code; ada-kk silently stays old",
+    ("Bad ada-voice deploy", "every backend restarts onto broken code; ada-kk silently stays old",
      "canary order catches it on ada-dev; membership explicit"),
     ("Ada mem/cpu leak on idc03", "starves kk-ha + michael-dev + mddb",
      "cgroup caps contain it"),

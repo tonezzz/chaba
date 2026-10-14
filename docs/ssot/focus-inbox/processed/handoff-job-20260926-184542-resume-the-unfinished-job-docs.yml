@@ -14,7 +14,7 @@ focus:
 
     The session''s tail was the **Ada evals job-report** design: your proposed model where a requester
     pre-writes a job doc to MDDB `ada-eval-jobs`, and an evals runner claims + live-updates it. The plan
-    doc was written to `ada-pi/docs/eval-jobs.md` (still **untracked/uncommitted** there), you approved
+    doc was written to `ada-voice/docs/eval-jobs.md` (still **untracked/uncommitted** there), you approved
     phase 1, and the assistant specced four edits — but the session had flipped to ask/read-only mode,
     so **nothing was ever applied**. Its final message was a paste-ready spec asking for write access.
 
@@ -26,7 +26,7 @@ focus:
     phases 1–4, runner status baseline, open questions) plus phase-1 status and the exact apply/run procedure.
 
     - **`docs/kb/ada-eval-jobs-phase1.patch`** — the four edits turned into a real unified diff, **verified**:
-    `git apply --check` clean against ada-pi HEAD `607035c`, all four files `py_compile` clean in a scratch
+    `git apply --check` clean against ada-voice HEAD `607035c`, all four files `py_compile` clean in a scratch
     copy, `--param` registers in `--help`.
 
     - **`docs/INDEX.md`** — added the entry.
@@ -48,7 +48,7 @@ focus:
     ## Abandoned / deferred (by session constraints — worktree-only, no deploy)
 
 
-    - Applying the patch to the live `ada-pi` checkout (outside this worktree).
+    - Applying the patch to the live `ada-voice` checkout (outside this worktree).
 
     - Deploy to idc01 + `ada-ha-tony` restart, and the `tv_power` prime on/off A/B run.
 

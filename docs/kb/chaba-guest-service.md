@@ -17,7 +17,7 @@ Name collisions are resolved by design: there is no "Ada vs Chaba" —
 everywhere. Guests never get a LINE persona; they talk to Chaba on a
 guest device.
 
-## Guest mode mechanics (already built in ada-pi)
+## Guest mode mechanics (already built in ada-voice)
 
 - Activation is a per-lane env flag: `CHABA_MEMORY=1` in the lane's
   `~/.config/secrets/ada-*.env` (idc03).

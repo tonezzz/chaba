@@ -269,7 +269,7 @@ def build_ada() -> dict:
             children=kids))
 
     # ops events — tool storms, actuation caps, confirm strips, blocked
-    # writes. Emitted by ada-pi into the ada-ha-events MDDB collection;
+    # writes. Emitted by ada-voice into the ada-ha-events MDDB collection;
     # read back here so containment shows on the Report tab. Optional:
     # any failure just omits the section.
     ops = _mddb_ops_events()
@@ -457,7 +457,7 @@ def build_feed() -> dict:
 
 
 def _mddb_ops_events() -> list[dict]:
-    """Recent ops/containment events emitted by ada-pi (kind=ops-event).
+    """Recent ops/containment events emitted by ada-voice (kind=ops-event).
     Network read with a hard timeout — failure returns [] so the feed
     still renders offline."""
     try:

@@ -55,7 +55,7 @@ sections:
       - label: Registry file
         text: Authored here in SSOT; rendered to ADA_MEMORY_BANKS_FILE (default ~/.config/ada/memory-banks.json) on mn01 and tony-dell at deploy time. Services read the file, filter by ada_instance_id().
       - label: backend/memory_banks.py
-        text: "Planned module in ada-pi: loads the registry, resolves mddb_collection ({instance} expansion), exposes banks(), collection_for(bank), notebook_for(bank). Fail-fast on missing registry for any bank marked required."
+        text: "Planned module in ada-voice: loads the registry, resolves mddb_collection ({instance} expansion), exposes banks(), collection_for(bank), notebook_for(bank). Fail-fast on missing registry for any bank marked required."
       - label: ada_remember tool
         text: Planned Gemini tool ada_remember(bank, text) → writes to the bank's MDDB collection with metadata above; optionally mirrors to the bank's NotebookLM notebook as a text source.
       - label: Recall routing
@@ -592,7 +592,7 @@ banks:
     public: false
 
 # Pre-write content scan — card ada-memory-injection-scan (2026-10-09).
-# Implemented in ada-pi backend/memory_write_guard.py (stdlib-only, string
+# Implemented in ada-voice backend/memory_write_guard.py (stdlib-only, string
 # level — no model call in the write path); the rule table lives in the
 # module's SCAN_RULES, this block is the documentation mirror — keep the
 # two in sync (`python3 backend/memory_write_guard.py --list-rules`).

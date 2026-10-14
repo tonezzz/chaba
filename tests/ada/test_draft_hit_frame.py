@@ -1,5 +1,5 @@
 """Unit tests for the draft-hit-frame drop staged under
-integrations/ada-pi/ (card ada-memory-search-draft-gap-notes-mislea-406683,
+integrations/ada-voice/ (card ada-memory-search-draft-gap-notes-mislea-406683,
 ADA-0607, 2026-10-13).
 
 The card: status=draft memory docs — auto-extracted candidates and
@@ -18,8 +18,8 @@ them as facts anyway. The drop fixes four leaks:
 - backend/tool_guide.yml — the ada_memory_search guide entry documents
   the frame.
 
-Strategy: apply the staged patches to copies of the live ada-pi sources
-(ADA_PI env or ~/CascadeProjects/ada-pi — skipped when absent), compile
+Strategy: apply the staged patches to copies of the live ada-voice sources
+(ADA_PI env or ~/CascadeProjects/ada-voice — skipped when absent), compile
 them, then exercise the behavior. backend modules carry heavy deps
 (google.genai etc.) so functions are exercised two ways: the patched
 tool_runner/memory.py is imported under a stub `backend.tool_runner.common`,
@@ -48,9 +48,9 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
-DROP = REPO / "integrations" / "ada-pi"
+DROP = REPO / "integrations" / "ada-voice"
 ADA_PI = Path(os.environ.get("ADA_PI",
-                             str(Path.home() / "CascadeProjects/ada-pi")))
+                             str(Path.home() / "CascadeProjects/ada-voice")))
 
 PATCHES = {
     "backend/tool_runner/memory.py":
@@ -67,14 +67,14 @@ PATCHES = {
 def _ada_pi_file(rel: str) -> Path:
     p = ADA_PI / rel
     if not p.exists():
-        pytest.skip(f"no ada-pi checkout at {ADA_PI} — drop ships the "
+        pytest.skip(f"no ada-voice checkout at {ADA_PI} — drop ships the "
                     f"patches, not the files")
     return p
 
 
 @pytest.fixture()
 def patched_tree(tmp_path):
-    """Apply all drop patches to copies of the ada-pi sources."""
+    """Apply all drop patches to copies of the ada-voice sources."""
     for rel, patch in PATCHES.items():
         src = _ada_pi_file(rel)
         dst = tmp_path / rel
@@ -89,7 +89,7 @@ def patched_tree(tmp_path):
 
 
 def test_patches_apply_and_compile(patched_tree):
-    """Every staged patch must apply to the live ada-pi tree and the
+    """Every staged patch must apply to the live ada-voice tree and the
     result must compile/parse — the drop is only as good as its apply."""
     for rel in PATCHES:
         p = patched_tree / rel

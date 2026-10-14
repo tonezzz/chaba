@@ -43,7 +43,7 @@ delivered:
   - docs/ssot/infrastructure/ssot.ada-participation.yml: >
       T2 gap extended: ada_board_write's respond requires request_id
       client-side so Ada cannot yet answer a card-level ask — the API
-      now accepts {id, text|option} without one, so the ada-pi patch is
+      now accepts {id, text|option} without one, so the ada-voice patch is
       make request_id optional + surface ask.question/options in
       _compact_card.
 
@@ -53,7 +53,7 @@ key_decisions:
      coexist — request_id present -> requests path, absent -> ask path.'
   - 'Free text resolves to a unique option match instead of storing
      raw text: that is what makes the voice answer "yes" land on the
-     "Yes — …" option without any ada-pi change on the API side.
+     "Yes — …" option without any ada-voice change on the API side.
      Ambiguous prefixes ("yes" vs ["yes a","yes b"]) stay verbatim.'
   - 'Options are indexed 0-based in the POST body ({option: N}) — the
      wire format never depends on label text, so renaming a label
@@ -76,6 +76,6 @@ verify: |
 open_items:
   - 'deploy: merge to master, then board-api.service + render on the
      served checkout (chaba-tony-dell) — promotion needs explicit approval'
-  - 'ada-pi: ada_board_write — request_id optional + ask surfaced in
+  - 'ada-voice: ada_board_write — request_id optional + ask surfaced in
      _compact_card (voice path for card-level asks)'
   - 'migrate further decide cards to ask.options as they appear'

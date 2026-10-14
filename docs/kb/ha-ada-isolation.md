@@ -21,7 +21,7 @@ Shared-fate vectors (one failure hits every lane):
 - **One `GEMINI_API_KEY` across all five `ada-*.env` files** (hash-identical).
   A quota storm in any instance starves them all — the observed storm burned
   Tony's key, which is also KK's, Michael's, dev's, and pwa's.
-- **One `ada-pi` checkout + one `.venv` on idc03** serves every backend.
+- **One `ada-voice` checkout + one `.venv` on idc03** serves every backend.
   `deploy-ada.sh` restarts the whole set — a bad commit can kill every Ada
   at once. `ada-kk` is NOT in the default `SERVICES` restart set, so it
   drifts on old code until manually restarted (accidental, undocumented
@@ -62,7 +62,7 @@ Shared-fate vectors (one failure hits every lane):
 | Gemini quota/reconnect storm | all 5 instances starve on the shared key | only the offending instance; `ada-gemini-quota-breaker` stops the storm itself |
 | tool-call / actuation loop | can toggle real devices on prod tony-ha with **owner** perms | non-admin svc token; allowlisted domains; logbook attributes every call |
 | ada HA token leak / rotation | owner token = full prod admin; revoking breaks anything else sharing it | svc token only; revoke kills Ada, nothing else |
-| bad ada-pi deploy | all backends restart onto broken code together; ada-kk silently stays old | canary order catches it on ada-dev first; membership explicit |
+| bad ada-voice deploy | all backends restart onto broken code together; ada-kk silently stays old | canary order catches it on ada-dev first; membership explicit |
 | ada mem/cpu leak on idc03 | starves kk-ha + michael-dev + mddb | cgroup caps contain it |
 | ada log storm | can fill idc03 disk → everything on host | per-unit journal caps |
 | idc03 host dies | kk-ha dies anyway (co-located) — accepted risk | same; tony-ha unaffected (on tony-dell) |

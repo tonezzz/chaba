@@ -88,7 +88,7 @@ calls and 156 `POST /api/tools/call` access-log entries from
   customers or demos.
 - Resolved 2026-09-17: `get_logbook` works on both instances — HA 2026.x
   moved the endpoint to `GET /api/logbook?end_time=&period=<days>&entity=`
-  (the old `/api/logbook/period/<ts>` path 404s); ada-pi tries the new form
+  (the old `/api/logbook/period/<ts>` path 404s); ada-voice tries the new form
   first and falls back for older HA.
 - Long-term: a contact sensor or position-feedback motor on the gate
   would give true open/closed state instead of transient `opening`/
@@ -96,6 +96,6 @@ calls and 156 `POST /api/tools/call` access-log entries from
 
 ## References
 
-- Code: `ada-pi` commits `8b6ca8f` (event logs), `55a80a0` (safety gate),
+- Code: `ada-voice` commits `8b6ca8f` (event logs), `55a80a0` (safety gate),
   `3fb570c` (UI api-key support)
 - Env: `~/.config/secrets/ada-ha-{tony,michael}.env` on mn01

@@ -5,7 +5,7 @@ Card `nest-query-cache` phase 0: what fraction of real
 
 - `bankq-corpus-20261008.jsonl` — 1366 prod rows mined from the
   nest-bank-router `memory_search tool timing` instrumentation
-  (copied from ada-pi `tests/bench/`, branch
+  (copied from ada-voice `tests/bench/`, branch
   dispatch/20261008-135509-bankq-student).
 - `analyze.py` — chronological replay: embed each normalized query
   (Weaviate embed service, all-MiniLM-L6-v2 — the same space the

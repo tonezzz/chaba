@@ -2,7 +2,7 @@
 """Stage-1 mechanical index of Ada voice transcripts (no LLM).
 
 Parses ~/.local/share/ada-review/transcripts/*.md (the format written by
-ada-pi backend/conversation_memory.py: "# Ada voice session <id>" then
+ada-voice backend/conversation_memory.py: "# Ada voice session <id>" then
 "## Ada|## User [HH:MM:SS]" turns) into one JSONL record per session.
 
 Mechanical signals only — cheap, deterministic, safe to run on private

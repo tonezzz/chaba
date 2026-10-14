@@ -5,7 +5,7 @@
 Live sessions + aux calls cost" before the next billing surprise:
 
   * tokens + sessions from the backend's own usage ledger
-    (~/CascadeProjects/ada-pi/data/usage.jsonl, written by
+    (~/CascadeProjects/ada-voice/data/usage.jsonl, written by
     backend/usage_tracker.py — all ada-* units share the file; source=live
     rows are Live turns, every other source is an aux generateContent
     call). est $ recomputed with the same RATES_PER_MILLION table —
@@ -69,7 +69,7 @@ def _base(payload):
             else MDDB)
 USAGE_LOG = Path(os.environ.get(
     "ADA_USAGE_LOG",
-    "~/CascadeProjects/ada-pi/data/usage.jsonl")).expanduser()
+    "~/CascadeProjects/ada-voice/data/usage.jsonl")).expanduser()
 LOCAL_OUT = Path.home() / ".local/share/ada-review"
 STATE = Path(os.environ.get(
     "GATE_STATE_FILE",

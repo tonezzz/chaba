@@ -60,8 +60,8 @@ class LessonPrimerTest(unittest.TestCase):
             root = _mkroot(Path(td))
             card = {"id": "voice-bench", "title": "whisper bench rerun",
                     "spec": "run the whisper bench on the gpu host",
-                    "action": {"repo": "ada-pi"}}
-            lines = self.mod.build(card, "tony-omen", "ada-pi", root)
+                    "action": {"repo": "ada-voice"}}
+            lines = self.mod.build(card, "tony-omen", "ada-voice", root)
             joined = "\n".join(lines)
             self.assertIn("never run two sessions on one GPU", joined)
             self.assertIn("whisper primer audio stalls", joined)

@@ -68,7 +68,7 @@ password** (`-nopw`): always bind the host's tailscale IP, never LAN/0.0.0.0.
 
 `vms-snap.py` is a pure-stdlib HTTP shim on the VMS host (bound to the
 tailscale IP, port **8377** — same never-LAN rule as VNC). Ada's
-`ada_camera_snapshot` tool (ada-pi, gated by `ADA_VMS_SNAP_URL`) calls it:
+`ada_camera_snapshot` tool (ada-voice, gated by `ADA_VMS_SNAP_URL`) calls it:
 
     GET /health              -> {"ok": true}
     GET /channels            -> {"channels": [...]}

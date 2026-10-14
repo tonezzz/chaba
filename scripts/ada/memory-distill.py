@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Distill ada voice session summaries into candidate memory drafts.
 
-Substrate: ada-pi writes kind=session-summary docs into
+Substrate: ada-voice writes kind=session-summary docs into
 ada-ha-recall-summary-<instance> at session close. Most sessions contain
 nothing worth keeping, but some carry durable decisions, facts, and
 preferences nobody said "remember" about. This job asks Gemini to extract

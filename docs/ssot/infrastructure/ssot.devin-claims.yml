@@ -26,7 +26,7 @@ worktree_per_session:
 deploy_checkouts:
   rule: |
     Served/deploy checkouts are pull-only: chaba-tony-dell (web container
-    bind-mount), ada-pi on idc03 (production Ada), ada-pi on idc02
+    bind-mount), ada-voice on idc03 (production Ada), ada-voice on idc02
     (staging). Pull --ff-only or --rebase --autostash. Never
     checkout -f / reset --hard on a shared checkout.
   rebase_hygiene: |
@@ -38,7 +38,7 @@ deploy_checkouts:
     you walk away.
   snapshots: |
     Snapshot uncommitted work (wip/deploy-snapshot-*) before any pull that
-    might conflict, per the ada-pi deploy flow.
+    might conflict, per the ada-voice deploy flow.
 
 claims:
   card_claim: |

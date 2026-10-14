@@ -822,7 +822,7 @@ def main() -> int:
 
 def write_zones_index() -> None:
     """DATA/zones.json — the web-readable mirror of zones.yml: tab labels
-    + per-zone {group, site, tab, cams}. The CMS sidebar (ada-pi
+    + per-zone {group, site, tab, cams}. The CMS sidebar (ada-voice
     pwa/cms) fetches this ONE file instead of guessing tabs from slug
     prefixes; zones absent from zones.yml land in 'unsorted'."""
     if not DATA.is_dir():

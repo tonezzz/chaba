@@ -25,12 +25,12 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Operator correction & education duty (added 2026-09-28)
 
-Applies to Devin AND Ada (parity — Ada's copy lives in `DEFAULT_ADA_INSTRUCTIONS` in ada-pi's `backend/realtime_provider.py`; keep both in sync when changing either):
+Applies to Devin AND Ada (parity — Ada's copy lives in `DEFAULT_ADA_INSTRUCTIONS` in ada-voice's `backend/realtime_provider.py`; keep both in sync when changing either):
 
 - Correct Tony plainly when he asserts something factually wrong, misremembers a prior decision, or proposes a wrong direction — accuracy over agreeableness. Do not comply silently with a request that rests on a misunderstanding.
 - When a wrong premise is detected, briefly explain the right model rather than just refusing; educate, don't just gate.
 - Verify before correcting: check SSOT/code/tools for the real state — the duty is to be right, not to be contrarian.
-- Tested continuously by the `education_correction` live scenario (ada-pi `tools` suite, smoke tier) — regressions show up in the hourly benchmark and the `auto-report` page.
+- Tested continuously by the `education_correction` live scenario (ada-voice `tools` suite, smoke tier) — regressions show up in the hourly benchmark and the `auto-report` page.
 
 ## Open-ask capture duty (added 2026-10-07)
 
@@ -337,7 +337,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 
 ## Headless Devin dispatch on tony-dell (learned 2026-09-22)
 
-- Launch a non-interactive session: `ssh tony-dell '~/.local/bin/devin-dispatch start <repo> "<task>"'` — creates a worktree (`~/CascadeProjects/dispatch-wt-<id>`, branch `dispatch/<id>`) and a `systemd-run --user` unit `devin-task-<id>`. Subcommands: `status`, `followup <id> "<msg>"`, `logs <id>`, `tail <id>`. Whitelisted repos: chaba, ada-pi, sunsynk-card. Source: `scripts/devin/devin-dispatch.sh`; registry at `~/.local/share/devin-dispatch/tasks/<id>/` (prompt.txt, transcript.json, meta.json).
+- Launch a non-interactive session: `ssh tony-dell '~/.local/bin/devin-dispatch start <repo> "<task>"'` — creates a worktree (`~/CascadeProjects/dispatch-wt-<id>`, branch `dispatch/<id>`) and a `systemd-run --user` unit `devin-task-<id>`. Subcommands: `status`, `followup <id> "<msg>"`, `logs <id>`, `tail <id>`. Whitelisted repos: chaba, ada-voice, sunsynk-card. Source: `scripts/devin/devin-dispatch.sh`; registry at `~/.local/share/devin-dispatch/tasks/<id>/` (prompt.txt, transcript.json, meta.json).
 - `devin` CLI on tony-dell is NOT in PATH — use `/usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin`. Auth via `~/.local/share/devin/credentials.toml` (copied from tony-omen 2026-09-22).
 - `devin -p` quirks: no positional PATH arg allowed (workspace = cwd via systemd `--working-directory`); `--respect-workspace-trust false` needed for fresh worktrees; sessions do NOT write `history_*.md` summaries — read outcomes from the exported `transcript.json` last agent message.
 - tony-dell summaries reach MDDB via `devin-summaries-sync.timer` (hourly :45, user unit) — closes the documented tony-dell gap.
@@ -350,7 +350,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 - Funnel: enabled (`tailscale funnel --bg --https=443 --yes 127.0.0.1:8085`)
 - Caddy on tony-dell: listens on `127.0.0.1:8085`, configured in `~/.config/caddy/Caddyfile.tony-dell`
 - Backend: `pwa_server.py` via `~/.config/systemd/user/ada-pi-pwa.service`, running on `0.0.0.0:8001`
-- Python venv: `/home/tony/CascadeProjects/ada-pi/.venv`
+- Python venv: `/home/tony/CascadeProjects/ada-voice/.venv`
 - API key: from `~/.config/yomi/yomi-api.env` (`GEMINI_API_KEY`) into `~/.config/secrets/ada-pi-pwa.env`
 - WebSocket: `wss://tony-dell.taila0626a.ts.net/apps/ada_pi/ws`
 
@@ -368,7 +368,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 
 ### SSOT
 
-- `docs/ssot/apps/ssot.apps.ada_pi.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-pi` under `tony-dell` host.
+- `docs/ssot/apps/ssot.apps.ada_pi.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-voice` under `tony-dell` host.
 
 ## Ada HA PWA (learned 2026-09-13)
 
@@ -383,11 +383,11 @@ Also check for a duplicate instance: clicking the launcher while the first insta
   - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`), `ADA_INSTANCE_ID=michael`, `ADA_API_KEY` set
   - `ada-pi-pwa.env` on tony-dell also sets `ADA_INSTANCE_ID=tony` (same HA, shared memory) + `ADA_API_KEY`
 - `ADA_API_KEY` gates `POST .../entities/{id}/power`, `GET /api/tools`, `POST /api/tools/call`, **and `/ws`** (4401 reject). Read GETs stay open. Optional `ADA_API_KEYS=name:key,...` gives per-caller names in logs + per-key revocation. `POST /api/auth/session` trades a key for a 12h HMAC HttpOnly cookie (`ada_session`, path = app base); `GET /api/auth/status` reports auth state; `POST /api/auth/logout` clears it. PWA: `?api_key=` unlocks (stripped from URL after storing), a Lock/Unlock button in the toolbar manages state, and a full-screen unlock card validates the key before storing.
-- Key ops: `scripts/ada-key-url.sh <tony|michael|ada-pi> [--qr]` prints the unlock deep-link; `/apps/ha/pair/` issues named per-device keys + one-time QR links (`POST /api/auth/keys`, persisted to `~/.config/secrets/ada-ha-<inst>-keys.json`, revocable via `DELETE`). `--qr` mints a **one-time** `/redeem/{token}` URL via `POST /api/auth/redeem-token` — burns on first GET, expires in `ADA_REDEEM_TTL_S`=600s, hands the device the key + session cookie); `scripts/rotate-ada-key.sh <instance>` rotates + restarts + prints the new link.
-- **`ADA_INSTANCE_ID` is required, fail-fast** (since 2026-09-17, ada-pi `b870d37`): it pins the MDDB memory collections (`ada-ha-snapshots|device-confidence|device-safety|events-<id>`). Never derive collection identity from `HOME_ASSISTANT_URL` — URL changes used to silently orphan all memory (`ada-ha-*-http-127-0-0-1-8123` orphans still exist). Missing/invalid → service refuses to start. Rule: **fail quick and report — no silent fallback for identity config.**
+- Key ops: `scripts/ada-key-url.sh <tony|michael|ada-voice> [--qr]` prints the unlock deep-link; `/apps/ha/pair/` issues named per-device keys + one-time QR links (`POST /api/auth/keys`, persisted to `~/.config/secrets/ada-ha-<inst>-keys.json`, revocable via `DELETE`). `--qr` mints a **one-time** `/redeem/{token}` URL via `POST /api/auth/redeem-token` — burns on first GET, expires in `ADA_REDEEM_TTL_S`=600s, hands the device the key + session cookie); `scripts/rotate-ada-key.sh <instance>` rotates + restarts + prints the new link.
+- **`ADA_INSTANCE_ID` is required, fail-fast** (since 2026-09-17, ada-voice `b870d37`): it pins the MDDB memory collections (`ada-ha-snapshots|device-confidence|device-safety|events-<id>`). Never derive collection identity from `HOME_ASSISTANT_URL` — URL changes used to silently orphan all memory (`ada-ha-*-http-127-0-0-1-8123` orphans still exist). Missing/invalid → service refuses to start. Rule: **fail quick and report — no silent fallback for identity config.**
 - Caddy: `~/.config/caddy/Caddyfile.mn01` routes `/apps/ha/ada-tony/` to `127.0.0.1:8002` and `/apps/ha/ada-michael/` to `127.0.0.1:8003` (legacy `/apps/ada_ha_*` paths 308 to the canonical ones); tony-dell's Caddyfile also proxies the canonical paths to mn01
 - WebSocket: `wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws` and `wss://mn01.taila0626a.ts.net/apps/ha/ada-michael/ws`
-- Text chat (added 2026-09-21): `{base}/chat/` page (ada-pi `pwa/chat/`) on the same `/ws` — browser sends `{"type":"text","text":...}` (→ `send_text_turn`, 4k cap, in `pwa_server.py`'s `browser_to_provider`, NOT `main.py` which is the kiosk variant), gets transcript deltas + PCM audio (Voice on/off toggle). Each `/ws` connection owns its own Gemini session — chat/voice don't share context. chaba-admin issued-keys card rows: `name [Voice] [Text] [Re-pair] [Revoke]` — Voice/Text re-pair then open the UI via the redeem `redirect` param (`ui` field on `script.ada_pair_reissue` → `rest_command.ada_repair_key`).
+- Text chat (added 2026-09-21): `{base}/chat/` page (ada-voice `pwa/chat/`) on the same `/ws` — browser sends `{"type":"text","text":...}` (→ `send_text_turn`, 4k cap, in `pwa_server.py`'s `browser_to_provider`, NOT `main.py` which is the kiosk variant), gets transcript deltas + PCM audio (Voice on/off toggle). Each `/ws` connection owns its own Gemini session — chat/voice don't share context. chaba-admin issued-keys card rows: `name [Voice] [Text] [Re-pair] [Revoke]` — Voice/Text re-pair then open the UI via the redeem `redirect` param (`ui` field on `script.ada_pair_reissue` → `rest_command.ada_repair_key`).
 - Home Assistant: `tony-ha` at `https://tony-dell.taila0626a.ts.net:8123/`, `michael-ha` at `http://michael-ha:8123/`
 - Navigation: `https://mn01.taila0626a.ts.net/apps/ha/` and `https://mn01.taila0626a.ts.net/apps/`
 

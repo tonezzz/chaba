@@ -23,7 +23,7 @@ Camera sources (in `ch` resolution order):
      cached 5min). Reachable as `longdo:<camid>`, or by title substring
      when the query matches nothing in the registry. Frame = imgurl GET,
      else the mjpeg vdourl's first frame, else its hls_url via ffmpeg —
-     same fallback chain as ada-pi backend/traffic_camera.py.
+     same fallback chain as ada-voice backend/traffic_camera.py.
 
 Caching: per-camera CACHE_TTL_S (default 15s) so a burst of polls doesn't
 spawn an ffmpeg each; fresh=1 forces a new grab. ffmpeg concurrency is
@@ -147,7 +147,7 @@ def resolve_registry(query: str, cams: dict[str, dict]) -> dict | None:
     return None
 
 
-# --- longdo feed (port of ada-pi backend/traffic_camera.py) ----------------
+# --- longdo feed (port of ada-voice backend/traffic_camera.py) ----------------
 
 AREA_ALIASES = {
     "bangna": "บางนา", "bang na": "บางนา", "บางนา": "บางนา",

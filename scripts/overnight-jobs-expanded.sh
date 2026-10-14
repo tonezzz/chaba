@@ -729,7 +729,7 @@ ada-cms-pages/benchmark-standard.
 EOF
 
 ADA_PI=""
-for d in /home/tony/CascadeProjects/ada-pi /home/tony/ada-pi; do
+for d in /home/tony/CascadeProjects/ada-voice /home/tony/ada-voice; do
     if [ -f "$d/scripts/scenario-prune.py" ]; then
         ADA_PI="$d"
         break
@@ -741,7 +741,7 @@ if [ -n "$ADA_PI" ]; then
         >> "$REPORT_FILE" 2>&1 \
         || echo "scenario-prune.py failed" >> "$REPORT_FILE"
 else
-    echo "ada-pi checkout not found — retention prune skipped" >> "$REPORT_FILE"
+    echo "ada-voice checkout not found — retention prune skipped" >> "$REPORT_FILE"
 fi
 echo '```' >> "$REPORT_FILE"
 

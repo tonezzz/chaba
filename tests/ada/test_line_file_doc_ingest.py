@@ -1,5 +1,5 @@
 """Unit tests for the line-file-doc-ingest drop staged under
-integrations/ada-pi/ (card line-file-doc-ingest, 2026-10-13).
+integrations/ada-voice/ (card line-file-doc-ingest, 2026-10-13).
 
 Two halves:
 
@@ -9,11 +9,11 @@ Two halves:
   media roots, run() passes the bytes to the pool as an inline part and
   returns the structured result.
 
-- line_relay patch — applied to a copy of the live ada-pi source
-  (ADA_PI env or ~/CascadeProjects/ada-pi), compiled, and its
+- line_relay patch — applied to a copy of the live ada-voice source
+  (ADA_PI env or ~/CascadeProjects/ada-voice), compiled, and its
   handle_event driven with a fake file/video/sticker LINE event to
   prove archive + journal + synthetic turn + delivery. Skips when no
-  ada-pi checkout is reachable (the patch is what ships, not the file).
+  ada-voice checkout is reachable (the patch is what ships, not the file).
 """
 
 from __future__ import annotations
@@ -33,11 +33,11 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
-DROP = REPO / "integrations" / "ada-pi"
+DROP = REPO / "integrations" / "ada-voice"
 DOC_READ = DROP / "backend" / "tools.d" / "doc_read.py"
 PATCH = DROP / "backend" / "line_relay.file-doc-ingest.patch"
 ADA_PI = Path(os.environ.get("ADA_PI",
-                             str(Path.home() / "CascadeProjects/ada-pi")))
+                             str(Path.home() / "CascadeProjects/ada-voice")))
 
 PDF = (b"%PDF-1.1\n"
        b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
@@ -248,7 +248,7 @@ def test_persons_profile_lists_doc_read():
 
 @pytest.mark.skipif(
     not (ADA_PI / "backend/line_relay.py").is_file(),
-    reason="no ada-pi checkout to apply the patch against")
+    reason="no ada-voice checkout to apply the patch against")
 class TestRelayPatch:
     def _patched_module(self, tmp_path, monkeypatch):
         src = tmp_path / "backend"

@@ -21,7 +21,7 @@ planning:
     stacks/tony-dell/gev-gemini/bridge.py (_dispatch grace loop + /command
     response contract), new bridge-check.py self-test, README +
     ssot.apps.gev.yml contract lines, stacks/web/Caddyfile gev-cmd
-    handle_path drift. ada-pi's gev_command tool is a different repo —
+    handle_path drift. ada-voice's gev_command tool is a different repo —
     unchanged; it already surfaces the relay's ok:false error text.
   success_criteria:
     - 'screen-targeted /command with no remote waits ~grace_s then returns
@@ -33,7 +33,7 @@ planning:
     - grace holds an HTTP handler thread for up to 12s — ThreadingHTTPServer
       makes this per-request, not a head-of-line block
     - '12s default means caller-side HTTP timeouts on the
-      ada-pi gev_command path should exceed grace+wait+5s'
+      ada-voice gev_command path should exceed grace+wait+5s'
   resources:
     - gev-gemini cmd relay /apps/gev-cmd/command (tony-dell :8790)
   owner: devin (dispatch)
@@ -101,7 +101,7 @@ verification:
   - "live deploy path: podman build -t localhost/gev-gemini:latest stacks/tony-dell/gev-gemini && systemctl --user restart gev-gemini.service (NOT done — deploy needs approval)"
 
 followups:
-  - ada-pi gev_command could drop its "wait ~10s after casting" usage hint
+  - ada-voice gev_command could drop its "wait ~10s after casting" usage hint
     now that the relay holds the command — separate repo, noted on card.
   - Deploy the rebuilt gev-gemini container on tony-dell (approval-gated)
     for the grace behavior to go live; the Caddyfile edit is a no-op vs

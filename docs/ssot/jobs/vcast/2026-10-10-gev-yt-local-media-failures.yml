@@ -4,7 +4,7 @@ icon: target
 
 planning:
   goal: Trace the three failures Ada reported (kanban card + Telegram) to root causes and verify what is still broken.
-  scope: "Live system diagnosis via ada-ha-tony journal on idc03 + tony-dell services. In scope: repo-side fix to scripts/ops/yt-live.sh. Out of scope: deploys (dispatch mode), ada-pi code, CMS bank writes."
+  scope: "Live system diagnosis via ada-ha-tony journal on idc03 + tony-dell services. In scope: repo-side fix to scripts/ops/yt-live.sh. Out of scope: deploys (dispatch mode), ada-voice code, CMS bank writes."
   owner: devin (dispatch on idc02)
   estimated_duration: 1 session
   related_focus:
@@ -76,7 +76,7 @@ processing:
         recipe hands Ada the LAN URL for casts. Correct URL for tailnet
         displays: https://tony-dell.taila0626a.ts.net/apps/yt-live/<file>.mp4
         (verified 206 from idc03). Follow-up cards filed:
-        cast-precheck-vantage (ada-pi) and voice-dub-recipe-lan-url (chaba).
+        cast-precheck-vantage (ada-voice) and voice-dub-recipe-lan-url (chaba).
     - id: 5
       label: Write-up + repo patch
       status: completed
@@ -99,7 +99,7 @@ outcome:
     - "curl probes: /apps/gev/ 200, /apps/gev-cmd/command ok:true,
       tailnet /apps/yt-live/*.mp4 206, LAN 192.168.2.67 from idc03 timeout" 
   followups:
-    - cast-precheck-vantage (ada-pi) — URL pre-check should be advisory or
+    - cast-precheck-vantage (ada-voice) — URL pre-check should be advisory or
       relay/display-side, not refuse LAN URLs probed from idc03
     - voice-dub-recipe-lan-url (chaba) — voice-dub-demos CMS page must teach
       per-display URL choice (tailnet vs LAN)

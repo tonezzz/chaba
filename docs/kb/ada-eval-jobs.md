@@ -2,8 +2,8 @@
 
 Status: **phase 1 specced + patch verified, not yet applied/deployed** (2026-09-26)
 Origin: session `artistic-pleasure` ("Job docs"), resumed by dispatch session.
-Canonical copy: this file. Working copy: `ada-pi/docs/eval-jobs.md`
-(untracked in ada-pi as of 2026-09-26 — commit it when phase 1 lands).
+Canonical copy: this file. Working copy: `ada-voice/docs/eval-jobs.md`
+(untracked in ada-voice as of 2026-09-26 — commit it when phase 1 lands).
 
 ## Problem
 
@@ -99,7 +99,7 @@ meta:
 ## Phase 1 — ready-to-apply patch
 
 `docs/kb/ada-eval-jobs-phase1.patch` (verified `git apply --check` clean
-against ada-pi HEAD `607035c`, all four files `py_compile` clean, `--param`
+against ada-voice HEAD `607035c`, all four files `py_compile` clean, `--param`
 shows in `--help`):
 
 | File | Change |
@@ -115,10 +115,10 @@ counter reset, diffs per turn, and sums deltas into `totals` (correct across
 mid-run session swaps — an improvement over the original spec which would
 have under-reported after reconnects).
 
-### Apply + first A/B (needs a mode with write/exec on ada-pi + idc01)
+### Apply + first A/B (needs a mode with write/exec on ada-voice + idc01)
 
 ```bash
-cd ~/CascadeProjects/ada-pi
+cd ~/CascadeProjects/ada-voice
 git apply ~/CascadeProjects/chaba/docs/kb/ada-eval-jobs-phase1.patch
 python3 -m py_compile backend/realtime_provider.py pwa_server.py \
     scripts/scenario-live.py scripts/scenario-report.py

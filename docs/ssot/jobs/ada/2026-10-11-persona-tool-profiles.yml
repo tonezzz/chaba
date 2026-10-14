@@ -2,7 +2,7 @@ title: Per-persona tool profiles — ADA_INCLUDED_TOOLS allowlist
 date: 2026-10-11
 card: persona-tool-profiles
 dispatch: dispatch-wt-20261011-190526-ada-excluded-tools-denylist-ro
-status: shipped-staged   # ada-pi edit uncommitted on edit-point main; env live on ada-kk
+status: shipped-staged   # ada-voice edit uncommitted on edit-point main; env live on ada-kk
 
 summary: |
   ADA_EXCLUDED_TOOLS denylist rotted on tool merges — the ada-kk env still
@@ -14,7 +14,7 @@ summary: |
 
 changes:
   ada_pi: |
-    Edit point ~/CascadeProjects/ada-pi, uncommitted on main.
+    Edit point ~/CascadeProjects/ada-voice, uncommitted on main.
     - backend/realtime_provider.py: ADA_INCLUDED_TOOLS env — when set,
       every declared name not listed is folded into the effective
       excluded set before the strip point (former L4585), so declaration
@@ -58,13 +58,13 @@ lint_semantics: |
   merge/rename tripwire). Include/exclude names not in the declared
   surface or alias table -> warning (stale). Names that are runner
   aliases get a hint naming their declared seat.
-  Verified live 2026-10-11: the local ada-pi checkout was behind
+  Verified live 2026-10-11: the local ada-voice checkout was behind
   origin/main and missed `percussion` (declared on prod) — the lint
   caught it once the census ran against current code. The checkout
   lag itself is the rot pattern this mechanism exists for.
 
 verify:
-  - "ada-pi tests on idc03 vs patched tree: test_tool_include_list 4/4,
+  - "ada-voice tests on idc03 vs patched tree: test_tool_include_list 4/4,
     test_calendar_providers whole file pass, tool-lint clean."
   - "python3 scripts/ada/render-tool-profiles.py --lint -> clean (47
     declared = 17 include + 30 exclude)"
@@ -74,7 +74,7 @@ verify:
     both vars"
 
 follow_ups:
-  - "ada-pi changes uncommitted on edit-point main — ship via normal
+  - "ada-voice changes uncommitted on edit-point main — ship via normal
     commit+push+deploy-ada flow (dispatch does not push)."
   - "Shared instances (ada-ha-tony/ada-ha-michael/ada-dev) keep the full
     surface by design; profiles are for dedicated/personal instances."

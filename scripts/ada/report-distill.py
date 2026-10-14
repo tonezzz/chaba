@@ -26,7 +26,7 @@ ada-cms-pages:
      cms-auto-health.py turns a stale/erroring distill into a kanban
      card. Missing docs are seeded with defaults.
   6. reports-index is regenerated once after all domains publish — raw
-     /v1/add never triggers ada-pi's own index refresh.
+     /v1/add never triggers ada-voice's own index refresh.
 
 v1: `health` is the template domain — its digest adds a "bank deltas"
 section covering every ada-ha-bank-* collection (enumerated from
@@ -237,7 +237,7 @@ def seed_cfg(domain: str) -> dict:
                       "cmd": "scripts/ada/report-distill.py",
                       "cwd": "chaba", "cost": {"timeout_s": 300}},
         "note": ("nightly L1->L2 domain digest — report-distill "
-                 "(canonical chaba copy; supersedes the ada-pi "
+                 "(canonical chaba copy; supersedes the ada-voice "
                  "scripts/report-distill.py prototype)"),
     }
 

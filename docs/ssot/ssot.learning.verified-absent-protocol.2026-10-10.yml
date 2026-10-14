@@ -14,18 +14,18 @@ sections:
       - label: False "half-built" report
         text: |
           Asked for the status of the chat secret-drop feature, the agent grepped
-          ada-pi's backend/ for "/api/secret-drop", found nothing, and reported
+          ada-voice's backend/ for "/api/secret-drop", found nothing, and reported
           the feature as UI-only: "backend was never written — the modal will 404".
           A repo-wide grep that would have found the real handler had timed out
-          earlier on ada-pi's heavy tree (.venv/node_modules), and the timeout
+          earlier on ada-voice's heavy tree (.venv/node_modules), and the timeout
           was silently treated as a negative result.
       - label: The truth was one board query away
         text: |
           Card ada-secret-drop was filed, dispatched, merged, and closed done
           the day before. Its comms recorded full verification:
-          "POST /api/secret-drop live in ada-pi HEAD (pwa_server.py:2591),
+          "POST /api/secret-drop live in ada-voice HEAD (pwa_server.py:2591),
           deployed on idc03 — auth-gated (401), writes ~/.config/secrets/ 0600".
-          The endpoint lives in ada-pi/pwa_server.py (repo root), not backend/
+          The endpoint lives in ada-voice/pwa_server.py (repo root), not backend/
           — outside the searched scope.
 
   - title: Root cause

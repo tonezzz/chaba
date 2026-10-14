@@ -371,7 +371,7 @@ decisions:
     related:
       - docs/ssot/apps/ssot.apps.ada-calendar.yml
       - docs/ssot/infrastructure/ssot.ada.howto.yml
-      - 'ada-pi: backend/calendar_providers.py, backend/google_calendar.py,
+      - 'ada-voice: backend/calendar_providers.py, backend/google_calendar.py,
         backend/tool_runner.py, backend/realtime_provider.py'
 
   - id: ada-ha-native-primary-ui
@@ -381,7 +381,7 @@ decisions:
     context: |
       Ada now has an embedded HA experience — custom:ada-voice-card ("Live
       assistant") on chaba-home/ai, plus ada-keys-card and ada-users-card on
-      chaba-admin/pair — alongside a standalone PWA served by ada-pi
+      chaba-admin/pair — alongside a standalone PWA served by ada-voice
       (pwa_server.py, port 8001). Keeping a separate user-facing frontend
       duplicates auth/session surfaces and widens the externally exposed
       attack surface.
@@ -420,7 +420,7 @@ decisions:
       - stacks/tony-dell/tony-ha/www/ada-voice-card.js
       - stacks/tony-dell/tony-ha/www/ada-keys-card.js
       - stacks/tony-dell/tony-ha/www/ada-users-card.js
-      - 'ada-pi: pwa_server.py, pwa/'
+      - 'ada-voice: pwa_server.py, pwa/'
 
   - id: tv-casting-groups
     date: '2026-09-24'
@@ -597,8 +597,8 @@ decisions:
       - benchmark/auto-report counts become trustworthy again
       - identified real defect stays visible: wall_ops T3 cctv_wall.settings refusal
     related:
-      - 'ada-pi: scripts/scenario-live.py'
-      - 'ada-pi: tests/scenarios-live/{camera_cast_permission,vcast_screen_cast,split_screen,wall_ops,vcast_gesture_ops}.yaml'
+      - 'ada-voice: scripts/scenario-live.py'
+      - 'ada-voice: tests/scenarios-live/{camera_cast_permission,vcast_screen_cast,split_screen,wall_ops,vcast_gesture_ops}.yaml'
       - docs/ssot/chaba/ssot.chaba.memory.yml
 
 related_files:

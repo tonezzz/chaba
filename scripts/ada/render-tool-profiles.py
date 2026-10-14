@@ -5,7 +5,7 @@ Source:  docs/ssot/apps/ssot.apps.ada-persons.yml — persons.<key>.tools
 Output:  a managed block in ~/.config/secrets/<env_file> on the instance
          host (ADA_INCLUDED_TOOLS keep-list / ADA_EXCLUDED_TOOLS drop-list)
 Lint:    warns on declared tools in NEITHER list and on names that do
-         not resolve to ada-pi's declared surface or alias table —
+         not resolve to ada-voice's declared surface or alias table —
          the anti-rot tripwire for tool merges/renames.
 
 Usage:
@@ -30,7 +30,7 @@ from pathlib import Path
 import yaml
 
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-persons.yml"
-ADA_PI = Path(os.environ.get("ADA_PI_REPO") or "~/CascadeProjects/ada-pi").expanduser()
+ADA_PI = Path(os.environ.get("ADA_PI_REPO") or "~/CascadeProjects/ada-voice").expanduser()
 BLOCK_BEGIN = "# >>> chaba-rendered: ada-tool-profile"
 BLOCK_END = "# <<< chaba-rendered: ada-tool-profile"
 _MANAGED_VARS = ("ADA_INCLUDED_TOOLS", "ADA_EXCLUDED_TOOLS")
@@ -97,7 +97,7 @@ def merge_env(current: str, block: str) -> str:
 
 
 def ada_surface() -> tuple[set[str], dict[str, str]] | None:
-    """Declared tool names + runner aliases, via ada-pi's tool-lint census."""
+    """Declared tool names + runner aliases, via ada-voice's tool-lint census."""
     tl = ADA_PI / "scripts/tool-lint.py"
     if not tl.is_file():
         return None
@@ -117,7 +117,7 @@ def lint(profiles: dict[str, dict]) -> list[str]:
     except Exception as exc:
         return [f"tool-surface census failed ({exc}) — coverage not checked"]
     if surface is None:
-        return [f"no ada-pi checkout at {ADA_PI} — coverage not checked"]
+        return [f"no ada-voice checkout at {ADA_PI} — coverage not checked"]
     declared, aliases = surface
     for person, prof in profiles.items():
         inst = prof["instance"]

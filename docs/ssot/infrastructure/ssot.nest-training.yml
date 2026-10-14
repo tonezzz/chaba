@@ -13,8 +13,8 @@ related:
   - docs/ssot/infrastructure/ssot.nest-bench.yml          # bench domains
   - docs/ssot/infrastructure/ssot.nest-brains.yml         # brain bundles
   - docs/kb/nest-asher-polity-inspiration.md              # concept source (reprogram lesser minds, human-gated)
-  - ../ada-pi/tests/bench/suites.yml                      # tier registry
-  - ../ada-pi/tests/bench/topologies.yml                  # models: + lanes:
+  - ../ada-voice/tests/bench/suites.yml                      # tier registry
+  - ../ada-voice/tests/bench/topologies.yml                  # models: + lanes:
   - scripts/ada/nest-train-loop.py                        # loop owner
   - stacks/services/nest-mgr/                             # per-host observer-governor (card nest-manager-node)
   - docs/ssot/infrastructure/ssot.nest-io-fabric.yml      # I/O fabric: surfaces, tiers, broker (card nest-io-fabric)
@@ -59,7 +59,7 @@ loop_owner:
     arbiter-assisted review) is what actually grows the corpus.
 
 training_lanes:
-  # registry detail lives in ada-pi tests/bench/topologies.yml `lanes:` —
+  # registry detail lives in ada-voice tests/bench/topologies.yml `lanes:` —
   # this is the posture summary.
   tony-omen-gtx1650: >-
     default lane. distilbert seq-cls FT ~11 min; gemma-3-1b/270m LoRA via
@@ -80,7 +80,7 @@ training_lanes:
     the prod champ — CPU covers distilbert-class serving. Shared busiest
     box: off-peak only, <10min runs; publishes bench/lane-<ts> docs.
   tony-dell-igpu: >-
-    parked — HD530 OpenVINO/Vulkan lane is registered in ada-pi
+    parked — HD530 OpenVINO/Vulkan lane is registered in ada-voice
     topologies.yml `lanes:` but phase-0 CPU numbers already beat the
     ~50ms p50 bar, so provisioning it adds nothing for seq-cls. Revisit
     for the gemma-270m specialist via llama.cpp-server (Vulkan), or if
@@ -106,10 +106,10 @@ promotion_gate:
 
 registries:
   suites: >-
-    ada-pi tests/bench/suites.yml — specialist -> tier sets -> sources +
+    ada-voice tests/bench/suites.yml — specialist -> tier sets -> sources +
     rotation + gate policy. `orch-bench.py --suite <name>` consumes it.
   models: >-
-    ada-pi tests/bench/topologies.yml `models:` — task, checkpoint,
+    ada-voice tests/bench/topologies.yml `models:` — task, checkpoint,
     corpus version, bench scores, status (train|shadow|prod|retired).
     jev-student-v5 is the first entry and the current champ.
   docs: >-

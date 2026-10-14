@@ -39,7 +39,7 @@ changes:
 
 deploy_checklist: |
   Nothing is live yet. To deploy, in order:
-    1. Merge ada-pi dispatch/20260926-193151-ada-keys-apps to main; restart
+    1. Merge ada-voice dispatch/20260926-193151-ada-keys-apps to main; restart
        ada-ha-tony + ada-ha-michael (systemd user units on idc01).
     2. Commit HA config edits (scripts.yaml, configuration.yaml) and
        `ha core reload` (or restart) on tony-ha.
@@ -55,7 +55,7 @@ deploy_checklist: |
   no apps and get the voice+chat default everywhere.
 
 verification: |
-  - ada-pi: python3 -m unittest tests.test_auth (11 tests, OK — run in the
+  - ada-voice: python3 -m unittest tests.test_auth (11 tests, OK — run in the
     ada-keys-apps worktree).
   - YAML parsed with a tolerant loader (scripts.yaml, configuration.yaml OK).
   - node --check on both card JS files and the pair page script — clean.

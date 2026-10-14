@@ -92,7 +92,7 @@ re-validated.
 With `&pub=N` the page rewrites
 `ada-ha-scenario-reports` → `eye/latest` every N s:
 `{ts, src, model, detections:[{cls,score,box}], ua, pub_s}`.
-The ada-pi tool `ada_look` (handoff spec in
+The ada-voice tool `ada_look` (handoff spec in
 `docs/ssot/jobs/eye/2026-10-07-nest-edge-vision.yml`) GETs that doc and
 answers "what do you see" — read-only; actions on detections stay behind
 the existing confirm-gate tools (cctv_wall/cast_to_screen).

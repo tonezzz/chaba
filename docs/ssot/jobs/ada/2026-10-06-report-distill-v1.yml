@@ -14,7 +14,7 @@ card: report-distill-v1
 findings: |
   The card's premise ("distill_jobs declares a job 'to write' that never
   got built") is half stale: a working prototype already exists —
-  ada-pi/scripts/report-distill.py (commit 1f50d0f, 2026-09-30; meta
+  ada-voice/scripts/report-distill.py (commit 1f50d0f, 2026-09-30; meta
   contract gate added 94b939f, 2026-10-05), deployed on a hand-installed
   report-distill.timer on idc02 at 04:00 daily and a disabled copy on
   idc01. What was actually missing: the canonical chaba copy, ada-* bank
@@ -23,7 +23,7 @@ findings: |
 
 changes: |
   scripts/ada/report-distill.py (NEW) — canonical chaba implementation.
-    Superset of the ada-pi prototype: per-domain <domain>-digest pages are
+    Superset of the ada-voice prototype: per-domain <domain>-digest pages are
     now kind:report with the full meta_contract (summary, domain,
     fresh_for, confidence, timeline, links, supersedes, updated) plus
     writer-contract schema fields; previous-day digests are archived to
@@ -46,7 +46,7 @@ changes: |
   ssot.jobs.yml — new job report-distill on idc02, OnCalendar 04:00,
     on_failure ada-report-fail@%p.service. Renders
     systemd/generated/idc02/report-distill.{service,timer} — same idc02
-    04:00 slot as the hand-installed ada-pi timer it retires.
+    04:00 slot as the hand-installed ada-voice timer it retires.
   systemd/generated/idc02/ssot-optimization-snapshot.service —
     pre-existing manifest/generated drift (MDDB_BASE 100.74.146.0 ->
     100.102.134.91) picked up by the re-render; committed together.
@@ -61,13 +61,13 @@ deliberately_not_done: |
   - No live unit install — convention is "committed, install after
     merge": on idc02 run `git -C ~/CascadeProjects/chaba pull` then
     `python3 scripts/render-jobs.py --host idc02 --install` +
-    `systemctl --user enable --now report-distill.timer`. The ada-pi
+    `systemctl --user enable --now report-distill.timer`. The ada-voice
     timer keeps running the old copy until then — harmless overlap, same
     page set.
   - --register/--domain/--dry-run/--force are the operator knobs; other
     domains (flood, bench, cctv, ...) get the same digest shape minus
     the bank-delta section until they get a DOMAINS entry.
-  - ada-pi's scripts/report-distill.py + backend/report_meta.py stay as
+  - ada-voice's scripts/report-distill.py + backend/report_meta.py stay as
     the ada-side validator source; chaba's copy re-implements the
     contract check inline (stdlib-only for idc02's bare python3).
 
