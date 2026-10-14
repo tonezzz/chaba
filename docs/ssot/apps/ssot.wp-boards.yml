@@ -35,8 +35,9 @@ post_types:
   attachment:    media library; images attach to trip posts via post_parent
   # chaba-boards plugin CPTs (v0.3.0, integrations/wp-boards/chaba-boards.php) —
   # public + show_in_rest, private-status posts are member-only like /chat/line/*.
-  # NOT YET DEPLOYED on live (verified 2026-10-14: /wp/v2/types registers only
-  # post/page/place/trip/ops-event/timeline_block; plugin is in local dev).
+  # LIVE since 2026-10-14 — deployed via wp-admin plugin editor ajax
+  # (edit-theme-plugin-file; admin creds on omen secrets dir). v0.2.0 added
+  # admin list columns so registered meta actually displays in wp-admin.
   asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor"
   expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date"
   contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role"
@@ -80,6 +81,11 @@ writers:
   place_report:   place + person tag            # maps links / place names
   trip_calendar:  trip parent+children + person # --public flag
   line-chat-timeline.py: timeline_block rebuilds (journal+ops-events)
+  render_job:     "OPS-0658 local_image lane / manual — one record per render
+                  (first: id 117, sdxl-lightning test 2026-10-14)"
+  # Writer access caveat (2026-10-14): POSTs through the PUBLIC edge
+  # (boards.surf-thailand.com) hit CF 1010 bot-check on bare/script UAs —
+  # fleet writers use origin_base (boards.h3.gizmo-thailand.com) directly.
 
 privacy:
   private_pages: /chat/line/* + /chat/ops — require editor login to view
