@@ -99,3 +99,49 @@ static_site:
   # The script is kept — re-enable by setting meta.public on a page and
   # running cms-publish-site.py --tenant <lane>. Webroot retains only
   # per-tenant index + kk-ha/moved-to-boards.html redirect notice.
+
+assessed_plugins:
+  fluentboards:
+    assessed: "2026-10-14"
+    verdict: viable-member-kanban
+    what: >-
+      WP-native kanban/project-management plugin by WPManageNinja
+      (FluentCRM/FluentForms vendor). Own fbs_* tables (NOT posts/CPTs),
+      Vue 3 SPA in wp-admin, REST API + MCP module. GPLv2 via wp.org SVN;
+      source development is private — GitHub only hosts dev-docs +
+      community MCP servers. v2.2.1, actively maintained (2026-10).
+    free_tier: >-
+      Kanban + list views, unlimited boards/tasks/members, labels,
+      comments, multi-stage. Includes public READ-ONLY board embed:
+      [fluent_board_public id=N] shortcode + GET-only
+      /public/boards/{id} routes gated by signed HMAC public_token
+      (revocable per-board salt) — logged-out visitors can view.
+    pro_tier: >-
+      Frontend portal (member write without wp-admin), subtasks/groups,
+      attachments (fbs_time_tracks, chunked), custom fields, task deps,
+      recurring, board roles, webhooks in+out, Trello/Asana/CSV import,
+      time tracking, calendar/table views, cloud storage, FluentRoadmap
+      add-on, extra MCP abilities.
+    fit:
+      member_kanban: >-
+        YES — the only sane path to a KK/Nhong-visible task board on the
+        WP surface. Free tier already gives a public read-only board
+        (e.g. "household board" embed); write access needs Pro frontend
+        portal + per-member accounts.
+      ops_kanban: >-
+        NO — does not replace the chaba kanban: no git/SSOT backing, no
+        dispatch model, no single-writer story. If used, treat as a
+        member-facing view; keep ops cards in SSOT.
+      agent_write: >-
+        REST API + WP app passwords (wp-boards.env pattern) work for
+        agent writes; a chaba-card -> FB-task sync shim is feasible.
+        Pro adds an MCP module + community fluent-boards-mcp-server
+        (danieliser) exists.
+    caveats:
+      - "vhost: public-token GET routes ride index.php?rest_route= — compatible with the Plesk permalink quirk."
+      - "attachments: plugin protects uploads/fluent-boards via .htaccess — our vhost doesn't honor it; needs an edge deny rule (same caveat as uploads privacy in general)."
+      - "separate data store: watchdogs/watchers can't see FB tasks via wp/v2 — they'd need FB REST."
+    recommendation: >-
+      Adopt only if a member-writable (or public-read) kanban is wanted
+      on boards.surf-thailand.com. Read-only embed is zero-cost today.
+      Otherwise stay on chaba-boards CPTs + chaba kanban.
