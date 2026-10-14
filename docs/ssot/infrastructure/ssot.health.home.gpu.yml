@@ -60,3 +60,17 @@ services:
     note: "Offline (2026-08-14) - intentionally stopped. Start manually when needed:
       docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference"
     host: tony_omen
+  - id: ada-whisper
+    name: Ada Whisper STT (large-v3)
+    type: http
+    url: http://tony-omen:8790/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+    profiles:
+      - home
+    note: "STT endpoint for msg-lane voice notes; model lazy-loads and
+      unloads after 300s idle (loaded:false in /health is healthy — it
+      means the GPU is free). Relays fall back to local whisper when
+      this is down. stacks/tony-omen/ada-whisper"
+    host: tony_omen

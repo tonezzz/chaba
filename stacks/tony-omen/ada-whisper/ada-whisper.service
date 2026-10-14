@@ -1,0 +1,17 @@
+[Unit]
+Description=Ada Whisper STT endpoint (faster-whisper large-v3, GTX 1650)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=WHISPER_MODEL=large-v3
+Environment=WHISPER_BIND=0.0.0.0:8790
+Environment=WHISPER_IDLE_S=300
+# ctranslate2 4.8 needs CUDA-12 userland libs from the venv's pip pkgs
+Environment=LD_LIBRARY_PATH=%h/.venvs/ada-whisper/lib/python3.12/site-packages/nvidia/cublas/lib:%h/.venvs/ada-whisper/lib/python3.12/site-packages/nvidia/cudnn/lib
+ExecStart=%h/.venvs/ada-whisper/bin/python %h/apps/ada-whisper/whisper_server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

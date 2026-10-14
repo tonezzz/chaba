@@ -36,6 +36,9 @@ curl -X POST http://<TG_LISTEN>/send -H 'content-type: application/json' \
 - [ ] `TELEGRAM_ALLOWED_CHAT_IDS`, `TELEGRAM_USER_CALLERS` (map senders as they appear)
 - [ ] `TG_SPEAKER_TAG`, `TG_LISTEN` (pick unused loopback port)
 - [ ] unit file cloned from a working lane, enabled
+- [ ] `TG_WHISPER_URL=http://tony-omen:8790/transcribe` in the lane env
+      file — voice notes transcribe on the omen GPU (large-v3); local
+      `TG_WHISPER_MODEL` fallback kicks in when the endpoint is down
 - [ ] verify: push test + real inbound → reply carries `[tag]`
 - [ ] add row to the table above + bump member-tg/msg-lane in ssot.procedures.yml
 

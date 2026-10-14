@@ -895,6 +895,27 @@ tony-omen:
     health_check: 'ssh tony-omen curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/health'
     status: active
     note: Running on tony-omen port 8001. Provides hardware sensors, CPU/GPU status, Docker container data, and fan/turbo control via /api/sensors.
+  ada-whisper:
+    service: ada-whisper.service (systemd --user)
+    host: tony-omen
+    port: 8790
+    host_port: 0.0.0.0:8790
+    runtime: python-venv
+    source: scripts/ada/whisper_server.py -> ~/apps/ada-whisper/whisper_server.py
+    venv: ~/.venvs/ada-whisper (faster-whisper 1.2.1 + ctranslate2 4.8.2 + nvidia-*-cu12)
+    stack: stacks/tony-omen/ada-whisper
+    health_check: 'ssh tony-omen curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8790/health'
+    status: active
+    note: >-
+      Whisper STT endpoint for msg-lane voice notes — large-v3
+      int8_float16 on the GTX 1650 (~1.9GB while warm). Lazy-loads and
+      unloads after 300s idle per ssot.gpu one-workload policy; evicts
+      ollama models on VRAM shortfall, CPU int8 as degraded fallback.
+      Consumers on idc03: ada-tg-relay + ada-tg-relay-kk (TG_WHISPER_URL),
+      ada-line-relay (LINE_WHISPER_URL — inert until LINE_VOICE_TRANSCRIBE
+      is armed). Each relay falls back to local faster-whisper
+      (TG_WHISPER_MODEL=medium) when the endpoint is unreachable.
+    deployed: 2026-10-14
 
 michael:
   home-assistant:

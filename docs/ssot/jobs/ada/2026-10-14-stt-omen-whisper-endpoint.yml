@@ -1,0 +1,128 @@
+title: STT endpoint on tony-omen GPU (whisper large-v3)
+subtitle: ada-whisper fastapi service serves large-v3 int8_float16 to all msg-lane relays
+icon: target
+card: stt-omen-large-v3
+runner: idc02
+
+planning:
+  goal: >-
+    Replace per-relay CPU whisper (medium, ~13s/clip, garbled Thai) with a
+    shared GPU endpoint on tony-omen (large-v3, ~2-4s/clip, clean Thai),
+    keeping a local small/medium fallback when omen is unreachable.
+  scope: >-
+    In: whisper HTTP endpoint + ada-whisper.service on omen; tg_relay and
+    line_relay WHISPER_URL wiring on idc03; faster-whisper local fallback
+    in the ada-pi venv. Out: Ada Live realtime path, speaker-id, TTS.
+  success_criteria:
+    - POST /transcribe on http://tony-omen:8790 returns correct Thai+EN text in <5s warm
+    - relays prefer the endpoint; local fallback works when URL unreachable
+    - service survives reboot (systemd --user, linger enabled)
+    - GPU freed between jobs per ssot.gpu one-workload policy
+  risks:
+    - VRAM contention with resident phi3 (~2.7GB) — mitigated by lazy
+      load + idle unload + ollama eviction on OOM
+    - idc03 has no ffmpeg — local fallback decodes via imageio-ffmpeg
+      bundled binary, then PyAV as last resort
+    - av version drift (tg-relay-whisper-pin) — local decode avoids the
+      av path; av pinned at 15.1 anyway
+  resources:
+    - tony-omen GTX 1650 (4GB), ~/.venvs/ada-whisper, HF cache large-v3
+    - idc03 ada-pi venv + env files
+  owner: tony
+  estimated_duration: 1 session
+
+processing:
+  status: in_progress
+  started_at: '2026-10-14 22:05'
+  steps:
+    - id: 1
+      label: Probe GPU fit on omen (thai-tts venv)
+      status: done
+      notes: >-
+        large-v3 int8_float16 = ~1.9GB VRAM, load ~10s, Thai fixture exact
+        match. cu13 pip libs fail at transcribe (libcublas.so.12 wanted) —
+        built dedicated ~/.venvs/ada-whisper with nvidia-*-cu12 instead.
+        del+gc verified to release VRAM (3713 -> 1830 -> 3652 free).
+    - id: 2
+      label: Write + deploy whisper_server.py and ada-whisper.service
+      status: done
+      notes: >-
+        scripts/ada/whisper_server.py -> ~/apps/ada-whisper/ on omen; unit
+        stacks/tony-omen/ada-whisper/ada-whisper.service. Lazy load, idle
+        unload 300s, ollama evict-on-OOM, CPU degraded fallback.
+        Verified: health OK; Thai 17.9s cold / 3.7s warm; EN 3.7s.
+    - id: 3
+      label: Patch relays + env wiring on idc03
+      status: done
+      notes: >-
+        tg_relay.py + line_relay.py: _transcribe_remote (httpx multipart
+        POST) first when {TG,LINE}_WHISPER_URL set, local faster-whisper
+        fallback via _decode_audio (ffmpeg/imageio-ffmpeg -> PyAV).
+        faster-whisper 1.2.1 + av==15.1 + imageio-ffmpeg installed into
+        ada-pi venv; requirements.txt gained the pins. ada-pi main
+        committed locally as daa0e0a (not pushed). TG_WHISPER_URL set in
+        telegram-bot.env + telegram-kk-bot.env; LINE_WHISPER_URL in
+        line-bot.env (LINE_VOICE_TRANSCRIBE stays unset — LINE
+        transcription was never armed; board request raised).
+    - id: 4
+      label: Restart relays + end-to-end verify
+      status: done
+      notes: >-
+        ada-tg-relay, ada-tg-relay-kk, ada-line-relay restarted clean;
+        /proc environ confirms WHISPER_URL present. Remote path verified
+        from idc03 (TH fixture exact, ~4s); dead-URL fallback -> local
+        medium -> same text. Idle-unload verified twice (22:16:17,
+        22:34:47) releasing ~1.9GB; reload-on-request ~8s.
+
+report:
+  summary: >-
+    ada-whisper.service live on tony-omen:8790 serving faster-whisper
+    large-v3 int8_float16 (GTX 1650, ~1.9GB while warm). All three msg
+    relays on idc03 prefer it via *_WHISPER_URL and fall back to local
+    medium/small + imageio-ffmpeg decode when unreachable. GPU stays a
+    shared citizen: model unloads after 300s idle, ollama eviction on
+    VRAM shortfall, CPU int8 last resort.
+  evidence:
+    - 'TH fixture via idc03->omen:8790: "สวัสดีครับ วันนี้เป็นไงบ้าง" (th p=1.00, 4.0s warm)'
+    - 'EN fixture: "Good morning, how are you today?" (en p=0.97, 3.6s)'
+    - 'local fallback: dead URL -> medium on idc03 -> identical TH text'
+    - 'idle unload frees ~1.9GB VRAM; journal logged twice'
+  caveats:
+    - 'phi3 partial CPU-offload while whisper warm (~5min window per clip)'
+    - 'LINE transcription still disarmed until LINE_VOICE_TRANSCRIBE=1 (board request raised)'
+    - 'ada-pi commit daa0e0a is local-only on idc03 — not pushed'
+  artifacts:
+    - scripts/ada/whisper_server.py
+    - stacks/tony-omen/ada-whisper/{ada-whisper.service,stack.yml}
+    - integrations/ada-pi/backend/{tg_relay,line_relay}.whisper-url.patch
+    - docs/ssot/infrastructure/ssot.health.home.gpu.yml (ada-whisper entry)
+    - docs/ssot/infrastructure/ssot.services.yml (ada-whisper entry)
+    - docs/kb/msg-lane-standard.md (new-lane checklist line)
+  decisions:
+    - label: Lazy load + 300s idle unload instead of resident model
+      rationale: >-
+        ssot.gpu policy is one GPU workload at a time; a resident 1.9GB
+        model would force phi3 (2.7GB) into permanent CPU offload.
+      alternatives_considered: >-
+        Resident model (2s always, breaks GPU sharing); distil-large-v3
+        (~1GB, might coexist with phi3, but Thai quality unverified).
+    - label: Dedicated ~/.venvs/ada-whisper instead of reusing thai-tts
+      rationale: >-
+        thai-tts is an experiment venv with cu13 libs ctranslate2 can't
+        use; a service needs its own pinned deps (nvidia-*-cu12).
+      alternatives_considered: Reuse thai-tts (proven but wrong CUDA libs + couples STT to TTS experiments).
+    - label: ffmpeg->numpy decode everywhere
+      rationale: card spec + av 19 API drift already broke this once.
+      alternatives_considered: model.transcribe(path) via PyAV (kept only as last-resort fallback).
+
+followup:
+  verification:
+    - 'curl -s http://tony-omen:8790/health'
+    - 'curl -s -F "file=@clip.wav" http://tony-omen:8790/transcribe'
+    - 'journalctl --user -u ada-tg-relay -f on idc03 while sending a TG voice note'
+    - 'nvidia-smi on omen: VRAM released after WHISPER_IDLE_S'
+  rollback_plan:
+    - >-
+      Remove *_WHISPER_URL from the three env files + restart relays;
+      systemctl --user disable --now ada-whisper on omen. ada-pi commit
+      can be reverted; local fallback still needs the pip pkgs.
