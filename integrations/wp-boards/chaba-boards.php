@@ -2,19 +2,20 @@
 /**
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
- *              contact, reminder, bench, report, xlate, cam, render_job, news)
+ *              contact, reminder, bench, report, xlate, cam, render_job, news,
+ *              repeat_ask, lesson, ops_error)
  *              + member-post translation + member-gated media endpoint
  *              + usage pull-render worker (pulls the idc02 usage feed into
  *              a report CPT post; Plesk Scheduled Task or WP-Cron).
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.5.0
+ * Version: 0.6.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.5.0';
+const CHABA_BOARDS_VER = '0.6.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -48,6 +49,11 @@ add_action('init', function () {
         // Agents write via REST; next_review drives spaced-recall digests.
         // Slug stays "lesson" (posts/URLs stable); label = Education.
         'lesson'   => ['Education','Educations','dashicons-welcome-learn-more'],
+        // ops_error — auto-posted Ada tool/stream failures (one post per
+        // error, written by scripts/ada/ops-error-posts.py). The review
+        // loop lives on comments: Kaewta/Devin post the truthful
+        // explanation, Tony marks meta status=resolved.
+        'ops_error' => ['Ops Error','Ops Errors','dashicons-warning'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -203,6 +209,14 @@ add_action('init', function () {
         // lesson — topic/level(intro|working|deep)/source(chat|voice|link)/
         // learned_at/next_review(ISO dates)/status(open|learned|revise)
         'lesson'   => ['topic', 'level', 'source', 'learned_at', 'next_review', 'status'],
+        // ops_error — lane(kk|tony|michael)/session_id/tool/
+        // error_type(schema_error|runtime_error|silent_reconnect|
+        // stale_result|phantom_claim|degraded_result)/raw_result(JSON
+        // string)/transcript_ref/occurred_at(ISO)/status(open|explained|
+        // resolved)/resolved_by/resolved_at
+        'ops_error' => ['lane', 'session_id', 'tool', 'error_type',
+                        'raw_result', 'transcript_ref', 'occurred_at',
+                        'status', 'resolved_by', 'resolved_at'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -213,7 +227,11 @@ add_action('init', function () {
                 'show_in_rest'      => true,
                 'single'            => true,
                 'type'              => 'string',
-                'sanitize_callback' => 'sanitize_text_field',
+                // raw_result holds JSON error payloads — sanitize_text_field
+                // would strip anything tag-shaped out of the evidence.
+                'sanitize_callback' => ($type === 'ops_error' && $k === 'raw_result')
+                    ? function ($v) { return is_string($v) ? mb_substr($v, 0, 8000) : ''; }
+                    : 'sanitize_text_field',
                 'auth_callback'     => function () { return current_user_can('edit_posts'); },
             ]);
         }
@@ -240,11 +258,12 @@ function chaba_cpt_admin_columns(string $type): array {
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
         'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
+        'ops_error'  => ['lane' => 'Lane', 'tool' => 'Tool', 'error_type' => 'Type', 'occurred_at' => 'At', 'status' => 'Status'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
@@ -496,6 +515,59 @@ add_filter('the_content', function ($content) {
     }
     if ($rows) {
         $out .= '<table style="font-size:.9em;margin-top:.8em">' . $rows . '</table>';
+    }
+    return $out;
+});
+
+// ============================================================================
+// ops_error single view — the record lives in meta; render an error card so
+// the review pair (raw failure vs truthful explanation) reads in one place.
+// Explanations live in the comment thread below; meta status open|explained|
+// resolved tracks where the error is in the loop.
+// ============================================================================
+
+add_filter('the_content', function ($content) {
+    if (!is_singular('ops_error') || !in_the_loop() || !is_main_query()) return $content;
+    $id  = get_the_ID();
+    $m   = function ($k) use ($id) { return trim((string) get_post_meta($id, $k, true)); };
+    $out = $content;
+
+    $status = $m('status') ?: 'open';
+    $badge  = ['open' => '#b3261e', 'explained' => '#a05a00',
+               'resolved' => '#137333'][$status] ?? '#5f6368';
+    $out .= '<p><span style="display:inline-block;padding:1px 10px;border-radius:10px;'
+          . 'background:' . esc_attr($badge) . ';color:#fff;font-size:.85em">'
+          . esc_html($status) . '</span></p>';
+
+    $rows = '';
+    foreach (['lane' => 'Lane', 'tool' => 'Tool', 'error_type' => 'Type',
+              'occurred_at' => 'Occurred', 'session_id' => 'Session',
+              'transcript_ref' => 'Transcript', 'resolved_by' => 'Resolved by',
+              'resolved_at' => 'Resolved at'] as $k => $label) {
+        $v = $m($k);
+        if ($v === '') continue;
+        $rows .= '<tr><th style="text-align:left;padding:2px 10px 2px 0;opacity:.6;font-weight:600">'
+               . esc_html($label) . '</th><td style="padding:2px 0">'
+               . esc_html($v) . '</td></tr>';
+    }
+    if ($rows) {
+        $out .= '<table style="font-size:.9em;margin:.6em 0">' . $rows . '</table>';
+    }
+    $raw = $m('raw_result');
+    if ($raw !== '') {
+        $pretty = json_decode($raw, true);
+        $out .= '<details open style="margin:.6em 0"><summary style="cursor:pointer;'
+              . 'opacity:.7">raw result</summary><pre style="white-space:pre-wrap;'
+              . 'font-size:.85em;background:#f6f6f6;padding:.6em;border-radius:6px;'
+              . 'overflow-x:auto">'
+              . esc_html($pretty !== null
+                    ? json_encode($pretty, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    : $raw)
+              . '</pre></details>';
+    }
+    if ($status !== 'resolved') {
+        $out .= '<p style="opacity:.65;font-size:.85em"><em>Explain this error '
+              . 'plainly in the comments below, then set status=resolved.</em></p>';
     }
     return $out;
 });

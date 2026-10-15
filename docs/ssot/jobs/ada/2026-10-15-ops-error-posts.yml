@@ -1,0 +1,146 @@
+title: ops_error CPT + ops-error-posts writer — Ada failures -> boards review loop
+id: 2026-10-15-ops-error-posts
+card: boards-error-post-type
+ref: ADA-0679
+date: 2026-10-15
+status: implemented-in-worktree (plugin v0.6.0 + writer + rendered units; live only after plugin deploy + branch merge)
+summary: |
+  Tony's kk-ha audit idea: every Ada tool/stream failure gets a private
+  boards post so Kaewta (or Devin) writes the plain-language explanation
+  as a comment and Tony reviews the pair — raw error vs explanation.
+  This is the REVIEW layer; the in-conversation honesty fix already
+  shipped via ada-error-truthfulness-narration (ADA-0676).
+
+  chaba-boards.php v0.6.0 registers CPT `ops_error` (private posts,
+  comments open, REST-writable meta). scripts/ada/ops-error-posts.py on
+  idc03 tails journald per lane + MDDB ada-ha-events-<lane> ops-events,
+  classifies, dedups by deterministic slug, and POSTs to origin_base
+  (the public edge bot-checks script UAs — CF 1010).
+
+lane_map:
+  kk:      {unit: ada-kk,      events: ada-ha-events-kk}
+  tony:    {unit: ada-ha-tony, events: ada-ha-events-tony}
+  michael: {unit: ada-michael, events: ada-ha-events-michael}
+
+detectors:
+  schema_error: |
+    function_call result ok:False/error where the error text carries
+    SchemaError, a `usage` hint key, or an arg/identifier rejection
+    (must-be-one-of, invalid action, unknown provider, unregistered
+    target…). Seed classes: web_search {} args, ada_enroll_speaker
+    {person:…} args — session 183e9c8d7e.
+  runtime_error: |
+    ok:False / error / err with no schema signature — real tool breakage
+    (HTTP 502 from a relay, tool exception…).
+  degraded_result: |
+    ok:True but degraded:true / quota_exhausted / delivered:0 — the call
+    "worked" but the answer is silently worse.
+  stale_result: |
+    result payload carries stale:true, or an MDDB ops-event doc of type
+    stale_result. (Expected rare — flag exists for the lane writers to
+    emit; journal-side detection is the payload flag only.)
+  silent_reconnect: |
+    journald line matching `resumed=False` — provider stream died and
+    context was wiped without narration. Coalesced: slug hashes
+    lane|session|date so a reconnect storm = ONE post per session-day.
+  phantom_claim: |
+    MDDB ops-event type phantom_write_claim (Ada claimed a write/action
+    that never ran). Not detected journal-side — the transcript-join is
+    session-audit's job; the ops-event doc is the honest signal.
+  skipped: |
+    Confirm-gate round trips (NOT EXECUTED / needs_confirm) and ACL/
+    owner-gate denials are correct-by-design — never posted (same
+    classes session-audit suppresses).
+
+mechanics:
+  dedup: |
+    slug err-<md5(lane|session|tool|occurred_at|type)[:16]>; silent_reconnect
+    hashes lane|session|date instead. WP lookup GET /wp/v2/ops_error?
+    slug=<slug>&status=private,archived before every create — idempotent
+    across restarts, no local ledger needed.
+  cursor: |
+    ~/.local/share/ada/ops-error-posts-state.json {journal_since,
+    mddb_since}. First run = now-1h; window capped at 24h. Refetch
+    overlaps 5min (journal) / 15min (mddb indexing lag) — slug dedup
+    absorbs the overlap. Cursor only advances when every post succeeded;
+    WP failures hold it so the next run rescans.
+  flood_guard: MAX_POSTS_PER_RUN=50 — overflow carries to the next run.
+  transcript_ref: |
+    glob ~/.local/share/ada/transcripts/*-<session>.md -> basename;
+    empty when the transcript hasn't flushed yet.
+  wp: |
+    POST {origin_base}/index.php?rest_route=/wp/v2/ops_error, Basic app
+    password (~/.config/secrets/wp-boards.env), browser UA (same shape
+    as line-chat-timeline.py). Posts are private + comment_status=open
+    explicitly (CPT comments were closed on boards 2026-10-15 — the
+    review thread is the product, so the writer pins it open).
+  title: |
+    "Err — {lane} {tool} {YYYY-MM-DD}" per ssot.wp-boards.yml
+    title_standard (tool='stream' for reconnects).
+
+review_loop:
+  flow: |
+    writer posts status=open -> Kaewta/Devin comment the plain-language
+    explanation (what happened + why, no gloss) -> Tony sets meta
+    status=resolved (+resolved_by/resolved_at) when the pair reads right.
+  admin_columns: Lane | Tool | Type | At | Status on the CPT list table.
+  single_view: |
+    the_content renders a status badge + meta table + pretty-printed
+    raw_result <details> block above the comment thread — the review
+    pair in one page.
+  optional_later: |
+    nudge Ada to explain within N hours via a board request — deferred
+    per card (loop works without it).
+
+seed_rows:
+  source: kk-ha session 183e9c8d7e, 2026-10-13 23:17-23:20 ICT (16:17Z)
+  command: |
+    On idc03 once the plugin is live:
+      python3 ~/CascadeProjects/chaba/scripts/ada/ops-error-posts.py \
+        --since "2026-10-13 16:00" --session 183e9c8d7e
+    Produces the three card seeds from the real journal:
+      err-*  Err — kk web_search …        schema_error      (args={})
+      err-*  Err — kk ada_enroll_speaker… schema_error      ({person:…})
+      err-*  Err — kk stream …            silent_reconnect  (resumed=False)
+    (a 4th row — ada_memory_search degraded_result — also posts; the
+    session evidence carries degraded:true.)
+
+verify: |
+  Selftest PASS: synthetic journal -> 2x schema_error, 1x silent_reconnect,
+  1x degraded_result; NOT EXECUTED confirm-gate correctly skipped.
+  Fixture dry-run on the seed-shaped lines (incl. a 502 runtime_error and
+  a foreign-session event) classifies all six rows correctly and the
+  --session filter drops out-of-scope events. php -l clean (podman
+  php:8-cli). render-jobs --check OK (58 jobs); units rendered for idc03.
+  NOT verified live: WP writes need chaba-boards v0.6.0 deployed (wp-admin
+  plugin zip) — until then the timer's POSTs 404 and the cursor holds.
+
+deliverables:
+  - file: integrations/wp-boards/chaba-boards.php
+    role: v0.6.0 — ops_error CPT + meta + admin columns + error-card
+      the_content renderer + comment_status support already in 'supports'
+  - file: scripts/ada/ops-error-posts.py
+    role: the writer (stdlib only; --dry-run/--since/--session/--lane/
+      --journal-file/--no-mddb/--selftest)
+  - file: docs/ssot/apps/ssot.wp-boards.yml
+    role: post_types.ops_error, title_standard, writers.ops_error_posts,
+      v0.6.0 changelog note
+  - file: docs/ssot/infrastructure/ssot.jobs.yml
+    role: ops-error-posts job — host idc03, every 15m, condition_path gate
+  - file: systemd/generated/idc03/ops-error-posts.{service,timer}
+    role: rendered units — install on idc03 after merge
+
+follow_ups:
+  - "DEPLOY GATE: chaba-boards v0.6.0 must be uploaded to boards WP
+    (wp-admin plugin zip — same flow as v0.3.3, creds on omen:
+    ~/.config/secrets/boards-surf-thailand-com-wp-admin-credential).
+    Then GET /wp/v2/types shows ops_error."
+  - "After merge + idc03 checkout pull: render-jobs.py --host idc03
+    --install (or systemctl --user enable --now ops-error-posts.timer),
+    then run the seed backfill command above."
+  - "Verify a live post: private status + comment_status=open + meta
+    round-trip; if comment_status comes back closed despite the
+    writer's flag, that's a site default_comment_status issue —
+    flip it in wp-admin or filter it in the plugin."
+  - "WP-Cron/plugin side is done; the 'nudge Ada to explain within N
+    hours' request-loop hook remains optional-later per card."
