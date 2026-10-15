@@ -44,6 +44,14 @@ post_types:
   # the_content renderer; has_archive for render_job+lesson (/wp/render_job/,
   # /wp/lesson/ member indexes); lessons-due dashboard widget; prompt-assist
   # meta box -> admin-ajax -> existing free Gemini lane (CHABA_LLM_*).
+  # v0.5.0 (repo, pending deploy): usage pull-render worker — pulls the
+  # token-gated idc02 usage feed (chaba-usage/v1, scripts/litellm/
+  # usage-feed.py on idc03) into a rolling private report post
+  # (slug usage-ledger) + ops-event heartbeat heartbeat-usage-pull each
+  # run. Plesk Scheduled Task -> wp-content/plugins/chaba-boards/
+  # usage-pull-cron.php (or wp-cli eval chaba_usage_pull_run(); WP-Cron
+  # hourly fallback). Card wp-usage-pull-render-plesk-worker / OPS-0661;
+  # design: docs/ssot/jobs/infrastructure/2026-10-15-usage-pull-render-plesk.yml
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -155,6 +163,14 @@ writers:
   lessons_due:  "scripts/lessons-due.py on idc03 — chaba-lessons-due.timer
                   daily 07:30 (ssot.jobs.yml); refreshes private page slug
                   education-due (post 354): due-now + upcoming review lists"
+  usage_pull:   "Plesk-side pull-render (OPS-0661, repo v0.5.0 pending deploy)
+                  — usage-pull-cron.php via Plesk Scheduled Task fetches the
+                  bearer-gated /feeds/usage.json on idc02 caddy-edge
+                  (pushed by usage-feed-push timer on idc03, ssot.jobs.yml)
+                  and upserts private report post slug usage-ledger
+                  (report_type=usage-ledger, period=rolling-14d,
+                  source_key=idc03-usage-feed) + ops-event
+                  heartbeat-usage-pull per run"
   # Writer access caveat (2026-10-14): POSTs through the PUBLIC edge
   # (boards.surf-thailand.com) hit CF 1010 bot-check on bare/script UAs —
   # fleet writers use origin_base (boards.h3.gizmo-thailand.com) directly.
@@ -173,6 +189,11 @@ watchdog:
   watcher:   idc02 wp-watch.timer -> WP 200 + heartbeat<10min -> board-api comment
   trigger:   line-chat-timeline.path (PathChanged glob on journals +
              ops-events.jsonl) -> near-real-time timeline updates
+  # usage-pull (OPS-0661, pending deploy): the Plesk worker bumps ops-event
+  # heartbeat-usage-pull `modified` every run — wp-watch adds it to its
+  # freshness list (stale > ~90min at 15m cadence = feed-or-worker dead).
+  # Feed freshness is separately visible in the report header
+  # (feed.generated_at) and the heartbeat body.
 
 static_site:
   # www.surf-thailand.com/<tenant>/ — static HTML rendered from

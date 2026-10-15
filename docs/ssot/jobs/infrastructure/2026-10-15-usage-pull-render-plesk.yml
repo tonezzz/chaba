@@ -1,0 +1,194 @@
+title: Usage timeline as Plesk pull-render worker — design + code drop
+subtitle: idc03 aggregate feed -> token-gated idc02 edge -> chaba-boards PHP worker
+icon: chart
+version: 1
+
+card: wp-usage-pull-render-plesk-worker   # OPS-0661
+date: 2026-10-15
+dispatch: 20261015-102327-usage-timeline-as-plesk-pull-r
+status: code-ready-pending-infra-setup
+
+summary: |
+  Tony prefers Plesk-side CPU where possible. This job implements the
+  three-part design from the card:
+
+    (a) idc03 exports ONE aggregate usage JSON — flat day x lane rows from
+        ada-voice usage.jsonl + LiteLLM_SpendLogs, NO raw session data
+        (it crosses the public edge) — pushed by a systemd timer to the
+        idc02 caddy-edge webroot and served on a bearer-gated path.
+    (b) A PHP worker inside the chaba-boards plugin (v0.5.0) runs via
+        Plesk Scheduled Task, pulls the feed, and does ALL bucketing
+        Plesk-side into a rolling private `report` CPT post
+        (slug usage-ledger). WP-Cron hourly fallback is armed
+        automatically if the Plesk task isn't set up.
+    (c) Every run bumps an ops-event heartbeat post
+        (slug heartbeat-usage-pull, title "ops-h3 usage-pull");
+        idc02 wp-watch verifies freshness — the alert path (board-api via
+        ssh tony-dell) never crosses the watched host.
+
+topology: |
+  idc03  usage-feed.py (timer, 15m)
+           usage.jsonl ──► day x lane rows (turns/sessions/aux/tokens/
+           LiteLLM DB    est_usd)  +  SpendLogs day x key-alias x model
+                           │ scp via fleet ssh mesh (atomic .tmp+mv)
+                           ▼
+  idc02  caddy-edge webroot  ~/.config/containers/caddy/data/www/feeds/
+           usage.json  (same docroot cms-publish-site.py writes)
+                           │ GET /feeds/usage.json  Authorization: Bearer
+                           ▼
+  h3     Plesk Scheduled Task -> usage-pull-cron.php -> wp-load ->
+           chaba_usage_pull_run()  [chaba-boards.php v0.5.0]
+             -> upsert report/usage-ledger (private, member-visible)
+             -> bump ops-event/heartbeat-usage-pull
+                           │ REST read of `modified` (anonymous)
+                           ▼
+  idc02  wp-watch.timer  +freshness check -> board-api comment on stale
+
+feed_schema: |
+  {
+    "feed": "chaba-usage/v1",
+    "generated_at": "<utc iso>",
+    "window_days": 14,
+    "sources": {"usage_jsonl": "ok|unreadable:…",
+                "litellm_spend": "postgres:LiteLLM_SpendLogs|admin:…|err"},
+    "usage": [ {"date":"YYYY-MM-DD","lane":"ada-ha-kk|ada-backends|…",
+                "turns":n,"sessions":n,"aux_calls":n,
+                "tok_in":n,"tok_out":n,"tok_cached":n,"tool_use":n,
+                "est_usd":f,"sources":{"live":n,…}} ],
+    "spend": [ {"date":"YYYY-MM-DD","key":"<alias>","lane":"<lane>",
+                "model":"<model>","calls":n,"tokens":n,"spend_usd":f} ]
+  }
+
+  Lane attribution honesty: SpendLogs rows map alias->lane via
+  USAGE_FEED_KEY_LANES (default chaba->tony, michael->michael, kk->kk,
+  bench->bench, <master>->master). usage.jsonl rows carry a lane only
+  when usage_tracker writes unit/lane/backend on the record — otherwise
+  they bucket under "ada-backends" (the file is shared across ada-*
+  units; per-lane live-traffic truth still needs journald, which stays
+  out of the feed per the aggregates-only rule).
+
+code_landed:
+  - >-
+    scripts/litellm/usage-feed.py — idc03 exporter. podman exec
+    litellm-db psql primary, admin API fallback w/ LITELLM_MASTER_KEY
+    (same pattern as daily-ledger.py); RATES_PER_MILLION mirrored from
+    spend-ledger.py; --push scp's to USAGE_FEED_TARGET (default
+    idc02:.config/containers/caddy/data/www/feeds/usage.json) via
+    .tmp+mv. Smoke-tested against synthetic usage.jsonl on the dispatch
+    host (podman-less here — spend section degrades to a sources error
+    string, feed still valid).
+  - >-
+    integrations/wp-boards/chaba-boards.php (0.4.2 -> 0.5.0) —
+    chaba_usage_pull_run() + chaba_usage_render() + upsert helpers;
+    report post usage-ledger (private, report_type/period/source_key
+    meta — already REST/admin-writable); ops-event heartbeat
+    heartbeat-usage-pull on EVERY run incl. fetch/upsert failures;
+    hourly WP-Cron fallback armed on init.
+  - >-
+    integrations/wp-boards/usage-pull-cron.php — Plesk Scheduled Task
+    entry point: walks up from the plugin dir to wp-load.php (works
+    under the /wp subdir install), loads WP, runs the worker, echoes
+    one summary line into the task log. CLI-only.
+  - >-
+    docs/ssot/infrastructure/ssot.routes.yml — route usage-feed:
+    static /feeds/usage.json on edge vps-public, public_host
+    monitor.surf-thailand.com, auth bearer-token.
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml — job usage-feed-push
+    (idc03, every 15m, usage-feed.py --days 14 --push). Activates on
+    next render-jobs.py --host idc03 --install.
+  - >-
+    docs/ssot/apps/ssot.wp-boards.yml — v0.5.0 note, usage_pull writer
+    entry, watchdog freshness line.
+
+idc02_caddyfile_snippet: |
+  # monitor.surf-thailand.com site block (idc02 caddy-edge, host-local
+  # ~/.config/caddy/Caddyfile):
+  handle /feeds/usage.json {
+      @authorized header Authorization "Bearer <CHABA_USAGE_FEED_TOKEN>"
+      handle @authorized {
+          root * /data/www
+          file_server
+          header Cache-Control "no-cache"
+      }
+      respond 403
+  }
+  # token = one shared random string; same value lands in wp-config.php
+  # on the Plesk host as CHABA_USAGE_FEED_TOKEN.
+
+deploy_steps: |
+  1. idc02: add the /feeds/usage.json bearer-gated handle to the
+     caddy-edge Caddyfile (~/.config/caddy/Caddyfile) inside the
+     monitor.surf-thailand.com (or chosen public) site block; mkdir -p
+     ~/.config/containers/caddy/data/www/feeds; reload caddy-edge.
+     Verify: curl -o /dev/null -w '%{http_code}'
+       https://monitor.surf-thailand.com/feeds/usage.json
+     -> 403 without token, 404/200 with it (404 until first push).
+     VERIFY at deploy that the host isn't behind CF Access — if the
+     monitor hostname rides Access, pick a grey-cloud/public name or add
+     an Access bypass for /feeds/* (PHP worker has no CF service token).
+  2. idc03: render-jobs.py --host idc03 --install (lands usage-feed-push
+     timer); or run once manually:
+       python3 scripts/litellm/usage-feed.py --days 14 --push
+     Prereq: idc03->idc02 BatchMode ssh works (fleet mesh; if not, run
+     scripts/ops/ssh-mesh-sync.sh from tony-omen).
+  3. Plesk (Tony one-time, per card help):
+       - redeploy chaba-boards plugin zip (v0.5.0, both .php files) via
+         wp-admin plugin upload + overwrite
+       - wp-config.php: define CHABA_USAGE_FEED_URL + CHABA_USAGE_FEED_TOKEN
+       - Scheduled Task "Run a PHP script":
+         wp-content/plugins/chaba-boards/usage-pull-cron.php every 15 min
+         (or wp-cli equivalent: wp eval 'chaba_usage_pull_run();')
+  4. idc02: extend wp-watch freshness list with ops-event slug
+     heartbeat-usage-pull (stale > ~90 min at 15m cadence = dead worker
+     or dead feed — heartbeat only bumps inside WP so both failure modes
+     surface the same way; distinguish via the heartbeat body/report hdr).
+
+decisions_open:
+  - "render target — landed: rolling private report post usage-ledger ★.
+    Alternatives still open: per-day report posts (durable daily
+    snapshots) or a `timeline_block` 'Timeline — usage' for a member
+    visual. Feed rows support any of them — switch is PHP-side only."
+  - "feed transport — landed: ssh push to idc02 webroot ★ (last-good data
+    survives idc03 tailnet flaps). Alternative: idc02 caddy
+    reverse_proxy to a tailnet listener on idc03 — fewer moving parts on
+    idc02, but 404s when idc03 is down instead of serving stale."
+  - "trigger — landed: Plesk Scheduled Task -> usage-pull-cron.php ★
+    (deterministic, output captured in task log, no HTTP/CF dependency
+    for triggering). WP-Cron hourly fallback already armed in-plugin."
+  - "feed hostname — recommended monitor.surf-thailand.com (already a
+    public static host on that edge); confirm CF posture at deploy."
+
+caveats:
+  - "Feed carries aggregates only (day x lane numbers) — safe for the
+    public edge even if the bearer leaks; worst case is exposure of
+    daily cost totals, no prompts/sessions/keys."
+  - "SpendLogs api_key is the key alias/handle — emit truncated (<=24
+    chars), never a usable token. usage.jsonl never crosses the edge."
+  - "est_usd (usage.jsonl modality rates) vs spend_usd (LiteLLM
+    invoiced) are both rendered side-by-side — live voice spend
+    bypasses the gateway (per-lane paid Gemini keys since 2026-10-13)
+    so spend_usd under-covers by design; est_usd under-covers nothing
+    but is a price-table estimate. Report footer says so."
+  - "ops-event CPT is registered outside chaba-boards — worker no-ops
+    the heartbeat if the type is absent (post_type_exists guard)."
+  - "PHP not available on the dispatch host — code is reviewed but not
+    `php -l` linted. First Plesk run is the syntax check; the worker
+    always writes a heartbeat incl. on failure, so a PHP fatal shows as
+    a stale heartbeat (self-detecting via wp-watch)."
+
+verification: |
+  # after deploy:
+  ssh idc03 'journalctl --user -u usage-feed-push -n 5'   # ran + pushed
+  curl -H "Authorization: Bearer $TOK" \
+       https://monitor.surf-thailand.com/feeds/usage.json | jq '.generated_at'
+  # Plesk task log: "usage-pull ok: N usage + M spend rows, …"
+  # WP: private report /wp/?post_type=report&p=<id> (slug usage-ledger)
+  # anonymous REST: /wp/v2/ops-event?slug=heartbeat-usage-pull ->
+  #   modified bumps every 15 min; wp-watch stays quiet
+
+related:
+  - scripts/litellm/daily-ledger.py     # SpendLogs access pattern
+  - scripts/ada/spend-ledger.py         # usage.jsonl parse + rate table
+  - scripts/ada/line-chat-timeline.py   # timeline_block writer (if D1 flips)
+  - docs/ssot/apps/ssot.wp-boards.yml   # watchdog topology this mirrors
