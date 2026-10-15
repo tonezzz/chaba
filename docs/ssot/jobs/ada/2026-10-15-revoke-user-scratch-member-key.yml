@@ -1,0 +1,33 @@
+title: "Revoke member key 'user-scratch-member' across ada lanes"
+subtitle: "Kanban card revoke-user-scratch-member-key-20943c (ref SEC-0482) — dispatch on tony-omen"
+icon: 🔑
+context:
+  card: revoke-user-scratch-member-key-20943c (ref SEC-0482)
+  trigger: "Tony answered card request 'Revoke user-scratch-member key now?' → revoke now ★"
+  prior_note: "Original 2026-10-11 ask failed because ada_member_keys tool was down;
+    tool later found obsolete on the ada-pi surface (audit-fail-ada-member-keys)."
+
+findings:
+  key_locations:
+    ada-ha-tony-keys.json: "entry already revoked — revoked:true, revoked_at 2026-10-12 20:33"
+    ada-ha-dev-keys.json:  "pending invite (approved:false, person SCRATCH, issued 2026-10-14), NOT revoked"
+    ada-pi-pwa :8001 store: "key not present (no matching entry in any ~/.config/secrets/*.json)"
+    tony-dell secrets: "key not present"
+    mn01 standby: "unverifiable — host offline >1d (tailscale last seen 1d ago); standby lane, minted on idc03 so almost certainly absent"
+
+action:
+  - "POST /api/auth/keys/user-scratch-member/reject on ada-dev 127.0.0.1:8005 (admin key from
+     ~/.config/secrets/ada-dev.env ADA_API_KEYS, server-side only) → {ok:true, status:revoked}"
+  - "verified ada-ha-dev-keys.json entry now revoked:true revoked_at 2026-10-15 15:59"
+
+notes:
+  - "Pending (approved:false) member keys take POST /api/auth/keys/{name}/reject — DELETE is for
+     issued keys ('key is pending — use DELETE to revoke' guard rejects the wrong verb)."
+  - "member_keys tool path: ada_member_keys was removed from the ada-pi surface; revocation is
+     direct HTTP to the lane backend's /api/auth/keys endpoints with the lane admin key."
+  - "All ada lane backends on idc03 run pwa_server.py (ada-pi-pwa :8001, ada-ha-tony :8002,
+     ada-ha-michael :8003, ada-dev :8005); each lane's keys file is
+     ~/.config/secrets/ada-ha-<instance>-keys.json keyed by ADA_INSTANCE_ID."
+
+result: done — key revoked on every reachable store that held it
+verify: "ssh idc03 'python3 -c \"import json;print(json.load(open(~/.config/secrets/ada-ha-dev-keys.json))[user-scratch-member][revoked])\"' → True"
