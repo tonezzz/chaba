@@ -1,7 +1,7 @@
 id: news-situation-summaries
 title: Situation summaries on wp-news — promoted digests + index + Thai + ask-hook
-column: review
-updated: 2026-10-16 04:40
+column: backlog
+updated: 2026-10-16 05:16
 priority: medium
 note: 'Tony asked Chaba สรุปข่าวน้ำท่วม on tony-ha 12:08 — good Thai situational answer referencing the mini-app
   flood report. Want: situation summaries for highly-interesting news, readable on /wp/ and reportable to household.
@@ -153,17 +153,18 @@ comms:
 - at: 2026-10-16 04:40
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-16 05:16
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   result: 'exit=0 ed on Tony: the wp-admin plugin zip upload (board request open) and ada-voice wiring (carded ADA-0707).
     | devin-task-20261015-202502-situation-summaries-on-wp-news.service: Consumed 26.070s CPU time, 172.2M memory
     peak, 0B memory swap peak.'
   attempts: 1
-  verified: false
   last_failure: 'pushed dispatch/20261015-194424-situation-summaries-on-wp-news to origin; test gate failed — merge
     held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
-  runner: idc03
   sweep:
     stale_running: 2026-10-15 20:29
     session_gone: 2026-10-15 20:29
@@ -188,4 +189,4 @@ requests:
   - proceed
   - hold
   answer: proceed
-awaiting_action: true
+  executed: 2026-10-16 queue

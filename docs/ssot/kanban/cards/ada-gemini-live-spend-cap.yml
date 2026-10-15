@@ -1,7 +1,7 @@
 id: ada-gemini-live-spend-cap
 title: Gemini Live refusing sessions — monthly spending cap hit (ada voice down)
 column: backlog
-updated: 2026-10-15 06:55
+updated: 2026-10-16 05:16
 priority: high
 tags:
 - ada
@@ -102,6 +102,12 @@ comms:
 - at: 2026-10-15 06:55
   from: chaba
   text: auto-merged 18c0a019 (dispatch/20261015-063912-every-voice-ws-connect-on-ada-) → origin/main
+- at: 2026-10-16 05:16
+  from: chaba
+  text: 'answer-sweep: executed ''queue for dispatch (build per-lane budget enforcement)'' -> queued for processing'
+- at: 2026-10-16 05:16
+  from: chaba
+  text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
 requests:
 - id: ada-voice-is-dead-until-the-gemini-proje-9be96b
   ask: Ada voice is dead until the Gemini project spend cap is resolved. Which way?
@@ -129,6 +135,7 @@ requests:
   - close — cap behaviour acceptable
   suggested: queue for dispatch (build per-lane budget enforcement) ★
   answer: queue for dispatch (build per-lane budget enforcement) ★
+  executed: 2026-10-16 queue
 - id: btnless-test
   ask: test-buttonless-guard — should auto-attach options (will retire)
   status: answered
@@ -141,12 +148,10 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: done
-  runner: tony-dell
+  status: queued
   attempts: 1
-  task_id: 20261015-063912-every-voice-ws-connect-on-ada-
   result: 20261015-063912-every-voice-ws-connect-on-ada- finished (inactive) — see `devin-dispatch logs 20261015-063912-every-voice-ws-connect-on-ada-`
-  verified: true
 claim:
   since: 2026-10-15 06:39
 review_kind: verify
+awaiting_action: true

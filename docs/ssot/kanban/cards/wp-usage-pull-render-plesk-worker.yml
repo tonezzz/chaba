@@ -1,7 +1,7 @@
 id: wp-usage-pull-render-plesk-worker
 title: usage timeline as Plesk pull-render worker (CPU to Plesk)
-column: review
-updated: 2026-10-15 16:02
+column: backlog
+updated: 2026-10-16 05:16
 priority: low
 note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
   in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
@@ -114,9 +114,15 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-154730-usage-timeline-as-plesk-pull-r,
     branch dispatch/20261015-154730-usage-timeline-as-plesk-pull-r'
+- at: 2026-10-16 05:16
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-16 05:16
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   sweep:
     stale_running: 2026-10-15 10:44
     dirty: 11
@@ -125,7 +131,6 @@ action:
   result: 'exit=0 ice: No such file or directory | devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
     No such file or directory'
-  runner: idc03
 requests:
 - id: usage-pull-worker-code-landed-deploy-nee-549e41
   ask: 'usage-pull worker: code landed, deploy needs your one-time setup + 3 defaults to confirm (reply e.g. ''all
@@ -143,6 +148,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-10-16 queue
 - id: plesk-side-is-the-only-step-left-h3-pane-a9d972
   ask: 'Plesk side is the only step left (h3 panel, ~5 min): (1) wp-admin → Plugins → upload chaba-boards v0.5.0
     zip (both .php files in integrations/wp-boards/) with overwrite. (2) wp-config.php: CHABA_USAGE_FEED_URL=https://surf-thailand.com/feeds/usage.json
@@ -155,5 +161,6 @@ requests:
   options:
   - proceed
   - hold
+  escalated_at: 2026-10-16 05:16
 review_kind: verify
 claim: {}
