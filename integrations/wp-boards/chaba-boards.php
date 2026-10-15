@@ -5,16 +5,18 @@
  *              contact, reminder, bench, report, xlate, cam, render_job, news)
  *              + member-post translation + member-gated media endpoint
  *              + usage pull-render worker (pulls the idc02 usage feed into
- *              a report CPT post; Plesk Scheduled Task or WP-Cron).
+ *              a report CPT post; Plesk Scheduled Task or WP-Cron)
+ *              + news situation flag (watching|pinned meta, badge,
+ *              [chaba_situations] index block).
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.5.0
+ * Version: 0.6.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.5.0';
+const CHABA_BOARDS_VER = '0.6.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -196,7 +198,13 @@ add_action('init', function () {
                          'source', 'output_url', 'rating', 'error'],
         // news — feed provenance; dedup rides the deterministic slug
         // (n-<md5(link)>) so no GUID index is needed.
-        'news'     => ['source_feed', 'source_url', 'published_at'],
+        // situation* = the situation-summary flag (card
+        // news-situation-summaries): watching|pinned + who/when set it;
+        // brief_th caches the digest's Thai brief so the situations
+        // index can render it without parsing post HTML.
+        'news'     => ['source_feed', 'source_url', 'published_at',
+                       'situation', 'situation_since', 'situation_by',
+                       'brief_th'],
         // repeat_ask — count = times re-asked; last_repeat = ISO date of most
         // recent recurrence (drives the admin list default sort).
         'repeat_ask' => ['topic', 'count', 'last_repeat', 'status'],
@@ -237,7 +245,7 @@ function chaba_cpt_admin_columns(string $type): array {
         'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
         'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
         'render_job' => ['result' => 'Result', 'prompt' => 'Prompt', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'est_cost_usd' => 'Est$', 'rating' => '★'],
-        'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
+        'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published', 'situation' => 'Situation'],
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
         'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
     ];
@@ -838,3 +846,110 @@ add_action('init', function () {
     }
 });
 add_action('chaba_usage_pull', 'chaba_usage_pull_run');
+
+// ============================================================================
+// News situations (card news-situation-summaries) — digest posts flagged
+// situation=watching|pinned are evolving "situation summaries" the household
+// can read. Writers: scripts/ada/news-situation.py (flag transitions +
+// auto-nomination + index page), wp-comment-sync.py (member comment
+// pin/unpin). The flag lives in meta AND a mirrored `situation-*` tag so it
+// works even before this version deploys (tags were already REST-writable
+// on news via taxonomies).
+//
+// Effective state helper reads meta first, tag second — fleet writers set
+// both, older posts may carry only the tag.
+// ============================================================================
+
+function chaba_news_situation(int $post_id): string {
+    $m = (string) get_post_meta($post_id, 'situation', true);
+    if (in_array($m, ['watching', 'pinned'], true)) return $m;
+    $tags = wp_get_post_tags($post_id, ['fields' => 'names']);
+    foreach ((array) $tags as $t) {
+        if ($t === 'situation-pinned')  return 'pinned';
+        if ($t === 'situation-watching') return 'watching';
+    }
+    return '';
+}
+
+// Badge on a flagged digest's single view — state + who/when set it.
+add_filter('the_content', function ($content) {
+    if (!is_singular('news') || !in_the_loop() || !is_main_query()) return $content;
+    $state = chaba_news_situation(get_the_ID());
+    if ($state === '') return $content;
+    $icon  = $state === 'pinned' ? '📌' : '👁';
+    $label = $state === 'pinned' ? 'Pinned situation' : 'Watching';
+    $by    = trim((string) get_post_meta(get_the_ID(), 'situation_by', true));
+    $since = trim((string) get_post_meta(get_the_ID(), 'situation_since', true));
+    $tail  = trim(($by ? " · set by $by" : '') . ($since ? " · $since" : ''), ' ·');
+    return '<p class="chaba-situation-badge" style="border-left:4px solid '
+         . ($state === 'pinned' ? '#b91c1c' : '#b45309')
+         . ';padding:.3em .8em;background:#fef9c3">'
+         . esc_html("$icon $label" . ($tail ? " — $tail" : '')) . '</p>'
+         . $content;
+});
+
+// [chaba_situations] — situations index block for any /wp/ page.
+// Attrs: limit (default 20). Pinned first, Thai brief when brief_th cached.
+add_shortcode('chaba_situations', function ($atts) {
+    $atts = shortcode_atts(['limit' => 20], $atts);
+    $limit = max(1, min(100, (int) $atts['limit']));
+
+    $by_id = [];
+    foreach (get_posts(['post_type' => 'news', 'post_status' => 'publish',
+                        'posts_per_page' => $limit * 2,
+                        'tag__in' => array_merge(
+                            wp_list_pluck(get_terms(['taxonomy' => 'post_tag',
+                                'slug' => ['situation-pinned', 'situation-watching'],
+                                'hide_empty' => false]), 'term_id'))]) as $p) {
+        $by_id[$p->ID] = $p;
+    }
+    foreach (get_posts(['post_type' => 'news', 'post_status' => 'publish',
+                        'posts_per_page' => $limit * 2,
+                        'meta_query' => [[
+                            'key' => 'situation',
+                            'value' => ['watching', 'pinned'],
+                            'compare' => 'IN']]]) as $p) {
+        $by_id[$p->ID] = $p;
+    }
+    $pinned = $watching = [];
+    foreach ($by_id as $p) {
+        $s = chaba_news_situation($p->ID);
+        if ($s === 'pinned')        $pinned[$p->ID]   = $p;
+        elseif ($s === 'watching')  $watching[$p->ID] = $p;
+    }
+    $sorter = function ($a, $b) { return strcmp($b->post_modified, $a->post_modified); };
+    usort($pinned, $sorter);
+    usort($watching, $sorter);
+
+    $row = function ($p, $state) {
+        $brief_th = trim((string) get_post_meta($p->ID, 'brief_th', true));
+        $since    = trim((string) get_post_meta($p->ID, 'situation_since', true));
+        $icon     = $state === 'pinned' ? '📌' : '👁';
+        $h  = '<li style="margin-bottom:.9em"><a href="' . esc_url(get_permalink($p)) . '"><strong>'
+            . esc_html(get_the_title($p)) . '</strong></a> ' . $icon;
+        if ($brief_th !== '') {
+            $h .= '<br><span style="font-size:.95em">' . esc_html($brief_th) . '</span>';
+        }
+        $h .= '<br><small style="opacity:.65">'
+            . esc_html(($since ? "since $since · " : '')
+                       . get_the_date('Y-m-d H:i', $p) . ' updated')
+            . ' — reply "pin"/"unpin" on the post to change state</small></li>';
+        return $h;
+    };
+
+    $out = '<div class="chaba-situations">';
+    if (!$pinned && !$watching) {
+        return $out . '<p>No active situations.</p></div>';
+    }
+    if ($pinned) {
+        $out .= '<h3>📌 Pinned</h3><ul style="list-style:none;padding-left:0">'
+              . implode('', array_map(fn($p) => $row($p, 'pinned'), array_slice($pinned, 0, $limit)))
+              . '</ul>';
+    }
+    if ($watching) {
+        $out .= '<h3>👁 Watching</h3><ul style="list-style:none;padding-left:0">'
+              . implode('', array_map(fn($p) => $row($p, 'watching'), array_slice($watching, 0, $limit)))
+              . '</ul>';
+    }
+    return $out . '</div>';
+});
