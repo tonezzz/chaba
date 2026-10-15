@@ -74,7 +74,8 @@ def main():
             if not key:
                 found = {}
                 for f in (os.path.expanduser("~/.config/secrets/mddb-gemini.env"),
-                          os.path.expanduser("~/.config/secrets/gemini-keys.env")):
+                          os.path.expanduser("~/.config/secrets/gemini-keys.env"),
+                          os.path.expanduser("~/.config/secrets/gemini-api-key.env")):
                     try:
                         for ln in open(f):
                             m = re.match(r"^(GEMINI_API_KEY_FREE|GOOGLE_API_KEY|GEMINI_API_KEY)=(.*)$", ln.strip())
