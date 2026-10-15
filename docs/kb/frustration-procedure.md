@@ -39,6 +39,13 @@ Before making a promise:
    ≤ ~30min" — a number Tony can falsify, not a reassurance.
 6. **Mark the unverified honestly.** Anything not checked gets said
    as `unverified` with what would verify it. Never round up.
+7. **Run the full kit — never curate.** All M-methods run every
+   time. A check is skipped ONLY with a stated reason
+   ("M5 n/a — no live session exists"), never silently. Selection
+   is where blind spots breed: 2026-10-15 the smoke tier passed
+   M1/M2/M4 while the unchecked timer-inventory path hid 6 weekly
+   Live suites. Redundant checks cost seconds; a missed layer costs
+   the wallet.
 
 ## Second-chance rule
 
@@ -55,7 +62,10 @@ is unverified and must be labelled so: "should", "expected to",
 ## Verification methods used 2026-10-15 — the repeatable kit
 
 Claim under test: "the smoke suite runs text-mode, not billed Gemini Live."
-Five independent methods; each answers a different layer of the claim.
+Eight independent methods; each answers a different layer of the claim.
+M1-M5 verify a session *isn't lying now*; M6-M8 verify *nothing else
+can start lying later*. A top-up/gate decision needs BOTH families —
+per rule 7, run all eight.
 Full 5-method pass re-run on session 5540bb5f19 (2026-10-15 00:34):
 argv --text ✓ · text-mode provider ✓ · 0 usage-turn lines ✓ ·
 spend-ledger unchanged (3 live / $0.33) ✓ · 0 external sockets ✓ ·
@@ -97,6 +107,23 @@ a text session holds zero external sockets — only transient REST calls
 0 external during session 5540bb5f19). *Lesson: the transport is
 visible at the socket layer — billed audio needs a held connection;
 REST text does not.*
+
+**M6 — spawner inventory.** `systemctl --user list-timers` (plus cron,
+`.timer` units, scheduled dispatches): WHO CAN START a billed session
+unattended. A clean M1-M5 on the current session says nothing about
+the next scheduled one — this is the check that found the 6 weekly
+suites aimed at :8002 after the smoke tier looked safe.
+
+**M7 — watcher coverage.** Are the watchdogs armed and recently run?
+(`list-timers` for `*-watch.timer`, last-run timestamps.) Detection
+between checks: prevention verifies now, watchers catch what slips
+through later. An unarmed watcher = a gap in the net, say so.
+
+**M8 — config audit.** Grep the actual scenario/service configs for
+the switch that selects the billed path (`transport:`, `mode`,
+endpoint URL, provider field). Code capability (`--text` exists) is
+not configuration (which callers pass it). Counts, not samples:
+"41/196 YAMLs have transport: text" beats "the ones I looked at do."
 
 Companion scoreboard: `voice-burn-ledger.py` now tags rows
 `mode: text|live` (a text session used to log minutes
