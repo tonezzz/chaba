@@ -412,10 +412,10 @@ function reqAnswerHtml(c, r) {{
     let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
     let sugVal = '';
     for (const o of opts) {{
-      const lbl = typeof o === 'string' ? o : (o.label || o.id);
-      const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
+      const lbl = optLabel(o);
+      const val = optVal(o);
       const sug = r.suggested && (r.suggested === val || r.suggested === lbl ||
-        (typeof o !== 'string' && r.suggested === o.id));
+        (typeof o !== 'string' && (r.suggested === o.id || r.suggested === o.v)));
       if (sug) sugVal = val;
       h += `<button class="rq-opt text-xs ${{sug ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 ring-1 ring-emerald-400 font-semibold' : 'bg-amber-800/70 hover:bg-amber-700 text-amber-100'}} rounded px-2 py-1" data-id="${{esc(c.id)}}" data-rq="${{esc(r.id)}}" data-val="${{esc(val)}}">${{sug ? '★ ' : ''}}${{esc(lbl)}}</button>`;
     }}
@@ -456,12 +456,15 @@ function askOpen(c) {{
   const a = askOf(c);
   return !!(a && a.question && a.status !== 'answered');
 }}
-function optLabel(o) {{ return typeof o === 'string' ? o : (o.label || o.id); }}
+// options may be {{id,label}}, {{v,d}} (value/description shorthand), or a
+// bare string — tolerate all three so a non-canonical card can't blank out
+function optLabel(o) {{ return typeof o === 'string' ? o : (o.label || o.d || o.id || o.v || ''); }}
+function optVal(o) {{ if (typeof o === 'string') return o; const k = o.id || o.v; return k ? k + ' — ' + (o.label || o.d || '') : (o.label || o.d || ''); }}
 function askAnswerHtml(c) {{
   const a = askOf(c) || {{}};
   const opts = a.options || [];
   const sug = a.suggested || '';
-  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === `${{o.id}} — ${{o.label || ''}}`)));
+  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === o.v || sug === optVal(o))));
   let h = '<div class="flex flex-wrap gap-1.5 mt-1">';
   opts.forEach((o, i) => {{
     const s = isSug(o);

@@ -207,7 +207,10 @@ function askOpen(c) {
   const a = askOf(c);
   return !!(a && a.question && a.status !== 'answered');
 }
-function optLabel(o) { return typeof o === 'string' ? o : (o.label || o.id); }
+// options may be {id,label}, {v,d} (value/description shorthand), or a
+// bare string — tolerate all three so a non-canonical card can't blank out
+function optLabel(o) { return typeof o === 'string' ? o : (o.label || o.d || o.id || o.v || ''); }
+function optVal(o) { if (typeof o === 'string') return o; const k = o.id || o.v; return k ? k + ' — ' + (o.label || o.d || '') : (o.label || o.d || ''); }
 function needYou(c) {
   return (c.requests||[]).filter(r => r.status !== 'answered').length
        + (askOpen(c) ? 1 : 0);
@@ -242,7 +245,7 @@ function rowHtml(c, ctx) {
   return `<div class="card${mv ? ' just-moved' : ''}" draggable="true" data-id="${esc(c.id)}"${c.brief ? ` title="${tip}"` : ''}>` +
     `<div class="ttl">${esc(c.title)}</div>` +
     (brief1 ? `<div class="brief-line">${esc(brief1)}</div>` : '') +
-    `<div class="meta"><span class="chip-extra text-[9px] text-slate-500">${esc(c.id)}</span>` +
+    `<div class="meta"><span class="chip-extra text-[9px] text-slate-500">${c.ref?`<b class="text-sky-400 font-semibold">${esc(c.ref)}</b> `:''}${esc(c.id)}</span>` +
     (mv ? `<span class="badge bg-sky-800/80 text-sky-100">⇄ ${esc(mv)}</span> ` : '') +
     `<span class="chip-extra">${badgeHtml(c, ctx)}</span>` +
     (ny ? `<span class="badge bg-amber-800/80 text-amber-100" title="open requests/asks">❓${ny}</span> ` : '') +
@@ -341,9 +344,9 @@ function reqAnswerHtml(c, r) {
   if (opts.length) {
     let h = '<div class="flex flex-wrap gap-1.5 mt-1.5 ml-4">';
     for (const o of opts) {
-      const lbl = typeof o === 'string' ? o : (o.label || o.id);
-      const val = typeof o === 'string' ? o : (o.id + ' — ' + (o.label || ''));
-      const sug = r.suggested && (r.suggested === val || r.suggested === lbl || (typeof o !== 'string' && r.suggested === o.id));
+      const lbl = optLabel(o);
+      const val = optVal(o);
+      const sug = r.suggested && (r.suggested === val || r.suggested === lbl || (typeof o !== 'string' && (r.suggested === o.id || r.suggested === o.v)));
       h += `<button class="rq-opt text-xs ${sug?'bg-emerald-800 hover:bg-emerald-700 ring-1 ring-emerald-400 font-semibold':'bg-amber-800/70 hover:bg-amber-700'} rounded px-2 py-1" data-id="${esc(c.id)}" data-rq="${esc(r.id)}" data-val="${esc(val)}">${sug?'★ ':''}${esc(lbl)}</button>`;
     }
     h += `<input class="rq-in flex-1 min-w-[100px] bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs" data-id="${esc(c.id)}" data-rq="${esc(r.id)}" placeholder="other…">`;
@@ -364,7 +367,7 @@ function askAnswerHtml(c) {
   const a = askOf(c) || {};
   const opts = a.options || [];
   const sug = a.suggested || '';
-  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === `${o.id} — ${o.label || ''}`)));
+  const isSug = o => sug && (sug === optLabel(o) || (typeof o !== 'string' && (sug === o.id || sug === o.v || sug === optVal(o))));
   let h = '<div class="flex flex-wrap gap-1.5 mt-1.5 ml-4">';
   opts.forEach((o, i) => {
     const s = isSug(o);
@@ -548,7 +551,7 @@ function detailHtml(c) {
   const a = c.action || {};
   let h = `<div class="flex items-start gap-3">
     <div class="flex-1"><div class="text-lg font-semibold">${esc(c.title)}</div>
-    <div class="text-xs text-slate-500 mt-0.5">${esc(c.id)} · ${esc(c.column||'backlog')} ${c.priority?'· '+esc(c.priority):''}</div>
+    <div class="text-xs text-slate-500 mt-0.5">${c.ref?`<span class="text-sky-400 font-semibold">${esc(c.ref)}</span> · `:''}${esc(c.id)} · ${esc(c.column||'backlog')} ${c.priority?'· '+esc(c.priority):''}</div>
     <div class="mt-1 flex gap-1 flex-wrap">${badgeHtml(c, c.column || 'backlog')}</div></div>
     <div class="flex flex-col gap-1 items-end shrink-0">
       ${!['queued','running','done'].includes(a.status||'idle') && (a.type || !['doing','done','verified','review'].includes(c.column||'')) ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}
