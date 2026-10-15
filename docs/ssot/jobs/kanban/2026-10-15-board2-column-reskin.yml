@@ -1,0 +1,67 @@
+title: board2 Planka-style column reskin — 5 columns side-by-side + zoom + drag
+subtitle: View-layer-only reskin of render-board2.py; board1 + cards.json + board-api untouched
+icon: layout
+version: 1
+
+job: board2-column-reskin
+card: board2-column-reskin
+date: 2026-10-15
+dispatch: 20261015-120714-board2-planka-style-column-res
+branch: dispatch/20261015-120714-board2-planka-style-column-res
+
+summary: >
+  Reskinned board2 (scripts/render-board2.py output only) from tabbed
+  sidebar+detail layout to a Planka-style 5-column board. View layer only —
+  board1, cards.json payload, and board-api untouched.
+
+changes:
+  - >-
+    Columns: lab/backlog/doing/review/done now render side-by-side
+    (flex row, per-column scroll, horizontal overflow on narrow screens).
+    Tab navigation removed entirely.
+  - >-
+    Lab stays a virtual lane: lab cards appear in the Lab column (sorted
+    by review_by) AND in their real column — same semantics the tabs had;
+    real column shown as a chip.
+  - >-
+    Zoom: -/+ buttons in nav cycle card density compact -> normal -> full
+    via a class on #board (d-compact/d-normal/d-full), persisted in
+    localStorage b2-density. compact = title + affordance chips only;
+    normal = title + all label chips; full = + first line of brief.
+  - >-
+    Card rows: title + chips (id, priority, lab, needs-you n, comment
+    count n, checks-fail) — tight Planka-style rows.
+  - >-
+    Drag & drop: cards are draggable; dropping on backlog/doing/review/
+    done POSTs /apps/board-api/action {id, do:'move', column}. Lab column
+    is not a drop target (virtual lane; dimmed during drags).
+  - >-
+    Modal card view: clicking a card opens an overlay (backdrop click,
+    Esc, or x to close) with the full detail — actions, move select,
+    brief, lab fields, asks/requests, comms, comment box. Hash deep-link
+    #card=<id> still works; modal re-renders live on each poll and
+    preserves scroll + half-typed comment.
+  - >-
+    Kept: 10s live poll + movedIn flash + doing-column pulse + needs-tony
+    band + event ticker + live-dot + automation collapse groups.
+  - >-
+    Filter box moved into nav; now filters all columns at once
+    (single query, localStorage b2-q); column counts show vis/total
+    while filtering.
+  - >-
+    Implementation note: page template changed from f-string to raw
+    string PAGE with a __POLL_SECONDS__ placeholder — JS braces and
+    backslash escapes pass through unescaped.
+
+verification:
+  - python3 scripts/render-board2.py  -> wrote index.html + cards.json (721 cards)
+  - extracted <script> passes node --check
+  - >-
+    headless-chrome DOM test (fetch spy + synthetic events): PASS x8 —
+    5 cols, modal open/title/Esc-close, zoom full+compact, drop posts
+    move {id, do:move, column}, lab column rejects drops.
+
+followups:
+  - >-
+    Planka lab on idc02:8301 can be torn down per card help
+    (podman-compose down -v ~/planka-lab) once Tony confirms the reskin.
