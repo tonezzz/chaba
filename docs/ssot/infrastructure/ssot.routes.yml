@@ -96,6 +96,7 @@ services:
   omen-gpu-queue: {host: tony-omen, listen: "0.0.0.0:3001", tailnet: "http://100.68.142.13:3001"}
   omen-trade-api: {host: tony-omen, listen: "0.0.0.0:9002", tailnet: "http://100.68.142.13:9002"}
   input-bridge:   {host: idc02, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
+  cms-render:     {host: idc03, listen: "100.102.134.91:8010", tailnet: "http://100.102.134.91:8010", note: "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"}
   frigate:        {host: tony-dell, listen: "docker-net:5000", tailnet: "frigate:5000"}
   imagen:         {host: tony-omen, listen: "docker-net:8000", tailnet: "imagen-inference:8000"}
 

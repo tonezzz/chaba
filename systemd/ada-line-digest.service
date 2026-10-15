@@ -1,0 +1,14 @@
+[Unit]
+Description=LINE digest — weekly per-member chaba-cms summary push via ada-line-relay
+
+[Service]
+Type=oneshot
+# Rollout gate (card cmssurface-render-digest VERIFY): members=tony only
+# until Tony eyeballs a --dry-run; widen LINE_DIGEST_MEMBERS to include
+# member lanes after approval. Idempotent per member+ISO-week — safe to
+# re-run or run manually.
+Environment=LINE_DIGEST_MEMBERS=tony
+Environment=MDDB_CMS_URL=http://127.0.0.1:11027/v1
+Environment=LINE_DIGEST_SITE=https://cms.surf-thailand.com
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/line-digest.py
+TimeoutStartSec=120

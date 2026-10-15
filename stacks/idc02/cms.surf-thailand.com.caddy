@@ -1,0 +1,8 @@
+# cms.surf-thailand.com — chaba-cms-render live surface (card
+# cmssurface-render-digest). Append to the idc02 edge Caddyfile
+# (~/.config/caddy/Caddyfile). Entire site sits behind CF Access like the
+# *-ha.surf-thailand.com blocks — no Caddy-layer auth.
+cms.surf-thailand.com {
+	tls internal
+	reverse_proxy http://100.102.134.91:8010
+}

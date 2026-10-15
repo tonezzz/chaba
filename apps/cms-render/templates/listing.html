@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>/k/{{ kind }} <span class="count">({{ count }})</span></h1>
+<table class="index">
+  {% for r in rows %}
+  <tr>
+    <td><a href="/p/{{ r.slug }}{% if r.collection != 'ada-cms-pages' %}?c={{ r.collection }}{% endif %}">{{ r.title }}</a></td>
+    <td>{{ r.updated }}{% if r.stale %} <span class="chip warn">⚠</span>{% endif %}</td>
+    {% if r.collection != 'ada-cms-pages' %}<td><span class="coll-badge">{{ r.collection }}</span></td>{% endif %}
+    <td class="summ">{{ r.summary[:80] }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="summ"><a href="/feed/{{ kind }}.xml">RSS — /feed/{{ kind }}.xml</a></p>
+{% endblock %}

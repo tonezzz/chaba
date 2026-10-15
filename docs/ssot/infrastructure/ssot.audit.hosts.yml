@@ -1654,6 +1654,12 @@ hosts:
         expected_state: active
         critical: false
         note: Embedding proxy 127.0.0.1:11435 -> Gemini, ollama fallback
+      - name: chaba-cms-render.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "apps/cms-render FastAPI on tailnet 100.102.134.91:8010 — live MDDB->HTML surface; public cms.surf-thailand.com via idc02 edge (card cmssurface-render-digest)"
       - name: ada-pi-pwa.service
         type: service
         scope: user
@@ -1936,6 +1942,7 @@ hosts:
       - {name: mddb-memory-standard.timer, type: timer, scope: user}
       - {name: mddb-restart.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: ada-line-digest.timer, type: timer, scope: user, note: "weekly Mon 09:00 per-member LINE digest push via relay /send (card cmssurface-render-digest); members=tony until rollout approved"}
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service

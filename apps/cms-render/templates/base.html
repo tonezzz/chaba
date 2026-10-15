@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="{{ ui_lang|default('en') }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }}</title>
+<style>
+:root{color-scheme:dark}
+html,body{margin:0;background:#0b0b0d;color:#e8e8ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65}
+main{max-width:56rem;margin:0 auto;padding:2rem 1.25rem 4rem}
+h1{font-size:1.55rem;border-bottom:1px solid #2a2a2e;padding-bottom:.6rem}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+a{color:#7db4ff}
+a:hover{color:#a8ccff}
+code{background:#1a1a1f;padding:.1em .35em;border-radius:4px;font-size:.92em}
+pre{background:#141418;padding:1rem;border-radius:8px;overflow-x:auto}
+pre code{background:none;padding:0}
+pre.json{font-size:.82rem;line-height:1.5}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+blockquote{border-left:3px solid #2a2a2e;margin-left:0;padding-left:1rem;color:#b8b8be}
+table{border-collapse:collapse;font-size:.92rem}
+td,th{border:1px solid #2a2a2e;padding:.35em .7em;text-align:left;vertical-align:top}
+th{background:#141418}
+/* CMS thumbnail convention: [![alt](thumb)](full) -> a > img */
+a>img{max-width:11rem;max-height:11rem;border-radius:6px;vertical-align:middle}
+td a>img{max-width:56px;max-height:56px}
+img{max-width:100%}
+figure.media{margin:1rem 0}
+figure.media video,figure.media audio{width:100%;max-width:42rem;border-radius:8px;background:#000}
+figcaption{color:#8a8a92;font-size:.85rem;margin-top:.3rem}
+.topbar{display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap;max-width:56rem;margin:0 auto;padding:.8rem 1.25rem;border-bottom:1px solid #1c1c20;color:#8a8a92;font-size:.85rem}
+.topbar a{color:#8a8a92;text-decoration:none}
+.topbar a:hover{color:#e8e8ea}
+.topbar .brand{color:#e8e8ea;font-weight:600}
+.topbar .spacer{flex:1}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap;margin:.4rem 0 1rem}
+.chip{background:#141418;border:1px solid #2a2a2e;border-radius:99px;padding:.1rem .65rem;font-size:.78rem;color:#8a8a92}
+.chip.warn{color:#e8b44a;border-color:#4a3a1a}
+.chip.role{color:#7db4ff}
+.lede{color:#b8b8be;margin-top:-.4rem}
+.banner{background:#1c1710;border:1px solid #4a3a1a;border-radius:8px;padding:.7rem 1rem;margin:1rem 0;font-size:.9rem}
+.banner a{color:#e8b44a}
+.section{margin-top:2.2rem}
+h2.collhead{margin-top:2.6rem;color:#8a8a92;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px dashed #2a2a2e;padding-bottom:.3rem}
+.section h2{border-bottom:1px solid #2a2a2e;padding-bottom:.4rem}
+.section h2 .count{color:#8a8a92;font-weight:400;font-size:.85rem}
+table.index{width:100%}
+table.index td:first-child{white-space:nowrap}
+table.index .summ{color:#b8b8be;font-size:.85rem}
+.langswitch{font-size:.8rem}
+.langswitch a{border:1px solid #2a2a2e;border-radius:5px;padding:.05rem .5rem;text-decoration:none;margin-left:.3rem}
+.langswitch a.cur{background:#2a2a2e;color:#e8e8ea}
+.coll-badge{font-size:.7rem;border:1px solid #2a2a2e;border-radius:4px;padding:0 .35rem;color:#8a8a92;vertical-align:middle}
+footer{max-width:56rem;margin:0 auto;padding:1rem 1.25rem 3rem;color:#5a5a62;font-size:.78rem;border-top:1px solid #1c1c20}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+<nav class="topbar">
+  <a class="brand" href="/">{{ ui.site|default('chaba-cms') }}</a>
+  <a href="/">{{ ui.index|default('Index') }}</a>
+  {% block topnav %}{% endblock %}
+  <span class="spacer"></span>
+  {% block langs %}{% endblock %}
+</nav>
+<main>
+{% block body %}{% endblock %}
+</main>
+<footer>
+  chaba-cms-render v{{ version|default('') }} · live from MDDB · {{ host|default('') }}
+</footer>
+{% if has_mermaid %}
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({startOnLoad:true,theme:'dark'});
+</script>
+{% endif %}
+</body>
+</html>

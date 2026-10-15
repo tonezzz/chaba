@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block langs %}
+{% if langs and langs|length > 1 %}
+<span class="langswitch">{{ ui.language|default('Language') }}:
+  {% for l in langs %}
+  <a href="/p/{{ slug }}?lang={{ l }}{% if collection != 'ada-cms-pages' %}&c={{ collection }}{% endif %}" class="{{ 'cur' if l == cur_lang }}">{{ l }}</a>
+  {% endfor %}
+</span>
+{% endif %}
+{% endblock %}
+{% block body %}
+<h1>{{ title }}</h1>
+<div class="chips">
+  <span class="chip role">{{ kind }}</span>
+  {% if role %}<span class="chip">{{ role }}</span>{% endif %}
+  {% if domain %}<span class="chip">{{ domain }}</span>{% endif %}
+  {% if collection != 'ada-cms-pages' %}<span class="chip">{{ collection }}</span>{% endif %}
+  <span class="chip">{{ ui.updated|default('updated') }} {{ updated }}</span>
+  {% if fresh %}<span class="chip">{{ ui.fresh|default('fresh') }} {{ fresh }}</span>{% endif %}
+  {% if stale %}<span class="chip warn">⚠ {{ ui.stale|default('STALE') }}</span>{% endif %}
+  {% if status not in ('active','') %}<span class="chip warn">{{ status }}</span>{% endif %}
+</div>
+{% if moved %}
+<div class="banner">{{ ui.moved|default('This page was superseded') }} →
+  {% if moved.startswith('http') %}<a href="{{ moved }}">{{ moved }}</a>
+  {% else %}<a href="/p/{{ moved }}">{{ moved }}</a>{% endif %}
+</div>
+{% endif %}
+{% if summary %}<p class="lede">{{ summary }}</p>{% endif %}
+{% block lead %}{% endblock %}
+{{ content|safe }}
+{% endblock %}
