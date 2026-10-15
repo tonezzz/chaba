@@ -1,0 +1,95 @@
+title: Offline lesson miner — Ada transcripts -> WP lesson CPT (no prompt tokens)
+id: 2026-10-15-lesson-transcript-miner
+card: lesson-transcript-miner
+date: 2026-10-15
+dispatch: 20261015-101304-offline-lesson-miner-transcrip
+runner: idc02
+status: built-in-worktree (job registered, not yet installed on idc03)
+
+summary: |
+  Offline counterpart of the live lesson-capture duty (AGENTS.md,
+  2026-10-15). Instead of burning per-session voice tokens to file
+  lessons inline, a nightly batch job on idc03 scans Ada session
+  transcripts for Tony's knowledge-Q&A turns, drafts lesson HTML from
+  the FULL transcript (richer than the live voice answer — the model
+  sees surrounding context, corrects ASR garble, organizes prose),
+  and files each topic via scripts/lesson-add.py (slug upsert +
+  automatic Thai translation). Zero per-session prompt tokens, zero
+  voice latency.
+
+pipeline: |
+  1. scan     — ~/.local/share/ada/transcripts/*.md newer/changed since
+                last run (size dedup in
+                ~/.local/share/ada/lesson-miner-state.json)
+  2. filter   — mechanical question-turn detection, no LLM: '?' /
+                EN question starters / Thai question markers; device
+                commands and <15-char turns dropped; each user question
+                paired with the following Ada turn(s) as its answer
+  3. classify — ONE gemini-3.5-flash-lite JSON call for the whole batch:
+                durable knowledge (explainer/comparison/how-it-works) vs
+                commands/chit-chat/private asks -> topic + level
+  4. draft    — one call per kept topic (--max-lessons 4/run): standalone
+                HTML fragment built from the full transcript; personal
+                specifics stripped, uncertainty flagged not asserted
+  5. file     — subprocess scripts/lesson-add.py --source voice
+                (topic -> slug lesson-<md5> upsert on the WP lesson CPT;
+                Thai section appended by the existing gemini call inside
+                lesson-add.py)
+
+cost_model: |
+  Free-first: LESSON_MINER_MODEL (default gemini-3.5-flash-lite), key
+  resolved env GEMINI_API_KEY_FREE/GEMINI_API_KEY/GOOGLE_API_KEY then
+  ~/.config/secrets/{mddb-gemini,gemini-keys,ada-pi-pwa}.env. Setting
+  GEMINI_BASE_URL=http://100.102.134.91:4000 + a LITELLM virtual key in
+  the unit env rides the gateway fallback chain instead (pure env opt-in
+  per ssot.llm-gateway.yml batch_opt_in). Typical run: 1 classify call +
+  <=4 draft calls + <=4 Thai-translation calls (inside lesson-add.py) =
+  well inside the 20 req/day free tier.
+
+dedup_and_state: |
+  State file ~/.local/share/ada/lesson-miner-state.json:
+    scanned: {filename: size} — re-scan only on change/append
+    filed:   {lesson-slug: {topic, at, file, level}} — a topic Tony
+             re-asks does not burn another draft call (--refile to
+             override; lesson-add.py upserts in place anyway)
+  Board comment: quiet-when-empty — posts to card
+  lesson-transcript-miner only when lessons were filed or drafting/
+  filing was attempted and failed.
+
+fallback: |
+  If mined recall proves lossy (candidates exist but classify keeps
+  nothing over several runs), the approved fallback is a one-line Ada
+  instruction + lesson-intake card comm (~20 tok, no new tool schema) —
+  not implemented; watch the first week of runs first.
+
+ops: |
+  Manual run on idc03:
+    python3 ~/CascadeProjects/chaba/scripts/ada/lesson-miner.py --dry-run
+  Install (after merge): scripts/render-jobs.py --host idc03 --install
+    -> systemd/generated/idc03/ada-lesson-miner.{service,timer}
+    OnCalendar *-*-* 04:40:00, Persistent, OnFailure ada-report-fail.
+  Requires on the host: ~/.config/secrets/wp-boards.env (WP lesson CPT),
+  a GEMINI key (free tier ok), transcripts at ~/.local/share/ada/.
+
+deliverables:
+  - file: scripts/ada/lesson-miner.py
+    role: miner pipeline (scan/filter/classify/draft/file + state)
+  - file: tests/ada/test_lesson_miner.py
+    role: 11 unit tests — parse, question filter (EN+TH, command/tiny
+      exclusion), Q->A pairing, slug parity with lesson-add.py, state
+  - file: docs/ssot/infrastructure/ssot.jobs.yml
+    role: ada-lesson-miner job entry (idc03, daily 04:40, systemd)
+  - file: systemd/generated/idc03/ada-lesson-miner.{service,timer}
+    role: rendered units (render-jobs.py --host idc03)
+
+verification: |
+  python3 -m unittest tests.ada.test_lesson_miner  — 11/11 green.
+  render-jobs.py --check — 54 jobs OK; rendered idc03 units verified.
+  End-to-end smoke with stubbed gemini_rest: candidate -> classify ->
+  draft path exercised; real LLM/WP path runs first night on idc03.
+
+not_done: |
+  - Unit not installed/enabled on idc03 — dispatch rule: no deploy.
+    After merge: render-jobs.py --host idc03 --install + enable timer.
+  - First live run will post its filing summary to the card; check
+    lesson quality on the first batch before letting it run unattended.
