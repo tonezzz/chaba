@@ -1,0 +1,34 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 1ad37cd..fa3b9b1 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -81,7 +81,11 @@ tv_action: >-
+   PNG, so it is auto-rewritten to the live lane);
+   text='screenlive:workspace:N[:pad|crop]' casts this host's live
+   workspace; text='tony-omen:workspace:N' casts Tony's desktop (also
+-  switches his live workspace). On a nav'd page: scroll text='up|down'
++  switches his live workspace). Every 'send/show/play X on the TV' ask
++  lands here — the TV, never a numbered vcast screen; if the TV is
++  unavailable or cast_verify failed, say that in one clause and stop —
++  never reroute to a screen the user did not name as a fallback.
++  On a nav'd page: scroll text='up|down'
+   (+dx/dy/factor), click text='<visible text>'/role=/selector=, type
+   text=, press text='<key>', back, shot text='<name>', viewport
+   text='WxH'. A streamed desktop is one-way video — for interaction nav
+@@ -99,7 +103,15 @@ tv_action: >-
+ 
+ cast_to_screen: >-
+   Numbered vcast displays — not the physical TV (tv_action / yt cast for
+-  that). DISPLAY MANAGEMENT: 'claim' pairs a pending display by the
++  that). TARGET FIDELITY: 'the TV' / 'ทีวี' is the physical TV — NEVER
++  a numbered screen, not even as a fallback when the TV is unavailable
++  (say it is unavailable). Only an explicit 'screen N', a display label,
++  or 'the <name> display' resolves here — when the user names no
++  target, ask; never guess a screen number. A correction ('not screen
++  1, the TV') is binding: the next call goes to the named target, never
++  back to the rejected one. ok:false means nothing is showing —
++  delivered:0 never reaches the model as a success, and no result may
++  be narrated as done. DISPLAY MANAGEMENT: 'claim' pairs a pending display by the
+   4-digit code on its QR screen; 'assign' retitles/renumbers a display;
+   'background' veils a screen while its audio keeps playing. Chat
+   screens self-register as ada-chat-<id> — 'list' shows them; mirror a

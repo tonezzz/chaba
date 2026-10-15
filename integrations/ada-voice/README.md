@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Nine drops live here:
+chaba dispatches. Ten drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -19,6 +19,10 @@ chaba dispatches. Nine drops live here:
    `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
 8. reply-context routing — LINE sends bind to the originating chat —
    card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13)
+9. whisper-url transcription — card `stt-omen-large-v3` (2026-10-14),
+   **already deployed** (ada-voice `daa0e0a`)
+10. cast wrong-target honesty + goal-loop breaker + frustration budget —
+    card `ada-cast-wrong-target-verbose-loop` (ADA-0684, 2026-10-15)
 
 ---
 
@@ -669,3 +673,111 @@ Card `stt-omen-large-v3` (2026-10-14) — **already deployed** (ada-voice
 - While whisper is warm (~5min after a clip), phi3 reloads into
   partial CPU offload on the 4GB GTX 1650 — the intended GPU-citizen
   tradeoff (ssot.gpu one-workload policy).
+
+---
+
+## Drop 10 — cast wrong-target honesty + goal-loop breaker + frustration budget
+
+Card `ada-cast-wrong-target-verbose-loop` (ADA-0684, Tony voice session
+2026-10-14 23:20 ICT, transcript `2026-10-14-4029a6447f`). Tony asked
+"send God's Eye View to the TV"; 'TV' misrouted to
+`cast_to_screen(screen=1)` twice — both `/pub` acks carried
+`delivered: 0` (screen 1 was offline) yet `ok: true`, so each narrated
+as "opened on screen 1". `control_entity turn_on media_player.tony_tv`
+returned `ok: true` on an entity HA itself reported 'unavailable'
+(MED-0493 class). The explicit correction "not screen 1 — the TV" was
+then inverted into an `ada_remember` write ("user wants only screen 1")
+that the confirm gate refused — while she SAID she'd remembered it
+(OPS-0567 class: correction dies at the gate, phantom claim survives).
+Only the 5th/6th attempts hit `tv_action`, which correctly failed
+`cast_verify`. Defects fixed:
+
+- (a) target honesty — results that landed nowhere can no longer
+  present as success, and the TV-vs-screen routing rule is explicit;
+- (b) failure loop — no breaker covered a goal wandering across tools
+  (the storm breaker is per-tool+error-class);
+- (c) verbosity — no register-mirroring rule; Tony's short frustrated
+  turns DID make her efficient, so it is formalized as a response
+  budget, not a feature that requires cursing.
+
+### Files
+
+- `backend/screens.delivered-zero.patch` — `tool_runner/screens.py`.
+  New `_pub_truth`: any cast_to_screen `/pub` result (nav/play/image/
+  audio/stop/layout/zoom/uplink*/background/say) with `ok:true` +
+  `delivered:0` flips to `ok:false` — "screen N is not connected … Do
+  NOT claim it showed"; absent `delivered` (older relay) passes
+  through. The miss now counts toward both breakers.
+- `backend/ha.unavailable-precheck.patch` — `tool_runner/ha.py`.
+  `control_entity` refuses up front when the precheck state is
+  'unavailable' — the service call is a guaranteed no-op; the error
+  says so plainly and forbids substituting an unnamed device.
+- `backend/tool_runner.goal-loop.patch` — `tool_runner/__init__.py`.
+  New `_goal_loop` (runs after `_denial_breaker`): GOAL_LOOP_ASK
+  consecutive counted failures (`_storm_error_class`) on CONTROL_TOOLS
+  in one session scope attach `stop_and_ask` — "tell the user in ONE
+  short sentence what is failing and ask what they want". A clean or
+  gate-deferred (needs_confirm) actuating result clears the streak;
+  circuit-open results skip. Directive, not hard block — an explicit
+  user "try again" stays legal.
+- `backend/common.goal-loop.patch` — `tool_runner/common.py`. New
+  `GOAL_LOOP_ASK` (env `ADA_GOAL_LOOP_ASK`, default 2) and
+  `GOAL_LOOP_WINDOW_S` (env `ADA_GOAL_LOOP_WINDOW_S`, default 600).
+- `backend/tool_guide.target-fidelity.patch` — `tool_guide.yml`.
+  cast_to_screen: 'the TV'/'ทีวี' is NEVER a numbered screen, not even
+  as a fallback; corrections are binding. tv_action: every 'send/show/
+  play X on the TV' lands here; unavailable/cast_verify-fail = one
+  clause then stop.
+- `backend/realtime_provider.cast-loop.patch` — `realtime_provider.py`
+  DEFAULT_ADA_INSTRUCTIONS. Three discipline bullets: TARGET FIDELITY
+  (named destination binding; corrections re-issue to the named target;
+  never store a correction inverted), FRUSTRATION BUDGET (short/
+  repeated/corrective turns collapse replies to one clause — no offers,
+  no questions; a bare repeat is the signal), FAILED-ACTION LOOP (two
+  failures end initiative; a `stop_and_ask` result is binding).
+- `tests/scenarios/cast_wrong_target_loop.yaml` — replay of the
+  incident: delivered:0 cast fails honestly, unavailable entity
+  refuses, stop_and_ask lands on the second cross-tool failure,
+  corrected tv_action resolves in one retry and clears the streak, and
+  the per-tool storm breaker short-circuits the third repeat — the
+  deterministic 'max 2 attempts then ask' floor.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && for p in screens.delivered-zero \
+   ha.unavailable-precheck tool_runner.goal-loop common.goal-loop \
+   tool_guide.target-fidelity realtime_provider.cast-loop; do git apply \
+   <chaba>/integrations/ada-voice/backend/$p.patch; done`
+   — base `main` @ `5dc7665` (verified `git apply --check` clean on a
+   fresh clone); if a hunk no longer applies, re-dispatch rather than
+   hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/scenarios/cast_wrong_target_loop.yaml
+   tests/scenarios/`
+3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; restart the ada-ha units
+   (realtime_provider instructions + tool_runner are in the voice
+   path). No manifest/surface change — no count_cap bump.
+
+### Verified
+
+- ada-voice `main` @ `5dc7665` + patches on a /tmp clone:
+  `pytest tests/` 1467 passed / 1 skipped; `tests/test_scenarios.py`
+  20/20 incl. the new scenario; `tool-lint` clean.
+- Chaba side: `tests/ada/test_cast_loop_breaker.py` — patch-apply gate
+  + patched-tree scenario run via the checkout's venv. Run with
+  `ADA_PI=<ada-voice checkout>`.
+
+### Residual / judgement calls
+
+- The stop_and_ask breaker is a directive, not a refusal — a user's
+  explicit "try again" must stay legal. The deterministic floor is the
+  existing per-tool storm breaker (TRIP=2 same-class).
+- The inverted-correction memory write is a model comprehension bug,
+  not patchable deterministically — covered by the TARGET FIDELITY
+  instruction; if it recurs, the fix is upstream (model or a
+  correction-echo tool step).
+- `gev_command(screen=N)` still silently lists tours when name is
+  absent — a model treating it as "put GEV on screen N" gets the tour
+  card back; the new guide text covers the TV misroute, but a
+  screen-only gev_command could also carry a hint. Left for a
+  follow-up if it recurs.

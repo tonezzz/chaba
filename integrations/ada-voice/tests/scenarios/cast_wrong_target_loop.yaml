@@ -1,0 +1,110 @@
+name: cast-wrong-target-loop
+instance: tony
+# ada-cast-wrong-target-verbose-loop — 2026-10-14 voice session
+# 4029a6447f: 'send God's Eye View to the TV' resolved to
+# cast_to_screen(screen=1) TWICE — both returned ok:true delivered:0
+# (screen 1 was offline) and Ada claimed "opened on screen 1"; a
+# turn_on on 'unavailable' media_player.tony_tv returned ok:true;
+# correction turns kept bouncing off the rejected target. Fixes under
+# test:
+#   1) delivered:0 flips the cast to ok:false — the phantom-success
+#      result becomes a narratable failure.
+#   2) an 'unavailable' entity refuses the actuation up front instead
+#      of swallowing the service call ok:true.
+#   3) two consecutive actuating failures ACROSS tools attach
+#      stop_and_ask — the goal-loop breaker the per-tool storm
+#      breaker can't see.
+#   4) the corrected target resolves in ONE retry: tv_action nav 'gev'
+#      on a healthy TV+cast lands ok:true and clears the streak.
+#   5) a later cast that also delivers 0 fails honestly again, and the
+#      per-tool storm breaker then short-circuits the repeat — the
+#      deterministic 'max attempts then stop' floor.
+env:
+  ADA_CAMWALL_BASE: "http://127.0.0.1:9/"   # no manifest read
+cast_screens:
+  screens: {"1": "shared"}
+  tv:
+    entity: media_player.tony_tv
+    screens: [1]
+    ok_apps: ["browser"]
+vcast:
+  /capture: {captures: {}}
+  /camwall: {ok: true, zones: {}}
+  /pub: {ok: true, delivered: 0}           # relay acks, display offline
+  /displays:
+    screens:
+      - {screen: 1, name: screen-1, label: screen-1, connected: false,
+         state: idle, state_detail: "", panes: 1}
+ha_entities:
+  - {entity_id: media_player.tony_tv, state: "on", available: true,
+     name: TONY-TV}
+  - {entity_id: media_player.tony_tv_cast, state: "playing",
+     available: true, name: TONY-TV Cast}
+ha_states:
+  input_select.tv_cast_target: {state: ""}   # -> default cast entity
+  media_player.tony_tv_cast: {state: "playing", attributes:
+    {friendly_name: TONY-TV Cast}}
+ha_states_seq:
+  media_player.tony_tv:
+    # step 2: the control_entity precheck reads 'unavailable' -> refuse.
+    - {state: unavailable, attributes:
+       {restored: true, friendly_name: TONY-TV}}
+    # step 4: tv_action's input verify sees the browser foregrounded.
+    - {state: "on", attributes:
+       {app_id: "com.webos.app.browser",
+        app_name: "com.webos.app.browser", friendly_name: TONY-TV}}
+ha_tv_action: {ok: true, cast: nav}
+steps:
+  # 1) The incident shape: 'to the TV' was misrouted to screen 1 and the
+  #    relay acked nothing — the result must be a failure, not ok:true.
+  - tool: cast_to_screen
+    args: {action: shortcut, shortcut: gev, screen: 1}
+    expect:
+      error_contains: "not connected"
+      output_contains:
+        - '"ok": false'
+        - '"delivered": 0'
+      output_not_contains: ['"stop_and_ask"']
+
+  # 2) Second failed attempt at the same user goal, a different tool —
+  #    'unavailable' refuses up front AND the cross-tool streak hits
+  #    GOAL_LOOP_ASK: the stop_and_ask directive lands on this result.
+  - tool: control_entity
+    args: {entity_id: media_player.tony_tv, action: turn_on}
+    expect:
+      error_contains: "unavailable"
+      output_contains:
+        - '"ok": false'
+        - '"stop_and_ask"'
+        - "ONE short sentence"
+
+  # 3) User corrected 'not screen 1 — the TV': the named target resolves
+  #    in ONE retry — tv_action lands ok:true (cast_verify saw the
+  #    player 'playing', tv_input saw the browser foregrounded).
+  - tool: tv_action
+    args: {cmd: nav, text: gev}
+    expect:
+      no_error: true
+      output_contains:
+        - '"ok": true'
+        - '"gev_lane"'
+        - '"cast_verify"'
+      output_not_contains: ['"stop_and_ask"']
+
+  # 4) The clean call cleared the streak — a fresh failure on the same
+  #    tool is a normal error again, not a stop_and_ask.
+  - tool: cast_to_screen
+    args: {action: shortcut, shortcut: gev, screen: 1}
+    expect:
+      error_contains: "not connected"
+      output_not_contains: ['"stop_and_ask"', '"circuit_open"']
+
+  # 5) But the per-tool storm breaker now short-circuits the same tool's
+  #    repeat — the deterministic floor under 'max 2 attempts then ask'.
+  - tool: cast_to_screen
+    args: {action: shortcut, shortcut: gev, screen: 1}
+    expect:
+      output_contains:
+        - '"circuit_open": true'
+        - '"error_type": "CircuitOpen"'
+        - "DO NOT RETRY"
