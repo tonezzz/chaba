@@ -193,7 +193,10 @@ card_schema:
       ask: "question"
       options: "optional list — renders one-click answer buttons instead of
         a free-text box. Items are strings ('A — syncthing clipboard dir')
-        or {id, label} objects. Answering posts the option text."
+        or {id, label} objects; {id, label, action} additionally declares
+        what answer-sweep executes when that option wins (queue|retry|
+        close|hold|none — knb-answer-action-triage). Answering posts the
+        option text."
       suggested: "optional — must equal one of options[] (string item, the
         option's id or label, or the 'id — label' composite). A
         recommendation, NOT a default: the suggested option renders ★
@@ -201,6 +204,10 @@ card_schema:
         auto-answers (kanban-request-suggested-answer)."
       status: "open | answered"
       answer: null
+      executed: "YYYY-MM-DD <verb> — stamped by answer-sweep.py when the
+        answered request's board action ran (or 'none' for acknowledge-
+        only answers like superseded/duplicate). Unmapped answers stay
+        unexecuted and keep awaiting_action set — they ARE the triage."
       at: "YYYY-MM-DD HH:MM — stamped by POST /request (kanban-push-notify)"
       from: "devin | ada | chaba | tony — who raised it"
       to: "target actor; absent = tony. Tony-targeted agent-raised requests
@@ -252,7 +259,14 @@ write_path:
       pushed into the live session: appended to
       $DISPATCH_DIR/tasks/<task_id>/answers.jsonl on the runner host (local
       write or ssh; best-effort, comms note either way —
-      board-answer-live-session). Sessions are told to poll that file."
+      board-answer-live-session). Sessions are told to poll that file.
+      Answers on idle cards are then triaged by answer-sweep.py inside
+      kanban-sync (15min): a known-verb answer executes its board action
+      (queue/dispatch/proceed/yes… -> queue; close/done/retire -> done via
+      merge-guard; hold/park/defer/keep… -> backlog; superseded/duplicate
+      -> stamped 'none'), dict-option `action:` fields execute verbatim,
+      and anything unmapped stays awaiting_action for a human —
+      knb-answer-action-triage."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
       400 'text required' on empty/whitespace text"
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
