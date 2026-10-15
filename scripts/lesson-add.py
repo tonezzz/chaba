@@ -98,7 +98,7 @@ def main():
     slug = "lesson-" + hashlib.md5(a.topic.strip().lower().encode()).hexdigest()[:12]
     wp = WP()
     payload = {
-        "title": f"Lesson — {a.topic}",
+        "title": f"Education — {a.topic}",
         "slug": slug,
         "status": "private",
         "content": content,

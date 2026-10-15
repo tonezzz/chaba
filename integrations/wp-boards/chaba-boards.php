@@ -7,12 +7,12 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.4.1
+ * Version: 0.4.2
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.4.1';
+const CHABA_BOARDS_VER = '0.4.2';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -44,7 +44,8 @@ add_action('init', function () {
         'repeat_ask' => ['Repeat Ask','Repeat Asks','dashicons-flag'],
         // lesson — Tony's education ledger: things he asked + the answers.
         // Agents write via REST; next_review drives spaced-recall digests.
-        'lesson'   => ['Lesson',   'Lessons',   'dashicons-welcome-learn-more'],
+        // Slug stays "lesson" (posts/URLs stable); label = Education.
+        'lesson'   => ['Education','Educations','dashicons-welcome-learn-more'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
