@@ -1,0 +1,57 @@
+title: tony-omen /home disk-critical incident (99% -> 57%)
+subtitle: model-fleet-bench model pulls filled /home; console cleanup moved ~77G to /data
+icon: alert
+version: 1
+
+card: disk-auto-tony-omen-home
+ref: OPS-0405
+date: 2026-10-15
+dispatch: 20261015-134048-disk-tony-omen-home-critical-9
+runner: tony-omen
+
+timeline: |
+  - Oct 11: OPS-0405 move-cache executed (/home 80%->50%); mddb-retired dumps
+    (64G) relocated /data -> ~/mddb-backups-idc01-retired (preserved on /home).
+  - Oct 12 10:30 -> Oct 14 19:00: /home 199.6G -> 242.5G (~+9G/day baseline:
+    devin sessions.db backups ~5.5G each, worktrees, caches).
+  - Oct 14 19:00-22:10 (model-fleet-benchmark dispatch): +30G+ pulled into
+    ~/model-bench (gemma-3-27b-it-Q4_K_M 15.4GiB, Llama-3.2-3B 2G),
+    ~/.ollama blobs (~10G), ~/models/sd sdxl-lightning 2.6G,
+    ~/.venvs/ada-whisper CUDA libs (~1.3G).
+  - Oct 14 19:00 -> Oct 15 01:30: /home 242G -> 281G; -> 303G (99%, 4.1G free)
+    by ~10:31 Oct 15; held at 99% through 13:15. Side effect: EMFILE
+    ("Too many open files") errors from gnome-keyring et al ~13:26.
+  - 13:26 wake-screens fired (console active). 13:30-13:36 operator cleanup:
+    ~/mddb-backups-idc01-retired -> /data/backups/mddb-backups-idc01-retired
+    (+symlink back at ~/), ~/.local/share/devin/cli/backups/*.db (3 files,
+    ~13G) -> /data/backups/devin-cli; ~55G more deleted outright.
+  - 13:40 this dispatch started; verified state, moved leftover
+    sessions.db.20261011-203232 (5.5G) to /data/backups/devin-cli.
+
+result:
+  home_pct_now: 57          # 127 GiB free
+  home_pct_peak: 99         # 4.1 GiB free, 10:31-13:15
+  data_pct_now: 88          # 36 GiB free - landing zone now under pressure
+  moved_to_data: ~82G       # 64G mddb-retired + 18G devin-cli db backups
+  deleted_at_console: ~55G  # unaccounted deletes during 13:30-13:36 cleanup
+
+growth_drivers:
+  - model-fleet-bench pulls (~/model-bench, ~/.ollama, ~/models) - one-off ~30G,
+    re-pulls on rerun
+  - devin-cli sessions.db backups ~5.5G each, no retention policy
+    (~/.local/share/devin/cli/backups + live sessions.db 5.5G growing)
+  - CascadeProjects worktree accumulation (~190-900M per dispatch-wt-*)
+  - ~/.venvs growth (ada-whisper CUDA stack ~1.3G+)
+
+gaps:
+  - disk-trend-watch DU_ROOTS only covers ~/.cache/* + /var/log; the actual
+    growers (model-bench, .ollama, .local/share/devin, .venvs,
+    CascadeProjects) are invisible to top-grower detection. Extend watchlist.
+  - /data now 88% (36G free) - mddb backups + HF cache (105G) + newly moved
+    sets; needs retention decision soon (disk-auto-tony-omen-data).
+  - devin-cli backup dir has no keep-N; each backup ~5.5G.
+
+related:
+  - docs/ssot/jobs/models/2026-10-14-model-fleet-bench.yml (the fill source)
+  - card disk-auto-tony-omen-data (landing-zone pressure)
+  - card disk-auto-tony-dell-root (tony-dell / at 98% same day - separate)
