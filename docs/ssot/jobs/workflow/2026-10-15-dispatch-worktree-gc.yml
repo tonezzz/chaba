@@ -1,0 +1,60 @@
+title: Dispatch worktree GC at card close + merge-sweep salvage
+subtitle: >-
+  Remove session worktree+branch when the head is provably on origin;
+  backstop stays devin-dispatch-prune.sh
+id: 2026-10-15-dispatch-worktree-gc
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-worktree-gc
+branch: dispatch/20261015-100100-in-scripts-board-runner-agent-
+started: "2026-10-15"
+completed: "2026-10-15"
+
+context:
+  user_request: >
+    Card dispatch-worktree-gc (OPS-0445): dispatch worktrees accumulate
+    forever (2026-10-11 tony-dell disk pressure, 97% -> 87% after a
+    manual sweep). Task dirs were already handled by
+    prune-devin-sessions.sh; worktrees still leaked. Spec: in
+    runner-agent's close path (or a sweep hook) remove the dispatch
+    worktree when the card closes AND it is clean+merged; never remove
+    dirty worktrees, never remove unmerged branches; one comms line
+    records what was removed; also clean the runner-side worktree after
+    merge-sweep's remote salvage merge+push.
+
+design:
+  helper: >
+    dispatch_repos.gc_worktree(worktree, merged_into, branch, task_id)
+    — the guarded removal. Guards mirror devin-dispatch-prune.sh:
+    porcelain-clean tree, no active devin-task-<tid>* unit, HEAD
+    ancestor of `merged_into` (caller-supplied merge proof: close_out's
+    pushed merge sha, or a fetched origin/<base>). `git worktree
+    remove` never --force (git re-refuses dirty/locked); branch via -d
+    with an ancestry-gated -D fallback. KANBAN_WTGC=0 disables.
+  close_path: >
+    dispatch_repos.gc_session(res) turns a close_out() result into GC +
+    comms lines; self-gating on ancestry so unmerged/conflict results
+    simply skip (a "worktree kept: <why>" note explains). Called by
+    runner-agent.close_out_merge (getattr-guarded for stale host
+    checkouts) and kanban-dispatch.merge_pending_one.
+  salvage_path: >
+    merge-sweep.REMOTE_GC_PROBE ships over `ssh <runner> python3 -`
+    (same transport as REMOTE_SESSION_PROBE) after merge_strict pushes
+    the fetched head — or whenever the fetched head already proves
+    inside origin/<base>. The runner verifies its tree is clean and
+    every commit is inside the sha dell merged, then removes
+    worktree+branch; one card comms lists the removals. Unreachable
+    runners retry on the next pass.
+  backstop: >
+    Cards already column=done never re-enter sweep scope and
+    verified-stragglers whose GC raced rely on the weekly
+    devin-dispatch-prune.timer — deliberate layering, not a gap.
+
+verification: >
+  tests/board/test_worktree_gc.py — 16 cases, unittest+tmpdir style:
+  merged+clean removed; dirty/unmerged/locked preserved; kill switch;
+  gc_session note text; REMOTE_GC_PROBE through the real python3-stdin
+  transport; gc_runner_worktree comms via the locked-YAML fallback; and
+  runner-agent close_out_merge end-to-end (merge + push + worktree
+  gone + branch deleted). Full tests/board suite: 141 tests green.

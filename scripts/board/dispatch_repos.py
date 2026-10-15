@@ -15,9 +15,11 @@ Consumers:
                                      commits are non-ancestors of the
                                      default branch
   scripts/board/kanban-dispatch.py — session-end comms (dirty worktree /
-                                     unmerged commit counts), claim order
-  scripts/board/runner-agent.py    — close_out merge + the same claim
-                                     order via dr_module()
+                                     unmerged commit counts), claim
+                                     order, close-out worktree GC
+  scripts/board/runner-agent.py    — close_out merge + worktree GC at
+                                     card close + the same claim order
+                                     via dr_module()
 """
 import json
 import os
@@ -868,6 +870,131 @@ def close_out_notes(res: dict) -> list:
         notes.append(f"auto-merge not done: {why} — close will block "
                      "until merged")
     return notes
+
+
+# -------------------------------------------------------- worktree GC
+#
+# Card dispatch-worktree-gc: dispatch worktrees and dispatch/<id>
+# branches accumulate forever (the 2026-10-11 tony-dell disk pressure —
+# manual sweep freed 10%). devin-dispatch-prune.sh is the weekly
+# backstop; gc_worktree() is the close-path GC — once the merge step has
+# PROVEN the session head is on origin/<default>, the worktree goes now
+# instead of lingering a week. Guards mirror the prune script — removal
+# only when ALL hold:
+#
+#   * worktree exists and `git status --porcelain` is empty (dirty
+#     worktrees are NEVER touched — uncommitted work has no backup)
+#   * no devin-task-<tid>* unit is active/activating for it
+#   * HEAD is an ancestor of `merged_into` — a local rev the caller
+#     already proved carries the work: close_out's pushed merge sha, or
+#     a fetched origin/<base> (merge-sweep hands the runner the sha it
+#     merged, via its own probe — same check, other side of the ssh)
+#
+# `git worktree remove` (never --force) re-refuses dirty/locked trees —
+# our porcelain check is a pre-check for a readable skip reason, git is
+# the second opinion. Branch delete tries -d, falls back to -D only
+# after re-proving ancestry (the -d refusal case: branch pushed without
+# upstream reachability — commits are already on origin, the local ref
+# loses nothing; prune.sh's branch_delete uses the same escape).
+# KANBAN_WTGC=0 disables both this and the merge-sweep probe call.
+
+def gc_worktree(worktree: Path, merged_into: str, branch: str = "",
+                task_id: str = "") -> dict:
+    """{"removed": [str], ...} — "skipped" (nothing done, reason) or
+    "error" (removal attempted, git refused), "kept_branch" when the
+    worktree went but the branch delete failed."""
+    out: dict = {"removed": []}
+    if os.environ.get("KANBAN_WTGC", "1") == "0":
+        out["skipped"] = "KANBAN_WTGC=0"
+        return out
+    wt = Path(worktree) if worktree else None
+    if not wt or not wt.is_dir():
+        out["skipped"] = "worktree gone"
+        return out
+    dirty = dirty_count(wt)
+    if dirty is None:
+        out["skipped"] = "worktree unreadable"
+        return out
+    if dirty:
+        out["skipped"] = f"dirty — {dirty} uncommitted file(s)"
+        return out
+    if task_id and sh(["systemctl", "--user", "list-units",
+                       f"devin-task-{task_id}*",
+                       "--state=active,activating",
+                       "--no-legend", "--plain"], timeout=15
+                      ).stdout.strip():
+        out["skipped"] = f"devin-task-{task_id}* still active"
+        return out
+    head = _rev_parse(wt, "HEAD")
+    if not head:
+        out["skipped"] = "no HEAD"
+        return out
+    if not merged_into or not _rev_parse(wt, merged_into):
+        out["skipped"] = f"merged-ref {merged_into or '?'} not present"
+        return out
+    if sh(["git", "-C", str(wt), "merge-base", "--is-ancestor",
+           head, merged_into]).returncode != 0:
+        out["skipped"] = f"unmerged commits — HEAD not in {merged_into}"
+        return out
+    root = _repo_root(wt)
+    if root is None:
+        out["skipped"] = "no repo root"
+        return out
+    r = sh(["git", "-C", str(root), "worktree", "remove", str(wt)],
+           timeout=60)
+    if r.returncode != 0:
+        out["error"] = ("worktree remove: "
+                        + (r.stderr or r.stdout).strip()[:160])
+        return out
+    out["removed"].append(f"worktree {wt}")
+    if branch:
+        r = sh(["git", "-C", str(root), "branch", "-d", branch],
+               timeout=30)
+        if r.returncode != 0:
+            # -d can refuse when the branch has no upstream and the
+            # checkout's HEAD doesn't contain it — the ancestry gate
+            # already proved the commits are in merged_into.
+            anc = sh(["git", "-C", str(root), "merge-base",
+                      "--is-ancestor", branch, merged_into])
+            if anc.returncode == 0:
+                r = sh(["git", "-C", str(root), "branch", "-D", branch],
+                       timeout=30)
+        if r.returncode == 0:
+            out["removed"].append(f"branch {branch}")
+        else:
+            out["kept_branch"] = branch
+    sh(["git", "-C", str(root), "worktree", "prune"], timeout=30)
+    return out
+
+
+def gc_session(res: dict) -> list:
+    """Post-merge worktree GC for a close_out() result -> comms lines.
+
+    Self-gating: runs only when the session left a worktree whose head is
+    provably inside merged_into (the pushed merge sha, else the fetched
+    origin/<base> — the ancestry check inside gc_worktree is the real
+    gate, so an unmerged/conflicted result simply skips). One line lists
+    what was removed; a kept-for-a-reason tree gets one line explaining
+    (silent when the worktree was already gone)."""
+    s = res.get("session") or {}
+    wt = s.get("worktree")
+    if not wt or not s.get("head"):
+        return []
+    merged_into = res.get("merged_sha") or s.get("base_ref") or ""
+    try:
+        r = gc_worktree(wt, merged_into, s.get("branch") or "",
+                        s.get("task_id") or "")
+    except Exception as e:
+        return [f"worktree GC failed: {type(e).__name__}: {e}"]
+    if r.get("removed"):
+        kept = (f"; kept branch {r['kept_branch']}"
+                if r.get("kept_branch") else "")
+        return ["worktree GC: removed "
+                + ", ".join(str(x) for x in r["removed"]) + kept]
+    skip = str(r.get("skipped") or r.get("error") or "")
+    if skip and "gone" not in skip:
+        return [f"worktree kept: {skip}"]
+    return []
 
 
 def try_merge(card: dict) -> dict:

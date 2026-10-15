@@ -104,6 +104,13 @@ merge outcome rides the finish body (verified flag) and lands in comms;
 conflicts or failed goals leave the card in review for a human.
 KANBAN_AUTOMERGE=0 disables. dispatch_repos.py is imported from a local
 chaba checkout (this agent deploys as a single file).
+
+Worktree GC (card dispatch-worktree-gc): when the close-out result
+leaves a session worktree whose head is provably on origin, the
+worktree+branch are removed locally (dr.gc_session — never dirty trees,
+never unmerged branches; KANBAN_WTGC=0 disables). Merge-sweep runs the
+same cleanup on this host over ssh when it salvaged the merge from
+dell's side.
 """
 
 import json
@@ -328,6 +335,12 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     except Exception as e:
         res = {"merged": False, "error": f"{type(e).__name__}: {e}"}
     notes = dr.close_out_notes(res)
+    # card dispatch-worktree-gc — once the head is provably on origin the
+    # session worktree+branch go now; dirty/unproven trees always keep.
+    # getattr: dr may resolve to a stale host checkout lacking gc_session.
+    gc = getattr(dr, "gc_session", None)
+    if gc:
+        notes += gc(res)
     if res.get("merged"):
         return True, notes
     if res.get("conflicts") or res.get("test_failures") \
