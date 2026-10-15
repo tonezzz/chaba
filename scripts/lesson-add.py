@@ -68,12 +68,23 @@ def main():
     content = Path(a.content_file).read_text()
     if not a.no_th:
         try:
-            import gemini_rest
+            import gemini_rest, os, re
+            key = os.environ.get("GEMINI_API_KEY")
+            if not key:
+                for f in (os.path.expanduser("~/.config/secrets/mddb-gemini.env"),
+                          os.path.expanduser("~/.config/secrets/gemini-keys.env")):
+                    try:
+                        for ln in open(f):
+                            m = re.match(r"^(GEMINI_API_KEY_FREE|GEMINI_API_KEY|GOOGLE_API_KEY)=(.*)$", ln.strip())
+                            if m and not key:
+                                key = m.group(2).strip().strip('"').strip("'")
+                    except OSError:
+                        pass
             th = gemini_rest.generate(
                 "Translate the following HTML lesson to natural Thai. "
                 "Keep HTML tags, code, URLs, and proper names verbatim. "
                 "Output ONLY the translated HTML.\n\n" + content,
-                "gemini-3.5-flash-lite")
+                "gemini-3.5-flash-lite", key=key)
             if th and th.strip():
                 content += "\n<hr>\n<h3>ไทย</h3>\n" + th.strip()
         except Exception as e:
