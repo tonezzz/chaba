@@ -696,6 +696,27 @@ jobs:
     only by schedule; small/medium/large and remote cells are run on demand
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
+- id: ada-lesson-miner
+  name: Ada lesson miner — transcripts -> lesson CPT
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 04:40:00'
+  persistent: true
+  timeout: 20m
+  on_failure: ada-report-fail@%p.service
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lesson-miner.py --card lesson-transcript-miner
+  note: 'card lesson-transcript-miner — offline counterpart of the live
+    lesson-capture duty. Scans ~/.local/share/ada/transcripts on the ada
+    runtime host for Tony knowledge-Q&A turns (mechanical pre-filter ->
+    one classify call -> one draft call per kept topic, capped 4/run),
+    files each via scripts/lesson-add.py (slug upsert + auto Thai).
+    Free-first: gemini-3.5-flash-lite on the free key resolved from
+    ~/.config/secrets (GEMINI_API_KEY_FREE first); set GEMINI_BASE_URL +
+    a LITELLM virtual key in unit env to ride the gateway chain instead.
+    Dedup state: ~/.local/share/ada/lesson-miner-state.json. Board
+    comment only when lessons were filed or filing failed
+    (quiet-when-empty). Needs ~/.config/secrets/wp-boards.env — idc03
+    has it. Added 2026-10-15.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
