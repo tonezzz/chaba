@@ -6,7 +6,9 @@ subtitle: >-
   by member asks and comments.
 icon: eye
 id: 2026-10-15-news-situation-summaries
-status: committed (plugin deploy pending)
+status: live on idc03 — sweep+index timer armed :45, 5 flood digests
+  watching, private /wp/index.php/situations/ page up (chaba-boards 0.6.0
+  wp-admin upload pending Tony; ada-voice wiring carded ADA-0707)
 owner: devin-dispatch
 project: chaba
 card: news-situation-summaries
@@ -78,14 +80,20 @@ design:
     Thai without parsing post HTML.
 
 deploy_notes: >
-  Code only — nothing deployed by this dispatch. Live needs: (1) merge to
-  master so idc03's checkout gets scripts/ada/news-situation.py; (2)
-  render-jobs.py --host idc03 --install for wp-news-situation.timer (or
-  hand-install systemd/generated/idc03/wp-news-situation.*); (3) upload
-  chaba-boards.php 0.6.0 via wp-admin plugin zip to unlock the meta keys,
-  admin column, badge, and shortcode — flag itself works today via tags.
-  Ada voice-side wiring (calling `news-situation.py ask` from her tools)
-  is a separate-repo change in ada-voice.
+  LIVE 2026-10-15 ~19:46 (second dispatch): render-jobs.py --host idc03
+  --install wrote wp-news-situation.{service,timer}; enabling the timer
+  immediately ran the missed 19:45 slot (Persistent=true) — first sweep
+  nominated 5 flood digests watching (WP comments posted, tag mirror
+  applied, sticky untouched) and index created private page 458
+  (/wp/index.php/situations/, TH-first). Ask-hook verified dry-run:
+  "สรุปข่าวน้ำท่วม" matched digest 437 at 0.595 cosine. Remaining: (1)
+  wp-admin plugin zip upload of integrations/wp-boards/dist/
+  chaba-boards-0.6.0.zip (board request raised — unlocks registered meta,
+  admin column, badge, [chaba_situations]; flag already works via tags);
+  (2) ada-voice tool wiring — carded ada-voice-news-situation-ask
+  (ADA-0707). Gotcha: render-jobs --install's batched `enable --now` left
+  new timers disabled on first run in this pass — re-check is-enabled
+  after install (ops-error-posts hit the same miss).
 
 verify: |
   python3 -m unittest tests.ada.test_news_situation   # 14 tests, pure/stubbed
