@@ -1,0 +1,57 @@
+title: Board2 living board MVP — live poll, column counters, event ticker
+subtitle: Presentation-only "alive" feel on the tabs view; zero backend changes
+icon: activity
+version: 1
+
+card: living-board-mvp
+date: 2026-10-15
+dispatch: 20261015-095556-render-board2-living-board-mvp
+
+summary: |
+  Tony wanted the ops board to feel active/responsive (WC3/Foundation worker
+  vibe). Phase 1 is intentionally minimal and entirely inside the
+  render-board2.py HTML template: faster poll with an in-place column-diff
+  flash, per-column counters with a Doing pulse, and a fixed bottom event
+  ticker streaming the latest card comms. No backend/board-api changes.
+
+deliverables:
+  - scripts/render-board2.py — POLL_SECONDS 30 -> 10 (JS poll of the
+    already-regenerating cards.json; no page reload, DOM diff in place).
+  - column-diff flash — load() snapshots card->column before swapping DATA;
+    cards that entered the board or changed column land in movedIn and their
+    rows get .just-moved (1.8s blue flash) plus a "⇄ <column>" badge on the
+    next render. Flags reset each poll, so tab switches inside the window
+    re-flash.
+  - per-column counters + doing pulse — tab buttons already render counts
+    (they are the counters); the Doing tab gains .doing-hot (1.6s green ring
+    pulse) whenever its count > 0.
+  - floating event ticker — #ticker fixed at bottom (26px) with "事件流"
+    label; renderTicker() merges comms across all cards (rescued /
+    test-gate / held / deployed / comments — they're all comm lines), sorts
+    desc by at, takes 30, and scrolls them via a translateX(-50%) seamless
+    loop (content duplicated once). The track DOM is only rebuilt when the
+    item signature changes so the animation keeps running between polls;
+    duration scales with item count (min 30s). Main pane gets pb-8 so the
+    bar never covers rows.
+  - live-dot blip — the nav dot restarts a scale animation every successful
+    poll for an extra "alive" cue; red on fetch failure as before.
+
+decisions:
+  - tabs-as-counters — the existing tab counts ARE the per-column counters;
+    the spec's deliverable is the doing pulse, not a second counter strip
+  - all comms in the ticker rather than filtered event kinds — rescued /
+    test-gate / held / deployed are ordinary comm lines; inclusion beats
+    classification for an MVP
+  - marquee via CSS -50% loop over JS rAF scroll — cheaper and survives
+    re-renders; only signature changes rebuild the track
+  - flash consumes flags per poll window (not once) — a card moved while
+    the user is on another tab still flashes when they switch over
+
+verify: |
+  python3 scripts/render-board2.py                     # regen OK (721 cards)
+  grep index.html for leftover '{{' / '}}'             # none
+  node --check on extracted <script>                   # JS parses
+  emitted CSS/markup spot-checked — dpulse/mvflash/tkscroll keyframes,
+    #ticker bar, movedIn diff block all present
+  # generated index.html + cards.json are gitignored artifacts; only
+  # scripts/render-board2.py is the source change (+61/-7)
