@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.7
+ * Version: 0.3.8
  */
 
 if (!defined('ABSPATH')) exit;
@@ -40,6 +40,9 @@ add_action('init', function () {
         // repeat_ask — counted recurrences of Tony's requests
         // (docs/ssot/ssot.repeat-asks.yml synced by scripts/sync-repeat-asks.py)
         'repeat_ask' => ['Repeat Ask','Repeat Asks','dashicons-flag'],
+        // lesson — Tony's education ledger: things he asked + the answers.
+        // Agents write via REST; next_review drives spaced-recall digests.
+        'lesson'   => ['Lesson',   'Lessons',   'dashicons-welcome-learn-more'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -159,6 +162,9 @@ add_action('init', function () {
         // repeat_ask — count = times re-asked; last_repeat = ISO date of most
         // recent recurrence (drives the admin list default sort).
         'repeat_ask' => ['topic', 'count', 'last_repeat', 'status'],
+        // lesson — topic/level(intro|working|deep)/source(chat|voice|link)/
+        // learned_at/next_review(ISO dates)/status(open|learned|revise)
+        'lesson'   => ['topic', 'level', 'source', 'learned_at', 'next_review', 'status'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -195,11 +201,12 @@ function chaba_cpt_admin_columns(string $type): array {
         'render_job' => ['kind' => 'Kind', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'backend' => 'Backend', 'est_cost_usd' => 'Est$', 'requested_by' => 'By'],
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
+        'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
