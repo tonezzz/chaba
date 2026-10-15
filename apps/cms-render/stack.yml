@@ -1,0 +1,24 @@
+id: chaba-cms-render
+host: idc03
+description: >-
+  Live HTML surface for the MDDB CMS plane (card cmssurface-render-digest,
+  cherry-picked Ghost presentation layer). FastAPI + Jinja2 app reading
+  ada-cms-pages / ada-cms-pages-kk / chaba-docs / ada-cms-automation
+  fetch-on-request from mddb-cms :11027 — page cache keyed by doc
+  updatedAt, listing cache CMS_LIST_TTL_S. Served publicly as
+  cms.surf-thailand.com via the idc02 caddy-edge block behind Cloudflare
+  Access (no app auth).
+verify: curl -sf http://127.0.0.1:8010/healthz | python3 -c 'import json,sys; assert json.load(sys.stdin)["ok"]'
+requires:
+  - "tool:python3.12 venv — fastapi uvicorn jinja2 markdown (requirements.txt)"
+  - "svc:mddb-cms on idc03 :11027 — read-only /v1/search + /v1/get"
+state:
+  - "~/CascadeProjects/chaba/apps/cms-render — app + templates/"
+  - "~/.config/systemd/user/chaba-cms-render.service"
+  - "idc02 ~/.config/caddy/Caddyfile — cms.surf-thailand.com block"
+restore: >-
+  Deploy = repo checkout + venv install + unit enable; the idc02 edge
+  block is one caddy site stanza (snippet in
+  stacks/idc02/cms.surf-thailand.com.caddy).
+related_cards: [cmssurface-render-digest]
+status: staged

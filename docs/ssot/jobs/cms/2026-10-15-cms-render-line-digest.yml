@@ -1,0 +1,90 @@
+title: chaba-cms-render + line-digest — cherry-picked Ghost features
+subtitle: >-
+  Live MDDB->HTML presentation layer (cms.surf-thailand.com) and the
+  weekly per-member LINE digest — the "show it" half chaba-cms lacked.
+id: 2026-10-15-cms-render-line-digest
+status: staged
+owner: devin-dispatch
+project: chaba
+card: cmssurface-render-digest
+branch: dispatch/20261015-132801-cherry-picked-ghost-features-f
+started: "2026-10-15"
+
+context:
+  user_request: >
+    From Tony's Ghost-vs-WP comparison — "create a post the way you want
+    to store it" — MDDB stays the store, agents stay primary authors.
+    NO Ghost, no editor UI, no new DB. Locked decisions (2026-10-14):
+    hostname cms.surf-thailand.com (new caddy edge block on idc02);
+    digest = PER-MEMBER LINE pushes, not a family group ("kk-ha is an
+    office, not a home"); recipients resolved from the member/person
+    registry; entire site behind CF Access (no public pages yet).
+
+built:
+  apps_cms_render: >
+    apps/cms-render/server.py — single-file FastAPI app + templates/ per
+    kind (page, report, digest, trip, place-report, timeline,
+    media-inbox, house-rules, automation, doc). Reads LIVE from
+    ada-cms-pages, ada-cms-pages-kk, chaba-docs, ada-cms-automation —
+    fetch-on-request, no rebuild pipeline. Page HTML cached keyed by
+    (collection, key, lang, updatedAt); collection listings cached
+    CMS_LIST_TTL_S=120 for slug->key resolution, lang variants, index.
+    Routes: / (index grouped by nav section per ssot.cms.yml — meta
+    kind/domain/role driven, which is what "grouped by meta.kind" means
+    on real data since kind is only page|report|archive),
+    /p/{slug-or-id} (kind-dispatched template, ?c= collection hint,
+    ?lang= variant pick + toggle), /k/{kind}, /feed/{kind}.xml RSS,
+    /healthz. KK lane defaults Thai UI strings; main lane EN. Media is
+    LINKED (relay-img thumbs / www URLs pass through — nothing copied).
+    ```mermaid and ```media fences render per cms-page-standard;
+    PWA-style #/slug links rewrite to /p/slug; superseded pages show a
+    moved_to/superseded_by banner; automation docs render their JSON
+    config as code.
+  scripts_ada_line_digest: >
+    scripts/ada/line-digest.py — stdlib-only weekly push. Sources:
+    house-timeline leaves, media-inbox additions (addedAt in window,
+    extracts/rollup excluded), refreshed *-digest rollups, kanban
+    done-count (board-api /cards — counts cards whose close/auto-close
+    comm landed in the window, not 'updated' which counts every touch),
+    WP render_job posts (skipped silently without wp-boards.env).
+    Idempotent message_id = line-digest-<member>-<ISOweek> persisted in
+    ~/.local/share/ada/line-digest.json — re-runs never double-push.
+    Relay /send {to=<person>, instance=<lane>} — the relay resolves
+    person name -> userId via its alias/caller tables.
+  units_and_edge: >
+    systemd/chaba-cms-render.service (idc03, tailnet 100.102.134.91:8010,
+    venv ~/.venvs/cms-render per requirements.txt),
+    systemd/ada-line-digest.{service,timer} (Mon 09:00, members=tony
+    until rollout approved), stacks/idc02/cms.surf-thailand.com.caddy
+    snippet (tls internal -> http://100.102.134.91:8010), ssot.routes.yml
+    cms-render service entry, ssot.audit.hosts.yml idc03 census entries.
+
+data_conventions: >
+  meta.slug is the clean-URL key (already required by
+  cms-page-standard §2); docs without it fall back to the doc key.
+  meta.lang picks the variant; lang variants share the key per
+  ssot.cms.yml (never -th suffixes). The index lists the en variant
+  when present, else the only variant.
+
+non_goals: >
+  member auth (CF Access covers it), editor UI (Docs->import only if KK
+  asks), file hosting changes, per-member privacy beyond the collection
+  split.
+
+verify:
+  done_in_session:
+    - "pytest tests/ada/test_cms_render.py tests/ada/test_line_digest.py — 31 passed"
+    - "/healthz ok against live mddb-cms (610 + 159 + 40 + 67 docs)"
+    - "eyeballed / index, /p/media-inbox (thumbs+leaf links), /p/trip-southafrica (kk, mermaid+superseded banner), /p/place-* (th), /p/api/health-endpoints.md (chaba-docs path key), /k/digest, /feed/digest.xml (well-formed, 30 items), 404 on unknown slug"
+    - "line-digest.py --dry-run renders Tony's digest (~300 chars): home 25 devices, media-inbox 15 items, news ada-digest +32, kanban done-count"
+  before_prod:
+    - "python3 -m venv ~/.venvs/cms-render + pip install -r apps/cms-render/requirements.txt on idc03"
+    - "enable+start chaba-cms-render.service on idc03; curl /healthz"
+    - "append stacks/idc02/cms.surf-thailand.com.caddy block to idc02 ~/.config/caddy/Caddyfile + caddy reload; browse https://cms.surf-thailand.com/ through CF Access"
+    - "CF DNS + Access policy entry for cms.surf-thailand.com (operator step)"
+    - "digest: LINE_DIGEST_MEMBERS=tony real send (not dry-run) once Tony eyeballs output; widen members + enable ada-line-digest.timer after approval"
+
+phase2: >
+  Event-triggered digests (new trip page -> push) per card spec; index
+  "grouped by meta.kind" currently = nav-section derivation — revisit if
+  a real per-kind nav is wanted.
