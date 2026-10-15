@@ -87,13 +87,20 @@ RX_CONN_FAIL = re.compile(
 RX_QUOTA = re.compile(
     r"exceeded your current quota|resource.?exhausted|"
     r"received 1011|APIError: 1011|check your plan and billing|"
+    # LiteLLM per-key budget caps surface as 422 budget_exceeded
+    # ("Budget has been exceeded! Key=bench ...") — observed
+    # 2026-10-15 when the bench virtual key crossed its $2/30d cap and
+    # ada-dev text turns fell through to OpenRouter free-tier 429s.
+    r"budget.{0,15}exceed|"
     r"HTTP.{0,10}429|status.{0,6}429|(?<![0-9A-Za-z=,.])429(?![0-9A-Za-z])",
     re.I)
 # Healthy-provider markers — a provider that served anything after the
-# last dunning line is not dead.
+# last dunning line is not dead. 'prime injected' is deliberately absent:
+# it is a local mddb write at session setup, logged even while every
+# provider call is failing, so it falsely marks a dead provider healthy.
 RX_OK = re.compile(
-    r"provider reconnected|prime injected|usage turn|"
-    r"assistant response|ready event", re.I)
+    r"provider reconnected|usage turn|assistant response|ready event",
+    re.I)
 RX_WS_CONNECT = re.compile(r"client connected", re.I)
 RX_UPSTREAM = re.compile(r"provider reconnected", re.I)
 
