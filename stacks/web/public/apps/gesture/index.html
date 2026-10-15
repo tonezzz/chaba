@@ -98,8 +98,21 @@
 </div>
 
 <script type="module">
-import { FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker }
-  from '/apps/vendor/mediapipe/vision_bundle.mjs';
+// ?engine=yolo — rebuild path: no on-device MediaPipe. The phone is a bare
+// camera: frames POST to input-bridge /frame (screen 0, token "gesture"),
+// a yolo-gesture service (hand_yolov8n.pt) turns the hand bounding box
+// into {type:"gesture"} msgs and publishes straight into the relay as a
+// controller. This page only uploads frames; the screen gets its cursor
+// from the service. Box world: no pinch — dwell clicks, 2 hands = grab.
+const QS = new URLSearchParams(location.search);
+const ENGINE = QS.get('engine') === 'yolo' ? 'yolo' : 'mediapipe';
+const YOLO_UPLINK_MS = 300;              // ~3.3fps — pointer cadence
+
+let FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker;
+if (ENGINE !== 'yolo') {
+  ({ FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker } =
+    await import('/apps/vendor/mediapipe/vision_bundle.mjs'));
+}
 
 const WASM_DIR   = '/apps/vendor/mediapipe/';
 const MODEL_HAND = '/apps/vendor/mediapipe/hand_landmarker.task';
@@ -136,7 +149,7 @@ let frames = 0, fpsT = performance.now();
 function status(text, cls) { statusEl.textContent = text; statusEl.className = cls; }
 
 /* ---------------- ws ---------------- */
-const wsUrl = new URLSearchParams(location.search).get('ws')
+const wsUrl = QS.get('ws')
   || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/apps/gesture-live/ws?role=controller`;
 let ws = null, wsOpen = false, wsRetry = 0;
 function connectWs() {
@@ -185,12 +198,43 @@ async function startCamera() {
   }
   video.srcObject = stream;
   await video.play();
+  if (ENGINE === 'yolo') {
+    status('yolo: frames → bridge', 'ok');
+    requestAnimationFrame(yoloLoop);
+    return;
+  }
   if ((want.hands && !landmarker) || (want.face && !faceLm) || (want.pose && !poseLm)) {
     status('loading models (hands+face+pose)…', 'warn');
     await initLandmarkers();
   }
   status('tracking', 'ok');
   requestAnimationFrame(loop);
+}
+
+/* ---------------- yolo engine: bare camera uplink ---------------- */
+// The yolo-gesture service polls the bridge's latest frame, detects the
+// hand bbox, and publishes {type:"gesture"} into the relay itself — this
+// page never sees a pointer coordinate, it just ships frames.
+let lastUp = 0, upOk = 0, upErr = 0;
+function yoloLoop() {
+  requestAnimationFrame(yoloLoop);
+  if (video.readyState < 2 || !video.videoWidth) return;
+  const now = performance.now();
+  frames++;
+  if (now - fpsT > 1000) { hudFps.textContent = 'cam ' + frames + 'fps'; frames = 0; fpsT = now; }
+  hudHand.textContent = 'up ' + upOk + (upErr ? ' err ' + upErr : '');
+  hudPose.textContent = 'engine yolo';
+  if (now - lastUp < YOLO_UPLINK_MS) return;
+  lastUp = now;
+  const w = 480, h = Math.round(w * video.videoHeight / video.videoWidth);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(video, 0, 0, w, h);
+  fetch('/api/input-bridge/frame', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ screen: 0, token: 'gesture',
+      state: 'gesture-uplink', data: c.toDataURL('image/jpeg', 0.6) }),
+  }).then(r => { r.ok ? upOk++ : upErr++; }).catch(() => upErr++);
 }
 
 /* ---------------- gestures ---------------- */
@@ -394,6 +438,8 @@ function loop() {
 /* ---------------- ui ---------------- */
 function renderStatus() {
   if (!stream) return status('idle — tap Start camera', 'warn');
+  if (ENGINE === 'yolo')
+    return status('yolo: uplinking frames — pointer comes from the service', 'ok');
   if (!landmarker) return status('loading hand model…', 'warn');
   status(wsOpen ? 'tracking · relay connected' : 'tracking · relay OFFLINE (retrying)', wsOpen ? 'ok' : 'err');
 }
@@ -497,6 +543,18 @@ async function startVoice(btn) {
 }
 
 $('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };
+
+if (ENGINE === 'yolo') {
+  // no on-device models in yolo mode — the toggles would init MediaPipe
+  for (const id of ['btn-hands', 'btn-face', 'btn-pose'])
+    $(id).style.display = 'none';
+  $('note').textContent =
+    'YOLO engine: this phone is only a camera — frames go to input-bridge, ' +
+    'a yolo-gesture service detects the hand bounding box and drives the ' +
+    'screen cursor. Point with an open hand; hold still to click; two ' +
+    'hands = grab. Service must run with YOLO_FRAME_URL pointing at ' +
+    'bridge /frame?screen=0&token=gesture and POINTER_SINK at the relay.';
+}
 
 connectWs();
 status('idle — tap Start camera', 'warn');

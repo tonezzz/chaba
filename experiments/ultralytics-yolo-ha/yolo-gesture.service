@@ -1,0 +1,29 @@
+[Unit]
+Description=YOLO hand-pointer — hand bbox -> gesture msgs (vcast/relay sinks)
+After=network-online.target
+
+[Service]
+Type=simple
+# hand detector: single-class "hand" yolov8n (Bingsu/adetailer, vendored)
+Environment=YOLO_MODEL=hand_yolov8n.pt
+# frame source: vcast screen camera uplink via input-bridge last-frames.
+# {src} expands to GO2RTC_SOURCE — so source=1 -> screen 1's uplink.
+Environment=GO2RTC_SOURCE=1
+Environment=YOLO_FRAME_URL=http://100.102.134.91:3010/frame?screen={src}&token=cam
+# pointer output: push gesture msgs into vcast screen 1's room AND/OR the
+# gesture-relay as a controller. Comma-separate multiple sinks:
+#   vcast:1                              -> POST input-bridge /pub
+#   ws://100.68.142.13:8794/ws?role=controller  -> gesture-relay controller
+Environment=POINTER_SINK=vcast:1
+Environment=INPUT_BRIDGE=http://100.102.134.91:3010
+Environment=YOLO_HOST=0.0.0.0
+Environment=YOLO_PORT=8785
+# knobs: POINTER_CLASSES=hand  POINTER_MIN_CONF=0.35  POINTER_EMIT_MS=100
+#        POINTER_GONE_MS=800   POINTER_FLIP=1 (selfie cam = mirror)
+WorkingDirectory=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha
+ExecStart=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha/run.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

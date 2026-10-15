@@ -1,0 +1,104 @@
+title: gesture pointer rebuilt on YOLO hand bounding boxes (OPS-0440)
+date: '2026-10-15'
+domain: gesture
+status: implemented-pending-deploy
+trigger: 'kanban card rebuild-gesture-pointer-with-yolo-732b0d (OPS-0440 —
+  canonical after ~30 voice-captured dupes; Tony: rebuild gesture logic
+  using YOLO bounding boxes instead of MediaPipe)'
+
+approach: >
+  The existing MediaPipe pipeline is untouched — YOLO is a parallel engine
+  emitting the SAME {type:"gesture",x,y,wx,wy,action} contract, so every
+  consumer (screen.html, vcast displays) works unchanged. A bounding-box
+  model has no landmarks, so the vocabulary changes: box centre = pointer,
+  dwell = click, TWO hands sustained >=3 detect frames = fist (grab), hand
+  lost > POINTER_GONE_MS = gone edge (cursor fades, drag released).
+
+deliverables:
+  model:
+    files:
+      - experiments/ultralytics-yolo-ha/hand_yolov8n.pt   # vendored 6.2MB
+    what: >
+      Single-class "hand" YOLOv8n detector (huggingface.co/Bingsu/adetailer
+      — the adetailer hand model, ultralytics-native .pt). Verified: detects
+      hands at conf 0.65-0.85 on the cansik/yolo-hand-detection test set.
+  server:
+    files:
+      - experiments/ultralytics-yolo-ha/server.py      # pointer mode
+      - experiments/ultralytics-yolo-ha/pointer-check.py  # unit check
+      - experiments/ultralytics-yolo-ha/yolo-gesture.service  # template
+      - experiments/ultralytics-yolo-ha/run.sh / requirements.txt (+websockets)
+      - experiments/ultralytics-yolo-ha/README.md      # pointer section
+    what: >
+      POINTER_SINK env (comma-sep): "vcast:N" -> POST input-bridge /pub
+      {screen:N,...msg}; "ws(s)://..." -> ws client (e.g. gesture-relay
+      ?role=controller — the service IS a controller); "http(s)://" raw POST.
+      Picks largest POINTER_CLASSES box >= POINTER_MIN_CONF, normalizes
+      centre, mirror-flips X by default (POINTER_FLIP=1 — selfie cams).
+      Emit throttle POINTER_EMIT_MS=100. New GET /pointer debug endpoint
+      (sinks/state/last msg); pointer-class boxes draw cyan on /image.
+  vcast:
+    files:
+      - stacks/web/public/apps/vcast/index.html
+    what: >
+      gesture {mode:"hand"} is BUILT now (was the "hand mode not built"
+      error Tony hit on Screen 1). Starts the existing camera uplink at
+      300ms cadence, draws the ada_v2 cyan-ring cursor driven by the
+      pushed gesture msgs (SENSITIVITY 2.0, LERP 0.25 screen-side), dwell
+      700ms = click (elementFromPoint + gesture-event broadcast for Ada),
+      fist_start = grab -> toggles pane zoom under cursor, gone -> hide.
+      Switching modes releases the uplink it started (gUplinkOwned).
+  gesture_app:
+    files:
+      - stacks/web/public/apps/gesture/index.html   # ?engine=yolo
+      - stacks/web/public/apps/gesture/screen.html  # gone + dwell-click
+    what: >
+      Controller gains ?engine=yolo — MediaPipe bundle isn't even loaded;
+      the phone becomes a bare camera POSTing 480px JPEGs to
+      /api/input-bridge/frame (screen 0, token "gesture") at ~3.3fps; the
+      yolo service (YOLO_FRAME_URL -> that frame, POINTER_SINK -> relay ws)
+      publishes cursor msgs itself. screen.html: dwell-click (700ms on a
+      snapped element) + {gone} handling — only for src:"yolo" msgs;
+      MediaPipe pinch/fist path unchanged.
+
+verified:
+  - "pointer-check.py: 13/13 — emit, normalize+flip, conf/class filters,
+    grab debounce both ways, largest-box wins, fist_end, gone edge+dedupe,
+    emit throttle"
+  - "E2E stub: real server.py + hand model + fake frame/sink HTTP servers —
+    cursor msgs {screen,type:gesture,x,y,wx,wy,hands,conf} at 10Hz,
+    fist_start on 4-hand frame, fist_end on drop to 1, gone on blank frame;
+    /pointer + /detect live"
+  - "E2E ws: server.py POINTER_SINK=ws:// -> REAL relay.py -> ws screen
+    client received {type:gesture,src:yolo,x,y,...}"
+  - "playlive headless: real screen.html + real relay.py + scripted yolo
+    controller — cursor snapped to CAST button centre, dwell fired a real
+    .click() (cast-status showed the fetch result), fist_start + wx/wy
+    deltas dragged win-tv to 696/484 and released, gone dimmed the cursor"
+  - "node --check on extracted inline JS of vcast/screen/controller: clean"
+  - "real detection: hand_yolov8n.pt finds hands on the cross-hands test
+    images (conf 0.65-0.85)"
+
+deploy_notes:
+  - "mn01 is OFFLINE (tailscale last-seen 1d) — yolo-xiaomi + yolo-ipad-1/2
+    are all down; the pointer service can run on ANY host with HTTP reach
+    to input-bridge (idc03/tony-dell both work — it only needs
+    /frame + /pub + optionally the relay)"
+  - "vcast display side: POST /api/input-bridge/pub {screen:N,
+    msg:{type:'gesture',mode:'hand'}} turns the pointer on — needs a
+    yolo-gesture instance with FRAME_URL -> /frame?screen=N&token=cam
+    and POINTER_SINK=vcast:N"
+  - "iPhone path: /apps/gesture/?engine=yolo uplinks frames; service env
+    GO2RTC_SOURCE=0 + YOLO_FRAME_URL=.../frame?screen=0&token=gesture +
+    POINTER_SINK=ws://<relay>:8794/ws?role=controller"
+  - "relay needs no change — the service is a normal controller ws client"
+
+notes:
+  - "pointer cadence is bounded by the frame-uplink rate (~3fps at 300ms),
+    not the model — feels like a wand, not a mouse. Faster uplink = more
+    bridge traffic; bump startUplink(150) if wanted"
+  - "dwell-click replaces pinch (no landmark distance in box world). If a
+    HaGRID-class gesture model gets trained later, real pinch/fist classes
+    drop in via POINTER_CLASSES+action mapping without client changes"
+  - "Ada dedup reminder stands: new voice-captured dupes of this idea keep
+    arriving — her capture flow should check OPS-0440 before carding"
