@@ -20,6 +20,7 @@ import base64
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -246,6 +247,17 @@ def main() -> int:
         cards = board_cards()
     except Exception as e:
         print(f"warn: board-api unavailable ({e})", file=sys.stderr)
+
+    sync_ra = SERVED_ROOT / "scripts" / "sync-repeat-asks.py"
+    if sync_ra.exists():
+        try:
+            r = subprocess.run([sys.executable, str(sync_ra)],
+                               capture_output=True, text=True, timeout=120)
+            if r.returncode != 0:
+                print(f"warn: repeat-asks WP sync rc={r.returncode} "
+                      f"{r.stderr.strip()[:120]}", file=sys.stderr)
+        except Exception as e:
+            print(f"warn: repeat-asks WP sync failed ({e})", file=sys.stderr)
 
     m = {
         "repeat_asks": repeat_asks(),
