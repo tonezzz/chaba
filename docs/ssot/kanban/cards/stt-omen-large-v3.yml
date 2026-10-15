@@ -3,7 +3,7 @@ title: 'STT endpoint on tony-omen GPU: whisper large-v3 for all msg lanes'
 column: doing
 priority: high
 created: 2026-10-10
-updated: 2026-10-14 22:04
+updated: 2026-10-15 11:00
 note: 'Verified 2026-10-10: large-v3 int8_float16 on omen GTX 1650 transcribes the Thai test clips ~2s vs 13s (medium/CPU
   on idc03) with markedly better Thai ("ผมส่งข้อความนี้เพื่อการทดสอบระบบ Transcript ด้วยข้อความเสียง จาก Telegram"
   vs medium''s garbled output). Build a small whisper HTTP endpoint on omen (fastapi + faster-whisper, decode via
@@ -19,6 +19,7 @@ requests:
   at: '2026-10-10'
   from: devin
   answer: 'yes'
+  executed: 2026-10-15 queue (already running)
 - id: whisper-large-v3-stt-on-omen-next-action-74540e
   ask: Whisper large-v3 STT on omen — next action?
   status: answered
@@ -30,6 +31,7 @@ requests:
   - close — not needed
   suggested: queue for dispatch ★
   answer: queue for dispatch ★
+  executed: 2026-10-15 queue (already running)
 links:
 - backend/tg_relay.py
 - docs/kb/msg-lane-standard.md

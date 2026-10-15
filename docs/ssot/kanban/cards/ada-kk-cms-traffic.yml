@@ -1,7 +1,7 @@
 id: ada-kk-cms-traffic
 title: kk-ha CMS traffic feed — public cam dossiers into ada-cms-pages-kk
 column: backlog
-updated: 2026-10-14 22:08
+updated: 2026-10-15 11:00
 spec: 'Tony asked: structure Kaewta CMS to include traffic cam awareness, answers truthful. Pattern = cam-wall-cms
   (generates cam-*/camwall-* dossiers Ada READS — data, not camera access). Build: (1) zone-group filter on cam-wall-cms.py
   (or kk wrapper) so only zones.yml group:public zones emit pages; (2) timer run with COLLECTION=ada-cms-pages-kk
@@ -43,6 +43,9 @@ comms:
   from: devin
   text: 'attempt 2 running: adding CAMWALL_GROUPS=public zone/cam filter + COLLECTION env to cam-wall-cms.py, per-collection
     state files, kk systemd timer pair, tests'
+- at: 2026-10-15 11:00
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
 requests:
 - id: noble-vms-cams-are-group-private-in-zone-baf2cb
   ask: Noble VMS cams are group:private in zones.yml. Scope kk-ha cam feed to public zones only, or add a Noble
@@ -66,6 +69,7 @@ requests:
   - close — superseded by WP cam dossiers
   suggested: queue for dispatch ★
   answer: queue for dispatch ★
+  executed: 2026-10-15 queue (already running)
 action:
   type: dispatch
   repo: chaba
@@ -76,3 +80,4 @@ action:
 claim:
   session: 20261014-220109-tony-asked-structure-kaewta-cm
   since: 2026-10-14 22:02
+awaiting_action: true

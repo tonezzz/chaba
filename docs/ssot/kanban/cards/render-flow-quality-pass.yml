@@ -1,7 +1,7 @@
 id: render-flow-quality-pass
 title: Render flow quality pass — vision self-check, iterate-on-last, multi-ref, aspect intent
 column: doing
-updated: 2026-10-14 22:06
+updated: 2026-10-15 11:00
 priority: medium
 tags:
 - ada
@@ -67,6 +67,9 @@ comms:
   text: 'scoped: all 6 items land in tools.d/ada_render_image.py + tool_guide + tests. last-render stored as render-dir
     path keyed by runner.context.session_id; self-check via gemini_pool on flash-lite; transient retry wraps generate
     (quota errors excluded — pool already rotates). implementing now.'
+- at: 2026-10-15 11:00
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
 requests:
 - id: which-quality-item-to-build-first-dc5d96
   ask: Which quality item to build first?
@@ -90,8 +93,10 @@ requests:
   - hold for now
   suggested: queue for dispatch ★
   answer: queue for dispatch ★
+  executed: 2026-10-15 queue (already running)
 action:
   type: dispatch
   repo: ada-voice
   status: running
   runner: idc02
+awaiting_action: true
