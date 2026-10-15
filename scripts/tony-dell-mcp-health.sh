@@ -15,12 +15,16 @@ if [[ -z "$TONY_OMEN_IP" ]]; then
     TONY_OMEN_IP="100.75.102.88"
 fi
 
-MCP_HEALTH_QUERY="python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp-health-client.py get_health_score '{\"include_optional\":false}'"
-if ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no "tony@${TONY_OMEN_IP}" "$MCP_HEALTH_QUERY" > "${MCP_HEALTH_OUT}.tmp" 2>/dev/null; then
+MCP_HEALTH_QUERY="POSTGRES_HOST=100.68.142.13 python3 /home/tony/CascadeProjects/chaba/scripts/mcp-health-client.py get_health_score '{\"include_optional\":false}'"
+SSH_ERR=$(mktemp)
+if ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no "tony@${TONY_OMEN_IP}" "$MCP_HEALTH_QUERY" > "${MCP_HEALTH_OUT}.tmp" 2>"$SSH_ERR"; then
     mv "${MCP_HEALTH_OUT}.tmp" "$MCP_HEALTH_OUT"
     printf '%s\n' "{\"timestamp\":\"$TS\",\"mcp-health\":\"queried\",\"file\":\"$MCP_HEALTH_OUT\"}"
 else
     rm -f "${MCP_HEALTH_OUT}.tmp"
     printf '%s\n' "{\"timestamp\":\"$TS\",\"mcp-health\":\"failed\"}" >&2
+    sed 's/^/ssh-stderr: /' "$SSH_ERR" >&2
+    rm -f "$SSH_ERR"
     exit 1
 fi
+rm -f "$SSH_ERR"

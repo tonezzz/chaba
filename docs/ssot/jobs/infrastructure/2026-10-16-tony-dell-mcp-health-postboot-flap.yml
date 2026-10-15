@@ -1,0 +1,75 @@
+id: 2026-10-16-tony-dell-mcp-health-postboot-flap
+title: tony-dell-mcp-health timer exit-code flap — post-boot transient, self-healed
+date: 2026-10-16
+host: tony-dell
+card: timer-alert-tony-dell-tony-dell-mcp-health
+dispatch: dispatch-wt-20261016-044213-timer-tony-dell-mcp-health-on-
+
+summary: >
+  timer-sentinel filed a card for tony-dell-mcp-health.service result=exit-code at
+  2026-10-14 19:44. Investigation shows the only two failures in the unit's
+  history (19:44:25 and 19:49:25 +07) both landed inside a rough post-reboot
+  window on tony-dell; the next run at 19:54:26 succeeded and the timer has run
+  clean every 5 min since (verified 2026-10-16 04:41 run, status=0).
+
+timeline:
+  - at: "2026-10-14 19:39:21"
+    event: previous boot's last journal entry — hard/unclean shutdown
+  - at: "2026-10-14 19:41:25"
+    event: tony-dell boots (boot 45c15688)
+  - at: "2026-10-14 19:42:14"
+    event: tailscaled starts; physical NIC down until ~19:42:22
+  - at: "2026-10-14 19:42:30"
+    event: tailnet up (home DERP derp-3)
+  - at: "2026-10-14 19:42:47"
+    event: chaba-postgres-16.service start attempt 1 — times out at 19:44:18
+  - at: "2026-10-14 19:44:25"
+    event: "mcp-health run 1 FAILS (~1s): ssh session to tony-omen opened OK
+      (auth.log session 239853) but remote command exited non-zero in ~0.7s"
+  - at: "2026-10-14 19:45:28"
+    event: postgres attempt 1 declared failed; restart counter 1 — dozens of
+      podman user services also failing in this window
+  - at: "2026-10-14 19:48:17"
+    event: postgres listens on 5432, enters WAL crash recovery
+      ("database system was interrupted")
+  - at: "2026-10-14 19:49:25"
+    event: mcp-health run 2 FAILS (~1s) — same signature
+  - at: "2026-10-14 19:50:17"
+    event: postgres "database system is ready to accept connections"
+  - at: "2026-10-14 19:54:26"
+    event: mcp-health run succeeds; healthy ever since
+
+findings:
+  - ssh transport to tony-omen worked during the failures (auth.log shows the
+    session open); the remote mcp-health-client.py exited non-zero in under a
+    second.
+  - Exact remote error is unrecoverable: the script discards ssh stderr
+    (2>/dev/null). A valid get_health_score result (even all-services-down)
+    exits 0, so the failure was a client-level crash or remote exec failure —
+    consistent with the degraded state of tony-omen at the time (see below).
+  - tony-omen was under a gnome-keyring-daemon fd-exhaustion storm (pid 9755 at
+    1024/1024 fds, "couldn't accept new control request: Too many open files"
+    repeated 100k+/day since 2026-10-13 03:09, still active 2026-10-16). Likely
+    made remote command exec flaky, but not proven — runs succeed today with
+    the storm still active. Carded separately.
+  - postgres-on-tony-dell being down is a correlate, not the direct cause:
+    get_health_score scores down services 0 but still returns exit 0
+    (verified live — postgres scored 0 at time of test, exit=0).
+
+changes:
+  - scripts/tony-dell-mcp-health.sh: synced to live semantics
+    (POSTGRES_HOST=100.68.142.13, remote chaba path) and now captures ssh
+    stderr to the journal on failure ("ssh-stderr: ..." lines) so the next
+    flap is diagnosable. NOTE: canonical source is chaba-tony-dell repo and
+    deploy to ~/.local/bin is manual — live copy still needs the same patch.
+
+followups:
+  - carded: tony-omen gnome-keyring fd leak (pid pegged at soft limit, 30% CPU,
+    needs daemon restart / leak investigation)
+  - option not taken: ssh retry loop — would not have absorbed a ~10 min boot
+    outage; stderr visibility is the real gap
+
+verification:
+  - ssh tony-dell 'journalctl --user -u tony-dell-mcp-health.service -n 20'
+  - ssh tony-dell 'systemctl --user list-timers tony-dell-mcp-health.timer'
+  - cat ~/var/chaba/health/tony-dell-mcp-health.json on tony-dell
