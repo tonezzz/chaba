@@ -1,0 +1,102 @@
+title: wp-comment-sync — member comments on boards posts -> agent suggestion lanes
+id: 2026-10-15-wp-comment-sync
+card: wp-comment-sync-suggestion-inbox
+date: 2026-10-15
+status: implemented-in-worktree (timer armed on idc03; runs once branch merges — condition_path gate)
+summary: |
+  Member comments on boards.surf-thailand.com posts are the cheap comms
+  channel (Tony call 2026-10-14). scripts/ada/wp-comment-sync.py polls
+  GET /wp/v2/comments?after=<cursor> every 15 min on idc03
+  (job wp-comment-sync in ssot.jobs.yml), routes each new comment by the
+  commented post's REST type, acks in-thread via a REST reply, and dedups
+  via a state-file cursor + processed-ids set. Comments are SUGGESTIONS
+  only — nothing writes MDDB or edits the post; every lane lands in a
+  human/agent-reviewable queue.
+
+lanes:
+  ada_suggestion:
+    post_types: [memory-mirror, memory_mirror]
+    sink: ~/.local/share/ada/memory-pending/mp-wpc<comment_id>.yml
+    detail: |
+      Reuses the staged-writes schema from ada-voice
+      backend/memory_pending.py (route: bank, sha256 pin, args with
+      post/comment provenance). Entries list through
+      scripts/ada/memory-pending.py (approver surface) unchanged;
+      deterministic id makes re-staging idempotent. If the mirror post
+      carries bank/key meta the entry is approvable end-to-end; without
+      meta it lists and a reviewer fills bank before approving. Approve
+      re-scans the pinned text through the write guard.
+  record_correction:
+    post_types: [asset, place, trip]
+    sink: ~/.local/share/wp-comment-sync/record-corrections/corr-<comment_id>.yml
+    detail: |
+      {id, status: pending, post_type/id/title/link, comment_id, author,
+      text, filed_at} — an agent applies the correction to the record in
+      a later step; the sync only files it.
+  digest:
+    post_types: [cam, bench, render_job] + fallback for every other type
+    sink: ~/.local/share/wp-comment-sync/digest.jsonl
+    detail: |
+      One jsonl line per comment {ts, lane, comment_id, post_id,
+      post_type, post_title, author, text<=400}. Every routed comment
+      (all lanes) also lands an events.md line in the ada digest
+      (kind wp-comment).
+
+mechanics:
+  cursor: state.json cursor = max comment date_gmt seen; first run seeds
+    at now-24h (--since overrides).
+  dedup: processed[] + acks[] id sets in state.json (bounded 2000);
+    ack replies carry an <!-- wcs-ack --> marker so a crash between ack
+    and state-save still can't re-route our own reply. Comment meta
+    _processed skipped per card help (needs register_meta on the comment
+    object — the state-file set is the simpler equivalent).
+  ack: POST /wp/v2/comments {post, parent, content} — "filed to <lane>
+    [<queue-id>]" note for the member.
+  ordering: route -> mark processed -> ack (best effort). A failed ack
+    can never re-route the comment into a duplicate queue entry.
+  locking: non-blocking flock on <state_dir>/.lock — overlapping timer
+    runs exit cleanly.
+  runbook_files:
+    state: ~/.local/share/wp-comment-sync/state.json
+    digest: ~/.local/share/wp-comment-sync/digest.jsonl
+    corrections: ~/.local/share/wp-comment-sync/record-corrections/
+    ada_queue: ~/.local/share/ada/memory-pending/mp-wpc*.yml
+    events: ~/.local/share/ada/events.md (kind wp-comment)
+    units: ~/.config/systemd/user/wp-comment-sync.{service,timer}
+
+verify: |
+  Live on idc03 2026-10-15: test comment on news post 361 routed ->
+  digest.jsonl line + in-thread ack (reply id 3, wcs-ack marker) +
+  events.md line + cursor advanced; second run fetched the ack and
+  skipped it via acks[] (0 routed, no reply-to-ack). Synthetic runs
+  exercised the other two lanes: corr-*.yml and mp-wpc*.yml both render
+  the documented schemas, and the mp- entry lists through
+  backend/memory_pending.list_pending(). post_ref() resolves place/106
+  type+title via _links.up. Test comments deleted; synthetic queue files
+  removed; state/digest left as honest history.
+
+deliverables:
+  - file: scripts/ada/wp-comment-sync.py
+    role: the router (stdlib + PyYAML; --dry-run, --since)
+  - file: docs/ssot/infrastructure/ssot.jobs.yml
+    role: wp-comment-sync job — host idc03, every 15m, condition_path
+  - file: scripts/render-jobs.py
+    role: condition_path job field -> ConditionPathExists= in [Unit] —
+      unit is skipped (not failed) while ExecStart's file is absent;
+      reusable for any job landing via a not-yet-merged branch
+  - file: systemd/generated/idc03/wp-comment-sync.{service,timer}
+    role: rendered units; installed + enabled on idc03 2026-10-15
+
+follow_ups:
+  - "MERGE GATE: ExecStart + ConditionPathExists point at the served
+    checkout %h/CascadeProjects/chaba/scripts/ada/wp-comment-sync.py —
+    unit stays skipped until this branch merges and the checkout pulls.
+    No action needed; the timer self-activates."
+  - "WP SIDE: comment_status is CLOSED on all board CPTs today (place,
+    trip, asset, cam, bench, render_job, ops-event all return
+    rest_comment_closed / comment_status null) — only news + posts are
+    open. Members cannot currently comment on the routed post types;
+    opening comments on the CPTs (supports: comments / per-post flag)
+    is a boards-site change — follow-up card wp-board-cpt-comments-open."
+  - "memory-mirror CPT does not exist yet on boards — the ada_suggestion
+    lane is armed but sees no traffic until the mirror posts land."
