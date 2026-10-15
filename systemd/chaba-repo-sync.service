@@ -1,0 +1,8 @@
+[Unit]
+Description=Sync chaba checkout (git pull --rebase --autostash) — repo-exec jobs depend on current code
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba
+ExecStart=/usr/bin/bash %h/CascadeProjects/chaba/scripts/git-safe-pull.sh
+TimeoutStartSec=300

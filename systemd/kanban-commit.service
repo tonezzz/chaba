@@ -4,3 +4,7 @@ Description=Persist live kanban card edits to git (scoped add + push)
 [Service]
 Type=oneshot
 ExecStart=/bin/bash %h/CascadeProjects/chaba-tony-dell/scripts/board/kanban-commit.sh
+# Same-trigger pull (OPS-0479): right after each commit+push tick, kick the
+# exec checkout (~/CascadeProjects/chaba) pull so repo-exec jobs converge
+# within seconds instead of waiting for chaba-repo-sync.timer's phase.
+ExecStartPost=-/usr/bin/systemctl --user start --no-block chaba-repo-sync.service
