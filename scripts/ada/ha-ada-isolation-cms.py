@@ -28,9 +28,9 @@ from pathlib import Path
 
 REPO = Path(os.environ.get("CHABA_REPO", "/home/tony/CascadeProjects/chaba"))
 RUNBOOK = REPO / "docs/kb/ha-ada-isolation.md"
-DEPLOY_SH = REPO.parent / "ada-voice/scripts/deploy-ada.sh"
+DEPLOY_SH = REPO / "scripts/deploy-ada.sh"
 if not DEPLOY_SH.exists():
-    DEPLOY_SH = REPO / "../ada-voice/scripts/deploy-ada.sh"
+    DEPLOY_SH = REPO.parent / "ada-voice/scripts/deploy-ada.sh"
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
 INDEX_SLUG = "ha-ada-isolation"
@@ -40,11 +40,21 @@ CARD_REF = "kanban: ha-ada-isolation (HOM-0464)"
 # Ada backends on idc03 -> their env file + the HA lane they act on.
 BACKENDS = {
     "ada-ha-tony":    {"env": "ada-ha-tony.env",    "ha": "tony-ha",    "svc": "svc-ada"},
+    "ada-pi-pwa":     {"env": "ada-pi-pwa.env",     "ha": "tony-ha",    "svc": "svc-ada"},
     "ada-ha-michael": {"env": "ada-ha-michael.env", "ha": "michael-ha", "svc": "svc-ada-michael"},
     "ada-kk":         {"env": "ada-kk.env",         "ha": "kk-ha",      "svc": "svc-kaewta"},
     "ada-dev":        {"env": "ada-dev.env",        "ha": None,         "svc": None},
-    "ada-pi-pwa":     {"env": "ada-pi-pwa.env",     "ha": None,         "svc": None},
+    "ada-kk-dev":     {"env": "ada-kk-dev.env",     "ha": None,         "svc": None},
 }
+
+# Approved Gemini pool split (card ha-ada-isolation, decided 2026-10-11):
+# tony-lane envs may share a key with each other but never with member/dev.
+TONY_ENVS = {"ada-ha-tony.env", "ada-pi-pwa.env"}
+
+
+def _pool(env):
+    return "tony" if env in TONY_ENVS else "member/dev"
+
 
 REMOTE_ENV_PROBE = r'''
 import hashlib, json, glob, os
@@ -59,7 +69,8 @@ for f in sorted(glob.glob(os.path.expanduser("~/.config/secrets/ada-*.env"))):
     out[name] = {
         "has_ha": bool(d.get("HOME_ASSISTANT_TOKEN")),
         "ha_url": d.get("HOME_ASSISTANT_URL") or None,
-        "gemini": hashlib.sha256((d.get("GEMINI_API_KEY") or "").encode()).hexdigest()[:10] or None,
+        "gemini": (hashlib.sha256(d["GEMINI_API_KEY"].encode()).hexdigest()[:10]
+                   if d.get("GEMINI_API_KEY") else None),
         "gemini_fb": bool(d.get("GEMINI_API_KEY_")),
         "excluded": bool((d.get("ADA_EXCLUDED_TOOLS") or "").strip()),
         "instance": d.get("ADA_INSTANCE_ID") or None,
@@ -138,10 +149,12 @@ def probe_units():
 
 
 def deploy_services():
+    """Parse the idc03 SERVICES list out of deploy-ada.sh's host_config()."""
     try:
         txt = DEPLOY_SH.read_text()
-        m = re.search(r'SERVICES="\$\{ADA_SERVICES:-([^}]+)\}"', txt)
-        return m.group(1).split() if m else []
+        m = re.search(r'idc03\)\s+echo "([^"|]+)', txt)
+        return [s.replace(".service", "")
+                for s in m.group(1).split(",") if s.strip()] if m else []
     except Exception:
         return []
 
@@ -173,18 +186,23 @@ def assess(envs, units, users, services):
     controls.append(("Dedicated non-admin `svc-*` HA user per lane",
                      worst, "; ".join(detail) or "no HA-bound backends"))
 
-    # 2. per-instance gemini key
+    # 2. gemini pool isolation — Tony decided "two pools" (tony-lane vs
+    # member/dev), not full per-instance. A key spanning both pools fails.
     hashes = {}
     for env, d in envs.items():
         if d.get("gemini"):
             hashes.setdefault(d["gemini"], []).append(env)
-    if len(hashes) <= 1 and hashes:
+    cross = [v for v in hashes.values()
+             if len({_pool(e) for e in v}) > 1]
+    if not hashes:
+        st, msg = "n/a", "no env probes"
+    elif len(hashes) <= 1 or cross:
         st = "fail"
-        msg = f"all {sum(map(len, hashes.values()))} envs share one key (hash {next(iter(hashes))})"
+        msg = f"key(s) span both pools: {'; '.join(f'{k[:6]}: {len(v)} envs' for k, v in hashes.items())}"
     else:
-        st = "ok" if all(len(v) == 1 for v in hashes.values()) else "partial"
+        st = "ok"
         msg = "; ".join(f"{k[:6]}: {len(v)} envs" for k, v in hashes.items())
-    controls.append(("Per-instance `GEMINI_API_KEY`", st, msg))
+    controls.append(("Gemini key pool isolation (tony-lane vs member/dev)", st, msg))
 
     # 3. cgroup caps
     capped = sum(1 for u in units.values()
@@ -219,13 +237,15 @@ def assess(envs, units, users, services):
 
 
 COUPLING = [
-    ("ada-ha-tony", "idc03:8002", "tony-ha (tailnet :8123)", "Tony OWNER LLAT",
+    ("ada-ha-tony", "idc03:8002", "tony-ha (tailnet :8123)", "svc-ada LLAT (non-admin)",
      "REST /api/states+services (light/switch/fan/input_boolean/cover/button/media_player) + ~5s poller"),
-    ("ada-ha-michael", "idc03:8003", "michael-ha (tailnet)", "Michael LLAT", "same tool set"),
+    ("ada-pi-pwa", "idc03:8001", "tony-ha (tailnet)", "svc-ada LLAT (non-admin)",
+     "CMS/enroll frontend + full tool set — only 2 exclusions (habit tools)"),
+    ("ada-ha-michael", "idc03:8003", "michael-ha (tailnet)", "Michael OWNER LLAT — Phase B pending approval",
+     "same tool set"),
     ("ada-kk", "idc03:8007", "kk-ha — no creds in env", "—", "voice card browser→/ada-ws/kk only"),
+    ("ada-kk-dev", "idc03:8009", "none — dev twin of ada-kk", "—", "HA tools excluded"),
     ("ada-dev", "idc03:8005", "none (upstream removed)", "—", "HA tools excluded"),
-    ("ada-pi-pwa", "idc03:8001", "tony-ha (tailnet)", "Tony OWNER LLAT",
-     "full tool set — only 2 exclusions (habit tools)"),
 ]
 
 WHATIF = [
@@ -289,10 +309,14 @@ def index_page(controls, units, now):
               f"- {_md_link('iso-whatif', 'What-if matrix')} — 9 scenarios, before/after",
               f"- {_md_link('iso-killswitch', 'Kill switch')} — fastest-first severance",
               "",
-              "## Open decisions (card requests)", "",
-              "1. Gemini key split — shared key vs two pools vs per-instance",
-              "2. ada-kk deploy-set membership — add vs pinned",
-              "3. Phase B approval — `svc-ada` on prod tony-ha",
+              "## Open items", "",
+              "1. Phase B on michael-ha — svc-ada-michael user + LLAT swap "
+              "(approval request on card ha-ada-isolation)",
+              "2. Old Tony OWNER LLAT still live — shared by chaba-guest / "
+              "nodered / home-assistant-token.env; revoke after those get own "
+              "svc tokens (follow-up card)",
+              "3. ada-kk Live-layer Gemini key mint — Tony's GCP console "
+              "(card kk-gemini-key)",
               "",
               f"*Generated by ha-ada-isolation-cms.py · {now}*"]
     return "\n".join(lines)
@@ -325,7 +349,13 @@ def shared_fate_page(hashes, services, envs, now):
     lines = ["# Shared-fate vectors", "",
              "## Gemini key sharing (live hash groups)", ""]
     for h, env_list in hashes.items():
-        flag = " ⚠️ shared pool" if len(env_list) > 1 else ""
+        pools = {_pool(e) for e in env_list}
+        if len(pools) > 1:
+            flag = " ⚠️ **spans tony + member/dev pools**"
+        elif len(env_list) > 1:
+            flag = f" ({next(iter(pools))} pool)"
+        else:
+            flag = ""
         lines.append(f"- `{h}` → {', '.join(env_list)}{flag}")
     lines += ["", "## Deploy set (deploy-ada.sh SERVICES)", "",
               f"`{' '.join(services) or '?'}`", ""]
