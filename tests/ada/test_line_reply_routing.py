@@ -49,9 +49,40 @@ PATCHES = [
 ]
 NEW_FILES = [DROP / "tests/test_line_reply_context.py"]
 
+# Once the drop lands upstream a patch can never apply again — the file
+# itself is already the merged result (same harness rule as
+# test_line_file_doc_ingest).
+MERGED_MARKERS = {
+    "line_relay.reply-routing.patch":
+        ("backend/line_relay.py", "&chat_id="),
+    "tg_relay.reply-routing.patch":
+        ("backend/tg_relay.py", "&chat_id={self.chat_id}"),
+    "tool_runner.reply-routing.patch":
+        ("backend/tool_runner/common.py", "def session_chat_id"),
+    "test_line_relay_group.reply-routing.patch":
+        ("tests/test_line_relay_group.py", "self.chat_id = chat_id"),
+    "pwa_server.reply-routing.patch":
+        ("pwa_server.py", 'ws.query_params.get("chat_id")'),
+}
+
 NEEDS_ADA_PI = pytest.mark.skipif(
     not (ADA_PI / "backend/line_relay.py").is_file(),
     reason="no ada-voice checkout to apply the patch against")
+
+
+def _apply_or_merged(patch: Path, cwd: Path) -> None:
+    """Apply patch at cwd; if it no longer applies, the drop must already
+    be merged upstream — verify the feature marker and keep the live
+    (already-merged) file."""
+    r = subprocess.run(["git", "apply", "--check", str(patch)],
+                       cwd=cwd, capture_output=True, text=True)
+    if r.returncode == 0:
+        subprocess.run(["git", "apply", str(patch)], cwd=cwd, check=True)
+        return
+    rel, marker = MERGED_MARKERS[patch.name]
+    assert marker in (cwd / rel).read_text(), (
+        f"{patch.name} no longer applies and feature markers are "
+        f"absent: {r.stderr}")
 
 
 def _clean_checkout(tmp_path: Path) -> Path:
@@ -75,16 +106,12 @@ class TestPatchApplies:
     def test_all_patches_apply_clean(self, tmp_path):
         src = _clean_checkout(tmp_path)
         for p in PATCHES:
-            r = subprocess.run(
-                ["git", "apply", "--check", str(p)],
-                cwd=src, capture_output=True, text=True)
-            assert r.returncode == 0, f"{p.name}: {r.stderr}"
+            _apply_or_merged(p, src)
 
     def test_applied_files_compile(self, tmp_path):
         src = _clean_checkout(tmp_path)
         for p in PATCHES:
-            subprocess.run(["git", "apply", str(p)], cwd=src,
-                           check=True)
+            _apply_or_merged(p, src)
         for f in NEW_FILES:  # install step copies new files verbatim
             (src / "tests" / f.name).write_bytes(f.read_bytes())
         for rel in ("backend/line_relay.py", "backend/tg_relay.py",
@@ -116,10 +143,8 @@ class TestPatchedRelay:
         target = src / "line_relay.py"
         target.write_bytes(
             (ADA_PI / "backend/line_relay.py").read_bytes())
-        subprocess.run(
-            ["git", "apply", str(DROP /
-                               "backend/line_relay.reply-routing.patch")],
-            cwd=tmp_path, check=True)
+        _apply_or_merged(
+            DROP / "backend/line_relay.reply-routing.patch", tmp_path)
         monkeypatch.setenv("LINE_NAME_BACKENDS", "ada:ws://lane")
         spec = importlib.util.spec_from_file_location(
             "line_relay_patched", target)
@@ -215,10 +240,8 @@ class TestPatchedToolRunner:
         """Verify against the APPLIED source text, then drive the real
         helpers when they import cleanly."""
         src = _clean_checkout(tmp_path)
-        subprocess.run(
-            ["git", "apply", str(DROP /
-                                 "backend/tool_runner.reply-routing.patch")],
-            cwd=src, check=True)
+        _apply_or_merged(
+            DROP / "backend/tool_runner.reply-routing.patch", src)
         text = (src / "backend/tool_runner/common.py").read_text()
         assert "SESSION_CHAT" in text and "session_chat_id" in text
         chat = (src / "backend/tool_runner/chat.py").read_text()

@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Ten drops live here:
+chaba dispatches. Eleven drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -23,6 +23,8 @@ chaba dispatches. Ten drops live here:
    **already deployed** (ada-voice `daa0e0a`)
 10. cast wrong-target honesty + goal-loop breaker + frustration budget —
     card `ada-cast-wrong-target-verbose-loop` (ADA-0684, 2026-10-15)
+11. wp_post CPT router — LINE save-asks land on the right chaba-boards
+    CPT — card `line-cpt-writer-router` (OPS-0656, 2026-10-15)
 
 ---
 
@@ -781,3 +783,76 @@ Only the 5th/6th attempts hit `tv_action`, which correctly failed
   card back; the new guide text covers the TV misroute, but a
   screen-only gev_command could also carry a hint. Left for a
   follow-up if it recurs.
+
+---
+
+## Drop 11 — wp_post CPT router (LINE saves land on the right CPT)
+
+Card `line-cpt-writer-router` (OPS-0656, Tony 2026-10-14): boards has
+chaba-boards CPTs (asset, expense, contact, reminder, …) but every LINE
+"post this" ask landed as a free-form post. This extends the existing
+`wp_post` tool with `kind=` + `meta=` — no new tool, so the tool surface
+stays flat (no count_cap bump) and member "ลงเว็บ" muscle memory keeps
+one entry point.
+
+### Files
+
+- `backend/tools.d/wp_post.cpt-router.patch` — `tools.d/wp_post.py`
+  vs ada-voice `main` @ `8eaab27`. New params: `kind`
+  (post|expense|contact|reminder|asset, default post) and `meta`
+  (object, whitelisted to the plugin-registered keys per kind —
+  unlisted keys dropped + reported via `dropped_meta`). CPT records:
+  status `private` (member-only, the /chat/line/* model — household
+  expenses/contacts never hit the public post stream), automatic
+  `<Kind> — <title>` prefix per ssot.wp-boards.yml title_standard, no
+  person tag (CPTs carry no post_tag taxonomy). kind=expense +
+  media_url runs `_ocr_receipt` — archived photo/PDF goes inline to
+  `gemini_pool.generate` (ADA_WP_OCR_MODEL, default
+  gemini-3.5-flash-lite; ADA_WP_OCR_MAX_BYTES 8 MiB) asking strict JSON
+  for amount/currency/vendor/receipt_date/paid_by; OCR fills only
+  fields the caller didn't supply, failure is silent (post still
+  lands). Non-image media (asset manual PDF) embeds as an attachment
+  link, and featured_media is set only for image uploads.
+- `backend/tool_guide.wp_post-cpt.patch` — `tool_guide.yml`. The
+  wp_post entry documents kind routing, per-kind meta keys, the kk-lane
+  convention (KK runs the household — 'remind us' defaults
+  assignee=kk), the private-status/member-only semantic, and that the
+  title prefix is automatic (pass the bare title).
+- `tests/scenarios-live/wp_post.cpt.patch` — two draft-mode turns
+  (reminder + contact) exercising the CPT route on the live tier.
+- `tests/ada/test_wp_post_cpt_router.py` (this repo) — 11 tests: post
+  regression, OCR fill/override/failure, per-kind meta whitelist +
+  dropped keys, private status, title prefix (incl. no double-prefix),
+  PDF-attachment link + no featured_media, invalid kind, draft, missing
+  media.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && git apply \
+   <chaba>/integrations/ada-voice/backend/tools.d/wp_post.cpt-router.patch \
+   && git apply <chaba>/integrations/ada-voice/backend/tool_guide.wp_post-cpt.patch \
+   && git apply <chaba>/integrations/ada-voice/tests/scenarios-live/wp_post.cpt.patch`
+   — base `main` @ `8eaab27` (verified `git apply --check`); if a hunk
+   no longer applies, re-dispatch rather than hand-merging.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both. No manifest/surface change
+   (same tool, new params) — no count_cap bump. Restart the lane units
+   so tools.d reloads (ada-line-relay not needed — relay untouched).
+3. Prereq on the WP side: chaba-boards plugin ≥0.3.x already active on
+   boards (verified 2026-10-14: all CPTs in /wp/v2/types) — the asset/
+   expense/contact/reminder meta keys were registered from day one, so
+   no plugin bump needed.
+
+### Contract
+
+- `wp_post(person, title, content, kind?, meta?, publish?, media_url?)`
+  — kind=post behaves exactly as before (public post + person tag +
+  tag_archive); kind∈{expense,contact,reminder,asset} writes the CPT.
+- Returns `{ok, id, url, status, kind, meta, ocr, dropped_meta,
+  media_url, note, tag_archive(post only)}`.
+- Caller meta wins over OCR; OCR is best-effort and never blocks the
+  write. Meta keys outside the plugin's registered set are dropped and
+  listed in `dropped_meta`.
+- Verified in-worktree by `tests/ada/test_wp_post_cpt_router.py`
+  (11 tests, patch-apply gate included) — run with
+  `ADA_PI=<ada-voice checkout>`; default `~/CascadeProjects/ada-voice`.

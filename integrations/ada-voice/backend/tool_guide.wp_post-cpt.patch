@@ -1,0 +1,25 @@
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -711,7 +711,18 @@
+   is the member whose page it lands on: tony|kk|nhong — ask once if it
+   is unclear who; do not guess across members. After a photo turn, pass
+   the (media_url: ...) shown in that turn as media_url= to embed it.
+-  publish=false makes a draft preview for review-before-publish asks;
+-  the default is to publish and answer with the returned url plus
+-  tag_archive. Thai titles/bodies are fine. If ok:false mentions missing
+-  credentials, say the site key isn't configured — don't retry.
++  kind= picks the record type: post (default — public member post) |
++  expense (receipt/bill — pass media_url so the photo lands on the
++  record; give meta= any of amount/vendor/receipt_date/paid_by/currency
++  you heard and the tool OCRs the rest off the photo itself) | contact
++  ('save this contact' — meta phone/line_id/role) | reminder ('remind
++  us …' — meta due_date/assignee; on the kk lane KK runs the household,
++  assignee=kk unless she says otherwise) | asset ('asset: CR-V model X'
++  — meta model/serial/purchase_date/warranty_until/vendor; a manual/PDF
++  sent with it attaches via media_url as a link). CPT records are
++  member-only (private status) and get the '<Kind> — <title>' prefix
++  automatically — pass the bare title. publish=false makes a draft
++  preview for review-before-publish asks; the default publishes and
++  answers with the returned url (posts also return tag_archive). Thai
++  titles/bodies are fine. If ok:false mentions missing credentials, say
++  the site key isn't configured — don't retry.

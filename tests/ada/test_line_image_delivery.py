@@ -40,6 +40,18 @@ PATCHES = [
     DROP / "backend" / "tool_guide.image-delivery.patch",
     DROP / "backend" / "realtime_provider.image-delivery.patch",
 ]
+
+# Once the drop lands upstream the patch can never apply again — the
+# file itself is already the merged result (same harness rule as
+# test_line_file_doc_ingest).
+MERGED_MARKERS = {
+    "line_relay.image-delivery.patch":
+        ("backend/line_relay.py", "_mine_image_urls"),
+    "tool_guide.image-delivery.patch":
+        ("backend/tool_guide.yml", "NEVER a page URL"),
+    "realtime_provider.image-delivery.patch":
+        ("backend/realtime_provider.py", "media_url resolve server-side"),
+}
 ADA_PI = Path(os.environ.get("ADA_PI",
                              str(Path.home() / "CascadeProjects/ada-voice")))
 
@@ -60,7 +72,12 @@ def patched(tmp_path, monkeypatch):
     for p in PATCHES:
         r = subprocess.run(["git", "apply", "--check", str(p)],
                            cwd=tmp_path, capture_output=True, text=True)
-        assert r.returncode == 0, f"{p.name} no longer applies: {r.stderr}"
+        if r.returncode != 0:
+            rel, marker = MERGED_MARKERS[p.name]
+            assert marker in (tmp_path / rel).read_text(), (
+                f"{p.name} no longer applies and feature markers are "
+                f"absent: {r.stderr}")
+            continue
         subprocess.run(["git", "apply", str(p)], cwd=tmp_path, check=True)
     for mod in ("httpx", "websockets"):
         stub = pytypes.ModuleType(mod)
@@ -238,12 +255,18 @@ class TestImageMsgs:
 
 # ------------------------------------------------------------- _images_from
 
+def _pairs(out):
+    """The merged upstream version returns (url, cap, kind) triples;
+    the staged patch returns pairs — compare on (url, cap)."""
+    return [t[:2] for t in out]
+
+
 class TestImagesFrom:
     def test_drive_get_image_media_url(self, patched):
         out = patched._images_from([{
             "mimeType": "image/jpeg",
             "media_url": "/v1/drive/media/X?t=1", "name": "car.jpg"}])
-        assert out == [("/v1/drive/media/X?t=1", "")]
+        assert _pairs(out) == [("/v1/drive/media/X?t=1", "")]
 
     def test_pdf_media_url_not_an_image(self, patched):
         assert patched._images_from([{

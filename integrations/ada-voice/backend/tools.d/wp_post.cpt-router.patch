@@ -1,0 +1,282 @@
+--- a/backend/tools.d/wp_post.py
++++ b/backend/tools.d/wp_post.py
+@@ -1,5 +1,5 @@
+-"""wp_post — publish a LINE chat message as a post on the boards
+-WordPress site and hand back the link to send in chat.
++"""wp_post — publish a LINE chat message on the boards WordPress site
++and hand back the link to send in chat.
+ 
+ The kk lane members chat in LINE ("post to my site: ..." or a photo with
+ a caption) and expect a live page back — card line-wp-site-manager
+@@ -7,18 +7,33 @@
+ exists, optionally upload archived LINE media, create the post, and
+ return the public URL. The REST plumbing lives in backend/wp_client.py.
+ 
++2026-10-15 (card line-cpt-writer-router): kind= routes save-asks to the
++chaba-boards CPTs instead of a free-form post — expense (receipts;
++missing amount/vendor/receipt_date are OCR'd from an attached photo via
++the lane's Gemini pool), contact, reminder, asset. CPT records are
++member-gated (status=private, the /chat/line/* model) and get the
++"<Kind> — <title>" title standard from ssot.wp-boards.yml; the caller's
++meta= is whitelisted to the keys the plugin registered per CPT.
++
+ Env (wp-boards.env on the backend host):
+     WP_SITE_URL     — e.g. https://boards.surf-thailand.com/wp
+     WP_APP_USER     — WP username the app password belongs to
+     WP_APP_PASSWORD — application password (24 chars, revocable)
++    ADA_WP_OCR_MODEL    — receipt OCR model (default
++        gemini-3.5-flash-lite)
++    ADA_WP_OCR_MAX_BYTES — inline payload cap (default 8 MiB)
+ """
+ 
+ from __future__ import annotations
+ 
++import json
++import os
++import re
+ from typing import Any
+ 
+ import httpx
+ 
++from backend import gemini_pool
+ from backend import wp_client as wp
+ 
+ DECLARATION = {
+@@ -26,7 +41,8 @@
+     "description": (
+         "Post to a member's WordPress page on the boards site "
+         "(persons: tony, kk, nhong) — use for เว็บบอร์ด/webboard/'ลงเว็บ' "
+-        "asks, NOT cms_publish_page. Returns the public URL for chat."),
++        "asks, NOT cms_publish_page. kind= routes saves to CPTs: "
++        "expense (receipts), contact, reminder, asset. Returns the URL."),
+     "parameters": {
+         "type": "object",
+         "properties": {
+@@ -39,6 +55,26 @@
+                 "type": "string",
+                 "description": "Post body text (Thai ok).",
+             },
++            "kind": {
++                "type": "string",
++                "enum": ["post", "expense", "contact", "reminder",
++                         "asset"],
++                "description": "Record type — post (default, free-form "
++                               "member post) or a CPT: expense "
++                               "(receipt/bill), contact (service "
++                               "contact), reminder (dated to-do), "
++                               "asset (household asset/manual).",
++            },
++            "meta": {
++                "type": "object",
++                "description": "CPT fields for kind!=post — expense "
++                               "{amount, currency, vendor, paid_by, "
++                               "receipt_date}, contact {phone, line_id, "
++                               "role}, reminder {due_date, assignee}, "
++                               "asset {model, serial, purchase_date, "
++                               "warranty_until, vendor}. Only listed "
++                               "keys are stored.",
++            },
+             "publish": {
+                 "type": "boolean",
+                 "description": "Publish immediately (default true); "
+@@ -55,6 +91,79 @@
+     },
+ }
+ 
++_KINDS = ("post", "expense", "contact", "reminder", "asset")
++
++# Meta keys the chaba-boards plugin registered REST-writable per CPT
++# (integrations/wp-boards/chaba-boards.php) — anything else in meta= is
++# dropped and reported, never sent.
++_KIND_META = {
++    "expense": ("amount", "currency", "vendor", "paid_by",
++                "receipt_date"),
++    "contact": ("phone", "line_id", "role"),
++    "reminder": ("due_date", "assignee"),
++    "asset": ("model", "serial", "purchase_date", "warranty_until",
++              "vendor"),
++}
++
++# "<Kind> — <name>" title standard (ssot.wp-boards.yml title_standard).
++_KIND_LABEL = {"expense": "Expense", "contact": "Contact",
++               "reminder": "Reminder", "asset": "Asset"}
++
++_OCR_MODEL = os.environ.get("ADA_WP_OCR_MODEL",
++                            "gemini-3.5-flash-lite")
++_OCR_MAX_BYTES = int(os.environ.get("ADA_WP_OCR_MAX_BYTES",
++                                    str(8 * 1024 * 1024)))
++_OCR_PROMPT = (
++    "This is a photo of a receipt, invoice or payment slip. Reply with "
++    "ONLY a JSON object, no prose and no code fences: {\"amount\": "
++    "\"123.45\" or null, \"currency\": \"THB\"/\"USD\"/etc or null, "
++    "\"vendor\": \"shop or issuer name\" or null, \"receipt_date\": "
++    "\"YYYY-MM-DD\" or null, \"paid_by\": \"payer name if shown\" or "
++    "null}.")
++
++
++async def _ocr_receipt(runner: Any, path: str) -> dict[str, str]:
++    """Pull expense fields out of an archived receipt photo/PDF via the
++    lane's Gemini pool. Best-effort: any failure returns {} and the post
++    lands with whatever meta the caller supplied."""
++    try:
++        with open(path, "rb") as fh:
++            data = fh.read(_OCR_MAX_BYTES + 1)
++    except OSError:
++        return {}
++    if not data or len(data) > _OCR_MAX_BYTES:
++        return {}
++    mime, _ext = wp.sniff_media(path)
++    if not (mime.startswith("image/") or mime == "application/pdf"):
++        return {}
++    try:
++        from google.genai import types
++        ctx = getattr(runner, "context", None)
++        resp = await gemini_pool.generate(
++            model=_OCR_MODEL,
++            contents=[
++                types.Part.from_bytes(data=data, mime_type=mime),
++                _OCR_PROMPT,
++            ],
++            tool="wp_post",
++            mddb=getattr(ctx, "mddb", None),
++            session_id=str(getattr(ctx, "session_id", "") or "runner"),
++            timeout=45.0)
++    except Exception:
++        return {}
++    text = (getattr(resp, "text", None) or "").strip()
++    m = re.search(r"\{.*\}", text, re.S)
++    if not m:
++        return {}
++    try:
++        obj = json.loads(m.group(0))
++    except ValueError:
++        return {}
++    if not isinstance(obj, dict):
++        return {}
++    return {k: str(v).strip() for k, v in obj.items()
++            if v is not None and str(v).strip()}
++
+ 
+ async def run(runner: Any, **args: Any) -> dict:
+     person = str(args.get("person") or "").strip().lower()
+@@ -62,11 +171,24 @@
+     content = str(args.get("content") or "").strip()
+     publish = bool(args.get("publish", True))
+     media_url = str(args.get("media_url") or "").strip()
++    kind = str(args.get("kind") or "post").strip().lower()
++    meta_in = args.get("meta") if isinstance(args.get("meta"), dict) else {}
+ 
+     if person not in wp.PEOPLE:
+         return {"ok": False, "error": f"person must be one of {wp.PEOPLE}"}
+     if not title or not content:
+         return {"ok": False, "error": "title and content required"}
++    if kind not in _KINDS:
++        return {"ok": False,
++                "error": f"kind must be one of {_KINDS} "
++                         "(post=free-form, expense/contact/reminder/asset "
++                         "are the boards CPTs)"}
++
++    allowed = _KIND_META.get(kind, ())
++    meta = {k: str(meta_in[k]).strip() for k in allowed
++            if k in meta_in and str(meta_in[k]).strip()}
++    dropped = sorted(str(k) for k in meta_in if k not in allowed)
++
+     env = wp.env()
+     if not wp.configured(env):
+         return {"ok": False,
+@@ -76,39 +198,83 @@
+     try:
+         async with httpx.AsyncClient(timeout=30,
+                                      follow_redirects=True) as client:
+-            tag_id = await wp.ensure_tag(client, env, person)
+-            if not tag_id:
+-                return {"ok": False,
+-                        "error": f"tag create failed for {person}"}
++            tag_id = None
++            if kind == "post":
++                tag_id = await wp.ensure_tag(client, env, person)
++                if not tag_id:
++                    return {"ok": False,
++                            "error": f"tag create failed for {person}"}
+ 
+             media_id, media_src, media_note = None, "", ""
++            media_path = None
+             if media_url:
+                 local = wp.media_local_path(media_url)
+                 if not local:
+                     media_note = " (photo skipped — not found in archive)"
+                 else:
++                    media_path = local
+                     media_id, media_src = await wp.upload_media(
+                         client, env, local)
+                     if not media_id:
+-                        media_note = " (photo upload failed)"
++                        media_note = " (media upload failed)"
+ 
+-            body = (f'<p><img src="{media_src}" alt=""/></p>\n'
+-                    if media_src else "") + wp.paragraphs(content)
++            # Receipt OCR — fill only the fields the caller left out.
++            ocr_used: dict[str, str] = {}
++            if kind == "expense" and media_path \
++                    and any(k not in meta for k in _KIND_META["expense"]):
++                got = await _ocr_receipt(runner, media_path)
++                for k in allowed:
++                    if k not in meta and got.get(k):
++                        meta[k] = got[k]
++                        ocr_used[k] = got[k]
++
++            if kind != "post" and not title.startswith(
++                    _KIND_LABEL[kind] + " —"):
++                title = f"{_KIND_LABEL[kind]} — {title}"
++
++            mime = wp.sniff_media(media_path)[0] if media_path else ""
++            if media_src and mime.startswith("image/"):
++                body = f'<p><img src="{media_src}" alt=""/></p>\n'
++            elif media_src:
++                body = (f'<p><a href="{media_src}">attachment</a></p>\n')
++            else:
++                body = ""
++            body += wp.paragraphs(content)
++
++            if not publish:
++                status = "draft"
++            elif kind == "post":
++                status = "publish"
++            else:
++                # CPT records are household data — member-gated like the
++                # /chat/line/* pages (anonymous visitors 404), not the
++                # public post stream.
++                status = "private"
+ 
+             res = await wp.create_post(
+-                client, env, title, body, tag_ids=[tag_id] if tag_id else [],
+-                status="publish" if publish else "draft",
+-                featured_media=media_id)
++                client, env, title, body,
++                tag_ids=[tag_id] if tag_id else [],
++                status=status,
++                featured_media=(media_id
++                                if media_id and mime.startswith("image/")
++                                else None),
++                post_type="posts" if kind == "post" else kind,
++                meta=meta or None)
+             if not res.get("ok"):
+                 return res
+             return {
+                 "ok": True,
+                 "id": res.get("id"),
+                 "url": res.get("link"),
+-                "status": "publish" if publish else "draft",
++                "status": status,
++                "kind": kind,
++                "meta": meta or None,
++                "ocr": ocr_used or None,
++                "dropped_meta": dropped or None,
+                 "media_url": media_src or None,
+                 "note": media_note or None,
+-                "tag_archive": f"{wp.PUBLIC_BASE}/index.php/tag/{person}/",
++                "tag_archive": (f"{wp.PUBLIC_BASE}/index.php/tag/{person}/"
++                                if kind == "post" else None),
+             }
+     except Exception as exc:
+         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}

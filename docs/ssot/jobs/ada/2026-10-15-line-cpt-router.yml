@@ -1,0 +1,81 @@
+title: LINE saves route to the right WP CPT (wp_post kind= router)
+id: 2026-10-15-line-cpt-router
+card: line-cpt-writer-router
+ref: OPS-0656
+date: 2026-10-15
+status: shipped-chaba-pending-adapi
+summary: |
+  boards.surf-thailand.com has had the chaba-boards CPTs live since
+  2026-10-14 (asset, expense, contact, reminder, …, all REST-writable
+  with registered meta), but every LINE "post this / save this" ask
+  still landed as a free-form post via wp_post. The drop extends the
+  existing wp_post tool with kind= + meta= so save-asks classify to the
+  right CPT — no new tool, so the declared surface stays flat (no
+  count_cap bump) and the member-facing verb stays "wp_post".
+
+deliverables:
+  - file: integrations/ada-voice/backend/tools.d/wp_post.cpt-router.patch
+    role: tool patch (staged, NOT deployed — vs ada-voice main @ 8eaab27)
+    detail: |
+      kind= post|expense|contact|reminder|asset (default post keeps the
+      old behavior byte-for-byte: public post + person tag +
+      tag_archive). meta= whitelists to the plugin-registered keys per
+      kind — unlisted keys dropped and reported in `dropped_meta`.
+      kind=expense + media_url runs _ocr_receipt: the archived LINE
+      photo/PDF goes inline to gemini_pool.generate (ADA_WP_OCR_MODEL,
+      default gemini-3.5-flash-lite; ADA_WP_OCR_MAX_BYTES 8 MiB) with a
+      strict-JSON prompt for amount/currency/vendor/receipt_date/
+      paid_by — caller-supplied fields always win, OCR failure is
+      silent (the record still lands). CPT records publish status
+      `private` (member-only, the /chat/line/* model — household
+      financials never enter the public post stream) and get the
+      "<Kind> — <title>" title_standard prefix automatically.
+      Non-image media (asset manual PDF) embeds as an attachment link;
+      featured_media only for image uploads.
+  - file: integrations/ada-voice/backend/tool_guide.wp_post-cpt.patch
+    role: model guidance
+    detail: |
+      kind routing per ask type (receipt/bill → expense, 'save this
+      contact' → contact, 'remind us' → reminder, 'asset: X' → asset),
+      per-kind meta keys, kk-lane convention (KK runs the household —
+      'remind us' defaults assignee=kk), private-status semantics, and
+      "pass the bare title" (prefix is automatic).
+  - file: integrations/ada-voice/tests/scenarios-live/wp_post.cpt.patch
+    role: live scenario coverage
+    detail: two draft-mode turns (reminder + contact) — exercises the
+      CPT route without publishing member-visible records.
+  - file: tests/ada/test_wp_post_cpt_router.py
+    role: chaba-side verification (11 tests)
+    detail: |
+      post-kind regression (public + tag + tag_archive), expense OCR
+      fill/override/failure-still-posts, contact meta whitelist +
+      dropped_meta, reminder due_date/assignee, asset PDF as attachment
+      link with no featured_media, no double title prefix, invalid
+      kind, draft preview, missing-media note. Harness applies the
+      staged patch to a scratch copy of ada-voice sources and exercises
+      the real wp_client plumbing against a fake httpx.AsyncClient +
+      stub backend.gemini_pool.
+  - file: docs/ssot/apps/ssot.wp-boards.yml
+    role: writer registry update (writers.wp_post)
+
+verification:
+  - pytest tests/ada/test_wp_post_cpt_router.py → 11 passed
+    (patch-apply gate included; ADA_PI env or ~/CascadeProjects/ada-voice)
+  - git apply --check on ada-voice main @ 8eaab27: all three patches clean
+  - no manifest/persons/count_cap changes required — same tool name,
+    same lanes, new optional params only
+
+install:
+  - "cd <ada-voice> && git apply the three patches (see
+    integrations/ada-voice/README.md Drop 11), run tool-lint + pytest,
+    restart the lane units — deploy-ada.sh covers all of it"
+  - "no WP-side change needed: chaba-boards ≥0.3.x already registers
+    the meta keys (verified active 2026-10-14)"
+
+notes: |
+  KK is boss of the kk-home lane — handled as guide-level convention
+  (reminder assignee defaults to kk on her lane), not a code gate: the
+  wp_post policy/identity layer already scopes lanes by caller, and the
+  CPT meta has no authority semantics to enforce. If CPTs later need a
+  'for_member' axis (e.g. admin columns per member), that's a plugin
+  meta add — deferred until a real ask needs it.

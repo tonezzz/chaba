@@ -63,6 +63,16 @@ PATCHES = {
         DROP / "backend" / "tool_guide.draft-hit-frame.patch",
 }
 
+# Once the drop lands upstream the patch can never apply again — the
+# file itself is already the merged result (same harness rule as
+# test_line_file_doc_ingest).
+MERGED_MARKERS = {
+    "backend/tool_runner/memory.py": "_frame_draft_hit",
+    "backend/memory_ops.py": "is_draft = True",
+    "backend/realtime_provider.py": "hedge, do not state them",
+    "backend/tool_guide.yml": "DRAFT frame",
+}
+
 
 def _ada_pi_file(rel: str) -> Path:
     p = ADA_PI / rel
@@ -80,6 +90,13 @@ def patched_tree(tmp_path):
         dst = tmp_path / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(src.read_bytes())
+        r = subprocess.run(["git", "apply", "--check", str(patch)],
+                           cwd=tmp_path, capture_output=True, text=True)
+        if r.returncode != 0:
+            merged = MERGED_MARKERS[rel] in src.read_text()
+            assert merged, (f"{patch.name} no longer applies and "
+                            f"feature markers are absent: {r.stderr}")
+            continue
         subprocess.run(["git", "apply", str(patch)], cwd=tmp_path,
                        check=True, capture_output=True)
     return tmp_path

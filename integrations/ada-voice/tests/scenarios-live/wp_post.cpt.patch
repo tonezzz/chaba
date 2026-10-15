@@ -1,0 +1,23 @@
+--- a/tests/scenarios-live/wp_post.yaml
++++ b/tests/scenarios-live/wp_post.yaml
+@@ -24,3 +24,20 @@
+       calls_any: [wp_post]
+       timeout_s: 60
+       settle_s: 10
++  # CPT routing (card line-cpt-writer-router, 2026-10-15): kind!=post
++  # sends the record to a chaba-boards CPT — member-only private status,
++  # meta fields filled from the ask. Draft keeps the live tier clean.
++  - user: >-
++      Save this to kk's board as a reminder, draft first: "water the
++      plants", due 2026-10-30, assignee kk.
++    expect:
++      calls_any: [wp_post]
++      timeout_s: 60
++      settle_s: 10
++  - user: >-
++      And save a contact on kk's board, also draft: "Somchai the
++      plumber", phone 081-234-5678, role plumber.
++    expect:
++      calls_any: [wp_post]
++      timeout_s: 60
++      settle_s: 10
