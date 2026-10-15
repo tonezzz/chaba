@@ -1,0 +1,899 @@
+
+    const params = new URLSearchParams(location.search);
+    const KEY_STORE = "vcast.api_key";
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const WS_URL = params.get("ws") || `${proto}//${location.host}/api/input-bridge/ws`;
+
+    // redeem redirect lands with ?api_key=... — store it and clean the URL
+    if (params.get("api_key")) {
+      localStorage.setItem(KEY_STORE, params.get("api_key"));
+      const clean = new URL(location.href);
+      clean.searchParams.delete("api_key");
+      history.replaceState(null, "", clean);
+    }
+    const apiKey = () => localStorage.getItem(KEY_STORE) || "";
+    // stable device identity — dedupes the pending "waiting" row across
+    // reconnects/reloads so the same screen doesn't appear twice
+    const DEV_STORE = "vcast.device_id";
+    if (!localStorage.getItem(DEV_STORE)) {
+      localStorage.setItem(DEV_STORE, crypto.randomUUID ? crypto.randomUUID() : "d" + Math.random().toString(36).slice(2));
+    }
+    const deviceId = localStorage.getItem(DEV_STORE);
+    const registerMsg = () => ({ type: "register-display", api_key: apiKey(), label: deviceLabel(), device_id: deviceId });
+    const manualRoom = params.get("room") || ""; // dev override: join vcast-N directly
+    const pairBase = `${location.origin}/apps/vcast/pair.html?sid=`;
+
+    const stage = document.getElementById("stage");
+    const idle = document.getElementById("idle");
+    const pair = document.getElementById("pair");
+    const boot = document.getElementById("boot");
+    const audio = document.getElementById("audio");
+    const hudText = document.getElementById("hudText");
+    const dot = document.getElementById("dot");
+    const toast = document.getElementById("toast");
+    const audioGate = document.getElementById("audioGate");
+    const veil = document.getElementById("veil");
+
+    let ws = null, wsRetry = 0;
+    let screenNum = null, audioOK = false;
+
+    // -- panes: each sub-screen owns video/img/frame; pane 0 wraps the
+    //    legacy markup so single-pane behaves exactly as before -----------
+    const panes = [];
+    let zoomedPane = -1;
+    function makePane(i) {
+      if (panes[i]) return panes[i];
+      const el = i === 0 ? document.getElementById("pane0")
+                         : document.createElement("div");
+      if (i !== 0) {
+        el.className = "pane";
+        el.innerHTML =
+          `<video playsinline></video><img alt="">` +
+          `<iframe allow="autoplay; fullscreen"></iframe>` +
+          `<div class="pz">⤢</div>`;
+        stage.appendChild(el);
+      }
+      const p = {
+        el, video: el.querySelector("video"), img: el.querySelector("img"),
+        frame: el.querySelector("iframe"), hls: null, imgTimer: null,
+        frameOk: false,
+        // hls drop-recovery state (see attachHls/nativeHlsReload)
+        hlsUrl: "", hlsRetries: 0, hlsMediaRecoveries: 0, hlsRetryT: null,
+      };
+      p.video.addEventListener("playing", () => resetHlsRetry(p));
+      // native-HLS path (Safari): a dropped producer ends the element with
+      // a MEDIA_ERR_* (or 'ended' on a live playlist) — reload with the
+      // same backoff instead of freezing on the last frame
+      p.video.addEventListener("error", () => {
+        if (!p.hlsUrl || p.hls) return;   // hls.js path self-recovers
+        sendState("hls-retry", `native reload #${p.hlsRetries + 1}`);
+        armHlsRetry(p, () => nativeHlsReload(p));
+      });
+      p.video.addEventListener("ended", () => {
+        if (!p.hlsUrl || p.hls || !isLiveVideo(p.video)) return;
+        sendState("hls-retry", `native ended #${p.hlsRetries + 1}`);
+        armHlsRetry(p, () => nativeHlsReload(p));
+      });
+      p.frame.addEventListener("load", () => {
+        if (p.frame.src && p.frame.src !== "about:blank") {
+          p.frameOk = true;
+          sendState(lastState, lastDetail);
+        }
+      });
+      el.querySelector(".pz").addEventListener("click", (e) => {
+        e.stopPropagation();
+        zoomPane(zoomedPane === i ? -1 : i);
+      });
+      el.addEventListener("dblclick", () =>
+        zoomPane(zoomedPane === i ? -1 : i));
+      panes[i] = p;
+      return p;
+    }
+    makePane(0);
+    function paneAt(i) {
+      i = Math.max(0, Math.min(Number(i) || 0, panes.length - 1));
+      return panes[i] || panes[0];
+    }
+    function zoomPane(i) {
+      zoomedPane = i;
+      panes.forEach((p, j) =>
+        p && p.el.classList.toggle("zoomed", j === i));
+      sendState(i >= 0 ? "zoomed" : "unzoomed",
+                i >= 0 ? `pane ${i}` : "");
+    }
+    function setLayout(n, mode) {
+      n = Math.max(1, Math.min(5, Math.round(Number(n) || 1)));
+      for (let i = panes.length - 1; i >= n; i--) {
+        const p = panes.pop();
+        if (p) { paneTeardown(p); p.el.remove(); }
+      }
+      for (let i = 0; i < n; i++) makePane(i);
+      const pip = mode === "pip" && n > 1;
+      stage.className = (!pip && n > 1) ? "n" + n : "";
+      panes.forEach((p, i) => p && p.el.classList.toggle("pip", pip && i > 0));
+      zoomPane(-1);
+      sendState("layout", `${n} pane${n > 1 ? "s" : ""}${pip ? " (pip)" : ""}`);
+    }
+    function paneTeardown(p) {
+      resetHlsRetry(p); p.hlsUrl = "";
+      if (p.hls) { try { p.hls.destroy(); } catch (e) {} p.hls = null; }
+      p.video.pause(); p.video.removeAttribute("src"); p.video.load();
+      p.video.style.display = "none";
+      p.img.onerror = p.img.onload = null;
+      p.img.style.display = "none"; p.img.removeAttribute("src");
+      p.frame.style.display = "none"; p.frame.src = "about:blank";
+      p.frameOk = false;
+      clearInterval(p.imgTimer); p.imgTimer = null;
+    }
+
+    function setHud(text, on) {
+      hudText.textContent = text + (audioOK ? "" : " · tap 🔊");
+      document.getElementById("hud").style.cursor = audioOK ? "default" : "pointer";
+      dot.className = "dot" + (on ? " on" : "");
+    }
+    function showToast(text, ms = 3000) {
+      toast.textContent = text;
+      toast.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => (toast.style.display = "none"), ms);
+    }
+    let lastState = "idle", lastDetail = "";
+    // Per-pane render summary — proves the pane isn't just configured but
+    // has decoded/loaded content: p0:img-nw800 / p1:frame-ok / p1:video-vw1280
+    function paneSummary() {
+      const parts = [];
+      panes.forEach((p, i) => {
+        if (!p) return;
+        const v = p.video.style.display !== "none" && (p.video.src || p.hls);
+        const im = p.img.style.display !== "none" && p.img.src;
+        const fr = p.frame.style.display !== "none" &&
+                   p.frame.src && p.frame.src !== "about:blank";
+        if (v)      parts.push(`p${i}:video-vw${p.video.videoWidth || 0}`);
+        else if (im) parts.push(`p${i}:img-nw${p.img.naturalWidth || 0}`);
+        else if (fr) parts.push(`p${i}:frame-${p.frameOk ? "ok" : "loading"}`);
+      });
+      return parts.length ? ` | ${parts.join(" ")}` : "";
+    }
+    function sendState(state, detail) {
+      lastState = state; lastDetail = detail || "";
+      // relay caps detail at 200 chars — cap the human part so the
+      // render proof isn't clipped off the end of a long URL
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({
+        type: "state", state,
+        detail: lastDetail.slice(0, 140) + paneSummary() }));
+    }
+    // heartbeat — keeps registry last_seen honest between real state changes
+    setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
+    function deviceLabel() {
+      const forced = params.get("label");
+      if (forced) return forced;
+      const ua = navigator.userAgent;
+      if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+      if (/iPhone/.test(ua)) return "iPhone";
+      if (/Android/.test(ua)) return "Android";
+      return "Browser";
+    }
+
+    // -- renderers ------------------------------------------------------------
+    function teardown() {
+      for (const p of panes) if (p) paneTeardown(p);
+      audio.pause(); audio.removeAttribute("src");
+    }
+    function showOnly(el) {
+      // fullscreen overlays only (idle/pair/boot) — panes keep their own
+      // children; hiding the stage blanks content panes
+      teardown();
+      for (const s of [idle, pair, boot]) s.style.display = "none";
+      stage.style.display = el ? "none" : "grid";
+      if (el) el.style.display = "flex";
+    }
+    function paneShow(p, el) {
+      paneTeardown(p);
+      stage.style.display = "grid";
+      for (const s of [idle, pair, boot]) s.style.display = "none";
+      for (const c of [p.video, p.img, p.frame])
+        c.style.display = c === el ? "block" : "none";
+    }
+    // human title assigned via POST /screen {label} — shown next to the
+    // number so "screen 5 · living-room" reads naturally
+    let screenTitle = "";
+    function refreshIdentity() {
+      document.getElementById("screenNum").textContent = screenNum != null ? `#${screenNum}` : "?";
+      document.getElementById("screenLabel").textContent =
+        screenNum != null
+          ? `Screen ${screenNum} · ${screenTitle || deviceLabel()}`
+          : "registered";
+    }
+    function showIdle() {
+      teardown();
+      showOnly(idle);
+      refreshIdentity();
+      setHud(`screen ${screenNum} idle`, true);
+      sendState("idle");
+    }
+    // -- background mode: cover the stage with a veil but leave panes
+    //    mounted — an audio app (e.g. percussion) keeps playing while the
+    //    screen reads as idle. Never reparent the iframe: DOM moves reload
+    //    it and kill WebAudio. ------------------------------------------
+    let bgOn = false, preBgState = "idle", preBgDetail = "";
+    function setBg(on) {
+      on = !!on;
+      if (on === bgOn) return;
+      bgOn = on;
+      veil.style.display = on ? "flex" : "none";
+      if (on) {
+        document.getElementById("veilNum").textContent =
+          screenNum != null ? `#${screenNum}` : "";
+        preBgState = lastState; preBgDetail = lastDetail;
+        sendState("bg", lastDetail || "background");
+      } else {
+        sendState(preBgState, preBgDetail);
+      }
+    }
+    function showPair(sid, code) {
+      teardown();
+      showOnly(pair);
+      const el = document.getElementById("pairQr");
+      el.innerHTML = "";
+      try {
+        const qr = qrcode(0, "M");
+        qr.addData(pairBase + sid);
+        qr.make();
+        el.innerHTML = qr.createImgTag(6);
+      } catch (e) { el.textContent = pairBase + sid; }
+      // spoken claim path — a bystander reads the code to Ada instead of
+      // scanning (relay resolves code -> sid inside /claim)
+      document.getElementById("pairCode").textContent = code || "";
+      document.getElementById("pairHint").textContent = code
+        ? `Tell Ada: "claim display ${code}" — or scan the QR with the admin phone.`
+        : "Unpaired display — scan with the admin phone to add it as a cast target.";
+      setHud("unpaired — awaiting claim", true);
+      sendState("unpaired", sid + (code ? ` code=${code}` : ""));
+    }
+    // YouTube/Vimeo page URLs can't be a <video> source and their watch pages
+    // refuse iframes (X-Frame-Options) — rewrite to the embed player, which is
+    // frameable and autoplays. Prevents the classic "cast a YouTube link ->
+    // black screen".
+    function embedUrl(url) {
+      const yt = url.match(/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/(?:shorts|live)\/|music\.youtube\.com\/watch\?[^#]*v=)([\w-]{6,})/);
+      if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0${audioOK ? "" : "&mute=1"}`;
+      const vm = url.match(/vimeo\.com\/(\d+)/);
+      if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1${audioOK ? "" : "&muted=1"}`;
+      return null;
+    }
+    // The receiver is served over https, so plain http: media URLs are
+    // mixed-content-blocked — and tailscale :8123-style listeners are
+    // https-only anyway (http gets a bare 400). Upgrade when the page is TLS.
+    function mediaUrl(url) {
+      if (location.protocol === "https:" && /^http:\/\//i.test(url)) {
+        return "https:" + url.slice(5);
+      }
+      return url;
+    }
+    function play(pi, url) {
+      const p = paneAt(pi), video = p.video;
+      const emb = embedUrl(url);
+      if (emb) { nav(pi, emb); sendState("playing", url); return; }
+      paneShow(p, video);
+      video.controls = false;
+      video.muted = !audioOK;
+      if (!audioOK) audioGate.style.display = "block";
+      const isHls = /\.m3u8($|\?)/i.test(url);
+      p.hlsUrl = isHls ? url : "";   // remembered for native-HLS reload
+      if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
+        if (!window.Hls || !Hls.isSupported()) { showToast("hls unsupported"); return sendState("error", "hls unsupported"); }
+        attachHls(p, url);
+      } else {
+        video.src = mediaUrl(url);
+      }
+      video.play().catch(() => showToast("tap for playback"));
+      setHud(`screen ${screenNum} · video`, true);
+      sendState("playing", `${pi || 0}:${url}`);
+    }
+    // HLS drop recovery — when the stream dies mid-play, hls.js escalates
+    // to a FATAL error after its internal retries give up. NETWORK_ERROR
+    // (playlist/segment gone) -> startLoad() re-polls the playlist until
+    // the producer returns; MEDIA_ERROR -> recoverMediaError() a couple of
+    // times then rebuild; anything else -> destroy + recreate. Bounded
+    // exponential backoff (1.5s..15s), reset once playback resumes, and
+    // every retry is reported as state so /displays shows the screen
+    // recovering instead of a stale "playing" over a frozen frame.
+    function resetHlsRetry(p) {
+      p.hlsRetries = 0; p.hlsMediaRecoveries = 0;
+      clearTimeout(p.hlsRetryT); p.hlsRetryT = null;
+    }
+    function armHlsRetry(p, fn) {
+      clearTimeout(p.hlsRetryT);
+      const n = ++p.hlsRetries;
+      p.hlsRetryT = setTimeout(fn, Math.min(15000, 1500 * Math.pow(2, n - 1)));
+    }
+    function isLiveVideo(v) {
+      // Infinity duration = live/event playlist; a finite VOD that 'ended'
+      // legitimately must NOT auto-reload (it would loop forever)
+      return v.duration === Infinity ||
+        (v.seekable.length && v.seekable.end(v.seekable.length - 1) - v.currentTime > 8);
+    }
+    function nativeHlsReload(p) {
+      if (!p.hlsUrl) return;
+      p.video.src = mediaUrl(p.hlsUrl);
+      p.video.play().catch(() => {});
+    }
+    function attachHls(p, url) {
+      const video = p.video;
+      p.hls = new Hls({ liveSyncDurationCount: 3 });
+      p.hls.loadSource(mediaUrl(url));
+      p.hls.attachMedia(video);
+      p.hls.on(Hls.Events.ERROR, (_, d) => {
+        if (!d.fatal) return;
+        const details = d.details || "error";
+        showToast("hls: " + details);
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          sendState("hls-retry", `net ${details} #${p.hlsRetries + 1}`);
+          armHlsRetry(p, () => {
+            if (!p.hls) return;   // pane torn down since the error fired
+            try { p.hls.startLoad(); } catch (e) {}
+          });
+        } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR
+                   && p.hlsMediaRecoveries < 2) {
+          p.hlsMediaRecoveries++;
+          sendState("hls-retry", `media ${details} #${p.hlsMediaRecoveries}`);
+          try { p.hls.recoverMediaError(); } catch (e) {}
+        } else {
+          sendState("hls-retry", `rebuild ${details} #${p.hlsRetries + 1}`);
+          armHlsRetry(p, () => {
+            if (!p.hls) return;
+            try { p.hls.destroy(); } catch (e) {}
+            attachHls(p, url);
+          });
+        }
+      });
+    }
+    function showImage(pi, url, interval) {
+      const p = paneAt(pi), img = p.img;
+      url = mediaUrl(url);
+      paneShow(p, img);
+      // surface a load failure instead of a silent black screen
+      img.onerror = () => {
+        setHud(`screen ${screenNum} · image failed`, false);
+        if (lastState !== "image-load-failed" || lastDetail !== url) {
+          showToast("image failed — " + url.slice(0, 120), 5000);
+        }
+        sendState("image-load-failed", url);
+      };
+      img.onload = () => {
+        setHud(`screen ${screenNum} · image`, true);
+        if (lastState === "image-load-failed") sendState("image", url);
+      };
+      // never append cache-busters to data: URLs — it corrupts the payload
+      const mkSrc = () => url.startsWith("data:") ? url
+        : url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
+      const tick = () => { img.src = mkSrc(); };
+      tick();
+      if (interval > 0) p.imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
+      setHud(`screen ${screenNum} · image`, true);
+      sendState("image", `${pi || 0}:${url}`);
+    }
+    function nav(pi, url) {
+      const p = paneAt(pi), frame = p.frame;
+      paneShow(p, frame);
+      let src = embedUrl(url) || mediaUrl(url);
+      // bust heuristic caches for same-origin pages — a re-cast should load
+      // the current deploy, not a stale iframe shell (Safari heuristic-cache
+      // trap: same URL with old cached response never re-requests)
+      try {
+        const u = new URL(src, location.href);
+        if (u.origin === location.origin) {
+          u.searchParams.set("_vcast", Date.now());
+          u.searchParams.set("screen", screenNum); // GEV remote needs screen
+          u.searchParams.set("pane", pi || 0);   // iframe announces its pane
+          src = u.toString();
+        }
+      } catch { /* keep src */ }
+      frame.src = src;
+      setHud(`screen ${screenNum} · web`, true);
+      sendState("nav", `${pi || 0}:${url}`);
+    }
+    function playAudio(url) {
+      if (!audioOK) { audioGate.style.display = "block"; showToast("audio blocked — tap to enable"); }
+      audio.src = mediaUrl(url);
+      audio.play().catch(() => {});
+      sendState("audio", url);
+    }
+
+    // Camera uplink — getUserMedia frames POSTed to input-bridge under
+    // token "cam" so consumers (yolo-ipad, Ada) can poll
+    // GET /frame?screen=N&token=cam. Offscreen video element only.
+    let uplinkStream = null, uplinkTimer = null, uplinkVideo = null;
+    async function startUplink(intervalMs) {
+      if (uplinkTimer) return;                       // already running
+      if (!screenNum) { sendState("uplink-error", "no screen"); return; }
+      try {
+        uplinkStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 } }, audio: false });
+      } catch (e) {
+        showToast("camera denied");
+        return sendState("uplink-error", String(e.name || e));
+      }
+      uplinkVideo = document.createElement("video");
+      uplinkVideo.srcObject = uplinkStream;
+      uplinkVideo.muted = true; uplinkVideo.playsInline = true;
+      await uplinkVideo.play().catch(() => {});
+      const push = () => {
+        if (!uplinkVideo.videoWidth) return;          // first frames not ready
+        const c = document.createElement("canvas");
+        c.width = uplinkVideo.videoWidth; c.height = uplinkVideo.videoHeight;
+        c.getContext("2d").drawImage(uplinkVideo, 0, 0);
+        fetch(`${location.origin}/api/input-bridge/frame`, {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ screen: screenNum, token: "cam",
+            state: "uplink", data: c.toDataURL("image/jpeg", 0.6) }),
+        }).catch(() => {});
+      };
+      uplinkTimer = setInterval(push, Math.max(300, intervalMs));
+      showToast("camera uplink on");
+      sendState("uplink-on");
+      // record the capture lease — Ada checks GET /capture before stopping
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, source: "cam",
+          active: true, by: "vcast-uplink" }),
+      }).catch(() => {});
+    }
+    function stopUplink() {
+      if (uplinkTimer) { clearInterval(uplinkTimer); uplinkTimer = null; }
+      if (uplinkStream) { uplinkStream.getTracks().forEach(t => t.stop()); uplinkStream = null; }
+      uplinkVideo = null;
+      showToast("camera uplink off");
+      sendState(lastState === "uplink-on" ? "idle" : lastState);
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, active: false }),
+      }).catch(() => {});
+    }
+
+    // Gesture control — the display's own camera watches for motion.
+    // 'room' = wake-on-motion (a wave/approach wakes the screen and emits
+    // a gesture-wake event Ada can react to); 'hand' = YOLO hand-pointer:
+    // the camera uplink feeds input-bridge /frame, a yolo service turns
+    // hand bounding boxes into {type:"gesture",x,y,action?} msgs pushed
+    // back over this room's ws. Box centre is the pointer (no landmarks);
+    // dwell on a spot = click; a second hand = grab -> toggles pane zoom.
+    let gStream = null, gTimer = null, gVideo = null, gPrev = null,
+        gStreak = 0, gCooldownUntil = 0, gMode = "off",
+        gUplinkOwned = false;
+    // hand-pointer state — same conventions as /apps/gesture/screen:
+    // producer sends raw normalized coords, lerp/snap live screen-side
+    let gCursor = null, ptrPos = null, ptrTgt = null, ptrRaf = 0,
+        ptrDwellEl = null, ptrDwellT = 0, ptrCooldown = 0;
+    const PTR_SENS = 2.0, PTR_LERP = 0.25, PTR_DWELL_MS = 700;
+    const ptrNorm = v => Math.min(1, Math.max(0, (v - 0.5) * PTR_SENS + 0.5));
+    function ptrFrame() {
+      ptrRaf = requestAnimationFrame(ptrFrame);
+      if (!ptrPos || !ptrTgt || !gCursor) return;
+      ptrPos.x += (ptrTgt.x - ptrPos.x) * PTR_LERP;
+      ptrPos.y += (ptrTgt.y - ptrPos.y) * PTR_LERP;
+      gCursor.style.left = ptrPos.x + "px";
+      gCursor.style.top = ptrPos.y + "px";
+      // dwell-click: cursor parked on the same element long enough fires a
+      // click — the box world has no pinch, so stillness is the trigger
+      const el = document.elementFromPoint(ptrPos.x, ptrPos.y);
+      const now = Date.now();
+      if (el !== ptrDwellEl) { ptrDwellEl = el; ptrDwellT = now; return; }
+      if (!el || now - ptrDwellT < PTR_DWELL_MS || now < ptrCooldown) return;
+      ptrCooldown = now + 1200; ptrDwellT = now + 1e9;
+      const pane = el.closest && el.closest(".pane");
+      const pi = pane ? panes.findIndex(p => p && p.el === pane) : -1;
+      ws && ws.send(JSON.stringify({ type: "gesture-event",
+        event: "click", screen: screenNum, pane: pi,
+        x: +(ptrPos.x / innerWidth).toFixed(3),
+        y: +(ptrPos.y / innerHeight).toFixed(3) }));
+      const btn = el.closest && el.closest(".pz, button, a, [role=button]");
+      if (btn) btn.click();
+      gCursor.style.background = "rgba(34,211,238,.5)";
+      setTimeout(() => { if (gCursor) gCursor.style.background = ""; }, 250);
+      showToast("click", 900);
+    }
+    function onGestureMsg(m) {
+      if (gMode !== "hand" || !gCursor) return;
+      if (m.gone) { gCursor.style.display = "none"; return; }
+      if (m.x === undefined) return;
+      gCursor.style.display = "block";
+      ptrTgt = { x: ptrNorm(m.x) * innerWidth,
+                 y: ptrNorm((m.y ?? 0.5)) * innerHeight };
+      if (m.action === "fist_start") {
+        // two-hands = grab — on vcast the useful grab is pane zoom
+        const el = document.elementFromPoint(ptrPos ? ptrPos.x : 0,
+                                             ptrPos ? ptrPos.y : 0);
+        const pane = el && el.closest && el.closest(".pane");
+        const pi = pane ? panes.findIndex(p => p && p.el === pane) : -1;
+        if (pi >= 0) { zoomPane(zoomedPane === pi ? -1 : pi);
+          showToast(pi >= 0 ? "grab → zoom pane " + pi : "grab", 1200); }
+        ws && ws.send(JSON.stringify({ type: "gesture-event",
+          event: "grab", screen: screenNum, pane: pi }));
+      }
+    }
+    function stopGesture() {
+      if (gTimer) { clearInterval(gTimer); gTimer = null; }
+      if (gStream) { gStream.getTracks().forEach(t => t.stop()); gStream = null; }
+      gVideo = null; gPrev = null; gStreak = 0;
+      if (ptrRaf) { cancelAnimationFrame(ptrRaf); ptrRaf = 0; }
+      if (gCursor) { gCursor.remove(); gCursor = null; }
+      ptrPos = ptrTgt = ptrDwellEl = null; ptrDwellT = 0;
+      if (gUplinkOwned) { gUplinkOwned = false; stopUplink(); }
+      gMode = "off";
+      const ov = document.getElementById("gestureOverlay");
+      if (ov) ov.remove();
+    }
+    async function setGesture(mode) {
+      mode = String(mode || "off").toLowerCase();
+      if (mode === "off") { stopGesture(); showToast("gesture off"); sendState("idle"); return; }
+      if (mode === "hand") {
+        if (gMode === "hand") return;
+        stopGesture();                       // drop room-mode bits if any
+        gMode = "hand";
+        // frames go up at pointer cadence; the yolo service detects the
+        // hand and pushes {type:"gesture"} msgs back onto this room's ws
+        gUplinkOwned = !uplinkTimer;
+        await startUplink(300);
+        if (gUplinkOwned && !uplinkTimer) {
+          // camera was denied — startUplink already reported it
+          gMode = "off"; sendState("gesture-error", "camera denied");
+          return;
+        }
+        gCursor = document.createElement("div");
+        gCursor.id = "gestureCursor";
+        gCursor.style.cssText = "position:fixed;width:26px;height:26px;" +
+          "border:3px solid #22d3ee;border-radius:50%;z-index:98;" +
+          "pointer-events:none;transform:translate(-50%,-50%);" +
+          "box-shadow:0 0 14px rgba(34,211,238,.6);display:none;" +
+          "left:50%;top:50%";
+        document.body.appendChild(gCursor);
+        ptrPos = ptrTgt = { x: innerWidth / 2, y: innerHeight / 2 };
+        ptrRaf = requestAnimationFrame(ptrFrame);
+        const ov = document.createElement("div");
+        ov.id = "gestureOverlay";
+        ov.style.cssText = "position:fixed;top:8px;right:8px;padding:4px 10px;" +
+          "background:#22d3ee;color:#012;border-radius:12px;font:600 13px system-ui;" +
+          "z-index:99;opacity:.85";
+        ov.textContent = "gesture: hand";
+        document.body.appendChild(ov);
+        showToast("gesture hand on — point to move, dwell to click, two hands to zoom");
+        sendState("gesture-hand");
+        return;
+      }
+      if (mode === "room" && gMode === "hand") stopGesture();
+      if (mode !== "room") { sendState("gesture-error", "unknown mode " + mode); return; }
+      if (gTimer) return;                              // already on
+      try {
+        gStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 320 } }, audio: false });
+      } catch (e) {
+        sendState("gesture-error", String(e.name || e));
+        return;
+      }
+      gVideo = document.createElement("video");
+      gVideo.srcObject = gStream; gVideo.muted = true; gVideo.playsInline = true;
+      await gVideo.play().catch(() => {});
+      const cv = document.createElement("canvas"); cv.width = 64; cv.height = 36;
+      const cx = cv.getContext("2d", { willReadFrequently: true });
+      gMode = "room";
+      const ov = document.createElement("div");
+      ov.id = "gestureOverlay";
+      ov.style.cssText = "position:fixed;top:8px;right:8px;padding:4px 10px;" +
+        "background:#0af0a0;color:#012;border-radius:12px;font:600 13px system-ui;" +
+        "z-index:99;opacity:.85";
+      ov.textContent = "gesture: room";
+      document.body.appendChild(ov);
+      showToast("gesture room on — wave to wake");
+      sendState("gesture-room");
+      gTimer = setInterval(() => {
+        if (!gVideo || !gVideo.videoWidth) return;
+        cx.drawImage(gVideo, 0, 0, 64, 36);
+        const cur = cx.getImageData(0, 0, 64, 36).data;
+        if (gPrev) {
+          let diff = 0;
+          for (let i = 0; i < cur.length; i += 4) {
+            diff += Math.abs(cur[i] - gPrev[i]) +
+                    Math.abs(cur[i + 1] - gPrev[i + 1]) +
+                    Math.abs(cur[i + 2] - gPrev[i + 2]);
+          }
+          const mean = diff / (cur.length / 4) / 3;
+          if (mean > 14) {                       // sustained motion burst
+            gStreak++;
+            if (gStreak >= 2 && Date.now() > gCooldownUntil) {
+              gCooldownUntil = Date.now() + 15000;
+              gStreak = 0;
+              sendState("gesture-wake", "motion");
+              ws && ws.send(JSON.stringify(
+                { type: "gesture-event", event: "wake", screen: screenNum }));
+              showToast("wake — motion detected");
+            }
+          } else gStreak = 0;
+        }
+        gPrev = cur.slice ? cur.slice() : cur;
+      }, 250);
+    }
+
+    // Ada's "look at the screen" path — draws the element actually on-screen
+    // into a canvas and POSTs the frame back through the relay. Canvas can
+    // capture video/img only; cross-origin iframes are reported as
+    // uncapturable-iframe rather than returning a black PNG.
+    // Targets the zoomed pane when one is zoomed, else pane 0.
+    async function snapFrame(token) {
+      const post = (extra) => fetch(`${location.origin}/api/input-bridge/frame`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, token, state: lastState, ...extra }),
+      }).catch(() => {});
+      const grab = (src, w, h) => {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(src, 0, 0);
+        return c.toDataURL("image/jpeg", 0.8);
+      };
+      const p = paneAt(zoomedPane >= 0 ? zoomedPane : 0);
+      const video = p.video, img = p.img, frame = p.frame;
+      try {
+        if (video.style.display !== "none" && video.videoWidth) {
+          return await post({ data: grab(video, video.videoWidth, video.videoHeight) });
+        }
+        if (img.style.display !== "none") {
+          if (img.naturalWidth) {
+            try {
+              return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+            } catch (e) {
+              // Canvas tainted by a cross-origin <img> without CORS — the
+              // pixels rendered fine on screen but can't be read back.
+              // Refetch the same URL through the relay's /img proxy so the
+              // copy is same-origin and clean.
+              const proxied = await fetch(
+                `${location.origin}/api/input-bridge/img?url=${encodeURIComponent(img.src)}`);
+              if (!proxied.ok) {
+                return await post({ error: "snap-proxy-failed",
+                  detail: `HTTP ${proxied.status} for ${img.src.slice(0, 160)}` });
+              }
+              const objUrl = URL.createObjectURL(await proxied.blob());
+              try {
+                const im = new Image();
+                await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = objUrl; });
+                return await post({ data: grab(im, im.naturalWidth, im.naturalHeight) });
+              } finally { URL.revokeObjectURL(objUrl); }
+            }
+          }
+          // element shown but nothing loaded — the cast URL 404'd/tainted
+          if (img.src) {
+            return await post({ error: "image-load-failed",
+              detail: img.src.slice(0, 200),
+              diag: `complete=${img.complete} nw=${img.naturalWidth} ` +
+                    `vis=${document.visibilityState} online=${navigator.onLine}` });
+          }
+          return await post({ error: "idle-or-overlay" });
+        }
+        if (frame.style.display !== "none") {
+          return await post({ error: "uncapturable-iframe",
+            detail: String(frame.src || "").slice(0, 200) });
+        }
+        return await post({ error: "idle-or-overlay" });
+      } catch (e) {
+        return await post({ error: String((e && e.message) || e) });
+      }
+    }
+
+    // -- wake lock --------------------------------------------------------------
+    let wakeLock = null;
+    async function keepAwake() {
+      try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        keepAwake();
+        // iOS suspends suspended-tab JS: the ws can die while hidden and
+        // onclose timers never fire — force a reconnect on foreground.
+        if (!ws || ws.readyState > 1) connect();
+      }
+    });
+    keepAwake();
+
+    function unlockAudio() {
+      audioOK = true;
+      audioGate.style.display = "none";
+      for (const p of panes) {
+        if (!p) continue;
+        p.video.muted = false;
+        if (p.video.src) p.video.play().catch(() => {});
+      }
+      hud.style.cursor = "default";
+      setHud(hudText.textContent.replace(/ · tap 🔊$/, ""), true);
+    }
+    audioGate.addEventListener("click", unlockAudio);
+    // the HUD label itself is the always-present audio unlock — the gate
+    // button only appears when a video needs unmuting, but narration needs
+    // audio even on an idle screen
+    const hud = document.getElementById("hud");
+    hud.addEventListener("click", unlockAudio);
+
+    // -- narration ---------------------------------------------------------------
+    // Ada announces what she's doing on this screen via speak messages.
+    // speechSynthesis on iOS is gesture-gated — until audioOK, fall back to
+    // a toast so the narration is still visible, and report the block so the
+    // sender knows the screen is muted.
+    function speak(text, langHint, audioUrl) {
+      text = String(text || "").slice(0, 300);
+      if (!text) return;
+      if (!audioOK) {
+        showToast("🔊 " + text, 4000);
+        sendState("speak-blocked", text);
+        return;
+      }
+      // backend-TTS path: Ada pre-synthesized the line (same voice as her
+      // own speech) when the text is a language this display likely can't
+      // voice — e.g. Thai on a lab Chromium with only en voices.
+      if (audioUrl) {
+        const a = new Audio(audioUrl);
+        sendState("speaking", "[tts] " + text);
+        showToast("🔊 " + text, 3000);
+        a.play().catch(() => speak(text, langHint));  // fallback to synth
+        a.onended = () => sendState("idle");
+        return;
+      }
+      if (!("speechSynthesis" in window)) {
+        showToast("🔊 " + text, 4000);
+        sendState("speak-blocked", text);
+        return;
+      }
+      speechSynthesis.cancel(); // new narration supersedes in-flight/queued
+      const u = new SpeechSynthesisUtterance(text);
+      // auto-language: Thai Unicode block -> th-TH so a Thai narration
+      // doesn't come out in the default English voice. Pick an actual
+      // voice for the lang — setting u.lang alone still falls back to the
+      // default voice when no matching voice is installed (observed:
+      // Thai text read by an English voice on a screen with no th voice).
+      const lang = langHint || (/[\u0E00-\u0E7F]/.test(text) ? "th-TH" : "en-US");
+      const voices = speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang === lang)
+                 || voices.find(v => v.lang && v.lang.startsWith(lang.split("-")[0]));
+      if (voice) u.voice = voice;
+      u.lang = lang;
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+      showToast("🔊 " + text, 3000);
+      sendState("speaking", `${voice ? "[" + voice.lang + "] " : "[missing-" + lang + " voice] "}${text}`);
+    }
+
+    // -- websocket ---------------------------------------------------------------
+    function connect() {
+      if (ws && ws.readyState <= 1) return;
+      setHud("connecting", false);
+      // after ~4s still unconnected, show the boot overlay so a dead relay
+      // reads as "reconnecting" instead of a black screen
+      setTimeout(() => {
+        if (!screenNum && (!ws || ws.readyState !== 1)) {
+          boot.querySelector(".spin").textContent = "connecting to relay — retrying…";
+          boot.style.display = "flex";
+        }
+      }, 4000);
+      ws = new WebSocket(WS_URL);
+      ws.onopen = () => {
+        wsRetry = 0;
+        setHud("connected", true);
+        if (manualRoom) {
+          ws.send(JSON.stringify({ type: "join", room: manualRoom }));
+          screenNum = manualRoom.replace(/^vcast-/, "");
+          showIdle();
+        } else {
+          ws.send(JSON.stringify(registerMsg()));
+        }
+      };
+      ws.onclose = (e) => {
+        // close-code forensics (picked up by vcast-real's console pipe):
+        // 1001 going-away = this page navigated/reloaded; 1006 = abnormal
+        // (no close frame seen — proxy/network drop), 1000 = clean.
+        console.error(`[vcast] ws closed code=${e.code} ` +
+          `reason="${e.reason || ""}" clean=${e.wasClean} ` +
+          `screen=${screenNum} state=${lastState}`);
+        ws = null;
+        setHud("reconnecting", false);
+        setTimeout(connect, Math.min(5000, 500 * ++wsRetry));
+      };
+      ws.onerror = () => {};
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch (err) { return; }
+        handle(msg);
+      };
+    }
+
+    function handle(msg) {
+      // new content or a stop lifts the background veil — the cast replaces
+      // whatever was playing anyway, so the screen shows it honestly
+      if (bgOn && ["play", "image", "nav", "audio", "stop", "layout",
+                   "uplink-start"].includes(msg.type)) setBg(false);
+      switch (msg.type) {
+        case "registered":
+          screenNum = msg.screen;
+          screenTitle = msg.label || "";
+          window.__vcastScreen = screenNum; // same-origin iframes (e.g. GEV) read this to identify their screen to the gev command relay
+          showIdle();
+          break;
+        case "rescreen":
+          // POST /screen moved the number live — keep HUD/idle/iframe view
+          // of "which screen am I" consistent without a page reload
+          screenNum = msg.screen;
+          screenTitle = msg.label || screenTitle;
+          window.__vcastScreen = screenNum;
+          refreshIdentity();
+          setHud(`screen ${screenNum}`, true);
+          showToast(`this display is now screen ${screenNum}`);
+          sendState(lastState, lastDetail);
+          break;
+        case "bg":
+          setBg(msg.on !== false && msg.mode !== "off");
+          break;
+        case "pending":
+          showPair(msg.sid, msg.code);
+          break;
+        case "dismissed":
+          teardown();
+          showOnly(idle);
+          document.getElementById("screenNum").textContent = "?";
+          document.getElementById("screenLabel").textContent = "pairing dismissed — tap to retry";
+          setHud("dismissed", false);
+          idle.onclick = () => { idle.onclick = null; ws.send(JSON.stringify(registerMsg())); };
+          break;
+        case "paired":
+          localStorage.setItem(KEY_STORE, msg.api_key);
+          ws.send(JSON.stringify(registerMsg()));
+          break;
+        case "unpaired":
+          localStorage.removeItem(KEY_STORE);
+          screenNum = null;
+          ws.send(JSON.stringify(registerMsg()));
+          break;
+        case "layout": setLayout(msg.panes ?? msg.layout, msg.mode); showToast(`${panes.length} panes${msg.mode === "pip" ? " · pip" : ""}`); break;
+        case "zoom": zoomPane(msg.pane ?? -1); break;
+        case "unzoom": zoomPane(-1); break;
+        case "play": play(msg.pane, msg.url); break;
+        case "image": showImage(msg.pane, msg.url, msg.interval); break;
+        case "nav": nav(msg.pane, msg.url); break;
+        case "audio": playAudio(msg.url); break;
+        case "speak": speak(msg.text, msg.lang, msg.audio); break;
+        case "stop":
+          if (msg.pane != null) {
+            paneTeardown(paneAt(msg.pane));
+            showToast(`pane ${msg.pane} stopped`);
+          } else {
+            setLayout(1); showIdle(); showToast("stopped");
+          }
+          break;
+        case "reload":
+          // navigate to a cache-busted URL — a plain reload may re-serve
+          // this page (and its iframes) from a stale heuristic cache
+          // (Safari has no forceReload anymore); a fresh query param is a
+          // new cache key and always hits the network.
+          { const u = new URL(location.href);
+            u.searchParams.set("_r", Date.now());
+            location.replace(u); }
+          break;
+        case "uplink-start":
+          startUplink(msg.interval || 750);
+          break;
+        case "uplink-stop":
+          stopUplink();
+          break;
+        case "gesture":
+          if (msg.mode !== undefined) setGesture(msg.mode);   // ctl msg
+          else onGestureMsg(msg);                             // pointer frame
+          break;
+        case "snap-request":
+          snapFrame(msg.token);
+          break;
+        case "ping": case "presence": case "pong": break;
+        default: break;
+      }
+    }
+
+    connect();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/apps/vcast/sw.js', { scope: '/apps/vcast/' }).catch(() => {});
+    }
+  
