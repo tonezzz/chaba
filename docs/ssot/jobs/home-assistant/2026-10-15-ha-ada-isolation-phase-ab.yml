@@ -1,0 +1,64 @@
+title: ha-ada-isolation — Phase A + Phase B (tony-ha) executed
+subtitle: Ada backends can no longer hurt tony-ha — svc-ada non-admin tokens,
+  cgroup caps, journal caps, explicit deploy set
+icon: shield-check
+id: 2026-10-15-ha-ada-isolation-phase-ab
+status: done-partial
+owner: devin
+project: chaba
+started: "2026-10-15"
+card: ha-ada-isolation
+runbook: docs/kb/ha-ada-isolation.md
+tooling: scripts/ada/ha-svc-user.py
+posture_report: "CMS index `ha-ada-isolation` (ada-cms-pages) — 5/6 PASS"
+
+done:
+  - "Phase A on idc03: isolation.conf drop-ins on all 10 ada units —
+    MemoryMax=2G, CPUQuota=150% (bankq-student 200%),
+    LogRateLimitIntervalSec=30s LogRateLimitBurst=1000. Verified effective
+    via systemctl show; all units active, health 200."
+  - "deploy-ada.sh: idc03 SERVICES reordered to canary ladder (dev -> relays
+    -> member -> tony last); ada-kk-dev (8009) and ada-tg-relay-kk added —
+    same fresh-code rationale Tony approved for ada-kk."
+  - "Phase B on tony-ha (approved 2026-10-11): user svc-ada created
+    non-admin (id 84e7b655f47d49cea47340e946590114); per-lane LLATs minted
+    via scripts/ada/ha-svc-user.py; HOME_ASSISTANT_TOKEN swapped in
+    ada-ha-tony.env and ada-pi-pwa.env; units restarted;
+    auth/current_user verifies svc-ada owner=false admin=false."
+  - "Phase C verified: stopped ada-ha-tony + ada-pi-pwa -> tony-ha /api/
+    still answered 401 (alive, auth required); michael-ha likewise;
+    services restarted clean."
+  - "Gemini pool state confirmed: 4 distinct keys, no key spans tony and
+    member/dev pools (tony={ha-tony,pwa}, michael own, kk=kaewta-paid,
+    dev={dev,kk-dev}). Approved standard met."
+  - "ha-ada-isolation-cms.py fixed: BACKENDS gains ada-kk-dev + pwa->tony-ha
+    mapping, DEPLOY_SH path corrected, SERVICES parser rewritten for
+    host_config() format, pool-aware Gemini check, empty-key hash artifact
+    removed. Posture now 5/6."
+
+blocked:
+  - "michael-ha Phase B — request phase-b-on-michael-ha-approve-creating-s-89770d
+    on card ha-ada-isolation (recommended approve; identical procedure)."
+  - "Owner-LLAT revoke — old Tony token is still shared by chaba-guest.env,
+    nodered-ha.env, home-assistant-token.env on tony-dell. Revoking now would
+    break them; follow-up card ha-owner-llat-co-use-split (HOM-0705) covers
+    per-consumer svc tokens then revoke."
+  - "kk Live-layer Gemini key mint — Tony's GCP console action, tracked on
+    card kk-gemini-key."
+
+evidence:
+  - "systemctl --user show <unit> MemoryMax=2147483648 CPUQuota=1.5s
+    LogRateLimitInterval=30s on all ada units (idc03)"
+  - "WS auth/current_user: ada-ha-tony.env and ada-pi-pwa.env -> svc-ada
+    is_owner=false is_admin=false"
+  - "kill test 2026-10-15: /api/ HTTP 401 while both tony lanes stopped"
+  - "token fingerprints: ada-ha-tony fp=4014aa8dc8, ada-pi-pwa fp=8b15786244
+    (values in idc03:/tmp/svc-ada-tokens.json 0600 + env files)"
+
+notes:
+  - "ha-svc-user.py handles the full Phase B repeat: provision creates the
+    user (config/auth/create + config/auth_provider/homeassistant/create —
+    this HA version takes no credentials in config/auth/create), runs the
+    OAuth login flow, mints per-lane LLATs. Michael-ha rerun = one command."
+  - "svc-ada keeps a random password credential (never recorded) — needed
+    for the OAuth leg; can be removed in the HA UI if undesired."

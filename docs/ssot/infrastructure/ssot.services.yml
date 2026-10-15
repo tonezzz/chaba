@@ -987,6 +987,7 @@ mn01:
     status: active on idc03 (migrated tony-dell -> idc01 2026-09-23 -> idc03 2026-10-06); retired on tony-dell
     tailnet_url: "https://idc03.taila0626a.ts.net/"
     env_file: "~/.config/secrets/ada-pi-pwa.env"
+    upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/ (svc-ada non-admin LLAT, ha-ada-isolation 2026-10-15)"
     note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui, then idc01 -> idc03; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. idc01 keeps a warm-boot copy (ada-pi-pwa.service runs but is not the primary). Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
@@ -1001,7 +1002,7 @@ mn01:
     env_file: "~/.config/secrets/ada-ha-tony.env"
     edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and a dedicated svc-ada non-admin LLAT (ha-ada-isolation Phase B, 2026-10-15 — replaced the Tony owner token). Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: idc03
