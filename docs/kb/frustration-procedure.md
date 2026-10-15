@@ -112,3 +112,27 @@ sessions" — the ledger counted all /ws wall-time.
 3. Add a watcher where the hole was (the 10-14 gap was an unread
    ledger → `ada-burn-watch.timer`), not just an apology.
 4. Record it on the card so the next session inherits the lesson.
+
+## Board-state claims (added 2026-10-15 — the kanban extension)
+
+Same discipline applies to claims about the kanban itself — the board is
+an output surface, not ground truth:
+
+1. **Never trust the card's declared state alone.** A card in `doing`
+   can be stale for days; a "queued" badge means a click happened, not a
+   running process. Verify: `action.status` on the card AND a live
+   `devin-task-*.service` (or pid) on the claimed runner host.
+2. **"Cards came back" has named mechanisms, not ghosts:** request-sweep
+   re-ping after 12h unanswered; merge-sweep re-raise on un-deduped ids;
+   lifecycle-check bounce done->doing when `verify:` exists but no
+   `[verify]` evidence comm was posted. Each is checkable in comms.
+3. **Rendered affordances can lie.** A button's existence ≠ valid action
+   (the Queue-on-done-cards bug). Verify against card fields: column,
+   action.status, requests[].
+4. **Answered ≠ acted.** /respond records the answer; nothing executes
+   it unless an actor does. "Tony already answered" is not evidence the
+   thing happened — check the outcome field (dispatch queued, column
+   moved), not the answer field.
+5. **Every Tony-facing request must carry options** — an ask without
+   buttons is a rendering failure, now enforced at board-api. If one
+   appears, it's an invariant breach worth a repeat-ask increment.
