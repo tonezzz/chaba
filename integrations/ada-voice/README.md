@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Ten drops live here:
+chaba dispatches. Eleven drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -23,6 +23,9 @@ chaba dispatches. Ten drops live here:
    **already deployed** (ada-voice `daa0e0a`)
 10. cast wrong-target honesty + goal-loop breaker + frustration budget —
     card `ada-cast-wrong-target-verbose-loop` (ADA-0684, 2026-10-15)
+11. correction commands self-authorize memory writes — card
+    `correction-commands-die-at-the-confirm-g-05902a` (OPS-0567,
+    2026-10-16)
 
 ---
 
@@ -781,3 +784,103 @@ Only the 5th/6th attempts hit `tv_action`, which correctly failed
   card back; the new guide text covers the TV misroute, but a
   screen-only gev_command could also carry a hint. Left for a
   follow-up if it recurs.
+
+---
+
+## Drop 11 — correction commands self-authorize memory writes
+
+Card `correction-commands-die-at-the-confirm-g-05902a` (OPS-0567,
+transcript `2026-10-13-cac2984711`). Tony said "CRV เป็นรถของกุ้ง
+ไม่ใช่ของผมนะ แก้ไขด้วย" — an explicit fix order. Kaewta acknowledged
+correctly but ASKED permission to write it; the session ended and the
+correction never landed (the wrong fact "Tony owns the CRV" stayed live
+until `car/tony-car-not-crv` was patched into personal-kk + personal-tony
+by hand). Same death path as the cast-loop inverted write: even a
+compliant `confirmed=true` call would have been stripped — 'แก้ไขด้วย'
+is not in the affirmation regex — forcing a second ask that never came.
+
+Two layers, one rule: an explicit store/correct/retract order in the
+user's own turn IS the confirmation. Confirm-first stays for inferred or
+uncertain facts, and for every other gated tool.
+
+### Files
+
+- `backend/realtime_provider.correction-command.patch` —
+  `backend/realtime_provider.py`.
+  - New `_MEMORY_DIRECTIVE_RE` — remember/note/jot/write-down/record/
+    save/fix/correct/change/update/forget + Thai จำไว้/จดไว้/บันทึก/
+    เก็บไว้/แก้ไข/แก้ด้วย/เปลี่ยนเป็น/อัปเดต/ลืม…/ลบ…/เอาออก.
+  - New `_user_memory_directive(text)` — directive minus the vetoes:
+    trailing-question guard (shared `_CONFIRM_QUESTION_RE`), negation in
+    the 40-char lead (`_MEMORY_DIRECTIVE_NEG_RE`: don't/do not/never/
+    no need/stop, อย่า/หยุด/เลิก/ไม่ต้อง/ไม่เอา — bare ไม่ excluded so
+    'ไม่ใช่ของผมนะ แก้ไขด้วย' still authorizes), and the 'I/you/we
+    remember' recollection exclusion
+    (`_MEMORY_REMEMBER_PRONOUN_RE`).
+  - New `_memory_directed_call(name, args)` — scopes authorization to
+    the memory-write seats: `ada_remember` (bank kinds — the vocab/
+    guest/habit carve-outs were never gated anyway), `ada_forget`,
+    `ada_ops action='outcome'`. Actuation/capture/CMS/calendar/devin
+    calls are NEVER directed — 'fix the TV' can't self-authorize a
+    control call.
+  - Dispatch: `_mem_directed` computed inside the existing gated-probe
+    block; the confirm-audit branch becomes
+    `confirmed or _mem_directed`; a directed call counts as affirmed,
+    gets `confirmed=true` + `_verified_affirm` injected (bare calls land
+    in ONE shot — no propose→deny→retry dance), and emits a
+    `memory_directive_authorize` ops event for the audit trail.
+  - DEFAULT_ADA_INSTRUCTIONS: the 'explicit ask IS the confirmation'
+    rule now covers corrections and retractions — write with
+    confirmed=true in the SAME turn (key= / supersedes= when known),
+    then report in one clause; never ask permission for an explicit
+    correction. ada_remember/ada_forget `confirmed` param and
+    ada_remember description updated to match.
+- `backend/tool_guide.correction-command.patch` —
+  `backend/tool_guide.yml`: ada_remember/ada_forget error-path text says
+  an explicit order IS the yes — pass confirmed=true directly.
+- `tests/test_memory_directive.py` — NEW: detector positives (the exact
+  incident turn + Thai/English directive forms), negatives (negated,
+  questions, recollection, no-directive incl. bare 'that's wrong'), and
+  seat scoping.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && git apply \
+   <chaba>/integrations/ada-voice/backend/realtime_provider.correction-command.patch \
+   && git apply \
+   <chaba>/integrations/ada-voice/backend/tool_guide.correction-command.patch`
+   — base `main` @ `41020cf` (verified `git apply --check` clean on a
+   fresh clone); if a hunk no longer applies, re-dispatch rather than
+   hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/test_memory_directive.py
+   tests/test_memory_directive.py`
+3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; restart the lane backends
+   (the directive check lives in the voice dispatch path). No manifest/
+   surface change — no count_cap bump.
+
+### Verified
+
+- ada-voice `main` @ `41020cf` + patches on a /tmp clone: `git apply`
+  clean, `py_compile` clean.
+- Detector verified against the patched tree's real regexes/methods
+  (extracted via ast, no deps): 22 positive + 19 negative utterances all
+  correct, seat scoping holds.
+- Chaba side: `tests/ada/test_correction_command.py` — patch-apply gate
+  + patched-tree unit run via the checkout's venv. Run with
+  `ADA_PI=<ada-voice checkout>` (skips clean where no venv).
+
+### Residual / judgement calls
+
+- Authorization is deliberately narrower than the card's headline —
+  directed calls count as *verified* for the memory-write seats only.
+  Extending the same pattern to calendar/CMS writes (e.g. 'put it on my
+  calendar' self-authorizing) is a separate decision; the LOOP-CLOSE
+  instruction already nudges CMS that way but the gate still asks.
+- A directive authorizes the write the model CHOSE to make — it can't
+  create intent. If a 'fix the TV' turn ever misroutes into a memory
+  write, the write lands unconfirmed (scan + ACL still apply; retractable
+  via ada_forget). If that misroute recurs, the fix is a target-check on
+  the directive, not the gate.
+- 'I remember X' recollection vs 'remember X' order is split by the
+  pronoun rule — Thai has no such ambiguity (จำไว้ is unambiguous).
