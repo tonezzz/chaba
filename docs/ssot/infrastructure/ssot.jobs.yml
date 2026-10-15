@@ -379,6 +379,24 @@ jobs:
   timeout: 10s
   exec: '%h/.config/home-assistant/update-cam-frame.sh'
   note: 5s cadence — below the dispatcher floor, proves the dispatch boundary
+- id: wp-cam-snapshot
+  name: Cam Snapshot -> WP cam CPT
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* *:2/15:00'
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/cam-wall/cam-snapshot-wp.py
+  note: 'card cam-snapshot-writer-wp — per go2rtc stream (parsed from
+    ~/.config/go2rtc/go2rtc.yaml, /api/streams fallback) fetches
+    frame.jpeg on 127.0.0.1:1984, uploads to WP media, writes private
+    cam posts (slug cam-<id>-<ts>, kind=live, camera_id/captured_at/
+    stream_url meta, featured_media=frame) and upserts the per-camera
+    directory post (slug cam-<id>) with the newest frame. Each run also
+    purges snapshot posts + attachments older than 7d. Creds:
+    ~/.config/secrets/wp-boards.env (origin base — public edge
+    bot-checks script UAs). 15min cadence offset :2 to spread off the
+    cam-wall-cms *:0/15 tick.'
 - id: yomi-update-active
   name: Yomi Update Active
   host: tony_dell
