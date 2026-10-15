@@ -82,6 +82,18 @@ topics:
     history:
       - {at: "2026-10-15", ask: "render jobs list shows no image / broken image — how verified for real?", cards: []}
       - {at: "2026-10-15", ask: "Render jobs still missing images — still in the card or repeat counter?", cards: [render-job-writer-must-upload-output-to-78229c]}
+  - id: shipped-not-scheduled
+    topic: "Tooling shipped but never wired to run — agent claims 'it syncs on a cycle' when no timer/job exists"
+    count: 1
+    status: fixed-2026-10-15
+    notes: "sync-repeat-asks.py existed for days but nothing scheduled it;
+      agent told Tony the WP mirror would update 'on its normal cycle' —
+      there was no cycle. Same wound as lesson-capture (capability !=
+      adoption): shipping a script is not shipping the behavior. Fix:
+      sync folded into qc-scoreboard.timer (twice daily); rule — a job
+      claim requires pointing at the timer/cron that runs it."
+    history:
+      - {at: "2026-10-15", ask: "missing from wp repeat asks, is it timer or another counter?", cards: []}
   - id: partial-verification
     topic: "A curated subset of checks presented as the verification — agent picks which checks 'matter' instead of running the full kit"
     count: 1
