@@ -82,6 +82,7 @@ def main():
     .tk-label {{ font-size:10px;color:#7dd3fc;letter-spacing:1px;padding:0 10px;border-right:1px solid #274a8c;white-space:nowrap; }}
     .tk-view {{ flex:1;overflow:hidden; }}
     .tk-track {{ display:inline-block;white-space:nowrap;animation:tkscroll 80s linear infinite; }}
+    .tk-view:hover .tk-track {{ animation-play-state:paused; }}
     .tk-item {{ font-size:11px;color:#c7d2fe;padding:0 14px; }}
     .tk-item b {{ color:#93c5fd; }}
     .tk-sep {{ color:#3b82f6;font-size:8px; }}
@@ -119,7 +120,7 @@ def main():
     <div id="detail" class="flex-1 overflow-y-auto min-h-0 bg-slate-900/40 border border-slate-700/60 rounded-lg p-4"></div>
   </div>
 
-  <div id="ticker"><div class="tk-label">事件流</div><div class="tk-view"><div class="tk-track" id="tk-track"></div></div></div>
+  <div id="ticker"><div class="tk-label">EVENTS</div><div class="tk-view"><div class="tk-track" id="tk-track"></div></div></div>
 
 <script>
 const API = '/apps/board-api';
@@ -573,7 +574,7 @@ function renderTicker() {{
   if (!track) return;
   let html;
   if (!top.length) {{
-    html = '<span class="tk-item" style="opacity:.5">— 暂无事件 —</span>';
+    html = '<span class="tk-item" style="opacity:.5">— no events —</span>';
   }} else {{
     html = top.map(it =>
       `<span class="tk-item"><b>${{esc(it.at)}}</b> ${{esc(it.id)}} · ${{esc(it.from)}} · ${{esc(it.text)}}</span><span class="tk-sep">◆</span>`).join('');
@@ -581,7 +582,7 @@ function renderTicker() {{
   if (track.dataset.sig === html) return;
   track.dataset.sig = html;
   track.innerHTML = top.length ? html + html : html;
-  track.style.animationDuration = Math.max(30, top.length * 3) + 's';
+  track.style.animationDuration = Math.max(120, top.length * 10) + 's';
 }}
 
 async function load() {{
