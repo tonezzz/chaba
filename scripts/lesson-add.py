@@ -69,17 +69,22 @@ def main():
     if not a.no_th:
         try:
             import gemini_rest, os, re
-            key = os.environ.get("GEMINI_API_KEY")
+            key = os.environ.get("GEMINI_API_KEY_FREE")
             if not key:
+                found = {}
                 for f in (os.path.expanduser("~/.config/secrets/mddb-gemini.env"),
                           os.path.expanduser("~/.config/secrets/gemini-keys.env")):
                     try:
                         for ln in open(f):
-                            m = re.match(r"^(GEMINI_API_KEY_FREE|GEMINI_API_KEY|GOOGLE_API_KEY)=(.*)$", ln.strip())
-                            if m and not key:
-                                key = m.group(2).strip().strip('"').strip("'")
+                            m = re.match(r"^(GEMINI_API_KEY_FREE|GOOGLE_API_KEY|GEMINI_API_KEY)=(.*)$", ln.strip())
+                            if m:
+                                found.setdefault(m.group(1), m.group(2).strip().strip('"').strip("'"))
                     except OSError:
                         pass
+                key = (found.get("GEMINI_API_KEY_FREE") or found.get("GOOGLE_API_KEY")
+                       or found.get("GEMINI_API_KEY"))
+                if not key:
+                    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
             th = gemini_rest.generate(
                 "Translate the following HTML lesson to natural Thai. "
                 "Keep HTML tags, code, URLs, and proper names verbatim. "
