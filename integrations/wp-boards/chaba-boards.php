@@ -7,7 +7,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.4
+ * Version: 0.3.7
  */
 
 if (!defined('ABSPATH')) exit;
@@ -37,6 +37,9 @@ add_action('init', function () {
         'cam'      => ['Cam',       'Cams',      'dashicons-camera'],
         'render_job' => ['Render Job','Render Jobs','dashicons-format-image'],
         'news'     => ['News',      'News',      'dashicons-rss'],
+        // repeat_ask — counted recurrences of Tony's requests
+        // (docs/ssot/ssot.repeat-asks.yml synced by scripts/sync-repeat-asks.py)
+        'repeat_ask' => ['Repeat Ask','Repeat Asks','dashicons-flag'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -58,27 +61,49 @@ add_action('init', function () {
 });
 
 // ============================================================================
-// Public-host canonicalization — the Caddy edge proxies with
-// Host=boards.h3.gizmo-thailand.com so the Plesk vhost matches, but WP builds
-// some URLs (wp-admin canonical, list-table sort/pagination) straight from
-// $_SERVER['HTTP_HOST'] — bypassing every URL filter below. When the request
-// demonstrably came through the public edge (X-Forwarded-Host), rewrite the
-// server vars at plugin-load time — before any URL is generated — so emitted
-// links carry the public host. Direct origin hits are left untouched.
-if (!headers_sent()) { header('X-Chaba-Env: v034 fwd=' . ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? '-') . ' host=' . ($_SERVER['HTTP_HOST'] ?? '-')); }
+// Public-host canonicalization — CF fronts boards.surf-thailand.com and the
+// Plesk host internally maps the request onto the boards.h3.gizmo-thailand.com
+// vhost, so PHP sees HTTP_HOST=boards.h3 while X-Forwarded-Host carries the
+// public name. WP builds some URLs (wp-admin canonical, list-table
+// sort/pagination) straight from $_SERVER['HTTP_HOST'] — bypassing every URL
+// filter — so rewrite the server vars at plugin-load time, before any URL is
+// generated. Direct origin hits (no forwarded host) are left untouched.
 if (($_SERVER['HTTP_X_FORWARDED_HOST'] ?? '') === 'boards.surf-thailand.com') {
     $_SERVER['HTTP_HOST']   = 'boards.surf-thailand.com';
     $_SERVER['SERVER_NAME'] = 'boards.surf-thailand.com';
+    if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
+        $_SERVER['HTTPS'] = 'on';
+    }
 }
 
+// The origin stack rewrites REQUEST_URI to the index.php form internally:
+// the public /wp/ arrives at WP as /wp/index.php/. That is fine for deep
+// paths (permalink structure /index.php/%postname%/ expects it) but the front
+// page's canonical URL is home_url('/') = /wp/ — so WP 301s /wp/index.php/
+// back to /wp/, the upstream rewrites it again, and the edge sees an
+// infinite self-redirect. Normalize ONLY the bare home URI; leave deep paths
+// in the index.php form WP routing expects.
+if (($_SERVER['REQUEST_URI'] ?? '') === '/wp/index.php/' || $_SERVER['REQUEST_URI'] === '/wp/index.php') {
+    $_SERVER['REQUEST_URI'] = '/wp/';
+}
+
+// Belt for the same failure class: never 301 to the URL already requested.
+// Genuine canonical redirects (missing slash, wrong scheme) keep working.
+add_filter('redirect_canonical', function ($redirect_url, $requested_url) {
+    $req = strtok((string) $requested_url, '?');
+    $red = strtok((string) $redirect_url, '?');
+    if ($req !== '' && $red !== '' && untrailingslashit($req) === untrailingslashit($red)) {
+        return false;
+    }
+    return $redirect_url;
+}, 10, 2);
+
 // ============================================================================
-// Public-host rewrite — wp-config on the Plesk origin pins WP_SITEURL/WP_HOME
-// to boards.h3.gizmo-thailand.com, which overrides the DB options and leaks
-// the origin host into generated URLs (admin sort/pagination links, rel=
-// canonical, REST _links, attachment URLs). The public edge is
-// boards.surf-thailand.com; rewrite every URL-emitting filter so generated
-// links always carry the public host. (The edge already rewrites redirect
-// Location headers; this fixes URLs embedded in HTML.)
+// Public-host rewrite — belt-and-suspenders sweep: anything that still emits
+// the origin host (plugins/themes reading stale state, URLs stored in content)
+// gets rewritten to the public edge. With the HTTP_HOST override above, WP
+// core already generates surf URLs natively; these filters only fire on URLs
+// that somehow still carry boards.h3.
 // ============================================================================
 add_action('init', function () {
     $from = 'https://boards.h3.gizmo-thailand.com';
@@ -131,6 +156,9 @@ add_action('init', function () {
         // news — feed provenance; dedup rides the deterministic slug
         // (n-<md5(link)>) so no GUID index is needed.
         'news'     => ['source_feed', 'source_url', 'published_at'],
+        // repeat_ask — count = times re-asked; last_repeat = ISO date of most
+        // recent recurrence (drives the admin list default sort).
+        'repeat_ask' => ['topic', 'count', 'last_repeat', 'status'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -166,11 +194,12 @@ function chaba_cpt_admin_columns(string $type): array {
         'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
         'render_job' => ['kind' => 'Kind', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'backend' => 'Backend', 'est_cost_usd' => 'Est$', 'requested_by' => 'By'],
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
+        'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
@@ -188,6 +217,35 @@ foreach (['asset','expense','contact','reminder','bench','report','xlate','cam',
     }, 10, 2);
 }
 unset($_t);
+
+// repeat_ask admin list — sorted by last repeat by default; Asked/Last-repeat
+// columns are clickable sortable (count numeric, last_repeat ISO-lexical).
+add_filter('manage_edit-repeat_ask_sortable_columns', function ($cols) {
+    $cols['chaba_count']       = 'ra_count';
+    $cols['chaba_last_repeat'] = 'ra_last_repeat';
+    return $cols;
+});
+add_action('pre_get_posts', function ($q) {
+    if (!is_admin() || !$q->is_main_query()) return;
+    if ($q->get('post_type') !== 'repeat_ask') return;
+    $ob = $q->get('orderby');
+    if ($ob === 'ra_count') {
+        $q->set('meta_key', 'count');
+        $q->set('orderby', 'meta_value_num');
+        return;
+    }
+    if ($ob === 'ra_last_repeat') {
+        $q->set('meta_key', 'last_repeat');
+        $q->set('orderby', 'meta_value');
+        return;
+    }
+    // default view: most recently repeated on top
+    if (!$ob) {
+        $q->set('meta_key', 'last_repeat');
+        $q->set('orderby', 'meta_value');
+        $q->set('order', 'DESC');
+    }
+});
 
 // ============================================================================
 // Member-post translation (TH<->EN) via Gemini — off unless CHABA_LLM_KEY set.
