@@ -45,6 +45,11 @@ SERVED_ROOT = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 CARDS_DIR = SERVED_ROOT / "docs" / "ssot" / "kanban" / "cards"
 REPEAT_ASKS = SERVED_ROOT / "docs" / "ssot" / "ssot.repeat-asks.yml"
 OPT_WARNINGS = SERVED_ROOT / "reports" / "SSOT_OPTIMIZATION_WARNINGS.json"
+COL_SNAP = Path(__file__).resolve().parent.parent / "reports" / \
+    "qc-scoreboard" / "column-snapshot.json"
+# column order — a move left (esp. out of done/verified) is a reopen event
+COL_RANK = {"inbox": 0, "backlog": 1, "queued": 2, "doing": 3,
+            "review": 4, "done": 5, "verified": 6, "parked": 1}
 WP_ENV = Path.home() / ".config" / "secrets" / "wp-boards.env"
 
 AUDIT_ID_RE = re.compile(r"^(audit-fail|audit-miss|bug|incident|qc)-", re.I)
@@ -137,6 +142,33 @@ def open_requests(cards: list[dict]) -> dict:
     return {"open": n}
 
 
+def reopen_events(cards: list[dict]) -> dict:
+    """Detect column resurrections: a card that moved backwards (esp. out
+    of done/verified) since the last run = a stomped close. Writes a fresh
+    snapshot for the next run."""
+    prev = {}
+    try:
+        prev = json.loads(COL_SNAP.read_text())
+    except Exception:
+        pass
+    cur, events = {}, []
+    for c in cards:
+        cid = str(c.get("id") or "")
+        col = str(c.get("column") or "")
+        cur[cid] = col
+        old = prev.get(cid)
+        if old and old != col and \
+                COL_RANK.get(col, 9) < COL_RANK.get(old, 9):
+            events.append(f"{cid}: {old} → {col}")
+    try:
+        COL_SNAP.parent.mkdir(parents=True, exist_ok=True)
+        COL_SNAP.write_text(json.dumps(cur))
+    except OSError:
+        pass
+    return {"count": len(events), "events": events[:15],
+            "baseline": not prev}
+
+
 def optimize_warnings() -> dict:
     try:
         d = json.loads(OPT_WARNINGS.read_text())
@@ -180,6 +212,14 @@ def render_md(m: dict) -> str:
             f"SSOT_OPTIMIZATION_WARNINGS.json @ {ow.get('generated', '?')[:16]} |")
     else:
         lines.append(f"| SSOT optimize warnings | {ow['error']} | — |")
+    re_ = m.get("reopen_events") or {}
+    if re_.get("baseline"):
+        lines.append("| Column reopens | baseline snapshot taken | "
+                     "qc-scoreboard |")
+    else:
+        lines.append(
+            f"| Column reopens (backward moves) | {re_.get('count', 0)} "
+            "since last run | qc-scoreboard snapshot diff |")
     lines += ["", "## Open repeat-ask topics", ""]
     for t in ra.get("open_ids", []):
         lines.append(f"- `{t}`")
@@ -188,6 +228,9 @@ def render_md(m: dict) -> str:
     if ac["open_ids"]:
         lines += ["", "## Open audit/incident cards", ""]
         lines += [f"- `{i}`" for i in ac["open_ids"][:15]]
+    if re_.get("events"):
+        lines += ["", "## Column reopen events (stomped closes)", ""]
+        lines += [f"- `{e}`" for e in re_["events"]]
     return "\n".join(lines) + "\n"
 
 
@@ -265,6 +308,7 @@ def main() -> int:
         "audit_cards": audit_cards(cards),
         "open_requests": open_requests(cards),
         "opt_warnings": optimize_warnings(),
+        "reopen_events": reopen_events(cards),
     }
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -280,6 +324,8 @@ def main() -> int:
              f"{m['open_requests']['open']} open requests"]
     if rj.get("checked"):
         parts.append(f"{rj['broken']}/{rj['total']} broken renders")
+    if m["reopen_events"].get("count"):
+        parts.append(f"{m['reopen_events']['count']} column reopens")
     summary = "; ".join(parts)
     status = "ok" if (ra.get("open", 0) == 0 and ac["open"] == 0
                       and rj.get("broken", 0) == 0) else "delta"
