@@ -743,6 +743,28 @@ jobs:
     lesson CPT next_review/status meta. Live unit on idc03 predates this
     manifest entry (hand-created 2026-10-15, same schedule+exec) —
     render-jobs.py --host idc03 --install converges it.'
+- id: ops-error-posts
+  name: Ada tool/stream errors -> WP ops_error posts
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/ops-error-posts.py
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/ops-error-posts.py'
+  note: 'card boards-error-post-type (ADA-0679) — tails journalctl --user -u
+    ada-kk/ada-ha-tony/ada-michael (since-cursor in
+    ~/.local/share/ada/ops-error-posts-state.json) + MDDB ada-ha-events-<lane>
+    kind=ops-event; posts one private ops_error CPT row per failure needing a
+    truthful explanation (schema_error/runtime_error/degraded_result/
+    stale_result/silent_reconnect/phantom_claim). Dedup = deterministic slug
+    err-<md5> via ?slug= lookup, WP app-password writes to origin_base (public
+    edge bot-checks script UAs). Requires chaba-boards v0.6.0 deployed —
+    until it lands, POSTs 404 and the cursor holds so the next run rescans
+    (no events lost, journal noise only). Seed backfill:
+    --since ''2026-10-13 16:00'' --session 183e9c8d7e. condition_path keeps the
+    unit skipped until the script lands in the served checkout on merge.
+    Added 2026-10-15.'
 - id: wp-comment-sync
   name: WP member comments -> suggestion lanes
   host: idc03
