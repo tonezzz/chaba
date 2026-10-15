@@ -52,9 +52,10 @@ class FakeWP:
         return out
 
 
-def post(pid=7, meta=None, tags=None, title="Digest — flood"):
+def post(pid=7, meta=None, tags=None, title="Digest — flood", content=""):
     return {"id": pid, "meta": meta or {}, "tags": tags or [],
-            "title": {"rendered": title}, "link": "https://x/p"}
+            "title": {"rendered": title}, "link": "https://x/p",
+            "content": {"rendered": content}}
 
 
 class LadderTest(unittest.TestCase):
@@ -185,6 +186,22 @@ class IndexRenderTest(unittest.TestCase):
 
     def test_empty(self):
         self.assertIn("ไม่มีสถานการณ์", ns.render_index(None, []))
+
+
+class BriefThTest(unittest.TestCase):
+    TH = ('<p>en brief</p><p class="brief-th" lang="th">'
+          "<strong>สรุป:</strong> น้ำท่วม 20 จังหวัด กทม. เร่งระบาย</p>")
+
+    def test_meta_wins(self):
+        p = post(meta={"brief_th": "จากเมทา"}, content=self.TH)
+        self.assertEqual(ns.brief_th_of(p), "จากเมทา")
+
+    def test_content_fallback(self):
+        self.assertEqual(ns.brief_th_of(post(content=self.TH)),
+                         "น้ำท่วม 20 จังหวัด กทม. เร่งระบาย")
+
+    def test_absent(self):
+        self.assertEqual(ns.brief_th_of(post(content="<p>en only</p>")), "")
 
 
 if __name__ == "__main__":

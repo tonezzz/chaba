@@ -148,6 +148,19 @@ def strip(s):
     return re.sub(r"\s+", " ", TAG_RE.sub(" ", html.unescape(s or ""))).strip()
 
 
+def brief_th_of(post):
+    """Thai brief for a digest: meta.brief_th once chaba-boards 0.6.0
+    registers the key; until then fall back to the สรุป paragraph
+    news-digest renders into the post body."""
+    m = ((post.get("meta") or {}).get("brief_th") or "").strip()
+    if m:
+        return m
+    body = (post.get("content") or {}).get("rendered", "")
+    hit = re.search(r'<p class="brief-th"[^>]*>\s*<strong>สรุป:</strong>\s*'
+                    r"(.*?)</p>", body, re.S)
+    return strip(hit.group(1)) if hit else ""
+
+
 def effective_state(post, wp=None):
     """meta first, tag mirror second. '' = not a situation."""
     m = ((post.get("meta") or {}).get("situation") or "").strip().lower()
@@ -352,7 +365,7 @@ def cmd_ask(wp, args):
     meta = post.get("meta") or {}
     out = {"post_id": post["id"], "title": title, "link": post.get("link"),
            "state": new or cur, "score": round(scores[best], 3),
-           "brief_th": meta.get("brief_th") or "",
+           "brief_th": brief_th_of(post),
            "brief_en": re.sub(r"</?[^>]+>", "",
                               (post.get("content") or {})
                               .get("rendered", "")).strip()[:400]}
@@ -395,7 +408,7 @@ def cmd_sweep(wp, args):
 def render_index(wp, rows):
     now = datetime.now(ICT).strftime("%Y-%m-%d %H:%M")
     def row(r):
-        brief = r["meta"].get("brief_th") or ""
+        brief = r.get("brief_th") or r["meta"].get("brief_th") or ""
         icon = "📌" if r["state"] == "pinned" else "👁"
         s = (f'<li style="margin-bottom:.9em"><strong>'
              f'<a href="{html.escape(r["link"])}">{html.escape(r["title"])}'
@@ -438,6 +451,7 @@ def cmd_index(wp, args):
             continue
         meta = p.get("meta") or {}
         rows.append({"id": p["id"], "state": st, "meta": meta,
+                     "brief_th": brief_th_of(p),
                      "sources": source_count(p),
                      "since": meta.get("situation_since") or "",
                      "by": meta.get("situation_by") or "",

@@ -58,6 +58,11 @@ post_types:
   # truthful explanation, meta status open->explained->resolved.
   # Card boards-error-post-type / ADA-0679; design:
   # docs/ssot/jobs/ada/2026-10-15-ops-error-posts.yml
+  # v0.6.0 also: news situation flag — meta
+  # situation/situation_since/situation_by/brief_th on news, Situation
+  # admin column, badge on flagged digests' single view, and the
+  # [chaba_situations] shortcode index block. Card news-situation-summaries;
+  # design: docs/ssot/jobs/ada/2026-10-15-news-situation-summaries.yml
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -86,7 +91,10 @@ post_types:
                est_cost_usd is a published-price estimate, not invoice truth."
   news:        "news feed items + distilled digests — hierarchical: digest
              parents own raw source items as children; has_archive +
-             category/post_tag — meta: source_feed/source_url/published_at"
+             category/post_tag — meta: source_feed/source_url/published_at
+             + situation(watching|pinned)/situation_since/situation_by/
+             brief_th (v0.6.0 — the situation-summary flag, mirrored as
+             situation-* tags so it works pre-deploy)"
   repeat_ask:  "repeat-ask register mirror (docs/ssot/ssot.repeat-asks.yml) —
              counted recurrences of Tony's requests, slug ra-<topic-id>,
              meta: topic/count/last_repeat/status; admin list defaults to
@@ -114,7 +122,10 @@ taxonomy_axes:
   post_tag: "person axis (tony|kk|nhong) + fine keywords (krabi, southafrica).
             News items: source (bangkokpost, thethaiger, khaosod, google-news),
             lang (en|th), geo (bang-phli, rayong). Digests add:
-            digest, sources:N (coverage breadth)"
+            digest, sources:N (coverage breadth), situation-watching|
+            situation-pinned (tag mirror of the situation meta — the flag
+            works before chaba-boards 0.6.0 deploys; /wp/tag/situation-pinned/
+            is a free public archive)"
   rule: one type axis = the CPT itself; never duplicate type as a tag
         (place-report/trip tags retired 2026-10-14)
 
@@ -174,7 +185,20 @@ writers:
                   topic/brief/coverage-diffs JSON per multi-source cluster;
                   parent post 'Digest — {topic}' gets synthesis cat +
                   digest/sources:N tags, members reparented via post_parent.
-                  Digest list: /wp/category/synthesis/"
+                  brief_th adds a Thai สรุป block + meta cache (v0.6.0);
+                  parent meta/tags are re-asserted on regen so the
+                  situation flag survives. Digest list: /wp/category/synthesis/"
+  news_situation: "scripts/ada/news-situation.py on idc03 —
+                  wp-news-situation.timer at :45 hourly (ssot.jobs.yml):
+                  sweep auto-nominates watching on >=3-source or
+                  disaster-desk digests; index rebuilds private page slug
+                  situations (TH-first pinned/watching list). Interactive:
+                  ask \"<text>\" embeds the ask, matches a digest, promotes
+                  one rung (none->watching->pinned) and prints TH+EN briefs
+                  for the asker — the member-ask hook Ada/agents call.
+                  wp-comment-sync routes pin/unpin/watch comment commands
+                  to the same transition. Every change posts a WP comment
+                  — never silent. Card news-situation-summaries."
   cam_snapshot: "scripts/cam-wall/cam-snapshot-wp.py on tony-dell —
                   wp-cam-snapshot.timer every 15min at :02 (ssot.jobs.yml
                   job wp-cam-snapshot). Enumerates streams from
