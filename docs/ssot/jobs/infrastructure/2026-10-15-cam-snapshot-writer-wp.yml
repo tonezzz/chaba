@@ -1,0 +1,77 @@
+title: cam snapshot writer — go2rtc frames -> WP cam CPT
+subtitle: card cam-snapshot-writer-wp — fleet-side recorder on tony-dell
+icon: camera
+version: 1
+
+card: cam-snapshot-writer-wp
+date: 2026-10-15
+dispatch: 20261015-102306-cam-snapshot-writer-go2rtc-fra
+
+summary: |
+  Built the cam recorder: a per-run script that pulls a JPEG frame per
+  go2rtc stream, uploads it to WP media, writes a private cam post
+  (kind=live), keeps one directory post per camera fresh, and purges
+  snapshot posts + attachments older than 7 days. Registered as
+  ssot.jobs.yml job wp-cam-snapshot on tony_dell (systemd, every 15min
+  at :02). Deploy/install on tony-dell pending — dispatch worktree only.
+
+files:
+  - scripts/cam-wall/cam-snapshot-wp.py          # the writer
+  - tests/camwall/test_cam_snapshot_wp.py        # fake go2rtc + fake WP REST
+  - docs/ssot/infrastructure/ssot.jobs.yml       # +job wp-cam-snapshot
+  - systemd/generated/tony_dell/wp-cam-snapshot.{service,timer}
+  - docs/ssot/apps/ssot.wp-boards.yml            # cam row model + writer entry
+
+data_model:
+  snapshot_post: |-
+    private cam post per captured frame.
+    title  "Cam — <camera_id> <YYYY-MM-DD HH:MM>"
+    slug   cam-<camera_id>-<yyyymmdd-HHMMSS>   (deterministic — timer
+                                                 reruns can't dup)
+    meta   camera_id / captured_at / kind=live /
+           stream_url=<GO2RTC>/stream.html?src=<cam>
+    featured_media = uploaded frame attachment; post date = capture time
+    so the `before` retention filter is exact.
+  directory_post: |-
+    one stable private cam post per camera — the member-visible
+    directory entry. title "Cam — <camera_id>", slug cam-<camera_id>,
+    kind=live; featured_media + captured_at refresh to the newest frame
+    every run. Never purged (slug carries no timestamp).
+  retention: |-
+    each run lists cam posts with post date < now-7d and force-deletes
+    those matching the snapshot slug pattern, then force-deletes their
+    featured attachment. Uploads whose post-create fails are deleted
+    immediately — no orphan media.
+  truncated_spec: |-
+    Card note ends mid-sentence ("Also seed kind=live directory posts
+    for sso") — board-api caps note at 500 chars. Implemented the
+    directory-post half verbatim; whatever surface "sso" named can
+    consume slug cam-<id> posts later without writer changes.
+
+operations:
+  install: |-
+    After merge, on tony-dell:
+      cd ~/CascadeProjects/chaba-tony-dell && ./scripts/git-safe-pull.sh
+      python3 scripts/render-jobs.py --host tony_dell --install
+    (installs wp-cam-snapshot.{service,timer} into
+    ~/.config/systemd/user + daemon-reload + enable --now)
+  manual_run: |-
+    python3 scripts/cam-wall/cam-snapshot-wp.py            # full run
+    python3 scripts/cam-wall/cam-snapshot-wp.py --dry-run  # discovery+fetch only
+    python3 scripts/cam-wall/cam-snapshot-wp.py --seed-only --cams=ip_cam_65
+    python3 scripts/cam-wall/cam-snapshot-wp.py --purge-only
+  env: |-
+    GO2RTC_URL (def http://127.0.0.1:1984), GO2RTC_CONFIG,
+    WP_BOARDS_ENV, WP_BASE, CAM_SNAPSHOT_SKIP (csv),
+    CAM_STREAM_BASE, CAM_SNAPSHOT_RETENTION_DAYS (def 7)
+
+verification: |
+  python3 -m unittest tests.camwall.test_cam_snapshot_wp -v  # 6/6 pass
+  python3 scripts/render-jobs.py --check                     # manifest OK
+  Post-install on tony-dell:
+    systemctl --user start wp-cam-snapshot.service && journalctl --user -u wp-cam-snapshot -n 20
+    -> per-cam "snap=<id> dir=<id>(created|updated) frame=<n>B"
+    wp-admin Cams list shows private snapshots + directory rows with
+    Camera/Captured/Kind columns.
+
+result: built-tested-pending-install
