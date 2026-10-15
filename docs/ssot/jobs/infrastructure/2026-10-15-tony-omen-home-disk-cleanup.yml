@@ -1,0 +1,51 @@
+id: tony-omen-home-disk-cleanup-20261015
+title: tony-omen /home 99% -> 59% — BrowserMetrics .pma leak + retired-backup moves
+date: 2026-10-15
+card: disk-auto-tony-omen-home
+ref: OPS-0405
+host: tony_omen
+status: done
+
+trigger: >
+  disk-trend-watch re-opened disk-auto-tony-omen-home: /home hit 99%
+  (3.7 GiB free) on 2026-10-15 after growing ~93G in 4 days
+  (195G used on 10-11 -> 288G on 10-15), including a ~51G single-day
+  jump on 10-14.
+
+findings:
+  primary_leak: >
+    /home/tony/.config/gev-cast-profile/BrowserMetrics held 10,678
+    BrowserMetrics-*.pma files x 4MiB = 42G. Known Chromium metrics-file
+    leak in long-running/headless profiles (*-cast-profile pattern).
+    Invisible to disk-trend-watch: watchlist only covered ~/.cache +
+    /var/log; .config was uninstrumented.
+  retired_archive: >
+    /home/tony/mddb-backups-idc01-retired = 64G of Sep/Oct mddb dumps
+    left behind after the 2026-10-11 move-cache pass (which only moved
+    the live mddb-backups dir).
+  devin_cli_backups: >
+    ~/.local/share/devin/cli/backups (13G, three multi-GB sessions.db
+    snapshots) + sessions.db.bak-20261013 (5.8G) — each backup is ~5.8G
+    because sessions.db itself is bloated to 5.8G.
+  other_growth: >
+    model-bench (18G) + .ollama (18G) downloaded 10-13/10-14 (gemma-3-27b
+    GGUF 15.4G, sdxl-lightning, ollama pulls) — left in place, active
+    benchmarking data.
+
+actions:
+  - "purged 10,669 BrowserMetrics-*.pma (kept newest 10): ~42G freed"
+  - "moved mddb-backups-idc01-retired 64G -> /data/backups/mddb-backups-idc01-retired + symlink at original path"
+  - "moved 2 older devin-cli backups + sessions.db.bak-20261013 (~13.5G) -> /data/backups/devin-cli/ (kept newest on /home)"
+  - "installed interim crontab on tony-omen: */30 find ~/.config/*/BrowserMetrics .pma -mmin +120 -delete (caps leak at ~2h of files until repo fix propagates)"
+  - "scripts/system-maintenance.mjs: added browserMetricsCleanup() (keep 50 newest .pma per profile) — runs daily 03:00 via existing cron"
+  - "scripts/ada/disk-trend-watch.py: added $HOME/.config/*/BrowserMetrics to default DU_ROOTS so the leak is trended next time"
+
+result:
+  home: "306G fs: 99% (3.7G free) -> 59% (122G free); ~118G reclaimed"
+  data: "295G fs: 61% -> 86% (42G free) after absorbing ~77G of moves"
+
+followups:
+  - "/data now 86% and mddb-backup-pull still has NO retention (~3.4G/day, flagged 2026-10-11) — needs keep-N or gdrive tier; watch disk-auto-tony-omen-data"
+  - "interim omen crontab line can be removed once system-maintenance.mjs change merges and pulls to omen's chaba checkout"
+  - "gev-cast launcher not found (not in omen crontab/systemd-user or repo) — if the cast chrome gets --disable-metrics or a fixed UA dir the .pma leak stops at source"
+  - "sessions.db is 5.8G on omen; periodic vacuum/rotation would shrink every backup copy"

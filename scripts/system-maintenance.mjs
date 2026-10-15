@@ -74,6 +74,21 @@ function logCleanup() {
   return result.success;
 }
 
+function browserMetricsCleanup() {
+  log("=== Browser Metrics Cleanup ===");
+
+  // Long-running/headless Chrome profiles (e.g. *-cast-profile) leak
+  // BrowserMetrics-*.pma files (~4MB each, ~2/min while running — one
+  // profile accumulated 42G in 4 days on tony-omen, 2026-10-15).
+  // Keep the 50 newest per profile dir; delete the rest.
+  const result = execCommand(
+    'for d in /home/tony/.config/*/BrowserMetrics; do [ -d "$d" ] && ls -t "$d"/BrowserMetrics-*.pma 2>/dev/null | tail -n +51 | xargs -r rm -f; done; true',
+    "Prune leaked BrowserMetrics .pma files (keep 50 per profile)"
+  );
+
+  return result.success;
+}
+
 function diskCheck() {
   log("=== Disk Space Check ===");
 
@@ -200,6 +215,7 @@ function generateReport(results) {
       dockerCleanup: results.dockerCleanup,
       journalCleanup: results.journalCleanup,
       logCleanup: results.logCleanup,
+      browserMetricsCleanup: results.browserMetricsCleanup,
       diskCheck: results.diskCheck,
       dockerHealthCheck: results.dockerHealthCheck,
       gpuMonitorCheck: results.gpuMonitorCheck,
@@ -224,6 +240,7 @@ function main() {
     dockerCleanup: dockerCleanup(),
     journalCleanup: journalCleanup(),
     logCleanup: logCleanup(),
+    browserMetricsCleanup: browserMetricsCleanup(),
     diskCheck: diskCheck(),
     dockerHealthCheck: dockerHealthCheck(),
     hostnameResolutionCheck: hostnameResolutionCheck(),
