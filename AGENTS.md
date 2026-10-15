@@ -96,6 +96,19 @@ Specs come from conversation — mine them, don't guess them:
 - One focused ask beats a checklist. If several unknowns exist, batch them into one request with per-item options.
 - **Decision-assist (added 2026-10-11):** when surfacing a decision to Tony — in chat or as a card request — do the research FOR him first: verify the real system state, explain what each option concretely means in plain terms (incl. non-obvious wrinkles), and mark a recommendation. A request he can answer with one word beats a question he must research.
 
+## Lesson-capture duty (added 2026-10-15 — Tony's standing order)
+
+When Tony asks a knowledge question worth retaining — an explainer, a
+comparison, a "what is X / how does Y work" — the answer does not stay in
+chat. File it: `python3 scripts/lesson-add.py --topic "<topic>" --level
+<intro|working|deep> --source <chat|voice|link> --content-file <html>`
+on a host with `~/.config/secrets/wp-boards.env` (idc03 works). The WP
+`lesson` CPT upserts by slug so re-asked topics update in place; Thai
+translation is automatic. If the write fails, say so — a lesson that only
+lived in the reply is a miss, and misses are counted in
+`docs/ssot/ssot.repeat-asks.yml` (check + increment it when Tony flags a
+repeat).
+
 ## Procedure-lookup duty (added 2026-10-11 — Tony's standing order)
 
 When Tony asks "what's our standard procedure for X" — answer **from the system**, not from memory:
