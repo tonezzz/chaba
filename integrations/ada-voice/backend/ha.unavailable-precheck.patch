@@ -1,0 +1,32 @@
+diff --git a/backend/tool_runner/ha.py b/backend/tool_runner/ha.py
+index f1da858..d7849c5 100644
+--- a/backend/tool_runner/ha.py
++++ b/backend/tool_runner/ha.py
+@@ -133,6 +133,27 @@ class HaMixin:
+         ghost, before = await self._control_precheck(entity_id)
+         if ghost is not None:
+             return ghost
++        # 'unavailable' means the integration cannot reach the device —
++        # HA still 200s the service call and nothing happens (2026-10-14
++        # session 4029a6447f: turn_on on an 'unavailable'
++        # media_player.tony_tv returned ok:true and narrated as done
++        # while the TV plug was off — MED-0493 phantom-state class).
++        # Fail before dispatching; the miss is honest, not a retry ban —
++        # the device may come back, but THIS call did nothing.
++        if before and before.get("state") == "unavailable":
++            return {
++                "ok": False,
++                "entity_id": entity_id,
++                "action": action or None,
++                "state": "unavailable",
++                "error": (
++                    f"{entity_id} is 'unavailable' — the service call "
++                    "is a no-op while the entity is unreachable (the "
++                    "device is off, unplugged, or its integration is "
++                    "down). Nothing was done — say the state plainly; "
++                    "do NOT claim it happened, and do not substitute "
++                    "another device the user did not name."),
++            }
+         if domain == "cover":
+             return await self._control_verified(
+                 entity_id, domain, action,

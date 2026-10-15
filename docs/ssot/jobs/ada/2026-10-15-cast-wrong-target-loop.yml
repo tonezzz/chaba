@@ -1,0 +1,78 @@
+title: Cast wrong-target honesty + goal-loop breaker + frustration budget
+subtitle: TV asks can no longer phantom-cast to screen 1; two failed action attempts force stop-and-ask
+icon: target
+card: ada-cast-wrong-target-verbose-loop
+ref: ADA-0684
+runner: idc03
+dispatch: devin-task-20261015-070254-tony-s-voice-session-tonight-h
+
+planning:
+  incident: >-
+    2026-10-14 voice session 4029a6447f (transcript 23:20-23:26 ICT,
+    ada-ha-tony): 'send God's Eye View to the TV' resolved to
+    cast_to_screen(screen=1) twice — both /pub acks returned
+    ok:true delivered:0 (screen 1 offline) and narrated as success;
+    control_entity turn_on media_player.tony_tv returned ok:true on an
+    entity HA reported 'unavailable' (restored:true — the plug was off);
+    the correction 'not screen 1, the TV' was inverted into an
+    ada_remember write that died at the confirm gate while Ada claimed
+    she remembered it; tv_action only came on attempt 5 and correctly
+    failed cast_verify. Tony had to get angry before the loop stopped —
+    and observed she DID get terse+efficient once he did.
+  root_causes:
+    - cast_to_screen treated /pub delivered:0 (no display received the
+      frame) as success — phantom 'it is showing' narration.
+    - control_entity had no 'unavailable' precheck — HA 200s a service
+      call on an unreachable entity and nothing happens.
+    - No breaker covered a failing user goal wandering across tools;
+      the storm breaker only trips per tool+error-class.
+    - >-
+      No register-mirroring rule — corrections/repeats did not collapse
+      the response budget.
+  scope: >-
+    Staged ada-voice drop-in only (integrations/ada-voice/ — 6 patches
+    + 1 offline scenario) — NO deploy, per dispatch rails and ada-voice
+    AGENTS.md (idc03 checkout is deploy-only).
+
+processing:
+  status: done
+  fixes:
+    - screens._pub_truth — cast_to_screen /pub results with ok:true +
+      delivered:0 flip to ok:false ('screen N is not connected … never
+      claim it showed'); covers nav/play/image/audio/stop/layout/zoom/
+      uplink*/background/say. delivered absent = legacy relay, passes.
+    - ha.control_entity — 'unavailable' precheck state refuses the
+      actuation before the service call, naming why.
+    - tool_runner._goal_loop — GOAL_LOOP_ASK (default 2) consecutive
+      counted failures on CONTROL_TOOLS in one session attach
+      stop_and_ask ('tell the user in ONE short sentence what is
+      failing and ask'); clean/needs_confirm results clear the streak.
+      Directive not hard-block — an explicit 'try again' stays legal;
+      the per-tool storm breaker (TRIP=2) remains the hard floor.
+    - tool_guide + DEFAULT_ADA_INSTRUCTIONS — TARGET FIDELITY ('the TV'
+      is tv_action/yt cast, never a numbered screen, even as fallback;
+      corrections binding; never store a correction inverted),
+      FRUSTRATION BUDGET (short/repeated/corrective turns collapse to
+      one clause — brevity never requires rudeness), FAILED-ACTION LOOP
+      (two failures end initiative; stop_and_ask binding).
+  verification: >-
+    tests/scenarios/cast_wrong_target_loop.yaml replays the incident on
+    ada-voice main@5dc7665 + patches on a /tmp clone: delivered:0 fails
+    loudly, unavailable refuses, stop_and_ask lands on the 2nd
+    cross-tool failure, corrected tv_action resolves ok:true in one
+    retry, 3rd same-tool repeat hits circuit_open. Full gates:
+    pytest tests/ 1467 passed/1 skipped, tool-lint clean. Chaba-side:
+    tests/ada/test_cast_loop_breaker.py (patch-apply + scenario).
+  residual:
+    - inverted-correction memory write is a model comprehension bug —
+      instruction-level mitigation only; if it recurs, needs a
+      correction-echo step upstream.
+    - gev_command(screen=N) with no name silently returns the tour
+      list — could carry a 'did you mean cast_to_screen' hint; follow-up
+      if it recurs.
+    - stop_and_ask is advisory (not a refusal) by design — see
+      integrations/ada-voice/README.md drop 10.
+  next: >-
+    Deploy via ada-voice edit point (tony-dell) per drop-10 install
+    steps; restart ada-ha-* units. Deploy needs explicit Tony approval —
+    not done in this dispatch.

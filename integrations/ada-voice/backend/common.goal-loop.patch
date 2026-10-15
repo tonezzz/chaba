@@ -1,0 +1,21 @@
+diff --git a/backend/tool_runner/common.py b/backend/tool_runner/common.py
+index 67a35b7..99d790c 100644
+--- a/backend/tool_runner/common.py
++++ b/backend/tool_runner/common.py
+@@ -390,6 +390,16 @@ TOOL_BREAKER_TRIP = int(os.environ.get("ADA_TOOL_BREAKER_TRIP", "2"))
+ TOOL_BREAKER_WINDOW_S = float(os.environ.get("ADA_TOOL_BREAKER_WINDOW_S", "120"))
+ TOOL_BREAKER_OPEN_S = float(os.environ.get("ADA_TOOL_BREAKER_OPEN_S", "300"))
+ 
++# Cross-tool goal-loop breaker (card ada-cast-wrong-target-verbose-loop):
++# the storm breaker trips per tool+error-class, but a failing user goal
++# wanders across tools — 2026-10-14 session 4029a6447f looped 'send GEV
++# to the TV' through cast_to_screen x2 + control_entity + tv_action x2
++# while no single tool tripped. GOAL_LOOP_ASK consecutive counted
++# failures on CONTROL_TOOLS in one session attach a stop_and_ask
++# directive to the result; a clean actuating call clears the streak.
++GOAL_LOOP_ASK = int(os.environ.get("ADA_GOAL_LOOP_ASK", "2"))
++GOAL_LOOP_WINDOW_S = float(os.environ.get("ADA_GOAL_LOOP_WINDOW_S", "600"))
++
+ # Arg-shape failures (model typos — the tool_guide usage hint already
+ # answers them) never count toward the breaker.
+ _BREAKER_ARG_ERRORS = {"ValueError", "KeyError", "TypeError", "AttributeError"}

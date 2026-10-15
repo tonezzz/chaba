@@ -1,0 +1,63 @@
+diff --git a/backend/tool_runner/screens.py b/backend/tool_runner/screens.py
+index fd1532c..85a7eb9 100644
+--- a/backend/tool_runner/screens.py
++++ b/backend/tool_runner/screens.py
+@@ -1261,6 +1261,29 @@ class ScreensMixin:
+             pass
+         return None
+ 
++    @staticmethod
++    def _pub_truth(out: Any, screen: Any) -> Any:
++        """A /pub ok only means the relay accepted the message — with
++        delivered:0 no connected display received it and nothing changed
++        on screen (2026-10-14 session 4029a6447f: two
++        cast_to_screen(screen=1, shortcut='gev') returned ok:true
++        delivered:0 while Ada claimed "opened on screen 1" — the display
++        was offline). Flip to ok:false so the miss narrates as failure
++        and counts toward the breakers. delivered ABSENT means an older
++        relay that doesn't count acks — pass it through untouched."""
++        if (isinstance(out, dict) and out.get("ok") is True
++                and not out.get("delivered", 1)):
++            out = dict(out)
++            out["ok"] = False
++            out["error"] = (
++                f"screen {screen} is not connected — the relay accepted "
++                "the message but no display received it, so nothing "
++                "changed on screen. Do NOT claim it showed. "
++                "cast_to_screen(action='list') shows which displays are "
++                "connected; 'the TV' is tv_action, not a numbered "
++                "screen.")
++        return out
++
+     async def cast_to_screen(self, screen: int | str | None = None,
+                              action: str = "nav",
+                              url: str = "", pane: int | None = None,
+@@ -1381,12 +1404,13 @@ class ScreensMixin:
+             # audio apps like /apps/percussion/ ("background the music").
+             # mode='off' lifts the veil; absent mode defaults to on.
+             on = str(mode or "on").lower() not in {"off", "0", "false", "no"}
+-            return await asyncio.to_thread(
++            return self._pub_truth(await asyncio.to_thread(
+                 self._vcast_api, "/pub",
+                 {"screen": screen,
+-                 "msg": {"type": "bg", "on": on}})
++                 "msg": {"type": "bg", "on": on}}), screen)
+         if action == "say":
+-            return await self.vcast_say(screen, text)
++            return self._pub_truth(
++                await self.vcast_say(screen, text), screen)
+         if action == "shortcut":
+             url = self._cast_shortcut_url(url or shortcut)
+             if not url:
+@@ -1524,8 +1548,9 @@ class ScreensMixin:
+             except Exception:
+                 pass
+         warn = probe.get("warn")
+-        out = await asyncio.to_thread(
+-            self._vcast_api, "/pub", {"screen": screen, "msg": msg})
++        out = self._pub_truth(await asyncio.to_thread(
++            self._vcast_api, "/pub", {"screen": screen, "msg": msg}),
++            screen)
+         if warn:
+             out["frame_warn"] = warn
+         if auto_image:

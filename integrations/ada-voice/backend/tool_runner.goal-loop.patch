@@ -1,0 +1,79 @@
+diff --git a/backend/tool_runner/__init__.py b/backend/tool_runner/__init__.py
+index 05f7a33..84de5c8 100644
+--- a/backend/tool_runner/__init__.py
++++ b/backend/tool_runner/__init__.py
+@@ -62,6 +62,12 @@ class ToolRunner(
+         # scope key keeps one session's outage from breaking another's.
+         self._storm_fails: dict[tuple[str, str, str], list[float]] = {}
+         self._storm_open: dict[tuple[str, str], dict[str, Any]] = {}
++        # Cross-tool goal-loop breaker (card
++        # ada-cast-wrong-target-verbose-loop): consecutive counted
++        # failures on CONTROL_TOOLS per session scope — the storm
++        # breaker is per-tool, a failing user goal wanders across
++        # tools. {scope: [timestamps]}
++        self._goal_loops: dict[str, list[float]] = {}
+         # Voice session that invoked the current tool call; the realtime
+         # provider sets this so memory writes carry provenance.
+         self.session_id: str | None = None
+@@ -586,6 +592,7 @@ class ToolRunner(
+                            and getattr(dyn_spec, "policy", None) == "confirmed"))
+         self._log_change_request(name, call_args, result, ident)
+         result = self._denial_breaker(name, call_args, result)
++        result = self._goal_loop(name, result)
+         result = self._usage_hint(name, result)
+         return await self._capture_reminder(name, result)
+ 
+@@ -799,6 +806,53 @@ class ToolRunner(
+                 name, scope, len(hits), cls,
+                 int(TOOL_BREAKER_WINDOW_S), int(TOOL_BREAKER_OPEN_S))
+ 
++    # -- cross-tool goal loop --------------------------------------------
++
++    def _goal_loop(self, name: str, result: Any) -> Any:
++        """Attach a stop_and_ask directive when actuating calls keep
++        failing (card ada-cast-wrong-target-verbose-loop). The storm
++        breaker trips per tool+error-class; a failing user goal wanders
++        ACROSS tools — 2026-10-14 session 4029a6447f looped 'send GEV to
++        the TV' through cast_to_screen x2, control_entity and tv_action
++        while no single tool tripped, and Ada narrated each miss at
++        length. GOAL_LOOP_ASK consecutive counted failures on
++        CONTROL_TOOLS in one session scope earn the directive — 'tell
++        the user it fails and ask', not a hard block: an explicit 'try
++        again' stays legal. A clean or uncounted actuating result clears
++        the streak."""
++        if name not in CONTROL_TOOLS or not isinstance(result, dict):
++            return result
++        if result.get("circuit_open"):
++            return result  # the storm breaker already spoke
++        cls = _storm_error_class(result)
++        scope = self._storm_scope()
++        loops = self.__dict__.setdefault("_goal_loops", {})
++        if cls is None:
++            # A landed action — or a gate asking the user (needs_confirm
++            # classifies uncounted) — ends the streak: the loop was
++            # either fixed or correctly handed to the user.
++            loops.pop(scope, None)
++            return result
++        now = time.monotonic()
++        hits = [t for t in loops.get(scope, [])
++                if now - t < GOAL_LOOP_WINDOW_S]
++        hits.append(now)
++        loops[scope] = hits
++        if len(hits) >= GOAL_LOOP_ASK:
++            result = dict(result)
++            result["stop_and_ask"] = (
++                f"{len(hits)} action attempts in a row failed this "
++                f"session (latest: {name}). STOP — do not try another "
++                "tool, target, or phrasing on your own: tell the user "
++                "in ONE short sentence what is failing and ask what "
++                "they want; stay terse until they give a fresh "
++                "instruction.")
++            logger.warning(
++                "goal loop: %d consecutive actuating failures scope=%s "
++                "(latest %s) — stop_and_ask attached",
++                len(hits), scope, name)
++        return result
++
+     # Tools that already carry capture state — a reminder on them would
+     # be noise (the capture IS the subject of these calls). The absorbed
+     # vcast_list/vcast_say names ride in as cast_to_screen actions, so
