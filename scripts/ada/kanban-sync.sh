@@ -7,7 +7,9 @@
 #      runner-fleet-health -> runner-auto-* cards
 #      (all write files under docs/ssot/kanban/cards/)
 #   2b. request-sweep: open requests targeting tony unanswered >12h get
-#      ONE batched escalation push (stamps escalated_at, never repeats)
+#      ONE batched escalation push (stamps escalated_at, never repeats);
+#      answer-sweep: answered requests execute known-verb actions
+#      (queue/close/hold) — the triage half of the request lifecycle
 #   3. commit + push ONLY cards/ changes the health checks made
 #   4. kanban-cms: render the live board into the dev-kanban CMS page
 #
@@ -46,6 +48,10 @@ python3 scripts/board/runner-fleet-health.py || echo "runner-fleet-health failed
 python3 scripts/ada/disk-trend-watch.py --reports-root "$SRC/reports" \
     || echo "disk-trend-watch failed (non-fatal)"
 python3 scripts/board/request-sweep.py || echo "request-sweep failed (non-fatal)"
+# answer-sweep: the other half of the request lifecycle — answered
+# requests whose answer is a known verb execute their board action
+# (queue/close/hold; unmapped answers stay flagged for triage)
+python3 scripts/board/answer-sweep.py || echo "answer-sweep failed (non-fatal)"
 # release-lifecycle gate check: bounce `release:`-tracked cards in
 # review/done that lack the required comms-tag evidence; stamps soak_until
 # on first sight in review (the beta soak timer).

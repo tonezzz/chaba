@@ -1,0 +1,73 @@
+id: answer-sweep-impl
+title: Answer-sweep — answered board requests execute known verbs
+date: 2026-10-15
+card: knb-answer-action-triage
+host: idc03
+status: implemented
+
+goal: >
+  /respond recorded answers but nothing acted on them — answered asks
+  piled up under awaiting_action with the sweep only logging
+  'needs triage'. Implement the card's suggested policy (auto-verb):
+  known-verb answers execute their board action at sweep time; answers
+  that are decisions, not verbs, stay flagged for human triage.
+
+policy_decision: >
+  The card's open request answer-triage-policy listed auto-verb (★
+  suggested), manual, per-option. Dispatched with the ★ default, so
+  auto-verb is implemented — and the per-option upgrade path ships with
+  it: dict options may carry `action: queue|retry|close|hold|none`,
+  which executes verbatim when that option wins (per-option without
+  forcing a flag day on existing emitters). Tony can still answer the
+  request to overrule; the machinery supports all three.
+
+delivered:
+  - scripts/board/answer-sweep.py: >
+      New sweep riding kanban-sync (15min, chaba-kanban-sync worktree).
+      Scans answered, unexecuted, unowned requests + card-level ask on
+      non-done/lab cards. Resolution order: dict-option `action:` field,
+      else dict-option id, else first word of the answer head (text
+      before ' — ') -> VERBS table {queue,dispatch,proceed,go,run,start,
+      build,yes,yeah,approve,approved,continue -> queue; retry; close,
+      done,resolve,retire,archive -> close; hold,park,defer,wait,later,
+      keep,stay,backlog -> hold; superseded,duplicate,self-resolved,
+      merged,n/a,none,nothing,skip,no-op -> 'none' receipt-only stamp}.
+      Soft assent (yes/approve/...) does not fire as unmatched free text
+      on an options ask. One verb per card per pass; conflicting verbs
+      defer the card; 'close' defers through dispatch_repos.guard (an
+      erred guard defers, never allows — stricter than the board
+      button); verbs defer while action is queued/starting/running.
+      Writes hold /tmp/board-api.lock; stamps executed: '<date> <verb>';
+      clears awaiting_action when nothing remains to triage, and heals
+      the flag onto cards whose pre-flag answers are still unexecuted.
+      Deferred-verb comms dedup against the card's last 8 entries.
+      --dry-run and ANSWER_SWEEP_MAX (default 10).
+  - scripts/ada/kanban-sync.sh: >
+      Runs answer-sweep.py right after request-sweep.py; tick's existing
+      `git add docs/ssot/kanban/cards/` persists the writes.
+  - docs/ssot/kanban/ssot.kanban.yml: >
+      requests[] schema gains `executed` and the option `action:` field;
+      /respond endpoint doc records the sweep as the triage step.
+  - docs/ssot/infrastructure/ssot.jobs.yml: >
+      kanban-sync note lists answer-sweep.py.
+  - tests/board/test_answer_sweep.py: >
+      22 unittest cases — classification (option action fields, option
+      ids, free-text verbs, soft-assent gate, decision answers unmapped,
+      noop markers), pending filters (owned prefixes, executed, open,
+      card-level ask), and triage (queue/hold/close execute, conflict
+      defers, armed cards, budget cap, flag semantics).
+
+verification: >
+  python3 -m unittest tests.board.test_answer_sweep — 22 pass. Dry-run
+  + locked pass over a 737-card live snapshot (/apps/board-api/cards):
+  10 executions (queue stamps on armed cards, real queue/hold flips,
+  none-receipts), flags healed onto unmapped-answer cards, stale
+  awaiting_action cleared on done cards, second pass fully idempotent.
+  Live takeover happens on the first kanban-sync tick after merge.
+
+notes: >
+  Verb table deliberately conservative — decision answers (two-pools,
+  move-cache, spend/hardware picks) remain awaiting_action; the
+  needs-you 'answered — needs triage' lane keeps showing them. Emitters
+  wanting auto-execution should declare `action:` on their options
+  going forward.
