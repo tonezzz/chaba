@@ -7,10 +7,13 @@ Parents carry the `synthesis` category + `digest`/`sources:N` tags; raw
 children keep their desk categories and source tags.
 
 Clustering: embedding cosine similarity (ollama-nomic-embed via LiteLLM —
-local, free; catches Thai paraphrases) over title+lead. Union-find merge,
-threshold --sim (default 0.80). Falls back to char-4-gram containment
-when embeddings are unavailable. Items already parented keep their
-parent and can pull new members into that cluster.
+local, free; catches Thai paraphrases) over titles only (content embeddings
+over-merge on shared boilerplate). Union-find merge, threshold --sim
+(default 0.85). Falls back to char-4-gram containment when embeddings are
+unavailable. Items already parented keep their parent and pull new members
+into that cluster; the parent regenerates, so an evolving story (rate
+2,000 -> 1,900 -> 1,800) grows a chronological "Developments" timeline
+under one parent instead of forking digests.
 
 LLM: gemini-3.5-flash-lite via scripts/ada/gemini_rest.py. Key from
 GEMINI_API_KEY env, else ~/.config/secrets/mddb-gemini.env or
@@ -197,19 +200,25 @@ def cluster(items, threshold):
 
 
 PROMPT = """You are a news-digest writer. Below are {n} items covering the same
-story from different outlets (JSON list of {{source, title, text}}).
+ongoing story from different outlets (JSON list of {{date, source, title,
+text}}), in chronological order. The items may be follow-up reports on one
+evolving story — facts like figures, locations or status can change between
+them (e.g. a dam discharge rate dropping from 1,900 to 1,800).
 
 Return ONLY a JSON object:
 {{"topic": "short story label (max ~8 words)",
-  "brief": "2-3 sentence neutral synthesis of what happened",
-  "diffs": ["one line per notable difference in coverage/framing — source name first"]}}
+  "brief": "2-3 sentence neutral synthesis of the LATEST state of the story, "
+           "mentioning what changed most recently",
+  "diffs": ["one line per notable difference in coverage/framing or per "
+            "material fact change between updates — source name first"]}}
 
 Items:
 {items}"""
 
 
 def synthesize(members, key):
-    payload = [{"source": m.get("meta", {}).get("source_feed") or "feed",
+    payload = [{"date": m.get("date", "")[:16],
+                "source": m.get("meta", {}).get("source_feed") or "feed",
                 "title": norm(m["title"]["rendered"])[:200],
                 "text": norm(m["content"]["rendered"])[:1200]}
                for m in members]
@@ -220,16 +229,28 @@ def synthesize(members, key):
     return out or {}
 
 
+def _when(m):
+    # site-local publish time, e.g. "14 Oct 20:41"
+    try:
+        return datetime.strptime(m["date"], "%Y-%m-%dT%H:%M:%S") \
+            .strftime("%d %b %H:%M")
+    except (KeyError, ValueError):
+        return "?"
+
+
 def render_content(topic, brief, diffs, members):
+    members = sorted(members, key=lambda m: m.get("date", ""))
     parts = [f"<p>{html.escape(brief)}</p>" if brief else ""]
     if diffs:
         lis = "".join(f"<li>{html.escape(d)}</li>" for d in diffs)
         parts.append(f"<p><strong>Coverage notes</strong></p><ul>{lis}</ul>")
     lis = "".join(
-        f'<li><a href="{html.escape(m["link"])}">{html.escape(norm(m["title"]["rendered"])[:90])}</a>'
+        f'<li>{html.escape(_when(m))} — '
+        f'<a href="{html.escape(m["link"])}">'
+        f'{html.escape(norm(m["title"]["rendered"])[:90])}</a>'
         f' — {html.escape(m.get("meta", {}).get("source_feed") or "feed")}</li>'
         for m in members)
-    parts.append(f"<p><strong>Sources ({len(members)})</strong></p><ul>{lis}</ul>")
+    parts.append(f"<p><strong>Developments</strong></p><ul>{lis}</ul>")
     return "\n".join(p for p in parts if p)
 
 
