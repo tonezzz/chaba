@@ -8,5 +8,6 @@ ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/nest-overview.py
 WorkingDirectory=%h/CascadeProjects/chaba-tony-dell
-Environment="KANBAN_BRIEF_LLM_URL=http://100.75.102.88:11434/v1"
-Environment="KANBAN_BRIEF_LLM_MODEL=phi3-gguf:latest"
+EnvironmentFile=%h/.config/secrets/litellm-chaba.env
+Environment="KANBAN_BRIEF_LLM_URL=http://100.102.134.91:4000/v1"
+Environment="KANBAN_BRIEF_LLM_MODEL=chat-local"

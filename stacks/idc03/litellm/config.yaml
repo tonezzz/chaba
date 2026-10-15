@@ -74,6 +74,12 @@ model_list:
       model: ollama_chat/moondream
       api_base: http://100.102.134.91:11434
 
+  # idc02 ollama (podman :11434, free-lane compute OFF prod host)
+  - model_name: ollama-qwen7b
+    litellm_params:
+      model: ollama_chat/qwen2.5:7b-instruct
+      api_base: http://100.123.163.11:11434
+
   # ── colab GPU worker (scripts/colab/colab-serve-worker.ipynb) ─────
   # ollama on a Colab T4, reverse-SSH'd onto idc03 loopback :11434 by
   # colabtun@ (nologin, permitopen-only). Ephemeral by design — when the
@@ -115,6 +121,10 @@ model_list:
     litellm_params:
       model: ollama/nomic-embed-text
       api_base: http://100.102.134.91:11434
+  - model_name: ollama-nomic-embed
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: http://100.123.163.11:11434
 
   # ── job classes (call these names; SSOT owns the chains) ─────────
   - model_name: tool-call
@@ -137,6 +147,10 @@ model_list:
     litellm_params:
       model: gemini/gemini-3.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: chat-local
+    litellm_params:
+      model: ollama_chat/qwen2.5:7b-instruct
+      api_base: http://100.123.163.11:11434
   - model_name: bench
     litellm_params:
       model: gemini/gemini-3.5-flash-lite
@@ -168,6 +182,7 @@ router_settings:
     - voice-aux: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-2.5-flash-lite: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - classify: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - chat-local: [ollama-llama3.2, colab-gemma3]
     - bench: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]
     - gemini-3.1-flash-image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]

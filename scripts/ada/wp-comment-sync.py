@@ -24,7 +24,12 @@ docs/ssot/infrastructure/ssot.jobs.yml):
                         digest's `situation` meta + situation-* tag are set
                         via news-situation.py's shared transition (meta only,
                         never post content) and the ack states the change —
-                        never silent. Other news comments -> digest.
+                        never silent. When the regex table misses, a
+                        chat-local classifier reads intent (free; strict
+                        one-word contract, ambiguity -> none) so phrasing
+                        like "keep an eye on this flood" still lands —
+                        WCS_CLASSIFY=0 disables. Other news comments ->
+                        digest.
        cam|bench|render_job (and anything else) -> digest only
                         (digest.jsonl + an events.md line)
   3. ack   reply in-thread via REST (wcs-ack marker so our own replies
@@ -42,6 +47,9 @@ Stdlib + PyYAML only. Env:
   WCS_STATE_DIR           default ~/.local/share/wp-comment-sync
   ADA_MEMORY_PENDING_DIR  default ~/.local/share/ada/memory-pending
   ADA_EVENTS_FILE         default ~/.local/share/ada/events.md
+  WCS_CLASSIFY            0 disables the chat-local intent fallback
+  WCS_CLASSIFY_MODEL      default chat-local (LiteLLM alias)
+  LITELLM_URL/LITELLM_KEY else read from ~/.config/secrets/mddb-gemini.env
 """
 from __future__ import annotations
 
@@ -139,6 +147,57 @@ def parse_situation_command(text):
     return None
 
 
+# Free-text fallback — when the regex table misses, the chat-local lane
+# (qwen2.5:7b on idc02 via the LiteLLM gateway; card chat-local-free-lane)
+# reads intent. Strict one-word contract: anything outside LABELS maps to
+# None -> digest lane exactly as before. WCS_CLASSIFY=0 disables.
+CLASSIFY_LABELS = {"pin": "pinned", "watch": "watching",
+                   "unpin": DEMOTE, "unwatch": "", "none": None}
+CLASSIFY_PROMPT = """A member left this comment on a news digest post. Does it
+ask us to change how we TRACK this story? Reply with exactly one word:
+  pin     - pin it (top-priority tracking)
+  watch   - watch/follow/keep an eye on it
+  unpin   - stop pinning it (one step down, keep watching)
+  unwatch - stop tracking it entirely
+  none    - not a tracking request (remark, question, thanks, narrative
+            mention like "glad they pinned that")
+
+Comment: {text}"""
+
+
+def _litellm_chat():
+    """Sibling scripts/ada/litellm_chat.py — OpenAI-style gateway caller."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "litellm_chat.py")
+    spec = importlib.util.spec_from_file_location("litellm_chat", path)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def classify_situation_intent(text):
+    """Free-text comment -> same contract as parse_situation_command, via
+    chat-local. Returns None unless the model answers a known label."""
+    if os.environ.get("WCS_CLASSIFY", "1").lower() in ("0", "no", "off"):
+        return None
+    text = " ".join((text or "").split())[:400]
+    if len(text) < 4:
+        return None
+    try:
+        out = _litellm_chat().chat(
+            CLASSIFY_PROMPT.format(text=text),
+            model=os.environ.get("WCS_CLASSIFY_MODEL", "chat-local"),
+            temperature=0, max_tokens=8, timeout=30,
+            label="wp-comment-classify")
+    except Exception as e:
+        print(f"  classify failed: {e}", file=sys.stderr)
+        return None
+    token = (out or "").strip().lower().strip(".,!:`\"'").split()
+    label = token[0] if token else ""
+    return CLASSIFY_LABELS.get(label) if label in CLASSIFY_LABELS else None
+
+
 def _news_situation():
     """Sibling scripts/ada/news-situation.py — shared flag transitions."""
     import importlib.util
@@ -150,10 +209,11 @@ def _news_situation():
     return m
 
 
-def apply_situation(c, post, target, dry_run):
+def apply_situation(c, post, target, dry_run, via="command"):
     """news + pin/unpin/watch command -> set the digest's situation flag.
     The ONE lane where a member comment mutates WP state (meta/tags only —
-    content untouched); the in-thread ack makes it loud."""
+    content untouched); the in-thread ack makes it loud. `via` notes when
+    chat-local intent classification (not a regex command) drove it."""
     cid = c["id"]
     who = c.get("author_name") or f"wp-user-{c.get('author')}"
     post_obj = {"id": post.get("id"), "meta": post.get("meta") or {},
@@ -168,7 +228,9 @@ def apply_situation(c, post, target, dry_run):
             target = ns.demote_step(ns.effective_state(post_obj))
         old, new, changed = ns.set_state(
             nswp, post_obj, target, by=f"comment:{who}",
-            note=f"comment #{cid}", dry_run=dry_run)
+            note=f"comment #{cid}" + (f" via {via}" if via != "command"
+                                      else ""),
+            dry_run=dry_run)
     except (Exception, SystemExit) as e:
         print(f"  situation FAIL comment={cid}: {e}", file=sys.stderr)
         return f"sit:error:{cid}"
@@ -402,10 +464,14 @@ def route(c, post, dry_run):
     lane = LANES.get(post.get("type") or "", LANE_DIGEST)
     if lane == LANE_SITUATION:
         target = _situation_target(c)
+        via = "command"
+        if target is None:
+            via = "chat-local"
+            target = classify_situation_intent(comment_text(c))
         if target is None:
             lane = LANE_DIGEST       # ordinary comment on a news post
         else:
-            return lane, apply_situation(c, post, target, dry_run)
+            return lane, apply_situation(c, post, target, dry_run, via=via)
     if lane == LANE_ADA:
         return lane, stage_ada_suggestion(c, post, dry_run)
     if lane == LANE_RECORD:
