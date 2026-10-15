@@ -15,17 +15,21 @@ summary: |
   ticker streaming the latest card comms. No backend/board-api changes.
 
 deliverables:
-  - scripts/render-board2.py — POLL_SECONDS 30 -> 10 (JS poll of the
+  - >-
+    scripts/render-board2.py — POLL_SECONDS 30 -> 10 (JS poll of the
     already-regenerating cards.json; no page reload, DOM diff in place).
-  - column-diff flash — load() snapshots card->column before swapping DATA;
+  - >-
+    column-diff flash — load() snapshots card->column before swapping DATA;
     cards that entered the board or changed column land in movedIn and their
     rows get .just-moved (1.8s blue flash) plus a "⇄ <column>" badge on the
     next render. Flags reset each poll, so tab switches inside the window
     re-flash.
-  - per-column counters + doing pulse — tab buttons already render counts
+  - >-
+    per-column counters + doing pulse — tab buttons already render counts
     (they are the counters); the Doing tab gains .doing-hot (1.6s green ring
     pulse) whenever its count > 0.
-  - floating event ticker — #ticker fixed at bottom (26px) with "事件流"
+  - >-
+    floating event ticker — #ticker fixed at bottom (26px) with "事件流"
     label; renderTicker() merges comms across all cards (rescued /
     test-gate / held / deployed / comments — they're all comm lines), sorts
     desc by at, takes 30, and scrolls them via a translateX(-50%) seamless
@@ -33,7 +37,8 @@ deliverables:
     item signature changes so the animation keeps running between polls;
     duration scales with item count (min 30s). Main pane gets pb-8 so the
     bar never covers rows.
-  - live-dot blip — the nav dot restarts a scale animation every successful
+  - >-
+    live-dot blip — the nav dot restarts a scale animation every successful
     poll for an extra "alive" cue; red on fetch failure as before.
 
 decisions:

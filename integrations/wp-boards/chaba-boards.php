@@ -3,16 +3,18 @@
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
  *              contact, reminder, bench, report, xlate, cam, render_job, news)
- *              + member-post translation + member-gated media endpoint.
+ *              + member-post translation + member-gated media endpoint
+ *              + usage pull-render worker (pulls the idc02 usage feed into
+ *              a report CPT post; Plesk Scheduled Task or WP-Cron).
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.4.2
+ * Version: 0.5.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.4.2';
+const CHABA_BOARDS_VER = '0.5.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -610,3 +612,229 @@ add_action('wp_ajax_chaba_prompt_assist', function () {
     $out === '' ? wp_send_json_error('empty model response', 502)
                 : wp_send_json_success($out);
 });
+
+// ============================================================================
+// Usage pull-render worker (card wp-usage-pull-render-plesk-worker, OPS-0661)
+// — pulls the aggregate usage feed from the token-gated idc02 caddy-edge path
+// and buckets it into WP: one rolling `report` post (slug usage-ledger,
+// private) + an ops-event heartbeat (slug heartbeat-usage-pull) every run.
+// idc02 wp-watch verifies heartbeat freshness — the alert path never crosses
+// this host.
+//
+// Feed = chaba-usage/v1 from scripts/litellm/usage-feed.py on idc03
+// (day x lane rows from usage.jsonl + LiteLLM_SpendLogs; aggregates ONLY —
+// it crosses the public edge). All bucketing/rendering happens HERE
+// (Plesk-side CPU, Tony's preference).
+//
+// Invocation (either):
+//   a) Plesk Scheduled Task -> php .../plugins/chaba-boards/usage-pull-cron.php
+//      (bootstraps WP, calls chaba_usage_pull_run(); stdout lands in the task
+//      log) — or wp-cli:  wp eval 'chaba_usage_pull_run();'
+//   b) WP-Cron fallback: event chaba_usage_pull on the hourly schedule —
+//      armed on init; fire by fetching /wp/wp-cron.php?doing_wp_cron if the
+//      Plesk task isn't set up yet.
+// Config constants in wp-config.php:
+//   CHABA_USAGE_FEED_URL   e.g. https://monitor.surf-thailand.com/feeds/usage.json
+//   CHABA_USAGE_FEED_TOKEN bearer token enforced by the idc02 Caddyfile
+// ============================================================================
+
+function chaba_usage_feed_url(): string {
+    return defined('CHABA_USAGE_FEED_URL') ? CHABA_USAGE_FEED_URL : '';
+}
+function chaba_usage_feed_token(): string {
+    return defined('CHABA_USAGE_FEED_TOKEN') ? CHABA_USAGE_FEED_TOKEN : '';
+}
+
+// Upsert-by-slug: CPT + slug -> post id (0 when absent).
+function chaba_post_id_by_slug(string $type, string $slug): int {
+    $q = get_posts(['post_type' => $type, 'name' => $slug,
+                    'post_status' => 'any', 'posts_per_page' => 1,
+                    'fields' => 'ids']);
+    return $q ? (int) $q[0] : 0;
+}
+
+// ops-event heartbeat — every run (success AND failure) bumps `modified` on
+// the heartbeat post; the idc02 watcher reads `modified` anonymously via REST.
+function chaba_usage_heartbeat(string $status, string $detail): void {
+    if (!post_type_exists('ops-event')) return;
+    $body = sprintf(
+        "usage-pull %s — %s\nfeed: %s\nat: %s",
+        $status, $detail,
+        chaba_usage_feed_url() ?: '(unset)',
+        current_time('mysql'));
+    $args = ['post_type' => 'ops-event', 'post_name' => 'heartbeat-usage-pull',
+             'post_title' => 'ops-h3 usage-pull', 'post_content' => $body,
+             'post_status' => 'publish'];
+    $id = chaba_post_id_by_slug('ops-event', 'heartbeat-usage-pull');
+    if ($id) {
+        $args['ID'] = $id;
+        wp_update_post($args);
+    } else {
+        wp_insert_post($args);
+    }
+}
+
+// Pivot feed rows into day x lane buckets and render the report HTML.
+function chaba_usage_render(array $feed): string {
+    $days = [];
+    foreach (($feed['usage'] ?? []) as $r) {
+        $d = (string) ($r['date'] ?? '');
+        if ($d === '') continue;
+        $l = (string) ($r['lane'] ?? 'ada-backends');
+        $days[$d][$l]['turns']     = ($days[$d][$l]['turns'] ?? 0) + (int) ($r['turns'] ?? 0);
+        $days[$d][$l]['sessions']  = ($days[$d][$l]['sessions'] ?? 0) + (int) ($r['sessions'] ?? 0);
+        $days[$d][$l]['aux_calls'] = ($days[$d][$l]['aux_calls'] ?? 0) + (int) ($r['aux_calls'] ?? 0);
+        $days[$d][$l]['tok_in']    = ($days[$d][$l]['tok_in'] ?? 0) + (int) ($r['tok_in'] ?? 0);
+        $days[$d][$l]['tok_out']   = ($days[$d][$l]['tok_out'] ?? 0) + (int) ($r['tok_out'] ?? 0);
+        $days[$d][$l]['est_usd']   = ($days[$d][$l]['est_usd'] ?? 0) + (float) ($r['est_usd'] ?? 0);
+    }
+    foreach (($feed['spend'] ?? []) as $r) {
+        $d = (string) ($r['date'] ?? '');
+        if ($d === '') continue;
+        $l = (string) ($r['lane'] ?? 'unknown');
+        $days[$d][$l]['calls']     = ($days[$d][$l]['calls'] ?? 0) + (int) ($r['calls'] ?? 0);
+        $days[$d][$l]['spend_usd'] = ($days[$d][$l]['spend_usd'] ?? 0) + (float) ($r['spend_usd'] ?? 0);
+        $m = (string) ($r['model'] ?? '?');
+        $days[$d][$l]['models'][$m] = ($days[$d][$l]['models'][$m] ?? 0) + (int) ($r['calls'] ?? 0);
+    }
+    krsort($days);
+    $lanes = [];
+    foreach ($days as $d => $ls) {
+        foreach ($ls as $l => $_) $lanes[$l] = true;
+    }
+    $lanes = array_keys($lanes);
+    sort($lanes);
+
+    $h = '<p><em>Feed: ' . esc_html((string) ($feed['feed'] ?? '?'))
+       . ' generated ' . esc_html((string) ($feed['generated_at'] ?? '?'))
+       . ' — ' . (int) ($feed['window_days'] ?? 0) . 'd window. '
+       . 'usage_jsonl: ' . esc_html((string) ($feed['sources']['usage_jsonl'] ?? '?'))
+       . '; litellm: ' . esc_html((string) ($feed['sources']['litellm_spend'] ?? '?'))
+       . '.</em></p>';
+    $h .= '<table style="border-collapse:collapse;font-size:.9em"><thead><tr>'
+        . '<th style="text-align:left;padding:2px 10px 2px 0">date</th>'
+        . '<th style="text-align:left;padding:2px 10px 2px 0">lane</th>'
+        . '<th style="padding:2px 10px 2px 0">sessions</th>'
+        . '<th style="padding:2px 10px 2px 0">turns</th>'
+        . '<th style="padding:2px 10px 2px 0">aux</th>'
+        . '<th style="padding:2px 10px 2px 0">gw calls</th>'
+        . '<th style="text-align:right;padding:2px 10px 2px 0">tok in/out</th>'
+        . '<th style="text-align:right;padding:2px 10px 2px 0">est $</th>'
+        . '<th style="text-align:right;padding:2px 10px 2px 0">spend $</th>'
+        . '<th style="text-align:left;padding:2px 0">models</th></tr></thead><tbody>';
+    $tot = ['sessions' => 0, 'turns' => 0, 'aux_calls' => 0, 'calls' => 0,
+            'tok_in' => 0, 'tok_out' => 0, 'est_usd' => 0.0, 'spend_usd' => 0.0];
+    $n = 0;
+    foreach ($days as $d => $ls) {
+        foreach ($lanes as $l) {
+            $c = $ls[$l] ?? null;
+            if (!$c) continue;
+            $n++;
+            foreach ($tot as $k => $_) {
+                $tot[$k] += $c[$k] ?? 0;
+            }
+            $models = '';
+            if (!empty($c['models'])) {
+                arsort($c['models']);
+                $pairs = [];
+                foreach (array_slice($c['models'], 0, 4, true) as $m => $cnt) {
+                    $pairs[] = esc_html($m) . '×' . $cnt;
+                }
+                $models = implode(', ', $pairs);
+            }
+            $h .= '<tr><td style="padding:1px 10px 1px 0">' . esc_html($d) . '</td>'
+                . '<td style="padding:1px 10px 1px 0">' . esc_html($l) . '</td>'
+                . '<td style="text-align:center">' . (int) ($c['sessions'] ?? 0) . '</td>'
+                . '<td style="text-align:center">' . (int) ($c['turns'] ?? 0) . '</td>'
+                . '<td style="text-align:center">' . (int) ($c['aux_calls'] ?? 0) . '</td>'
+                . '<td style="text-align:center">' . (int) ($c['calls'] ?? 0) . '</td>'
+                . '<td style="text-align:right">' . number_format((int) ($c['tok_in'] ?? 0))
+                . ' / ' . number_format((int) ($c['tok_out'] ?? 0)) . '</td>'
+                . '<td style="text-align:right">$' . number_format((float) ($c['est_usd'] ?? 0), 2) . '</td>'
+                . '<td style="text-align:right">$' . number_format((float) ($c['spend_usd'] ?? 0), 2) . '</td>'
+                . '<td>' . $models . '</td></tr>';
+        }
+    }
+    if ($n === 0) {
+        $h .= '<tr><td colspan="10" style="padding:4px 0;opacity:.6">no rows in feed window</td></tr>';
+    }
+    $h .= '</tbody><tfoot><tr style="border-top:1px solid #888;font-weight:600">'
+        . '<td colspan="2" style="padding:2px 10px 2px 0">total</td>'
+        . '<td style="text-align:center">' . $tot['sessions'] . '</td>'
+        . '<td style="text-align:center">' . $tot['turns'] . '</td>'
+        . '<td style="text-align:center">' . $tot['aux_calls'] . '</td>'
+        . '<td style="text-align:center">' . $tot['calls'] . '</td>'
+        . '<td style="text-align:right">' . number_format($tot['tok_in'])
+        . ' / ' . number_format($tot['tok_out']) . '</td>'
+        . '<td style="text-align:right">$' . number_format($tot['est_usd'], 2) . '</td>'
+        . '<td style="text-align:right">$' . number_format($tot['spend_usd'], 2) . '</td>'
+        . '<td></td></tr></tfoot></table>';
+    $h .= '<p style="opacity:.6;font-size:.85em">est $ = usage.jsonl '
+        . 'modality rates (spend-ledger table); spend $ = LiteLLM '
+        . 'SpendLogs invoiced cost. Pulled ' . esc_html(current_time('mysql'))
+        . ' by chaba-boards ' . CHABA_BOARDS_VER . '.</p>';
+    return $h;
+}
+
+function chaba_usage_pull_run(): string {
+    $url   = chaba_usage_feed_url();
+    $token = chaba_usage_feed_token();
+    if ($url === '') {
+        chaba_usage_heartbeat('error', 'CHABA_USAGE_FEED_URL not set in wp-config.php');
+        return 'error: CHABA_USAGE_FEED_URL unset';
+    }
+    $resp = wp_remote_get($url, [
+        'timeout' => 30,
+        'headers' => array_filter([
+            'Authorization' => $token !== '' ? "Bearer $token" : '',
+            'Accept'        => 'application/json',
+            'User-Agent'    => 'Mozilla/5.0 (compatible; chaba-usage-pull/' . CHABA_BOARDS_VER . ')',
+        ]),
+    ]);
+    if (is_wp_error($resp)) {
+        $m = $resp->get_error_message();
+        chaba_usage_heartbeat('error', "fetch failed: $m");
+        return "error: $m";
+    }
+    $code = wp_remote_retrieve_response_code($resp);
+    $feed = json_decode(wp_remote_retrieve_body($resp), true);
+    if ($code !== 200 || !is_array($feed) || ($feed['feed'] ?? '') !== 'chaba-usage/v1') {
+        $m = "feed http $code / bad payload";
+        chaba_usage_heartbeat('error', $m);
+        return "error: $m";
+    }
+
+    $html = chaba_usage_render($feed);
+    $args = ['post_type' => 'report', 'post_name' => 'usage-ledger',
+             'post_title' => 'Report — LLM usage ledger',
+             'post_content' => $html, 'post_status' => 'private'];
+    $id = chaba_post_id_by_slug('report', 'usage-ledger');
+    if ($id) {
+        $args['ID'] = $id;
+        wp_update_post($args);
+    } else {
+        $id = wp_insert_post($args);
+    }
+    if (!$id || is_wp_error($id)) {
+        chaba_usage_heartbeat('error', 'report upsert failed');
+        return 'error: report upsert failed';
+    }
+    update_post_meta($id, 'report_type', 'usage-ledger');
+    update_post_meta($id, 'period', 'rolling-' . (int) ($feed['window_days'] ?? 0) . 'd');
+    update_post_meta($id, 'source_key', 'idc03-usage-feed');
+
+    $detail = sprintf('%d usage + %d spend rows, feed gen %s, report #%d',
+        count($feed['usage'] ?? []), count($feed['spend'] ?? []),
+        (string) ($feed['generated_at'] ?? '?'), $id);
+    chaba_usage_heartbeat('ok', $detail);
+    return "ok: $detail";
+}
+
+// WP-Cron fallback — armed on init; Plesk can also fire it by fetching
+// wp-cron.php, but the direct-PHP task (usage-pull-cron.php) is primary.
+add_action('init', function () {
+    if (!wp_next_scheduled('chaba_usage_pull')) {
+        wp_schedule_event(time() + 300, 'hourly', 'chaba_usage_pull');
+    }
+});
+add_action('chaba_usage_pull', 'chaba_usage_pull_run');
