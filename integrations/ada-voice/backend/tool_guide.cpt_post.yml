@@ -1,0 +1,29 @@
+# tool_guide.yml snippet — append at top level
+# (<ada-voice>/backend/tool_guide.yml).
+#
+# cpt_post (2026-10-15, card line-cpt-writer-router): LINE save-asks
+# classify to a chaba-boards CPT. The model reads a receipt photo
+# in-turn (LINE images arrive as image turns) and passes the extracted
+# fields — no separate OCR step in the tool.
+
+cpt_post: >-
+  Structured save on the boards WP site — pick kind= from the ask:
+  expense for a receipt photo or 'spent 320 on fuel' (read the receipt
+  in the turn; pass amount/currency/vendor/receipt_date/paid_by —
+  currency defaults to THB), contact for 'save this contact' (name in
+  title=, phone/line_id/role=), reminder for 'remind us …' (title= +
+  due_date/assignee), asset for 'asset: CR-V model X' (name in title= +
+  model/serial/purchase_date/warranty_until/vendor= — attach a photo of
+  the item or its manual via media_url=). The tool builds the standard
+  title itself; records land PRIVATE (member login to view) — status=
+  'publish' only when the member wants it public. After a photo turn
+  pass the (media_url: …) shown in that turn as media_url=. person=
+  defaults to the lane's own member — kk's lane saves as kk — set it
+  only when saving for someone else. contact/asset upsert by slug:
+  re-saving the same contact UPDATES it; expenses and reminders always
+  create a new record. Free-form 'post this' asks still go to wp_post.
+  meta_written in the result lists what actually stored — if the note
+  says meta was skipped, tell the member the record saved but the
+  fields need the plugin update; never claim fields that were dropped.
+  If ok:false mentions missing credentials, the site key isn't
+  configured — don't retry.

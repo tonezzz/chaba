@@ -52,16 +52,19 @@ post_types:
   # usage-pull-cron.php (or wp-cli eval chaba_usage_pull_run(); WP-Cron
   # hourly fallback). Card wp-usage-pull-render-plesk-worker / OPS-0661;
   # design: docs/ssot/jobs/infrastructure/2026-10-15-usage-pull-render-plesk.yml
+  # v0.5.1 (repo, pending deploy): saved_by meta on asset/expense/
+  # contact/reminder (+ 'By' admin column) — cpt_post attributes each
+  # LINE save to a member. Card line-cpt-writer-router.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
   # path. The old standalone /tmp/chaba-translate.php is retired — its
   # TH<->EN translation hooks merged into this plugin (xlate CPT +
   # save_post_post Gemini call).
-  asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor"
-  expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date"
-  contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role"
-  reminder:    "member-visible dated reminders — meta: due_date/assignee"
+  asset:       "household assets (car, UPS, washer) — meta: model/serial/purchase_date/warranty_until/vendor/saved_by"
+  expense:     "receipt/expense records — meta: amount/currency/vendor/paid_by/receipt_date/saved_by"
+  contact:     "service contacts (plumber, insurance, Honda) — meta: phone/line_id/role/saved_by"
+  reminder:    "member-visible dated reminders — meta: due_date/assignee/saved_by"
   bench:       "ada-voice benchmark/suite run results — meta: suite/run_id/pass_count/fail_count/duration_s/commit"
   report:      "report/digest publications — meta: report_type/period/source_key"
   xlate:       "member-post translation records (TH<->EN via Gemini, private) — meta: source_post/source_lang/target_lang/engine/status/chars"
@@ -128,6 +131,15 @@ title_standard:
 
 writers:
   wp_post:        post  + person tag            # LINE "ลงเว็บ/เว็บบอร์ด" asks
+  cpt_post:       "expense|contact|reminder|asset + registered meta —
+                  ada-voice tools.d/cpt_post (card line-cpt-writer-router).
+                  LINE save-asks classify by kind=; receipt photos are
+                  read in-turn (LINE images arrive as image turns) and
+                  passed as amount/vendor/receipt_date — no OCR step in
+                  the tool. Records land status=private; saved_by = the
+                  lane's member. contact/asset upsert by slug
+                  (<kind>-<name>), expense/reminder always create.
+                  Needs wp_client slug patch (staged drop 11)."
   place_report:   place + person tag            # maps links / place names
   trip_calendar:  trip parent+children + person # --public flag
   line-chat-timeline.py: timeline_block rebuilds (journal+ops-events)

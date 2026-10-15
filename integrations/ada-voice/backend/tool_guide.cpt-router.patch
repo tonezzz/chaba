@@ -1,0 +1,16 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 1ad37cd..9558b4a 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -707,7 +707,10 @@ place_report: >-
+   plainly.
+ wp_post: >-
+   Boards-site writer — 'ส่งไปเว็บบอร์ด / post to my site / ลงเว็บให้หน่อย'
+-  routes HERE, not cms_publish_page (that is the internal CMS). person=
++  routes HERE, not cms_publish_page (that is the internal CMS).
++  Structured saves are NOT wp_post: a receipt/expense photo, 'save this
++  contact', 'remind us ...' or 'asset: X' all go to cpt_post — wp_post is
++  free-form posts only. person=
+   is the member whose page it lands on: tony|kk|nhong — ask once if it
+   is unclear who; do not guess across members. After a photo turn, pass
+   the (media_url: ...) shown in that turn as media_url= to embed it.

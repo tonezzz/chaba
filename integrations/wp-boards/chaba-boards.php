@@ -9,12 +9,12 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.5.0
+ * Version: 0.5.1
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.5.0';
+const CHABA_BOARDS_VER = '0.5.1';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -173,10 +173,13 @@ add_action('init', function () {
 // REST-writable meta — fleet writers set these via the `meta` field.
 add_action('init', function () {
     $meta = [
-        'asset'    => ['model', 'serial', 'purchase_date', 'warranty_until', 'vendor'],
-        'expense'  => ['amount', 'currency', 'vendor', 'paid_by', 'receipt_date'],
-        'contact'  => ['phone', 'line_id', 'role'],
-        'reminder' => ['due_date', 'assignee'],
+        // saved_by (v0.5.1) — which member the record belongs to; the
+        // LINE cpt_post writer fills it from person=/lane context
+        // (card line-cpt-writer-router).
+        'asset'    => ['model', 'serial', 'purchase_date', 'warranty_until', 'vendor', 'saved_by'],
+        'expense'  => ['amount', 'currency', 'vendor', 'paid_by', 'receipt_date', 'saved_by'],
+        'contact'  => ['phone', 'line_id', 'role', 'saved_by'],
+        'reminder' => ['due_date', 'assignee', 'saved_by'],
         'bench'    => ['suite', 'run_id', 'pass_count', 'fail_count', 'duration_s', 'commit'],
         'report'   => ['report_type', 'period', 'source_key'],
         'xlate'    => ['source_post', 'source_lang', 'target_lang', 'engine', 'status', 'chars'],
@@ -228,10 +231,10 @@ add_action('init', function () {
 
 function chaba_cpt_admin_columns(string $type): array {
     static $cols = [
-        'asset'      => ['model' => 'Model', 'vendor' => 'Vendor', 'purchase_date' => 'Purchased', 'warranty_until' => 'Warranty'],
-        'expense'    => ['amount' => 'Amount', 'currency' => 'Cur', 'vendor' => 'Vendor', 'paid_by' => 'Paid by', 'receipt_date' => 'Date'],
-        'contact'    => ['role' => 'Role', 'phone' => 'Phone', 'line_id' => 'LINE'],
-        'reminder'   => ['due_date' => 'Due', 'assignee' => 'Assignee'],
+        'asset'      => ['model' => 'Model', 'vendor' => 'Vendor', 'purchase_date' => 'Purchased', 'warranty_until' => 'Warranty', 'saved_by' => 'By'],
+        'expense'    => ['amount' => 'Amount', 'currency' => 'Cur', 'vendor' => 'Vendor', 'paid_by' => 'Paid by', 'receipt_date' => 'Date', 'saved_by' => 'By'],
+        'contact'    => ['role' => 'Role', 'phone' => 'Phone', 'line_id' => 'LINE', 'saved_by' => 'By'],
+        'reminder'   => ['due_date' => 'Due', 'assignee' => 'Assignee', 'saved_by' => 'By'],
         'bench'      => ['suite' => 'Suite', 'run_id' => 'Run', 'pass_count' => 'Pass', 'fail_count' => 'Fail', 'duration_s' => 'Secs'],
         'report'     => ['report_type' => 'Type', 'period' => 'Period', 'source_key' => 'Source'],
         'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
