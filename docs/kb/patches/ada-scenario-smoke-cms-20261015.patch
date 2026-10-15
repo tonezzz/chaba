@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000001 Mon Sep 17 00:00:00 2001
+From: Devin <devin@cognition.local>
+Date: Thu, 15 Oct 2026 16:40:00 +0700
+Subject: [PATCH 1/2] fix(cms): coerce non-str public arg before .strip()
+
+cms_publish_page declares public: str but the model passes a JSON bool
+~50% of the time ('public': true) — public.strip() then dies with
+AttributeError and the publish never lands. Call-log scan
+(~/.local/share/ada/call-logs, Oct): 88 calls with bool public, 36
+results 'ok': False "'bool' object has no attribute 'strip'"; every
+bool-public publish that got past the confirm gate failed this way.
+This is the deterministic failure behind the cms_public_url_lane smoke
+scenario (card ada-scenario-suite-cms-fails): "make it public" ->
+public=True -> crash -> no public_url -> the LINE send turn has no URL
+to send.
+
+str(True) -> 'true' (yes-set, flag set); str(False) -> 'false' (no-set,
+flag cleared); str(None) -> 'none' (neither set, flag untouched) —
+matches the existing string contract for every observed arg shape.
+---
+ backend/tool_runner/cms.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/backend/tool_runner/cms.py b/backend/tool_runner/cms.py
+index 1111111..2222222 100644
+--- a/backend/tool_runner/cms.py
++++ b/backend/tool_runner/cms.py
+@@ -472,6 +472,9 @@
+         # empty leaves the existing flag alone. The publisher's personal-
+         # data scan is the hard gate under this flag — flagging a page
+         # public does not guarantee it ships.
+-        p = public.strip().lower()
++        # Models pass a JSON bool as often as 'yes' — coerce first or
++        # public=True dies on AttributeError (call-log: 36x in Oct 2026).
++        p = (public if isinstance(public, str)
++             else str(public)).strip().lower()
+         if p in ("yes", "true", "1", "on"):
+             meta["public"] = ["true"]
+         elif p in ("no", "false", "0", "off"):
+-- 
+2.39.0
+
+
+From 0000000000000000000000000000000000000002 Mon Sep 17 00:00:00 2001
+From: Devin <devin@cognition.local>
+Date: Thu, 15 Oct 2026 16:41:00 +0700
+Subject: [PATCH 2/2] fix(scenario): cms-translate asserts JSON quoting, not repr
+
+result_contains is checked against json.dumps(result) in
+scripts/scenario-live.py:check_turn — flat scalar fields arrive
+double-quoted ("lang": "th"). The written expectation used the
+Python-repr form ('lang': 'th'), which can only appear when a NESTED
+dict value gets repr'd by _safe_args(); cms_publish_page/cms_get_page
+return flat dicts, so the match was impossible. Call-logs show the TH
+variant publishes correctly (result_full "lang": "th") — the scenario
+has failed turns 4/5 on every recorded run since 2026-09-27 purely on
+the quoting.
+---
+ tests/scenarios-live/cms_translate.yaml | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/tests/scenarios-live/cms_translate.yaml b/tests/scenarios-live/cms_translate.yaml
+index 3333333..4444444 100644
+--- a/tests/scenarios-live/cms_translate.yaml
++++ b/tests/scenarios-live/cms_translate.yaml
+@@ -52,9 +52,10 @@
+   - user: Yes, publish the Thai version.
+     expect:
+       calls_any: [cms_publish_page]
+-      # tool_result events hold a Python-repr dict (single quotes, <=300
+-      # chars) — _safe_args() stringifies nested dicts. Match 'lang': 'th'.
+-      result_contains: ["'lang': 'th'"]
++      # tool_result events are checked via json.dumps(result) in
++      # check_turn — flat scalars stay double-quoted; the repr form
++      # 'lang': 'th' can never match a flat result. Match the JSON form.
++      result_contains: ['"lang": "th"']
+       timeout_s: 90
+       settle_s: 10
+ 
+@@ -64,7 +65,7 @@
+   - user: Fetch the Thai variant of translate-probe and tell me what it says.
+     expect:
+       calls_any: [cms_get_page]
+-      result_contains: ["'lang': 'th'"]
++      result_contains: ['"lang": "th"']
+       response_nonempty: true
+       timeout_s: 60
+       settle_s: 8
+-- 
+2.39.0
+
