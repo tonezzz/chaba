@@ -14,7 +14,7 @@ Thai translation appended by default (--no-th to skip) via gemini_rest
 flash-lite — lessons are bilingual surfaces, not EN-only.
 """
 import argparse, base64, hashlib, json, sys, urllib.parse, urllib.request
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "ada"))
@@ -59,7 +59,8 @@ def main():
     ap.add_argument("--source", default="chat",
                     choices=["chat", "voice", "link"])
     ap.add_argument("--content-file", required=True)
-    ap.add_argument("--next-review", default="")
+    ap.add_argument("--next-review", default="",
+                    help="ISO date; default = learned_at + 7d (first spaced review)")
     ap.add_argument("--status", default="open")
     ap.add_argument("--no-th", action="store_true",
                     help="skip Thai translation section")
@@ -107,7 +108,7 @@ def main():
             "level": a.level,
             "source": a.source,
             "learned_at": str(date.today()),
-            "next_review": a.next_review,
+            "next_review": a.next_review or str(date.today() + timedelta(days=7)),
             "status": a.status,
         },
     }
