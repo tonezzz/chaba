@@ -93,6 +93,11 @@ def render_service(j, man):
     ]
     if j.get("on_failure"):
         lines.append(f"OnFailure={esc(j['on_failure'])}")
+    # condition_path: string or list — unit is skipped (not failed) when
+    # absent; for jobs whose ExecStart lands via a not-yet-merged branch.
+    cp = j.get("condition_path")
+    for p in ([cp] if isinstance(cp, str) else (cp or [])):
+        lines.append(f"ConditionPathExists={esc(p)}")
     lines += [
         "",
         "[Service]",
