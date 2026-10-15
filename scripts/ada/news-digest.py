@@ -209,6 +209,8 @@ Return ONLY a JSON object:
 {{"topic": "short story label (max ~8 words)",
   "brief": "2-3 sentence neutral synthesis of the LATEST state of the story, "
            "mentioning what changed most recently",
+  "brief_th": "Thai translation/adaptation of brief — same facts, natural "
+              "Thai for a household reader (2-3 sentences)",
   "diffs": ["one line per notable difference in coverage/framing or per "
             "material fact change between updates — source name first"]}}
 
@@ -238,9 +240,12 @@ def _when(m):
         return "?"
 
 
-def render_content(topic, brief, diffs, members):
+def render_content(topic, brief, diffs, members, brief_th=""):
     members = sorted(members, key=lambda m: m.get("date", ""))
     parts = [f"<p>{html.escape(brief)}</p>" if brief else ""]
+    if brief_th:
+        parts.append(f'<p class="brief-th" lang="th">'
+                     f"<strong>สรุป:</strong> {html.escape(brief_th)}</p>")
     if diffs:
         lis = "".join(f"<li>{html.escape(d)}</li>" for d in diffs)
         parts.append(f"<p><strong>Coverage notes</strong></p><ul>{lis}</ul>")
@@ -299,19 +304,36 @@ def main():
         res = synthesize(g, _load_gemini_key())
         topic = res.get("topic") or norm(g[0]["title"]["rendered"])[:60]
         brief = res.get("brief") or ""
+        brief_th = res.get("brief_th") or ""
         diffs = res.get("diffs") or []
-        content = render_content(topic, brief, diffs, g)
+        content = render_content(topic, brief, diffs, g, brief_th=brief_th)
         cats = sorted({c for m in g for c in m.get("categories", [])})
         member_tag_ids = sorted({t for m in g for t in m.get("tags", [])})
+        keep_meta, keep_tags = {}, set()
+        if parent_id:
+            # A digest update replaces only the fields we send — but meta
+            # and tags are whole-list fields: re-assert what the parent
+            # already carries (situation flag, situation-* tag, brief_th)
+            # so regeneration never silently drops the situation state.
+            try:
+                cur = wp.api(f"/wp/v2/news/{parent_id}")
+                keep_meta = {k: v for k, v in (cur.get("meta") or {}).items()
+                             if k.startswith("situation") or k == "brief_th"}
+                keep_tags = set(cur.get("tags") or [])
+            except Exception as e:
+                print(f"  warn: parent {parent_id} re-read failed: {e}",
+                      file=sys.stderr)
         payload = {
             "title": f"Digest — {topic}",
             "status": "publish",
             "content": content,
             "categories": sorted(set(cats) | set(synth_cat)),
-            "tags": member_tag_ids + wp.tag_ids(
-                ["digest", f"sources:{len(feeds)}"]),
-            "meta": {"source_feed": "+".join(feeds),
-                     "source_url": "", "published_at": ""},
+            "tags": sorted(set(member_tag_ids) | keep_tags | set(
+                wp.tag_ids(["digest", f"sources:{len(feeds)}"]))),
+            "meta": {**keep_meta,
+                     "source_feed": "+".join(feeds),
+                     "source_url": "", "published_at": "",
+                     "brief_th": brief_th or keep_meta.get("brief_th", "")},
         }
         try:
             if parent_id:

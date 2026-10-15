@@ -782,6 +782,24 @@ jobs:
     only — never writes MDDB or edits posts. condition_path keeps the unit
     skipped until the script lands in the served checkout on merge.
     Added 2026-10-15.'
+- id: wp-news-situation
+  name: News situation sweep + situations index refresh
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:45:00'
+  persistent: true
+  timeout: 3m
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-situation.py sweep
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-situation.py index
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/news-situation.py'
+  note: 'card news-situation-summaries — sweep auto-nominates watching on
+    >=3-source or disaster-desk digests (never pins/demotes, every change
+    leaves a WP comment); index rebuilds the private /wp/ page slug
+    situations (TH-first pinned+watching list). Runs at :45, after
+    wp-news-fetch (:00) and wp-news-digest (:20). Member-ask promotion is
+    interactive: news-situation.py ask "<text>" or comment pin/unpin via
+    wp-comment-sync. Added 2026-10-15.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py

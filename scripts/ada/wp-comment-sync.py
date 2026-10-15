@@ -16,6 +16,15 @@ docs/ssot/infrastructure/ssot.jobs.yml):
                         (~/.local/share/wp-comment-sync/record-corrections/
                         corr-<comment_id>.yml — an agent applies the
                         correction to the record, nothing is auto-applied)
+       news + recognized command (pin/watch pin up the ladder; unpin
+                        demotes one rung; unwatch/clear stops tracking —
+                        ปักหมุด/เลิกปักหมุด/เฝ้าระวัง/เลิกติดตาม)
+                        -> situation lane:
+                        the comment IS the member's instruction, so the
+                        digest's `situation` meta + situation-* tag are set
+                        via news-situation.py's shared transition (meta only,
+                        never post content) and the ack states the change —
+                        never silent. Other news comments -> digest.
        cam|bench|render_job (and anything else) -> digest only
                         (digest.jsonl + an events.md line)
   3. ack   reply in-thread via REST (wcs-ack marker so our own replies
@@ -85,6 +94,7 @@ ACK_MARK = "<!-- wcs-ack -->"
 LANE_ADA = "ada_suggestion"       # memory-mirror posts
 LANE_RECORD = "record_correction"  # asset/place/trip posts
 LANE_DIGEST = "digest"             # cam/bench/render_job + fallback
+LANE_SITUATION = "situation"       # news posts + pin/unpin/watch commands
 LANES = {
     "memory-mirror": LANE_ADA,
     "memory_mirror": LANE_ADA,
@@ -94,12 +104,88 @@ LANES = {
     "cam": LANE_DIGEST,
     "bench": LANE_DIGEST,
     "render_job": LANE_DIGEST,
+    "news": LANE_SITUATION,
 }
+
+# Situation commands — checked in order (demote/clear before pin/watch so
+# "เลิกปักหมุด" doesn't trip the "ปักหมุด" substring). English uses \b,
+# Thai is a plain substring; must appear in the first 60 chars so narrative
+# mentions ("he pinned the notice") don't fire it.
+#   "unpin" demotes one rung (pinned->watching->none) — the digest was
+#   usually auto-nominated for a reason; "unwatch"/"clear" stops tracking.
+DEMOTE = "__demote__"
+SITUATION_CMD_WINDOW = 60
+SITUATION_COMMANDS = [
+    ("", (r"\bunwatch\b", r"\bunfollow\b", r"\bclear\b",
+          "เลิกติดตาม", "เลิกเฝ้าระวัง", "ยกเลิกการติดตาม")),
+    (DEMOTE, (r"\bunpin\b", "เลิกปักหมุด", "เอาปักหมุดออก")),
+    ("pinned", (r"\bpin\b", "ปักหมุด")),
+    ("watching", (r"\bwatch\b", r"\bfollow\b", "เฝ้าระวัง", "ติดตาม")),
+]
+
+
+def parse_situation_command(text):
+    """Member comment -> target state, DEMOTE, ''=clear, or None."""
+    head = " ".join((text or "").lower().split())[:SITUATION_CMD_WINDOW]
+    if not head:
+        return None
+    for state, pats in SITUATION_COMMANDS:
+        for p in pats:
+            if p.startswith("\\b"):
+                if re.search(p, head):
+                    return state
+            elif p in head:
+                return state
+    return None
+
+
+def _news_situation():
+    """Sibling scripts/ada/news-situation.py — shared flag transitions."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "news-situation.py")
+    spec = importlib.util.spec_from_file_location("news_situation", path)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def apply_situation(c, post, target, dry_run):
+    """news + pin/unpin/watch command -> set the digest's situation flag.
+    The ONE lane where a member comment mutates WP state (meta/tags only —
+    content untouched); the in-thread ack makes it loud."""
+    cid = c["id"]
+    who = c.get("author_name") or f"wp-user-{c.get('author')}"
+    post_obj = {"id": post.get("id"), "meta": post.get("meta") or {},
+                "tags": post.get("tags") or [],
+                "title": {"rendered": post.get("title") or ""},
+                "link": post.get("link")}
+    try:
+        ns = _news_situation()
+        nswp = ns.WP()
+        post_obj["_tag_names"] = nswp.tag_names(post_obj["tags"])
+        if target == DEMOTE:
+            target = ns.demote_step(ns.effective_state(post_obj))
+        old, new, changed = ns.set_state(
+            nswp, post_obj, target, by=f"comment:{who}",
+            note=f"comment #{cid}", dry_run=dry_run)
+    except (Exception, SystemExit) as e:
+        print(f"  situation FAIL comment={cid}: {e}", file=sys.stderr)
+        return f"sit:error:{cid}"
+    return f"sit:{cid}:{new or 'cleared'}"
+
+
+def _situation_target(c):
+    return parse_situation_command(comment_text(c))
 
 
 def load_wp_env(path):
     env = {}
-    for line in open(path):
+    try:
+        lines = open(path).read().splitlines()
+    except OSError:
+        sys.exit(f"missing env file {path}")
+    for line in lines:
         m = re.match(r"^([A-Z_]+)=(.*)$", line.strip())
         if m:
             env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
@@ -109,16 +195,26 @@ def load_wp_env(path):
     return env
 
 
-ENV = load_wp_env(ENV_PATH)
-BASE = ENV["WP_SITE_URL"].strip().rstrip("/")
-AUTH = "Basic " + base64.b64encode(
-    f"{ENV['WP_APP_USER'].strip()}:{ENV['WP_APP_PASSWORD'].strip()}"
-    .encode()).decode()
+# Lazily resolved so the module stays importable (tests, offline review)
+# on hosts without the secrets file — api() fails there instead of import.
+ENV = None
+BASE = AUTH = None
+
+
+def _ensure_env():
+    global ENV, BASE, AUTH
+    if ENV is None:
+        ENV = load_wp_env(ENV_PATH)
+        BASE = ENV["WP_SITE_URL"].strip().rstrip("/")
+        AUTH = "Basic " + base64.b64encode(
+            f"{ENV['WP_APP_USER'].strip()}:"
+            f"{ENV['WP_APP_PASSWORD'].strip()}".encode()).decode()
 
 
 def api(method, route, data=None):
     """WP REST via ?rest_route= permalink workaround (line-chat-timeline.py
     pattern). `route` may contain & separators already."""
+    _ensure_env()
     url = f"{BASE}/index.php?rest_route=/wp/v2/{route}"
     body = json.dumps(data).encode() if data is not None else None
     req = urllib.request.Request(url, data=body, method=method)
@@ -140,6 +236,7 @@ def api(method, route, data=None):
 def api_url(method, url):
     """Follow an absolute REST href (comment._links.up) for the parent
     post — same auth, arbitrary wp/v2 route."""
+    _ensure_env()
     req = urllib.request.Request(url, method=method)
     req.add_header("Authorization", AUTH)
     req.add_header("User-Agent", UA)
@@ -179,6 +276,7 @@ def post_ref(c):
             info["link"] = post.get("link")
             if isinstance(post.get("meta"), dict):
                 info["meta"] = post["meta"]
+            info["tags"] = post.get("tags") or []
     return info
 
 
@@ -302,6 +400,12 @@ def stage_record_correction(c, post, dry_run):
 def route(c, post, dry_run):
     """File the comment into its lane. Returns (lane, queue_id)."""
     lane = LANES.get(post.get("type") or "", LANE_DIGEST)
+    if lane == LANE_SITUATION:
+        target = _situation_target(c)
+        if target is None:
+            lane = LANE_DIGEST       # ordinary comment on a news post
+        else:
+            return lane, apply_situation(c, post, target, dry_run)
     if lane == LANE_ADA:
         return lane, stage_ada_suggestion(c, post, dry_run)
     if lane == LANE_RECORD:
@@ -324,6 +428,7 @@ LANE_BLURB = {
     LANE_ADA: "Ada suggestion queue (staged — nothing applied)",
     LANE_RECORD: "record-corrections queue (an agent applies it)",
     LANE_DIGEST: "comment digest (reference only)",
+    LANE_SITUATION: "situation flag (applied to this post's meta)",
 }
 
 
@@ -331,10 +436,22 @@ def ack(c, lane, qid, dry_run):
     """In-thread reply ack. Marker lets re-polls skip our own replies;
     returned reply id is recorded in state.acks as well."""
     author = c.get("author_name") or "there"
-    content = (f"{ACK_MARK}\nNoted, {author} — filed to "
-               f"{LANE_BLURB.get(lane, lane)} [{qid}]. "
-               "Member comments are suggestions; a human/agent reviews "
-               "before anything changes.")
+    if lane == LANE_SITUATION and qid.startswith("sit:"):
+        if qid.startswith("sit:error"):
+            content = (f"{ACK_MARK}\nSorry {author} — the situation flag "
+                       f"change failed on our side; the ops log has the "
+                       f"detail. Nothing was changed.")
+        else:
+            state = qid.rsplit(":", 1)[-1]
+            content = (f"{ACK_MARK}\nDone, {author} — situation is now "
+                       f"'{state}' on this digest. It shows on the "
+                       f"/wp/ situations index; reply \"unpin\" or \"unwatch\" "
+                       f"to clear.")
+    else:
+        content = (f"{ACK_MARK}\nNoted, {author} — filed to "
+                   f"{LANE_BLURB.get(lane, lane)} [{qid}]. "
+                   "Member comments are suggestions; a human/agent reviews "
+                   "before anything changes.")
     if dry_run:
         return None
     s, res = api("POST", "comments",

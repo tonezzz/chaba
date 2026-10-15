@@ -1,0 +1,103 @@
+title: News situation summaries — situation flag on digests + index + Thai + ask-hook
+subtitle: >-
+  Digest parents on the WP `news` CPT are already evolving topic summaries;
+  this promotes the interesting ones to tracked "situations" — flagged
+  watching|pinned, listed on a /wp/ index page, Thai-first, and promotable
+  by member asks and comments.
+icon: eye
+id: 2026-10-15-news-situation-summaries
+status: committed (plugin deploy pending)
+owner: devin-dispatch
+project: chaba
+card: news-situation-summaries
+ref: OPS-0706
+started: "2026-10-15"
+
+context:
+  trigger: >
+    Tony asked Chaba สรุปข่าวน้ำท่วม on tony-ha 2026-10-15 12:08 and got a
+    good Thai situational answer referencing the mini-app flood report.
+    Want: situation summaries for highly-interesting news, readable on
+    /wp/ and reportable to the household.
+  card_truncation: >
+    The card `note` was cut at 500 chars (board-api.py caps note at 500)
+    mid-sentence in the BUILD list — "(1) situation flag — meta
+    situation=watching|pinned on digest posts, ke…". Build items
+    reconstructed from the card title (promoted digests + index + Thai +
+    ask-hook), the `help` field ("Signals are additive — auto-nominate
+    watches, member-ask promotes, comment pins/unpins. Suggestion-only
+    paths; never silent."), and the verified DESIGN preamble.
+  prototype: >
+    flood-report is the prototype pattern (ada-cms-pages +
+    flood-news-update.py + flood-alert.timer); digest parents from
+    scripts/ada/news-digest.py already carry topic/brief/diffs/
+    Developments — the situation flag is layered on top, not a new CPT.
+
+design:
+  flag: >
+    meta `situation` = watching|pinned on digest posts (+ situation_since,
+    situation_by, brief_th — registered REST-writable in chaba-boards
+    0.6.0). Mirrored as post_tag `situation-watching`/`situation-pinned`
+    because tags were already REST-writable on news — the flag works even
+    before the plugin bump deploys (unregistered meta keys are silently
+    dropped by WP REST, not errors). effective_state() reads meta first,
+    tag second; news-digest.py re-asserts parent meta+tags on regen so the
+    flag survives digest refresh.
+  ladder: >
+    none -> watching -> pinned. promote_step/demote_step move one rung;
+    `set` jumps. pin also sets WP `sticky` (floats on /wp/news/ — the
+    "promoted digest"); unpin/clear removes it. Sticky is attempted
+    best-effort: hierarchical CPTs reject it on some WP versions — the
+    write retries without sticky rather than losing the flag.
+  signals: >
+    Additive, suggestion-only, never silent (every transition posts a WP
+    comment naming actor+reason):
+    - auto-nominate: news-situation.py sweep (wp-news-situation.timer :45
+      hourly, after fetch :00 / digest :20) marks watching on >=3-source
+      or disaster-desk digests. Never pins, never demotes, never touches
+      flagged posts.
+    - member-ask: news-situation.py ask "<text>" — embeds the ask
+      (ollama-nomic-embed via LiteLLM, ngram fallback), matches digest
+      title+lead by cosine (--threshold 0.55), promotes one rung, prints
+      TH+EN briefs + link — the situational answer Ada can relay. Weak
+      match -> exit 3, nothing written. --json for tool callers.
+    - comment: wp-comment-sync.py news lane — pin/unpin/watch/unwatch
+      (EN + ปักหมุด/เลิกปักหมุด/เฝ้าระวัง/เลิกติดตาม) within the first 60
+      chars applies via the same set_state; the wcs-ack reply states the
+      new state. Non-command news comments -> digest lane unchanged.
+  index: >
+    news-situation.py index upserts private WP page slug `situations`
+    (lessons-due pattern) — pinned then watching, Thai brief first,
+    sources/since/by provenance. Plugin 0.6.0 adds [chaba_situations]
+    shortcode (same list, embeddable on any member page) + a badge banner
+    on flagged digests' single views + a Situation column in the news
+    admin list.
+  thai: >
+    news-digest PROMPT now returns brief_th; rendered as a สรุป paragraph
+    in the digest body and cached in meta brief_th so the index renders
+    Thai without parsing post HTML.
+
+deploy_notes: >
+  Code only — nothing deployed by this dispatch. Live needs: (1) merge to
+  master so idc03's checkout gets scripts/ada/news-situation.py; (2)
+  render-jobs.py --host idc03 --install for wp-news-situation.timer (or
+  hand-install systemd/generated/idc03/wp-news-situation.*); (3) upload
+  chaba-boards.php 0.6.0 via wp-admin plugin zip to unlock the meta keys,
+  admin column, badge, and shortcode — flag itself works today via tags.
+  Ada voice-side wiring (calling `news-situation.py ask` from her tools)
+  is a separate-repo change in ada-voice.
+
+verify: |
+  python3 -m unittest tests.ada.test_news_situation   # 14 tests, pure/stubbed
+  scripts/ada/news-situation.py sweep --dry-run        # nominations only
+  scripts/ada/news-situation.py index --dry-run        # page HTML preview
+  scripts/ada/news-situation.py ask "สรุปข่าวน้ำท่วม" --dry-run
+  member comment "pin" on any /wp/news digest -> wp-comment-sync applies + acks
+
+files:
+  - scripts/ada/news-situation.py         (new — flag engine + ask hook + index)
+  - scripts/ada/news-digest.py            (brief_th + meta/tag preservation on regen)
+  - scripts/ada/wp-comment-sync.py        (news situation lane + lazy env for tests)
+  - integrations/wp-boards/chaba-boards.php (v0.6.0 — meta, badge, shortcode, admin col)
+  - docs/ssot/infrastructure/ssot.jobs.yml + systemd/generated/idc03/wp-news-situation.*
+  - tests/ada/test_news_situation.py

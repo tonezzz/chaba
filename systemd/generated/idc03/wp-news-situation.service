@@ -1,0 +1,9 @@
+[Unit]
+Description=News situation sweep + situations index refresh (job:wp-news-situation, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/news-situation.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=180
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-situation.py sweep
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-situation.py index
