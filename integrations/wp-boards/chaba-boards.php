@@ -7,10 +7,12 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.3.8
+ * Version: 0.4.0
  */
 
 if (!defined('ABSPATH')) exit;
+
+const CHABA_BOARDS_VER = '0.4.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -59,9 +61,23 @@ add_action('init', function () {
             $extra['supports']     = array_merge($common['supports'],
                                                  ['page-attributes']);
         }
+        // render_job + lesson get archives so members can re-browse:
+        // /wp/render_job/ = results index, /wp/lesson/ = re-read ledger.
+        if (in_array($slug, ['render_job', 'lesson'], true)) {
+            $extra['has_archive'] = true;
+        }
         register_post_type($slug, array_merge($common, $extra));
     }
 });
+
+// Rewrite rules only change on version bumps (new has_archive types) —
+// flush once per deployed version, stored as an option so it never repeats.
+add_action('init', function () {
+    if (get_option('chaba_boards_ver') !== CHABA_BOARDS_VER) {
+        flush_rewrite_rules();
+        update_option('chaba_boards_ver', CHABA_BOARDS_VER, false);
+    }
+}, 20);
 
 // ============================================================================
 // Public-host canonicalization — CF fronts boards.surf-thailand.com and the
@@ -198,7 +214,7 @@ function chaba_cpt_admin_columns(string $type): array {
         'report'     => ['report_type' => 'Type', 'period' => 'Period', 'source_key' => 'Source'],
         'xlate'      => ['source_lang' => 'From', 'target_lang' => 'To', 'engine' => 'Engine', 'status' => 'Status'],
         'cam'        => ['camera_id' => 'Camera', 'captured_at' => 'Captured', 'kind' => 'Kind'],
-        'render_job' => ['kind' => 'Kind', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'backend' => 'Backend', 'est_cost_usd' => 'Est$', 'requested_by' => 'By'],
+        'render_job' => ['result' => 'Result', 'prompt' => 'Prompt', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'est_cost_usd' => 'Est$', 'rating' => '★'],
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published'],
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
         'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
@@ -217,10 +233,27 @@ foreach (['asset','expense','contact','reminder','bench','report','xlate','cam',
         $tail = array_intersect_key($cols, ['date' => 1]);
         return $head + $extra + $tail;
     });
-    add_action("manage_{$_t}_posts_custom_column", function ($col, $post_id) {
-        if (str_starts_with($col, 'chaba_')) {
-            echo esc_html((string) get_post_meta($post_id, substr($col, 6), true));
+    add_action("manage_{$_t}_posts_custom_column", function ($col, $post_id) use ($_t) {
+        if (!str_starts_with($col, 'chaba_')) return;
+        $k = substr($col, 6);
+        $v = (string) get_post_meta($post_id, $k, true);
+        // render_job: result = image/video thumb, prompt = readable excerpt
+        if ($_t === 'render_job' && $k === 'result') {
+            $u = (string) get_post_meta($post_id, 'output_url', true);
+            if ($u === '') { echo '<span style="opacity:.5">—</span>'; return; }
+            $kind = (string) get_post_meta($post_id, 'kind', true);
+            echo $kind === 'video'
+                ? '<a href="' . esc_url($u) . '" target="_blank">▶ video</a>'
+                : '<a href="' . esc_url($u) . '" target="_blank"><img src="'
+                  . esc_url($u) . '" style="width:64px;height:64px;object-fit:cover;border-radius:4px" loading="lazy"></a>';
+            return;
         }
+        if ($_t === 'render_job' && $k === 'prompt') {
+            echo '<span title="' . esc_attr($v) . '">'
+               . esc_html(mb_strimwidth($v, 0, 90, '…')) . '</span>';
+            return;
+        }
+        echo esc_html($v);
     }, 10, 2);
 }
 unset($_t);
@@ -375,4 +408,150 @@ add_action('rest_api_init', function () {
             exit;
         },
     ]);
+});
+
+// ============================================================================
+// render_job single view — the post content is usually empty; the record lives
+// in meta. Render a job card: result media + prompt + negative + params table.
+// Private posts already gate this to logged-in members.
+// ============================================================================
+
+add_filter('the_content', function ($content) {
+    if (!is_singular('render_job') || !in_the_loop() || !is_main_query()) return $content;
+    $id  = get_the_ID();
+    $m   = function ($k) use ($id) { return trim((string) get_post_meta($id, $k, true)); };
+    $out = $content;
+
+    $u = $m('output_url');
+    if ($u !== '') {
+        $out .= $m('kind') === 'video'
+            ? '<p><video controls style="max-width:100%;border-radius:8px" src="' . esc_url($u) . '"></video></p>'
+            : '<p><a href="' . esc_url($u) . '" target="_blank"><img src="' . esc_url($u)
+              . '" style="max-width:100%;border-radius:8px" loading="lazy"></a></p>';
+    }
+    if ($m('prompt') !== '') {
+        $out .= '<blockquote style="border-left:3px solid #888;padding:.2em .8em;margin:.8em 0">'
+              . nl2br(esc_html($m('prompt'))) . '</blockquote>';
+    }
+    if ($m('negative_prompt') !== '') {
+        $out .= '<p><em>Negative:</em> ' . esc_html($m('negative_prompt')) . '</p>';
+    }
+
+    $rows = '';
+    foreach (['kind' => 'Kind', 'status' => 'Status', 'model' => 'Model',
+              'model_file' => 'Model file', 'size_px' => 'Size', 'aspect' => 'Aspect',
+              'res' => 'Res', 'steps' => 'Steps', 'sampler' => 'Sampler',
+              'cfg_scale' => 'CFG', 'seed' => 'Seed', 'secs' => 'Clip secs',
+              'duration_s' => 'Render s', 'vae_s' => 'VAE s', 'backend' => 'Backend',
+              'host' => 'Host', 'est_cost_usd' => 'Est $', 'rating' => 'Rating',
+              'source' => 'Source', 'requested_by' => 'By', 'operation' => 'Op',
+              'parent_job' => 'Parent', 'chain_index' => 'Chain#', 'error' => 'Error',
+              'ref_url' => 'Ref'] as $k => $label) {
+        $v = $m($k);
+        if ($v === '') continue;
+        $cell = ($k === 'ref_url')
+            ? '<a href="' . esc_url($v) . '" target="_blank">link</a>'
+            : esc_html($v);
+        $rows .= '<tr><th style="text-align:left;padding:2px 10px 2px 0;opacity:.6;font-weight:600">'
+               . esc_html($label) . '</th><td style="padding:2px 0">' . $cell . '</td></tr>';
+    }
+    if ($rows) {
+        $out .= '<table style="font-size:.9em;margin-top:.8em">' . $rows . '</table>';
+    }
+    return $out;
+});
+
+// ============================================================================
+// Lessons due — wp-admin dashboard widget so review dates surface without a
+// cron: next_review <= today AND status != learned.
+// ============================================================================
+
+add_action('wp_dashboard_setup', function () {
+    wp_add_dashboard_widget('chaba-lessons-due', 'Chaba — lessons due for review', function () {
+        $q = new WP_Query([
+            'post_type'      => 'lesson',
+            'post_status'    => 'any',
+            'posts_per_page' => 10,
+            'meta_key'       => 'next_review',
+            'orderby'        => 'meta_value',
+            'order'          => 'ASC',
+            'meta_query'     => [[
+                'key'     => 'next_review',
+                'value'   => current_time('Y-m-d'),
+                'compare' => '<=',
+                'type'    => 'DATE',
+            ], [
+                'key'     => 'status',
+                'value'   => 'learned',
+                'compare' => '!=',
+            ]],
+        ]);
+        if (!$q->have_posts()) { echo '<p>Nothing due. ✓</p>'; return; }
+        echo '<ul>';
+        foreach ($q->posts as $p) {
+            printf('<li><a href="%s">%s</a> <span style="opacity:.6">— %s</span></li>',
+                esc_url(get_edit_post_link($p->ID)),
+                esc_html(get_the_title($p)),
+                esc_html((string) get_post_meta($p->ID, 'next_review', true)));
+        }
+        echo '</ul>';
+    });
+});
+
+// ============================================================================
+// Prompt assist — render_job editor box: sends the prompt to the existing
+// free Gemini lane (CHABA_LLM_ENDPOINT/KEY, same as xlate) and returns an
+// analysis + suggested rewrite + negative-prompt hints. Advisory only —
+// Tony reads/copies; nothing is written back automatically.
+// ============================================================================
+
+add_action('add_meta_boxes', function () {
+    add_meta_box('chaba-prompt-assist', 'Prompt assist (free Gemini)', function ($post) {
+        $prompt = get_post_meta($post->ID, 'prompt', true);
+        echo '<p><button type="button" class="button" id="chaba-pa-btn"'
+           . ($prompt ? '' : ' disabled') . '>Analyze &amp; suggest</button>'
+           . ' <span id="chaba-pa-status" style="opacity:.6"></span></p>'
+           . '<div id="chaba-pa-out" style="white-space:pre-wrap;font-size:.9em"></div>'
+           . '<script>(function(){var b=document.getElementById("chaba-pa-btn");if(!b)return;'
+           . 'b.onclick=function(){var s=document.getElementById("chaba-pa-status"),o=document.getElementById("chaba-pa-out");'
+           . 's.textContent="asking…";o.textContent="";var f=new FormData();'
+           . 'f.append("action","chaba_prompt_assist");f.append("post_id","' . (int) $post->ID . '");'
+           . 'f.append("_wpnonce","' . wp_create_nonce('chaba_prompt_assist') . '");'
+           . 'fetch(ajaxurl,{method:"POST",body:f,credentials:"same-origin"}).then(function(r){return r.json();})'
+           . '.then(function(j){s.textContent="";o.textContent=j.success?j.data:(j.data||"failed");})'
+           . '.catch(function(e){s.textContent="error "+e;});};})();</script>';
+    }, 'render_job', 'normal', 'high');
+});
+
+add_action('wp_ajax_chaba_prompt_assist', function () {
+    if (!current_user_can('edit_posts')) wp_die('forbidden', 403);
+    check_ajax_referer('chaba_prompt_assist');
+    $post_id = (int) ($_POST['post_id'] ?? 0);
+    $prompt  = trim((string) get_post_meta($post_id, 'prompt', true));
+    if ($prompt === '') wp_send_json_error('no prompt on this job', 400);
+    $endpoint = chaba_llm_endpoint();
+    $key      = chaba_llm_key();
+    if (!$endpoint || !$key) wp_send_json_error('CHABA_LLM endpoint/key not set', 503);
+
+    $ask = "You are a diffusion-prompt coach. Analyze this generation prompt and reply "
+         . "in PLAIN TEXT with four short sections:\n"
+         . "ISSUES — what is vague, conflicting, or likely to hurt quality\n"
+         . "SUGGESTED PROMPT — an improved rewrite (keep intent + language)\n"
+         . "NEGATIVE PROMPT — 3-8 comma-separated terms worth excluding\n"
+         . "PARAMS — suggested steps/cfg/sampler for a fast local SDXL-class model\n\n"
+         . "Prompt:\n" . mb_substr($prompt, 0, 4000);
+
+    $resp = wp_remote_post($endpoint . '?key=' . rawurlencode($key), [
+        'timeout' => 30,
+        'headers' => ['Content-Type' => 'application/json'],
+        'body'    => wp_json_encode([
+            'contents' => [['parts' => [['text' => $ask]]]],
+            'generationConfig' => ['maxOutputTokens' => 1024, 'temperature' => 0.4],
+        ]),
+    ]);
+    if (is_wp_error($resp)) wp_send_json_error('request failed: ' . $resp->get_error_message(), 502);
+    $data = json_decode(wp_remote_retrieve_body($resp), true);
+    $out  = trim($data['candidates'][0]['content']['parts'][0]['text'] ?? '');
+    $out === '' ? wp_send_json_error('empty model response', 502)
+                : wp_send_json_success($out);
 });

@@ -33,13 +33,17 @@ post_types:
                  show_in_rest=true (watchers read `modified` anonymously)"
   timeline_block: timeline-block-block plugin CPT — timelines[] JSON in block markup
   attachment:    media library; images attach to trip posts via post_parent
-  # chaba-boards plugin CPTs (v0.3.3, integrations/wp-boards/chaba-boards.php) —
+  # chaba-boards plugin CPTs (v0.4.0, integrations/wp-boards/chaba-boards.php) —
   # public + show_in_rest, private-status posts are member-only like /chat/line/*.
   # LIVE since 2026-10-14 — deployed via wp-admin plugin zip upload
   # (update.php?action=upload-plugin + overwrite link; admin creds
   # ~/.config/secrets/boards-surf-thailand-com-wp-admin-credential on omen).
   # v0.2.0 added admin list columns so registered meta displays in wp-admin.
   # v0.3.7 (2026-10-15): repeat_ask CPT + sortable admin list.
+  # v0.4.0 (2026-10-15): render_job result-thumb+prompt admin columns + job-card
+  # the_content renderer; has_archive for render_job+lesson (/wp/render_job/,
+  # /wp/lesson/ member indexes); lessons-due dashboard widget; prompt-assist
+  # meta box -> admin-ajax -> existing free Gemini lane (CHABA_LLM_*).
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
