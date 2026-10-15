@@ -154,9 +154,10 @@ jobs:
   persistent: true
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
+  env_file: '%h/.config/secrets/litellm-chaba.env'
   env:
-    KANBAN_BRIEF_LLM_URL: http://100.75.102.88:11434/v1
-    KANBAN_BRIEF_LLM_MODEL: phi3-gguf:latest
+    KANBAN_BRIEF_LLM_URL: http://100.102.134.91:4000/v1
+    KANBAN_BRIEF_LLM_MODEL: chat-local
   exec:
   - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-brief.py
   - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/kanban-act.py
@@ -167,7 +168,9 @@ jobs:
     autonomy:t2 whose auto_done_when checks all pass (card_done/page_exists/ file_exists/service_active/git_merged/verified_true
     — bounded vocabulary, no shell); rk=decide and open-request cards are held; every close emits a kanban_act ops
     event. Then nest-overview.py. Deployed 2026-10-06; exec/env/cwd captured into this manifest 2026-10-08 (kanban-act-loop)
-    — the rendered unit previously dropped kanban-act + nest-overview.'
+    — the rendered unit previously dropped kanban-act + nest-overview. Prose lane moved off tony-omen phi3
+    onto the LiteLLM gateway chat-local alias (qwen2.5:7b on idc02 — card chat-local-free-lane, 2026-10-16);
+    env_file supplies LITELLM_KEY (LITELLM_KEY_CHABA virtual key).'
 - id: chaba-tony-ideas
   name: Tony ideas/decisions harvest -> CMS tony-ideas
   host: tony_dell

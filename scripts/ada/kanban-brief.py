@@ -32,8 +32,12 @@ managed block, meta contract).
 Env:
     MDDB_BASE_URL        default http://100.102.134.91:11027/v1
     REPO                 default = this checkout root
-    KANBAN_BRIEF_LLM_URL e.g. http://tony-omen:11434/v1 (optional)
-    KANBAN_BRIEF_LLM_MODEL  default gemma3:4b
+    KANBAN_BRIEF_LLM_URL e.g. http://tony-omen:11434/v1 (optional); the
+                         LiteLLM gateway http://100.102.134.91:4000/v1
+                         routes to chat-local (qwen2.5:7b on idc02)
+    KANBAN_BRIEF_LLM_MODEL  default gemma3:4b; chat-local on the gateway
+    KANBAN_BRIEF_LLM_KEY    bearer token — else LITELLM_KEY (gateway needs
+                         a virtual key; bare ollama ignores the header)
 
 Usage:
     kanban-brief.py            # gated by registry interval
@@ -213,6 +217,11 @@ def llm_why(card: dict) -> str:
         f"title: {card['title']}\ncolumn: {card['column']}\n"
         f"flags: {', '.join(card['urgent'] + card['important'])}\n"
         f"note: {card['note1'][:300]}")
+    key = os.environ.get("KANBAN_BRIEF_LLM_KEY") \
+        or os.environ.get("LITELLM_KEY", "")
+    headers = {"Content-Type": "application/json"}
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
     try:
         r = urllib.request.urlopen(urllib.request.Request(
             f"{url}/chat/completions",
@@ -220,7 +229,7 @@ def llm_why(card: dict) -> str:
                 "model": model, "temperature": 0.2, "max_tokens": 60,
                 "messages": [{"role": "user", "content": prompt}],
             }).encode(),
-            headers={"Content-Type": "application/json"}), timeout=30)
+            headers=headers), timeout=30)
         out = json.load(r)["choices"][0]["message"]["content"].strip()
         return out.splitlines()[0][:200] if out else None
     except Exception:

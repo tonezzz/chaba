@@ -1,0 +1,18 @@
+[Unit]
+Description=Ollama local LLM — free-lane compute for LiteLLM chat-local (qwen2.5:7b, nomic-embed)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/ollama/ollama:latest
+ContainerName=ollama
+PublishPort=100.123.163.11:11434:11434
+Volume=ollama-data:/root/.ollama
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=70
+
+[Install]
+WantedBy=default.target
