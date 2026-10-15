@@ -22,8 +22,11 @@ import asyncio
 import json
 import os
 import re
+import socket
 import sys
+import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import websockets
 import yaml
@@ -188,11 +191,32 @@ def devices_view_for_instance(instance: str, ssot: dict) -> dict:
     }
 
 
+def wait_for_ha(url: str, timeout: float = 180.0) -> None:
+    """Wait for the HA websocket TCP endpoint to accept connections.
+
+    Timer-fired runs can race HA startup after a host reboot
+    (ConnectionRefused on 127.0.0.1:8123). Poll the port so a still-booting
+    HA does not fail the whole run.
+    """
+    parsed = urlparse(url)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 8123
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=5):
+                return
+        except OSError:
+            time.sleep(3)
+    raise TimeoutError(f"HA at {host}:{port} not reachable after {timeout:.0f}s")
+
+
 async def build_and_push(instance: str) -> None:
     if instance not in INSTANCES:
         raise ValueError(f"Unknown instance: {instance}")
 
     spec = INSTANCES[instance]
+    wait_for_ha(spec["ha_url"])
     token = load_token(spec["token_file"], spec["token_kind"])
     ssot = load_yaml(SSOT_PATH)
     view = devices_view_for_instance(instance, ssot)

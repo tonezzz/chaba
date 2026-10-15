@@ -127,9 +127,15 @@ lessons:
     fix: |
       Manually restarted after tony-ha was ready. The service has a timer that
       retries every ~15 minutes, so it self-heals.
+      Recurred on the 2026-10-14 19:41 tony-dell reboot (OnBootSec=2m fired at
+      19:43:34 while tony-ha was still coming up; one exit-code failure, next
+      tick green). Fix implemented 2026-10-16: build-dossier-devices.py now calls
+      wait_for_ha() — polls the websocket TCP endpoint for up to 180s before
+      connecting, so a still-booting HA no longer fails the run.
     prevention: |
-      Consider adding After=tony-ha.service or a retry loop in the ExecStartPre
-      that waits for port 8123 to be available before running the scan.
+      build-dossier-devices.py waits for the HA websocket port (wait_for_ha,
+      180s) before connecting. If a similar boot race appears in another
+      HA-pushing script, apply the same wait or After=/ExecStartPre guard.
 
 general_principles:
   - |
