@@ -300,6 +300,22 @@ jobs:
     optimize-gate warnings) into reports/qc-scoreboard/*.md + CMS page
     qc-scoreboard. After daily-brief (07:05/19:05) so its numbers ride the
     freshest producer state. Added 2026-10-15.'
+- id: board-invariants
+  name: Board invariants scan (every 4h)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 00,04,08,12,16,20:35:00'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-invariants.py --alert
+  note: 'card board-invariants-* (KNB-0716) — read-only truth checks over the
+    served card dir: open Tony-facing requests with <2 options (R1), suggested
+    not in options (R2), duplicate open requests (R3), done+verify: without an
+    evidence-tagged comm = lifecycle bounce fuel (V1, mirrors
+    lifecycle-check.py gate semantics incl. VERIFY_GATE_AFTER 2026-10-12),
+    stale running claims >24h quiet (S1), parked doing >7d (S2). --alert writes
+    one deduped focus-inbox file per violated class (invariant-<slug>.yml); no
+    auto-fixes. Added 2026-10-15.'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_dell
