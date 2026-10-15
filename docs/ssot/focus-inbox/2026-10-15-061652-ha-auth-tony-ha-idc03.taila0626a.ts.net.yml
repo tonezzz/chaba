@@ -1,0 +1,24 @@
+title: HA auth failure on tony-ha
+subtitle: "invalid-authentication attempt from idc03.taila0626a.ts.net"
+icon: inbox
+focus:
+  label: "HA auth failure: tony-ha from idc03.taila0626a.ts.net"
+  text: >-
+    Home Assistant logged a login/API attempt with invalid
+    authentication. instance=tony-ha source=idc03.taila0626a.ts.net
+    log_ts=1792044547.5329185 Detected 2026-10-15T06:16:52Z by ha-auth-watch. If this follows a
+    revoked or deleted token, mint a replacement long-lived token and
+    update the consumer.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [security, home-assistant, auth]
+  safe_to_parallel:
+    value: true
+    reason: read-only alert; remediation is per-consumer
+ownership:
+  owner: tony
+  locked: false
+  lock_reason: ""
+source:
+  date: 2026-10-15
