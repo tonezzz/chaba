@@ -1,0 +1,26 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 1ad37cd..41e953c 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -295,7 +295,9 @@ ada_remember: >-
+   (fact/preference/person/procedure/note) need bank=; find-then-update —
+   a matching key or subject+attribute corrects in place, otherwise
+   creates; supersedes=<key> replaces a misattributed fact;
+-  confirmed-policy banks need confirmed=true after a spoken yes.
++  confirmed-policy banks need confirmed=true after a spoken yes — an
++  explicit remember/correct/forget order in the user's own turn IS that
++  yes, so pass confirmed=true directly and never re-ask an explicit order.
+   Hard caps: text 2,000 chars, key/subject 160 — over-cap refuses with a
+   memory_cap error telling you to shorten or split into N entries.
+   kind='vocab' logs a speaker's misused term into their glossary (text
+@@ -310,7 +312,9 @@ ada_remember: >-
+ 
+ ada_forget: >-
+   Retract when the user says a memory is no longer true — bank+key from
+-  ada_memory_search; marked retracted, stays in archive for audit.
++  ada_memory_search; marked retracted, stays in archive for audit. A
++  'forget that'/'ลืมมันไป' order authorizes confirmed=true directly —
++  same rule as ada_remember.
+ 
+ ada_ops: >-
+   action='outcome' records how a stored memory/purchase check turned out

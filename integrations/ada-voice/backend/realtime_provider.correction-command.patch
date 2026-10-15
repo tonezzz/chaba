@@ -1,0 +1,203 @@
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 0aa0188..bd681f5 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -571,6 +571,61 @@ _CONFIRM_VERB_RE = re.compile(
+     re.IGNORECASE,
+ )
+ 
++# Explicit memory directives (OPS-0567, card
++# correction-commands-die-at-the-confirm-gate): a correction or remember
++# order in the user's own turn — 'CRV เป็นรถของกุ้ง ไม่ใช่ของผมนะ
++# แก้ไขด้วย', 'remember that', 'forget it' — IS the authorization for the
++# write; asking for a yes on top of the order is the failure that let the
++# correction die unwritten (transcript 2026-10-13-cac2984711).
++# _user_memory_directive() checks this pattern; it is consulted ONLY for
++# the memory-write seats (_memory_directed_call) and never authorizes
++# actuation, captures, or publishes.
++_MEMORY_DIRECTIVE_RE = re.compile(
++    r"\bremember\b|\bnote\s+(?:it|this|that)\b|"
++    r"\bjot\s+(?:it|this|that)(?:\s+down)?\b|"
++    r"\bwrite\s+(?:it|this|that)\s+down\b|\brecord\s+(?:it|this|that)\b|"
++    r"\bsave\s+(?:it|this|that)\b|"
++    r"\b(?:fix|correct|change|update)\s+"
++    r"(?:it|that|this|the\s+record|the\s+memory|your\s+memory)\b|"
++    r"\bforget\s+(?:it|that|this|about\s+it)\b|"
++    # STT splits Thai syllables with spaces — \s* between fragments.
++    r"จำ\s*(?:เอา\s*)?ไว้|จด\s*(?:ไว้|บันทึก)|บันทึก|เก็บ\s*ไว้|"
++    r"แก้\s*ไข|แก้\s*(?:ด้วย|ให้|หน่อย|นะ)|"
++    r"เปลี่ยน\s*(?:เป็น|ให้|ด้วย|หน่อย|นะ|บันทึก|ข้อมูล|ความ\s*จำ)|"
++    r"อัปเดต|อัพเดท|"
++    r"ลืม\s*(?:มัน|ไป|เรื่อง|เถอะ|ซะ)|ลบ\s*(?:มัน|ออก|ทิ้ง|ที่|ความจำ)|"
++    r"เอา\s*ออก",
++    re.IGNORECASE,
++)
++# Negation in front of the directive reverses it — 'อย่าจำ', 'don't
++# record that', 'ไม่ต้องแก้' are vetoes, not orders. Scanned over the
++# ~40 chars before the match (same lead-stance idea as _CONFIRM_NEG_RE).
++# Bare ไม่ is deliberately absent — the correction content itself
++# negates ('ไม่ใช่ของผมนะ แก้ไขด้วย' must still authorize).
++_MEMORY_DIRECTIVE_NEG_RE = re.compile(
++    r"\b(?:don't|do\s+not|never|no\s+need|stop)\s*$|"
++    r"อย่า|หยุด|เลิก|ไม่\s*ต้อง|ไม่\s*เอา",
++    re.IGNORECASE,
++)
++# 'I remember X' / 'do you remember X' is recollection, not a store
++# order — 'remember' only counts when no speaker/subject pronoun
++# immediately precedes it.
++_MEMORY_REMEMBER_PRONOUN_RE = re.compile(
++    r"(?:^|\s)(?:i|you|we|they|he|she)\s*$", re.IGNORECASE)
++
++
++def _memory_directed_call(name: str, args: dict) -> bool:
++    """True for the confirm-gated memory-write seats an explicit user
++    directive can authorize — ada_remember's curated-bank kinds and
++    ada_forget, plus ada_ops action='outcome' (the memory-feedback seat).
++    Callers already carved ada_remember's non-bank kinds (vocab/guest/
++    habit) out of the gated block — they were never confirm-gated."""
++    if name in ("ada_remember", "ada_forget"):
++        return True
++    return (name == "ada_ops"
++            and str((args or {}).get("action") or "").lower() == "outcome")
++
++
+ DEVIN_INSTRUCTIONS = (
+     " You can dispatch unattended Devin coding sessions on tony-dell: "
+     "devin action='dispatch' starts one in a dedicated git worktree (repos: "
+@@ -1648,7 +1703,9 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                 "Store or update a memory (absorbs vocab_note, guest_remember*, "
+                 "report_habit_observation) — bank= + kind=; a matching "
+                 "key/subject+attribute updates in place. Some banks need "
+-                "confirmed=true after a spoken yes."
++                "confirmed=true — a spoken yes or an explicit "
++                "remember/correct/forget order in the user's own turn "
++                "counts as that confirmation."
+             ),
+             "behavior": types.Behavior.NON_BLOCKING,
+             "parameters_json_schema": {
+@@ -1740,7 +1797,7 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                     },
+                     "confirmed": {
+                         "type": "boolean",
+-                        "description": "Required for confirmed-policy banks; set true only after explicit user confirmation.",
++                        "description": "Required for confirmed-policy banks; set true after explicit user confirmation — an explicit remember/correct/forget order in the user's own turn already is that confirmation.",
+                     },
+                     "confirm_token": {
+                         "type": "string",
+@@ -1781,7 +1838,7 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                     },
+                     "confirmed": {
+                         "type": "boolean",
+-                        "description": "Required for confirmed-policy banks; set true only after explicit user confirmation.",
++                        "description": "Required for confirmed-policy banks; set true after explicit user confirmation — an explicit remember/correct/forget order in the user's own turn already is that confirmation.",
+                     },
+                     "confirm_token": {
+                         "type": "string",
+@@ -3135,7 +3192,15 @@ class GeminiLiveProvider(RealtimeProvider):
+             "remember it, then call ada_remember — pass confirmed=true only after the user agrees. "
+             "But when the user explicitly asks you to remember something ('remember that…', "
+             "'note this'), that request IS the confirmation — pass confirmed=true directly "
+-            "instead of asking again. "
++            "instead of asking again. The same law covers corrections and retractions: "
++            "when the user says a stored fact is wrong and orders the fix "
++            "('แก้ไขด้วย', 'that's wrong — fix it', 'correct that', 'forget that', "
++            "'ลืมมันไป'), the order IS the authorization — write it with "
++            "ada_remember/ada_forget and confirmed=true in the SAME turn "
++            "(update the existing key= or use supersedes= when you have it), then "
++            "say in one clause what you changed. Never ask permission to apply an "
++            "explicit correction — the ask-first turn is exactly how corrections die. "
++            "Reserve confirm-first for facts you inferred or are unsure about. "
+             "Quick idea bursts ('jot this', 'idea:', a fragment worth keeping) go to the "
+             "'ideas' bank — save the raw wording verbatim with kind=idea and attribute=raw; "
+             "write_policy there is direct so no confirmation is needed. The Devin console "
+@@ -3635,6 +3700,33 @@ class GeminiLiveProvider(RealtimeProvider):
+         # is consent with commentary, "no, uh-huh" is a denial.
+         return not (neg and neg.start() < aff.start())
+ 
++    def _user_memory_directive(self, source_text: str) -> bool:
++        """True when the user's own recent speech carries an explicit
++        directive to store, correct, or retract a memory — 'แก้ไขด้วย',
++        'remember that', 'forget it' (OPS-0567: the order IS the
++        authorization; confirm-first stays for inferred/uncertain facts).
++        Negated forms ('อย่าจำ', 'don't record that') and questions don't
++        count; 'I/you remember X' is recollection, not an order. Only
++        consulted for memory-write calls (_memory_directed_call) — it
++        never authorizes actuation."""
++        text = (source_text or "").strip()
++        if not text or self._is_junk_turn(text):
++            return False
++        if _CONFIRM_QUESTION_RE.search(text):
++            return False
++        m = _MEMORY_DIRECTIVE_RE.search(text)
++        while m:
++            lead = text[max(0, m.start() - 40):m.start()]
++            if _MEMORY_DIRECTIVE_NEG_RE.search(lead):
++                m = _MEMORY_DIRECTIVE_RE.search(text, m.end())
++                continue
++            if (m.group(0).lower() == "remember"
++                    and _MEMORY_REMEMBER_PRONOUN_RE.search(lead)):
++                m = _MEMORY_DIRECTIVE_RE.search(text, m.end())
++                continue
++            return True
++        return False
++
+     def _confirm_retry_pending(self, tool: str,
+                                args: dict[str, Any]) -> bool:
+         """True when this exact gated call was already denied once in this
+@@ -5600,6 +5692,7 @@ class GeminiLiveProvider(RealtimeProvider):
+                             if self.tool_runner is not None:
+                                 try:
+                                     call_args = dict(call.args or {})
++                                    _mem_directed = False
+                                     if (str(call.name) in _CONFIRM_GATED_TOOLS
+                                             # non-bank ada_remember kinds
+                                             # (vocab/guest/habit) absorbed
+@@ -5633,9 +5726,24 @@ class GeminiLiveProvider(RealtimeProvider):
+                                         _affirmed = self._user_confirmed(input_transcript)
+                                         self._jev_confirm_probe(
+                                             _src, _affirmed, str(call.name))
+-                                    if call_args.get("confirmed"):
++                                        # OPS-0567 (card correction-
++                                        # commands-die-at-the-confirm-gate):
++                                        # an explicit remember/correct/
++                                        # forget order in the user's own
++                                        # turn IS the confirmation for the
++                                        # memory write — the ask-first
++                                        # round-trip is what let
++                                        # 'แก้ไขด้วย' die unwritten.
++                                        _mem_directed = (
++                                            _memory_directed_call(
++                                                str(call.name), call_args)
++                                            and self._user_memory_directive(
++                                                _src))
++                                    if call_args.get("confirmed") or _mem_directed:
+                                         _src = self._confirm_source_text(input_transcript)
+-                                        _affirmed = self._user_confirmed(input_transcript)
++                                        _affirmed = (
++                                            self._user_confirmed(input_transcript)
++                                            or _mem_directed)
+                                         if not _affirmed and self._confirm_retry_pending(
+                                                 str(call.name), call_args):
+                                             # The denial already proposed
+@@ -5683,6 +5791,21 @@ class GeminiLiveProvider(RealtimeProvider):
+                                             # 2026-09-29: 'approve' → denied
+                                             # 'no pending' → double-ask loop).
+                                             call_args["_verified_affirm"] = True
++                                        if _mem_directed:
++                                            # The order itself is the grant —
++                                            # arm the envelope even on a bare
++                                            # call so the server gate doesn't
++                                            # force propose → deny → retry on
++                                            # a command the user already gave.
++                                            call_args["confirmed"] = True
++                                            call_args["_verified_affirm"] = True
++                                            self._emit_ops_event(
++                                                "memory_directive_authorize",
++                                                f"Authorized {call.name} on the "
++                                                "user's explicit memory "
++                                                "directive — no separate yes "
++                                                "needed.",
++                                                tool=str(call.name))
+                                     if call.name == "ada_memory_search":
+                                         q = call_args.get("query")
+                                         if q:
