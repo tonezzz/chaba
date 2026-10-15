@@ -67,6 +67,21 @@ topics:
       - {at: "2026-10-15", ask: "board looks suspicious — cards came back or never move", cards: [OPS-0688]}
       - {at: "2026-10-15", ask: "ADA-0643 in Doing — why does it have the queue button", cards: [KNB-*]}
       - {at: "2026-10-15", ask: "OPS-0502 — what am I supposed to do with it? (stale card needing his attention again)", cards: [OPS-0502]}
+  - id: render-job-missing-images
+    topic: "render_job records with missing/broken output — writer stores a filesystem path instead of uploading to WP media"
+    count: 2
+    status: open
+    notes: "First surfaced when Tony reported the render_job archive showed
+      'no image / broken image' after v0.4.0 deploy; re-asked 2026-10-15
+      ('Render jobs still missing images, is it still in the card or is it
+      time for the repeat counter?'). Root cause: writer stores
+      /local/local-gen/*.png paths, never POSTs /wp/v2/media — pixels
+      unrecoverable (job 117 file already gone on omen). Plugin v0.4.1
+      flags bad output_url; fix carded as
+      render-job-writer-must-upload-output-to-78229c."
+    history:
+      - {at: "2026-10-15", ask: "render jobs list shows no image / broken image — how verified for real?", cards: []}
+      - {at: "2026-10-15", ask: "Render jobs still missing images — still in the card or repeat counter?", cards: [render-job-writer-must-upload-output-to-78229c]}
   - id: partial-verification
     topic: "A curated subset of checks presented as the verification — agent picks which checks 'matter' instead of running the full kit"
     count: 1
