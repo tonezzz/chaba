@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
-column: backlog
-updated: 2026-10-14 19:56
+column: review
+updated: 2026-10-16 04:48
 priority: high
 tags:
 - timer-alert
@@ -14,3 +14,39 @@ comms:
 - at: 2026-10-14 19:56
   from: devin
   text: card captured via board-api
+- at: 2026-10-16 04:41
+  from: tony
+  text: queued for processing
+- at: 2026-10-16 04:41
+  from: tony-omen
+  text: claimed
+- at: 2026-10-16 04:41
+  from: chaba
+  text: started devin-task-20261016-044150-timer-network-scan-tony-on-ton on tony-omen (dispatch)
+- at: 2026-10-16 04:42
+  from: devin
+  text: Investigating network-scan-tony.service failure on tony-dell — pulling journal.
+- at: 2026-10-16 04:46
+  from: devin
+  text: 'Root cause: tony-dell rebooted 10-14 19:41; timer OnBootSec=2m fired at 19:43 while tony-ha (127.0.0.1:8123)
+    was still starting → ConnectionRefused → single exit-code failure. Self-healed at 19:58; every 15-min run green
+    since (verified to 04:29). This is a recurrence of the 09-21 network-scan-startup-race learning — fix committed
+    on dispatch branch: build-dossier-devices.py now waits up to 180s for the HA websocket port before connecting.
+    Alert is stale; timer is healthy. Safe to close once the'
+- at: 2026-10-16 04:48
+  from: tony-omen
+  text: 'finished (ok): exit=0 44150-timer-network-scan-tony-on-ton.md` — the card is safe to close as fixed-pending-merge.
+    | devin-task-2026101'
+- at: 2026-10-16 04:48
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0 44150-timer-network-scan-tony-on-ton.md` — the card is safe to close as fixed-pending-merge. |
+    devin-task-20261016-044150-timer-network-scan-tony-on-ton.service: Consumed 53.312s CPU time over 4min 41.551s
+    wall clock time, 1.1G memory peak.'
+  verified: false
+review_kind: verify
+claim: {}

@@ -1,0 +1,29 @@
+id: wp-repeat-ask-surface
+title: Surface repeat-ask register in WP as repeat_ask CPT, sorted by last repeat
+column: done
+updated: 2026-10-15 07:07
+priority: high
+ref: OPS-0690
+comms:
+- at: 2026-10-15 07:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 07:03
+  from: devin
+  text: 'Spec: ssot.repeat-asks.yml -> repeat_ask CPT (private, meta: topic/count/last_repeat/status, content=history
+    table). Slug ra-<topic-id> for idempotent upserts. Admin list sorted by last_repeat desc + sortable columns.
+    Sync script on idc03 (has wp-boards.env) + 15min timer. Plugin 0.3.6->0.3.7 deploy via zip upload (admin creds
+    on omen). Started.'
+- at: 2026-10-15 07:07
+  from: devin
+  text: 'DONE. Plugin 0.3.7 deployed (zip upload, overwrite confirmed): repeat_ask CPT + REST meta + admin columns
+    + default sort last_repeat desc (clickable Asked/Last-repeat). sync-repeat-asks.py live on idc03: 3 posts created
+    (ra-decision-buttons count=4, ra-recall-aid-suggestions count=1, ra-stale-card-actions count=2) with meta verified
+    via REST GET. chaba-repeat-asks-sync.timer armed 15min on idc03. CF-1010 gotcha: writers must send a custom
+    UA — Python-urllib default gets bot-blocked. SSOT updated'
+- at: 2026-10-15 07:07
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

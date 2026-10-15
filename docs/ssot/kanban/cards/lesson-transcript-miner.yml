@@ -1,0 +1,66 @@
+id: lesson-transcript-miner
+title: 'Offline lesson miner: transcripts -> lesson CPT (no prompt tokens)'
+column: done
+updated: 2026-10-15 10:29
+priority: medium
+ref: OPS-0694
+comms:
+- at: 2026-10-15 08:49
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 08:49
+  from: devin
+  text: 'Spec (approved design 2026-10-15): periodic job on idc03 scans Ada session transcripts for Tony knowledge-Q&A
+    turns, drafts lesson HTML from full transcript (richer than live voice answers), files via scripts/lesson-add.py
+    (bilingual automatic). Zero per-session prompt tokens, zero voice latency. Model: free-first — flash-lite free
+    tier / OpenRouter free models; batch window off-peak. Fallback if recall lossy: one-line Ada instruction + lesson-intake
+    card comm (~20 tok, no new tool schema).'
+- at: 2026-10-15 10:12
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 10:12
+  from: idc02
+  text: claimed
+- at: 2026-10-15 10:13
+  from: chaba
+  text: started devin-task-20261015-101304-offline-lesson-miner-transcrip on idc02 (dispatch)
+- at: 2026-10-15 10:13
+  from: devin
+  text: dispatch started — reading lesson-add.py + transcript sources to design the miner
+- at: 2026-10-15 10:19
+  from: devin
+  text: 'BUILT: scripts/ada/lesson-miner.py — scan transcripts -> mechanical question filter -> 1 classify call
+    -> <=4 draft calls -> lesson-add.py (slug upsert + auto TH). Free-first flash-lite, gateway opt-in via GEMINI_BASE_URL;
+    quiet-when-empty board comments; slug+size dedup state. Job registered: ada-lesson-miner in ssot.jobs.yml (idc03,
+    daily 04:40, rendered units committed). 11 unit tests green, ssot-validate 0 errors. NOT installed on idc03
+    — post-merge: render-jobs.py --host idc03 --install, th'
+- at: 2026-10-15 10:20
+  from: idc02
+  text: 'finished (ok): exit=0 after merge, run `render-jobs.py --host idc03 --install` and eyeball the first `--dry-run`
+    output. | devin-task-2'
+- at: 2026-10-15 10:20
+  from: chaba
+  text: pushed dispatch/20261015-101304-offline-lesson-miner-transcrip to origin
+- at: 2026-10-15 10:20
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:20
+  from: chaba
+  text: auto-merged 05c08045 (dispatch/20261015-101304-offline-lesson-miner-transcrip) → origin/master
+- at: 2026-10-15 10:29
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 after merge, run `render-jobs.py --host idc03 --install` and eyeball the first `--dry-run` output.
+    | devin-task-20261015-101304-offline-lesson-miner-transcrip.service: Consumed 1min 16.406s CPU time, 213.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 10:29
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: ada-scenario-suite-cms-fails
 title: 'ada-scenario-smoke failing: auto-report-worthy + cms_public_url_lane + cms-translate (2 runs each)'
-column: backlog
-updated: 2026-10-12 22:30
+column: done
+updated: 2026-10-15 16:29
 brief: 'ada-scenario-smoke.service failed 2026-10-12 22:04 — three scenario failures (2 runs each): auto-report-worthy,
   cms_public_url_lane, cms-translate. Also stale-failed: ada-scenario-memory/reports/research/tools (Oct 9), mddb-memory-standard
   (18:37 today), mddb-vector-reindex, ada-recall-canary. Root-cause needed — likely CMS lane or free-key degradation.'
@@ -11,3 +11,49 @@ comms:
 - at: 2026-10-12 22:30
   from: tony
   text: card captured via board-api
+- at: 2026-10-15 15:55
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:56
+  from: tony-omen
+  text: claimed
+- at: 2026-10-15 15:56
+  from: chaba
+  text: started devin-task-20261015-155632-ada-scenario-smoke-failing-aut on tony-omen (dispatch)
+- at: 2026-10-15 16:00
+  from: devin
+  text: 'investigating: pulled latest smoke reports from ada-ha-scenario-reports. 3 distinct signatures so far —
+    auto-report-worthy: empty transcripts (model never responds); cms_public_url_lane: <|tool_call_start|> leaks
+    as literal text instead of a parsed call; cms-translate: publish/read run but result lacks lang=th. Digging
+    into ada-dev logs + ada-voice code on idc03 next.'
+- at: 2026-10-15 16:24
+  from: tony-omen
+  text: 'finished (ok): exit=0 g in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
+    | devin-task-20261015-15563'
+- at: 2026-10-15 16:24
+  from: chaba
+  text: 'session-end checkpoint f3c993b1: 1 leftover file(s) committed'
+- at: 2026-10-15 16:24
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'merge-sweep: merged fc89f080 (dispatch/20261015-155632-ada-scenario-smoke-failing-aut from tony-omen) ->
+    origin/master — marked verified (exit_code=0; 2 file(s) changed vs base) — auto-closed'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-155632-ada-scenario-smoke-failing-aut,
+    branch dispatch/20261015-155632-ada-scenario-smoke-failing-aut on tony-omen'
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0 g in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261015-155632-ada-scenario-smoke-failing-aut.service:
+    Consumed 1min 7.561s CPU time over 25min 29.665s wall clock time, 973.7M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 16:29
+  note: verified — exit_code=0; 2 file(s) changed vs base

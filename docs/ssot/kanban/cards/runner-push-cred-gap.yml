@@ -1,0 +1,16 @@
+id: runner-push-cred-gap
+title: Runners without repo push creds strand dispatch branches (macbook, idc03)
+column: backlog
+updated: 2026-10-14 22:38
+spec: 'ADA-0673 hit the documented failure mode: tony-macbook claimed an ada-pi dispatch, finished, checkpoint committed
+  — but its SSH key is a chaba-only deploy key, so the branch never reached origin; card still marked done+verified
+  (misleading). Same gap on idc03 (daa0e0a stranded). Options: (a) add ada-voice deploy keys to each runner host;
+  (b) restrict runner labels so hosts only claim repos they can push (RUNNER_LABELS exists); (c) close-out fallback
+  — if push fails, auto-export patch via board-api to dell edit point (what I did manually). Recommend (b)+(c):
+  labels as guard, patch-relay as safety net. Also: merge-sweep/card-verify should treat ''branch absent from origin''
+  as NOT verified — the done+verified stamp on a stranded branch is the bug that hid this.'
+ref: OPS-0682
+comms:
+- at: 2026-10-14 22:38
+  from: devin
+  text: card captured via board-api

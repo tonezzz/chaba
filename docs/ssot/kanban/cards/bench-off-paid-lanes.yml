@@ -1,7 +1,7 @@
 id: bench-off-paid-lanes
 title: Move hourly benchmark/smoke traffic off paid Gemini lanes
-column: backlog
-updated: 2026-10-13 22:08
+column: done
+updated: 2026-10-15 13:37
 priority: high
 spec: 'Goal: automated probes never bill a paid project again.
 
@@ -34,3 +34,115 @@ comms:
     on paid lane; manual date_echo scenario PASS). Canary already FREE-keyed. Remaining: weekly tiers ada-scenario-{memory,reports,tools,casting,cms,research}
     still hit :8002 (~234 admin turns each run-day) — lane-coupled suites (casting needs VCAST/HA actuation ada-dev
     lacks) need a p'
+- at: 2026-10-14 23:47
+  from: devin
+  text: 'ROOT CAUSE FOUND (2026-10-14 ~midnight): the agreed text-only scenario path was never wired to the suite.
+    scenario-live.py --text (mode=text ws) exists since ADA-0598, but scenario-benchmark.py _run_one builds the
+    driver cmd WITHOUT it, and no per-scenario transport flag exists — so all 41 smoke-tier scenarios open real
+    Live sessions hourly (~45 Live-min/hr, ~689/day, dev lane). FIX SPEC: (a) scenario yaml gains a transport: text|live
+    field (default live for compat); _run_one appends --text when'
+- at: 2026-10-14 23:47
+  from: devin
+  text: queued for processing
+- at: 2026-10-14 23:47
+  from: idc02
+  text: claimed
+- at: 2026-10-14 23:48
+  from: chaba
+  text: started devin-task-20261014-234803-goal-automated-probes-never-bi on idc02 (dispatch)
+- at: 2026-10-14 23:54
+  from: devin
+  text: 'PAUSED for the bleed (2026-10-15 ~00:00, Tony-approved direction): systemctl --user stop ada-scenario-smoke.timer
+    + ada-bench-casting.timer on idc03 — no more hourly Live burn until this card ships transport:text and the timers
+    are re-armed (systemctl --user start). Side effect: hourly smoke/bench coverage halts — auto-report goes stale;
+    that is the intended trade until the fix lands. Re-arm = part of this card''s done-condition.'
+- at: 2026-10-14 23:58
+  from: devin
+  text: 'SHIPPED 2026-10-15 ~00:00 (f485a27): transport: field wired — scenario-benchmark._run_one appends --text
+    when yaml declares it; 40/41 smoke-tier scenarios now transport:text (speech-stall-voiceback stays live as audio
+    sentinel). --transport suite override added. PROOF: ran date_echo manually on ada-dev with --text — PASS 3 turns/33.9s,
+    correct Thai replies, NO voice-burn ledger entry (ledger only logs Live-provider sessions). Timers re-armed
+    — smoke next runs 00:00, casting 02:00; expected burn '
+- at: 2026-10-15 00:12
+  from: devin
+  text: '[exec] Repo-side done on dispatch wt (idc02). Suites: research/cms/reports → ada-dev :8005; memory/tools/casting
+    + full tier now park unless a prod-allow-<suite> sentinel names a card (one-shot, ≤7d) — enforced by provider-gate
+    ExecCondition + paid-lane guard in scenario-suite-run.sh. New stacks/services/ada-live-canary/: free hourly
+    unchanged + ada-live-canary-paid daily 06:12 (1 connect/day) + wallet-watch units tracked (kept hourly ~1-token
+    REST/LINE alerts — flip to daily if that should coun'
+- at: 2026-10-15 00:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-234803-goal-automated-probes-never-bi no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-15 00:14
+  from: idc02
+  text: 'finished (ok): exit=0 rd: per-scenario `url:` overrides bypass `ADA_LIVE_URL` — needs an ada-voice-side
+    fix on tony-dell. | devin-task-'
+- at: 2026-10-15 00:14
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-234803-goal-automated-probes-never-bi already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261014-234803-goal-automated-probes-never-bi.md) — auto-closed'
+- at: 2026-10-15 00:14
+  from: chaba
+  text: pushed dispatch/20261014-234803-goal-automated-probes-never-bi to origin
+- at: 2026-10-15 00:14
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 00:14
+  from: chaba
+  text: auto-merged 387eada2 (dispatch/20261014-234803-goal-automated-probes-never-bi) → origin/master
+- at: 2026-10-15 00:14
+  from: devin
+  text: 'CORRECTION to previous comment — my first verification proved the wrong caller. f485a27 patched scenario-benchmark.py,
+    but the hourly timer''s container runs scenario-report.py, which builds its own scenario-live command — the
+    00:00 run still spawned drivers WITHOUT --text (verified via pgrep on the live process). Follow-up 5dc7665 wires
+    transport into scenario-report.py itself. Re-verified through the REAL path: scenario-report --only date-echo
+    spawns `scenario-live.py ... --text`, events kind=t'
+- at: 2026-10-15 00:18
+  from: devin
+  text: '00:4x follow-up — second burn vector found and disarmed: ada-bench-casting.timer (02:00) -> preflight ->
+    ada-scenario-casting -> scenario-suite-run.sh -> scenario-benchmark.py --suite casting against :8002 (ada-ha-TONY
+    lane = now kk''s funded ..bheg key). Its ~20 yamls (vcast_*/tv_cast/gev_*/cam_*) carry NO transport: field ->
+    all Live on the paid lane. Timer STOPPED again. Unlike smoke, these are genuine audio/actuation scenarios (speaker-id,
+    gesture ops) — flipping them to text changes what the'
+- at: 2026-10-15 06:38
+  from: devin
+  text: 'raised request ada-bench-casting-02-00-targets-paid-800-5a542e: ada-bench-casting (02:00, targets paid
+    :8002 lane) is paused. Its ~20 scenarios are genuinely audio/actuation — how shou'
+- at: 2026-10-15 13:22
+  from: tony
+  text: 'answered ada-bench-casting-02-00-targets-paid-800-5a542e: triage per-scenario: text-safe ones to text,
+    keep speaker-id live ★'
+- at: 2026-10-15 13:37
+  from: tony
+  text: closed by tony
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  sweep:
+    stale_running: 2026-10-15 00:14
+  result: 'exit=0 rd: per-scenario `url:` overrides bypass `ADA_LIVE_URL` — needs an ada-voice-side fix on tony-dell.
+    | devin-task-20261014-234803-goal-automated-probes-never-bi.service: Consumed 1min 3.981s CPU time, 109.5M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 00:14
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-234803-goal-automated-probes-never-bi.md
+requests:
+- id: ada-bench-casting-02-00-targets-paid-800-5a542e
+  ask: ada-bench-casting (02:00, targets paid :8002 lane) is paused. Its ~20 scenarios are genuinely audio/actuation
+    — how should it run?
+  status: answered
+  at: 2026-10-15 06:38
+  from: devin
+  options:
+  - 'triage per-scenario: text-safe ones to text, keep speaker-id live ★'
+  - run weekly not daily
+  - repoint at ada-dev free lane
+  - keep paused until Live budget resolved
+  suggested: 'triage per-scenario: text-safe ones to text, keep speaker-id live ★'
+  answer: 'triage per-scenario: text-safe ones to text, keep speaker-id live ★'

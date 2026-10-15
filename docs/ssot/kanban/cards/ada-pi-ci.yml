@@ -2,7 +2,7 @@ id: ada-pi-ci
 title: ada-pi CI — lint + unit tests + scenario-schema on push
 brief: ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch
   already exists in chaba for failure alerts. Waiting in backlog.
-column: doing
+column: done
 metric: every push to main runs tool-lint + pytest + scenario yaml validation; failures alert via gh-runs-watch
 verify: push a violating commit on a branch -> workflow fails + alert fires
 note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2) pytest tests/ -x (unit), (3) a
@@ -10,7 +10,7 @@ note: 'Minimum workflow: (1) python3 scripts/tool-lint.py (surface contract), (2
   the existing gh-runs-watch channel so failures page instead of rotting. Complements ada-deploy-gate-tests — CI
   catches it at push, the gate catches what CI missed.'
 help: scripts/tool-lint.py; tests/; chaba gh-runs-watch card + workflows for the alert path
-updated: 2026-10-15 11:15
+updated: 2026-10-15 12:59
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -92,6 +92,9 @@ comms:
   from: chaba
   text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
     Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -122,7 +125,7 @@ requests:
 review_kind: verify
 auto_close:
   by: merge-sweep
-  at: 2026-10-11 06:26
+  at: 2026-10-15 12:59
   note: verified — evidence checks green, closing itself
 ref: ADA-0418
 awaiting_action: true

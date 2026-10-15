@@ -1,0 +1,71 @@
+id: living-board-mvp
+title: render-board2 living board MVP — live poll, ticker, counters
+column: done
+updated: 2026-10-15 10:15
+priority: medium
+note: 'Tony wants the ops board to feel active/responsive (WC3/Foundation worker vibe). MINIMAL scope phase 1, all
+  presentation-layer in render-board2.py output — zero backend changes: (1) JS polls cards.json every ~10s, diffs
+  cards in/out of columns in place — no page reload; (2) per-column counters + doing-column pulse when >0; (3) floating
+  event ticker — latest card comms scrolling across the bottom (merge rescued / test-gate / held / deployed lines).
+  Data already exists (cards.json regenerates via '
+help: 'Game-model ref: runners=peasants, cards=jobs, comms=event log. Keep truth in YAML — this is pure view layer.'
+ref: KNB-0693
+comms:
+- at: 2026-10-15 08:38
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 09:55
+  from: devin
+  text: 'Re-scoped after reading render-board2.py: live polling ALREADY exists (30s cards.json poll, live-dot, tab
+    counts, healPending). Remaining MVP = (1) scroll-stable updates — diff incoming cards vs rendered list, preserve
+    sidebar scroll, animate moves/fades instead of wholesale renderList(); (2) comms ticker from existing cards.json
+    payload; (3) faster poll via If-Modified-Since 304. Risk: view-layer only, board1 unaffected fallback.'
+- at: 2026-10-15 09:55
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 09:55
+  from: tony-omen
+  text: claimed
+- at: 2026-10-15 09:55
+  from: chaba
+  text: started devin-task-20261015-095556-render-board2-living-board-mvp on tony-omen (dispatch)
+- at: 2026-10-15 09:57
+  from: devin
+  text: 开始实现 board2 活体看板：10s轮询+列内diff闪烁、Doing脉冲计数、底部事件流ticker，全部改在 render-board2.py 模板层
+- at: 2026-10-15 09:59
+  from: devin
+  text: 实现完成：轮询10s+换列/新卡行内闪烁+⇄徽章；Doing tab计数脉冲(>0)；底部26px事件流ticker(全部comms合并排序前30条，-50%无缝循环，签名不变不重建)；live-dot每轮blip。全部在render-board2.py模板层，+61/-7，node
+    --check通过。job留档 docs/ssot/jobs/kanban/2026-10-15-board2-living-board.yml
+- at: 2026-10-15 10:01
+  from: tony-omen
+  text: 'finished (ok): exit=0 ml` and outcome to `dispatch-outcome-20261015-095556-render-board2-living-board-mvp.md`.
+    | devin-task-20261015-09'
+- at: 2026-10-15 10:01
+  from: chaba
+  text: 'session-end checkpoint 676dbd44: 2 leftover file(s) committed'
+- at: 2026-10-15 10:01
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+- at: 2026-10-15 10:14
+  from: chaba
+  text: 'merge-sweep: merged ce625fe1 (dispatch/20261015-095556-render-board2-living-board-mvp from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-095556-render-board2-living-board-mvp.md)
+    — auto-closed'
+- at: 2026-10-15 10:15
+  from: chaba
+  text: 'merge-sweep: merged ce625fe1 (dispatch/20261015-095556-render-board2-living-board-mvp from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-095556-render-board2-living-board-mvp.md)
+    — auto-closed'
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0 ml` and outcome to `dispatch-outcome-20261015-095556-render-board2-living-board-mvp.md`. | devin-task-20261015-095556-render-board2-living-board-mvp.service:
+    Consumed 1min 3.389s CPU time over 3min 28.914s wall clock time, 1.4G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 10:14
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261015-095556-render-board2-living-board-mvp.md

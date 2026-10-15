@@ -1,7 +1,7 @@
 id: ada-render-video-bypasses-litellm-no-per-ede157
 title: ada_render_video bypasses LiteLLM — no per-lane spend metering
 column: doing
-updated: 2026-10-15 11:00
+updated: 2026-10-16 04:44
 priority: medium
 tags:
 - spend
@@ -49,6 +49,88 @@ comms:
     tool is now gateway-ready via ADA_GEMINI_API_BASE=<proxy>/gemini + ADA_RENDER_VIDEO_API_KEY (download URI rewrite
     included). 31/31 video tests, tool-lint clean. Note: fast rate is actually $0.10/s@720p now, not $0.15. Trail:
     docs/ssot/jobs/ada/2026-10-14-render-vide'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-220118-ada-render-video-calls-generat no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-15 13:38
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 13:38
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-15 13:44
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 13:44
+  from: chaba
+  text: 'raised request merge-conflict-2: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-15 15:54
+  from: tony
+  text: 'answered merge-conflict-2: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 15:54
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'raised request merge-conflict-3: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-15 17:59
+  from: tony
+  text: 'answered merge-conflict-3: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 17:59
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-15 18:14
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 18:14
+  from: chaba
+  text: 'raised request merge-conflict-4: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-15 19:53
+  from: tony
+  text: 'answered merge-conflict-4: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 19:53
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-15 19:59
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 19:59
+  from: chaba
+  text: 'raised request merge-conflict-5: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-16 04:39
+  from: tony
+  text: 'answered merge-conflict-5: drop this dispatch — re-dispatch fresh from current main'
+- at: 2026-10-16 04:39
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-16 04:44
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-16 04:44
+  from: chaba
+  text: 'raised request merge-conflict-6: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
 requests:
 - id: how-should-ada-render-video-be-metered-ac2542
   ask: How should ada_render_video be metered?
@@ -60,9 +142,94 @@ requests:
   - keep direct; log usage locally
   suggested: route through LiteLLM ledger ★
   answer: route through LiteLLM ledger ★
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 12:59
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-2
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 13:44
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-3
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 15:59
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-4
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 18:14
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-5
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 19:59
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: drop this dispatch — re-dispatch fresh from current main
+- id: merge-conflict-6
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: open
+  at: 2026-10-16 04:44
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
 action:
   type: dispatch
   repo: ada-voice
   status: running
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-15 12:59
 awaiting_action: true

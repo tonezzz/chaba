@@ -1,0 +1,18 @@
+id: tony-omen-install-chaba-repo-sync-timer-c581bd
+title: 'tony-omen: install chaba-repo-sync.timer — exec checkout has no periodic pull'
+column: backlog
+updated: 2026-10-16 04:53
+tags:
+- tony-omen
+- ops
+- drift
+note: 'Sibling of OPS-0479 (tony-dell, fixed 2026-10-16): chaba-repo-sync.timer does hourly/15min git-safe-pull
+  of ~/CascadeProjects/chaba on idc02/idc03/mn01/tony-dell, but is NOT installed on tony-omen (0 unit files, checked
+  2026-10-16). tony-omen jobs run from ~/CascadeProjects/chaba per ssot.jobs.yml repo: map, so its checkout drifts
+  the same way. Fix: copy systemd/chaba-repo-sync.{service,timer} to ~/.config/systemd/user/ + daemon-reload + enable
+  --now. Canonical units now in repo systemd/ (hourly'
+ref: OPS-0713
+comms:
+- at: 2026-10-16 04:53
+  from: devin
+  text: card captured via board-api

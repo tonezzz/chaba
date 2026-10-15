@@ -1,0 +1,78 @@
+id: ada-cast-wrong-target-verbose-loop
+title: Ada casts to wrong screen + verbose failure-loop (Tony 2026-10-14 eve)
+column: done
+updated: 2026-10-15 07:29
+priority: high
+spec: 'Tony''s voice session tonight: he asked for the TV, Ada repeatedly cast to Screen 1 instead, and narrated
+  each failed attempt at length — he had to get angry before she stopped. Two defects: (a) cast target resolution
+  — ''TV'' resolved to Screen 1; check the session''s tool calls for which entity was picked and whether correction
+  turns were honored (adjacent: MED-0493 phantom state, OPS-0567 correction commands dying at confirm gate). (b)
+  no failure-loop breaker — N repeated failed attempts at the same action should trigger stop-and-ask, and verbosity
+  should drop when the user repeats/corrects. Bonus observation from Tony: frustrated short commands DID make her
+  efficient — model mirrors register; formalize as frustration-adaptive response budget, not a feature requiring
+  cursing. Verify: scenario where a wrong-target cast + user correction resolves to the right entity within 1 retry,
+  max 2 attempts then ask.'
+ref: ADA-0684
+comms:
+- at: 2026-10-14 23:50
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 00:09
+  from: devin
+  text: 'Related finding from BEN-0573 text-mode verification (2026-10-15 00:2x): date-echo turn1 in TEXT mode got
+    transcript=''Welcome back'' — the away-resume session note (memory_ops AWAY_TIER_RETURN) made the model greet
+    INSTEAD of answering the question. Turns 2-3 then answered correctly. Same family as the cast-loop complaint:
+    she talks around the task instead of doing it. Spec for whoever takes this card or a sibling: greeting may preface
+    but must not replace the answer — a returning user''s first qu'
+- at: 2026-10-15 07:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 07:02
+  from: idc03
+  text: claimed
+- at: 2026-10-15 07:02
+  from: chaba
+  text: started devin-task-20261015-070254-tony-s-voice-session-tonight-h on idc03 (dispatch)
+- at: 2026-10-15 07:22
+  from: devin
+  text: 'Session 4029a6447f audited: TV ask misrouted to cast_to_screen(screen=1) x2 — /pub returned ok:true delivered:0
+    (screen offline) and narrated as done; control_entity turn_on tony_tv ok:true on an unavailable entity; correction
+    inverted into an ada_remember write that died at the confirm gate while claimed saved; tv_action only on attempt
+    5 (correctly failed cast_verify). Drop staged: integrations/ada-voice drop 10 — delivered:0->ok:false, unavailable
+    precheck, cross-tool stop_and_ask loop breake'
+- at: 2026-10-15 07:23
+  from: devin
+  text: 'Dispatch complete (commit e125a5b5c on dispatch/20261015-070254 branch). Drop 10 staged in integrations/ada-voice/:
+    6 patches + scenario + chaba-side test, README install steps, job trail at docs/ssot/jobs/ada/2026-10-15-cast-wrong-target-loop.yml.
+    Verified: 1467 passed/1 skipped on patched clone, scenario 20/20, tool-lint clean. NOT deployed — needs Tony
+    approval at the tony-dell edit point.'
+- at: 2026-10-15 07:23
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261015-070254-tony-s-voice-session-tonight-h.service:
+    Failed to ope'
+- at: 2026-10-15 07:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 07:24
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 07:29
+  from: chaba
+  text: 'merge-sweep: merged 319471de (dispatch/20261015-070254-tony-s-voice-session-tonight-h from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-070254-tony-s-voice-session-tonight-h.md)
+    — auto-closed'
+action:
+  type: dispatch
+  status: done
+  runner: idc03
+  result: 'exit=0 ice: No such file or directory | devin-task-20261015-070254-tony-s-voice-session-tonight-h.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261015-070254-tony-s-voice-session-tonight-h.service:
+    No such file or directory'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 07:29
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261015-070254-tony-s-voice-session-tonight-h.md

@@ -1,7 +1,7 @@
 id: render-flow-quality-pass
 title: Render flow quality pass — vision self-check, iterate-on-last, multi-ref, aspect intent
-column: doing
-updated: 2026-10-15 11:00
+column: review
+updated: 2026-10-15 16:29
 priority: medium
 tags:
 - ada
@@ -70,6 +70,76 @@ comms:
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-215937-from-tony-2026-10-14-what-else no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-215937-from-tony-2026-10-14-what-else conflicts with origin/main: backend/tool_guide.yml,
+    backend/tools.d/ada_render_image.py — merge aborted, card stays for human resolution'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261014-215937-from-tony-2026-10-14-what-else:
+    1 commit(s) conflict with origin/main in'
+- at: 2026-10-15 13:05
+  from: tony
+  text: retry requested
+- at: 2026-10-15 13:05
+  from: idc02
+  text: claimed
+- at: 2026-10-15 13:05
+  from: idc02
+  text: 'finished (failed): start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+- at: 2026-10-15 13:14
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-215937-from-tony-2026-10-14-what-else failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261014-215937-from-tony-2026-10-14-what-else by
+    hand.'
+- at: 2026-10-15 13:38
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 13:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 15:53
+  from: tony
+  text: retry requested
+- at: 2026-10-15 15:54
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-15 15:54
+  from: chaba
+  text: started devin-task-20261015-155419-from-tony-2026-10-14-what-else on tony-macbook (dispatch)
+- at: 2026-10-15 16:00
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261014-215937-from-tony-2026-10-14-what-else on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-15 16:05
+  from: devin
+  text: 'explored render flow (ada_render_image/video, gemini_pool, relays). Implementing: last-render store + ref_url="last"
+    & auto-feed, vision self-check w/ one retry, ref_urls[] multi-ref, aspect/page ask notices, arch full_url on
+    2K/4K, transient retry + short-TTL 429 parking in pool.'
+- at: 2026-10-15 16:26
+  from: devin
+  text: 'done — all 6 items implemented on dispatch branch (387fdc7): render_state last-render store + ref_url="last"/auto-feed,
+    vision self-check w/ miss-retry, ref_urls[] multi-ref cap3, page/px notices, 2K/4K arch full_url, transient
+    retry + pool 429-vs-quota split. 1508 tests pass, tool-lint clean. Not pushed/deployed.'
+- at: 2026-10-15 16:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 lity-pass.yml` and `dispatch-outcome-20261015-155419-from-tony-2026-10-14-what-else.md`.
+    | devin-task-20261015-15'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-155419-from-tony-2026-10-14-what-else,
+    branch dispatch/20261015-155419-from-tony-2026-10-14-what-else'
 requests:
 - id: which-quality-item-to-build-first-dc5d96
   ask: Which quality item to build first?
@@ -94,9 +164,32 @@ requests:
   suggested: queue for dispatch ★
   answer: queue for dispatch ★
   executed: 2026-10-15 queue (already running)
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261014-215937-from-tony-2026-10-14-what-else: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tool_guide.yml, backend/tools.d/ada_render_image.py. Merge
+    idc02:/home/tony/CascadeProjects/dispatch-wt-20261014-215937-from-tony-2026-10-14-what-else by hand, or retry/abandon
+    the card.'
+  status: answered
+  at: 2026-10-15 13:00
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
 action:
   type: dispatch
   repo: ada-voice
-  status: running
-  runner: idc02
-awaiting_action: true
+  status: done
+  sweep:
+    stale_running: 2026-10-15 13:00
+    failed_noted: 2026-10-15 13:14
+    session_gone: 2026-10-15 16:00
+  attempts: 2
+  last_failure: 'start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+  runner: tony-macbook
+  result: 'exit=0 lity-pass.yml` and `dispatch-outcome-20261015-155419-from-tony-2026-10-14-what-else.md`. | devin-task-20261015-155419-from-tony-2026-10-14-what-else.service:
+    Consumed 3min 50.562s CPU time over 33min 256ms wall clock time, 1.2G memory peak.'
+review_kind: verify
+claim: {}

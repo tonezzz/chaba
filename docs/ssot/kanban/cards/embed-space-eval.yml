@@ -1,0 +1,77 @@
+id: embed-space-eval
+title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
+column: done
+updated: 2026-10-15 12:14
+priority: medium
+ref: MEM-0695
+comms:
+- at: 2026-10-15 09:20
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 09:20
+  from: devin
+  text: 'Spec (Tony 2026-10-15, edu post 353): eval set = ~30-50 real ada_memory_search queries mined by bank-router-mine,
+    relevance-labeled, TH+EN mix. 3 conditions: gemini-embedding-2 baseline / nomic raw / nomic on EN-translated
+    text. Metrics recall@1,3,5 + MRR + p50/p95 latency, split by language. Extends embed-bench.py harness. Cost
+    ~bash.001 + free-tier labels. Decision rule: nomic+translate within ~5% recall of gemini => bank migration arguable;
+    else paid stays. Gate before ANY mddb space migratio'
+- at: 2026-10-15 10:03
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 10:04
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-15 10:04
+  from: chaba
+  text: started devin-task-20261015-100427-embedding-space-eval-gemini-2- on tony-macbook (dispatch)
+- at: 2026-10-15 10:13
+  from: devin
+  text: 'Spec confirmed. Corpus: 22 vector-searched tony banks ~8.2K docs (sessions+ops-scenarios excluded - they
+    are ops-routed/keyword-ranked in prod, no vectors to migrate). Eval set from existing bankq corpus (812 unique
+    queries, 55 TH). Arms: gemini-embedding-2 / nomic-embed-text / nomic on EN-translated (TH docs+queries via flash
+    free key) + prod mddb vector-search reference arm. Labels: LLM-judged pooled top-10s. Metrics: recall@1/3/5+MRR+q-latency,
+    split TH/EN. Running on idc03 where keys+ollama '
+- at: 2026-10-15 10:35
+  from: devin
+  text: 'Fetch+select+translate done: 8261 docs across 24 vector colls, 48 queries (34 EN/14 TH), 529 TH texts translated
+    via gemini-3.5-flash-lite free key ($0). Embedding now: nomic on idc03 ollama ~2.7 docs/s then gemini-embedding-2
+    paced vs free-tier RPM. Prod mddb reference arm via queryVector per-collection. Labels = flash-judged pooled
+    top-10s.'
+- at: 2026-10-15 12:03
+  from: devin
+  text: 'DONE. Verdict: paid gemini space stays. nomic+translate = 86% of gemini recall@5 (.399 vs .465, outside
+    the ~5% band), worst on TH queries (.311 vs .406 = -23%). nomic raw .330. Prod mddb index arm .450 validates
+    method. 8,109 docs x 24 colls, 48 mined queries, flash-lite pooled labels. Cost $0.38 OR embed tokens (free
+    tier saturated ~2.3K calls). Report: reports/2026-10-15-embed-space-eval.md + docs/ssot/jobs/ada/2026-10-15-embed-space-eval.yml.
+    Side findings: embedding-001 vs -2 are DIFFERENT '
+- at: 2026-10-15 12:06
+  from: tony-macbook
+  text: 'finished (ok): exit=0 61015-100427-embedding-space-eval-gemini-2-.md`; card commented. | devin-task-20261015-100427-embedding-space-eva'
+- at: 2026-10-15 12:06
+  from: chaba
+  text: 'session-end checkpoint 7286547b: 1 leftover file(s) committed'
+- at: 2026-10-15 12:06
+  from: chaba
+  text: pushed dispatch/20261015-100427-embedding-space-eval-gemini-2- to origin
+- at: 2026-10-15 12:06
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 12:06
+  from: chaba
+  text: auto-merged 7d6ae339 (dispatch/20261015-100427-embedding-space-eval-gemini-2-) → origin/master
+- at: 2026-10-15 12:14
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 61015-100427-embedding-space-eval-gemini-2-.md`; card commented. | devin-task-20261015-100427-embedding-space-eval-gemini-2-.service:
+    Consumed 5min 19.359s CPU time over 2h 228ms wall clock time, 989.3M memory peak, 233.3M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 12:14
+  note: verified — evidence checks green, closing itself

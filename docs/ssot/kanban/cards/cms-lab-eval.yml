@@ -1,7 +1,7 @@
 id: cms-lab-eval
 title: 'cms-lab: trial Ghost+Directus+Strapi+Payload on idc02'
-column: doing
-updated: 2026-10-14 06:32
+column: done
+updated: 2026-10-15 10:25
 brief: 'Four GitHub CMSs side-by-side in ~/cms-lab on idc02, tailnet-only :8301-8304. Eval rubric: author a Thai
   shop report in each UI, then create the same via API (agent path) — measures fit for the kk place_report flow.
   Teardown: docker compose down -v + rm -rf ~/cms-lab.'
@@ -38,3 +38,22 @@ comms:
     public URL live), Strapi (4 hops: login→content-type-builder→api-token→write, schema via API triggers restart),
     Payload (code-first: added src/collections/ShopReports.ts + restart → REST write; schema-in-git is the most
     agent-native). Strapi eval token saved as STRAPI_EVA'
+- at: 2026-10-15 06:34
+  from: devin
+  text: 'VERDICT (2026-10-14, with Tony): member surface = boards WP. Ghost eliminated — its only real edge (polished
+    writing canvas + pretty default public pages) is a WP theme problem, not a CMS capability; WP wins on the 95%
+    that matters: 10 CPTs + REST meta + comments + roles + the whole writer stack already deployed. Directus/Strapi/Payload
+    eliminated earlier (agent leg friction / headless). Lab earned its keep: we now know exactly what Ghost sells
+    (theme-quality output) and that it is purchasable o'
+- at: 2026-10-15 10:25
+  from: devin
+  text: 'VERDICT + teardown (Tony decision 2026-10-15). Member surface = boards WP — places/trips/timelines/news/comments/CPTs
+    all live there now. Ghosts only edge = polished public theme, which is purchasable on WP via a member theme
+    (KNB-0687) — not worth a second CMS. Directus/Strapi/Payload eliminated on agent+schema legs. Lab torn down
+    on idc02: 5 containers removed, ~2.6G images + 1.9G ~/cms-lab dir deleted, ~4.5G freed. Recipe preserved in
+    card history + this comms thread.'
+- at: 2026-10-15 10:25
+  from: devin
+  text: closed by devin
+action:
+  status: done

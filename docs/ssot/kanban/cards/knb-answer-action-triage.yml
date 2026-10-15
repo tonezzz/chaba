@@ -1,0 +1,96 @@
+id: knb-answer-action-triage
+title: Answered board asks need action-triage — answers record but nothing executes
+column: done
+updated: 2026-10-15 17:59
+priority: high
+ref: OPS-0688
+comms:
+- at: 2026-10-15 06:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 06:48
+  from: chaba
+  text: 'raised request answer-triage-policy: Your button taps record answers but nothing acts on them — 40+ answered
+    asks sit untriaged (sweep just logs needs-triage'
+- at: 2026-10-15 10:03
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 10:03
+  from: idc03
+  text: claimed
+- at: 2026-10-15 10:04
+  from: chaba
+  text: started devin-task-20261015-100401-answered-board-asks-need-actio on idc03 (dispatch)
+- at: 2026-10-15 10:14
+  from: devin
+  text: 'investigating: 163 answered-unexecuted requests on live board (mostly done cards); ~20 on live cards. Implementing
+    answer-sweep.py — auto-verb executor riding kanban-sync (queue/close/hold verbs + per-option action: schema
+    hook), conservative: unmapped answers stay flagged for triage'
+- at: 2026-10-15 10:29
+  from: devin
+  text: 'implemented auto-verb (the ★ option) + per-option schema hook: new scripts/board/answer-sweep.py rides
+    kanban-sync after request-sweep — answered requests resolve dict-option action: field, else option id / leading
+    verb -> {queue,retry,close,hold,none}. close is merge-guarded (erred guard defers); verbs defer on starting/running;
+    conflicting verbs defer the card; lab-review/merge-conflict requests untouched. Unmapped decision answers stay
+    awaiting_action — flag now also heals onto pre-flag backl'
+- at: 2026-10-15 10:30
+  from: idc03
+  text: 'finished (ok): exit=0 to-verb (the ★ option) is implemented, and the `action:` field gives the per-option
+    path for free. | devin-task-2'
+- at: 2026-10-15 10:30
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:30
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 10:44
+  from: chaba
+  text: 'merge-sweep: merged 2263145d (dispatch/20261015-100401-answered-board-asks-need-actio from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-100401-answered-board-asks-need-actio.md)
+    — held in review (open request(s) [''answer-triage-policy''] block close)'
+- at: 2026-10-15 10:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''answer-triage-policy''] block close)'
+- at: 2026-10-15 17:50
+  from: tony
+  text: 'answered answer-triage-policy: auto-verb — Auto-execute known verbs (queue→dispatch, close→done, hold→parked)
+    at sweep time ★ — suggested'
+- at: 2026-10-15 17:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 17:59
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+requests:
+- id: answer-triage-policy
+  ask: Your button taps record answers but nothing acts on them — 40+ answered asks sit untriaged (sweep just logs
+    needs-triage and waits). How should answers execute?
+  status: answered
+  at: 2026-10-15 06:48
+  from: chaba
+  options:
+  - v: auto-verb
+    d: Auto-execute known verbs (queue→dispatch, close→done, hold→parked) at sweep time ★ — suggested
+  - v: manual
+    d: Keep it manual — answers flag, you/I triage each card
+  - v: per-option
+    d: Map actions per-option at request time — safer, needs schema work
+  answer: auto-verb — Auto-execute known verbs (queue→dispatch, close→done, hold→parked) at sweep time ★ — suggested
+action:
+  type: dispatch
+  status: done
+  runner: idc03
+  result: 'exit=0 to-verb (the ★ option) is implemented, and the `action:` field gives the per-option path for free.
+    | devin-task-20261015-100401-answered-board-asks-need-actio.service: Consumed 1min 48.494s CPU time, 289.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-15 10:59
+review_kind: verify
+claim: {}
+awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 17:59
+  note: verified — evidence checks green, closing itself

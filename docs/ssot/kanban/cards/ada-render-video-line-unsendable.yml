@@ -1,7 +1,7 @@
 id: ada-render-video-line-unsendable
 title: ada_render_video output is unsendable on LINE lanes — tailnet URL + no video message type
 column: backlog
-updated: 2026-10-14 21:05
+updated: 2026-10-15 13:49
 brief: 'Audit 2026-10-12 (session 7a2f02b3db): KK asked for an easy-to-read trip summary image; Kaewta ran ada_render_video
   — ok:true but video_url is https://tony-dell.taila0626a.ts.net/api/input-bridge/frame?... — a tailnet-only URL
   LINE can never fetch, and even if public the relay only sends imageMessages (jpeg) — video needs videoMessage
@@ -25,10 +25,21 @@ comms:
 - at: 2026-10-14 21:05
   from: tony
   text: 'raised request video-delivery-to-line-lanes-234cd4: Video delivery to LINE lanes?'
+- at: 2026-10-15 13:49
+  from: tony
+  text: 'answered video-delivery-to-line-lanes-234cd4: hybrid: LINE lanes get the link, TG lanes get the file'
+- at: 2026-10-15 13:49
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 13:49
+  from: devin
+  text: 'Decision recorded: split delivery — LINE lanes send the render link (no size cap, original quality), TG
+    lanes push the mp4 file. Implementation note for whoever picks this up: line_relay already has a working [video,text]
+    path but link-first is the cheaper default; tg-relay keeps file push.'
 requests:
 - id: video-delivery-to-line-lanes-234cd4
   ask: Video delivery to LINE lanes?
-  status: open
+  status: answered
   at: 2026-10-14 21:05
   from: tony
   options:
@@ -36,3 +47,5 @@ requests:
   - compress under LINE limit
   - TG lanes only
   suggested: send link instead of file ★
+  answer: 'hybrid: LINE lanes get the link, TG lanes get the file'
+awaiting_action: true

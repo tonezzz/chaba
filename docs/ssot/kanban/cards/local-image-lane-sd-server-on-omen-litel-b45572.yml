@@ -1,7 +1,7 @@
 id: local-image-lane-sd-server-on-omen-litel-b45572
 title: local-image-lane — sd-server on omen + LiteLLM 'local_image' model + ada tool wiring
-column: doing
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-15 13:00
 priority: medium
 spec: '{''goal'': "Ada can request a local image render: tool -> LiteLLM ''local_image'' -> sd-server on tony-omen
   -> PNG to media/CMS/LINE", ''done'': [''sd.cpp built on tony-omen (CPU-only, ~/stable-diffusion.cpp/build/bin/{sd-cli,sd-server})'',
@@ -50,6 +50,18 @@ comms:
     submit returned pending+job in ~4s; a 1024px validation render is in flight. ada_render_image gains provider=local
     + job= resume on the dispatch branch (22/22 tests, lint clean) — submits async sdcpp job, polls 45s, then background
     task pushes the PNG via chat_send. PENDING on chab'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261014-220156-goal-ada-can-request-a-local-i no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261014-220156-goal-ada-can-request-a-local-i,
+    branch dispatch/20261014-220156-goal-ada-can-request-a-local-i on tony-omen'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220156-goal-ada-can-request-a-local-i already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261014-220156-goal-ada-can-request-a-local-i.md) — auto-closed'
 requests:
 - id: productize-local-image-as-an-ada-render-58e79c
   ask: Productize local_image as an ada_render_image backend?
@@ -66,5 +78,13 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-15 13:00
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 13:00
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-220156-goal-ada-can-request-a-local-i.md

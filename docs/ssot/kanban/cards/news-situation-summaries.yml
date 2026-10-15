@@ -1,0 +1,191 @@
+id: news-situation-summaries
+title: Situation summaries on wp-news — promoted digests + index + Thai + ask-hook
+column: review
+updated: 2026-10-16 04:40
+priority: medium
+note: 'Tony asked Chaba สรุปข่าวน้ำท่วม on tony-ha 12:08 — good Thai situational answer referencing the mini-app
+  flood report. Want: situation summaries for highly-interesting news, readable on /wp/ and reportable to household.
+  DESIGN (verified): flood-report is the prototype (ada-cms-pages + flood-news-update.py + flood-alert.timer); digest
+  parents on WP already ARE evolving topic summaries (topic/brief/diffs/Developments). BUILD: (1) situation flag
+  — meta situation=watching|pinned on digest posts, ke'
+help: Signals are additive — auto-nominate watches, member-ask promotes, comment pins/unpins. Suggestion-only paths;
+  never silent.
+ref: OPS-0706
+comms:
+- at: 2026-10-15 13:33
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 15:53
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:53
+  from: idc02
+  text: claimed
+- at: 2026-10-15 15:54
+  from: chaba
+  text: started devin-task-20261015-155409-situation-summaries-on-wp-news on idc02 (dispatch)
+- at: 2026-10-15 15:54
+  from: devin
+  text: 'dispatch started: locating full card spec, then scoping build'
+- at: 2026-10-15 16:03
+  from: devin
+  text: 'note was truncated at capture (board-api caps note at 500c) — rebuilding spec from title+help+code. Build:
+    (1) situation meta watching|pinned on news digests + mirrored situation:* tag (works pre-plugin-deploy); (2)
+    promote ladder none->watching->pinned, pin also sets WP sticky; (3) private /wp/ page slug situations + [chaba_situations]
+    shortcode; (4) brief_th from digest LLM + Thai-first index; (5) ask-hook = scripts/ada/news-situation.py ask
+    "<text>" (embeds ask, matches digest, promotes, prin'
+- at: 2026-10-15 16:22
+  from: devin
+  text: 'built on dispatch branch 76023993 (not pushed/deployed). Delivered: scripts/ada/news-situation.py (list/set/promote/demote/ask/sweep/index
+    — flag ladder, comment trail, sticky-on-pin, TH+EN ask answer), news-digest.py brief_th + meta/tag preservation
+    on regen, wp-comment-sync news lane (pin/watch promote, unpin demotes, unwatch clears; EN+TH commands), chaba-boards
+    0.6.0 (meta+admin col+badge+[chaba_situations]), wp-news-situation.timer idc03 :45 hourly, job record docs/ssot/jobs/ada/2026-10-15-'
+- at: 2026-10-15 16:23
+  from: idc02
+  text: 'finished (ok): exit=0 r-jobs.py --install` + plugin zip upload, with ada-voice wiring as the remaining
+    separate-repo step. | devin-task'
+- at: 2026-10-15 16:23
+  from: chaba
+  text: pushed dispatch/20261015-155409-situation-summaries-on-wp-news to origin
+- at: 2026-10-15 16:23
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 16:23
+  from: chaba
+  text: auto-merged 53e7e924 (dispatch/20261015-155409-situation-summaries-on-wp-news) → origin/master
+- at: 2026-10-15 16:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-155409-situation-summaries-on-wp-news,
+    branch dispatch/20261015-155409-situation-summaries-on-wp-news'
+- at: 2026-10-15 16:29
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-15 19:44
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 19:44
+  from: chaba
+  text: dispatched 20261015-194424-situation-summaries-on-wp-news on chaba
+- at: 2026-10-15 19:45
+  from: devin
+  text: 'attempt 2 started: prior run merged at 16:23 + auto-closed; re-queue implies finish-the-job. Checking full
+    spec + live state (timer on idc03, plugin 0.6.0, situations page).'
+- at: 2026-10-15 19:50
+  from: devin
+  text: 'raised request deploy-chaba-boards-0-6-0-to-wp-timer-sw-ebd86d: Deploy chaba-boards 0.6.0 to WP? Timer+sweep+index
+    are LIVE on idc03 already (5 flood digests flagged watching, /wp/inde'
+- at: 2026-10-15 19:53
+  from: devin
+  text: 'attempt 2: found the real defect — 53e7e924 conflict resolution dropped the situation hunks from ssot.wp-boards.yml
+    (ops_error kept). Restored union. LIVE now: wp-news-situation.timer armed on idc03 :45 — first sweep auto-nominated
+    5 flood digests watching (comment trail + situation-watching tag), index created private page /wp/index.php/situations/
+    TH-first. ask-hook verified dry: สรุปข่าวน้ำท่วม -> digest 437 @0.595. Zip dist/chaba-boards-0.6.0.zip + request
+    raised for wp-admin upload; ada-voi'
+- at: 2026-10-15 20:22
+  from: devin
+  text: 'DONE (attempt 2). Real defect found+fixed: merge 53e7e924 conflict-resolution dropped this feature''s ssot.wp-boards.yml
+    hunks — restored as union w/ ops_error. LIVE: wp-news-situation.timer armed idc03 :45 (sweep+index); first sweep
+    nominated 5 flood digests watching w/ comment trail; private /wp/index.php/situations/ up TH-first; flag survived
+    the 20:20 digest regen (verified: 5/5 still watching); ask-hook dry-verified (น้ำท่วม→digest 437 @0.595). Pending
+    gates: board request — wp-admin upload '
+- at: 2026-10-15 20:24
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-15 20:24
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): pushed dispatch/20261015-194424-situation-summaries-on-wp-news to origin;
+    test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+- at: 2026-10-15 20:24
+  from: chaba
+  text: pushed dispatch/20261015-194424-situation-summaries-on-wp-news to origin
+- at: 2026-10-15 20:24
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+- at: 2026-10-15 20:24
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-15 20:24
+  from: idc03
+  text: claimed
+- at: 2026-10-15 20:25
+  from: chaba
+  text: started devin-task-20261015-202502-situation-summaries-on-wp-news on idc03 (dispatch)
+- at: 2026-10-15 20:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261015-155409-situation-summaries-on-wp-news no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-15 20:29
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261015-155409-situation-summaries-on-wp-news on
+    idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-15 21:02
+  from: devin
+  text: '[attempt-3] Verified live on idc03: wp-news-situation.timer armed :45 (ran 19:46/19:49/20:45 clean), 5
+    flood digests watching, page 458 /wp/index.php/situations/ updating, ask-hook dry-run สรุปข่าวน้ำท่วม -> digest
+    288 @0.574. Flag survives digest regen. Still pending: wp-admin upload of chaba-boards-0.6.0.zip (Tony manual
+    step, request open); ada-voice wiring = ADA-0707. NOTE: attempt-2 branch (86f54f5a9) still unmerged — master
+    missing the ssot.wp-boards.yml situation hunks + dist zip + live s'
+- at: 2026-10-15 21:28
+  from: devin
+  text: '[attempt-3 done] Committed 732eaa39a on dispatch/20261015-202502-*: (1) relanded attempt-2 stranded files
+    byte-identical (wp-boards.yml situation hunks, live job status, chaba-boards-0.6.0.zip) — clean merge either
+    order; (2) NEW brief_th fallback: parses the digest สรุป paragraph until plugin 0.6.0 registers the meta — index
+    + ask now render real Thai (verified live dry-run, 3/5 digests; older 2 fill on next regen). 17/17 tests. Feature
+    verified live: timer :45 hourly, 5 digests watching, page '
+- at: 2026-10-15 21:30
+  from: idc03
+  text: 'finished (ok): exit=0 ed on Tony: the wp-admin plugin zip upload (board request open) and ada-voice wiring
+    (carded ADA-0707). | devin-t'
+- at: 2026-10-15 21:30
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 21:30
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 21:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-202502-situation-summaries-on-wp-news,
+    branch dispatch/20261015-202502-situation-summaries-on-wp-news'
+- at: 2026-10-16 04:40
+  from: tony
+  text: 'answered deploy-chaba-boards-0-6-0-to-wp-timer-sw-ebd86d: proceed'
+- at: 2026-10-16 04:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0 ed on Tony: the wp-admin plugin zip upload (board request open) and ada-voice wiring (carded ADA-0707).
+    | devin-task-20261015-202502-situation-summaries-on-wp-news.service: Consumed 26.070s CPU time, 172.2M memory
+    peak, 0B memory swap peak.'
+  attempts: 1
+  verified: false
+  last_failure: 'pushed dispatch/20261015-194424-situation-summaries-on-wp-news to origin; test gate failed — merge
+    held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
+  runner: idc03
+  sweep:
+    stale_running: 2026-10-15 20:29
+    session_gone: 2026-10-15 20:29
+review_kind: verify
+claim:
+  since: 2026-10-15 19:44
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 16:29
+  note: verified — evidence checks green, closing itself
+requests:
+- id: deploy-chaba-boards-0-6-0-to-wp-timer-sw-ebd86d
+  ask: 'Deploy chaba-boards 0.6.0 to WP? Timer+sweep+index are LIVE on idc03 already (5 flood digests flagged watching,
+    /wp/index.php/situations/ page up, TH-first). Plugin zip ready at integrations/wp-boards/dist/chaba-boards-0.6.0.zip
+    — needs wp-admin > Plugins > Add New > Upload (your manual path, ~1 min). Unlocks: registered situation*/brief_th
+    meta (REST-visible), Situation admin column, badge on flagged digests, [chaba_situations] shortcode. Works fine
+    without it via tag mirror — upload when convenient, or answer no to defer.'
+  status: answered
+  at: 2026-10-15 19:50
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+awaiting_action: true

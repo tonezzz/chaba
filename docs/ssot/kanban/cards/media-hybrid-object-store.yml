@@ -1,0 +1,17 @@
+id: media-hybrid-object-store
+title: 'Hybrid media store: R2 archive layer over local working stores (S3-compatible design)'
+column: backlog
+updated: 2026-10-15 08:12
+priority: medium
+ref: MED-0692
+comms:
+- at: 2026-10-15 08:11
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 08:12
+  from: devin
+  text: 'SPEC (Tony 2026-10-15): hybrid, not migration. Local hosts keep hot/working data (Ada render scratch, DBs,
+    secrets, repos — apps need disk speed). R2 becomes the durable archive + link layer for: renders, LINE media
+    archive, cam captures, WP uploads, backups. S3-upgrade-ready design, minimal effort: (1) all writers go through
+    one helper media_store.py — backend=local|r2|s3 is a config flag, not code; (2) records store canonical URLs
+    not host paths; (3) bucket layout media/<kind>/<yyyy-mm>/; (4) '

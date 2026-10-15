@@ -1,7 +1,7 @@
 id: board-card-action-buttons
 title: 'Board UI: card action buttons (Queue / Hold / Close) on card rows'
-column: backlog
-updated: 2026-10-14 22:13
+column: done
+updated: 2026-10-14 22:40
 priority: medium
 spec: 'Board currently renders option buttons only on requests/asks. Tonight showed the gap: queueing an approved
   card needed an ssh+curl /action call. Add a compact action row on each card (detail view + maybe row hover): [Queue]
@@ -13,3 +13,14 @@ comms:
 - at: 2026-10-14 22:13
   from: tony
   text: card captured via board-api
+- at: 2026-10-14 22:39
+  from: devin
+  text: 'done 1f19d51d1: actBtns no longer gated on action.type — every non-terminal card shows ▶ Queue (server
+    defaults type=dispatch, repo=chaba; tooltip notes repo override), modal gains ✔ Close. board2 detail Start drops
+    same gate. Deployed+rendered on dell; index.html verified. Note: your doing move was fine as intent, but doing
+    without a claim is idle — the fix is the button itself now.'
+- at: 2026-10-14 22:40
+  from: devin
+  text: closed by devin
+action:
+  status: done

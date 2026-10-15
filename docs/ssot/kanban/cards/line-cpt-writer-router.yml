@@ -1,7 +1,7 @@
 id: line-cpt-writer-router
 title: LINE saves route to the right WP CPT (not just posts)
-column: backlog
-updated: 2026-10-14 18:13
+column: review
+updated: 2026-10-15 16:21
 priority: medium
 note: 'boards.surf-thailand.com now has chaba-boards CPTs: asset, expense, contact, reminder, bench, report, xlate
   (plugin zip /tmp/chaba-boards.zip pending Tony upload; REST-writable). Today every LINE "post this" ask lands
@@ -15,3 +15,146 @@ comms:
 - at: 2026-10-14 18:13
   from: devin
   text: card captured via board-api
+- at: 2026-10-15 10:22
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 10:23
+  from: tony-omen
+  text: claimed
+- at: 2026-10-15 10:23
+  from: chaba
+  text: started devin-task-20261015-102314-line-saves-route-to-the-right- on tony-omen (dispatch)
+- at: 2026-10-15 10:47
+  from: devin
+  text: '[wip] wp_post extended with kind=+meta= (no new tool — surface stays flat): expense/contact/reminder/asset
+    route to their CPTs, private status + auto <Kind> — title prefix, expense receipt photos OCRd via lane Gemini
+    for missing amount/vendor/date, PDF manuals attach as links. Staged as ada-voice drop 11 patches (git apply
+    --check clean vs main@8eaab27); 11 new chaba tests green, plus repaired 3 stale patch-gate tests whose drops
+    already merged upstream.'
+- at: 2026-10-15 10:50
+  from: devin
+  text: '[done] staged ada-voice drop 11: wp_post kind=+meta= routes expense/contact/reminder/asset saves to their
+    CPTs (private status, auto title prefix, receipt OCR via lane Gemini, PDF manuals as attachment links). Patches
+    git apply --check clean vs main@8eaab27; tests/ada 111 passed (incl. repaired stale gates for merged drops 6-8
+    + board2 YAML fix). Install = 3x git apply + deploy-ada.sh — needs a normal ada-voice session; no WP/plugin
+    change needed. Details: docs/ssot/jobs/ada/2026-10-15-line-cpt-'
+- at: 2026-10-15 10:52
+  from: tony-omen
+  text: 'finished (ok): exit=0 + pytest (deploy-ada.sh covers both), restart lane units — no WP/plugin change needed.
+    | devin-task-20261015-1023'
+- at: 2026-10-15 10:53
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada_memory/test_obsidian_app.py::TestHubSplit::test_oversized_subject_splits_into_month_subhubs'
+- at: 2026-10-15 10:59
+  from: chaba
+  text: 'merge-sweep: dispatch/20261015-102314-line-saves-route-to-the-right- conflicts with origin/master: docs/ssot/jobs/kanban/2026-10-15-board2-living-board.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-15 10:59
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261015-102314-line-saves-route-to-the-right-:
+    1 commit(s) conflict with origin/master '
+- at: 2026-10-15 15:09
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 15:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 15:14
+  from: chaba
+  text: 'merge-sweep: dispatch/20261015-102314-line-saves-route-to-the-right- conflicts with origin/master: docs/ssot/jobs/kanban/2026-10-15-board2-living-board.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-15 15:14
+  from: chaba
+  text: 'raised request merge-conflict-2: merge-sweep can''t land dispatch/20261015-102314-line-saves-route-to-the-right-:
+    1 commit(s) conflict with origin/master '
+- at: 2026-10-15 15:46
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:47
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-15 15:47
+  from: chaba
+  text: started devin-task-20261015-154713-line-saves-route-to-the-right- on tony-macbook (dispatch)
+- at: 2026-10-15 15:53
+  from: tony
+  text: 'answered merge-conflict-2: let devin resolve the conflict and land it ★'
+- at: 2026-10-15 15:53
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-15 15:58
+  from: devin
+  text: '[progress] picked up in dispatch. Design: new tools.d/cpt_post (kind=expense|contact|reminder|asset) —
+    model classifies the save-ask + extracts receipt fields in-turn, tool writes the CPT + registered meta, status=private.
+    person defaults to the lane member (kk lane -> kk). Staged as ada-voice drop + chaba-boards v0.5.1 saved_by
+    meta.'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261015-102314-line-saves-route-to-the-right- no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-15 16:00
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261015-102314-line-saves-route-to-the-right- on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-15 16:20
+  from: devin
+  text: '[done-pending-deploy] Staged as ada-voice drop 11 (integrations/ada-voice/): new tools.d/cpt_post — kind=
+    expense|contact|reminder|asset, model reads the receipt photo in-turn and passes amount/vendor/date; tool composes
+    the standard title, writes the CPT private + registered meta, uploads the archived photo as featured_media.
+    person defaults to the lane member (kk lane -> kk). contact/asset upsert by slug; expense/reminder always create.
+    saved_by meta added to the 4 CPTs in chaba-boards.php v0.'
+- at: 2026-10-15 16:21
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ted, outcome in `dispatch-outcome-20261015-154713-line-saves-route-to-the-right-.md`.
+    | devin-task-20261015-15471'
+- at: 2026-10-15 16:21
+  from: chaba
+  text: 'session-end checkpoint f5068631: 18 leftover file(s) committed'
+- at: 2026-10-15 16:21
+  from: chaba
+  text: pushed dispatch/20261015-154713-line-saves-route-to-the-right- to origin
+- at: 2026-10-15 16:21
+  from: chaba
+  text: 'auto-merge conflicts: integrations/wp-boards/chaba-boards.php — card stays in review for manual resolution'
+- at: 2026-10-15 16:21
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0 ted, outcome in `dispatch-outcome-20261015-154713-line-saves-route-to-the-right-.md`. | devin-task-20261015-154713-line-saves-route-to-the-right-.service:
+    Consumed 2min 59.718s CPU time over 34min 3.248s wall clock time, 732.3M memory peak.'
+  runner: tony-macbook
+  sweep:
+    stale_running: 2026-10-15 16:00
+    session_gone: 2026-10-15 16:00
+  verified: false
+review_kind: verify
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261015-102314-line-saves-route-to-the-right-: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/jobs/kanban/2026-10-15-board2-living-board.yml. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261015-102314-line-saves-route-to-the-right-
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 10:59
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-2
+  ask: 'merge-sweep can''t land dispatch/20261015-102314-line-saves-route-to-the-right-: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/jobs/kanban/2026-10-15-board2-living-board.yml. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261015-102314-line-saves-route-to-the-right-
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-15 15:14
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★

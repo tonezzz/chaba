@@ -1,0 +1,27 @@
+id: board-ui-state-lies
+title: Board UI shows action buttons that contradict card state (queue on done, no buttons on asks)
+column: done
+updated: 2026-10-15 07:01
+priority: high
+ref: KNB-0689
+comms:
+- at: 2026-10-15 06:55
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-15 06:56
+  from: devin
+  text: 'Spec: render-board.py:400-403 else-fallback draws ▶Queue on ANY card lacking action.type — incl. doing/done
+    cards (ADA-0643 evidence). render-board2.py:466 same pattern. Fix: suppress fallback Queue when column in doing/done
+    or work already claimed. Started — devin.'
+- at: 2026-10-15 07:01
+  from: devin
+  text: 'DONE+deployed a83f5ae1f. render-board.py:402 fallback Queue suppressed on doing/done/verified/review cols;
+    render-board2.py:466 same for Start (explicit action.type still shows Start — intentional). Verified: served
+    stacks/web/public/apps/board/index.html carries the guard (dynamic page, live now). ADA-0643 (doing, no action.type)
+    no longer offers Queue. Companion: repeat-ask register committed at docs/ssot/ssot.repeat-asks.yml.'
+- at: 2026-10-15 07:01
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

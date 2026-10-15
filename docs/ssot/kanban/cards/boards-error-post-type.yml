@@ -1,7 +1,7 @@
 id: boards-error-post-type
 title: 'wp-boards: error post type — auto-posted tool failures + truthful-explanation loop'
-column: backlog
-updated: 2026-10-14 21:55
+column: done
+updated: 2026-10-15 16:14
 brief: 'Tony''s idea from the kk-ha audit: prepare errors in boards with post types so Kaewta explains each truthfully.
   Design: an `ops_error` (or `error`) CPT in chaba-boards plugin — auto-created by a small writer that watches ada
   ops-events/tool failures per lane; meta: lane/session_id/tool/error_type/raw_result; Kaewta comments her plain-language
@@ -39,3 +39,57 @@ comms:
 - at: 2026-10-14 21:55
   from: tony
   text: card captured via board-api
+- at: 2026-10-15 15:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:47
+  from: idc02
+  text: claimed
+- at: 2026-10-15 15:47
+  from: chaba
+  text: started devin-task-20261015-154749-design-build-in-integrations-w on idc02 (dispatch)
+- at: 2026-10-15 15:52
+  from: devin
+  text: '[progress] Design+build started in dispatch worktree: ops_error CPT in chaba-boards.php (v0.6.0), writer
+    scripts/ada/ops-error-posts.py (journalctl per lane + MDDB ops-events -> WP via origin_base), ssot.jobs entry
+    on idc03, seed path for session 183e9c8d7e.'
+- at: 2026-10-15 16:01
+  from: devin
+  text: 'done on dispatch branch (not pushed/deployed): chaba-boards v0.6.0 ops_error CPT (private, REST meta lane/session_id/tool/error_type/raw_result/transcript_ref/occurred_at/status/resolved_*,
+    comments open, admin cols + single-view card) + scripts/ada/ops-error-posts.py on idc03 15min timer (journald+MDDB
+    sources, err-<md5> slug dedup, cursor holds on POST fail & on filtered seed runs) + job trail doc + 17 unittests
+    green + repo ssot-validate clean (fixed a pre-existing YAML break in 2026-10-15-wp'
+- at: 2026-10-15 16:03
+  from: idc02
+  text: 'finished (ok): exit=0 ded in the jobs manifest and `dispatch-outcome-20261015-154749-design-build-in-integrations-w.md`.
+    | devin-task-2'
+- at: 2026-10-15 16:03
+  from: chaba
+  text: pushed dispatch/20261015-154749-design-build-in-integrations-w to origin
+- at: 2026-10-15 16:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 16:03
+  from: chaba
+  text: auto-merged 92703f92 (dispatch/20261015-154749-design-build-in-integrations-w) → origin/master
+- at: 2026-10-15 16:03
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-154749-design-build-in-integrations-w,
+    branch dispatch/20261015-154749-design-build-in-integrations-w'
+- at: 2026-10-15 16:14
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 ded in the jobs manifest and `dispatch-outcome-20261015-154749-design-build-in-integrations-w.md`.
+    | devin-task-20261015-154749-design-build-in-integrations-w.service: Consumed 1min 25.559s CPU time, 935.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 16:14
+  note: verified — evidence checks green, closing itself

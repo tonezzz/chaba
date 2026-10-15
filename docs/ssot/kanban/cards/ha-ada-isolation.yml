@@ -1,7 +1,7 @@
 id: ha-ada-isolation
 title: Isolate tony-ha + kk-ha from Ada failures (runbook ha-ada-isolation)
-column: backlog
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-15 18:00
 brief: Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy,
   idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
 priority: high
@@ -101,6 +101,102 @@ comms:
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-15 12:49
+  from: idc02
+  text: claimed
+- at: 2026-10-15 12:50
+  from: chaba
+  text: started devin-task-20261015-124959-procedure-lives-in-docs-kb-ha- on idc02 (dispatch)
+- at: 2026-10-15 12:53
+  from: devin
+  text: 'dispatch picked up card (idc02): verifying Phase A leftovers on idc03, then executing approved Phase B
+    on tony-ha + Phase C verify.'
+- at: 2026-10-15 13:13
+  from: devin
+  text: 'Phase A finished on idc03: isolation.conf drop-ins on all 10 ada units (MemoryMax=2G, CPUQuota=150%/200%
+    bankq, LogRateLimit 30s/1000) — verified effective + all healthy. deploy-ada.sh: canary order + ada-kk-dev/ada-tg-relay-kk
+    added. Phase B tony-ha DONE: svc-ada non-admin user created, per-lane LLATs minted, ada-ha-tony + ada-pi-pwa
+    swapped + verified auth/current_user=svc-ada non-admin. Phase C verified: both lanes stopped -> tony-ha /api/
+    still 401 (alive). DEFERRED: old owner LLAT revoke — '
+- at: 2026-10-15 13:13
+  from: devin
+  text: 'raised request phase-b-on-michael-ha-approve-creating-s-89770d: Phase B on michael-ha — approve creating
+    svc-ada-michael non-admin user + swapping ada-ha-michael off Michael OWNER toke'
+- at: 2026-10-15 13:15
+  from: devin
+  text: 'dispatch complete: Phase A done (caps+journal on 10 units, deploy set explicit+canary-ordered), Phase B
+    tony-ha done (svc-ada non-admin, per-lane LLATs, verified), Phase C verified (401 while ada dead). Posture 5/6
+    — only fail is ada-ha-michael owner token; approval request raised. Owner-LLAT revoke deferred -> card ha-owner-llat-co-use-split
+    (HOM-0705, token co-used by chaba-guest/nodered). Runbook updated; CMS pages refreshed.'
+- at: 2026-10-15 13:17
+  from: idc02
+  text: 'finished (ok): exit=0  committed on the dispatch branch — nothing pushed, no prod writes beyond the approved
+    tony-ha Phase B. | devin-t'
+- at: 2026-10-15 13:17
+  from: chaba
+  text: 'session-end checkpoint 249cb164: 1 leftover file(s) committed'
+- at: 2026-10-15 13:17
+  from: chaba
+  text: pushed dispatch/20261015-124959-procedure-lives-in-docs-kb-ha- to origin
+- at: 2026-10-15 13:17
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 13:18
+  from: chaba
+  text: auto-merged 1794d211 (dispatch/20261015-124959-procedure-lives-in-docs-kb-ha-) → origin/master
+- at: 2026-10-15 13:23
+  from: tony
+  text: 'answered phase-b-on-michael-ha-approve-creating-s-89770d: approve — Approve — same procedure as tony-ha,
+    run next dispatch'
+- at: 2026-10-15 13:23
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 13:28
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 13:28
+  from: idc03
+  text: claimed
+- at: 2026-10-15 13:28
+  from: chaba
+  text: started devin-task-20261015-132831-procedure-lives-in-docs-kb-ha- on idc03 (dispatch)
+- at: 2026-10-15 13:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261015-124959-procedure-lives-in-docs-kb-ha- no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-15 13:29
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261015-124959-procedure-lives-in-docs-kb-ha- on
+    idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-15 13:31
+  from: devin
+  text: 'dispatch 132831: Tony approved Phase B on michael-ha (13:23) — executing now: svc-ada user + per-lane LLAT
+    via ha-svc-user.py, swap ada-ha-michael.env, restart, verify non-admin.'
+- at: 2026-10-15 13:37
+  from: devin
+  text: 'Phase B michael-ha DONE (approved 13:23): svc-ada created non-admin (id 2bf63e6d…), per-lane LLAT minted,
+    ada-ha-michael.env swapped+restarted, auth/current_user = svc-ada owner=false admin=false. Phase C re-verified:
+    /api/ 401 x3 while lane stopped. Old Michael owner LLAT has no other consumer on idc03 — revoke deferred to
+    ha-owner-llat-co-use-split pending remote-consumer check. Posture report republished: 6/6 PASS. Runbook + job
+    yml updated. All card work now complete; remaining items live on'
+- at: 2026-10-15 13:39
+  from: idc03
+  text: 'finished (ok): exit=0 h (b0f78f916); outcome written to `dispatch-outcome-20261015-132831-procedure-lives-in-docs-kb-ha-.md`.
+    | devin-t'
+- at: 2026-10-15 13:39
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 13:39
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 13:39
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-132831-procedure-lives-in-docs-kb-ha-,
+    branch dispatch/20261015-132831-procedure-lives-in-docs-kb-ha-'
+- at: 2026-10-15 18:00
+  from: tony
+  text: closed by tony
 requests:
 - id: gemini-key-isolation-strategy-today-all-12834c
   ask: Gemini key isolation strategy — today all 5 ada instances share one GEMINI_API_KEY, so one lane's quota storm
@@ -144,7 +240,28 @@ requests:
   suggested: approve
   answer: approve — Approve Phase B on tony-ha
   executed: 2026-10-15 queue
-awaiting_action: true
+- id: phase-b-on-michael-ha-approve-creating-s-89770d
+  ask: Phase B on michael-ha — approve creating svc-ada-michael non-admin user + swapping ada-ha-michael off Michael
+    OWNER token?
+  status: answered
+  at: 2026-10-15 13:13
+  from: devin
+  options:
+  - id: approve
+    label: Approve — same procedure as tony-ha, run next dispatch
+  - id: hold
+    label: Hold — michael keeps owner token for now
+  suggested: approve
+  answer: approve — Approve — same procedure as tony-ha, run next dispatch
 action:
   type: dispatch
-  status: queued
+  status: done
+  result: 'exit=0 h (b0f78f916); outcome written to `dispatch-outcome-20261015-132831-procedure-lives-in-docs-kb-ha-.md`.
+    | devin-task-20261015-132831-procedure-lives-in-docs-kb-ha-.service: Consumed 20.869s CPU time, 125.7M memory
+    peak, 0B memory swap peak.'
+  runner: idc03
+  sweep:
+    stale_running: 2026-10-15 13:29
+    session_gone: 2026-10-15 13:29
+review_kind: verify
+claim: {}

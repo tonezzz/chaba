@@ -1,7 +1,7 @@
 id: ada-gemini-live-spend-cap
 title: Gemini Live refusing sessions — monthly spending cap hit (ada voice down)
 column: backlog
-updated: 2026-10-14 21:05
+updated: 2026-10-15 06:55
 priority: high
 tags:
 - ada
@@ -46,6 +46,62 @@ comms:
 - at: 2026-10-14 21:05
   from: tony
   text: 'raised request gemini-live-monthly-cap-hit-next-step-75fa03: Gemini Live monthly cap hit — next step?'
+- at: 2026-10-14 23:44
+  from: devin
+  text: 'key audit 2026-10-14 ~23:50: ALL THREE ada paid keys depleted (1011/402 prepayment-credits): ..0MDA (chaba-paid.env,
+    tony lane — 225 fails today), ..ppiw (gem-ada-paid.env, michael), ..0xoA (gem_kaewta-paid.env). Still funded:
+    ..bheg (kaewta-paid.env, kk lane — 289min today fine) and ..UCiA (dev lanes). TEMP REWIRE: ada-ha-tony GEMINI_API_KEY
+    -> ..bheg (env backed up .bak-20261014) — tony lane now shares kk billing project until top-up. Real fix still
+    = AI Studio top-up on the 0MDA/ppiw projects'
+- at: 2026-10-15 06:26
+  from: tony
+  text: 'answered gemini-live-monthly-cap-hit-next-step-75fa03: queue for dispatch (build per-lane budget enforcement)
+    ★'
+- at: 2026-10-15 06:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 06:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 06:39
+  from: chaba
+  text: dispatched 20261015-063912-every-voice-ws-connect-on-ada- on ada-voice
+- at: 2026-10-15 06:42
+  from: devin
+  text: 'raised request btnless-test: test-buttonless-guard — should auto-attach options (will retire)'
+- at: 2026-10-15 06:42
+  from: devin
+  text: 'answered btnless-test: test passed — auto-options verified, retiring'
+- at: 2026-10-15 06:42
+  from: chaba
+  text: answer delivered to running session 20261015-063912-every-voice-ws-connect-on-ada-
+- at: 2026-10-15 06:43
+  from: devin
+  text: 'Picked up. Directive = per-lane budget enforcement (Tony 06:26). Plan: backend/lane_budget.py — per-lane
+    monthly est-spend gate on GeminiLiveProvider.connect (the one choke point for paid Live; relays ride /ws?mode=text
+    on OpenRouter), plus a persisted provider-cap latch so a learned 1011 spend-cap fail-fasts locally until rollover/rekey
+    instead of dialing Google every retry. live_manager/pwa reconnect loops get a long-cooldown hold state. Lane
+    attribution added to usage_ledger records.'
+- at: 2026-10-15 06:51
+  from: devin
+  text: 'Done (branch dispatch/20261015-063912, commits 7d317b4+0d53bc9, not pushed). Built per-lane budget enforcement
+    per Tony''s ★ answer: backend/lane_budget.py gates GeminiLiveProvider.connect — ADA_LANE_MONTHLY_BUDGET_USD
+    per-lane est-spend ceiling (lane-tagged usage ledger) raises LaneBudgetExceeded pre-genai.Client, and billing-class
+    connect failures (monthly cap / prepaid-depleted / 402) latch the key fingerprint in data/lane-budget.json so
+    later connects fail locally until rollover/rekey. live_m'
+- at: 2026-10-15 06:53
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-15 06:55
+  from: chaba
+  text: pushed dispatch/20261015-063912-every-voice-ws-connect-on-ada- to origin
+- at: 2026-10-15 06:55
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 144.7s)
+- at: 2026-10-15 06:55
+  from: chaba
+  text: auto-merged 18c0a019 (dispatch/20261015-063912-every-voice-ws-connect-on-ada-) → origin/main
 requests:
 - id: ada-voice-is-dead-until-the-gemini-proje-9be96b
   ask: Ada voice is dead until the Gemini project spend cap is resolved. Which way?
@@ -64,7 +120,7 @@ requests:
   escalated_at: 2026-10-14 18:30
 - id: gemini-live-monthly-cap-hit-next-step-75fa03
   ask: Gemini Live monthly cap hit — next step?
-  status: open
+  status: answered
   at: 2026-10-14 21:05
   from: tony
   options:
@@ -72,4 +128,25 @@ requests:
   - hold until next billing cycle
   - close — cap behaviour acceptable
   suggested: queue for dispatch (build per-lane budget enforcement) ★
-awaiting_action: true
+  answer: queue for dispatch (build per-lane budget enforcement) ★
+- id: btnless-test
+  ask: test-buttonless-guard — should auto-attach options (will retire)
+  status: answered
+  at: 2026-10-15 06:42
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: test passed — auto-options verified, retiring
+action:
+  type: dispatch
+  repo: ada-voice
+  status: done
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261015-063912-every-voice-ws-connect-on-ada-
+  result: 20261015-063912-every-voice-ws-connect-on-ada- finished (inactive) — see `devin-dispatch logs 20261015-063912-every-voice-ws-connect-on-ada-`
+  verified: true
+claim:
+  since: 2026-10-15 06:39
+review_kind: verify

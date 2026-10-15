@@ -1,7 +1,7 @@
 id: revoke-user-scratch-member-key-20943c
 title: Revoke 'user-scratch-member' key
-column: backlog
-updated: 2026-10-14 21:07
+column: done
+updated: 2026-10-15 16:04
 priority: medium
 note: User requested to revoke 'user-scratch-member' but member_keys tool was down.
 ref: SEC-0482
@@ -12,13 +12,52 @@ comms:
 - at: 2026-10-14 21:07
   from: tony
   text: 'raised request revoke-user-scratch-member-key-now-6282e7: Revoke ''user-scratch-member'' key now?'
+- at: 2026-10-15 13:39
+  from: tony
+  text: 'answered revoke-user-scratch-member-key-now-6282e7: revoke now ★'
+- at: 2026-10-15 13:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 15:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:55
+  from: tony-omen
+  text: claimed
+- at: 2026-10-15 15:55
+  from: chaba
+  text: started devin-task-20261015-155532-revoke-user-scratch-member-key on tony-omen (dispatch)
+- at: 2026-10-15 15:55
+  from: devin
+  text: '[devin] Picked up. Looking up member-keys tooling to revoke user-scratch-member.'
+- at: 2026-10-15 16:00
+  from: devin
+  text: '[devin] DONE — user-scratch-member revoked everywhere it existed. ada-dev (:8005, idc03): pending invite
+    rejected via POST /api/auth/keys/user-scratch-member/reject → revoked:true revoked_at 2026-10-15 15:59 (verified
+    in ada-ha-dev-keys.json). ada-ha-tony lane: already revoked 2026-10-12 20:33 (keys file entry). tony-dell: key
+    not present. mn01 standby: host offline >1d, store unreachable — key was minted on idc03 lanes so almost certainly
+    absent; flagged if it resurfaces.'
+- at: 2026-10-15 16:01
+  from: tony
+  text: closed by tony
+- at: 2026-10-15 16:04
+  from: chaba
+  text: 'session-end checkpoint a391247a: 2 leftover file(s) committed'
+- at: 2026-10-15 16:04
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
 requests:
 - id: revoke-user-scratch-member-key-now-6282e7
   ask: Revoke 'user-scratch-member' key now?
-  status: open
+  status: answered
   at: 2026-10-14 21:07
   from: tony
   options:
   - revoke now ★
   - keep — still needed
   suggested: revoke now ★
+  answer: revoke now ★
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen

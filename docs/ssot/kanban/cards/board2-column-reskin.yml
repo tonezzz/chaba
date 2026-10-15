@@ -1,0 +1,69 @@
+id: board2-column-reskin
+title: board2 Planka-style column reskin — 5 columns side-by-side + zoom + drag
+column: done
+updated: 2026-10-15 12:14
+priority: high
+note: 'Tony compared real-data Planka demo (idc02:8301, disposable) vs board2 — Planka feel wins, esp zoom. Reskin
+  render-board2.py output ONLY (view layer; board1 + cards.json + board-api untouched). TAKE: 5 columns side-by-side
+  (lab/backlog/doing/review/done — replaces tab navigation entirely); zoom +/- cycling card density compact|normal|full
+  via board-container class; tight card rows (title+label chips+comment/request affordance only); drag card->board-api
+  /action do=move; modal card view (overlay,'
+help: 'Reference: Planka board on idc02:8301 (kill after merge — podman-compose down -v ~/planka-lab). This supersedes
+  the remaining scope of living-board-mvp.'
+ref: KNB-0699
+comms:
+- at: 2026-10-15 12:06
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 12:06
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 12:07
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-15 12:07
+  from: chaba
+  text: started devin-task-20261015-120714-board2-planka-style-column-res on tony-macbook (dispatch)
+- at: 2026-10-15 12:08
+  from: devin
+  text: 'in progress — rewriting render-board2.py view layer: 5 side-by-side columns (lab/backlog/doing/review/done,
+    tabs removed), zoom compact|normal|full on board container, tight rows, drag→/action move, modal card detail
+    overlay'
+- at: 2026-10-15 12:11
+  from: devin
+  text: 'done — render-board2.py reskinned (view only): 5 side-by-side columns (tabs gone), -/+ zoom cycling compact|normal|full
+    on #board, tight rows w/ ❓/💬 affordances, drag-drop -> /action move (lab not a drop target), modal card overlay
+    w/ Esc/backdrop close. Kept live poll+movedIn flash, needs-tony band, ticker, auto groups. Verified: node --check
+    + headless-chrome DOM test 8/8 PASS. Trail: docs/ssot/jobs/kanban/2026-10-15-board2-column-reskin.yml'
+- at: 2026-10-15 12:13
+  from: tony-macbook
+  text: 'finished (ok): exit=0 n-res.md`; the Planka lab on idc02:8301 can be torn down once Tony confirms the reskin.
+    | devin-task-20261015-120'
+- at: 2026-10-15 12:13
+  from: chaba
+  text: 'session-end checkpoint 9d171c1f: 1 leftover file(s) committed'
+- at: 2026-10-15 12:13
+  from: chaba
+  text: pushed dispatch/20261015-120714-board2-planka-style-column-res to origin
+- at: 2026-10-15 12:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 12:13
+  from: chaba
+  text: auto-merged 5c991061 (dispatch/20261015-120714-board2-planka-style-column-res) → origin/master
+- at: 2026-10-15 12:14
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 n-res.md`; the Planka lab on idc02:8301 can be torn down once Tony confirms the reskin. | devin-task-20261015-120714-board2-planka-style-column-res.service:
+    Consumed 1min 384ms CPU time over 4min 39.221s wall clock time, 775.9M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 12:14
+  note: verified — evidence checks green, closing itself

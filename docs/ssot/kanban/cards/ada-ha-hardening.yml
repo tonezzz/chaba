@@ -2,10 +2,10 @@ id: ada-ha-hardening
 title: Harden ada-ha into stable private prod — ADA-HA (Tony)
 brief: ada-ha stops being the disposable lab and becomes Tony's stable private HA. Dev work moves to ada-dev; ada-ha
   keeps running and gets backup/health coverage.
-column: doing
+column: done
 priority: high
 created: 2026-10-08
-updated: 2026-10-13 19:00
+updated: 2026-10-15 12:22
 program: ha-lanes
 metric: ada-ha survives reboot/restart cleanly, appears in audit + health SSOT, config recoverable; no dev experiments
   run on it once ada-dev exists.
@@ -39,6 +39,22 @@ comms:
   from: chaba
   text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
     Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-10-15 10:21
+  from: devin
+  text: '[verify] ran the card criterion today: systemctl --user restart ada-ha.service -> HA 200 on :8125 in <10s
+    (within 60s). Service is the isolated lab instance, active, 47 tasks. Health-check coverage confirmed via ssot.health/audit
+    paths. [verify] note for lifecycle-check per the 10-13 bounce.'
+- at: 2026-10-15 10:21
+  from: devin
+  text: moved doing -> done
+- at: 2026-10-15 12:22
+  from: devin
+  text: '[verify] 2026-10-15: systemctl --user restart ada-ha-tony.service on idc03 -> /api/health 200 in 8s (criterion
+    <60s); 0 active sessions at restart so no conversation cut. audit hosts SSOT includes ada-ha.service (ssot.audit.hosts.yml).
+    location_name UI-header clause not re-verified this pass — marking partial honestly.'
+- at: 2026-10-15 12:22
+  from: tony
+  text: closed by tony
 ref: ADA-0377
 action:
   status: done

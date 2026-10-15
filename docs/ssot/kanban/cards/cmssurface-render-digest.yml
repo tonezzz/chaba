@@ -1,0 +1,199 @@
+id: cmssurface-render-digest
+title: 'CMS surface: chaba-cms-render service + per-member LINE digest'
+column: done
+updated: 2026-10-15 16:00
+priority: medium
+tags:
+- cms
+- surface
+- line
+- renderer
+spec: 'Cherry-picked Ghost features for chaba-cms — MDDB stays the store, agents stay primary authors. NO Ghost,
+  no editor UI, no new DB.
+
+
+  Decisions locked with Tony (2026-10-14):
+
+  - Hostname: cms.surf-thailand.com (new caddy edge block on idc02)
+
+  - Digest: PER-MEMBER LINE pushes, not a family group — ''kk-ha is an office, not a home''; recipients resolved
+  from member/person registry
+
+  - Entire site behind CF Access for now (no public pages)
+
+
+  COMPONENT 1 — chaba-cms-render (FastAPI on idc03, same host as CMS plane :11027):
+
+  - ~1 app file + templates/ per kind; Jinja2 + markdown; follow docs/kb/cms-page-standard.md + media-inbox-standard.md
+
+  - Reads LIVE from collections: ada-cms-pages, ada-cms-pages-kk, ada-cms-automation, chaba-docs — fetch-on-request,
+  cache keyed by doc modified (no rebuild pipeline, no drift)
+
+  - Routes: / (index grouped by meta.kind), /p/{slug-or-id} (kind-dispatched template: place-report, trip, house-rules,
+  timeline, media-inbox, report, digest), /k/{kind} listing, /feed/{kind}.xml RSS, /healthz
+
+  - Persona split: *-kk collection defaults Thai UI; main collection EN/ไทย toggle per page standard
+
+  - Media: LINK existing asset URLs (relay-img thumbs, www copies) — never copies files
+
+  - systemd unit chaba-cms-render.service; caddy handle for cms.surf-thailand.com on idc02 edge (CF Access covers
+  auth)
+
+
+  COMPONENT 2 — line-digest (scripts/ada/line-digest.py + timer on idc03):
+
+  - Weekly per-member push to start; sources: house-timeline rollups, media-inbox additions, news digests, kanban
+  done-count, render_job highlights
+
+  - Short markdown -> LINE push via existing relay path with idempotent message_id
+
+  - Phase 2 (later): event-triggered (new trip page -> push)
+
+
+  DATA CONVENTIONS: add meta.slug on CMS docs for clean URLs (fallback doc id); meta.lang where it differs from
+  collection default.
+
+
+  NON-GOALS: member auth system (CF Access does it), editor UI (Docs->import only if KK asks), file hosting changes,
+  per-member privacy beyond collection split.
+
+
+  VERIFY: pytest render fns on fixture docs; /healthz; one real page per kind eyeballed; RSS validates; digest DRY-RUN
+  to Tony''s LINE only before enabling member recipients.
+
+
+  Origin: Tony''s Ghost-vs-WP comparison — ''create a post the way you want to store it'' — chaba-cms lacks the
+  ''show it'' half; this is the presentation layer + the newsletter-equivalent (LINE, not email).'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  result: 'exit=0 s (idc03 venv+unit, idc02 caddy block, CF DNS/Access, tony-only real send then member widening)
+    are operator actions listed in the outcome file. | devin-task-20261015-155511-cherry-picked-ghost-features-f.service:
+    Consumed 29.677s CPU time.'
+  sweep:
+    close_held: 2026-10-15 13:59
+  runner: idc02
+  verified: true
+ref: KNB-0691
+comms:
+- at: 2026-10-15 07:48
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 07:48
+  from: devin
+  text: 'raised request spec-is-locked-cms-surf-thailand-com-per-966142: Spec is locked (cms.surf-thailand.com,
+    per-member LINE digests, all behind CF Access). Dispatch to a chaba worktree, or '
+- at: 2026-10-15 13:27
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 13:27
+  from: idc02
+  text: claimed
+- at: 2026-10-15 13:28
+  from: chaba
+  text: started devin-task-20261015-132801-cherry-picked-ghost-features-f on idc02 (dispatch)
+- at: 2026-10-15 13:30
+  from: devin
+  text: '[run] dispatch started on idc02 worktree — scoping done: MDDB :11027 reachable, relay /send contract confirmed
+    (to= display-name/person-alias/instance). Building apps/cms-render (FastAPI+Jinja2) + scripts/ada/line-digest.py;
+    tests with fixture docs, no deploy per worktree mode.'
+- at: 2026-10-15 13:43
+  from: devin
+  text: '[done-staged] Both components built + verified in worktree (no deploy per dispatch mode). apps/cms-render:
+    FastAPI live MDDB->HTML, all routes live-tested vs real :11027 (index, /p kinds incl kk-th+mermaid+superseded
+    banner, /k, /feed RSS valid, /healthz). scripts/ada/line-digest.py: stdlib weekly per-member push, idempotent
+    msg_id, dry-run renders 300-char Tony digest. Units + idc02 caddy block + routes/audit SSOT staged. 31 pytest
+    pass. Remaining ops steps (venv on idc03, caddy append, CF DNS/'
+- at: 2026-10-15 13:45
+  from: idc02
+  text: 'finished (ok): exit=0 ree failing ada tests on this host are pre-existing ada-voice patch-drift unrelated
+    to this change. | devin-task-'
+- at: 2026-10-15 13:45
+  from: chaba
+  text: 'session-end checkpoint 830d3535: 12 leftover file(s) committed'
+- at: 2026-10-15 13:45
+  from: chaba
+  text: pushed dispatch/20261015-132801-cherry-picked-ghost-features-f to origin
+- at: 2026-10-15 13:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 13:45
+  from: chaba
+  text: auto-merged 4e9f2db9 (dispatch/20261015-132801-cherry-picked-ghost-features-f) → origin/master
+- at: 2026-10-15 13:45
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-132801-cherry-picked-ghost-features-f,
+    branch dispatch/20261015-132801-cherry-picked-ghost-features-f'
+- at: 2026-10-15 13:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''spec-is-locked-cms-surf-thaila''] block close)'
+- at: 2026-10-15 15:54
+  from: tony
+  text: 'answered spec-is-locked-cms-surf-thailand-com-per-966142: dispatch — Dispatch now — builds renderer + digest
+    in a chaba worktree, rails: pytest + selftest before merge'
+- at: 2026-10-15 15:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 15:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:54
+  from: idc02
+  text: claimed
+- at: 2026-10-15 15:55
+  from: chaba
+  text: started devin-task-20261015-155511-cherry-picked-ghost-features-f on idc02 (dispatch)
+- at: 2026-10-15 15:58
+  from: devin
+  text: '[re-verified] Your "dispatch" answer re-armed the card — work was already merged (4e9f2db9) by the 13:28
+    run, so this dispatch re-verified post-merge: 31 pytest pass, /healthz live vs mddb-cms (642+159+40+67 docs),
+    pages per kind eyeballed (kk th, mermaid, relay-img thumbs), all feeds valid XML, 404 ok, digest --dry-run tony
+    renders 4 bullets. Staged-not-deployed per worktree rails: remaining = idc03 venv+unit, idc02 caddy block, CF
+    DNS/Access, then tony-only real send before widening members.'
+- at: 2026-10-15 15:59
+  from: idc02
+  text: 'finished (ok): exit=0 s (idc03 venv+unit, idc02 caddy block, CF DNS/Access, tony-only real send then member
+    widening) are operator acti'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'session-end checkpoint 7ee3e177: 2 leftover file(s) committed'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: pushed dispatch/20261015-155511-cherry-picked-ghost-features-f to origin
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-15 15:59
+  from: chaba
+  text: auto-merged 2dbdd200 (dispatch/20261015-155511-cherry-picked-ghost-features-f) → origin/master
+- at: 2026-10-15 16:00
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-155511-cherry-picked-ghost-features-f,
+    branch dispatch/20261015-155511-cherry-picked-ghost-features-f'
+requests:
+- id: spec-is-locked-cms-surf-thailand-com-per-966142
+  ask: Spec is locked (cms.surf-thailand.com, per-member LINE digests, all behind CF Access). Dispatch to a chaba
+    worktree, or hold for your review first?
+  status: answered
+  at: 2026-10-15 07:48
+  from: devin
+  options:
+  - id: dispatch
+    label: 'Dispatch now — builds renderer + digest in a chaba worktree, rails: pytest + selftest before merge'
+  - id: renderer-first
+    label: Dispatch renderer only — hold the LINE digest component for a second card
+  - id: hold
+    label: Hold in backlog — I'll review the spec first
+  suggested: dispatch
+  answer: 'dispatch — Dispatch now — builds renderer + digest in a chaba worktree, rails: pytest + selftest before
+    merge'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 15:59
+  note: verified — evidence checks green, closing itself

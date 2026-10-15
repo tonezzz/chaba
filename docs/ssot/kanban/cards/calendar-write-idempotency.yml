@@ -1,7 +1,7 @@
 id: calendar-write-idempotency
 title: 'calendar_write: dedup identical creates (double-write bug)'
 column: done
-updated: 2026-10-13 15:40
+updated: 2026-10-14 22:50
 priority: medium
 spec: 'calendar_create_event in backend/tool_runner/calendar.py has no idempotency check — a retry/double-invoke
   created two identical kk-ha events 1s apart (ทริปแอฟริกาใต้ BKK-CPT 2027-01-02, deleted the dup 2026-10-13). Same
@@ -56,6 +56,11 @@ comms:
     stripped), model restated + got real yes, then BOTH the confirm_token replay AND the confirmed=true resend executed
     — two events 1s apart. The token path and the confirmed-resend path must be mutually exclusive; also dedupe
     (title,start) same-day before create.'
+- at: 2026-10-14 22:50
+  from: devin
+  text: 'heads-up found during ada-voice rename sweep: the fix shipped STAGED-ONLY — integrations/ada-voice/backend/calendar_providers.create-dedup.patch
+    was never applied upstream and has now drifted vs ada-voice main (18/158 added lines present). The double-write
+    guard is NOT live. Patch needs regeneration or hand-apply + deploy to actually land.'
 review_kind: verify
 claim: {}
 auto_close:

@@ -1,7 +1,7 @@
 id: ada-pi-rename-ada-voice
 title: 'rename ada-pi repo/lane to ada-voice (condition met: additions ~130x original)'
-column: backlog
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-15 12:59
 spec: 'Tony-approved rename — original import was 13 files/974 LOC; now 661 files/~128k LOC, +232k insertions, and
   nothing ever ran on a Pi. Rename repo + all references.
 
@@ -52,6 +52,19 @@ comms:
   text: 'attempt 2: gate not met — 8 ada-pi dispatches in flight across all hosts (idc02,idc03,omen,macbook,dell).
     Doing the zero-risk half now: GH rename, compat symlinks, repos.conf+remote updates, chaba sweep, ada-pi self-sweep
     branch, per-host quiet-gated rename script + runbook.'
+- at: 2026-10-15 12:50
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-15 12:51
+  from: chaba
+  text: pushed dispatch/20261014-220238-tony-approved-rename-original- to origin
+- at: 2026-10-15 12:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261014-220238-tony-approved-rename-original-,
+    branch dispatch/20261014-220238-tony-approved-rename-original-'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: condition-met-rename-ada-pi-repo-lane-to-893b96
   ask: Condition met — rename ada-pi repo/lane to ada-voice now?
@@ -67,10 +80,16 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   task_id: 20261014-220238-tony-approved-rename-original-
+  result: 20261014-220238-tony-approved-rename-original- finished (inactive) — see `devin-dispatch logs 20261014-220238-tony-approved-rename-original-`
+  verified: true
 claim:
-  session: 20261014-220238-tony-approved-rename-original-
   since: 2026-10-14 22:02
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 12:59
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: cam-snapshot-writer-wp
 title: 'cam snapshot writer: go2rtc frames -> WP cam CPT'
-column: backlog
-updated: 2026-10-14 19:02
+column: done
+updated: 2026-10-15 15:08
 priority: medium
 note: 'chaba-boards plugin ACTIVE on boards (v0.2.0, CPTs verified + asset write sanity passed). Build the cam recorder:
   timer on tony-dell (go2rtc aggregator host) -> per cam in ~/.config/go2rtc/go2rtc.yaml GET http://<host>:1984/api/frame.jpeg?src=<cam>
@@ -15,3 +15,73 @@ comms:
 - at: 2026-10-14 19:02
   from: devin
   text: card captured via board-api
+- at: 2026-10-15 10:22
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 10:22
+  from: idc02
+  text: claimed
+- at: 2026-10-15 10:23
+  from: chaba
+  text: started devin-task-20261015-102306-cam-snapshot-writer-go2rtc-fra on idc02 (dispatch)
+- at: 2026-10-15 10:32
+  from: devin
+  text: '[progress] Scoped: cam CPT already has camera_id/captured_at/kind/stream_url REST-writable meta (plugin
+    v0.4.2). Building scripts/cam-wall/cam-snapshot-wp.py (go2rtc.yaml streams -> frame.jpeg -> POST /wp/v2/media
+    -> private cam post kind=live; per-cam directory post slug cam-<id> upserted each run; 7d purge of snapshot
+    posts+attachments). Registering wp-cam-snapshot job in ssot.jobs.yml (tony_dell, systemd). Note: card note is
+    truncated at "for sso" (board-api caps note at 500 chars) — interpre'
+- at: 2026-10-15 10:42
+  from: devin
+  text: 'raised request card-note-truncates-mid-sentence-also-se-f5f523: Card note truncates mid-sentence: "Also
+    seed kind=live directory posts for sso" (board-api caps note at 500 chars). Buil'
+- at: 2026-10-15 10:43
+  from: devin
+  text: '[done] Built scripts/cam-wall/cam-snapshot-wp.py + registered job wp-cam-snapshot (tony_dell, systemd,
+    every 15min at :02). Per run: go2rtc.yaml streams (variant-collapsed, /api/streams fallback) -> frame.jpeg w/
+    variant fallback -> WP media upload -> private cam post cam-<id>-<ts> kind=live featured_media -> upsert directory
+    post cam-<id> -> purge snapshot posts+media >7d. Tests 6/6 (fake go2rtc+WP). Trail: docs/ssot/jobs/infrastructure/2026-10-15-cam-snapshot-writer-wp.yml.
+    Install on tony-del'
+- at: 2026-10-15 10:45
+  from: idc02
+  text: 'finished (ok): exit=0 ony-dell is the documented one-line post-merge step (`render-jobs.py --host tony_dell
+    --install`). | devin-task-2'
+- at: 2026-10-15 10:45
+  from: chaba
+  text: pushed dispatch/20261015-102306-cam-snapshot-writer-go2rtc-fra to origin
+- at: 2026-10-15 10:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:46
+  from: chaba
+  text: auto-merged 7bc836af (dispatch/20261015-102306-cam-snapshot-writer-go2rtc-fra) → origin/master
+- at: 2026-10-15 10:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''card-note-truncates-mid-senten''] block close)'
+- at: 2026-10-15 15:08
+  from: tony
+  text: closed by tony
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 ony-dell is the documented one-line post-merge step (`render-jobs.py --host tony_dell --install`).
+    | devin-task-20261015-102306-cam-snapshot-writer-go2rtc-fra.service: Consumed 1min 21.658s CPU time, 165.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-15 10:59
+requests:
+- id: card-note-truncates-mid-sentence-also-se-f5f523
+  ask: 'Card note truncates mid-sentence: "Also seed kind=live directory posts for sso" (board-api caps note at
+    500 chars). Built: snapshots kind=live slug cam-<id>-<ts> + per-camera directory post slug cam-<id> (kind=live,
+    featured image = newest frame). What did "for sso" mean?'
+  status: open
+  at: 2026-10-15 10:42
+  from: devin
+  options:
+  - as-built is fine — directory posts were the ask ★
+  - directory posts were for a specific surface — will clarify
+  - 'redo: different kind/split for directory vs snapshots'
+review_kind: verify
+claim: {}

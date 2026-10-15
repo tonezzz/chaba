@@ -1,0 +1,22 @@
+id: ada-voice-news-situation-ask
+title: 'ada-voice: wire news-situation ask-hook — voice asks promote + read back TH/EN briefs'
+column: backlog
+updated: 2026-10-15 19:50
+priority: medium
+spec: 'In ada-voice, add a tool/function callable that runs: python3 scripts/ada/news-situation.py ask "<member
+  ask text>" --json (on idc03, or wherever the chaba checkout with WP creds lives). On success (exit 0): speak the
+  Thai brief (json.th) and optionally offer the link. On exit 3: treat as no-situation-match and continue with her
+  normal search path — never claim a situation was tracked. Side effect to surface in tool doc: a successful ask
+  promotes the digest one rung and posts a WP comment — that IS the designed member-ask signal, not a bug. Verify:
+  voice ask สรุปข่าวน้ำท่วม -> Thai brief read aloud; /wp/index.php/situations/ shows the digest pinned after.'
+note: 'Member asks Ada/Chaba about a tracked news situation (trigger: Tony asked สรุปข่าวน้ำท่วม on tony-ha 2026-10-15
+  12:08). Wire a tool that calls: python3 scripts/ada/news-situation.py ask "<text>" --json on idc03 (chaba repo).
+  It embeds the ask, matches the digest parent, promotes one rung (watching→pinned, posts WP comment trail), returns
+  {th,en,link,state} — Ada reads the Thai brief aloud + can report situations to household. Exit 3 = weak match
+  → fall back to normal news search, no write. Done '
+help: 'Separate-repo follow-on of news-situation-summaries (OPS-0706). Tool contract: ask --json; exit 3 = no match.'
+ref: ADA-0707
+comms:
+- at: 2026-10-15 19:50
+  from: devin
+  text: card captured via board-api

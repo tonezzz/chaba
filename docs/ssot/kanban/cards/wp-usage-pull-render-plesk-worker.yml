@@ -1,7 +1,7 @@
 id: wp-usage-pull-render-plesk-worker
 title: usage timeline as Plesk pull-render worker (CPU to Plesk)
-column: backlog
-updated: 2026-10-14 19:02
+column: review
+updated: 2026-10-15 16:02
 priority: low
 note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
   in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
@@ -15,3 +15,145 @@ comms:
 - at: 2026-10-14 19:02
   from: devin
   text: card captured via board-api
+- at: 2026-10-15 10:22
+  from: devin
+  text: queued for processing
+- at: 2026-10-15 10:23
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-15 10:23
+  from: chaba
+  text: started devin-task-20261015-102327-usage-timeline-as-plesk-pull-r on tony-macbook (dispatch)
+- at: 2026-10-15 10:40
+  from: devin
+  text: 'design+code landed in dispatch worktree (OPS-0661). (a) scripts/litellm/usage-feed.py — idc03 exporter:
+    usage.jsonl + LiteLLM_SpendLogs -> chaba-usage/v1 flat day×lane rows, scp-pushed to idc02 caddy webroot /feeds/usage.json
+    (job usage-feed-push registered in ssot.jobs.yml, every 15m). (b) chaba-boards v0.5.0 — chaba_usage_pull_run()
+    buckets feed into rolling private report post slug usage-ledger; new usage-pull-cron.php = Plesk Scheduled Task
+    entry (wp-load walker) + WP-Cron hourly fallback. ('
+- at: 2026-10-15 10:40
+  from: devin
+  text: 'raised request usage-pull-worker-code-landed-deploy-nee-549e41: usage-pull worker: code landed, deploy
+    needs your one-time setup + 3 defaults to confirm (reply e.g. ''all ★''): (1) rende'
+- at: 2026-10-15 10:44
+  from: chaba
+  text: 'merge-sweep: devin-task-20261015-102327-usage-timeline-as-plesk-pull-r no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-15 10:44
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261015-102327-usage-timeline-as-plesk-pull-r on tony-macbook still
+    dirty — 11 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-15 10:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ome written to `dispatch-outcome-20261015-102327-usage-timeline-as-plesk-pull-r.md`.
+    | devin-task-20261015-102327'
+- at: 2026-10-15 10:45
+  from: chaba
+  text: 'session-end checkpoint 7dc59ac9: 11 leftover file(s) committed'
+- at: 2026-10-15 10:45
+  from: chaba
+  text: pushed dispatch/20261015-102327-usage-timeline-as-plesk-pull-r to origin
+- at: 2026-10-15 10:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:45
+  from: chaba
+  text: auto-merged a3dd4dee (dispatch/20261015-102327-usage-timeline-as-plesk-pull-r) → origin/master
+- at: 2026-10-15 10:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''usage-pull-worker-code-landed-''] block close)'
+- at: 2026-10-15 15:45
+  from: tony
+  text: 'answered usage-pull-worker-code-landed-deploy-nee-549e41: proceed'
+- at: 2026-10-15 15:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 15:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 15:47
+  from: idc03
+  text: claimed
+- at: 2026-10-15 15:47
+  from: chaba
+  text: started devin-task-20261015-154730-usage-timeline-as-plesk-pull-r on idc03 (dispatch)
+- at: 2026-10-15 15:48
+  from: devin
+  text: 'dispatch 154730 on idc03 picked up Tony''s ''proceed'' — executing deploy steps: idc02 edge bearer-gate
+    + feeds dir, idc03 exporter run + timer, wp-watch freshness extension; Plesk panel bits stay Tony-side'
+- at: 2026-10-15 16:00
+  from: devin
+  text: 'deploy executed on your ''proceed'' (dispatch 154730, idc03). LIVE now: (a) idc02 edge — bearer-gated /feeds/usage.json
+    on apex surf-thailand.com (monitor.* turned out CF Access-gated → 302 login on every path; apex/www/boards/status
+    are clean). Verified 403 no-token / 200 token. Note: caddy-edge needed a RESTART not reload — the Caddyfile
+    bind-mount was pinned to a stale inode. (b) idc03 usage-feed-push.timer armed every 15m via render-jobs --install;
+    real feed pushed (15 usage + 86 spend rows). '
+- at: 2026-10-15 16:00
+  from: devin
+  text: 'raised request plesk-side-is-the-only-step-left-h3-pane-a9d972: Plesk side is the only step left (h3 panel,
+    ~5 min): (1) wp-admin → Plugins → upload chaba-boards v0.5.0 zip (both .php '
+- at: 2026-10-15 16:00
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261015-102327-usage-timeline-as-plesk-pull-r on
+    idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-15 16:02
+  from: idc03
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
+    Failed to ope'
+- at: 2026-10-15 16:02
+  from: chaba
+  text: 'session-end checkpoint ea43e8e9: 5 leftover file(s) committed'
+- at: 2026-10-15 16:02
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 16:02
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 16:02
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-154730-usage-timeline-as-plesk-pull-r,
+    branch dispatch/20261015-154730-usage-timeline-as-plesk-pull-r'
+action:
+  type: dispatch
+  status: done
+  sweep:
+    stale_running: 2026-10-15 10:44
+    dirty: 11
+    close_held: 2026-10-15 10:59
+    session_gone: 2026-10-15 16:01
+  result: 'exit=0 ice: No such file or directory | devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
+    No such file or directory'
+  runner: idc03
+requests:
+- id: usage-pull-worker-code-landed-deploy-nee-549e41
+  ask: 'usage-pull worker: code landed, deploy needs your one-time setup + 3 defaults to confirm (reply e.g. ''all
+    ★''): (1) render target — ★ rolling private report post ''usage-ledger'' (same shape as spend-ledger) vs per-day
+    report posts vs a ''Timeline — usage'' timeline_block. (2) feed transport — ★ idc03 pushes JSON via scp to idc02
+    caddy webroot (survives idc03 tailnet flaps, serves last-good) vs edge reverse-proxy to an idc03 tailnet listener.
+    (3) feed hostname — ★ https://monitor.surf-thailand.com/feeds/usage.json (existing public static host on idc02
+    edge, bearer-gated) vs another name. Setup on your side when ready: redeploy chaba-boards zip (v0.5.0), wp-config
+    constants CHABA_USAGE_FEED_URL/TOKEN, Plesk Scheduled Task every 15m, idc02 Caddyfile /feeds/ handle — all steps
+    spelled out in docs/ssot/jobs/infrastructure/2026-10-15-usage-pull-render-plesk.yml.'
+  status: answered
+  at: 2026-10-15 10:40
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+- id: plesk-side-is-the-only-step-left-h3-pane-a9d972
+  ask: 'Plesk side is the only step left (h3 panel, ~5 min): (1) wp-admin → Plugins → upload chaba-boards v0.5.0
+    zip (both .php files in integrations/wp-boards/) with overwrite. (2) wp-config.php: CHABA_USAGE_FEED_URL=https://surf-thailand.com/feeds/usage.json
+    and CHABA_USAGE_FEED_TOKEN=<value in idc03 ~/.config/secrets/usage-feed.env>. (3) Scheduled Task: Run a PHP
+    script wp-content/plugins/chaba-boards/usage-pull-cron.php every 15 min — optional, WP-Cron hourly fallback
+    self-arms. Reply done/skip and I''ll verify the heartbeat.'
+  status: open
+  at: 2026-10-15 16:00
+  from: devin
+  options:
+  - proceed
+  - hold
+review_kind: verify
+claim: {}

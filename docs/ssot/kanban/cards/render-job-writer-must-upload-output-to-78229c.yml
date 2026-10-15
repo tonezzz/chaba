@@ -1,0 +1,16 @@
+id: render-job-writer-must-upload-output-to-78229c
+title: render_job writer must upload output to /wp/v2/media (output_url convention)
+column: backlog
+updated: 2026-10-15 12:30
+note: follow-up to render-job display work 2026-10-15
+ref: OPS-0701
+comms:
+- at: 2026-10-15 12:30
+  from: devin
+  text: 'Records land with filesystem paths (job 117: /local/local-gen/test-sdxl-1024.png — file later lost, image
+    unrecoverable). v0.4.1 plugin now flags these (2/2 broken on the QC scoreboard + wp-admin widget).
+
+
+    Fix the writer(s) — local_image lane (OPS-0658) + ada_render_video path: after a render completes, POST the
+    binary to /wp/v2/media (or chaba/v1/media for member-gated), attach to the render_job post, and set output_url
+    to the returned source_url. Convention documented in ssot.wp-boards.yml wri'

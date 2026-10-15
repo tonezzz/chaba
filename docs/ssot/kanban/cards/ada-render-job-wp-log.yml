@@ -1,7 +1,7 @@
 id: ada-render-job-wp-log
 title: 'ada_render_video: auto-write render_job records to WP boards'
-column: review
-updated: 2026-10-14 22:15
+column: done
+updated: 2026-10-14 22:44
 spec: 'Each ada_render_video call should land one render_job post on WP boards so renders are visible + cost-trackable.
   Plugin v0.3.1 is live: render_job now carries kind=video + video meta (secs/aspect/res/ref_url/operation/est_cost_usd/parent_job/chain_index).
   Implement in backend/tools.d/ada_render_video.py using backend/wp_client.py (create_post(..., post_type=''render_job''))
@@ -20,6 +20,7 @@ action:
   runner: tony-macbook
   result: 'exit=0 each-ada-render-video-call-sho.md`. No commits or pushes made. | devin-task-20261014-215906-each-ada-render-video-call-sho.service:
     Consumed 2min 20.493s CPU time over 14min 57.475s wall clock time, 1.5G memory peak, 13.3M memory swap peak.'
+  verified: true
 ref: ADA-0673
 comms:
 - at: 2026-10-14 21:05
@@ -54,5 +55,13 @@ comms:
   from: chaba
   text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
     address — close will block until merged'
+- at: 2026-10-14 22:44
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-215906-each-ada-render-video-call-sho already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261014-215906-each-ada-render-video-call-sho.md) — auto-closed'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-14 22:44
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-215906-each-ada-render-video-call-sho.md

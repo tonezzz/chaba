@@ -1,7 +1,7 @@
 id: webchat-lane-boards
 title: Webchat lane on boards WP — LINE/TG-style chat screen talking to the real Ada lanes
-column: backlog
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-15 13:00
 priority: medium
 tags:
 - wp-boards
@@ -64,6 +64,19 @@ comms:
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-15 12:50
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-15 12:51
+  from: chaba
+  text: pushed dispatch/20261014-220023-tony-2026-10-14-a-chat-screen- to origin
+- at: 2026-10-15 12:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261014-220023-tony-2026-10-14-a-chat-screen-,
+    branch dispatch/20261014-220023-tony-2026-10-14-a-chat-screen-'
+- at: 2026-10-15 13:00
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: member-auth-model-for-the-webchat-lane-c824c0
   ask: Member auth model for the webchat lane?
@@ -90,11 +103,17 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   attempts: 1
   task_id: 20261014-220023-tony-2026-10-14-a-chat-screen-
   runner: tony-dell
+  result: 20261014-220023-tony-2026-10-14-a-chat-screen- finished (inactive) — see `devin-dispatch logs 20261014-220023-tony-2026-10-14-a-chat-screen-`
+  verified: true
 claim:
-  session: 20261014-220023-tony-2026-10-14-a-chat-screen-
   since: 2026-10-14 22:01
 awaiting_action: true
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 13:00
+  note: verified — evidence checks green, closing itself

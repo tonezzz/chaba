@@ -1,0 +1,19 @@
+id: embedding-backfill-lanes
+title: Embedding backfill lane — nomic re-embed MDDB banks/lessons/news on idle hosts
+column: backlog
+updated: 2026-10-15 20:03
+priority: medium
+note: 'Bursty CPU+embed work for idle idc cores. edu-embed-migration already in flight (education-store card review);
+  extend pattern: nomic via litellm ollama-nomic-embed on idc02 (once #chat-local up) or existing idc03 ollama.
+  Jobs: lesson CPT vectors for edu review recall, news digest clustering precompute, MDDB bank reindex. NOTE nomic
+  space != gemini-embedding-2 — never silent fallback for retrieval.'
+ref: MEM-0710
+comms:
+- at: 2026-10-15 19:58
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 20:03
+  from: devin
+  text: 'Lane half done w/ OPS-0708: nomic-embed-text now served on idc02 AND idc03 behind litellm ollama-nomic-embed
+    (LB via duplicate model_name) — embedding traffic splits off prod automatically. Backfill jobs themselves still
+    open: lesson CPT vectors, news-digest precompute, MDDB reindex — each rides this lane.'

@@ -1,7 +1,7 @@
 id: dispatch-worktree-gc
 title: GC dispatch worktrees + task dirs at card close
-column: backlog
-updated: 2026-10-11 07:43
+column: done
+updated: 2026-10-15 10:29
 brief: Dispatch worktrees and task dirs accumulate forever — root cause of the 2026-10-11 tony-dell disk pressure
   (97% to 87% after manual sweep). Task-dir GC now lives in prune-devin-sessions.sh (d721e9b0); worktrees still
   leak.
@@ -17,6 +17,12 @@ spec: 'In scripts/board/runner-agent.py close path (or a sweep hook), remove the
   Verify: close a test card, confirm worktree gone, dirty worktree preserved.'
 action:
   type: dispatch
+  status: done
+  runner: idc03
+  result: 'exit=0 utation/push allowed); the first production close or merge-sweep pass will post the GC comms line.
+    | devin-task-20261015-100100-in-scripts-board-runner-agent-.service: Consumed 1min 30.783s CPU time, 384.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-11 07:43
   from: tony
@@ -24,4 +30,60 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0445'
+- at: 2026-10-15 10:00
+  from: tony
+  text: queued for processing
+- at: 2026-10-15 10:00
+  from: idc03
+  text: claimed
+- at: 2026-10-15 10:01
+  from: chaba
+  text: started devin-task-20261015-100100-in-scripts-board-runner-agent- on idc03 (dispatch)
+- at: 2026-10-15 10:14
+  from: devin
+  text: 'picked up — design: dr.gc_worktree guard helper (clean+merged only, mirrors devin-dispatch-prune), hooked
+    into runner-agent close_out path + kanban-dispatch merge_pending; merge-sweep gets a REMOTE_GC_PROBE ssh probe
+    after successful merge/push. unittest coverage incoming.'
+- at: 2026-10-15 10:25
+  from: devin
+  text: 'done: gc_worktree guard helper in dispatch_repos (clean + ancestor-of-merged-sha only, never --force);
+    wired into runner-agent close_out_merge + kanban-dispatch merge_pending; merge-sweep REMOTE_GC_PROBE cleans
+    runner worktrees over ssh after salvage merge/push and posts a one-line comms. tests/board/test_worktree_gc.py:
+    16 cases incl. close_out_merge e2e — merged+clean removed, dirty/unmerged/locked preserved. Full board suite
+    141 green. KANBAN_WTGC=0 kill switch.'
+- at: 2026-10-15 10:25
+  from: devin
+  text: 'done: dr.gc_worktree guard helper (clean + ancestor-of-merged-sha, never --force); wired into runner-agent
+    close_out_merge + kanban-dispatch merge_pending; merge-sweep REMOTE_GC_PROBE cleans runner worktrees over ssh
+    after salvage merge/push + posts one-line comms. tests/board/test_worktree_gc.py 16 cases incl. close_out_merge
+    e2e; board suite 141 green. KANBAN_WTGC=0 killswitch.'
+- at: 2026-10-15 10:26
+  from: idc03
+  text: 'finished (ok): exit=0 utation/push allowed); the first production close or merge-sweep pass will post the
+    GC comms line. | devin-task-2'
+- at: 2026-10-15 10:27
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:27
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 10:27
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 10:28
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 10:29
+  from: chaba
+  text: 'merge-sweep: merged 5287cfc8 (dispatch/20261015-100100-in-scripts-board-runner-agent- from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-100100-in-scripts-board-runner-agent-.md)
+    — auto-closed'
 ref: OPS-0445
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 10:29
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261015-100100-in-scripts-board-runner-agent-.md

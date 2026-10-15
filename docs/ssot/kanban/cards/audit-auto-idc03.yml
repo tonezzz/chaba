@@ -1,5 +1,5 @@
 id: audit-auto-idc03
-title: 'Audit drift on `idc03`: 2 delta(s) vs expected state'
+title: 'Audit drift on `idc03`: 5 delta(s) vs expected state'
 brief: 'Daily audit-hosts diff found service/placement drift on this host. Deltas
   become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent,
   allowed_running, known_failed).'
@@ -9,13 +9,19 @@ generated: audit-hosts
 program: chaba-ci
 area: fleet-ops
 priority: medium
-note: '- Unexpected failed user service: 58875db245e191f84f50096a483ff3536d0de010aef1f7653bd5962552965bf0.service
+note: '- Expected service missing: ada-bench-casting.timer
 
-  - Unexpected failed user service: ada-recall-canary.service'
+  - Expected service missing: ada-live-canary-paid.timer
+
+  - Unexpected failed user service: 58875db245e191f84f50096a483ff3536d0de010aef1f7653bd5962552965bf0.service
+
+  - Unexpected failed user service: ada-recall-canary.service
+
+  - Unexpected failed user service: gemini-wallet-watch.service'
 help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.idc03. A delta means
   declared != observed: either restore the expected state, or amend the SSOT so the
   declaration matches intent (this file IS the placement contract).'
-updated: '2026-10-14'
+updated: '2026-10-15'
 action:
   status: done
 claim: {}

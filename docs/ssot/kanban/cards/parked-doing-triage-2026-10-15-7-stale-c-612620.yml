@@ -1,0 +1,51 @@
+id: parked-doing-triage-2026-10-15-7-stale-c-612620
+title: Parked-doing triage 2026-10-15 — 7 stale claims + 1 dead dispatch
+column: done
+updated: 2026-10-15 13:05
+priority: low
+ref: OPS-0702
+comms:
+- at: 2026-10-15 12:34
+  from: devin
+  text: 'Sweep findings. Parked in doing with no work comms: capacity-move-michael-dev (Tony moved 10-13), playlive-idc-targets
+    (OPS-0439), vcast-program-design (MED-0425), nest-node-hardware (OPS-0437, needs your buy call). Work-evidence-but-open:
+    keep-eye-on-floods (job verified running — arguably done), cms-lab-eval ([exp] mid-eval), kk-cms-only-memory-bench
+    (first suite ran 10-12). Dead dispatch: render-flow-quality-pass — runner died before merge, only a checkpoint
+    commit on origin; needs re-dispatc'
+- at: 2026-10-15 12:34
+  from: devin
+  text: 'raised request doing-column-carried-stale-state-i-close-41a108: Doing column carried stale state — I closed
+    8 verified-done cards (evidence comms on each). These remain: keep-eye-on-fl'
+- at: 2026-10-15 13:03
+  from: tony
+  text: 'answered doing-column-carried-stale-state-i-close-41a108: recommended — Apply recommended moves'
+- at: 2026-10-15 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-15 13:05
+  from: devin
+  text: 'Recommended moves applied: floods->done (watch job verified running), 4 parked->backlog, render-flow re-queued
+    (dispatch died pre-merge — only checkpoint commit on origin), cms-lab+kk-bench left in doing (genuinely mid-work).'
+- at: 2026-10-15 13:05
+  from: tony
+  text: closed by tony
+requests:
+- id: doing-column-carried-stale-state-i-close-41a108
+  ask: 'Doing column carried stale state — I closed 8 verified-done cards (evidence comms on each). These remain:
+    keep-eye-on-floods (job runs — likely done), capacity-move-michael-dev, playlive-idc-targets, vcast-program-design,
+    nest-node-hardware (parked), cms-lab-eval + kk-cms-only-memory-bench (mid-work), render-flow-quality-pass (dispatch
+    died pre-merge — needs re-dispatch or close). Global disposition?'
+  status: answered
+  at: 2026-10-15 12:34
+  from: devin
+  options:
+  - id: recommended
+    label: Apply recommended moves
+    d: floods->done; capacity/playlive/vcast/nest->backlog; cms-lab+kk-bench stay doing; render-flow re-dispatched
+  - id: leave
+    label: Leave as-is
+    d: keep current claims, revisit later
+  suggested: recommended
+  answer: recommended — Apply recommended moves
+action:
+  status: done

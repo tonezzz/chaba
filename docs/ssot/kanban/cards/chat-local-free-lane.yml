@@ -1,0 +1,21 @@
+id: chat-local-free-lane
+title: Chat-local free lane — ollama on idc02 behind litellm, background-turn offload
+column: backlog
+updated: 2026-10-15 20:03
+priority: high
+note: 'Ollama podman on idc02 (NOT idc03-prod) serving qwen2.5:7b -> litellm alias chat-local -> route background
+  lanes (news-digest synthesis, wp-comment classification, situation summaries, card triage). Keep Thai output on
+  gemini; EN summarize/classify local. Verified base: ollama already on idc03:11434 w/ llama3.2:3b+moondream+nomic-embed
+  + colab-gemma3:12b when tunnel up; litellm cfg ~/.config/litellm/config.yaml job-class aliases.'
+ref: OPS-0708
+comms:
+- at: 2026-10-15 19:57
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-15 20:03
+  from: devin
+  text: 'LANE LIVE + verified end-to-end 2026-10-15: ollama podman on idc02 :11434 (qwen2.5:7b-instruct + nomic-embed-text);
+    litellm config.yaml on idc03 += ollama-qwen7b, second ollama-nomic-embed backend (same model_name = LB across
+    idc02+idc03 — halves embed traffic off prod), job-class alias chat-local w/ fallback [ollama-llama3.2, colab-gemma3].
+    Smoke: chat-local reply OK (~10s incl cold-load, 84 tok); embed 768-dim OK. Remaining = caller adoption (news-digest
+    gemini_rest, wp-comment-sync classify, '

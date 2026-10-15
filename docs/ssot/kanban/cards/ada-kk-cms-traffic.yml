@@ -1,7 +1,7 @@
 id: ada-kk-cms-traffic
 title: kk-ha CMS traffic feed — public cam dossiers into ada-cms-pages-kk
-column: backlog
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-15 12:59
 spec: 'Tony asked: structure Kaewta CMS to include traffic cam awareness, answers truthful. Pattern = cam-wall-cms
   (generates cam-*/camwall-* dossiers Ada READS — data, not camera access). Build: (1) zone-group filter on cam-wall-cms.py
   (or kk wrapper) so only zones.yml group:public zones emit pages; (2) timer run with COLLECTION=ada-cms-pages-kk
@@ -46,6 +46,60 @@ comms:
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-15 12:50
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-15 12:51
+  from: chaba
+  text: 'auto-retry queued (attempt 2/2): pushed dispatch/20261014-220109-tony-asked-structure-kaewta-cm to origin;
+    auto-merge conflicts: scripts/cam-wall/cam-wall-cms.py, systemd/cam-wall-cms-kk.service, systemd/cam-wall-cms-kk.timer,
+    tests/camwall/test_cam_wall_cms.py — card stays in review for manual resolution'
+- at: 2026-10-15 12:51
+  from: chaba
+  text: pushed dispatch/20261014-220109-tony-asked-structure-kaewta-cm to origin
+- at: 2026-10-15 12:51
+  from: chaba
+  text: 'auto-merge conflicts: scripts/cam-wall/cam-wall-cms.py, systemd/cam-wall-cms-kk.service, systemd/cam-wall-cms-kk.timer,
+    tests/camwall/test_cam_wall_cms.py — card stays in review for manual resolution'
+- at: 2026-10-15 12:51
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-15 12:51
+  from: idc03
+  text: claimed
+- at: 2026-10-15 12:51
+  from: chaba
+  text: started devin-task-20261015-125125-tony-asked-structure-kaewta-cm on idc03 (dispatch)
+- at: 2026-10-15 12:56
+  from: devin
+  text: 'dispatch 20261015-125125 re-verify (idc03): all 3 deliverables already live from 10-14 merges. cam-wall-cms-kk.timer
+    ticking on tony-dell (:7/15, last 12:52, journal clean: filter [public]->5 zones, 5 walls+21 cams). MDDB ada-cms-pages-kk:
+    camwall-traffic updated 05:52Z, zone_group=public, fresh_for=1h; 5 walls+45 cam dossiers (en+th), zero private-zone
+    keys. ada-kk.service running on idc03, cms_collection=ada-cms-pages-kk, cms_read in kk tools, catalog-prime
+    on. tests 4/4. nothing left to build'
+- at: 2026-10-15 12:57
+  from: idc03
+  text: 'finished (ok): exit=0 a-cm.md`. The only remaining step is human: ask Kaewta a Bangkok traffic question
+    and confirm she cites the camwa'
+- at: 2026-10-15 12:57
+  from: chaba
+  text: 'session-end checkpoint 8517aae8: 1 leftover file(s) committed'
+- at: 2026-10-15 12:57
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-15 12:58
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep: merged 2871ce25 (dispatch/20261015-125125-tony-asked-structure-kaewta-cm from idc03) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261015-125125-tony-asked-structure-kaewta-cm.md)
+    — auto-closed'
+- at: 2026-10-15 12:59
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-125125-tony-asked-structure-kaewta-cm,
+    branch dispatch/20261015-125125-tony-asked-structure-kaewta-cm on idc03'
 requests:
 - id: noble-vms-cams-are-group-private-in-zone-baf2cb
   ask: Noble VMS cams are group:private in zones.yml. Scope kk-ha cam feed to public zones only, or add a Noble
@@ -73,11 +127,20 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
-  runner: tony-dell
+  status: done
   attempts: 1
-  task_id: 20261014-220109-tony-asked-structure-kaewta-cm
+  result: 'exit=0 a-cm.md`. The only remaining step is human: ask Kaewta a Bangkok traffic question and confirm
+    she cites the camwall-*/cam-* pages with freshness. | devin-task-20261015-125125-tony-asked-structure-kaewta-cm.service:
+    Consumed 8.959s CPU time.'
+  verified: true
+  last_failure: 'pushed dispatch/20261014-220109-tony-asked-structure-kaewta-cm to origin; auto-merge conflicts:
+    scripts/cam-wall/cam-wall-cms.py, systemd/cam-wall-cms-kk.service, systemd/cam-wall-cms-kk.timer, tests/camwall/test_cam_wall_cms.py
+    — card stays in review for manual resolution'
+  runner: idc03
 claim:
-  session: 20261014-220109-tony-asked-structure-kaewta-cm
   since: 2026-10-14 22:02
-awaiting_action: true
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-15 12:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261015-125125-tony-asked-structure-kaewta-cm.md
