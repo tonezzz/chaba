@@ -73,7 +73,9 @@ def main() -> int:
         if card.get("note") == note:
             return 0
         card["note"] = note
-        card["column"] = "review"
+        # never resurrect: column is set only at creation above — Tony's
+        # close/move must stick across digest runs (KNB-0453 zombie fix)
+        card.setdefault("column", "review")
         card["updated"] = __import__("datetime").datetime.now(
             __import__("datetime").timezone(
                 __import__("datetime").timedelta(hours=7))
