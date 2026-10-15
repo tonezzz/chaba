@@ -1,0 +1,68 @@
+title: Education store — lesson ledger loose ends tied off
+subtitle: OPS-0696 — title standard retrofix, timer registered in jobs manifest, writers documented
+icon: check
+version: 1
+
+card: education-store
+date: 2026-10-15
+dispatch: 20261015-100116-education-store-tony-learning-
+
+summary: |
+  Card education-store tracked remaining work on the WP lesson ledger
+  after the earlier session shipped the CPT (plugin 0.4.2, label
+  Education), lesson-add.py, and lessons-due.py. This dispatch verified
+  the shipped state and closed the three loose ends: existing posts
+  still used the pre-standard "Lesson —" title prefix, the
+  chaba-lessons-due timer was live on idc03 but absent from the jobs
+  manifest, and ssot.wp-boards.yml's writers section never listed the
+  lesson writers.
+
+state_found:
+  - >-
+    5 lesson posts live (ids 336/342/343/351/353) — all titled
+    "Lesson — …" although title_standard says "Education — {topic}"
+    and lesson-add.py already writes the new form (posts predate it).
+  - >-
+    chaba-lessons-due.{service,timer} live on idc03 user systemd
+    (daily 07:30, next trigger 2026-10-16) but hand-created —
+    not in ssot.jobs.yml, not in systemd/generated/.
+  - >-
+    lessons-due.py --dry-run: 0 due, 5 upcoming (next_review
+    backfilled to 2026-10-22; PolityAI 2026-11-15) — correct.
+
+actions_taken:
+  - >-
+    Retitled all 5 lesson posts via REST to "Education — {topic}"
+    (the upsert path only fixes a post when its topic is re-asked).
+  - >-
+    Ran lessons-due.py once from the live idc03 checkout — refreshed
+    private page education-due (post 354); the timer path is verified
+    end-to-end before its first scheduled run.
+  - >-
+    Registered the job in docs/ssot/infrastructure/ssot.jobs.yml
+    (id chaba-lessons-due, host idc03, on_calendar 07:30, persistent)
+    and rendered systemd/generated/idc03/chaba-lessons-due.{service,timer}.
+    Rendered unit is semantically identical to the live hand-made one
+    (same exec/schedule/cwd; adds TimeoutStartSec=300).
+  - >-
+    Added lesson_add + lessons_due writer entries to
+    docs/ssot/apps/ssot.wp-boards.yml — the writers section now
+    documents the ledger's write paths.
+
+still_open:
+  - >-
+    OPS-0694 lesson-transcript-miner (own backlog card) — offline
+    transcript miner that drafts lessons free-first; also delivers the
+    "Ada parity via miner" item. Not in this card's scope.
+  - >-
+    Live idc03 unit still the hand-made copy — converges on the next
+    `render-jobs.py --host idc03 --install` (identical schedule+exec;
+    cosmetic Description/TimeoutStartSec diff only).
+
+result: verified-live
+verification: |
+  GET /wp/v2/lesson&status=any -> titles all "Education — …" (5 posts)
+  python3 scripts/lessons-due.py -> "updated page 354"
+  systemctl --user list-timers -> chaba-lessons-due.timer next 07:30
+  python3 scripts/render-jobs.py --check -> OK 54 jobs
+  git status -> only ssot.jobs.yml, ssot.wp-boards.yml, 2 generated units
