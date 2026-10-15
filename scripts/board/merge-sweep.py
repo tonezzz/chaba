@@ -62,6 +62,15 @@ For each card in doing/review with action.type=dispatch:
      same drain — the early-skip and the already-merged path both
      route through it, so stragglers verified before this lane
      existed close too.
+  8. worktree GC (card dispatch-worktree-gc): after a successful
+     merge+push — and whenever the fetched head proves already inside
+     origin/<base> — the runner's session worktree+branch are removed
+     over ssh (REMOTE_GC_PROBE), only when the tree is clean and every
+     commit it holds is inside the merged sha. Dirty trees and
+     unmerged state are never touched; one comms line records what was
+     removed. devin-dispatch-prune.sh stays the weekly backstop for
+     anything this misses (unreachable runner, card already out of
+     scope). KANBAN_WTGC=0 disables.
 
 Zombie lane: devin-task-* units on dell + the recorded runners +
 MERGE_SWEEP_HOSTS running > ZOMBIE_AGE_H (6h) with no activity >
@@ -297,6 +306,79 @@ for u in units:
     out.append({"task": base, "unit": u,
                 "age_s": round(now - start),
                 "idle_s": round(now - (latest or start))})
+print(json.dumps(out))
+'''
+
+# Runs on the runner via `ssh <host> python3 - <worktree> <branch>
+# <head> <tid>` after this host landed <head> into origin/<base> — the
+# runner-side half of dispatch_repos.gc_worktree for a tree this host
+# can't reach locally (card dispatch-worktree-gc). Removes the session
+# worktree + dispatch branch ONLY when the tree is clean and every
+# commit it points at is inside <head> — the sha this host just merged
+# and pushed, so removal can never strand work. Guards mirror
+# devin-dispatch-prune.sh: no --force, dirty/locked trees fail git's own
+# removal, -d then ancestry-gated -D for the branch, and an active
+# devin-task-<tid>* unit keeps everything. Prints one JSON object.
+REMOTE_GC_PROBE = r'''
+import json, subprocess, sys
+from pathlib import Path
+wt_s, branch, head, tid = sys.argv[1:5]
+out = {"removed": []}
+wt = Path(wt_s)
+
+def g(cwd, *a):
+    r = subprocess.run(["git", "-C", str(cwd), *a],
+                       capture_output=True, text=True, timeout=30)
+    return r.returncode, (r.stdout or r.stderr or "").strip()
+
+if not wt.is_dir():
+    out["skipped"] = "worktree gone"
+else:
+    rc, s = g(wt, "status", "--porcelain=v1")
+    if rc != 0:
+        out["skipped"] = "status unreadable"
+    elif s.strip():
+        out["skipped"] = ("dirty — %d uncommitted file(s)"
+                          % len(s.splitlines()))
+    else:
+        rc, whe = g(wt, "rev-parse", "HEAD")
+        act = ""
+        if tid:
+            r = subprocess.run(
+                ["systemctl", "--user", "list-units",
+                 "devin-task-%s*" % tid, "--state=active,activating",
+                 "--no-legend", "--plain"],
+                capture_output=True, text=True, timeout=15)
+            act = (r.stdout or "").strip()
+        if not whe:
+            out["skipped"] = "no HEAD"
+        elif g(wt, "merge-base", "--is-ancestor", whe, head)[0] != 0:
+            out["skipped"] = "commits on top of the merged head"
+        elif act:
+            out["skipped"] = "devin-task-%s* still active" % tid
+        else:
+            rc, root = g(wt, "rev-parse", "--path-format=absolute",
+                         "--git-common-dir")
+            root = str(Path(root).parent) if rc == 0 and root else ""
+            if not root:
+                out["skipped"] = "no repo root"
+            else:
+                rc, err = g(root, "worktree", "remove", str(wt))
+                if rc != 0:
+                    out["error"] = "worktree remove: %s" % err[:160]
+                else:
+                    out["removed"].append("worktree %s" % wt)
+                    if branch:
+                        rc, _ = g(root, "branch", "-d", branch)
+                        if rc != 0 and g(
+                                root, "merge-base", "--is-ancestor",
+                                branch, head)[0] == 0:
+                            rc, _ = g(root, "branch", "-D", branch)
+                        if rc == 0:
+                            out["removed"].append("branch %s" % branch)
+                        else:
+                            out["kept_branch"] = branch
+                    g(root, "worktree", "prune")
 print(json.dumps(out))
 '''
 
@@ -858,6 +940,39 @@ def merge_strict(repo: Path, sha: str, base_ref: str,
 
 
 # ------------------------------------------------------------- sweep
+def gc_runner_worktree(card: dict, runner: str, probe: dict,
+                       head: str, tid: str, dry: bool) -> bool:
+    """Clean the runner's session worktree after this host landed its
+    head on origin/<base> (card dispatch-worktree-gc — the salvage path
+    leaves the runner's tree behind otherwise). `head` is the sha this
+    host merged/pushed — the probe removes the tree only when it is
+    clean and fully inside that sha, so nothing unmerged is ever lost;
+    a dirty or ahead-of-merge tree is simply kept (weekly
+    devin-dispatch-prune stays the backstop). One comms line records the
+    removal; unreachable runners retry on a later pass. KANBAN_WTGC=0
+    disables."""
+    if os.environ.get("KANBAN_WTGC", "1") == "0":
+        return False
+    wt = str(probe.get("worktree") or "")
+    if not wt or not probe.get("wt_exists") or not head:
+        return False
+    if dry:
+        print(f"  [dry] {card.get('id')}: would GC session worktree "
+              f"{wt} on {runner or HOST}")
+        return True
+    r = runner_probe(runner, REMOTE_GC_PROBE, wt,
+                     str(probe.get("branch") or ""), head, tid)
+    if not isinstance(r, dict) or not r.get("removed"):
+        return False
+    kept = (f"; kept branch {r['kept_branch']}"
+            if r.get("kept_branch") else "")
+    card_note(card["id"],
+              "merge-sweep GC: removed "
+              + ", ".join(str(x) for x in r["removed"])
+              + f" on {runner or HOST}{kept}", dry)
+    return True
+
+
 def task_id_for(card: dict, runner: str) -> str:
     """action.task_id -> claim.session -> comms 'devin-task-<id>' line ->
     runner-agent state.json on the runner host."""
@@ -1079,7 +1194,9 @@ def sweep_card(card: dict, active: dict, dry: bool,
                 f"{probe.get('branch')} has {m['unmerged']} commit(s) "
                 f"not in {base_ref} — not re-gating a proven card; "
                 "check by hand", dry)
-        return drain_verified(card, dry)
+        return bool(gc_runner_worktree(card, runner, probe, head,
+                                       tid, dry)
+                    | drain_verified(card, dry))
 
     # verified gate — verified means "the dispatch delivered", not "the
     # branch merged" (2026-10-09 nest-mgr false-verify). A provable
@@ -1128,6 +1245,9 @@ def sweep_card(card: dict, active: dict, dry: bool,
                          f"withheld — {g['why'][:200]}", dry)
 
     if m["ancestor"]:
+        # head already in base — the runner's worktree can go too
+        # (commits are provably on origin regardless of the gate verdict)
+        gc_runner_worktree(card, runner, probe, head, tid, dry)
         return stamp_gate_result(
             f"{probe.get('branch')} already in {base_ref}")
     # shadow-flagged heads don't re-attempt the doomed merge every pass —
@@ -1146,6 +1266,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
         stamp_gate_result(
             f"merged {res['sha'][:8]} ({probe.get('branch')} from "
             f"{runner or HOST}) -> origin/{base}")
+        gc_runner_worktree(card, runner, probe, head, tid, dry)
         return True
     if res.get("shadows"):
         paths = ", ".join(str(p) for p in res["shadows"][:10])

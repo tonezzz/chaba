@@ -518,6 +518,10 @@ def merge_pending_one(path: Path) -> str:
         res = dr.close_out(load_card(path))
     except Exception as e:
         res = {"merged": False, "error": str(e)}
+    # card dispatch-worktree-gc — remove the session worktree+branch once
+    # the head is provably on origin (never dirty/unmerged; runs outside
+    # the card lock like the merge itself)
+    gc_notes = dr.gc_session(res)
 
     def apply():
         card = load_card(path)
@@ -553,6 +557,8 @@ def merge_pending_one(path: Path) -> str:
                     f"kanban-dispatch auto-retry `{card.get('id') or path.stem}` "
                     f"(attempt {att + 1}/{max_att}) on {HOST}: {why}")
         for n in dr.close_out_notes(res):
+            comms_add(card, "chaba", n)
+        for n in gc_notes:
             comms_add(card, "chaba", n)
         for n in session_end_notes(card):
             comms_add(card, "chaba", n)
