@@ -332,6 +332,10 @@ hosts:
       - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
       - {name: chaba-kanban-brief.timer, type: timer, scope: user}
       - {name: chaba-nag.timer, type: timer, scope: user}
+      - {name: chaba-repo-sync.timer, type: timer, scope: user,
+         note: "git-safe-pull of the ~/CascadeProjects/chaba exec checkout; installed
+           2026-10-16 (OPS-0479) at kanban-commit cadence via timer.d drop-in —
+           15min, not the hourly default other hosts run"}
       - {name: chaba-report-watch.timer, type: timer, scope: user}
       - {name: chaba-review-digest.timer, type: timer, scope: user}
       - {name: chaba-route-health.timer, type: timer, scope: user}

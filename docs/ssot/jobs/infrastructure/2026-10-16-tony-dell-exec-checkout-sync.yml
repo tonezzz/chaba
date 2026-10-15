@@ -1,0 +1,112 @@
+# SSOT Job Lifecycle: tony-dell exec checkout (~/CascadeProjects/chaba) sync
+# Card: tony-dell-job-execution-checkout-cascade-3dd548 (OPS-0479).
+# Found 2026-10-11 via flood-alert quiet-streak: a committed+pushed change
+# sat unexecuted ~5h because the exec checkout never pulled.
+
+title: tony-dell exec checkout sync — chaba-repo-sync.timer installed at kanban-commit cadence
+subtitle: Two checkouts on tony-dell are deliberate; the exec one just had no puller
+icon: git-branch
+
+context:
+  checkout_split: |
+    tony-dell runs TWO chaba checkouts on purpose:
+      - ~/CascadeProjects/chaba-tony-dell — the SERVED/WRITER checkout.
+        board-api reads/writes cards here; kanban-commit.timer (15min)
+        safe-pulls + commits + pushes from here. Single-writer rule.
+      - ~/CascadeProjects/chaba — the EXEC checkout. ssot.jobs.yml
+        `repo: tony_dell` maps here; ~19 user units (flood-alert,
+        chaba-jobs dispatcher, audits, digests, report-api, sentinel)
+        run their ExecStart out of this tree.
+    Converging them (the card's option A) was rejected: job scripts can
+    dirty the tree, and the writer checkout's scoped auto-commit +
+    pre-commit card-guard assumptions break if exec jobs share it.
+  gap: |
+    chaba-repo-sync.timer (hourly git-safe-pull of the exec checkout)
+    was installed on idc02/idc03/mn01 after the 2026-10-09 drift
+    findings, but never on tony-dell — the host with the most exec
+    units. Result: the exec checkout only moved on manual pulls;
+    observed 2026-10-15 at 84 commits behind origin/master.
+
+fix:
+  installed_on_tony_dell: |
+    - ~/.config/systemd/user/chaba-repo-sync.{service,timer}
+      — canonical files now committed at systemd/chaba-repo-sync.*.
+    - ~/.config/systemd/user/chaba-repo-sync.timer.d/tony-dell-cadence.conf
+      — overrides OnCalendar=hourly to OnUnitActiveSec=15min +
+      OnBootSec=5min + RandomizedDelaySec=120, mirroring
+      kanban-commit.timer's tick shape (the card's option B:
+      "pull on the same trigger as kanban-commit"). 15min bounds the
+      lag for pushes from ANY source, not just kanban-commit.
+    - systemd/kanban-commit.service gained
+      `ExecStartPost=-/usr/bin/systemctl --user start --no-block
+      chaba-repo-sync.service` (installed live too): after each
+      commit+push tick the exec checkout pulls immediately, so the
+      dominant write path propagates in seconds, not up to 15min.
+      `-` prefix: a repo-sync failure can never fail kanban-commit.
+  audit_ssot: |
+    chaba-repo-sync.timer added to tony-dell expected_services in
+    ssot.audit.hosts.yml (with the cadence note) so drift-reconcile
+    flags it if the tick disappears.
+
+incident_found_while_fixing: |
+  kanban-commit.service had failed EVERY tick since ~2026-10-15 16:00
+  (96 exit-1s / 24h) — the .husky/pre-commit ssot-optimize-gate refused
+  the commit because 5 warnings were new debt vs the committed baseline.
+  Side effect: ~13h of board writes sat staged-but-uncommitted in the
+  served checkout (133 files). Baseline refresh was itself blocked: the
+  documented `node scripts/ssot-optimize.mjs` full run shells out to
+  ssot-validate-all.mjs (no --staged) and crashed on a REAL YAML syntax
+  error committed 2026-10-15 in docs/ssot/jobs/ada/2026-10-15-wp-comment-sync.yml
+  (`post_types: [cam, bench, render_job] + fallback ...` — scalar glued
+  to a flow list). Fixed live in the served checkout:
+    1. quoted that line (job-scoped fix commit),
+    2. full `ssot-optimize.mjs` run regenerated
+       reports/SSOT_OPTIMIZATION_WARNINGS.json (the 5 warnings are
+       false-positive secret heuristics — a key NAME `kaewta-paid`, a
+       `<value` placeholder — plus a missing request suggestion and
+       auto-card bloat; all still tracked in the baseline),
+    3. committed both — gate now reports "no warnings".
+  Verified: manual kanban-commit tick committed+pushed the backlog
+  (ccbc2d351) and ExecStartPost fired chaba-repo-sync within seconds;
+  exec checkout converged to origin HEAD.
+
+evidence:
+  - "Before fix: ~/CascadeProjects/chaba was master...origin/master [behind 84]"
+  - "Immediate git-safe-pull run: clean; one autostash superseded+archived
+     (standard generated-path resolution), one non-card conflict kept as
+     docs/ssot/ssot.dev-system.assessment.yml.local-conflict-20261008-211752"
+  - "systemctl --user list-timers: chaba-repo-sync.timer NEXT ~15min after
+     each activation; first run exited 0"
+  - "kanban-commit.service ExecStartPost verified parsed by
+     systemctl show (ignore_errors=yes)"
+
+unit_audit_2026_10_16:
+  chaba_exec_checkout_units: |
+    ada-flood-news, ada-market-report, ada-memory-backup,
+    chaba-audit, chaba-audit-full, chaba-jobs, chaba-kb-audit,
+    chaba-report-api, chaba-services-regen, daily-brief (also reads
+    chaba-tony-dell cards dir), devin-bank-distill, devin-session-prune,
+    devin-summaries-sync, flood-alert, ha-auth-watch, mcp-link-monitor,
+    secrets-console, timer-sentinel, timer-timeline-update
+  chaba_tony_dell_units: |
+    ~42 units incl. kanban-commit, kanban-dispatch, chaba-board-api,
+    chaba-board-render, merge-sweep, overnight-assessment, qc-scoreboard
+  other_checkouts: |
+    trade, ada-voice, chaba-raceman, chaba-kanban-sync (job worktree —
+    expected), chaba-h3-tony-dell — separate repos, not in scope.
+
+followups:
+  - tony-omen has NO chaba-repo-sync.timer either — follow-up card filed
+    as OPS-0713 (tony-omen-install-chaba-repo-sync-timer-c581bd).
+  - mn01 unreachable during audit; macbook hostname unresolvable —
+    assumed still installed per ssot.audit.hosts.yml census.
+  - >-
+    Exec-checkout residue worth a sweep look (left in place, non-card):
+    docs/ssot/ssot.dev-system.assessment.yml.local-conflict-20261008-211752
+    re-surfaces on every git-safe-pull; and one handoff file is
+    permanently dirty (autostash churn each tick).
+  - >-
+    Design question for a later card — should the pre-commit
+    ssot-optimize-gate hard-block the kanban-commit persistence path?
+    13h of unpersisted board writes is the failure mode it produced;
+    a warn+card might fit the committer better than a hard gate.
