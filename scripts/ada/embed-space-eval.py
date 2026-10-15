@@ -412,7 +412,8 @@ def stage_embed(work: str) -> None:
 
     # --- doc vectors ---------------------------------------------------
     embed_docs("nomic", lambda d: NOMIC_DOC + d["text"])
-    embed_docs("gemini", lambda d: d["text"])
+    if os.environ.get("SKIP_GEMINI_DOCS") != "1":
+        embed_docs("gemini", lambda d: d["text"])
     # nomic_en: non-thai docs reuse the nomic vectors; only the ~500
     # translated texts need a fresh embed.
     ne_path = os.path.join(work, "vec-nomic_en.jsonl")

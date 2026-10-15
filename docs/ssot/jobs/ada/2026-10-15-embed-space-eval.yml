@@ -1,0 +1,51 @@
+title: Embedding space eval — gemini-2 vs nomic vs nomic+translate
+subtitle: recall@k benchmark decides whether mddb banks can leave the paid space
+type: eval
+status: done
+card: embed-space-eval
+repo: chaba
+branch: dispatch/20261015-100427-embedding-space-eval-gemini-2-
+host: idc03 + tony-macbook
+date: 2026-10-15
+
+summary: >-
+  Benchmarked 3 embedding arms + the production mddb index over all 24
+  vector-searched tony collections (8,109 active docs) on 48 real
+  ada_memory_search queries (34 EN / 14 TH, mined from ada-ha-tony
+  journals, flash-lite-judged pooled labels).  nomic+translate reaches
+  ~86% of gemini's recall@5 — outside the card's ~5% decision band,
+  and the gap is worst on Thai queries (-23% relative).  Verdict:
+  paid gemini-embedding-2 space stays; bank migration to nomic is not
+  arguable on recall.  Report: docs/ssot/jobs/ada/2026-10-15-embed-space-eval.md,
+  data: docs/ssot/jobs/ada/2026-10-15-embed-space-eval.json.
+
+key_numbers:
+  recall_at_5: {gemini: .465, nomic: .330, nomic_en: .399, mddb_prod: .450}
+  recall_at_5_th: {gemini: .406, nomic: .171, nomic_en: .311}
+  mrr: {gemini: .820, nomic: .625, nomic_en: .761}
+  query_latency_p50_s: {gemini_or: 1.42, nomic: .056, nomic_en: .051}
+  corpus: 8109 docs, 24 collections, 48 queries (34 EN / 14 TH)
+  cost_usd: {openrouter_embed_tokens: 2532114, usd: 0.38}
+
+findings:
+  - "Decision rule: nomic_en within ~5% of gemini -> migrate arguable.
+    Measured gap is ~14% overall / ~23% on TH -> paid space stays."
+  - "Ops-routed collections (ada-ha-recall-summary-*, ada-ha-scenario-reports)
+    are keyword-ranked in production, not embedded — out of scope for
+    space migration."
+  - "gemini-embedding-001 and -2 are DIFFERENT vector spaces (cos ~0).
+    A silent -2->-001 fallback mid-corpus poisons the index — harness
+    pins -2 only."
+  - "Free-tier Gemini embedding quota saturates at ~2.3K calls/day-ish;
+    corpus-scale work needs the OR route (~$0.15/Mtok, same space,
+    verified cos=1.0 per doc)."
+  - "mddb prod-index arm lands within 3% of doc-level cosine (r@5
+    .450 vs .465) — methodology validated against the live index."
+
+artifacts:
+  - scripts/ada/embed-space-eval.py — staged harness (fetch/select/
+    translate/embed/prod/label/score, resumable)
+  - docs/ssot/jobs/ada/2026-10-15-embed-space-eval.md — full report
+  - docs/ssot/jobs/ada/2026-10-15-embed-space-eval.json — raw metrics
+  - idc03:/tmp/embedeval/ — workdir (docs/queries/translations/vec-*.jsonl/
+    qrels/prod-hits)
