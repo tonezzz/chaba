@@ -287,6 +287,19 @@ jobs:
     report + overnight producers) = overnight results; evening (19:05) = day completions + needs-Tony. Edition auto-picked
     by run hour. Stays on tony_dell: reads the local devin-dispatch ledger, ~/var/chaba/health, and the served-checkout
     card dir (git log = truthful "filed" signal; board-api fallback). Added 2026-10-05 (card daily-brief-node).'
+- id: qc-scoreboard
+  name: QC Scoreboard (morning+evening)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 07,19:20:00'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/qc-scoreboard.py
+  note: 'L2 qc-scoreboard node — rolls up the scattered quality counters
+    (repeat-asks, broken render_jobs, open audit cards, open requests,
+    optimize-gate warnings) into reports/qc-scoreboard/*.md + CMS page
+    qc-scoreboard. After daily-brief (07:05/19:05) so its numbers ride the
+    freshest producer state. Added 2026-10-15.'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_dell
