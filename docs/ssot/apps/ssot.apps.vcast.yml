@@ -41,9 +41,9 @@ sections:
     layout: list
     items:
       - label: Inbound to display (room vcast-N)
-        text: "play {url} (hls or direct video), image {url,interval}, nav {url} (iframe), audio {url}, stop, reload, snap-request {token} (self-capture -> POST /frame), uplink-start {interval} / uplink-stop (getUserMedia frames -> POST /frame token 'cam'). YouTube/Vimeo page URLs are rewritten to embed players by embedUrl()."
+        text: "play {url} (hls or direct video), image {url,interval}, nav {url} (iframe), audio {url}, stop, reload, snap-request {token} (self-capture -> POST /frame), uplink-start {interval} / uplink-stop (getUserMedia frames -> POST /frame token 'cam'), gesture {mode: off|room|hand} — 'room' = wake-on-motion frame-diff, 'hand' = YOLO hand-pointer (camera uplink -> yolo service detects hand bbox -> {type:gesture,x,y,action} msgs pushed back via /pub; box centre is the pointer, dwell 700ms = click, two hands sustained = grab -> toggles pane zoom; gone => hide cursor). YouTube/Vimeo page URLs are rewritten to embed players by embedUrl()."
       - label: Outbound
-        text: "register-display {api_key,label,device_id}, state {state,detail} reports (relay records them in the registry), 30s state heartbeats, POST /frame snapshot uploads, POST /capture lease records, normal room broadcast messages."
+        text: "register-display {api_key,label,device_id}, state {state,detail} reports (relay records them in the registry), 30s state heartbeats, POST /frame snapshot uploads, POST /capture lease records, gesture-event {event:click|grab|wake,...} msgs emitted by gesture modes, normal room broadcast messages."
       - label: Dev override
         text: "URL params: room=vcast-N joins a room directly without pairing; api_key persists a key into localStorage; ws overrides the WS URL."
   - title: Screen ownership (ACL)

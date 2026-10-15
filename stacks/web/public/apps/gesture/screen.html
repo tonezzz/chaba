@@ -201,6 +201,22 @@ function doPinch() {
   else if (el) el.click();
 }
 
+/* dwell-click for box-driven pointers (src:"yolo") — no landmark pinch
+ * exists in the YOLO rebuild, so parking the cursor on the same snapped
+ * element for DWELL_MS fires the click instead. MediaPipe-sourced frames
+ * keep the pinch-only contract. */
+const DWELL_MS = 700, DWELL_COOLDOWN = 1200;
+let dwellEl = null, dwellT = 0, dwellCool = 0, yoloSrc = false;
+setInterval(() => {
+  if (!yoloSrc || !snapped || dragId !== null) { dwellEl = null; return; }
+  const now = performance.now();
+  if (snapped.el !== dwellEl) { dwellEl = snapped.el; dwellT = now; return; }
+  if (now - dwellT >= DWELL_MS && now > dwellCool) {
+    dwellCool = now + DWELL_COOLDOWN; dwellT = now + 1e9;
+    doPinch();                          // same hit-test/click path
+  }
+}, 120);
+
 let dragId = null, lastWrist = null;
 function fistStart(m) {
   const s = snapped;
@@ -277,7 +293,13 @@ function connect() {
   ws.onmessage = ev => {
     let m; try { m = JSON.parse(ev.data); } catch { return; }
     if (m.type === 'peer') { peers = m; renderStatus(); return; }
-    if (m.type !== 'gesture' || m.x === undefined) return;
+    if (m.type !== 'gesture') return;
+    if (m.gone) {                        // yolo: hand left the frame
+      cursor.style.opacity = '0.25'; fistEnd(); dwellEl = null; return;
+    }
+    if (m.x === undefined) return;
+    cursor.style.opacity = '';
+    yoloSrc = m.src === 'yolo';
     rx++;
     const now = performance.now();
     if (now - rxT > 1000) { rxRate = rx; rx = 0; rxT = now; renderStatus(); }

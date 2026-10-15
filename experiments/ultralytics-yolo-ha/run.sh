@@ -17,5 +17,8 @@ fi
 "$VENV/bin/pip" install --no-deps ultralytics
 # tiny profiling helper used by ultralytics utils
 "$VENV/bin/pip" install --no-deps ultralytics-thop
+# ws client for POINTER_SINK=ws://... (publish into gesture-relay as a
+# controller); harmless when the pointer is off
+"$VENV/bin/pip" install websockets==16.1.1
 
 exec "$VENV/bin/python" -u server.py

@@ -581,15 +581,74 @@
 
     // Gesture control — the display's own camera watches for motion.
     // 'room' = wake-on-motion (a wave/approach wakes the screen and emits
-    // a gesture-wake event Ada can react to); 'hand' = MediaPipe hand
-    // tracking (not built yet — reported honestly). Tiny frame-diff loop:
-    // no ML deps, ~4fps at 64x36.
+    // a gesture-wake event Ada can react to); 'hand' = YOLO hand-pointer:
+    // the camera uplink feeds input-bridge /frame, a yolo service turns
+    // hand bounding boxes into {type:"gesture",x,y,action?} msgs pushed
+    // back over this room's ws. Box centre is the pointer (no landmarks);
+    // dwell on a spot = click; a second hand = grab -> toggles pane zoom.
     let gStream = null, gTimer = null, gVideo = null, gPrev = null,
-        gStreak = 0, gCooldownUntil = 0, gMode = "off";
+        gStreak = 0, gCooldownUntil = 0, gMode = "off",
+        gUplinkOwned = false;
+    // hand-pointer state — same conventions as /apps/gesture/screen:
+    // producer sends raw normalized coords, lerp/snap live screen-side
+    let gCursor = null, ptrPos = null, ptrTgt = null, ptrRaf = 0,
+        ptrDwellEl = null, ptrDwellT = 0, ptrCooldown = 0;
+    const PTR_SENS = 2.0, PTR_LERP = 0.25, PTR_DWELL_MS = 700;
+    const ptrNorm = v => Math.min(1, Math.max(0, (v - 0.5) * PTR_SENS + 0.5));
+    function ptrFrame() {
+      ptrRaf = requestAnimationFrame(ptrFrame);
+      if (!ptrPos || !ptrTgt || !gCursor) return;
+      ptrPos.x += (ptrTgt.x - ptrPos.x) * PTR_LERP;
+      ptrPos.y += (ptrTgt.y - ptrPos.y) * PTR_LERP;
+      gCursor.style.left = ptrPos.x + "px";
+      gCursor.style.top = ptrPos.y + "px";
+      // dwell-click: cursor parked on the same element long enough fires a
+      // click — the box world has no pinch, so stillness is the trigger
+      const el = document.elementFromPoint(ptrPos.x, ptrPos.y);
+      const now = Date.now();
+      if (el !== ptrDwellEl) { ptrDwellEl = el; ptrDwellT = now; return; }
+      if (!el || now - ptrDwellT < PTR_DWELL_MS || now < ptrCooldown) return;
+      ptrCooldown = now + 1200; ptrDwellT = now + 1e9;
+      const pane = el.closest && el.closest(".pane");
+      const pi = pane ? panes.findIndex(p => p && p.el === pane) : -1;
+      ws && ws.send(JSON.stringify({ type: "gesture-event",
+        event: "click", screen: screenNum, pane: pi,
+        x: +(ptrPos.x / innerWidth).toFixed(3),
+        y: +(ptrPos.y / innerHeight).toFixed(3) }));
+      const btn = el.closest && el.closest(".pz, button, a, [role=button]");
+      if (btn) btn.click();
+      gCursor.style.background = "rgba(34,211,238,.5)";
+      setTimeout(() => { if (gCursor) gCursor.style.background = ""; }, 250);
+      showToast("click", 900);
+    }
+    function onGestureMsg(m) {
+      if (gMode !== "hand" || !gCursor) return;
+      if (m.gone) { gCursor.style.display = "none"; return; }
+      if (m.x === undefined) return;
+      gCursor.style.display = "block";
+      ptrTgt = { x: ptrNorm(m.x) * innerWidth,
+                 y: ptrNorm((m.y ?? 0.5)) * innerHeight };
+      if (m.action === "fist_start") {
+        // two-hands = grab — on vcast the useful grab is pane zoom
+        const el = document.elementFromPoint(ptrPos ? ptrPos.x : 0,
+                                             ptrPos ? ptrPos.y : 0);
+        const pane = el && el.closest && el.closest(".pane");
+        const pi = pane ? panes.findIndex(p => p && p.el === pane) : -1;
+        if (pi >= 0) { zoomPane(zoomedPane === pi ? -1 : pi);
+          showToast(pi >= 0 ? "grab → zoom pane " + pi : "grab", 1200); }
+        ws && ws.send(JSON.stringify({ type: "gesture-event",
+          event: "grab", screen: screenNum, pane: pi }));
+      }
+    }
     function stopGesture() {
       if (gTimer) { clearInterval(gTimer); gTimer = null; }
       if (gStream) { gStream.getTracks().forEach(t => t.stop()); gStream = null; }
-      gVideo = null; gPrev = null; gStreak = 0; gMode = "off";
+      gVideo = null; gPrev = null; gStreak = 0;
+      if (ptrRaf) { cancelAnimationFrame(ptrRaf); ptrRaf = 0; }
+      if (gCursor) { gCursor.remove(); gCursor = null; }
+      ptrPos = ptrTgt = ptrDwellEl = null; ptrDwellT = 0;
+      if (gUplinkOwned) { gUplinkOwned = false; stopUplink(); }
+      gMode = "off";
       const ov = document.getElementById("gestureOverlay");
       if (ov) ov.remove();
     }
@@ -597,10 +656,40 @@
       mode = String(mode || "off").toLowerCase();
       if (mode === "off") { stopGesture(); showToast("gesture off"); sendState("idle"); return; }
       if (mode === "hand") {
-        // honest until MediaPipe hands lands — don't claim it works
-        sendState("gesture-error", "hand mode not built");
+        if (gMode === "hand") return;
+        stopGesture();                       // drop room-mode bits if any
+        gMode = "hand";
+        // frames go up at pointer cadence; the yolo service detects the
+        // hand and pushes {type:"gesture"} msgs back onto this room's ws
+        gUplinkOwned = !uplinkTimer;
+        await startUplink(300);
+        if (gUplinkOwned && !uplinkTimer) {
+          // camera was denied — startUplink already reported it
+          gMode = "off"; sendState("gesture-error", "camera denied");
+          return;
+        }
+        gCursor = document.createElement("div");
+        gCursor.id = "gestureCursor";
+        gCursor.style.cssText = "position:fixed;width:26px;height:26px;" +
+          "border:3px solid #22d3ee;border-radius:50%;z-index:98;" +
+          "pointer-events:none;transform:translate(-50%,-50%);" +
+          "box-shadow:0 0 14px rgba(34,211,238,.6);display:none;" +
+          "left:50%;top:50%";
+        document.body.appendChild(gCursor);
+        ptrPos = ptrTgt = { x: innerWidth / 2, y: innerHeight / 2 };
+        ptrRaf = requestAnimationFrame(ptrFrame);
+        const ov = document.createElement("div");
+        ov.id = "gestureOverlay";
+        ov.style.cssText = "position:fixed;top:8px;right:8px;padding:4px 10px;" +
+          "background:#22d3ee;color:#012;border-radius:12px;font:600 13px system-ui;" +
+          "z-index:99;opacity:.85;pointer-events:none";
+        ov.textContent = "gesture: hand";
+        document.body.appendChild(ov);
+        showToast("gesture hand on — point to move, dwell to click, two hands to zoom");
+        sendState("gesture-hand");
         return;
       }
+      if (mode === "room" && gMode === "hand") stopGesture();
       if (mode !== "room") { sendState("gesture-error", "unknown mode " + mode); return; }
       if (gTimer) return;                              // already on
       try {
@@ -919,7 +1008,10 @@
         case "uplink-stop":
           stopUplink();
           break;
-        case "gesture": setGesture(msg.mode); break;
+        case "gesture":
+          if (msg.mode !== undefined) setGesture(msg.mode);   // ctl msg
+          else onGestureMsg(msg);                             // pointer frame
+          break;
         case "snap-request":
           snapFrame(msg.token);
           break;
