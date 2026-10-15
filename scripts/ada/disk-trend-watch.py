@@ -88,8 +88,11 @@ HISTORY_MAX_LINES = 60000
 # .cache children come BEFORE the .cache parent: the parent total is the
 # slowest scan (~77s cold on tony-dell) so if the outer timeout kills it
 # we still have the per-child numbers — that is where top-growers live.
+# + BrowserMetrics dirs: headless/cast Chrome leaks 4MB .pma files
+# (~2/min while running — 42G in 4 days on tony-omen, 2026-10-15).
 DU_ROOTS = os.environ.get(
-    "DISK_TREND_DU_ROOTS", "$HOME/.cache/*/ $HOME/.cache /var/log")
+    "DISK_TREND_DU_ROOTS",
+    "$HOME/.cache/*/ $HOME/.cache $HOME/.config/*/BrowserMetrics /var/log")
 TOP_GROWERS_N = 5
 # only flag dirs that grew at least this much in 24h (MiB).
 TOP_GROW_MIN_MIB = 256
