@@ -7,12 +7,12 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.4.0
+ * Version: 0.4.1
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.4.0';
+const CHABA_BOARDS_VER = '0.4.1';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -78,6 +78,25 @@ add_action('init', function () {
         update_option('chaba_boards_ver', CHABA_BOARDS_VER, false);
     }
 }, 20);
+
+// ============================================================================
+// 'archived' post status — 2nd-chance bin. WP trash auto-empties after 30d;
+// anything we might want back goes status=archived instead (REST-writable via
+// show_in_rest): hidden from front-end lists/searches, still in admin under
+// the "Archived" filter. Cost: one row.
+// ============================================================================
+add_action('init', function () {
+    register_post_status('archived', [
+        'label'                     => 'Archived',
+        'label_count'               => _n_noop('Archived <span class="count">(%s)</span>',
+                                               'Archived <span class="count">(%s)</span>'),
+        'public'                    => false,
+        'exclude_from_search'       => true,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'show_in_rest'              => true,
+    ]);
+}, 5);
 
 // ============================================================================
 // Public-host canonicalization — CF fronts boards.surf-thailand.com and the
@@ -239,8 +258,19 @@ foreach (['asset','expense','contact','reminder','bench','report','xlate','cam',
         $v = (string) get_post_meta($post_id, $k, true);
         // render_job: result = image/video thumb, prompt = readable excerpt
         if ($_t === 'render_job' && $k === 'result') {
-            $u = (string) get_post_meta($post_id, 'output_url', true);
-            if ($u === '') { echo '<span style="opacity:.5">—</span>'; return; }
+            $u      = (string) get_post_meta($post_id, 'output_url', true);
+            $status = (string) get_post_meta($post_id, 'status', true);
+            if ($u === '') {
+                // done/ok but nothing to show = a broken record, flag it
+                echo in_array($status, ['done', 'ok'], true)
+                    ? '<span title="status=' . esc_attr($status) . ' but no output_url">⚠ missing</span>'
+                    : '<span style="opacity:.5">—</span>';
+                return;
+            }
+            if (!preg_match('#^https?://#', $u)) {
+                echo '<span title="' . esc_attr($u) . '">⚠ not a web URL</span>';
+                return;
+            }
             $kind = (string) get_post_meta($post_id, 'kind', true);
             echo $kind === 'video'
                 ? '<a href="' . esc_url($u) . '" target="_blank">▶ video</a>'
@@ -423,11 +453,17 @@ add_filter('the_content', function ($content) {
     $out = $content;
 
     $u = $m('output_url');
-    if ($u !== '') {
+    if ($u !== '' && preg_match('#^https?://#', $u)) {
         $out .= $m('kind') === 'video'
             ? '<p><video controls style="max-width:100%;border-radius:8px" src="' . esc_url($u) . '"></video></p>'
             : '<p><a href="' . esc_url($u) . '" target="_blank"><img src="' . esc_url($u)
               . '" style="max-width:100%;border-radius:8px" loading="lazy"></a></p>';
+    } elseif ($u !== '') {
+        $out .= '<p style="opacity:.7">⚠ output_url is a path, not a web URL — the file '
+              . 'was never uploaded to WP: <code>' . esc_html($u) . '</code></p>';
+    } elseif (in_array($m('status'), ['done', 'ok'], true)) {
+        $out .= '<p style="opacity:.7">⚠ status is ' . esc_html($m('status'))
+              . ' but no output_url was recorded.</p>';
     }
     if ($m('prompt') !== '') {
         $out .= '<blockquote style="border-left:3px solid #888;padding:.2em .8em;margin:.8em 0">'
@@ -467,7 +503,25 @@ add_filter('the_content', function ($content) {
 // ============================================================================
 
 add_action('wp_dashboard_setup', function () {
-    wp_add_dashboard_widget('chaba-lessons-due', 'Chaba — lessons due for review', function () {
+    wp_add_dashboard_widget('chaba-lessons-due', 'Chaba — lessons due & broken renders', function () {
+        // broken render_jobs: status done/ok but output_url missing or not a
+        // web URL — zero-cost counter computed on dashboard load.
+        $bad = 0; $total = 0; $bad_ids = [];
+        $jobs = get_posts(['post_type' => 'render_job', 'post_status' => 'any',
+                           'posts_per_page' => -1, 'fields' => 'ids']);
+        foreach ($jobs as $jid) {
+            $total++;
+            $u = (string) get_post_meta($jid, 'output_url', true);
+            $s = (string) get_post_meta($jid, 'status', true);
+            if (in_array($s, ['done', 'ok'], true)
+                && ($u === '' || !preg_match('#^https?://#', $u))) {
+                $bad++; $bad_ids[] = $jid;
+            }
+        }
+        printf('<p><strong>Render jobs:</strong> %d total, %d broken output%s</p>',
+            $total, $bad,
+            $bad ? ' — <a href="' . esc_url(admin_url('edit.php?post_type=render_job')) . '">review</a>' : ' ✓');
+        echo '<hr style="border:none;border-top:1px solid #ddd;margin:.6em 0">';
         $q = new WP_Query([
             'post_type'      => 'lesson',
             'post_status'    => 'any',

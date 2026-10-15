@@ -121,7 +121,12 @@ writers:
   render_job:     "OPS-0658 local_image lane / manual — one record per render
                   (first: id 117, sdxl-lightning test 2026-10-14). Video:
                   ada_render_video auto-writes kind=video records
-                  (ada-render-job-wp-log); image lane can follow same path."
+                  (ada-render-job-wp-log); image lane can follow same path.
+                  output_url MUST be a WP attachment URL — upload via
+                  POST /wp/v2/media then store the returned source_url (or
+                  chaba/v1/media/<id> for member-gated); never a filesystem
+                  path (id 117 stored /local/local-gen/... which 404s in the
+                  browser; file also no longer exists on tony-omen)"
   news_fetch:     "scripts/ada/news-fetch.py + news-feeds.json on idc03 —
                   wp-news-fetch.timer hourly; RSS/Atom -> news CPT, dedup by
                   slug n-<md5(link)> via ?slug= lookup (no local ledger).
