@@ -147,6 +147,14 @@ writers:
                   parent post 'Digest — {topic}' gets synthesis cat +
                   digest/sources:N tags, members reparented via post_parent.
                   Digest list: /wp/category/synthesis/"
+  lesson_add:   "scripts/lesson-add.py on any host with
+                  ~/.config/secrets/wp-boards.env — upserts private lesson
+                  posts by slug lesson-<md5(topic)>; Thai section appended
+                  via gemini flash-lite (GEMINI_API_KEY_FREE first); meta
+                  incl. next_review default learned_at+7d"
+  lessons_due:  "scripts/lessons-due.py on idc03 — chaba-lessons-due.timer
+                  daily 07:30 (ssot.jobs.yml); refreshes private page slug
+                  education-due (post 354): due-now + upcoming review lists"
   # Writer access caveat (2026-10-14): POSTs through the PUBLIC edge
   # (boards.surf-thailand.com) hit CF 1010 bot-check on bare/script UAs —
   # fleet writers use origin_base (boards.h3.gizmo-thailand.com) directly.
