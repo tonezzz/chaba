@@ -1,0 +1,24 @@
+title: HA auth failure on michael-ha
+subtitle: "invalid-authentication attempt from r00.r000.ropz.eu"
+icon: inbox
+focus:
+  label: "HA auth failure: michael-ha from r00.r000.ropz.eu"
+  text: >-
+    Home Assistant logged a login/API attempt with invalid
+    authentication. instance=michael-ha source=r00.r000.ropz.eu
+    log_ts=1792121744.7937887 Detected 2026-10-16T03:50:00Z by ha-auth-watch. If this follows a
+    revoked or deleted token, mint a replacement long-lived token and
+    update the consumer.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [security, home-assistant, auth]
+  safe_to_parallel:
+    value: true
+    reason: read-only alert; remediation is per-consumer
+ownership:
+  owner: tony
+  locked: false
+  lock_reason: ""
+source:
+  date: 2026-10-16
