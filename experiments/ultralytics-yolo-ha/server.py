@@ -437,10 +437,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    loop_s = float(os.environ.get("YOLO_LOOP_MS", "0")) / 1000
+
     def worker():
         while True:
+            t0 = time.monotonic()
             detect()
-            time.sleep(0)
+            if loop_s:
+                time.sleep(max(0.0, loop_s - (time.monotonic() - t0)))
+            else:
+                time.sleep(0)
 
     t = threading.Thread(target=worker, daemon=True)
     t.start()
