@@ -21,6 +21,7 @@ Consumers:
                                      card close + the same claim order
                                      via dr_module()
 """
+import base64
 import json
 import os
 import re
@@ -29,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -51,6 +53,25 @@ BUILTIN_REPOS = {
     "mddb-fork": ("~/CascadeProjects/mddb-fork", "main"),
     "gods-eye-view": ("~/gods-eye-view", "main"),
 }
+
+# repo name -> canonical name, for surfaces that name capabilities
+# (the push:<repo> runner label) — aliased repos share one credential.
+REPO_ALIASES = {"ada-pi": "ada-voice"}
+
+
+def canon_repo(name: str) -> str:
+    return REPO_ALIASES.get(name or "", name or "")
+
+
+DEFAULT_BOARD_API = "https://tony-dell.taila0626a.ts.net/apps/board-api"
+
+
+def board_api_base() -> str:
+    """Where relay/patch posts go — BOARD_API (kanban-dispatch,
+    merge-sweep) or RUNNER_API (runner-agent); the tailnet route is the
+    same default both use."""
+    return (os.environ.get("BOARD_API") or os.environ.get("RUNNER_API")
+            or DEFAULT_BOARD_API).rstrip("/")
 
 
 def dispatch_dir() -> Path:
@@ -363,6 +384,182 @@ def push_branch(repo: Path, branch: str) -> dict:
         return {"pushed": True}
     return {"pushed": False,
             "error": (r.stderr or r.stdout).strip()[:200]}
+
+
+# ----------------------------------------------------- push credential
+#
+# Card runner-push-cred-gap (the 2026-10-14 ADA-0673 incident): a runner
+# whose repo creds are fetch-only or scoped to a different repo finishes
+# a dispatch, commits the checkpoint, and pushes nothing — the branch
+# strands on the remote host while the card still read done+verified.
+# The URL shape cannot detect this (macbook's ada-voice clone had a
+# git@ remote AND core.sshCommand — the deploy key was chaba-only), so
+# the capability is probed for real: `git push --dry-run` exercises the
+# auth path without touching a ref.
+#
+# Two mechanisms share it:
+#   * claim guard — runner-agent/kanban-dispatch only claim dispatch
+#     cards for repos the host can push (declared `push:<repo>` label
+#     fast-path, live probe otherwise; RUNNER_/KANBAN_PUSH_GUARD=0 off)
+#   * bundle relay — when a push still fails at close-out, the session
+#     head is exported as a `git bundle` (shas preserved, unlike
+#     format-patch) and POSTed to board-api /patch-relay; merge-sweep
+#     fetches it from $DISPATCH_DIR/patch-inbox like any other head.
+
+PUSH_PROBE_REF = "refs/heads/__runner-push-probe"
+
+
+def push_probe(repo_name: str) -> dict:
+    """{"pushable": bool, "detail"} — dry-run push against this host's
+    checkout of repo_name. False also when the checkout is absent —
+    such a host can't run the dispatch at all."""
+    ent = repos().get(repo_name) or repos().get(canon_repo(repo_name))
+    if not ent:
+        return {"pushable": False, "detail": f"no repo '{repo_name}'"}
+    p = Path(ent["path"])
+    if not (p / ".git").exists():
+        return {"pushable": False, "detail": f"no checkout at {p}"}
+    r = sh(["git", "-C", str(p), "push", "--dry-run", "origin",
+            f"HEAD:{PUSH_PROBE_REF}"], timeout=45)
+    if r.returncode == 0:
+        return {"pushable": True, "detail": "dry-run push ok"}
+    return {"pushable": False,
+            "detail": (r.stderr or r.stdout).strip()[:200]
+            or "push --dry-run failed"}
+
+
+def branch_on_origin(repo: Path, branch: str, head: str) -> bool:
+    """ls-remote truth: origin's refs/heads/<branch> == head."""
+    if not branch or not head:
+        return False
+    r = sh(["git", "-C", str(repo), "ls-remote", "origin",
+            f"refs/heads/{branch}"], timeout=45)
+    if r.returncode != 0:
+        return False
+    got = (r.stdout.split() or [""])[0]
+    return bool(got) and got == head
+
+
+def head_on_origin(repo: Path, head: str, base_ref: str,
+                   branch: str = "") -> tuple:
+    """(bool, how) — is the session head provably on origin? Either an
+    ancestor of the fetched origin/<base> ref (work merged/landed), or
+    the session branch ref itself resolves to head. 'verified' may only
+    be stamped when this holds — a head that lives only on the runner
+    is stranded, not delivered (runner-push-cred-gap)."""
+    if not head:
+        return False, "no head"
+    if base_ref and sh(["git", "-C", str(repo), "merge-base",
+                        "--is-ancestor", head, base_ref],
+                       timeout=30).returncode == 0:
+        return True, f"ancestor of {base_ref}"
+    if branch_on_origin(repo, branch, head):
+        return True, f"origin refs/heads/{branch}"
+    return False, f"not in {base_ref or 'origin/<base>'} and " \
+                  f"{('refs/heads/' + branch) if branch else 'no branch'} " \
+                  "not at head on origin"
+
+
+RELAY_MAX_BYTES = int(os.environ.get(
+    "PATCH_RELAY_MAX_BYTES", str(8 * 1024 * 1024)))
+
+
+def export_bundle(repo: Path, base_ref: str | None, head: str,
+                  ref: str = "",
+                  out_dir: Path | None = None) -> dict:
+    """git bundle of base_ref..head (whole history when base_ref is
+    unresolvable) -> {"path", "bytes", "head"} or {"error"}.
+    A bundle preserves commit shas — the receiver fetches it like the
+    runner's own remote and every downstream check (ancestry, verify
+    gate, GC) works unchanged. `ref` names the positive rev recorded in
+    the bundle (HEAD in a session worktree, refs/heads/<branch> when
+    only the repo survives) — a bare sha records no ref and git refuses
+    the bundle; when nothing resolves to head a transient ref is pinned
+    for the duration."""
+    if not head:
+        return {"error": "no head"}
+    repo = Path(repo)
+    tmpref = ""
+    if not ref or _rev_parse(repo, ref) != head:
+        tmpref = f"refs/dispatch-relay/{head[:12]}"
+        if sh(["git", "-C", str(repo), "update-ref", tmpref, head],
+              timeout=30).returncode != 0:
+            return {"error": "cannot pin session head to a ref"}
+        ref = tmpref
+    try:
+        d = out_dir or Path(tempfile.mkdtemp(prefix="dispatch-bundle-"))
+        f = d / f"dispatch-{head[:10]}.bundle"
+        r = None
+        if base_ref and _rev_parse(repo, base_ref):
+            r = sh(["git", "-C", str(repo), "bundle", "create", str(f),
+                    ref, f"^{base_ref}"], timeout=120)
+        if r is None or r.returncode != 0:
+            r = sh(["git", "-C", str(repo), "bundle", "create", str(f),
+                    ref], timeout=300)
+        if r.returncode != 0:
+            return {"error": (r.stderr or r.stdout).strip()[:200]}
+        size = f.stat().st_size
+        if size > RELAY_MAX_BYTES:
+            try:
+                f.unlink()
+            except OSError:
+                pass
+            return {"error": f"bundle too large ({size}B > "
+                             f"{RELAY_MAX_BYTES}B)"}
+        return {"path": f, "bytes": size, "head": head}
+    finally:
+        if tmpref:
+            sh(["git", "-C", str(repo), "update-ref", "-d", tmpref],
+               timeout=30)
+
+
+def relay_session(card: dict, s: dict, api_base: str = "") -> dict:
+    """Close-out safety net: the push failed, so export the session head
+    as a bundle and POST it to board-api /patch-relay — dell-side
+    merge-sweep lands it. {relayed, file|bytes|error}."""
+    head = s.get("head") or ""
+    repo = s.get("repo_root")
+    if not repo or not head:
+        return {"relayed": False, "error": "no repo/head to relay"}
+    # the ref recorded in the bundle: HEAD inside the session worktree,
+    # the branch ref when only the repo survives
+    wt = s.get("worktree")
+    b = export_bundle(Path(wt or repo), s.get("base_ref"), head,
+                      ref=("HEAD" if wt else
+                           f"refs/heads/{s.get('branch') or ''}"))
+    if b.get("error"):
+        return {"relayed": False, "error": f"bundle: {b['error']}"}
+    tid = s.get("task_id") or ""
+    exit_code = None
+    try:
+        ecp = dispatch_dir() / "tasks" / tid / "exit_code"
+        exit_code = ecp.read_text().strip() if ecp.is_file() else None
+    except Exception:
+        pass
+    body = {"id": card.get("id"), "host": os.uname().nodename,
+            "repo": s.get("repo_name"), "branch": s.get("branch"),
+            "base": s.get("default_branch"), "head": head,
+            "task_id": tid, "exit_code": exit_code,
+            "bundle": base64.b64encode(b["path"].read_bytes()).decode()}
+    try:
+        req = urllib.request.Request(
+            (api_base or board_api_base()) + "/patch-relay",
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=90) as r:
+            resp = json.loads(r.read())
+    except Exception as e:
+        return {"relayed": False,
+                "error": f"{type(e).__name__}: {e}"}
+    finally:
+        try:
+            b["path"].unlink()
+        except (OSError, KeyError):
+            pass
+    if resp.get("error"):
+        return {"relayed": False, "error": str(resp["error"])[:200]}
+    return {"relayed": True, "file": resp.get("file"),
+            "bytes": b["bytes"]}
 
 
 def goals_gate(card: dict, worktree: Path | None) -> dict:
@@ -727,9 +924,21 @@ def close_out(card: dict) -> dict:
         out.update(skipped="no origin default branch")
         return out
     repo, branch, base = s["repo_root"], s["branch"], s["default_branch"]
-    # 2. push the branch always — strand-proof even if the merge bails
+    # 2. push the branch always — strand-proof even if the merge bails.
+    #    When the host can't push (fetch-only clone, wrong-repo deploy
+    #    key — card runner-push-cred-gap) relay the head as a bundle so
+    #    merge-sweep on the board host can land it anyway.
     if s.get("head"):
-        out.update(push_branch(wt or repo, branch))
+        pr = push_branch(wt or repo, branch)
+        out["pushed"] = pr.get("pushed")
+        if pr.get("error"):
+            # push_error (not 'error') so the merge step's own errors
+            # don't mask the branch push failure — and so the comms
+            # note below actually fires
+            out["push_error"] = pr["error"]
+        if not out.get("pushed") and \
+                os.environ.get("KANBAN_PATCH_RELAY", "1") != "0":
+            out["relay"] = relay_session(card, s)
     # 3. nothing produced → silent no-op
     if not s.get("head"):
         out.update(noop=True, skipped="no session head")
@@ -832,6 +1041,15 @@ def close_out_notes(res: dict) -> list:
         notes.append(f"branch push failed: {res['push_error']}")
     elif res.get("pushed") and (res.get("session") or {}).get("branch"):
         notes.append(f"pushed {res['session']['branch']} to origin")
+    rl = res.get("relay") or {}
+    if rl.get("relayed"):
+        notes.append(f"push failed → session head relayed to the board "
+                     f"host as a bundle ({rl.get('file') or '?'}, "
+                     f"{rl.get('bytes', '?')}B) — merge-sweep will land "
+                     f"it from patch-inbox")
+    elif rl.get("error"):
+        notes.append(f"push failed AND patch-relay failed: "
+                     f"{rl['error']} — rescue the branch by hand")
     if res.get("noop"):
         return notes  # no commits to merge — silent per spec
     gate = res.get("gate") or {}

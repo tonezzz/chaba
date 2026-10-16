@@ -36,6 +36,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -73,6 +74,32 @@ MAX_LOAD_PC = float(os.environ.get("KANBAN_MAX_LOAD_PC", "1.0"))
 MY_LABELS = {x.strip() for x in
              os.environ.get("KANBAN_HOST_LABELS", "").split(",")
              if x.strip()}
+# Push-credential claim guard (runner-push-cred-gap): same rule as
+# runner-agent — a dispatch card is only claimable when this host can
+# actually push the card's repo. A `push:<repo>` label in
+# KANBAN_HOST_LABELS is the declared fast path; otherwise
+# dr.push_probe() runs a real `git push --dry-run` (a git@ remote is no
+# proof — ADA-0673's chaba-only deploy key looked ssh-capable).
+PUSH_GUARD = os.environ.get("KANBAN_PUSH_GUARD", "1") != "0"
+PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
+_PUSH_PROBE_CACHE: dict = {}
+
+
+def push_capable(repo: str) -> bool:
+    if not PUSH_GUARD:
+        return True
+    canon = dr.canon_repo(repo)
+    if f"push:{canon}" in MY_LABELS or f"push:{repo}" in MY_LABELS:
+        return True
+    now = time.time()
+    hit = _PUSH_PROBE_CACHE.get(canon)
+    if hit and now - hit[0] < PUSH_PROBE_TTL:
+        return hit[1]
+    ok = bool(dr.push_probe(canon).get("pushable"))
+    _PUSH_PROBE_CACHE[canon] = (now, ok)
+    return ok
+
+
 # Dead-runner sweep: a card 'running' on a remote runner-agent host that
 # stops answering ssh gets requeued after this many consecutive misses
 # (~2min cadence — 3 misses ≈ 6min down before requeue).
@@ -643,6 +670,15 @@ def main() -> int:
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:
                     continue  # needs capabilities this host lacks
+                # runner-push-cred-gap: claiming a repo this host can't
+                # push strands the finished branch (ADA-0673, idc03
+                # daa0e0a) — leave it queued for a host that can
+                repo = str(a.get("repo") or "chaba")
+                if not push_capable(repo):
+                    print(f"{card['id']}: skipped — cannot push "
+                          f"{dr.canon_repo(repo)} (no push: label and "
+                          "`git push --dry-run` fails)")
+                    continue
                 if a.get("runner") and a["runner"] != HOST:
                     continue  # claimed/starting on another host
                 if active_tasks() + claimed >= HOST_CAP:

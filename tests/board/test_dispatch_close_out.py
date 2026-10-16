@@ -11,6 +11,7 @@ No network, no systemd — all git ops stay inside the tmpdir.
 
 from __future__ import annotations
 
+import base64
 import importlib.util
 import json
 import os
@@ -310,6 +311,102 @@ class Case(unittest.TestCase):
         res = dr.close_out(card)
         self.assertFalse(res["merged"])
         self.assertTrue(res.get("skipped"))
+
+    # ---------------------------------------------------- patch relay
+    # runner-push-cred-gap (the 2026-10-14 ADA-0673 incident): a runner
+    # whose creds don't cover the repo finishes, can't push, and relays
+    # the session head to board-api as a git bundle — shas preserved —
+    # instead of stranding the branch.
+
+    def _break_remote(self) -> None:
+        git(self.main, "remote", "set-url", "origin",
+            str(self.tmp / "gone.git"))
+
+    def test_push_failure_relays_bundle(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        self._break_remote()
+        captured = {}
+
+        class _Resp:
+            def read(self_):
+                return json.dumps(
+                    {"ok": True, "file": "x.bundle"}).encode()
+
+            def __enter__(self_):
+                return self_
+
+            def __exit__(self_, *a):
+                return False
+
+        def fake_urlopen(req, timeout=0):
+            captured["url"] = req.full_url
+            captured["body"] = json.loads(req.data)
+            return _Resp()
+
+        with mock.patch.object(dr.urllib.request, "urlopen",
+                               fake_urlopen):
+            res = dr.close_out(self.card)
+
+        self.assertFalse(res.get("pushed"))
+        self.assertTrue(res.get("push_error"), res)
+        self.assertFalse(res.get("merged"), res)  # nothing on origin
+        rl = res.get("relay") or {}
+        self.assertTrue(rl.get("relayed"), res)
+        body = captured["body"]
+        self.assertEqual(body["id"], "test-card")
+        self.assertEqual(body["head"], head)
+        self.assertEqual(body["branch"], f"dispatch/{TID}")
+        self.assertTrue(captured["url"].endswith("/patch-relay"))
+        # the posted bundle is fetchable and carries the exact head —
+        # merge-sweep consumes it like the runner's own remote
+        blob = base64.b64decode(body["bundle"])
+        self.assertTrue(blob.startswith(b"# v"), blob[:20])
+        bf = self.tmp / "relayed.bundle"
+        bf.write_bytes(blob)
+        r = git(self.main, "fetch", "-q", str(bf), "HEAD")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            git(self.main, "rev-parse", "FETCH_HEAD").stdout.strip(),
+            head)
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("relayed" in n for n in notes), notes)
+
+    def test_push_failure_relay_unreachable(self):
+        # the api being down must not mask the push failure — the card
+        # note names both failures so a human rescues by hand
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        self._break_remote()
+
+        def boom(req, timeout=0):
+            raise OSError("connection refused")
+
+        with mock.patch.object(dr.urllib.request, "urlopen", boom):
+            res = dr.close_out(self.card)
+        rl = res.get("relay") or {}
+        self.assertFalse(rl.get("relayed"))
+        self.assertTrue(rl.get("error"))
+        self.assertTrue(any("patch-relay failed" in n
+                            for n in dr.close_out_notes(res)))
+
+    def test_head_on_origin_gate(self):
+        # the verified stamp's hard requirement: runner-local work is
+        # NOT on origin; pushing the branch ref (or merging into the
+        # base) makes it provable — ls-remote is the ground truth.
+        commit(self.wt, "x.py", "x=1\n", "work")
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        ok, how = dr.head_on_origin(self.main, head, "origin/master",
+                                    f"dispatch/{TID}")
+        self.assertFalse(ok, how)
+        r = git(self.main, "push", "-q", "origin",
+                f"{head}:refs/heads/dispatch/{TID}")
+        assert r.returncode == 0, r.stderr
+        ok, how = dr.head_on_origin(self.main, head, "origin/master",
+                                    f"dispatch/{TID}")
+        self.assertTrue(ok, how)
+        # merged-into-base is the other proof shape
+        self.assertTrue(dr.merge_state(self.main, head,
+                                       "origin/master")["unmerged"])
 
     # ------------------------------------------------------ test gate
     # The merged tree always has tests/ (seeded above); REPO_TESTS["chaba"]

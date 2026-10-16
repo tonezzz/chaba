@@ -91,6 +91,7 @@ tailnet logins may write; unset = any tailnet identity.
 
 Smoke test: python3 scripts/board/board-api.py --selftest
 """
+import base64
 import fcntl
 import hashlib
 import json
@@ -356,6 +357,12 @@ SESSIONS_DB = Path.home() / ".local/share/devin/cli/sessions.db"
 DISPATCH_TASKS = Path(
     os.environ.get("DISPATCH_DIR", str(Path.home() / ".local/share/devin-dispatch"))
 ) / "tasks"
+# patch-relay spool (card runner-push-cred-gap): a runner whose close-out
+# push can't authenticate bundles its session head and POSTs it here;
+# merge-sweep fetches the bundle like the runner's own remote.
+PATCH_INBOX = DISPATCH_TASKS.parent / "patch-inbox"
+RELAY_MAX_BYTES = int(os.environ.get(
+    "BOARD_API_RELAY_MAX_BYTES", str(8 * 1024 * 1024)))
 HOST = os.uname().nodename
 # Remote hosts that may have run dispatch tasks (session db + task dir live
 # on the runner). action.runner is consulted first; this list is the
@@ -771,6 +778,52 @@ def deliver_comment(card: dict, frm: str, text: str) -> str:
         card, {"from": frm, "kind": "comment", "text": text[:500]})
 
 
+_RELAY_SHA_RE = re.compile(r"^[0-9a-f]{6,64}$")
+_RELAY_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+
+def do_patch_relay(card: dict, body: dict, frm: str) -> tuple:
+    """POST /patch-relay — card runner-push-cred-gap's safety net: a
+    runner whose close-out push can't authenticate exports its session
+    head as a git bundle and relays it here; the file lands in
+    $DISPATCH_DIR/patch-inbox/<card>-<head10>.bundle (+ .json sidecar)
+    and merge-sweep fetches it like the runner's own remote. Same head
+    relays to the same name → idempotent re-posts."""
+    head = str(body.get("head") or "")
+    branch = str(body.get("branch") or "")
+    if not _RELAY_SHA_RE.match(head):
+        raise ValueError("head must be a commit sha")
+    if branch and (not _RELAY_REF_RE.match(branch) or ".." in branch):
+        raise ValueError("bad branch")
+    try:
+        blob = base64.b64decode(str(body.get("bundle") or ""),
+                                validate=True)
+    except Exception:
+        raise ValueError("bundle must be base64")
+    if not blob:
+        raise ValueError("bundle required")
+    if len(blob) > RELAY_MAX_BYTES:
+        raise ValueError(f"bundle too large ({len(blob)} > "
+                         f"{RELAY_MAX_BYTES} bytes)")
+    if not blob.startswith(b"# v2 git bundle\n") \
+            and not blob.startswith(b"# v3 git bundle\n"):
+        raise ValueError("payload is not a git bundle")
+    PATCH_INBOX.mkdir(parents=True, exist_ok=True)
+    name = f"{card.get('id')}-{head[:10]}.bundle"
+    (PATCH_INBOX / name).write_bytes(blob)
+    sidecar = {k: body.get(k) for k in
+               ("repo", "branch", "base", "head", "task_id",
+                "exit_code", "host") if body.get(k) is not None}
+    sidecar.update(at=now(), via=frm)
+    (PATCH_INBOX / (name + ".json")).write_text(
+        json.dumps(sidecar, indent=1) + "\n")
+    comms_add(card, "chaba",
+              f"patch-relay: {branch or head[:8]} from "
+              f"{body.get('host') or frm} — {len(blob)}B bundle in "
+              f"patch-inbox ({name}); merge-sweep will land it")
+    return f"relayed {name}", name
+
+
 def do_request(card: dict, body: dict) -> str:
     ask = str(body.get("ask") or "").strip()
     if not ask:
@@ -1170,6 +1223,14 @@ class H(BaseHTTPRequestHandler):
                         msg += f" — {note}"
                     card["updated"] = now()
                     save(p, card)
+                elif path == "/patch-relay":
+                    frm = actor(body)
+                    p = card_path(body.get("id", ""))
+                    card = load(p)
+                    msg, name = do_patch_relay(card, body, frm)
+                    resp_extra = {"file": name}
+                    card["updated"] = now()
+                    save(p, card)
                 elif path == "/request":
                     p = card_path(body.get("id", ""))
                     card = load(p)
@@ -1350,6 +1411,38 @@ def _selftest() -> None:
     assert deliver_comment({"action": {"status": "done"}},
                            "tony", "late note") == ""
 
+    # /patch-relay (runner-push-cred-gap): a runner that can't push
+    # relays its session head as a git bundle into PATCH_INBOX; the
+    # sidecar carries the fetch+verify metadata merge-sweep needs
+    globals()["PATCH_INBOX"] = tmp / "patch-inbox"
+    rcard = {"id": "relay-card", "comms": []}
+    good = base64.b64encode(b"# v2 git bundle\nfake").decode()
+    rejects(lambda: do_patch_relay(rcard, {"head": "xyz"}, "devin"),
+            "head must be a commit sha")
+    rejects(lambda: do_patch_relay(rcard, {"head": "ab" * 20}, "devin"),
+            "bundle required")
+    rejects(lambda: do_patch_relay(
+        rcard, {"head": "ab" * 20, "bundle": "!!!"}, "devin"),
+        "bundle must be base64")
+    rejects(lambda: do_patch_relay(
+        rcard, {"head": "ab" * 20,
+                "bundle": base64.b64encode(b"junk").decode()}, "devin"),
+        "not a git bundle")
+    rejects(lambda: do_patch_relay(
+        rcard, {"head": "ab" * 20, "branch": "bad..ref",
+                "bundle": good}, "devin"), "bad branch")
+    msg, name = do_patch_relay(
+        rcard, {"head": "ab" * 20, "branch": "dispatch/t-1",
+                "bundle": good, "host": "no-push-runner"}, "devin")
+    assert name == "relay-card-" + "ab" * 5 + ".bundle"
+    assert (tmp / "patch-inbox" / name).read_bytes() == \
+        b"# v2 git bundle\nfake"
+    meta = json.loads(
+        (tmp / "patch-inbox" / (name + ".json")).read_text())
+    assert meta["head"] == "ab" * 20 and meta["host"] == "no-push-runner"
+    assert meta["branch"] == "dispatch/t-1"
+    assert any("patch-relay" in m["text"] for m in rcard["comms"])
+
     rejects(lambda: do_request(card, {"ask": "  "}), "ask required")
     rejects(lambda: do_request(card, {"ask": "q", "from": "nobody"}),
             "from must be one of")
@@ -1365,7 +1458,10 @@ def _selftest() -> None:
     rejects(lambda: do_request(card, {"ask": "again", "request_id": "rq2"}),
             "duplicate request id")
     # suggested — recommendation validated against options, never applied
-    rejects(lambda: do_request(card, {"ask": "q", "suggested": "y"}),
+    # (tony-targeted asks auto-fill [proceed, hold], so exercise the
+    # optionless path on an ada-targeted request)
+    rejects(lambda: do_request(card, {"ask": "q", "to": "ada",
+                                      "suggested": "y"}),
             "suggested requires options")
     rejects(lambda: do_request(card, {"ask": "q", "options": ["y", "n"],
                                       "suggested": "maybe"}),

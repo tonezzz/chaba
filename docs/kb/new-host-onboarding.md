@@ -89,8 +89,18 @@ user-level unless marked **[sudo]** or **[Tony]** (needs his hands/password).
   `dispatch-repos.conf` → `~/.local/share/devin-dispatch/repos.conf`.
 - `runner-agent.service`+`.timer` (oneshot every ~60s): `RUNNER_CAP`, `RUNNER_LABELS`
   per the hardware doc / placement policy.
+- Push credentials (runner-push-cred-gap, 2026-10-14 ADA-0673 incident): a
+  dispatch card for `action.repo: X` is only claimable when the host can push
+  repo X. For each repo checkout in the host's `repos.conf`, run
+  `git -C <path> push --dry-run origin HEAD:refs/heads/__probe` — declare
+  `push:<repo>` in `RUNNER_LABELS` only where it passes. A `git@` remote is
+  NOT proof — the deploy key's scope is what matters (macbook's ada-voice
+  clone had an ssh remote but a chaba-only key). Hosts without the label
+  fall back to a live probe at claim time; hosts that can push nothing
+  strand every branch they claim (fleet-health flags `no-push-creds`).
 - Mirror cap+labels in `ssot.kanban.yml#execution.concurrency.runner_fleet` prose —
-  fleet-health parses it.
+  fleet-health parses it and audits declared `push:<repo>` labels against
+  the probe (false label = `push-label-false` violation).
 - Task types: `dispatch` needs the devin login; `container` needs podman;
   `script` needs only git+the toolchain — a host can run script-only while pending.
 - Verify: `journalctl --user -u runner-agent` clean passes; the runner reports

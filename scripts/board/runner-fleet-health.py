@@ -24,6 +24,15 @@ stranding):
                      salvage path is probed: `git ls-remote <host>:<path>`
                      from here (runner branches are fetched over tailnet
                      ssh by merge-sweep, not pushed)
+  push-probe         `git push --dry-run` per dispatch repo checkout —
+                     the runner-push-cred-gap ground truth: remote URL
+                     shape says nothing about credential scope (ADA-0673's
+                     chaba-only deploy key looked pushable). Probe result
+                     is audited against the host's declared push:<repo>
+                     labels both ways (false label = violation, unlabeled
+                     capability = note), and feeds queue_satisfiability —
+                     a queued dispatch card is unsatisfiable when no host
+                     can push its repo.
   runner-agent-*     ~/.local/bin/runner-agent exists, parses, matches
                      the repo copy (installed copies drift — mn01 ran a
                      stale devin-dispatch missing DEVIN_MODEL passthrough)
@@ -119,14 +128,28 @@ HELP = {
     "repo-checkout":
         "A declared dispatch repo checkout is missing/.git-less on the "
         "host — reclone it or drop it from that host's repos.conf.",
+    "push-label-false":
+        "RUNNER_LABELS declares push:<repo> but `git push --dry-run` "
+        "fails in the checkout — the label lies about the credential "
+        "scope (runner-push-cred-gap). Remove the label or fix the key.",
+    "no-push-creds":
+        "A dispatch runner that can't push ANY repo only strands "
+        "branches (relay salvages them, but the host is a liability). "
+        "Give it a push-capable deploy key per repo and declare "
+        "push:<repo> in RUNNER_LABELS, or drop it from the fleet.",
 }
+
+
+# repo name -> canonical name — aliased repos share one credential
+# and one push:<repo> label (mirrors dispatch_repos.REPO_ALIASES)
+REPO_ALIASES = {"ada-pi": "ada-voice"}
 
 
 # ---------------------------------------------------------- host probe
 # Runs via `ssh <host> python3 -` (or local python3 -). Stdlib only —
 # runner hosts are not guaranteed to have PyYAML. Prints one JSON doc.
 REMOTE_PROBE = r'''
-import hashlib, json, os, subprocess, sys
+import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 
 HOME = Path.home()
@@ -206,6 +229,17 @@ for name, ent in repos_table().items():
                                   "rev-parse", "--abbrev-ref", "HEAD"])
     _, e["shallow"], _ = run(["git", "-C", str(p),
                               "rev-parse", "--is-shallow-repository"])
+    # real push-capability probe (runner-push-cred-gap): remote URL
+    # shape says nothing about credential scope — a chaba-only deploy
+    # key makes another repo's git@ remote LOOK pushable (ADA-0673).
+    # --dry-run exercises the auth path without touching a ref.
+    if e.get("remote"):
+        prc, pso, pse = run(
+            ["git", "-C", str(p), "push", "--dry-run", "origin",
+             "HEAD:refs/heads/__fleet-push-probe"], timeout=45)
+        e["push_probe"] = prc == 0
+        if prc:
+            e["push_probe_err"] = (pse or pso or "")[:160]
     base = f"origin/{ent['branch']}"
     if name == FETCH_REPO:
         # real fetch — the count must be against today's origin, not
@@ -378,6 +412,12 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
     v, notes = [], []
     if d.get("_error"):
         return [("unreachable", f"probe failed: {d['_error']}")], notes
+    # the host's declared capabilities — the push:<repo> label audit
+    # cross-checks each repo's live push probe against this (a stale
+    # label = a claim guard hole; runner-push-cred-gap)
+    labels = {x.strip() for x in
+              ((d.get("runner_env") or {}).get("RUNNER_LABELS") or "")
+              .split(",") if x.strip()}
 
     git_ok = d.get("git_ok", True)
     if not git_ok:
@@ -441,8 +481,23 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
         elif chaba.get("remote"):
             notes.append("chaba origin is push-capable")
 
+    # push-credential audit (runner-push-cred-gap): for every repo the
+    # claim guard consults, the declared push:<repo> label must agree
+    # with the live `git push --dry-run` probe. A host that can push
+    # nothing only strands branches — flag it.
+    any_push = False
     for name, e in (repos.items() if git_ok else []):
+        canon = REPO_ALIASES.get(name, name)
+        adv = f"push:{canon}" in labels or f"push:{name}" in labels
+        probe_ok = e.get("push_probe") is True
+        if probe_ok or adv:
+            any_push = True
         if name == "chaba":
+            if adv and not probe_ok and e.get("remote"):
+                v.append(("push-label-false",
+                          f"chaba: push:chaba declared but the push "
+                          f"probe fails ({e.get('push_probe_err') or '?'} "
+                          f"— remove the label or fix the key)"))
             continue
         if not e.get("exists"):
             notes.append(f"no {name} checkout — host can't take "
@@ -461,6 +516,28 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                       f"{name}: {b} commits behind "
                       f"origin/{e.get('head_branch') or '?'} "
                       f"(limit {MAX_BEHIND}, last-fetched basis)"))
+        if e.get("remote"):
+            if adv and not probe_ok:
+                v.append(("push-label-false",
+                          f"{name}: push:{canon} declared but the push "
+                          f"probe fails ({e.get('push_probe_err') or '?'} "
+                          f"— the label lies; remove it or fix the key)"))
+            elif probe_ok and not adv:
+                notes.append(f"{name}: push probe ok — declare "
+                             f"push:{canon} in RUNNER_LABELS for the "
+                             f"fast path (live probe still gates)")
+            else:
+                notes.append(f"{name}: push probe fails "
+                             f"({(e.get('push_probe_err') or '?')[:60]}) "
+                             f"— {canon} dispatches defer to a pushable "
+                             f"host; stranded work relays via board-api")
+    if git_ok and (d.get("installed") or {}).get("runner_agent",
+                                                {}).get("exists") \
+            and not any_push:
+        v.append(("no-push-creds",
+                  "runner-agent installed but no repo push-capable "
+                  "(no push:<repo> label, every probe fails) — this "
+                  "host can only strand dispatch branches"))
 
     inst = d.get("installed") or {}
     for key, label in (("runner_agent", "runner-agent"),
@@ -588,13 +665,20 @@ def queue_satisfiability(probes: dict) -> int:
     One fleet-level card, runner-auto-queue, mirrors the host lifecycle."""
     path = CARDS / "runner-auto-queue.yml"
     today = time.strftime("%Y-%m-%d")
-    # label sets per probed-ok host
+    # label sets per probed-ok host — plus each repo the live push probe
+    # proved, as push:<repo> (runner-push-cred-gap: labels AND probed
+    # credentials both count, matching the claim guard's logic)
     can = {}
     for host, d in probes.items():
         if not isinstance(d, dict) or d.get("_error"):
             continue
-        labels = ((d.get("runner_env") or {}).get("RUNNER_LABELS") or "")
-        can[host] = {x.strip() for x in labels.split(",") if x.strip()}
+        labels = {x.strip() for x in
+                  ((d.get("runner_env") or {}).get("RUNNER_LABELS") or "")
+                  .split(",") if x.strip()}
+        for rname, e in (d.get("repos") or {}).items():
+            if isinstance(e, dict) and e.get("push_probe"):
+                labels.add(f"push:{REPO_ALIASES.get(rname, rname)}")
+        can[host] = labels
     stranded = []
     for p in sorted(CARDS.glob("*.yml")):
         try:
@@ -602,10 +686,17 @@ def queue_satisfiability(probes: dict) -> int:
         except Exception:
             continue
         a = card.get("action") or {}
-        if a.get("status") != "queued" or a.get("type") not in (
-                "dispatch", "container", "script", "devin"):
+        if a.get("status") != "queued" or (a.get("type") or "dispatch") \
+                not in ("dispatch", "container", "script", "devin"):
             continue
         needs = set(a.get("labels") or [])
+        if (a.get("type") or "dispatch") == "dispatch":
+            # implicit requirement: some host must be able to PUSH the
+            # card's repo — the claim guard's real test (probe result),
+            # not just a declared label
+            repo = REPO_ALIASES.get(str(a.get("repo") or "chaba"),
+                                    str(a.get("repo") or "chaba"))
+            needs = needs | {f"push:{repo}"}
         pin = a.get("host")
         if pin:
             ok = pin in can and needs <= can.get(pin, set())

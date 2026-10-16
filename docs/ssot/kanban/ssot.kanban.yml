@@ -117,7 +117,12 @@ card_schema:
     labels: "optional list — capability requirements; a runner only claims
              the card if every label is in its RUNNER_LABELS (e.g. gpu).
              'desktop' is reserved as a host marker (not a card label): it
-             arms runner-agent's interactive-host guards"
+             arms runner-agent's interactive-host guards. push:<repo> is a
+             host-side capability label (runner declares it, cards don't
+             request it) — dispatch cards for action.repo imply it
+             implicitly: without the label, the claiming path runs a live
+             'git push --dry-run' probe against the repo checkout and
+             defers the card when it fails (runner-push-cred-gap)"
     gpu: "optional — VRAM pre-flight for gpu-labeled cards
           (omen-gpu-display-wedge): {min_free_mb: N} — the runner claims
           only while some GPU shows >=N MB free in nvidia-smi (a host
@@ -386,7 +391,26 @@ execution:
                deprioritizes (strike 1) then SIGSTOP-pauses (strike 2) a
                gpu task when the GetVSyncParametersIfAvailable flood or a
                hung xrandr marks a display wedge, auto-SIGCONT on healthy
-               probes. Env overrides: RUNNER_TASK_LIMITS,
+               probes. Push guard (runner-push-cred-gap, 2026-10-14 —
+               a host claiming a repo it can't push strands the branch:
+               ADA-0673 macbook ada-voice, idc03 daa0e0a): dispatch cards
+               require push:<repo> in RUNNER_LABELS OR a passing live
+               probe — 'git push --dry-run origin HEAD:refs/heads/
+               __runner-push-probe' against the host's repos.conf
+               checkout (cached RUNNER_PUSH_PROBE_TTL=300s). URL shape is
+               NOT consulted — a git@ remote with a wrong-scoped deploy
+               key is the exact bug. Probe failure defers the card (stays
+               queued, debounced comms); a false push:<repo> label is the
+               escape hatch for probes that flap. RUNNER_PUSH_GUARD=0
+               disables; same logic in kanban-dispatch
+               (KANBAN_PUSH_GUARD=0). Close-out safety net: a push
+               failure on finish exports the session head as a git bundle
+               via board-api /patch-relay into $DISPATCH_DIR/patch-inbox/
+               on dell — merge-sweep consumes it when the runner is
+               unreachable, and 'verified' now requires head_on_origin()
+               (ancestor of origin/base or ls-remote branch match) so a
+               stranded branch can no longer stamp done+verified.
+               Env overrides: RUNNER_TASK_LIMITS,
                RUNNER_TASK_NICE/_CPU_QUOTA/_MEM_MAX/_CPU_WEIGHT/
                _IO_CLASS/_IO_PRIO/_IO_WEIGHT, RUNNER_GPU_MIN_FREE_MB,
                RUNNER_GPU_WATCHDOG, RUNNER_WATCHDOG_*, RUNNER_VSYNC_
@@ -434,7 +458,14 @@ execution:
                IS present; RAM-tight so cap stays 1); tony-macbook: cap 2
                gate 0.8 labels macbook,local-8c,always-home (script-type
                only — no devin CLI or podman yet; enrolled 2026-10-11).
-               Unpinned dispatch
+               Push creds (2026-10-14 audit, runner-push-cred-gap):
+               tony-dell pushes all dispatch_repos repos; tony-macbook's
+               ada-voice clone is fetch-only (HTTPS remote / chaba-only
+               deploy key) — no push:ada-voice label, and the close-out
+               relay covers slips; idc03 stranded daa0e0a the same way.
+               Declare push:<repo> per host per
+               docs/kb/new-host-onboarding.md §5 — fleet-health's
+               label-vs-probe audit flags drift. Unpinned dispatch
                cards land on any dispatch-capable host. Nest lanes:
                micro-training cold batch -> idc02 (idc01 RETIRED — removed
                from fleet 2026-10-10; runner-agent.timer stopped+disabled after
