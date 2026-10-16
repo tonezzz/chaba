@@ -651,6 +651,8 @@
       gMode = "off";
       const ov = document.getElementById("gestureOverlay");
       if (ov) ov.remove();
+      const gq = document.getElementById("gestureQr");
+      if (gq) gq.remove();
     }
     async function setGesture(mode) {
       mode = String(mode || "off").toLowerCase();
@@ -687,6 +689,23 @@
           "z-index:99;opacity:.85;pointer-events:none";
         ov.textContent = "gesture: hand";
         document.body.appendChild(ov);
+        // fire-and-forget pairing: the QR encodes the phone controller URL
+        // with THIS screen baked in (?s=N) — scan it and the phone becomes
+        // the pointer camera for this display. No config anywhere.
+        const qrEl = document.createElement("div");
+        qrEl.id = "gestureQr";
+        qrEl.style.cssText = "position:fixed;left:10px;bottom:10px;padding:8px;" +
+          "background:rgba(2,6,23,.85);border:1px solid #155e75;border-radius:10px;" +
+          "z-index:99;text-align:center;font:600 11px system-ui;color:#22d3ee;" +
+          "pointer-events:none";
+        const ctrlUrl = location.origin + "/apps/gesture/?engine=yolo&s=" + screenNum;
+        try {
+          const qr = qrcode(0, "M");
+          qr.addData(ctrlUrl); qr.make();
+          qrEl.innerHTML = qr.createImgTag(4, 6) +
+            "<div style='margin-top:5px'>scan to control<br>screen " + screenNum + "</div>";
+        } catch (e) { qrEl.textContent = ctrlUrl; }
+        document.body.appendChild(qrEl);
         showToast("gesture hand on — point to move, dwell to click, two hands to zoom");
         sendState("gesture-hand");
         return;

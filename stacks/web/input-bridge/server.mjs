@@ -602,14 +602,26 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && url.pathname === "/frame") {
     const screen = Number(url.searchParams.get("screen"));
     const token = url.searchParams.get("token");
-    const f = lastFrames.get(`${screen}:${token || ""}`)
-        || (token ? null : [...lastFrames.entries()]
+    const meta = url.searchParams.get("meta") === "1";
+    const hit = lastFrames.has(`${screen}:${token || ""}`)
+        ? [`${screen}:${token || ""}`, lastFrames.get(`${screen}:${token || ""}`)]
+        : (token ? null : [...lastFrames.entries()]
              .filter(([k]) => k.startsWith(`${screen}:`))
-             .sort((a, b) => b[1].ts - a[1].ts)[0]?.[1]);
+             .sort((a, b) => b[1].ts - a[1].ts)[0]);
+    const f = hit?.[1];
     if (!f) {
       return json(res, 404, {
         error: "frame not ready", screen,
         state: f ? f.state : null,
+      });
+    }
+    // meta=1: JSON envelope instead of the raw body — lets consumers read
+    // which token the newest frame arrived under (gesture-N -> screen N)
+    if (meta) {
+      return json(res, 200, {
+        ok: true, screen, key: hit[0], ts: f.ts, state: f.state,
+        error: f.error || null,
+        data: f.buf ? "data:image/jpeg;base64," + f.buf.toString("base64") : null,
       });
     }
     if (f.error || !f.buf) {

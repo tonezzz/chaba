@@ -107,6 +107,10 @@
 const QS = new URLSearchParams(location.search);
 const ENGINE = QS.get('engine') === 'yolo' ? 'yolo' : 'mediapipe';
 const YOLO_UPLINK_MS = 300;              // ~3.3fps — pointer cadence
+// ?s=N — which vcast screen this phone drives. The uplink token carries
+// it (gesture-N) so the yolo service's vcast:auto sink can route the
+// pointer to the right screen; bare 'gesture' defaults to screen 1.
+const UPLINK_TOKEN = QS.get('s') ? 'gesture-' + QS.get('s') : 'gesture';
 
 let FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker;
 if (ENGINE !== 'yolo') {
@@ -232,7 +236,7 @@ function yoloLoop() {
   c.getContext('2d').drawImage(video, 0, 0, w, h);
   fetch('/api/input-bridge/frame', {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ screen: 0, token: 'gesture',
+    body: JSON.stringify({ screen: 0, token: UPLINK_TOKEN,
       state: 'gesture-uplink', data: c.toDataURL('image/jpeg', 0.6) }),
   }).then(r => { r.ok ? upOk++ : upErr++; }).catch(() => upErr++);
 }

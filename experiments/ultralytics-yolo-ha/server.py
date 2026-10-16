@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Ultralytics YOLOv8 detector for a go2rtc stream."""
+import base64
 import json
 import os
 import re
@@ -112,7 +113,12 @@ def ptr_emit(msg):
     for sink in ptr["sinks"]:
         try:
             if sink.startswith("vcast:"):
-                screen = int(sink.split(":", 1)[1])
+                if sink == "vcast:auto":
+                    screen = _target_screen()
+                    if screen is None:
+                        continue
+                else:
+                    screen = int(sink.split(":", 1)[1])
                 body = json.dumps({"screen": screen, "msg": msg}).encode()
                 req = urllib.request.Request(
                     f"{INPUT_BRIDGE}/pub", data=body,
@@ -208,6 +214,13 @@ def _ha_token():
 HA_TOKEN = HA_TOKEN or _ha_token()
 
 
+def _target_screen():
+    """vcast:auto — screen comes from the uplink token: key '0:gesture-3'
+    -> screen 3; bare '0:gesture' -> screen 1 (the single-screen default)."""
+    m = re.match(r"^\d+:gesture(?:-(\d+))?$", ptr.get("frame_key") or "")
+    return int(m.group(1)) if m and m.group(1) else (1 if m else None)
+
+
 def fetch_frame():
     with state_lock:
         src = state["source"]
@@ -217,6 +230,17 @@ def fetch_frame():
         url = f"{GO2RTC_BASE}/api/frame.jpeg?src={src}"
     with urllib.request.urlopen(url, timeout=10) as resp:
         data = resp.read()
+        ctype = resp.headers.get("Content-Type", "")
+    if ctype.startswith("application/json"):
+        # meta=1 mode: JSON envelope {key, data: dataURL} — the key carries
+        # which gesture token the frame arrived under (gesture-N = screen N)
+        obj = json.loads(data)
+        raw = obj.get("data") or ""
+        if obj.get("error") or not raw:
+            raise RuntimeError(f"frame: {obj.get('error') or 'no image data'}")
+        with state_lock:
+            ptr["frame_key"] = obj.get("key") or ""
+        data = base64.b64decode(raw.split(",", 1)[-1])
     img = np.frombuffer(data, np.uint8)
     return cv2.imdecode(img, cv2.IMREAD_COLOR)
 
