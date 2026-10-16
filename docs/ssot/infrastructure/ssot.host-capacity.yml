@@ -1,59 +1,70 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Measured 2026-10-09 (nproc, free -g, df -BG /). Refresh on each service
-  deployment or via health-check.
+  Measured 2026-10-16 (nproc, free -m, df -m /, loadavg, live probes) —
+  post kanban-writer migration (OPS-0725 phase 2). Refresh on each service
+  deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
 version: 1
 
 hosts:
   tony_dell:
-    role: lan-hub
+    role: lan-hub   # DRAINING (OPS-0725) — becomes failover capacity after SSD+RAM upgrade
     cpu_cores: 8
-    mem_gb: 14        # ~10G used — pressured
-    disk_gb: {total: 118, free: 17}   # DISK TIGHT (<15% trigger) — do not land new stateful services
+    mem_gb: 15.3    # ~7.4G avail — pressured but stable post-stabilization
+    disk_gb: {total: 118, free: 6.7}   # DISK CRITICAL (95%) — do not land anything new
     gpu: none
     note: >-
-      Household LAN hub — tony-ha (LAN-bound) + ada-ha (media/cast mounts).
-      kk-ha and michael-dev evacuated to idc03 2026-10-09; stale michael-dev
-      duplicate disabled on dell 2026-10-12 (deploy-card.sh retargeted idc03).
-      Tony's desktop duty moved to tony-macbook 2026-10-12 — devin-desktop
-      load follows.
+      Household LAN hub — tony-ha + ada-ha (LAN-bound) stay until phase 5.
+      Kanban single-writer family moved to idc03 2026-10-16 (OPS-0725 ph2):
+      writer units stopped+disabled — do NOT re-enable (split-brain).
+      `~/CascadeProjects/chaba-tony-dell` is a FROZEN stale checkout;
+      ~25 exec-only units still run code from it — convert to pull-mirror
+      or repoint to `~/CascadeProjects/chaba` before dell goes dark.
+      Board-api compat shim on dell web proxies old URLs to idc03.
+      Ralink USB WiFi adapter physically pins chaba-guest-lan/ha-guest-lan.
   tony_omen:
-    role: nest-gpu-lane    # was gpu-dev; dedicated Ada Nest host 2026-10-12 (card omen-dedicate-nest)
+    role: nest-gpu-lane    # absorbs the LAN group next (tony-ha/ada-ha/go2rtc/camera-panel per OPS-0725 ph5)
     cpu_cores: 12
-    mem_gb: 30        # ~8G used after openjev-student landed 2026-10-12 (OPS-0524, ~4.5G RSS)
-    disk_gb: {total: 98, free: 59}
+    mem_gb: 31        # ~25G avail — good room
+    disk_gb: {total: 98, free: 56}
     gpu: yes          # GTX1650 4GB — jev/nest serve+train lane, ollama :11434 (user svc, reinstalled 2026-10-12)
-    note: heavy/ML workloads, development; power-hungry — prefer Colab for
-      burst GPU.
+    note: >-
+      LAN-connected + GPU — target host for dell's LAN-dependent services
+      (same network segment keeps devices reachable). heavy/ML workloads,
+      development; power-hungry — prefer Colab for burst GPU.
   idc02:
-    role: edge-primary
+    role: edge-primary   # +capacity-absorber 2026-10-16 — idlest host, bias new VPS placements HERE
     cpu_cores: 4
-    mem_gb: 15        # ~2G used — plenty
-    disk_gb: {total: 290, free: 220}
-    gpu: none
-    note: public edge (caddy, CF). Lots of headroom — good host for
-      stateless member nodes (kk-ha) or replicas.
-  idc03:
-    role: backend-hub
-    cpu_cores: 4
-    mem_gb: 15        # ~8G used
-    disk_gb: {total: 290, free: 188}
+    mem_gb: 16        # ~9.9G avail, load ~0.1 — idle
+    disk_gb: {total: 290, free: 192}
     gpu: none
     note: >-
-      Ada backends, MDDB leader, secondary edge (api.surf-thailand.com).
-      Now also hosts kk-ha (:8126) and michael-dev (:8124) HA nodes —
-      migrated from tony-dell 2026-10-09. openjev-student (gemma-3-1b,
-      :8779, ~4.5G RSS) moved to tony-omen 2026-10-12 per capacity-adjust
-      (OPS-0524); source unit parked for 24h rollback.
+      public edge (caddy, CF) + tailnet front door (idc02.taila0626a.ts.net,
+      serve→caddy:8088→dell compat). Large headroom — preferred target for
+      new VPS placements (APIs, timers, standby roles incl. board standby).
+  idc03:
+    role: backend-hub + kanban-writer   # writer family migrated from dell 2026-10-16 (OPS-0725 ph2)
+    cpu_cores: 4
+    mem_gb: 16        # ~6.5G avail — NEAR-SATURATED: load ~5 on 4 cores sustained
+    disk_gb: {total: 290, free: 128}   # -60G since 10-09 (checkout copy + ada stack growth)
+    gpu: none
+    note: >-
+      Ada backends, MDDB leader, secondary edge (api.surf-thailand.com),
+      kk-ha (:8126), michael-dev (:8124), kanban writer family + board-api
+      (:8787, serve :10000), runner-agent lane. SATURATION WATCH: 4 cores
+      carrying the fleet's write path — reserve for MDDB-local/board-local
+      work; new VPS placements default to idc02. Borrows chaba deploy key
+      via gh-chaba ssh alias (proper key = OPS-0682). Node.js installed
+      2026-10-16 for pre-commit SSOT validation.
   mn01:
     role: legacy-home
     cpu_cores: 4
     mem_gb: 7         # ~4G used
     disk_gb: {total: 234, free: 167}
     gpu: none
-    note: legacy/home node; warm capacity.
+    note: legacy/home node; warm capacity. Unreachable at 2026-10-16 probe
+      (off-net is normal for it — verify before counting on it).
   tony_macbook:
     role: portable-dev
     cpu_cores: 4
@@ -69,12 +80,14 @@ hosts:
     note: do not place anything — retired, not warm DR.
 
 placement_policy:
-  - "LAN-bound services (ha integrations, cameras, radios): tony-dell ONLY."
-  - "Member nodes + dev nodes (no LAN dependency): prefer idc02/idc03 — VPS disk/mem headroom and stability beat tony-dell."
-  - "Ada backends + memory banks: idc03 (co-located with MDDB)."
+  - "LAN-bound services (ha integrations, cameras, radios): tony-dell until OPS-0725 ph5, then tony-omen (same LAN segment)."
+  - "Member nodes + dev nodes (no LAN dependency): prefer idc02 — it is the idle absorber since 2026-10-16; VPS headroom beats tony-dell."
+  - "VPS-suitable services from dell (OPS-0725): default idc02; idc03 only when co-locating with MDDB or the board checkout."
+  - "Ada backends + memory banks: idc03 (co-located with MDDB). idc03 is near-saturated — do not grow it without a capacity check."
   - "Public ingress: idc02 primary, idc03 secondary."
   - "GPU/burst: tony-omen, else Colab free tier."
   - "Backups/DR artifacts: mn01 + idc02/idc03 cold copy."
+  - "Single-writer assets (board checkout, card files): exactly one live writer host — currently idc03; standbys stay stopped."
 
 procedure:
   before_deploy:
@@ -83,6 +96,7 @@ procedure:
     - "Record host + reason in the service's SSOT entry / card."
   rebalance_triggers:
     - "disk free < 15% of total, or mem sustained > 80%."
+    - "load average sustained > cpu_cores (committed-load saturation — idc03 hit this 2026-10-16)."
     - "any host marked unstable in session notes."
   rebalance_flow:
     - "audit-hosts.py --consolidate + health-monitor alerts (load>80%, disk) feed ops-health; a trigger event = a kanban card naming source host, target host, service list, verify steps."
@@ -97,7 +111,8 @@ procedure:
     - "First placements go through placement_policy; nothing lands by convenience."
   refresh:
     - "Re-measure this file after any service lands or moves; add 'as-of' date."
+    - "OPS-0725 gate: each migration phase exit includes re-measure + this-file update (docs/kb/host-migration-tony-dell.md)."
 
 related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
 status: active
-updated: 2026-10-09
+updated: 2026-10-16

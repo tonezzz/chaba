@@ -51,12 +51,14 @@ Full HA (active-active, keepalived, pacemaker) = too complex/risky for this flee
 
 0. ~~**Edge layer on idc02**~~ ✅ 2026-10-16 (`f95be36d0`) — `idc02.taila0626a.ts.net` serve→caddy:8088 passthrough + shadow ports 8123/24/25/8444/46/9230/3002. Caught: `http://127.0.0.1:N` is a host-matcher not a bind (use `bind`); serve certs need `tailscale cert` priming.
 1. ~~**Kanban single-writer → idc03**~~ ✅ 2026-10-16 — writer family moved wholesale (14 svc/timer pairs incl. board-api, kanban-commit/dispatch/sync, sweeps, digests). Same path `%h/CascadeProjects/chaba-tony-dell` = units moved unchanged; `CHABA_SERVED_CHECKOUT` hook is path-based → self-identifies. board-api via `idc03.ts.net:10000` serve; `/apps/board-api` split to idc03 on both public edge + tailnet front; dell web keeps a compat shim (api stays OFF on dell — dual-writer is the forbidden state). `/apps/board` static still dell-served (mirror lag ≤15min). **Residuals:** dell's `~/CascadeProjects/chaba-tony-dell` is now a FROZEN stale dir — ~25 exec-only units still run code from it; convert to pull-mirror or repoint to `~/CascadeProjects/chaba` (exec checkout) before dell goes dark. idc03 needed `apt install nodejs` (pre-commit validator) + borrowed chaba deploy key via `gh-chaba` ssh alias — register a proper idc03 deploy key (OPS-0682 scope). GitHub push races: safe-pull handles.
-2. **Kanban single-writer → idc03** — rsync `chaba-tony-dell` (~5G), install board-api + kanban-commit units, flip edge upstream for board-api. Gate: `POST /health` 200 via new name, kanban-commit runs once on idc03, dell's writer **stopped** (never two writers).
-3. **VPS APIs → idc03** — per service: rsync data dir + install unit + flip upstream. Gate: health endpoint per service.
+2. ~~**Kanban single-writer → idc03**~~ ✅ done as phase 1 above — the 14-unit writer family moved wholesale rather than one unit at a time (single-writer meant the whole flock-writer set had to flip together).
+3. **VPS APIs → idc02 (default) / idc03 (MDDB-or-board-local only)** — per service: rsync data dir + install unit + flip upstream. Gate: health endpoint per service. *Bias to idc02 since 2026-10-16: idc03 is near-saturated (load ~5 on 4 cores) after absorbing the writer family — see ssot.host-capacity.yml.*
 4. **Backups/offload → idc02** — mddb-standby-pull + rclone remotes. Gate: next scheduled pull lands + gdrive verify.
 5. **LAN group → omen** — rsync HA configs + go2rtc + cams last (most user-facing). tony-ha serve re-point. Gate: automations fire, a device toggles, camera streams.
 6. **Verify 48h on migrated state** → then dell goes dark for hardware work.
 7. **Post-hardware**: decide per service — stay migrated (recommended: dell becomes capacity/failover, not the everything-box again) or pull specific services back.
+
+**Every phase's exit gate includes:** re-measure + update `docs/ssot/infrastructure/ssot.host-capacity.yml` (host roles, headroom, placement bias) — the registry stays true during the migration, not after.
 
 ## Per-service state manifest pattern
 
