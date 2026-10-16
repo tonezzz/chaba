@@ -148,6 +148,19 @@ def strip(s):
     return re.sub(r"\s+", " ", TAG_RE.sub(" ", html.unescape(s or ""))).strip()
 
 
+def brief_th_of(post):
+    """Thai brief for a digest: meta.brief_th once chaba-boards 0.6.0
+    registers the key; until then fall back to the สรุป paragraph
+    news-digest renders into the post body."""
+    m = ((post.get("meta") or {}).get("brief_th") or "").strip()
+    if m:
+        return m
+    body = (post.get("content") or {}).get("rendered", "")
+    hit = re.search(r'<p class="brief-th"[^>]*>\s*<strong>สรุป:</strong>\s*'
+                    r"(.*?)</p>", body, re.S)
+    return strip(hit.group(1)) if hit else ""
+
+
 def effective_state(post, wp=None):
     """meta first, tag mirror second. '' = not a situation."""
     m = ((post.get("meta") or {}).get("situation") or "").strip().lower()
@@ -195,11 +208,31 @@ def comment(wp, post_id, text, dry_run=False):
         return None
 
 
+def sync_meta_from_tag(wp, post, state, dry_run=False):
+    """Backfill registered meta when only the tag mirror holds the flag —
+    flags set before chaba-boards 0.6.0 deployed had their meta silently
+    dropped by REST (unregistered keys). Silent in WP: the transition
+    comment was already posted, this is convergence not a transition.
+    Returns True when a write was (or would be) made."""
+    m = post.get("meta") or {}
+    if (m.get("situation") or "").strip().lower() == state:
+        return False
+    if not dry_run:
+        wp.api(f"/wp/v2/news/{post['id']}", {"meta": {
+            "situation": state,
+            "situation_since": m.get("situation_since")
+                               or datetime.now(ICT).strftime("%Y-%m-%d %H:%M"),
+            "situation_by": m.get("situation_by") or "tag-sync"}})
+    return True
+
+
 def set_state(wp, post, state, by="system", note="", dry_run=False):
     """Apply one ladder position: meta + tag mirror + sticky + comment.
     state '' clears. Idempotent — returns (old, new, changed)."""
     old = effective_state(post, wp)
     if old == state:
+        if state:
+            sync_meta_from_tag(wp, post, state, dry_run)
         return old, state, False
 
     pid = post["id"]
@@ -352,7 +385,7 @@ def cmd_ask(wp, args):
     meta = post.get("meta") or {}
     out = {"post_id": post["id"], "title": title, "link": post.get("link"),
            "state": new or cur, "score": round(scores[best], 3),
-           "brief_th": meta.get("brief_th") or "",
+           "brief_th": brief_th_of(post),
            "brief_en": re.sub(r"</?[^>]+>", "",
                               (post.get("content") or {})
                               .get("rendered", "")).strip()[:400]}
@@ -373,10 +406,14 @@ def cmd_sweep(wp, args):
     cats = wp.api("/wp/v2/categories&per_page=100")
     disaster_ids = {c["id"] for c in cats if c.get("slug") == DISASTER_CAT}
     disaster_ids |= {c["id"] for c in cats if c.get("parent") in disaster_ids}
-    nom = 0
+    nom = synced = 0
     for p in posts:
         p["_tag_names"] = wp.tag_names(p.get("tags") or [])
-        if effective_state(p):
+        st = effective_state(p)
+        if st:
+            if sync_meta_from_tag(wp, p, st, dry_run=args.dry_run):
+                synced += 1
+                print(f"  {p['id']}: meta <- tag ({st})")
             continue
         why = []
         if source_count(p) >= args.sources:
@@ -388,14 +425,15 @@ def cmd_sweep(wp, args):
         nom += 1
         set_state(wp, p, "watching", by="auto-nominate",
                   note=" + ".join(why), dry_run=args.dry_run)
-    print(f"sweep: {nom} nominated (of {len(posts)} digests)")
+    print(f"sweep: {nom} nominated, {synced} meta-backfilled "
+          f"(of {len(posts)} digests)")
     return 0
 
 
 def render_index(wp, rows):
     now = datetime.now(ICT).strftime("%Y-%m-%d %H:%M")
     def row(r):
-        brief = r["meta"].get("brief_th") or ""
+        brief = r.get("brief_th") or r["meta"].get("brief_th") or ""
         icon = "📌" if r["state"] == "pinned" else "👁"
         s = (f'<li style="margin-bottom:.9em"><strong>'
              f'<a href="{html.escape(r["link"])}">{html.escape(r["title"])}'
@@ -438,6 +476,7 @@ def cmd_index(wp, args):
             continue
         meta = p.get("meta") or {}
         rows.append({"id": p["id"], "state": st, "meta": meta,
+                     "brief_th": brief_th_of(p),
                      "sources": source_count(p),
                      "since": meta.get("situation_since") or "",
                      "by": meta.get("situation_by") or "",
