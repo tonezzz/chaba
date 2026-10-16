@@ -48,6 +48,20 @@ homes:
     ha_url: https://idc03.taila0626a.ts.net:8124
     public_url: null                 # tailnet-only by decision 2026-10-07
     voice_backend: null
+  - id: tony-dev
+    label: Tony dev twin (planned)
+    host: tony-dell
+    ha_url: http://127.0.0.1:8127
+    public_url: null
+    voice_backend: null
+    planned: true                    # card ha-dev-instances — blocked; promote-tony.sh uses --from michael-dev meanwhile
+  - id: ada-dev
+    label: Ada dev twin (planned)
+    host: tony-dell
+    ha_url: http://127.0.0.1:8128
+    public_url: null
+    voice_backend: null
+    planned: true                    # card ha-dev-instances — blocked. Name collides with ada-dev.service (idc03 :8005, the ada-ai voice backend) — different thing, watch it
 
 # ---------------------------------------------------------------------------
 # LAYER 2 — Voice personas (one backend per home; ada-voice on idc03)
