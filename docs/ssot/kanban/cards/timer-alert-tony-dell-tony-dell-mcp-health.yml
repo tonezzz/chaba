@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-tony-dell-mcp-health
 title: Timer tony-dell-mcp-health on tony-dell failing
 column: doing
-updated: 2026-10-16 04:42
+updated: 2026-10-16 14:42
 priority: high
 tags:
 - timer-alert
@@ -27,7 +27,18 @@ comms:
   from: devin
   text: '[dispatch] investigating tony-dell-mcp-health.service failure (10-14 19:44 exit-code) — pulling journal
     + service definition'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: devin-task-20261016-044213-timer-tony-dell-mcp-health-on- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261016-044213-timer-tony-dell-mcp-health-on- on
+    idc02 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: running
   runner: idc02
+  sweep:
+    stale_running: 2026-10-16 14:42
+    session_gone: 2026-10-16 14:42

@@ -1,7 +1,7 @@
 id: correction-commands-die-at-the-confirm-g-05902a
 title: correction commands die at the confirm gate
 column: doing
-updated: 2026-10-16 04:51
+updated: 2026-10-16 14:42
 brief: 'Transcript 2026-10-13-cac2984711: Tony said "CRV เป็นรถของกุ้ง ไม่ใช่ของผมนะ แก้ไขด้วย" — an explicit fix
   order. Kaewta acknowledged correctly but ASKED permission to write it to memory; session ended, correction never
   landed. The wrong fact (Tony=CRV owner) stayed live until manually patched (car/tony-car-not-crv written to personal-kk
@@ -23,7 +23,19 @@ comms:
 - at: 2026-10-16 04:51
   from: chaba
   text: started devin-task-20261016-045107-correction-commands-die-at-the on tony-omen (dispatch)
+- at: 2026-10-16 14:41
+  from: chaba
+  text: 'merge-sweep: devin-task-20261016-045107-correction-commands-die-at-the no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
 action:
   type: dispatch
-  status: running
-  runner: tony-omen
+  status: queued
+  sweep:
+    stale_running: 2026-10-16 14:41
+  verified: false
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
+claim: {}
