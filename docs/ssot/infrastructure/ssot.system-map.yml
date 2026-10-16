@@ -111,7 +111,7 @@ personas:
     tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-kk
     home: kk-ha
     keys: [gemini-ada-kk, litellm-vkey-kk, ada-device-keys]
-    dev_backend: ada-kk-dev.service  # = kaewta-ai-dev — live on idc03, free key
+    dev_backend: ada-kk-dev.service  # = kaewta-ai-dev — live on idc03 :8009, free key
   - id: ada-ai
     label: Ada — lab/dev persona
     unit: ada-dev.service
@@ -197,6 +197,30 @@ data:
     role: age-encrypted tarballs — idc03 daily + secrets-collect weekly
   - id: kanban
     role: board-api on tony-dell :8787 + cards.json render on web edge
+
+# ---------------------------------------------------------------------------
+# TARGET NAMING — grand-rename spec (card mn-dev-rename / OPS-0726 grown up).
+# Physical resources still carry the 'now' names; ids above are the target.
+# Port slot convention: member=1, chaba=2, kraut=3, kaewta=4, ada=5.
+# Prod backend :800N, persona dev backend :801N. Renumber is optional phase.
+# ---------------------------------------------------------------------------
+rename_map:
+  units:
+    - {now: ada-pi-pwa.service,     to: member-ai.service,     port_now: 8001, port_target: 8001, note: "public member surface — catch-all on app.surf-thailand.com + legacy /api/cms*; ADA_INSTANCE_ID=tony"}
+    - {now: ada-ha-tony.service,    to: chaba-ai.service,      port_now: 8002, port_target: 8002}
+    - {now: ada-ha-michael.service, to: kraut-ai.service,      port_now: 8003, port_target: 8003, note: "kraut name TBC by Tony"}
+    - {now: ada-dev.service,        to: ada-ai.service,        port_now: 8005, port_target: 8005}
+    - {now: ada-kk.service,         to: kaewta-ai.service,     port_now: 8007, port_target: 8004, note: "renumber optional"}
+    - {now: ada-kk-dev.service,     to: kaewta-ai-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional"}
+  paths: {from: "/apps/ha/<name>", to: "/ai/<persona>"}
+  env_files: {from: "~/.config/secrets/ada-<x>.env", to: "~/.config/secrets/<persona>-ai.env"}
+  key_pools: {from: "~/.config/secrets/ada-ha-<lane>-keys.json", to: "~/.config/secrets/<persona>-ai-keys.json"}
+  ha_dev_twins: {michael-dev: mn-ha-dev}   # unit+container+dirs+~119 refs — OPS-0726
+  open_decisions:
+    - "kraut-ai persona name — confirm before kraut-ai.service lands"
+    - "member-ai vs guest-ai vs keep ada-pi-pwa for the member surface"
+    - "port renumber (8007->8004, 8009->8014) or keep current ports"
+    - "hard cutover vs alias grace period for old unit/path names"
 
 notes:
   - "Naming is compositional: <x>-ha / <x>-ha-dev / <x>-ai / <x>-ai-dev.
