@@ -1,0 +1,19 @@
+id: podman-lock-wedge-watchdog
+title: 'tony-dell: watchdog for wedged rootless-podman state DB (stale shm lock -> auto-clear + alert)'
+column: backlog
+updated: 2026-10-16 18:30
+priority: medium
+spec: 'Timer on tony-dell: probe `timeout 8 podman ps`; on 3 consecutive failures with no live `podman` CLI processes
+  (conmon/pause excluded), remove stale /dev/shm/libpod_rootless_lock_$(id -u), dead pause.pid under /run/user/$UID/containers,
+  stale alive.lck; optionally `podman system renumber`; re-probe; alert via chaba-admin event + LINE on both auto-recovery
+  and failure-to-recover. Recovery procedure documented in docs/ssot/jobs/infrastructure/2026-10-16-tony-dell-podman-lock-wedge.yml.'
+note: 'Follow-up from 2026-10-16 collapse (card tony-dell-podman-lock-wedge, doc docs/ssot/jobs/infrastructure/2026-10-16-tony-dell-podman-lock-wedge.yml).
+  Bounded docker-ps callers now prevent the pile-up, but a wedged podman state DB still hangs every container op
+  until someone manually clears stale /dev/shm/libpod_rootless_lock_<uid> + dead pause.pid/alive.lck. Proposal:
+  a systemd --user timer (~2min) that probes `timeout 8 podman ps`; on N>=3 consecutive failures AND no live podman
+  CLI processes, a'
+ref: OPS-0726
+comms:
+- at: 2026-10-16 18:30
+  from: devin
+  text: card captured via board-api
