@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
-"""gemini-wallet-watch — early warning for the Gemini prepaid wallet.
+"""gemini-wallet-watch — early warning for depleted/capped Gemini keys.
 
-Probes the PAID key once per run with a ~1-token generateContent call
-(negligible cost) and watches the state transition:
+Probes each configured key once per run with a ~1-token generateContent
+call (negligible cost) and watches the per-key state transition:
 
-    ok -> credit  : notify every household lane via the LINE relay /send
-                    (tony DM + kk group) so an empty wallet is known
-                    BEFORE a voice session dies on it.
+    ok -> credit  : notify — tony DM (EN) for every key; kk group (TH)
+                    only when the kk lane's own key is down — so an
+                    empty wallet / capped project is known BEFORE a
+                    voice session dies on it.
     credit -> ok  : one recovery note so the lanes know they're whole.
 
 429/demand verdicts are logged but do NOT alert — they are per-key
 throttling/congestion, not an empty wallet (2026-10-12 incident: the
 402 '1011 prepayment credits depleted' is the only true empty-wallet
-signal).
+signal; the 2026-10-14 ada-ha-tony incident was the same 1011 surfacing
+as a project spend cap on GEMINI_API_KEY_TONY — which is why the probe
+list now covers every paid lane key, not just the shared PAID wallet).
 
     state:   ~/.local/share/ada/gemini-wallet-watch.json
-    journal: one INFO line per run (journald)
+    journal: one INFO line per key per run (journald)
 
 Usage:
   gemini-wallet-watch.py --env-file ~/.config/secrets/gemini-keys.env
+                         [--key-var GEMINI_API_KEY_PAID]...   (repeatable)
                          [--relay-url http://127.0.0.1:8912/send]
                          [--model gemini-3.5-flash-lite]
 """
@@ -34,14 +38,42 @@ MODEL = "gemini-3.5-flash-lite"
 STATE = Path.home() / ".local/share/ada/gemini-wallet-watch.json"
 RELAY = "http://127.0.0.1:8912/send"
 
-DEPLETED_EN = ("⚠️ Gemini prepaid depleted — paid wallet empty. Voice "
-               "lanes are running on the free tier until you top up "
-               "(ai.studio → project billing). Scenario suite stays "
-               "parked either way.")
-DEPLETED_TH = ("แจ้งเตือนค่ะ — เครดิต Gemini เติมเงินหมดแล้ว "
-               "ระบบเสียงใช้เฟรีเทียร์ชั่วคราว รอคุณโทนี่เติมเงินนะคะ")
-RECOVERED = ("✅ Gemini prepaid credit is back — paid lane healthy "
-             "again.")
+# Which voice lanes die when a given key stops working. Used in alert
+# text so "key down" reads as "this lane is down" — the 1011 incident
+# showed a bare var name means nothing at 2am.
+LANE_LABELS = {
+    "GEMINI_API_KEY_PAID": "mddb/infra shared paid wallet",
+    "GEMINI_API_KEY_TONY": "ada-ha-tony + ada-pi-pwa",
+    "GEMINI_API_KEY_KK": "ada-kk",
+    "GEMINI_API_KEY_MICHAEL": "ada-ha-michael",
+    "GEMINI_API_KEY_FREE": "dev lanes (free tier)",
+}
+
+# Lanes whose group should hear about their own key dying (Thai).
+KK_LANE_VARS = {"GEMINI_API_KEY_KK"}
+
+
+def _depleted_en(var: str) -> str:
+    lane = LANE_LABELS.get(var, "unknown lane")
+    return (f"⚠️ Gemini key refusing calls — {var} ({lane}) is "
+            "depleted/capped. That lane is down until topped up "
+            "(ai.studio → project billing). Scenario suite stays "
+            "parked either way.")
+
+
+def _depleted_th(var: str) -> str:
+    lane = LANE_LABELS.get(var, var)
+    return (f"แจ้งเตือนค่ะ — คีย์ Gemini ของ {lane} หมดเครดิตแล้ว "
+            "เลนเสียงใช้ไม่ได้จนกว่าจะเติมเงินนะคะ")
+
+
+def _recovered_en(var: str) -> str:
+    lane = LANE_LABELS.get(var, "unknown lane")
+    return f"✅ Gemini credit is back — {var} ({lane}) healthy again."
+
+
+_RECOVERED_TH = ("✅ เครดิต Gemini กลับมาแล้วค่ะ "
+                 "เลนเสียงใช้งานได้ตามปกติ")
 
 
 def _env_key(path: str, var: str) -> str:
@@ -103,10 +135,36 @@ def notify(relay: str, targets: list[dict]) -> list[str]:
     return out
 
 
+def _load_state(path: Path) -> dict:
+    """Return per-key state; migrate the legacy single-key format
+    ({status: ...}) — it always tracked GEMINI_API_KEY_PAID."""
+    try:
+        raw = json.loads(path.read_text()) if path.exists() else {}
+    except Exception:
+        raw = {}
+    if "keys" in raw and isinstance(raw["keys"], dict):
+        return raw
+    keys = {}
+    if raw.get("status"):
+        keys["GEMINI_API_KEY_PAID"] = raw
+    return {"keys": keys}
+
+
+def _alert_targets(var: str, depleted: bool) -> list[dict]:
+    text_en = _depleted_en(var) if depleted else _recovered_en(var)
+    targets = [{"to": "tony", "instance": "tony", "text": text_en}]
+    if var in KK_LANE_VARS:
+        targets.append({"instance": "kk", "text":
+                        _depleted_th(var) if depleted else _RECOVERED_TH})
+    return targets
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--env-file", required=True)
-    ap.add_argument("--key-var", default="GEMINI_API_KEY_PAID")
+    ap.add_argument("--key-var", action="append", default=None,
+                    help="env var to probe; repeatable. "
+                         "Default: GEMINI_API_KEY_PAID")
     ap.add_argument("--relay-url", default=RELAY)
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--state", type=Path, default=STATE)
@@ -114,45 +172,43 @@ def main() -> int:
                     help="probe + report but do not notify or write state")
     args = ap.parse_args()
 
-    key = _env_key(args.env_file, args.key_var)
-    rec = probe(key, args.model) if key else {"verdict": "no-key"}
+    key_vars = args.key_var or ["GEMINI_API_KEY_PAID"]
     ts = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+    state = _load_state(args.state)
+    prev_keys = state.get("keys", {})
+    new_keys = {}
+    any_depleted = False
 
-    prev = {}
-    if args.state.exists():
-        try:
-            prev = json.loads(args.state.read_text())
-        except Exception:
-            prev = {}
-    prev_status = prev.get("status", "ok")
-    cur = rec["verdict"]
-    notes = []
+    for var in key_vars:
+        key = _env_key(args.env_file, var)
+        rec = probe(key, args.model) if key else {"verdict": "no-key"}
+        prev_status = prev_keys.get(var, {}).get("status", "ok")
+        cur = rec["verdict"]
+        notes = []
 
-    depleted_now = cur == "credit"
-    was_depleted = prev_status == "credit"
-    if not args.dry_run:
-        if depleted_now and not was_depleted:
-            notes = notify(args.relay_url, [
-                {"to": "tony", "instance": "tony", "text": DEPLETED_EN},
-                {"instance": "kk", "text": DEPLETED_TH},
-            ])
-        elif was_depleted and cur == "ok":
-            notes = notify(args.relay_url, [
-                {"to": "tony", "instance": "tony", "text": RECOVERED},
-                {"instance": "kk", "text": RECOVERED},
-            ])
-        args.state.parent.mkdir(parents=True, exist_ok=True)
-        args.state.write_text(json.dumps({
+        depleted_now = cur == "credit"
+        any_depleted = any_depleted or depleted_now
+        was_depleted = prev_status == "credit"
+        if not args.dry_run:
+            if depleted_now and not was_depleted:
+                notes = notify(args.relay_url, _alert_targets(var, True))
+            elif was_depleted and cur == "ok":
+                notes = notify(args.relay_url, _alert_targets(var, False))
+        new_keys[var] = {
             "status": cur, "at": ts,
             "key_suffix": key[-4:] if key else "",
             "detail": rec.get("detail", "")[:160],
-        }) + "\n")
-    print(f"gemini-wallet-watch: {cur} (was {prev_status}) "
-          f"key=...{key[-4:] if key else 'none'} "
-          f"{rec.get('detail','')} {' '.join(notes)}")
-    # exit 1 while depleted so the unit's Result reflects the wallet —
-    # one timer-alert card, resolved by the auto-close on recovery.
-    return 1 if depleted_now else 0
+        }
+        print(f"gemini-wallet-watch: {var}={cur} (was {prev_status}) "
+              f"key=...{key[-4:] if key else 'none'} "
+              f"{rec.get('detail','')} {' '.join(notes)}")
+
+    if not args.dry_run:
+        args.state.parent.mkdir(parents=True, exist_ok=True)
+        args.state.write_text(json.dumps({"keys": new_keys}) + "\n")
+    # exit 1 while ANY key is depleted so the unit's Result reflects the
+    # worst lane — one timer-alert card, resolved on full recovery.
+    return 1 if any_depleted else 0
 
 
 if __name__ == "__main__":

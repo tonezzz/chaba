@@ -588,7 +588,10 @@ class AdaChatCard extends HTMLElement {
         this._setStatus("Reconnecting…");
         break;
       case "error":
-        this._system(`Error: ${ev.message || ev.type}`);
+        this._system(ev.stage === "provider_connect"
+          ? `Upstream provider refused: ${ev.message}`
+          : `Error: ${ev.message || ev.type}`);
+        if (ev.stage) this._state = "error";
         break;
     }
     this._render();
@@ -618,6 +621,7 @@ class AdaChatCard extends HTMLElement {
       };
       this._socket.onerror = () => this._system("WebSocket error");
       this._socket.onclose = async (e) => {
+        console.info(`[ada-chat] ws close code=${e.code}${e.reason ? ` reason=${e.reason}` : ""}`);
         // A handshake rejection (HTTP 403 — stale/foreign key) surfaces as
         // 1006, not 4401 — the server never accepted the socket. Treat both
         // as key rejection: drop the cached key, re-mint, retry once.
@@ -633,6 +637,12 @@ class AdaChatCard extends HTMLElement {
           localStorage.removeItem(ACC_KEY_STORAGE);
           this._state = "locked";
           this._setStatus("Key rejected — paste a key below");
+        } else if (e.code !== 1000) {
+          // abnormal close with no error frame — keep the code visible so
+          // "just stopped" is diagnosable (e.g. 1011 = upstream/provider error)
+          this._system(`ws close code=${e.code}${e.reason ? ` reason=${e.reason}` : ""}`);
+          this._state = "error";
+          this._setStatus(`Disconnected (code ${e.code}${e.reason ? ` — ${e.reason}` : ""})`);
         }
         this._teardown(false);
       };
