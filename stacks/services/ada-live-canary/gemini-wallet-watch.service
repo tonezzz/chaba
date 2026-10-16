@@ -1,11 +1,16 @@
 [Unit]
-Description=Gemini prepaid wallet watch — 1-token REST probe on PAID key
+Description=Gemini prepaid wallet watch — 1-token REST probe on each paid lane key
 After=network-online.target
 
 [Service]
 Type=oneshot
-# ~1 input + 1 output token per run (~$0). Alerts LINE on depleted /
-# recovered transitions. Exit 1 while depleted so the unit Result
-# reflects the wallet (timer-alert card, auto-closed on recovery).
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/gemini-wallet-watch.py --env-file %h/.config/secrets/gemini-keys.env --key-var GEMINI_API_KEY_PAID
-TimeoutStartSec=60
+# ~1 input + 1 output token per key per run (~$0). Alerts LINE on
+# depleted / recovered transitions PER KEY — tony DM for every paid
+# lane key, kk group (TH) only for GEMINI_API_KEY_KK. Exit 1 while any
+# key is depleted so the unit Result reflects the worst lane
+# (timer-alert card, auto-closed on recovery). 2026-10-14 incident:
+# ada-ha-tony's GEMINI_API_KEY_TONY hit its project cap while the
+# shared PAID key stayed green — the probe list must cover every
+# key that can kill a voice lane, not just the wallet.
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/gemini-wallet-watch.py --env-file %h/.config/secrets/gemini-keys.env --key-var GEMINI_API_KEY_PAID --key-var GEMINI_API_KEY_TONY --key-var GEMINI_API_KEY_KK --key-var GEMINI_API_KEY_MICHAEL
+TimeoutStartSec=120

@@ -16,12 +16,16 @@ Automated probes never bill a paid project:
   (`GEMINI_API_KEY_PAID`). Exactly 1 connect/day: enough to detect
   paid-lane dunning (`402/1011` = depleted wallet, `429` = per-key
   quota, `auth` = key rotated out) without measurable spend.
-- `gemini-wallet-watch.timer` — hourly :47, PAID key, ~1-token
-  `generateContent` REST probe (`scripts/ada/gemini-wallet-watch.py`).
-  This is the wallet-depletion **alerting** path (LINE notify on
-  ok→credit transitions), not a Live connect — ~24 tokens/day is not a
-  billing concern. If policy later wants it daily too, it is a one-line
-  `OnCalendar` change.
+- `gemini-wallet-watch.timer` — hourly :47, ~1-token `generateContent`
+  REST probe per paid lane key (`scripts/ada/gemini-wallet-watch.py`
+  `--key-var` repeat: PAID + TONY + KK + MICHAEL). This is the
+  depletion/cap **alerting** path (LINE notify per key on ok→credit
+  transitions — tony DM for all, kk group only for KK's own key), not
+  a Live connect — ~96 tokens/day is not a billing concern. Per-key
+  coverage added 2026-10-16: the ada-ha-tony 1011 incident was
+  GEMINI_API_KEY_TONY hitting its project cap while the shared PAID
+  probe stayed green. If policy later wants it daily too, it is a
+  one-line `OnCalendar` change.
 
 Ledgers: `~/.local/share/ada-live-canary.jsonl` (free) and
 `~/.local/share/ada-live-canary-paid.jsonl` (paid). Both land in the
