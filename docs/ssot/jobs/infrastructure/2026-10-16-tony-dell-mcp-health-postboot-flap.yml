@@ -43,31 +43,37 @@ findings:
   - ssh transport to tony-omen worked during the failures (auth.log shows the
     session open); the remote mcp-health-client.py exited non-zero in under a
     second.
-  - Exact remote error is unrecoverable: the script discards ssh stderr
+  - >-
+    Exact remote error is unrecoverable: the script discards ssh stderr
     (2>/dev/null). A valid get_health_score result (even all-services-down)
     exits 0, so the failure was a client-level crash or remote exec failure —
     consistent with the degraded state of tony-omen at the time (see below).
-  - tony-omen was under a gnome-keyring-daemon fd-exhaustion storm (pid 9755 at
-    1024/1024 fds, "couldn't accept new control request: Too many open files"
-    repeated 100k+/day since 2026-10-13 03:09, still active 2026-10-16). Likely
-    made remote command exec flaky, but not proven — runs succeed today with
-    the storm still active. Carded separately.
-  - postgres-on-tony-dell being down is a correlate, not the direct cause:
+  - >-
+    tony-omen was under a gnome-keyring-daemon fd-exhaustion storm (pid 9755
+    at 1024/1024 fds, "couldn't accept new control request: Too many open
+    files" repeated 100k+/day since 2026-10-13 03:09, still active
+    2026-10-16). Likely made remote command exec flaky, but not proven —
+    runs succeed today with the storm still active. Carded separately.
+  - >-
+    postgres-on-tony-dell being down is a correlate, not the direct cause:
     get_health_score scores down services 0 but still returns exit 0
     (verified live — postgres scored 0 at time of test, exit=0).
 
 changes:
-  - scripts/tony-dell-mcp-health.sh: synced to live semantics
+  - >-
+    scripts/tony-dell-mcp-health.sh synced to live semantics
     (POSTGRES_HOST=100.68.142.13, remote chaba path) and now captures ssh
     stderr to the journal on failure ("ssh-stderr: ..." lines) so the next
     flap is diagnosable. NOTE: canonical source is chaba-tony-dell repo and
     deploy to ~/.local/bin is manual — live copy still needs the same patch.
 
 followups:
-  - carded: tony-omen gnome-keyring fd leak (pid pegged at soft limit, 30% CPU,
-    needs daemon restart / leak investigation)
-  - option not taken: ssh retry loop — would not have absorbed a ~10 min boot
-    outage; stderr visibility is the real gap
+  - >-
+    carded: tony-omen gnome-keyring fd leak (pid pegged at soft limit, 30%
+    CPU, needs daemon restart / leak investigation)
+  - >-
+    option not taken: ssh retry loop — would not have absorbed a ~10 min
+    boot outage; stderr visibility is the real gap
 
 verification:
   - ssh tony-dell 'journalctl --user -u tony-dell-mcp-health.service -n 20'

@@ -20,8 +20,10 @@ them as facts anyway. The drop fixes four leaks:
 
 Strategy: apply the staged patches to copies of the live ada-voice sources
 (ADA_PI env or ~/CascadeProjects/ada-voice — skipped when absent), compile
-them, then exercise the behavior. backend modules carry heavy deps
-(google.genai etc.) so functions are exercised two ways: the patched
+them, then exercise the behavior. Patches already merged upstream resolve
+to the live file (tests/ada/_drops.py) — the drop shipped in ada-voice
+02c5058 (2026-10-13), so these now guard the merged implementation.
+backend modules carry heavy deps (google.genai etc.) so functions are exercised two ways: the patched
 tool_runner/memory.py is imported under a stub `backend.tool_runner.common`,
 and the memory_ops / realtime_provider methods are ast-extracted from the
 patched source and exec'd with stub globals — the assertions run the
@@ -35,7 +37,6 @@ import asyncio
 import importlib.util
 import logging
 import os
-import subprocess
 import sys
 import textwrap
 import time
@@ -46,6 +47,8 @@ from typing import Any
 
 import pytest
 import yaml
+
+from tests.ada._drops import apply_patch
 
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
@@ -74,14 +77,15 @@ def _ada_pi_file(rel: str) -> Path:
 
 @pytest.fixture()
 def patched_tree(tmp_path):
-    """Apply all drop patches to copies of the ada-voice sources."""
+    """Apply all drop patches to copies of the ada-voice sources —
+    patches that already merged upstream (or diverged post-merge) test
+    the live file instead; see tests/ada/_drops.py."""
     for rel, patch in PATCHES.items():
         src = _ada_pi_file(rel)
         dst = tmp_path / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(src.read_bytes())
-        subprocess.run(["git", "apply", str(patch)], cwd=tmp_path,
-                       check=True, capture_output=True)
+        apply_patch(patch, tmp_path)
     return tmp_path
 
 
@@ -89,8 +93,8 @@ def patched_tree(tmp_path):
 
 
 def test_patches_apply_and_compile(patched_tree):
-    """Every staged patch must apply to the live ada-voice tree and the
-    result must compile/parse — the drop is only as good as its apply."""
+    """Every staged patch resolves against the live ada-voice tree
+    (applied, or already merged) and the result must compile/parse."""
     for rel in PATCHES:
         p = patched_tree / rel
         if rel.endswith(".py"):

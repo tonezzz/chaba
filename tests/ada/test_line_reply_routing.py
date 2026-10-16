@@ -16,8 +16,11 @@ deliveries under the instance key so the fallback map is readable again.
 Chaba-side coverage (the ada-pi-side suite is tests/test_line_reply_context.py
 in the drop):
 
-- every patch in the drop applies cleanly to a live ada-voice checkout
-  (ADA_PI env or ~/CascadeProjects/ada-voice) and the patched files compile;
+- every patch in the drop resolves against a live ada-voice checkout
+  (ADA_PI env or ~/CascadeProjects/ada-voice): applies while pending, or
+  already-merged/diverged -> the live file is tested (tests/ada/_drops.py
+  — the drop shipped in ada-voice 8f8f488, so this guards the merged
+  implementation now);
 - the patched line_relay actually carries chat_id onto the ws URL and
   through _session();
 - the patched tool_runner resolves session_chat_id correctly.
@@ -34,6 +37,8 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+
+from tests.ada._drops import apply_patch, check_patch, drop_guard_ok
 
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
@@ -72,19 +77,20 @@ def _clean_checkout(tmp_path: Path) -> Path:
 
 @NEEDS_ADA_PI
 class TestPatchApplies:
-    def test_all_patches_apply_clean(self, tmp_path):
+    def test_patches_apply_or_landed(self, tmp_path):
+        """Tri-state per patch: applies (drop pending), merged (already
+        upstream), diverged. Divergence fails only when NOTHING in the
+        drop merged — a pending drop whose base rotted. Landed drops
+        legitimately drift (tests/ada/_drops.py)."""
         src = _clean_checkout(tmp_path)
-        for p in PATCHES:
-            r = subprocess.run(
-                ["git", "apply", "--check", str(p)],
-                cwd=src, capture_output=True, text=True)
-            assert r.returncode == 0, f"{p.name}: {r.stderr}"
+        states = {p.name: check_patch(p, src) for p in PATCHES}
+        assert drop_guard_ok(states.values()), (
+            f"drop rotted on its base — re-dispatch: {states}")
 
     def test_applied_files_compile(self, tmp_path):
         src = _clean_checkout(tmp_path)
         for p in PATCHES:
-            subprocess.run(["git", "apply", str(p)], cwd=src,
-                           check=True)
+            apply_patch(p, src)
         for f in NEW_FILES:  # install step copies new files verbatim
             (src / "tests" / f.name).write_bytes(f.read_bytes())
         for rel in ("backend/line_relay.py", "backend/tg_relay.py",
@@ -116,10 +122,8 @@ class TestPatchedRelay:
         target = src / "line_relay.py"
         target.write_bytes(
             (ADA_PI / "backend/line_relay.py").read_bytes())
-        subprocess.run(
-            ["git", "apply", str(DROP /
-                               "backend/line_relay.reply-routing.patch")],
-            cwd=tmp_path, check=True)
+        apply_patch(DROP / "backend/line_relay.reply-routing.patch",
+                    tmp_path)
         monkeypatch.setenv("LINE_NAME_BACKENDS", "ada:ws://lane")
         spec = importlib.util.spec_from_file_location(
             "line_relay_patched", target)
@@ -215,10 +219,7 @@ class TestPatchedToolRunner:
         """Verify against the APPLIED source text, then drive the real
         helpers when they import cleanly."""
         src = _clean_checkout(tmp_path)
-        subprocess.run(
-            ["git", "apply", str(DROP /
-                                 "backend/tool_runner.reply-routing.patch")],
-            cwd=src, check=True)
+        apply_patch(DROP / "backend/tool_runner.reply-routing.patch", src)
         text = (src / "backend/tool_runner/common.py").read_text()
         assert "SESSION_CHAT" in text and "session_chat_id" in text
         chat = (src / "backend/tool_runner/chat.py").read_text()
@@ -227,7 +228,11 @@ class TestPatchedToolRunner:
         # Drive the real functions in-process when the module imports —
         # the copied tree's own tests/dep_stubs fills heavy deps. Load it
         # by path: 'tests' in sys.modules is already CHABA's package.
+        # dep_stubs.install() fabricates fastapi/starlette/genai into
+        # sys.modules globally — remove what it added or later tests
+        # (ada_memory server imports) see fakes as the real packages.
         import importlib.util
+        pre_modules = set(sys.modules)
         try:
             spec = importlib.util.spec_from_file_location(
                 "ada_pi_dep_stubs", src / "tests/dep_stubs.py")
@@ -262,6 +267,8 @@ class TestPatchedToolRunner:
             finally:
                 mod._CALLER_SESSION.reset(tok)
         finally:
+            for name in set(sys.modules) - pre_modules:
+                sys.modules.pop(name, None)
             for name in ("backend.tool_runner.common",
                          "backend.tool_runner", "backend"):
                 sys.modules.pop(name, None)

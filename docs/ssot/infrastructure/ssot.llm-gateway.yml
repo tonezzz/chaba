@@ -61,6 +61,13 @@ providers:
   gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
   openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
+  ollama-idc02: >-
+    ollama_chat/* + ollama/* @ http://100.123.163.11:11434 — podman on
+    idc02 (free-lane compute OFF prod): qwen2.5:7b-instruct +
+    nomic-embed-text. Deployed 2026-10-15 (card chat-local-free-lane).
+    ollama-nomic-embed is deployed under the same model_name on BOTH
+    hosts — LiteLLM load-balances idc02+idc03, halving embed traffic
+    off prod.
   colab: >-
     ollama_chat/gemma3:12b @ http://127.0.0.1:11434 — ephemeral Colab T4 worker,
     reverse-SSH'd onto idc03 loopback by scripts/colab/colab-serve-worker.ipynb
@@ -87,6 +94,18 @@ job_classes:
   classify:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
+  chat-local:
+    chain: [qwen2.5:7b-instruct@ollama-idc02, llama3.2:3b@ollama, gemma3:12b@colab]
+    note: >-
+      FREE background-turn lane (card chat-local-free-lane, 2026-10-15/16) —
+      EN summarize/classify work where local 7B quality suffices; Thai-facing
+      output stays on gemini. Adopters: news-digest.py EN synthesis
+      (NEWS_DIGEST_LLM, brief_th still gemini-translated),
+      wp-comment-sync.py news-comment intent classify (WCS_CLASSIFY),
+      kanban-brief.py "why now" prose (KANBAN_BRIEF_LLM_*). Callers use
+      scripts/ada/litellm_chat.py (mddb-gemini.env creds) — every adopter
+      keeps a deterministic/gemini fallback so a dead lane never stalls a
+      job.
   bench:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: benchmark traffic on its own virtual key — spend isolated by design. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
@@ -113,6 +132,7 @@ real_name_deployments:
 proof_lanes:
   ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
   chaba: "scripts/litellm/daily-ledger.py + gateway-bench; the whole report/extract/distill chain honors GEMINI_BASE_URL via scripts/ada/gemini_rest.py (2026-10-13, card gateway-batch-opt-in-for-report-extract-aee7d7)."
+  chat-local: "verified end-to-end 2026-10-15 (alias reply + 768d embed); adopters wired 2026-10-16: news-digest EN synthesis, wp-comment-sync intent classify, kanban-brief prose (env_file litellm-chaba.env on tony-dell, LITELLM_KEY_CHABA)."
 
 batch_opt_in:
   how: >-

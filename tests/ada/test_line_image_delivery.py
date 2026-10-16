@@ -15,8 +15,9 @@ image/*.
 
 Same harness as test_line_file_doc_ingest: the unified diff is applied to
 a copy of the ada-voice source (ADA_PI env or ~/CascadeProjects/ada-voice),
-compiled, and its helpers exercised with stubbed http. Skips when no
-ada-voice checkout is reachable (the patch is what ships, not the file).
+compiled, and its helpers exercised with stubbed http. Patches already
+merged upstream (ada-voice 02c5058, 2026-10-13) resolve to the live file —
+tests/ada/_drops.py. Skips when no ada-voice checkout is reachable.
 """
 
 from __future__ import annotations
@@ -24,7 +25,6 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import os
-import subprocess
 import sys
 import types as pytypes
 from pathlib import Path
@@ -32,6 +32,8 @@ from types import SimpleNamespace
 from unittest import mock
 
 import pytest
+
+from tests.ada._drops import apply_patch
 
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
@@ -58,10 +60,8 @@ def patched(tmp_path, monkeypatch):
                  "realtime_provider.py"):
         (src / name).write_bytes((ADA_PI / "backend" / name).read_bytes())
     for p in PATCHES:
-        r = subprocess.run(["git", "apply", "--check", str(p)],
-                           cwd=tmp_path, capture_output=True, text=True)
-        assert r.returncode == 0, f"{p.name} no longer applies: {r.stderr}"
-        subprocess.run(["git", "apply", str(p)], cwd=tmp_path, check=True)
+        # already-merged / post-merge-drifted patches test the live file
+        apply_patch(p, tmp_path)
     for mod in ("httpx", "websockets"):
         stub = pytypes.ModuleType(mod)
 
@@ -240,10 +240,12 @@ class TestImageMsgs:
 
 class TestImagesFrom:
     def test_drive_get_image_media_url(self, patched):
+        # merged upstream returns (url, caption, kind) triples — the
+        # video-bubble evolution added the kind element post-merge
         out = patched._images_from([{
             "mimeType": "image/jpeg",
             "media_url": "/v1/drive/media/X?t=1", "name": "car.jpg"}])
-        assert out == [("/v1/drive/media/X?t=1", "")]
+        assert out == [("/v1/drive/media/X?t=1", "", "image")]
 
     def test_pdf_media_url_not_an_image(self, patched):
         assert patched._images_from([{

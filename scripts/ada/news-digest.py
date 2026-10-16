@@ -15,10 +15,16 @@ into that cluster; the parent regenerates, so an evolving story (rate
 2,000 -> 1,900 -> 1,800) grows a chronological "Developments" timeline
 under one parent instead of forking digests.
 
-LLM: gemini-3.5-flash-lite via scripts/ada/gemini_rest.py. Key from
-GEMINI_API_KEY env, else ~/.config/secrets/mddb-gemini.env or
-gemini-keys.env (FREE first). Prompt returns JSON {topic, brief, diffs[]}
-which we render — the model never writes markup directly.
+LLM: two lanes (card chat-local-free-lane). English synthesis {topic,
+brief, diffs[]} defaults to the `chat-local` LiteLLM alias (qwen2.5:7b on
+idc02 — free) via scripts/ada/litellm_chat.py; the Thai brief_th is a
+small gemini translate call of that brief (Thai output stays on gemini).
+NEWS_DIGEST_LLM=gemini restores the old single-call path — and any
+chat-local failure falls back to it automatically so a digest run never
+stalls on the local lane. Gemini side: gemini-3.5-flash-lite via
+scripts/ada/gemini_rest.py, key from GEMINI_API_KEY env, else
+~/.config/secrets/mddb-gemini.env or gemini-keys.env (FREE first). The
+model never writes markup directly.
 
 Usage:
     news-digest.py --dry-run              # show clusters, no writes/LLM
@@ -26,8 +32,10 @@ Usage:
     news-digest.py --hours 48 --sim 0.35
 
 Env:
-    WP_BOARDS_ENV   path to wp-boards.env (parsed, never sourced)
-    GEMINI_API_KEY  or the secrets files above
+    WP_BOARDS_ENV    path to wp-boards.env (parsed, never sourced)
+    GEMINI_API_KEY   or the secrets files above
+    NEWS_DIGEST_LLM  chat-local (default; any LiteLLM alias) | gemini
+    LITELLM_URL/LITELLM_KEY  else read from mddb-gemini.env
 """
 import argparse
 import base64
@@ -43,8 +51,12 @@ from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gemini_rest
+import litellm_chat
 
 MODEL = os.environ.get("NEWS_DIGEST_MODEL", "gemini-3.5-flash-lite")
+# chat-local (default) = LiteLLM job-class alias -> qwen2.5:7b on idc02;
+# "gemini" = legacy single-call synthesis.
+DIGEST_LLM = os.environ.get("NEWS_DIGEST_LLM", "chat-local")
 ENV_PATH = os.environ.get("WP_BOARDS_ENV",
                           os.path.expanduser("~/.config/secrets/wp-boards.env"))
 SECRET_FILES = [os.path.expanduser("~/.config/secrets/mddb-gemini.env"),
@@ -217,17 +229,74 @@ Return ONLY a JSON object:
 Items:
 {items}"""
 
+# Local-lane variant — English fields only; brief_th comes from a small
+# gemini translate call afterwards (Thai output stays on gemini).
+PROMPT_LOCAL = """You are a news-digest writer. Below are {n} items covering the
+same ongoing story from different outlets (JSON list of {{date, source,
+title, text}}), in chronological order. The items may be follow-up reports
+on one evolving story — facts like figures, locations or status can change
+between them (e.g. a dam discharge rate dropping from 1,900 to 1,800).
+
+Return ONLY a JSON object (no prose, no code fences):
+{{"topic": "short story label (max ~8 words)",
+  "brief": "2-3 sentence neutral synthesis of the LATEST state of the story, "
+           "mentioning what changed most recently",
+  "diffs": ["one line per notable difference in coverage/framing or per "
+            "material fact change between updates — source name first"]}}
+
+Items:
+{items}"""
+
+PROMPT_TH = """Translate this English news brief into natural Thai for a
+household reader — same facts, 2-3 sentences. Reply with the Thai text only.
+
+Brief:
+{brief}"""
+
+
+def _payload(members):
+    return json.dumps(
+        [{"date": m.get("date", "")[:16],
+          "source": m.get("meta", {}).get("source_feed") or "feed",
+          "title": norm(m["title"]["rendered"])[:200],
+          "text": norm(m["content"]["rendered"])[:1200]}
+         for m in members], ensure_ascii=False)
+
+
+def _translate_th(brief, key):
+    """brief -> Thai, gemini only. Gateway `summary` class first (paid
+    quota + fallbacks — the free key 429s under batch load); direct
+    generateContent as last resort."""
+    out = litellm_chat.chat(
+        PROMPT_TH.format(brief=brief), model="summary",
+        temperature=0.2, max_tokens=400, timeout=90,
+        label="news-digest-th")
+    if out:
+        return out
+    return gemini_rest.generate(
+        PROMPT_TH.format(brief=brief), MODEL, key=key,
+        label="news-digest-th") or ""
+
 
 def synthesize(members, key):
-    payload = [{"date": m.get("date", "")[:16],
-                "source": m.get("meta", {}).get("source_feed") or "feed",
-                "title": norm(m["title"]["rendered"])[:200],
-                "text": norm(m["content"]["rendered"])[:1200]}
-               for m in members]
+    """{topic, brief, brief_th, diffs} — EN fields via chat-local (free)
+    when DIGEST_LLM names a LiteLLM alias, brief_th via a small gemini
+    translate; DIGEST_LLM=gemini or a local-lane failure -> the legacy
+    single gemini call that produces all fields at once."""
+    items = _payload(members)
+    if DIGEST_LLM.lower() not in ("gemini", "google"):
+        out = litellm_chat.chat_json(
+            PROMPT_LOCAL.format(n=len(members), items=items),
+            model=DIGEST_LLM, temperature=0.2, max_tokens=900,
+            timeout=120, label="news-digest")
+        if out:
+            out["brief_th"] = _translate_th(out.get("brief") or "", key) \
+                if out.get("brief") else ""
+            return out
+        print("  warn: chat-local synthesis unavailable — gemini fallback",
+              file=sys.stderr)
     out = gemini_rest.generate_json(
-        PROMPT.format(n=len(members), items=json.dumps(payload,
-                                                       ensure_ascii=False)),
-        MODEL, key=key)
+        PROMPT.format(n=len(members), items=items), MODEL, key=key)
     return out or {}
 
 

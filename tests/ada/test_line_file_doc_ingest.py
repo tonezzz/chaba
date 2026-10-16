@@ -32,6 +32,8 @@ from unittest import mock
 import pytest
 import yaml
 
+from tests.ada._drops import apply_patch
+
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
 DOC_READ = DROP / "backend" / "tools.d" / "doc_read.py"
@@ -256,18 +258,9 @@ class TestRelayPatch:
         target = src / "line_relay.py"
         target.write_bytes(
             (ADA_PI / "backend/line_relay.py").read_bytes())
-        r = subprocess.run(
-            ["git", "apply", "--check", str(PATCH)],
-            cwd=tmp_path, capture_output=True, text=True)
-        if r.returncode != 0:
-            # Once the drop lands upstream the patch can never apply
-            # again — the file itself is already the merged result.
-            merged = "_MEDIA_INBOUND" in target.read_text()
-            assert merged, (f"patch no longer applies and feature "
-                            f"markers are absent: {r.stderr}")
-        else:
-            subprocess.run(["git", "apply", str(PATCH)],
-                           cwd=tmp_path, check=True)
+        # Once the drop lands upstream the patch can never apply again —
+        # merged/diverged resolve to testing the live file (see _drops).
+        apply_patch(PATCH, tmp_path)
         for name in ("httpx", "websockets"):
             stub = pytypes.ModuleType(name)
 

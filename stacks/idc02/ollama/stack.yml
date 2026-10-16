@@ -1,0 +1,37 @@
+id: ollama
+host: idc02
+description: >-
+  Ollama CPU inference — the free/local lane behind the LiteLLM gateway's
+  `chat-local` job class (card chat-local-free-lane). Serves
+  qwen2.5:7b-instruct + nomic-embed-text; gateway also load-balances
+  `ollama-nomic-embed` across idc02+idc03 (same model_name, two
+  deployments). Lives on idc02 deliberately — cheap background-turn
+  compute OFF the prod host.
+verify: >-
+  curl -sf http://100.123.163.11:11434/api/tags — lists
+  qwen2.5:7b-instruct + nomic-embed-text
+secrets: []
+requires:
+  - "tool:podman (rootless, linger=yes)"
+  - "net: tailnet only — PublishPort binds 100.123.163.11, never 0.0.0.0
+    (ollama has NO auth; a public bind exposes free inference to the
+    internet)"
+state:
+  - "podman volume ollama-data -> /root/.ollama — pulled models"
+restore: >-
+  copy ollama.container to ~/.config/containers/systemd/ on idc02;
+  systemctl --user daemon-reload && systemctl --user start ollama;
+  then `podman exec ollama ollama pull qwen2.5:7b-instruct` and
+  `ollama pull nomic-embed-text` if the volume was lost.
+related_cards: [chat-local-free-lane, llm-gateway-litellm]
+status: deployed
+deployed: 2026-10-15
+endpoints:
+  api: http://100.123.163.11:11434   # tailnet only
+notes: >-
+  Installed as a quadlet 2026-10-16 (was a manual `podman run` from
+  2026-10-15 — first attempt bound 0.0.0.0:11434, fixed same day to
+  tailnet-only + systemd-managed). CPU-only: cold first-token ~10-30s
+  for 7b; keep callers' timeouts >= 90s. Do NOT run a second ollama on
+  idc03 for chat traffic — prod host stays light; llama3.2 there is a
+  chain fallback, not the lane.

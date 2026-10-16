@@ -1,0 +1,9 @@
+[Unit]
+Description=Board invariants scan (every 4h) (job:board-invariants, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnCalendar=*-*-* 00,04,08,12,16,20:35:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

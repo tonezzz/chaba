@@ -11,14 +11,20 @@ chaba dispatches. Eleven drops live here:
    (2026-10-13) — **already deployed** (ada-voice `074c7a8`+`e24b14d`); this
    drop is the repo-of-record copy
 5. file-input speaker ID + LINE enroll-on-clips + boss rule — card
-   `line-voice-enroll-recognize` (2026-10-13)
+   `line-voice-enroll-recognize` (2026-10-13) — **already deployed**
+   (ada-voice `02c5058`); this drop is the repo-of-record copy
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
-   (ADA-0607, 2026-10-13)
+   (ADA-0607, 2026-10-13) — **already deployed** (ada-voice `02c5058`);
+   this drop is the repo-of-record copy
 7. LINE image delivery — Drive share links and image URLs inside reply
    text become real LINE image messages — card
-   `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13)
+   `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13) —
+   **already deployed** (ada-voice `02c5058`); this drop is the
+   repo-of-record copy
 8. reply-context routing — LINE sends bind to the originating chat —
-   card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13)
+   card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13) —
+   **already deployed** (ada-voice `8f8f488`); this drop is the
+   repo-of-record copy
 9. whisper-url transcription — card `stt-omen-large-v3` (2026-10-14),
    **already deployed** (ada-voice `daa0e0a`)
 10. cast wrong-target honesty + goal-loop breaker + frustration budget —
