@@ -208,11 +208,31 @@ def comment(wp, post_id, text, dry_run=False):
         return None
 
 
+def sync_meta_from_tag(wp, post, state, dry_run=False):
+    """Backfill registered meta when only the tag mirror holds the flag —
+    flags set before chaba-boards 0.6.0 deployed had their meta silently
+    dropped by REST (unregistered keys). Silent in WP: the transition
+    comment was already posted, this is convergence not a transition.
+    Returns True when a write was (or would be) made."""
+    m = post.get("meta") or {}
+    if (m.get("situation") or "").strip().lower() == state:
+        return False
+    if not dry_run:
+        wp.api(f"/wp/v2/news/{post['id']}", {"meta": {
+            "situation": state,
+            "situation_since": m.get("situation_since")
+                               or datetime.now(ICT).strftime("%Y-%m-%d %H:%M"),
+            "situation_by": m.get("situation_by") or "tag-sync"}})
+    return True
+
+
 def set_state(wp, post, state, by="system", note="", dry_run=False):
     """Apply one ladder position: meta + tag mirror + sticky + comment.
     state '' clears. Idempotent — returns (old, new, changed)."""
     old = effective_state(post, wp)
     if old == state:
+        if state:
+            sync_meta_from_tag(wp, post, state, dry_run)
         return old, state, False
 
     pid = post["id"]
@@ -386,10 +406,14 @@ def cmd_sweep(wp, args):
     cats = wp.api("/wp/v2/categories&per_page=100")
     disaster_ids = {c["id"] for c in cats if c.get("slug") == DISASTER_CAT}
     disaster_ids |= {c["id"] for c in cats if c.get("parent") in disaster_ids}
-    nom = 0
+    nom = synced = 0
     for p in posts:
         p["_tag_names"] = wp.tag_names(p.get("tags") or [])
-        if effective_state(p):
+        st = effective_state(p)
+        if st:
+            if sync_meta_from_tag(wp, p, st, dry_run=args.dry_run):
+                synced += 1
+                print(f"  {p['id']}: meta <- tag ({st})")
             continue
         why = []
         if source_count(p) >= args.sources:
@@ -401,7 +425,8 @@ def cmd_sweep(wp, args):
         nom += 1
         set_state(wp, p, "watching", by="auto-nominate",
                   note=" + ".join(why), dry_run=args.dry_run)
-    print(f"sweep: {nom} nominated (of {len(posts)} digests)")
+    print(f"sweep: {nom} nominated, {synced} meta-backfilled "
+          f"(of {len(posts)} digests)")
     return 0
 
 

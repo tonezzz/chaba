@@ -6,9 +6,12 @@ subtitle: >-
   by member asks and comments.
 icon: eye
 id: 2026-10-15-news-situation-summaries
-status: live on idc03 — sweep+index timer armed :45, 5 flood digests
-  watching, private /wp/index.php/situations/ page up (chaba-boards 0.6.0
-  wp-admin upload pending Tony; ada-voice wiring carded ADA-0707)
+status: live on idc03 — sweep+index timer armed :45, 7 flood digests
+  watching, private /wp/index.php/situations/ page up; chaba-boards 0.6.0
+  DEPLOYED 2026-10-16 (Tony answered "proceed" — automated wp-admin upload
+  via scripts/wp-boards/deploy-plugin-zip.sh on omen) and the 7 tag-only
+  flags were meta-backfilled (situation=watching, by=tag-sync). ada-voice
+  wiring carded ADA-0707.
 owner: devin-dispatch
 project: chaba
 card: news-situation-summaries
@@ -94,9 +97,19 @@ deploy_notes: >
   (ADA-0707). Gotcha: render-jobs --install's batched `enable --now` left
   new timers disabled on first run in this pass — re-check is-enabled
   after install (ops-error-posts hit the same miss).
+  2026-10-16 (fourth dispatch): test-gate fix 85ec42e86 landed on master —
+  attempt-2/3a work rebased and relanded (69ad2cff9). chaba-boards 0.6.0
+  deployed to WP via scripted wp-admin upload (deploy-plugin-zip.sh on
+  omen, creds never transit tony-dell); /wp/v2/plugins confirms active.
+  7 tag-only flags meta-backfilled; news-situation.py gained
+  sync_meta_from_tag() so the sweep converges tag->meta automatically
+  (pre-0.6.0 flags had meta silently dropped by REST). Gotcha: WP app
+  passwords contain spaces — `source`ing wp-boards.env breaks; parse with
+  grep/cut -d= -f2-. And Cloudflare 1010-blocks urllib's default UA on
+  boards.surf-thailand.com — always send the chaba UA.
 
 verify: |
-  python3 -m unittest tests.ada.test_news_situation   # 14 tests, pure/stubbed
+  python3 -m unittest tests.ada.test_news_situation   # 20 tests, pure/stubbed
   scripts/ada/news-situation.py sweep --dry-run        # nominations only
   scripts/ada/news-situation.py index --dry-run        # page HTML preview
   scripts/ada/news-situation.py ask "สรุปข่าวน้ำท่วม" --dry-run
@@ -108,4 +121,5 @@ files:
   - scripts/ada/wp-comment-sync.py        (news situation lane + lazy env for tests)
   - integrations/wp-boards/chaba-boards.php (v0.6.0 — meta, badge, shortcode, admin col)
   - docs/ssot/infrastructure/ssot.jobs.yml + systemd/generated/idc03/wp-news-situation.*
+  - scripts/wp-boards/deploy-plugin-zip.sh  (new — scripted wp-admin zip upload, runs on omen)
   - tests/ada/test_news_situation.py

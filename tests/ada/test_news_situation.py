@@ -6,6 +6,7 @@ the situations index renderer. Pure functions + a stub WP — no network.
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import unittest
 from pathlib import Path
@@ -134,6 +135,54 @@ class SetStateTest(unittest.TestCase):
         p["_tag_names"] = ["digest"]
         self.assertEqual(ns.set_state(wp, p, "watching")[2], False)
         self.assertEqual(wp.writes, [])
+
+    def test_tag_only_flag_backfills_meta(self):
+        # pre-0.6.0 flag: tag holds watching, registered meta is empty
+        wp = FakeWP()
+        wp.names[99] = "situation-watching"
+        wp.ids["situation-watching"] = 99
+        p = post(meta={"situation": "", "situation_by": ""}, tags=[1, 99])
+        p["_tag_names"] = ["digest", "situation-watching"]
+        old, new, changed = ns.set_state(wp, p, "watching")
+        self.assertEqual((old, new, changed), ("watching", "watching", False))
+        self.assertEqual(len(wp.writes), 1)
+        route, data = wp.writes[0]
+        self.assertEqual(route, "/wp/v2/news/7")
+        self.assertEqual(data["meta"]["situation"], "watching")
+        self.assertEqual(data["meta"]["situation_by"], "tag-sync")
+        # convergence is silent — no comment posted
+        self.assertFalse([d for r, d in wp.writes
+                          if r == "/wp/v2/comments"])
+
+    def test_no_backfill_when_meta_present(self):
+        wp = FakeWP()
+        p = post(meta={"situation": "watching"}, tags=[1])
+        p["_tag_names"] = ["digest", "situation-watching"]
+        self.assertFalse(ns.sync_meta_from_tag(wp, p, "watching"))
+        self.assertEqual(wp.writes, [])
+
+
+class SweepTest(unittest.TestCase):
+    def test_sweep_backfills_tag_only_flags(self):
+        wp = FakeWP()
+        wp.names[99] = "situation-watching"
+        wp.ids["situation-watching"] = 99
+
+        flagged = post(pid=7, meta={}, tags=[99])
+        flagged["_tag_names"] = ["situation-watching"]
+        quiet = post(pid=8, meta={}, tags=[1])
+        quiet["_tag_names"] = ["digest"]
+
+        posts = [flagged, quiet]
+        args = argparse.Namespace(sources=3, dry_run=False)
+        orig_digest = ns.digest_posts
+        try:
+            ns.digest_posts = lambda w: posts
+            ns.cmd_sweep(wp, args)
+        finally:
+            ns.digest_posts = orig_digest
+        metas = [d["meta"] for r, d in wp.writes if r == "/wp/v2/news/7"]
+        self.assertEqual(metas[0]["situation"], "watching")
 
 
 class CommentCommandTest(unittest.TestCase):
