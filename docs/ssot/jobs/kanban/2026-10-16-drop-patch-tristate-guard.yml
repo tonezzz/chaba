@@ -1,0 +1,71 @@
+title: Drop-patch tri-state guard — landed ada-voice drops no longer red-hold merges
+subtitle: tests/ada/_drops.py resolves applied/merged/diverged per patch; clone+load flakes fixed
+icon: shield
+date: 2026-10-16
+card: chat-local-free-lane
+status: done
+project: chaba
+program: chaba-ci
+
+summary:
+  - |
+    dispatch_repos' merge test gate (`pytest tests -x -q`, 240s) held the
+    chat-local-free-lane merge — but the reported failure
+    (test_cast_loop_breaker clone timeout) was only the FIRST of four
+    independent red causes; `-x` masked the rest. Root causes and fixes:
+
+    1. **Slow local clone.** test_cast_loop_breaker /
+       test_correction_command cloned ~/CascadeProjects/ada-voice
+       (~86M objects) per test — 4m37s on tony-dell's near-full HDD vs
+       the 120s timeout. Now `--depth 1` + `file://` URI (4.7s).
+       Plain-path `git clone` still packs the whole object store;
+       depth-1 via file:// transports only HEAD.
+    2. **Stale patch-apply tests.** Drop tests demanded forward
+       `git apply` forever — but drops SHIP: drops 6/7/8
+       (draft-hit-frame, image-delivery, reply-routing) merged into
+       ada-voice via 02c5058 / 8f8f488, so their patches can never
+       apply again. 26 errors + 6 failures. New shared helper
+       `tests/ada/_drops.py` resolves each patch tri-state:
+       `applied` (forward apply → pending drop), `merged`
+       (`git apply -R --check` → already upstream, test the live file),
+       `diverged` (neither → post-merge drift if any sibling merged;
+       else the pending drop's base rotted and the guard fails).
+       Behavioral assertions then verify the FEATURE whether patched
+       or live — one diverged contract did drift (`_images_from`
+       returns (url, cap, kind) triples post video-bubbles); the test
+       now asserts the live contract.
+    3. **dep_stubs sys.modules leak.** With drop 8 applying again,
+       test_line_reply_routing reached ada-voice's dep_stubs.install()
+       which fabricates fastapi/starlette/genai into sys.modules — the
+       fake `fastapi` (not a package) then poisoned
+       test_obsidian_app's `from fastapi.testclient import TestClient`.
+       The test now snapshots sys.modules and pops additions.
+    4. **Live-load flake.** test_claim_order RunnerAgentClaimOrderTest
+       called the real `overloaded()` — 5-min load/core >1.0 on a busy
+       host silently zeroes claims. Now stubbed `lambda: False`
+       (claim ORDER is under test, not the load gate).
+
+    Result: `pytest tests -x -q` → 370 passed, 38 skipped, 50s
+    (was: 9 failed / 26 errors, and ~2min to first failure).
+
+operator_notes:
+  - "README drop list now marks drops 5-8 already-deployed
+    (02c5058/8f8f488) matching drops 4/9 convention — keep that list
+    honest; the tests only self-heal when patches reverse-apply."
+  - "tony-dell `/` (sda5) is a rotational HDD at 97% (3.7G free) —
+    that's why the object-pack clone took 4.5min. Anything doing full
+    local clones or big scans is on borrowed time; disk pressure is a
+    real host risk, not just a test annoyance."
+  - "dep_stubs.install() is a global mutation — any test that calls it
+    must snapshot sys.modules and drop additions in a finally, or it
+    leaks fake fastapi/starlette into every later import."
+  - "drop_guard_ok semantics: diverged patches pass only when a sibling
+    merged. If a whole drop goes diverged with nothing merged, that's
+    real rot — the staged diff no longer maps to upstream; re-dispatch
+    the card per the README install notes."
+
+verify: |
+  python3 -m pytest tests -x -q  → 370 passed, 38 skipped (~50s)
+  Per-patch tri-state on ada-voice HEAD: drop 6 all merged;
+  drop 7 realtime_provider+tool_guide merged, line_relay diverged;
+  drop 8 line_relay/tg_relay/test merged, tool_runner+pwa_server diverged.

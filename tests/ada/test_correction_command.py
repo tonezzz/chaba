@@ -22,6 +22,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.ada._drops import apply_patch, check_patch, drop_guard_ok
+
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
 PATCHES = [
@@ -36,13 +38,14 @@ ADA_PI = Path(os.environ.get(
 def _scratch_tree(tmp_path: Path) -> Path:
     """Copy the ada-voice checkout and apply the staged patches."""
     dst = tmp_path / "ada-voice"
+    # file:// + depth 1: a plain local-path clone packs the full object
+    # store (~86M, minutes on the HDD); the tests only need HEAD.
     subprocess.run(
-        ["git", "clone", "-q", str(ADA_PI), str(dst)],
+        ["git", "clone", "-q", "--depth", "1",
+         ADA_PI.as_uri(), str(dst)],
         check=True, timeout=120)
     for rel in PATCHES:
-        subprocess.run(
-            ["git", "apply", str(DROP / rel)],
-            cwd=dst, check=True, timeout=30)
+        apply_patch(DROP / rel, dst)
     shutil.copy(TESTFILE, dst / "tests" / "test_memory_directive.py")
     return dst
 
@@ -65,11 +68,13 @@ def test_patches_apply_and_directive_tests_pass(tmp_path):
 @pytest.mark.skipif(not (ADA_PI / ".git").exists(),
                     reason="no ada-voice checkout reachable")
 def test_patches_apply_clean(tmp_path):
-    """git apply --check alone — the base-commit guard."""
+    """Base-commit guard: every patch must apply OR already be merged
+    upstream; divergence only fails when nothing in the drop landed
+    (pending drop on a rotted base — tests/ada/_drops.py)."""
     dst = tmp_path / "ada-voice"
-    subprocess.run(["git", "clone", "-q", str(ADA_PI), str(dst)],
+    subprocess.run(["git", "clone", "-q", "--depth", "1",
+                    ADA_PI.as_uri(), str(dst)],
                    check=True, timeout=120)
-    for rel in PATCHES:
-        proc = subprocess.run(["git", "apply", "--check", str(DROP / rel)],
-                              cwd=dst, capture_output=True, text=True)
-        assert proc.returncode == 0, f"{rel}: {proc.stderr[-500:]}"
+    states = {rel: check_patch(DROP / rel, dst) for rel in PATCHES}
+    assert drop_guard_ok(states.values()), (
+        f"drop rotted on its base — re-dispatch: {states}")

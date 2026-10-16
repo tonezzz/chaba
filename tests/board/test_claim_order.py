@@ -131,9 +131,11 @@ class RunnerAgentClaimOrderTest(unittest.TestCase):
         m = self.mod
         self.claimed = []
         self._saved = (m.api, m.claimable, m.start_task, m.gpu_preflight,
-                       m.CAP, m.STARVE_HOURS)
+                       m.overloaded, m.CAP, m.STARVE_HOURS)
         m.CAP = 10
         m.STARVE_HOURS = 12
+        # the claim ORDER is under test — the live load gate isn't
+        m.overloaded = lambda: False
         self.cards = []
         m.api = lambda path, body=None: (
             {"cards": self.cards} if path == "/cards"
@@ -148,7 +150,7 @@ class RunnerAgentClaimOrderTest(unittest.TestCase):
 
     def tearDown(self):
         (self.mod.api, self.mod.claimable, self.mod.start_task,
-         self.mod.gpu_preflight, self.mod.CAP,
+         self.mod.gpu_preflight, self.mod.overloaded, self.mod.CAP,
          self.mod.STARVE_HOURS) = self._saved
 
     def test_claims_drain_in_priority_order(self):
