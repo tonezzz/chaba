@@ -11,11 +11,16 @@ purpose: >-
   this file references credential ids, never values).
 
 naming: >-
-  Compositional scheme (2026-10-16): <name>-ha = HA node, <name>-ha-dev =
-  its dev twin; <name>-ai = voice persona, <name>-ai-dev = that persona's
-  dev backend (on-demand, free-tier keys). Physical unit/dir names predate
-  this scheme (ada-ha-tony, ada-kk, ada-dev.service, ada-pi-pwa) — ids here
-  are logical; renames are carded migrations (OPS-0726).
+  Compositional scheme (2026-10-16). Homes: <name>-ha = HA node,
+  <name>-ha-dev = its dev twin. Voice: <family>-ai-<role>[-dev] —
+  family = assistant provider (ada = Gemini Live stack; future providers
+  get their own family, e.g. adam-ai-chaba for a ChatGPT-backed chaba),
+  role = household persona (chaba/kraut/kaewta/member), -dev = that
+  backend's dev twin (on-demand, free-tier keys). Base `ada-ai` = the
+  member/guest surface (was ada-pi-pwa); `ada-ai-dev` = lab backend (was
+  ada-dev.service). Hyphens, never underscores — DNS-safe. Physical
+  unit/dir names predate this scheme — renames are carded migrations
+  (grand-rename card, subsumes OPS-0726).
 
 # ---------------------------------------------------------------------------
 # LAYER 1 — Home Assistant WebUI (the base; one per household)
@@ -206,19 +211,19 @@ data:
 # ---------------------------------------------------------------------------
 rename_map:
   units:
-    - {now: ada-pi-pwa.service,     to: member-ai.service,     port_now: 8001, port_target: 8001, note: "public member surface — catch-all on app.surf-thailand.com + legacy /api/cms*; ADA_INSTANCE_ID=tony"}
-    - {now: ada-ha-tony.service,    to: chaba-ai.service,      port_now: 8002, port_target: 8002}
-    - {now: ada-ha-michael.service, to: kraut-ai.service,      port_now: 8003, port_target: 8003, note: "kraut name TBC by Tony"}
-    - {now: ada-dev.service,        to: ada-ai.service,        port_now: 8005, port_target: 8005}
-    - {now: ada-kk.service,         to: kaewta-ai.service,     port_now: 8007, port_target: 8004, note: "renumber optional"}
-    - {now: ada-kk-dev.service,     to: kaewta-ai-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional"}
-  paths: {from: "/apps/ha/<name>", to: "/ai/<persona>"}
-  env_files: {from: "~/.config/secrets/ada-<x>.env", to: "~/.config/secrets/<persona>-ai.env"}
-  key_pools: {from: "~/.config/secrets/ada-ha-<lane>-keys.json", to: "~/.config/secrets/<persona>-ai-keys.json"}
+    - {now: ada-pi-pwa.service,     to: ada-ai.service,           port_now: 8001, port_target: 8001, note: "family root — member/guest surface; catch-all on app.surf-thailand.com + legacy /api/cms*; ADA_INSTANCE_ID=tony"}
+    - {now: ada-ha-tony.service,    to: ada-ai-chaba.service,     port_now: 8002, port_target: 8002}
+    - {now: ada-ha-michael.service, to: ada-ai-kraut.service,     port_now: 8003, port_target: 8003, note: "kraut name TBC by Tony"}
+    - {now: ada-dev.service,        to: ada-ai-dev.service,       port_now: 8005, port_target: 8005, note: "lab backend — the name finally says what it is"}
+    - {now: ada-kk.service,         to: ada-ai-kaewta.service,    port_now: 8007, port_target: 8004, note: "renumber optional"}
+    - {now: ada-kk-dev.service,     to: ada-ai-kaewta-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional"}
+  paths: {from: "/apps/ha/<name>", to: "/ai/<role>"}   # /ai/chaba, /ai/kraut, /ai/kaewta, /ai/ada (member), /ai/dev
+  env_files: {from: "~/.config/secrets/ada-<x>.env", to: "~/.config/secrets/ada-ai-<role>.env"}
+  key_pools: {from: "~/.config/secrets/ada-ha-<lane>-keys.json", to: "~/.config/secrets/ada-ai-<role>-keys.json"}
   ha_dev_twins: {michael-dev: mn-ha-dev}   # unit+container+dirs+~119 refs — OPS-0726
+  future_families: "<family>-ai-<role>[-dev] — e.g. adam-ai-chaba (ChatGPT family), eve-ai-chaba. Ports: new family gets its own block (:81xx adam, :82xx eve…)"
   open_decisions:
-    - "kraut-ai persona name — confirm before kraut-ai.service lands"
-    - "member-ai vs guest-ai vs keep ada-pi-pwa for the member surface"
+    - "kraut role name — confirm before ada-ai-kraut.service lands"
     - "port renumber (8007->8004, 8009->8014) or keep current ports"
     - "hard cutover vs alias grace period for old unit/path names"
 
