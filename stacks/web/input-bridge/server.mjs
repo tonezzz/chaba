@@ -48,12 +48,15 @@ const sockets = new Set(); // every ws the server accepted (for ping sweeps)
 
 // Spoken claim codes: a pending display shows a 4-digit code under its QR
 // so a bystander can tell Ada "claim code 4821" instead of scanning —
-// voice-first pairing. Unique among pending entries only; the code dies
-// with the pending slot (it is not a durable screen identity).
+// voice-first pairing. Unique among pending entries AND live screens —
+// registered screens keep a persistent code (minted once at register,
+// stored in the registry) as their durable "take control" voice id.
 function mintClaimCode() {
   for (;;) {
     const c = String(1000 + Math.floor(Math.random() * 9000));
-    if (![...pending.values()].some(p => p.code === c)) return c;
+    if ([...pending.values()].some(p => p.code === c)) continue;
+    if (Object.values(registry.screens).some(s => s.code === c)) continue;
+    return c;
   }
 }
 function sidForCode(code) {
@@ -374,6 +377,7 @@ function displaysSnapshot() {
       state: s.state || "idle",
       state_detail: s.state_detail || null,
       panes: s.panes || 1,
+      code: s.code || null,
     };
   });
   screens.sort((a, b) => a.screen - b.screen);
@@ -546,6 +550,22 @@ const server = http.createServer(async (req, res) => {
       code: p.code || null,
       since: new Date(p.ts).toISOString(),
     });
+  }
+
+  // GET /claim-resolve?code=NNNN — resolve a 4-digit code to its target:
+  // pending display -> {sid} for the /claim path; registered screen ->
+  // {screen} so voice/tools can say "control display 4821" -> screen N.
+  if (req.method === "GET" && url.pathname === "/claim-resolve") {
+    const code = String(url.searchParams.get("code") || "").trim();
+    const sid = sidForCode(code);
+    if (sid) return json(res, 200, { ok: true, kind: "pending", sid });
+    for (const [n, s] of Object.entries(registry.screens)) {
+      if (s.code && String(s.code) === code) {
+        return json(res, 200, { ok: true, kind: "screen",
+          screen: parseInt(n, 10), label: s.label || s.name });
+      }
+    }
+    return json(res, 404, { error: "unknown code" });
   }
 
   if (req.method === "POST" && url.pathname === "/pub") {
@@ -1158,6 +1178,8 @@ async function registerDisplay(ws, msg) {
   if (label) entry.label = label;
   delete entry.disconnected_at;
   delete entry.claimed_at;   // claim->register gap closed — name is live-held
+  if (!entry.code) entry.code = mintClaimCode();   // persistent 4-digit id —
+  // the on-screen "take control" code; survives reconnects + restarts
   entry.last_seen = new Date().toISOString();
   saveRegistry();
 
@@ -1180,7 +1202,8 @@ async function registerDisplay(ws, msg) {
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
   ws.send(JSON.stringify({ type: "registered", screen, name,
-                           label: entry.label || name }));
+                           label: entry.label || name,
+                           code: entry.code || null }));
   // restore the last casts after a reconnect — pane-keyed, layout first so
   // content lands in the right sub-screens (a ws flap no longer blanks it)
   const prefix = `vcast-${screen}|`;

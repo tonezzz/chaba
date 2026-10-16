@@ -13,11 +13,12 @@
 //   - Cache name is vcast-* (not apps-*) so the shared /apps/sw.js
 //     self-heal purge — which deletes all apps-* caches — leaves this
 //     one alone.
-const CACHE_NAME = "vcast-v7";
+const CACHE_NAME = "vcast-v8";
 const ASSETS = [
   "/apps/vcast/",
   "/apps/vcast/index.html",
   "/apps/vcast/pair.html",
+  "/apps/vcast/remote.html",
   "/apps/vcast/manifest.json",
   "/apps/vcast/hls.min.js",
   "/apps/vcast/qrcode.min.js",

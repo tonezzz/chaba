@@ -58,6 +58,25 @@
     #pairCode { font-size: clamp(2.6rem, 10vw, 6rem); font-weight: 800; letter-spacing: 0.18em;
       background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
     #pairHint { color: var(--muted); font-size: 1rem; max-width: 30rem; }
+    /* corner plate — always on: context QR (controller for what's on this
+       screen) + big screen id + the persistent 4-digit take-control code */
+    #corner { position: fixed; left: .7rem; bottom: 2.4rem; z-index: 22;
+      display: none; align-items: center; gap: .7rem; pointer-events: none; }
+    #cornerQr { background: #fff; padding: .3rem; border-radius: 8px; opacity: .92; }
+    #cornerQr img { display: block; width: 88px; height: auto; image-rendering: pixelated; }
+    #cornerNum { font-size: 2.4rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #cornerCode { font-size: 1.2rem; font-weight: 700; letter-spacing: .2em;
+      color: var(--text); display: block; margin-top: .15rem; }
+    /* idle quick-launch buttons — anyone can play when the screen is free;
+       real <button>s so the gesture dwell-click lands on them too */
+    #idleApps { position: fixed; top: 1rem; left: 1rem; z-index: 26;
+      display: flex; gap: .6rem; }
+    #idleApps button { font: 700 1.05rem system-ui; padding: .8rem 1.2rem;
+      border-radius: 10px; border: 1px solid #155e75; cursor: pointer;
+      background: rgba(8,47,73,.85); color: #e5e7eb; }
+    #idleApps button:active { background: #155e75; }
     /* bg mode: the veil covers the stage visually but leaves panes in the
        DOM and running — audio keeps playing underneath (moving the iframe
        would reload it and kill WebAudio, so we cover, not reparent) */
@@ -100,6 +119,11 @@
   <div id="boot"><div class="spin" style="color:var(--muted);font-size:1.2rem">connecting…</div></div>
 
   <div id="idle">
+    <div id="idleApps">
+      <button data-open="/apps/jam/">▶ jam</button>
+      <button data-open="/apps/percussion/">▶ percussion</button>
+      <button data-gesture>✋ gesture</button>
+    </div>
     <div id="screenNum">?</div>
     <div id="screenLabel"></div>
   </div>
@@ -116,6 +140,10 @@
     <div class="note" id="veilNote">playing in the background</div>
   </div>
 
+  <div id="corner">
+    <div id="cornerQr"></div>
+    <div><b id="cornerNum">#?</b><span id="cornerCode"></span></div>
+  </div>
   <div id="hud"><span class="dot" id="dot"></span><span id="hudText">connecting</span></div>
   <button id="audioGate">tap for audio</button>
   <div id="toast"></div>
@@ -250,7 +278,7 @@
       p.img.onerror = p.img.onload = null;
       p.img.style.display = "none"; p.img.removeAttribute("src");
       p.frame.style.display = "none"; p.frame.src = "about:blank";
-      p.frameOk = false;
+      p.frameOk = false; p.url = "";
       clearInterval(p.imgTimer); p.imgTimer = null;
     }
 
@@ -289,7 +317,43 @@
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({
         type: "state", state,
         detail: lastDetail.slice(0, 140) + paneSummary() }));
+      renderCorner();
     }
+
+    // Persistent take-control code — minted server-side at register, shown
+    // on every state so the owner can claim/drive the screen by voice.
+    let screenCode = "";
+    // The corner QR always points at the controller surface for whatever
+    // this screen shows: gesture hand-mode -> phone wand; an /apps/ page ->
+    // the app itself (jam/percussion are their own controllers); anything
+    // else -> remote.html, a remote "blank screen" that drives this display.
+    function cornerUrl() {
+      if (gMode === "hand")
+        return location.origin + "/apps/gesture/?engine=yolo&s=" + screenNum;
+      const u = panes[0] && panes[0].url || "";
+      if (u.startsWith("/apps/")) return location.origin + u;
+      return location.origin + "/apps/vcast/remote.html?s=" + screenNum;
+    }
+    function renderCorner() {
+      const c = document.getElementById("corner");
+      if (screenNum == null) { c.style.display = "none"; return; }
+      c.style.display = "flex";
+      document.getElementById("cornerNum").textContent = "#" + screenNum;
+      document.getElementById("cornerCode").textContent = screenCode;
+      const qrEl = document.getElementById("cornerQr");
+      qrEl.innerHTML = "";
+      try {
+        const q = qrcode(0, "M"); q.addData(cornerUrl()); q.make();
+        qrEl.innerHTML = q.createImgTag(3, 4);
+      } catch (e) {}
+    }
+    document.querySelectorAll("#idleApps button").forEach((b) => {
+      b.addEventListener("click", () => {
+        const url = b.dataset.open;
+        if (url) nav(0, url);
+        else setGesture(gMode === "hand" ? "off" : "hand");
+      });
+    });
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
     function deviceLabel() {
@@ -503,6 +567,7 @@
     }
     function nav(pi, url) {
       const p = paneAt(pi), frame = p.frame;
+      p.url = url;
       paneShow(p, frame);
       let src = embedUrl(url) || mediaUrl(url);
       // bust heuristic caches for same-origin pages — a re-cast should load
@@ -651,8 +716,6 @@
       gMode = "off";
       const ov = document.getElementById("gestureOverlay");
       if (ov) ov.remove();
-      const gq = document.getElementById("gestureQr");
-      if (gq) gq.remove();
     }
     async function setGesture(mode) {
       mode = String(mode || "off").toLowerCase();
@@ -689,23 +752,8 @@
           "z-index:99;opacity:.85;pointer-events:none";
         ov.textContent = "gesture: hand";
         document.body.appendChild(ov);
-        // fire-and-forget pairing: the QR encodes the phone controller URL
-        // with THIS screen baked in (?s=N) — scan it and the phone becomes
-        // the pointer camera for this display. No config anywhere.
-        const qrEl = document.createElement("div");
-        qrEl.id = "gestureQr";
-        qrEl.style.cssText = "position:fixed;left:10px;bottom:10px;padding:8px;" +
-          "background:rgba(2,6,23,.85);border:1px solid #155e75;border-radius:10px;" +
-          "z-index:99;text-align:center;font:600 11px system-ui;color:#22d3ee;" +
-          "pointer-events:none";
-        const ctrlUrl = location.origin + "/apps/gesture/?engine=yolo&s=" + screenNum;
-        try {
-          const qr = qrcode(0, "M");
-          qr.addData(ctrlUrl); qr.make();
-          qrEl.innerHTML = qr.createImgTag(4, 6) +
-            "<div style='margin-top:5px'>scan to control<br>screen " + screenNum + "</div>";
-        } catch (e) { qrEl.textContent = ctrlUrl; }
-        document.body.appendChild(qrEl);
+        // the corner plate (renderCorner) shows the phone-controller QR —
+        // gMode === "hand" makes it encode /apps/gesture/?s=<this screen>
         showToast("gesture hand on — point to move, dwell to click, two hands to zoom");
         sendState("gesture-hand");
         return;
@@ -960,9 +1008,11 @@
       switch (msg.type) {
         case "registered":
           screenNum = msg.screen;
+          screenCode = msg.code || "";
           screenTitle = msg.label || "";
           window.__vcastScreen = screenNum; // same-origin iframes (e.g. GEV) read this to identify their screen to the gev command relay
           showIdle();
+          renderCorner();
           break;
         case "rescreen":
           // POST /screen moved the number live — keep HUD/idle/iframe view

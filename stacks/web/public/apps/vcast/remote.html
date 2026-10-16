@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>vcast remote — Chaba</title>
+<link rel="stylesheet" href="/apps/sw-theme.css">
+<style>
+  body { font-family: system-ui; background: var(--bg, #0b0e13); color: var(--text, #e5e7eb);
+    min-height: 100vh; margin: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 1.4rem; text-align: center;
+    padding: 2rem; box-sizing: border-box; }
+  #num { font-size: clamp(5rem, 22vw, 14rem); font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, var(--accent, #22d3ee), #818cf8);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #label { color: var(--muted, #94a3b8); font-size: 1.1rem; }
+  #code { font-size: 2rem; font-weight: 700; letter-spacing: .25em; }
+  #code small { display: block; font-size: .8rem; letter-spacing: .05em;
+    color: var(--muted, #94a3b8); font-weight: 500; margin-top: .3rem; }
+  #apps { display: flex; flex-wrap: wrap; gap: .7rem; justify-content: center; }
+  #apps button { font: 700 1.2rem system-ui; padding: 1rem 1.5rem;
+    border-radius: 12px; border: 1px solid #155e75; cursor: pointer;
+    background: rgba(8,47,73,.85); color: #e5e7eb; }
+  #apps button:active { background: #155e75; }
+  #state { color: var(--muted, #94a3b8); font-size: .85rem; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div id="num">#?</div>
+<div id="label">remote</div>
+<div id="code"><span id="codeDigits">····</span><small>screen claim id</small></div>
+<div id="apps">
+  <button data-url="/apps/jam/">▶ jam</button>
+  <button data-url="/apps/percussion/">▶ percussion</button>
+  <button data-gest>✋ gesture</button>
+</div>
+<div id="state"></div>
+<script>
+  // remote.html?s=N — the "blank screen" a phone gets when it scans the
+  // corner QR of an idle vcast display. Buttons drive the REAL screen over
+  // /api/input-bridge/pub — the phone is a remote, not a display.
+  const S = parseInt(new URLSearchParams(location.search).get("s") || "0", 10);
+  const API = location.origin + "/api/input-bridge";
+  const stateEl = document.getElementById("state");
+  let gestOn = false;
+
+  document.getElementById("num").textContent = "#" + (S || "?");
+
+  async function pub(msg) {
+    try {
+      const r = await fetch(API + "/pub", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ screen: S, msg }) });
+      const j = await r.json();
+      stateEl.textContent = j.delivered ? "sent" : "screen offline";
+    } catch (e) { stateEl.textContent = "bridge unreachable"; }
+  }
+
+  async function refresh() {
+    try {
+      const j = await (await fetch(API + "/displays")).json();
+      const s = (j.screens || []).find(x => x.screen === S);
+      if (!s) { stateEl.textContent = "screen not found"; return; }
+      document.getElementById("label").textContent = s.label || "";
+      document.getElementById("codeDigits").textContent = s.code || "····";
+      if (!stateEl.textContent || stateEl.textContent === "sent")
+        stateEl.textContent = (s.connected ? "" : "offline · ") +
+          (s.state || "") + (s.state_detail ? " · " + s.state_detail : "");
+      gestOn = /gesture-hand/.test(s.state || "");
+    } catch (e) {}
+  }
+
+  document.querySelectorAll("#apps button").forEach(b => {
+    b.addEventListener("click", () => {
+      if (b.dataset.url)
+        pub({ type: "nav", pane: 0, url: b.dataset.url });
+      else {
+        gestOn = !gestOn;
+        pub({ type: "gesture", mode: gestOn ? "hand" : "off" });
+      }
+    });
+  });
+
+  if (!S) stateEl.textContent = "no screen — open via the screen's QR";
+  refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>
