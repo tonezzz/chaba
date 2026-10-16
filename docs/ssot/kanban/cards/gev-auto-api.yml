@@ -1,0 +1,16 @@
+id: gev-auto-api
+title: GEV api 127.0.0.1:4173 not answering
+brief: 'An automated health check flagged: GEV api 127.0.0.1:4173 not answering. Read
+  the note, fix it, then close the card.'
+column: review
+review_kind: triage
+generated: gev-auto-health
+program: gev
+area: monitoring
+priority: high
+note: 'GET http://127.0.0.1:4173/__gev_health_probe__ failed: <urlopen error [Errno
+  111] Connection refused>'
+help: 'gods-eye-view-api (/home/tony/gods-eye-view/server.mjs) listens on 4173; Caddy
+  routes /apps/gev/api/* to it. The probe GETs a bogus path — 404 counts as alive.
+  systemctl --user status gods-eye-view-api; restart: systemctl --user restart gods-eye-view-api'
+updated: '2026-10-16'
