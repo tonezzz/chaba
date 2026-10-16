@@ -4,12 +4,14 @@ column: done
 priority: high
 created: 2026-10-10
 updated: 2026-10-16 16:59
-note: 'Verified 2026-10-10: large-v3 int8_float16 on omen GTX 1650 transcribes the Thai test clips ~2s vs 13s (medium/CPU
-  on idc03) with markedly better Thai ("ผมส่งข้อความนี้เพื่อการทดสอบระบบ Transcript ด้วยข้อความเสียง จาก Telegram"
-  vs medium''s garbled output). Build a small whisper HTTP endpoint on omen (fastapi + faster-whisper, decode via
-  ffmpeg->numpy to skip the fragile av API), run as ada-whisper.service, and point tg_relay''s transcriber at it
-  (TG_WHISPER_URL) with local small/medium as fallback when omen is down. Omen setup notes: needs nvidia-cublas-cu12
-  + nvidia-cudnn-cu12 pip pkgs and LD_LIBRARY_PATH to their lib dirs.
+note: 'Verified 2026-10-10: large-v3 int8_float16 on omen GTX 1650 transcribes the
+  Thai test clips ~2s vs 13s (medium/CPU on idc03) with markedly better Thai ("ผมส่งข้อความนี้เพื่อการทดสอบระบบ
+  Transcript ด้วยข้อความเสียง จาก Telegram" vs medium''s garbled output). Build a
+  small whisper HTTP endpoint on omen (fastapi + faster-whisper, decode via ffmpeg->numpy
+  to skip the fragile av API), run as ada-whisper.service, and point tg_relay''s transcriber
+  at it (TG_WHISPER_URL) with local small/medium as fallback when omen is down. Omen
+  setup notes: needs nvidia-cublas-cu12 + nvidia-cudnn-cu12 pip pkgs and LD_LIBRARY_PATH
+  to their lib dirs.
 
   '
 requests:
@@ -36,22 +38,29 @@ links:
 - backend/tg_relay.py
 - docs/kb/msg-lane-standard.md
 comms:
-- '2026-10-10 bench: small=garbled th, medium=~13s/clip ok-ish, large-v3 GPU=~2s clean th. medium now live as interim.'
+- at: 2026-10-10 00:00
+  from: tony
+  text: '2026-10-10 bench: small=garbled th, medium=~13s/clip ok-ish, large-v3 GPU=~2s
+    clean th. medium now live as interim.'
 - at: 2026-10-13 18:25
   from: tony
   text: 'answered approve-gpu-stt: yes'
 - at: 2026-10-13 18:25
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-14 21:05
   from: tony
-  text: 'raised request whisper-large-v3-stt-on-omen-next-action-74540e: Whisper large-v3 STT on omen — next action?'
+  text: 'raised request whisper-large-v3-stt-on-omen-next-action-74540e: Whisper large-v3
+    STT on omen — next action?'
 - at: 2026-10-14 21:24
   from: tony
-  text: 'answered whisper-large-v3-stt-on-omen-next-action-74540e: queue for dispatch ★'
+  text: 'answered whisper-large-v3-stt-on-omen-next-action-74540e: queue for dispatch
+    ★'
 - at: 2026-10-14 21:24
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-14 22:00
   from: tony
   text: queued for processing
@@ -60,11 +69,13 @@ comms:
   text: claimed
 - at: 2026-10-14 22:01
   from: chaba
-  text: started devin-task-20261014-220104-stt-endpoint-on-tony-omen-gpu- on idc02 (dispatch)
+  text: started devin-task-20261014-220104-stt-endpoint-on-tony-omen-gpu- on idc02
+    (dispatch)
 - at: 2026-10-14 22:04
   from: devin
-  text: 'dispatched on idc02: building fastapi+faster-whisper large-v3 endpoint on omen (ada-whisper.service), patching
-    tg_relay + line_relay for WHISPER_URL with local fallback'
+  text: 'dispatched on idc02: building fastapi+faster-whisper large-v3 endpoint on
+    omen (ada-whisper.service), patching tg_relay + line_relay for WHISPER_URL with
+    local fallback'
 - at: 2026-10-16 16:59
   from: tony
   text: closed by tony
