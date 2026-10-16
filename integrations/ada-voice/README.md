@@ -32,6 +32,8 @@ chaba dispatches. Eleven drops live here:
 11. correction commands self-authorize memory writes — card
     `correction-commands-die-at-the-confirm-g-05902a` (OPS-0567,
     2026-10-16)
+12. `cpt_post` — LINE save-asks route to the right chaba-boards CPT +
+    registered meta — card `line-cpt-writer-router` (OPS-0656, 2026-10-15)
 
 ---
 
@@ -890,3 +892,95 @@ uncertain facts, and for every other gated tool.
   the directive, not the gate.
 - 'I remember X' recollection vs 'remember X' order is split by the
   pronoun rule — Thai has no such ambiguity (จำไว้ is unambiguous).
+## Drop 12 — cpt_post tool (LINE saves -> the right WP CPT)
+
+Card `line-cpt-writer-router` (OPS-0656, 2026-10-15): every LINE "post
+this" ask used to land as a free-form post via wp_post. Now save-asks
+classify — receipt photo -> `expense`, "save this contact" ->
+`contact`, "remind us" -> `reminder`, "asset: X" -> `asset` — and the
+registered meta fills from what the model read off the turn (LINE
+photos arrive as real image turns, so a receipt's amount/vendor/date
+are extracted by the model, not an OCR step in the tool).
+
+### Files
+
+- `backend/tools.d/cpt_post.py` — the tool (new file, drop-in).
+- `backend/tools.d/manifest.cpt_post.yml` — manifest fragment, merge
+  under `tools:` (`policy: read`, `secondary_allowed: true`, 60s).
+- `backend/tool_guide.cpt_post.yml` — guide fragment, append to
+  `backend/tool_guide.yml`.
+- `backend/wp_client.cpt-post.patch` — `create_post` gains `slug=`
+  (deterministic slugs for the upsert kinds) and sends `tags` only when
+  non-empty (CPTs have no post_tag taxonomy).
+- `backend/tools.d/wp_post.cpt-router.patch` — wp_post description
+  reroutes structured saves to cpt_post.
+- `backend/tool_guide.cpt-router.patch` — wp_post guide entry says the
+  same (the split is the model's classification cue).
+- `ssot.tool-surface.cpt-post.patch` — adds cpt_post to
+  `coverage_debt` (unit-tested here; a live scenario would write real
+  WP records every suite run).
+- `tests/test_cpt_post.py` — ada-voice-side unit tests (path-loaded
+  like test_conv_journal.py).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/cpt_post.py
+   backend/tools.d/cpt_post.py`
+2. Merge `manifest.cpt_post.yml`'s `cpt_post:` block into
+   `backend/tools.d/manifest.yml` under `tools:`.
+3. Append `tool_guide.cpt_post.yml` to `backend/tool_guide.yml`.
+4. `for p in wp_client.cpt-post tool_guide.cpt-router \
+   ssot.tool-surface.cpt-post; do git apply
+   <chaba>/integrations/ada-voice/backend/$p.patch 2>/dev/null || \
+   git apply <chaba>/integrations/ada-voice/$p.patch; done` —
+   wp_post.cpt-router lives under backend/tools.d/:
+   `git apply <chaba>/integrations/ada-voice/backend/tools.d/wp_post.cpt-router.patch`.
+   Verified `git apply --check` clean vs origin/main @ `18c0a01`.
+5. `cp <chaba>/integrations/ada-voice/tests/test_cpt_post.py
+   tests/test_cpt_post.py`
+6. Gates: `python3 scripts/tool-lint.py` (cpt_post lands in
+   coverage_debt via the ssot patch — without it lint fails the tool
+   as an uncovered add), `.venv/bin/python -m pytest tests/ -x -q`.
+   Env is the same `wp-boards.env` wp_post uses — already present on
+   the lanes that have wp_post.
+7. Lane profiles: `cpt_post` added to `persons.tony.tools.include` +
+   `persons.kk.tools.include` in chaba ssot.apps.ada-persons.yml —
+   re-run `scripts/ada/render-tool-profiles.py` for ada-ha-tony.env /
+   ada-kk.env on idc03 (kk-parity bench profile left as-is — it has
+   drifted from persons.kk already, e.g. no wp_post).
+
+### Contract
+
+- `cpt_post(kind, title?, content?, person?, media_url?, status?,
+  <kind meta fields>)` — kind= expense|contact|reminder|asset.
+- Title is composed server-side per the wp-boards title_standard
+  ("Expense — {vendor} {date}", "Contact — {name}", ...) — the model
+  passes the raw name/fields.
+- Records default `status=private` (member login to view — the CPTs
+  are public-queryable). `status='publish'` only on explicit ask.
+- `person` resolves: explicit arg -> lane instance (kk's lane saves as
+  kk — KK is boss of kk-home) -> caller identity normalized
+  (person.kk/user-kk -> kk). Feeds `saved_by` meta.
+- Meta is filtered to the kind's registered keys; fields for other
+  kinds are ignored and reported in the result. `currency` defaults
+  THB for expense.
+- contact/asset UPSERT by slug `<kind>-<slug(name)>` (re-saving the
+  same contact updates it; Thai names get a stable hash slug).
+  expense/reminder always create — each receipt/reminder is a new
+  event.
+- Plugin-skew guard: `saved_by` needs chaba-boards >= 0.5.1; on a meta
+  400 the write retries once without meta rather than losing the
+  record (result carries `meta_written` + note).
+
+### Verified
+
+- `tests/ada/test_cpt_post_drop.py` (chaba side): 11/11 — stubbed
+  wp_client end-to-end runs + `git apply --check` of all four patches
+  on a clone of the ada-voice checkout.
+- ada-voice-side `tests/test_cpt_post.py`: 20/20 under a local venv
+  (pytest + pytest-asyncio + httpx) with real wp_client imported.
+- tools_loader loads the module+manifest cleanly (`errors: []`);
+  DECLARATION description 228 chars (< 300 lint cap).
+- NOT verified live: no REST call against boards was made from this
+  worktree — first real save is the deploy smoke (kk lane: "save this
+  contact: Honda service 02-1234567").

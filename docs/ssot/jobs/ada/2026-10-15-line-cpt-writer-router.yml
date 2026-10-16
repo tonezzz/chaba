@@ -1,0 +1,227 @@
+title: LINE saves route to the right WP CPT (not just posts)
+subtitle: New tools.d/cpt_post classifies LINE save-asks to expense/
+  contact/reminder/asset with registered meta + saved_by attribution
+icon: route
+version: 1
+
+card: line-cpt-writer-router
+date: 2026-10-15
+dispatch: 20261015-154713-line-saves-route-to-the-right-
+runner: tony-macbook
+
+planning:
+  goal: |
+    Card line-cpt-writer-router (OPS-0656): boards.surf-thailand.com has
+    chaba-boards CPTs (asset, expense, contact, reminder, bench, report,
+    xlate) but every LINE "post this" ask lands as a free-form wp_post.
+    Route save-asks to the right CPT and fill registered meta: receipt
+    photo -> expense (amount/vendor/date read in-turn), "save this
+    contact" -> contact, "remind us" -> reminder, "asset: CR-V model X"
+    -> asset w/ manual attachment. KK is boss of kk-home — her lane's
+    saves attribute to kk without her naming herself.
+  scope: |
+    ada-voice staged drop-in only (integrations/ada-voice/ — drop 11) +
+    chaba-boards plugin v0.5.1 (saved_by meta) + SSOT updates. No push,
+    no deploy from this worktree — ada-voice lands via deploy-ada.sh on
+    idc03; the plugin zip redeploys via wp-admin upload (Tony).
+    Out of scope: reminder->calendar fan-out (record only), OCR inside
+    the tool (the model reads receipt image turns directly), bench/
+    report/xlate kinds (dedicated writers exist).
+  success_criteria:
+    - kind=expense|contact|reminder|asset writes the CPT + registered
+      meta; wp_post stays the free-form path
+    - title_standard composed server-side ("Expense — {vendor} {date}")
+    - records land status=private; saved_by resolves person from the
+      lane (kk lane -> kk) or explicit person=
+    - contact/asset upsert by slug; expense/reminder always create
+    - meta writes survive plugin version skew (saved_by needs >=0.5.1)
+    - "ada-voice drop gates — tool-lint clean (coverage_debt entry),
+      unit tests green"
+  risks:
+    - Model keeps routing saves to wp_post -> mitigated by DECLARATION
+      reroute patch on wp_post + cpt_post guide text claiming the asks
+    - Live plugin is 0.3.3, repo 0.5.1 -> meta degrade-retry keeps the
+      record even if saved_by isn't registered yet
+    - Thai-only names slugify empty -> md5 slug fallback keeps the
+      upsert deterministic
+  resources:
+    - ada-voice checkout ~/CascadeProjects/ada-voice @ 41020cf
+      (origin/main 18c0a01 — patched files identical on both)
+    - integrations/wp-boards/chaba-boards.php registered-meta table
+    - wp_client.create_post already had post_type/meta plumbing
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+
+processing:
+  status: completed
+  started_at: 2026-10-15T15:55:00
+  steps:
+    - id: 1
+      label: Read card, wp_post/wp_client, tools_loader, chaba-boards meta
+      status: completed
+      notes: |
+        wp_client.create_post already takes post_type+meta — the only
+        plumbing gap was slug (upsert needs deterministic slugs; WP
+        auto-slugs strip non-ascii so Thai names need an explicit slug).
+        CPTs register no post_tag taxonomy — person attribution can't
+        ride wp_post's person tag; added saved_by meta instead.
+    - id: 2
+      label: Write tools.d/cpt_post.py + manifest + guide fragments
+      status: completed
+      notes: |
+        New tool (card help blessed "or new cpt_post tool"). kind=
+        enum routes; meta params are flat optional fields filtered to
+        the kind's registered keys (dropped args are reported back).
+        person resolves explicit -> ADA_INSTANCE_ID (kk, kk-dev->kk)
+        -> caller identity (person.kk/user-kk -> kk).
+    - id: 3
+      label: "Patches — wp_client slug, wp_post desc, tool_guide, surface"
+      status: completed
+      notes: |
+        Four patches, all `git apply --check` clean vs the checkout
+        (identical to origin/main for those paths):
+        backend/wp_client.cpt-post.patch (slug= + tags only when set),
+        backend/tools.d/wp_post.cpt-router.patch (desc reroute),
+        backend/tool_guide.cpt-router.patch (guide reroute),
+        ssot.tool-surface.cpt-post.patch (coverage_debt — a live
+        scenario would write real WP records every suite run).
+    - id: 4
+      label: Tests — ada-voice unit file + chaba drop verifier
+      status: completed
+      notes: |
+        integrations/ada-voice/tests/test_cpt_post.py: 20/20 under a
+        /tmp venv (pytest+pytest-asyncio+httpx, real wp_client).
+        tests/ada/test_cpt_post_drop.py: 11/11 — stubbed-wp end-to-end
+        runs + patch-apply gate on a clone of the ada-voice checkout.
+    - id: 5
+      label: Plugin v0.5.1 + SSOT + README
+      status: completed
+      notes: |
+        chaba-boards.php: saved_by on asset/expense/contact/reminder
+        (+ 'By' admin column), 0.5.0->0.5.1. ssot.wp-boards.yml: meta
+        lists, writers.cpt_post, version note. ssot.apps.ada-persons:
+        cpt_post into persons.tony + persons.kk include lists
+        (kk-parity bench profile left — already drifted, lacks wp_post).
+        README drop 11 with install steps.
+    - id: 6
+      label: Validate
+      status: completed
+      notes: |
+        ssot-validate-all: my files clean; found+fixed a pre-existing
+        YAML syntax error in jobs/ada/2026-10-15-wp-comment-sync.yml
+        (unquoted '+ fallback' scalar, committed ca235bc41). tools_loader
+        loads cpt_post with zero errors; DECLARATION desc 228 chars.
+  decisions:
+    - label: New tool vs extending wp_post
+      rationale: >-
+        Separate DECLARATION keeps each schema small (the fleet is on a
+        token diet) and gives the model a clean classification boundary —
+        wp_post keeps the member-posts contract; cpt_post owns structured
+        records. The card's own help text offered this shape.
+      alternatives_considered: >-
+        kind= param on wp_post — rejected: meta fields for four CPTs
+        would bloat the one schema every save-ask carries, and 'post'
+        vs record semantics differ (tags vs meta, public vs private).
+    - label: Model-side extraction, not tool-side OCR
+      rationale: >-
+        LINE photos already arrive as real image turns (send_image_turn)
+        — the model reads the receipt in-context and passes fields. An
+        in-tool vision call would double latency/cost for no accuracy
+        gain.
+      alternatives_considered: gemini_pool OCR inside cpt_post.
+    - label: status=private default
+      rationale: >-
+        Household expenses/contacts/reminders are member records, not
+        public posts — the plugin's model is private-by-status (same as
+        /chat/line/*). publish stays an explicit opt-in.
+    - label: Upsert contact/asset, create expense/reminder
+      rationale: >-
+        Entities re-save over time (a phone number changes); events are
+        each a new record. Deterministic slug + hash fallback keeps
+        Thai-named contacts upsertable.
+  changes:
+    - file: integrations/ada-voice/backend/tools.d/cpt_post.py
+      summary: New tool — kind router, meta scoping, person default, media
+    - file: integrations/ada-voice/backend/tools.d/manifest.cpt_post.yml
+      summary: manifest fragment (read policy, secondary_allowed, 60s)
+    - file: integrations/ada-voice/backend/tool_guide.cpt_post.yml
+      summary: guide fragment teaching the classification split
+    - file: integrations/ada-voice/backend/wp_client.cpt-post.patch
+      summary: create_post slug= param; tags only when non-empty
+    - file: integrations/ada-voice/backend/tools.d/wp_post.cpt-router.patch
+      summary: wp_post description points structured saves at cpt_post
+    - file: integrations/ada-voice/backend/tool_guide.cpt-router.patch
+      summary: wp_post guide entry carries the same reroute
+    - file: integrations/ada-voice/ssot.tool-surface.cpt-post.patch
+      summary: coverage_debt += cpt_post (lint gate)
+    - file: integrations/ada-voice/tests/test_cpt_post.py
+      summary: 20 unit tests (path-loaded, mocked wp_client)
+    - file: tests/ada/test_cpt_post_drop.py
+      summary: chaba-side drop verifier — 11 tests incl. patch gate
+    - file: integrations/wp-boards/chaba-boards.php
+      summary: v0.5.1 — saved_by meta + 'By' admin column on the 4 CPTs
+    - file: docs/ssot/apps/ssot.wp-boards.yml
+      summary: meta lists + writers.cpt_post + v0.5.1 note
+    - file: docs/ssot/apps/ssot.apps.ada-persons.yml
+      summary: cpt_post into persons.tony + persons.kk tool includes
+    - file: integrations/ada-voice/README.md
+      summary: Drop 11 — files, install steps, contract, verified
+    - file: docs/ssot/jobs/ada/2026-10-15-wp-comment-sync.yml
+      summary: drive-by YAML syntax fix (pre-existing validator error)
+
+followup:
+  verification:
+    - Apply drop 11 on idc03 ada-voice + deploy-ada.sh (tool-lint + suite)
+    - Redeploy chaba-boards zip (v0.5.1) via wp-admin upload
+    - Re-run render-tool-profiles.py for ada-ha-tony.env + ada-kk.env
+    - "Live smoke on kk lane LINE — 'save this contact: Honda service
+      02-123-4567' -> private contact post + meta; a receipt photo ->
+      expense with amount/vendor/date"
+  rollback_plan:
+    - Remove cpt_post from the include lists (tool disappears from the
+      lane surface); module file itself is inert without a manifest entry
+  handoff:
+    - Deploy order is flexible — the meta degrade-retry means cpt_post
+      works before OR after the plugin redeploy (saved_by lands when
+      the plugin has it)
+  deferred:
+    - reminder -> lane calendar/tasks fan-out (record-only for now)
+    - bench/report/xlate LINE saves (dedicated producers own those)
+    - kk-parity bench profile drift (missing wp_post predates this drop)
+
+report:
+  status: completed
+  completed_at: 2026-10-15T16:20:00
+  summary: |
+    Staged ada-voice drop 11: tools.d/cpt_post routes LINE save-asks to
+    the chaba-boards CPT that matches the ask and fills its registered
+    meta — wp_post keeps free-form posts (its description + guide now
+    say so). Receipt photos are read in-turn by the model; the tool
+    composes the standard title, uploads the archived photo as
+    featured_media, writes status=private, and attributes via saved_by
+    (new plugin v0.5.1 meta; degrade-retry covers older deploys).
+    contact/asset upsert by slug; expense/reminder always create.
+  metrics:
+    - ada-voice-side unit tests: 20/20
+    - chaba-side drop verifier: 11/11 (incl. git apply --check gate)
+    - DECLARATION description: 228 chars (cap 300)
+    - tool surface after merge: 55 declared / cap 112
+  links:
+    - title: Card
+      file: docs/ssot/kanban/cards/line-cpt-writer-router.yml
+    - title: Drop README
+      file: integrations/ada-voice/README.md
+  kb_review:
+    - CPTs register no post_tag taxonomy — person attribution needs a
+      meta key (saved_by), not wp_post's person tag
+    - WP auto-slugs strip non-ascii — Thai-named records need an
+      explicit slug (or hash fallback) for deterministic upsert
+  lessons_learned:
+    - "Deploy-order independence is worth ~15 lines — the meta degrade
+      retry means the tool is correct against plugin 0.3.3 AND 0.5.1."
+
+config:
+  version: 1
+  created_at: 2026-10-15
+  last_updated: 2026-10-15
+  maintainer: devin

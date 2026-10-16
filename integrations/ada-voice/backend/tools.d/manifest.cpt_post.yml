@@ -1,0 +1,17 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# cpt_post (2026-10-15, chaba card line-cpt-writer-router): LINE
+# "save this" asks route to the right chaba-boards CPT + registered meta
+# instead of stacking free-form posts — receipt photo -> expense,
+# "save this contact" -> contact, "remind us" -> reminder,
+# "asset: X" -> asset. Records land status=private (member-only).
+# read policy + secondary_allowed like wp_post: the write is a
+# member-visible record on their own board, reversible, and members
+# save for their household. 60s — media upload + 1-2 REST calls.
+tools:
+  cpt_post:
+    module: cpt_post
+    policy: read
+    secondary_allowed: true
+    timeout_s: 60
