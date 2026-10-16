@@ -15,4 +15,13 @@ Description=Pull nightly MDDB backup from idc03 -> refresh tony-dell standby db
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/bash -c 'rsync -az --timeout=60 --include="mddb-2*.db" --exclude="*" idc03:mddb-backups/ %h/.local/share/mddb-backups/filecopy/ && latest=$(ls -t %h/.local/share/mddb-backups/filecopy/mddb-2*.db 2>/dev/null | head -n1) && test -n "$latest" && { systemctl --user is-active --quiet mddb.service || podman unshare cp "$latest" %h/.config/containers/mddb/data/mddb.db; } && ls -t %h/.local/share/mddb-backups/filecopy/mddb-2*.db | tail -n +2 | xargs -r -I{} rclone move {} gdrive:backups/mddb/ --transfers=1'
+# 2026-10-16 fix: producer on idc03 now writes mddb-filecopy-mddb-*.db so
+# the old mddb-2*.db glob pulled nothing since ~Oct 7 (standby 10d stale);
+# the rclone offload sat behind `podman unshare cp`, so a wedged podman
+# starved the gdrive leg and local copies piled up; and a sync-all pull
+# re-downloaded already-offloaded snapshots oldest-first into a nearly
+# full disk. Now: pull only the NEWEST remote snapshot (standby refresh
+# only needs the latest; older dailies reach gdrive via the offload leg),
+# standby refresh is best-effort-but-logged, offload always runs, and the
+# unit still exits non-zero when the pull leg failed.
+ExecStart=/usr/bin/bash -c 'rc=0; newest=$(ssh -o ConnectTimeout=15 -o BatchMode=yes idc03 "ls -t ~/mddb-backups/mddb*.db 2>/dev/null | head -n1") || rc=$?; if [ -n "$newest" ]; then rsync -az --timeout=300 "idc03:$newest" %h/.local/share/mddb-backups/filecopy/ || rc=$?; fi; latest=$(ls -t %h/.local/share/mddb-backups/filecopy/mddb*.db 2>/dev/null | head -n1); if [ -n "$latest" ] && ! systemctl --user is-active --quiet mddb.service; then podman unshare cp "$latest" %h/.config/containers/mddb/data/mddb.db || echo "standby db refresh failed" >&2; fi; ls -t %h/.local/share/mddb-backups/filecopy/mddb*.db | tail -n +2 | xargs -r -I{} rclone move {} gdrive:backups/mddb/ --transfers=1; exit $rc'
