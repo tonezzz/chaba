@@ -226,7 +226,7 @@ function connectWs() {
 // that screen — one relay, no gesture-live dependency.
 let vWs = null, vOpen = false;
 function connectVcast() {
-  if (ENGINE === 'yolo') return;   // yolo mode is frames-only, no ws sink
+  // hum msgs ride this room even in yolo mode — voice isn't a frame
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   try { vWs = new WebSocket(`${proto}//${location.host}/api/input-bridge/ws`); }
   catch (e) { setTimeout(connectVcast, 5000); return; }
@@ -702,6 +702,7 @@ async function humStart(btn) {
     const r = humFrame(buf, hCtx.sampleRate);
     if (r.f > 0) {
       send({ type: 'hum', f: Math.round(r.f * 10) / 10, a: r.a });
+      if (!wasVoiced) ctlPost('hum-voiced', `f=${Math.round(r.f)}`);
       wasVoiced = true;
       btn.textContent = '🎷 ' + Math.round(r.f) + ' Hz';
     } else if (wasVoiced) {
