@@ -45,7 +45,7 @@ PAGE = r"""<!doctype html>
     html { font-size: 18px; }
     .bg-bg { background-color: #1a1a2e; }
     .bg-card { background-color: #16213e; }
-    .badge { font-size:10px; padding:1px 5px; border-radius:4px; white-space:nowrap; }
+    .badge { font-size:11px; padding:1px 5px; border-radius:4px; white-space:nowrap; }
     #ny-body { max-height:34vh; overflow-y:auto; }
     #live-dot.tick { animation:dotblip .8s ease-out; }
     @keyframes dotblip { 0%{transform:scale(1.8);} 100%{transform:scale(1);} }
@@ -72,13 +72,13 @@ PAGE = r"""<!doctype html>
             padding:5px 7px; margin-bottom:5px; }
     .card:hover { background:#22315a; }
     .card.dragging { opacity:.4; }
-    .card .ttl { font-size:12.5px; line-height:1.25; }
+    .card .ttl { font-size:14.5px; line-height:1.3; }
     .card .meta { display:flex; align-items:center; gap:4px; margin-top:3px; flex-wrap:wrap; }
-    .card .brief-line { display:none; font-size:11px; color:#94a3b8; margin-top:2px;
+    .card .brief-line { display:none; font-size:12px; color:#94a3b8; margin-top:2px;
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     /* compact: title + affordance chips only */
     #board.d-compact .card { padding:3px 6px; margin-bottom:3px; }
-    #board.d-compact .card .ttl { font-size:11.5px; }
+    #board.d-compact .card .ttl { font-size:13px; }
     #board.d-compact .card .meta { margin-top:1px; }
     #board.d-compact .card .chip-extra { display:none; }
     /* full: adds the brief first line */
