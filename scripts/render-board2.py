@@ -45,7 +45,7 @@ PAGE = r"""<!doctype html>
     html { font-size: 18px; }
     .bg-bg { background-color: #1a1a2e; }
     .bg-card { background-color: #16213e; }
-    .badge { font-size:11px; padding:1px 5px; border-radius:4px; white-space:nowrap; }
+    .badge { font-size:12px; padding:1px 5px; border-radius:4px; white-space:nowrap; }
     #ny-body { max-height:34vh; overflow-y:auto; }
     #live-dot.tick { animation:dotblip .8s ease-out; }
     @keyframes dotblip { 0%{transform:scale(1.8);} 100%{transform:scale(1);} }
@@ -72,13 +72,13 @@ PAGE = r"""<!doctype html>
             padding:5px 7px; margin-bottom:5px; }
     .card:hover { background:#22315a; }
     .card.dragging { opacity:.4; }
-    .card .ttl { font-size:14.5px; line-height:1.3; }
+    .card .ttl { font-size:16px; line-height:1.3; }
     .card .meta { display:flex; align-items:center; gap:4px; margin-top:3px; flex-wrap:wrap; }
-    .card .brief-line { display:none; font-size:12px; color:#94a3b8; margin-top:2px;
+    .card .brief-line { display:none; font-size:13px; color:#94a3b8; margin-top:2px;
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     /* compact: title + affordance chips only */
     #board.d-compact .card { padding:3px 6px; margin-bottom:3px; }
-    #board.d-compact .card .ttl { font-size:13px; }
+    #board.d-compact .card .ttl { font-size:14px; }
     #board.d-compact .card .meta { margin-top:1px; }
     #board.d-compact .card .chip-extra { display:none; }
     /* full: adds the brief first line */
@@ -101,6 +101,12 @@ PAGE = r"""<!doctype html>
                 justify-content:center; }
     .zoom-btn:hover { background:#31427a; }
     #density-lbl { font-size:10px; color:#64748b; min-width:52px; text-align:center; }
+    #colmenu { position:absolute; top:44px; z-index:70; display:none; background:#16213e;
+               border:1px solid #2f3f6b; border-radius:8px; padding:6px 10px; min-width:130px; }
+    #colmenu.open { display:block; }
+    #colmenu label { display:flex; align-items:center; gap:7px; font-size:12px;
+                     color:#cbd5e1; padding:3px 0; cursor:pointer; white-space:nowrap; }
+    #colmenu input { accent-color:#0a84ff; }
     #ticker { position:fixed;left:0;right:0;bottom:0;height:26px;z-index:40;display:flex;align-items:center;background:#0d1b3a;border-top:1px solid #274a8c; }
     .tk-label { font-size:10px;color:#7dd3fc;letter-spacing:1px;padding:0 10px;border-right:1px solid #274a8c;white-space:nowrap; }
     .tk-view { flex:1;overflow:hidden; }
@@ -130,6 +136,10 @@ PAGE = r"""<!doctype html>
       <button id="z-out" class="zoom-btn" title="zoom out (denser)">&minus;</button>
       <span id="density-lbl">normal</span>
       <button id="z-in" class="zoom-btn" title="zoom in (roomier)">+</button>
+    </div>
+    <div class="relative">
+      <button id="cols-btn" class="zoom-btn" title="show/hide columns" style="width:auto;padding:0 8px;font-size:12px">▦ columns</button>
+      <div id="colmenu"></div>
     </div>
     <div class="ml-auto flex items-center gap-2">
       <span id="ny-pill" class="badge bg-amber-800/70 text-amber-100 px-2 py-0.5 rounded cursor-pointer hidden"></span>
@@ -275,9 +285,25 @@ function colHtml(col) {
     `<div class="col-list">${inner}</div></div>`;
 }
 
+// column visibility — hiddenCols persisted in localStorage; the board
+// never lets the last visible column be hidden (the menu is the only way
+// back, and it must stay reachable)
+const hiddenCols = new Set(
+  JSON.parse(localStorage.getItem('b2-cols') || '[]'));
+function saveCols() {
+  localStorage.setItem('b2-cols', JSON.stringify([...hiddenCols]));
+}
+function renderColMenu() {
+  document.getElementById('colmenu').innerHTML = COLS.map(c =>
+    `<label><input type="checkbox" data-col="${c.id}"${hiddenCols.has(c.id) ? '' : ' checked'}> ${esc(c.title)}</label>`
+  ).join('');
+}
+
 function renderBoard() {
   if (document.getElementById('q').value !== q) document.getElementById('q').value = q;
-  document.getElementById('board').innerHTML = COLS.map(colHtml).join('');
+  const visCols = COLS.filter(c => !hiddenCols.has(c.id));
+  document.getElementById('board').innerHTML = visCols.map(colHtml).join('')
+    || '<div class="text-slate-500 text-sm p-4 italic">all columns hidden — use the ▦ columns menu</div>';
   // ny pill — total open decisions across all cards
   let ny = 0; for (const c of (DATA ? DATA.cards : [])) ny += needYou(c);
   const el = document.getElementById('ny-pill');
@@ -650,6 +676,31 @@ function zoom(dir) {
 }
 document.getElementById('z-out').onclick = () => zoom(-1);
 document.getElementById('z-in').onclick = () => zoom(1);
+
+// columns menu: toggle the dropdown; checkboxes flip hiddenCols and rerender
+const colMenu = document.getElementById('colmenu');
+document.getElementById('cols-btn').onclick = (e) => {
+  e.stopPropagation();
+  renderColMenu();
+  colMenu.classList.toggle('open');
+};
+document.addEventListener('click', (e) => {
+  if (!colMenu.contains(e.target)) colMenu.classList.remove('open');
+});
+colMenu.addEventListener('change', (e) => {
+  const id = e.target.dataset.col;
+  if (!id) return;
+  if (e.target.checked) {
+    hiddenCols.delete(id);
+  } else if (COLS.length - hiddenCols.size > 1) {
+    hiddenCols.add(id);
+  } else {
+    e.target.checked = true;  // keep ≥1 column visible
+    return;
+  }
+  saveCols();
+  renderBoard();
+});
 
 document.getElementById('q').oninput = (e) => {
   q = e.target.value;
