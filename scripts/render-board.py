@@ -296,6 +296,7 @@ def main():
     <span class="font-semibold i18n" data-en="Board" data-th="บอร์ด">Board</span>
     <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400" title="live"></span>
     <div class="ml-auto flex items-center gap-1">
+      <a href="/apps/board2/" class="text-xs px-2 py-1 rounded text-sky-400 hover:text-sky-300">board2 &rarr;</a>
       <button id="lang-en" class="text-xs px-2 py-1 rounded">EN</button>
       <button id="lang-th" class="text-xs px-2 py-1 rounded">ไทย</button>
     </div>
