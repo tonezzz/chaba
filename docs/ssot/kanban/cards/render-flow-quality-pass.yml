@@ -1,7 +1,7 @@
 id: render-flow-quality-pass
 title: Render flow quality pass — vision self-check, iterate-on-last, multi-ref, aspect intent
-column: review
-updated: 2026-10-16 05:16
+column: done
+updated: 2026-10-16 18:24
 priority: medium
 tags:
 - ada
@@ -140,6 +140,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261015-155419-from-tony-2026-10-14-what-else,
     branch dispatch/20261015-155419-from-tony-2026-10-14-what-else'
+- at: 2026-10-16 18:24
+  from: devin
+  text: '[sweep] the Oct-15 macbook dispatch never pushed (OPS-0682 cred gap) and its worktree was GCd — but the
+    commit survived in the object store. Merged 387fdc7 onto main (df25702): render_state last-render memory, ref_url=last,
+    vision self-check, 429-vs-quota split. 72 render tests green on idc03.'
+- at: 2026-10-16 18:24
+  from: tony
+  text: closed by tony
 requests:
 - id: which-quality-item-to-build-first-dc5d96
   ask: Which quality item to build first?
@@ -193,4 +201,3 @@ action:
     Consumed 3min 50.562s CPU time over 33min 256ms wall clock time, 1.2G memory peak.'
 review_kind: verify
 claim: {}
-awaiting_action: true
