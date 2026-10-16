@@ -110,7 +110,46 @@ const YOLO_UPLINK_MS = 300;              // ~3.3fps — pointer cadence
 // ?s=N — which vcast screen this phone drives. The uplink token carries
 // it (gesture-N) so the yolo service's vcast:auto sink can route the
 // pointer to the right screen; bare 'gesture' defaults to screen 1.
-const UPLINK_TOKEN = QS.get('s') ? 'gesture-' + QS.get('s') : 'gesture';
+const TARGET_SCREEN = QS.get('s') || '1';
+const UPLINK_TOKEN = 'gesture-' + TARGET_SCREEN;
+if (!QS.get('s')) { /* bare URL still uplinks 'gesture-1' */ }
+
+/* --- remote-control channel — same mechanic as vcast displays ---------
+   Joins the bridge 'gesture-ctl' room so ops can push commands without
+   touching the phone: POST /pub {room:"gesture-ctl", msg:{...}}.
+     {type:"reload"}            -> cache-busted reload (clears stale SW)
+     {type:"reload", s:N}       -> only controllers targeting screen N
+     {type:"ping"}              -> controller POSTs a status entry
+   Status lives in the screen-99 bucket (GET /frame?screen=99&meta=1) so
+   it never collides with the screen-0 frame channel the yolo reads. */
+let ctlWs = null;
+function ctlPost(st, detail, error) {
+  fetch('/api/input-bridge/frame', { method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ screen: 99, token: 'gesture-status-' + TARGET_SCREEN,
+      state: st, detail, error }) }).catch(() => {});
+}
+function ctlConnect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  try { ctlWs = new WebSocket(`${proto}//${location.host}/api/input-bridge/ws`); }
+  catch (e) { setTimeout(ctlConnect, 5000); return; }
+  ctlWs.onopen = () => {
+    ctlWs.send(JSON.stringify({ type: 'join', room: 'gesture-ctl' }));
+    ctlPost('ctl-joined', `target=${TARGET_SCREEN} ua=${navigator.userAgent.slice(0, 100)}`);
+  };
+  ctlWs.onmessage = (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch { return; }
+    if (!m || (m.s !== undefined && String(m.s) !== TARGET_SCREEN)) return;
+    if (m.type === 'reload') {
+      const u = new URL(location.href); u.searchParams.set('_r', Date.now());
+      location.replace(u);
+    } else if (m.type === 'ping') {
+      ctlPost('pong', `up=${upOk} err=${upErr} cam=${stream ? 'on' : 'off'}`);
+    }
+  };
+  ctlWs.onclose = () => setTimeout(ctlConnect, 5000);
+}
+ctlConnect();
 
 let FilesetResolver, HandLandmarker, FaceLandmarker, PoseLandmarker;
 if (ENGINE !== 'yolo') {
@@ -204,6 +243,7 @@ async function startCamera() {
   await video.play();
   if (ENGINE === 'yolo') {
     status('yolo: frames → bridge', 'ok');
+    ctlPost('uplink-on', 'cam started');
     requestAnimationFrame(yoloLoop);
     return;
   }
@@ -237,7 +277,8 @@ function yoloLoop() {
   fetch('/api/input-bridge/frame', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ screen: 0, token: UPLINK_TOKEN,
-      state: 'gesture-uplink', data: c.toDataURL('image/jpeg', 0.6) }),
+      state: 'gesture-uplink', detail: `up ${upOk}${upErr ? ' err ' + upErr : ''} t=${TARGET_SCREEN}`,
+      data: c.toDataURL('image/jpeg', 0.6) }),
   }).then(r => { r.ok ? upOk++ : upErr++; }).catch(() => upErr++);
 }
 
@@ -447,7 +488,10 @@ function renderStatus() {
   if (!landmarker) return status('loading hand model…', 'warn');
   status(wsOpen ? 'tracking · relay connected' : 'tracking · relay OFFLINE (retrying)', wsOpen ? 'ok' : 'err');
 }
-$('btn-start').onclick = () => startCamera().catch(e => status('camera/model: ' + e.message, 'err'));
+$('btn-start').onclick = () => startCamera().catch(e => {
+  status('camera/model: ' + e.message, 'err');
+  ctlPost('gesture-error', String(e.name || e), e.message);
+});
 $('btn-flip').onclick = e => {
   flipX = !flipX;
   e.target.textContent = 'Mirror X: ' + (flipX ? 'on' : 'off');
