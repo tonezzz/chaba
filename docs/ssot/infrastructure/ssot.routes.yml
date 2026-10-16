@@ -54,8 +54,9 @@ edges:
   # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
   # mn-ha.surf-thailand.com edge (idc02 caddy): Michael's HA —
   #   reverse_proxy -> http://michael-ha.taila0626a.ts.net:8123
-  #   renamed 2026-10-16 from michael-ha.surf-thailand.com (block kept serving;
-  #   flip to redirect once mn-ha's CF Access app exists + bookmarks migrate)
+  #   renamed 2026-10-16 from michael-ha.surf-thailand.com; old name is now a
+  #   301 -> mn-ha (both gated by their own CF Access apps — mn-ha app
+  #   0e0e65e0, policies tony + tony-gmail, 720h session, like michael-ha's)
   # tony-ha.surf-thailand.com edge (idc02 caddy): Chaba AI dashboard tabs
   #   redir /chatui -> /chatui/chat.html ; redir /cms -> /cms/
   #   handle_path /chatui* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
