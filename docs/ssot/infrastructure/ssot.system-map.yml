@@ -1,0 +1,173 @@
+schema: 1
+title: Chaba system map — layered view (homes -> personas -> plumbing -> keys -> data)
+created: '2026-10-16'
+maintainer: tony
+status: active
+purpose: >-
+  Tony's mental model of the whole platform, written down: every home
+  (HA instance) is a base layer; each home has one voice persona; the
+  plumbing layer carries traffic between them; the key layer lists which
+  credential each service holds (detail lives in ssot.secrets.yml —
+  this file references credential ids, never values). Lanes:
+  tony-ha | mn-ha | kk-ha | ada-ha | michael-dev | dev | infra | shared.
+
+# ---------------------------------------------------------------------------
+# LAYER 1 — Home Assistant WebUI (the base; one per household)
+# ---------------------------------------------------------------------------
+homes:
+  - id: tony-ha
+    label: Tony's house
+    host: tony-dell
+    ha_url: https://tony-dell.taila0626a.ts.net:8123
+    public_url: https://tony-ha.surf-thailand.com   # CF Access app 70aa9fe3
+    voice_backend: ada-ha-tony
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.instances.yml
+  - id: mn-ha
+    label: Michael's house
+    host: michael-ha                 # HAOS appliance (aarch64)
+    ha_url: http://michael-ha:8123/
+    nabu_casa: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    public_url: https://mn-ha.surf-thailand.com   # CF Access app 0e0e65e0; renamed from michael-ha.surf-thailand.com 2026-10-16
+    voice_backend: ada-ha-michael
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.yml
+  - id: kk-ha
+    label: Kaewta's member node
+    host: idc03
+    ha_url: https://idc03.taila0626a.ts.net:8126
+    public_url: https://kk-ha.surf-thailand.com   # CF Access app 4e806482
+    voice_backend: ada-kk
+  - id: ada-ha
+    label: Ada lab persona home
+    host: ada-ha
+    ha_url: https://ada-ha.taila0626a.ts.net:8125
+    public_url: https://ada-ha.surf-thailand.com   # CF Access app 775374be
+    voice_backend: null              # lab; ada-dev rides it
+  - id: michael-dev
+    label: Michael dev twin
+    host: idc03
+    ha_url: https://idc03.taila0626a.ts.net:8124
+    public_url: null                 # tailnet-only by decision 2026-10-07
+    voice_backend: null
+
+# ---------------------------------------------------------------------------
+# LAYER 2 — Voice personas (one backend per home; ada-voice on idc03)
+# ---------------------------------------------------------------------------
+personas:
+  - id: chaba-ai
+    label: Chaba — Tony's household persona
+    unit: ada-ha-tony.service
+    host: idc03
+    listen: 127.0.0.1:8002
+    tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-tony
+    home: tony-ha
+    keys: [gemini-tony-paid, litellm-vkey-chaba, ha-tony-token-svc-ada, ada-device-keys]
+  - id: kraut-ai
+    label: Kraut — Michael's household persona (name TBC by Tony)
+    unit: ada-ha-michael.service
+    host: idc03
+    listen: 127.0.0.1:8003
+    tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-michael
+    home: mn-ha
+    keys: [gemini-ada-lane-paid, litellm-vkey-michael, ha-michael-live-token, ada-device-keys]
+    note: Gemini key is currently FREE-tier (…VPnw, rotated 2026-10-15) —
+      bump to a paid key minted under Michael's billing when that lands.
+  - id: kaewta-ai
+    label: Kaewta — KK's household persona
+    unit: ada-kk.service
+    host: idc03
+    listen: 127.0.0.1:8007
+    tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-kk
+    home: kk-ha
+    keys: [gemini-ada-kk, litellm-vkey-kk, ada-device-keys]
+  - id: ada-ai
+    label: Ada — lab/dev persona
+    unit: ada-dev.service
+    host: idc03
+    listen: 127.0.0.1:8005
+    tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-dev
+    home: ada-ha
+    keys: [gemini-ada, litellm-vkey-bench]
+  - id: ada-pi-pwa
+    label: PWA/guest surface (voice+chat, member keys)
+    unit: ada-pi-pwa.service
+    host: idc03
+    listen: 127.0.0.1:8001
+    tailnet: https://idc03.taila0626a.ts.net/
+    home: tony-ha                    # shares tony identity for now
+    keys: [gemini-tony-paid, litellm-vkey-chaba, ada-device-keys]
+
+# ---------------------------------------------------------------------------
+# LAYER 3 — Edge & messaging plumbing (how traffic reaches personas)
+# ---------------------------------------------------------------------------
+edges:
+  - id: caddy-edge-idc02
+    role: public edge — *-ha.surf-thailand.com + monitor + board hosts
+    host: idc02
+    config: ~/.config/caddy/Caddyfile  # hand-maintained; blocks per host
+    gate: cloudflare-access            # one self-hosted app per hostname
+  - id: caddy-edge-idc03
+    role: api.surf-thailand.com — LINE/TG webhooks, PWA redeem, ada-ws
+    host: idc03
+  - id: ada-line-relay
+    role: LINE webhook + push; group-pinned lanes (C4fb0ce…=chaba, C8220…=kaewta)
+    unit: ada-line-relay.service
+    host: idc03
+    keys: [line-relay-channel]
+  - id: ada-tg-relay
+    role: Telegram relay — tony lane
+    unit: ada-tg-relay.service
+    host: idc03
+  - id: ada-tg-relay-kk
+    role: Telegram relay — kk-ha lane (kk_ha_bot)
+    unit: ada-tg-relay-kk.service
+    host: idc03
+  - id: litellm-gateway
+    role: REST/embedding LLM gateway — per-lane virtual keys, budget caps
+    host: idc03
+    listen: 100.102.134.91:4000
+    upstream_key: gemini-ada-paid      # all vkey traffic bills here (pooled)
+  - id: cloudflare
+    role: DNS (cfat_ on idc01/02/03) + Access (cfut_ on tony-omen/tony-dell)
+    note: two tokens, different scopes — ssot.secrets.yml cloudflare-* entries
+
+# ---------------------------------------------------------------------------
+# LAYER 4 — Keys & secrets (per-lane: Live key + REST vkey + HA token + key pool)
+# Detail = ssot.secrets.yml credential ids below; fingerprints come from the
+# live scanner (scripts/secret-inventory.py, ada-pi), never stored here.
+# ---------------------------------------------------------------------------
+lane_keys:
+  per_home: [GEMINI_API_KEY, ADA_GEMINI_REST_API_KEY, HOME_ASSISTANT_TOKEN, ADA_API_KEYS]
+  infra_only:
+    - gemini-ada-paid        # LiteLLM upstream + mddb-gemini
+    - openrouter-ada-safety  # OR fallback ($10 cap)
+    - cloudflare-cfat        # DNS
+    - cloudflare-cfut        # Access + Workers
+    - mddb-mcp-api-key
+    - mddb-replication-secret
+    - backup-age
+    - secrets-console-key
+    - github-pat
+    - postgres-mcp
+
+# ---------------------------------------------------------------------------
+# LAYER 5 — Data & ops
+# ---------------------------------------------------------------------------
+data:
+  - id: mddb
+    role: memory banks + ada-cms-pages content store
+    host: idc03 (leader), idc01/idc02 followers
+  - id: spend-ledger
+    role: usage.jsonl + lane budgets (lane_budget.py) + daily-ledger.py
+    note: shared ledger — untagged rows count toward every lane (known
+      overcount, carded under ADA-0631 follow-ups)
+  - id: secrets-backup
+    role: age-encrypted tarballs — idc03 daily + secrets-collect weekly
+  - id: kanban
+    role: board-api on tony-dell :8787 + cards.json render on web edge
+
+notes:
+  - "mn-ha renamed from michael-ha 2026-10-16 — old name 301s, both Access-gated."
+  - "Persona display names (chaba-ai / kraut-ai / kaewta-ai / ada-ai) are Tony's
+    vocabulary — confirm kraut-ai before it lands in docs/UI."
+  - "kk-ha has no dedicated HA WebUI of its own here — its lane is the member
+    node on idc03:8126 behind the kk-ha hostname."
