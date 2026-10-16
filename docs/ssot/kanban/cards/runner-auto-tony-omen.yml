@@ -7,16 +7,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: chaba clone 669 commits behind origin/master (limit 200). Info: chaba
-  origin is fetch-only (by design — no push creds); merge-sweep salvage path verified;
-  no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view
-  checkout — host can''t take action.repo=gods-eye-view cards; dispatch_repos copy
-  differs from repo (sha 9223d29cbd4846a5 vs fde8ecde6e678b5a) — functional attrs
-  present; devin: /home/tony/.local/bin/devin (devin 3000.11.92 (7f4e64980e22)).'
+note: 'Failing: probe failed: Command ''[''ssh'', ''-o'', ''BatchMode=yes'', ''-o'',
+  ''ConnectTimeout=8'', ''tony-omen'', ''python3'', ''-'']'' timed out after 120 seconds.'
 help: 'Per-check fixes:
 
-  - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale
-  clones crash runner-agent on missing dispatch_repos helpers (idc01, 860 behind).'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
+  Check tailscale + sshd + the key on the host.'
 updated: '2026-10-14'
 review_kind: triage
 action:
