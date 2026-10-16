@@ -137,7 +137,7 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 
 - tony-ha: `https://tony-dell.taila0626a.ts.net:8123` (tailnet only — HA binds loopback; no LAN/plain-HTTP access)
 - michael-dev: `https://idc03.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated to idc03 2026-10-09; `127.0.0.1:8124` refers to that host)
-- michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
+- michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/` / public `https://mn-ha.surf-thailand.com` (renamed from michael-ha.surf-thailand.com 2026-10-16)
 - tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
 
 ## Token files

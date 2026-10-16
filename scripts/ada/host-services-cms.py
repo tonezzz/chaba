@@ -68,8 +68,8 @@ HOST_META = {
                    "ip": "100.106.196.22"},
     "michael-ha": {"role": "HAOS appliance", "ts": "michael-ha.taila0626a.ts.net",
                    "ip": "100.80.105.88", "jump": "tony-omen",
-                   "urls": [("michael-ha", "https://michael-ha.surf-thailand.com",
-                             "CF Access")],
+                   "urls": [("mn-ha", "https://mn-ha.surf-thailand.com",
+                             "CF Access — renamed from michael-ha 2026-10-16")],
                    "unreachable_body": (
                        "## Last known layout\n\n"
                        "- Home Assistant OS — services are HA core + supervisor-\n"
@@ -78,8 +78,8 @@ HOST_META = {
                        "  solar/inverter/weather integrations)\n"
                        "- Nabu Casa UI: `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs."
                        "ui.nabu.casa/`\n"
-                       "- Public: [michael-ha.surf-thailand.com]"
-                       "(https://michael-ha.surf-thailand.com) (CF Access)\n"
+                       "- Public: [mn-ha.surf-thailand.com]"
+                       "(https://mn-ha.surf-thailand.com) (CF Access)\n"
                        "- Consumed by: `ada-ha-michael` on idc03 (:8003),\n"
                        "  `mha-state-push` / `michael-ha-mcp-tunnel` on tony-dell\n"
                        "- Normally probed via the tony-omen ssh hop (jump host)\n"
