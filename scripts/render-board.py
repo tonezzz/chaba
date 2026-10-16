@@ -188,7 +188,7 @@ def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
 
     # deploy + verify — comms heuristics (verify mirrors isVerified);
     # both give way to pipeline.verify goal chips when those exist
-    comms = c.get("comms") or []
+    comms = [m for m in (c.get("comms") or []) if isinstance(m, dict)]
     if not vgoals:
         dep = next((m.get("text", "") for m in comms
                     if _DEPLOY_PY.search(m.get("text") or "")), None)
