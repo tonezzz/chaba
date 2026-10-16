@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="cache-control" content="no-store">
+<title>Gesture — reset workers</title>
+<style>
+  body { background:#05070a; color:#e5e7eb; font:15px ui-monospace,Menlo,monospace;
+         margin:0; padding:24px; line-height:1.6; }
+  h1 { color:#22d3ee; font-size:16px; }
+  .ok { color:#4ade80; } .dim { color:#64748b; }
+</style>
+</head>
+<body>
+<h1>SERVICE WORKER RESET</h1>
+<pre id="o" class="dim">clearing…</pre>
+<script>
+// Un-wedge page for the stale /apps/ caching worker (Oct-4 incident class):
+// a device still controlled by the dead worker gets stale HTML + broken
+// fetches on every /apps/ page — and the fix can't ship because the page
+// carrying it is what's cached. This URL was never cached, so it loads
+// fresh, unregisters every worker and deletes every cache for the origin.
+// After it reports done, all pages load clean.
+(async () => {
+  const o = document.getElementById('o');
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) await r.unregister();
+    const names = await caches.keys();
+    for (const n of names) await caches.delete(n);
+    o.className = 'ok';
+    o.textContent = `done — removed ${regs.length} worker(s), ${names.length} cache(s).\n\nNow rescan the QR (or open the gesture page again).`;
+  } catch (e) {
+    o.textContent = 'error: ' + e + '\n\nFallback: Settings → Safari → Advanced → Website Data → remove this site.';
+  }
+})();
+</script>
+</body>
+</html>

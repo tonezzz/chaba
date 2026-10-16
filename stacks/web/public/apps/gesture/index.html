@@ -7,6 +7,19 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#05070a">
 <title>Gesture Controller — Chaba</title>
+<script>
+// SW hygiene (Oct-16, iPhone wedge): a device still controlled by the
+// pre-Oct-4 apps-v* caching worker gets stale HTML + dead fetches. Force
+// an update check NOW and reload once when the healthy worker claims us —
+// so this load is the last one a legacy worker can serve. If even this
+// page can't load fresh, /apps/gesture/reset.html is the manual un-wedge.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/sw.js')
+    .then(r => r.update()).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange',
+    () => location.reload());
+}
+</script>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
