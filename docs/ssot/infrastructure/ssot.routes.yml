@@ -116,7 +116,7 @@ routes:
   # idc03 usage-feed.py pushes aggregate JSON into the idc02 caddy-edge
   # webroot (/data/www/feeds/); edge serves it under a bearer gate so the
   # boards-WP Plesk worker can pull it. Aggregates only — public edge.
-  - {id: usage-feed,       kind: static, path: /feeds/usage.json,      edges: [vps-public], owner: chaba, public_host: monitor.surf-thailand.com, auth: bearer-token, note: "Caddyfile idc02: @ok header Authorization 'Bearer <CHABA_USAGE_FEED_TOKEN>' else 403; file_server root /data/www"}
+  - {id: usage-feed,       kind: static, path: /feeds/usage.json,      edges: [vps-public], owner: chaba, public_host: surf-thailand.com, auth: bearer-token, note: "Caddyfile idc02: @ok header Authorization 'Bearer <CHABA_USAGE_FEED_TOKEN>' else 403; file_server root /data/www. LIVE 2026-10-15 — apex chosen because monitor.* rides CF Access (302 login on every path); verified 403 anon / 200 bearer"}
   - {id: jev-bench,        kind: static, path: /apps/jev-bench/*,      owner: chaba, headers: {Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Embedder-Policy: require-corp, Cross-Origin-Resource-Policy: cross-origin, Cache-Control: "public, max-age=86400"}}
   - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        strip: /apps/gev-cmd, upstream: "127.0.0.1:8790", owner: gev}
   - {id: gev-api,          kind: proxy,  path: /apps/gev/api/*,        upstream: "127.0.0.1:4173", owner: gev}

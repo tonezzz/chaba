@@ -6,7 +6,42 @@ version: 1
 card: wp-usage-pull-render-plesk-worker   # OPS-0661
 date: 2026-10-15
 dispatch: 20261015-102327-usage-timeline-as-plesk-pull-r
-status: code-ready-pending-infra-setup
+status: deployed-pending-plesk-panel
+
+deployed_state: |
+  Verified live 2026-10-16 (dispatch 20261016-143736, tony-dell):
+    (a) idc02 edge — bearer gate LIVE on APEX surf-thailand.com
+        (https://surf-thailand.com/feeds/usage.json): 403 anon /
+        200 bearer + valid chaba-usage/v1 body. monitor.* turned out to
+        be CF Access-gated (302 login on every path) so the apex site
+        block was used instead — ssot.routes.yml corrected to match.
+        Gotcha: caddy-edge needed a RESTART not a reload after the
+        Caddyfile edit (bind-mounted file pinned to a stale inode).
+        Cosmetic quirk: the handle's root resolves via a literal
+        /data,Z dir inside the container (a fossil of a `-v :Z` flag
+        typo'd `,Z` at some earlier date — /data,Z and /config,Z both
+        exist); it serves the same live webroot, verified fresh.
+    (b) idc03 — usage-feed-push.timer armed (every 15m), last run
+        14:30 SUCCESS: "15 usage rows, 100 spend rows ->
+        /tmp/usage-feed.json (27652 bytes) -> pushed -> idc02". Feed
+        file on idc02 confirmed fresh (generated_at 2026-10-16T07:30Z).
+        USAGE_FEED_TOKEN in idc03 ~/.config/secrets/usage-feed.env.
+        NOTE: the ssot.jobs.yml job registration was made inside the
+        idc03 dispatch worktree whose branch failed to push (https auth
+        on idc03) — the timer lived with no manifest entry until
+        2026-10-16 when it was re-added matching the live rendered
+        unit byte-for-byte.
+    (c) idc02 wp-watch.py — heartbeat-usage-pull freshness check
+        applied 2026-10-15 (USAGE_STALE_MIN=90 + seen-marker file
+        ~/.local/share/wp-watch/usage-pull-seen so pre-deploy absence
+        is not an alert; .bak-usagepull-20261015155605 beside it).
+        Host-local script, not repo-tracked — this doc is its record.
+    PENDING (Tony, h3 Plesk panel ~5min — board request
+    plesk-side-is-the-only-step-left-h3-pane-a9d972): plugin zip
+    v0.5.0 upload, wp-config constants CHABA_USAGE_FEED_URL/TOKEN,
+    Plesk Scheduled Task every 15m (WP-Cron hourly fallback self-arms).
+    Verified pending: GET /wp/v2/ops-event?slug=heartbeat-usage-pull
+    returns [] on both public and h3 origin as of 2026-10-16.
 
 summary: |
   Tony prefers Plesk-side CPU where possible. This job implements the
