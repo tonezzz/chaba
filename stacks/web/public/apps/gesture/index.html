@@ -101,6 +101,7 @@ if ('serviceWorker' in navigator) {
   <button id="btn-face" class="toggle on">Face: on</button>
   <button id="btn-pose" class="toggle on">Body: on</button>
   <button id="btn-voice" class="toggle">🎤 hold to talk</button>
+  <button id="btn-hum" class="toggle">🎷 hum→sax</button>
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
 <div id="note">
@@ -649,6 +650,84 @@ async function startVoice(btn) {
   window.addEventListener('blur', () => stopVoice(vb));
   document.addEventListener('visibilitychange',
     () => { if (document.hidden) stopVoice(vb); });
+}
+
+/* ---------------- hum -> sax voice ----------------
+// Mic pitch-detect on the phone (autocorrelation); sends {type:"hum",
+// f, a} ~14x/s into the vcast room — jam's sax mod turns it into the
+// reed voice there. Raw audio never leaves the phone (unlike the
+// push-to-talk PCM above, there is no howl risk), and it works with
+// or without the camera running. */
+let hStream = null, hCtx = null, hTimer = null;
+function humFrame(buf, sr) {
+  let rms = 0; const n = buf.length;
+  for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / n);
+  if (rms < 0.012) return { f: 0 };
+  let r1 = 0, r2 = n - 1; const th = 0.2;
+  for (let i = 0; i < n / 2; i++) if (Math.abs(buf[i]) < th) { r1 = i; break; }
+  for (let i = 1; i < n / 2; i++) if (Math.abs(buf[n - i]) < th) { r2 = n - i; break; }
+  const b = buf.slice(r1, r2), m = b.length;
+  if (m < 8) return { f: 0 };
+  const c = new Float64Array(m);
+  for (let i = 0; i < m; i++) for (let j = 0; j + i < m; j++) c[i] += b[j] * b[j + i];
+  let d = 0; while (d + 1 < m && c[d] > c[d + 1]) d++;
+  let mv = -1, mp = -1;
+  for (let i = d; i < m; i++) if (c[i] > mv) { mv = c[i]; mp = i; }
+  if (mp < 1) return { f: 0 };
+  let T0 = mp;
+  if (mp + 1 < m) {
+    const x1 = c[mp - 1], x2 = c[mp], x3 = c[mp + 1];
+    const aa = (x1 + x3 - 2 * x2) / 2, bb = (x2 - x1) / 2;
+    if (aa) T0 -= bb / (2 * aa);
+  }
+  const f = sr / T0;
+  return (f > 70 && f < 1100) ? { f, a: rms } : { f: 0 };
+}
+async function humStart(btn) {
+  try {
+    hStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false } });
+  } catch (e) {
+    status('mic: ' + e.message, 'err'); ctlPost('hum-mic-err', e.name); return;
+  }
+  hCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = hCtx.createMediaStreamSource(hStream);
+  const an = hCtx.createAnalyser(); an.fftSize = 2048;
+  src.connect(an);
+  const buf = new Float32Array(an.fftSize);
+  let wasVoiced = false;
+  hTimer = setInterval(() => {
+    an.getFloatTimeDomainData(buf);
+    const r = humFrame(buf, hCtx.sampleRate);
+    if (r.f > 0) {
+      send({ type: 'hum', f: Math.round(r.f * 10) / 10, a: r.a });
+      wasVoiced = true;
+      btn.textContent = '🎷 ' + Math.round(r.f) + ' Hz';
+    } else if (wasVoiced) {
+      send({ type: 'hum', f: 0 });
+      wasVoiced = false; btn.textContent = '🎷 humming…';
+    }
+  }, 70);
+  btn.classList.add('on'); btn.textContent = '🎷 humming…';
+  ctlPost('hum-on', `target=${TARGET_SCREEN}`);
+}
+function humStop(btn) {
+  if (!hStream && !hTimer) return;
+  clearInterval(hTimer); hTimer = null;
+  if (hStream) hStream.getTracks().forEach(t => t.stop());
+  if (hCtx) hCtx.close();
+  hStream = hCtx = null;
+  send({ type: 'hum', f: 0 });
+  if (btn) { btn.classList.remove('on'); btn.textContent = '🎷 hum→sax'; }
+}
+{
+  const hb = $('btn-hum');
+  hb.onclick = () => (hStream ? humStop(hb) : humStart(hb));
+  // dead tab must not leave a stuck note — tell the sax to breathe out
+  window.addEventListener('pagehide', () => send({ type: 'hum', f: 0 }));
+  document.addEventListener('visibilitychange',
+    () => { if (document.hidden) humStop(hb); });
 }
 
 $('btn-screen').onclick = () => { location.href = '/apps/gesture/screen'; };

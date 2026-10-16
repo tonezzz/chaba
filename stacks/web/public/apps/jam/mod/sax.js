@@ -7,13 +7,17 @@
      fist          -> growl (opens the filter, adds bite)
      pinch         -> octave up/down toggle
      hand leaves   -> release (note breathes out)
+    hum (phone mic) -> continuous pitch: hum a melody, it plays back as
+                       sax — glide + volume follow your voice; while
+                       humming, the hand only adds vibrato/growl
 
    Feed: same gesture relay contract as remote — joins the vcast-N room
    when jam runs inside a screen (?screen=N), else gesture-live. */
 "use strict";
 JAM.register("sax", {
-  ws: null, retry: 0, v: null, oct: 0,
+  ws: null, retry: 0, v: null, oct: 0, stale: null,
   lastX: 0.5, wig: 0, lastY: null, midi: null,
+  hum: { f: 0, until: 0 },
 
   voice() {
     if (this.v) return this.v;
@@ -69,33 +73,43 @@ JAM.register("sax", {
 
   onMsg(data) {
     let m; try { m = JSON.parse(data); } catch { return; }
+    if (m.type === "hum") return this.onHum(m);
     if (m.type !== "gesture") return;
     const ac = JAM._actx();
-    if (m.gone || m.x === undefined) { this.gate(0); this.midi = null; return; }
+    const humming = performance.now() < this.hum.until;
+    if (m.gone || m.x === undefined) {
+      if (!humming) this.gate(0);
+      this.midi = null;
+      return;
+    }
 
     // lateral wiggle drives vibrato — a held-still hand sings clean,
-    // a shaking hand warbles like a player pushing the note
+    // a shaking hand warbles like a player pushing the note (also rides
+    // on top of humming: warble the melody you're singing)
     const dx = Math.abs(m.x - this.lastX); this.lastX = m.x;
     this.wig = this.wig * 0.9 + dx * 14;
     const v = this.voice();
     v.vibG.gain.setTargetAtTime(Math.min(26, 4 + this.wig * 50),
                                 ac.currentTime, 0.12);
 
-    // y -> blue scale, two octaves, root Bb-ish — quantize to the nearest
-    // step so it's impossible to land between notes; the glide sells it
-    const scale = JAM._SCALES.blue;
-    const steps = scale.length * 2;
-    const n = Math.min(steps - 1, Math.max(0, Math.round((1 - m.y) * (steps - 1))));
-    const midi = 46 + scale[n % scale.length]
-               + 12 * Math.floor(n / scale.length) + this.oct * 12;
-    if (midi !== this.midi) {
-      this.midi = midi;
-      const f = JAM._NOTE(midi);
-      v.o1.frequency.setTargetAtTime(f, ac.currentTime, 0.055);
-      v.o2.frequency.setTargetAtTime(f * 1.004, ac.currentTime, 0.055);
-      JAM.hud(`🎷 ${midi % 12 === 10 ? "B♭" : ""}note ${midi}`);
+    if (!humming) {
+      // y -> blue scale, two octaves, root Bb-ish — quantize to the
+      // nearest step so it's impossible to land between notes; the
+      // glide sells it
+      const scale = JAM._SCALES.blue;
+      const steps = scale.length * 2;
+      const n = Math.min(steps - 1, Math.max(0, Math.round((1 - m.y) * (steps - 1))));
+      const midi = 46 + scale[n % scale.length]
+                 + 12 * Math.floor(n / scale.length) + this.oct * 12;
+      if (midi !== this.midi) {
+        this.midi = midi;
+        const f = JAM._NOTE(midi);
+        v.o1.frequency.setTargetAtTime(f, ac.currentTime, 0.055);
+        v.o2.frequency.setTargetAtTime(f * 1.004, ac.currentTime, 0.055);
+        JAM.hud(`🎷 ${midi % 12 === 10 ? "B♭" : ""}note ${midi}`);
+      }
+      this.gate(1);
     }
-    this.gate(1);
 
     if (m.action === "fist_start") this.growl(true);
     else if (m.action === "fist_end") this.growl(false);
@@ -105,17 +119,46 @@ JAM.register("sax", {
     }
   },
 
+  onHum(m) {
+    const v = this.voice(), ac = JAM._actx();
+    if (m.f > 40) {
+      this.hum.until = performance.now() + 600;
+      const f = Math.min(1200, m.f);
+      v.o1.frequency.setTargetAtTime(f, ac.currentTime, 0.05);
+      v.o2.frequency.setTargetAtTime(f * 1.004, ac.currentTime, 0.05);
+      // breath loudness -> volume: hum harder, it honks harder
+      const vol = Math.min(0.22, 0.05 + (m.a || 0) * 1.4);
+      v.g.gain.setTargetAtTime(vol, ac.currentTime, 0.05);
+      if (Math.abs(f - this.hum.f) > 8)
+        JAM.hud(`🎷 ${Math.round(f)} Hz`);
+      this.hum.f = f;
+    } else {
+      this.hum.until = 0; this.hum.f = 0;
+      v.g.gain.setTargetAtTime(0, ac.currentTime, 0.12);
+    }
+  },
+
   init() {
     JAM.tonesOff = true;   // remote's theremin ducks while sax owns melody
     this.voice();
     this.connect();
-    JAM.hud("🎷 sax on — raise your hand and play");
+    // if the phone dies mid-note no f:0 arrives — breathe out on stale
+    this.stale = setInterval(() => {
+      if (this.hum.f && performance.now() > this.hum.until) {
+        this.hum.f = 0;
+        this.v && this.v.g.gain.setTargetAtTime(
+          0, JAM._actx().currentTime, 0.15);
+      }
+    }, 400);
+    JAM.hud("🎷 sax on — hand plays notes, or hum a tune on the phone");
   },
 
   destroy() {
     JAM.tonesOff = false;
     const ws = this.ws; this.ws = null;
     ws && ws.close();
+    clearInterval(this.stale); this.stale = null;
+    this.hum = { f: 0, until: 0 };
     const v = this.v;
     if (v) {
       this.v = null;
