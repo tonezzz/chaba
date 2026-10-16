@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-tony-dell-mcp-health
 title: Timer tony-dell-mcp-health on tony-dell failing
-column: doing
-updated: 2026-10-16 15:09
+column: backlog
+updated: 2026-10-16 17:03
 priority: high
 tags:
 - timer-alert
@@ -39,10 +39,26 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-16 14:57) of `tony-dell-mcp-health.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u tony-dell-mcp-health.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-16 17:01
+  from: devin
+  text: '[sweep] investigation merged (b780a6915 + 791f3ea69: ssh-stderr capture + live-semantics sync). Dead claim
+    cleared. NOTE: alert refired 10-16 14:57 (exit-code) after the investigation concluded post-boot transient —
+    moved to review, not done, since the flap is still live.'
+- at: 2026-10-16 17:01
+  from: tony
+  text: moved doing -> review
+- at: 2026-10-16 17:02
+  from: tony
+  text: put on hold
+- at: 2026-10-16 17:03
+  from: devin
+  text: '[sweep] correction: hold moved this to backlog+idle, not review. Investigation commit is on master; card
+    returns to the alert pool — next flap reopens it.'
 action:
   type: dispatch
-  status: running
+  status: idle
   runner: idc02
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
+review_kind: verify

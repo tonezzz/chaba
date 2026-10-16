@@ -1,9 +1,9 @@
 id: stt-omen-large-v3
 title: 'STT endpoint on tony-omen GPU: whisper large-v3 for all msg lanes'
-column: doing
+column: done
 priority: high
 created: 2026-10-10
-updated: 2026-10-15 11:00
+updated: 2026-10-16 16:59
 note: 'Verified 2026-10-10: large-v3 int8_float16 on omen GTX 1650 transcribes the Thai test clips ~2s vs 13s (medium/CPU
   on idc03) with markedly better Thai ("ผมส่งข้อความนี้เพื่อการทดสอบระบบ Transcript ด้วยข้อความเสียง จาก Telegram"
   vs medium''s garbled output). Build a small whisper HTTP endpoint on omen (fastapi + faster-whisper, decode via
@@ -65,8 +65,11 @@ comms:
   from: devin
   text: 'dispatched on idc02: building fastapi+faster-whisper large-v3 endpoint on omen (ada-whisper.service), patching
     tg_relay + line_relay for WHISPER_URL with local fallback'
+- at: 2026-10-16 16:59
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
