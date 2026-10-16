@@ -192,9 +192,24 @@ lane_keys:
 # LAYER 5 — Data & ops
 # ---------------------------------------------------------------------------
 data:
-  - id: mddb
-    role: memory banks + ada-cms-pages content store
-    host: idc03 (leader), idc01/idc02 followers
+  - id: mddb-primary
+    role: "Ada memory — ada-ha-bank-*, events, snapshots, recall, nlm-answers,
+      personal banks. Persona backends read/write here."
+    host: "idc03 mddb.service — HTTP 100.102.134.91:11023, MCP :9000 (keyed),
+      gRPC :11024. Followers on idc01/idc02."
+  - id: mddb-cms
+    role: "chaba content store — ada-cms-pages*, chaba-*, infrastructure-ssot
+      sync target. NO ada memory lives here; a bank doc written here is
+      invisible to every persona backend."
+    host: "idc03 mddb-cms.service — HTTP 100.102.134.91:11027"
+  - id: mddb-ops
+    role: "ops telemetry — host-logs, host-logs-state, ops digests (per unit
+      description; primary stats also list host-logs — confirm canonical
+      store before writing)"
+    host: "idc03 mddb-ops.service (separate DB; no embedding)"
+    note: "THREE independent stores on one host — verified 2026-10-16 when a
+      personal-bank doc written to :11027 never reached the primary. Pick the
+      port by collection family, not by host."
   - id: spend-ledger
     role: usage.jsonl + lane budgets (lane_budget.py) + daily-ledger.py
     note: shared ledger — untagged rows count toward every lane (known
