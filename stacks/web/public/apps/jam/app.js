@@ -500,7 +500,7 @@ for (const [act, mods] of Object.entries(ACTS)) {
 // ?mods=remote,fx auto-enables modules once their script registers
 const wantMods = new Set(
   (new URLSearchParams(location.search).get("mods") || "").split(",").filter(Boolean));
-for (const m of ["fx", "hands", "mic", "remote", "band"]) {
+for (const m of ["fx", "hands", "mic", "remote", "sax", "band"]) {
   const s = document.createElement("script");
   s.src = "mod/" + m + ".js?v=" +
     (new URLSearchParams(location.search).get("v") || Date.now());

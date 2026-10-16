@@ -31,7 +31,7 @@
 <div id="label">remote</div>
 <div id="code"><span id="codeDigits">····</span><small>screen claim id</small></div>
 <div id="apps">
-  <button data-url="/apps/jam/?mods=remote">▶ jam + 📷</button>
+  <button data-url="/apps/jam/?mods=remote,sax">▶ jam + 📷</button>
   <button data-url="/apps/percussion/">▶ percussion</button>
   <button data-gest>✋ gesture cam</button>
   <button id="b-menu">⌂ menu</button>
@@ -82,7 +82,7 @@
 
   document.querySelectorAll("#apps button[data-url], #apps button[data-gest]").forEach(b => {
     b.addEventListener("click", () => {
-      if (b.dataset.url === "/apps/jam/") {
+      if ((b.dataset.url || "").startsWith("/apps/jam/")) {
         pub({ type: "nav", pane: 0, url: b.dataset.url });
         pub({ type: "gesture", mode: "hand" });
         location.href = WAND;
