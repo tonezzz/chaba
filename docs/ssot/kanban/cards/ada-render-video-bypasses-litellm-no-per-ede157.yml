@@ -1,7 +1,7 @@
 id: ada-render-video-bypasses-litellm-no-per-ede157
 title: ada_render_video bypasses LiteLLM — no per-lane spend metering
 column: doing
-updated: 2026-10-16 04:44
+updated: 2026-10-16 15:56
 priority: medium
 tags:
 - spend
@@ -131,6 +131,20 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-6: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
     1 commit(s) conflict with origin/main in'
+- at: 2026-10-16 15:55
+  from: tony
+  text: 'answered merge-conflict-6: let devin resolve the conflict and land it ★'
+- at: 2026-10-16 15:55
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-16 15:56
+  from: chaba
+  text: 'merge-sweep: dispatch/20261014-220118-ada-render-video-calls-generat conflicts with origin/main: backend/tools.d/ada_render_video.py,
+    backend/usage_tracker.py — merge aborted, card stays for human resolution'
+- at: 2026-10-16 15:56
+  from: chaba
+  text: 'raised request merge-conflict-7: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
+    1 commit(s) conflict with origin/main in'
 requests:
 - id: how-should-ada-render-video-be-metered-ac2542
   ask: How should ada_render_video be metered?
@@ -217,8 +231,22 @@ requests:
     origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
     tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
     retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-16 04:44
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-7
+  ask: 'merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat: 1 commit(s) conflict with
+    origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
+    tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
+    retry/abandon the card.'
+  status: open
+  at: 2026-10-16 15:56
   from: chaba
   options:
   - let devin resolve the conflict and land it ★
