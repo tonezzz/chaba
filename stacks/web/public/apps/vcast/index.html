@@ -126,7 +126,7 @@
 
   <div id="idle">
     <div id="idleApps">
-      <button data-open="/apps/jam/">▶ jam</button>
+      <button data-open="/apps/jam/?mods=remote">▶ jam</button>
       <button data-open="/apps/percussion/">▶ percussion</button>
       <button data-gesture>✋ gesture</button>
     </div>
@@ -336,10 +336,11 @@
     // else -> remote.html, a remote "blank screen" that drives this display.
     function cornerUrl() {
       const u = panes[0] && panes[0].url || "";
-      // jam's real controller is the camera wand — your hand taps the pads
-      // through the pointer, the phone can't play pads faster than you can
+      // jam's real controller is the camera wand — mediapipe mode detects
+      // palm/face/pose ON the phone and drives the cursor + jam directly;
+      // ?engine=yolo remains the headless-uplink alternative
       if (gMode === "hand" || u.startsWith("/apps/jam/"))
-        return location.origin + "/apps/gesture/?engine=yolo&s=" + screenNum;
+        return location.origin + "/apps/gesture/?s=" + screenNum;
       if (u.startsWith("/apps/")) return location.origin + u;
       return location.origin + "/apps/vcast/remote.html?s=" + screenNum;
     }
@@ -366,7 +367,7 @@
         const url = b.dataset.open;
         if (url) nav(0, url);
         else setGesture(gMode === "hand" ? "off" : "hand");
-        if (url === "/apps/jam/") setGesture("hand");  // jam plays by hand
+        if (url.startsWith("/apps/jam/")) setGesture("hand");  // jam plays by hand
       });
     });
     document.getElementById("menuBtn").addEventListener("click", showIdle);
@@ -687,21 +688,27 @@
       // click — the box world has no pinch, so stillness is the trigger
       const el = document.elementFromPoint(ptrPos.x, ptrPos.y);
       const now = Date.now();
-      // iframe-aware dwell: inside a same-origin app frame (jam pads etc.)
-      // the meaningful element is in the frame's document — tracking the
-      // frame itself dwells forever on nothing and clicks hit the shell
-      let hitEl = el;
-      if (el && el.tagName === "IFRAME") {
-        try {
-          const r = el.getBoundingClientRect();
-          hitEl = (el.contentDocument && el.contentDocument.elementFromPoint(
-            ptrPos.x - r.left, ptrPos.y - r.top)) || el;
-        } catch (e) { /* cross-origin — keep the frame */ }
-      }
+      const hitEl = hitAt(el, ptrPos.x, ptrPos.y);
       if (hitEl !== ptrDwellEl) { ptrDwellEl = hitEl; ptrDwellT = now; return; }
       if (!hitEl || now - ptrDwellT < PTR_DWELL_MS || now < ptrCooldown) return;
       ptrCooldown = now + 1200; ptrDwellT = now + 1e9;
-      const pane = el.closest && el.closest(".pane");
+      fireClick(hitEl, el);
+    }
+    // iframe-aware hit: inside a same-origin app frame (jam pads etc.) the
+    // meaningful element is in the frame's document — tracking the frame
+    // itself dwells forever on nothing and clicks hit the shell
+    function hitAt(el, x, y) {
+      if (el && el.tagName === "IFRAME") {
+        try {
+          const r = el.getBoundingClientRect();
+          return (el.contentDocument && el.contentDocument.elementFromPoint(
+            x - r.left, y - r.top)) || el;
+        } catch (e) { /* cross-origin — keep the frame */ }
+      }
+      return el;
+    }
+    function fireClick(hitEl, shellEl) {
+      const pane = shellEl && shellEl.closest && shellEl.closest(".pane");
       const pi = pane ? panes.findIndex(p => p && p.el === pane) : -1;
       ws && ws.send(JSON.stringify({ type: "gesture-event",
         event: "click", screen: screenNum, pane: pi,
@@ -725,6 +732,12 @@
       gCursor.style.display = "block";
       ptrTgt = { x: ptrNorm(m.x) * innerWidth,
                  y: ptrNorm((m.y ?? 0.5)) * innerHeight };
+      if (m.action === "pinch") {
+        // mediapipe edge — pinch is the instant click (dwell still works)
+        const el = document.elementFromPoint(ptrPos.x, ptrPos.y);
+        fireClick(hitAt(el, ptrPos.x, ptrPos.y), el);
+        return;
+      }
       if (m.action === "fist_start") {
         // two-hands = grab — on vcast the useful grab is pane zoom
         const el = document.elementFromPoint(ptrPos ? ptrPos.x : 0,

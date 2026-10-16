@@ -137,11 +137,23 @@ JAM.register("remote", {
   JAM_BIND(evt) { return JAM.bindings[evt]; },
 
   connect() {
-    const ws = new WebSocket(
-      `${location.protocol === "https:" ? "wss" : "ws"}://` +
-      `${location.host}/apps/gesture-live/ws?role=screen`);
+    // Inside a vcast screen (nav() appends ?screen=N to the iframe URL) we
+    // join the input-bridge room for THIS display — the same relay that
+    // carries the cursor, so a mediapipe controller hits jam and the
+    // pointer in one hop. Outside vcast (standalone phone jam) the legacy
+    // gesture-live relay still serves.
+    const scr = new URLSearchParams(location.search).get("screen");
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    const url = scr
+      ? `${proto}://${location.host}/api/input-bridge/ws`
+      : `${proto}://${location.host}/apps/gesture-live/ws?role=screen`;
+    const ws = new WebSocket(url);
     this.ws = ws;
-    ws.onopen = () => { this.retry = 0; JAM.hud("📱 remote linked — waiting for iPhone controller"); };
+    ws.onopen = () => {
+      this.retry = 0;
+      if (scr) ws.send(JSON.stringify({ type: "join", room: "vcast-" + scr }));
+      JAM.hud("📱 remote linked — waiting for iPhone controller");
+    };
     ws.onclose = ws.onerror = () => {
       JAM.hud("📱 relay offline — retrying");
       setTimeout(() => this.ws && this.connect(),

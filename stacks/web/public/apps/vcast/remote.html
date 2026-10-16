@@ -31,7 +31,7 @@
 <div id="label">remote</div>
 <div id="code"><span id="codeDigits">····</span><small>screen claim id</small></div>
 <div id="apps">
-  <button data-url="/apps/jam/">▶ jam + 📷</button>
+  <button data-url="/apps/jam/?mods=remote">▶ jam + 📷</button>
   <button data-url="/apps/percussion/">▶ percussion</button>
   <button data-gest>✋ gesture cam</button>
   <button id="b-menu">⌂ menu</button>
@@ -75,7 +75,7 @@
   // Jam's controller is the camera wand — tapping jam sends the screen to
   // the app AND takes the phone to the gesture page, whose camera watches
   // your hand and taps the pads through the on-screen pointer.
-  const WAND = location.origin + "/apps/gesture/?engine=yolo&s=" + S;
+  const WAND = location.origin + "/apps/gesture/?s=" + S;
 
   document.getElementById("b-menu").addEventListener("click", () =>
     pub({ type: "stop" }));   // stop w/o pane -> back to the blank screen

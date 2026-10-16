@@ -216,8 +216,32 @@ function connectWs() {
     setTimeout(connectWs, Math.min(8000, 500 * 2 ** wsRetry++));
   };
 }
+
+// vcast lane — mediapipe mode ALSO feeds the input-bridge room for the
+// target screen: the shell reads {type:"gesture",x,y,action} for its
+// cursor and jam's remote module listens on the same room. Same contract
+// the yolo service emits, plus the richer edges (pinch, body events).
+// Room membership also means msgs we send reach every display+app on
+// that screen — one relay, no gesture-live dependency.
+let vWs = null, vOpen = false;
+function connectVcast() {
+  if (ENGINE === 'yolo') return;   // yolo mode is frames-only, no ws sink
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  try { vWs = new WebSocket(`${proto}//${location.host}/api/input-bridge/ws`); }
+  catch (e) { setTimeout(connectVcast, 5000); return; }
+  vWs.onopen = () => {
+    vOpen = true;
+    vWs.send(JSON.stringify({ type: 'join', room: 'vcast-' + TARGET_SCREEN }));
+  };
+  vWs.onclose = vWs.onerror = () => { vOpen = false; setTimeout(connectVcast, 4000); };
+}
+connectVcast();
+
 function send(obj) {
-  if (wsOpen && ws.readyState === 1) { ws.send(JSON.stringify(obj)); txCount++; hudTx.textContent = 'tx ' + txCount; }
+  const s = JSON.stringify(obj);
+  if (wsOpen && ws.readyState === 1) ws.send(s);
+  if (vOpen && vWs.readyState === 1) vWs.send(s);
+  if (wsOpen || vOpen) { txCount++; hudTx.textContent = 'tx ' + txCount; }
 }
 
 /* ---------------- mediapipe ---------------- */
@@ -419,7 +443,13 @@ function loop() {
     if (now - lastEmit >= EMIT_MIN_MS) send(base());
   }
   if (now - lastEmit >= EMIT_MIN_MS) lastEmit = now;
-  if (!hands.length) handState = {};
+  // hand-loss edge -> gone, so the screen cursor hides instead of freezing
+  if (!hands.length && !handState._gone) {
+    handState._gone = true;
+    send({ type: 'gesture', gone: 1, hands: 0 });
+  }
+  if (hands.length) delete handState._gone;
+  if (!hands.length) handState = { _gone: true };
   for (const h in handState) if (!seen[h]) delete handState[h];
 
   /* ---------------- face ---------------- */
