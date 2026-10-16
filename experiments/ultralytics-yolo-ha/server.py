@@ -113,7 +113,7 @@ def ptr_emit(msg):
         try:
             if sink.startswith("vcast:"):
                 screen = int(sink.split(":", 1)[1])
-                body = json.dumps({"screen": screen, **msg}).encode()
+                body = json.dumps({"screen": screen, "msg": msg}).encode()
                 req = urllib.request.Request(
                     f"{INPUT_BRIDGE}/pub", data=body,
                     headers={"Content-Type": "application/json"},
