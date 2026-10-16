@@ -70,26 +70,33 @@ async function checkServiceHealth(serviceName, url) {
   }
 }
 
-// Check Docker container status
-async function checkContainerStatus(containerName) {
+// Check Docker container status — ONE bounded call per tick for all containers.
+// A wedged podman/docker daemon must never pile up unbounded children:
+// `timeout 8` kills the CLI, exec timeout SIGKILLs the shell wrapper.
+async function checkAllContainerStatus(containerNames) {
+  const ts = new Date().toISOString();
   try {
     const { stdout } = await execAsync(
-      `docker ps --filter "name=${containerName}" --format "{{.Status}}"`
+      `timeout 8 docker ps --format "{{.Names}} {{.Status}}"`,
+      { timeout: 10000, killSignal: "SIGKILL" }
     );
-    const isRunning = stdout.trim().length > 0;
-
-    return {
-      name: containerName,
-      status: isRunning ? "running" : "stopped",
-      lastCheck: new Date().toISOString(),
-    };
+    const running = new Set(
+      stdout.split("\n").map((l) => l.trim().split(" ")[0]).filter(Boolean)
+    );
+    return containerNames.map((name) => ({
+      name,
+      status: [...running].some((r) => r === name || r.includes(name))
+        ? "running"
+        : "stopped",
+      lastCheck: ts,
+    }));
   } catch (error) {
-    return {
-      name: containerName,
+    return containerNames.map((name) => ({
+      name,
       status: "error",
       error: error.message,
-      lastCheck: new Date().toISOString(),
-    };
+      lastCheck: ts,
+    }));
   }
 }
 
@@ -285,7 +292,7 @@ async function updateDashboardState() {
 
   // Check key containers
   const containers = ["postgres", "redis", "caddy", "gpu-queue"];
-  const containerChecks = await Promise.all(containers.map((name) => checkContainerStatus(name)));
+  const containerChecks = await checkAllContainerStatus(containers);
   containerChecks.forEach((check) => {
     dashboardState.services[check.name] = check;
   });
