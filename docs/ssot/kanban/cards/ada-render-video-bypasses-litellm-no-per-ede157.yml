@@ -1,7 +1,7 @@
 id: ada-render-video-bypasses-litellm-no-per-ede157
 title: ada_render_video bypasses LiteLLM — no per-lane spend metering
-column: doing
-updated: 2026-10-16 15:56
+column: review
+updated: 2026-10-16 16:59
 priority: medium
 tags:
 - spend
@@ -145,6 +145,28 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-7: merge-sweep can''t land dispatch/20261014-220118-ada-render-video-calls-generat:
     1 commit(s) conflict with origin/main in'
+- at: 2026-10-16 16:57
+  from: chaba
+  text: 'merge-sweep: merged 8ffadf85 (dispatch/20261014-220118-ada-render-video-calls-generat from tony-omen) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-220118-ada-render-video-calls-generat.md)
+    — held in review (open request(s) [''merge-conflict-7''] block close)'
+- at: 2026-10-16 16:57
+  from: chaba
+  text: 'merge-sweep: merged 8ffadf85 (dispatch/20261014-220118-ada-render-video-calls-generat from tony-omen) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261014-220118-ada-render-video-calls-generat.md)
+    — held in review (open request(s) [''merge-conflict-7''] block close)'
+- at: 2026-10-16 16:57
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat,
+    branch dispatch/20261014-220118-ada-render-video-calls-generat on tony-omen'
+- at: 2026-10-16 16:59
+  from: tony
+  text: 'answered merge-conflict-7: resolved manually — branch was deleted remotely but the worktree survived on
+    tony-omen; merged c9b38f0 onto main (2b10077→8ffadf8), conflicts unioned (WP render_job logging + usage_ledger
+    metering), 3'
+- at: 2026-10-16 16:59
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: how-should-ada-render-video-be-metered-ac2542
   ask: How should ada_render_video be metered?
@@ -245,7 +267,7 @@ requests:
     origin/main in ada-pi — conflicted paths: backend/tools.d/ada_render_video.py, backend/usage_tracker.py. Merge
     tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261014-220118-ada-render-video-calls-generat by hand, or
     retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-16 15:56
   from: chaba
   options:
@@ -253,11 +275,16 @@ requests:
   - drop this dispatch — re-dispatch fresh from current main
   - hold the card
   suggested: let devin resolve the conflict and land it ★
+  answer: resolved manually — branch was deleted remotely but the worktree survived on tony-omen; merged c9b38f0
+    onto main (2b10077→8ffadf8), conflicts unioned (WP render_job logging + usage_ledger metering), 37 render_video
+    tests pass, deployed
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   runner: tony-omen
   sweep:
     stale_running: 2026-10-15 12:59
+  verified: true
 awaiting_action: true
+claim: {}

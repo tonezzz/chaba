@@ -1,7 +1,7 @@
 id: runner-push-cred-gap
 title: Runners without repo push creds strand dispatch branches (macbook, idc03)
 column: backlog
-updated: 2026-10-14 22:38
+updated: 2026-10-16 16:53
 spec: 'ADA-0673 hit the documented failure mode: tony-macbook claimed an ada-pi dispatch, finished, checkpoint committed
   — but its SSH key is a chaba-only deploy key, so the branch never reached origin; card still marked done+verified
   (misleading). Same gap on idc03 (daa0e0a stranded). Options: (a) add ada-voice deploy keys to each runner host;
@@ -14,3 +14,18 @@ comms:
 - at: 2026-10-14 22:38
   from: devin
   text: card captured via board-api
+- at: 2026-10-16 16:53
+  from: devin
+  text: queued for processing
+- at: 2026-10-16 16:53
+  from: chaba
+  text: dispatched 20261016-165349-ada-0673-hit-the-documented-fa on chaba
+action:
+  type: dispatch
+  status: running
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261016-165349-ada-0673-hit-the-documented-fa
+claim:
+  session: 20261016-165349-ada-0673-hit-the-documented-fa
+  since: 2026-10-16 16:53
