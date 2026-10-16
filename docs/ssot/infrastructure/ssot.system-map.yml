@@ -42,12 +42,22 @@ homes:
     ha_url: https://ada-ha.taila0626a.ts.net:8125
     public_url: https://ada-ha.surf-thailand.com   # CF Access app 775374be
     voice_backend: null              # lab; ada-dev rides it
-  - id: michael-dev
-    label: Michael dev twin
+  - id: mn-dev
+    label: Michael dev twin (was michael-dev — renamed for mn-ha parity 2026-10-16)
     host: idc03
     ha_url: https://idc03.taila0626a.ts.net:8124
     public_url: null                 # tailnet-only by decision 2026-10-07
     voice_backend: null
+    note: underlying resources still named michael-dev — unit michael-dev.service,
+      container michael-dev, ~/.config/michael-dev, ha-michael-dev.env, ~119 SSOT
+      refs. Physical rename is a carded migration, not done yet.
+  - id: kk-dev
+    label: Kaewta dev twin (planned)
+    host: idc03
+    ha_url: https://idc03.taila0626a.ts.net:8129
+    public_url: null
+    voice_backend: null
+    planned: true                    # symmetric with mn-dev; kk lane has no release flow yet — provision on demand
   - id: tony-dev
     label: Tony dev twin (planned)
     host: tony-dell
