@@ -229,9 +229,12 @@ watchdog:
   watcher:   idc02 wp-watch.timer -> WP 200 + heartbeat<10min -> board-api comment
   trigger:   line-chat-timeline.path (PathChanged glob on journals +
              ops-events.jsonl) -> near-real-time timeline updates
-  # usage-pull (OPS-0661, pending deploy): the Plesk worker bumps ops-event
-  # heartbeat-usage-pull `modified` every run — wp-watch adds it to its
-  # freshness list (stale > ~90min at 15m cadence = feed-or-worker dead).
+  # usage-pull (OPS-0661): feed+edge+watch LIVE 2026-10-15/16; Plesk-side
+  # worker still pending panel setup. idc03 usage-feed-push.timer (15m)
+  # scp's chaba-usage/v1 aggregates -> idc02 webroot, served bearer-gated
+  # at https://surf-thailand.com/feeds/usage.json (apex — monitor.* is CF
+  # Access-gated). wp-watch.py on idc02 already checks heartbeat-usage-pull
+  # freshness (90min, seen-marker so pre-deploy absence isn't an alert).
   # Feed freshness is separately visible in the report header
   # (feed.generated_at) and the heartbeat body.
 
