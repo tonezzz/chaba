@@ -1,0 +1,14 @@
+id: cms-auto-cctv-digest
+title: CMS automation `cctv-digest` error
+brief: A scheduled report-page job ('cctv-digest') is error. Re-run it or check the
+  generator — details in the note.
+column: review
+review_kind: triage
+generated: cms-auto-health
+priority: high
+note: 'last_status=error — Remote end closed connection without response. last_run=2026-10-16T08:00:01+00:00
+  interval=1440m status=error. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-digest'
+help: 'Trigger a manual regen: cms_automation run_now for ''cctv-digest'' (or POST
+  /api/cms/pages/cctv-digest/regenerate). If it repeats, check the page''s generator
+  command in the registry doc.'
+updated: '2026-10-16'
