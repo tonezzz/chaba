@@ -111,6 +111,13 @@ lived in the reply is a miss, and misses are counted in
 `docs/ssot/ssot.repeat-asks.yml` (check + increment it when Tony flags a
 repeat).
 
+Split rule (added 2026-10-16 — Tony): SSOT keeps only the
+comparison/decision layer — verdict, table, pointer to the lesson post.
+Research depth (benchmarks, background, options analysis) belongs in
+Education, where spaced review surfaces it; not as prose buried in SSOT
+YAML or card comms. Applies to assessments, evals, and "what's out there"
+research — operational state stays in SSOT as before.
+
 ## Procedure-lookup duty (added 2026-10-11 — Tony's standing order)
 
 When Tony asks "what's our standard procedure for X" — answer **from the system**, not from memory:

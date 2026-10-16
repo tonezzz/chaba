@@ -178,7 +178,7 @@ const nyFlash = {};
 const movedIn = {};
 // id of the card currently being dragged (null outside a drag)
 let dragId = null;
-const AUTO_RE = /^(cms|logs|gev|vcast|disk)-auto-|-auto-health$/;
+const AUTO_RE = /^(cms|logs|gev|vcast|disk|runner|audit|cast|eye)-auto-|-auto-health$|^timer-alert-/;
 const DENSITIES = ['compact', 'normal', 'full'];
 
 const COLS = [
