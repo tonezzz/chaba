@@ -1,0 +1,65 @@
+# Job trail: explicit correction commands self-authorize memory writes (OPS-0567)
+# Card: correction-commands-die-at-the-confirm-g-05902a
+# Incident: transcript 2026-10-13-cac2984711 — 'CRV เป็นรถของกุ้ง
+#   ไม่ใช่ของผมนะ แก้ไขด้วย' got a permission-ask instead of a write; the
+#   session ended and the correction died unwritten.
+
+title: Correction commands die at the confirm gate
+card: correction-commands-die-at-the-confirm-g-05902a
+ref: OPS-0567
+
+decision: |
+  In ada-voice's memory-write path, an explicit store/correct/retract
+  order in the user's own turn (แก้ไขด้วย / remember that / fix it /
+  forget it) IS the confirmation for confirmed-policy banks — the
+  provider writes immediately and reports in one clause. Confirm-first
+  stays only for inferred/uncertain facts. Authorization is scoped to
+  the memory-write seats (ada_remember curated-bank kinds, ada_forget,
+  ada_ops action='outcome'); actuation/capture/CMS/calendar/devin calls
+  can never be directive-authorized.
+
+deliverables:
+  staged_drop: integrations/ada-voice/ (Drop 11)
+    # backend/realtime_provider.correction-command.patch — detector
+    # (_MEMORY_DIRECTIVE_RE + negation/question/recollection vetoes),
+    # seat scoping (_memory_directed_call), dispatch arm
+    # (confirmed=true + _verified_affirm injected, ops event
+    # memory_directive_authorize), instruction paragraph update.
+    # backend/tool_guide.correction-command.patch — ada_remember /
+    # ada_forget guide text.
+    # tests/test_memory_directive.py — 10 unit tests, copy into ada-voice.
+  chaba_gate: tests/ada/test_correction_command.py
+    # Patch-apply + patched-tree unit run via tests/ada/_drops.py
+    # tri-state guard (pending/merged/diverged).
+  ssot: docs/ssot/apps/ssot.apps.ada-memory-banks.yml write_policy text
+
+status:
+  state: staged-not-deployed
+  verify_2026-10-16: |
+    Re-verified on dispatch attempt 2 (tony-dell): both patches still
+    `git apply --check` clean on ada-voice HEAD 5dc7665 (drop base was
+    41020cf — no rot across ~2d of upstream drift). Gate test 2 passed
+    (patch-apply + directive unit run in a depth-1 clone under the live
+    venv). Directive NOT yet merged upstream — grep for
+    memory_directive/_MEMORY_DIRECTIVE in ada-voice backend returns
+    nothing.
+  prior_failure: |
+    Attempt 1 was scored 'no delivered work — head is an old base
+    commit' — a merge-gate ref/timing false-negative: the checkpoint
+    commit e1a79a2d7 + merge 22d2358cb did land. The gate itself was
+    fixed in 85ec42e86 (tri-state drop guard + depth-1 clone + stub
+    leak fixes).
+
+deploy:
+  gate: ada-pi/ada-voice prod edits need explicit same-session approval —
+    a dispatch cannot self-approve.
+  steps: integrations/ada-voice/README.md § 'Drop 11' (git apply both
+    patches on ada-voice main, copy test_memory_directive.py, run the
+    standard deploy gates per ada-voice AGENTS.md).
+
+residual: |
+  - Directed authorization covers memory writes only; extending
+    self-authorization to calendar/CMS writes is a separate decision.
+  - A directive authorizes the write the model chose — it cannot fix a
+    wrong tool choice. Reversible via ada_forget; recurrence warrants a
+    target check, not a gate change.
