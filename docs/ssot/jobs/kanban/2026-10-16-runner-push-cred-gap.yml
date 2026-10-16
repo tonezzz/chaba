@@ -1,0 +1,125 @@
+title: Runner push-credential gap — claim guard, patch-relay, origin-gated verify
+subtitle: hosts can no longer claim dispatch repos they can't push; a
+  failed push relays the session head as a git bundle to dell; 'verified'
+  requires the head to be provably on origin
+icon: key
+
+context:
+  incident: "2026-10-14, card ADA-0673: tony-macbook claimed an ada-pi
+    dispatch, finished, checkpoint-committed — but its ada-voice clone
+    used a chaba-only deploy key (ssh-looking remote, wrong scope), so
+    the branch never reached origin. merge-sweep salvaged the work over
+    ssh and stamped done+verified — technically the work landed, but the
+    stamp hid that the host's push path is broken. Same gap on idc03
+    (daa0e0a stranded)."
+  card: runner-push-cred-gap
+  ref: OPS-0682
+  seams:
+    - scripts/board/dispatch_repos.py (probe/bundle/relay/origin-check)
+    - scripts/board/runner-agent.py (claim guard + defer comms)
+    - scripts/board/kanban-dispatch.py (same guard on the dell-local path)
+    - scripts/board/merge-sweep.py (fetch fallbacks + verify gate)
+    - scripts/board/board-api.py (POST /patch-relay spool)
+    - scripts/board/runner-fleet-health.py (probe-vs-label audit)
+
+shipped:
+  push_label:
+    what: "`push:<repo>` in RUNNER_LABELS (or KANBAN_HOST_LABELS on dell)
+      declares 'this host's checkout of <repo> can push origin'. Aliases
+      share one capability (ada-pi == ada-voice). Declare it ONLY after a
+      real `git push --dry-run` passes — see onboarding §5."
+    why_not_url: "Remote URL shape cannot detect the bug: macbook's
+      ada-voice clone had a git@ remote AND core.sshCommand — the deploy
+      key was chaba-only. Only exercising the auth path knows."
+
+  claim_guard:
+    what: "A dispatch card for action.repo:X is claimable only when
+      push_capable(X): label fast-path, else a live
+      `git push --dry-run origin HEAD:refs/heads/__runner-push-probe`
+      against the host's repos.conf checkout, cached
+      RUNNER_PUSH_PROBE_TTL=300s (KANBAN_PUSH_PROBE_TTL on dell)."
+    defer: "Probe failure leaves the card queued; runner-agent posts a
+      debounced comms note (per-card+reason, GPU_DEFER_SECS cadence) so
+      the gap is visible instead of silent."
+    off: "RUNNER_PUSH_GUARD=0 / KANBAN_PUSH_GUARD=0 restores old behavior
+      (e.g. for a host deliberately fetch-only under manual salvage)."
+
+  patch_relay:
+    what: "When close-out's branch push still fails (creds revoked,
+      flaky net, repo added mid-card), dispatch_repos.relay_session()
+      exports the session head as a `git bundle` — shas preserved, so
+      ancestry/verify/GC downstream are unchanged — and POSTs
+      base64+metadata to board-api /patch-relay."
+    storage: "board-api validates sha/ref/base64/bundle-header and a
+      8MiB cap (BOARD_API_RELAY_MAX_BYTES, PATCH_RELAY_MAX_BYTES on the
+      sender) then writes $DISPATCH_DIR/patch-inbox/<card>-<head10>.bundle
+      plus a .json sidecar (repo, branch, base, head, task_id,
+      exit_code, host, via). Same card+head → same filename → idempotent."
+    off: "KANBAN_PATCH_RELAY=0 disables the relay; the push failure is
+      still reported in close-out notes either way."
+
+  merge_sweep_fallbacks:
+    order: "session fetch over tailnet ssh -> origin session-branch ref
+      (runner pushed but died before the merge push) -> patch-inbox
+      bundle (relayed head). Relay hits also trigger when session_probe
+      finds nothing at all."
+    salvage: "A merge that lands via relay/origin-branch also pushes
+      refs/heads/<branch> (best-effort) so the branch exists literally
+      on origin for forensics; dispatch-merged-branch-prune GCs it."
+
+  verify_gate:
+    what: "stamp_gate_result now requires dr.head_on_origin() before the
+      verified stamp: head must be an ancestor of the just-fetched
+      origin/<base> OR the session branch ref must equal head on
+      ls-remote. Otherwise a 'verify_no_origin' flag is posted and the
+      stamp is withheld — a stranded branch is stranded, not delivered."
+    also_fixed: "close_out mapped push failures to 'error' while
+      close_out_notes read 'push_error' — the 'branch push failed' note
+      never fired, which is part of why ADA-0673 stayed invisible.
+      Push errors now map to push_error and the note works."
+
+  fleet_health:
+    what: "REMOTE_PROBE runs the same push --dry-run per repos.conf
+      checkout on every dispatch runner; judge() raises 'push-label-false'
+      when a declared push:<repo> label contradicts the probe,
+      'no-push-creds' when a dispatch host can push nothing, and queue
+      satisfiability now counts type-absent (dispatch-default) cards —
+      a queue only pushable by a host that can't push shows as
+      unsatisfiable instead of silently starving."
+    latent_bug_fixed: "REMOTE_PROBE's runner_env block used re.search
+      without importing re — host RUNNER_LABELS were never actually
+      probed until this change."
+
+ops:
+  declare_label: "Per host: for each repo in its repos.conf run
+    `git -C <path> push --dry-run origin HEAD:refs/heads/__probe`;
+    where rc=0 add push:<repo> to RUNNER_LABELS via the service drop-in,
+    then mirror in ssot.kanban.yml#execution.concurrency.runner_fleet."
+  known_state_2026_10: "tony-dell pushes all dispatch repos; tony-macbook
+    ada-voice = fetch-only (no label, relay covers); idc03 stranded
+    daa0e0a historically — audit before trusting its ada-voice claims."
+  rescue_stranded: "If a branch is already stranded and no relay fired:
+    on the runner `git bundle create /tmp/x.bundle <branch> ^origin/<base>`,
+    scp to dell's patch-inbox as <card>-<head10>.bundle + .json sidecar,
+    or push the ref from the runner if creds get fixed."
+
+verification:
+  - "python3 -m unittest discover -s tests/board -p 'test_*.py' —
+    161 tests incl. push guard (8), close-out relay, sweep inbox
+    fallback, origin-gated verify."
+  - "python3 scripts/board/board-api.py --selftest — incl. /patch-relay
+    validation cases."
+  - "Live: queue a dispatch card action.repo:ada-voice unpinned — a
+    host without push:ada-voice defers with a comms note; a push-capable
+    host claims it."
+
+lessons:
+  - "A git@ remote + sshCommand prove connectivity, not authorization —
+    deploy-key scope is only visible to a live push --dry-run."
+  - "git bundle of a bare sha records no ref ('empty bundle'); pass a
+    refname (HEAD or refs/heads/x) — export_bundle pins a transient
+    refs/dispatch-relay/ ref when nothing resolves to the head."
+  - "Verified must mean 'on origin', not 'we merged locally' — the
+    runner-local salvage merge is exactly what hid ADA-0673."
+  - "Name close_out result keys to match what the notes renderer reads
+    (push_error vs error) — a silent drop kept the incident invisible."
