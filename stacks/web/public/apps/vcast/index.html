@@ -664,9 +664,11 @@
         gUplinkOwned = !uplinkTimer;
         await startUplink(300);
         if (gUplinkOwned && !uplinkTimer) {
-          // camera was denied — startUplink already reported it
-          gMode = "off"; sendState("gesture-error", "camera denied");
-          return;
+          // local camera denied — but a REMOTE frame source (e.g. a phone
+          // running /apps/gesture/?engine=yolo, uplinking screen=0) can
+          // still drive the pointer: msgs arrive on this room's ws either
+          // way. Arm the cursor and note the source is remote.
+          sendState("gesture-hand", "remote-cam");
         }
         gCursor = document.createElement("div");
         gCursor.id = "gestureCursor";
