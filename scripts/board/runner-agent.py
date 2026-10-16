@@ -45,7 +45,19 @@ Env:
                  yields the queue to idle runners)
   RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd";
                  "desktop" marks an interactive host and arms the
-                 guards below)
+                 guards below; "push:<repo>" declares push credentials
+                 for that dispatch repo — see RUNNER_PUSH_GUARD)
+  RUNNER_PUSH_GUARD   0 disables the push-credential claim guard
+                 (runner-push-cred-gap): a dispatch card is only
+                 claimable when this host can actually push the card's
+                 repo — `push:<repo>` label fast-path, else a live
+                 `git push --dry-run` probe against the host checkout
+                 (a git@ remote is no proof — the 2026-10-14 ADA-0673
+                 failure was a chaba-only deploy key on an ssh-looking
+                 ada-voice clone). Cards this host can't push stay
+                 queued for a host that can, with a debounced comms
+                 note.
+  RUNNER_PUSH_PROBE_TTL  probe-cache seconds (default 300)
   RUNNER_STATE   state dir (default ~/.local/share/runner-agent)
   RUNNER_STARVE_HOURS  queued-card age that outranks fresh higher-
                  priority cards (default 12; 0 disables — priority is a
@@ -127,6 +139,9 @@ from pathlib import Path
 API = os.environ.get(
     "RUNNER_API",
     "https://tony-dell.taila0626a.ts.net/apps/board-api").rstrip("/")
+# dispatch_repos.board_api_base() reads BOARD_API/RUNNER_API — export the
+# resolved base so the close-out patch-relay posts to the same api.
+os.environ.setdefault("BOARD_API", API)
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
@@ -183,6 +198,90 @@ XRANDR_TIMEOUT = int(os.environ.get("RUNNER_XRANDR_TIMEOUT", "8"))
 VSYNC_PAT = "GetVSyncParametersIfAvailable"
 UNSTICK = ("display unstick: ssh in, `sudo chvt 3`, sleep 2, "
            "`sudo chvt 2` (modeset reset — session survives)")
+
+# --- push-credential claim guard (runner-push-cred-gap) ---------------
+# A runner must only claim dispatch cards for repos it can push. The
+# ADA-0673 failure (2026-10-14): tony-macbook's ada-voice clone looked
+# ssh-capable but its deploy key was chaba-only — it claimed, finished,
+# checkpointed, and pushed nothing, stranding the branch while the card
+# read done. Declare `push:<repo>` in RUNNER_LABELS only after a real
+# `git push --dry-run` passes — the label is the fast path, the probe
+# is the ground truth (run once per TTL, not per card).
+PUSH_GUARD = os.environ.get("RUNNER_PUSH_GUARD", "1") != "0"
+PUSH_PROBE_TTL = int(os.environ.get("RUNNER_PUSH_PROBE_TTL", "300"))
+PUSH_PROBE_REF = "refs/heads/__runner-push-probe"
+_PUSH_PROBE_CACHE: dict = {}
+REPO_ALIASES = {"ada-pi": "ada-voice"}  # one repo, one credential
+
+
+def _repo_checkout(repo: str) -> Path | None:
+    """This host's checkout of a dispatch repo — the same table
+    devin-dispatch dispatches against ($DISPATCH_DIR/repos.conf), then
+    the chaba copy of dispatch_repos when importable."""
+    conf = Path(os.environ.get(
+        "DISPATCH_DIR",
+        str(Path.home() / ".local/share/devin-dispatch"))) / "repos.conf"
+    paths = {}
+    try:
+        for ln in conf.read_text().splitlines():
+            ln = ln.split("#", 1)[0].strip()
+            p = ln.split()
+            if p:
+                paths[p[0]] = Path(p[1]).expanduser()
+    except OSError:
+        pass
+    canon = REPO_ALIASES.get(repo, repo)
+    p = paths.get(repo) or paths.get(canon)
+    if p:
+        return p
+    dr = dr_module()
+    if dr:
+        ent = (dr.repos().get(repo) or dr.repos().get(canon) or {})
+        if ent.get("path"):
+            return Path(ent["path"])
+    return None
+
+
+def push_capable(repo: str) -> bool:
+    """May this host claim dispatch cards for repo? Declared push:<repo>
+    label wins; otherwise a live `git push --dry-run` probe — only the
+    auth path knows whether the key actually covers the repo."""
+    if not PUSH_GUARD:
+        return True
+    canon = REPO_ALIASES.get(repo, repo)
+    if f"push:{canon}" in LABELS or f"push:{repo}" in LABELS:
+        return True
+    now = time.time()
+    hit = _PUSH_PROBE_CACHE.get(canon)
+    if hit and now - hit[0] < PUSH_PROBE_TTL:
+        return hit[1]
+    p = _repo_checkout(canon)
+    ok = bool(p) and (p / ".git").exists() and \
+        sh(["git", "-C", str(p), "push", "--dry-run", "origin",
+            f"HEAD:{PUSH_PROBE_REF}"], timeout=45).returncode == 0
+    _PUSH_PROBE_CACHE[canon] = (now, ok)
+    return ok
+
+
+def push_guard_reason(card: dict) -> str:
+    """Why this host declines an otherwise-claimable dispatch card —
+    "" when N/A (not dispatch, not claimable anyway, or push works)."""
+    a = card.get("action") or {}
+    if (a.get("type") or "dispatch") != "dispatch" \
+            or a.get("status") != "queued" \
+            or (a.get("runner") and a["runner"] != HOST) \
+            or (a.get("host") and a["host"] != HOST) \
+            or not set(a.get("labels") or []) <= LABELS \
+            or not Path(DISPATCH).exists():
+        return ""
+    repo = str(a.get("repo") or "chaba")
+    if push_capable(repo):
+        return ""
+    canon = REPO_ALIASES.get(repo, repo)
+    return (f"push guard: no push:{canon} label and `git push --dry-run` "
+            f"fails in {_repo_checkout(canon) or '(no checkout)'} — this "
+            "host can't land the branch, so the card stays queued for a "
+            "host with push creds (card runner-push-cred-gap)")
 
 
 def sync_repo(name: str, url: str, ref: str) -> Path:
@@ -364,8 +463,13 @@ def claimable(card: dict) -> str:
     if not needs <= LABELS:
         return ""
     typ = a.get("type") or "dispatch"
-    if typ == "dispatch" and not Path(DISPATCH).exists():
-        return ""
+    if typ == "dispatch":
+        if not Path(DISPATCH).exists():
+            return ""
+        # runner-push-cred-gap: never claim a repo this host can't push
+        # — finishing here strands the branch (ADA-0673)
+        if not push_capable(str(a.get("repo") or "chaba")):
+            return ""
     if typ == "container":
         c = a.get("container") or {}
         if not c.get("image") or not shutil_which("podman"):
@@ -554,27 +658,32 @@ def gpu_preflight(card: dict) -> str:
     return ""
 
 
-def note_gpu_defer(card: dict, reason: str) -> None:
-    """Comment a gpu defer/refuse — at most once per GPU_DEFER_SECS per
-    distinct reason."""
+def note_defer(card: dict, kind: str, reason: str) -> None:
+    """Comment a defer/refuse — at most once per GPU_DEFER_SECS per
+    distinct reason per kind (gpu preflight, push guard)."""
     cid = card.get("id") or ""
+    key = f"{cid}:{kind}"
     try:
         log = json.loads(DEFER_FILE.read_text())
     except Exception:
         log = {}
-    ent = log.get(cid) or {}
+    ent = log.get(key) or {}
     now = int(time.time())
     if ent.get("reason") == reason and \
             now - int(ent.get("at", 0)) < GPU_DEFER_SECS:
         return
     api("/comment", {"id": cid, "from": "chaba",
-                     "text": f"gpu preflight: {reason}"})
-    log[cid] = {"at": now, "reason": reason}
+                     "text": f"{HOST} defers: {reason}"})
+    log[key] = {"at": now, "reason": reason}
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         DEFER_FILE.write_text(json.dumps(log, indent=1))
     except OSError:
         pass
+
+
+def note_gpu_defer(card: dict, reason: str) -> None:
+    note_defer(card, "gpu", f"gpu preflight: {reason}")
 
 
 # --- presentation watchdog --------------------------------------------
@@ -875,11 +984,18 @@ def claim_pass(st: dict) -> bool:
             break
         cid = card.get("id") or ""
         typ = claimable(card)
-        if typ and card.get("blocked_by"):
+        if not typ:
+            # distinguish "not for me" from "would claim but can't push"
+            # — the latter wants a board note so the gap is visible
+            pg = push_guard_reason(card)
+            if pg:
+                note_defer(card, "push", pg)
+            continue
+        if card.get("blocked_by"):
             blocker = by_id.get(card["blocked_by"]) or {}
             if not blocker_released(blocker):
                 continue  # gate holds — try again next pass
-        if not cid or not typ:
+        if not cid:
             continue
         reason = gpu_preflight(card)
         if reason:

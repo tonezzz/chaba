@@ -24,10 +24,12 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -422,6 +424,96 @@ class Case(unittest.TestCase):
         self.assertIs(c["action"].get("verified"), True)
         self.assertEqual(c["column"], "done")
         self.assertTrue((c.get("auto_close") or {}).get("note"))
+
+    # --------------------------------------------------- patch relay
+    # runner-push-cred-gap (the 2026-10-14 ADA-0673 / idc03 daa0e0a
+    # incident): a runner without push creds strands its branch; its
+    # close-out relays the head as a git bundle through board-api into
+    # $DISPATCH_DIR/patch-inbox — the sweep consumes it like the
+    # runner's own remote. And the stamp itself is gated on the head
+    # being PROVABLY on origin — a runner-local head never verifies.
+
+    def _relay_bundle(self, cid: str = "test-card") -> str:
+        """Export the wt's head the way dr.relay_session does and drop
+        it in the patch-inbox with the sidecar board-api writes."""
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        inbox = self.tmp / "dispatch" / "patch-inbox"
+        inbox.mkdir(parents=True, exist_ok=True)
+        b = dr.export_bundle(self.wt, "origin/master", head, ref="HEAD",
+                             out_dir=inbox)
+        self.assertIn("path", b, b)
+        name = f"{cid}-{head[:10]}.bundle"
+        b["path"].rename(inbox / name)
+        (inbox / (name + ".json")).write_text(json.dumps(
+            {"repo": "chaba", "branch": f"dispatch/{TID}",
+             "base": "master", "head": head, "task_id": TID,
+             "exit_code": "0", "host": "no-push-runner"}))
+        return head
+
+    def _kill_session(self) -> None:
+        """Make the runner's session unfindable: no meta, no worktree,
+        no branch in any whitelisted repo."""
+        shutil.rmtree(self.task_dir)
+        shutil.rmtree(self.wt)
+        git(self.runner_repo, "worktree", "prune")
+        git(self.runner_repo, "branch", "-D", f"dispatch/{TID}")
+
+    def test_relay_bundle_lands_and_verifies(self):
+        # runner gone, push impossible — the relayed bundle carries the
+        # work to origin anyway, and the stamp is honest about the path
+        commit(self.wt, "relay.py", "x=1\n", "work")
+        head = self._relay_bundle()
+        self._kill_session()
+        card = self.write_card()
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        self.assertTrue(self.remote_has("master", "relay.py"))
+        c = self.read_card()
+        self.assertIs(c["action"].get("verified"), True)
+        # the salvaged session branch lands on origin too — 'the branch
+        # is on origin' holds literally, not just 'in base history'
+        r = git(self.served, "ls-remote", "--heads", "origin",
+                f"dispatch/{TID}")
+        self.assertIn(f"{head}", r.stdout)
+        self.assertTrue(any("patch-relay" in m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+
+    def test_session_gone_without_relay_still_flags(self):
+        # unchanged behavior: no session AND no bundle -> the honest
+        # 'may be gone' flag, never a verified stamp (the flag fires;
+        # sweep_card's return stays False like before)
+        commit(self.wt, "gone.py", "x=1\n", "work")
+        self._kill_session()
+        card = self.write_card()
+        ms.sweep_card(card, {}, dry=False)
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True)
+        self.assertFalse(self.remote_has("master", "gone.py"))
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("session_gone"))
+
+    def test_head_absent_from_origin_is_not_verified(self):
+        # the card's headline regression: a merge reported 'landed' but
+        # the head is provably NOT on origin (push creds dead) — the
+        # verified stamp must be withheld, flag_once'd, never faked.
+        commit(self.wt, "x.py", "x=1\n", "work")
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        # the served repo's creds die between fetch and push — merge
+        # claims landed but nothing reached origin
+        git(self.served, "remote", "set-url", "origin",
+            str(self.tmp / "gone.git"))
+        fake = {"merged": True,
+                "sha": "0" * 40}
+        card = self.write_card()
+        with mock.patch.object(ms, "merge_strict", return_value=fake):
+            self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertNotEqual(c["action"].get("verified"), True, c)
+        self.assertTrue((c["action"].get("sweep") or {})
+                        .get("verify_no_origin"), c)
+        self.assertTrue(any("not provable on origin" in
+                            m.get("text", "")
+                            for m in c.get("comms") or []), c["comms"])
+        self.assertFalse(self.remote_has("master", "x.py"))
 
     def test_conflict_posts_request_not_wrong_merge(self):
         commit(self.wt, "file.txt", "session\n", "session change")

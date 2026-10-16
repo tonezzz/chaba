@@ -24,7 +24,13 @@ For each card in doing/review with action.type=dispatch:
   4. fetch the head into the served checkout:
        git -c core.sshCommand=ssh fetch <runner>:<worktree> HEAD
      (the -c override is required — the repo's configured sshCommand is
-     a GitHub-only key that cannot reach tailnet hosts)
+     a GitHub-only key that cannot reach tailnet hosts). Fallbacks when
+     the runner's session/worktree is unreachable (card
+     runner-push-cred-gap): the session branch on origin itself (the
+     runner pushed the branch but died before the merge push), then a
+     relayed git bundle in $DISPATCH_DIR/patch-inbox/<cid>-<head>.bundle
+     — the close-out patch-relay a no-push-creds runner POSTs via
+     board-api; bundle shas are preserved so ancestry/GC are unchanged
   5. merge into the served checkout's repo — dispatch_repos.merge_state
      vs origin/<default>, then --no-ff in a throwaway detached worktree
      of the served repo and push HEAD:<base> (same shape as
@@ -47,7 +53,11 @@ For each card in doing/review with action.type=dispatch:
      changed files vs base or carries dispatch-outcome-<tid>.md, and
      (c) the card's auto_done_when checks pass (a self verified_true
      counts the a+b verdict; anything else failing defers the stamp to
-     kanban-act — the work still merges). A provable failure — no
+     kanban-act — the work still merges), and (d) the head is PROVABLY
+     on origin — ancestor of the just-fetched base ref or the session
+     branch ref at head via ls-remote (runner-push-cred-gap: a head that
+     only exists on the runner is stranded, not delivered — the
+     ADA-0673 done+verified-on-nothing stamp). A provable failure — no
      deliverable, or a nonzero unit exit on unmerged work — marks the
      attempt failed and requeues on kanban-dispatch's retry path.
      Undecidable states hold in review with a comms flag.
@@ -626,7 +636,10 @@ def conflict_rid(card: dict) -> str:
 #       deliverable is the doc);
 #   (c) the card's auto_done_when checks pass — a self 'verified_true'
 #       entry counts the a+b gate itself; a failing/unrunnable contract
-#       defers to kanban-act rather than failing the attempt.
+#       defers to kanban-act rather than failing the attempt;
+#   (d) the head is provably on origin (runner-push-cred-gap) —
+#       ancestor of the fetched base ref or the branch ref at head via
+#       ls-remote; a runner-local head is stranded, not delivered.
 #
 # A provable failure (nonzero exit on unmerged work, or no deliverable
 # at all) marks the attempt failed and requeues it on the same path
@@ -884,6 +897,63 @@ def fetch_session(repo: Path, host: str, probe: dict) -> str:
     return dr._rev_parse(repo, "FETCH_HEAD")
 
 
+def fetch_origin_branch(repo: Path, branch: str) -> str:
+    """The runner may have pushed the session branch and died before the
+    merge push — origin may already carry it. "" otherwise."""
+    if not branch or ".." in branch:
+        return ""
+    if sh(["git", "-C", str(repo), "fetch", "-q", "origin",
+           f"refs/heads/{branch}"], timeout=60).returncode != 0:
+        return ""
+    return dr._rev_parse(repo, "FETCH_HEAD")
+
+
+def inbox_relay(repo: Path, card: dict) -> dict:
+    """patch-relay fallback (card runner-push-cred-gap): a runner whose
+    close-out push can't authenticate bundles its session head and
+    POSTs it to board-api, which lands it in
+    $DISPATCH_DIR/patch-inbox/<cid>-<head10>.bundle (+ .json sidecar).
+    Fetch it like the runner's own remote — bundle shas are preserved,
+    so every downstream check (ancestry, verify gate, GC) is unchanged.
+    Returns a synthetic probe, or {} when no usable bundle exists."""
+    cid = str(card.get("id") or "")
+    if not cid:
+        return {}
+    d = dr.dispatch_dir() / "patch-inbox"
+    try:
+        cands = sorted(d.glob(f"{cid}-*.bundle"),
+                       key=lambda p: p.stat().st_mtime, reverse=True)
+    except OSError:
+        return {}
+    for b in cands:
+        meta = {}
+        try:
+            meta = json.loads((b.parent / (b.name + ".json"))
+                              .read_text()) or {}
+        except Exception:
+            pass
+        want = str(meta.get("head") or "")
+        refs = [ln.split()[-1] for ln in
+                sh(["git", "-C", str(repo), "bundle", "list-heads",
+                    str(b)], timeout=30).stdout.splitlines()
+                if ln.split()]
+        for ref in refs or ["HEAD"]:
+            if sh(["git", "-C", str(repo), "fetch", "-q", str(b), ref],
+                  timeout=180).returncode != 0:
+                continue
+            got = dr._rev_parse(repo, "FETCH_HEAD")
+            if not got or (want and got != want):
+                break  # fetched but not the relayed head — next file
+            return {"head": got,
+                    "branch": str(meta.get("branch") or ""),
+                    "worktree": "", "dirty": 0,
+                    "exit_code": meta.get("exit_code"),
+                    "meta": {"repo": meta.get("repo"),
+                             "default_branch": meta.get("base")},
+                    "relay": b.name}
+    return {}
+
+
 def merge_strict(repo: Path, sha: str, base_ref: str,
                  base: str) -> dict:
     """--no-ff merge of sha into origin/<base> inside a throwaway
@@ -1130,14 +1200,8 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return False
 
     probe = session_probe(runner, tid)
-    if not probe or (not probe.get("head") and not probe.get("wt_exists")):
-        flag_once(card, "session_gone",
-                  f"merge-sweep: no session/worktree found for "
-                  f"devin-task-{tid} on {runner or HOST} — if the work "
-                  "was never pushed it may be gone", dry)
-        return False
-    repo_name = (probe.get("meta") or {}).get("repo") \
-        or a.get("repo") or ""
+    repo_name = (((probe or {}).get("meta") or {}).get("repo")
+                 or a.get("repo") or "")
     repo = served_repo(repo_name)
     if repo is None:
         flag_once(card, "no_repo",
@@ -1145,6 +1209,16 @@ def sweep_card(card: dict, active: dict, dry: bool,
                   f"'{repo_name or '?'}' — can't land devin-task-{tid}",
                   dry)
         return False
+    if not probe or (not probe.get("head") and not probe.get("wt_exists")):
+        # the runner's session is unreachable/gone — the close-out
+        # patch relay (runner-push-cred-gap) may still carry its head
+        probe = inbox_relay(repo, card)
+        if not probe.get("head"):
+            flag_once(card, "session_gone",
+                      f"merge-sweep: no session/worktree found for "
+                      f"devin-task-{tid} on {runner or HOST} — if the "
+                      "work was never pushed it may be gone", dry)
+            return False
     dirty = probe.get("dirty")
     if dirty:
         flag_once(card, "dirty",
@@ -1165,7 +1239,21 @@ def sweep_card(card: dict, active: dict, dry: bool,
                   f"merge-sweep: no {base_ref} in {repo} — can't "
                   f"land devin-task-{tid}", dry)
         return False
-    head = fetch_session(repo, runner, probe)
+    if probe.get("relay"):
+        head = str(probe["head"])  # fetched from the relayed bundle
+    else:
+        head = fetch_session(repo, runner, probe)
+    if not head:
+        # branch pushed but the runner died before the merge push —
+        # origin may already carry it
+        head = fetch_origin_branch(repo, str(probe.get("branch") or ""))
+    if not head:
+        # last resort: a relayed bundle even when the probe looked fine
+        # (ssh to the runner went down mid-sweep)
+        probe2 = inbox_relay(repo, card)
+        if probe2.get("head"):
+            head = str(probe2["head"])
+            probe["relay"] = probe2["relay"]
     if not head:
         flag_once(card, "fetch_failed",
                   f"merge-sweep: fetch {runner or 'local'}:"
@@ -1211,6 +1299,23 @@ def sweep_card(card: dict, active: dict, dry: bool,
     def stamp_gate_result(merged_txt: str) -> bool:
         """Apply the gate verdict after a merge/already-merged check."""
         if g.get("verify"):
+            # runner-push-cred-gap: verified requires the head to be
+            # PROVABLY on origin — ancestor of the just-fetched base ref
+            # or the session branch ref at head. Anything else is a
+            # stranded branch wearing a success stamp (the ADA-0673
+            # bug: done+verified while origin never got the work).
+            on_origin, how = dr.head_on_origin(
+                repo, head, base_ref, str(probe.get("branch") or ""))
+            if not on_origin:
+                return flag_once(
+                    card, "verify_no_origin",
+                    f"merge-sweep: {merged_txt} but {head[:8]} is not "
+                    f"provable on origin ({how}) — verified withheld; "
+                    "a runner that can't push must relay via board-api",
+                    dry)
+            if probe.get("relay"):
+                merged_txt += (f" — via patch-relay "
+                               f"{probe['relay']} (runner can't push)")
             held = {}
 
             def mark(c):
@@ -1263,6 +1368,15 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return True
     res = merge_strict(repo, head, base_ref, base)
     if res.get("merged"):
+        # land the session branch ref too (best-effort) — a salvaged
+        # branch that exists only in origin/<base> history still looks
+        # stranded; refs/heads/<branch> makes 'on origin' literally true
+        # and gives forensics a handle (dispatch-merged-branch-prune
+        # cleans it later)
+        br = str(probe.get("branch") or "")
+        if br:
+            sh(["git", "-C", str(repo), "push", "-q", "origin",
+                f"{head}:refs/heads/{br}"], timeout=60)
         stamp_gate_result(
             f"merged {res['sha'][:8]} ({probe.get('branch')} from "
             f"{runner or HOST}) -> origin/{base}")
