@@ -41,7 +41,7 @@ const REDEEM_HOSTS = new Set(
 // ---------------------------------------------------------------------------
 // Screen registry (vcast virtual displays) — name -> screen number, persisted.
 // ---------------------------------------------------------------------------
-const registry = { screens: {}, tombstones: {} };
+const registry = { screens: {}, tombstones: {}, codes: {} };
 const live = new Map(); // screen number -> ws
 const pending = new Map(); // sid -> {ws, label, ts, code}
 const sockets = new Set(); // every ws the server accepted (for ping sweeps)
@@ -56,6 +56,7 @@ function mintClaimCode() {
     const c = String(1000 + Math.floor(Math.random() * 9000));
     if ([...pending.values()].some(p => p.code === c)) continue;
     if (Object.values(registry.screens).some(s => s.code === c)) continue;
+    if (Object.values(registry.codes).includes(c)) continue;
     return c;
   }
 }
@@ -72,6 +73,7 @@ function loadRegistry() {
     if (data && typeof data.screens === "object") registry.screens = data.screens;
     if (data && typeof data.tombstones === "object")
       registry.tombstones = data.tombstones;
+    if (data && typeof data.codes === "object") registry.codes = data.codes;
   } catch (e) { /* fresh registry */ }
 }
 
@@ -1178,8 +1180,11 @@ async function registerDisplay(ws, msg) {
   if (label) entry.label = label;
   delete entry.disconnected_at;
   delete entry.claimed_at;   // claim->register gap closed — name is live-held
-  if (!entry.code) entry.code = mintClaimCode();   // persistent 4-digit id —
-  // the on-screen "take control" code; survives reconnects + restarts
+  // persistent 4-digit "take control" id — keyed by NAME (codes map) not
+  // the screen entry, so the grace sweep freeing a dead entry never
+  // remints the code: "control display 4821" stays bound to screen-N
+  if (!registry.codes[name]) registry.codes[name] = mintClaimCode();
+  entry.code = registry.codes[name];
   entry.last_seen = new Date().toISOString();
   saveRegistry();
 
