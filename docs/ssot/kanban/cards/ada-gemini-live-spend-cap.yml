@@ -1,7 +1,7 @@
 id: ada-gemini-live-spend-cap
 title: Gemini Live refusing sessions — monthly spending cap hit (ada voice down)
-column: backlog
-updated: 2026-10-16 14:38
+column: done
+updated: 2026-10-16 14:56
 priority: high
 tags:
 - ada
@@ -111,6 +111,18 @@ comms:
 - at: 2026-10-16 14:38
   from: chaba
   text: dispatched 20261016-143838-every-voice-ws-connect-on-ada- on ada-voice
+- at: 2026-10-16 14:47
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-16 14:56
+  from: chaba
+  text: 'merge-sweep: merged ab95ef1c (dispatch/20261016-143838-every-voice-ws-connect-on-ada- from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261016-143838-every-voice-ws-connect-on-ada-.md)
+    — auto-closed'
+- at: 2026-10-16 14:56
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-143838-every-voice-ws-connect-on-ada-,
+    branch dispatch/20261016-143838-every-voice-ws-connect-on-ada- on tony-dell'
 requests:
 - id: ada-voice-is-dead-until-the-gemini-proje-9be96b
   ask: Ada voice is dead until the Gemini project spend cap is resolved. Which way?
@@ -151,12 +163,17 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   attempts: 2
-  result: 20261015-063912-every-voice-ws-connect-on-ada- finished (inactive) — see `devin-dispatch logs 20261015-063912-every-voice-ws-connect-on-ada-`
+  result: 20261016-143838-every-voice-ws-connect-on-ada- finished (inactive) — see `devin-dispatch logs 20261016-143838-every-voice-ws-connect-on-ada-`
   runner: tony-dell
   task_id: 20261016-143838-every-voice-ws-connect-on-ada-
+  merge_pending: true
+  verified: true
 claim:
   since: 2026-10-16 14:38
-  session: 20261016-143838-every-voice-ws-connect-on-ada-
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-16 14:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261016-143838-every-voice-ws-connect-on-ada-.md

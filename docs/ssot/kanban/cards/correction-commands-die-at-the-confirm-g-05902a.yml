@@ -1,7 +1,7 @@
 id: correction-commands-die-at-the-confirm-g-05902a
 title: correction commands die at the confirm gate
-column: doing
-updated: 2026-10-16 14:42
+column: done
+updated: 2026-10-16 14:56
 brief: 'Transcript 2026-10-13-cac2984711: Tony said "CRV เป็นรถของกุ้ง ไม่ใช่ของผมนะ แก้ไขด้วย" — an explicit fix
   order. Kaewta acknowledged correctly but ASKED permission to write it to memory; session ended, correction never
   landed. The wrong fact (Tony=CRV owner) stayed live until manually patched (car/tony-car-not-crv written to personal-kk
@@ -31,11 +31,56 @@ comms:
   from: chaba
   text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
     unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-10-16 14:44
+  from: chaba
+  text: dispatched 20261016-144441-correction-commands-die-at-the on chaba
+- at: 2026-10-16 14:51
+  from: devin
+  text: 'attempt 2 done: drop 11 verified intact — patches apply clean on ada-voice HEAD 5dc7665, gate test 2 passed,
+    README+SSOT present. Prior no-delivered-work was a merge-gate ref false-negative (work landed via e1a79a2d7+22d2358cb;
+    gate fixed in 85ec42e86). Added job trail docs/ssot/jobs/ada/2026-10-16-correction-command-directive.yml + outcome
+    doc. Still staged-not-deployed — ada-pi install needs explicit approval (README Drop 11).'
+- at: 2026-10-16 14:51
+  from: devin
+  text: 'attempt 2 done: drop 11 verified intact — both patches apply clean on ada-voice HEAD 5dc7665 (base moved
+    41020cf->5dc7665, no rot), gate test tests/ada/test_correction_command.py 2 passed, README Drop 11 + SSOT write_policy
+    present. Prior no-delivered-work was a merge-gate ref false-negative (work landed via e1a79a2d7+22d2358cb; gate
+    itself fixed in 85ec42e86). Added job trail docs/ssot/jobs/ada/2026-10-16-correction-command-directive.yml +
+    dispatch-outcome doc on the dispatch branch. Still stag'
+- at: 2026-10-16 14:53
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-16 14:54
+  from: chaba
+  text: pushed dispatch/20261016-144441-correction-commands-die-at-the to origin
+- at: 2026-10-16 14:54
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 44.0s)
+- at: 2026-10-16 14:54
+  from: chaba
+  text: auto-merged 93216bba (dispatch/20261016-144441-correction-commands-die-at-the) → origin/master
+- at: 2026-10-16 14:54
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-144441-correction-commands-die-at-the,
+    branch dispatch/20261016-144441-correction-commands-die-at-the'
+- at: 2026-10-16 14:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
-  status: queued
+  status: done
   sweep:
     stale_running: 2026-10-16 14:41
-  verified: false
+  verified: true
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
-claim: {}
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261016-144441-correction-commands-die-at-the
+  result: 20261016-144441-correction-commands-die-at-the finished (inactive) — see `devin-dispatch logs 20261016-144441-correction-commands-die-at-the`
+claim:
+  since: 2026-10-16 14:44
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-16 14:56
+  note: verified — evidence checks green, closing itself

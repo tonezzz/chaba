@@ -1,7 +1,7 @@
 id: news-situation-summaries
 title: Situation summaries on wp-news — promoted digests + index + Thai + ask-hook
-column: backlog
-updated: 2026-10-16 14:37
+column: done
+updated: 2026-10-16 14:57
 priority: medium
 note: 'Tony asked Chaba สรุปข่าวน้ำท่วม on tony-ha 12:08 — good Thai situational answer referencing the mini-app
   flood report. Want: situation summaries for highly-interesting news, readable on /wp/ and reportable to household.
@@ -159,12 +159,41 @@ comms:
 - at: 2026-10-16 14:37
   from: chaba
   text: dispatched 20261016-143717-situation-summaries-on-wp-news on chaba
+- at: 2026-10-16 14:51
+  from: devin
+  text: '[attempt-4] Gate failure resolved: test fix 85ec42e86 already on master — relanded attempt-2+3a work (732eaa39a
+    via git-am as 69ad2cff9): ssot.wp-boards.yml situation hunks, dist zip, live job status, brief_th fallback.
+    25/25 tests pass incl. test_patches_apply_and_compile.'
+- at: 2026-10-16 14:53
+  from: devin
+  text: '[attempt-4 DONE] Gate failure was stale-master breakage (fixed by 85ec42e86) — relanded stranded 732eaa39a
+    via git-am (69ad2cff9): wp-boards.yml hunks, dist zip, job status, brief_th fallback. EXECUTED Tony-proceed:
+    chaba-boards 0.6.0 DEPLOYED to boards.surf-thailand.com via new scripts/wp-boards/deploy-plugin-zip.sh (scripted
+    wp-admin upload on omen); /wp/v2/plugins confirms active + ops_error CPT registered (unblocks ADA-0679). Found+fixed
+    gap: 7 pre-deploy flags were tag-only — added sync_met'
+- at: 2026-10-16 14:55
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-16 14:56
+  from: chaba
+  text: pushed dispatch/20261016-143717-situation-summaries-on-wp-news to origin
+- at: 2026-10-16 14:56
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 43.6s)
+- at: 2026-10-16 14:56
+  from: chaba
+  text: auto-merged e6d9bf8f (dispatch/20261016-143717-situation-summaries-on-wp-news) → origin/master
+- at: 2026-10-16 14:56
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-143717-situation-summaries-on-wp-news,
+    branch dispatch/20261016-143717-situation-summaries-on-wp-news'
+- at: 2026-10-16 14:57
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 ed on Tony: the wp-admin plugin zip upload (board request open) and ada-voice wiring (carded ADA-0707).
-    | devin-task-20261015-202502-situation-summaries-on-wp-news.service: Consumed 26.070s CPU time, 172.2M memory
-    peak, 0B memory swap peak.'
+  status: done
+  result: 20261016-143717-situation-summaries-on-wp-news finished (inactive) — see `devin-dispatch logs 20261016-143717-situation-summaries-on-wp-news`
   attempts: 2
   last_failure: 'pushed dispatch/20261015-194424-situation-summaries-on-wp-news to origin; test gate failed — merge
     held: tests/ada/test_draft_hit_frame.py::test_patches_apply_and_compile'
@@ -173,13 +202,13 @@ action:
     session_gone: 2026-10-15 20:29
   runner: tony-dell
   task_id: 20261016-143717-situation-summaries-on-wp-news
+  verified: true
 review_kind: verify
 claim:
   since: 2026-10-16 14:37
-  session: 20261016-143717-situation-summaries-on-wp-news
 auto_close:
   by: merge-sweep
-  at: 2026-10-15 16:29
+  at: 2026-10-16 14:57
   note: verified — evidence checks green, closing itself
 requests:
 - id: deploy-chaba-boards-0-6-0-to-wp-timer-sw-ebd86d

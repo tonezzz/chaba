@@ -1,0 +1,18 @@
+id: grand-rename
+title: Grand rename — compositional <x>-ha/-ha-dev/-ai/-ai-dev across units, ports, paths, env files
+column: backlog
+updated: 2026-10-16 14:50
+brief: Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml
+  rename_map. Subsumes OPS-0726 (mn-dev rename).
+priority: medium
+spec: 'Target: ada-pi-pwa->member-ai :8001, ada-ha-tony->chaba-ai :8002, ada-ha-michael->kraut-ai :8003 (name TBC),
+  ada-dev->ada-ai :8005, ada-kk->kaewta-ai :8007->8004?, ada-kk-dev->kaewta-ai-dev :8009->8014?. Paths /apps/ha/<x>
+  -> /ai/<persona>. Env files ada-<x>.env -> <persona>-ai.env. Key pools ada-ha-<lane>-keys.json -> <persona>-ai-keys.json.
+  HA twins: michael-dev->mn-ha-dev. Phases: 1) confirm kraut name + member-ai + port renumber + cutover mode, 2)
+  idc03 unit/env/keypool renames one lane at a time, 3) caddy path changes idc03+idc02, 4) optional port renumber,
+  5) sed sweep SSOT/AGENTS/scripts (~119+ refs), 6) verify each lane health+dashboard, 7) drop aliases.'
+ref: OPS-0714
+comms:
+- at: 2026-10-16 14:50
+  from: tony
+  text: card captured via board-api

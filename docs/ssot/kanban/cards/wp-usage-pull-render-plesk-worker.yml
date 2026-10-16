@@ -1,7 +1,7 @@
 id: wp-usage-pull-render-plesk-worker
 title: usage timeline as Plesk pull-render worker (CPU to Plesk)
 column: backlog
-updated: 2026-10-16 14:37
+updated: 2026-10-16 14:47
 priority: low
 note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
   in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
@@ -123,20 +123,38 @@ comms:
 - at: 2026-10-16 14:37
   from: chaba
   text: dispatched 20261016-143736-usage-timeline-as-plesk-pull-r on chaba
+- at: 2026-10-16 14:44
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-16 14:47
+  from: chaba
+  text: 'session-end checkpoint dfca3886: 3 leftover file(s) committed'
+- at: 2026-10-16 14:47
+  from: chaba
+  text: pushed dispatch/20261016-143736-usage-timeline-as-plesk-pull-r to origin
+- at: 2026-10-16 14:47
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 100.9s)
+- at: 2026-10-16 14:47
+  from: chaba
+  text: auto-merged 72c6fc1a (dispatch/20261016-143736-usage-timeline-as-plesk-pull-r) → origin/master
+- at: 2026-10-16 14:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-143736-usage-timeline-as-plesk-pull-r,
+    branch dispatch/20261016-143736-usage-timeline-as-plesk-pull-r'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     stale_running: 2026-10-15 10:44
     dirty: 11
     close_held: 2026-10-15 10:59
     session_gone: 2026-10-15 16:01
-  result: 'exit=0 ice: No such file or directory | devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
-    Failed to open /run/user/1000/systemd/transient/devin-task-20261015-154730-usage-timeline-as-plesk-pull-r.service:
-    No such file or directory'
+  result: 20261016-143736-usage-timeline-as-plesk-pull-r finished (inactive) — see `devin-dispatch logs 20261016-143736-usage-timeline-as-plesk-pull-r`
   runner: tony-dell
   attempts: 1
   task_id: 20261016-143736-usage-timeline-as-plesk-pull-r
+  verified: true
 requests:
 - id: usage-pull-worker-code-landed-deploy-nee-549e41
   ask: 'usage-pull worker: code landed, deploy needs your one-time setup + 3 defaults to confirm (reply e.g. ''all
@@ -170,5 +188,4 @@ requests:
   escalated_at: 2026-10-16 05:16
 review_kind: verify
 claim:
-  session: 20261016-143736-usage-timeline-as-plesk-pull-r
   since: 2026-10-16 14:37
