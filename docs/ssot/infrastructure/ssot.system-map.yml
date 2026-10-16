@@ -99,11 +99,12 @@ personas:
     home: tony-ha
     keys: [gemini-tony-paid, litellm-vkey-chaba, ha-tony-token-svc-ada, ada-device-keys]
   - id: kraut-ai
-    label: Kraut — Michael's household persona (name TBC by Tony)
-    unit: ada-ha-michael.service
+    label: Kraut — Michael's household persona (confirmed 2026-10-16 — Kraut = sauerkraut, Michael likes it)
+    unit: ada-ai-kraut.service       # renamed from ada-ha-michael.service 2026-10-16 — first lane of grand-rename
     host: idc03
     listen: 127.0.0.1:8003
-    tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-michael
+    tailnet: https://idc03.taila0626a.ts.net/ai/kraut
+    tailnet_legacy: https://idc03.taila0626a.ts.net/apps/ha/ada-michael   # alias kept during transition
     home: mn-ha
     keys: [gemini-ada-lane-paid, litellm-vkey-michael, ha-michael-live-token, ada-device-keys]
     note: Gemini key is currently FREE-tier (…VPnw, rotated 2026-10-15) —
@@ -213,7 +214,7 @@ rename_map:
   units:
     - {now: ada-pi-pwa.service,     to: ada-ai.service,           port_now: 8001, port_target: 8001, note: "family root — member/guest surface; catch-all on app.surf-thailand.com + legacy /api/cms*; ADA_INSTANCE_ID=tony"}
     - {now: ada-ha-tony.service,    to: ada-ai-chaba.service,     port_now: 8002, port_target: 8002}
-    - {now: ada-ha-michael.service, to: ada-ai-kraut.service,     port_now: 8003, port_target: 8003, note: "kraut name TBC by Tony"}
+    - {now: ada-ha-michael.service, to: ada-ai-kraut.service,     port_now: 8003, port_target: 8003, status: "DONE 2026-10-16 — unit/env/keys.json renamed, ADA_KEYS_FILE pinned, ADA_INSTANCE_ID=michael kept (pins MDDB banks), /ai/kraut alias live, old path kept during transition"}
     - {now: ada-dev.service,        to: ada-ai-dev.service,       port_now: 8005, port_target: 8005, note: "lab backend — the name finally says what it is"}
     - {now: ada-kk.service,         to: ada-ai-kaewta.service,    port_now: 8007, port_target: 8004, note: "renumber optional"}
     - {now: ada-kk-dev.service,     to: ada-ai-kaewta-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional"}
@@ -223,9 +224,10 @@ rename_map:
   ha_dev_twins: {michael-dev: mn-ha-dev}   # unit+container+dirs+~119 refs — OPS-0726
   future_families: "<family>-ai-<role>[-dev] — e.g. adam-ai-chaba (ChatGPT family), eve-ai-chaba. Ports: new family gets its own block (:81xx adam, :82xx eve…)"
   open_decisions:
-    - "kraut role name — confirm before ada-ai-kraut.service lands"
-    - "port renumber (8007->8004, 8009->8014) or keep current ports"
-    - "hard cutover vs alias grace period for old unit/path names"
+    - "RESOLVED kraut — confirmed (sauerkraut, Michael likes Sour Kraut)"
+    - "RESOLVED ports — sort to slot convention approved (8007->8004, 8009->8014 when that lane migrates)"
+    - "RESOLVED surface name — family-first scheme makes ada-pi-pwa -> ada-ai"
+    - "cutover: alias grace chosen in practice (old serve path kept alongside /ai/kraut)"
 
 notes:
   - "Naming is compositional: <x>-ha / <x>-ha-dev / <x>-ai / <x>-ai-dev.

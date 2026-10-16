@@ -66,6 +66,13 @@ post_types:
   # admin column, badge on flagged digests' single view, and the
   # [chaba_situations] shortcode index block. Card news-situation-summaries;
   # design: docs/ssot/jobs/ada/2026-10-15-news-situation-summaries.yml
+  # v0.7.0 (DEPLOYED 2026-10-16 via deploy-plugin-zip.sh): score CPT —
+  # the balance board. repeat_ask counts only complaints; score events
+  # count BOTH praise and complaint, subject is anyone incl. Tony
+  # ("now you can judge me too"). One post per event, private status
+  # (member-gated). meta: who/delta(signed)/kind(praise|complaint)/
+  # topic/card/at/status. [chaba_balance] shortcode renders the per-who
+  # tally table + recent events on any /wp/ page. Seed posts 595-596.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -107,6 +114,10 @@ post_types:
              re-ask). meta: topic/level(intro|working|deep)/source/
              learned_at/next_review/status — next_review feeds spaced-recall
              digests (v0.3.8)"
+  score:       "balance board — praise + complaint events per subject
+             (tony/devin/ada/system/<lane>), private posts, one per event.
+             meta: who/delta(signed pts)/kind(praise|complaint)/topic/
+             card/at/status. [chaba_balance] renders the tally (v0.7.0)"
   ops_error:   "Ada tool/stream failures auto-posted for the
              truthful-explanation loop (v0.6.0, card boards-error-post-type).
              slug err-<md5(lane|session|tool|occurred_at|type)> — silent_reconnect

@@ -3,21 +3,23 @@
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
  *              contact, reminder, bench, report, xlate, cam, render_job, news,
- *              repeat_ask, lesson, ops_error)
+ *              repeat_ask, lesson, ops_error, score)
  *              + member-post translation + member-gated media endpoint
  *              + usage pull-render worker (pulls the idc02 usage feed into
  *              a report CPT post; Plesk Scheduled Task or WP-Cron)
  *              + news situation flag (watching|pinned meta, badge,
- *              [chaba_situations] index block).
+ *              [chaba_situations] index block)
+ *              + score CPT — balance board: praise AND complaints score
+ *              points for anyone incl. Tony ([chaba_balance] tally block).
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.6.0
+ * Version: 0.7.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.6.0';
+const CHABA_BOARDS_VER = '0.7.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -56,6 +58,11 @@ add_action('init', function () {
         // loop lives on comments: Kaewta/Devin post the truthful
         // explanation, Tony marks meta status=resolved.
         'ops_error' => ['Ops Error','Ops Errors','dashicons-warning'],
+        // score — the balance board (2026-10-16): repeat_ask counted only
+        // complaints; score events count BOTH praise and complaint, and the
+        // subject is anyone — tony/devin/ada/system. One post per event;
+        // [chaba_balance] renders the per-who tally.
+        'score'    => ['Score','Scores','dashicons-star-half'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -225,6 +232,11 @@ add_action('init', function () {
         'ops_error' => ['lane', 'session_id', 'tool', 'error_type',
                         'raw_result', 'transcript_ref', 'occurred_at',
                         'status', 'resolved_by', 'resolved_at'],
+        // score — who = subject scored (tony|devin|ada|system|<lane>);
+        // delta = signed points (+1 praise / -1 complaint typical);
+        // kind = praise|complaint; topic = short label; card = kanban ref;
+        // at = ISO event time; status = open|standing|reverted
+        'score'    => ['who', 'delta', 'kind', 'topic', 'card', 'at', 'status'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -267,11 +279,12 @@ function chaba_cpt_admin_columns(string $type): array {
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
         'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
         'ops_error'  => ['lane' => 'Lane', 'tool' => 'Tool', 'error_type' => 'Type', 'occurred_at' => 'At', 'status' => 'Status'],
+        'score'      => ['who' => 'Who', 'delta' => 'Δ', 'kind' => 'Kind', 'topic' => 'Topic', 'at' => 'At'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error','score'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
@@ -1022,6 +1035,69 @@ add_shortcode('chaba_situations', function ($atts) {
         $out .= '<h3>👁 Watching</h3><ul style="list-style:none;padding-left:0">'
               . implode('', array_map(fn($p) => $row($p, 'watching'), array_slice($watching, 0, $limit)))
               . '</ul>';
+    }
+    return $out . '</div>';
+});
+
+// [chaba_balance] — the balance board: score events (praise AND complaint)
+// tallied per subject. Anyone can be scored — tony/devin/ada/system/lane.
+// Attrs: recent (default 10) = how many latest events to list.
+add_shortcode('chaba_balance', function ($atts) {
+    $atts = shortcode_atts(['recent' => 10], $atts);
+    $recent = max(0, min(50, (int) $atts['recent']));
+
+    $posts = get_posts(['post_type' => 'score',
+                        'post_status' => is_user_logged_in() ? ['publish', 'private'] : ['publish'],
+                        'posts_per_page' => 500,
+                        'orderby' => 'date', 'order' => 'DESC']);
+
+    $tally = [];   // who => ['praise' => pts, 'complaint' => pts, 'net' => sum]
+    foreach ($posts as $p) {
+        $who   = trim((string) get_post_meta($p->ID, 'who', true)) ?: 'unknown';
+        $kind  = trim((string) get_post_meta($p->ID, 'kind', true)) ?: 'praise';
+        $delta = (float) get_post_meta($p->ID, 'delta', true) ?: ($kind === 'complaint' ? -1 : 1);
+        $tally[$who] = $tally[$who] ?? ['praise' => 0.0, 'complaint' => 0.0, 'net' => 0.0];
+        $tally[$who]['net'] += $delta;
+        if ($delta >= 0) $tally[$who]['praise'] += $delta;
+        else             $tally[$who]['complaint'] += -$delta;
+    }
+    uasort($tally, fn($a, $b) => $b['net'] <=> $a['net']);
+
+    $fmt = fn($n) => ($n == (int) $n) ? (string) (int) $n : (string) $n;
+
+    $out = '<div class="chaba-balance">';
+    if (!$tally) {
+        $out .= '<p>No score events yet.</p>';
+    } else {
+        $out .= '<table style="border-collapse:collapse"><thead><tr>'
+              . '<th style="text-align:left;padding:.3em 1em .3em 0">Who</th>'
+              . '<th style="text-align:right;padding:.3em 1em">Praise</th>'
+              . '<th style="text-align:right;padding:.3em 1em">Complaints</th>'
+              . '<th style="text-align:right;padding:.3em 0 0 1em">Net</th>'
+              . '</tr></thead><tbody>';
+        foreach ($tally as $who => $t) {
+            $net = $fmt($t['net']);
+            $sign = $t['net'] > 0 ? 'color:#2a7' : ($t['net'] < 0 ? 'color:#c55' : '');
+            $out .= '<tr><td style="padding:.2em 1em .2em 0"><strong>' . esc_html($who) . '</strong></td>'
+                  . '<td style="text-align:right;padding:.2em 1em">' . $fmt($t['praise']) . '</td>'
+                  . '<td style="text-align:right;padding:.2em 1em">' . $fmt($t['complaint']) . '</td>'
+                  . '<td style="text-align:right;padding:.2em 0 .2em 1em;' . $sign . '"><strong>' . $net . '</strong></td></tr>';
+        }
+        $out .= '</tbody></table>';
+    }
+
+    if ($recent && $posts) {
+        $out .= '<h3 style="margin-top:1.2em">Recent events</h3><ul style="list-style:none;padding-left:0">';
+        foreach (array_slice($posts, 0, $recent) as $p) {
+            $who  = trim((string) get_post_meta($p->ID, 'who', true)) ?: 'unknown';
+            $kind = trim((string) get_post_meta($p->ID, 'kind', true)) ?: 'praise';
+            $at   = trim((string) get_post_meta($p->ID, 'at', true));
+            $icon = $kind === 'complaint' ? '👎' : '👍';
+            $out .= '<li style="margin-bottom:.5em">' . $icon . ' <strong>' . esc_html($who) . '</strong> — '
+                  . esc_html(get_the_title($p))
+                  . ' <small style="opacity:.65">' . esc_html($at ?: get_the_date('Y-m-d', $p)) . '</small></li>';
+        }
+        $out .= '</ul>';
     }
     return $out . '</div>';
 });
