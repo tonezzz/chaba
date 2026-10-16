@@ -77,6 +77,12 @@
       border-radius: 10px; border: 1px solid #155e75; cursor: pointer;
       background: rgba(8,47,73,.85); color: #e5e7eb; }
     #idleApps button:active { background: #155e75; }
+    /* menu button — shown over content (top-left) so a screen in an app
+       can always get back to the blank screen; hidden on idle/pair/boot */
+    #menuBtn { position: fixed; top: 1rem; left: 1rem; z-index: 26;
+      display: none; font: 700 1.05rem system-ui; padding: .6rem .9rem;
+      border-radius: 10px; border: 1px solid #155e75; cursor: pointer;
+      background: rgba(8,47,73,.85); color: #e5e7eb; }
     /* bg mode: the veil covers the stage visually but leaves panes in the
        DOM and running — audio keeps playing underneath (moving the iframe
        would reload it and kill WebAudio, so we cover, not reparent) */
@@ -144,6 +150,7 @@
     <div id="cornerQr"></div>
     <div><b id="cornerNum">#?</b><span id="cornerCode"></span></div>
   </div>
+  <button id="menuBtn" title="back to menu">⌂</button>
   <div id="hud"><span class="dot" id="dot"></span><span id="hudText">connecting</span></div>
   <button id="audioGate">tap for audio</button>
   <div id="toast"></div>
@@ -340,6 +347,11 @@
       const c = document.getElementById("corner");
       if (screenNum == null) { c.style.display = "none"; return; }
       c.style.display = "flex";
+      // menu button shows whenever an app/content owns the stage — the
+      // only way back to the blank screen from the display itself
+      document.getElementById("menuBtn").style.display =
+        idle.style.display === "none" && pair.style.display === "none" &&
+        boot.style.display === "none" ? "block" : "none";
       document.getElementById("cornerNum").textContent = "#" + screenNum;
       document.getElementById("cornerCode").textContent = screenCode;
       const qrEl = document.getElementById("cornerQr");
@@ -357,6 +369,7 @@
         if (url === "/apps/jam/") setGesture("hand");  // jam plays by hand
       });
     });
+    document.getElementById("menuBtn").addEventListener("click", showIdle);
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
     function deviceLabel() {

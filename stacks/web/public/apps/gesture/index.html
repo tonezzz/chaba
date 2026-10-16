@@ -257,7 +257,8 @@ async function startCamera() {
   if (ENGINE === 'yolo') {
     status('yolo: frames → bridge', 'ok');
     ctlPost('uplink-on', 'cam started');
-    requestAnimationFrame(yoloLoop);
+    holdWake();
+    scheduleYolo();
     return;
   }
   if ((want.hands && !landmarker) || (want.face && !faceLm) || (want.pose && !poseLm)) {
@@ -272,9 +273,26 @@ async function startCamera() {
 // The yolo-gesture service polls the bridge's latest frame, detects the
 // hand bbox, and publishes {type:"gesture"} into the relay itself — this
 // page never sees a pointer coordinate, it just ships frames.
+// Screen Wake Lock — the wand dies if the phone dims (iOS suspends rAF +
+// camera in a locked/dimmed page; observed 2026-10-16 as "yolo not
+// active": frames froze while the service sat healthy). Held while the
+// camera runs; auto-releases on hide, re-taken on return.
+let wakeLock = null;
+async function holdWake() {
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && stream) holdWake();
+});
 let lastUp = 0, upOk = 0, upErr = 0;
+function scheduleYolo() {
+  // rAF freezes in background tabs — a 1s setTimeout keeps a dribble of
+  // frames alive so the service doesn't drop the pointer to 'gone'
+  if (document.hidden) setTimeout(yoloLoop, 1000);
+  else requestAnimationFrame(yoloLoop);
+}
 function yoloLoop() {
-  requestAnimationFrame(yoloLoop);
+  scheduleYolo();
   if (video.readyState < 2 || !video.videoWidth) return;
   const now = performance.now();
   frames++;

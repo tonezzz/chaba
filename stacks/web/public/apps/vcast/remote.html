@@ -34,6 +34,7 @@
   <button data-url="/apps/jam/">▶ jam + 📷</button>
   <button data-url="/apps/percussion/">▶ percussion</button>
   <button data-gest>✋ gesture cam</button>
+  <button id="b-menu">⌂ menu</button>
 </div>
 <div id="state"></div>
 <script>
@@ -76,7 +77,10 @@
   // your hand and taps the pads through the on-screen pointer.
   const WAND = location.origin + "/apps/gesture/?engine=yolo&s=" + S;
 
-  document.querySelectorAll("#apps button").forEach(b => {
+  document.getElementById("b-menu").addEventListener("click", () =>
+    pub({ type: "stop" }));   // stop w/o pane -> back to the blank screen
+
+  document.querySelectorAll("#apps button[data-url], #apps button[data-gest]").forEach(b => {
     b.addEventListener("click", () => {
       if (b.dataset.url === "/apps/jam/") {
         pub({ type: "nav", pane: 0, url: b.dataset.url });
