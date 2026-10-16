@@ -1,0 +1,15 @@
+id: tony-dell-podman-lock-wedge
+title: 'tony-dell collapse 2026-10-16: stale podman shm lock + unbounded docker-ps pile -> swap thrash'
+column: review
+updated: 2026-10-16 15:02
+note: 'Host went load~94, all TCP dead (ssh banner timeouts), swap 16G/23G on 5400rpm HDD. Root cause chain: unclean
+  state left stale /dev/shm/libpod_rootless_lock_1000 + dead pause.pid; container-start units serialized on alive.lck
+  while refresh hit stale per-container lock (ctr 95f430e EEXIST); monitoring-dashboard fired 4 unbounded `docker
+  ps` (podman) per 30s tick -> ~700 procs -> memory exhaust -> thrash. Fixes landed: (1) remote reboot via sudo
+  systemctl reboot; (2) cleared /dev/shm lock + /run/u'
+ref: OPS-0718
+comms:
+- at: 2026-10-16 15:02
+  from: tony
+  text: card captured via board-api
+review_kind: verify
