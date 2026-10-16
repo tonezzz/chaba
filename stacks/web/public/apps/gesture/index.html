@@ -747,6 +747,14 @@ if (ENGINE === 'yolo') {
 
 connectWs();
 status('idle — tap Start camera', 'warn');
+
+// ?sax=1 — arrived from a jam screen's QR: skip the camera entirely and
+// go straight to hum mode (the mic prompt itself is the "tap")
+if (QS.get('sax')) {
+  const hb = $('btn-hum');
+  status('🎷 allow the mic, then hum — the screen plays it as sax', 'ok');
+  humStart(hb);
+}
 </script>
 </body>
 </html>

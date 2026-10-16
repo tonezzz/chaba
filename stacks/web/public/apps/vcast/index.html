@@ -339,7 +339,11 @@
       // jam's real controller is the camera wand — mediapipe mode detects
       // palm/face/pose ON the phone and drives the cursor + jam directly;
       // ?engine=yolo remains the headless-uplink alternative
-      if (gMode === "hand" || u.startsWith("/apps/jam/"))
+      if (u.startsWith("/apps/jam/"))
+        // sax mod is loaded on the jam side — send the phone straight to
+        // hum mode so "scan -> allow mic -> hum" is the whole flow
+        return location.origin + "/apps/gesture/?s=" + screenNum + "&sax=1";
+      if (gMode === "hand")
         return location.origin + "/apps/gesture/?s=" + screenNum;
       if (u.startsWith("/apps/")) return location.origin + u;
       return location.origin + "/apps/vcast/remote.html?s=" + screenNum;
