@@ -31,9 +31,9 @@
 <div id="label">remote</div>
 <div id="code"><span id="codeDigits">····</span><small>screen claim id</small></div>
 <div id="apps">
-  <button data-url="/apps/jam/">▶ jam</button>
+  <button data-url="/apps/jam/">▶ jam + 📷</button>
   <button data-url="/apps/percussion/">▶ percussion</button>
-  <button data-gest>✋ gesture</button>
+  <button data-gest>✋ gesture cam</button>
 </div>
 <div id="state"></div>
 <script>
@@ -71,13 +71,22 @@
     } catch (e) {}
   }
 
+  // Jam's controller is the camera wand — tapping jam sends the screen to
+  // the app AND takes the phone to the gesture page, whose camera watches
+  // your hand and taps the pads through the on-screen pointer.
+  const WAND = location.origin + "/apps/gesture/?engine=yolo&s=" + S;
+
   document.querySelectorAll("#apps button").forEach(b => {
     b.addEventListener("click", () => {
-      if (b.dataset.url)
+      if (b.dataset.url === "/apps/jam/") {
         pub({ type: "nav", pane: 0, url: b.dataset.url });
-      else {
-        gestOn = !gestOn;
-        pub({ type: "gesture", mode: gestOn ? "hand" : "off" });
+        pub({ type: "gesture", mode: "hand" });
+        location.href = WAND;
+      } else if (b.dataset.url) {
+        pub({ type: "nav", pane: 0, url: b.dataset.url });
+      } else {
+        pub({ type: "gesture", mode: "hand" });
+        location.href = WAND;
       }
     });
   });
