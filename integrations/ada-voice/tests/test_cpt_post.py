@@ -109,8 +109,11 @@ class TestRun:
         assert res["ok"] is False and "title" in res["error"]
 
     async def test_expense_without_title_ok_but_needs_env(self, tool):
-        res = await tool.run(_runner(), kind="expense", amount="5")
-        assert res["ok"] is False  # no wp-boards.env in test env
+        # Stub env empty — hosts with a real wp-boards.env would otherwise
+        # post a live record (observed: junk "Expense - receipt" on prod).
+        with patch.object(tool.wp, "env", return_value={}):
+            res = await tool.run(_runner(), kind="expense", amount="5")
+        assert res["ok"] is False
         assert "wp-boards.env" in res["error"]
 
     async def test_happy_path_expense(self, tool):
