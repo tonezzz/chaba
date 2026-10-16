@@ -745,6 +745,27 @@ if (ENGINE === 'yolo') {
     'bridge /frame?screen=0&token=gesture and POINTER_SINK at the relay.';
 }
 
+/* zombie-ws watchdog: iOS suspends sockets on backgrounding WITHOUT
+   firing onclose — the page wakes still believing it is connected and
+   send() drops msgs into a dead pipe (hum-voiced posted fine while zero
+   msgs reached the room, 2026-10-16). The server pings every ~30s, so
+   >50s of silence on an "open" socket means zombie: force close -> the
+   socket's own onclose handler reconnects it. Self-attaching: any new
+   socket instance (reconnects create fresh objects) gets wrapped on
+   first sight. */
+const zLast = new WeakMap();
+setInterval(() => {
+  for (const s of [vWs, ctlWs]) {   // ws (gesture-live) may idle silently
+    if (!s || s.readyState !== 1) continue;
+    if (!s._zw) {
+      s._zw = 1; zLast.set(s, Date.now());
+      const prev = s.onmessage;
+      s.onmessage = ev => { zLast.set(s, Date.now()); prev && prev.call(s, ev); };
+    }
+    if (Date.now() - zLast.get(s) > 50000) { try { s.close(); } catch {} }
+  }
+}, 10000);
+
 connectWs();
 status('idle — tap Start camera', 'warn');
 
