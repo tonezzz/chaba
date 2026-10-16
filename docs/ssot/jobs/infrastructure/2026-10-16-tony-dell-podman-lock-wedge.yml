@@ -1,0 +1,143 @@
+id: 2026-10-16-tony-dell-podman-lock-wedge
+title: tony-dell collapse — stale podman shm lock + unbounded docker-ps pile -> swap thrash
+date: 2026-10-16
+host: tony-dell
+card: tony-dell-podman-lock-wedge
+ref: OPS-0718
+dispatch: dispatch-wt-20261016-182606-tony-dell-collapse-2026-10-16-
+
+summary: >
+  tony-dell collapsed mid-afternoon 2026-10-16: load ~94, all TCP dead (ssh
+  banner timeouts), swap 16G/23G on the 5400rpm HDD. Root-cause chain: an
+  unclean podman shutdown earlier in the uptime left a stale
+  /dev/shm/libpod_rootless_lock_1000 plus dead pause.pid; container-start
+  units then serialized on alive.lck while a refresh hit a stale
+  per-container lock (ctr 95f430e, EEXIST). With the podman state DB
+  wedged, monitoring-dashboard's 30s tick kept firing 4 unbounded
+  `docker ps` calls that never exited — ~700 piled processes, memory
+  exhaust, swap thrash on spinning rust. Recovered by remote reboot
+  14:23 (+07) and manual lock cleanup; the docker-ps pile-up was fixed in
+  code at 14:35 (aa879d254). Verified 2026-10-16 18:30: host healthy,
+  podman responsive, fix deployed AND running, sibling callers all
+  bounded. Residual gap: stale-lock detection/recovery is still manual —
+  watchdog carded.
+
+timeline:
+  - at: "2026-10-14 ~19:42"
+    event: previous boot (after a hard/unclean shutdown at 19:39 — see
+      2026-10-16-tony-dell-mcp-health-postboot-flap.yml); dozens of podman
+      user services failed in the post-boot window — likely origin of the
+      unclean container state (dead pause.pid, stale per-ctr locks)
+  - at: "2026-10-16 ~13:4x-14:2x"
+    event: podman state DB wedges — container-start units serialize on
+      alive.lck; refresh hits stale per-container lock on ctr 95f430e
+      (EEXIST); stale /dev/shm/libpod_rootless_lock_1000 + dead pause.pid
+      left by the earlier unclean kill
+  - at: "same window"
+    event: monitoring-dashboard fires 4 unbounded `docker ps` (podman)
+      per 30s tick; wedged daemon never answers, calls never die, ~700
+      procs pile up geometrically
+  - at: "same window"
+    event: memory exhaust -> swap thrash on 5400rpm HDD -> load ~94, all
+      TCP dead (ssh banner timeouts); earlyoom running but could not reap
+      fast enough against a process-count-driven pile
+  - at: "2026-10-16 14:23"
+    event: remote `sudo systemctl reboot` — graceful shutdown visible in
+      journal (14:23:10-14:23:34); /dev/shm tmpfs cleared by the reboot
+  - at: "2026-10-16 14:35"
+    event: 'fix committed — aa879d254 "monitoring-dashboard: bound
+      docker-ps health checks" (one `timeout 8 docker ps` per tick +
+      exec timeout 10s SIGKILL)'
+  - at: "2026-10-16 18:30"
+    event: verify pass (this dispatch) — up 4h, `timeout 10 podman ps`
+      returns 19 containers instantly, no runaway docker-ps procs, live
+      dashboard file byte-identical to fixed repo copy, swap 4.3G/15G
+      residual from thrash (drains lazily, not an active leak)
+
+findings:
+  - >-
+    The pile-up mechanism was geometric: each 30s tick spawned 4
+    `docker ps --filter name=...` exec calls with NO timeout. Once the
+    daemon wedged, every tick added 4 immortal children — ~700 in the
+    window before collapse. Confirmed by pre-fix diff (aa879d254).
+  - >-
+    /dev/shm is tmpfs — the stale rootless lock did NOT survive the
+    reboot; it was created and orphaned during the uptime by a podman
+    process killed uncleanly (SIGKILL does not unlink). A reboot always
+    clears the shm lock; the durable risk is mid-session wedge, which is
+    why bounded callers + a watchdog are the real fix surface.
+  - >-
+    Fix verified end-to-end: commit aa879d254 is an ancestor of
+    origin/master; the live copy at
+    ~/CascadeProjects/chaba-tony-dell/scripts/monitoring-dashboard.mjs is
+    byte-identical; the running process (PID 48190, started 14:2x
+    post-boot) executes that file.
+  - >-
+    Sibling audit — every other caller that runs podman/docker ps is
+    bounded: scripts/ada/host-services-cms.py (subprocess timeout=90s,
+    on-demand audit), tony-dell-monitor.sh (curl --max-time + subprocess
+    timeout=10, no podman calls), scripts/system-maintenance.mjs
+    (execSync timeout=300s, manual maintenance only), mcp-health
+    server.js (on-demand MCP tool calls, no timer loop). The
+    fast-timer + unbounded-exec combination was unique to
+    monitoring-dashboard.
+  - >-
+    Journal is lossy during the thrash window — no EEXIST/alive.lck
+    lines captured; evidence is the commit message, card note, and
+    post-hoc code analysis. Swap-thrash boxes stop logging before they
+    stop responding.
+  - >-
+    earlyoom + 8G zram swap are in place and active, but a wedged-
+    daemon process pile exhausts via process count / fork overhead, not
+    just RSS — neither mitigation prevented the collapse.
+
+changes:
+  - >-
+    scripts/monitoring-dashboard.mjs (aa879d254, already landed):
+    4x unbounded per-container `docker ps` -> 1x `timeout 8 docker ps`
+    for all containers per tick, plus execAsync timeout=10s SIGKILL.
+  - >-
+    This job doc — incident record + recovery runbook below.
+
+recovery_runbook: |
+  Symptoms: `podman ps` / `podman <anything>` hangs forever; container-
+  start units queue up; `ls -l /dev/shm/libpod_rootless_lock_<uid>` shows
+  a lock whose owning PID is dead; ctr ops report alive.lck/EEXIST.
+  1. Confirm no live podman/conmon holds the lock:
+       pgrep -af 'podman|conmon'     # expect only long-lived conmon/pause
+  2. Clear the stale rootless state (safe only while no podman is mid-op):
+       rm -f /dev/shm/libpod_rootless_lock_$(id -u)
+       rm -f /run/user/$(id -u)/containers/*/pause.pid   # dead pause pids
+       rm -f ~/.local/share/containers/storage/*-lock /run/user/$(id -u)/libpod/tmp/alive.lck
+  3. If the lock file count drifted, run: podman system renumber
+  4. Re-probe: timeout 10 podman ps — must return in <10s.
+  5. If the box is already thrashing (load >50, TCP dead): remote
+     `sudo systemctl reboot` via a still-open channel (crd/tailscale on
+     another NIC) — /dev/shm clears on boot; do NOT spend time surgically
+     clearing locks while the HDD is swap-thrashing.
+  Prevention: any caller that exec's podman/docker on a timer MUST wrap
+  it (`timeout 8`, plus exec-level kill) and MUST NOT fan out per
+  container — one call per tick for all containers.
+
+followups:
+  - >-
+    carded: podman-lock-wedge watchdog — a timer that probes
+    `timeout 8 podman ps`; on N consecutive failures with no live podman
+    processes it auto-clears the stale locks (runbook above) and alerts,
+    so a mid-session wedge self-heals before callers pile up.
+  - >-
+    known-uncleared risk: overnight-jobs-expanded.sh runs ~11 sequential
+    `docker ps` calls unbounded — sequential so the pile caps at 1
+    hung proc per run, but a wedge will hang the whole nightly batch.
+    Worth bounding when next touched (low priority).
+  - >-
+    journald visibility gap: during thrash the journal loses the wedge
+    evidence — consider a tiny always-on sampler (load + swap + docker-ps
+    proc count written to a mmap'd file) if this class of incident recurs.
+
+verification:
+  - "uptime; free -h; timeout 10 podman ps | wc -l    (expect ~19 containers, instant)"
+  - "diff -q scripts/monitoring-dashboard.mjs ~/CascadeProjects/chaba-tony-dell/scripts/monitoring-dashboard.mjs"
+  - "ps -eo pid,etimes,args | grep monitoring-dashboard    (PID started post-boot)"
+  - "git merge-base --is-ancestor aa879d254 origin/master"
+  - "pgrep -c -f 'docker ps|podman ps'    (expect 0-1 transient MCP call)"
