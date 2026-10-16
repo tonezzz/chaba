@@ -1,6 +1,8 @@
 [Unit]
 Description=Kanban board write API (card actions/respond/comment -> YAML + render)
-After=default.target
+# no After=default.target — it queued start behind unrelated crash-looping
+# units completing default.target (2026-10-16 boot, ~8min delay). WantedBy
+# already puts us in the transaction; we start in parallel with it.
 
 [Service]
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-api.py

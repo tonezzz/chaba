@@ -1,6 +1,7 @@
 [Unit]
 Description=System report refresh API (POST /refresh -> chaba-system-report.service, GET /status)
-After=default.target
+# no After=default.target — same boot-delay trap as chaba-board-api
+# (queued behind crash-looping units, 2026-10-16). WantedBy suffices.
 
 [Service]
 # Bind all interfaces: tailnet peers reach it for service-to-service
