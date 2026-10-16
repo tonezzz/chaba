@@ -1,7 +1,7 @@
 id: runner-push-cred-gap
 title: Runners without repo push creds strand dispatch branches (macbook, idc03)
-column: backlog
-updated: 2026-10-16 17:14
+column: review
+updated: 2026-10-16 17:43
 spec: 'ADA-0673 hit the documented failure mode: tony-macbook claimed an ada-pi dispatch, finished, checkpoint committed
   — but its SSH key is a chaba-only deploy key, so the branch never reached origin; card still marked done+verified
   (misleading). Same gap on idc03 (daa0e0a stranded). Options: (a) add ada-voice deploy keys to each runner host;
@@ -25,12 +25,31 @@ comms:
   text: 'attempt 2 in worktree: implementing (b) push:<repo> claim guard (label + live push --dry-run probe), (c)
     git-bundle patch-relay via new board-api /patch-relay -> $DISPATCH_DIR/patch-inbox + merge-sweep consume, and
     head-on-origin gating for the verified stamp'
+- at: 2026-10-16 17:41
+  from: devin
+  text: 'shipped (b)+(c)+verify-fix: push:<repo> claim guard w/ live push --dry-run probe on both claim paths (runner-agent
+    + kanban-dispatch, kill-switch env), close-out patch-relay (git bundle → board-api /patch-relay → $DISPATCH_DIR/patch-inbox
+    on dell), merge-sweep falls back runner-ssh → origin branch → relayed bundle and pushes salvaged branch refs,
+    verified stamp now gated on dr.head_on_origin(). Also fixed: close_out push errors silently dropped (error vs
+    push_error key), fleet-health missing re '
+- at: 2026-10-16 17:42
+  from: devin
+  text: 'DONE (attempt 2). All three fixes landed in the dispatch worktree: (b) push:<repo> claim guard + live push
+    --dry-run probe on runner-agent & kanban-dispatch, defer comms, kill-switch envs; (c) close-out patch-relay
+    — git bundle → new board-api /patch-relay → $DISPATCH_DIR/patch-inbox, validated+idempotent; verify fix — merge-sweep
+    stamps verified only when dr.head_on_origin() proves the head on origin, fetch falls back runner-ssh → origin
+    branch → relayed bundle, salvaged branches pushed to orig'
+- at: 2026-10-16 17:43
+  from: chaba
+  text: run finished (inactive) → review
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   task_id: 20261016-165349-ada-0673-hit-the-documented-fa
+  result: 20261016-165349-ada-0673-hit-the-documented-fa finished (inactive) — see `devin-dispatch logs 20261016-165349-ada-0673-hit-the-documented-fa`
+  merge_pending: true
 claim:
-  session: 20261016-165349-ada-0673-hit-the-documented-fa
   since: 2026-10-16 16:53
+review_kind: verify
