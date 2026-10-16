@@ -1,17 +1,17 @@
 id: gev-auto-bridge
 title: gev-gemini service not active
-column: done
+column: review
 generated: gev-auto-health
 program: gev
 area: monitoring
 priority: high
-note: 'Auto-recovered 2026-10-14: `bridge` check passing again.'
+note: systemctl --user is-active gev-gemini -> deactivating
 help: 'Quadlet ~/.config/containers/systemd/gev-gemini.container runs the Gemini Live
   bridge (image localhost/gev-gemini, Network=host, :8789 ws + :8790 cmd). Fix: systemctl
   --user start gev-gemini. If the image is stale: podman build -t localhost/gev-gemini:latest
   ~/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini && systemctl --user
   restart gev-gemini'
-updated: '2026-10-14'
+updated: '2026-10-16'
 brief: 'An automated health check flagged: gev-gemini service not active. Read the
   note, fix it, then close the card.'
 ref: MED-0176
