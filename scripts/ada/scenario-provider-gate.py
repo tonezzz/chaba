@@ -17,8 +17,15 @@ zero API spend (journal + env-file reads only):
                      while a FREE lane exists (sha-compare against
                      gemini-keys.env; key material never logged).
   3. quota-dead    — quota-shaped provider errors in the last --window
-                     minutes with no healthy session marker newer than
-                     the newest error (else 'skip-quota').
+                     minutes with no healthy marker newer than the
+                     newest error ON THE SAME TRANSPORT (else
+                     'skip-quota'). Live-lane dunning (1011/quota close
+                     stamps) needs a live marker (usage turn / ready /
+                     provider reconnected); REST-lane dunning (LiteLLM
+                     key-cap 422s, 429s) is cleared by any served
+                     completion 200 — text-mode suites exercise that
+                     path, and a lane whose fallback chain still answers
+                     is not dead for them.
 
 On a skip verdict it records the skip the way the runner itself would:
 one report/<scenario>-<ts> doc per smoke-tier scenario with status
@@ -77,23 +84,29 @@ SCENARIOS_DIR = Path(os.environ.get(
     "ADA_PI_DIR", "~/CascadeProjects/ada-voice")).expanduser() / \
     "tests" / "scenarios-live"
 
-# Dunning evidence in the backend journal. 'provider (re)connect failed'
-# is the connect-level kill; the quota strings are the reason stamped by
-# the upstream close. The bare-429 alternative refuses ',429'/'.429'
-# (log-timestamp millis) and 'out=429'/'in=429' (usage-turn lines) —
-# both false-positived on real journals (2026-10-11).
+# Dunning evidence in the backend journal, split by transport — a dead
+# provider is only refuted by a success marker on the SAME transport
+# (check_quota). 'provider (re)connect failed' is the connect-level
+# kill; the quota strings are the reason stamped by the upstream close.
+# The bare-429 alternative refuses ',429'/'.429' (log-timestamp millis)
+# and 'out=429'/'in=429' (usage-turn lines) — both false-positived on
+# real journals (2026-10-11).
 RX_CONN_FAIL = re.compile(
     r"provider (connect|reconnect) failed", re.I)
-RX_QUOTA = re.compile(
+# Live-lane dunning — Gemini Live upstream close/quota stamps.
+RX_QUOTA_LIVE = re.compile(
     r"exceeded your current quota|resource.?exhausted|"
-    r"received 1011|APIError: 1011|check your plan and billing|"
-    # LiteLLM per-key budget caps surface as 422 budget_exceeded
-    # ("Budget has been exceeded! Key=bench ...") — observed
-    # 2026-10-15 when the bench virtual key crossed its $2/30d cap and
-    # ada-dev text turns fell through to OpenRouter free-tier 429s.
+    r"received 1011|APIError: 1011|check your plan and billing", re.I)
+# REST-lane dunning — LiteLLM per-key budget caps surface as 422
+# budget_exceeded ("Budget has been exceeded! Key=bench ...") — observed
+# 2026-10-15 when the bench virtual key crossed its $2/30d cap and
+# ada-dev text turns fell through to OpenRouter free-tier 429s.
+RX_QUOTA_REST = re.compile(
     r"budget.{0,15}exceed|"
     r"HTTP.{0,10}429|status.{0,6}429|(?<![0-9A-Za-z=,.])429(?![0-9A-Za-z])",
     re.I)
+RX_QUOTA = re.compile(
+    RX_QUOTA_LIVE.pattern + "|" + RX_QUOTA_REST.pattern, re.I)
 # Healthy-provider markers — a provider that served anything after the
 # last dunning line is not dead. 'prime injected' is deliberately absent:
 # it is a local mddb write at session setup, logged even while every
@@ -101,6 +114,15 @@ RX_QUOTA = re.compile(
 RX_OK = re.compile(
     r"provider reconnected|usage turn|assistant response|ready event",
     re.I)
+# Served completion on the REST text lane — httpx access log,
+# 'HTTP Request: POST <url> "HTTP/1.1 200 OK"'. Text-mode providers log
+# none of the RX_OK markers (observed on ada-dev 2026-10-16: 2197
+# chat/completions lines vs 0 'usage turn'), so without this a text lane
+# that serves every turn via the fallback chain reads quota-dead
+# forever once a key cap trips.
+RX_OK_REST = re.compile(
+    r"HTTP Request: POST \S*(?:chat/completions|generateContent)\S*"
+    r".*HTTP/[0-9.]+ 200", re.I)
 RX_WS_CONNECT = re.compile(r"client connected", re.I)
 RX_UPSTREAM = re.compile(r"provider reconnected", re.I)
 
@@ -328,25 +350,44 @@ def check_free_lane(unit: str) -> tuple[str, str]:
 
 def check_quota(unit: str, window_min: int) -> tuple[str, dict]:
     """(verdict, detail) — 'ok' | 'quota-dead' | 'quota-suspect'.
-    quota-suspect = repeated connect failures without a quota stamp —
-    still gated: a storming retry loop is exactly what we must not feed."""
+
+    Dunning is refuted only by a success marker on the SAME transport:
+    live-lane quota stamps (1011 / 'exceeded your current quota' /
+    resource-exhausted) are cleared only by upstream markers (RX_OK) —
+    a REST 200 must not mask a dead Live upstream on a prod suite run.
+    REST-lane dunning (key caps, 429s) is cleared by any served
+    completion — a text-mode suite exercises exactly that path.
+    Connect-fail streaks still need an upstream marker: a live provider
+    that cannot connect is dead for live-transport suites regardless of
+    REST health.
+    """
     lines = _journal(unit, f"-{window_min} min")
-    last_quota = last_fail = last_ok = -1
-    n_quota = n_fail = n_ok = 0
+    last_quota = last_quota_live = last_fail = -1
+    last_ok = last_ok_rest = -1
+    n_quota = n_quota_live = n_fail = n_ok = n_ok_rest = 0
     for i, line in enumerate(lines):
         if RX_QUOTA.search(line):
             n_quota += 1
             last_quota = i
+            if RX_QUOTA_LIVE.search(line):
+                n_quota_live += 1
+                last_quota_live = i
         if RX_CONN_FAIL.search(line):
             n_fail += 1
             last_fail = i
         if RX_OK.search(line):
             n_ok += 1
             last_ok = i
+        if RX_OK_REST.search(line):
+            n_ok_rest += 1
+            last_ok_rest = i
     detail = {"window_min": window_min, "quota_lines": n_quota,
+              "live_quota_lines": n_quota_live,
               "provider_connect_fails": n_fail, "healthy_markers": n_ok,
-              "journal_lines": len(lines)}
-    if n_quota and last_quota > last_ok:
+              "rest_served": n_ok_rest, "journal_lines": len(lines)}
+    if last_quota_live > last_ok:
+        return "quota-dead", detail
+    if last_quota > max(last_ok, last_ok_rest):
         return "quota-dead", detail
     if n_fail >= 5 and last_fail > last_ok:
         # persistent connect failure without a quota string — treat as an

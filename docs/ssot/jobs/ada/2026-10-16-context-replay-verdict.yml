@@ -1,0 +1,95 @@
+date: 2026-10-16
+title: Context-replay burn verdict + provider-gate transport fix
+domain: ada
+job: context-replay-verdict
+cards: [live-voice-burn-context-replay]
+refs: [ADA-0631]
+host: idc03
+summary: >
+  Re-measured the 2026-10-14 findings on live usage.jsonl + journald:
+  the burn the card described has already collapsed (128.8M in-tokens on
+  10-12 -> 0.39M on 10-15, 0.91M on 10-16) because the earlier diet
+  stack moved bench + LINE traffic off Live onto the REST text lane.
+  The one live defect the dig exposed is now the smoke-tier gate:
+  text-mode transports produce none of the gate's "healthy" markers, so
+  LiteLLM bench-key 422s flap ada-dev between quota-dead and ok every
+  other hour. Fixed check_quota to refute dunning only with
+  same-transport success.
+
+burn_context:
+  usage_jsonl_by_day:
+    2026-10-12: 4084 turns / 128.8M in (5.5M of it t-ctx test rows)
+    2026-10-13: 1095 turns / 27.7M in (4.5M test rows)
+    2026-10-14: 2966 turns / 63.8M in (dig day — mostly ada-dev Live)
+    2026-10-15: 20 turns / 0.39M in
+    2026-10-16: 37 turns / 0.91M in (all lane=tony)
+  why_collapsed:
+    - 'scenario transport change (ada-voice f485a27): 40/41 smoke
+      scenarios now run mode=text — REST generateContent via LiteLLM,
+      no upstream Gemini Live session at all'
+    - 'LINE text sessions moved to the gateway chat alias
+      (verified 10-14)'
+    - 'rotation-bounded context (ADA_CONTEXT_TRIGGER/TARGET 47k/35k),
+      _cap_tool_result, ADA_TOOL_CALL_BUDGET=10, keep-list, lazy
+      schemas — all landed 10-12..10-13 (OPS-0509 chain)'
+  remaining_live_burn: >-
+    ~<1M in/day, real voice sessions on ada-ha-tony only. The "85%
+    text-in" replay shape still holds per turn (median first-turn in
+    ~40k on tony lane, 50% of sessions 1-turn) — the residual levers are
+    ada-voice-scope and already carded (ada-voice-session-churn,
+    expression-call-batching ADA-0601).
+
+test_pollution:
+  status: fixed upstream
+  evidence: >-
+    ada-voice tests/conftest.py sets ADA_USAGE_LOG="off" (usage_tracker
+    honours 'off' = no persistence). Ledger confirms: zero non-10-hex
+    session rows on 10-15/16 (was 5.5M+4.5M on 10-12/13). Chaba readers
+    (spend-ledger.py, usage-feed.py) additionally drop source=live rows
+    whose session_id is not 10-hex — defense in depth already in place.
+
+live_defect_found_and_fixed:
+  symptom: >-
+    ada-scenario-smoke ExecCondition alternated ok/quota-dead every
+    hour since 2026-10-15 (quota_lines 35-372 per window), writing 41
+    skip-quota report docs per skipped hour. Half the hourly runs were
+    blind.
+  root_cause: >-
+    BEN-0573 moved smoke to ada-dev text-mode; text turns ride the
+    LiteLLM `bench` key, which crossed its $2 cap (Current 2.008/Max 2.0)
+    on ~10-15. Every text turn now logs a 'budget_exceeded' 422 (counted
+    as quota evidence, deliberately — RX_QUOTA) then falls back to
+    OpenRouter which answers 200. Text-mode sessions log none of the
+    RX_OK markers (0 'usage turn'/'ready event' lines on ada-dev in 24h
+    vs 2197 chat/completions calls), so any fresh 422 in the 70-min
+    window read as provider-dead even though the lane serves.
+  fix: >-
+    scripts/ada/scenario-provider-gate.py — RX_QUOTA split into
+    RX_QUOTA_LIVE (1011/'exceeded your current quota'/resource-exhausted)
+    and RX_QUOTA_REST (budget_exceeded/429s); new RX_OK_REST counts
+    served completions (httpx 'HTTP Request: POST
+    ..(chat/completions|generateContent).. HTTP/x 200'). check_quota:
+    live-class dunning is cleared only by live markers (a REST 200 must
+    not mask a dead Live upstream on a prod run); rest-class dunning is
+    cleared by any served completion; connect-fail streaks still need an
+    upstream marker. Detail dict gains live_quota_lines + rest_served.
+  verification:
+    - 'local synthetic-journal matrix: 10/10 cases pass, incl. the
+      masked-death guard (live dunning + only REST 200s -> still
+      quota-dead) and connect-fail streak + REST 200 -> quota-dead'
+    - 'live dry-run on idc03 vs ada-dev: ok — quota_lines=46
+      live_quota_lines=0 rest_served=63 (was quota-dead on the stock
+      script at 11:00)'
+    - 'NOT deployed — ExecCondition resolves %h/CascadeProjects/chaba/
+      on idc03; change propagates on merge + chaba-repo-sync (hourly).'
+
+open_items:
+  - 'LiteLLM `bench` virtual key is hard-capped at $2/30d and exhausted
+    — every ada-dev text turn pays a 422 round-trip before the
+    OpenRouter fallback. Either raise the cap, mint a fresh dev key, or
+    accept fallback-latency. Spend decision — flagged on the card, not
+    changed here.'
+  - 'Card-level follow-up for ada-voice scope: skip the gateway attempt
+    entirely when the key is known-capped (backend-side provider
+    reorder), and Live session resumption for reconnect re-prime —
+    outside this repo; noted on the card.'
