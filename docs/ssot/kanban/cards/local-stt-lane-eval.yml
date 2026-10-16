@@ -1,0 +1,21 @@
+id: local-stt-lane-eval
+title: Local STT lane POC — audio.cpp Qwen3-ASR vs sherpa-onnx vs whisper-large-v3 (4-way Thai/EN shootout on idc02)
+column: backlog
+updated: 2026-10-16 16:26
+spec: 'Host: idc02 (4-core ~9GB free, CPU lane). Install audio-v0.9.2-bin-ubuntu-x64-cpu-portable (~57MB); pull
+  GGUFs: Qwen3-ASR-0.6B Q8+F16, CrisperWhisper-Large Q8; sherpa-onnx binary + whisper small/medium. Corpus ~25-30
+  real utterances: Thai/EN/code-switched, names (Ada, Kaewta, KK), household commands — from Ada transcripts or
+  re-recorded. Contenders: qwen3-asr-0.6B, crisperwhisper-large (audio.cpp), whisper-small/medium (sherpa-onnx),
+  whisper-large-v3 (existing omen lane), gemini-live (cloud ref). Metrics: Thai CER, EN WER, code-switch, TTT, RTF,
+  RSS. Gates: Qwen3-ASR Thai CER within ~20% rel of whisper-large-v3; RTF<1.0 on idc02 CPU for 10s clips; streaming
+  endpoint works; no crashes/OOM. If pass -> card for Ada text-mode STT lane integration. Contained: no prod lane,
+  no spend, ~1GB disk on idc02.'
+note: 'From focus-inbox 2026-10-16-033559 (deferred: board-api was down during dell collapse). Deep research is
+  in WP Education post 589 (spaced review 2026-10-23). VERDICT: Phonon-2 = best tiny EN ASR but ~25 langs, NO THAI.
+  audio.cpp is the Thai-capable candidate (C++ ggml, ~57MB, no Python): Qwen3-ASR-0.6B/1.7B (explicit th, streaming),
+  Thai TTS (Confucius4/VoxCPM2), VAD, wake-word, diarization in one server. sherpa-onnx = incumbent baseline.'
+ref: OPS-0723
+comms:
+- at: 2026-10-16 16:26
+  from: tony
+  text: card captured via board-api
