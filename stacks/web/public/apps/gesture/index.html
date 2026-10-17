@@ -266,6 +266,15 @@ function send(obj) {
   const s = JSON.stringify(obj);
   if (wsOpen && ws.readyState === 1) ws.send(s);
   if (vOpen && vWs.readyState === 1) vWs.send(s);
+  // ws flapping on iOS must not mute the controller — POST the same msg
+  // over /pub (proven reliable: ctlPost survives when sockets churn).
+  // Only when the room socket is down, else msgs would double.
+  if (!vOpen && (obj.type === 'hum' || obj.type === 'gesture')) {
+    fetch('/api/input-bridge/pub', { method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ room: 'vcast-' + TARGET_SCREEN, msg: obj })
+    }).catch(() => {});
+  }
   if (wsOpen || vOpen) { txCount++; hudTx.textContent = 'tx ' + txCount; }
 }
 
