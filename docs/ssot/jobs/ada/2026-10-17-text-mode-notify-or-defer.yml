@@ -1,0 +1,81 @@
+# Job trail: text-mode sessions couldn't take proactive pushes
+# Card: text-mode-chat-send-broken
+# Incident: observed 2026-10-16 on ada-ai-kraut — `chat_send notify
+#   failed: timed out` (~14s) then `WARNING pwa_server: session=...
+#   notify failed: AttributeError: OpenRouterTextProvider object has no
+#   attribute notify_or_defer`. Kraut's chat_send of a dub-sample video
+#   (channel=line) ran its background job, but the completion note POST
+#   to /api/notify hard-crashed on the text provider — and before the
+#   AttributeError the handler had already stalled on an unbounded
+#   ws.send_text, which is what the caller saw as the ~14s timeout.
+
+title: notify_or_defer / queue_context_note on OpenRouterTextProvider
+card: text-mode-chat-send-broken
+repo: ada-voice
+branch: dispatch/20261017-150512-observed-2026-10-16-on-ada-ai-
+commit: f4c4625 (worktree ~/CascadeProjects/ada-wt-text-mode-notify on idc02)
+
+decision: |
+  Text-mode notify ports the Live split rather than inventing a new one:
+  _turns IS the session history on the REST provider, so a context note
+  is delivered by appending it (Live's turn_complete=False equivalent —
+  no flush queue needed). The announce path splits by what the channel
+  can actually render:
+
+  - line/telegram/tg: a spontaneous model reply is drained-and-dropped
+    by the relay reader before the next user turn, so urgent goes
+    out-of-band via the relay /send endpoint — the same path chat_send
+    takes, which keeps the relay's own per-chat guards authoritative
+    (LINE_LANE_ALLOW/LOCK, TG_PUSH_DENY on the mn-ha group). A denied or
+    unreachable push degrades to a context note ('queued') — the
+    notification is never lost.
+  - web/pwa/scenario clients read provider events continuously, so
+    urgent kicks a completion — the inline-announce analog of Live's
+    interrupt ('interrupted').
+  - non-urgent: silent context note in history ('context'), no reply.
+
+  queue_context_note now exists too — the channel-mirror and
+  command-lane callers were silently dropping notes on text sessions
+  (both sites are suppress()-wrapped, so it was invisible).
+
+changes:
+  backend/openrouter_provider.py:
+    - queue_context_note(text) — append system turn; closed sessions no-op.
+    - notify_or_defer(text, urgent) — returns interrupted|context|queued,
+      same contract /api/notify maps to {delivered, queued}.
+    - _relay_push(chan, text) — loopback POST to ADA_TG_SEND_URL /
+      ADA_LINE_SEND_URL with the SESSION_CHAT-bound chat_id (lane default
+      room when unbound); 20s timeout, runs via asyncio.to_thread.
+    - closed provider raises RuntimeError("provider is not connected") —
+      /api/notify's retry loop keys on that phrase.
+  pwa_server.py:
+    - api_notify — notify_voice ws.send_text wrapped in
+      asyncio.wait_for(timeout=4) — a half-dead relay socket could stall
+      the handler past the caller's own timeout (the observed ~14s).
+  tests/test_openrouter_provider.py:
+    - 5 cases — non-urgent context append, urgent relay push (endpoint,
+      chat_id, session record), deny/failure fallback to 'queued',
+      inline kick on web channel, closed-session RuntimeError,
+      queue_context_note append.
+
+not_changed: |
+  chat_send itself is untouched — LINE /send already degrades
+  video_url to a text link via _video_msgs, so the media-degrade clause
+  was already covered relay-side. TG_PUSH_DENY is env-side on the relay;
+  routing urgent pushes through /send keeps the guard authoritative
+  rather than bypassed.
+
+status:
+  state: branch-committed-not-merged-not-deployed
+  verify: |
+    tests/test_openrouter_provider.py: 13/13 pass.
+    Full suite (tests/ -q): 1542 passed, 7 skipped; 3 failures are a
+    pre-existing environment artifact on pristine origin/main (a9a8cca)
+    — `capture_reminder` injected into gev/tool-runner results on this
+    host, unrelated to the diff.
+    scripts/tool-lint.py: clean.
+  ship_path: |
+    merge-sweep pulls the dispatch branch to the served ada-voice
+    checkout on tony-dell; deploy via deploy-ada.sh on idc03 (drains
+    live /ws, restarts the lanes). Until deployed, /api/notify still
+    AttributeErrors against text-mode sessions on prod.
