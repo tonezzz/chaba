@@ -282,21 +282,38 @@ function send(obj) {
 }
 
 /* ---------------- mediapipe ---------------- */
-// three sensors, each toggleable — landmarkers init lazily per `want`
+// three sensors, each toggleable — landmarkers init lazily per `want`.
+// The GPU delegate can hang forever on some platforms (iOS Safari,
+// headless/WebGL-blocked chromium) — race the create against a timeout,
+// then retry on CPU so a stuck GPU init can't wedge "loading models".
+async function createLM(cls, vision, opts, timeoutMs = 15000) {
+  const make = (delegate) => cls.createFromOptions(vision, {
+    ...opts, baseOptions: { ...opts.baseOptions, delegate } });
+  try {
+    return await Promise.race([
+      make('GPU'),
+      new Promise((_, rej) => setTimeout(
+        () => rej(new Error('GPU delegate timeout')), timeoutMs)),
+    ]);
+  } catch (e) {
+    console.warn('mediapipe GPU delegate failed — retrying on CPU:', e);
+    return await make('CPU');
+  }
+}
 async function initLandmarkers() {
   const vision = await (visionP ||= FilesetResolver.forVisionTasks(WASM_DIR));
   const jobs = [];
   if (want.hands && !landmarker)
-    jobs.push(HandLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_HAND, delegate: 'GPU' },
+    jobs.push(createLM(HandLandmarker, vision, {
+      baseOptions: { modelAssetPath: MODEL_HAND },
       runningMode: 'VIDEO', numHands: 2 }).then(m => landmarker = m));
   if (want.face && !faceLm)
-    jobs.push(FaceLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_FACE, delegate: 'GPU' },
+    jobs.push(createLM(FaceLandmarker, vision, {
+      baseOptions: { modelAssetPath: MODEL_FACE },
       runningMode: 'VIDEO', outputFaceBlendshapes: true }).then(m => faceLm = m));
   if (want.pose && !poseLm)
-    jobs.push(PoseLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_POSE, delegate: 'GPU' },
+    jobs.push(createLM(PoseLandmarker, vision, {
+      baseOptions: { modelAssetPath: MODEL_POSE },
       runningMode: 'VIDEO', numPoses: 1 }).then(m => poseLm = m));
   await Promise.all(jobs);
 }

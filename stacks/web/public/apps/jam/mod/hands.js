@@ -1,7 +1,8 @@
 /* jam mod: hands — MediaPipe HandLandmarker (in-browser WASM, frames
    never leave the device). Air-drum: fast downward wrist motion =
    strike; hand height = continuous value for note-style targets.
-   Loads tasks-vision lazily from CDN — offline = module disabled. */
+   Loads tasks-vision lazily from /apps/vendor/mediapipe/ (vendored —
+   CDN/offline no longer a dependency). */
 "use strict";
 JAM.register("hands", {
   stream: null, landmarker: null, raf: 0,
@@ -15,16 +16,26 @@ JAM.register("hands", {
     video.srcObject = this.stream; video.style.display = "block";
     await video.play();
 
-    const mp = await import(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs");
+    const mp = await import("/apps/vendor/mediapipe/vision_bundle.mjs");
     const files = await mp.FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-    this.landmarker = await mp.HandLandmarker.createFromOptions(files, {
+      "/apps/vendor/mediapipe/");
+    // GPU delegate can hang forever (iOS Safari, headless/webgl-blocked
+    // chromium) — race the create, retry on CPU if it doesn't resolve.
+    const mk = (delegate) => mp.HandLandmarker.createFromOptions(files, {
       baseOptions: {
-        modelAssetPath:
-          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-        delegate: "GPU" },
+        modelAssetPath: "/apps/vendor/mediapipe/hand_landmarker.task",
+        delegate },
       runningMode: "VIDEO", numHands: 2 });
+    try {
+      this.landmarker = await Promise.race([
+        mk("GPU"),
+        new Promise((_, rej) => setTimeout(
+          () => rej(new Error("GPU delegate timeout")), 15000)),
+      ]);
+    } catch (e) {
+      console.warn("hands: GPU delegate failed, retrying on CPU:", e);
+      this.landmarker = await mk("CPU");
+    }
 
     const loop = () => {
       this.raf = requestAnimationFrame(loop);

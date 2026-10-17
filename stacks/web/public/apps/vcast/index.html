@@ -344,7 +344,9 @@
         // hum mode so "scan -> allow mic -> hum" is the whole flow
         return location.origin + "/apps/gesture/?s=" + screenNum + "&sax=1";
       if (gMode === "hand")
-        return location.origin + "/apps/gesture/?s=" + screenNum;
+        // engine=yolo — the phone only uplinks frames; detection runs
+        // server-side, so the wand never downloads landmarker models
+        return location.origin + "/apps/gesture/?s=" + screenNum + "&engine=yolo";
       if (u.startsWith("/apps/")) return location.origin + u;
       return location.origin + "/apps/vcast/remote.html?s=" + screenNum;
     }
