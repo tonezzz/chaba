@@ -63,7 +63,10 @@ http://127.0.0.1:8080 {
 			not header Tailscale-User-Login *
 		}
 		respond @anon_write_board-api "forbidden: board-api writes need a tailnet identity" 403
-		reverse_proxy 127.0.0.1:8787
+		# canonical writer moved to idc03 (OPS-0725) — the local :8787 api
+		# wrote into a pull-only mirror and silently reverted; forward via
+		# tailscale serve so tailnet identity headers stay valid
+		reverse_proxy https://idc03.taila0626a.ts.net:10000
 	}
 
 	handle /apps/system-report/api {
