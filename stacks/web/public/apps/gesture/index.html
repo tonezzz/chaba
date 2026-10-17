@@ -255,8 +255,10 @@ function connectVcast() {
   vWs.onopen = () => {
     vOpen = true;
     vWs.send(JSON.stringify({ type: 'join', room: 'vcast-' + TARGET_SCREEN }));
+    ctlPost('vws-open', 'vcast-' + TARGET_SCREEN);
   };
-  vWs.onclose = vWs.onerror = () => { vOpen = false; setTimeout(connectVcast, 4000); };
+  vWs.onclose = () => { vOpen = false; ctlPost('vws-close', ''); setTimeout(connectVcast, 4000); };
+  vWs.onerror = () => { vOpen = false; ctlPost('vws-error', ''); };
 }
 connectVcast();
 
