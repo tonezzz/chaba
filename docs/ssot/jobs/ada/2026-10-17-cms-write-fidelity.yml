@@ -1,0 +1,92 @@
+title: cms_publish_page write fidelity — narrated-vs-stored divergence guard
+id: 2026-10-17-cms-write-fidelity
+card: ada-cms-write-fidelity
+ref: ADA-0732
+date: 2026-10-17
+status: staged-not-deployed
+summary: |
+  MEM-0498 (kk-cms-only memory bench, 2026-10-12) finding 2: during the
+  suite Kaewta stored "Tuesdays" in cms_publish_page content while
+  narrating "Mondays" aloud — the stored artifact and the spoken claim
+  diverged, and the write persisted.
+
+  Root-cause read (ada-voice a9a8cca): the write path is verbatim —
+  tool_runner/cms.py cms_publish_page passes `content` straight to
+  mddb_client.add_document -> POST /add {contentMd} with no transform;
+  the confirm gate and slug/lang normalization never touch content.
+  The divergence is therefore a MODEL slip: narration and tool args are
+  separate generations that nothing binds. Not tool mangling.
+
+  Fix shipped as ada-voice Drop 13 (three layers):
+  1. tool-side post-write read-back — cms_publish_page re-reads the doc
+     after add_document and returns stored_verified + stored_sha256 +
+     stored_excerpt with a note directing the model to republish when a
+     stored fact differs from what she told the user. A store-side
+     mangle flips stored_verified=false; a read-back miss marks
+     "unknown".
+  2. provider-side write_fidelity ops event — at turn_complete,
+     _fidelity_tokens extracts weekday/clock-time/date sets (en+th in
+     one space) from the assistant narration AND the last-3 user turns;
+     a publish call whose persisted content arg carries a CONTRADICTING
+     set (both non-empty, disjoint) emits an advisory event for
+     session-audit/QC. Final-segment-boundary only — fires at most once
+     per turn; vague narration ("saved the page") cannot flag.
+  3. bench-side deterministic assertion — kk_cms_only_seeded_recall
+     turn 2 now requires call_args_contain for the seeded facts
+     (Monday/Thursday/prime, en+th alternates) and pins
+     calls_any: [cms_publish_page].
+
+flow: |
+  user seed -> model proposes -> confirm -> cms_publish_page(content)
+  -> meta merge + add_document -> READ-BACK get_document ->
+  stored_verified/stored_excerpt in the tool result (model self-check)
+  -> turn_complete -> _write_fidelity_problems(narration, user-seed,
+  publish-calls) -> write_fidelity ops event on contradiction ->
+  session-audit scoreboard picks it up next sweep.
+
+deliverables:
+  - file: integrations/ada-voice/backend/write-fidelity.patch
+    role: ada-voice patch (272 lines, applies clean vs a9a8cca)
+    detail: |
+      backend/tool_runner/cms.py — post-write read-back block after the
+      out{} dict (~line 547): get_document, compare contentMd vs
+      content, set stored_verified/stored_sha256/stored_excerpt + note.
+      backend/realtime_provider.py — _FIDELITY_* constants +
+      _fidelity_tokens + _write_fidelity_problems (~line 452);
+      turn_fidelity_calls list threaded beside turn_tool_results (init,
+      append at dispatch ~5884, resets at barge-in + final boundary);
+      check wired after the media-guard block gated on
+      `turn_fidelity_calls and not tools_pending`.
+      tests/scenarios-live/kk_cms_only_seeded_recall.yaml — turn-2
+      call_args_contain + calls_any pin.
+  - file: integrations/ada-voice/tests/test_write_fidelity.py
+    role: ada-voice-side unit tests (17 — token extraction,
+      contradiction matrix, read-back branches)
+  - file: integrations/ada-voice/README.md
+    role: Drop 13 install/contract/verified docs
+  - file: docs/ssot/jobs/ada/2026-10-17-cms-write-fidelity.yml
+    role: this record
+
+verification:
+  - "tests/test_write_fidelity.py 17/17 green (bare venv: httpx pyyaml pillow numpy websockets pytest)"
+  - "test_cms_regen + test_dead_turn + test_alias_hit_report + test_memory_pending: 71 passed, no regression"
+  - "test_tool_runner: 260 passed, 1 failure (test_non_dict_return_wraps_in_output) — reproduces on clean HEAD, pre-existing"
+  - "tool-lint clean; scenario-schema-check 196 files 0 violations"
+  - "git apply --check clean vs ada-voice origin/main @ a9a8cca"
+  - "NOT verified live: no real mddb — first real publish exercises the read-back on the dev lane"
+
+notes: |
+  Design choices worth knowing:
+  - Advisory, not corrective: the ops event fires AFTER the write and
+    does not roll back — the model self-corrects via the read-back
+    note; QC counts write_fidelity events like phantom_write_claim.
+  - Contradiction-only flagging: disjoint non-empty sets required, so
+    a narration with no day/time/date facts never flags. Fact classes
+    are deliberately narrow (weekdays, clock times, iso/slash dates) —
+    numbers and proper nouns are too noisy for set-disjoint checks.
+  - user-seed comparison is the stronger catch: it flags even when
+    narration is entirely vague, because the seed turn itself carries
+    the facts (bounded to last-3 user turns to dodge stale hits).
+  - _FIDELITY_WRITE_TOOLS currently holds only cms_publish_page —
+    cpt_post/wp_post writes could join the same check by extending the
+    frozenset (their content arg has the same verbatim path).
