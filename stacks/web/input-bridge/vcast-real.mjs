@@ -109,7 +109,10 @@ async function run() {
     let browser;
     try {
       browser = await chromium.launch({
-        headless: true,
+        // VCAST_HEADED=1 -> a REAL window on the host desktop: the display
+        // becomes watchable while playwright still manages lifecycle (no
+        // tab-freeze/discard — it's the browser's only page)
+        headless: process.env.VCAST_HEADED !== "1",
         args: [
           "--no-sandbox",
           "--enable-unsafe-swiftshader",       // Cesium/WebGL w/o GPU
