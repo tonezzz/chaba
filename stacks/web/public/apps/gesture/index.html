@@ -297,7 +297,11 @@ async function createLM(cls, vision, opts, timeoutMs = 15000) {
     ]);
   } catch (e) {
     console.warn('mediapipe GPU delegate failed — retrying on CPU:', e);
-    return await make('CPU');
+    return await Promise.race([
+      make('CPU'),
+      new Promise((_, rej) => setTimeout(
+        () => rej(new Error('CPU delegate timeout — wasm init wedged')), timeoutMs)),
+    ]);
   }
 }
 async function initLandmarkers() {
