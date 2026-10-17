@@ -801,6 +801,19 @@ jobs:
     only — never writes MDDB or edits posts. condition_path keeps the unit
     skipped until the script lands in the served checkout on merge.
     Added 2026-10-15.'
+- id: wp-lane-timeline
+  name: Ada lane transcripts -> WP timeline (mn-ha)
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-transcript-timeline.py
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/lane-transcript-timeline.py'
+  note: 'Lane membership via journalctl --user -u ada-ai-kraut session= ids ->
+    *-<sid>.md under ~/.local/share/ada/transcripts (shared pool, no lane tag
+    in files). Writes private timeline_block post 872 "Timeline — mn-ha",
+    newest-first turns, cap 200, 7d window. Added 2026-10-17.'
 - id: wp-news-situation
   name: News situation sweep + situations index refresh
   host: idc03
