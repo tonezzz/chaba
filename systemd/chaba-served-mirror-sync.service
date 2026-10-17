@@ -1,0 +1,8 @@
+[Unit]
+Description=Pull-only sync of frozen served checkout (mirror of idc03 writer) — exec units still run code from this path
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba-tony-dell
+ExecStart=/usr/bin/bash %h/CascadeProjects/chaba/scripts/git-safe-pull.sh
+TimeoutStartSec=300
