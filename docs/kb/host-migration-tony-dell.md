@@ -80,3 +80,19 @@ Every flip is a proxy upstream line + a `systemctl start` on dell (which stays u
 - Two-writer window: kanban-commit MUST be stopped on dell before idc03's starts — overlap = diverging card files.
 - Secrets/envs aren't in repo — pull from `~/.config/secrets/` per service; don't commit them.
 - Omen becomes single-point for LAN control while dell is out — acceptable for days, worth a note.
+
+## Phase 3 batch 3 (2026-10-18): helm + bserver → idc02
+
+- **bserver** (CMS: `/`, `/new`, `/decisions`, `/infrastructure`) → idc02 podman
+  `bserver:latest` (34.7M, ID 7c783ac77999), binds tailnet IP :8092 + :8443
+  (was wildcard on dell). Static mount `stacks/web/bserver-www` comes via the
+  chaba checkout — no data copy needed.
+- **helm** (`/apps/helm`) → idc02 podman `web-helm:prod` (947M), tailnet :3003.
+- **Gotcha — `podman save` multi-tag quirk**: saving `web-helm:prod bserver:latest`
+  in one archive landed BOTH tags on the helm image ID on the receiving host.
+  Always `podman save` one ref per archive (or verify IDs after load). bserver
+  was retransferred solo.
+- **Gotcha — quadlet `AddHost` unsupported on podman 4.9**: dell runs newer;
+  on idc02 use `PodmanArgs=--add-host host.docker.internal:host-gateway`.
+- Dell quadlets parked (`*.container.parked`) — same pattern as notebooklm.
+- Verified: `/`, `/decisions`, `/infrastructure`, `/apps/helm` → 200 via dell edge.
