@@ -133,6 +133,13 @@ class AdaVoiceCard extends HTMLElement {
     this._state = "idle"; // idle | locked | connecting | listening | speaking | reconnecting | error
     this._docNotes = [];      // queued "document uploaded" session notes
     this._docUploading = false;
+    this._wakeLock = null;    // screen wake lock while a session is live —
+                            // iOS suspends Safari (and its ws) on auto-lock,
+                            // killing voice sessions mid-conversation.
+    this._onVisWake = () => {
+      if (!document.hidden && this._socket && !this._wakeLock) this._acquireWakeLock();
+    };
+    document.addEventListener("visibilitychange", this._onVisWake);
     this._build();
   }
 
@@ -606,6 +613,7 @@ class AdaVoiceCard extends HTMLElement {
       case "ready":
         this._state = "listening";
         this._setStatus("Connected — listening");
+        this._acquireWakeLock();
         this._flushDocNotes();
         break;
       case "speech_started":
@@ -791,7 +799,20 @@ class AdaVoiceCard extends HTMLElement {
     }
   }
 
+  async _acquireWakeLock() {
+    if (this._wakeLock || !("wakeLock" in navigator)) return;
+    try { this._wakeLock = await navigator.wakeLock.request("screen"); }
+    catch { this._wakeLock = null; }
+  }
+
+  _releaseWakeLock() {
+    const wl = this._wakeLock;
+    this._wakeLock = null;
+    if (wl) wl.release().catch(() => {});
+  }
+
   async _teardown(closeSocket = true) {
+    this._releaseWakeLock();
     if (closeSocket && this._socket && this._socket.readyState < WebSocket.CLOSING)
       this._socket.close(1000, "user disconnect");
     this._socket = null;
@@ -861,7 +882,10 @@ class AdaVoiceCard extends HTMLElement {
     this._unlockRow.style.display = this._state === "locked" && !this._apiKey() ? "flex" : "none";
   }
 
-  disconnectedCallback() { this._teardown(true); }
+  disconnectedCallback() {
+    document.removeEventListener("visibilitychange", this._onVisWake);
+    this._teardown(true);
+  }
 
   getCardSize() { return 3; }
 }

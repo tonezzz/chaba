@@ -56,6 +56,12 @@ class AdaChatCard extends HTMLElement {
     this._docNotes = [];      // queued "document uploaded" session notes
     this._docUploading = false;
     this._responseActive = false;
+    this._wakeLock = null;    // hold the screen while connected — iOS
+                            // suspends the page (and its ws) on auto-lock.
+    this._onVisWake = () => {
+      if (!document.hidden && this._socket && !this._wakeLock) this._acquireWakeLock();
+    };
+    document.addEventListener("visibilitychange", this._onVisWake);
 
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Ada chat";
@@ -542,6 +548,7 @@ class AdaChatCard extends HTMLElement {
         this._state = "connected";
         this._responseActive = false;
         this._setStatus("Connected — type below");
+        this._acquireWakeLock();
         this._flushDocNotes();
         break;
       case "speech_started":
@@ -658,7 +665,20 @@ class AdaChatCard extends HTMLElement {
     }
   }
 
+  async _acquireWakeLock() {
+    if (this._wakeLock || !("wakeLock" in navigator)) return;
+    try { this._wakeLock = await navigator.wakeLock.request("screen"); }
+    catch { this._wakeLock = null; }
+  }
+
+  _releaseWakeLock() {
+    const wl = this._wakeLock;
+    this._wakeLock = null;
+    if (wl) wl.release().catch(() => {});
+  }
+
   async _teardown(closeSocket = true) {
+    this._releaseWakeLock();
     if (closeSocket && this._socket && this._socket.readyState < WebSocket.CLOSING)
       this._socket.close(1000, "user disconnect");
     this._socket = null;
@@ -1083,6 +1103,7 @@ class AdaChatCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    document.removeEventListener("visibilitychange", this._onVisWake);
     this._closeYolo();
     this._closeSecretDrop();
     if (this._socket) this._teardown(true);

@@ -33,19 +33,16 @@ const ACC_SECRET_NAME_RE = /^[a-z0-9._-]{1,64}$/;
 // (generated from docs/ssot/infrastructure/ssot.routes.yml, served to HA
 // cards as /local/routes.json) > literal fallback. Hostnames must not
 // live in card code — the registry is the single source (edge-route-registry).
-let _accRoutesP = null;
 async function accResolveWs(cfg) {
   if (cfg && cfg.ws_url) return cfg.ws_url;
-  try {
-    if (!_accRoutesP)
-      _accRoutesP = fetch("/local/routes.json")
-        .then(r => (r.ok ? r.json() : null)).catch(() => null);
-    const reg = await _accRoutesP;
-    const ws = reg && reg.routes && reg.routes["ada-tony"] &&
-      reg.routes["ada-tony"].ws;
-    if (ws) return ws;
-  } catch (e) { /* fall through to literal */ }
-  return ACC_DEFAULT_WS;
+  const inst = (cfg && cfg.instance) || "tony";
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  // Same-origin edge — mirrors ada-voice-card's candidate order: the host
+  // serving this dashboard proxies /ada-ws/<instance>/*, so public vs
+  // tailnet viewers each reach the lane through their own edge. A
+  // routes.json lookup here could hand out a cross-network URL (tailnet
+  // literal to a public viewer) — wrong network, wrong lane.
+  return `${proto}//${location.host}/ada-ws/${inst}/ws`;
 }
 
 class AdaChatCard extends HTMLElement {
@@ -59,6 +56,12 @@ class AdaChatCard extends HTMLElement {
     this._docNotes = [];      // queued "document uploaded" session notes
     this._docUploading = false;
     this._responseActive = false;
+    this._wakeLock = null;    // hold the screen while connected — iOS
+                            // suspends the page (and its ws) on auto-lock.
+    this._onVisWake = () => {
+      if (!document.hidden && this._socket && !this._wakeLock) this._acquireWakeLock();
+    };
+    document.addEventListener("visibilitychange", this._onVisWake);
 
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Ada chat";
@@ -545,6 +548,7 @@ class AdaChatCard extends HTMLElement {
         this._state = "connected";
         this._responseActive = false;
         this._setStatus("Connected — type below");
+        this._acquireWakeLock();
         this._flushDocNotes();
         break;
       case "speech_started":
@@ -661,7 +665,20 @@ class AdaChatCard extends HTMLElement {
     }
   }
 
+  async _acquireWakeLock() {
+    if (this._wakeLock || !("wakeLock" in navigator)) return;
+    try { this._wakeLock = await navigator.wakeLock.request("screen"); }
+    catch { this._wakeLock = null; }
+  }
+
+  _releaseWakeLock() {
+    const wl = this._wakeLock;
+    this._wakeLock = null;
+    if (wl) wl.release().catch(() => {});
+  }
+
   async _teardown(closeSocket = true) {
+    this._releaseWakeLock();
     if (closeSocket && this._socket && this._socket.readyState < WebSocket.CLOSING)
       this._socket.close(1000, "user disconnect");
     this._socket = null;
@@ -1086,6 +1103,7 @@ class AdaChatCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    document.removeEventListener("visibilitychange", this._onVisWake);
     this._closeYolo();
     this._closeSecretDrop();
     if (this._socket) this._teardown(true);
