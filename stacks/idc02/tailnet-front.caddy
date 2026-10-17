@@ -14,7 +14,11 @@
 #           so consumers change just the hostname (http on wireguard is
 #           already encrypted; upstreams stay https). 8123=tony-ha,
 #           8124=tony-test, 8125=ada-ha, 8444/8446=serve mounts
-#           (:9005/:9101), 9230=input-bridge, 3002=monitoring-dashboard.
+#           (:9005/:9101), 9230=input-bridge.
+#   LOCAL ports (ph3, services now run ON idc02 — loopback upstreams):
+#           3002=monitoring-dashboard, 8000=status-data-api, 8792=report-api.
+#           secrets-console (:8005) + websockify (:6080/:6082) bind the tailnet
+#           IP directly — no caddy block needed.
 
 # NOTE: `http://:8088` + bind — a `127.0.0.1` site address is a host
 # matcher, NOT a bind; it still listens on *.
@@ -67,5 +71,17 @@ http://:9230 {
 
 http://:3002 {
 	bind 100.123.163.11
-	reverse_proxy http://tony-dell.taila0626a.ts.net:3002
+	reverse_proxy http://127.0.0.1:3002
+}
+
+# status-data-api — migrated from tony-dell 2026-10-17 (OPS-0725 ph3)
+http://:8000 {
+	bind 100.123.163.11
+	reverse_proxy http://127.0.0.1:8000
+}
+
+# chaba-report-api — migrated from tony-dell 2026-10-17 (OPS-0725 ph3)
+http://:8792 {
+	bind 100.123.163.11
+	reverse_proxy http://127.0.0.1:8792
 }
