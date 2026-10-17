@@ -77,8 +77,11 @@ services:
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
   tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
   michael-dev:    {host: idc03,     listen: "127.0.0.1:8124", tailnet: "https://idc03.taila0626a.ts.net:8124"}     # migrated 2026-10-09
-  board-api:      {host: tony-dell, listen: "127.0.0.1:8787"}
-  report-api:     {host: tony-dell, listen: "127.0.0.1:8792"}
+  board-api:      {host: idc03, listen: "127.0.0.1:8787", tailnet: "https://idc03.taila0626a.ts.net:10000"}    # migrated 2026-10-16 OPS-0725 ph2
+  report-api:     {host: idc02, listen: "127.0.0.1:8792"}    # migrated 2026-10-17 OPS-0725 ph3; tailnet shadow idc02:8792
+  status-data-api: {host: idc02, listen: "127.0.0.1:8000", tailnet: "http://idc02.taila0626a.ts.net:8000"}   # migrated 2026-10-17 OPS-0725 ph3 (podman, loopback+shadow)
+  secrets-console: {host: idc02, listen: "100.123.163.11:8005", tailnet: "http://idc02.taila0626a.ts.net:8005"}   # migrated 2026-10-17 OPS-0725 ph3; tailnet-IP bind, URL changed
+  monitoring-dashboard: {host: idc02, listen: "127.0.0.1:3002", tailnet: "http://idc02.taila0626a.ts.net:3002"}   # migrated 2026-10-17 OPS-0725 ph3
   gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
   gev-api:        {host: tony-dell, listen: "127.0.0.1:4173"}
   gev-cmd:        {host: tony-dell, listen: "127.0.0.1:8790"}
