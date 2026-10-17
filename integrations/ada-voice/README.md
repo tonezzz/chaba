@@ -34,6 +34,9 @@ chaba dispatches. Eleven drops live here:
     2026-10-16)
 12. `cpt_post` — LINE save-asks route to the right chaba-boards CPT +
     registered meta — card `line-cpt-writer-router` (OPS-0656, 2026-10-15)
+13. write fidelity — narrated-vs-stored divergence guard for
+    `cms_publish_page` — card `ada-cms-write-fidelity` (ADA-0732,
+    2026-10-17)
 
 ---
 
@@ -984,3 +987,61 @@ are extracted by the model, not an OCR step in the tool).
 - NOT verified live: no REST call against boards was made from this
   worktree — first real save is the deploy smoke (kk lane: "save this
   contact: Honda service 02-1234567").
+
+## Drop 13 — write fidelity (narrated vs stored, cms_publish_page)
+
+Card `ada-cms-write-fidelity` (ADA-0732, 2026-10-17): the kk-cms-only
+bench caught Kaewta storing "Tuesdays" in `cms_publish_page` content
+while narrating "Mondays" (2026-10-12, MEM-0498 finding 2) — the write
+persisted. Root cause read: the tool path is verbatim
+(`content` → `mddb.add_document(contentMd)` untouched), so the
+divergence is a MODEL slip — narration and tool args are separate
+generations that nothing binds. Two guards + one bench assertion:
+
+### Files
+
+- `backend/write-fidelity.patch` — three files:
+  - `backend/tool_runner/cms.py` — post-write read-back: after
+    `add_document` succeeds, the doc is re-read and the result gains
+    `stored_verified` (true/false/"unknown"), `stored_sha256`,
+    `stored_excerpt`, and a note telling the model to republish if any
+    stored fact differs from what she told the user.
+  - `backend/realtime_provider.py` — `write_fidelity` ops event at
+    turn_complete: `_fidelity_tokens` extracts weekday/clock-time/date
+    sets from the narration AND the last-3 user turns; a publish call
+    whose persisted `content` arg carries a CONTRADICTING set (both
+    non-empty, disjoint) emits an advisory event for session-audit/QC.
+    Runs only at the final segment boundary — fires at most once per
+    turn. Thai + English tokens normalize into one space (จันทร์ ==
+    Monday; 6 โมงเย็น == 6pm).
+  - `tests/scenarios-live/kk_cms_only_seeded_recall.yaml` — the
+    confirm turn now asserts `call_args_contain` for the seeded facts
+    (Monday/Thursday/prime, en+th alternates) and pins
+    `calls_any: [cms_publish_page]` — the deterministic bench catch
+    that would have failed the original run.
+- `tests/test_write_fidelity.py` — 17 unit tests: token extraction,
+  contradiction logic (agree/partial/vague/unpublished/non-watched all
+  silent), and the read-back branches via AsyncMock mddb.
+
+### Install (ada-voice worktree)
+
+1. `git apply <chaba>/integrations/ada-voice/backend/write-fidelity.patch`
+   — verified `git apply --check` clean vs origin/main @ `a9a8cca`.
+2. `cp <chaba>/integrations/ada-voice/tests/test_write_fidelity.py
+   tests/test_write_fidelity.py`
+3. Gates: `python3 scripts/tool-lint.py`,
+   `.venv/bin/python -m pytest tests/ -x -q`,
+   `python3 scripts/scenario-schema-check.py`.
+
+### Verified
+
+- `tests/test_write_fidelity.py` 17/17 green (bare venv: httpx,
+  pyyaml, pillow, numpy, websockets, pytest).
+- `tests/test_cms_regen.py + test_dead_turn.py + test_alias_hit_report.py
+  + test_memory_pending.py` — 71 passed, no regression.
+- `tests/test_tool_runner.py` — 260 passed, 1 failure
+  (`test_non_dict_return_wraps_in_output`) that reproduces on CLEAN
+  HEAD — pre-existing, unrelated.
+- `tool-lint` clean; `scenario-schema-check` 196 files 0 violations.
+- NOT verified live: no real mddb — the first real publish exercises
+  the read-back against the dev lane.
