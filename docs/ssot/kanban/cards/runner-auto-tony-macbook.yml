@@ -8,16 +8,14 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/runner-agent sha 4d39e3a8284c039b != repo 6c8466ac08e68188
+note: 'Failing: ~/.local/bin/runner-agent sha 4d39e3a8284c039b != repo adfa0c5733ddc771
   — installed copy drifted; redeploy. Info: chaba origin is push-capable; no sunsynk-card
   checkout — host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout
   — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
-  can''t take action.repo=gods-eye-view cards; ada-voice: push probe fails (ERROR:
-  Permission to tonezzz/ada-voice.git denied to deploy ) — ada-voice dispatches defer
-  to a pushable host; stranded work relays via board-api; ada-pi: push probe fails
-  (ERROR: Permission to tonezzz/ada-voice.git denied to deploy ) — ada-voice dispatches
-  defer to a pushable host; stranded work relays via board-api; devin: /home/tony/.local/bin/devin
-  (devin 3000.11.3 (9c803229faa4)).'
+  can''t take action.repo=gods-eye-view cards; ada-voice: push probe ok — declare
+  push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates); ada-pi:
+  push probe ok — declare push:ada-voice in RUNNER_LABELS for the fast path (live
+  probe still gates); devin: /home/tony/.local/bin/devin (devin 3000.11.3 (9c803229faa4)).'
 help: 'Per-check fixes:
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
