@@ -18,6 +18,7 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const PORT = 3002;
+const HOST = process.env.MON_HOST || "0.0.0.0"; // VPS hosts MUST set MON_HOST=127.0.0.1 — 0.0.0.0 is public there
 const UPDATE_INTERVAL = 30000; // 30 seconds
 const SENSOR_READER_URL = "http://100.75.102.88:8001";
 const LOG_FILE = "/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log";
@@ -525,7 +526,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log(`🚀 Chaba Monitoring Dashboard running on http://localhost:${PORT}`);
   console.log(`📊 Dashboard: http://localhost:${PORT}`);
   console.log(`🔌 API: http://localhost:${PORT}/api/status`);
