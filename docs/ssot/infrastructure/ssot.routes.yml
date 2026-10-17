@@ -40,6 +40,13 @@ edges:
       /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
       /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
+      # :8447 mount = vcast display front (2026-10-17): whole port proxies to
+      # caddy-edge http://127.0.0.1:8749, which serves /srv/public static
+      # (apps/vcast/, pair, remote) + strips /api/input-bridge/* ->
+      # 127.0.0.1:3010 loopback. Display page+ws no longer ride tony-dell's
+      # web caddy — dell restarts were killing screen ws (code 1001 flap).
+      # Display URL: https://idc03.taila0626a.ts.net:8447/apps/vcast/
+      # dell edge still serves the same paths for clients on the old URL.
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
