@@ -47,6 +47,9 @@ edges:
       # web caddy — dell restarts were killing screen ws (code 1001 flap).
       # Display URL: https://idc03.taila0626a.ts.net:8447/apps/vcast/
       # dell edge still serves the same paths for clients on the old URL.
+      # Canonical display client for screen 1: vcast-real@1.service on idc02
+      # (drop-in edge.conf pins VCAST_PAGE/VCAST_API to this :8447 front);
+      # fleet @6/@7 still default to the dell edge.
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
