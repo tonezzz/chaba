@@ -93,3 +93,9 @@ prod text-mode sessions.
 - The 3 pre-existing suite failures on this host (`capture_reminder`
   polluting tool-runner results) may be worth a card — they fail the
   deploy gate's `pytest -x` for anyone gating on idc02.
+- **board-api on tony-dell returned 502** for the final comms post
+  (retried ~3min apart; the pickup comment landed at session start —
+  the service appears to have died since, consistent with the
+  2026-10-16 tony-dell collapse). Card comms carrying this result may
+  need a manual re-post once board-api recovers; this file + the job
+  YAML carry the full record.
