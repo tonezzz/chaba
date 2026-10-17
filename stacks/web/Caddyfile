@@ -30,7 +30,7 @@ http://:80 {
 		file_server browse
 	}
 	handle @root80 {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
@@ -348,7 +348,7 @@ http://127.0.0.1:8080 {
 
 	@root path /
 	handle @root {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
@@ -357,28 +357,28 @@ http://127.0.0.1:8080 {
 		redir /new/ 308
 	}
 	handle_path /new/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 
 	handle /decisions {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /decisions/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /infrastructure {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /infrastructure/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
@@ -447,7 +447,7 @@ http://127.0.0.1:8080 {
 
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
-		reverse_proxy 127.0.0.1:3003 {
+		reverse_proxy idc02.taila0626a.ts.net:3003 {
 			header_up Host localhost
 		}
 	}
