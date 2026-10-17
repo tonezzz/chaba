@@ -1,0 +1,23 @@
+[Unit]
+Description=YOLOv8 detector -> /detect + /set-source for HA (tony-dell local go2rtc)
+After=network-online.target
+
+[Service]
+Type=simple
+# Replaces the mn01 deployment (mn01 retired 2026-10). Runs on tony-dell so
+# go2rtc frames and HA are both loopback — no cross-host dependency.
+Environment=GO2RTC_BASE=http://127.0.0.1:1984
+Environment=GO2RTC_SOURCE=ip_cam_65_low
+Environment=HA_BASE=http://127.0.0.1:8123
+Environment=YOLO_HOST=127.0.0.1
+Environment=YOLO_PORT=8780
+# 0.5 Hz inference is plenty for a 5s-scan occupancy sensor; without this
+# the worker busy-loops a core.
+Environment=YOLO_LOOP_MS=2000
+WorkingDirectory=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha
+ExecStart=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha/run.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
