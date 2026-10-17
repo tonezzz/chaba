@@ -63,7 +63,7 @@ def canon_repo(name: str) -> str:
     return REPO_ALIASES.get(name or "", name or "")
 
 
-DEFAULT_BOARD_API = "https://tony-dell.taila0626a.ts.net/apps/board-api"
+DEFAULT_BOARD_API = "https://idc03.taila0626a.ts.net:10000"
 
 
 def board_api_base() -> str:

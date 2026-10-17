@@ -68,7 +68,7 @@ SERVED = Path(os.environ.get(
 BOARD_API_BASES = (
     [os.environ["BOARD_API"].rstrip("/")] if os.environ.get("BOARD_API")
     else ["http://127.0.0.1:8787",
-          "https://tony-dell.taila0626a.ts.net/apps/board-api"])
+          "https://idc03.taila0626a.ts.net:10000"])
 TZ = timezone(timedelta(hours=7))
 
 CONFLICT_RE = re.compile(
