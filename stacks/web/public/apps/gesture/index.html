@@ -30,13 +30,13 @@ if ('serviceWorker' in navigator) {
   }
   body { display: flex; flex-direction: column; min-height: 100dvh; }
   header {
-    padding: 10px 14px; display: flex; align-items: baseline; gap: 10px;
+    padding: 6px 14px; display: flex; align-items: baseline; gap: 10px;
     border-bottom: 1px solid #164e63;
   }
-  header h1 { font-size: 15px; margin: 0; color: #22d3ee; font-weight: 600; }
-  header .sub { font-size: 11px; color: #64748b; }
+  header h1 { font-size: 14px; margin: 0; color: #22d3ee; font-weight: 600; }
+  header .sub { font-size: 10px; color: #64748b; }
   #status {
-    padding: 8px 14px; font-size: 14px; font-weight: 600;
+    padding: 6px 14px; font-size: 13px; font-weight: 600;
     border-bottom: 1px solid #1e293b;
   }
   #status.ok { color: #4ade80; }
@@ -60,10 +60,15 @@ if ('serviceWorker' in navigator) {
     background: rgba(8, 47, 73, .85); border: 1px solid #155e75;
     border-radius: 6px; padding: 4px 10px;
   }
+  /* single scrollable row — wrapping buttons was eating half the stage */
   #controls {
-    display: flex; gap: 10px; padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-    border-top: 1px solid #1e293b; flex-wrap: wrap;
+    display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid #1e293b; flex-wrap: nowrap;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
+  #controls button { flex: 0 0 auto; white-space: nowrap; }
+  #note summary { font-size: 11px; color: #475569; cursor: pointer; padding: 4px 14px 8px; }
+  #note p { margin: 0; padding: 0 14px 10px; font-size: 11px; color: #475569; line-height: 1.5; }
   button {
     background: #0e7490; color: #fff; border: 1px solid #22d3ee;
     border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 13px;
@@ -72,9 +77,7 @@ if ('serviceWorker' in navigator) {
   button:active { background: #155e75; }
   button.toggle { background: #164e63; }
   button.toggle.on { background: #b45309; border-color: #fbbf24; }
-  #note {
-    padding: 0 14px 10px; font-size: 11px; color: #475569; line-height: 1.5;
-  }
+  #note { border-top: 1px solid #111827; }
   /* sax mode (?sax=1): camera preview is pointless for humming — show a
      tuner-style readout instead so the whole flow is "allow mic -> hum" */
   #saxview {
@@ -126,12 +129,12 @@ if ('serviceWorker' in navigator) {
   <button id="btn-hum" class="toggle">🎷 hum→sax</button>
   <button id="btn-screen" class="toggle">Screen ↗</button>
 </div>
-<div id="note">
+<details id="note"><summary>help / notes</summary><p>
   Front camera faces you (mirrored like a selfie). Point the index fingertip to move the cursor on the
   screen page; pinch (thumb+index) clicks; a closed fist grabs and drags
   windows. iOS: camera needs HTTPS (ok here) and — in installed-PWA mode —
   camera permission may not persist; use plain Safari tab if denied.
-</div>
+</p></details>
 
 <script type="module">
 // ?engine=yolo — rebuild path: no on-device MediaPipe. The phone is a bare
