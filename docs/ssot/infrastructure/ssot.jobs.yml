@@ -47,7 +47,7 @@ conventions:
 jobs:
 - id: overnight-assessment
   name: Overnight Assessment
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*-*-* 02:00:00'
   persistent: true
@@ -55,7 +55,7 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/orchestrate.py --workflow overnight --force
 - id: focus-dispatcher-overnight
   name: Chaba Overnight Focus Review
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*-*-* 03:00:00'
   persistent: true
@@ -138,7 +138,7 @@ jobs:
     into CMS page cached-videos-report (en+th); replaces the hand-written 2026-09-27 snapshot
 - id: chaba-starboard-tracker
   name: Starboard catalogs tracker -> CMS page
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
@@ -148,7 +148,7 @@ jobs:
     a managed block on CMS page starboard-catalogs (en+th); interval-gated via ada-cms-automation registry doc
 - id: chaba-kanban-brief
   name: Kanban Eisenhower brief + T2 auto-close -> CMS kanban-brief
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
@@ -292,7 +292,7 @@ jobs:
     card dir (git log = truthful "filed" signal; board-api fallback). Added 2026-10-05 (card daily-brief-node).'
 - id: qc-scoreboard
   name: QC Scoreboard (morning+evening)
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*-*-* 07,19:20:00'
   persistent: true
@@ -305,7 +305,7 @@ jobs:
     freshest producer state. Added 2026-10-15.'
 - id: board-invariants
   name: Board invariants scan (every 4h)
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*-*-* 00,04,08,12,16,20:35:00'
   persistent: true
@@ -487,7 +487,7 @@ jobs:
     file kept as alias for legacy consumers like micro-bench)
 - id: kanban-sync
   name: Kanban <-> CMS sync (xmatch)
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*-*-* *:0/15:00'
   exec: '%h/CascadeProjects/chaba-kanban-sync/scripts/ada/kanban-sync.sh'
@@ -676,7 +676,7 @@ jobs:
     timers' note targets idc03, whose scenario timers are weekly, not nightly.
 - id: chaba-review-digest
   name: Kanban review-digest card refresher (standing summary card for Tony)
-  host: tony_dell
+  host: idc03   # moved 2026-10-16/17 OPS-0725
   dispatch: systemd
   on_calendar: '*:0/15'
   persistent: true
