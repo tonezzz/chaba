@@ -440,7 +440,8 @@ http://127.0.0.1:8080 {
 		redir * /api/ 308
 	}
 	handle /api/* {
-		reverse_proxy 100.68.142.13:8000
+		# status-data-api migrated to idc02 2026-10-17 (OPS-0725 ph3)
+		reverse_proxy idc02.taila0626a.ts.net:8000
 	}
 
 	@apps_helm path /apps/helm /apps/helm/*
