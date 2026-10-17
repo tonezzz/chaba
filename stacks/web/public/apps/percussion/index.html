@@ -37,6 +37,10 @@
   electronic · edm · hardrock · rockballad · polyphia + moods
   blue/bright/tense/calm — Ada tool <code>percussion</code> or
   ?style=&mood=&instruments= URL args</div>
-<script src="app.js"></script>
+<script>
+  const _s = document.createElement("script");
+  _s.src = "app.js?v=" + (new URLSearchParams(location.search).get("v") || Date.now());
+  document.body.appendChild(_s);
+</script>
 </body>
 </html>
