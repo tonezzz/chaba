@@ -127,3 +127,14 @@ Every flip is a proxy upstream line + a `systemctl start` on dell (which stays u
 - **Migration note**: the h3 worktree + its publisher jobs write branch
   `chaba.h3` through dell's served-checkout object store — belongs in the
   writer-constellation move to idc03, not a standalone port.
+
+## Hardening — parked ALL migrated dell unit files (2026-10-18)
+
+- `chaba-board-api` on dell was manually re-started (systemd user unit,
+  no parent chain — an ssh session did `systemctl --user start`) and ran
+  ~1.5h writing to the FROZEN checkout. Disabled isn't enough — unit files
+  can be re-started by anything.
+- **Procedure update**: after migrating a service, don't just stop+disable —
+  rename unit files to `*.parked` (same convention as quadlets). Parked 42
+  files: whole writer family + migrated services + retired zombies.
+- Dell running service count now ~35 real services (from ~75 at start).
