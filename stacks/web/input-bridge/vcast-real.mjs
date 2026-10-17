@@ -116,6 +116,13 @@ async function run() {
           "--use-angle=swiftshader",
           "--autoplay-policy=no-user-gesture-required",
           "--mute-audio",
+          // opt-in peek/debug port — VCAST_CDP_PORT lets ops screenshot the
+          // real framebuffer (connectOverCDP); loopback-only inside the
+          // container netns, never exposed
+          ...(process.env.VCAST_CDP_PORT
+            ? [`--remote-debugging-port=${process.env.VCAST_CDP_PORT}`,
+               "--remote-debugging-address=127.0.0.1"]
+            : []),
         ],
       });
       browser.on("disconnected", () =>
