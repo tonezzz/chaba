@@ -112,3 +112,18 @@ Every flip is a proxy upstream line + a `systemctl start` on dell (which stays u
 - idc02 had 38G untiered mddb backups accumulating — the new tier job drains
   them to gdrive on first run.
 - Canonical units: `systemd/mddb-gdrive-tier.{service,timer}`.
+
+## Repair — chaba.h3 publish chain (2026-10-18)
+
+- `cms-h3-publish` + `mcp-debug-h3-sync` failing since ~10-14: `git push`
+  remote unpack failed — **corrupt tree object** in the object store
+  (dell disk-full writes). 2016 unpushed auto-commits.
+- The `chaba-h3-tony-dell` checkout is a **linked worktree of the served
+  checkout** — they share `.git/objects`. Served master verified healthy
+  (mirror pull + rev-parse clean); corruption confined to the h3 chain.
+- Fix: `git update-ref refs/heads/chaba.h3 origin/chaba.h3` — abandoned the
+  corrupt local chain (auto-publish output, regenerable). Both jobs push
+  clean again.
+- **Migration note**: the h3 worktree + its publisher jobs write branch
+  `chaba.h3` through dell's served-checkout object store — belongs in the
+  writer-constellation move to idc03, not a standalone port.
