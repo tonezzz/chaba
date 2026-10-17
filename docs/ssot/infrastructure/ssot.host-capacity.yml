@@ -1,7 +1,7 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Measured 2026-10-16 (nproc, free -m, df -m /, loadavg, live probes) —
+  Re-measured 2026-10-18 post-ph3 (exit gate) + 2026-10-16 baseline —
   post kanban-writer migration (OPS-0725 phase 2). Refresh on each service
   deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
@@ -11,8 +11,8 @@ hosts:
   tony_dell:
     role: lan-hub   # DRAINING (OPS-0725) — becomes failover capacity after SSD+RAM upgrade
     cpu_cores: 8
-    mem_gb: 15.3    # ~7.4G avail — pressured but stable post-stabilization
-    disk_gb: {total: 118, free: 6.7}   # DISK CRITICAL (95%) — do not land anything new
+    mem_gb: 15.3    # ~7G avail — pressured but stable post-stabilization
+    disk_gb: {total: 118, free: 5}     # DISK CRITICAL (96%, still shrinking) — drain priority; do not land anything new
     gpu: none
     note: >-
       Household LAN hub — tony-ha + ada-ha (LAN-bound) stay until phase 5.
@@ -36,8 +36,8 @@ hosts:
   idc02:
     role: edge-primary   # +capacity-absorber 2026-10-16 — idlest host, bias new VPS placements HERE
     cpu_cores: 4
-    mem_gb: 16        # ~9.9G avail, load ~0.1 — idle
-    disk_gb: {total: 290, free: 192}
+    mem_gb: 16        # ~8G avail, load <0.5 even after absorbing ~10 ph3 services — absorber confirmed
+    disk_gb: {total: 290, free: 187}
     gpu: none
     note: >-
       public edge (caddy, CF) + tailnet front door (idc02.taila0626a.ts.net,
@@ -46,8 +46,8 @@ hosts:
   idc03:
     role: backend-hub + kanban-writer   # writer family migrated from dell 2026-10-16 (OPS-0725 ph2)
     cpu_cores: 4
-    mem_gb: 16        # ~6.5G avail — NEAR-SATURATED: load ~5 on 4 cores sustained
-    disk_gb: {total: 290, free: 128}   # -60G since 10-09 (checkout copy + ada stack growth)
+    mem_gb: 16        # ~7G avail, load ~2.9/4 cores post-ph3 (was 5.9 spike 10-16) — warm, still saturation-watch
+    disk_gb: {total: 290, free: 116}   # still shrinking — -12G in 2 days
     gpu: none
     note: >-
       Ada backends, MDDB leader, secondary edge (api.surf-thailand.com),
