@@ -1,0 +1,155 @@
+--- a/backend/tg_relay.py
++++ b/backend/tg_relay.py
+@@ -362,7 +362,14 @@
+     (sender_user/hidden_user/chat/channel) then the legacy forward_*
+     fields. When the origin maps in TELEGRAM_USER_CALLERS the mapped
+     caller name is returned too — corpus clips then file under the
+-    original speaker, not the forwarder."""
++    original speaker, not the forwarder.
++
++    Hidden origin (the source user blocked account linking): the label
++    still carries the claimed display name when Telegram provides one
++    (sender_user_name / legacy forward_sender_name), else falls back to
++    the FORWARDER's identity — either way it is suffixed
++    '— origin hidden' so the persona never treats a hidden-origin
++    forward as authored by whoever carried it."""
+     fo = msg.get("forward_origin") or {}
+     t = str(fo.get("type") or "")
+     if t == "sender_user":
+@@ -372,7 +379,10 @@
+         return (mapped or u.get("first_name") or u.get("username")
+                 or str(uid or "unknown")), mapped
+     if t == "hidden_user":
+-        return str(fo.get("sender_user_name") or "hidden user"), None
++        name = str(fo.get("sender_user_name") or "").strip()
++        if not name:
++            name = _forwarder_name(msg)
++        return f"{name} — origin hidden", None
+     if t == "chat":
+         return str((fo.get("sender_chat") or {}).get("title")
+                    or "a chat"), None
+@@ -386,13 +396,52 @@
+         return (mapped or fu.get("first_name") or fu.get("username")
+                 or str(uid or "unknown")), mapped
+     if msg.get("forward_sender_name"):
+-        return str(msg["forward_sender_name"]), None
++        return str(msg["forward_sender_name"]) + " — origin hidden", None
+     fc = msg.get("forward_from_chat") or {}
+     if fc:
+         return str(fc.get("title") or "a chat"), None
+     return "", None
+ 
+ 
++def _forwarder_name(msg: dict) -> str:
++    """The carrying user's best label — mapped caller first, then their
++    TG display name — for forwards whose origin is hidden."""
++    sender = msg.get("from") or {}
++    return str(_user_callers().get(sender.get("id"))
++               or sender.get("first_name") or sender.get("username")
++               or "the forwarder")
++
++
++def _media_desc(msg: dict, kind: str) -> str:
++    """One-line description of a media payload the relay can't render —
++    enough for the persona to name what was forwarded."""
++    m = msg.get(kind) or {}
++    if kind == "document":
++        name = m.get("file_name") or m.get("mime_type") or "file"
++        size = int(m.get("file_size") or 0)
++        return f"{name} ({size // 1024} KB)" if size else str(name)
++    if kind == "sticker":
++        return str(m.get("emoji") or m.get("set_name") or "sticker")
++    if kind in ("video", "animation"):
++        return str(m.get("file_name") or m.get("mime_type") or kind)
++    if kind == "contact":
++        return " ".join(p for p in (m.get("first_name"),
++                                    m.get("last_name")) if p) or "contact"
++    if kind in ("location", "venue"):
++        return str(m.get("title")
++                   or f"{m.get('latitude')},{m.get('longitude')}")
++    if kind == "poll":
++        return str(m.get("question") or "poll")
++    return kind
++
++
++# Media kinds the relay has no renderer/ingest for. voice/audio/
++# video_note go to the corpus branch and photo has its own path — this
++# list is everything else that can still carry a forward.
++_OTHER_MEDIA = ("document", "video", "animation", "sticker",
++                "contact", "location", "venue", "poll", "dice")
++
++
+ def _images_from(results: list[dict]) -> list[tuple[str, str, str]]:
+     """(url, caption, kind) triples found in tool_result payloads — a
+     camera snapshot's cast_url turns into a photo; a render's
+@@ -748,7 +797,8 @@
+         TELEGRAM_USER_CALLERS; the manifest keeps forwarded_by either way."""
+         data, tg_path = await self._download_file(media["file_id"])
+         fwd_label, fwd_caller = fwd
+-        slug = _sender_slug(msg, fwd_caller or caller, sender_id)
++        slug = _sender_slug(msg, fwd_caller or caller
++                            or _user_callers().get(sender_id), sender_id)
+         stamp = datetime.fromtimestamp(
+             msg.get("date") or time.time()).strftime("%Y%m%d-%H%M%S")
+         mime = str(media.get("mime_type") or "")
+@@ -779,7 +829,8 @@
+         }
+         if fwd_label:
+             entry["forward_from"] = fwd_label
+-            entry["forwarded_by"] = _sender_slug(msg, caller, sender_id)
++            entry["forwarded_by"] = _sender_slug(
++                msg, caller or _user_callers().get(sender_id), sender_id)
+         with (VOICE_CORPUS_DIR / "manifest.jsonl").open("a") as fh:
+             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+         logger.info("chat %s saved %s clip %s (%ds)",
+@@ -934,6 +985,50 @@
+                     + " — try again.", [])
+             finally:
+                 stop.set(); pulse.cancel()
++            try:
++                await self.send_text(chat_id,
++                                     _reply_tag() + (reply or "(no reply)"),
++                                     reply_to=reply_to)
++            except Exception as exc:
++                logger.warning("chat %s reply send failed: %s",
++                               chat_id, exc)
++            for url, cap2, kind in images[:3]:
++                await self.send_media(chat_id, url, cap2, kind)
++            return
++        # Forwarded media with no dedicated renderer/ingest (document,
++        # video, animation, sticker, contact, location, poll...): the
++        # blob stays in Telegram, but the forward still reaches the
++        # persona as a described turn WITH provenance — a forwarded
++        # document must never silently drop or arrive misattributed.
++        # Non-forwarded media of these kinds keep the old drop:
++        # relaying every stray sticker would bill a turn for nothing.
++        other = next((k for k in _OTHER_MEDIA if msg.get(k)), None)
++        if other and fwd[0]:
++            sess = self.sessions.setdefault(
++                skey, ChatSession(chat_id, self, caller=caller))
++            try:
++                await self.tg("sendChatAction", chat_id=chat_id,
++                              action="typing")
++            except Exception:
++                pass
++            stop = asyncio.Event()
++            pulse = asyncio.ensure_future(
++                self._turn_progress(chat_id, reply_to, stop))
++            try:
++                cap = (msg.get("caption") or "").strip()
++                reply, images = await sess.send_turn(
++                    f"(forwarded from {fwd[0]}) [received a {other}: "
++                    f"{_media_desc(msg, other)} — content not viewable "
++                    "here]"
++                    + (f" Their caption: {cap}" if cap else ""))
++            except Exception as exc:
++                logger.warning("chat %s %s turn failed: %s",
++                               chat_id, other, exc)
++                reply, images = (
++                    "Couldn't pass that to " + _persona()
++                    + " — try again.", [])
++            finally:
++                stop.set(); pulse.cancel()
+             try:
+                 await self.send_text(chat_id,
+                                      _reply_tag() + (reply or "(no reply)"),

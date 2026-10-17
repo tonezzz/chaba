@@ -1,0 +1,47 @@
+title: TG relay forward provenance — residual gaps closed
+id: 2026-10-17-tg-forward-provenance
+card: tg-forward-provenance
+date: 2026-10-17
+status: staged-not-deployed
+summary: |
+  Incident 2026-10-16: Tony forwarded 3 of Michael's voice clips to
+  @KrautMNBot's DM. tg_relay had no forward_origin handling then — clips
+  filed under corpus/tg/tony/, transcripts reached Kraut as caller=tony,
+  and the persona was confused when told the voice was Michael's. The
+  corpus was fixed by a manual refile.
+
+  Core fix shipped same-day directly in ada-voice b205457 ("mn-ha relay
+  batch"; live on idc03): _forward_label resolves forward_origin
+  (sender_user/hidden_user/chat/channel + legacy forward_* fields),
+  clips file under the ORIGINAL sender when it maps in
+  TELEGRAM_USER_CALLERS, manifest keeps forward_from + forwarded_by, and
+  all handled turn types carry an attribution prefix.
+
+  This dispatch closed the remaining card-spec gaps as ada-voice
+  Drop 14 (integrations/ada-voice/backend/tg_relay.forward-provenance.patch,
+  base main @ 5ad03d2):
+  - hidden/unknown origin: label suffixed '— origin hidden'; when
+    sender_user_name is absent the label falls back to the FORWARDER's
+    identity per the card spec (was a bare 'hidden user' before).
+  - forwarded other-media (document/video/animation/sticker/contact/
+    location/venue/poll/dice) no longer drop silently — they reach the
+    persona as described turns with the same '(forwarded from X)'
+    prefix plus the caption. Non-forwarded media still drop (a stray
+    sticker shouldn't bill a persona turn).
+  - canonical slugs: _save_voice_clip resolves the forwarder via
+    TELEGRAM_USER_CALLERS for the fallback clip dir and manifest
+    forwarded_by (was raw TG username in private chats).
+
+verification:
+  - tests/ada/test_tg_forward_provenance.py 16/16 green — bare venv
+    (pytest + httpx + websockets) driving patched tg_relay standalone
+  - git apply --check clean vs ada-voice main @ 5ad03d2; py_compile clean
+  - NOT verified live — no real Telegram update; first forwarded clip
+    to @KrautMNBot post-deploy is the smoke
+
+followups:
+  - Full TG document ingest (download + archive + doc_read parity with
+    LINE's file-doc-ingest drop) — this drop only acknowledges a
+    forwarded doc with provenance; the blob is not stored/readable.
+  - deploy-ada.sh canonical re-land of b205457 + this patch on idc03,
+    then mn-ha relay restart.
