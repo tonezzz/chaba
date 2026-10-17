@@ -199,10 +199,10 @@ JAM.register("remote", {
       // theremin: ONE shared gliding tone (two side-voices could beat
       // dissonantly when a hand hovered center = the "scream" timbre)
       const ac = JAM._actx(), now = performance.now();
+      const deg = Math.min(7, Math.max(0, ((1 - m.y) * 8) | 0));
       if (!JAM.tonesOff) {
         const tone = JAM._tone("remote-hand", "sine");
         const scale = JAM._SCALES.blue;
-        const deg = Math.min(7, Math.max(0, ((1 - m.y) * 8) | 0));
         tone.o.frequency.setTargetAtTime(
           JAM._NOTE(48 + scale[deg % scale.length] +
                     12 * (deg / scale.length | 0)),

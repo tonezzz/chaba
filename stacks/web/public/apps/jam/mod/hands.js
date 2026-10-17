@@ -58,10 +58,10 @@ JAM.register("hands", {
         this.lastY[hand] = y;
         // theremin: one shared gliding tone — presence = sound
         const side = hand[0], ac = JAM._actx();
+        const deg = Math.min(7, Math.max(0, ((1 - y) * 8) | 0));
         if (!JAM.tonesOff) {
           const tone = JAM._tone("hands-hand", "sine");
           const scale = JAM._SCALES.blue;
-          const deg = Math.min(7, Math.max(0, ((1 - y) * 8) | 0));
           tone.o.frequency.setTargetAtTime(
             JAM._NOTE(48 + scale[deg % scale.length] +
                       12 * (deg / scale.length | 0)),

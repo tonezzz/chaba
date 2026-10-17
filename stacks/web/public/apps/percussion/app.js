@@ -451,9 +451,11 @@ function render() {
     (C.instruments.length ? " [" + C.instruments.join(",") + "]" : "")
     : "";
   document.getElementById("stat").textContent =
-    `bpm ${S.bpm} · ${st.events_per_hour ?? "?"} ev/h · ` +
-    `${(st.summary && st.summary.healthy) ?? "?"}/` +
-    `${(st.summary && st.summary.total) ?? "?"} green` +
+    `bpm ${S.bpm} · ` +
+    `${(st.summary && st.summary.reachable) ?? "?"}/` +
+    `${(st.summary && st.summary.hosts) ?? "?"} up` +
+    (typeof st.failing_services === "number"
+      ? ` · ${st.failing_services} failing` : "") +
     (a.length ? ` · alerts: ${a.slice(0,3).join(", ")}` : "") + music;
   document.getElementById("log").textContent =
     a.length ? "watch: " + a.join(", ") : "";
