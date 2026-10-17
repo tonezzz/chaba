@@ -75,7 +75,8 @@ http://127.0.0.1:8080 {
 			not header Tailscale-User-Login *
 		}
 		respond @anon_write_report-api "forbidden: report-api writes need a tailnet identity" 403
-		reverse_proxy 127.0.0.1:8792
+		# report-api migrated to idc02 2026-10-17 (OPS-0725 ph3)
+		reverse_proxy idc02.taila0626a.ts.net:8792
 	}
 
 	handle /apps/system-report {
