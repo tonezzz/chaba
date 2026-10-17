@@ -1,12 +1,13 @@
 id: cms-auto-where-things-go
-title: CMS automation `where-things-go` error
-brief: A scheduled report-page job ('where-things-go') is error. Re-run it or check
+title: CMS automation `where-things-go` stale
+brief: A scheduled report-page job ('where-things-go') is stale. Re-run it or check
   the generator — details in the note.
-column: done
+column: review
 review_kind: triage
 generated: cms-auto-health
-priority: high
-note: 'Auto-recovered 2026-10-17: where-things-go healthy again (status=ok, state=ok).'
+priority: medium
+note: 'last_run 30m overdue (interval 60m). last_run=2026-10-17T03:00:01+00:00 interval=60m
+  status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/where-things-go'
 help: 'Trigger a manual regen: cms_automation run_now for ''where-things-go'' (or
   POST /api/cms/pages/where-things-go/regenerate). If it repeats, check the page''s
   generator command in the registry doc.'
