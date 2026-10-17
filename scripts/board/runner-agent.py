@@ -36,8 +36,9 @@ Task types (card `action` block):
              own clone so local edits there are disposable).
 
 Env:
-  RUNNER_API     board api base — default the tailnet Caddy route so the
-                 same value works on every host incl. tony-dell itself
+  RUNNER_API     board api base — default the tailnet serve route on the
+                 canonical writer host (idc03) so the same value works on
+                 every host
   RUNNER_HOST    hostname claim identity (default: uname nodename)
   RUNNER_CAP     max concurrent claimed tasks (default 2)
   RUNNER_MAX_LOAD_PC  stop claiming when 5-min load per core exceeds
@@ -138,7 +139,7 @@ from pathlib import Path
 
 API = os.environ.get(
     "RUNNER_API",
-    "https://tony-dell.taila0626a.ts.net/apps/board-api").rstrip("/")
+    "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 # dispatch_repos.board_api_base() reads BOARD_API/RUNNER_API — export the
 # resolved base so the close-out patch-relay posts to the same api.
 os.environ.setdefault("BOARD_API", API)
