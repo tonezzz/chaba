@@ -66,7 +66,7 @@ if ('serviceWorker' in navigator) {
   }
   button {
     background: #0e7490; color: #fff; border: 1px solid #22d3ee;
-    border-radius: 8px; padding: 12px 16px; font: inherit; font-size: 14px;
+    border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 13px;
     font-weight: 600; cursor: pointer; touch-action: manipulation;
   }
   button:active { background: #155e75; }
@@ -75,6 +75,23 @@ if ('serviceWorker' in navigator) {
   #note {
     padding: 0 14px 10px; font-size: 11px; color: #475569; line-height: 1.5;
   }
+  /* sax mode (?sax=1): camera preview is pointless for humming — show a
+     tuner-style readout instead so the whole flow is "allow mic -> hum" */
+  #saxview {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; padding: 20px;
+  }
+  #saxview[hidden] { display: none; }
+  #saxnote {
+    font-size: clamp(4rem, 22vw, 7rem); font-weight: 800;
+    color: #fbbf24; line-height: 1;
+  }
+  #saxhz { font-size: 1.2rem; color: #94a3b8; text-align: center; }
+  #saxbar {
+    width: min(70vw, 300px); height: 10px; background: #1e293b;
+    border-radius: 5px; overflow: hidden;
+  }
+  #saxbar i { display: block; height: 100%; width: 0; background: #22d3ee; transition: width .08s; }
 </style>
 </head>
 <body>
@@ -83,6 +100,11 @@ if ('serviceWorker' in navigator) {
   <span class="sub">ada_v2 rebuild · iPhone camera → TV screen</span>
 </header>
 <div id="status" class="warn">starting…</div>
+<div id="saxview" hidden>
+  <div id="saxnote">—</div>
+  <div id="saxhz">allow the mic, then hum — the screen plays it as sax</div>
+  <div id="saxbar"><i></i></div>
+</div>
 <div id="stage" class="mirror">
   <video id="cam" autoplay playsinline muted></video>
   <canvas id="overlay"></canvas>
@@ -696,6 +718,10 @@ async function humStart(btn) {
   const an = hCtx.createAnalyser(); an.fftSize = 2048;
   src.connect(an);
   const buf = new Float32Array(an.fftSize);
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const sn = $('saxnote'), sh = $('saxhz'), sb = $('saxbar').firstElementChild;
+  const noteName = f => { const n = Math.round(12 * Math.log2(f / 440) + 69);
+    return NOTE_NAMES[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1); };
   let wasVoiced = false;
   hTimer = setInterval(() => {
     an.getFloatTimeDomainData(buf);
@@ -705,9 +731,13 @@ async function humStart(btn) {
       if (!wasVoiced) ctlPost('hum-voiced', `f=${Math.round(r.f)}`);
       wasVoiced = true;
       btn.textContent = '🎷 ' + Math.round(r.f) + ' Hz';
+      if (sn) { sn.textContent = noteName(r.f);
+        sh.textContent = Math.round(r.f) + ' Hz';
+        sb.style.width = Math.min(100, r.a * 400) + '%'; }
     } else if (wasVoiced) {
       send({ type: 'hum', f: 0 });
       wasVoiced = false; btn.textContent = '🎷 humming…';
+      if (sn) { sn.textContent = '—'; sb.style.width = '0'; }
     }
   }, 70);
   btn.classList.add('on'); btn.textContent = '🎷 humming…';
@@ -721,6 +751,9 @@ function humStop(btn) {
   hStream = hCtx = null;
   send({ type: 'hum', f: 0 });
   if (btn) { btn.classList.remove('on'); btn.textContent = '🎷 hum→sax'; }
+  const sn = $('saxnote'), sb = $('saxbar').firstElementChild;
+  if (sn) { sn.textContent = '—'; sb.style.width = '0';
+    $('saxhz').textContent = 'hum stopped'; }
 }
 {
   const hb = $('btn-hum');
@@ -756,7 +789,13 @@ if (ENGINE === 'yolo') {
 const zLast = new WeakMap();
 setInterval(() => {
   for (const s of [vWs, ctlWs]) {   // ws (gesture-live) may idle silently
-    if (!s || s.readyState !== 1) continue;
+    if (!s) continue;
+    if (s.readyState === 0) {        // CONNECTING — iOS can freeze a
+      if (!s._zc) s._zc = Date.now(); // mid-handshake socket forever
+      else if (Date.now() - s._zc > 15000) { try { s.close(); } catch {} }
+      continue;
+    }
+    if (s.readyState !== 1) continue;
     if (!s._zw) {
       s._zw = 1; zLast.set(s, Date.now());
       const prev = s.onmessage;
@@ -769,9 +808,16 @@ setInterval(() => {
 connectWs();
 status('idle — tap Start camera', 'warn');
 
-// ?sax=1 — arrived from a jam screen's QR: skip the camera entirely and
-// go straight to hum mode (the mic prompt itself is the "tap")
+// ?sax=1 — arrived from a jam screen's QR: the camera preview buys
+// nothing for humming, so swap it for the tuner view and go straight to
+// hum mode (the mic prompt itself is the "tap")
 if (QS.get('sax')) {
+  $('stage').style.display = 'none';
+  $('saxview').hidden = false;
+  $('note').textContent =
+    'Hum mode: sing/hum into the phone — the screen plays it back as a ' +
+    'sax. Louder hum = louder sax. Start camera below if you also want ' +
+    'hand controls (vibrato wiggle, fist growl).';
   const hb = $('btn-hum');
   status('🎷 allow the mic, then hum — the screen plays it as sax', 'ok');
   humStart(hb);
