@@ -38,6 +38,13 @@ lanes:
                                # decision 2026-10-12)
     ha_home: tony-ha           # svc-chaba-guest scoped creds, not owner
     owner_person: none
+  mn:
+    prod: ada-ai-kraut         # was ada-ha-michael; renamed in the
+                               # grand-rename (michael -> mn, 2026-10-16)
+    persona: kraut             # ADA_PWA_NAME=Kraut — sauerkraut in-joke;
+                               # no LINE persona binding yet
+    ha_home: mn-ha             # renamed from michael-ha 2026-10-16
+    owner_person: michael
 
 instances:
   ada-ha-tony:
@@ -82,6 +89,36 @@ instances:
     identity_env: ADA_IDENTITY_INSTRUCTIONS   # Kaewta identity + feminine
       # register — overrides the default introduce-yourself-as-Ada block
       # (59fceb8). Without it the lane inherits Ada's identity paragraph.
+
+  ada-ai-kraut:
+    host: idc03
+    port: 8003
+    env_file: ada-ai-kraut.env
+    ha_upstream: mn-ha         # HOME_ASSISTANT_URL=http://michael-ha:8123 —
+                               # Michael's real HA (home plugs etc.)
+    instance_id: michael       # ADA_INSTANCE_ID=michael — bank registry
+                               # keys on this, shared banks already span
+                               # [tony, michael, kk]
+    bank: instance-default     # private-personal bank (person_scope:
+                               # instance owner) — Michael's person bank
+    cms_collection: ada-cms-pages-mn    # carved 2026-10-17 — the lane
+                               # previously fell through to shared
+                               # ada-cms-pages (Tony's); seeded with an
+                               # index doc, live-verified
+    cms_catalog_prime: true    # ADA_CMS_CATALOG_PRIME=1
+    cms_anon_read: true        # ADA_CMS_ANON_READ=1
+    cms_public_base: ""        # no published mirror yet (kk uses
+                               # surf-thailand.com/kk-ha/ — mn gets one
+                               # when a public lane is wanted)
+    person: person.michael_nakvachara
+    pwa_name: Kraut            # ADA_PWA_NAME=Kraut
+    identity_env: ADA_IDENTITY_INSTRUCTIONS   # Kraut identity — EN-first,
+                               # dry-witted masculine; follows speaker to
+                               # Thai (ครับ/ผม) or German
+    note: member lane (Michael — fluent TH/EN/DE). cms tools included by
+      default — publish capability matches pre-carve state; revisit if the
+      lane should be read-mostly like kk (which excludes
+      cms_publish_page/cms_edit).
 
   ada-kk-dev:
     host: idc03
