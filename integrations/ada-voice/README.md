@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Eleven drops live here:
+chaba dispatches. Fourteen drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -37,6 +37,8 @@ chaba dispatches. Eleven drops live here:
 13. write fidelity — narrated-vs-stored divergence guard for
     `cms_publish_page` — card `ada-cms-write-fidelity` (ADA-0732,
     2026-10-17)
+14. tg forward provenance gaps — hidden-origin flagging + forwarded
+    other-media turns — card `tg-forward-provenance` (2026-10-17)
 
 ---
 
@@ -1045,3 +1047,86 @@ generations that nothing binds. Two guards + one bench assertion:
 - `tool-lint` clean; `scenario-schema-check` 196 files 0 violations.
 - NOT verified live: no real mddb — the first real publish exercises
   the read-back against the dev lane.
+
+---
+
+## Drop 14 — tg forward provenance gaps
+
+Card `tg-forward-provenance` (2026-10-17). Incident: Tony forwarded 3 of
+Michael's voice clips to @KrautMNBot's DM — the relay filed them under
+`corpus/tg/tony/` and the transcripts reached Kraut as caller=tony, so
+the persona answered as if Tony had spoken them; the corpus needed a
+manual refile.
+
+The bulk of the fix already shipped directly in ada-voice `b205457`
+("mn-ha relay batch", 2026-10-17, live on idc03): `_forward_label` reads
+`forward_origin` (sender_user/hidden_user/chat/channel + legacy
+`forward_*` fallbacks), clips file under the ORIGINAL sender when it maps
+in `TELEGRAM_USER_CALLERS`, the manifest keeps `forward_from` +
+`forwarded_by`, and text/photo/voice turns all carry attribution. THIS
+drop closes the remaining card-spec gaps on top of that base:
+
+- **Hidden origin flagging** — `hidden_user` forwards (and legacy
+  `forward_sender_name`) now suffix the label `— origin hidden`, so the
+  persona knows attribution is claimed-not-verified. When Telegram gives
+  no `sender_user_name` at all, the label falls back to the FORWARDER's
+  identity (`_forwarder_name` — mapped caller, then TG name) per the
+  card's "fall back to forwarder identity but note forwarded, origin
+  hidden".
+- **Forwarded other-media no longer drop** — `document`, `video`,
+  `animation`, `sticker`, `contact`, `location`, `venue`, `poll`, `dice`
+  forwards used to fall through to `if not text: return` and vanish.
+  They now reach the persona as a described turn —
+  `(forwarded from X) [received a document: report.pdf (200 KB) —
+  content not viewable here] Their caption: …` — via the new
+  `_media_desc` helper. The blob itself still stays in Telegram (no
+  ingest — that's a separate feature); the turn carries provenance +
+  filename + caption so the forward is never silently lost or
+  misattributed. Non-forwarded media of these kinds still drop — a
+  stray sticker shouldn't bill a persona turn.
+- **Canonical slugs for provenance** — `_save_voice_clip` now resolves
+  the forwarder through `TELEGRAM_USER_CALLERS` for both the fallback
+  clip dir and the manifest `forwarded_by` (previously a private-chat
+  forwarder recorded as the raw TG username, e.g. `tonezzz` instead of
+  `user-tony`).
+
+### Files
+
+- `backend/tg_relay.forward-provenance.patch` — unified diff vs
+  ada-voice `main` @ `5ad03d2` (post-`b205457`).
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/tg_relay.forward-provenance.patch`
+   — verified `git apply --check` clean on `main` @ `5ad03d2`; if it
+   rots, re-dispatch rather than hand-merging.
+2. Gates: `.venv/bin/python -m pytest tests/ -x -q` then restart the
+   tg-relay lanes (`deploy-ada.sh` runs both); no manifest/surface
+   change — no count_cap bump.
+
+### Verified
+
+- `tests/ada/test_tg_forward_provenance.py` (chaba side): 16/16 —
+  `_forward_label` across all origin types + legacy fields,
+  `handle()` turn text for forwarded text/document/sticker/hidden,
+  `_save_voice_clip` filing under the ORIGINAL sender with
+  `forwarded_by` provenance (the 2026-10-16 incident replayed), and
+  hidden-origin clips filing under the forwarder with the hidden flag
+  in the manifest.
+- Patch `git apply --check` clean vs ada-voice `main` @ `5ad03d2`;
+  patched file `py_compile` clean.
+- NOT verified live: no real Telegram update — first forwarded clip
+  to @KrautMNBot after deploy is the smoke.
+
+### Residual / judgement calls
+
+- Hidden-user forwards keep the claimed `sender_user_name` in the label
+  when present (it IS the origin's display name — Telegram hides the
+  account link, not the name). The card's forwarder-fallback kicks in
+  only when the name is absent.
+- Forwarded *non*-media-bearing types Telegram doesn't model
+  (`successful_payment`, `game`, `invoice`, `passport_data`) still
+  drop — none carry user content worth a turn.
+- Full TG document ingest (download + archive + doc_read parity with
+  LINE's `file-doc-ingest` drop) is a separate card — this drop only
+  guarantees a forwarded doc is acknowledged with provenance.
