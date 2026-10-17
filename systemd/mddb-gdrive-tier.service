@@ -1,0 +1,14 @@
+# Tiers old mddb backups from ~/.local/share/mddb-backups/ to gdrive:backups/mddb/.
+# Lives on idc02 (OPS-0725 — absorbs the gdrive-tier role from tony-dell's
+# retired mddb-standby-pull). Keeps newest-2 local; requires rclone +
+# ~/.config/rclone/rclone.conf (gdrive remote).
+[Unit]
+Description=Tier old mddb backups to gdrive
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c "ls -t %h/.local/share/mddb-backups/mddb*.db 2>/dev/null | tail -n +3 | xargs -r -I{} %h/.local/bin/rclone move {} gdrive:backups/mddb/ --transfers=1"
+
+[Install]
+WantedBy=default.target

@@ -96,3 +96,19 @@ Every flip is a proxy upstream line + a `systemctl start` on dell (which stays u
   on idc02 use `PodmanArgs=--add-host host.docker.internal:host-gateway`.
 - Dell quadlets parked (`*.container.parked`) — same pattern as notebooklm.
 - Verified: `/`, `/decisions`, `/infrastructure`, `/apps/helm` → 200 via dell edge.
+
+## Phase 4 preview — mddb backup chain (2026-10-18)
+
+- **Found broken**: `chaba-postgres-16` on dell had been down ~25h (status 125,
+  restart-counter exhaustion) — collateral of the 10-16 freeze window. yomi-api
+  degraded, yomi timers + trade DB dead. Restarted clean; 22 tables intact;
+  all yomi jobs re-verified OK.
+- **`mddb-standby-pull` retired on dell** (disabled). Its three roles:
+  pull newest → covered by idc02 `mddb-lab-pull` (daily, succeeds);
+  standby replica → idc02 `mddb-lab` (:11024) + `mddb-ops` (:11025);
+  gdrive tier → NEW `mddb-gdrive-tier.timer` on idc02 (04:30 daily,
+  newest-2 local, rclone → gdrive:backups/mddb/).
+- Dell disk relief: stranded 8.2G filecopy pushed to gdrive (14G free, 89%).
+- idc02 had 38G untiered mddb backups accumulating — the new tier job drains
+  them to gdrive on first run.
+- Canonical units: `systemd/mddb-gdrive-tier.{service,timer}`.
