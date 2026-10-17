@@ -128,7 +128,7 @@ jobs:
     .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
 - id: chaba-cached-videos
   name: yt-live media cache -> CMS cached-videos-report
-  host: tony_dell
+  host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
@@ -173,7 +173,7 @@ jobs:
     env_file supplies LITELLM_KEY (LITELLM_KEY_CHABA virtual key).'
 - id: chaba-tony-ideas
   name: Tony ideas/decisions harvest -> CMS tony-ideas
-  host: tony_dell
+  host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
@@ -190,7 +190,7 @@ jobs:
     same contract as kanban-brief. Added 2026-10-10.
 - id: chaba-cms-regen
   name: CMS registry command-generator sweeper (the missing regen lane)
-  host: tony_dell
+  host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
   on_calendar: hourly
   persistent: true
@@ -205,7 +205,7 @@ jobs:
     are untrusted input. Write-back stamps last_run/status/duration. Added 2026-10-10.
 - id: chaba-standard-drift
   name: Standard-drift digest -> CMS standard-drift
-  host: tony_dell
+  host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
   on_calendar: hourly
   persistent: true
@@ -280,7 +280,7 @@ jobs:
     checkout drift can never break it. Card device-telemetry-prune; added 2026-10-10.'
 - id: daily-brief
   name: Daily Brief (morning+evening)
-  host: tony_dell
+  host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
   dispatch: systemd
   on_calendar: '*-*-* 07,19:05:00'
   persistent: true
