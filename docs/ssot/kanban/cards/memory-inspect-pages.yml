@@ -1,0 +1,15 @@
+id: memory-inspect-pages
+title: Memory-inspection pages — per-lane bank snapshots into CMS
+column: backlog
+updated: 2026-10-18 22:16
+brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
+  kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
+  by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
+  kind=memory-inspect template. Read-only snapshots keep the memory->CMS direction one-way (the leak we closed).
+  Redact secret-keyed entries at write time. ~half day.'
+priority: medium
+ref: MEM-0745
+comms:
+- at: 2026-10-18 22:16
+  from: tony
+  text: card captured via board-api
