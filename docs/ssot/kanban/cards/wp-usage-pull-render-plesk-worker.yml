@@ -1,7 +1,7 @@
 id: wp-usage-pull-render-plesk-worker
 title: usage timeline as Plesk pull-render worker (CPU to Plesk)
 column: backlog
-updated: 2026-10-16 14:47
+updated: 2026-10-17 06:56
 priority: low
 note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
   in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
@@ -142,6 +142,31 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-143736-usage-timeline-as-plesk-pull-r,
     branch dispatch/20261016-143736-usage-timeline-as-plesk-pull-r'
+- at: 2026-10-16 19:53
+  from: tony
+  text: 'answered plesk-side-is-the-only-step-left-h3-pane-a9d972: done'
+- at: 2026-10-16 19:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-16 19:53
+  from: devin
+  text: '[verify] plugin live (ops_error/cam CPTs registered, >=0.6.0) and the pull mechanism fired — heartbeat
+    post 568. BUT it reports: CHABA_USAGE_FEED_URL not set in wp-config.php (beat at 19:50 ICT). The plugin upload
+    took; the wp-config constants likely were not picked up — recheck the two define() lines, then next wp-cron
+    tick (hourly) or a manual Plesk-task run should turn the heartbeat green and create the usage-ledger report
+    post.'
+- at: 2026-10-17 06:56
+  from: devin
+  text: 're-answered plesk-side-is-the-only-step-left-h3-pane-a9d972: done'
+- at: 2026-10-17 06:56
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-17 06:56
+  from: devin
+  text: '[verify] reopened — heartbeat post 568 ran again 23:50 UTC and STILL reports CHABA_USAGE_FEED_URL unset.
+    The plugin + pull mechanism work; the wp-config define() is not being read — check it is in the real docroot
+    wp-config.php, above the stop-editing line, exact name CHABA_USAGE_FEED_URL (and CHABA_USAGE_FEED_TOKEN from
+    idc03 usage-feed.env). Next hourly wp-cron tick will show green or error in the same heartbeat post.'
 action:
   type: dispatch
   status: done
@@ -179,13 +204,15 @@ requests:
     and CHABA_USAGE_FEED_TOKEN=<value in idc03 ~/.config/secrets/usage-feed.env>. (3) Scheduled Task: Run a PHP
     script wp-content/plugins/chaba-boards/usage-pull-cron.php every 15 min — optional, WP-Cron hourly fallback
     self-arms. Reply done/skip and I''ll verify the heartbeat.'
-  status: open
+  status: answered
   at: 2026-10-15 16:00
   from: devin
   options:
   - proceed
   - hold
   escalated_at: 2026-10-16 05:16
+  answer: done
 review_kind: verify
 claim:
   since: 2026-10-16 14:37
+awaiting_action: true

@@ -1,0 +1,19 @@
+id: ada-chat-card-ignores-instance-crosslane
+title: ada-chat-card ignores instance config — dialed ada-tony ws from any lane
+column: done
+updated: 2026-10-17 15:16
+brief: 'mn-ha ChatUI tab showed WebSocket error: accResolveWs used ws_url > routes.json[ada-tony] > hardcoded wss://idc03.../ada-tony/ws
+  — instance never consulted, so any non-tony lane dialed Ada backend (cross-lane + wrong network for public viewers).
+  Fixed: ws_url > same-origin /ada-ws/<instance>/ws mirroring ada-voice-card. Canonical chaba 6fd4ade pushed; deployed
+  to mn-ha /config/www/. Dashboard also carries explicit ws_url as belt-and-braces.'
+ref: ADA-0737
+comms:
+- at: 2026-10-17 15:16
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-17 15:16
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

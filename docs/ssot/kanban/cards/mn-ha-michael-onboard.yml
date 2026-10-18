@@ -1,0 +1,27 @@
+id: mn-ha-michael-onboard
+title: 'mn-ha: whitelist Michael on @mn_ha_bot + demo prep'
+column: backlog
+updated: 2026-10-17 15:11
+brief: Michael has not messaged the bot yet — his TG user ID is needed to whitelist him before the 11am meeting.
+priority: high
+tags:
+- mn-ha
+- telegram
+- onboarding
+spec: 'Steps when his first message arrives: (1) refusal echoes his TG user id in ada-tg-relay-mn journal; (2) add
+  uid:michael to TELEGRAM_USER_CALLERS in telegram-mn-bot.env and his DM chat_id to TELEGRAM_ALLOWED_CHAT_IDS; (3)
+  restart relay; (4) verify his voice clip lands in corpus/tg/michael/ and Kraut replies. Also pre-meeting dry-run
+  (before 9am): text Kraut "who are you", voice note, "tell me about my house", "why cant you control my house"
+  — all four must answer right. Quarantine stays until Tony says open.'
+ref: KNB-0728
+comms:
+- at: 2026-10-16 21:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-17 15:11
+  from: devin
+  text: '[dry-run done 15:10 ICT] All 4 demo questions PASSED live on ada-ai-kraut (:8003, text turns): who-are-you
+    -> answered; my-house -> narrated tool failure honestly; why-cant-you-control -> told the truth (cant reach
+    the home, quarantine) instead of pretending; 2+2 correct. Relay polls getUpdates cleanly every 25s; voice path
+    ready (ada-stt restarted, remote STT on :8914 healthy). Caveats for demo: (a) text turns greet as Tony — Michael
+    sees his own greeting once whitelisted; (b) she noticed a sta'

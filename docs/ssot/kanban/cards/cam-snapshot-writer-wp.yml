@@ -1,7 +1,7 @@
 id: cam-snapshot-writer-wp
 title: 'cam snapshot writer: go2rtc frames -> WP cam CPT'
 column: done
-updated: 2026-10-15 15:08
+updated: 2026-10-16 19:53
 priority: medium
 note: 'chaba-boards plugin ACTIVE on boards (v0.2.0, CPTs verified + asset write sanity passed). Build the cam recorder:
   timer on tony-dell (go2rtc aggregator host) -> per cam in ~/.config/go2rtc/go2rtc.yaml GET http://<host>:1984/api/frame.jpeg?src=<cam>
@@ -61,6 +61,17 @@ comms:
 - at: 2026-10-15 15:08
   from: tony
   text: closed by tony
+- at: 2026-10-16 19:45
+  from: tony
+  text: closed by tony
+- at: 2026-10-16 19:52
+  from: devin
+  text: 'answered card-note-truncates-mid-sentence-also-se-f5f523: as-built is fine — directory posts were the ask'
+- at: 2026-10-16 19:53
+  from: devin
+  text: '[verify] installed the missing systemd units (wp-cam-snapshot.service/.timer, every 15min at :02 — dispatch
+    merged code but never installed it). First live run: omen_cam snap post 645 + directory post 646 created; 7
+    go2rtc cams returned empty frames (camera-side issue, not the writer). Card now *actually* done.'
 action:
   type: dispatch
   status: done
@@ -76,12 +87,13 @@ requests:
   ask: 'Card note truncates mid-sentence: "Also seed kind=live directory posts for sso" (board-api caps note at
     500 chars). Built: snapshots kind=live slug cam-<id>-<ts> + per-camera directory post slug cam-<id> (kind=live,
     featured image = newest frame). What did "for sso" mean?'
-  status: open
+  status: answered
   at: 2026-10-15 10:42
   from: devin
   options:
   - as-built is fine — directory posts were the ask ★
   - directory posts were for a specific surface — will clarify
   - 'redo: different kind/split for directory vs snapshots'
+  answer: as-built is fine — directory posts were the ask
 review_kind: verify
 claim: {}

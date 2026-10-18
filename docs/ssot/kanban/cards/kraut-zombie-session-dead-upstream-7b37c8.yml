@@ -1,0 +1,19 @@
+id: kraut-zombie-session-dead-upstream-7b37c8
+title: kraut-zombie-session-dead-upstream
+column: done
+updated: 2026-10-18 20:37
+brief: 'mn-ha voice session loses its Gemini upstream (idle-kill 1008/1011) while the client ws stays open — pump
+  never sees the death, is_stalled only arms on a pending user turn, send_audio errors are suppressed, deferred
+  notifies log into the corpse every ~10s. User: permanent silence = no voice out.'
+priority: medium
+program: ada-voice
+note: 'Found 2026-10-17 ~16:26 on session e2f72da8a9 (mn-ha-sidebar caller): provider ws closed 1008 The operation
+  was aborted, no stream-ended log, no reconnect — zombie for 27+min. Fix c20e39a on ada-voice main: upstream_dead()/upstream_close_code()
+  on the provider, pump heartbeat + pump_reconnecting flag in speech_state, stall_watchdog closes dead providers
+  so the pump unwinds into the reconnect path, and drops the client ws when the pump itself is parked >20s (client
+  send backpressure) so the brows'
+ref: OPS-0741
+comms:
+- at: 2026-10-18 20:37
+  from: tony
+  text: card captured via board-api

@@ -1,0 +1,17 @@
+id: tg-relay-tg-listen-env-drift-kk-binds-89-62c51e
+title: tg relay TG_LISTEN env drift — kk binds 8913 (env 8912), mn binds 8917 (env 8916)
+column: backlog
+updated: 2026-10-18 21:29
+brief: telegram-kk-bot.env says TG_LISTEN=127.0.0.1:8912 but the relay actually listens on 8913 (line_relay owns
+  8912); telegram-mn-bot.env says 8916 but binds 8917. Startup log send listener lines are the truth. Any consumer
+  reading the env files for the /send port will hit the wrong port. Found 2026-10-18 delivery-surface survey.
+priority: low
+program: ada-voice
+spec: 'Decide whether the env files or the binds are canonical: update the env files to the real ports (then a restart
+  aligns everything), or fix whatever picked the +1 ports so env and bind agree. Cross-check the ada chat_send relay-endpoint
+  map for the same drift.'
+ref: OPS-0744
+comms:
+- at: 2026-10-18 21:29
+  from: tony
+  text: card captured via board-api

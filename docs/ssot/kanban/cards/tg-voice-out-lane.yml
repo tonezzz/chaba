@@ -1,0 +1,21 @@
+id: tg-voice-out-lane
+title: 'Voice-out lane: TTS replies over Telegram/LINE'
+column: backlog
+updated: 2026-10-16 21:32
+brief: Relay sessions are text-only (realtime_provider.py) — personas can hear but cannot speak back on TG/LINE.
+priority: high
+tags:
+- ada-voice
+- telegram
+- tts
+- mn-ha
+spec: 'send_voice + /send audio_b64 plumbing already exists in tg_relay.py (line ~484) and tts.py has a working
+  Gemini-TTS synth helper (vcast-proven). Missing: the bridge — after a text turn completes, synthesize reply with
+  tts.synth_pcm -> POST audio_b64 to the relay send listener. Gate per-lane via env (e.g. TG_VOICE_REPLY=1) so lanes
+  opt in. Latency: adds a few seconds per turn — acceptable for voice UX. Michael asked for a voice reply in-session
+  and got text; this is the gap.'
+ref: ADA-0727
+comms:
+- at: 2026-10-16 21:32
+  from: tony
+  text: card captured via board-api

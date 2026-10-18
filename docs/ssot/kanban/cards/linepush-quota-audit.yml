@@ -1,0 +1,142 @@
+id: linepush-quota-audit
+title: LINE push quota audit — monthly-limit 429s, park/piggyback policy, push-source census
+column: done
+updated: 2026-10-17 16:50
+priority: high
+tags:
+- line
+- quota
+- relay
+spec: 'LINE Messaging API monthly push limit is depleted — ~30 quota-blocked events in 48h (429 ''You have reached
+  your monthly limit'') hitting pushes to tony DM (U7efe5dde785e89fc998de234dfbe3d90), nhong, kk, and group C822026077530a29620b5041bd1a955c5.
+  Relay parks blocked msgs and flushes on next inbound, so nothing is lost — but ALL proactive pushes (digests,
+  board notify, wallet-watch alerts, request-sweep pings) are starved. This directly gates KNB-0691''s per-member
+  LINE digest component — a digest that can''t push is dead on arrival.
+
+
+  DISPATCH SCOPE (backend/line_relay.py in ada-voice repo on idc03 + callers):
+
+  1. Push-source census: journalctl ada-line-relay 30d -> count push attempts by source/recipient; identify what
+  spends the monthly quota (notification loops? digests? per-event pushers?). Report top spenders.
+
+  2. Policy fix in relay: classify pushes urgent|bulk. Urgent (safety/security/user-requested) pushes always attempt;
+  bulk (digests, rollups, newsletters) piggyback on reply tokens or hold for next inbound window. Optionally collapse
+  hourly/daily bulk pushes into one bundled message.
+
+  3. Quota visibility: log remaining quota header if LINE exposes it (X-Line-Request-Id / quota headers), else estimate
+  counter persisted across restarts; add ''quota depleted'' alert path that does NOT itself push (board comms /
+  SSOT event instead).
+
+  4. Document the plan-tier facts in SSOT: which plan the ชบา bot is on, monthly cap, when it resets — so the decision
+  to upgrade is data-backed.
+
+
+  OUT OF SCOPE: billing/plan changes (Tony''s call), second-channel fallback (separate card if wanted), relay-img
+  transient miss spam (by-design transient keys — note only).
+
+
+  VERIFY: census table posted on the card; policy change unit-tested in repo suite; no regression to reply-path
+  delivery.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: done
+  runner: tony-macbook
+  sweep:
+    stale_running: 2026-10-17 16:35
+    session_gone: 2026-10-17 16:35
+  result: 'exit=0 lk"` (or use `LINE_BULK_LANES`) to actually demote — until then behavior is unchanged. | devin-task-20261017-162335-line-messaging-api-monthly-pus.service:
+    Consumed 1min 37.961s CPU time over 15min 25.259s wall clock time, 1.1G memory peak.'
+  verified: true
+ref: AUD-0736
+comms:
+- at: 2026-10-17 15:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-17 15:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-17 15:05
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-17 15:05
+  from: chaba
+  text: started devin-task-20261017-150555-line-messaging-api-monthly-pus on tony-macbook (dispatch)
+- at: 2026-10-17 15:06
+  from: devin
+  text: 'starting: census of push sources + quota policy fix in line_relay.py'
+- at: 2026-10-17 15:11
+  from: chaba
+  text: runner tony-macbook unreachable 3 passes — requeued
+- at: 2026-10-17 16:23
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-17 16:23
+  from: chaba
+  text: started devin-task-20261017-162335-line-messaging-api-monthly-pus on tony-macbook (dispatch)
+- at: 2026-10-17 16:29
+  from: devin
+  text: 'Census done: quota API confirms 300/mo cap, 300/300 consumed since ~Oct 14 12:24. Top spenders in last
+    12d of journal: tony DM 161, nhong DM 80, kk group 39, kk DM 34 push-calls. Sources: chaba-nag (hourly+2h resend),
+    ada_track_device 5-min deltas (iphone-15 watch → nhong), gemini-wallet-watch, chat_send, line-digest. Parked
+    backlog now: nhong 44, tony 13, kk 10 msgs. Implementing bulk|urgent split + coalescing in line_relay.py next.'
+- at: 2026-10-17 16:35
+  from: chaba
+  text: 'merge-sweep: devin-task-20261017-150555-line-messaging-api-monthly-pus no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-17 16:35
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261017-150555-line-messaging-api-monthly-pus on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-17 16:38
+  from: devin
+  text: 'CENSUS (journalctl ada-line-relay, retained window Oct 5 21:14 -> Oct 17 15:58; 30d requested but journal
+    keeps ~12d)
+
+
+    Plan facts (live API): bot ชบา @339sbrov; quota {limited, 300/mo}; consumption 300/300 — resets on the 1st (starved
+    until Nov 1 ICT). First 429: Oct 14 12:24.
+
+
+    API calls in window: push 314 OK / 21 x400 / 81 x429 | reply 505 OK (free).
+
+
+    push-200 by recipient: tony DM 161 | nhong DM 80 | kk group C8220 39 | kk DM 34
+
+
+    Top spenders (timing + parked-queue forensics):
+
+    1. chaba-nag.ti'
+- at: 2026-10-17 16:38
+  from: devin
+  text: 'Done. Dispatch branch dispatch/20261017-162335 (2 commits, not pushed): urgent|bulk push classes, bundled
+    bulk flush, 6h monthly-block guard, boot quota probe + GET /quota, quota_depleted ops alert, send-source log;
+    ada_track_device deltas marked bulk. 14 new tests, suite 1576 green, tool-lint clean. Note for adoption: chaba-nag/wallet-watch/line-digest
+    live in other checkouts — they need class=bulk added (or LINE_BULK_LANES) to actually demote; KNB-0691 digest
+    pushes should set class=bulk from '
+- at: 2026-10-17 16:40
+  from: tony-macbook
+  text: 'finished (ok): exit=0 lk"` (or use `LINE_BULK_LANES`) to actually demote — until then behavior is unchanged.
+    | devin-task-20261017-1623'
+- at: 2026-10-17 16:40
+  from: chaba
+  text: pushed dispatch/20261017-162335-line-messaging-api-monthly-pus to origin
+- at: 2026-10-17 16:40
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-17 16:41
+  from: chaba
+  text: auto-merged 7d9436f2 (dispatch/20261017-162335-line-messaging-api-monthly-pus) → origin/main
+- at: 2026-10-17 16:41
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261017-162335-line-messaging-api-monthly-pus,
+    branch dispatch/20261017-162335-line-messaging-api-monthly-pus'
+- at: 2026-10-17 16:50
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+claim: {}
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-17 16:50
+  note: verified — evidence checks green, closing itself

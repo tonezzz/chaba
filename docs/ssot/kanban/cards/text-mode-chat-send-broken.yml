@@ -1,0 +1,57 @@
+id: text-mode-chat-send-broken
+title: 'chat_send fails on text-mode sessions: OpenRouterTextProvider lacks notify_or_defer'
+column: done
+updated: 2026-10-17 15:49
+brief: 'On mode=text sessions (TG/LINE relays), chat_send times out then crashes: pwa_server notify failed: OpenRouterTextProvider
+  object has no attribute notify_or_defer.'
+priority: high
+tags:
+- ada-voice
+- text-mode
+- chat-send
+- bug
+spec: 'Observed 2026-10-16 on ada-ai-kraut: `chat_send notify failed: timed out` (~14s) then `WARNING pwa_server:
+  session=... notify failed: AttributeError: OpenRouterTextProvider object has no attribute notify_or_defer`. Kraut
+  tried to send a dub-sample video via chat_send channel=line — the call hung and never delivered. Fix: implement
+  notify_or_defer (or equivalent send path) on OpenRouterTextProvider in backend/openrouter_provider.py so proactive
+  tools (chat_send, notifications) work in text-mode sessions; degrade gracefully where the channel cannot take
+  media. Also note: TG_PUSH_DENY now guards the mn-ha group against out-of-band pushes (replies unaffected).'
+ref: OPS-0730
+comms:
+- at: 2026-10-16 21:53
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-17 15:04
+  from: tony
+  text: queued for processing
+- at: 2026-10-17 15:04
+  from: idc02
+  text: claimed
+- at: 2026-10-17 15:05
+  from: chaba
+  text: started devin-task-20261017-150512-observed-2026-10-16-on-ada-ai- on idc02 (dispatch)
+- at: 2026-10-17 15:05
+  from: devin
+  text: '[run] dispatch picked up on idc02 — investigating OpenRouterTextProvider.notify_or_defer'
+- at: 2026-10-17 15:35
+  from: chaba
+  text: 'merge-sweep: devin-task-20261017-150512-observed-2026-10-16-on-ada-ai- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-17 15:35
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261017-150512-observed-2026-10-16-on-ada-ai- on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-17 15:48
+  from: tony
+  text: closed by tony
+- at: 2026-10-17 15:49
+  from: devin
+  text: '[landed] dispatch on idc02 ended without push — recovered f4c4625 (notify_or_defer + queue_context_note
+    on OpenRouterTextProvider, +222 lines with tests) via bundle relay, merged f7499d1, deployed 04154f6 all lanes.'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  sweep:
+    stale_running: 2026-10-17 15:35
+    session_gone: 2026-10-17 15:35

@@ -1,0 +1,18 @@
+id: omen-battery-charge-policy
+title: omen battery charge policy — hysteresis via smart plug (no firmware threshold on HP Omen)
+column: backlog
+updated: 2026-10-18 21:04
+tags:
+- hardware
+- omen
+- battery
+spec: 'Goal: keep omen battery in 40-80%% band instead of cooking at 100%% on permanent AC (macbook-swell lesson).
+  HP Omen exposes no charge_control_* on Linux — verified 2026-10-18. Options: (A) Tuya smart plug on charger +
+  HA hysteresis automation: off at >=85%%, on at <=45%%, failsafes (plug power-on state=ON, alert <25%% sustained,
+  force-on <20%%). Needs a spare plug. (B) Check BIOS Battery Health Manager at next reboot (F10 > Power) — zero
+  hardware if present. Needs: tony decision A vs B; if A, which plug + confirm HA automation on tony-ha.'
+ref: OPS-0742
+comms:
+- at: 2026-10-18 21:04
+  from: devin
+  text: card captured via board-api

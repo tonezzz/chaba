@@ -1,0 +1,100 @@
+id: tg-forward-provenance
+title: 'tg_relay: label forwarded messages by original sender (forward_origin)'
+column: done
+updated: 2026-10-17 16:35
+brief: Forwarded clips/messages are labeled by the forwarding account — Kraut treated Michael voice clips as Tony
+  voice. Detect msg.forward_origin and attribute correctly.
+priority: medium
+tags:
+- ada-voice
+- telegram
+- corpus
+- provenance
+spec: 'In tg_relay.py handle(): read msg.get("forward_origin") (MessageOriginUser/HiddenUser/Chat). Cases: (1) voice/audio/video_note
+  forwards — save clip under original sender dir when resolvable (e.g. corpus/tg/michael/) with forwarded_by provenance
+  in manifest, and prepend transcript turn with attribution like "(forwarded voice clip from Michael)" so the persona
+  knows whose voice it is; (2) text forwards — prepend "(forwarded from X):" to the turn text; (3) photo/document/other
+  media forwards — same attribution prefix. Unknown/hidden origin: fall back to forwarder identity but note "forwarded,
+  origin hidden". Real-world proof: 2026-10-16 Tony forwarded 3 Michael clips to @KrautMNBot DM — relay labeled
+  them tony/, transcripts went to Kraut as caller=tony, Kraut was confused when told they were Michael. Manual refile
+  fixed corpus; this prevents recurrence.'
+ref: OPS-0729
+comms:
+- at: 2026-10-16 21:49
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-16 22:00
+  from: devin
+  text: 'IMPLEMENTED on idc03 (pending canonical re-land): _forward_label() resolves forward_origin (sender_user/hidden_user/chat/channel
+    + legacy fields); clips file under original sender when mapped in TELEGRAM_USER_CALLERS; manifest gains forward_from/forwarded_by;
+    voice turns now carry [voice clip saved: PATH; forwarded clip from X] prefix so personas can call speaker_profiles
+    match_file; text forwards prefixed (forwarded from X):; photo prompts attribute origin. Also fixes: /send deny
+    guard TG_PUSH_'
+- at: 2026-10-17 15:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-17 15:05
+  from: tony-omen
+  text: claimed
+- at: 2026-10-17 15:06
+  from: chaba
+  text: started devin-task-20261017-150601-in-tg-relay-py-handle-read-msg on tony-omen (dispatch)
+- at: 2026-10-17 15:19
+  from: chaba
+  text: 'merge-sweep: devin-task-20261017-150601-in-tg-relay-py-handle-read-msg no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-17 15:20
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-10-17 16:23
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-17 16:24
+  from: chaba
+  text: started devin-task-20261017-162358-in-tg-relay-py-handle-read-msg on tony-macbook (dispatch)
+- at: 2026-10-17 16:29
+  from: devin
+  text: '[done-staged] Found core fix already landed in ada-voice b205457 (mn-ha relay batch, live on idc03). Closed
+    the remaining card-spec gaps as chaba drop 14: integrations/ada-voice/backend/tg_relay.forward-provenance.patch
+    vs main@5ad03d2 — (a) hidden origin now flagged "— origin hidden" with forwarder-identity fallback when no name,
+    (b) forwarded document/video/sticker/etc no longer drop silently — reach persona as described turns with "(forwarded
+    from X)" + caption, (c) forwarded_by + fallback cl'
+- at: 2026-10-17 16:31
+  from: tony-macbook
+  text: 'finished (ok): exit=0 17-162358-in-tg-relay-py-handle-read-msg.md`, and the board has a `[done-staged]`
+    comment. | devin-task-20261017-'
+- at: 2026-10-17 16:32
+  from: chaba
+  text: 'session-end checkpoint d5a4ff3a: 4 leftover file(s) committed'
+- at: 2026-10-17 16:32
+  from: chaba
+  text: pushed dispatch/20261017-162358-in-tg-relay-py-handle-read-msg to origin
+- at: 2026-10-17 16:32
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-17 16:32
+  from: chaba
+  text: auto-merged 40771f3f (dispatch/20261017-162358-in-tg-relay-py-handle-read-msg) → origin/master
+- at: 2026-10-17 16:32
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-17 16:35
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  sweep:
+    stale_running: 2026-10-17 15:20
+  verified: true
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
+  runner: tony-macbook
+  result: 'exit=0 17-162358-in-tg-relay-py-handle-read-msg.md`, and the board has a `[done-staged]` comment. | devin-task-20261017-162358-in-tg-relay-py-handle-read-msg.service:
+    Consumed 37.584s CPU time over 6min 58.099s wall clock time, 337.7M memory peak.'
+claim: {}
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-17 16:35
+  note: verified — evidence checks green, closing itself

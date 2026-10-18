@@ -1,0 +1,39 @@
+id: ada-cms-write-fidelity
+title: cms_publish_page write fidelity — stored content diverged from narrated content
+column: done
+updated: 2026-10-17 15:49
+ref: ADA-0732
+comms:
+- at: 2026-10-17 08:14
+  from: devin
+  text: 'From MEM-0498 kk-cms-only memory bench finding (2): during the suite Kaewta stored TUESDAYS in cms_publish_page
+    content while narrating MONDAYS aloud. The stored artifact and the spoken claim diverged — the same class of
+    failure as phantom ok:true, worse because the write persisted. Investigate: was this a model slip (she wrote
+    different text than she said) or a tool path mangling content? Add a verify step: compare narrated vs stored
+    content on publish calls, or a post-write read-back check in '
+- at: 2026-10-17 15:04
+  from: tony
+  text: queued for processing
+- at: 2026-10-17 15:06
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-17 15:06
+  from: chaba
+  text: started devin-task-20261017-150637-cms-publish-page-write-fidelit on tony-macbook (dispatch)
+- at: 2026-10-17 15:11
+  from: chaba
+  text: runner tony-macbook unreachable 3 passes — requeued
+- at: 2026-10-17 15:49
+  from: tony
+  text: closed by tony
+- at: 2026-10-17 15:49
+  from: devin
+  text: '[landed] macbook session ended with work staged-but-uncommitted (session checkpoint only captured the outcome
+    doc). Recovered: committed 8ae325bc0 on the dispatch branch (fixed a YAML plain-scalar bug in the job doc),
+    merged to chaba master, applied drop to ada-voice (04154f6): post-write read-back on cms_publish_page + write_fidelity
+    ops event on narration/stored contradiction + seeded-recall scenario assert. 17/17 unit tests, lint clean, deployed
+    all lanes.'
+action:
+  type: dispatch
+  status: done
+claim: {}

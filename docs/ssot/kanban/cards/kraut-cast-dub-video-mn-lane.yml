@@ -1,0 +1,37 @@
+id: kraut-cast-dub-video-mn-lane
+title: Kraut cast dub video to screen — mn CMS gap + filename verbatim fix
+column: done
+updated: 2026-10-18 20:38
+brief: 'Test of inject+cast flow on mn-ha lane found: (1) cms_read resolves ADA_CMS_COLLECTION=ada-cms-pages-mn
+  which lacked voice-dub-demos/cached-videos-report — fixed by replicating both pages (mn copy will drift; no sync
+  automation exists). (2) Model fabricated interview-dub.mp4 (404) — fixed by verbatim-filename rule + alias map
+  in the recipe page (both collections). Verified live: cms_read→cast_to_screen confirm-gate→screen 1 playing jr-noel-interview-dub.mp4.
+  Caveat: narration said on screen while first self-asserted confirmed=true was stripped (overclaim class); confirm-gate
+  itself enforced co'
+priority: medium
+ref: MED-0738
+comms:
+- at: 2026-10-17 15:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-17 16:08
+  from: devin
+  text: 'Follow-up 2026-10-17: same hallucination class hit Chaba — a random-clip ask produced /apps/yt-live/clip-random.mp4
+    (404 replayed on every display reconnect). Root cause found deeper than CMS wording: cast_to_screen pre-flight
+    only probed absolute URLs and HTTP 404 was never marked dead. Structural fix afe909c (main, deployed + backends
+    restarted): relative paths now HEAD-probed against the vcast edge, 404/410 = dead → cast refused with never-invent-a-URL
+    error. See MED-0739 for full trail.'
+- at: 2026-10-17 16:09
+  from: devin
+  text: 'Follow-up 2026-10-17: same hallucination class hit Chaba — a random-clip ask produced /apps/yt-live/clip-random.mp4
+    (404 replayed on every display reconnect). Root cause found deeper than CMS wording: cast_to_screen pre-flight
+    only probed absolute URLs and HTTP 404 was never marked dead. Structural fix afe909c (main, deployed + backends
+    restarted): relative paths now HEAD-probed against the vcast edge, 404/410 = dead → cast refused with never-invent-a-URL
+    error. See MED-0739 for full trail.'
+- at: 2026-10-18 20:38
+  from: devin
+  text: 'veo i2v render for Tony 2026-10-18: animated /tmp/devin-pasted-images phuket-veg-fest.jpg (682x1024 portrait,
+    ma song w/ cheek skewer, Phuket Vegetarian Festival) via veo-3.1-fast-generate-preview predictLongRunning —
+    op models/veo-3.1-fast-generate-preview/operations/iudw7m9yo3bj, 9:16 8s 720p, ~$0.80, no RAI filter. Output
+    7.2MB mp4 verified (mvhd 8.00s) -> published http://192.168.2.67/apps/yt-live/phuket-veg-fest-anim.mp4 + ~/Downloads
+    on tony-macbook. Bypassed ada_render_video (direct REST,'

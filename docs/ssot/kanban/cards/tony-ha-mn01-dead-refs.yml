@@ -1,0 +1,37 @@
+id: tony-ha-mn01-dead-refs
+title: tony-ha rest_commands repointed mn01->idc03 (pairing restored); yolo :8780 refs still dead
+column: done
+updated: 2026-10-17 15:04
+brief: '2026-10-17: mn01 tailnet-offline 3d killed every tony-ha->Ada call: rest_command ada_issue_key/repair/voice_redeem/doc_intake
+  + sensor.ada_*_issued_keys all pointed at https://mn01.taila0626a.ts.net. Symptom: pairing hung, card logged "key
+  mint failed: issued is undefined" (script ada_voice_key derefs issued.content when the REST call dies). FIXED
+  live on tony-dell: repointed to idc03.taila0626a.ts.net in configuration.yaml + scripts.yaml redeem prefix, hardened
+  redeem_url template with is-defined guards, restarted tony-ha, verified end-to-end (script mints+redeems, returns
+  api_key 200). REMAI'
+priority: high
+ref: HOM-0733
+comms:
+- at: 2026-10-17 14:45
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-17 15:01
+  from: devin
+  text: 'RESOLVED 2026-10-17: ada_* rest_commands + sensors + redeem prefixes repointed mn01->idc03, ada_voice_key
+    hardened (is-defined guards + token gate), HA restarted — pairing verified end-to-end (script.ada_voice_key
+    mints+redeems, 200 + api_key).
+
+
+    Yolo refs FIXED, differently: deployed yolo-detect.service ON tony-dell (go2rtc :1984 + HA :8123 both loopback
+    — no cross-host dep). Unit committed (experiments/ultralytics-yolo-ha/yolo-detect.service, 501a384a9), enabled,
+    :8780 serving. HA yolo refs rep'
+- at: 2026-10-17 15:01
+  from: devin
+  text: 'RESOLVED: ada rest_commands repointed mn01->idc03, ada_voice_key hardened, pairing verified end-to-end.
+    Yolo refs fixed by deploying yolo-detect.service ON tony-dell (unit committed 501a384a9, :8780 live, sensors
+    polling). NEW FINDING: ip_cam_65/xiaomi cams physically offline (192.168.2.71 unreachable) — occupancy=0 persons
+    is camera-down, not stack. Needs physical check of coffee-corner cam.'
+- at: 2026-10-17 15:04
+  from: tony
+  text: closed by tony
+action:
+  status: done
