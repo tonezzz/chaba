@@ -78,11 +78,11 @@ async function claim() {
   let forced = false;
   while (Date.now() < deadline) {
     const { sid, live } = await pollDisplays();
-    // persisted-key path: the page already holds a valid key and
-    // registered itself — waiting on a pending sid that never comes
-    // would burn the whole CLAIM_WAIT_MS then relaunch a healthy page
-    // (the pre-keyfile loop that kept re-claiming screen-N slots)
-    if (live) return true;
+    // our own pending sid beats a label-matched "live" entry — a dead
+    // session's socket can linger as connected for hours (tcp keepalive
+    // on a suspended host), so trusting `live` first stranded the page
+    // on the pair screen while the relay held a zombie binding
+    // (2026-10-18 macbook restart)
     if (sid) {
       const r = await fetch(`${API}/claim`, {
         method: "POST",
@@ -99,6 +99,9 @@ async function claim() {
       if (r.status === 409 && !forced) { forced = true; continue; }
       return r.ok;
     }
+    // persisted-key path: the page already holds a valid key and
+    // registered itself as live with no pending sid — nothing to claim
+    if (live) return true;
     await sleep(2000);
   }
   return false;
@@ -164,11 +167,16 @@ async function run() {
         console.log("[warn] claim timed out — relaunching");
         continue;   // finally closes the browser; loop re-opens + re-claims
       }
-      // the page may have minted a fresh key via /claim — persist it
+      // the page may have minted a fresh key via /claim — the "paired"
+      // push is async, so poll briefly rather than sampling too early
+      // and relaunching keyless every time
       try {
-        const k = await page.evaluate(() =>
-          localStorage.getItem("vcast.api_key"));
-        if (k) saveKey(k);
+        for (let i = 0; i < 15; i++) {
+          const k = await page.evaluate(() =>
+            localStorage.getItem("vcast.api_key"));
+          if (k) { saveKey(k); break; }
+          await sleep(1000);
+        }
       } catch (e) {}
       console.log(`[ready] claimed attach_ms=${Date.now() - tClaim}`);
       // a renderer crash doesn't fire the page "close" event — the ws
