@@ -271,8 +271,9 @@ def publish(lang, body, now):
         "domain": ["media"],
         "fresh_for": ["1h"],
         "sources": SOURCES,
-        "title": ["Cached Videos" if lang == "en"
-                  else "วิดีโอที่แคชไว้"],
+        # meta is shared per key across langs (last publish wins) —
+        # keep one bilingual title so cms list reads right either way
+        "title": ["Cached Videos / วิดีโอที่แคชไว้"],
         "written_by": ["cached-videos-update"],
     })
     _post("add", {"collection": COLLECTION, "key": PAGE, "lang": lang,
