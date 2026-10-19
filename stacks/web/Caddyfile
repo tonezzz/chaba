@@ -416,7 +416,7 @@ http://127.0.0.1:8080 {
 		redir * /api/yomi/ 308
 	}
 	handle /api/yomi/* {
-		reverse_proxy 100.68.142.13:3000
+		reverse_proxy 100.102.134.91:3000
 	}
 
 	handle /api/weaviate {
@@ -464,7 +464,7 @@ http://127.0.0.1:8080 {
 
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up X-Forwarded-Prefix /apps/trade
 		}
@@ -472,7 +472,7 @@ http://127.0.0.1:8080 {
 
 	handle /apps/trade/api/ws/* {
 		uri strip_prefix /apps/trade
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up X-Forwarded-Prefix /apps/trade
 			header_up Connection {>Connection}
@@ -481,7 +481,7 @@ http://127.0.0.1:8080 {
 	}
 
 	handle /api/ws/* {
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up Connection {>Connection}
 			header_up Upgrade {>Upgrade}
