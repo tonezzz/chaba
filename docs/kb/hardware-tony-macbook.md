@@ -85,10 +85,36 @@
   `/usr/lib/systemd/system-sleep/99-bdprochot` (post hook). Files staged
   at `/tmp/bdprochot/`; install commands in the card/comms. If SMC
   re-asserts mid-session (watch for snap-back), add a 5-min timer.
-- **Real fix**: battery replacement. This host's battery is dying —
-  workaround keeps CPU usable but the pack keeps degrading.
+- **Real fix**: battery replacement — DONE 2026-10-19 (see below).
 - Requires `msr-tools` (`apt install msr-tools`) + `modprobe msr`.
 - **Verify anytime**: `cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq`
+
+## Battery replaced + 900MHz re-lock → it was the power profile (2026-10-19)
+
+- Shop replaced the swollen pack. New battery verified healthy:
+  `energy-full` 79.25 Wh vs design 75.24 Wh (**105%**), `charge-cycles` 1.
+- Machine came home hot in the bag → thermal shutdown → failed to boot
+  until cooled. After boot: tiny fonts (text-scaling-factor 0.6, monitor
+  scales reset — restored via `display-scale-check --restore docked-home`
+  + `gsettings ... text-scaling-factor 1.0`) and CPU re-locked ~900MHz.
+- **Wrong first guess**: SMC throttle latch / PROCHOT snap-back. MSR
+  `0x1FC` read `0x24005c` (BD PROCHOT clear), `0x19C` showed only
+  historical thermal log bits, HWP requested 3.5GHz — hardware clean.
+- **Actual cause**: GNOME power profile had silently flipped to
+  `power-saver` (auto-switch on low/dead battery) — EPP `power` caps all
+  cores ~900MHz while `scaling_max_freq` still reads 3.5GHz. Switching
+  to balanced restored clocks instantly; performance boosts 3.0GHz
+  all-core.
+- **Diagnostic order for "CPU stuck at ~800–900MHz"** (cheapest first):
+  1. `powerprofilesctl get` — must not be `power-saver`. Standard =
+     `balanced`, enforced by `~/.local/bin/desktop-standard.sh`.
+  2. `bdprochot-off.service` + `rdmsr 0x1FC` (the 2026-10-13 battery-fault
+     path — still relevant if the pack's gauge misbehaves).
+  3. Only then suspect an SMC latch → SMC reset (Shift+Ctrl+Option+Power
+     10s, machine off, on AC). Lesson: `lesson-cdf16adca87b`.
+- Watch: aftermarket-pack mistrust can still surface (persistent
+  PROCHOT re-assert or a real SMC clamp). If so, battery calibration
+  (100% → ~10% → 100% uninterrupted) then reassess pack quality.
 
 ## Fleet role
 
