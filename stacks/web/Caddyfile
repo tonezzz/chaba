@@ -443,7 +443,13 @@ http://127.0.0.1:8080 {
 	handle /api {
 		redir * /api/ 308
 	}
-	handle /api/* {
+	# /api/* catch-all loses sort to deeper /api/<svc> handles — exclude them
+	# explicitly or /api/yomi/* and /api/ws/* get shadowed (OPS-0725 10-19 bug)
+	@api_fallback {
+		path /api/*
+		not path /api/yomi /api/yomi/* /api/ws /api/ws/*
+	}
+	handle @api_fallback {
 		# status-data-api migrated to idc02 2026-10-17 (OPS-0725 ph3)
 		reverse_proxy idc02.taila0626a.ts.net:8000
 	}
