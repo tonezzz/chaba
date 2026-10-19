@@ -1,0 +1,55 @@
+title: "tg relay TG_LISTEN env drift — decision + verification"
+id: 2026-10-19-tg-relay-env-drift-decision
+status: done
+owner: devin-dispatch
+project: chaba
+card: tg-relay-tg-listen-env-drift-kk-binds-89-62c51e
+ref: OPS-0744
+started: "2026-10-19"
+completed: "2026-10-19"
+
+decision: >-
+  The binds are canonical. tg_relay.py binds exactly TG_WEBHOOK_LISTEN with no
+  auto-increment — nothing ever "picked +1". The apparent drift was DEAD
+  `TG_LISTEN=` lines in telegram-kk-bot.env (8912 — actually the LINE relay's
+  port) and telegram-mn-bot.env (8916): `TG_LISTEN` is only the code alias /
+  docs shorthand; the real env var is `TG_WEBHOOK_LISTEN`, which already held
+  the correct ports (8913 / 8917).
+
+fix_applied_2026_10_19_1630: >-
+  An earlier pass (same card, ~16:30 ICT via idc02) deleted the dead TG_LISTEN
+  lines, added ADA_TG_SEND_URL=http://127.0.0.1:8913/send to ada-kk.env and
+  http://127.0.0.1:8917/send to ada-ai-kraut.env, and restarted both lane
+  backends (16:30:52). Verified live this session: running processes carry the
+  new env (/proc/<pid>/environ); relays bound 8913/8917 since the Oct 18
+  20:36 restart per journal "send listener" lines; ss -tlnp maps the sockets
+  to the right units.
+
+deeper_finding: >-
+  Before the fix, kk/mn lane backends had no ADA_TG_SEND_URL, so chat_send
+  telegram posted to the :8911 default (ada/tony relay) — a silent cross-lane
+  send failure. The chat_send relay-endpoint map itself (tool_runner/chat.py,
+  openrouter_provider.py, ada_track_device.py) had no drift: defaults tg=8911
+  / line=8912 are correct for the ada lane, per-lane override is the env var.
+
+verified_state:
+  idc03:
+    "127.0.0.1:8911": "ada-tg-relay (telegram-bot.env TG_WEBHOOK_LISTEN=8911)"
+    "127.0.0.1:8912": "ada-line-relay (line-bot.env)"
+    "127.0.0.1:8913": "ada-tg-relay-kk (telegram-kk-bot.env=8913; ada-kk.env ADA_TG_SEND_URL=8913)"
+    "127.0.0.1:8914": "ada-stt"
+    "127.0.0.1:8917": "ada-tg-relay-mn (telegram-mn-bot.env=8917; ada-ai-kraut.env ADA_TG_SEND_URL=8917)"
+  free: "8915, 8916"
+  dev_lanes: >-
+    ada-dev / ada-kk-dev / ada-pi-pwa keep the :8911 default — they are lab
+    lanes that intentionally push through the ada relay.
+
+doc_trail:
+  - "docs/kb/msg-lane-standard.md — TG_LISTEN->TG_WEBHOOK_LISTEN naming fix, mn lane row, 891x allocation, ADA_TG_SEND_URL checklist item"
+  - "docs/ssot/ssot.procedures.yml tg-lane-setup — same naming fix + ADA_TG_SEND_URL step"
+  - "stacks/idc03/ada-tg-relay-kk + ada-tg-relay-mn stack entries added (were missing)"
+
+verify_commands:
+  - "ssh idc03 'ss -tlnp | grep -E \"891[0-9]\"'"
+  - "ssh idc03 'journalctl --user -u ada-tg-relay-kk --since <restart> | grep \"send listener\"'"
+  - "ssh idc03 'tr \"\\0\" \"\\n\" < /proc/$(systemctl --user show ada-kk -p MainPID --value)/environ | grep ADA_TG_SEND_URL'"
