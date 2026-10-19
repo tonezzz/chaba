@@ -217,8 +217,6 @@ hosts:
       - {name: dnsmasq-postgre.service, type: service, scope: user}
       - {name: gemini-ollama-proxy.service, type: service, scope: user}
       - {name: gesture-relay.service, type: service, scope: user}
-      - {name: gev-gemini.service, type: service, scope: user}
-      - {name: gods-eye-view-api.service, type: service, scope: user}
       - {name: google-home-mcp.service, type: service, scope: user}
       - {name: ha-guest-lan.service, type: service, scope: user}
       - {name: ha-live.service, type: service, scope: user}
@@ -324,6 +322,9 @@ hosts:
       - {name: yomi-mddb-digest.timer, scope: user}
       - {name: yomi-update-active.timer, scope: user}
       - {name: yomi-update-all.timer, scope: user}
+      - {name: gev-gemini.service, scope: user}
+      - {name: gods-eye-view-api.service, scope: user}
+      - {name: gev-workspace.service, scope: user}
     allowed_running:
       - devin-task-*.service   # ephemeral dispatch session units
     known_failed:
@@ -2080,6 +2081,9 @@ hosts:
       - {name: status-data-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-macbook.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-vms-mn01.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: gev-gemini.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation, moved by parallel session)"}
+      - {name: gods-eye-view-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation)"}
+      - {name: gev-cmd-relay.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19"}
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
