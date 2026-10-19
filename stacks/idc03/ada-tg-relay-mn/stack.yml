@@ -1,0 +1,18 @@
+id: ada-tg-relay-mn
+host: idc03
+description: >-
+  Telegram relay — mn-ha lane (KrautMNBot, Kraut persona). Poll mode;
+  loopback /send listener is the lane's outbound push endpoint.
+verify: >-
+  systemctl --user is-active ada-tg-relay-mn | grep -q active
+secrets:
+  - "~/.config/secrets/telegram-mn-bot.env — mn bot token, TG_WEBHOOK_LISTEN"
+  - "~/.config/secrets/ada-ai-kraut.env — ADA_TG_SEND_URL=http://127.0.0.1:8917/send"
+requires:
+  - "tool:python3"
+  - "tcp:127.0.0.1:8003 — ada-ai-kraut backend (ADA_WS_URL)"
+state:
+  - "~/CascadeProjects/ada-voice — shared app code"
+ports:
+  - "127.0.0.1:8917 — mn Telegram send listener"
+status: deployed

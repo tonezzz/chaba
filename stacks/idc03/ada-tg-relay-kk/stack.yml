@@ -1,0 +1,18 @@
+id: ada-tg-relay-kk
+host: idc03
+description: >-
+  Telegram relay — kk-ha lane (kk_ha_bot, Kaewta persona). Poll mode;
+  loopback /send listener is the lane's outbound push endpoint.
+verify: >-
+  systemctl --user is-active ada-tg-relay-kk | grep -q active
+secrets:
+  - "~/.config/secrets/telegram-kk-bot.env — kk bot token, TG_WEBHOOK_LISTEN"
+  - "~/.config/secrets/ada-kk.env — ADA_TG_SEND_URL=http://127.0.0.1:8913/send"
+requires:
+  - "tool:python3"
+  - "tcp:127.0.0.1:8007 — ada-kk backend (ADA_WS_URL)"
+state:
+  - "~/CascadeProjects/ada-voice — shared app code"
+ports:
+  - "127.0.0.1:8913 — kk Telegram send listener"
+status: deployed

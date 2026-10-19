@@ -13,19 +13,28 @@ One bot lane per persona. Every lane follows the same contract — new lanes cop
    `TELEGRAM_USER_CALLERS` (`<uid>:<key-name>` — sender → person, not the group).
    A sender's first message must be captured and mapped before their policy works.
 4. **Outbound push** — every relay exposes loopback `POST /send {chat_id?, text?, photo_url?}`
-   on `TG_LISTEN` (one port per lane; registered here). Proactive messages go through it —
-   assistants never call the Telegram API directly.
+   on `TG_WEBHOOK_LISTEN` (the real env var in `telegram-<lane>-bot.env`; the
+   `tg_relay.py` code alias is `TG_LISTEN` — a bare `TG_LISTEN=` line in an env
+   file is dead config, it is never read). One port per lane; registered here.
+   Lane backends reach it via `ADA_TG_SEND_URL=http://<listen>/send` in the
+   backend env (`ada-<lane>.env`) — unset means the ada default :8911, which is
+   wrong for any non-ada lane. Proactive messages go through it — assistants
+   never call the Telegram API directly.
 
-| lane | bot | chat | tag | TG_LISTEN | state |
+| lane | bot | chat | tag | TG_WEBHOOK_LISTEN | state |
 |---|---|---|---|---|---|
 | ada | ada bot | 8960073266 (Tony DM), -5410424865 | ada | 127.0.0.1:8911 | live |
 | kk | kk_ha_bot | -5597972933 (KK-HA) | kaewta | 127.0.0.1:8913 | live |
+| mn | KrautMNBot | 8960073266 (Tony DM), 80597829 (Michael DM), -5426710106 (mn group) | michael | 127.0.0.1:8917 | live |
 | line | — | — | — | — | blocked: Yomi token revoked (PIN re-login on Tony's phone) |
+
+Loopback 891x allocation: 8911 ada tg, 8912 line_relay, 8913 kk tg,
+8914 ada-stt, 8917 mn tg. 8915/8916 are free.
 
 ## Verify a lane
 
 ```bash
-curl -X POST http://<TG_LISTEN>/send -H 'content-type: application/json' \
+curl -X POST http://<TG_WEBHOOK_LISTEN>/send -H 'content-type: application/json' \
   -d '{"text": "[<tag>] relay check"}'
 # -> {"ok":true,"chat_id":<id>} and the tagged message appears in the group
 ```
@@ -34,7 +43,10 @@ curl -X POST http://<TG_LISTEN>/send -H 'content-type: application/json' \
 
 - [ ] bot token → lane env file on idc03
 - [ ] `TELEGRAM_ALLOWED_CHAT_IDS`, `TELEGRAM_USER_CALLERS` (map senders as they appear)
-- [ ] `TG_SPEAKER_TAG`, `TG_LISTEN` (pick unused loopback port)
+- [ ] `TG_SPEAKER_TAG`, `TG_WEBHOOK_LISTEN` (pick unused loopback port — see the
+      891x allocation table above; never write `TG_LISTEN=`, it is ignored)
+- [ ] `ADA_TG_SEND_URL=http://127.0.0.1:<port>/send` in the lane backend env
+      (`ada-<lane>.env`) — without it chat_send posts to the ada default :8911
 - [ ] unit file cloned from a working lane, enabled
 - [ ] `TG_WHISPER_URL=http://tony-omen:8790/transcribe` in the lane env
       file — voice notes transcribe on the omen GPU (large-v3); local
