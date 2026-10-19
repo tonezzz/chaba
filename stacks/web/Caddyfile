@@ -423,14 +423,14 @@ http://127.0.0.1:8080 {
 		redir * /api/weaviate/ 308
 	}
 	handle_path /api/weaviate/* {
-		reverse_proxy 100.68.142.13:8084
+		reverse_proxy 100.123.163.11:8084
 	}
 
 	handle /api/gpu-queue {
 		redir * /api/gpu-queue/ 308
 	}
 	handle_path /api/gpu-queue/* {
-		reverse_proxy 100.68.142.13:3001
+		reverse_proxy 100.123.163.11:3001
 	}
 
 	handle /api/input-bridge {

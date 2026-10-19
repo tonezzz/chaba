@@ -110,8 +110,8 @@ services:
   omen-api:       {host: tony-omen, listen: "0.0.0.0:8000", tailnet: "http://100.68.142.13:8000"}
   omen-gemini-mic: {host: tony-omen, listen: "0.0.0.0:3009", tailnet: "http://100.68.142.13:3009"}
   yomi:           {host: idc03, listen: "100.102.134.91:3000", tailnet: "http://100.102.134.91:3000", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"}
-  omen-weaviate:  {host: tony-omen, listen: "0.0.0.0:8084", tailnet: "http://100.68.142.13:8084"}
-  omen-gpu-queue: {host: tony-omen, listen: "0.0.0.0:3001", tailnet: "http://100.68.142.13:3001"}
+  weaviate:       {host: idc02, listen: "100.123.163.11:8084", tailnet: "http://100.123.163.11:8084", note: "migrated 2026-10-19"}
+  gpu-queue:      {host: idc02, listen: "100.123.163.11:3001", tailnet: "http://100.123.163.11:3001", note: "migrated 2026-10-19"}
   trade-api:      {host: idc03, listen: "100.102.134.91:9002", tailnet: "http://100.102.134.91:9002", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+yomi); tailnet-only bind"}
   input-bridge:   {host: idc02, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
   cms-render:     {host: idc03, listen: "100.102.134.91:8010", tailnet: "http://100.102.134.91:8010", note: "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"}
