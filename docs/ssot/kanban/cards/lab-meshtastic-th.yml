@@ -1,18 +1,32 @@
 id: lab-meshtastic-th
 title: 'Lab: Meshtastic TH mesh collector'
-brief: An experiment listening to the Thai Meshtastic radio mesh and mapping what it hears. Keep-or-close decision
-  due 2026-10-18.
+brief: An experiment listening to the Thai Meshtastic radio mesh and mapping what
+  it hears. Keep-or-close decision due 2026-10-18.
 column: lab
 lab:
-  hypothesis: A passive collector on the Thai Meshtastic mesh sees enough node traffic to map community coverage
-    — worth a permanent node
+  hypothesis: A passive collector on the Thai Meshtastic mesh sees enough node traffic
+    to map community coverage — worth a permanent node
   metric: '>= 20 unique nodes heard over 14 days, mapped on CMS'
   review_by: '2026-10-18'
-note: 'Experiment dir: experiments/meshtastic-th-collector. Retire = collector becomes a cron''d map publisher;
-  promote = dedicated always-on node card.'
+note: 'Experiment dir: experiments/meshtastic-th-collector. Retire = collector becomes
+  a cron''d map publisher; promote = dedicated always-on node card.'
 updated: '2026-10-04'
 ref: OPS-0011
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0011'
+- ts: '2026-10-19T09:00:19'
+  from: chaba
+  text: lab review due — promote, retire, or extend?
+requests:
+- id: lab-review
+  ask: Lab review_by 2026-10-18 has passed with no outcome — promote, retire, or extend?
+  status: open
+  options:
+  - id: promote
+    label: promote → backlog — it earned a real card
+  - id: retire
+    label: retire → done — write the learning in comms first
+  - id: extend
+    label: extend 2w — set a new lab.review_by (+14d)
