@@ -1,5 +1,5 @@
 id: runner-auto-tony-dell
-title: Runner host `tony-dell` fails 3 dispatch bootstrap check(s)
+title: Runner host `tony-dell` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-dell that will strand
   dispatch cards. Read the note, fix on the host, close the card.
 column: review
@@ -7,28 +7,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: sunsynk-card: 256 commits behind origin/sunsynk (limit 200, last-fetched
-  basis); runner-agent installed but no repo push-capable (no push:<repo> label, every
-  probe fails) — this host can only strand dispatch branches; ~/.local/bin/runner-agent
-  sha 4d39e3a8284c039b != repo adfa0c5733ddc771 — installed copy drifted; redeploy.
-  Info: chaba fetch failed but clone was current at last fetch — transient? (fatal:
-  unable to access ''https://github.com/tonezzz/chaba.git/'': Failed to conne); chaba
-  origin is fetch-only (by design — no push creds); merge-sweep salvage path verified;
-  sunsynk-card: push probe fails (fatal: unable to access ''https://github.com/tonezzz/sunsynk-)
-  — sunsynk-card dispatches defer to a pushable host; stranded work relays via board-api;
-  mddb-fork: push probe fails (fatal: unable to access ''https://github.com/tradik/mddb/'':
-  F) — mddb-fork dispatches defer to a pushable '
+note: 'Failing: probe failed: ssh: connect to host 100.68.142.13 port 8222: Connection
+  timed out.'
 help: 'Per-check fixes:
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host
-  — reclone it or drop it from that host''s repos.conf.
-
-  - no-push-creds: A dispatch runner that can''t push ANY repo only strands branches
-  (relay salvages them, but the host is a liability). Give it a push-capable deploy
-  key per repo and declare push:<repo> in RUNNER_LABELS, or drop it from the fleet.
-
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
-  && ssh <host> chmod +x ~/.local/bin/runner-agent'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
+  Check tailscale + sshd + the key on the host.'
 updated: '2026-10-13'
 review_kind: triage
 action:
