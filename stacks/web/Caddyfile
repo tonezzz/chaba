@@ -149,12 +149,12 @@ http://127.0.0.1:8080 {
 	handle_path /apps/gesture-live/* {
 		@ws path /ws
 		handle @ws {
-			reverse_proxy 100.68.142.13:8794
+			reverse_proxy 100.123.163.11:8794
 		}
 		# /health (and any future plain-HTTP path) lives on the same
 		# relay port — unlike gev-live there is no static side here.
 		handle {
-			reverse_proxy 100.68.142.13:8794
+			reverse_proxy 100.123.163.11:8794
 		}
 	}
 
