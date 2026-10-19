@@ -2,14 +2,15 @@ id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
 brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
   or close the card.
-column: done
+column: review
 generated: disk-trend-watch
 area: monitoring
-priority: medium
-note: 'Auto-recovered 2026-10-15: tony-omen /home back in bounds (57%, slope 6.68 GiB/d)'
+priority: high
+note: '77% used, growing 10.2 GiB/day -> full in ~6.7d top grower 24h: /home/tony/.config/gev-cast-profile/BrowserMetrics
+  +10.8 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-15 14:00
+updated: 2026-10-19 21:46
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -82,3 +83,4 @@ action:
   type: dispatch
 ref: OPS-0405
 claim: {}
+awaiting_action: true
