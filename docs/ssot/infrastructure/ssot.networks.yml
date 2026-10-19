@@ -44,19 +44,19 @@ sections:
           tony-home backup WAN by permission. Intentional access path = dell's
           USB dongle wlx00761100125e, profile "Naris" (autoconnect, priority
           10, route-metric 700 — failover only, never bridged). INCIDENT
-          2026-10-19 — the plug-tv repeater (wireless bridge giving ethernet
-          to the TV + True box) uplinks to Naris and bridges its L2 onto the
-          tony-home wire while powered; that's how dell's ethernet caught a
-          .1.x lease with a dead .1.1 gateway. If .1.x appears on tony-home
-          it is expected leakage from that corner, not a rogue device — but
-          devices that take the lease lose real WAN. mn-home is also
-          192.168.1.0/24 (same numbers, different network) — scope is
-          per-location. LIVE CHECK same evening: with plug-tv ON (19:14+)
-          the repeater sat at .2.65/.2.91 and bridged TONY-WIFI_2.4G — zero
-          .1.x on the wire — so the uplink alternates (Naris at ~13:21,
-          TONY-WIFI by evening); which upstream it picks is not yet verified
-          (admin UI served no TCP ports; credentials not stored — Tony has
-          them).
+          2026-10-19 — something on the plug-tv power strip bridged Narit's
+          L2 onto the tony-home wire at ~13:21; dell's ethernet caught a
+          .1.x lease with a dead .1.1 gateway. NOT the Tenda repeater — its
+          admin UI was read live that evening (config dump
+          ~/.local/ai-hub/page-dumps/repeater-config-2026-10-19.json): its
+          only configured uplink is TONY-WIFI_2.4G, DHCP server off. Prime
+          suspect: the TrueID Android OTT box (wifi b8:59:ce:74:75:28 seen
+          at .2.85 on the wire that evening; also wired behind the repeater)
+          — if its wifi joins Naris while its ethernet is up, it L2-bridges
+          the two. If .1.x appears on tony-home it is expected leakage from
+          that corner, not a rogue device — but devices that take the lease
+          lose real WAN. mn-home is also 192.168.1.0/24 (same numbers,
+          different network) — scope is per-location.
         status: fallback
       - label: Mountain View
         text: Resort network. SSIDs Mountain View Resort_2.4G / Mountain View Resort_5G, 192.168.1.0/24, gateway 192.168.1.1. Password 1111100000 in wifi JSON.
