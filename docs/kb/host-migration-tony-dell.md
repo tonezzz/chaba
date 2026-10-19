@@ -138,3 +138,30 @@ Every flip is a proxy upstream line + a `systemctl start` on dell (which stays u
   rename unit files to `*.parked` (same convention as quadlets). Parked 42
   files: whole writer family + migrated services + retired zombies.
 - Dell running service count now ~35 real services (from ~75 at start).
+
+## Constellation plan — postgres + yomi + trade → idc03 (drafted 2026-10-19)
+
+One coupled move. `chaba-postgres-16` serves `chaba` (168M, yomi) + `trade`
+(77M, mostly empty) DBs. Consumers resolve `postgre` via baked `--add-host`
+in unit ExecStart (dnsmasq-postgre only serves LAN/floating name lookups).
+
+Steps:
+1. `pg_dump` chaba + trade on dell (~245M total — trivial).
+2. Recreate `chaba-postgres-16` on idc03 (same unit; bind loopback +
+   `100.102.134.91:5432`); restore dumps.
+3. rsync `~/.local/share/yomi` (22M) + `~/.yomi` (174M) + `~/.config/yomi/*.env`;
+   install yomi-* units on idc03 with `--add-host postgre:100.102.134.91`.
+   yomi-api keeps tailscale-serve :3000 (serve on idc03, not dell).
+4. trade-api: `podman save localhost/trade-trade-api:latest | ssh idc03 load`
+   (LOCAL BUILD — one ref per archive); rsync `~/CascadeProjects/trade/`
+   (data+config+.env mounts); bind `127.0.0.1:9002`; serve :9002 on idc03.
+5. LAN client 192.168.2.67: app sees it via XFF through the dell web edge —
+   flip `/apps/trade/api/*` + `/api/ws/*` upstream to `100.102.134.91:9002`;
+   LAN path preserved. (If a direct :9002 tailnet consumer exists, keep a
+   dell-side TCP forwarder temporarily.)
+6. dnsmasq-postgre: repoint `address=/postgre/` → 100.102.134.91 during
+   transition; retire the unit once nothing queries it.
+7. Verify pg conns, yomi /health, trade routes; park dell units.
+
+Not done yet — needs a quiet-ish window (trade has a live client) and a
+fresh capacity check on idc03 before landing the pg + node workload.
