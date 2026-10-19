@@ -360,7 +360,7 @@ jobs:
     devin-session-prune). Coexists with devin-cleanup.timer (Sun 04:00, 7d, all sessions).
 - id: yomi-backup
   name: Yomi + PostgreSQL Backup
-  host: tony_dell
+  host: idc03
   dispatch: systemd
   on_calendar: daily
   persistent: true
@@ -372,7 +372,7 @@ jobs:
   note: move to idc02 once backup storage lands there
 - id: yomi-update-all
   name: Yomi Update All
-  host: tony_dell
+  host: idc03
   dispatch: systemd
   on_calendar: hourly
   persistent: true
@@ -418,7 +418,7 @@ jobs:
     cam-wall-cms *:0/15 tick.'
 - id: yomi-update-active
   name: Yomi Update Active
-  host: tony_dell
+  host: idc03
   dispatch: dispatcher
   every: 15m
   timeout: 120s

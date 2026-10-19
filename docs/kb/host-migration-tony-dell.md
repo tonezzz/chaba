@@ -165,3 +165,32 @@ Steps:
 
 Not done yet — needs a quiet-ish window (trade has a live client) and a
 fresh capacity check on idc03 before landing the pg + node workload.
+
+## Phase 4b — pg+yomi+redis+trade constellation → idc03 (DONE 2026-10-19)
+
+Executed the plan above in one window:
+- pg_dump both DBs (8M compressed) → `chaba-postgres-16` rebuilt on idc03,
+  bound tailnet-only `100.102.134.91:5432` (idc03's loopback :5432 is
+  litellm's — untouched). 22 tables restored, counts match dell.
+- **redis had been dead on dell ~3 days** (same Oct-16 crash as pg —
+  yomi degraded to cache-miss silently). Rebuilt on idc03 tailnet-only;
+  yomi-api logs `Redis connected` again.
+- yomi-api + 4 timers moved; needed `@google/generative-ai` which dell
+  had ad-hoc at checkout root (NOT in package.json — repo gap, fixed by
+  installing on idc03; package.json still lacks it).
+- trade-api image transferred solo (one-ref-per-archive rule); health
+  identical to dell's incl. pre-existing 17-day-stale FX (not migration).
+- Edge flips: `/api/yomi/*` → :3000, `/apps/trade/api*` + `/api/ws/*` →
+  :9002 on idc03. Verified 200 through dell edge.
+- **Route-shadow bug (pre-existing since 10-17):** Caddy sorts `/api/*`
+  BEFORE `/api/yomi/*` and `/api/ws/*` in the handle table — the
+  status-data catch-all answered both with its FastAPI 404 since it
+  landed. Fix: catch-all matcher now excludes both prefixes (0951a45e5).
+- dell units all parked (.service/.timer.parked): yomi-api, 4 yomi
+  timers, trade-api, chaba-postgres-16, redis. tailscale serve
+  :3000/:9002 removed on dell, added on idc03.
+- dnsmasq-postgre repointed `postgre` → 100.102.134.91 (kept — LAN
+  consumers may still resolve it).
+- ssot.jobs.yml: yomi-backup/update-all/update-active host → idc03.
+- Dell WAN/LAN dropped ~17:00 during the cutover (gateway 192.168.1.1
+  stopped ARPing; tailscale held then dropped). Verified after return.

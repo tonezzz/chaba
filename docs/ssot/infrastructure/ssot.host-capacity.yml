@@ -1,7 +1,7 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Re-measured 2026-10-18 post-ph3 (exit gate) + 2026-10-16 baseline —
+  Re-measured 2026-10-19 post-constellation (pg+yomi+redis+trade→idc03) + 2026-10-18 post-ph3 —
   post kanban-writer migration (OPS-0725 phase 2). Refresh on each service
   deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
@@ -12,7 +12,7 @@ hosts:
     role: lan-hub   # DRAINING (OPS-0725) — becomes failover capacity after SSD+RAM upgrade
     cpu_cores: 8
     mem_gb: 15.3    # ~7G avail — pressured but stable post-stabilization
-    disk_gb: {total: 118, free: 5}     # DISK CRITICAL (96%, still shrinking) — drain priority; do not land anything new
+    disk_gb: {total: 118, free: 21}     # relieved — 82% used post ph4 offload (was 96%); still drain-priority
     gpu: none
     note: >-
       Household LAN hub — tony-ha + ada-ha (LAN-bound) stay until phase 5.
@@ -37,7 +37,7 @@ hosts:
     role: edge-primary   # +capacity-absorber 2026-10-16 — idlest host, bias new VPS placements HERE
     cpu_cores: 4
     mem_gb: 16        # ~8G avail, load <0.5 even after absorbing ~10 ph3 services — absorber confirmed
-    disk_gb: {total: 290, free: 187}
+    disk_gb: {total: 290, free: 205}  # grew after gdrive-tier drained backup backlog
     gpu: none
     note: >-
       public edge (caddy, CF) + tailnet front door (idc02.taila0626a.ts.net,
@@ -46,8 +46,8 @@ hosts:
   idc03:
     role: backend-hub + kanban-writer   # writer family migrated from dell 2026-10-16 (OPS-0725 ph2)
     cpu_cores: 4
-    mem_gb: 16        # ~7G avail, load ~2.9/4 cores post-ph3 (was 5.9 spike 10-16) — warm, still saturation-watch
-    disk_gb: {total: 290, free: 116}   # still shrinking — -12G in 2 days
+    mem_gb: 16        # ~7G avail, load ~2.4/4 cores post-constellation (pg+redis+yomi+trade) — warm, still watch
+    disk_gb: {total: 290, free: 133}  # stabilized after constellation landed (pg+redis+yomi+trade 10-19)
     gpu: none
     note: >-
       Ada backends, MDDB leader, secondary edge (api.surf-thailand.com),
