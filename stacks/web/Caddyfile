@@ -106,14 +106,14 @@ http://127.0.0.1:8080 {
 		redir * /apps/gev-cmd/ 308
 	}
 	handle_path /apps/gev-cmd/* {
-		reverse_proxy 127.0.0.1:8790
+		reverse_proxy 100.123.163.11:8790
 	}
 
 	handle /apps/gev/api {
 		redir * /apps/gev/api/ 308
 	}
 	handle /apps/gev/api/* {
-		reverse_proxy 127.0.0.1:4173
+		reverse_proxy 100.123.163.11:4173
 	}
 
 	handle /apps/gev {
@@ -130,7 +130,7 @@ http://127.0.0.1:8080 {
 	handle_path /apps/gev-live/* {
 		@ws path /ws
 		handle @ws {
-			reverse_proxy 127.0.0.1:8789
+			reverse_proxy 100.123.163.11:8789
 		}
 		handle {
 			root * /srv/public/apps/gev-live
@@ -140,7 +140,7 @@ http://127.0.0.1:8080 {
 
 	handle_path /apps/gev/token {
 		uri strip_prefix /apps/gev/token
-		reverse_proxy 127.0.0.1:8790
+		reverse_proxy 100.123.163.11:8790
 	}
 
 	handle /apps/gesture-live {

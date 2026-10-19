@@ -92,9 +92,9 @@ services:
   status-data-api: {host: idc02, listen: "127.0.0.1:8000", tailnet: "http://idc02.taila0626a.ts.net:8000"}   # migrated 2026-10-17 OPS-0725 ph3 (podman, loopback+shadow)
   secrets-console: {host: idc02, listen: "100.123.163.11:8005", tailnet: "http://idc02.taila0626a.ts.net:8005"}   # migrated 2026-10-17 OPS-0725 ph3; tailnet-IP bind, URL changed
   monitoring-dashboard: {host: idc02, listen: "127.0.0.1:3002", tailnet: "http://idc02.taila0626a.ts.net:3002"}   # migrated 2026-10-17 OPS-0725 ph3
-  gev-gemini:     {host: tony-dell, listen: "127.0.0.1:8789"}
-  gev-api:        {host: tony-dell, listen: "127.0.0.1:4173"}
-  gev-cmd:        {host: tony-dell, listen: "127.0.0.1:8790"}
+  gev-gemini:     {host: idc02, listen: "100.123.163.11:8789", note: "migrated 2026-10-19"}
+  gev-api:        {host: idc02, listen: "100.123.163.11:4173", note: "migrated 2026-10-19"}
+  gev-cmd:        {host: idc02, listen: "100.123.163.11:8790", note: "gev-cmd-relay migrated 2026-10-19"}
   gesture-relay:  {host: tony-dell, listen: "100.68.142.13:8794", note: "tailnet-IP bind only — PublishPort rendered by install.sh; never LAN"}
   dev-v0:         {host: tony-dell, listen: "127.0.0.1:8006"}
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
@@ -131,11 +131,11 @@ routes:
   # boards-WP Plesk worker can pull it. Aggregates only — public edge.
   - {id: usage-feed,       kind: static, path: /feeds/usage.json,      edges: [vps-public], owner: chaba, public_host: surf-thailand.com, auth: bearer-token, note: "Caddyfile idc02: @ok header Authorization 'Bearer <CHABA_USAGE_FEED_TOKEN>' else 403; file_server root /data/www. LIVE 2026-10-15 — apex chosen because monitor.* rides CF Access (302 login on every path); verified 403 anon / 200 bearer"}
   - {id: jev-bench,        kind: static, path: /apps/jev-bench/*,      owner: chaba, headers: {Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Embedder-Policy: require-corp, Cross-Origin-Resource-Policy: cross-origin, Cache-Control: "public, max-age=86400"}}
-  - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        strip: /apps/gev-cmd, upstream: "127.0.0.1:8790", owner: gev}
-  - {id: gev-api,          kind: proxy,  path: /apps/gev/api/*,        upstream: "127.0.0.1:4173", owner: gev}
+  - {id: gev-cmd,          kind: proxy,  path: /apps/gev-cmd/*,        strip: /apps/gev-cmd, upstream: "100.123.163.11:8790", owner: gev}
+  - {id: gev-api,          kind: proxy,  path: /apps/gev/api/*,        upstream: "100.123.163.11:4173", owner: gev}
   - {id: gev,              kind: static, path: /apps/gev/*,            owner: gev}
-  - {id: gev-live,         kind: proxy,  path: /apps/gev-live/*,       ws: true, upstream: "127.0.0.1:8789", owner: gev, custom: true, note: "mixed ws-proxy + static sub-handles — hand block in renderer"}
-  - {id: gev-token,        kind: proxy,  path: /apps/gev/token,        strip: /apps/gev/token, upstream: "127.0.0.1:8790", owner: gev}
+  - {id: gev-live,         kind: proxy,  path: /apps/gev-live/*,       ws: true, upstream: "100.123.163.11:8789", owner: gev, custom: true, note: "mixed ws-proxy + static sub-handles — hand block in renderer"}
+  - {id: gev-token,        kind: proxy,  path: /apps/gev/token,        strip: /apps/gev/token, upstream: "100.123.163.11:8790", owner: gev}
   - {id: gesture-live,     kind: proxy,  path: /apps/gesture-live/*,   ws: true, upstream: "100.68.142.13:8794", owner: gesture, custom: true, verify: {get: "/health", expect: 200}, note: "ws fan-out relay — /ws plus /health on the same port; no static side"}
   - {id: gesture,          kind: static, path: /apps/gesture/*,        owner: gesture, custom: true, verify: {get: "/", expect: 200}, note: "controller + screen pages; /screen rewrites to screen.html"}
   - {id: ada-tony,         kind: proxy,  path: /apps/ha/ada-tony/*,    upstream: "https://idc03.taila0626a.ts.net", upstream_host: idc03.taila0626a.ts.net, ws: /ws, owner: ada-voice, verify: {get: "/", expect: 200}}
