@@ -1,7 +1,7 @@
 id: wp-usage-pull-render-plesk-worker
 title: usage timeline as Plesk pull-render worker (CPU to Plesk)
-column: backlog
-updated: 2026-10-17 06:56
+column: done
+updated: 2026-10-19 07:58
 priority: low
 note: 'Tony prefers Plesk-side CPU where possible. Design: (a) idc03 exports one aggregate usage JSON (per-lane/day
   in/out/cost from usage.jsonl + litellm SpendLogs) to a token-gated path on idc02 caddy-edge; (b) a PHP worker
@@ -167,6 +167,13 @@ comms:
     The plugin + pull mechanism work; the wp-config define() is not being read — check it is in the real docroot
     wp-config.php, above the stop-editing line, exact name CHABA_USAGE_FEED_URL (and CHABA_USAGE_FEED_TOKEN from
     idc03 usage-feed.env). Next hourly wp-cron tick will show green or error in the same heartbeat post.'
+- at: 2026-10-19 07:58
+  from: chaba
+  text: 'merge guard: no session branch/worktree for 20261016-143736-usage-timeline-as-plesk-pull-r — nothing to
+    verify'
+- at: 2026-10-19 07:58
+  from: chaba
+  text: 'answer-sweep: executed ''done'' -> moved to done'
 action:
   type: dispatch
   status: done
@@ -212,7 +219,7 @@ requests:
   - hold
   escalated_at: 2026-10-16 05:16
   answer: done
+  executed: 2026-10-19 close
 review_kind: verify
 claim:
   since: 2026-10-16 14:37
-awaiting_action: true
