@@ -107,8 +107,6 @@ services:
   camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
   websockify-dell:  {host: tony-dell, listen: "127.0.0.1:6081"}
   websockify-vms:   {host: tony-dell, listen: "127.0.0.1:6082"}   # -> mn01 VNC 5900
-  omen-api:       {host: tony-omen, listen: "0.0.0.0:8000", tailnet: "http://100.68.142.13:8000"}
-  omen-gemini-mic: {host: tony-omen, listen: "0.0.0.0:3009", tailnet: "http://100.68.142.13:3009"}
   yomi:           {host: idc03, listen: "100.102.134.91:3000", tailnet: "http://100.102.134.91:3000", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"}
   weaviate:       {host: idc02, listen: "100.123.163.11:8084", tailnet: "http://100.123.163.11:8084", note: "migrated 2026-10-19"}
   gpu-queue:      {host: idc02, listen: "100.123.163.11:3001", tailnet: "http://100.123.163.11:3001", note: "migrated 2026-10-19"}
@@ -166,10 +164,9 @@ routes:
   - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "idc02.taila0626a.ts.net:8092", owner: chaba, custom: true, note: "docs-site route set + / root fallthrough; upstream idc02 since 2026-10-18"}
   - {id: map,              kind: static, path: /apps/map/*,            owner: chaba}
   - {id: camwall,          kind: proxy,  path: /apps/camwall/*,        strip: /apps/camwall, upstream: ["http://100.102.134.91:8380", "http://100.123.163.11:8380"], lb: least_conn, owner: camwall}
-  - {id: gemini-mic,       kind: proxy,  path: /api/gemini-mic/*,      strip: /api/gemini-mic, upstream: "100.68.142.13:3009", owner: ada-voice}
   - {id: yomi,             kind: proxy,  path: /api/yomi/*,            upstream: "100.102.134.91:3000", owner: yomi}
-  - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.68.142.13:8084", owner: weaviate}
-  - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.68.142.13:3001", owner: gpu}
+  - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.123.163.11:8084", owner: weaviate}
+  - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.123.163.11:3001", owner: gpu}
   - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
   - {id: api-status-data,  kind: proxy,  path: /api/*,                 upstream: "idc02.taila0626a.ts.net:8000", owner: chaba, note: "catch-all → status-data-api on idc02 (migrated 10-18); must stay last of /api group; Caddy sort puts /api/* BEFORE deeper handles — matcher must exclude /api/yomi/* and /api/ws/* (fixed 10-19, was shadowing both since 10-17)"}
   - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "idc02.taila0626a.ts.net:3003", upstream_host: localhost, owner: chaba, custom: true, note: "basePath-preserved multi-path matcher; upstream idc02 since 2026-10-18"}

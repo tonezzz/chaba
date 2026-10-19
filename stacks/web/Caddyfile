@@ -405,12 +405,7 @@ http://127.0.0.1:8080 {
 		}
 	}
 
-	handle /api/gemini-mic {
-		redir * /api/gemini-mic/ 308
-	}
-	handle_path /api/gemini-mic/* {
-		reverse_proxy 100.68.142.13:3009
-	}
+	# gemini-mic retired 2026-10-19 (chaba-gemini-mic-test) — route removed
 
 	handle /api/yomi {
 		redir * /api/yomi/ 308
