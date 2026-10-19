@@ -99,11 +99,17 @@ sections:
       - label: tony-repeater
         text:
           Tenda Wi-Fi repeater (reasy-ui/GoAhead, fw 005) — LAN MAC 06:28:58:26:4b:2c, WAN MAC 0A:F0:BC:AD:20:8B (both locally
-          administered). Admin UI http://<ip>/login.html; own IP DHCP-floats (seen .72, .73, .82). Config dumped 2026-09-18
-          (~/.local/ai-hub/page-dumps/repeater-config-2026-09-18.json) — Universal Repeater (client+ap) bridging upstream
-          TONY-WIFI_2.4G to own SSID TONY-WIFI_2.4G-ext (WPA2-PSK, 2.4GHz only, 11b/g/n, ch6/20MHz). DHCP server OFF; LAN
-          192.168.2.73/24; NTP GMT+7. Auto-maintenance reboots daily at 03:00 — explains IP drift and intermittent admin UI.
-          Clients behind it appear in ARP with WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT), e.g. the Samsung on its LAN port.
+          administered). Admin UI http://<ip>/login.html; own IP DHCP-floats (seen .65, .72, .73, .82, .91). Config dumped
+          2026-09-18 (~/.local/ai-hub/page-dumps/repeater-config-2026-09-18.json) — Universal Repeater (client+ap) bridging
+          upstream TONY-WIFI_2.4G to own SSID TONY-WIFI_2.4G-ext (WPA2-PSK, 2.4GHz only, 11b/g/n, ch6/20MHz). DHCP server OFF;
+          LAN 192.168.2.73/24; NTP GMT+7. Auto-maintenance reboots daily at 03:00 — explains IP drift and intermittent admin
+          UI. Clients behind it appear in ARP with WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT), e.g. the Samsung on its LAN port.
+          Verified live 2026-10-19 ~19:15 with plug-tv on — repeater at .2.65, a downstream client proxying at .2.91 (ports
+          5601/52235/52396 — Android-box-like, probably TrueID), zero 192.168.1.x on the wire → uplink was TONY-WIFI_2.4G,
+          NOT Naris. Two caveats that day — (1) admin UI served NOTHING — all 65k TCP ports refused on .2.65; UI reachable
+          only via the ext SSID or not at all post-boot; (2) credentials are NOT actually stored — admin password never
+          landed in SSOT/NM/wifi-JSON (the 2026-09-18 session stopped at the credential; Tony entered it manually), and
+          the TONY-WIFI_2.4G-ext PSK differs from TONY-WIFI_2.4G's and is stored nowhere either. Both need Tony.
       - label: cozylife-01
         text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
       - label: tuya-plug-tv
