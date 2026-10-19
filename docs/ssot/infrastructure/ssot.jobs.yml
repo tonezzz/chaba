@@ -379,9 +379,9 @@ jobs:
   timeout: 10m
   exec: /usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
-    --add-host postgre:100.68.142.13 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
+    --add-host postgre:100.102.134.91 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
     node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs
-  note: podman one-shot; pause while yomi-api is failed over to tony-omen
+  note: podman one-shot; moved to idc03 2026-10-19 w/ pg constellation — postgre alias = idc03 tailnet IP
 - id: xiaomi-token-refresh
   name: Xiaomi Token Refresh
   host: tony_dell
