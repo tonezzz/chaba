@@ -236,12 +236,7 @@ http://127.0.0.1:8080 {
 		redir * /apps/ha/tony-ha{uri} 308
 	}
 
-	handle /apps/dev/v0 {
-		redir * /apps/dev/v0/ 308
-	}
-	handle_path /apps/dev/v0/* {
-		reverse_proxy 127.0.0.1:8006
-	}
+	# dev-v0 retired 2026-10-19 (dev-miniapp-v0) — route removed
 
 	handle /apps/yt-live {
 		redir * /apps/yt-live/ 308

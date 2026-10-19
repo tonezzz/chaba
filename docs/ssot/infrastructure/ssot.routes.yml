@@ -96,7 +96,6 @@ services:
   gev-api:        {host: idc02, listen: "100.123.163.11:4173", note: "migrated 2026-10-19"}
   gev-cmd:        {host: idc02, listen: "100.123.163.11:8790", note: "gev-cmd-relay migrated 2026-10-19"}
   gesture-relay:  {host: idc02, listen: "100.123.163.11:8794", note: "migrated 2026-10-19"}
-  dev-v0:         {host: tony-dell, listen: "127.0.0.1:8006"}
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
   snapshot:       {host: tony-dell, listen: "127.0.0.1:9005"}
   chaba-docs:     {host: idc02, listen: "100.123.163.11:8092", note: "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
@@ -147,7 +146,6 @@ routes:
   - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc03.taila0626a.ts.net:8124/", owner: michael-ha}
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
-  - {id: dev-v0,           kind: proxy,  path: /apps/dev/v0/*,         strip: /apps/dev/v0, upstream: "127.0.0.1:8006", owner: chaba}
   # nlm-cookies removed 2026-10-07: :9876 browser-cookie sidecar retired;
   # notebooklm-rest :3011 owns auth (only consumer was ai-hub-extension preset)
   - {id: yt-live,          kind: static, path: /apps/yt-live/*,        hls: true, owner: chaba, note: "voice-dub media — cast fetches LAN:80 directly"}
