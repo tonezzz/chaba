@@ -85,21 +85,11 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-      - name: mcp-debug-sse.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
       - name: go2rtc.service
         type: service
         scope: user
         expected_state: active
         critical: false
-      - name: chaba-postgres-16.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
       - name: michael-dev.service
         type: service
         scope: user
@@ -123,12 +113,6 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-      - name: ssot-optimization-snapshot.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Nightly trigger for ssot-optimization-snapshot.service
       - name: devin-cleanup.timer
         type: timer
         scope: user
@@ -178,12 +162,6 @@ hosts:
         note: Polls tony-omen clipboard (text + image/*) every 1s into :1 —
           Barrier 2.4.0 relays text only; reverse of omen's clip-sync-dell.
           Runs ~/.local/bin/clip-sync tony-omen
-      - name: secrets-console.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Tailnet-only Secrets Console on port 8005
       - name: mddb.service
         type: service
         scope: user
@@ -193,48 +171,6 @@ hosts:
           (100.123.163.11:11023). Verify-timeout loop on contended HDD could
           never converge; quadlet + seeded data kept for manual fallback —
           reseed before any restart, its LSN is stale
-      - name: mcp-link-monitor.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: TCP/IP link monitor (omen/dell/macbook); mn01 copy retired 2026-09-25 — this dell instance is the canonical one
-      - name: chaba-board-api.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Kanban board write API on 127.0.0.1:8787 — Caddy proxies /apps/board-api/* here; scripts/board/board-api.py, runs against the chaba-tony-dell served checkout"
-      - name: chaba-board-render.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "60s — re-renders apps/board (index.html + cards.json) when docs/ssot/kanban/cards/ changes outside the API"
-      - name: kanban-dispatch.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "2min — drains cards with action.status=queued through devin-dispatch, polls running tasks to done/review"
-      - name: kanban-commit.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "15min — persists live card edits to git (scoped add + push) from chaba-tony-dell"
-      - name: chaba-lab-sweep.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "weekly Mon 09:00 — flags lab cards past lab.review_by with no outcome (comms nudge + lab-review request), executes answered promote/retire/extend decisions"
-      - name: merge-sweep.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "15min — merge-sweep.py: fetches stranded dispatch branches off runners over tailscale ssh (git -c core.sshCommand=ssh fetch <runner>:<worktree> HEAD), merges into the served checkout (stop-and-report conflicts -> card request), flags zombie devin-task-* units >6h idle"
       - name: chaba-services-regen.timer
         type: timer
         scope: user
@@ -274,15 +210,10 @@ hosts:
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
       - {name: ada-ha.service, type: service, scope: user}
-      - {name: bserver.service, type: service, scope: user}
       - {name: camera-panel.service, type: service, scope: user}
-      - {name: chaba-gemini-mic-test.service, type: service, scope: user}
       - {name: chaba-guest-lan.service, type: service, scope: user}
       - {name: chaba-guest.service, type: service, scope: user}
-      - {name: chaba-monitoring-dashboard.service, type: service, scope: user}
-      - {name: chaba-report-api.service, type: service, scope: user}
       - {name: chaba-tunnel.service, type: service, scope: user}
-      - {name: dev-miniapp-v0.service, type: service, scope: user}
       - {name: dnsmasq-postgre.service, type: service, scope: user}
       - {name: gemini-ollama-proxy.service, type: service, scope: user}
       - {name: gesture-relay.service, type: service, scope: user}
@@ -292,31 +223,21 @@ hosts:
       - {name: ha-guest-lan.service, type: service, scope: user}
       - {name: ha-live.service, type: service, scope: user}
       - {name: ha-stall-watchdog.service, type: service, scope: user}
-      - {name: helm.service, type: service, scope: user}
-      - {name: mha-state-push.service, type: service, scope: user}
       - {name: michael-ha-mcp-tunnel.service, type: service, scope: user}
       - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
       - {name: nest-mgr.service, type: service, scope: user}
       - {name: node-red.service, type: service, scope: user}
-      - {name: notebooklm-mcp.service, type: service, scope: user}
-      - {name: notebooklm-rest.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
       - {name: playlive-omen-cdp-tunnel.service, type: service, scope: user}
       - {name: plug-watch.service, type: service, scope: user}
       - {name: raceman-php.service, type: service, scope: user}
       - {name: raceman-web.service, type: service, scope: user}
       - {name: rclone-gdrive.service, type: service, scope: user}
-      - {name: redis.service, type: service, scope: user}
-      - {name: status-data-api.service, type: service, scope: user}
-      - {name: trade-api.service, type: service, scope: user}
       - {name: weaviate.service, type: service, scope: user}
       - {name: web.service, type: service, scope: user}
-      - {name: websockify-macbook.service, type: service, scope: user}
-      - {name: websockify-vms-mn01.service, type: service, scope: user}
       - {name: workflows-mcp.service, type: service, scope: user}
       - {name: xvfb-99.service, type: service, scope: user}
-      - {name: yomi-api.service, type: service, scope: user}
       - {name: yt-live-api.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
       - {name: ada-flood-news.timer, type: timer, scope: user}
@@ -326,46 +247,32 @@ hosts:
       - {name: cam-frame-refresh.timer, type: timer, scope: user}
       - {name: cam-wall-cms.timer, type: timer, scope: user}
       - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
-      - {name: chaba-cached-videos.timer, type: timer, scope: user}
       - {name: chaba-cms-reflect.timer, type: timer, scope: user}
-      - {name: chaba-cms-regen.timer, type: timer, scope: user}
       - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
-      - {name: chaba-kanban-brief.timer, type: timer, scope: user}
       - {name: chaba-nag.timer, type: timer, scope: user}
       - {name: chaba-repo-sync.timer, type: timer, scope: user,
          note: "git-safe-pull of the ~/CascadeProjects/chaba exec checkout; installed
            2026-10-16 (OPS-0479) at kanban-commit cadence via timer.d drop-in —
            15min, not the hourly default other hosts run"}
       - {name: chaba-report-watch.timer, type: timer, scope: user}
-      - {name: chaba-review-digest.timer, type: timer, scope: user}
       - {name: chaba-route-health.timer, type: timer, scope: user}
-      - {name: chaba-standard-drift.timer, type: timer, scope: user}
-      - {name: chaba-starboard-tracker.timer, type: timer, scope: user}
       - {name: chaba-system-report.timer, type: timer, scope: user}
-      - {name: chaba-tony-ideas.timer, type: timer, scope: user}
-      - {name: daily-brief.timer, type: timer, scope: user}
       - {name: devin-dispatch-prune.timer, type: timer, scope: user}
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
       - {name: devin-session-prune.timer, type: timer, scope: user}
       - {name: devin-summaries-sync.timer, type: timer, scope: user}
       - {name: flood-alert.timer, type: timer, scope: user}
-      - {name: focus-dispatcher-overnight.timer, type: timer, scope: user}
       - {name: ha-auth-watch.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
-      - {name: kanban-sync.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-mha.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: log-shipper-severe-mha.timer, type: timer, scope: user}
       - {name: mcp-debug-h3-sync.timer, type: timer, scope: user}
-      - {name: mcp-debug-cors.service, type: service, scope: user,
-         note: ":9100 live-data source for h3 sync — dead = frozen site (found down 2026-10-13)"}
       - {name: cms-h3-publish.timer, type: timer, scope: user,
          note: "15min — publishes meta.public CMS pages + status JSON to chaba.h3 branch -> Plesk"}
-      - {name: mddb-standby-pull.timer, type: timer, scope: user}
       - {name: network-scan-tony.timer, type: timer, scope: user}
       - {name: ops-percussion.timer, type: timer, scope: user}
-      - {name: overnight-assessment.timer, type: timer, scope: user}
       - {name: session-audit.timer, type: timer, scope: user}
       - {name: staleness-sentinel.timer, type: timer, scope: user}
       - {name: tony-dell-health-snapshot.timer, type: timer, scope: user}
@@ -373,11 +280,50 @@ hosts:
       - {name: tony-dell-monitor.timer, type: timer, scope: user}
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
-      - {name: yomi-backup.timer, type: timer, scope: user}
-      - {name: yomi-mddb-digest.timer, type: timer, scope: user}
-      - {name: yomi-update-active.timer, type: timer, scope: user}
-      - {name: yomi-update-all.timer, type: timer, scope: user}
-    expected_absent: []   # michael-dev covered by expected_state: absent above
+    expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
+      - {name: bserver.service, scope: user}
+      - {name: chaba-board-api.service, scope: user}
+      - {name: chaba-board-render.timer, scope: user}
+      - {name: chaba-cached-videos.timer, scope: user}
+      - {name: chaba-cms-regen.timer, scope: user}
+      - {name: chaba-gemini-mic-test.service, scope: user}
+      - {name: chaba-kanban-brief.timer, scope: user}
+      - {name: chaba-lab-sweep.timer, scope: user}
+      - {name: chaba-monitoring-dashboard.service, scope: user}
+      - {name: chaba-postgres-16.service, scope: user}
+      - {name: chaba-report-api.service, scope: user}
+      - {name: chaba-review-digest.timer, scope: user}
+      - {name: chaba-standard-drift.timer, scope: user}
+      - {name: chaba-starboard-tracker.timer, scope: user}
+      - {name: chaba-tony-ideas.timer, scope: user}
+      - {name: daily-brief.timer, scope: user}
+      - {name: dev-miniapp-v0.service, scope: user}
+      - {name: focus-dispatcher-overnight.timer, scope: user}
+      - {name: helm.service, scope: user}
+      - {name: kanban-commit.timer, scope: user}
+      - {name: kanban-dispatch.timer, scope: user}
+      - {name: kanban-sync.timer, scope: user}
+      - {name: mcp-debug-cors.service, scope: user}
+      - {name: mcp-debug-sse.service, scope: user}
+      - {name: mcp-link-monitor.service, scope: user}
+      - {name: mddb-standby-pull.timer, scope: user}
+      - {name: merge-sweep.timer, scope: user}
+      - {name: mha-state-push.service, scope: user}
+      - {name: notebooklm-mcp.service, scope: user}
+      - {name: notebooklm-rest.service, scope: user}
+      - {name: overnight-assessment.timer, scope: user}
+      - {name: redis.service, scope: user}
+      - {name: secrets-console.service, scope: user}
+      - {name: ssot-optimization-snapshot.timer, scope: user}
+      - {name: status-data-api.service, scope: user}
+      - {name: trade-api.service, scope: user}
+      - {name: websockify-macbook.service, scope: user}
+      - {name: websockify-vms-mn01.service, scope: user}
+      - {name: yomi-api.service, scope: user}
+      - {name: yomi-backup.timer, scope: user}
+      - {name: yomi-mddb-digest.timer, scope: user}
+      - {name: yomi-update-active.timer, scope: user}
+      - {name: yomi-update-all.timer, scope: user}
     allowed_running:
       - devin-task-*.service   # ephemeral dispatch session units
     known_failed:
@@ -1950,6 +1896,33 @@ hosts:
       - {name: mddb-restart.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
       - {name: ada-line-digest.timer, type: timer, scope: user, note: "weekly Mon 09:00 per-member LINE digest push via relay /send (card cmssurface-render-digest); members=tony until rollout approved"}
+      - {name: chaba-board-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-board-render.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-cached-videos.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-cms-regen.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-kanban-brief.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-lab-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-postgres-16.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-review-digest.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-standard-drift.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-starboard-tracker.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: chaba-tony-ideas.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: daily-brief.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: focus-dispatcher-overnight.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: kanban-commit.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: kanban-dispatch.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: kanban-sync.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: merge-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: mha-state-push.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: overnight-assessment.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: qc-scoreboard.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: redis.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: trade-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: yomi-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: yomi-backup.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: yomi-mddb-digest.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: yomi-update-active.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: yomi-update-all.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
@@ -2094,6 +2067,19 @@ hosts:
       - {name: report-distill.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
+      - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: helm.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: mcp-link-monitor.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: mddb-gdrive-tier.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: notebooklm-mcp.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: notebooklm-rest.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: secrets-console.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: status-data-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: websockify-macbook.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
+      - {name: websockify-vms-mn01.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
