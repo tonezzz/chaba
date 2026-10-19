@@ -28,8 +28,31 @@ sections:
         text: Michael's home. SSID AisMN_5G, 192.168.1.0/24, gateway 192.168.1.1. Typical device wlo1. The PSK is stored in ~/.local/share/wifi/tony-omen-networks.json. Routers 192.168.1.1 (Huawei HG8145X6N, michael-home-router) and 192.168.1.124 (Huawei HG8145X6N, michael-huawei-igd-secondary). 58 active hosts recorded in ssot.ip-address-registry.michael.yml (updated 2026-09-13).
         status: active
       - label: tony-home
-        text: Tony's home. SSIDs TONY-WIFI_2.4G / TONY-WIFI_5G and netplan-eno1, 192.168.2.0/24, gateway 192.168.2.1. Credentials in ~/.local/share/wifi/tony-omen-networks.json.
+        text: >-
+          Tony's home. SSIDs TONY-WIFI_2.4G / TONY-WIFI_5G and netplan-eno1,
+          192.168.2.0/24, gateway 192.168.2.1 (ZTE F688 GPON). Credentials in
+          ~/.local/share/wifi/tony-omen-networks.json. NOTE — a second IPv4
+          scope (192.168.1.x, Naris) is intermittently present ON THIS SAME
+          WIRE via the plug-tv repeater; .1.x hosts seen here are the
+          neighbor's subnet, not your LAN. Wired clients should be static or
+          DHCP-pinned (dell is static .2.67 since 2026-10-19) or they can land
+          on the .1.x scope.
         status: available
+      - label: naris (neighbor backup)
+        text: >-
+          Neighbor's network, SSID "Naris", 192.168.1.0/24 gw 192.168.1.1 —
+          tony-home backup WAN by permission. Intentional access path = dell's
+          USB dongle wlx00761100125e, profile "Naris" (autoconnect, priority
+          10, route-metric 700 — failover only, never bridged). INCIDENT
+          2026-10-19 — the plug-tv repeater (wireless bridge giving ethernet
+          to the TV + True box) uplinks to Naris and bridges its L2 onto the
+          tony-home wire while powered; that's how dell's ethernet caught a
+          .1.x lease with a dead .1.1 gateway. If .1.x appears on tony-home
+          it is expected leakage from that corner, not a rogue device — but
+          devices that take the lease lose real WAN. mn-home is also
+          192.168.1.0/24 (same numbers, different network) — scope is
+          per-location.
+        status: fallback
       - label: Mountain View
         text: Resort network. SSIDs Mountain View Resort_2.4G / Mountain View Resort_5G, 192.168.1.0/24, gateway 192.168.1.1. Password 1111100000 in wifi JSON.
         status: stale
