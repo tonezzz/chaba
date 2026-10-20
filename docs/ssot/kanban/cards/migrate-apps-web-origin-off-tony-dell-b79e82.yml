@@ -1,7 +1,7 @@
 id: migrate-apps-web-origin-off-tony-dell-b79e82
 title: migrate /apps web origin off tony-dell
-column: review
-updated: 2026-10-20 16:17
+column: done
+updated: 2026-10-20 18:33
 note: 'dell is the sole host for the whole /apps site (Caddy+web container+tailnet entry). Taking dell down kills
   vcast/jam/gesture pages entirely — QR origin follows location.origin so a move fixes QRs automatically. Natural
   target: idc03 (already runs input-bridge).'
@@ -61,6 +61,16 @@ comms:
 - at: 2026-10-20 16:17
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-20 18:32
+  from: devin
+  text: '[verify] 2026-10-20 ~18:45 ICT — ph2 claim verified by surface. Producer: idc02 serves /apps/{board,gev,jam,system-report,ha,lab,vcast,gesture,tony-live}/
+    + route-health.json all 200 via tailnet front; deployed ~/.config/caddy/Caddyfile has ZERO live dell upstreams
+    (10 remaining matches are comments only); yt-corpus 8.0G landed in ~/web-srv and /apps/yt-corpus/ 200. Consumer:
+    content is current — idc02 /apps/lab/ already carries the OPS-0754 repoints (0 stale dell:8xxx refs, 3 new omen
+    refs). Pa'
+- at: 2026-10-20 18:33
+  from: devin
+  text: moved review -> done
 action:
   type: dispatch
   status: done

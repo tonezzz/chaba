@@ -10,7 +10,7 @@ priority: medium
 note: 'Auto-recovered 2026-10-20: `mn01-unreachable` condition cleared — shipper healthy again.'
 help: 'Likely a tailscale ssh auth check on the tony-omen -> host hop: run a manual ssh and open the login.tailscale.com
   link it prints, or install a local log-shipper timer on mn01.'
-updated: 2026-10-20 18:16
+updated: 2026-10-20 18:45
 comms:
 - at: 2026-10-15 15:04
   from: devin
@@ -84,10 +84,22 @@ comms:
 - at: 2026-10-20 18:16
   from: chaba
   text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime goes fresh within ~5 min.'
+- at: 2026-10-20 18:44
+  from: chaba
+  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) dropped off the LAN again.'
+- at: 2026-10-20 18:45
+  from: devin
+  text: 'answered mn01-is-powered-off-net-down-tailscale-o-9760d4: power-on'
+- at: 2026-10-20 18:45
+  from: devin
+  text: '[verify] 2026-10-20 ~19:05 ICT — mn01 BACK, same incident resolved not new: tailscale ping 93ms via LAN
+    direct path (192.168.2.83), ssh live, up 3h44m (came back ~08:00 today), no failed user units, disk 27%. Load
+    7.4/3.6/3.5 = Persistent-timer catch-up storm, normal post-outage. Answered open request power-on (treat as
+    always-on; probe self-healed).'
 requests:
 - id: mn01-is-powered-off-net-down-tailscale-o-9760d4
   ask: mn01 is powered off/net-down (tailscale offline 1d). How should it be treated?
-  status: open
+  status: answered
   at: 2026-10-15 15:24
   from: devin
   options:
@@ -99,3 +111,4 @@ requests:
     label: Retire mn01 — remove from shipper/fleet probes entirely
   suggested: scheduled
   escalated_at: 2026-10-16 05:16
+  answer: power-on

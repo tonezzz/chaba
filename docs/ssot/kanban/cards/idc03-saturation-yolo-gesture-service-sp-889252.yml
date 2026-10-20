@@ -1,7 +1,7 @@
 id: idc03-saturation-yolo-gesture-service-sp-889252
 title: 'idc03 saturation: yolo-gesture.service spinning 124% CPU for 4d on writer host'
-column: backlog
-updated: 2026-10-20 16:43
+column: done
+updated: 2026-10-20 18:32
 priority: high
 tags:
 - ops
@@ -17,3 +17,16 @@ comms:
 - at: 2026-10-20 16:43
   from: tony
   text: card captured via board-api
+- at: 2026-10-20 18:32
+  from: devin
+  text: '[done] Moved + idle-off shipped 2026-10-20. server.py park mode (9941cbb30): gesture lanes skip inference
+    when latest uplink key is not a fresh N:gesture(-M) frame — the display only uploads while its screen is open,
+    so no gesture frames = nobody is using it. Parks at YOLO_IDLE_POLL_MS=3s, wakes instantly. Verified: unit live
+    on tony-omen :8785, parked:true at 0.1% CPU (was 124% for 4d on idc03). idc03 service disabled+stopped; unit
+    env repointed at input-bridge over tailnet (100.102.134.91:3010'
+- at: 2026-10-20 18:32
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

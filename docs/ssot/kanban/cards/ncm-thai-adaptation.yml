@@ -1,7 +1,7 @@
 id: ncm-thai-adaptation
 title: NCM (next-concept modeling) for Thai — feasibility + possible training run
-column: doing
-updated: 2026-10-20 18:25
+column: review
+updated: 2026-10-20 18:29
 brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
   training stages from the paper. Novel research artifact, no stack utility for Ada.'
 priority: low
@@ -79,6 +79,50 @@ comms:
 - at: 2026-10-20 18:15
   from: idc02
   text: claimed
+- at: 2026-10-20 18:16
+  from: chaba
+  text: started devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e on idc02 (dispatch)
+- at: 2026-10-20 18:16
+  from: devin
+  text: 'dispatch picked up card — completing recon-spike deliverables: re-verifying paper training details + repo
+    issue status, writing durable recon report, then verdict comm + next-step request.'
+- at: 2026-10-20 18:19
+  from: devin
+  text: 'VERDICT (recon-spike complete — full report: reports/2026-10-20-ncm-thai-recon.md). Repo cloned: ALL model
+    code ships incl. training internals — quantizer does EMA updates, dead-code restart, nested dropout INSIDE forward()
+    under self.training; generator ships idx_to_ncm_input. Missing = loops only: ~1.2-1.5k LOC new code (2 trainer
+    loops + corruption fn + L_NCM loss + Thai SP tokenizer + eval wiring), revising earlier 2-4k down. Recipe fully
+    specified in App.B/C (tokenizer: 0 encoder blocks!, β'
+- at: 2026-10-20 18:20
+  from: devin
+  text: 'raised request recon-done-toy-train-is-cheaper-than-fea-b244ca: Recon done — toy-train is cheaper than
+    feared (~1.2-1.5k LOC new code, <$50, few days) but still zero Ada/stack payoff. '
+- at: 2026-10-20 18:22
+  from: idc02
+  text: 'finished (ok): exit=0 y in `reports/2026-10-20-ncm-thai-recon.md`, and the outcome summary is in `dispatch-outcome-20261020-181610-cont'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: 'session-end checkpoint 98ddb9d9: 1 leftover file(s) committed'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: pushed dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e to origin
+- at: 2026-10-20 18:22
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: auto-merged e813275d (dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e) → origin/master
+- at: 2026-10-20 18:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261020-181610-context-ncm-arxiv-2610-14162-e,
+    branch dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e'
+- at: 2026-10-20 18:29
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''recon-done-toy-train-is-cheape''] block close)'
+- at: 2026-10-20 18:31
+  from: chaba
+  text: 'auto-reconciled ncm-thai-adaptation.yml.local-conflict-20261020-183106: column: ''doing'' -> ''review''
+    (conflict); action: merged per-key (conflict wins); +11 comms'
 requests:
 - id: how-far-should-the-thai-ncm-idea-go-repo-743d93
   ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
@@ -100,8 +144,34 @@ requests:
   suggested: recon-spike
   answer: recon-spike — Recon spike (recommended) — read the paper’s training details, size the reimplementation
     (LOC/compute), check whether authors plan to release training code, pick dataset + eval. Then decide.
+- id: recon-done-toy-train-is-cheaper-than-fea-b244ca
+  ask: Recon done — toy-train is cheaper than feared (~1.2-1.5k LOC new code, <$50, few days) but still zero Ada/stack
+    payoff. How to proceed?
+  status: open
+  at: 2026-10-20 18:20
+  from: devin
+  options:
+  - id: watch-only
+    label: 'Watch only (recommended) — subscribe repo; Tony +1s GH issue #2 to nudge authors; revisit when/if trainer
+      lands (would cut remaining work further). Zero cost, keeps optionality.'
+  - id: toy-train
+    label: 'Toy-train — build the ~1.5k LOC trainers, reproduce Sudoku first to validate, then Thai toy run on rented
+      GPU (~$20-50 spend, few sessions). Yield: first Thai coarse-to-fine generator + learning artifact.'
+  - id: typhoon-ft
+    label: Different want — fine-tune Typhoon/WangchanX for fast Thai generation. Cheaper, usable result, but not
+      an NCM.
+  - id: drop
+    label: Drop — close card, keep report.
+  suggested: watch-only
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 y in `reports/2026-10-20-ncm-thai-recon.md`, and the outcome summary is in `dispatch-outcome-20261020-181610-context-ncm-arxiv-2610-14162-e.md`.
+    | devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e.service: Consumed 12.842s CPU time.'
+  verified: true
+  sweep:
+    close_held: 2026-10-20 18:29
+review_kind: verify
+claim: {}
 awaiting_action: true

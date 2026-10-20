@@ -1,0 +1,44 @@
+id: roster-agents-tab
+title: Agents tab on chaba-admin — unified roster chat over ada lanes
+column: review
+updated: 2026-10-20 18:34
+priority: medium
+tags:
+- chaba-admin
+- webchat
+- roster
+- ada
+spec: 'Tony 2026-10-20: wanted a single chat UI to talk to ada/chaba/kaewta/klaut (+nest/devin later) after the
+  OpenMausBot assessment — OMB is single-operator so the roster rides the existing ada lanes instead. Shipped: stacks/web/public/apps/roster/index.html
+  (contacts rail + one <ada-webchat-card> per lane over idc03 tailnet mounts, member=tony -> chat_id web-tony, per-lane
+  key cache ada_roster + #key.<id>= hash seeding), agents view inserted after board on chaba-admin (live ws mutate
+  + snapshot synced), roster-tony chat-capability keys minted on all four lanes (:8002/:8007/:8003/:8005).'
+note: 'VERIFY: open https://ada-ha.surf-thailand.com/chaba-admin/agents — seed keys once via the URL in ~/.config/secrets/roster-bootstrap.txt
+  (or paste each lane key into the contact setup gate). Needs Tailscale for lane ws. devin/nest listed as soon —
+  shim card roster-devin-nest-shims.'
+ref: ADA-0757
+comms:
+- at: 2026-10-20 18:32
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-20 18:32
+  from: devin
+  text: 'raised request open-chaba-admin-agents-and-seed-the-lan-1ec7b1: Open chaba-admin/agents and seed the lane
+    keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt into the br'
+- at: 2026-10-20 18:34
+  from: devin
+  text: 'Shipped + verified: roster page live on idc02 web origin (:8099 200; public edge CF-gated as normal), chaba-admin
+    views now [pair, board, agents, chaba-cms, ...]. roster-tony keys minted on all 4 lanes with apps=[chat] — verified
+    each authenticates via /api/auth/session. Keys for Tony: ~/.config/secrets/roster-keys.json + ready bootstrap
+    URL in roster-bootstrap.txt (open once, then delete). Seeds via #key.<id>= hash -> localStorage, stripped after.'
+requests:
+- id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
+  ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt
+    into the browser (hash params land in localStorage, never hit the wire). All four contacts connect?
+  status: open
+  at: 2026-10-20 18:32
+  from: devin
+  options:
+  - all four connect
+  - snag — see comms
+  suggested: all four connect

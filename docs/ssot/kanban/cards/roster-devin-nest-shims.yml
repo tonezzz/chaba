@@ -1,0 +1,22 @@
+id: roster-devin-nest-shims
+title: Lane-ws shims so devin + nest join the Agents roster
+column: backlog
+updated: 2026-10-20 18:32
+priority: low
+tags:
+- roster
+- webchat
+- devin
+- nest
+spec: Roster page (apps/roster, card roster-agents-tab) lists devin + nest as "soon" — neither speaks the ada lane
+  ws contract. Shim = a small ws endpoint per agent that accepts {type:"text"} in and emits assistant_transcript_delta
+  / response_started / response_completed (+ optionally chat_push) out, so a standard ada-webchat-card can front
+  it. Devin shim could wrap a devin CLI/dispatch session; nest shim fronts the orchestrator chat entry. When a shim
+  lands, add the contact to CONTACTS in stacks/web/public/apps/roster/index.html and its lane base to ssot.routes.yml
+  if new.
+note: Follow-up of roster-agents-tab.
+ref: DEV-0758
+comms:
+- at: 2026-10-20 18:32
+  from: devin
+  text: card captured via board-api
