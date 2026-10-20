@@ -1,15 +1,18 @@
 id: logs-auto-michael-ha-silent
-title: logs `michael-ha` never shipped state
-column: done
+title: logs `michael-ha` silent 3h
+column: review
 generated: logs-kanban
 program: logs-digest
-priority: medium
-note: 'Auto-recovered 2026-10-06: `michael-ha-silent` condition cleared — shipper healthy again.'
-help: Run `log-shipper.py --hosts michael-ha --dry-run` from tony-omen; if the ssh probe fails, check tailscale
-  auth (browser link).
-updated: '2026-10-06'
+priority: high
+note: last ship-state write 3h ago (limit 3.0h) — shipper stopped running
+help: Check ada-review-refresh.service on tony-omen and whether the host was removed
+  from --hosts.
+updated: '2026-10-20'
 ref: HOM-0085
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: HOM-0085'
+brief: 'The log digest flagged something worth a look: logs `michael-ha` silent 3h.
+  Read the note, then fix it or close the card.'
+review_kind: triage
