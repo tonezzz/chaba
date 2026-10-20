@@ -156,6 +156,9 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 
 ## Token files
 
+- Secrets originate on tony-macbook first (`~/.config/secrets/`), then sync to the host that needs them (2026-10-20 — Tony). macbook is the canonical secrets origin; hosts get copies for runtime/backup.
+- tony-ha: `~/.config/secrets/home-assistant-token.env` on tony-omen (`HA_LONG_LIVED_TOKEN`)
+- ada-ha: `~/.config/secrets/ada-ha-token.env` on tony-omen (`HA_LONG_LIVED_TOKEN`) — instance on :8125
 - michael-dev: `~/.config/secrets/ha-michael-dev.env` (`HASS_TOKEN`)
 - michael-ha: `~/.local/share/home-assistant-michael/ha-token` (raw token file, NOT `ha-michael-live.env`)
 - Never paste tokens into chat or commit them.
