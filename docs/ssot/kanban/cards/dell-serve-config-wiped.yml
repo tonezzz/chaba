@@ -1,0 +1,13 @@
+id: dell-serve-config-wiped
+title: tailscale serve config on tony-dell wiped — :443 edge dead until restored
+column: backlog
+updated: 2026-10-20 16:53
+ref: OPS-0754
+comms:
+- at: 2026-10-20 16:53
+  from: devin
+  text: 'Found 2026-10-20 ~16:40: serve status = No serve config. Web edge :443 (apps/gev, relay-img, board) refused
+    from everywhere; caddy healthy on :80 (host-net). Cause unknown — likely tailscaled restart/upgrade dropping
+    serve state (~16:14, same window the web container restarted). RESTORED: tailscale serve --bg --https=443 http://127.0.0.1:80
+    (the documented serve-restore proc, same wound as member-nodes-to-vps-ha Oct-09). NOT restored: :8123 tony-ha,
+    :8124/:8125 test views, :8444, :3007/3008 rvie'
