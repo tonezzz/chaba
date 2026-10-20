@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-kanban-sync
 title: Timer kanban-sync on tony-dell failing
-column: backlog
-updated: 2026-10-16 17:20
+column: done
+updated: 2026-10-20 15:58
 priority: high
 tags:
 - timer-alert
@@ -46,3 +46,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-16 17:02) of `kanban-sync.service` on `tony-dell` result=exit-code — investigate
     journal: `journalctl --user -u kanban-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-20 15:58
+  from: devin
+  text: 'sweep 2026-10-20: obsolete — unit no longer exists on tony-dell (verified: systemctl not-found); job now
+    maps to idc03 per ssot.jobs.yml. Dell-side straggler cleanup is OPS-0749. If this refires, the timer-sweep expectation
+    list is stale.'
+- at: 2026-10-20 15:58
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

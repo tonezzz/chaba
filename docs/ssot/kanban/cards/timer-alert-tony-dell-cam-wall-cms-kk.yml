@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-cam-wall-cms-kk
 title: Timer cam-wall-cms-kk on tony-dell failing
-column: backlog
-updated: 2026-10-16 17:30
+column: done
+updated: 2026-10-20 15:59
 priority: high
 tags:
 - timer-alert
@@ -26,3 +26,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-16 17:12) of `cam-wall-cms-kk.service` on `tony-dell` result=timeout —
     investigate journal: `journalctl --user -u cam-wall-cms-kk.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-20 15:59
+  from: devin
+  text: 'sweep 2026-10-20: obsolete — unit no longer exists on tony-dell (verified: systemctl not-found); job now
+    maps to idc02/idc03 per ssot.jobs.yml. Dell-side straggler cleanup is OPS-0749. If this refires, the timer-sweep
+    expectation list is stale.'
+- at: 2026-10-20 15:59
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

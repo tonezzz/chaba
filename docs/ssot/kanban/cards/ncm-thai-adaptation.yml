@@ -1,7 +1,7 @@
 id: ncm-thai-adaptation
 title: NCM (next-concept modeling) for Thai — feasibility + possible training run
 column: backlog
-updated: 2026-10-20 15:06
+updated: 2026-10-20 15:47
 brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
   training stages from the paper. Novel research artifact, no stack utility for Ada.'
 priority: low
@@ -58,11 +58,19 @@ comms:
     turn); the missing rung is a trivial-answer gate specialist, carded separately as ada-nest-trivial-gate; (2)
     best-of-N sampling + MBR pick = a candidate-ranker shelf item for text lanes, useful under provider caps; (3)
     frozen tokenizer + generator sp'
+- at: 2026-10-20 15:47
+  from: tony
+  text: 'answered how-far-should-the-thai-ncm-idea-go-repo-743d93: recon-spike — Recon spike (recommended) — read
+    the paper’s training details, size the reimplementation (LOC/compute), check whether authors plan to release
+    training code, pick dataset + eval. Then dec'
+- at: 2026-10-20 15:47
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: how-far-should-the-thai-ncm-idea-go-repo-743d93
   ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
     both stages from the paper. Education post 1588 has the full assessment.
-  status: open
+  status: answered
   at: 2026-10-20 15:04
   from: devin
   options:
@@ -77,3 +85,6 @@ requests:
   - id: drop
     label: Drop — not worth it; close the card.
   suggested: recon-spike
+  answer: recon-spike — Recon spike (recommended) — read the paper’s training details, size the reimplementation
+    (LOC/compute), check whether authors plan to release training code, pick dataset + eval. Then decide.
+awaiting_action: true

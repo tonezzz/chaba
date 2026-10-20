@@ -1,7 +1,7 @@
 id: migrate-apps-web-origin-off-tony-dell-b79e82
 title: migrate /apps web origin off tony-dell
-column: backlog
-updated: 2026-10-19 18:55
+column: doing
+updated: 2026-10-20 15:48
 note: 'dell is the sole host for the whole /apps site (Caddy+web container+tailnet entry). Taking dell down kills
   vcast/jam/gesture pages entirely — QR origin follows location.origin so a move fixes QRs automatically. Natural
   target: idc03 (already runs input-bridge).'
@@ -22,3 +22,16 @@ comms:
   text: 'idc02 web origin verified end-to-end: board/trade-api/yomi/jam all 200 via tailnet front. trade+yomi upstreams->idc03
     primary. web-srv-sync.timer armed (hourly pull from idc03 canonical checkout). yt-cache 3.5G+ still rsyncing
     to ~/backups; mv into web-srv/yt-cache when done.'
+- at: 2026-10-20 15:48
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 15:48
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-20 15:48
+  from: chaba
+  text: started devin-task-20261020-154846-migrate-apps-web-origin-off-to on tony-macbook (dispatch)
+action:
+  type: dispatch
+  status: running
+  runner: tony-macbook

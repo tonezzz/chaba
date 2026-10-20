@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-board-render
 title: Timer chaba-board-render on tony-dell failing
-column: backlog
-updated: 2026-10-16 18:39
+column: done
+updated: 2026-10-20 15:57
 priority: high
 tags:
 - timer-alert
@@ -106,3 +106,48 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-16 18:26) of `chaba-board-render.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-board-render.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-20 15:48
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 15:48
+  from: mn01
+  text: claimed
+- at: 2026-10-20 15:49
+  from: chaba
+  text: started devin-task-20261020-084915-timer-chaba-board-render-on-to on mn01 (dispatch)
+- at: 2026-10-20 15:49
+  from: devin
+  text: '[devin] Dispatch started — investigating chaba-board-render.service failure on tony-dell (last run 10-15
+    12:59 exit-code).'
+- at: 2026-10-20 15:54
+  from: devin
+  text: '[resolved] Root cause: stt-omen-large-v3 had a bare string in comms — render-board.py compute_checks crashed
+    (AttributeError .get) every render. Fixed in d4545bc1 (10-16 19:31, isinstance filter); renders healthy from
+    next tick. Dell unit then parked by phase-2 migration (10-16 ~19:40) — no dell runs since, sentinel alerts stopped.
+    Timer now lives on idc03, verified healthy today (60s, 828 cards). One idc03 blip 10-18 22:12 = file-not-found
+    during the .git repair window, not a code fault. Drift '
+- at: 2026-10-20 15:54
+  from: devin
+  text: closed by devin
+- at: 2026-10-20 15:54
+  from: devin
+  text: '[verify-ish] interim fix landed 2026-10-20: board-api + render run on idc03 (renders stacks/web/public/apps/board{,2}
+    there); Dell serves gitignored generated files, so installed board-statics-sync.timer on dell pulling the rendered
+    dirs from idc03 every 2min. Dell edge now serves OPS-0750 etc. Real fix remains OPS-0731 /apps origin repoint;
+    retire the sync timer then.'
+- at: 2026-10-20 15:56
+  from: chaba
+  text: 'session-end checkpoint 14dc4e38: 2 leftover file(s) committed'
+- at: 2026-10-20 15:56
+  from: chaba
+  text: pushed dispatch/20261020-084915-timer-chaba-board-render-on-to to origin
+- at: 2026-10-20 15:57
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 15:57
+  from: chaba
+  text: auto-merged e1546cb3 (dispatch/20261020-084915-timer-chaba-board-render-on-to) → origin/master
+action:
+  type: dispatch
+  status: done
+  runner: mn01
