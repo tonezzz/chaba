@@ -325,7 +325,7 @@ jobs:
   on_calendar: '*-*-* 00,04,08,12,16,20:35:00'
   persistent: true
   timeout: 2m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-invariants.py --alert
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/board/board-invariants.py --alert
   note: 'card board-invariants-* (KNB-0716) — read-only truth checks over the
     served card dir: open Tony-facing requests with <2 options (R1), suggested
     not in options (R2), duplicate open requests (R3), done+verify: without an
@@ -334,6 +334,33 @@ jobs:
     stale running claims >24h quiet (S1), parked doing >7d (S2). --alert writes
     one deduped focus-inbox file per violated class (invariant-<slug>.yml); no
     auto-fixes. Added 2026-10-15.'
+- id: kraut-rain-watch
+  name: Kraut rain-event watch (mn-ha)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:11,41:00'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/weather-bakeoff.py --rain-check --send --chat 8960073266
+  note: 'card kraut-rain-events — deduped pushes on rain transitions at
+    Michael''s home (weather.forecast_home condition + Open-Meteo next-6h
+    rain% + HA-FC daily mm; state ~/.local/share/ada/rain-watch-state.json).
+    SOAK TARGET = Tony''s mn DM 8960073266 until promote-to-group is approved.
+    Env: ~/.config/secrets/ada-ai-kraut.env (HA v6 URL + TG send :8917).
+    Added 2026-10-20.'
+- id: weather-bakeoff-daily
+  name: Weather bake-off daily report + snapshot (mn-ha)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 07:40:00'
+  persistent: true
+  timeout: 5m
+  exec: '%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/weather-bakeoff.py --snapshot --send --chat 8960073266'
+  note: 'card kraut-weather-bakeoff follow-through — morning bake-off
+    (RK600 now + ECMWF/GFS/ICON + METNO + HA-FC + TMD + GEMINI rows) to
+    Tony''s mn DM, plus --snapshot appends normalized forecasts to
+    ~/.local/share/ada/weather-bakeoff-log.jsonl for later RMSE scoring
+    vs RK600 actuals. Source pick pending team decision. Added 2026-10-20.'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
   host: tony_omen

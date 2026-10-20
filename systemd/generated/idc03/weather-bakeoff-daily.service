@@ -1,0 +1,7 @@
+[Unit]
+Description=Weather bake-off daily report + snapshot (mn-ha) (job:weather-bakeoff-daily, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/weather-bakeoff.py --snapshot --send --chat 8960073266
