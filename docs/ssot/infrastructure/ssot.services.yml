@@ -310,11 +310,11 @@ tony-dell:
     port: 9005
     host_port: 127.0.0.1:9005
     purpose: Push-to-talk Gemini Live bridge for Home Assistant
-    tailscale_funnel: "https://tony-dell.taila0626a.ts.net:8444"
+    tailnet_url: "https://tony-omen.taila0626a.ts.net:8444"
     source: /home/tony/.config/home-assistant/ha-live/bridge.py
     systemd: systemd/ha-live.service
     status: "running (2026-08-31)"
-    note: "Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected."
+    note: "Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-omen.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected."
   node-red:
     container: node-red
     image: docker.io/nodered/node-red:latest
@@ -506,11 +506,11 @@ tony-dell:
       mcp_path: /api/ha-mcp/
       backend: 100.68.142.13
       caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
-      note: 'Planned paths — not yet routed in the Caddyfile (verified 2026-09-18). HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
+      note: 'Planned paths — not yet routed in the Caddyfile (verified 2026-09-18). HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-omen.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (evacuated dell->omen 2026-10-20, OPS-0754) (decision: tony-ha-tailscale-only-access).'
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-dell.taila0626a.ts.net:8123 only (loopback bind, no LAN listener). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
+    note: 'Container rootless podman on tony-dell. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-omen.taila0626a.ts.net:8123 only (loopback bind, no LAN listener; evacuated dell->omen 2026-10-20, OPS-0754). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
   michael-dev:
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:stable
@@ -555,8 +555,8 @@ tony-dell:
     binary: /home/tony/.local/bin/go2rtc
     autostart: systemctl --user enable go2rtc
     health_check: systemctl --user is-active go2rtc
-    hls_url: "https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd"
-    tailscale_funnel: "https://tony-dell.taila0626a.ts.net:8448"
+    hls_url: "http://tony-omen.taila0626a.ts.net:1984/api/stream.m3u8?src=ip_cam_65_hd"
+    tailnet_url: "http://tony-omen.taila0626a.ts.net:1984"
     status: implemented (2026-08-31)
   gpu-queue:
     container: gpu-queue
@@ -987,7 +987,7 @@ mn01:
     status: active on idc03 (migrated tony-dell -> idc01 2026-09-23 -> idc03 2026-10-06); retired on tony-dell
     tailnet_url: "https://idc03.taila0626a.ts.net/"
     env_file: "~/.config/secrets/ada-pi-pwa.env"
-    upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/ (svc-ada non-admin LLAT, ha-ada-isolation 2026-10-15)"
+    upstream_ha: "https://tony-omen.taila0626a.ts.net:8123/ (svc-ada non-admin LLAT, ha-ada-isolation 2026-10-15)"
     note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui, then idc01 -> idc03; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. idc01 keeps a warm-boot copy (ada-pi-pwa.service runs but is not the primary). Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
@@ -1001,7 +1001,7 @@ mn01:
     tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony/"
     env_file: "~/.config/secrets/ada-ha-tony.env"
     edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
-    upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
+    upstream_ha: "https://tony-omen.taila0626a.ts.net:8123/"
     note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and a dedicated svc-ada non-admin LLAT (ha-ada-isolation Phase B, 2026-10-15 — replaced the Tony owner token). Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service

@@ -32,6 +32,18 @@ edges:
       paths unauthenticated, POST needs X-Ingest-Key; stack +
       worker in stacks/edge/claw-channel/ + edge/claw-channel/; not a
       routes[] entry — render-routes.py kinds are proxy/static/alias only"
+  tony-dell-serve:
+    kind: tailscale-serve          # tailnet TLS edge in front of the web caddy
+    mounts:
+      /: http://127.0.0.1:80                      # web container (all /apps/* routes)
+      # Retired (OPS-0754, 2026-10-20 — serve config was wiped; census found
+      # nothing local left to proxy):
+      #   :8123 tony-ha     -> tony-omen tailscale serve :8123
+      #   :8124 michael-dev -> idc03 tailscale serve :8124
+      #   :8444 ha-live     -> tony-omen :8444 (-> :9005)
+      #   :8448 go2rtc      -> tony-omen :1984 direct (no serve port)
+      # Watchdog: check-serve-config.timer alerts when this edge has no config
+      #   while a mount is declared here (this file is the expectation).
   idc03-serve:
     kind: tailscale-serve          # host fabric exports
     mounts:
