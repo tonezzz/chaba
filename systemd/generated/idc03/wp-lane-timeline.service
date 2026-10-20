@@ -1,0 +1,8 @@
+[Unit]
+Description=Ada lane transcripts -> WP timeline (mn-ha) (job:wp-lane-timeline, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/lane-transcript-timeline.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lane-transcript-timeline.py

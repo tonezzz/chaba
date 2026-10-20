@@ -1,0 +1,7 @@
+[Unit]
+Description=HA Config Backup (job:ha-config-backup, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=%h/.config/home-assistant/ha-live/snapshot-config.sh

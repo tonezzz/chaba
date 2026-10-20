@@ -73,10 +73,29 @@ def _battery() -> dict | None:
             return {"raw": out.splitlines()[-1][:120]}
         return None
     for bat in ("BAT0", "BAT1"):
-        cap = _run(["cat", f"/sys/class/power_supply/{bat}/capacity"])
-        st = _run(["cat", f"/sys/class/power_supply/{bat}/status"])
+        base = f"/sys/class/power_supply/{bat}"
+        cap = _run(["cat", f"{base}/capacity"])
+        st = _run(["cat", f"{base}/status"])
         if cap.isdigit():
-            return {"pct": int(cap), "status": st}
+            b = {"pct": int(cap), "status": st}
+            for key, fn in (("charge_now_uah", "charge_now"),
+                            ("charge_full_uah", "charge_full"),
+                            ("charge_full_design_uah", "charge_full_design"),
+                            ("cycle_count", "cycle_count"),
+                            ("temp_dxc", "temp"),
+                            ("voltage_now_uv", "voltage_now"),
+                            ("current_now_ua", "current_now")):
+                v = _run(["cat", f"{base}/{fn}"])
+                if v.lstrip("-").isdigit():
+                    b[key] = int(v)
+            for fn in ("model_name", "manufacturer", "technology"):
+                v = _run(["cat", f"{base}/{fn}"])
+                if v:
+                    b[fn] = v
+            if b.get("charge_full_uah") and b.get("charge_full_design_uah"):
+                b["health_pct"] = round(
+                    100.0 * b["charge_full_uah"] / b["charge_full_design_uah"], 1)
+            return b
     return None
 
 

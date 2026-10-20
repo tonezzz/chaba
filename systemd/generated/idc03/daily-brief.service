@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily Brief (morning+evening) (job:daily-brief, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/report-daily-brief.py --edition auto --cards-dir %h/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards

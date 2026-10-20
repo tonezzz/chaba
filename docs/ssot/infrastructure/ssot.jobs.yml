@@ -263,6 +263,21 @@ jobs:
   note: hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/ users/top-procs) to MDDB device-telemetry
     collection on idc03 (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
     scripts/device-telemetry/
+- id: telemetry-ha-push
+  name: Device telemetry -> tony-ha sensor mirror
+  host: tony_omen
+  dispatch: systemd
+  on_calendar: '*:0/5'
+  persistent: true
+  timeout: 60s
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
+  env:
+    TELEMETRY_DEVICES: tony-macbook
+  note: reads device-telemetry/<dev>/latest from MDDB :11023 and mirrors battery sensors
+    (sensor.<dev>_battery{,_health,_cycles,_temp,_voltage} + binary_sensor.<dev>_telemetry_fresh)
+    into tony-ha via REST. Token file is the same home-assistant-token env file board_notify.py
+    uses — credential stays on tony_omen, never on the laptop. Stale beacon docs set fresh=off
+    without zeroing sensors — asleep/off-net is quiet. Card macbook-battery-swell; added 2026-10-21.
 - id: device-telemetry-prune
   name: Device telemetry retention prune (7d)
   host: idc03

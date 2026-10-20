@@ -1,0 +1,7 @@
+[Unit]
+Description=Model fleet speed bench (cheap tiers) (job:model-bench, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1800
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/bench/model-speed.py --targets %h/CascadeProjects/chaba/scripts/bench/targets.weekly.yml --runs 3

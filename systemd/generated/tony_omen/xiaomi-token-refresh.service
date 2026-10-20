@@ -1,0 +1,7 @@
+[Unit]
+Description=Xiaomi Token Refresh (job:xiaomi-token-refresh, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/.config/go2rtc/xiaomi-token-refresh.py

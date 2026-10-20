@@ -1,0 +1,9 @@
+[Unit]
+Description=Ada session audit (transcripts -> friction -> CMS/focus/corpus) (job:session-audit, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/.local/share/session-audit/session-audit.py
+Environment="MDDB_BASE_URL=http://100.102.134.91:11023/v1"
+Environment="AUDIT_HOSTS=idc03,idc01"
