@@ -1,29 +1,14 @@
 id: logs-auto-coverage
 title: Log coverage gaps
-column: review
+column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Expected log sources vs what actually ships:
-
-
-  - `idc01` — ok [local]; shipped 28/28 matched
-
-  - `idc02` — ok [local]; shipped 265/265 matched
-
-  - `idc03` — ok [local]; shipped 156/156 matched
-
-  - `mn01` — UNREACHABLE (ssh probe failed) [ssh]; shipped 0/0 matched
-
-  - `tony-dell` — ok [local]; shipped 1419/1419 matched
-
-  - `tony-omen` — ok [local]; shipped 667/667 matched
-
-  - `michael-ha` — ok [ha-cli-ssh]; shipped 4/4 matched'
+note: 'Coverage clean 2026-10-20: all 7 expected hosts ship both journals.'
 help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
   usually mean `journalctl --user` isn't permitted for the ssh login.
-updated: '2026-10-14'
+updated: '2026-10-20'
 comms:
 - at: 2026-10-04 14:16
   from: devin
