@@ -114,9 +114,26 @@ sections:
           WAN MAC with ports 5601/52235/52396 — Android-box-like, likely the TrueID box. POWER NOTE 2026-10-20 —
           the repeater is NOT powered by switch.plug_tv despite the corner-map note above — plug confirmed off
           (corner clients all dead) while the repeater stayed up and answered its UI. Separate always-on outlet.
-          SECOND REPEATER (same morning) — open AP SSID WIFI_3C59, BSSID 68:f0:bc:ad:3c:59 (same Tenda reasy
-          family), -36dBm near tony-omen, factory-default SSID name, zero presence on the wire (no .2.x lease,
-          no 192.168.0.254, no bridged MAC) — uplink/clients unknown; admin UI needs a client joined to WIFI_3C59.
+      - label: tony-repeater-2
+        text:
+          Second Tenda Wi-Fi repeater (same reasy-ui/GoAhead fw 005 family) — BSSID 68:f0:bc:ad:3c:59, WAN/proxy MAC
+          0A:F0:BC:AD:3C:59. Found factory-fresh 2026-10-20 broadcasting open SSID WIFI_3C59 (factory scope
+          192.168.11.0/24, admin 192.168.11.1, wizard at /quickset.html). Configured same day via wizard
+          (POST /goform/setWizard, module1=wifiRelay) — Universal Repeater client+ap, uplink TONY-WIFI_2.4G,
+          bridgeSuccess verified live. Ext SSID TONY-WIFI_2.4G-ext2 (WPA2, same key convention). DHCP server OFF;
+          own admin IP DHCP-floats on .2.x (192.168.2.98 at setup). Admin UI http://<ip>/login.html; admin
+          login follows the same convention as tony-repeater. Config dump ~/.local/ai-hub/page-dumps/
+          repeater2-config-2026-10-20.json on tony-omen. Role — feeds mn01's LAN port; its single ethernet client
+          is mn01 (proxied under the WAN MAC; see mn01 entry).
+      - label: mn01
+        text:
+          mn01 (Michael-node utility box) — reached via USB live env 2026-10-20. Wired adapter reports MAC
+          00:e0:4c:36:12:76 — the well-known Realtek RTL8153 blank-EEPROM default, IDENTICAL to kks-macbook's
+          USB-eth dongle. Safe only because mn01 sits behind tony-repeater-2's MAC-NAT — upstream it appears
+          proxied as 0A:F0:BC:AD:3C:59 at 192.168.2.99. If mn01 is ever cabled to the house wire directly the
+          duplicate MAC will collide with the MacBook dongle — replace/reprogram the dongle first. Live env
+          runs OpenSSH_10.2p1 Ubuntu on port 22 (publickey,password; no stored key accepted yet). Tailscale
+          100.106.196.22 still offline 6d+ — tailscaled not up in the live env.
       - label: cozylife-01
         text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
       - label: tuya-plug-tv
