@@ -33,6 +33,14 @@
   .contact.soon { opacity: .45; cursor: default; }
   #rail .foot { margin-top: auto; padding: 10px 14px; font-size: 11px;
                 color: var(--dim); border-top: 1px solid var(--rail-edge); }
+  #seedbox { margin-top: 8px; display: flex; gap: 6px; }
+  #seedbox input { flex: 1; min-width: 0; background: var(--card);
+                   border: 1px solid var(--rail-edge); border-radius: 6px;
+                   color: var(--txt); padding: 6px 8px; font-size: 11px; }
+  #seedbox button { background: var(--accent); border: 0; border-radius: 6px;
+                    color: #fff; padding: 6px 10px; font-size: 11px;
+                    cursor: pointer; }
+  #seed-msg { margin-top: 6px; font-size: 11px; color: var(--accent); }
   #stage { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   #stage-head { padding: 10px 16px; border-bottom: 1px solid var(--rail-edge);
                 display: flex; align-items: baseline; gap: 10px; }
@@ -47,7 +55,13 @@
 <body>
   <nav id="rail"><h1>Agents</h1><div id="contacts"></div>
     <div class="foot">Lanes connect over the tailnet (idc03).
-      Off-tailnet? Connect Tailscale first.</div>
+      Off-tailnet? Connect Tailscale first.
+      <div id="seedbox">
+        <input id="seed-in" type="password" autocomplete="off"
+               placeholder="Paste bootstrap URL or keys blob">
+        <button id="seed-go">Seed</button>
+      </div>
+      <div id="seed-msg"></div></div>
   </nav>
   <div id="stage">
     <div id="stage-head"><span class="nm" id="h-name"></span>
@@ -81,17 +95,30 @@ const setKey = (lane, key, device_id) => {
   localStorage.setItem(LS_KEYS, JSON.stringify(k));
 };
 
-// One-shot seeding: #key.<id>=ada-... — lands in localStorage, then the
-// hash is stripped so keys don't linger in the URL.
-(function seed() {
-  const h = new URLSearchParams(location.hash.slice(1));
+// Seeding: accepts "#key.<id>=ada-..." pairs — from the URL fragment OR
+// pasted into the seed box (the fragment is fragile: a Cloudflare Access
+// or similar auth redirect drops it before the page ever runs).
+function seedFrom(str) {
+  let i = str.indexOf("#"); if (i >= 0) str = str.slice(i + 1);
+  i = str.indexOf("key."); if (i >= 0) str = str.slice(i);
+  const h = new URLSearchParams(str.trim());
   let touched = false;
   for (const c of CONTACTS) {
     const v = h.get("key." + c.id);
     if (v && /^ada-[A-Za-z0-9_-]{10,}$/.test(v)) { setKey(c.lane, v); touched = true; }
   }
-  if (touched) history.replaceState(null, "", location.pathname);
-})();
+  return touched;
+}
+if (seedFrom(location.hash.slice(1)))
+  history.replaceState(null, "", location.pathname);
+
+document.getElementById("seed-go").addEventListener("click", () => {
+  const inp = document.getElementById("seed-in");
+  const msg = document.getElementById("seed-msg");
+  if (seedFrom(inp.value)) { msg.textContent = "Keys stored — reloading…";
+                           location.reload(); }
+  else msg.textContent = "No key.<name>=ada-… pairs found in that paste.";
+});
 
 const rail = document.getElementById("contacts");
 const wrap = document.getElementById("chat-wrap");
