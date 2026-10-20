@@ -1,0 +1,30 @@
+id: kraut-weather-bakeoff
+title: "Kraut weather report — add forecast bake-off (all sources, numbers)"
+brief: >-
+  Tony+Michael decision 2026-10-20: keep the RK600 measured report on top,
+  append every candidate forecast source below in engineer numbers, compare
+  together, pick a winner as a team. Demo = one-shot TG report to the mn lane.
+column: doing
+priority: medium
+tags: [mn-ha, weather, tg]
+spec: >-
+  scripts/ada/weather-bakeoff.py (idc03): fetch (1) RK600 live readings via
+  michael-ha HA REST, (2) HA weather.forecast_home get_forecasts daily,
+  (3) Open-Meteo multi-model ECMWF/GFS/ICON daily+hourly, (4) Met.no
+  locationforecast compact, (5) TMD WeatherForecast7Days (Rayong, demo key),
+  (6) GEMINI baseline via lane REST key + google_search grounding (= what
+  web_search answers today). Render a PIL PNG table into
+  ~/.local/share/ada/line-media/bakeoff/ (public via /relay-img/arch/) and
+  POST photo_url+text to ADA_TG_SEND_URL (:8917/send). Demo lands in Tony's
+  DM 8960073266 first — NOT the mn group.
+note: >-
+  Sources verified live 2026-10-20. Found while building: idc03 cannot reach
+  michael-ha:8123 right now — ada-ai-kraut's HOME_ASSISTANT_URL is dead from
+  that host (get_rk600_weather/home_search errors in journal) — demo runs
+  through an ssh tunnel via tony-omen. Michael's house coords pulled from
+  michael-ha /api/config: 12.898N 100.908E (Ban Chang, Rayong).
+  If the demo lands: becomes an ssot.jobs timer + RK600 actuals scoring
+  (RMSE per source over ~7d) before picking the production source.
+comms: []
+requests: []
+updated: '2026-10-20'
