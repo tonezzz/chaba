@@ -1,7 +1,7 @@
 id: dell-off-repoint-followups
 title: Dell-off repoint follow-ups (ssh MCPs, h3 publish, webcams, workflows-mcp)
 column: backlog
-updated: 2026-10-20 10:17
+updated: 2026-10-20 17:16
 ref: OPS-0748
 comms:
 - at: 2026-10-20 10:17
@@ -16,3 +16,10 @@ comms:
     2) DOC_PRINT_SSH=tony-dell-m2m in idc03 ~/.config/secrets/ada-*.env - doc printing degrades until repointed.
 
     3) cms-h3-publish: needs ~/CascadeP'
+- at: 2026-10-20 17:16
+  from: devin
+  text: 'Dashboard consumer-URL audit (post OPS-0731): found + fixed absolute tony-dell URLs in live HA dashboards
+    — chaba-admin (board/monitor/percussion iframes -> tony-ha.surf-thailand.com/apps/*) and chaba-home (gesture
+    + gesture/screen links). Root-cause gap: the migration inventory covered producers (units, listeners, upstreams)
+    but not consumers; adding a consumer-reference grep step to the host-migration runbook. REMAINING: ada-ha-chaba-home
+    (:8125) still has 2 gesture links on tony-dell — no lon'
