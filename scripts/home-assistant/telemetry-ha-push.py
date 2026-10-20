@@ -73,13 +73,14 @@ def _push(token: str, entity: str, state, attrs: dict) -> None:
 
 
 def push_device(dev: str, token: str) -> str:
+    eid = dev.replace("-", "_")  # entity_ids may not contain hyphens
     doc = _latest(dev)
     now = int(time.time())
     if not doc or not doc.get("ts"):
         return f"{dev}: no telemetry doc"
     age = now - int(doc["ts"])
     fresh = "on" if age <= STALE_S else "off"
-    _push(token, f"binary_sensor.{dev}_telemetry_fresh", fresh, {
+    _push(token, f"binary_sensor.{eid}_telemetry_fresh", fresh, {
         "friendly_name": f"{dev} telemetry fresh",
         "device_class": "connectivity",
         "last_seen": time.strftime("%Y-%m-%dT%H:%M:%S%z",
@@ -100,7 +101,7 @@ def push_device(dev: str, token: str) -> str:
     }
     pct = b.get("pct")
     if pct is not None:
-        _push(token, f"sensor.{dev}_battery", min(int(pct), 100), {
+        _push(token, f"sensor.{eid}_battery", min(int(pct), 100), {
             "friendly_name": f"{dev} battery",
             "device_class": "battery",
             "unit_of_measurement": "%",
@@ -109,7 +110,7 @@ def push_device(dev: str, token: str) -> str:
             **common,
         })
     if b.get("health_pct") is not None:
-        _push(token, f"sensor.{dev}_battery_health",
+        _push(token, f"sensor.{eid}_battery_health",
               min(round(float(b["health_pct"]), 1), 100.0), {
                   "friendly_name": f"{dev} battery health",
                   "unit_of_measurement": "%",
@@ -121,14 +122,14 @@ def push_device(dev: str, token: str) -> str:
                   **common,
               })
     if b.get("cycle_count") is not None:
-        _push(token, f"sensor.{dev}_battery_cycles", int(b["cycle_count"]), {
+        _push(token, f"sensor.{eid}_battery_cycles", int(b["cycle_count"]), {
             "friendly_name": f"{dev} battery cycles",
             "state_class": "total_increasing",
             "icon": "mdi:battery-sync",
             **common,
         })
     if b.get("temp_dxc") is not None:
-        _push(token, f"sensor.{dev}_battery_temp",
+        _push(token, f"sensor.{eid}_battery_temp",
               round(int(b["temp_dxc"]) / 10.0, 1), {
                   "friendly_name": f"{dev} battery temp",
                   "device_class": "temperature",
@@ -137,7 +138,7 @@ def push_device(dev: str, token: str) -> str:
                   **common,
               })
     if b.get("voltage_now_uv") is not None:
-        _push(token, f"sensor.{dev}_battery_voltage",
+        _push(token, f"sensor.{eid}_battery_voltage",
               round(int(b["voltage_now_uv"]) / 1e6, 3), {
                   "friendly_name": f"{dev} battery voltage",
                   "device_class": "voltage",
