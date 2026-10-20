@@ -46,6 +46,12 @@ POINTER_GONE_MS = int(os.environ.get("POINTER_GONE_MS", "800"))
 # frame-left, so flip X by default (set 0 for a rear/room camera)
 POINTER_FLIP = os.environ.get("POINTER_FLIP", "1") not in ("0", "false", "no")
 INPUT_BRIDGE = os.environ.get("INPUT_BRIDGE", "http://127.0.0.1:3010")
+# park mode (gesture lanes only): when the latest uplink is NOT a fresh
+# gesture frame, skip inference entirely — the gesture display only uploads
+# frames while its screen is open, so a missing/stale 'N:gesture' key means
+# nobody is using it. YOLO_IDLE_MS=0 disables parking.
+YOLO_IDLE_MS = int(os.environ.get("YOLO_IDLE_MS", "60000"))
+YOLO_IDLE_POLL_S = float(os.environ.get("YOLO_IDLE_POLL_MS", "3000")) / 1000
 HA_BASE = os.environ.get("HA_BASE", "http://192.168.2.67:8123")
 HA_TOKEN_FILE = os.environ.get("HA_TOKEN_FILE", "/home/tony/.config/secrets/home-assistant-token.env")
 HA_TOKEN = os.environ.get("HA_TOKEN")
@@ -62,6 +68,7 @@ state = {
     "annotated": None,
     "error": None,
     "source": GO2RTC_SOURCE,
+    "parked": False,
 }
 state_lock = threading.Lock()
 
@@ -221,6 +228,17 @@ def _target_screen():
     return int(m.group(1)) if m and m.group(1) else (1 if m else None)
 
 
+def _gesture_in_use(frame_key: str, frame_ts_ms) -> bool:
+    """In-use = latest uplink key is a gesture frame AND it's fresh."""
+    if not YOLO_IDLE_MS:
+        return True
+    if not re.match(r"^\d+:gesture(?:-\d+)?$", frame_key or ""):
+        return False
+    if frame_ts_ms and (time.time() * 1000 - float(frame_ts_ms)) > YOLO_IDLE_MS:
+        return False
+    return True
+
+
 def fetch_frame():
     with state_lock:
         src = state["source"]
@@ -231,23 +249,33 @@ def fetch_frame():
     with urllib.request.urlopen(url, timeout=10) as resp:
         data = resp.read()
         ctype = resp.headers.get("Content-Type", "")
+    frame_key, frame_ts = "", None
     if ctype.startswith("application/json"):
-        # meta=1 mode: JSON envelope {key, data: dataURL} — the key carries
+        # meta=1 mode: JSON envelope {key, ts, data: dataURL} — the key carries
         # which gesture token the frame arrived under (gesture-N = screen N)
         obj = json.loads(data)
         raw = obj.get("data") or ""
         if obj.get("error") or not raw:
             raise RuntimeError(f"frame: {obj.get('error') or 'no image data'}")
+        frame_key = obj.get("key") or ""
+        frame_ts = obj.get("ts")
         with state_lock:
-            ptr["frame_key"] = obj.get("key") or ""
+            ptr["frame_key"] = frame_key
         data = base64.b64decode(raw.split(",", 1)[-1])
-    img = np.frombuffer(data, np.uint8)
-    return cv2.imdecode(img, cv2.IMREAD_COLOR)
+    return data, frame_key, frame_ts
 
 
 def detect():
+    """Returns True when inference ran, False when parked or failed."""
     try:
-        frame = fetch_frame()
+        data, frame_key, frame_ts = fetch_frame()
+        if ptr["sinks"] and not _gesture_in_use(frame_key, frame_ts):
+            with state_lock:
+                state["parked"] = True
+                state["error"] = None
+            return False
+        img = np.frombuffer(data, np.uint8)
+        frame = cv2.imdecode(img, cv2.IMREAD_COLOR)
         results = model(frame, verbose=False)
         r = results[0]
         counts = {}
@@ -295,9 +323,12 @@ def detect():
             state["person_count"] = person_count
             state["annotated"] = buf.tobytes()
             state["error"] = None
+            state["parked"] = False
+        return True
     except Exception as e:
         with state_lock:
             state["error"] = str(e)
+        return False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -352,6 +383,7 @@ class Handler(BaseHTTPRequestHandler):
                     "ok": state["error"] is None,
                     "ts": state["ts"],
                     "error": state["error"],
+                    "parked": state["parked"],
                     "source": state["source"],
                     "person_count": state["person_count"],
                     "counts": state["counts"],
@@ -466,11 +498,9 @@ def main():
     def worker():
         while True:
             t0 = time.monotonic()
-            detect()
-            if loop_s:
-                time.sleep(max(0.0, loop_s - (time.monotonic() - t0)))
-            else:
-                time.sleep(0)
+            inferred = detect()
+            wait = loop_s if inferred else max(YOLO_IDLE_POLL_S, loop_s)
+            time.sleep(max(0.0, wait - (time.monotonic() - t0)))
 
     t = threading.Thread(target=worker, daemon=True)
     t.start()
