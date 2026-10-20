@@ -1,0 +1,45 @@
+id: ada-nest-trivial-gate
+title: 'Ada Nest: trivial-turn gate — local specialist answers cheap queries before a provider turn'
+column: backlog
+updated: 2026-10-20 15:07
+brief: 'Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist
+  that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth
+  pattern.'
+priority: medium
+tags:
+- ada-nest
+- cost-control
+- tg-relay
+- model-shelf
+spec: 'Context: tg_relay.py already runs a coarse-to-fine cascade — silence detection, STT call, trivial-transcript
+  filter, then an Ada text turn (provider cost + latency). NCM (OPS-0750 / Education 1588) demonstrates the general
+  principle: adaptive depth per input — stop when a cheap stage suffices.
+
+
+  Work:
+
+  - Add a trivial-answer specialist to the model shelf on idc02 (next to ada-stt): a small CPU instruct model (e.g.
+  Qwen3-0.6B/1.7B via llama.cpp) or intent-similarity rules for greetings/time/date/acks.
+
+  - tg_relay.py: route transcripts through the gate before dispatching an Ada turn; confidence threshold decides
+  local-answer vs pass-through.
+
+  - Answer locally only when confident; everything else passes through untouched.
+
+  - Log deflection rate so the gate is measurable.
+
+
+  Done: trivial queries answered locally in <2s with zero provider calls; real queries unaffected; deflection %
+  visible in relay logs. Scope: TG relay first, LINE relay later.
+
+
+  Motivation: cuts provider turns (cost + rate-limit exposure — relevant during Gemini cap latches), cuts latency
+  on trivial traffic, and formalizes the adaptive-depth cascade as a named Nest pattern.'
+action:
+  type: dispatch
+  repo: ada-voice
+ref: ADA-0751
+comms:
+- at: 2026-10-20 15:07
+  from: tony
+  text: carded from NCM x Ada Nest mix-and-match discussion — survives independently of OPS-0750

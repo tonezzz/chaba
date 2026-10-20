@@ -1,0 +1,79 @@
+id: ncm-thai-adaptation
+title: NCM (next-concept modeling) for Thai — feasibility + possible training run
+column: backlog
+updated: 2026-10-20 15:06
+brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
+  training stages from the paper. Novel research artifact, no stack utility for Ada.'
+priority: low
+tags:
+- research
+- nlp
+- thai
+- parallel-generation
+spec: 'Context: NCM (arXiv:2610.14162, Education post 1588 / lesson-51569f4faa8f) is a two-stage coarse-to-fine
+  parallel text generator: multiscale residual VQ-VAE tokenizer + level-parallel transformer. Released checkpoints
+  are <=725M params, English/German tasks only.
+
+
+  Feasibility findings:
+
+  - NO training code in repo (evaluate.py + shard scripts only). Training = reimplement both stages; VAR image codebase
+  is the closest reference design.
+
+  - Data: mC4/OSCAR Thai easily reach the paper-scale ~1B-token budget.
+
+  - Compute: toy scale (~100-300M params) = single rented GPU, days, tens of dollars. Local GTX 1650 = toy-only.
+
+  - Thai specifics: byte/char or SentencePiece base units (no spaces in Thai); eval via XL-Sum Thai, scb-mt-en-th,
+  ThaiQA.
+
+  - Value: first Thai coarse-to-fine generator (novel), good learning artifact. No Ada/stack payoff — not instruction-tuned.
+
+  - Cheaper alternative for fast Thai generation: fine-tune existing small Thai AR model (Typhoon/WangchanX).
+
+
+  Done-condition depends on the request outcome:
+
+  - recon-spike: read paper training sections, estimate reimplementation LOC + compute, check/ask authors re training-code
+  release, pick dataset+eval set; verdict comm on this card.
+
+  - toy-train: additionally produce a working Thai NCM at TinyStories-equivalent scale with quality numbers vs a
+  small AR Thai baseline.
+
+  - watch-only: subscribe to repo; revisit when/if training code lands.'
+ref: OPS-0750
+comms:
+- at: 2026-10-20 15:03
+  from: tony
+  text: carded from chat — Tony asked about training NCM for Thai; feasibility assessment in spec; Education post
+    1588 has the repo assessment
+- at: 2026-10-20 15:04
+  from: devin
+  text: 'raised request how-far-should-the-thai-ncm-idea-go-repo-743d93: How far should the Thai-NCM idea go? Repo
+    ships no training code, so any training run means reimplementing both stages f'
+- at: 2026-10-20 15:06
+  from: devin
+  text: 'NCM x Ada Nest mix-and-match analysis (Tony follow-up): no code-level mixing — NCM is a training framework,
+    Nest is a serving topology — but 3 pattern transfers: (1) adaptive-depth/coarse-to-fine = our gate cascade (silence->STT->trivial-filter->Ada
+    turn); the missing rung is a trivial-answer gate specialist, carded separately as ada-nest-trivial-gate; (2)
+    best-of-N sampling + MBR pick = a candidate-ranker shelf item for text lanes, useful under provider caps; (3)
+    frozen tokenizer + generator sp'
+requests:
+- id: how-far-should-the-thai-ncm-idea-go-repo-743d93
+  ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
+    both stages from the paper. Education post 1588 has the full assessment.
+  status: open
+  at: 2026-10-20 15:04
+  from: devin
+  options:
+  - id: recon-spike
+    label: Recon spike (recommended) — read the paper’s training details, size the reimplementation (LOC/compute),
+      check whether authors plan to release training code, pick dataset + eval. Then decide.
+  - id: toy-train
+    label: Commit to toy-scale training — recon spike plus an actual Thai NCM at TinyStories-equivalent scale; needs
+      a rented GPU (tens of dollars).
+  - id: watch-only
+    label: Watch only — track the repo, revisit if/when training code is released.
+  - id: drop
+    label: Drop — not worth it; close the card.
+  suggested: recon-spike
