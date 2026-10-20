@@ -102,15 +102,15 @@ services:
   helm:           {host: idc02, listen: "100.123.163.11:3003", note: "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
   node-red:       {host: tony-omen, listen: "0.0.0.0:1880", note: "evacuated dell 2026-10-19/20 (ph5)"}
   yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
-  camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
-  camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
-  websockify-dell:  {host: tony-dell, listen: "127.0.0.1:6081"}
-  websockify-vms:   {host: tony-dell, listen: "127.0.0.1:6082"}   # -> mn01 VNC 5900
+  camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
+  camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
+  websockify-vms:   {host: idc02, listen: "100.123.163.11:6082", note: "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
+  websockify-macbook: {host: idc02, listen: "100.123.163.11:6080", note: "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
   yomi:           {host: idc03, listen: "100.102.134.91:3000", tailnet: "http://100.102.134.91:3000", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"}
   weaviate:       {host: idc02, listen: "100.123.163.11:8084", tailnet: "http://100.123.163.11:8084", note: "migrated 2026-10-19"}
   gpu-queue:      {host: idc02, listen: "100.123.163.11:3001", tailnet: "http://100.123.163.11:3001", note: "migrated 2026-10-19"}
   trade-api:      {host: idc03, listen: "100.102.134.91:9002", tailnet: "http://100.102.134.91:9002", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+yomi); tailnet-only bind"}
-  input-bridge:   {host: idc02, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
+  input-bridge:   {host: idc03, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
   cms-render:     {host: idc03, listen: "100.102.134.91:8010", tailnet: "http://100.102.134.91:8010", note: "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"}
   frigate:        {host: tony-dell, listen: "docker-net:5000", tailnet: "frigate:5000"}
   imagen:         {host: tony-omen, listen: "docker-net:8000", tailnet: "imagen-inference:8000"}
@@ -119,8 +119,10 @@ routes:
   # kind: proxy (upstream sees path per `strip`), static (root under
   # /srv/public), alias (301/308 to target). `edges:` defaults to
   # [tony-dell-web]. `verify` = cheap probe for health lane.
-  - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "127.0.0.1:8787", auth: tailnet-identity-write, owner: chaba}
-  - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: /apps/system-report/api, upstream: "127.0.0.1:8792", auth: tailnet-identity-write, owner: chaba}
+  - {id: yt-cache,         kind: static, path: /apps/yt-cache/*,       owner: chaba, custom: true, note: "local media mount /srv/media/yt-cache (not /srv/public)"}
+  - {id: yt-corpus,        kind: static, path: /apps/yt-corpus/*,      owner: chaba, custom: true, note: "local media mount /srv/media/yt-corpus — gdrive corpus snapshot on idc02"}
+  - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "https://idc03.taila0626a.ts.net:10000", auth: tailnet-identity-write, owner: chaba, note: "canonical writer on idc03 — forward via tailscale serve so tailnet identity headers stay valid"}
+  - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: /apps/system-report/api, upstream: "idc02.taila0626a.ts.net:8792", auth: tailnet-identity-write, owner: chaba}
   - {id: system-report,    kind: static, path: /apps/system-report/*,  owner: chaba, public_host: monitor.surf-thailand.com}
   # usage-feed — card wp-usage-pull-render-plesk-worker (OPS-0661):
   # idc03 usage-feed.py pushes aggregate JSON into the idc02 caddy-edge
@@ -153,11 +155,13 @@ routes:
   - {id: yolo-api,         kind: proxy,  path: /apps/yolo/api/*,       strip: /apps/yolo/api, upstream: "100.106.196.22:8780", owner: yolo}
   - {id: yolo,             kind: static, path: /apps/yolo/*,           owner: yolo}
   - {id: dance2energy,     kind: static, path: /apps/dance2energy/*,   owner: chaba}
-  - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "host.containers.internal:6081", owner: vms}
+  - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "100.123.163.11:6082", owner: vms, note: "default target = mn01 vms; websockify units on idc02 host, tailnet-IP binds"}
+  - {id: vnc-ws-mn01,      kind: proxy,  path: /apps/vnc/ws-mn01,      ws: true, upstream: "100.123.163.11:6082", owner: vms}
+  - {id: vnc-ws-macbook,   kind: proxy,  path: /apps/vnc/ws-macbook,   ws: true, upstream: "100.123.163.11:6080", owner: vms}
   - {id: vnc,              kind: static, path: /apps/vnc/*,            owner: vms}
   - {id: vms-snap,         kind: proxy,  path: /apps/vms-snap/*,       strip: /apps/vms-snap, upstream: "100.106.196.22:8377", owner: vms, note: "xmeye channel snapshots (vms-snap shim on mn01) — /apps/eye ?src=vms:<ch>"}
   - {id: eye-mddb,         kind: proxy,  path: /apps/eye-mddb/v1/add,  upstream: "100.102.134.91:11023", owner: chaba, custom: true, note: "MDDB write lane for /apps/eye bench+detections — only /v1/add proxied, tailnet-identity-write"}
-  - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "127.0.0.1:9005", owner: chaba}
+  - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "100.75.102.88:9005", owner: chaba, note: "ha-live bridge on tony-omen since ph5"}
   - {id: chaba-h3,         kind: static, path: /chaba-h3/*,            owner: chaba}
   - {id: docs,             kind: proxy,  path: "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}", upstream: "idc02.taila0626a.ts.net:8092", owner: chaba, custom: true, note: "docs-site route set + / root fallthrough; upstream idc02 since 2026-10-18"}
   - {id: map,              kind: static, path: /apps/map/*,            owner: chaba}
@@ -166,7 +170,7 @@ routes:
   - {id: weaviate,         kind: proxy,  path: /api/weaviate/*,        strip: /api/weaviate, upstream: "100.123.163.11:8084", owner: weaviate}
   - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.123.163.11:3001", owner: gpu}
   - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
-  - {id: api-status-data,  kind: proxy,  path: /api/*,                 upstream: "idc02.taila0626a.ts.net:8000", owner: chaba, note: "catch-all → status-data-api on idc02 (migrated 10-18); must stay last of /api group; Caddy sort puts /api/* BEFORE deeper handles — matcher must exclude /api/yomi/* and /api/ws/* (fixed 10-19, was shadowing both since 10-17)"}
+  - {id: api-status-data,  kind: proxy,  path: /api/*,                 upstream: "idc02.taila0626a.ts.net:8000", owner: chaba, custom: true, note: "catch-all → status-data-api on idc02 (migrated 10-18); must stay last of /api group; Caddy sort puts /api/* BEFORE deeper handles — matcher must exclude /api/yomi/* and /api/ws/* (fixed 10-19, was shadowing both since 10-17)"}
   - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "idc02.taila0626a.ts.net:3003", upstream_host: localhost, owner: chaba, custom: true, note: "basePath-preserved multi-path matcher; upstream idc02 since 2026-10-18"}
   - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate, expect_down: true, note: "on-demand NVR stack (frigate/) — stopped by design"}
   # imagen routes archived 2026-10-07 — omen-layout cargo cult, dead on

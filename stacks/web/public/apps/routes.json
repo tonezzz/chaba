@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-09 13:55 +07",
+  "generated": "2026-10-20 16:04 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -39,7 +39,8 @@
         "/": "http://127.0.0.1:8001",
         "/apps/ha/ada-tony": "http://127.0.0.1:8002",
         "/apps/ha/ada-michael": "http://127.0.0.1:8003",
-        "/apps/ha/ada-dev": "http://127.0.0.1:8005"
+        "/apps/ha/ada-dev": "http://127.0.0.1:8005",
+        "/apps/ha/ada-kk": "http://127.0.0.1:8007"
       }
     }
   },
@@ -59,69 +60,93 @@
       "listen": "127.0.0.1:8005",
       "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"
     },
+    "ada-kk": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8007",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"
+    },
     "ada-pi-pwa": {
       "host": "idc03",
       "listen": "127.0.0.1:8001",
       "tailnet": "https://idc03.taila0626a.ts.net/"
     },
     "tony-ha": {
-      "host": "tony-dell",
+      "host": "tony-omen",
       "listen": "127.0.0.1:8123",
-      "tailnet": "https://tony-dell.taila0626a.ts.net:8123"
+      "tailnet": "https://tony-omen.taila0626a.ts.net:8123"
     },
     "michael-dev": {
-      "host": "tony-dell",
+      "host": "idc03",
       "listen": "127.0.0.1:8124",
-      "tailnet": "https://tony-dell.taila0626a.ts.net:8124"
+      "tailnet": "https://idc03.taila0626a.ts.net:8124"
     },
     "board-api": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:8787"
+      "host": "idc03",
+      "listen": "127.0.0.1:8787",
+      "tailnet": "https://idc03.taila0626a.ts.net:10000"
     },
     "report-api": {
-      "host": "tony-dell",
+      "host": "idc02",
       "listen": "127.0.0.1:8792"
     },
+    "status-data-api": {
+      "host": "idc02",
+      "listen": "127.0.0.1:8000",
+      "tailnet": "http://idc02.taila0626a.ts.net:8000"
+    },
+    "secrets-console": {
+      "host": "idc02",
+      "listen": "100.123.163.11:8005",
+      "tailnet": "http://idc02.taila0626a.ts.net:8005"
+    },
+    "monitoring-dashboard": {
+      "host": "idc02",
+      "listen": "127.0.0.1:3002",
+      "tailnet": "http://idc02.taila0626a.ts.net:3002"
+    },
     "gev-gemini": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:8789"
+      "host": "idc02",
+      "listen": "100.123.163.11:8789",
+      "note": "migrated 2026-10-19"
     },
     "gev-api": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:4173"
+      "host": "idc02",
+      "listen": "100.123.163.11:4173",
+      "note": "migrated 2026-10-19"
     },
     "gev-cmd": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:8790"
+      "host": "idc02",
+      "listen": "100.123.163.11:8790",
+      "note": "gev-cmd-relay migrated 2026-10-19"
     },
     "gesture-relay": {
-      "host": "tony-dell",
-      "listen": "100.68.142.13:8794",
-      "note": "tailnet-IP bind only — PublishPort rendered by install.sh; never LAN"
-    },
-    "dev-v0": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:8006"
+      "host": "idc02",
+      "listen": "100.123.163.11:8794",
+      "note": "migrated 2026-10-19"
     },
     "nlm-cookies": {
       "host": "tony-dell",
       "listen": "127.0.0.1:9876"
     },
     "snapshot": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:9005"
+      "host": "tony-omen",
+      "listen": "127.0.0.1:9005",
+      "note": "ha-live bridge inside tony-ha — evacuated dell 2026-10-19/20"
     },
     "chaba-docs": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:8092"
+      "host": "idc02",
+      "listen": "100.123.163.11:8092",
+      "note": "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
     },
     "helm": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:3003"
+      "host": "idc02",
+      "listen": "100.123.163.11:3003",
+      "note": "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
     },
     "node-red": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:1880"
+      "host": "tony-omen",
+      "listen": "0.0.0.0:1880",
+      "note": "evacuated dell 2026-10-19/20 (ph5)"
     },
     "yolo": {
       "host": "mn01",
@@ -131,55 +156,57 @@
     "camwall-idc02": {
       "host": "idc02",
       "listen": "0.0.0.0:8380",
-      "tailnet": "http://100.102.134.91:8380"
+      "tailnet": "http://100.123.163.11:8380"
     },
     "camwall-idc03": {
       "host": "idc03",
       "listen": "0.0.0.0:8380",
-      "tailnet": "http://100.123.163.11:8380"
-    },
-    "websockify-dell": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:6081"
+      "tailnet": "http://100.102.134.91:8380"
     },
     "websockify-vms": {
-      "host": "tony-dell",
-      "listen": "127.0.0.1:6082"
+      "host": "idc02",
+      "listen": "100.123.163.11:6082",
+      "note": "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
     },
-    "omen-api": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:8000",
-      "tailnet": "http://100.68.142.13:8000"
+    "websockify-macbook": {
+      "host": "idc02",
+      "listen": "100.123.163.11:6080",
+      "note": "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
     },
-    "omen-gemini-mic": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:3009",
-      "tailnet": "http://100.68.142.13:3009"
+    "yomi": {
+      "host": "idc03",
+      "listen": "100.102.134.91:3000",
+      "tailnet": "http://100.102.134.91:3000",
+      "note": "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"
     },
-    "omen-yomi": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:3000",
-      "tailnet": "http://100.68.142.13:3000"
+    "weaviate": {
+      "host": "idc02",
+      "listen": "100.123.163.11:8084",
+      "tailnet": "http://100.123.163.11:8084",
+      "note": "migrated 2026-10-19"
     },
-    "omen-weaviate": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:8084",
-      "tailnet": "http://100.68.142.13:8084"
+    "gpu-queue": {
+      "host": "idc02",
+      "listen": "100.123.163.11:3001",
+      "tailnet": "http://100.123.163.11:3001",
+      "note": "migrated 2026-10-19"
     },
-    "omen-gpu-queue": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:3001",
-      "tailnet": "http://100.68.142.13:3001"
-    },
-    "omen-trade-api": {
-      "host": "tony-omen",
-      "listen": "0.0.0.0:9002",
-      "tailnet": "http://100.68.142.13:9002"
+    "trade-api": {
+      "host": "idc03",
+      "listen": "100.102.134.91:9002",
+      "tailnet": "http://100.102.134.91:9002",
+      "note": "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+yomi); tailnet-only bind"
     },
     "input-bridge": {
-      "host": "idc02",
+      "host": "idc03",
       "listen": "0.0.0.0:3010",
       "tailnet": "http://100.102.134.91:3010"
+    },
+    "cms-render": {
+      "host": "idc03",
+      "listen": "100.102.134.91:8010",
+      "tailnet": "http://100.102.134.91:8010",
+      "note": "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"
     },
     "frigate": {
       "host": "tony-dell",
@@ -193,21 +220,36 @@
     }
   },
   "routes": {
+    "yt-cache": {
+      "kind": "static",
+      "path": "/apps/yt-cache",
+      "owner": "chaba"
+    },
+    "yt-corpus": {
+      "kind": "static",
+      "path": "/apps/yt-corpus",
+      "owner": "chaba"
+    },
     "board-api": {
       "kind": "proxy",
       "path": "/apps/board-api",
       "owner": "chaba",
-      "local": true
+      "http": "https://idc03.taila0626a.ts.net:10000/apps/board-api"
     },
     "report-api": {
       "kind": "proxy",
       "path": "/apps/system-report/api",
       "owner": "chaba",
-      "local": true
+      "http": "https://idc02.taila0626a.ts.net:8792/apps/system-report/api"
     },
     "system-report": {
       "kind": "static",
       "path": "/apps/system-report",
+      "owner": "chaba"
+    },
+    "usage-feed": {
+      "kind": "static",
+      "path": "/feeds/usage.json",
       "owner": "chaba"
     },
     "jev-bench": {
@@ -219,13 +261,13 @@
       "kind": "proxy",
       "path": "/apps/gev-cmd",
       "owner": "gev",
-      "local": true
+      "http": "http://100.123.163.11:8790/apps/gev-cmd"
     },
     "gev-api": {
       "kind": "proxy",
       "path": "/apps/gev/api",
       "owner": "gev",
-      "local": true
+      "http": "http://100.123.163.11:4173/apps/gev/api"
     },
     "gev": {
       "kind": "static",
@@ -236,20 +278,21 @@
       "kind": "proxy",
       "path": "/apps/gev-live",
       "owner": "gev",
-      "local": true
+      "http": "http://100.123.163.11:8789/apps/gev-live",
+      "ws": "ws://100.123.163.11:8789/apps/gev-live/ws"
     },
     "gev-token": {
       "kind": "proxy",
       "path": "/apps/gev/token",
       "owner": "gev",
-      "local": true
+      "http": "http://100.123.163.11:8790/apps/gev/token"
     },
     "gesture-live": {
       "kind": "proxy",
       "path": "/apps/gesture-live",
       "owner": "gesture",
-      "http": "http://100.68.142.13:8794/apps/gesture-live",
-      "ws": "ws://100.68.142.13:8794/apps/gesture-live/ws"
+      "http": "http://100.123.163.11:8794/apps/gesture-live",
+      "ws": "ws://100.123.163.11:8794/apps/gesture-live/ws"
     },
     "gesture": {
       "kind": "static",
@@ -304,13 +347,13 @@
       "kind": "alias",
       "path": "/apps/ha/tony-ha",
       "owner": "tony-ha",
-      "target": "https://tony-dell.taila0626a.ts.net:8123/"
+      "target": "https://tony-omen.taila0626a.ts.net:8123/"
     },
     "ha-michael-dev": {
       "kind": "alias",
       "path": "/apps/ha/michael-dev",
       "owner": "michael-ha",
-      "target": "https://tony-dell.taila0626a.ts.net:8124/"
+      "target": "https://idc03.taila0626a.ts.net:8124/"
     },
     "ha-michael": {
       "kind": "alias",
@@ -323,12 +366,6 @@
       "path": "/apps/tony-ha",
       "owner": "tony-ha",
       "target": "/apps/ha/tony-ha{uri}"
-    },
-    "dev-v0": {
-      "kind": "proxy",
-      "path": "/apps/dev/v0",
-      "owner": "chaba",
-      "local": true
     },
     "yt-live": {
       "kind": "static",
@@ -360,7 +397,22 @@
       "kind": "proxy",
       "path": "/apps/vnc/ws",
       "owner": "vms",
-      "local": true
+      "http": "http://100.123.163.11:6082/apps/vnc/ws",
+      "ws": "ws://100.123.163.11:6082/apps/vnc/ws/ws"
+    },
+    "vnc-ws-mn01": {
+      "kind": "proxy",
+      "path": "/apps/vnc/ws-mn01",
+      "owner": "vms",
+      "http": "http://100.123.163.11:6082/apps/vnc/ws-mn01",
+      "ws": "ws://100.123.163.11:6082/apps/vnc/ws-mn01/ws"
+    },
+    "vnc-ws-macbook": {
+      "kind": "proxy",
+      "path": "/apps/vnc/ws-macbook",
+      "owner": "vms",
+      "http": "http://100.123.163.11:6080/apps/vnc/ws-macbook",
+      "ws": "ws://100.123.163.11:6080/apps/vnc/ws-macbook/ws"
     },
     "vnc": {
       "kind": "static",
@@ -383,7 +435,7 @@
       "kind": "proxy",
       "path": "/snapshot",
       "owner": "chaba",
-      "local": true
+      "http": "http://100.75.102.88:9005/snapshot"
     },
     "chaba-h3": {
       "kind": "static",
@@ -394,7 +446,7 @@
       "kind": "proxy",
       "path": "{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}",
       "owner": "chaba",
-      "local": true
+      "http": "https://idc02.taila0626a.ts.net:8092{/new,/decisions,/infrastructure,/decisions/*,/infrastructure/*,/new/*}"
     },
     "map": {
       "kind": "static",
@@ -407,29 +459,23 @@
       "owner": "camwall",
       "http": "http://100.102.134.91:8380/apps/camwall"
     },
-    "gemini-mic": {
-      "kind": "proxy",
-      "path": "/api/gemini-mic",
-      "owner": "ada-voice",
-      "http": "http://100.68.142.13:3009/api/gemini-mic"
-    },
     "yomi": {
       "kind": "proxy",
       "path": "/api/yomi",
       "owner": "yomi",
-      "http": "http://100.68.142.13:3000/api/yomi"
+      "http": "http://100.102.134.91:3000/api/yomi"
     },
     "weaviate": {
       "kind": "proxy",
       "path": "/api/weaviate",
       "owner": "weaviate",
-      "http": "http://100.68.142.13:8084/api/weaviate"
+      "http": "http://100.123.163.11:8084/api/weaviate"
     },
     "gpu-queue": {
       "kind": "proxy",
       "path": "/api/gpu-queue",
       "owner": "gpu",
-      "http": "http://100.68.142.13:3001/api/gpu-queue"
+      "http": "http://100.123.163.11:3001/api/gpu-queue"
     },
     "input-bridge": {
       "kind": "proxy",
@@ -437,17 +483,17 @@
       "owner": "chaba",
       "http": "http://100.102.134.91:3010/api/input-bridge"
     },
-    "api-omen": {
+    "api-status-data": {
       "kind": "proxy",
       "path": "/api",
       "owner": "chaba",
-      "http": "http://100.68.142.13:8000/api"
+      "http": "https://idc02.taila0626a.ts.net:8000/api"
     },
     "helm": {
       "kind": "proxy",
       "path": "{/apps/helm,/apps/helm/*}",
       "owner": "chaba",
-      "local": true
+      "http": "https://idc02.taila0626a.ts.net:3003{/apps/helm,/apps/helm/*}"
     },
     "frigate": {
       "kind": "proxy",
@@ -459,8 +505,8 @@
       "kind": "proxy",
       "path": "{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}",
       "owner": "trade",
-      "http": "http://100.68.142.13:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}",
-      "ws": "ws://100.68.142.13:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}/ws"
+      "http": "http://100.102.134.91:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}",
+      "ws": "ws://100.102.134.91:9002{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}/ws"
     },
     "trade": {
       "kind": "static",
@@ -471,7 +517,7 @@
       "kind": "proxy",
       "path": "/apps/node-red",
       "owner": "nodered",
-      "local": true
+      "http": "http://100.75.102.88:1880/apps/node-red"
     },
     "board": {
       "kind": "static",

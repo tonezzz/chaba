@@ -222,7 +222,7 @@ http://127.0.0.1:8080 {
 	}
 
 	handle /apps/ha/michael-dev* {
-		redir * https://tony-dell.taila0626a.ts.net:8124/ 308
+		redir * https://idc03.taila0626a.ts.net:8124/ 308
 	}
 
 	handle /apps/ha/michael-ha* {
@@ -299,8 +299,17 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	# noVNC websocket upstreams live on the idc02 host (websockify units,
+	# tailnet-IP binds): :6082 -> mn01:5900 (vms host, default), :6080 ->
+	# kk-macbook:5900. noVNC picks via ?path=apps/vnc/ws[-mn01|-macbook]
 	handle /apps/vnc/ws {
-		reverse_proxy host.containers.internal:6081
+		reverse_proxy 100.123.163.11:6082
+	}
+	handle /apps/vnc/ws-mn01 {
+		reverse_proxy 100.123.163.11:6082
+	}
+	handle /apps/vnc/ws-macbook {
+		reverse_proxy 100.123.163.11:6080
 	}
 
 	handle /apps/vnc {
@@ -332,8 +341,9 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.102.134.91:11023
 	}
 
+	# ha-live snapshot bridge — on tony-omen since 2026-10-19/20 (ph5)
 	handle /snapshot {
-		reverse_proxy 127.0.0.1:9005
+		reverse_proxy 100.75.102.88:9005
 	}
 
 	handle /chaba-h3 {

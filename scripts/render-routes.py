@@ -124,7 +124,7 @@ http://:80 {
 	}
 	@root80 path /
 	handle @root80 {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
@@ -172,6 +172,39 @@ CADDY_POSTAMBLE = """
 # Hand-tuned blocks for routes flagged `custom: true` — preserved verbatim
 # from the manual Caddyfile (mixed sub-handles, multi-pattern routes).
 CUSTOM_BLOCKS = {
+    "yt-cache": """
+	handle /apps/yt-cache {
+		redir * /apps/yt-cache/ 308
+	}
+	handle_path /apps/yt-cache/* {
+		root * /srv/media/yt-cache
+		file_server browse
+	}
+""",
+    "yt-corpus": """
+	handle /apps/yt-corpus {
+		redir * /apps/yt-corpus/ 308
+	}
+	handle_path /apps/yt-corpus/* {
+		root * /srv/media/yt-corpus
+		file_server browse
+	}
+""",
+    "api-status-data": """
+	handle /api {
+		redir * /api/ 308
+	}
+	# /api/* catch-all loses sort to deeper /api/<svc> handles — exclude them
+	# explicitly or /api/yomi/* and /api/ws/* get shadowed (OPS-0725 10-19 bug)
+	@api_fallback {
+		path /api/*
+		not path /api/yomi /api/yomi/* /api/ws /api/ws/*
+	}
+	handle @api_fallback {
+		# status-data-api migrated to idc02 2026-10-17 (OPS-0725 ph3)
+		reverse_proxy idc02.taila0626a.ts.net:8000
+	}
+""",
     "gev-live": """
 	handle /apps/gev-live {
 		redir /apps/gev-live/ 308
@@ -179,7 +212,7 @@ CUSTOM_BLOCKS = {
 	handle_path /apps/gev-live/* {
 		@ws path /ws
 		handle @ws {
-			reverse_proxy 127.0.0.1:8789
+			reverse_proxy 100.123.163.11:8789
 		}
 		handle {
 			root * /srv/public/apps/gev-live
@@ -194,12 +227,12 @@ CUSTOM_BLOCKS = {
 	handle_path /apps/gesture-live/* {
 		@ws path /ws
 		handle @ws {
-			reverse_proxy 100.68.142.13:8794
+			reverse_proxy 100.123.163.11:8794
 		}
 		# /health (and any future plain-HTTP path) lives on the same
 		# relay port — unlike gev-live there is no static side here.
 		handle {
-			reverse_proxy 100.68.142.13:8794
+			reverse_proxy 100.123.163.11:8794
 		}
 	}
 """,
@@ -216,7 +249,7 @@ CUSTOM_BLOCKS = {
     "trade-api": """
 	handle /apps/trade/api/* {
 		uri strip_prefix /apps/trade
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up X-Forwarded-Prefix /apps/trade
 		}
@@ -224,7 +257,7 @@ CUSTOM_BLOCKS = {
 
 	handle /apps/trade/api/ws/* {
 		uri strip_prefix /apps/trade
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up X-Forwarded-Prefix /apps/trade
 			header_up Connection {>Connection}
@@ -233,7 +266,7 @@ CUSTOM_BLOCKS = {
 	}
 
 	handle /api/ws/* {
-		reverse_proxy 100.68.142.13:9002 {
+		reverse_proxy 100.102.134.91:9002 {
 			header_up Host localhost
 			header_up Connection {>Connection}
 			header_up Upgrade {>Upgrade}
@@ -258,7 +291,7 @@ CUSTOM_BLOCKS = {
     "helm": """
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
-		reverse_proxy 127.0.0.1:3003 {
+		reverse_proxy idc02.taila0626a.ts.net:3003 {
 			header_up Host localhost
 		}
 	}
@@ -273,7 +306,7 @@ CUSTOM_BLOCKS = {
     "docs": """
 	@root path /
 	handle @root {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
@@ -282,28 +315,28 @@ CUSTOM_BLOCKS = {
 		redir /new/ 308
 	}
 	handle_path /new/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 
 	handle /decisions {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /decisions/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /infrastructure {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
 	handle /infrastructure/* {
-		reverse_proxy 127.0.0.1:8092 {
+		reverse_proxy idc02.taila0626a.ts.net:8092 {
 			header_up Host 127.0.0.1:8092
 		}
 	}
