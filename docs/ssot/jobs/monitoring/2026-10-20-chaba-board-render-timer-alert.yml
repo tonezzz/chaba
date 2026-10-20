@@ -1,0 +1,44 @@
+title: chaba-board-render timer-alert — root cause, migration state, guard deployed
+subtitle: timer-alert-tony-dell-chaba-board-render (KNB-0704) investigation
+icon: timer
+
+decision:
+  summary: >
+    Timer-sentinel flagged chaba-board-render.service result=exit-code on
+    tony-dell from 2026-10-15 12:59 through 2026-10-16 18:26. Journal root
+    cause: AttributeError 'str' object has no attribute 'get' in
+    render-board.py compute_checks — the deploy-mention genexpr assumed
+    every card comms entry is a dict; card stt-omen-large-v3 had a bare
+    string entry. Fixed in d4545bc1 (2026-10-16 19:31, "tolerate non-dict
+    comms entries" — comms filtered with isinstance(m, dict)); renders
+    succeeded from the next tick.
+  migration_state: >
+    The same evening (phase-2 of tony-dell-full-migration, ~19:40) the
+    kanban single-writer family including chaba-board-render moved
+    dell -> idc03; dell units renamed .parked. No dell runs since
+    Oct 16 19:32; the sentinel stopped flagging. On idc03 the 60s timer is
+    healthy (verified 2026-10-20, rendering 828 cards). One transient
+    idc03 failure Oct 18 22:12 = render-board.py not found during the
+    .git-corruption repair window (see tony-dell-full-migration comms) —
+    not a code fault.
+  drift_fixed: >
+    Installed unit on idc03 (carried unchanged from dell) predated the
+    board-render-guard wrapper: ExecStart ran render-board.py +
+    render-board2.py directly, so a persistent renderer break would only
+    surface via timer-sentinel exit-code flags, not the guard's
+    ops-board-render-fail card with stderr tail. Deployed canonical
+    systemd/chaba-board-render.service (guard ExecStart, landed in
+    71adbc26 but never installed) to idc03 ~/.config/systemd/user/;
+    daemon-reload + manual start verified exit 0. Old unit kept at
+    chaba-board-render.service.bak-pre-guard.
+  verify: >
+    idc03: systemctl --user status chaba-board-render.service — ExecStart
+    must be scripts/board/board-render-guard.py; journalctl --user -u
+    chaba-board-render.service -n 20 shows clean ticks. Guard selftest:
+    python3 scripts/board/board-render-guard.py --selftest.
+  open_question: >
+    Unit install drift is systemic — nothing syncs systemd/ canonical
+    units into ~/.config/systemd/user/ on the active writer host, so
+    "canonical in repo" does not mean "installed". Worth a deploy
+    convention (the guard commit message already noted: ship .service +
+    script together) — candidate card if it recurs on other units.
