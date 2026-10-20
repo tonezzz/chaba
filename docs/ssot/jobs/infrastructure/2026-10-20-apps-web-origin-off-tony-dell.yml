@@ -1,0 +1,54 @@
+title: Migrate /apps web origin off tony-dell
+subtitle: OPS-0731 — whole /apps site (Caddy + web container + tailnet entry) moved to idc02; dell dependencies removed end-to-end
+icon: server
+card: migrate-apps-web-origin-off-tony-dell-b79e82
+
+state: done  # verified 2026-10-20; card -> review
+
+topology:
+  front: "https://idc02.taila0626a.ts.net (tailscale serve) -> caddy-edge :8088 -> web.service :8099 (loopback)"
+  origin: "idc02 web.service — rootless podman caddy:latest, mounts ~/web-srv/{caddy/Caddyfile,public,docs,chaba-h3,yt-cache,yt-corpus}"
+  canonical_config: "stacks/web/Caddyfile in chaba repo (served checkout idc03:~/CascadeProjects/chaba-tony-dell) — hand-maintained ahead of generator"
+  generator: "docs/ssot/infrastructure/ssot.routes.yml + scripts/render-routes.py -> stacks/web/Caddyfile.generated + public/apps/routes.json"
+  content_sync: "idc02 web-srv-sync.timer hourly: public/ + docs/ from idc03 checkout, yt-corpus/ from dell gdrive mount"
+
+changes_2026-10-20:
+  web_origin:
+    - "deployed Caddyfile synced to canonical: michael-dev redir -> https://idc03.taila0626a.ts.net:8124/ (was stale dell:8124)"
+    - "/snapshot -> 100.75.102.88:9005 (ha-live on tony-omen, ph5)"
+    - "/apps/vnc/ws -> 100.123.163.11:6082 (websockify->mn01:5900); added /apps/vnc/ws-mn01 + /apps/vnc/ws-macbook (:6080) explicit handles"
+    - "/apps/yt-corpus now serves /srv/media/yt-corpus (rsync snapshot of dell ~/GoogleDrive/chaba-media-corpus/yt-live-media, 8.9G) — was proxying to dell"
+    - "dev-v0 + gemini-mic routes absent (retired 10-19); frigate kept, expect_down (stopped by design 2026-08-14)"
+    - "zero tony-dell/100.68.142.13 upstreams remain"
+  edge_caddy_idc02:
+    - ":8124 shadow -> https://idc03.taila0626a.ts.net:8124 (michael-dev; was dell tony-test)"
+    - ":9230 shadow -> http://idc03.taila0626a.ts.net:3010 (input-bridge INPUT_BRIDGE_PORT=3010)"
+    - ":8446 retired to 503 (mcp-debug-sse gone; mn01 mcp-link-monitor is outbound-only, no :9101 backend)"
+  dell:
+    - "web.container quadlet parked -> ~/.config/containers/systemd/migrated-off/; container stopped"
+    - "tailscale serve table cleared (was / -> :80 dead, tcp :9000) — tailnet entry off dell"
+    - "zombie quadlets parked (revived by boot 15:35): chaba-postgres-16, redis, trade-api, mddb, yomi-api, michael-dev, kk-ha -> migrated-off/"
+    - "trade-automation kept running (no idc03 counterpart) BUT AddHost postgre repointed dell->idc03 IP — was silently writing stale dell pg"
+  ssot:
+    - "ssot.routes.yml: board-api->idc03:10000, report-api->idc02:8792, snapshot->omen:9005, vnc-ws trio, websockify services -> idc02, input-bridge host->idc03, camwall tailnet swap fixed, api-status-data custom, yt-cache/yt-corpus routes added"
+    - "render-routes.py: CUSTOM_BLOCKS dell IPs purged (gesture->idc02, trade-api->idc03), loopback upstreams -> idc02 names, preamble 8092->idc02, blocks added for yt-cache/yt-corpus/api-status-data"
+    - "ssot.system-map.yml: caddy-edge-idc02 tailnet_front describes local origin; kanban board-api -> idc03"
+
+verification:
+  - "https://idc02.taila0626a.ts.net/apps/{board,jam,gesture,vcast,vnc,node-red,yt-cache,yt-corpus,gev}/ all 200"
+  - "ws handshake /apps/vnc/ws -> 101 through full chain (h1)"
+  - "/apps/ha/tony-ha -> 308 https://tony-omen...:8123/ ; /apps/ha/michael-dev -> 308 https://idc03...:8124/"
+  - "/snapshot -> 200 (omen ha-live); /api/yomi/health -> 200"
+  - "/frigate -> 502 expected (stopped by design); /api/gemini-mic -> 404 (retired)"
+  - "edge :8124 -> 200 michael-dev, :9230/health -> 200 input-bridge, :8446 -> 503 retired"
+
+known_remaining:
+  - "yt-corpus freshness depends on dell gdrive mount staying reachable (hourly rsync); dell offline = last snapshot served. Long-term: rclone gdrive mount on idc02 or move writers."
+  - "trade-automation still RUNS on dell (scheduled auto_update) — data volumes dell-local; proper move belongs to parent card OPS-0725 job-estate sweep"
+  - "dnsmasq-postgre.service still enabled on dell (user-level resolver helper; config already postgre->idc03)"
+  - "dell itself back online post-hardware-window; serve table empty by design"
+
+lessons:
+  - "Parked .service files do NOT stop quadlet zombies: podman-user-generator regenerates units from ~/.config/containers/systemd/*.container — park the .container, not the .service"
+  - "Container 127.0.0.1 upstreams are host-loopback blind — rootless podman; use tailnet IPs/names for host-bound services"
+  - "systemd-socket-proxyd forwards can masquerade as the target service on a port — verify process identity before repointing (omen:5000 -> mn01 embedding, NOT frigate)"

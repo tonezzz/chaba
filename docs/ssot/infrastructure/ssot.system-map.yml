@@ -145,8 +145,8 @@ edges:
     config: ~/.config/caddy/Caddyfile  # hand-maintained; blocks per host; fragments in stacks/idc02/*.caddy
     gate: cloudflare-access            # one self-hosted app per hostname
     tailnet_front:                     # OPS-0725 ph1 — stable internal names; upstreams flip here on migration
-      https: "idc02.taila0626a.ts.net (serve -> caddy :8088) — wholesale passthrough of dell web-stack paths (/apps/*, /api/*)"
-      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha, 8124 tony-test, 8125 ada-ha, 8444 serve-:9005, 8446 serve-:9101, 9230 input-bridge} — bind tailnet IP, http; 3002 monitoring now LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1)"
+      https: "idc02.taila0626a.ts.net (serve -> caddy :8088) — LOCAL web origin since 2026-10-19 (OPS-0731): web.service rootless caddy :8099 serving /apps/*, /api/*; dell passthrough retired 2026-10-20"
+      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha->omen, 8124 michael-dev->idc03:8124, 8125 ada-ha->omen, 8444 ha-live->omen, 8446 RETIRED (mcp-debug-sse), 9230 input-bridge->idc03:3010} — bind tailnet IP, http; 3002 monitoring LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1)"
       rule: "internal consumers reference the front, never tony-dell.* — upstreams repoint per migration phase"
   - id: caddy-edge-idc03
     role: api.surf-thailand.com — LINE/TG webhooks, PWA redeem, ada-ws
@@ -221,7 +221,7 @@ data:
   - id: secrets-backup
     role: age-encrypted tarballs — idc03 daily + secrets-collect weekly
   - id: kanban
-    role: board-api on tony-dell :8787 + cards.json render on web edge
+    role: board-api on idc03 :8787 (serve :10000) + cards.json render on web edge
 
 # ---------------------------------------------------------------------------
 # TARGET NAMING — grand-rename spec (card mn-dev-rename / OPS-0726 grown up).
