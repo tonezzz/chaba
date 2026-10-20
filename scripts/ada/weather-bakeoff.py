@@ -20,10 +20,19 @@ Output: a PNG table (engineer numbers view) dropped into the relay-img
 arch dir -> durable public URL, plus a compact text caption. --send posts
 both to the lane's TG send API (ada-ai-kraut.env ADA_TG_SEND_URL).
 
+Modes:
+  default      full bake-off report (demo / on-demand)
+  --rain-check lightweight rain-event check (kraut-rain-events): pushes a
+               notice on transitions — rain started / cleared / incoming —
+               deduped via a small state file. Card kraut-rain-events.
+  --snapshot   also append today's normalized forecasts + RK600 now-line
+               to a JSONL log for later scoring vs measured actuals.
+
 Usage (on idc03, ada-voice venv for PIL):
   ~/CascadeProjects/ada-voice/.venv/bin/python \
       scripts/ada/weather-bakeoff.py --send [--chat 8960073266]
-  --no-send prints the text + PNG path only.
+  --rain-check --send --chat 8960073266
+  --snapshot appends to ~/.local/share/ada/weather-bakeoff-log.jsonl
 """
 
 from __future__ import annotations
@@ -54,6 +63,10 @@ METNO_URL = ("https://api.met.no/weatherapi/locationforecast/2.0/compact"
              "?lat={lat}&lon={lon}")
 ARCH_DIR = Path.home() / ".local/share/ada/line-media/bakeoff"
 PUBLIC_BASE = "https://157.85.102.125.sslip.io/relay-img/arch/bakeoff"
+STATE_FILE = Path.home() / ".local/share/ada/rain-watch-state.json"
+SNAP_FILE = Path.home() / ".local/share/ada/weather-bakeoff-log.jsonl"
+RAINY_CONDS = {"rainy", "pouring", "lightning-rainy", "hail",
+               "exceptional"}
 
 
 def load_env(path: str) -> dict[str, str]:
@@ -332,6 +345,121 @@ def render_png(now_txt: str, place: str, fetched: str,
     img.save(out_png)
 
 
+def ha_condition(ha_url: str, token: str) -> str:
+    st = http_json(f"{ha_url}/api/states/weather.forecast_home",
+                   {"Authorization": f"Bearer {token}"})
+    return st.get("state", "unknown")
+
+
+def rk600_line(rk: dict) -> str:
+    def pick(sub):
+        for eid, s in rk.items():
+            if sub in eid and s["state"] not in ("unknown", "unavailable"):
+                try:
+                    return f"{float(s['state']):.1f}{s['unit']}"
+                except ValueError:
+                    return s["state"]
+        return "-"
+    return (f"{pick('temperature')} · {pick('humidity')} RH · "
+            f"wind {pick('wind_speed')}")
+
+
+def rain_check(env: dict, ha_url: str, token: str, lat: float,
+               lon: float, args) -> int:
+    """Event check for kraut-rain-events — deduped pushes on:
+      rain started  : HA-FC condition entered a rainy family
+      rain cleared  : condition left the rainy family
+      rain incoming : not raining now, but models flag >60% in next 6h
+                      or HA-FC forecasts >=5mm today (once/day max)
+    """
+    cond = ha_condition(ha_url, token)
+    raining = cond in RAINY_CONDS
+
+    try:
+        rk = rk600_now(ha_url, token)
+    except Exception:
+        rk = {}
+    next6: dict[str, int | None] = {}
+    ha_mm = None
+    try:
+        om = openmeteo(lat, lon)
+        now = datetime.now(ICT).replace(minute=0, second=0, microsecond=0)
+        keys = [(now + timedelta(hours=i)).strftime("%Y-%m-%dT%H:00")
+                for i in range(6)]
+        for tag, series in om["hourly"].items():
+            idx = {p["time"]: p["rain"] for p in series}
+            vals = [idx[k] for k in keys if idx.get(k) is not None]
+            next6[tag] = max(vals) if vals else None
+    except Exception:
+        pass
+    try:
+        fc = ha_daily(ha_url, token)
+        ha_mm = fc[0]["rain_mm"] if fc else None
+    except Exception:
+        pass
+
+    state = {}
+    if STATE_FILE.exists():
+        try:
+            state = json.loads(STATE_FILE.read_text())
+        except Exception:
+            state = {}
+    today = datetime.now(ICT).strftime("%Y-%m-%d")
+    stamp = datetime.now(ICT).strftime("%H:%M ICT %d %b")
+    place = f"{lat:.2f}N {lon:.2f}E"
+    n6 = " · ".join(f"{k} {v}%" for k, v in next6.items()
+                   if v is not None) or "n/a"
+
+    incoming = (not raining and
+                (any((v or 0) >= 60 for v in next6.values()) or
+                 (ha_mm or 0) >= 5))
+    events = []
+    if raining and not state.get("raining"):
+        events.append(f"RAIN STARTED — HA-FC cond={cond}")
+    elif not raining and state.get("raining"):
+        events.append(f"RAIN CLEARED — HA-FC cond={cond}")
+    if incoming and state.get("incoming_date") != today:
+        events.append("RAIN INCOMING — models flag it in next 6h")
+
+    state.update({"raining": raining, "last_cond": cond,
+                  "checked": stamp,
+                  "incoming_date": today if incoming or raining
+                  else state.get("incoming_date")})
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(state, indent=1))
+
+    if not events:
+        print(f"rain-check ok: cond={cond} raining={raining} "
+              f"next6[{n6}] ha_mm={ha_mm} — no event")
+        return 0
+
+    lines = [f"RAIN · Michael's home {place} · {stamp}", ""]
+    lines += [f"* {e}" for e in events]
+    lines += ["",
+              f"NOW: {cond} (HA-FC) · RK600 {rk600_line(rk)}",
+              f"next-6h rain%: {n6}",
+              f"today precip: HA-FC {ha_mm if ha_mm is not None else '-'}mm"]
+    text = "\n".join(lines)
+    print(text)
+    if not args.send:
+        return 0
+    send_url = env.get("ADA_TG_SEND_URL", "http://127.0.0.1:8917/send")
+    payload = {"text": text[:3800]}
+    if args.chat:
+        payload["chat_id"] = int(args.chat)
+    d = http_json(send_url, data=json.dumps(payload).encode(),
+                  headers={"Content-Type": "application/json"}, timeout=30)
+    print("send:", d)
+    return 0 if d.get("ok") else 1
+
+
+def snapshot(rec: dict) -> None:
+    SNAP_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with SNAP_FILE.open("a") as fh:
+        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    print(f"snapshot -> {SNAP_FILE}")
+
+
 # ---------------------------------------------------------------- main
 
 def main() -> int:
@@ -343,6 +471,10 @@ def main() -> int:
     ap.add_argument("--send", action="store_true")
     ap.add_argument("--out", default=None, help="PNG path override")
     ap.add_argument("--province", default="Rayong")
+    ap.add_argument("--rain-check", action="store_true",
+                    help="deduped rain-event check (no full report)")
+    ap.add_argument("--snapshot", action="store_true",
+                    help="append today's forecasts to the JSONL log")
     ap.add_argument("--ha-url", default=None,
                     help="override HOME_ASSISTANT_URL (e.g. ssh tunnel)")
     ap.add_argument("--ha-token", default=None)
@@ -356,6 +488,9 @@ def main() -> int:
                     {"Authorization": f"Bearer {token}"})
     lat, lon = cfg["latitude"], cfg["longitude"]
     place = f"{lat:.2f}N {lon:.2f}E"
+
+    if args.rain_check:
+        return rain_check(env, ha_url, token, lat, lon, args)
 
     # --- fetch all sources, never let one kill the report
     errs: dict[str, str] = {}
@@ -387,17 +522,7 @@ def main() -> int:
     fetched = datetime.now(ICT).strftime("%H:%M ICT %d %b")
 
     # --- now line (RK600 measured)
-    def pick(sub):
-        for eid, s in rk.items():
-            if sub in eid and s["state"] not in ("unknown", "unavailable"):
-                try:
-                    return f"{float(s['state']):.1f}{s['unit']}"
-                except ValueError:
-                    return s["state"]
-        return "-"
-    now_txt = (f"NOW (RK600 station, measured): "
-               f"{pick('temperature')} · {pick('humidity')} RH · "
-               f"wind {pick('wind_speed')}")
+    now_txt = f"NOW (RK600 station, measured): {rk600_line(rk)}"
 
     # --- daily matrix
     sources_daily: dict[str, list[dict]] = {}
@@ -473,6 +598,14 @@ def main() -> int:
     print(text)
     if out_png:
         print(f"\npng: {out_png}")
+
+    if args.snapshot:
+        snapshot({
+            "at": datetime.now(ICT).isoformat(timespec="seconds"),
+            "lat": lat, "lon": lon, "rk600_now": now_txt,
+            "daily": {k: v for k, v in sources_daily.items()},
+            "gemini": gm or None, "errs": errs,
+        })
 
     if not args.send:
         return 0
