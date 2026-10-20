@@ -1,33 +1,36 @@
 id: kraut-rain-events
-title: "Kraut: proactive rain-event reports to mn-ha TG"
-brief: >-
-  Michael +1 (2026-10-20, via Tony): rain-event reporting at Michael's home —
-  Kraut pushes a notice to the mn-ha chat when rain starts/is incoming.
-  Builds on kraut-weather-bakeoff (the same fetchers cover it).
-column: backlog
+title: 'Kraut: proactive rain-event reports to mn-ha TG'
+brief: 'Michael +1 (2026-10-20, via Tony): rain-event reporting at Michael''s home — Kraut pushes a notice to the
+  mn-ha chat when rain starts/is incoming. Builds on kraut-weather-bakeoff (the same fetchers cover it).'
+column: review
 priority: medium
-tags: [mn-ha, weather, tg]
-spec: >-
-  Watch + push. Detection signals available today: (a) HA
-  weather.forecast_home state transitions (currently 'rainy' — the entity
-  exposes current condition, state_changes land in the lane's own ha event
-  recorder), (b) RK600 doesn't carry a rain gauge (RK900 head: wind/temp/RH
-  only) so station-actual rain needs the forecast/condition path, (c) bakeoff
-  precip fields (ECMWF/GFS/ICON precip_probability, METNO rain_mm, HA-FC
-  rain_mm, TMD PercentRainCover) give 'rain incoming in N hours' heads-up.
-  Delivery: POST ADA_TG_SEND_URL (:8917/send) to the mn chat; dedupe so one
-  event = one push (state in ~/.local/share/ada/). Natural shape: an
-  ssot.jobs timer every 15-30min running a watch mode in
-  scripts/ada/weather-bakeoff.py (or a rain-watch.py sharing its fetchers),
-  firing on condition->rainy transition or forecast precip crossing a
-  threshold, and a morning 'rain expected today' line when daily precip is
-  high. Gate: needs the HA path stable first (mn-ha-v4-8123-blocked — v6
-  workaround live, root cause open).
+tags:
+- mn-ha
+- weather
+- tg
+spec: 'Watch + push. Detection signals available today: (a) HA weather.forecast_home state transitions (currently
+  ''rainy'' — the entity exposes current condition, state_changes land in the lane''s own ha event recorder), (b)
+  RK600 doesn''t carry a rain gauge (RK900 head: wind/temp/RH only) so station-actual rain needs the forecast/condition
+  path, (c) bakeoff precip fields (ECMWF/GFS/ICON precip_probability, METNO rain_mm, HA-FC rain_mm, TMD PercentRainCover)
+  give ''rain incoming in N hours'' heads-up. Delivery: POST ADA_TG_SEND_URL (:8917/send) to the mn chat; dedupe
+  so one event = one push (state in ~/.local/share/ada/). Natural shape: an ssot.jobs timer every 15-30min running
+  a watch mode in scripts/ada/weather-bakeoff.py (or a rain-watch.py sharing its fetchers), firing on condition->rainy
+  transition or forecast precip crossing a threshold, and a morning ''rain expected today'' line when daily precip
+  is high. Gate: needs the HA path stable first (mn-ha-v4-8123-blocked — v6 workaround live, root cause open).'
 comms:
-  - >-
-    [context] 2026-10-20 rain detection note: weather.forecast_home already
-    reports live condition ('rainy' today) and ada-ai-kraut's ha event
-    recorder subscribes state_changed on michael-ha — the trigger signal can
-    come straight off the existing event feed, no polling needed.
+- '[context] 2026-10-20 rain detection note: weather.forecast_home already reports live condition (''rainy'' today)
+  and ada-ai-kraut''s ha event recorder subscribes state_changed on michael-ha — the trigger signal can come straight
+  off the existing event feed, no polling needed.'
+- at: 2026-10-20 14:52
+  from: devin
+  text: '[verify] rain-watch shipped + live: --rain-check mode added to weather-bakeoff.py; kraut-rain-watch.timer
+    armed on idc03 every 30min (next 15:11). First check 14:44 ICT caught a real event: HA-FC cond=rainy, next-6h
+    rain% ECMWF100/GFS100/ICON90 — pushed RAIN STARTED to Tony mn DM 8960073266 via :8917 (ok:true). Dedupe: ~/.local/share/ada/rain-watch-state.json.
+    weather-bakeoff-daily.timer 07:40 adds the full table + JSONL snapshot for RMSE scoring. NOTE overlap: rika-wx-tg-alerts
+    (review) polls R'
+- at: 2026-10-20 14:52
+  from: tony
+  text: moved backlog -> review
 requests: []
-updated: '2026-10-20'
+updated: 2026-10-20 14:52
+review_kind: verify

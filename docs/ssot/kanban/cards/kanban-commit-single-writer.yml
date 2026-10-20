@@ -9,7 +9,7 @@ spec: 'Two options — pick one in spec phase: (a) only the served checkout (cha
   + conflict resolver that takes upstream for generated files. Also: add a pre-commit hook or lint that warns when
   writing docs/ssot/focus-inbox/ outside the served checkout. Verify: two parallel sessions + one untracked-collision
   case completes pull --rebase without manual intervention.'
-updated: 2026-10-05 20:34
+updated: 2026-10-20 14:53
 action:
   type: dispatch
   repo: chaba
@@ -54,6 +54,13 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0065'
+- at: 2026-10-20 14:53
+  from: devin
+  text: '[verify] KNB-0717 recurred on the idc03 writer 2026-10-20: chaba-tony-dell stuck 122 commits behind, kanban-commit
+    failing every 15min on leftover UU (dev-system.assessment.yml) + AUTO_MERGE from an autostash pop; staged focus-inbox
+    writes were also blocked. Repaired manually: upstream-wins resolutions + repair commit, pushed as 4e58b46a1,
+    writer converged. Both symptoms present — wedged index AND a silent write-loss window while board-api kept accepting
+    writes into the stale tree.'
 claim:
   since: 2026-10-05 13:30
 ref: KNB-0065
