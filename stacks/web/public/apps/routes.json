@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-20 16:04 +07",
+  "generated": "2026-10-20 18:22 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -32,6 +32,12 @@
         "public"
       ],
       "note": "claw-channel lab (card lab-cf-kv-claw-channel): GET unlisted paths unauthenticated, POST needs X-Ingest-Key; stack + worker in stacks/edge/claw-channel/ + edge/claw-channel/; not a routes[] entry — render-routes.py kinds are proxy/static/alias only"
+    },
+    "tony-dell-serve": {
+      "kind": "tailscale-serve",
+      "mounts": {
+        "/": "http://127.0.0.1:80"
+      }
     },
     "idc03-serve": {
       "kind": "tailscale-serve",
