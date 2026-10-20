@@ -236,8 +236,9 @@ instances:
         icon: mdi:server
         cards: horizontal-stack of two entities cards — tony-omen
           (battery_level/state, cpu_package_temp, gpu_temp) and
-          tony-macbook (battery_level/state/health/temp/voltage/cycles +
-          binary_sensor.tony_macbook_telemetry_fresh). Added 2026-10-20
+          tony-macbook (switch.mac_plug toggle + battery_level/state/health/
+          temp/voltage/cycles + binary_sensor.tony_macbook_telemetry_fresh).
+          Added 2026-10-20
           via push-dashboard.py mutate; sensors REST-pushed every 5min by
           the telemetry-ha-push job (ssot.jobs.yml) mirroring the
           device-telemetry MDDB beacon.
