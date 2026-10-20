@@ -67,6 +67,12 @@ STATE_FILE = Path.home() / ".local/share/ada/rain-watch-state.json"
 SNAP_FILE = Path.home() / ".local/share/ada/weather-bakeoff-log.jsonl"
 RAINY_CONDS = {"rainy", "pouring", "lightning-rainy", "hail",
                "exceptional"}
+COND_ICON = {"rainy": "🌧️", "pouring": "⛈️", "lightning-rainy": "⛈️",
+             "hail": "🌨️", "exceptional": "🌪️", "partlycloudy": "⛅",
+             "cloudy": "☁️", "clear-night": "🌙", "sunny": "☀️",
+             "windy": "💨", "fog": "🌫️", "snowy": "❄️"}
+EVENT_ICON = {"RAIN STARTED": "🌧️", "RAIN CLEARED": "🌤️",
+              "RAIN INCOMING": "🌦️"}
 
 
 def load_env(path: str) -> dict[str, str]:
@@ -433,10 +439,13 @@ def rain_check(env: dict, ha_url: str, token: str, lat: float,
               f"next6[{n6}] ha_mm={ha_mm} — no event")
         return 0
 
-    lines = [f"RAIN · Michael's home {place} · {stamp}", ""]
-    lines += [f"* {e}" for e in events]
+    icon = COND_ICON.get(cond, "🌡️")
+    lines = [f"{icon} RAIN · Michael's home {place} · {stamp}", ""]
+    for e in events:
+        mark = next((v for k, v in EVENT_ICON.items() if k in e), "•")
+        lines.append(f"{mark} {e}")
     lines += ["",
-              f"NOW: {cond} (HA-FC) · RK600 {rk600_line(rk)}",
+              f"NOW: {icon} {cond} (HA-FC) · RK600 {rk600_line(rk)}",
               f"next-6h rain%: {n6}",
               f"today precip: HA-FC {ha_mm if ha_mm is not None else '-'}mm"]
     text = "\n".join(lines)
