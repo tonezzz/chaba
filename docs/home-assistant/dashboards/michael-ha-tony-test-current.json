@@ -2013,6 +2013,16 @@
                 },
                 "input_boolean.rk600_shutter_state",
                 {
+                  "type": "button",
+                  "icon": "mdi:help-circle-outline",
+                  "name": "Shutter Command help",
+                  "action_name": "Info",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "/tony-test/shutter-help"
+                  }
+                },
+                {
                   "entity": "input_boolean.rk600_shutter_config_show",
                   "name": "Show Config"
                 },
@@ -2270,6 +2280,16 @@
               "entities": [
                 "sensor.rk600_shutter_status",
                 "input_boolean.rk600_shutter_state",
+                {
+                  "type": "button",
+                  "icon": "mdi:help-circle-outline",
+                  "name": "Shutter Command help",
+                  "action_name": "Info",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "/tony-test/shutter-help"
+                  }
+                },
                 "automation.rk600_shutter_open",
                 "automation.rk600_shutter_close",
                 "input_boolean.rk600_shutter_config_show"
@@ -7213,6 +7233,18 @@
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               },
               "decimal_places": 3
+            }
+          ]
+        },
+        {
+          "title": "Shutter help",
+          "path": "shutter-help",
+          "subview": true,
+          "back_path": "/tony-test/mn-weather",
+          "cards": [
+            {
+              "type": "markdown",
+              "content": "## What is \"Shutter Command\"?\n\nThis card controls the **wind-protection logic** for the roller shutters (front door + kitchen).\n\n- **Compass dial** — live wind direction. The **red arc** is the danger zone: the range of directions that should close the shutters. **Drag the two handles** on the ring to adjust it.\n- **Wind Dir Min / Max** — the same range as numbers (for fine tuning).\n- **Wind Speed Min** — wind must be above this speed to trigger a close.\n- **Shutter Command** — the system's decision: **ON** = shutters should be closed, **OFF** = safe to open. Once the system is armed, flipping this also moves the shutters by hand (manual override).\n- **Shutter Status** — what the logic would do right now with current wind.\n\n⚠️ **Current status: DEMO / DISARMED** — nothing physically moves yet. A hidden switch (**Shutter Control Armed**) must be turned on before any real shutter command is sent."
             }
           ]
         }
