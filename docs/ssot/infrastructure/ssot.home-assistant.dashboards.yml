@@ -58,13 +58,21 @@ instances:
       svg + link + expiry countdown + close); Revoke calls
       script.ada_pair_revoke_named. Rows also show a bound/unbound/shared
       badge from the sensor's `bindings` attribute.
-      Tabs (2026-10-06): pair → board → chaba-cms → chaba-cms-security →
+      Tabs (2026-10-20): pair → board → agents → chaba-cms → chaba-cms-security →
       chaba-cms-traffic → chaba-cms-flood → monitor → percussion → events → log →
-      obsidian. `board` is the kanban page (iframe → /apps/board/) using
+      obsidian → hosts. `board` is the kanban page (iframe → /apps/board/) using
       the full_page_iframe convention below; chaba-cms* are the four Ada
       CMS category views (iframe → public /cms/ edge with ?tab= deep-link);
       `monitor` iframes the L3 system report app
       (/apps/system-report/ — public mirror: monitor.surf-thailand.com).
+      `agents` (2026-10-20) iframes /apps/roster/ — contacts-rail console
+      mounting one <ada-webchat-card> per ada lane (chaba/kaewta/kraut/dev)
+      over the idc03 tailnet mounts, member=tony → chat_id web-tony;
+      per-lane `chat` keys named roster-tony (minted via POST
+      /api/auth/keys apps:[chat]); roster page keeps a per-lane key cache
+      (localStorage ada_roster) and seeds from a #key.<id>= hash, so keys
+      never sit in the dashboard JSON. devin/nest entries listed as soon
+      (need lane-ws shims).
       ada_pair_reissue (voice|chat|cms ui) → rest_command.ada_repair_key POST
       /api/auth/keys/{name}/redeem on mn01 (preserves key identity/audit;
       ui=chat lands on /apps/ha/ada-{instance}/chat, ui=cms on .../cms).

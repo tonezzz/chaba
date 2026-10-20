@@ -33,6 +33,18 @@
       "type": "panel"
     },
     {
+      "title": "Agents",
+      "path": "agents",
+      "icon": "mdi:robot-outline",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://tony-ha.surf-thailand.com/apps/roster/"
+        }
+      ]
+    },
+    {
       "title": "Chaba CMS",
       "path": "chaba-cms",
       "icon": "mdi:file-document-edit-outline",
@@ -156,6 +168,66 @@
         {
           "type": "iframe",
           "url": "https://mn01.taila0626a.ts.net/apps/obsidian/"
+        }
+      ]
+    },
+    {
+      "title": "Hosts",
+      "path": "hosts",
+      "icon": "mdi:server",
+      "cards": [
+        {
+          "type": "horizontal-stack",
+          "cards": [
+            {
+              "type": "entities",
+              "title": "tony-omen",
+              "entities": [
+                {
+                  "entity": "sensor.tony_omen_battery_level"
+                },
+                {
+                  "entity": "sensor.tony_omen_battery_state"
+                },
+                {
+                  "entity": "sensor.tony_omen_cpu_package_temp"
+                },
+                {
+                  "entity": "sensor.tony_omen_gpu_temp"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "tony-macbook",
+              "entities": [
+                {
+                  "entity": "switch.mac_plug"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_level"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_state"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_health"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_temp"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_voltage"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_cycles"
+                },
+                {
+                  "entity": "binary_sensor.tony_macbook_telemetry_fresh"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
