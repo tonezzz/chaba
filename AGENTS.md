@@ -149,10 +149,10 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 
 ## Key URLs
 
-- tony-ha: `https://tony-dell.taila0626a.ts.net:8123` (tailnet only — HA binds loopback; no LAN/plain-HTTP access)
+- tony-ha: `https://tony-omen.taila0626a.ts.net:8123` (tailnet — on tony-omen since ph5; stable front `http://idc02.taila0626a.ts.net:8123` shadow; public `https://tony-ha.surf-thailand.com`)
 - michael-dev: `https://idc03.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated to idc03 2026-10-09; `127.0.0.1:8124` refers to that host)
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/` / public `https://mn-ha.surf-thailand.com` (renamed from michael-ha.surf-thailand.com 2026-10-16)
-- tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
+- tony-test views: `https://idc03.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}` (michael-dev instance)
 
 ## Token files
 
@@ -408,7 +408,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
   - `~/.config/systemd/user/ada-ha-tony.service` running `uvicorn pwa_server:app --port 8002`
   - `~/.config/systemd/user/ada-ha-michael.service` running `uvicorn pwa_server:app --port 8003`
 - Env files:
-  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-dell.taila0626a.ts.net:8123/`), `ADA_INSTANCE_ID=tony`, `ADA_API_KEY` set
+  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-omen.taila0626a.ts.net:8123/`), `ADA_INSTANCE_ID=tony`, `ADA_API_KEY` set
   - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`), `ADA_INSTANCE_ID=michael`, `ADA_API_KEY` set
   - `ada-pi-pwa.env` on tony-dell also sets `ADA_INSTANCE_ID=tony` (same HA, shared memory) + `ADA_API_KEY`
 - `ADA_API_KEY` gates `POST .../entities/{id}/power`, `GET /api/tools`, `POST /api/tools/call`, **and `/ws`** (4401 reject). Read GETs stay open. Optional `ADA_API_KEYS=name:key,...` gives per-caller names in logs + per-key revocation. `POST /api/auth/session` trades a key for a 12h HMAC HttpOnly cookie (`ada_session`, path = app base); `GET /api/auth/status` reports auth state; `POST /api/auth/logout` clears it. PWA: `?api_key=` unlocks (stripped from URL after storing), a Lock/Unlock button in the toolbar manages state, and a full-screen unlock card validates the key before storing.
@@ -417,7 +417,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 - Caddy: `~/.config/caddy/Caddyfile.mn01` routes `/apps/ha/ada-tony/` to `127.0.0.1:8002` and `/apps/ha/ada-michael/` to `127.0.0.1:8003` (legacy `/apps/ada_ha_*` paths 308 to the canonical ones); tony-dell's Caddyfile also proxies the canonical paths to mn01
 - WebSocket: `wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws` and `wss://mn01.taila0626a.ts.net/apps/ha/ada-michael/ws`
 - Text chat (added 2026-09-21): `{base}/chat/` page (ada-voice `pwa/chat/`) on the same `/ws` — browser sends `{"type":"text","text":...}` (→ `send_text_turn`, 4k cap, in `pwa_server.py`'s `browser_to_provider`, NOT `main.py` which is the kiosk variant), gets transcript deltas + PCM audio (Voice on/off toggle). Each `/ws` connection owns its own Gemini session — chat/voice don't share context. chaba-admin issued-keys card rows: `name [Voice] [Text] [Re-pair] [Revoke]` — Voice/Text re-pair then open the UI via the redeem `redirect` param (`ui` field on `script.ada_pair_reissue` → `rest_command.ada_repair_key`).
-- Home Assistant: `tony-ha` at `https://tony-dell.taila0626a.ts.net:8123/`, `michael-ha` at `http://michael-ha:8123/`
+- Home Assistant: `tony-ha` at `https://tony-omen.taila0626a.ts.net:8123/`, `michael-ha` at `http://michael-ha:8123/`
 - Navigation: `https://mn01.taila0626a.ts.net/apps/ha/` and `https://mn01.taila0626a.ts.net/apps/`
 
 ### Service commands

@@ -1,7 +1,7 @@
 /* chaba-cast-card — pick a yt-cached video, cast to a media_player.
  *
  * Browses HA media_source collections (yt_live / yt_cache / yt_corpus),
- * casts via media_player.play_media with the LAN URL on tony-dell's web
+ * casts via media_player.play_media with the LAN URL on tony-omen's web
  * stack (Chromecasts fetch http://192.168.2.67/apps/<lane>/<path> over LAN —
  * they cannot reach ada-ha's loopback/tailnet bind).
  *

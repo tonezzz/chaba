@@ -4,13 +4,13 @@
 // (push unpaired -> display shows its QR again), release (revoke key).
 // "Add screen" pops a QR for the bare /apps/vcast/ URL — scan it on the
 // device to open the app; the device then shows its own claim QR.
-// Config: api (default https://tony-dell.taila0626a.ts.net/api/input-bridge),
+// Config: api (default https://idc02.taila0626a.ts.net/api/input-bridge),
 //         refresh (seconds, default 5), test_play_url, test_nav_url,
 //         test_audio_url, app_url
 class VcastScreensCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
-    this._api = (this._config.api || "https://tony-dell.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
+    this._api = (this._config.api || "https://idc02.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
     this._origin = this._api.replace(/\/api\/input-bridge\/?$/, "");
     this._appUrl = this._config.app_url || `${this._origin}/apps/vcast/`;
     this._refreshMs = Math.max(2, this._config.refresh || 5) * 1000;
@@ -191,7 +191,7 @@ class VcastScreensCard extends HTMLElement {
       const navBtn = this._iconBtn("mdi:open-in-app");
       navBtn.title = "Cast a test page (iframe nav)";
       navBtn.onclick = () =>
-        this._pub(s.screen, { type: "nav", url: this._config.test_nav_url || "https://tony-dell.taila0626a.ts.net/apps/" });
+        this._pub(s.screen, { type: "nav", url: this._config.test_nav_url || "https://idc02.taila0626a.ts.net/apps/" });
       const sndBtn = this._iconBtn("mdi:volume-high");
       sndBtn.title = "Play a test sound (needs the 'tap for audio' gesture once on iOS)";
       sndBtn.onclick = async () => {

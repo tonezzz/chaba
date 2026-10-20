@@ -48,8 +48,8 @@ Env:
     NEST_IO_PORT        listen port (default 8795)
     NEST_IO_STATE       state dir (default ~/.local/share/nest/io-fabric)
     NEST_IO_OFFLINE     "1" = never emit egress, record only
-    INPUT_BRIDGE_URL    default https://tony-dell.taila0626a.ts.net/api/input-bridge
-    BOARD_API_URL       default https://tony-dell.taila0626a.ts.net/apps/board-api
+    INPUT_BRIDGE_URL    default https://idc02.taila0626a.ts.net/api/input-bridge
+    BOARD_API_URL       default https://idc02.taila0626a.ts.net/apps/board-api
     MDDB_BASE_URL       default http://100.102.134.91:11023/v1
     NEST_IO_MDDB_COLD   "1" = also write cold facts to ada-ha-bank-inbox-cold
     HA_URL / HASS_TOKEN enables the ha_media_player speak adapter
@@ -85,10 +85,10 @@ BIND = os.environ.get("NEST_IO_BIND", "127.0.0.1")
 OFFLINE = os.environ.get("NEST_IO_OFFLINE", "") == "1"
 INPUT_BRIDGE = os.environ.get(
     "INPUT_BRIDGE_URL",
-    "https://tony-dell.taila0626a.ts.net/api/input-bridge").rstrip("/")
+    "https://idc02.taila0626a.ts.net/api/input-bridge").rstrip("/")
 BOARD_API = os.environ.get(
     "BOARD_API_URL",
-    "https://tony-dell.taila0626a.ts.net/apps/board-api").rstrip("/")
+    "https://idc02.taila0626a.ts.net/apps/board-api").rstrip("/")
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
 MDDB_COLD = os.environ.get("NEST_IO_MDDB_COLD", "") == "1"

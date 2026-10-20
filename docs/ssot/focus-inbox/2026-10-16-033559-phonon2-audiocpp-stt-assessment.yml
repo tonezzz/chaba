@@ -1,0 +1,171 @@
+title: Local STT lane POC — audio.cpp Qwen3-ASR vs whisper-large-v3
+subtitle: Comparison lives here; full research moved to Education post 589
+icon: inbox
+
+focus:
+  label: Local STT lane eval — audio.cpp + Qwen3-ASR vs whisper-large-v3
+  text: >
+    Decision layer only — deep research is in WP Education post 589
+    ("local audio runtimes — single-binary STT/TTS landscape", bilingual,
+    due for spaced review 2026-10-23). VERDICT: Phonon-2 is best-in-class
+    tiny English ASR (164MB, 5.21% WER) but ~25 European languages, NO
+    THAI → English-only MacBook dictation at most. audio.cpp (C++ ggml,
+    ~57MB tarball, 110+ model families, no Python) is the Thai-capable
+    candidate: Qwen3-ASR-0.6B/1.7B (explicit th, streaming), plus Thai TTS
+    (Confucius4/VoxCPM2/OmniVoice), VAD, wake-word, diarization in one
+    server. It also already runs Phonon-2 weights (parakeet_tdt family).
+    sherpa-onnx is the mature incumbent to benchmark against. PROPOSED CARD:
+    POC on idc02 — 4-way Thai/EN WER + latency shootout on real Ada
+    utterances: Qwen3-ASR (audio.cpp) vs whisper-on-sherpa-onnx vs
+    whisper-large-v3 (stt-omen-large-v3 lane) vs Gemini Live. Board-api on
+    tony-dell was unreachable at assessment time — file the card when back.
+  branch: master
+  priority: medium
+  status: draft
+  tags: [stt, tts, ada, local-lane, eval, thai]
+  missing_info:
+    - Integration decision: wire ada-tg-relay transcription to an audio.cpp Qwen3-ASR server (closes tg-relay-whisper-pin by deleting the faster-whisper/av dep) — card when board-api is back
+    - Michael + KK voice samples once TG/michael-ha lane exists (see 2026-10-16-1705-tg-michael-ha-setup.yml)
+
+results_2026_10_16: |
+  POC EXECUTED on idc02 (4-core CPU). 11 real TG voice clips (opus .ogg),
+  refs = Gemini flash-lite inline audio. Qwen3-ASR-0.6B Q8 GGUF via
+  audio.cpp v0.9.2: mean CER 0.31 vs ref, RTF 0.56 (~1.8x RT), ~3.5s/clip,
+  RSS 2.2GB — GPU-class accuracy on idle CPU, BEATS whisper-large-v3 on
+  Omen GTX 1650 (CER 0.35, ~4s/clip warm) and crushes CrisperWhisper Q4_K
+  (CER 0.49, RTF 18.3, hallucinated tags). Caveat: much of CER gap is
+  Thai-script transliteration style (เอโค=echo) not error; true losses are
+  proper names (Dell→เดย์, Telegram→เทเลกาน). Full catalog + transcripts +
+  repro commands in Education post 624. Eval assets: idc02 ~/audio-cpp-eval.
+  safe_to_parallel:
+    value: true
+    reason: Read-only eval on idc02; no production lane touched
+  subtasks:
+    - label: Card the integration via board-api when Dell is back (ref tg-relay-whisper-pin)
+      status: not_started
+    - label: Install audio.cpp + pull Qwen3-ASR-0.6B GGUF on idc02
+      status: completed
+    - label: Thai+EN WER/latency benchmark vs whisper-large-v3 GPU — DONE, Qwen3 wins
+      status: completed
+    - label: sherpa-onnx baseline run (deferred — whisper-v3 was already the stronger baseline)
+      status: deferred
+
+poc_plan:
+  name: local-stt-lane-eval
+  host: idc02 (4-core, ~9GB free, already runs Ollama; CPU is the realistic always-on lane)
+  install:
+    - audio-v0.9.2-bin-ubuntu-x64-cpu-portable.tar.gz (~57MB) → run as server on a free port
+    - GGUF pulls from audio-cpp/audio.cpp-gguf: Qwen3-ASR-0.6B Q8 (~650MB) + F16; CrisperWhisper-Large Q8 (~1.6GB) as second candidate
+    - sherpa-onnx binary + multilingual whisper (small/medium) as incumbent baseline
+  corpus: >
+    FOUND: tg-voice-corpus-capture (done 2026-10-08) already saves TG voice
+    notes to ~/.local/share/ada-voice-corpus/tg/<sender>/*.ogg on idc03 —
+    11 Tony clips on disk (opus .ogg 48kHz mono ~32kbps = exactly the
+    production input format). Add Michael/KK samples when Tony collects
+    them; grow to ~25-30 utterances covering Thai, English, code-switch,
+    names, household commands. CER for Thai, WER for English.
+  why_now: >
+    Tony sends voice commands to Ada via TG and gets no response —
+    tg-relay-whisper-pin (backlog, HIGH) is the cause: av 19 broke
+    faster-whisper, transcription leg silently dies. If the audio.cpp
+    winner ships, the relay calls a C++ HTTP server and the fragile
+    faster-whisper+av Python dep stack gets deleted — the POC and the bug
+    fix are the same work.
+  hosts: >
+    Eval on idc02 (idle 4-core). Sanity pass on idc03 too — that is where
+    ada-tg-relay lives, so it is the likely deploy target if CPU latency
+    holds. whisper-large-v3 on Omen already covers the GPU baseline; no
+    need to spread the eval wider.
+  contenders: [qwen3-asr-0.6B (audio.cpp), crisperwhisper-large (audio.cpp), whisper-small/medium (sherpa-onnx), whisper-large-v3 (existing omen lane), gemini-live (cloud reference)]
+  metrics: [thai CER, en WER, code-switch correctness, time-to-transcript, RTF, RSS memory]
+  gates:
+    - Qwen3-ASR Thai CER within ~20% relative of whisper-large-v3
+    - RTF < 1.0 on idc02 CPU for 10s clips (batch); streaming endpoint functional
+    - No crashes/OOM across the full corpus
+  out_if_pass: card for Ada text-mode STT lane integration (audio.cpp server on idc02, registered like chat-local in LiteLLM-style routing)
+  cost: contained — no production lane touched, no spend, ~1GB disk on idc02
+
+deployed_2026_10_16: |
+  SHIPPED past POC: ada-stt.service on idc02 (audio.cpp v0.9.2 CPU,
+  Qwen3-ASR-0.6B Q8, tailscale-bound 100.123.163.11:8914, lazy_load,
+  idle-unload 10min). Moved OFF idc03 same day: under idc03's service
+  load the same clips ran RTF 2.75-12 (15-43s) vs idc02 RTF ~0.5
+  (1-6s) — ~8x. Placement rule learned: STT specialist lives on the
+  idle node, relay just POSTs over tailnet. idc03's ada-stt unit left
+  installed+stopped as a fallback target (flip TG_WHISPER_URL back to
+  127.0.0.1:8914 if idc02 is ever down).
+  ada-tg-relay patched: _transcribe prefers TG_WHISPER_URL remote —
+  decodes opus→wav16k in-venv (av+soundfile, no ffmpeg on idc03), POSTs
+  OpenAI-style multipart incl. model field — falls back to local
+  faster-whisper. Env: ada-ha-tony.env TG_VOICE_TRANSCRIBE=1,
+  TG_WHISPER_URL=http://100.123.163.11:8914/v1/audio/transcriptions,
+  TG_WHISPER_MODEL=qwen3-asr. Verified: _transcribe() in real venv →
+  live server → correct Thai transcript; relay restarted clean.
+  Closes the tg-relay-whisper-pin failure mode.
+  OPEN: 4 new clips (19:52-19:58) transcribed fine but Qwen emitted
+  ENGLISH — either Tony spoke English or the model auto-translated
+  ("crowd" looks like a ครับ mistranslation). Check for a language/
+  task pin field on the transcriptions endpoint before prod rollout.
+  UNPUSHED: ada-voice commit acd364e lives on idc03 main only — no push
+  creds there or on macbook (deploy-key denied). Push/re-land from
+  tony-dell when it returns; until then idc03 main is 1 ahead of origin
+  (ff-safe for deploy-ada.sh). KK relay shares the module but stays
+  corpus-only (env not set). Detection: scripts/ops/deploy-diff.sh flags
+  idc03 ada-voice as ahead-of-origin + dirty until re-landed.
+  +1 POSTED: score posts 641 (tony, stt-discovery) + 642 (devin,
+  deploy-diff detector) landed once a browser UA was added. CF
+  LESSON (corrected 2026-10-16 via Security-Events screenshot):
+  boards WP sits behind Cloudflare Browser Integrity Check — a
+  STANDING zone setting, not a toggle someone flipped. BIC bans the
+  default python-urllib signature (403 error-code-1010); curl passed
+  the whole time, urllib+browser-UA passes. Events at 19:43 BKK were
+  our own idc03 POSTs (157.85.102.125); 22:24 Managed-rules blocks
+  from a German GCP IP were ordinary scanner noise. Writers don't
+  need a browser UA — proven 2026-10-16: named agents pass BIC
+  ("chaba-agent/0.1 (+idc03)" → 400 reached-WP vs "Python-urllib/3.12"
+  → 403). CONVENTION: every chaba HTTP client sends UA
+  "chaba-<tool>/<ver>" — identifiable in CF events + origin logs AND
+  BIC-clean. Most scripts comply already (chaba-lessons/1.0,
+  chaba-news-digest, timing-probe, vcast-auto-health…); ad-hoc inline
+  urllib was the only gap. Optional hardening: WAF skip rule for
+  /wp-json/ from tailnet egress IPs (needs zone-edit scope we lack).
+
+nest_next_plan: |
+  Ada Nest (micro-AI fleet) improvements this unlocks — for the follow-on
+  card:
+  1. Shared STT specialist: ada-stt is already the fleet pattern — one
+     audiocpp_server per node, other lanes (kk TG, michael) get voice by
+     env var alone.
+  2. Voice-out lane: Thai TTS in the same server (VoxCPM2-2B or
+     Confucius4 GGUF) — closes voice-in→voice-out for TG/LINE.
+  3. Specialist shelf per node: bundled Silero/FireRed VAD,
+     microWakeWord, Smart-Turn, Nemotron diarization all run in the same
+     binary — one port, many micro-skills (the Nest vision: tiny models,
+     more when connected).
+  4. Speaker-ID from the corpus: CAM++/spk task — sender-labeled clips
+     are already collecting; enroll Tony/KK/Michael embeddings, tag
+     group voice notes by speaker.
+  5. Wake-word gate on live sessions (Tony ask 2026-10-16): gate the
+     mic→Gemini-Live upstream behind a local wake-word model
+     (microWakeWord already bundled in audio.cpp — same ada-stt server,
+     new task). "Ada" opens the gate, explicit off-word or silence-
+     timeout closes it. Wins: kills false triggers in noisy rooms,
+     cuts Live input-token burn to actual command windows, and the
+     gate is CPU-cheap enough to run always-on per node. Needs a
+     session-state flag in realtime_provider.py + the KWS stream loop;
+     card with the integration work when Dell/board-api returns.
+     SPEC (Tony 2026-10-16): the gate mode itself must be voice-
+     commandable — he tells Ada on/off, so other people speaking
+     without the wake word get ignored only when he wants that. I.e.
+     modes: open-mic (current) ↔ wake-gated, switched by spoken
+     command to Ada (later: speaker-ID gates who may switch).
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: tony-macbook-chat
+  date: 2026-10-16

@@ -713,7 +713,7 @@ class AdaChatCard extends HTMLElement {
 
   _yoloBase() {
     return (this._config.yolo_base ||
-      "https://tony-dell.taila0626a.ts.net/apps/yolo/api").replace(/\/$/, "");
+      "https://idc02.taila0626a.ts.net/apps/yolo/api").replace(/\/$/, "");
   }
 
   _openYolo() {
@@ -855,11 +855,11 @@ class AdaChatCard extends HTMLElement {
 
   _screenUrl() {
     if (this._config.screen_url) return this._config.screen_url;
-    // vcast display page on the tony-dell web edge (ssot.routes.yml:
+    // vcast display page on the idc02 web edge (ssot.routes.yml:
     // /apps/vcast/* is tailnet/LAN only). Reached via the public ada-ha
     // edge, the iframe needs the browser on the tailnet — or set
     // screen_url in card config to a reachable route.
-    const base = "https://tony-dell.taila0626a.ts.net/apps/vcast/";
+    const base = "https://idc02.taila0626a.ts.net/apps/vcast/";
     return `${base}?label=${encodeURIComponent("ada-chat-" + this._chatId())}`;
   }
 
@@ -893,7 +893,7 @@ class AdaChatCard extends HTMLElement {
   _vcastApi() {
     // input-bridge relay base — same origin as the vcast app unless overridden
     return (this._config.vcast_api
-      || "https://tony-dell.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
+      || "https://idc02.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
   }
 
   // Zero-touch pairing: the iframe registers pending as label ada-chat-<id>;

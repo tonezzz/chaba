@@ -392,7 +392,7 @@ class AdaUsersCard extends HTMLElement {
   _haUrl(instance, view) {
     if (this._config && this._config.ha_url) return this._config.ha_url;
     const map = {
-      tony: `https://tony-dell.taila0626a.ts.net:8123/chaba-home/${view || "ai"}`,
+      tony: `http://idc02.taila0626a.ts.net:8123/chaba-home/${view || "ai"}`,
       michael: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/",
     };
     return map[instance] || map.tony;
