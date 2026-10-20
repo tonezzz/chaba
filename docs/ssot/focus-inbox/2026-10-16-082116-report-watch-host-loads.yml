@@ -1,0 +1,25 @@
+title: Focus Inbox Item
+subtitle: Report node host-loads is stale
+focus:
+  label: 'Report watch: host-loads = stale'
+  text: 'Report node `host-loads` is `stale` — the last artifact is older than its cadence.
+
+
+    Summary: 5/7 hosts sampled; unreachable: macbook, mn01
+
+    Bad state first seen: 2026-10-16 08:21:16 +07
+
+    Meta: reports/host-loads/meta.host-loads.yml
+
+
+    Fix the producer or mark the node retired; the item clears once the node reports ok.'
+  status: processed
+  priority: medium
+  tags:
+  - report
+  - watch
+  - stale
+  missing_info:
+  - Is the failure a producer bug or real findings to triage?
+  - Should the node be fixed, muted (expect_down), or retired?
+  processed_reason: healed — node reports delta (2026-10-16 09:01)

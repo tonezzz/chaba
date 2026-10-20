@@ -1,0 +1,17 @@
+id: mn-dev-rename
+title: Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)
+column: backlog
+updated: 2026-10-16 14:13
+brief: 'Public hostname renamed to mn-ha.surf-thailand.com (2026-10-16) and system-map now calls the dev twin mn-dev.
+  Physical rename pending: michael-dev.service, podman container michael-dev, ~/.config/michael-dev, ~/.config/secrets/ha-michael-dev.env,
+  plus ~119 references across docs/ssot, AGENTS.md, scripts. All must move together or scripts break.'
+priority: low
+spec: '1. idc03: stop+disable michael-dev.service, rename container + ~/.config/michael-dev + unit file, daemon-reload,
+  start, verify :8124. 2. Rename ha-michael-dev.env -> ha-mn-dev.env on all hosts that hold it (check secret-inventory).
+  3. sed michael-dev -> mn-dev across docs/ssot + AGENTS.md + scripts (exclude git history). 4. Update ssot.home-assistant.lanes.yml
+  instances.michael-dev key. 5. Remove alias note from ssot.system-map.yml.'
+ref: OPS-0726
+comms:
+- at: 2026-10-16 14:13
+  from: tony
+  text: card captured via board-api

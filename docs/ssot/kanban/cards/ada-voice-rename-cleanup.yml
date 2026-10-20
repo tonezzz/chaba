@@ -1,0 +1,25 @@
+id: ada-voice-rename-cleanup
+title: 'ada-voice rename cleanup: mn01 catch-up + retire ada-pi compat shims'
+column: backlog
+updated: 2026-10-14 22:23
+spec: 'Residuals from card ada-pi-rename-ada-voice (job doc docs/ssot/jobs/infrastructure/2026-10-14-ada-pi-rename-ada-voice.yml):
+
+
+  1. mn01 was unreachable (ssh timeout) during the 2026-10-14 rename — it still has ~/CascadeProjects/ada-pi. When
+  back: run scripts/devin/rename-ada-voice.sh run mn01 from tony-dell, then git pull --ff-only in the renamed checkout.
+  stacks/mn01/*.service reference the dir.
+
+  2. Retire compat shims once verified clean: rm ~/CascadeProjects/ada-pi symlink on each host; remove the legacy
+  ada-pi alias lines from repos.conf (dell, macbook), BUILTIN_REPOS/REPO_TESTS in scripts/board/dispatch_repos.py,
+  and the fallback map in scripts/devin/devin-dispatch.sh.
+
+  3. Optional hygiene: sweep kanban cards still carrying action.repo: ada-pi to ada-voice (alias makes it cosmetic,
+  not urgent).
+
+
+  Done-condition: no host has a real dir or symlink named ada-pi; dispatch claim on repo ada-voice observed green.'
+ref: ADA-0681
+comms:
+- at: 2026-10-14 22:23
+  from: tony
+  text: card captured via board-api

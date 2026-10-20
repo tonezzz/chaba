@@ -1,0 +1,15 @@
+id: tony-omen-gnome-keyring-daemon-fd-leak-p-338561
+title: tony-omen gnome-keyring-daemon fd leak — pegged at 1024/1024, 30% CPU
+column: backlog
+updated: 2026-10-16 05:01
+priority: high
+note: 'Found while investigating timer-alert-tony-dell-tony-dell-mcp-health. On tony-omen, gnome-keyring-daemon
+  pid 9755 (up 4d9h) holds exactly 1024 fds = its soft nofile limit, burns ~30% CPU, and has spammed auth.log with
+  couldnt-accept-new-control-request: Too many open files at 100k+ msgs/day since 2026-10-13 03:09 (still active
+  2026-10-16). Impact: every sshd session pokes the keyring control socket and fails; possible intermittent remote-command
+  failures. Fix path likely: systemctl --user restar'
+ref: SEC-0714
+comms:
+- at: 2026-10-16 05:01
+  from: devin
+  text: card captured via board-api

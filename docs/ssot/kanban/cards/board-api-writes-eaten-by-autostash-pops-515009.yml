@@ -1,0 +1,14 @@
+id: board-api-writes-eaten-by-autostash-pops-515009
+title: board-api writes eaten by autostash pops on tony-dell
+column: backlog
+updated: 2026-10-16 06:05
+priority: high
+ref: KNB-0717
+comms:
+- at: 2026-10-16 06:05
+  from: devin
+  text: 'Confirmed 2026-10-15: board-api card writes (comms + column moves) landed then were reverted when kanban-commit.timer
+    pull --rebase --autostash stashed uncommitted files and the pop failed — stash@{0} still holds orphaned comms
+    (incl. 22:37 merge-sweep auto-merge lines that never landed). Loss side of the column-resurrection bug card-column-guard
+    fixes. Options: board-api commits writes immediately (single-writer exemption exists), or committer pulls before
+    writes / honors a write lock. Also: 3+'

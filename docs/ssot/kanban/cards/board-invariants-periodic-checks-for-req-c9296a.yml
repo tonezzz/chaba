@@ -1,0 +1,20 @@
+id: board-invariants-periodic-checks-for-req-c9296a
+title: board invariants — periodic checks for request options, verify-evidence, stale running claims
+column: doing
+updated: 2026-10-16 06:06
+priority: medium
+ref: KNB-0716
+comms:
+- at: 2026-10-16 06:02
+  from: devin
+  text: 'Periodic scanner catching the wound classes we keep hitting: (1) open Tony-facing requests with <2 options;
+    (2) done cards declaring verify: but no [verify] comm (lifecycle-bounce fuel); (3) action.status=running with
+    no live runner/heartbeat >24h (stale claims); (4) doing cards with zero comms in N days (parked claims). Emits
+    focus-inbox alerts / comms notes; no auto-fixes. Sits alongside lifecycle-check in kanban-sync chain.'
+- at: 2026-10-16 06:06
+  from: devin
+  text: 'Shipped scripts/board/board-invariants.py — 6 check classes (R1 buttonless requests, R2 bad suggested,
+    R3 dup open requests, V1 verify-evidence mirrors lifecycle gate incl. 2026-10-12 grandfather + all stage tags,
+    S1 stale running >24h, S2 parked doing >7d). First live run: only stt-omen-large-v3 flagged (a real stale claim
+    — re-closed after autostash ate the first close; see KNB-0717). Job entry added to ssot.jobs.yml (4x daily :35,
+    tony_dell, --alert->focus-inbox). Pending: timer install on de'
