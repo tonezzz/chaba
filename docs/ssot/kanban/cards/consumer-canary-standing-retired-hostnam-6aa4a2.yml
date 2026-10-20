@@ -1,7 +1,7 @@
 id: consumer-canary-standing-retired-hostnam-6aa4a2
 title: 'consumer-canary: standing retired-hostname audit across live surfaces'
 column: backlog
-updated: 2026-10-20 18:01
+updated: 2026-10-20 18:29
 priority: low
 tags:
 - ops
@@ -17,3 +17,10 @@ comms:
 - at: 2026-10-20 18:01
   from: tony
   text: card captured via board-api
+- at: 2026-10-20 18:29
+  from: devin
+  text: 'IMPLEMENTED + installed on idc03 (timer consumer-canary.timer, every 6h, first run CLEAN). Script: scripts/audit/consumer-canary.py
+    — greps deployed www card bundles (tony-ha+ada-ha), unit envs (omen/idc01/idc02/idc03/mn01), caddy configs (idc02
+    edge + web-origin, mn01), and every lovelace dashboard via ws. First live run found + fixed real stragglers
+    the manual sweep missed: yolo-xiaomi HA_BASE on omen AND mn01, mn01 devin-dispatch-watch HA_URL + chaba-audit
+    MDDB_BASE, smart-home dashboard cam '

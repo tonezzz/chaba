@@ -1,7 +1,7 @@
 id: dell-serve-config-wiped
 title: tailscale serve config on tony-dell wiped — :443 edge dead until restored
-column: backlog
-updated: 2026-10-20 16:53
+column: done
+updated: 2026-10-20 18:24
 ref: OPS-0754
 comms:
 - at: 2026-10-20 16:53
@@ -11,3 +11,16 @@ comms:
     serve state (~16:14, same window the web container restarted). RESTORED: tailscale serve --bg --https=443 http://127.0.0.1:80
     (the documented serve-restore proc, same wound as member-nodes-to-vps-ha Oct-09). NOT restored: :8123 tony-ha,
     :8124/:8125 test views, :8444, :3007/3008 rvie'
+- at: 2026-10-20 18:23
+  from: devin
+  text: '[verify] 2026-10-20 ~18:25 ICT — OPS-0754 closed. Producer proof: tailscale serve on dell holds :443->127.0.0.1:80;
+    check-serve-config.service run 18:23 logged OK tony-dell: 1 declared mount(s) present; timer armed hourly *:23.
+    Consumer proof (fetched live from idc03): served pages /apps/{lab,ha,ha/tony-ha,ha/michael-dev,ha/cast,tailscale-funnel}/
+    + tony-live ssot.ui + ssot.health.mobile + ssot.devin.tools all return ZERO refs to tony-dell.taila0626a.ts.net:8xxx.
+    Repoint map: :8123 tony-ha->tony'
+- at: 2026-10-20 18:24
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}
