@@ -3,10 +3,10 @@ title: 'Lab: Ada session boundaries — does forced context reset improve memory
 brief: Ada's messaging chats run as one long continuous session, so her memory snapshot never refreshes and compaction
   keeps re-processing an ever-longer history (Hermes calls this out explicitly — memory only pays off at session
   end). This experiment tests whether periodic boundaries improve recall quality and cut token spend.
-column: lab
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-20 15:44
 autonomy: t2
 lab:
   hypothesis: Introducing a session boundary (context reset + memory re-snapshot) at natural break points improves
@@ -33,3 +33,34 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: ADA-0177'
+- at: 2026-10-20 15:36
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 15:37
+  from: tony-omen
+  text: claimed
+- at: 2026-10-20 15:37
+  from: chaba
+  text: started devin-task-20261020-153716-spike-questions-answer-these-f on tony-omen (dispatch)
+- at: 2026-10-20 15:39
+  from: devin
+  text: 'Spike started. Code read: pwa_server /ws = per-connect session; session prime injects memory snapshot on
+    every connect; relays idle-close WS at 600s (LINE_IDLE_SESSION_S/TELEGRAM_IDLE_SESSION_S). Live context bounded
+    by sliding-window 32k->24k. Now measuring real session lifetimes + token cost on idc03.'
+- at: 2026-10-20 15:44
+  from: devin
+  text: 'SPIKE ANSWERS (measured on idc03 + code read of ada-voice@a67bea0):
+
+
+    Q1 — session boundary TODAY: one /ws connect on pwa_server = one session (fresh session_id, provider, ConversationMemory).
+    Messaging chats already DO reset: relays hold a WS per (chat,sender,persona) and close it after 600s idle (LINE_IDLE_SESSION_S
+    / TELEGRAM_IDLE_SESSION_S) — 34 idle closes on LINE in 7d. Memory DOES re-snapshot every connect: _prime_session
+    injects recent-sessions summary + top memories + shared channel tail'
+- at: 2026-10-20 15:44
+  from: devin
+  text: moved lab -> done
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+claim: {}

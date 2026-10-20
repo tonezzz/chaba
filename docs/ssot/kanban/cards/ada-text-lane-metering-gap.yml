@@ -1,0 +1,20 @@
+id: ada-text-lane-metering-gap
+title: 'Text-relay turns are unmetered: usage.jsonl + journal-report miss LINE/TG text-mode token cost'
+column: backlog
+updated: 2026-10-20 15:44
+brief: 'LINE_TEXT_MODE=1 means the main messaging lane runs OpenRouterTextProvider via gemini_pool.generate — which
+  never calls usage_ledger.record and emits no "usage turn in=" log line. All 76k records in data/usage.jsonl are
+  source=live. Result: the actual chat lanes token/day is invisible to journal-report and the usage endpoint; only
+  the LiteLLM gateway meters it. Found during lab-ada-session-boundaries spike.'
+priority: low
+spec: 'Add usage recording to the text path: either usage_ledger.record inside gemini_pool.generate (source=text-relay,
+  session_id passthrough) or a usage turn log line in OpenRouterTextProvider._complete so scripts/ada/journal-report.py
+  counts it. Also two hygiene items from the same spike: (1) LINE_IDLE_SESSION_S_NIGHT=120 is set in secrets but
+  no code reads it — either implement the night-idle in line_relay.py or drop the env var; (2) OpenRouterTextProvider._turns
+  grows unbounded within a WS session — add a sliding cap (e.g. keep last N turns + re-prime) for parity with Live
+  sliding window.'
+ref: ADA-0752
+comms:
+- at: 2026-10-20 15:44
+  from: devin
+  text: card captured via board-api
