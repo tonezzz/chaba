@@ -1,7 +1,7 @@
 id: migrate-apps-web-origin-off-tony-dell-b79e82
 title: migrate /apps web origin off tony-dell
 column: review
-updated: 2026-10-20 16:14
+updated: 2026-10-20 16:17
 note: 'dell is the sole host for the whole /apps site (Caddy+web container+tailnet entry). Taking dell down kills
   vcast/jam/gesture pages entirely — QR origin follows location.origin so a move fixes QRs automatically. Natural
   target: idc03 (already runs input-bridge).'
@@ -46,6 +46,21 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261020-154846-migrate-apps-web-origin-off-to on tony-macbook still
     dirty — 5 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-20 16:16
+  from: chaba
+  text: 'session-end checkpoint 90afc77c: 1 leftover file(s) committed'
+- at: 2026-10-20 16:16
+  from: chaba
+  text: pushed dispatch/20261020-154846-migrate-apps-web-origin-off-to to origin
+- at: 2026-10-20 16:16
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 16:17
+  from: chaba
+  text: auto-merged eb16c01d (dispatch/20261020-154846-migrate-apps-web-origin-off-to) → origin/master
+- at: 2026-10-20 16:17
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
   status: done
