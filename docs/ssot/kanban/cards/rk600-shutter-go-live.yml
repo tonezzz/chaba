@@ -1,0 +1,34 @@
+id: rk600-shutter-go-live
+title: 'RK600 shutter control: go-live checklist (blocked on motor repair)'
+column: backlog
+updated: 2026-10-20 18:02
+spec: 'Shutter control UI + armed gate shipped and demoed to Michael (2026-10-20, satisfied). Motors physically
+  broken — cannot test real actuation until repaired.
+
+
+  DONE: wind-arc-editor drag-threshold dial live on mn-weather; armed-gated actuate automations (close/open on shutter_state,
+  condition input_boolean.shutter_control_armed=on); armed helper defaults off and is on no dashboard; EN help subview;
+  labels shortened.
+
+
+  REMAINING (in order when motors fixed):
+
+  1. Manual smoke: arm input_boolean.shutter_control_armed, flip Shutter Command once, confirm covers physically
+  move (covers are Tuya cloud, assumed_state, unknown is normal).
+
+  2. If responsive: re-enable automation.rk600_shutter_close + rk600_shutter_open (currently disabled) so wind drives
+  the command.
+
+  3. Decide wind-speed unit: sensor.rk600_wind_speed + input_number.shutter_wind_speed_min are labeled kn but the
+  scaled value is m/s (raw 772 -> 7.72 shown as kn; really ~15kt). Either relabel to m/s or rescale — Michael now
+  sees the number, get his read.
+
+  4. Optional: consolidate the second Shutter card on view rk600 to match mn-weather; optional rain threshold (dev
+  has it, live logic does not).
+
+  5. After go-live: decide whether armed stays on permanently; document in card.'
+ref: OPS-0756
+comms:
+- at: 2026-10-20 18:02
+  from: tony
+  text: card captured via board-api

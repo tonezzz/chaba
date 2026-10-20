@@ -1,0 +1,19 @@
+id: consumer-canary-standing-retired-hostnam-6aa4a2
+title: 'consumer-canary: standing retired-hostname audit across live surfaces'
+column: backlog
+updated: 2026-10-20 18:01
+priority: low
+tags:
+- ops
+- audit
+- dell-migration
+note: 'Born of the OPS-0731 miss: producers migrated + health-checked green while consumer surfaces (HA dashboard
+  iframes, deployed card JS, caddy redirects) still dialed tony-dell. One-off audit 2026-10-20 caught the rest;
+  this card makes it standing. Sweep step or small timer job: grep LIVE surfaces for retired hostnames (currently
+  tony-dell.taila0626a.ts.net) — (1) HA dashboard configs via websocket on tony-ha(:8123)/ada-ha(:8125), (2) deployed
+  ~/.config/{home-assistant,ada-ha}/www/*.js on omen, (3)'
+ref: OPS-0755
+comms:
+- at: 2026-10-20 18:01
+  from: tony
+  text: card captured via board-api

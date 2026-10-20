@@ -1,7 +1,7 @@
 id: ncm-thai-adaptation
 title: NCM (next-concept modeling) for Thai — feasibility + possible training run
-column: backlog
-updated: 2026-10-20 16:02
+column: doing
+updated: 2026-10-20 18:15
 brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
   training stages from the paper. Novel research artifact, no stack utility for Ada.'
 priority: low
@@ -73,6 +73,12 @@ comms:
     code — GH issue #2 (training code request) open+unanswered, assume self-implement ~2-4k LOC, main risk VQ stability.
     Compute: LM1B-scale ~1-2 H100-days; Thai toy run ~$20-50 rented. Data: mC4/OSCAR-th, eval XL-Sum-th + scb-mt-en-th.
     Recommended path: reproduce released Sudoku first'
+- at: 2026-10-20 18:15
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 18:15
+  from: idc02
+  text: claimed
 requests:
 - id: how-far-should-the-thai-ncm-idea-go-repo-743d93
   ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
@@ -94,4 +100,7 @@ requests:
   suggested: recon-spike
   answer: recon-spike — Recon spike (recommended) — read the paper’s training details, size the reimplementation
     (LOC/compute), check whether authors plan to release training code, pick dataset + eval. Then decide.
-awaiting_action: true
+action:
+  type: dispatch
+  status: running
+  runner: idc02

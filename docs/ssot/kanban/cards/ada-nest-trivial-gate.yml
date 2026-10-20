@@ -1,7 +1,7 @@
 id: ada-nest-trivial-gate
 title: 'Ada Nest: trivial-turn gate — local specialist answers cheap queries before a provider turn'
 column: backlog
-updated: 2026-10-20 15:07
+updated: 2026-10-20 18:15
 brief: 'Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist
   that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth
   pattern.'
@@ -38,8 +38,12 @@ spec: 'Context: tg_relay.py already runs a coarse-to-fine cascade — silence de
 action:
   type: dispatch
   repo: ada-voice
+  status: queued
 ref: ADA-0751
 comms:
 - at: 2026-10-20 15:07
   from: tony
   text: carded from NCM x Ada Nest mix-and-match discussion — survives independently of OPS-0750
+- at: 2026-10-20 18:15
+  from: tony
+  text: queued for processing

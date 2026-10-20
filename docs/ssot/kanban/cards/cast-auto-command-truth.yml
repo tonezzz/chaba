@@ -1,16 +1,20 @@
 id: cast-auto-command-truth
 title: 'Command-truth: 20 unattributed device state change(s)'
-brief: A watched device changed state with no allowlisted commander — attribute it
-  (logbook context, unit, automation, device-side schedule) then either fix the commander
-  or add it to ssot.command-truth.yml allowed_commanders.
-column: review
+brief: A watched device changed state with no allowlisted commander — attribute it (logbook context, unit, automation,
+  device-side schedule) then either fix the commander or add it to ssot.command-truth.yml allowed_commanders.
+column: done
 review_kind: triage
 generated: command-truth
 program: chaba-ci
 area: ha-ops
 priority: high
 note: 'Auto-recovered 2026-10-15: all watched entities attributed.'
-help: 'config: docs/ssot/infrastructure/ssot.command-truth.yml. context.user_id =
-  HA user/API caller; parent_id = automation/script run; neither = device-side schedule,
-  integration poll, or LAN chatter.'
-updated: '2026-10-15'
+help: 'config: docs/ssot/infrastructure/ssot.command-truth.yml. context.user_id = HA user/API caller; parent_id
+  = automation/script run; neither = device-side schedule, integration poll, or LAN chatter.'
+updated: 2026-10-20 18:11
+action:
+  status: done
+comms:
+- at: 2026-10-20 18:11
+  from: tony
+  text: closed by tony
