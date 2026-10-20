@@ -1,0 +1,41 @@
+job: session-boundaries-spike
+date: 2026-10-20
+card: lab-ada-session-boundaries
+ref: ADA-0177
+runner: tony-omen
+result: hypothesis-dead-retired
+summary: >-
+  Spike measured whether Ada messaging chats run as one continuous session
+  with a stale memory snapshot and unbounded compaction cost. They do not:
+  sessions already reset per websocket connect and at a 600s relay idle
+  reaper, and the session-prime re-injects the memory snapshot on every
+  connect (and on every mid-session provider rotate). Card retired to done.
+findings:
+  session_model:
+    - "pwa_server /ws: one connect = one session_id + provider + ConversationMemory. Every live unit (ada-ha-tony:8002, ada-pi-pwa:8001, ada-dev:8005, ada-kk:8007, ada-ai-kraut) runs pwa_server."
+    - "Relay lanes (LINE/TG): ChatSession per (chat,sender,persona), WS closed after IDLE_SESSION_S=600s quiet — close triggers the session-end pipeline (persist, report, extraction, rolling summary). 34 idle closes on LINE in 7d."
+    - "LINE prod runs LINE_TEXT_MODE=1 → OpenRouterTextProvider (Gemini REST, metered per call); TG still opens a Live session per connect."
+    - "Legacy main.py LiveSessionManager (session_id='persistent', resumption handles) IS the never-ending session the card hypothesized — but no live unit serves it; pwa_server replaced it."
+  memory_resnapshot:
+    - "_prime_session injects recent-sessions summary + top memories + shared channel tail + reconnect tail on every connect — 79 primes on ada-ha-tony in 7d, including repeats within one WS session (provider rotates re-prime)."
+  context_bounds:
+    - "Live: sliding-window compression trigger_tokens=32000 → target_tokens=24000 (ADA_CONTEXT_TRIGGER_TOKENS/TARGET env-tunable)."
+    - "Live: token-budget context-rotate — a turn whose input exceeds _context_turn_budget drops the resumption handle and rotates the Live session once idle (context_reset directive)."
+    - "Text mode: OpenRouterTextProvider._turns unbounded per WS session; bounded in practice by the 600s idle close."
+  measurement:
+    sessions_7d: 1396 (ada-ha-tony+ada-pi-pwa+ada-dev via journal-report)
+    real_session_durations: "p50=57s p90=152s p99=383s max=577s (responses>0)"
+    long_sessions: ">10min sessions all idle HA-panel holds — 0 responses, 0 tokens (max 8.9h)"
+    tokens_7d: "~77M input total, dominated by Oct 13-14 ada-dev benchmark storms (554 sess/day); ada-ha-tony ~4.4M on Oct 17, ~0 Oct 18-20"
+  session_end_cost: "per ended session ~3-6 small Gemini REST calls (rolling summary, session summary, session report, candidate/action extraction) on a transcript capped at 8000 chars — bounded per session"
+  gaps_found:
+    - "Text-relay turns never reach usage_ledger / journal-report (all 76k usage.jsonl records are source=live) — chat-lane tokens/day only visible on the LiteLLM gateway. Carded: ada-text-lane-metering-gap (ADA-0752)."
+    - "LINE_IDLE_SESSION_S_NIGHT=120 set in secrets but no code reads it (dead env var)."
+    - "No server-side idle reaper on pwa_server /ws — browser/HA-panel sessions idle 8h+ (harmless today; no turns)."
+verification:
+  - "journal-report: python3 scripts/ada/journal-report.py --host idc03 --units ada-ha-tony,ada-pi-pwa,ada-dev --since '7 days ago'"
+  - "usage.jsonl by-day totals on idc03 ~/CascadeProjects/ada-voice/data/usage.jsonl"
+  - "journalctl --user -u ada-line-relay | grep 'idle close' — reaper firing continuously"
+  - "journalctl --user -u ada-ha-tony | grep 'prime injected' — 79 in 7d"
+followups:
+  - ada-text-lane-metering-gap (ADA-0752): text-path usage recording + dead env var + _turns cap
