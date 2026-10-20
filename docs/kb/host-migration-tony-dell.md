@@ -66,6 +66,20 @@ Full HA (active-active, keepalived, pacemaker) = too complex/risky for this flee
 
 **Every phase's exit gate includes:** re-measure + update `docs/ssot/infrastructure/ssot.host-capacity.yml` (host roles, headroom, placement bias) — the registry stays true during the migration, not after.
 
+## Consumer-reference audit (added 2026-10-20 — the OPS-0731 miss)
+
+The migration inventory tracked **producers** (units, listeners, route upstreams) but not **consumers** — moving an origin doesn't move the pointers to it. When the `/apps` origin moved to idc02, the board API 200'd and every health check passed, while the *only surface Tony actually opens* — the `chaba-admin` HA dashboard — still iframe'd `tony-dell.taila0626a.ts.net` absolute URLs and went dark the moment dell dropped.
+
+**New exit-gate step for any phase that retires/moves a host or origin:** before declaring done, grep every consumer-side artifact for the retired hostname:
+
+- `docs/home-assistant/dashboards/*.json` (iframe + weblink cards — these are *live-config snapshots*, so check live over websocket too, not just the repo copy)
+- `stacks/**/*.js` card sources (hardcoded fetch/iframe URLs survive in deployed bundles)
+- `stacks/**/flows*.json` (node-red HTTP endpoints)
+- `docs/ssot/infrastructure/ssot.*.yml` doc URLs (update so the next grep is clean)
+- Anything user-facing that embeds a URL: chat cards, PWA manifests, casts, kiosks
+
+Health checks verify the producer serves; only this grep + one real browser-open verifies the consumer still reaches it. The 2026-10-20 dashboard fix (chaba-admin + chaba-home → `tony-ha.surf-thailand.com/apps/*`) is the worked example; ada-ha-chaba-home remains as the residual (needs an ada-ha LLAT — tracked on `dell-off-repoint-followups`).
+
 ## Per-service state manifest pattern
 
 Every migrated unit needs 4 declared facts in the runbook card / unit comment: `{data_dirs, unit_file, secrets_env, front_name}` — that's the difference between "a migration" and "a system that can migrate." Add as you move each one; don't try to enumerate all 50 upfront.
