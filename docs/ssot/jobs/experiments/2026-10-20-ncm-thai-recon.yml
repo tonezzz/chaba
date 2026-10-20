@@ -1,0 +1,115 @@
+title: NCM Thai adaptation — recon spike
+subtitle: Feasibility of training HazyResearch/ncm (arXiv:2610.14162) for Thai
+icon: flask
+card: ncm-thai-adaptation  # OPS-0750
+related:
+  paper: arXiv:2610.14162
+  repo: github.com/HazyResearch/ncm
+  education_post: 1588  # lesson-51569f4faa8f
+  full_report: reports/2026-10-20-ncm-thai-recon.md  # gitignored; canonical copy = this file's notes
+
+decision_context:
+  mode: recon-spike  # Tony picked 2026-10-20 15:47
+  pending_request: recon-done-toy-train-is-cheaper-than-fea-b244ca  # watch-only suggested
+
+findings:
+  verdict: |
+    Feasible and cheaper than first feared. Repo ships ALL model code including
+    training-time internals; only loops/losses/data plumbing missing (~1.2-1.5k LOC
+    new code, revised down from earlier 2-4k estimate). Thai toy run stays in the
+    $20-50 / single rented GPU / ~2-4 days implementation envelope. Value remains
+    novelty + learning artifact only — no Ada/stack payoff (not instruction-tuned).
+
+  repo_inventory: |
+    Cloned and inspected (2,961 py LOC, MIT). Training-ready internals verified:
+    - models/quant.py (736 LOC): EMA codebook updates, dead-code restart, kmeans
+      init, nested dropout (fine_drop, annealed), learned down/up cascades, Phi
+      residual convs — all inside forward() under self.training; returns vq_loss.
+    - models/vqvae.py + vae.py: encoder/decoder complete; encode_z, z_to_idx,
+      idx_to_zhats, get_ncm_inputs.
+    - models/next_concept.py (703 LOC): block-diagonal flex mask, prefix-LM,
+      tied-codebook heads, generate(); idx_to_ncm_input() already builds the
+      training-time inputs.
+    - config/eval/*.yaml: full level ladders + quantizer hyperparams per checkpoint
+      (TinyStories: 12 levels [1,8,16,24,32,40,52,64,76,92,108,128], V=4096,
+      commitment 0.25, EMA 0.95, fine_drop 0.5).
+    Missing: trainer loops, conditioning-corruption fn, L_NCM loss, data pipeline,
+    base-tokenizer trainer.
+
+  loc_estimate: |
+    ~1.2-1.5k LOC new code:
+    - tokenizer trainer loop ~350 (VQVAE fwd → recon CE + returned vq_loss → opt)
+    - corpus→codes encoder ~120 (wraps z_to_idx)
+    - conditioning corruption ~80 (uniform replace, shifted-linear decay, mean 0.5)
+    - generator trainer ~350 (idx_to_ncm_input → level-weighted CE, w_k ∝ ℓ_k^(1-α)/Σℓ)
+    - Thai SentencePiece/BPE trainer ~60 (off-the-shelf)
+    - Thai eval wiring ~200 (gen-PPL vs Thai AR ref + entropy; XL-Sum-th; scb-mt-en-th)
+    Residual risk: VQ training stability per new domain — mitigated: EMA + dead-code
+    restart + nested dropout already implemented; configs give known-good points.
+
+  recipe: |
+    Tokenizer: 0 encoder blocks (embedding+conv only), 1-4 decoder blocks, d=384,
+    K=8-32 levels, V=4096-8192/level, β=0.25 commitment, EMA 0.95-0.99, nested
+    dropout 0.5; AdamW 3e-4→3e-5 (5e-4 small), wd 0.01-0.05, clip 1.0, warmup
+    500-1000; batch 768-4096; 10k-120k updates; BF16+torch.compile.
+    Generator: 12×768×12 (~88-120M; Sudoku 8×512=25M); block-diagonal attention
+    (best of 3 ablated); RoPE; prefix-LM; corruption mean 0.5 shifted-linear
+    decreasing; AdamW 3e-4→3e-5; batch 256-2048; 50k-350k updates.
+    Budgets (token exposure): LM1B 13.36B positions vs DLM 66B (4.9× fewer);
+    OWT 127B vs 500B+. Conditional: unpaired pretrain then pairs.
+
+  compute: |
+    Thai toy (TinyStories-equivalent ~90M gen + ~36M tok, L=128, K=12), scaled-down
+    ~10k tokenizer + ~20k generator updates @ batch 512-1024 ≈ <1 H100-day ≈
+    $20-50 rented (vast.ai/RunPod). GTX 1650 4GB = not viable beyond micro-scale.
+    Recommended first milestone if proceeding: reproduce released Sudoku-easy with
+    own trainer (25M, tiny) to validate loop against known-good checkpoint.
+
+  thai_data_eval:
+    corpus: mC4 'th' (allenai/c4) primary; OSCAR-th supplement; ~100M-1B tokens for toy
+    base_tokenizer: SentencePiece BPE 8-16k on Thai (no word spaces); alt = reuse WangchanX SP
+    eval_unconditional: generative perplexity under Thai AR ref (Typhoon-2-1.5B/WangchanX-7B) + unigram entropy, 5×256 samples
+    eval_conditional: XL-Sum th ROUGE-1/2/L; scb-mt-en-th-2020 sacreBLEU+chrF; ThaiQA
+    baseline: small Thai AR model for quality-vs-speed comparison
+
+  training_code_release: |
+    GH issue #2 "Request for training codes" open since Oct 15, unanswered as of
+    Oct 20 (issue #8 also open). Repo active (HF collection updated ~4d ago, 5
+    commits). Shipped code's self.training branches prove an internal trainer
+    exists — deliberately withheld. Not asked on Tony's behalf: +1 on issue #2
+    needs his GitHub identity; correspondence: kumboh, iskhare @stanford.edu.
+    Fallback reference: FoundationVision/VAR (same next-scale design paper cites).
+
+options_presented:
+  - id: watch-only
+    suggested: true
+    label: subscribe repo; Tony +1s issue #2; revisit when/if trainer lands
+  - id: toy-train
+    label: ~1.5k LOC + ~$20-50 GPU + few sessions → first Thai coarse-to-fine generator
+  - id: typhoon-ft
+    label: different want — fine-tune Typhoon/WangchanX for fast Thai generation
+  - id: drop
+    label: close card, keep report
+
+processing:
+  status: completed
+  started_at: "2026-10-20"
+  completed_at: "2026-10-20"
+  steps:
+    - id: 1
+      label: Read paper training sections (§3.3/3.4, App.B/C/F)
+      status: completed
+    - id: 2
+      label: Clone repo, inventory shipped vs missing code, estimate LOC
+      status: completed
+    - id: 3
+      label: Check authors re training-code release (GH issue #2, HF activity)
+      status: completed
+      notes: open 5d, unanswered; not posted on Tony's behalf — needs his GH identity
+    - id: 4
+      label: Pick dataset + eval set for Thai
+      status: completed
+    - id: 5
+      label: Verdict comm + next-step request on card
+      status: completed
+      notes: request recon-done-toy-train-is-cheaper-than-fea-b244ca raised
