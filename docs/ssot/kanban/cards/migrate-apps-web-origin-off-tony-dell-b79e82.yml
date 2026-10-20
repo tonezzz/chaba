@@ -1,7 +1,7 @@
 id: migrate-apps-web-origin-off-tony-dell-b79e82
 title: migrate /apps web origin off tony-dell
 column: backlog
-updated: 2026-10-17 06:34
+updated: 2026-10-19 18:55
 note: 'dell is the sole host for the whole /apps site (Caddy+web container+tailnet entry). Taking dell down kills
   vcast/jam/gesture pages entirely — QR origin follows location.origin so a move fixes QRs automatically. Natural
   target: idc03 (already runs input-bridge).'
@@ -10,3 +10,15 @@ comms:
 - at: 2026-10-17 06:34
   from: tony
   text: card captured via board-api
+- at: 2026-10-19 18:36
+  from: devin
+  text: '[ph1 done 2026-10-19] web origin stood up on idc02: new  systemd unit (enabled, :8099 loopback, caddy).
+    Caddyfile variant = dell file with 127.0.0.1 backends remapped to dell tailnet IP (transitional until each service
+    migrates), /apps/yt-corpus proxied back to dell (8.9G corpus stays on gdrive/dell), intra-container :8080 kept
+    loopback. Front flip: idc02:443->:8088 now serves local origin instead of dell passthrough; surf-thailand /apps/*
+    handles flipped too. Verified /apps/board, /apps/jam, /a'
+- at: 2026-10-19 18:55
+  from: devin
+  text: 'idc02 web origin verified end-to-end: board/trade-api/yomi/jam all 200 via tailnet front. trade+yomi upstreams->idc03
+    primary. web-srv-sync.timer armed (hourly pull from idc03 canonical checkout). yt-cache 3.5G+ still rsyncing
+    to ~/backups; mv into web-srv/yt-cache when done.'

@@ -1,0 +1,69 @@
+id: rika-wx-tg-alerts
+title: RK600 weather alerts to Telegram (wind>15kt / rain)
+column: review
+updated: 2026-10-19 20:46
+tags:
+- rika
+- rk600
+- telegram
+- mn-ha
+- alerts
+spec: "Goal: push a Telegram alert when the RK600 at Michael site reports wind > 15 knots or rain.\n\nDesign (agreed\
+  \ w/ Tony, 2026-10-19):\n- Poller on idc03 (user timer, 60s): GET http://39.99.253.232:8005/data/22100502\n  -\
+  \ login POST /login (RIKA_ACCOUNT/RIKA_PASSWORD from ~/.config/secrets/rikacloud.env), JWT in 'token' header,\
+  \ TTL 86400s; cache token, re-login on 401.\n  - Freshness guard: only evaluate if dataTime < ~5 min old. Stale\
+  \ data = no alert (rika-hmi-watch already covers upload outages).\n- Thresholds:\n  - wind: e2 >= 772 if e2 is\
+  \ cm/s (15 kt = 7.72 m/s). Observed peak 1129 on Oct-14 storm ~22kt; calm day ~12-99. VERIFY unit against a known\
+  \ gust before ship; cm/s (x100 of m/s) is the best-fitting scale.\n  - rain: e5 > 0 (e5=0 dry; spikes 80-190 seen\
+  \ in Oct-15 rain).\n- Edge-triggered: fire once on transition into condition; re-alert at most every 60 min while\
+  \ sustained; optional all-clear note when it drops back.\n- Delivery: Telegram Bot API sendMessage with the mn\
+  \ bot token (idc03 ~/.config/secrets/telegram-mn-bot.env). Recipient chat_id TBD - see request.\n- Track state\
+  \ in ~/.local/state/rika-wx-alert/state; log to alert.log."
+action:
+  type: manual
+note: Alert via mn-ha TG bot when wind >15kt or rain starts at Michael site.
+ref: OPS-0747
+comms:
+- at: 2026-10-19 20:17
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-19 20:17
+  from: chaba
+  text: 'raised request who-receives-the-wind-rain-telegram-aler-066b20: Who receives the wind/rain Telegram alerts?'
+- at: 2026-10-19 20:36
+  from: tony
+  text: 'answered who-receives-the-wind-rain-telegram-aler-066b20: mn-ha group chat (-5426710106) — tony+michael+kraut
+    all present'
+- at: 2026-10-19 20:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-19 20:36
+  from: devin
+  text: 'Built + deployed: rika-wx-alert.timer on idc03 (60s) -> cloud /data/22100502 -> TG group -5426710106 via
+    KrautMNBot. Edge-triggered wind>=15kt (e2>=772, cm/s assumption) or e5>0, 60-min sustained re-alert, all-clear
+    on drop-back, 5-min freshness guard. Test message landed in group (msg_id 164). Live run: 1.2kt/dry -> correctly
+    silent. rikacloud.env copied to idc03. Watch for first real fire to confirm e2 scaling.'
+- at: 2026-10-19 20:36
+  from: tony
+  text: moved backlog -> review
+- at: 2026-10-19 20:46
+  from: devin
+  text: 'Companion piece landed (a96fd83, all lanes): weather_station tool — Michael can ASK for a report in the
+    group and Kraut replies with live RK600 readings (wind kt+dir, temp, humidity, rain). Stale data narrates its
+    age honestly. Verified live on idc03: 0.0kt SE, 26.2C, 88.6% RH, 24s old.'
+requests:
+- id: who-receives-the-wind-rain-telegram-aler-066b20
+  ask: Who receives the wind/rain Telegram alerts?
+  status: answered
+  at: 2026-10-19 20:17
+  from: chaba
+  options:
+  - id: michael
+    label: Michael (once he messages @mn_ha_bot - gives us his chat_id)
+  - id: tony
+    label: Tony only
+  - id: both
+    label: Both Tony + Michael
+  suggested: both
+  answer: mn-ha group chat (-5426710106) — tony+michael+kraut all present
+review_kind: verify

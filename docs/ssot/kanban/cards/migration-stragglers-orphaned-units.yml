@@ -1,0 +1,50 @@
+id: migration-stragglers-orphaned-units
+title: 'Migration stragglers: orphaned units after dell/omen->idc02/03 move'
+column: backlog
+updated: 2026-10-20 10:20
+tags:
+- migration
+- ops-0725
+- ops-0731
+- cleanup
+spec: 'Verified 2026-10-20 — all claimed services are live on the new hosts (gev/gesture/weaviate/gpu-queue on idc02
+  tailnet IP; yomi/trade-api/pg/redis on idc03; tony-ha+node-red on omen; edge serving new upstreams, live probes
+  200). These units were left behind:
+
+
+  FAILING (target moved):
+
+  - tony-dell ha-auth-watch.service — polls tony-ha (now on omen) + michael-ha (quarantined). Move or repoint.
+
+  - tony-dell network-scan-tony.service — scans the tony-ha network; HA host moved to omen.
+
+  - tony-omen weaviate-index.service — fails; weaviate is on idc02:8084 now.
+
+  - tony-omen mcp-health-snapshot.service — failed (check if it should move with the health lane).
+
+
+  DEAD-END:
+
+  - tony-omen weaviate-embed-proxy.service — forwards localhost:5000 -> mn01:5000; mn01 offline 6d. Point at idc02
+  weaviate or retire.
+
+  - tony-omen weaviate-search.service — running but backend moved to idc02; verify its weaviate URL.
+
+
+  NOT migration (do not fix here):
+
+  - wp-cam-snapshot oneshot ''failed'' = 7 cams returning empty go2rtc frames — pre-existing.
+
+  - OPS-0731: /apps origin (web container + Caddy + tailnet entry) still on dell — separate card, still open.
+
+
+  Done = each unit either repointed to the new host (and verified active) or retired with a comms note; nothing
+  left in failed state for migration reasons.'
+action:
+  type: manual
+note: Units left pointing at services that moved in the 2026-10-19/20 constellation move (ph3+ph5).
+ref: OPS-0749
+comms:
+- at: 2026-10-20 10:20
+  from: devin
+  text: card captured via board-api

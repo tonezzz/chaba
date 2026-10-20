@@ -1,0 +1,18 @@
+id: dell-off-repoint-followups
+title: Dell-off repoint follow-ups (ssh MCPs, h3 publish, webcams, workflows-mcp)
+column: backlog
+updated: 2026-10-20 10:17
+ref: OPS-0748
+comms:
+- at: 2026-10-20 10:17
+  from: devin
+  text: 'Work surfaced by tony-dell power-off 2026-10-20 (OPS-0725).
+
+
+    1) Repoint ssh-hosted MCP servers in ~/.config/devin/mcp_config.json off tony-dell: postgres (conn string still
+    tony-dell:5432 - pg lives on idc03), yomi (lives on idc03), gpu/llama (omen serves :8001/:11434), docs-mcp,
+    weaviate (idc02:8084), notebooklm, focus. Each needs ssh host + env fixes.
+
+    2) DOC_PRINT_SSH=tony-dell-m2m in idc03 ~/.config/secrets/ada-*.env - doc printing degrades until repointed.
+
+    3) cms-h3-publish: needs ~/CascadeP'

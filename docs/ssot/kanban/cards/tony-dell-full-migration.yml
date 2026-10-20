@@ -1,7 +1,7 @@
 id: tony-dell-full-migration
 title: tony-dell full-service migration runbook (hardware window + edge-name layer)
 column: backlog
-updated: 2026-10-18 22:16
+updated: 2026-10-20 10:17
 spec: 'Phases: 1) edge proxy + service names on idc02 2) kanban single-writer pair→idc03 (stop dell writer FIRST)
   3) VPS APIs 4) backups→idc02 5) LAN group→omen last 6) 48h verify then dell dark 7) post-hardware: dell returns
   as failover capacity, not everything-box. Every migrated unit declares {data_dirs, unit_file, secrets_env, front_name}.'
@@ -64,3 +64,86 @@ comms:
     cards had auto-recovered on origin). Rebuilt: kept worktree, re-init .git, replayed live deltas by mtime>last-push
     onto fresh clone, pushed e374cd7fb (258 live files restored, conflicts resolved upstream-wins). Old git kept
     at ~/CascadeProjects/chaba-tony-dell.livebak-20261018/.git.corr'
+- at: 2026-10-19 16:52
+  from: devin
+  text: '[devin] ph3 b3+b4 (2026-10-18/19): helm+bserver → idc02 (quadlets parked). mddb backup chain → idc02: standby-pull
+    retired on dell, new mddb-gdrive-tier.timer (04:30, newest-2 local); dell disk 5G→14G free. REPAIRS: chaba-postgres-16
+    was down ~25h (restart-exhaustion, pg 22 tables intact, yomi+trade recovered); chaba.h3 object-store corruption
+    fixed by repointing to origin tip. HARDENING: dell chaba-board-api got manually reanimated (wrote frozen checkout
+    1.5h) — parked all 42 migrated unit file'
+- at: 2026-10-19 16:53
+  from: devin
+  text: '[devin] ph3 b3+b4 (2026-10-18/19): helm+bserver → idc02. mddb backup chain → idc02 (standby-pull retired
+    on dell; new mddb-gdrive-tier.timer daily 04:30 newest-2 local). Dell disk 5G→14G free. REPAIRS: chaba-postgres-16
+    down ~25h restarted (22 tables intact, yomi+trade recovered); chaba.h3 object corruption fixed (repointed to
+    origin tip). HARDENING: parked all 42 migrated dell unit files after board-api manual-restart zombie wrote frozen
+    checkout 1.5h. OPEN: retire keep/kill on dev-miniapp-v0, '
+- at: 2026-10-19 18:36
+  from: devin
+  text: '[web origin ph1] OPS-0731 first cut: /apps origin now runs on idc02 (new web unit :8099, generated Caddyfile
+    variant with dell-local upstreams remapped to dell tailnet IPs). idc02:443 front flipped from dell-passthrough
+    to local origin; surf-thailand /apps handles flipped. Verified 200s on board/jam/percussion/system-report via
+    both fronts. Dell outage context: dell hung ~18:10, rebooted — github/devin.ai egress block (13:23-18:2x) was
+    wedged host state, cleared on boot. Data pulled to idc02 fir'
+- at: 2026-10-19 18:55
+  from: devin
+  text: 'pg/yomi/trade trio: found ALREADY migrated+live on idc03 (pg :5432, yomi :3000, trade :9002 via tailscale-serve,
+    all verified 200). idc02-web upstreams now consistent — trade+yomi->idc03 primary. Redundant idc02 trio (same-dump
+    restore) parked disabled as standby. Remaining dell work: yt-cache rsync in flight, HA/node-red/LAN-seat stack,
+    timer estate.'
+- at: 2026-10-19 19:01
+  from: devin
+  text: '[ph4b done 10-19] pg+yomi+redis+trade constellation → idc03 complete. pg 22 tables restored+verified; redis
+    rebuilt (had been dead on dell ~3d — silent cache-miss degrade); yomi-api+4 timers live, update-all ran clean;
+    trade-api live, health identical (17d-stale FX = pre-existing). Edge flips verified 200 via dell edge. BONUS
+    FIX: Caddy sorted /api/* before /api/yomi/*+/api/ws/* — status-data catch-all had shadowed both since 10-17
+    (commit 0951a45e5). Dell units all parked (12 files .parked), se'
+- at: 2026-10-19 19:02
+  from: devin
+  text: '[ph4b done 10-19] pg+yomi+redis+trade constellation -> idc03 complete. pg 22 tables restored+verified;
+    redis rebuilt (dead on dell ~3d, silent cache-miss); yomi-api+4 timers live, update-all ran clean; trade-api
+    live, health identical (17d-stale FX pre-existing). Edge flips verified 200. BONUS FIX: Caddy sorted /api/*
+    before /api/yomi/*+/api/ws/* - status-data catch-all shadowed both since 10-17 (0951a45e5). Dell units parked
+    (12 files), serve :3000/:9002 removed, dnsmasq postgre->idc03. Dell WA'
+- at: 2026-10-19 19:21
+  from: devin
+  text: 'Migrated dell->idc02: weaviate (data+exact image, /api/weaviate 200 via front), gpu-queue+processor (DATABASE_URL
+    repointed to idc03 pg — 22 completed jobs visible, /api/gpu-queue 200). yt-cache snapshot (3.8G) landed in web-srv
+    mount, /apps/yt-cache 200. Dead upstreams found already-broken on dell: v0-dev :8006, vnc-ws :6081, gemini-mic
+    :3009 — no listeners. Remaining dell upstreams: gev stack (8790/4173/8789/8794), node-red :1880, frigate :5000,
+    ha-live snapshot :9005, yt-corpus, HA pair. Dell'
+- at: 2026-10-19 19:37
+  from: devin
+  text: 'gev stack migrated dell->idc02: gev-gemini (cmd :8790 via python sidecar relay in netns — app hardcodes
+    loopback bind; ws :8789 direct), gods-eye-view-api :4173 (node:22-alpine + synced 543M tree), gesture-relay
+    :8794 (image+unit). /apps/gev/ 200 via front with dell units stopped. gemini-api-key podman secret replicated.
+    Note: --cgroups=split dropped on gev-gemini (wedge with netns-sharing sidecar). Remaining dell upstreams: node-red
+    :1880, frigate :5000, ha-live :9005, yt-corpus, HA pair; dead '
+- at: 2026-10-19 20:46
+  from: devin
+  text: 'HANDOFF NOTE — second session detected on same task; this session pausing migration lane to avoid collision.
+    STATE: migrated+live on idc02: web origin(:8099), weaviate:8084, gpu-queue:3001, gev-gemini(ws:8789,cmd:8790
+    via netns sidecar relay), gods-eye-view:4173, gesture-relay:8794, yt-cache in web-srv mount. idc03 authoritative:
+    postgres/yomi/trade (+ my idc02 copies parked disabled). IN-FLIGHT on omen: HA config rsyncs + ha:stable image
+    LANDED in ~/.config/home-assistant + ~/.config/ada-ha + i'
+- at: 2026-10-19 21:16
+  from: devin
+  text: 'CORRECTION + fix: idc01 is ALIVE (ssh works from idc03, tailscale shows offline only) — earlier ''idc01
+    retired'' assumption wrong. cert-sync->idc01 works as designed (weekly standby-edge push, last ok 10-18). mddb-lab-pull
+    on idc02 repointed idc01->idc03 anyway because backup PRODUCER moved to idc03 (fresh dumps land there; idc01
+    stale since ~10-17): verified end-to-end, 8.7G dump landed, mddb-lab /health 200 on :11024. Also added --replace
+    to mddb-lab.service (stale-name collision killed restart'
+- at: 2026-10-20 09:41
+  from: devin
+  text: '[ph5] LAN cohort evacuated dell->tony-omen (2026-10-19/20). tony-ha live on omen :8123 (API TONY-HA v2026.8.3,
+    tailnet tony-omen:8123=200), ada-ha :8125, node-red, go2rtc 12 streams, google-home-mcp, yt-live-api+raceman
+    media, chaba-guest, ha-live :8444, yolo/playlive/cast + 4 timers armed. Retired: clip-sync-omen, cast-browser-proxy,
+    playlive-omen-cdp-tunnel. Found+fixed: stale michael-dev ghost on omen held :8123 (parked). Pending: .67 IP
+    handoff at dell power-off (guest-lan units staged), web'
+- at: 2026-10-20 10:17
+  from: devin
+  text: '[phase-6] Dell powered OFF 2026-10-20. Final sweep: 11 job timers (flood/market/CMS/session/dispatch/prune)
+    moved to omen; devin-summaries-sync+session-audit+devin-session-prune flipped in jobs.yml (47385da96). .67 handoff
+    DONE: ip on omen wlo1 via guest-lan-ip.service (enabled, idempotent); ha-guest-lan 8125 + chaba-guest-lan 8126
+    bound .67, verified 200. Ada envs already pointed at omen. KNOWN LOSSES with dell off: tony-dell.* URLs, ssh-hosted
+    MCPs (pg/yomi/gpu/llama/docs/weaviate/notebooklm/f'
