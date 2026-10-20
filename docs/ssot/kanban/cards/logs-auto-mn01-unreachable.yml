@@ -1,88 +1,79 @@
 id: logs-auto-mn01-unreachable
 title: logs `mn01` ssh probe failed
-brief: 'The log digest flagged something worth a look: logs `mn01` ssh probe failed.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `mn01` ssh probe failed. Read the note, then fix it
+  or close the card.'
 column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: medium
-note: 'Auto-recovered 2026-10-20: `mn01-unreachable` condition cleared — shipper healthy
-  again.'
-help: 'Likely a tailscale ssh auth check on the tony-omen -> host hop: run a manual
-  ssh and open the login.tailscale.com link it prints, or install a local log-shipper
-  timer on mn01.'
-updated: '2026-10-20'
+note: 'Auto-recovered 2026-10-20: `mn01-unreachable` condition cleared — shipper healthy again.'
+help: 'Likely a tailscale ssh auth check on the tony-omen -> host hop: run a manual ssh and open the login.tailscale.com
+  link it prints, or install a local log-shipper timer on mn01.'
+updated: 2026-10-20 16:01
 comms:
 - at: 2026-10-15 15:04
   from: devin
-  text: 'Verified: mn01 is offline at the tailscale layer (last seen ~1d ago, tx stalled)
-    — ssh probe times out from both macbook and the shipper path. Not an auth/wheel
-    issue: the host is powered off or net-down. Its live roles per SSOT are mddb warm-copy
-    target (weekly Sun) + canary; services were migrated to idc03 2026-10-05/06. Needs
-    Tony''s call: power it back if it should stay always-on, or mark it a scheduled/offline
-    host so the probe stops re-carding.'
+  text: 'Verified: mn01 is offline at the tailscale layer (last seen ~1d ago, tx stalled) — ssh probe times out
+    from both macbook and the shipper path. Not an auth/wheel issue: the host is powered off or net-down. Its live
+    roles per SSOT are mddb warm-copy target (weekly Sun) + canary; services were migrated to idc03 2026-10-05/06.
+    Needs Tony''s call: power it back if it should stay always-on, or mark it a scheduled/offline host so the probe
+    stops re-carding.'
 - at: 2026-10-15 15:24
   from: devin
-  text: 'raised request mn01-is-powered-off-net-down-tailscale-o-9760d4: mn01 is powered
-    off/net-down (tailscale offline 1d). How should it be treated?'
+  text: 'raised request mn01-is-powered-off-net-down-tailscale-o-9760d4: mn01 is powered off/net-down (tailscale
+    offline 1d). How should it be treated?'
 - at: 2026-10-16 05:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 - at: 2026-10-16 19:53
   from: tony
-  text: mn01 has a boot error — Tony will fix when time permits (~tomorrow). Keeping
-    monitor; not decommissioning.
+  text: mn01 has a boot error — Tony will fix when time permits (~tomorrow). Keeping monitor; not decommissioning.
 - at: 2026-10-19 19:51
   from: devin
-  text: '[evidence] the RK600 weather station at Michael site also stopped uploading
-    to RikaCloud — last row 2026-10-15 16:38:12 (was ~1 row/min; cloud side verified
-    healthy: login + :8899 socket + API all fine). Site-wide outage signature, not
-    just mn01 — likely power or WAN down at Michael place since ~Oct-15 16:38 ICT.'
+  text: '[evidence] the RK600 weather station at Michael site also stopped uploading to RikaCloud — last row 2026-10-15
+    16:38:12 (was ~1 row/min; cloud side verified healthy: login + :8899 socket + API all fine). Site-wide outage
+    signature, not just mn01 — likely power or WAN down at Michael place since ~Oct-15 16:38 ICT.'
 - at: 2026-10-19 20:02
   from: chaba
-  text: 'Substitute watcher installed while mn01 is down: rika-hmi-watch.timer on
-    idc03 (2-min cycle) pings RK600 HMI 192.168.31.148 + jkbms ESP32 .231 via root@michael-ha
-    (live leg on 192.168.31.0/24). Current: HMI down, ESP32 up. On HMI recovery it
-    comments here so the upload-verify step isn''t missed. Note: ESP32 alive inside
+  text: 'Substitute watcher installed while mn01 is down: rika-hmi-watch.timer on idc03 (2-min cycle) pings RK600
+    HMI 192.168.31.148 + jkbms ESP32 .231 via root@michael-ha (live leg on 192.168.31.0/24). Current: HMI down,
+    ESP32 up. On HMI recovery it comments here so the upload-verify step isn''t missed. Note: ESP32 alive inside
     the enclosure while HMI is off — it''s on the battery leg.'
 - at: 2026-10-19 20:07
   from: chaba
-  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) is back on the LAN. Next: verify
-    cloud upload resumes (GET /data/22100502 dataTime fresh) — route re-add may be
-    needed; omen watchdog still blind while mn01 is off the tailnet.'
+  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) is back on the LAN. Next: verify cloud upload resumes (GET /data/22100502
+    dataTime fresh) — route re-add may be needed; omen watchdog still blind while mn01 is off the tailnet.'
 - at: 2026-10-19 20:10
   from: chaba
-  text: 'RK600 recovered 2026-10-19 ~20:09 ICT: HMI rejoined LAN but had lost its
-    default route again (Sept failure mode). Fixed via root@michael-ha telnet: route
-    add default gw 192.168.31.1 + Samkoonhmi app restart -> :8899 ESTABLISHED, cloud
-    dataTime now fresh (21:09:40 +08, temp 26.3C hum 88.1%). ESP32 .231 flapped down
-    during the window. Caveat: route is volatile; omen watchdog still blind while
-    mn01 is off tailnet — idc03 rika-hmi-watch alerts on next loss but does not auto-fix
-    yet.'
+  text: 'RK600 recovered 2026-10-19 ~20:09 ICT: HMI rejoined LAN but had lost its default route again (Sept failure
+    mode). Fixed via root@michael-ha telnet: route add default gw 192.168.31.1 + Samkoonhmi app restart -> :8899
+    ESTABLISHED, cloud dataTime now fresh (21:09:40 +08, temp 26.3C hum 88.1%). ESP32 .231 flapped down during the
+    window. Caveat: route is volatile; omen watchdog still blind while mn01 is off tailnet — idc03 rika-hmi-watch
+    alerts on next loss but does not auto-fix yet.'
 - at: 2026-10-19 20:10
   from: chaba
-  text: 'RK600 recovered 2026-10-19 ~20:09 ICT: HMI rejoined LAN but had lost its
-    default route again (Sept failure mode). Fixed via root@michael-ha telnet: route
-    add default gw 192.168.31.1 + Samkoonhmi app restart -> :8899 ESTABLISHED, cloud
-    dataTime fresh (21:09:40 +08, temp 26.3C hum 88.1%). ESP32 .231 flapped down during
-    the window. Caveat: route is volatile; omen watchdog still blind while mn01 is
-    off tailnet — idc03 rika-hmi-watch alerts on next loss but does not auto-fix yet.'
+  text: 'RK600 recovered 2026-10-19 ~20:09 ICT: HMI rejoined LAN but had lost its default route again (Sept failure
+    mode). Fixed via root@michael-ha telnet: route add default gw 192.168.31.1 + Samkoonhmi app restart -> :8899
+    ESTABLISHED, cloud dataTime fresh (21:09:40 +08, temp 26.3C hum 88.1%). ESP32 .231 flapped down during the window.
+    Caveat: route is volatile; omen watchdog still blind while mn01 is off tailnet — idc03 rika-hmi-watch alerts
+    on next loss but does not auto-fix yet.'
 - at: 2026-10-20 11:11
   from: chaba
-  text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime
-    goes fresh within ~5 min.'
+  text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime goes fresh within ~5 min.'
 - at: 2026-10-20 11:12
   from: chaba
-  text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime
-    goes fresh within ~5 min.'
+  text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime goes fresh within ~5 min.'
 - at: 2026-10-20 12:57
   from: chaba
   text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) dropped off the LAN again.'
 - at: 2026-10-20 12:59
   from: chaba
-  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) back on the LAN. Watchdog will
-    verify route + :8899 and remediate if needed.'
+  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) back on the LAN. Watchdog will verify route + :8899 and remediate
+    if needed.'
+- at: 2026-10-20 16:01
+  from: devin
+  text: '[verify] ssh mn01 OK + tailscale direct 2026-10-20 — transient outage resolved.'
 requests:
 - id: mn01-is-powered-off-net-down-tailscale-o-9760d4
   ask: mn01 is powered off/net-down (tailscale offline 1d). How should it be treated?
@@ -93,8 +84,7 @@ requests:
   - id: power-on
     label: Should be always-on — I'll power it back; probe self-heals
   - id: scheduled
-    label: Offline by design — add to OPTIONAL_HOSTS / weekly-only schedule so probes
-      stop re-carding
+    label: Offline by design — add to OPTIONAL_HOSTS / weekly-only schedule so probes stop re-carding
   - id: decommission
     label: Retire mn01 — remove from shipper/fleet probes entirely
   suggested: scheduled

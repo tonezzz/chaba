@@ -1,7 +1,7 @@
 id: migrate-apps-web-origin-off-tony-dell-b79e82
 title: migrate /apps web origin off tony-dell
-column: doing
-updated: 2026-10-20 15:48
+column: review
+updated: 2026-10-20 16:14
 note: 'dell is the sole host for the whole /apps site (Caddy+web container+tailnet entry). Taking dell down kills
   vcast/jam/gesture pages entirely — QR origin follows location.origin so a move fixes QRs automatically. Natural
   target: idc03 (already runs input-bridge).'
@@ -31,7 +31,29 @@ comms:
 - at: 2026-10-20 15:48
   from: chaba
   text: started devin-task-20261020-154846-migrate-apps-web-origin-off-to on tony-macbook (dispatch)
+- at: 2026-10-20 16:02
+  from: devin
+  text: '[ph2 in-flight 2026-10-20] picked up card. State: idc02 deployed Caddyfile still has 9 dell upstreams (dell
+    rebooted 15:35, all dead). Services verified live elsewhere: node-red/ha-live/frigate-proxy/input-bridge neighbors
+    on omen+idc03+mn01. Plan: repoint web Caddyfile (michael-dev->idc03:8124, snapshot->omen:9005, vnc-ws->idc02:6082,
+    node-red->omen:1880, drop retired dev-v0/gemini-mic, frigate stays expect_down), rsync yt-corpus 8.9G dell->idc02
+    + mount, edge :8124->idc03 :9230->idc03:3010 :84'
+- at: 2026-10-20 16:13
+  from: tony-macbook
+  text: 'finished (ok): ph2 done 2026-10-20: /apps origin fully dell-free on idc02. Deployed Caddyfile synced to
+    canonical (michael-dev->idc03:8'
+- at: 2026-10-20 16:13
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261020-154846-migrate-apps-web-origin-off-to on tony-macbook still
+    dirty — 5 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'ph2 done 2026-10-20: /apps origin fully dell-free on idc02. Deployed Caddyfile synced to canonical (michael-dev->idc03:8124,
+    /snapshot->omen:9005, vnc/ws->idc02:6082 +ws-mn01/ws-macbook, yt-corpus local mount, dev-v0+gemini-mic already
+    dropped). Edge :8124->idc03, :9230->idc03:3010 input-bridge, :84'
+  sweep:
+    dirty: 5
+review_kind: verify
+claim: {}
