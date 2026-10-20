@@ -1,0 +1,9 @@
+[Unit]
+Description=tailscale-serve watchdog (hourly) (job:check-serve-config, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnCalendar=*-*-* *:23:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
