@@ -88,6 +88,9 @@ edges:
   # 2026-10-12
   #   /ada-ws/tony/* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
   #   (voice card same-origin lane; missing route 404'd the card 2026-10-13)
+  #   /apps/roster* -> 127.0.0.1:8099 web origin (agents roster console,
+  #   card roster-agents-tab; explicit handle needed — catch-all falls to
+  #   HA :8123 and 404s unlisted /apps/*) added 2026-10-20
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
