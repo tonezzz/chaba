@@ -118,6 +118,13 @@ Education, where spaced review surfaces it; not as prose buried in SSOT
 YAML or card comms. Applies to assessments, evals, and "what's out there"
 research — operational state stays in SSOT as before.
 
+Lesson series convention (added 2026-10-20): multi-part education lives
+as a topic family, e.g. Ada Nest = hub lesson `ada-nest-map` (post 1608)
++ `ada-nest-*` topic lessons, each with its own spaced-review date. A
+session that ships work touching a covered topic updates the matching
+lesson in place (upsert — don't fork a new topic) and refreshes the hub's
+inventory/links.
+
 ## Procedure-lookup duty (added 2026-10-11 — Tony's standing order)
 
 When Tony asks "what's our standard procedure for X" — answer **from the system**, not from memory:
