@@ -71,7 +71,11 @@ Thumbnails `thumb-workspace-*.png` are used by
   `TONY-WIFI_2.4G-ext`, 2.4GHz only, ch6/20MHz, WPA2-PSK. DHCP server OFF.
 - Admin UI `http://<ip>/login.html`; own IP floats (`.72`/`.73`/`.82`) and the
   UI auto-reboots daily at 03:00 — admin pages are intermittently unreachable.
-- Full config dump: `~/.local/ai-hub/page-dumps/repeater-config-2026-09-18.json`.
+- Config dumps: `~/.local/ai-hub/page-dumps/repeater-config-2026-09-18.json` and
+  `repeater-config-2026-10-19.json` (verified identical). Admin login: POST
+  /login/Auth, password field is base64 of the wifi PSK; admin IP floats on the
+  WAN-MAC side (.69 on 10-19); if the UI refuses on the wire, join
+  TONY-WIFI_2.4G-ext (same PSK as the main network) and retry.
 
 ## References
 
@@ -79,5 +83,6 @@ Thumbnails `thumb-workspace-*.png` are used by
   (`tony-tv`, `samsung-tv`, `tony-repeater` entries)
 - Tailscale subnet-route conflict fix: `AGENTS.md` → "Tailscale subnet-route
   conflict"; `lan-route-pref.service`
-- TV-corner power: `switch.plug_tv` feeds Samsung + TrueID + repeater — ask
-  before power-cycling.
+- TV-corner power: `switch.plug_tv` feeds Samsung + TrueID — ask before
+  power-cycling. The Tenda repeater is on a separate always-on outlet
+  (verified 2026-10-20); plug_tv does NOT cycle it.

@@ -94,7 +94,7 @@ sections:
           2026-09-17 via rygel (TonyTest) on tony-omen — pull via MEDIA.P/Source works clean; push (SetAVTransportURI+Play) needs an
           on-screen accept prompt each time. No AirPlay/Screen Mirroring — DLNA cast only. In ARP it appears with the
           repeater's WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT); its own eth0 MAC is only visible when it's on the upstream network
-          directly. Power — HA `switch.plug_tv` feeds the whole TV corner (Samsung + TrueID box + repeater). When unavailable,
+          directly. Power — HA `switch.plug_tv` feeds the TV + TrueID box (NOT the Tenda repeater — corrected 2026-10-20; it has its own always-on outlet). When unavailable,
           ask user before power-cycling — see "Samsung TV / TV-corner power flow" in AGENTS.md.
       - label: tony-repeater
         text:
@@ -111,7 +111,12 @@ sections:
           same, so credentials ARE effectively in the wifi stores). The admin UI floats on the WAN-MAC side IP
           (.69 on 10-19; .2.65 LAN-MAC side pings but serves no TCP); if it refuses on the wire, join
           TONY-WIFI_2.4G-ext (same PSK as TONY-WIFI_2.4G) and retry. Downstream client seen proxying under the
-          WAN MAC with ports 5601/52235/52396 — Android-box-like, likely the TrueID box.
+          WAN MAC with ports 5601/52235/52396 — Android-box-like, likely the TrueID box. POWER NOTE 2026-10-20 —
+          the repeater is NOT powered by switch.plug_tv despite the corner-map note above — plug confirmed off
+          (corner clients all dead) while the repeater stayed up and answered its UI. Separate always-on outlet.
+          SECOND REPEATER (same morning) — open AP SSID WIFI_3C59, BSSID 68:f0:bc:ad:3c:59 (same Tenda reasy
+          family), -36dBm near tony-omen, factory-default SSID name, zero presence on the wire (no .2.x lease,
+          no 192.168.0.254, no bridged MAC) — uplink/clients unknown; admin UI needs a client joined to WIFI_3C59.
       - label: cozylife-01
         text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
       - label: tuya-plug-tv
