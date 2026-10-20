@@ -60,7 +60,7 @@ All work lives on the kanban — the board is the single place everyone (Tony, D
 
 A "sweep" — status check, board hygiene, multi-ask morning batch, "finish my kanban" — runs the full loop without checking in at each step:
 
-1. **Verify** real state (services, logs, DBs, live endpoints — not memory).
+1. **Verify** real state (services, logs, DBs, live endpoints — not memory). **Verify by surface, not by service (added 2026-10-20 — the OPS-0731 miss):** a "done"/"verified" claim needs BOTH producer proof (unit active, health 200) AND consumer proof (the actual surface a user touches — open the page, fetch what the iframe/card fetches). For any retired host/route, grep consumer artifacts (dashboard JSONs, deployed `www/*.js`, caddy configs, unit envs) for the old hostname before declaring done — runbook: `docs/kb/host-migration-tony-dell.md` §consumer-reference audit.
 2. **Fix** what's safely fixable: verified-close cards, dead webhooks, stale sessions, config drift. Reversible ops are momentum, not permission.
 3. **Card** what needs hands or a decision — with `requests:` options when it's Tony's call.
 4. **Close** what's verified done; move cards honestly (never claim completion without evidence).
