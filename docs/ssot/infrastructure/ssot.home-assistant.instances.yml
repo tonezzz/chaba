@@ -6,7 +6,7 @@ instances:
     id: tony-ha
     base: ha
     role: prod           # restructure 2026-10-10: sole home-control plane
-    host: tony_dell
+    host: tony_omen      # evacuated tony-dell -> tony-omen 2026-10-19/20 (phase-5 full drain)
     runtime: rootless podman
     network: host
     container: tony-ha
@@ -16,8 +16,8 @@ instances:
     config: /home/tony/.config/home-assistant
     url:
       local: http://127.0.0.1:8123
-      tailscale: https://tony-dell.taila0626a.ts.net:8123
-      note: 'HA binds loopback only (configuration.yaml http.server_host). No LAN listener; tailscale serve terminates TLS on the tailnet IP. Use the tailscale URL for both internal and external in the HA app (decision: tony-ha-tailscale-only-access). Plain http://tony-dell:8123 fails — tailscaled expects TLS on that port.'
+      tailscale: https://tony-omen.taila0626a.ts.net:8123
+      note: 'HA binds loopback only (configuration.yaml http.server_host). No LAN listener; tailscale serve terminates TLS on the tailnet IP. Use the tailscale URL for both internal and external in the HA app (decision: tony-ha-tailscale-only-access). Plain http://tony-omen:8123 fails — tailscaled expects TLS on that port.'
     ssot: docs/ssot/infrastructure/ssot.home-assistant.tony.yml
     mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.tony_ha
     dashboards:
@@ -70,12 +70,12 @@ instances:
     id: ada-ha
     base: ada
     role: lab            # restructure 2026-10-10: tony-ha=prod, ada-ha+kk-ha=virtual homes for project dev
-    host: tony_dell
+    host: tony_omen      # evacuated tony-dell -> tony-omen 2026-10-19/20
     runtime: rootless podman
     network: podman (NOT host — dev isolation)
     container: ada-ha
     netns_note: '127.0.0.1 inside the container is the container, not
-      tony-dell. Host services reachable only via host.containers.internal
+      the host (tony-omen since 2026-10-20). Host services reachable only via host.containers.internal
       (non-loopback bindings) or AddHost-pinned tailnet names;
       loopback-bound host services (:8014) are unreachable entirely —
       see docs/ssot/jobs/home-assistant/2026-10-12-ada-ha-loopback-ssh-probe.yml.'
@@ -85,7 +85,7 @@ instances:
     config: /home/tony/.config/ada-ha
     url:
       local: http://127.0.0.1:8125
-      tailscale: https://tony-dell.taila0626a.ts.net:8125
+      tailscale: https://tony-omen.taila0626a.ts.net:8125
       note: 'Dev/lab tier — bottom rung of ada-ha -> michael-dev -> tony-ha
         promotion ladder. NOTE (audit 2026-10-10): no longer a fresh config —
         has organically grown to 340 entities/25 integrations incl. TONY-IP +
@@ -271,7 +271,8 @@ status:
   last_verified: "2026-09-15"
   health: active
   notes: |
-    tony-ha HA core container is healthy on port 8123, now bound to 127.0.0.1:8123
-    and exposed via Tailscale HTTPS at https://tony-dell.taila0626a.ts.net:8123.
-    michael-dev HA core container is healthy on port 8124 and exposed via
-    Tailscale HTTPS at https://tony-dell.taila0626a.ts.net:8124.
+    tony-ha HA core container is healthy on port 8123 on tony-omen, bound to 127.0.0.1:8123
+    and exposed via Tailscale HTTPS at https://tony-omen.taila0626a.ts.net:8123 (evacuated
+    tony-dell 2026-10-19/20; michael-dev's stale omen container was parked for the :8123 port).
+    michael-dev HA core container is healthy on port 8124 on idc03, exposed via
+    Tailscale HTTPS at https://idc03.taila0626a.ts.net:8124.

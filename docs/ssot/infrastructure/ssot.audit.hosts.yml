@@ -61,18 +61,6 @@ hosts:
         critical: true
         verification: pgrep -a devin-desktop
         note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
-      - name: chrome-cdp-headless.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: cast-browser-proxy.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: Renamed from cast-browser.service — now an :8799 proxy to the
-          cast-browser unit on tony-omen (cast moved there 2026-10).
       - name: cast-ha-panel.timer
         type: timer
         scope: user
@@ -154,14 +142,6 @@ hosts:
         critical: false
         note: Every 15s; chvt 7 when lxqt-seat is up but another VT is in front
           (greeter/getty). Never steals a real user graphical session
-      - name: clip-sync-omen.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Polls tony-omen clipboard (text + image/*) every 1s into :1 —
-          Barrier 2.4.0 relays text only; reverse of omen's clip-sync-dell.
-          Runs ~/.local/bin/clip-sync tony-omen
       - name: mddb.service
         type: service
         scope: user
@@ -227,7 +207,6 @@ hosts:
       - {name: nest-mgr.service, type: service, scope: user}
       - {name: node-red.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
-      - {name: playlive-omen-cdp-tunnel.service, type: service, scope: user}
       - {name: plug-watch.service, type: service, scope: user}
       - {name: raceman-php.service, type: service, scope: user}
       - {name: raceman-web.service, type: service, scope: user}
@@ -276,8 +255,6 @@ hosts:
       - {name: tony-dell-health-snapshot.timer, type: timer, scope: user}
       - {name: tony-dell-mcp-health.timer, type: timer, scope: user}
       - {name: tony-dell-monitor.timer, type: timer, scope: user}
-      - {name: update-cam-frame.timer, type: timer, scope: user}
-      - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
     expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
       - {name: bserver.service, scope: user}
       - {name: chaba-board-api.service, scope: user}
@@ -325,6 +302,44 @@ hosts:
       - {name: gev-gemini.service, scope: user}
       - {name: gods-eye-view-api.service, scope: user}
       - {name: gev-workspace.service, scope: user}
+      # phase-5 LAN cohort -> tony-omen 2026-10-19/20
+      - {name: tony-ha.service, scope: user, note: "HA prod — evacuated to omen; container also podman-stopped"}
+      - {name: ada-ha.service, scope: user}
+      - {name: node-red.service, scope: user}
+      - {name: go2rtc.service, scope: user}
+      - {name: camera-panel.service, scope: user}
+      - {name: plug-watch.service, scope: user}
+      - {name: google-home-mcp.service, scope: user}
+      - {name: nest-mgr.service, scope: user}
+      - {name: yt-live-api.service, scope: user}
+      - {name: ha-live.service, scope: user}
+      - {name: ha-stall-watchdog.service, scope: user}
+      - {name: michael-ha-mcp-tunnel.service, scope: user}
+      - {name: chaba-guest.service, scope: user}
+      - {name: chaba-guest-lan.service, scope: user, note: "binds 192.168.2.67 — revives only after omen takes the IP"}
+      - {name: ha-guest-lan.service, scope: user}
+      - {name: gemini-ollama-proxy.service, scope: user}
+      - {name: raceman-web.service, scope: user}
+      - {name: workflows-mcp.service, scope: user, note: "pre-existing breakage — image missing on dell before migration"}
+      - {name: playlived.service, scope: user}
+      - {name: playlive-chrome.service, scope: user}
+      - {name: yolo-detect.service, scope: user}
+      - {name: cast-ha-panel.service, scope: user}
+      - {name: cast-ha-panel.timer, scope: user}
+      - {name: audit-cast.service, scope: user}
+      - {name: audit-cast.timer, scope: user}
+      - {name: wp-cam-snapshot.service, scope: user}
+      - {name: wp-cam-snapshot.timer, scope: user}
+      - {name: update-cam-frame.service, scope: user}
+      - {name: update-cam-frame.timer, scope: user}
+      - {name: ha-config-backup.service, scope: user}
+      - {name: ha-config-backup.timer, scope: user}
+      - {name: xiaomi-token-refresh.service, scope: user}
+      - {name: xiaomi-token-refresh.timer, scope: user}
+      - {name: chrome-cdp-headless.service, scope: user}
+      - {name: cast-browser-proxy.service, scope: user, note: "retired — already proxied to omen"}
+      - {name: clip-sync-omen.service, scope: user, note: "retired — targets dell's X display"}
+      - {name: playlive-omen-cdp-tunnel.service, scope: user, note: "retired — pointless on omen"}
     allowed_running:
       - devin-task-*.service   # ephemeral dispatch session units
     known_failed:
@@ -903,6 +918,33 @@ hosts:
       - {name: wayback-save-gta.timer, type: timer, scope: user}
       - {name: weaviate-index.timer, type: timer, scope: user}
       - {name: weekly-digest.timer, type: timer, scope: user}
+      # phase-5 LAN cohort <- tony-dell 2026-10-19/20
+      - {name: tony-ha.service, type: service, scope: user, critical: true, note: "HA prod — tailnet :8123"}
+      - {name: ada-ha.service, type: service, scope: user, note: "HA lab — tailnet :8125"}
+      - {name: node-red.service, type: service, scope: user}
+      - {name: go2rtc.service, type: service, scope: user, note: "camera proxy :1984/:8554 — all 12 dell streams merged"}
+      - {name: camera-panel.service, type: service, scope: user, note: "moved to :8091 — :8090 is cast-shots-http"}
+      - {name: plug-watch.service, type: service, scope: user}
+      - {name: google-home-mcp.service, type: service, scope: user, note: "binds 100.75.102.88:8004"}
+      - {name: nest-mgr.service, type: service, scope: user}
+      - {name: yt-live-api.service, type: service, scope: user, note: ":8791 — media via raceman :8083/apps/yt-live"}
+      - {name: ha-live.service, type: service, scope: user, note: "execs bridge.py inside tony-ha; tailnet :8444"}
+      - {name: ha-stall-watchdog.service, type: service, scope: user}
+      - {name: michael-ha-mcp-tunnel.service, type: service, scope: user}
+      - {name: chaba-guest.service, type: service, scope: user, note: ":8014 loopback"}
+      - {name: chaba-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff at dell power-off"}
+      - {name: ha-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff"}
+      - {name: gemini-ollama-proxy.service, type: service, scope: user, note: ":11435"}
+      - {name: raceman-web.service, type: service, scope: user, note: "nginx :8083 serves yt-live media"}
+      - {name: playlived.service, type: service, scope: user}
+      - {name: playlive-chrome.service, type: service, scope: user}
+      - {name: yolo-detect.service, type: service, scope: user}
+      - {name: cast-ha-panel.timer, type: timer, scope: user}
+      - {name: audit-cast.timer, type: timer, scope: user}
+      - {name: wp-cam-snapshot.timer, type: timer, scope: user, note: "rendered from ssot.jobs — host now tony_omen"}
+      - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
+      - {name: update-cam-frame.timer, type: timer, scope: user}
+      - {name: ha-config-backup.timer, type: timer, scope: user}
     expected_absent:
       - name: michael-dev.service
         scope: user

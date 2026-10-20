@@ -194,3 +194,40 @@ Executed the plan above in one window:
 - ssot.jobs.yml: yomi-backup/update-all/update-active host → idc03.
 - Dell WAN/LAN dropped ~17:00 during the cutover (gateway 192.168.1.1
   stopped ARPing; tailscale held then dropped). Verified after return.
+
+## Phase 5 — LAN cohort evacuation dell → tony-omen (2026-10-19/20) — DONE
+
+Full evacuation, approved and executed live. Household HA blip ~15min.
+
+- **Moved & verified on omen:** tony-ha (:8123 hostnet, dell's exact image
+  `bfdd6332e2f4` — patch mounts are version-pinned), ada-ha (:8125),
+  node-red (:1880), go2rtc (12 streams, config merged — dell's remote-pull
+  `omen_cam` swapped for omen's local exec), camera-panel (:8091 — :8090
+  taken by cast-shots), plug-watch, google-home-mcp (bind→100.75.102.88:8004),
+  nest-mgr, yt-live-api (:8791, media via raceman nginx :8083/apps/yt-live),
+  chaba-guest (:8014), ha-live (bridge inside tony-ha, tailnet :8444),
+  ha-stall-watchdog, michael-ha-mcp-tunnel, gemini-ollama-proxy (:11435),
+  raceman-web, playlived+playlive-chrome, yolo-detect, cast timers,
+  wp-cam-snapshot/update-cam-frame/xiaomi-token-refresh/ha-config-backup timers.
+- **Data:** HA 3.9G + ada-ha 1G + yt-live media ~11G rsync'd dell→omen direct
+  LAN ssh; final delta pass after dell HA stop.
+- **Retired (host-bound):** clip-sync-omen (targets dell X), cast-browser-proxy
+  (already proxied to omen), playlive-omen-cdp-tunnel.
+- **Pre-existing breakage (not migration):** workflows-mcp image missing on
+  dell (restart-looping before the move) — needs rebuild, carded.
+  Camera frames dead end-to-end (wp-cam-snapshot was 0/8 on dell too —
+  camera/LAN-side, not the move).
+- **Split-brain found+fixed:** stale `michael-dev` container on omen held
+  :8123 — parked (canonical on idc03 since 10-09). tony-ha's first boot
+  failed http/auth setup mid-rsync — restarted clean.
+- **Tailnet serve:** dell :8123/:8125/:8444 mappings cleared; omen now serves
+  :8123→HA, :8125→ada-ha, :8444→ha-live. Edge `/apps/ha/tony-ha*` →
+  tony-omen:8123; `/apps/node-red/*` → 100.75.102.88:1880.
+- **Pending (.67 handoff):** chaba-guest-lan + ha-guest-lan staged-but-stopped
+  on omen — they bind 192.168.2.67 which is dell's primary LAN IP. When dell
+  powers off: `ip addr add 192.168.2.67/24 dev <iface>` on omen + start both
+  units. yt-live-api URLs already emit .67:8083.
+- **Pending (webcams):** tony-ha runs without /dev/video0/1 mounts — user
+  moves the USB cams later; re-add AddDevice lines when done.
+- Dell remains: web compat edge (:443→caddy), dnsmasq-postgre, desktop
+  plumbing, dell-* monitors. All migrated units .parked + audit-guarded.

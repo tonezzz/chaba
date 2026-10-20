@@ -1,38 +1,42 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Re-measured 2026-10-19 post-constellation (pg+yomi+redis+trade→idc03) + 2026-10-18 post-ph3 —
-  post kanban-writer migration (OPS-0725 phase 2). Refresh on each service
-  deployment/migration phase or via health-check.
+  Re-measured 2026-10-20 post-phase-5 full dell evacuation (LAN cohort → tony-omen);
+  2026-10-19 post-constellation (pg+yomi+redis+trade→idc03). Refresh on each
+  service deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
 version: 1
 
 hosts:
   tony_dell:
-    role: lan-hub   # DRAINING (OPS-0725) — becomes failover capacity after SSD+RAM upgrade
+    role: evacuated   # FULLY DRAINED 2026-10-19/20 (OPS-0725 ph5) — failover capacity after SSD+RAM upgrade
     cpu_cores: 8
-    mem_gb: 15.3    # ~7G avail — pressured but stable post-stabilization
-    disk_gb: {total: 118, free: 21}     # relieved — 82% used post ph4 offload (was 96%); still drain-priority
+    mem_gb: 15.3    # ~7G avail, load ~0.6 — cool post-evacuation
+    disk_gb: {total: 118, free: 20}     # 83% used — all migrated units .parked, ghost-guarded
     gpu: none
     note: >-
-      Household LAN hub — tony-ha + ada-ha (LAN-bound) stay until phase 5.
-      Kanban single-writer family moved to idc03 2026-10-16 (OPS-0725 ph2):
-      writer units stopped+disabled — do NOT re-enable (split-brain).
-      `~/CascadeProjects/chaba-tony-dell` is a FROZEN stale checkout;
-      ~25 exec-only units still run code from it — convert to pull-mirror
-      or repoint to `~/CascadeProjects/chaba` before dell goes dark.
+      Evacuated 2026-10-19/20 — entire LAN cohort now on tony-omen (tony-ha,
+      ada-ha, go2rtc, node-red, guests, yolo, playlive, cast timers, jobs).
+      All migrated units .parked + audit expected_absent. Still runs: `web`
+      compat edge shim (tailnet serve :443 → caddy :80), dnsmasq-postgre,
+      desktop plumbing (xorg/xfce/barrier/xvfb), dell-* monitors. Owns LAN
+      IP 192.168.2.67 until power-off — guest-lan proxies staged-but-stopped
+      on omen pending that IP handoff. Webcams (/dev/video0/1) still
+      attached — tony-ha runs without them until physical move.
+      `~/CascadeProjects/chaba-tony-dell` remains a FROZEN checkout.
       Board-api compat shim on dell web proxies old URLs to idc03.
-      Ralink USB WiFi adapter physically pins chaba-guest-lan/ha-guest-lan.
   tony_omen:
-    role: nest-gpu-lane    # absorbs the LAN group next (tony-ha/ada-ha/go2rtc/camera-panel per OPS-0725 ph5)
+    role: lan-hub + nest-gpu-lane    # absorbed dell's LAN cohort 2026-10-19/20 (OPS-0725 ph5)
     cpu_cores: 12
-    mem_gb: 31        # ~25G avail — good room
-    disk_gb: {total: 98, free: 56}
+    mem_gb: 31        # ~17G avail, load ~1.5 — absorbed HA stack cleanly
+    disk_gb: {total: 98, free: 59}
     gpu: yes          # GTX1650 4GB — jev/nest serve+train lane, ollama :11434 (user svc, reinstalled 2026-10-12)
     note: >-
-      LAN-connected + GPU — target host for dell's LAN-dependent services
-      (same network segment keeps devices reachable). heavy/ML workloads,
-      development; power-hungry — prefer Colab for burst GPU.
+      Now the household LAN hub: tony-ha (:8123, tailnet-served), ada-ha
+      (:8125), node-red, go2rtc (12 streams merged), google-home-mcp,
+      yt-live-api+raceman media, ha-live, guests (pending .67 handoff),
+      yolo/playlive/cast timers. heavy/ML workloads, development;
+      power-hungry — prefer Colab for burst GPU.
   idc02:
     role: edge-primary   # +capacity-absorber 2026-10-16 — idlest host, bias new VPS placements HERE
     cpu_cores: 4

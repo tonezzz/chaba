@@ -79,7 +79,7 @@ jobs:
     leader (was dell-local env)
 - id: ha-config-backup
   name: HA Config Backup
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: '*-*-* 03:30:00'
   persistent: true
@@ -384,7 +384,7 @@ jobs:
   note: podman one-shot; moved to idc03 2026-10-19 w/ pg constellation — postgre alias = idc03 tailnet IP
 - id: xiaomi-token-refresh
   name: Xiaomi Token Refresh
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: daily
   persistent: true
@@ -392,7 +392,7 @@ jobs:
   exec: /usr/bin/python3 %h/.config/go2rtc/xiaomi-token-refresh.py
 - id: cam-frame-refresh
   name: Cam Frame Refresh
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   every: 5s
   timeout: 10s
@@ -400,12 +400,12 @@ jobs:
   note: 5s cadence — below the dispatcher floor, proves the dispatch boundary
 - id: wp-cam-snapshot
   name: Cam Snapshot -> WP cam CPT
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: '*-*-* *:2/15:00'
   persistent: true
   timeout: 5m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/cam-wall/cam-snapshot-wp.py
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/cam-wall/cam-snapshot-wp.py
   note: 'card cam-snapshot-writer-wp — per go2rtc stream (parsed from
     ~/.config/go2rtc/go2rtc.yaml, /api/streams fallback) fetches
     frame.jpeg on 127.0.0.1:1984, uploads to WP media, writes private

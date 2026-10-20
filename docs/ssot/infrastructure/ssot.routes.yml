@@ -85,7 +85,7 @@ services:
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
   ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
-  tony-ha:        {host: tony-dell, listen: "127.0.0.1:8123", tailnet: "https://tony-dell.taila0626a.ts.net:8123"}
+  tony-ha:        {host: tony-omen, listen: "127.0.0.1:8123", tailnet: "https://tony-omen.taila0626a.ts.net:8123"}   # evacuated dell 2026-10-19/20 (ph5)
   michael-dev:    {host: idc03,     listen: "127.0.0.1:8124", tailnet: "https://idc03.taila0626a.ts.net:8124"}     # migrated 2026-10-09
   board-api:      {host: idc03, listen: "127.0.0.1:8787", tailnet: "https://idc03.taila0626a.ts.net:10000"}    # migrated 2026-10-16 OPS-0725 ph2
   report-api:     {host: idc02, listen: "127.0.0.1:8792"}    # migrated 2026-10-17 OPS-0725 ph3; tailnet shadow idc02:8792
@@ -97,10 +97,10 @@ services:
   gev-cmd:        {host: idc02, listen: "100.123.163.11:8790", note: "gev-cmd-relay migrated 2026-10-19"}
   gesture-relay:  {host: idc02, listen: "100.123.163.11:8794", note: "migrated 2026-10-19"}
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
-  snapshot:       {host: tony-dell, listen: "127.0.0.1:9005"}
+  snapshot:       {host: tony-omen, listen: "127.0.0.1:9005", note: "ha-live bridge inside tony-ha — evacuated dell 2026-10-19/20"}
   chaba-docs:     {host: idc02, listen: "100.123.163.11:8092", note: "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
   helm:           {host: idc02, listen: "100.123.163.11:3003", note: "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
-  node-red:       {host: tony-dell, listen: "127.0.0.1:1880"}
+  node-red:       {host: tony-omen, listen: "0.0.0.0:1880", note: "evacuated dell 2026-10-19/20 (ph5)"}
   yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
   camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
   camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
@@ -142,7 +142,7 @@ routes:
   - {id: ada-ha-legacy,    kind: alias,  path: /apps/ada_ha*,          target: "/apps/ha/ada{uri}", owner: ada-voice}
   - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-voice}
   - {id: ha-index,         kind: alias,  path: /apps/ha,            target: "/apps/ha/", owner: chaba}
-  - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-dell.taila0626a.ts.net:8123/", owner: tony-ha}
+  - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-omen.taila0626a.ts.net:8123/", owner: tony-ha}
   - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc03.taila0626a.ts.net:8124/", owner: michael-ha}
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
@@ -174,7 +174,7 @@ routes:
   # docs/kb/imagen-archive-2026-10-07.md
   - {id: trade-api,        kind: proxy,  path: "{/apps/trade/api/*,/apps/trade/api/ws/*,/api/ws/*}", strip: /apps/trade, upstream: "100.102.134.91:9002", upstream_host: localhost, ws: true, owner: trade, custom: true, note: "three handle variants + /api/ws alias — hand block in renderer"}
   - {id: trade,            kind: static, path: /apps/trade/*,          owner: trade, headers: {Cache-Control: "public, max-age=3600"}}
-  - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "127.0.0.1:1880", owner: nodered}
+  - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "100.75.102.88:1880", owner: nodered, note: "omen since 2026-10-19/20 (ph5)"}
   - {id: board,            kind: static, path: /apps/board/*,          owner: chaba}
   - {id: board2,           kind: static, path: /apps/board2/*,         owner: chaba, note: "tabbed comparison view (render-board2.py)"}
   - {id: sw,               kind: static, path: /apps/sw.js,            owner: chaba, note: "shared service worker"}
