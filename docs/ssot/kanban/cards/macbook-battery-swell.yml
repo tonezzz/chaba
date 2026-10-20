@@ -1,7 +1,7 @@
 id: macbook-battery-swell
 title: macbook battery swelling — replace/remove within days (trackpad hard to press)
 column: done
-updated: 2026-10-20 12:14
+updated: 2026-10-20 16:39
 priority: high
 tags:
 - hardware
@@ -65,6 +65,13 @@ comms:
 - at: 2026-10-20 12:14
   from: devin
   text: moved backlog -> done
+- at: 2026-10-20 16:39
+  from: devin
+  text: '[followup] mac_plug charge-band automation live on tony-ha (automation.mac_plug_charge_band_80_60): battery_level>80
+    AND telemetry fresh -> plug off; <60 -> plug on; telemetry_fresh off >10m -> fail-open ON; watchdog */5min forces
+    ON if battery_level last_updated >15m (bridge dead). Fan plug repurposed 2026-10-20: switch.plakphadlom -> switch.mac_plug,
+    verified off=Discharging on=Charging via sysfs. coffee_corner_fan automation DISABLED (person-follow would have
+    cut macbook power). automations.y'
 requests:
 - id: macbook-battery-swollen-58-replace-or-re-5542b4
   ask: MacBook battery (swollen, 58%) — replace or remove?

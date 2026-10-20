@@ -1,0 +1,19 @@
+id: idc03-saturation-yolo-gesture-service-sp-889252
+title: 'idc03 saturation: yolo-gesture.service spinning 124% CPU for 4d on writer host'
+column: backlog
+updated: 2026-10-20 16:43
+priority: high
+tags:
+- ops
+- capacity
+- idc03
+spec: 'Load assessment 2026-10-20: idc03 (4c, backend-hub+kanban-writer, already SATURATION WATCH) carries yolo-gesture.service
+  (ultralytics-yolo-ha server.py :8785, gesture uplink->vcast screen1) at ~124% CPU sustained ~4 days. Wrong lane
+  per placement policy — CV/GPU work belongs on tony-omen. Options: (a) move yolo-gesture to tony-omen (GTX1650,
+  has yolo/playlive lane already) ★recommended, (b) move to mn01 (already runs same server.py + VMS.exe, but retirement
+  pending), (c) frame-rate/model cap to cut CPU. Done = service off idc03 or CPU-bound, load sustained <2.'
+ref: OPS-0753
+comms:
+- at: 2026-10-20 16:43
+  from: tony
+  text: card captured via board-api
