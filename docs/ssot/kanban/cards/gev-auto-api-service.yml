@@ -1,17 +1,18 @@
 id: gev-auto-api-service
 title: gods-eye-view-api service not active
-brief: 'An automated health check flagged: gods-eye-view-api service not active. Read the note, fix it, then close
-  the card.'
-column: done
+brief: 'An automated health check flagged: gods-eye-view-api service not active. Read
+  the note, fix it, then close the card.'
+column: review
 review_kind: triage
 generated: gev-auto-health
 program: gev
 area: monitoring
 priority: high
 note: systemctl --user is-active gods-eye-view-api -> inactive
-help: 'User unit ~/.config/systemd/user/gods-eye-view-api.service runs server.mjs on 4173. Fix: systemctl --user
-  enable --now gods-eye-view-api; logs: journalctl --user -u gods-eye-view-api -n 50'
-updated: 2026-10-20 18:11
+help: 'User unit ~/.config/systemd/user/gods-eye-view-api.service runs server.mjs
+  on 4173. Fix: systemctl --user enable --now gods-eye-view-api; logs: journalctl
+  --user -u gods-eye-view-api -n 50'
+updated: '2026-10-20'
 action:
   status: done
 comms:
