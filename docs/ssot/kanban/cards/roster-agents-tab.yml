@@ -1,7 +1,7 @@
 id: roster-agents-tab
 title: Agents tab on chaba-admin — unified roster chat over ada lanes
 column: review
-updated: 2026-10-20 18:34
+updated: 2026-10-20 18:55
 priority: medium
 tags:
 - chaba-admin
@@ -31,6 +31,11 @@ comms:
     views now [pair, board, agents, chaba-cms, ...]. roster-tony keys minted on all 4 lanes with apps=[chat] — verified
     each authenticates via /api/auth/session. Keys for Tony: ~/.config/secrets/roster-keys.json + ready bootstrap
     URL in roster-bootstrap.txt (open once, then delete). Seeds via #key.<id>= hash -> localStorage, stripped after.'
+- at: 2026-10-20 18:55
+  from: devin
+  text: 'FIX 2026-10-20: tab+bootstrap 404 — tony-ha.surf-thailand.com edge routes /apps/* by explicit handle blocks;
+    catch-all falls to HA :8123. Added /apps/roster* -> idc02 web origin (edge-local 200). Same trap fixed on /apps/percussion*
+    (was silently 404 too). ssot.routes.yml edge comment updated. Every dashboard iframe URL now has a route.'
 requests:
 - id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
   ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt

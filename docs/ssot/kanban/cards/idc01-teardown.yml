@@ -1,7 +1,7 @@
 id: idc01-teardown
 title: idc01 lease teardown — rescue jev-corpus archive, cancel dead VPS
 column: backlog
-updated: 2026-10-12 21:20
+updated: 2026-10-20 18:49
 priority: medium
 spec: 'idc01 is retired (SSOT: not warm DR, mddb masked never unmask) yet ssh now fails entirely (permission denied
   — access fully dead). It still holds the pre-migration jev-corpus archive (jsonl files referenced by ssot.nest-training.yml
@@ -13,3 +13,13 @@ comms:
 - at: 2026-10-12 21:20
   from: tony
   text: card captured via board-api
+- at: 2026-10-20 18:48
+  from: devin
+  text: test-probe
+- at: 2026-10-20 18:49
+  from: devin
+  text: '(ignore the test-probe line above — wrong param name on first try) RESCUED before contract expiry (~2026-10-21,
+    1mo from tailnet join 2026-09-21): pulled jev-corpus{,-mined,-reviewed}.jsonl from idc01:~/.local/share/ada/
+    to idc03:~/.local/share/ada/jev-corpus-archive-idc01/ — verified 4721 lines total (3483+1205+33). Box is currently
+    ALIVE again (ssh works, follower+caddy-edge up ~2d) despite the 2026-10-12 ssh-dead retirement note — provider
+    apparently suspended then reinstated once already. If'
