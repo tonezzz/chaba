@@ -49,6 +49,30 @@ hosts:
     tailscale_ip: 100.68.142.13
     description: Secondary workstation, primary headless browser/cast target
     role: secondary
+    storage:
+      migrated: "2026-10-20 — root moved HDD->NVMe via rsync clone; Tony-approved"
+      primary:
+        device: /dev/nvme0n1
+        model: Samsung SSD 970 EVO Plus 250GB
+        serial: S4EUNG0M266545M
+        note: BIOS SATA Operation switched RAID-On->AHCI to expose the
+          PCIe NVMe (RST remapping hid it). Old Windows wiped.
+        partitions:
+          - {part: nvme0n1p1, size: 512M, fstype: vfat, label: DELL-EFI, mount: /boot/efi}
+          - {part: nvme0n1p2, size: 8G, fstype: swap, label: dell-swap}
+          - {part: nvme0n1p3, size: 224G, fstype: ext4, label: dell-root, mount: /}
+      rollback:
+        device: /dev/sda5
+        model: Seagate ST500LM000 SSHD 500GB
+        note: "Untouched pre-migration root (label: none, UUID 565f7f54...);
+          efibootmgr Boot0002 'Ubuntu' still boots it — F12 fallback"
+      boot:
+        entry: "Boot0005 Ubuntu-NVMe -> \\EFI\\ubuntu\\shimx64.efi (first in BootOrder)"
+        secureboot: disabled
+      moved_to_idc02:
+        path: "~/dell-moved-20261020/ (6.7G, byte-verified then deleted from NVMe)"
+        dirs: [mddb-bench, nest-lane, gev-wt-flood, model-bench, Backups, Downloads, "'-' docker-save tar", .cache/yt-live-media]
+      services_disabled_20261020: [openvpn, wpa_supplicant, ModemManager, bluetooth, cloud-init]
     tags:
       - headless-primary
       - barrier-client
@@ -627,7 +651,6 @@ hosts:
         - apparmor.service
         - apport.service
         - avahi-daemon.service
-        - bluetooth.service
         - caddy.service
         - chrome-remote-desktop@tony.service
         - chrony.service
@@ -644,12 +667,10 @@ hosts:
         - keyboard-setup.service
         - kmod-static-nodes.service
         - lm-sensors.service
-        - ModemManager.service
         - netplan-configure.service
         - networkd-dispatcher.service
         - NetworkManager-wait-online.service
         - NetworkManager.service
-        - openvpn.service
         - plymouth-quit-wait.service
         - plymouth-read-write.service
         - plymouth-start.service
@@ -669,7 +690,7 @@ hosts:
         - sysstat.service
         - systemd-binfmt.service
         - systemd-fsck-root.service
-        - systemd-fsck@dev-disk-by\x2duuid-E6FF\x2d442F.service
+        - systemd-fsck@dev-disk-by\x2duuid-D170\x2d3E72.service
         - systemd-journal-flush.service
         - systemd-journald.service
         - systemd-logind.service
@@ -697,7 +718,6 @@ hosts:
         - user@1000.service
         - user@60578.service
         - uuidd.service
-        - wpa_supplicant.service
         - xorg-seat.service
         - xrdp-sesman.service
         - xrdp.service
@@ -737,13 +757,13 @@ hosts:
         available: 6.4Gi
       swap: {}
       disk:
-        filesystem: /dev/sda5
-        size: 118G
-        used: 82G
-        available: 31G
-        percent: "73"
+        filesystem: /dev/nvme0n1p3
+        size: 220G
+        used: 75G
+        available: 135G
+        percent: "36"
         mount: /
-        total: 118G
+        total: 220G
       load:
         1m: 2.03
         5m: 2.52
