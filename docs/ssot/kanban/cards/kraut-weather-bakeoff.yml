@@ -25,6 +25,17 @@ note: >-
   michael-ha /api/config: 12.898N 100.908E (Ban Chang, Rayong).
   If the demo lands: becomes an ssot.jobs timer + RK600 actuals scoring
   (RMSE per source over ~7d) before picking the production source.
-comms: []
+column: done
+comms:
+  - >-
+    [done] 2026-10-20 demo delivered to Tony's mn-lane DM (8960073266) via
+    ada-tg-relay-mn :8917 — journal verified sendMessage 200 + arch PNG fetch
+    200 + sendPhoto 200. All 6 sources returned live data (RK600 30.3°C/74%RH
+    measured, HA-FC, ECMWF/GFS/ICON, METNO, TMD-Rayong, GEMINI grounded).
+    Run note: HA calls went through a throwaway `ssh -L 18123:michael-ha:8123
+    tony-omen` tunnel because idc03→michael-ha:8123 is dead — that's a real
+    outage for Kraut's HA tools, not a demo artifact (tunnel killed after
+    run). Follow-ups when approved: (a) restore the idc03→michael-ha path or
+    repoint ada-ai-kraut HA, (b) daily timer + RMSE scoring vs RK600.
 requests: []
 updated: '2026-10-20'
