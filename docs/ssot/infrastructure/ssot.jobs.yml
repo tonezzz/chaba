@@ -321,7 +321,7 @@ jobs:
     auto-fixes. Added 2026-10-15.'
 - id: devin-summaries-sync
   name: Devin Summaries Sync
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: '*-*-* *:45:00'
   persistent: true
@@ -329,7 +329,7 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py
 - id: session-audit
   name: Ada session audit (transcripts -> friction -> CMS/focus/corpus)
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: '*-*-* 05:30:00'
   persistent: true
@@ -347,7 +347,7 @@ jobs:
     dell''s ssh key. 05:30 lands before the 07:05 daily-brief.'
 - id: devin-session-prune
   name: Devin Dispatch Session Prune
-  host: tony_dell
+  host: tony_omen
   dispatch: systemd
   on_calendar: Sun *-*-* 03:00:00
   persistent: true
