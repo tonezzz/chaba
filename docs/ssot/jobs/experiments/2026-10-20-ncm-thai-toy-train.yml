@@ -1,0 +1,78 @@
+title: NCM Thai adaptation — toy-train implementation
+subtitle: Reimplemented NCM training loops (arXiv:2610.14162) + Thai pipeline; Sudoku-validated on CPU
+icon: flask
+card: ncm-thai-adaptation  # OPS-0750
+related:
+  recon: docs/ssot/jobs/experiments/2026-10-20-ncm-thai-recon.yml
+  paper: arXiv:2610.14162
+  upstream: github.com/HazyResearch/ncm
+  code: experiments/ncm-thai/  # trainers + configs; upstream clone at experiments/ncm-upstream
+
+decision_context:
+  mode: toy-train  # Tony picked 2026-10-20 19:06 (request recon-done-toy-train-is-cheaper-than-fea-b244ca)
+
+what_was_built:
+  trainers:
+    tokenizer: |
+      experiments/ncm-thai/ncmthai/train_tokenizer.py — stage-1 VQ-VAE loop.
+      loss = recon CE + vq_loss (commitment+latent, returned by shipped forward;
+      nested dropout + EMA codebook updates fire inside forward under
+      self.training). AdamW + cosine-to-floor + clip; codebook-util logging.
+    generator: |
+      train_generator.py — stage-2 loop per paper Alg.1: encode clean codes ->
+      corrupt conditioning codes (uniform same-codebook replacement,
+      "shifted linear decreasing" rates, mean 0.5) -> vq.idx_to_ncm_input ->
+      one forward -> L_NCM with w_k ∝ ell_k^(-alpha)/sum ell^(1-alpha).
+      Handles query_level0 (queries prepended, all-level targets),
+      predict_level0, conditional prefixes + prefix_dropout for CFG.
+      Tracks level-0 unigram histogram -> generator.pt:inference.level0_unigram
+      (format scripts/eval_shard.py expects). save_every writes opt state;
+      --resume restores model+opt+step+l0_counts (earlyoom-proof).
+    support: |
+      corrupt.py (rates + weights), model_wrap.py CheckpointedNCP (per-block
+      grad ckpt — required on CPU: SDPA math backend keeps [B,H,S,S] weights
+      for backward, ~8x activation blowup), train_common.py, encode_corpus.py.
+  sudoku:
+    data: sudoku_data.py — backtracking gen, released token format
+      (puzzle [BOS]+81+8sep+[BOS]=91, solution 81+8sep=89); 12k boards carved at 40 clues.
+    eval: eval_sudoku.py — wellformed/valid/solved on held-out released puzzles.
+  thai:
+    base_tok: sp_tokenizer.py — SentencePiece BPE 8192 trained on 65k mC4-th docs;
+      registered as pre_tokenizer name "spm" in upstream registry.
+    data: thai_data.py — mC4 'th' stream -> data/thai_corpus.txt (120k docs,
+      314.6M chars) -> SP ids data/thai_ids.pt (300k x 128, BOS..EOS + PAD).
+    config: configs/thai-toy.yaml — paper TinyStories column verbatim
+      (param counts verified: VQVAE 36.43M, NCP 88.61M — identical to Table 5/6).
+    baseline/eval: ar_baseline.py (AR LM on same ids, RoPE+qknorm, tied head),
+      eval_thai.py (held-out PPL, NCM Gen-PPL under AR ref, unigram entropy,
+      s/seq vs AR NFE — paper protocol).
+
+validation:
+  sudoku_tokenizer: |
+    250 updates @ bs64 CPU: recon CE 2.65 -> 0.134, vq_loss 8.4 -> 0.72.
+    Held-out recon: 96.1% token acc (16 released easy solutions). Param count
+    matches paper (14.90M).
+  sudoku_generator: |
+    micro variant (4x256=3.28M, paper ladder/vocab, query_level0): at step 50
+    loss 2.90 -> 1.97, code acc 4.3% -> 44.3%. Trainer verified end-to-end;
+    killed repeatedly by earlyoom on mn01 (VmRSS ~1.8-2.9GB, box carries
+    ~4GB of camera/embeddings services; OOMScoreAdjust=200 makes dispatch
+    the preferred victim) — mitigated via CheckpointedNCP + --resume +
+    retry-train.sh.
+
+host_constraints:
+  mn01: |
+    CPU-only 4c/7GB, earlyoom kills >~10% avail dips. Tokenizer smoke OK;
+    paper-arch generator (25M, S=413) OOMs without checkpointing; micro arch
+    + batch 16 + checkpointed = ~7.7s/step. Thai toy (88M gen, 36M tok) is
+    not runnable here beyond smoke steps.
+
+remaining_for_done_condition:
+  - "Working Thai NCM at TinyStories-equivalent scale with quality numbers vs
+    AR baseline" needs the GPU run: ~10k tok + ~20k gen updates @ bs 512-1024
+    (<1 H100-day, $20-50 rented per recon) — or a long tony-omen GTX 1650 run.
+    Everything up to `train_tokenizer --config configs/thai-toy.yaml` is ready;
+    eval + AR baseline scripts written.
+  - GPU dispatch path exists: card action.gpu.min_free_mb routes to tony-omen
+    runner (4GB VRAM — fits micro/medium, tight for 88M; batch small + ckpt).
+    Rented GPU needs Tony's account — spend was inside the accepted option.
