@@ -160,8 +160,11 @@ sections:
           192.168.2.90/.92 (11n 2.4GHz ch1, RSSI -68dBm @28Mbps — marginal; Wi-Fi 6E capable, stuck on weak band at
           her spot). Remote Login ON since 2026-10-21 (ssh -J tony-dell kkkakk@<ip>; use .92 if .80:22 filtered).
           Setup 2026-10-21 — pmset sleep=0/disksleep=0/displaysleep=15; Xcode CLT 16.4 headless; Homebrew in
-          /opt/homebrew (API mode); Ollama 0.40.7 cask serving :11434 (nohup — LaunchDaemon pending ADA-0765);
-          tmux installed. Bench — llama3.2:3b 123 tok/s eval / 254 tok/s prompt, 1s load, 69% mem free.
+          /opt/homebrew (API mode); tmux; Tailscale daemon via brew services (auth pending, hostname kk-mac).
+          Ada Nest service layer — dedicated standard user 'adanest' (uid 502); LaunchDaemon
+          net.adanest.ollama runs ollama 0.40.7 as adanest on 0.0.0.0:11434 (KeepAlive, flash-attn +
+          q8 KV cache); models under /Users/adanest/.ollama. Bench — llama3.2:3b 161 tok/s eval,
+          LAN-reachable from dell. Teardown — deluser adanest, rm plist, brew uninstall.
           KK's Adobe workstation; travels with KK sometimes (needs Tailscale for away-reach — see card).
       - label: iphone-tony
         text: Tony iPhone (hotspot name TONY-IP) — MAC 7c:d2:da:73:30:8a (192.168.2.69).
