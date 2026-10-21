@@ -25,6 +25,16 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Exec-checkout sync (2026-10-16): tony-dell has TWO chaba checkouts on purpose — `chaba-tony-dell` (served/writer, kanban-commit) and `~/CascadeProjects/chaba` (job-execution, ~19 units per ssot.jobs.yml `repo:` map). `chaba-repo-sync.timer` keeps the exec checkout current: canonical units in `systemd/`, hourly on other hosts, 15-min drop-in + `ExecStartPost` hook on kanban-commit.service on tony-dell. If repo-exec jobs run stale code, check that timer first.
 - Field ownership (2026-10-15, KNB-0453 lesson): **humans own workflow fields, producers own content fields.** A scheduled producer that updates a card (digest writers, sync jobs) may touch `note`, `updated`, its own meta — but MUST NOT write `column`, `action`, `requests`, or `comms` on an existing card unless its declared job is moving that card. Set `column` only at card creation. Violations look like autostash resurrections but are producer stomps — QC scoreboard's `reopen_events` counter detects them.
 
+## Host hygiene rules (added 2026-10-21)
+
+Any work that installs, removes, or changes services/data on a host
+follows `docs/kb/host-hygiene-rules.md`: declared-or-dead units (no
+`.parked`/`.bak`), one checkout per role, secrets only via
+`~/.config/secrets/` EnvironmentFile, quadlets-only containers,
+declared data tiers, repo+restart changes, stated rollback before
+destructive ops. Verify compliance with `scripts/audit-hosts.py
+--host <h>` after service changes.
+
 ## Operator correction & education duty (added 2026-09-28)
 
 Applies to Devin AND Ada (parity — Ada's copy lives in `DEFAULT_ADA_INSTRUCTIONS` in ada-voice's `backend/realtime_provider.py`; keep both in sync when changing either):
