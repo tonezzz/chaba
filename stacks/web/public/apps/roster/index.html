@@ -30,6 +30,10 @@
                  font-size: 15px; color: #fff; flex: none; }
   .contact .nm { font-weight: 600; }
   .contact .sub { font-size: 11px; color: var(--dim); }
+  .contact .dot { width: 8px; height: 8px; border-radius: 50%;
+                  flex: none; margin-left: auto;
+                  border: 1px solid var(--dim); }
+  .contact .dot.keyed { background: #57d98d; border-color: #57d98d; }
   .contact.soon { opacity: .45; cursor: default; }
   #rail .foot { margin-top: auto; padding: 10px 14px; font-size: 11px;
                 color: var(--dim); border-top: 1px solid var(--rail-edge); }
@@ -140,8 +144,21 @@ function harvest() {
     const d = JSON.parse(localStorage.getItem("ada_webchat") || "{}");
     if (d.lane && d.key) setKey(d.lane, d.key, d.device_id);
   } catch (_) {}
+  refreshDots();
 }
 setInterval(harvest, 2000);
+
+// Per-contact key presence: filled dot = ada_roster has a usable key for
+// the lane, hollow = the card will show its invite gate on select.
+function refreshDots() {
+  const k = keys();
+  document.querySelectorAll(".contact").forEach(b => {
+    const c = CONTACTS.find(x => x.id === b.dataset.id);
+    const dot = b.querySelector(".dot");
+    if (dot) dot.classList.toggle("keyed",
+      !c.soon && /^ada-[A-Za-z0-9_-]{10,}$/.test(k[c.lane]?.key || ""));
+  });
+}
 
 function select(c) {
   if (current === c.id) return;
@@ -159,8 +176,9 @@ function select(c) {
     return;
   }
   const k = keys()[c.lane];
-  if (k) localStorage.setItem("ada_webchat", JSON.stringify(
-    { lane: c.lane, key: k.key, device_id: k.device_id || deviceId() }));
+  if (k && /^ada-[A-Za-z0-9_-]{10,}$/.test(k.key || ""))
+    localStorage.setItem("ada_webchat", JSON.stringify(
+      { lane: c.lane, key: k.key, device_id: k.device_id || deviceId() }));
   else localStorage.removeItem("ada_webchat");
   cardEl = document.createElement("ada-webchat-card");
   cardEl.setAttribute("lane", c.lane);
@@ -175,10 +193,12 @@ for (const c of CONTACTS) {
   b.innerHTML = `<span class="av" style="background:${c.color || "#333"}">
       ${c.name[0]}</span>
     <span><span class="nm">${c.name}</span><br>
-      <span class="sub">${c.soon || c.lane.split("/").pop()}</span></span>`;
+      <span class="sub">${c.soon || c.lane.split("/").pop()}</span></span>
+    <span class="dot"></span>`;
   if (!c.soon) b.addEventListener("click", () => select(c));
   rail.append(b);
 }
+refreshDots();
 select(CONTACTS[0]);
 </script>
 </body>
