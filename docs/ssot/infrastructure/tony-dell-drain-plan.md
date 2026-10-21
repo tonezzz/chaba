@@ -87,10 +87,15 @@
 7. Soak 24–48 h → THEN strip dell to minimal base
 ```
 
-## Open questions for Tony
+## Decisions (Tony, 2026-10-21)
 
-1. `~/.config/home-assistant` 3.9G — archive (idc02) or drop?
-2. Media corpus (yt-live-media via gdrive+caddy) — serve from idc02 edge or drop the route?
-3. sync-to-hdd — retire, or repurpose as NVMe→HDD nightly backup?
-4. cups on the spare box — drop ok?
-5. idc02 disk at 90% — investigate before it becomes a target at all.
+1. `~/.config/home-assistant` 3.9G — **DROPPED** (verified tony-ha runs on omen container; dell copy was the stale pre-ph5 config).
+2. Media corpus → **relocate** — caddy media route + rclone gdrive mount → idc02 edge (rclone.conf already staged on idc02, wave 1).
+3. sync-to-hdd → **REPURPOSED** as NVMe→HDD bootable clone (`/usr/local/bin/nvme-hdd-clone.sh`, weekly `sync-to-hdd.timer`, `--exclude=/etc/fstab` keeps sda5 self-consistent; first seed running 2026-10-21). This replaces the frozen Oct-20 rollback with a refreshed clone — intended.
+4. cups → **KEEP** (dell returns to service — printing retained).
+5. idc02 90% explained: `hf-cache-archive-202610` 68G + `mddb-backups-idc01-retired` 64G — archive payload, not a leak. Open: is the retired-idc01 pile redundant with idc03's own 56G mddb-backups?
+
+## Wave status
+
+- **Wave 1 done (2026-10-21):** `~/.config/secrets/` → `idc03:~/.config/secrets/from-dell-20261021/` (staged, no clobber — merge when units install); `ada-ha`/`michael-dev`/`caddy` configs → `idc03:~/.config/dell-lane-configs/`; `rclone.conf` → idc02.
+- Waves 2–7 pending.
