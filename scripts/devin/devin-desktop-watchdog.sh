@@ -20,8 +20,8 @@
 #   3. Detect new AppArmor userns denials and renderer crashes in the
 #      journal and log + desktop-notify them (once per event).
 #   4. Optional auto-restart: create ~/.config/devin/watchdog-autorestart
-#      to enable; relaunches on the first X display it finds, with a
-#      30-minute cooldown.
+#      to enable; relaunches on the user's own X display (socket-owner
+#      match, see display_targets), with a 30-minute cooldown.
 #
 # Install: scripts/devin/install-devin-host.sh
 
@@ -39,6 +39,9 @@ HANG_RUNS=2
 # never kill — right choice for the primary workstation),
 # WATCHDOG_HANG_RUNS (consecutive runs with the modal hang dialog before
 # the app is restarted; 0 disables hang escalation).
+# WATCHDOG_DISPLAY / WATCHDOG_XAUTHORITY: pin the display used for
+# auto-restart/notify instead of auto-detecting (rarely needed; the
+# user-owned-socket heuristic below normally wins).
 [ -f "$HOME/.config/devin/watchdog.conf" ] && . "$HOME/.config/devin/watchdog.conf"
 CPU_PCT="${WATCHDOG_CPU_PCT:-$CPU_PCT}"
 CPU_HOLD_SECS="${WATCHDOG_CPU_HOLD_SECS:-$CPU_HOLD_SECS}"
@@ -49,17 +52,66 @@ mkdir -p "$(dirname "$LOG")" "$STATE_DIR"
 
 log() { echo "$(date -Iseconds) $*" >>"$LOG"; }
 
-notify() {
-    command -v notify-send >/dev/null 2>&1 || return 0
+# Candidate X displays as "disp<TAB>xauthority" lines, best first.
+# The /tmp/.X11-unix/X<n> socket file's owner is the X server's UID, so a
+# socket owned by us marks the real user session (e.g. Chrome Remote
+# Desktop's Xvfb on :20) and its server's -auth file is the right
+# XAUTHORITY. Greeter sockets (gdm's rootless Xwayland, :1024+) sort FIRST
+# in glob order yet reject our credentials or hang clients — auto-restart
+# used to pick them and the app died instantly, forever (tony-omen
+# 2026-10-21: ~36h of relaunches onto the greeter display; the window was
+# never visible and the loop looked like lag).
+display_targets() {
+    local sock disp pid auth line uid
+    local -a mine=() other=()
+    local -A srv_pid=()
+    uid=$(id -u)
+    # Map socket -> listening server pid (attribution visible for our own
+    # processes, which is exactly the case that needs it).
+    while read -r line; do
+        case "$line" in
+            *pid=*) ;;
+            *) continue ;;
+        esac
+        sock=${line##*/tmp/.X11-unix/}
+        sock=${sock%% *}
+        pid=${line##*pid=}
+        pid=${pid%%,*}
+        srv_pid[$sock]=$pid
+    done < <(ss -xlp 2>/dev/null | grep '/tmp/.X11-unix/')
     for sock in /tmp/.X11-unix/X*; do
         [ -S "$sock" ] || continue
+        disp=":${sock##*X}"
+        if [ "$(stat -c %u "$sock" 2>/dev/null)" = "$uid" ]; then
+            auth=""
+            pid=${srv_pid[X${sock##*X}]:-}
+            if [ -n "$pid" ]; then
+                auth=$(tr '\0' '\n' <"/proc/$pid/cmdline" 2>/dev/null \
+                       | awk '/^-auth$/ {getline; print; exit}')
+            fi
+            mine+=("$disp	${auth:-$HOME/.Xauthority}")
+        else
+            other+=("$disp	/run/user/$uid/gdm/Xauthority")
+        fi
+    done
+    [ -n "$WATCHDOG_DISPLAY" ] &&
+        printf '%s\t%s\n' "$WATCHDOG_DISPLAY" \
+            "${WATCHDOG_XAUTHORITY:-$HOME/.Xauthority}"
+    printf '%s\n' ${mine[@]+"${mine[@]}"} ${other[@]+"${other[@]}"}
+}
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 || return 0
+    local disp xa
+    while IFS=$'\t' read -r disp xa; do
+        [ -n "$disp" ] || continue
         # timeout: notify-send can block indefinitely when the notification
         # daemon is wedged (observed right after a seat-session restart).
-        DISPLAY=":${sock##*X}" \
-        XAUTHORITY="/run/user/$(id -u)/gdm/Xauthority" \
+        DISPLAY="$disp" \
+        XAUTHORITY="$xa" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus" \
             timeout 5 notify-send "Devin watchdog" "$*" 2>/dev/null && return 0
-    done
+    done < <(display_targets)
     return 0
 }
 
@@ -90,11 +142,9 @@ main_pid() {
 # named exactly "Devin" carrying _NET_WM_STATE_MODAL. Prints the window id
 # on the first match across all X sockets, else nothing.
 hang_dialog() {
-    local sock disp xa w
-    xa="/run/user/$(id -u)/gdm/Xauthority"
-    for sock in /tmp/.X11-unix/X*; do
-        [ -S "$sock" ] || continue
-        disp=":${sock##*X}"
+    local disp xa w
+    while IFS=$'\t' read -r disp xa; do
+        [ -n "$disp" ] || continue
         for w in $(DISPLAY="$disp" XAUTHORITY="$xa" timeout 5 \
                    xdotool search --name "^Devin$" 2>/dev/null); do
             if DISPLAY="$disp" XAUTHORITY="$xa" \
@@ -104,7 +154,7 @@ hang_dialog() {
                 return 0
             fi
         done
-    done
+    done < <(display_targets)
     return 1
 }
 
@@ -208,22 +258,27 @@ if ! main_pid >/dev/null || [ -z "$(main_pid)" ]; then
         last=$(cat "$STATE_DIR/last-restart" 2>/dev/null || echo 0)
         now=$(date +%s)
         if [ $((now - last)) -ge "$RESTART_COOLDOWN_SECS" ]; then
-            for sock in /tmp/.X11-unix/X*; do
-                [ -S "$sock" ] || continue
-                disp=":${sock##*X}"
-                log "Auto-restarting devin-desktop on DISPLAY=$disp"
+            while IFS=$'\t' read -r disp xa; do
+                [ -n "$disp" ] || continue
+                log "Auto-restarting devin-desktop on DISPLAY=$disp xa=$xa"
                 # nohup+setsid, not systemd-run: transient-service launches were
                 # observed dying ~1.3s in on tony-omen (2026-09-21).
                 env DISPLAY="$disp" \
-                    XAUTHORITY="/run/user/$(id -u)/gdm/Xauthority" \
+                    XAUTHORITY="$xa" \
                     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus" \
                     setsid /usr/bin/devin-desktop \
                     >>"$HOME/.local/share/devin/cli/devin-restart-watchdog.log" \
                     2>&1 </dev/null &
                 echo "$now" >"$STATE_DIR/last-restart"
-                notify "Devin desktop auto-restarted on DISPLAY=$disp"
+                sleep 10
+                if [ -z "$(main_pid)" ]; then
+                    log "ALERT: auto-restart on DISPLAY=$disp did not survive 10s — next cooldown $(date -d "+$RESTART_COOLDOWN_SECS sec" -Iseconds)"
+                    notify "Devin auto-restart on $disp died — check devin-restart-watchdog.log"
+                else
+                    notify "Devin desktop auto-restarted on DISPLAY=$disp"
+                fi
                 break
-            done
+            done < <(display_targets)
         fi
     fi
 fi
