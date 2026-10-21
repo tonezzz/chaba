@@ -1,30 +1,28 @@
 id: mn-ha-v4-8123-blocked
-title: "tailnet v4 drops idc03->michael-ha:8123 — needs ACL/firewall check"
-brief: >-
-  ada-ai-kraut's HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times
-  out (silent drop). All HA tools on the mn lane errored (get_rk600_weather,
-  home_search — journal shows failures since ~Oct 17). Interim fix shipped:
-  HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.
+title: tailnet v4 drops idc03->michael-ha:8123 — needs ACL/firewall check
+brief: 'ada-ai-kraut''s HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times out (silent drop). All HA
+  tools on the mn lane errored (get_rk600_weather, home_search — journal shows failures since ~Oct 17). Interim
+  fix shipped: HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.'
 column: backlog
 priority: high
-tags: [mn-ha, infra, tailscale]
-spec: >-
-  Root cause still open. Evidence (2026-10-20): idc03->michael-ha v4 — :22
-  ok, :4357 (observer) ok, :1883 (mqtt) ok, :8123 silent TIMEOUT (not
-  refused), 192.168.31.x subnet also unreachable (routes not accepted on
-  idc03). Same v4 :8123 works from macbook, tony-omen, idc02. IPv6 ULA
-  fd7a:115c:a1e0::692d:6959:8123 answers from idc03 (401 w/o auth, full API
-  with token, ws handshake fine). No ip_bans.yaml entries on michael-ha.
-  Hypothesis: tailnet ACL rule allowing limited ports from idc03 (or a
-  source-specific v4 drop on the far end) — check the tailnet ACL/policy
-  in the admin console for rules scoping idc03->michael-ha, and any HAOS
-  host iptables. Workaround in place: ada-ai-kraut.env HOME_ASSISTANT_URL
-  points at the v6 literal (comment in file); if the ACL is fixed, revert
-  to http://michael-ha:8123.
-note: >-
-  Likely broken since the mn lane moved to idc03 (Oct 16-17) — dry-run
-  passed because the demo questions didn't touch HA. Found during
-  kraut-weather-bakeoff build.
-comms: []
+tags:
+- mn-ha
+- infra
+- tailscale
+spec: 'Root cause still open. Evidence (2026-10-20): idc03->michael-ha v4 — :22 ok, :4357 (observer) ok, :1883 (mqtt)
+  ok, :8123 silent TIMEOUT (not refused), 192.168.31.x subnet also unreachable (routes not accepted on idc03). Same
+  v4 :8123 works from macbook, tony-omen, idc02. IPv6 ULA fd7a:115c:a1e0::692d:6959:8123 answers from idc03 (401
+  w/o auth, full API with token, ws handshake fine). No ip_bans.yaml entries on michael-ha. Hypothesis: tailnet
+  ACL rule allowing limited ports from idc03 (or a source-specific v4 drop on the far end) — check the tailnet ACL/policy
+  in the admin console for rules scoping idc03->michael-ha, and any HAOS host iptables. Workaround in place: ada-ai-kraut.env
+  HOME_ASSISTANT_URL points at the v6 literal (comment in file); if the ACL is fixed, revert to http://michael-ha:8123.'
+note: Likely broken since the mn lane moved to idc03 (Oct 16-17) — dry-run passed because the demo questions didn't
+  touch HA. Found during kraut-weather-bakeoff build.
+comms:
+- at: 2026-10-21 20:22
+  from: devin
+  text: 'Re-verified 2026-10-21 during card sweep: idc03 -> michael-ha:8123 still returns 000 (quarantine/ACL still
+    dropping). Card stays valid backlog — tony-omen hop remains the working path (verified working today for entity
+    cleanup).'
 requests: []
-updated: '2026-10-20'
+updated: 2026-10-21 20:22

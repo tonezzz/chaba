@@ -1,0 +1,20 @@
+id: git-safe-pull-add-reports-ssot-optimizat-1998bb
+title: 'git-safe-pull: add reports/SSOT_OPTIMIZATION_WARNINGS.json to generated-paths (or stop committing it)'
+column: backlog
+updated: 2026-10-21 20:22
+priority: high
+tags:
+- kanban
+- single-writer
+spec: 'Verify: kanban-commit stays green across 2+ cycles after a fresh warnings-json write; no new local-conflict
+  comments on ops-local-conflict-guard.'
+note: '2026-10-21 wedge postmortem: served checkout stuck 127 commits behind — kanban-commit dead-looped for hours
+  while board writes piled up silently and ops-local-conflict-guard got spammed ~15min/cycle. Cause: ssot-optimize
+  writes reports/SSOT_OPTIMIZATION_WARNINGS.json into the writer checkout; it is not in SAFE_PULL_GENERATED_RE (^docs/ssot/),
+  so every autostash-pop conflict is a hard wall. Options: (a) extend default GENERATED_RE to include the file —
+  1-line fix in scripts/git-safe-pull.sh, ★ re'
+ref: KNB-0767
+comms:
+- at: 2026-10-21 20:22
+  from: devin
+  text: card captured via board-api

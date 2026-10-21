@@ -1,0 +1,20 @@
+id: board-api-write-latency-10s-client-timeo-3e4d83
+title: board-api write latency ~10s → client timeouts show error but write lands (dupes + confusion)
+column: backlog
+updated: 2026-10-21 20:31
+priority: medium
+tags:
+- kanban
+- ux
+spec: 'Verify: POST /comment responds <3s p50 on tailnet; a client timeout no longer means the write landed silently
+  — either confirmed via response or detectably queued.'
+note: '2026-10-21: board-api POST responses take ~10s (flock + save + synchronous render wait) — journal shows write→200
+  gap 9-13s then BrokenPipeError. Clients (board UI / curl with short timeout) show an error while the write actually
+  lands — Tony hit this responding to cards; retries create duplicate comms. Options: (a) respond before the render/sync
+  wait (ack then async persist) ★; (b) raise UI timeout to >15s; (c) profile the 10s — if it is render, decouple
+  render from write path. During the 2026-'
+ref: KNB-0769
+comms:
+- at: 2026-10-21 20:31
+  from: devin
+  text: card captured via board-api

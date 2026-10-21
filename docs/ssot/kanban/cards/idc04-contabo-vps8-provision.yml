@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
 column: backlog
-updated: 2026-10-21 17:49
+updated: 2026-10-21 20:30
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -31,3 +31,9 @@ comms:
     day for a first order; may request ID docs. Provisioning triggers once login credentials + IP arrive: baseline
     hardening, tailnet join as con01, then role stack per spec (follower #2, ada-stt migrate, standby edge, secrets
     target, offload timers, lab). OPEN: which region was'
+- at: 2026-10-21 20:30
+  from: devin
+  text: 'Region decision (Tony): EU — SG carried a surcharge he declined. Consequence: standby-edge failover to
+    con01 runs ~280ms to Thai users = survivable tier, not fast; if we later want a fast TH-facing edge, a small
+    SG box (~$5-6) can front it separately. All other roles (follower, ada-stt, backups, batch, lab) are latency-insensitive
+    — unaffected. Provisioning still pending (Contabo slow setup is normal post-KYC, hours to ~1 day).'

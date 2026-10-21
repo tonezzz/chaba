@@ -1,0 +1,20 @@
+id: provision-tony-dev-8127-staging-twin-ada-1b5b1c
+title: Provision tony-dev :8127 staging twin (ada-dev dropped — ada-ha is the dev lane)
+column: backlog
+updated: 2026-10-21 20:22
+priority: high
+blocked_by: '[''ha-staging-actuation-guard'']'
+tags:
+- ha-lanes
+spec: 'Per ha-dev-instances spec (minus ada-dev). Seed rule per lanes SSOT 2026-10-21: cloning is allowed HERE by
+  design (staging twin of prod), but apply ha-staging-actuation-guard before first boot.'
+note: 'Tony 2026-10-21: needs tony-dev for testing/preview once tony-ha goes full production. Scope reduced from
+  ha-dev-instances (which was closed done but twins were never provisioned — verified no containers/config/listeners
+  anywhere). ada-dev dropped: ada-ha is now the clean dev-only lane itself. Spec from ha-dev-instances carries over:
+  quadlet (podman network NOT host-net), publish 127.0.0.1:8127:8123, volume ~/.config/tony-dev:/config:Z, TZ=Asia/Bangkok,
+  health-cmd, seed = cp -a tony-ha config + '
+ref: ADA-0768
+comms:
+- at: 2026-10-21 20:22
+  from: devin
+  text: card captured via board-api
