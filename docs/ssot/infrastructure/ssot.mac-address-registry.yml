@@ -158,9 +158,11 @@ sections:
           M4 Max 14-core (10P+4E), 36 GB unified, macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk.
           Interfaces — en0 Ethernet 1c:1d:d3:e8:0a:4f = 192.168.2.80 (primary route); en1 Wi-Fi 1c:1d:d3:f3:c3:08 =
           192.168.2.90/.92 (11n 2.4GHz ch1, RSSI -68dBm @28Mbps — marginal; Wi-Fi 6E capable, stuck on weak band at
-          her spot). Remote Login ON since 2026-10-21 (ssh -J tony-dell kkkakk@<ip>). No brew/ollama/docker —
-          KK's Adobe workstation. Sleep=1min w/ powernap — explains silent-ARP on scans; travels with KK
-          sometimes (needs Tailscale for away-reach — see card).
+          her spot). Remote Login ON since 2026-10-21 (ssh -J tony-dell kkkakk@<ip>; use .92 if .80:22 filtered).
+          Setup 2026-10-21 — pmset sleep=0/disksleep=0/displaysleep=15; Xcode CLT 16.4 headless; Homebrew in
+          /opt/homebrew (API mode); Ollama 0.40.7 cask serving :11434 (nohup — LaunchDaemon pending ADA-0765);
+          tmux installed. Bench — llama3.2:3b 123 tok/s eval / 254 tok/s prompt, 1s load, 69% mem free.
+          KK's Adobe workstation; travels with KK sometimes (needs Tailscale for away-reach — see card).
       - label: iphone-tony
         text: Tony iPhone (hotspot name TONY-IP) — MAC 7c:d2:da:73:30:8a (192.168.2.69).
       - label: realme-c63
