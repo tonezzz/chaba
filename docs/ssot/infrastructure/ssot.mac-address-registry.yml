@@ -152,14 +152,15 @@ sections:
         text: ESP32 test device — MAC c0:cd:d6:85:a8:38.
       - label: kks-macbook-pro
         text: KKs MacBook Pro (tony-macbook, Ubuntu since 2026-10-10) — USB-LAN adapter (Realtek RTL8152 "USB 10/100 LAN" on usb-11.3.4; some hub/dock NIC — Tony says no dongle was ever attached, so likely part of a hub) MAC 00:e0:4c:36:12:76 (now 192.168.2.89; .80/.88 leases stale).
-      - label: kks-mac-studio
+      - label: kk-mac
         text:
-          KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f (wired Ethernet; 192.168.2.80 as of 2026-10-21, drifts). Also carries
-          192.168.2.92 on a locally-administered MAC ca:f0:42:32:04:32 (private-MAC wifi or bridge iface). Tony calls
-          this box "kk-imac" — verified by SSH 2026-10-21 it is a Mac Studio (Mac16,9), M4 Max 14-core, 36 GB,
-          macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk. Remote Login enabled 2026-10-21 for Ada Nest
-          assessment. NOT an iMac; no iMac exists on the LAN. No brew/ollama/docker — KK's Adobe workstation.
-          Sleep=1min w/ powernap — explains silent-ARP behavior on scans.
+          kk-mac (canonical name 2026-10-21; aka "kk-imac", "KKs Mac Studio") — KK's desktop, Mac Studio Mac16,9,
+          M4 Max 14-core (10P+4E), 36 GB unified, macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk.
+          Interfaces — en0 Ethernet 1c:1d:d3:e8:0a:4f = 192.168.2.80 (primary route); en1 Wi-Fi 1c:1d:d3:f3:c3:08 =
+          192.168.2.90/.92 (11n 2.4GHz ch1, RSSI -68dBm @28Mbps — marginal; Wi-Fi 6E capable, stuck on weak band at
+          her spot). Remote Login ON since 2026-10-21 (ssh -J tony-dell kkkakk@<ip>). No brew/ollama/docker —
+          KK's Adobe workstation. Sleep=1min w/ powernap — explains silent-ARP on scans; travels with KK
+          sometimes (needs Tailscale for away-reach — see card).
       - label: iphone-tony
         text: Tony iPhone (hotspot name TONY-IP) — MAC 7c:d2:da:73:30:8a (192.168.2.69).
       - label: realme-c63
@@ -170,9 +171,9 @@ sections:
         text:
           "192.168.2.74 (68:f0:bc:ad:20:8a), .76 (iPhone 22:73:11:ed:13:53), .78 (Watch b6:72:65:ca:aa:e1),
           .79 (ea:9b:8f:d2:80:f0), .86 (Mac 72:b5:f0:db:14:f3), .88 (iPhone fa:31:d9:bd:44:ff).
-          2026-10-21 additions: .90 = 1c:1d:d3:f3:c3:08 (Apple wired-Ethernet OUI, ARP+ping only, no mDNS/ports —
-          sleeping-Mac signature; kk-macbook on Ethernet? still unidentified), .92 = ca:f0:42:32:04:32 (kks-mac-studio
-          secondary iface — private-MAC wifi/bridge), .97 = 9e:16:8a:1c:a1:16 (unidentified).
+          2026-10-21 additions: .90 = 1c:1d:d3:f3:c3:08 → RESOLVED = kk-mac en1 (Wi-Fi); .92 = ca:f0:42:32:04:32
+          → RESOLVED = kk-mac en1 second lease (same iface, private-MAC alias); .97 = 9e:16:8a:1c:a1:16
+          (unidentified).
           Resolved 2026-09-17: .73/.82 = tony-repeater (lwip 06:28:58:26:4b:2c), .91 = samsung-tv (00:12:fb:0e:93:ed);
           .72 floats between apple-watch-3a21760b0885 and xiaomi-c100 (b8:88:80:cb:7d:2c).
           Some are private Wi-Fi addresses; identify by disabling private Wi-Fi on the device or matching router hostnames."
@@ -407,8 +408,8 @@ config:
           first_seen: "2026-09-09"
           last_observed: "2026-09-09"
           status: active
-    - device_id: kks-mac-studio
-      label: KKs Mac Studio (aka "kk-imac" — Mac16,9 M4 Max 36GB)
+    - device_id: kk-mac
+      label: kk-mac — KK's Mac Studio (aka kk-imac; Mac16,9 M4 Max 36GB)
       status: active
       interfaces:
         - interface_id: en0
@@ -418,6 +419,15 @@ config:
           type: ethernet
           source: dhcp
           first_seen: "2026-09-09"
+          last_observed: "2026-10-21"
+          status: active
+        - interface_id: en1
+          mac: 1c:1d:d3:f3:c3:08
+          oui: 1C1DD3
+          vendor: Apple
+          type: wifi
+          source: dhcp
+          first_seen: "2026-10-21"
           last_observed: "2026-10-21"
           status: active
     - device_id: mac-72b5f0db14f3

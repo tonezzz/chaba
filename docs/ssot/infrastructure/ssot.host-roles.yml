@@ -79,6 +79,33 @@ hosts:
       preferred_for:
         - portable lab tasks, CPU/dev dispatch lane (planned, cap 2)
 
+  kk-mac:
+    description: KK's Mac Studio (Mac16,9) — M4 Max 14-core (10P+4E), 36 GB unified, macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk. Registered 2026-10-21; aka "kk-imac" / former device_id kks-mac-studio.
+    lan_ip: 192.168.2.80 (en0 wired, primary) / 192.168.2.90,.92 (en1 wifi — 2.4GHz-only at her spot, RSSI -68dBm, marginal)
+    local_hostname: KKs-Mac-Studio.local
+    tags:
+      - macos
+      - apple-silicon
+      - member-device
+      - ada-nest-candidate
+    headless_browser:
+      enabled: false
+      note: Safari-capable if a mac/iOS verify lane is ever re-opened (see policies.mac_ios_verify — currently retired)
+    web_preview:
+      enabled: false
+    offload:
+      eligible: true
+      kind: apple-silicon-workstation
+      can_run:
+        - macOS builds, Safari/WebKit verification
+        - llama.cpp/MLX local inference (36GB unified — ~24-30B quantized class alongside KK's Adobe load)
+        - SSH batch jobs (Remote Login enabled 2026-10-21; ssh -J tony-dell kkkakk@192.168.2.80)
+      cannot_run:
+        - unattended 24/7 services (sleep=1min + travels with KK; needs power policy fix + Tailscale first)
+        - anything touching her Adobe/OneDrive apps without her sign-off
+      preferred_for:
+        - Ada Nest member lane (permitted by KK 2026-10-21 — resource assessment done, see ada-nest-map lesson family)
+
 policies:
   headless_browser_priority:
     - tony-dell

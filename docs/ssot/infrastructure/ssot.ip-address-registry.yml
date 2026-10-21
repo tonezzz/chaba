@@ -36,7 +36,7 @@ sections:
       - label: Known hosts
         text:
           Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
-          Samsung TV-40C5000 (behind Tenda repeater), Tenda repeater, ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone,
+          Samsung TV-40C5000 (behind Tenda repeater), Tenda repeater, ESP32 test, KKs MacBook Pro, KK's Mac ("kk-mac"), Tony iPhone,
           realme C63, HONOR Pad 9, plus transient/randomized devices.
       - label: Note
         text: This is the current active network. The detailed allocations are in config.networks below.
@@ -238,7 +238,7 @@ config:
           last_observed: "2026-09-09"
           source: dhcp
         - ip: 192.168.2.80
-          device_id: kks-mac-studio
+          device_id: kk-mac
           interface_id: en0
           kind: dhcp
           status: active
@@ -274,7 +274,7 @@ config:
           first_seen: "2026-10-21"
           last_observed: "2026-10-21"
           source: arp+ssh
-          note: superseded kks-mac-studio (drifted to .80); same MAC 88:11:00:c5:0a:2c proxied by tony-repeater-2
+          note: superseded kk-mac (drifted to .80); same MAC 88:11:00:c5:0a:2c proxied by tony-repeater-2
         - ip: 192.168.2.83
           device_id: tony-repeater
           interface_id: wan0
@@ -334,14 +334,14 @@ config:
           last_observed: "2026-09-09"
           source: dhcp
         - ip: 192.168.2.90
-          device_id: apple-1c1dd3f3c308
-          interface_id: eth0
+          device_id: kk-mac
+          interface_id: en1
           kind: dhcp
           status: active
           first_seen: "2026-10-21"
           last_observed: "2026-10-21"
-          source: arp
-          note: unidentified Apple wired device (sleeping-Mac signature); realme-c63 superseded
+          source: arp+ssh
+          note: kk-mac Wi-Fi (MAC 1c:1d:d3:f3:c3:08); realme-c63 superseded
         - ip: 192.168.2.91
           device_id: samsung-tv
           interface_id: eth0
@@ -351,14 +351,14 @@ config:
           last_observed: "2026-09-17"
           source: dhcp
         - ip: 192.168.2.92
-          device_id: kks-mac-studio
-          interface_id: en1-or-bridge
+          device_id: kk-mac
+          interface_id: en1
           kind: dhcp
           status: active
           first_seen: "2026-10-21"
           last_observed: "2026-10-21"
           source: arp+ssh
-          note: secondary iface on KK's Studio, MAC ca:f0:42:32:04:32 (locally administered)
+          note: second lease on kk-mac Wi-Fi, MAC ca:f0:42:32:04:32 (private-MAC alias); SSH answers here
         - ip: 192.168.2.97
           device_id: unknown-9e168a1ca116
           interface_id: unknown
