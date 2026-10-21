@@ -248,6 +248,15 @@ function select(c) {
   cardEl.setAttribute("lane", c.lane);
   cardEl.setAttribute("member", MEMBER);
   wrap.append(cardEl);
+  // Card quirk (fixed upstream, safe to keep): #wc-setup is not hidden by
+  // default and the keyed-boot path never swaps to main — a stored key
+  // connects while the invite gate stays on top. Flip it at mount.
+  if (k) queueMicrotask(() => {
+    try {
+      cardEl.shadowRoot.getElementById("wc-setup").hidden = true;
+      cardEl.shadowRoot.getElementById("wc-main").hidden = false;
+    } catch (_) {}
+  });
   const st = document.getElementById("h-status");
   if (k) {
     st.textContent = "probing lane…";
