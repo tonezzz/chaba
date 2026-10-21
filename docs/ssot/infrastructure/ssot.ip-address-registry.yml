@@ -115,13 +115,14 @@ config:
           last_observed: "2026-09-10"
           source: arp
         - ip: 192.168.2.65
-          device_id: esp32-test
-          interface_id: wlan0
-          kind: reservation
+          device_id: tony-repeater
+          interface_id: lan0
+          kind: dhcp
           status: active
-          first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp
+          note: LAN MAC 06:28:58:26:4b:2c; no TCP services on this side. esp32-test reservation superseded/moved
         - ip: 192.168.2.66
           device_id: tuya-plug-bedside
           interface_id: wlan0
@@ -237,47 +238,52 @@ config:
           last_observed: "2026-09-09"
           source: dhcp
         - ip: 192.168.2.80
-          device_id: kks-macbook-pro
-          interface_id: eth0
+          device_id: kks-mac-studio
+          interface_id: en0
           kind: dhcp
-          status: stale
+          status: active
           first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
-          note: pre-Linux lease; same USB-C dongle now holds .88 on Ubuntu
+          last_observed: "2026-10-21"
+          source: arp+mdns
+          note: "KKs-Mac-Studio.local confirmed via mDNS+SSH 2026-10-21"
         - ip: 192.168.2.88
           device_id: tony-macbook
           interface_id: enx00e04c361276
           kind: dhcp
-          status: active
+          status: stale
           first_seen: "2026-10-11"
           last_observed: "2026-10-11"
           source: dhcp
-          note: USB-C ethernet dongle (MAC 00:e0:4c:36:12:76) on Ubuntu install
+          note: "USB-C ethernet dongle (MAC 00:e0:4c:36:12:76) on Ubuntu install. STALE 2026-10-21 — the dongle now
+            holds a rogue 192.168.1.106 lease from the phantom .1.x DHCP behind tony-repeater (see kanban
+            tenda-downstream-rogue-dhcp); .88 is currently Tony's iPad. IPv6/ARP still reach the wire fine."
         - ip: 192.168.2.81
-          device_id: xiaomi-c100
-          interface_id: wlan0
+          device_id: mn01
+          interface_id: wlx881100c50a2c
           kind: dhcp
           status: active
-          first_seen: "2026-09-11"
-          last_observed: "2026-09-11"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp+ssh
+          note: superseded xiaomi-c100 (stale); MAC 88:11:00:c5:0a:2c confirmed via ssh to mn01
         - ip: 192.168.2.82
-          device_id: kks-mac-studio
-          interface_id: wlan0
+          device_id: mn01
+          interface_id: enp1s0
           kind: dhcp
           status: active
-          first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp+ssh
+          note: superseded kks-mac-studio (drifted to .80); same MAC 88:11:00:c5:0a:2c proxied by tony-repeater-2
         - ip: 192.168.2.83
-          device_id: tony-omen
-          interface_id: wlo1
+          device_id: tony-repeater
+          interface_id: wan0
           kind: dhcp
           status: active
-          first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp+http
+          note: superseded tony-omen wlo1; WAN MAC 0a:f0:bc:ad:20:8b, admin UI live at /login.html today
         - ip: 192.168.2.84
           device_id: tony-omen
           interface_id: eno1
@@ -311,13 +317,14 @@ config:
           last_observed: "2026-09-09"
           source: dhcp
         - ip: 192.168.2.88
-          device_id: iphone-fa31d9bd44ff
+          device_id: tony-ipad
           interface_id: wlan0
           kind: dhcp
           status: active
-          first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: mdns
+          note: Tonys-iPad.local via Bonjour; MAC ea:9b:8f:d2:80:f0 (private-MAC). iphone-fa31d9bd44ff superseded
         - ip: 192.168.2.89
           device_id: honor-pad-9
           interface_id: wlan0
@@ -327,13 +334,14 @@ config:
           last_observed: "2026-09-09"
           source: dhcp
         - ip: 192.168.2.90
-          device_id: realme-c63
-          interface_id: wlan0
+          device_id: apple-1c1dd3f3c308
+          interface_id: eth0
           kind: dhcp
           status: active
-          first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp
+          note: unidentified Apple wired device (sleeping-Mac signature); realme-c63 superseded
         - ip: 192.168.2.91
           device_id: samsung-tv
           interface_id: eth0
@@ -342,6 +350,24 @@ config:
           first_seen: "2026-09-09"
           last_observed: "2026-09-17"
           source: dhcp
+        - ip: 192.168.2.92
+          device_id: kks-mac-studio
+          interface_id: en1-or-bridge
+          kind: dhcp
+          status: active
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp+ssh
+          note: secondary iface on KK's Studio, MAC ca:f0:42:32:04:32 (locally administered)
+        - ip: 192.168.2.97
+          device_id: unknown-9e168a1ca116
+          interface_id: unknown
+          kind: dhcp
+          status: active
+          first_seen: "2026-10-21"
+          last_observed: "2026-10-21"
+          source: arp
+          note: unidentified; locally-administered MAC
         - ip: 192.168.2.98
           device_id: tony-repeater-2
           interface_id: wan0

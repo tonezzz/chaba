@@ -111,7 +111,14 @@ sections:
           same, so credentials ARE effectively in the wifi stores). The admin UI floats on the WAN-MAC side IP
           (.69 on 10-19; .2.65 LAN-MAC side pings but serves no TCP); if it refuses on the wire, join
           TONY-WIFI_2.4G-ext (same PSK as TONY-WIFI_2.4G) and retry. Downstream client seen proxying under the
-          WAN MAC with ports 5601/52235/52396 — Android-box-like, likely the TrueID box. POWER NOTE 2026-10-20 —
+          WAN MAC with ports 5601/52235/52396 — Android-box-like, likely the TrueID box. ROGUE-DHCP NOTE 2026-10-21 —
+          tcpdump on the upstream LAN shows DHCPOFFERs for a phantom 192.168.1.0/24 scope (gw/dns 192.168.1.1,
+          server-id 0.0.0.0, src IP 0.0.0.0) arriving under THIS repeater's LAN MAC. Repeater's own dhcpd is verified
+          disabled AND its leftover pool is .11.x not .1.x — the real emitter is a downstream device behind it
+          (TrueID Android box b8:59:ce:74:75:28 or old Mountain View router cabled to its LAN port; same conclusion
+          as the 2026-10-19 investigation). Poisons any client that grabs the wrong lease (hit tony-macbook ethernet).
+          Admin UI 2026-10-21 — live at http://192.168.2.83/login.html (WAN-MAC IP). Kanban — tenda-downstream-rogue-dhcp.
+          POWER NOTE 2026-10-20 —
           the repeater is NOT powered by switch.plug_tv despite the corner-map note above — plug confirmed off
           (corner clients all dead) while the repeater stayed up and answered its UI. Separate always-on outlet.
       - label: tony-repeater-2
@@ -146,7 +153,13 @@ sections:
       - label: kks-macbook-pro
         text: KKs MacBook Pro (tony-macbook, Ubuntu since 2026-10-10) — USB-LAN adapter (Realtek RTL8152 "USB 10/100 LAN" on usb-11.3.4; some hub/dock NIC — Tony says no dongle was ever attached, so likely part of a hub) MAC 00:e0:4c:36:12:76 (now 192.168.2.89; .80/.88 leases stale).
       - label: kks-mac-studio
-        text: KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f (192.168.2.82).
+        text:
+          KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f (wired Ethernet; 192.168.2.80 as of 2026-10-21, drifts). Also carries
+          192.168.2.92 on a locally-administered MAC ca:f0:42:32:04:32 (private-MAC wifi or bridge iface). Tony calls
+          this box "kk-imac" — verified by SSH 2026-10-21 it is a Mac Studio (Mac16,9), M4 Max 14-core, 36 GB,
+          macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk. Remote Login enabled 2026-10-21 for Ada Nest
+          assessment. NOT an iMac; no iMac exists on the LAN. No brew/ollama/docker — KK's Adobe workstation.
+          Sleep=1min w/ powernap — explains silent-ARP behavior on scans.
       - label: iphone-tony
         text: Tony iPhone (hotspot name TONY-IP) — MAC 7c:d2:da:73:30:8a (192.168.2.69).
       - label: realme-c63
@@ -157,6 +170,9 @@ sections:
         text:
           "192.168.2.74 (68:f0:bc:ad:20:8a), .76 (iPhone 22:73:11:ed:13:53), .78 (Watch b6:72:65:ca:aa:e1),
           .79 (ea:9b:8f:d2:80:f0), .86 (Mac 72:b5:f0:db:14:f3), .88 (iPhone fa:31:d9:bd:44:ff).
+          2026-10-21 additions: .90 = 1c:1d:d3:f3:c3:08 (Apple wired-Ethernet OUI, ARP+ping only, no mDNS/ports —
+          sleeping-Mac signature; kk-macbook on Ethernet? still unidentified), .92 = ca:f0:42:32:04:32 (kks-mac-studio
+          secondary iface — private-MAC wifi/bridge), .97 = 9e:16:8a:1c:a1:16 (unidentified).
           Resolved 2026-09-17: .73/.82 = tony-repeater (lwip 06:28:58:26:4b:2c), .91 = samsung-tv (00:12:fb:0e:93:ed);
           .72 floats between apple-watch-3a21760b0885 and xiaomi-c100 (b8:88:80:cb:7d:2c).
           Some are private Wi-Fi addresses; identify by disabling private Wi-Fi on the device or matching router hostnames."
@@ -392,17 +408,17 @@ config:
           last_observed: "2026-09-09"
           status: active
     - device_id: kks-mac-studio
-      label: KKs Mac Studio
+      label: KKs Mac Studio (aka "kk-imac" — Mac16,9 M4 Max 36GB)
       status: active
       interfaces:
-        - interface_id: wlan0
+        - interface_id: en0
           mac: 1c:1d:d3:e8:0a:4f
           oui: 1C1DD3
-          vendor: Unknown
-          type: wifi
+          vendor: Apple
+          type: ethernet
           source: dhcp
           first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
+          last_observed: "2026-10-21"
           status: active
     - device_id: mac-72b5f0db14f3
       label: Mac (72:b5:f0:db:14:f3)
