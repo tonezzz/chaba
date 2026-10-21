@@ -12,6 +12,12 @@ last_updated: "2026-10-10"
 # (same-session human approval — ssot.release-lifecycle.yml s5, never
 # automatic). The michael-dev -> michael-ha lane predates the two-lane model
 # and is kept for the sunsynk card work; household releases use tony.
+#
+# Never seed a lane by cloning another instance's config (cp -a of
+# /config or .storage). The 2026-10-21 audit found ada-ha + michael-ha both
+# carried household entities, device keys, SSH keys and recorder history
+# inherited that way (HOM-0762). New lanes start from a fresh config or a
+# declared minimal seed; household content lives on tony-ha only.
 # ---------------------------------------------------------------------------
 
 lanes:
