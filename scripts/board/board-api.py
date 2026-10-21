@@ -669,6 +669,24 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
         else:
             return do_ask_respond(card, body, frm)
     answer = str(body.get("answer") or body.get("text") or "").strip()
+    if not answer and "option" in body:
+        # option-index responds work against requests[] too — the voice/UI
+        # path posts {option: N} for whichever ask is open; map the index to
+        # the option's value (same 'id — label' composite as the ask: path).
+        for r in card.get("requests") or []:
+            if r.get("id") == rid:
+                opts = r.get("options") or []
+                try:
+                    o = opts[int(body["option"])]
+                except (IndexError, TypeError, ValueError):
+                    raise ValueError(f"option must be 0..{len(opts) - 1}")
+                if isinstance(o, str):
+                    answer = o
+                else:
+                    k = o.get("id") or o.get("v")
+                    answer = f"{k} — {o.get('label') or o.get('d') or ''}" if k \
+                        else (o.get("label") or o.get("d") or "")
+                break
     if not answer:
         raise ValueError("answer required")
     for r in card.get("requests") or []:
