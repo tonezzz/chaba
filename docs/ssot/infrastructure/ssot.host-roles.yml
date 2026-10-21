@@ -101,8 +101,15 @@ hosts:
         - llama.cpp/MLX local inference (36GB unified — ~24-30B quantized class alongside KK's Adobe load)
         - SSH batch jobs (Remote Login enabled 2026-10-21; ssh -J tony-dell kkkakk@192.168.2.80)
       cannot_run:
-        - unattended 24/7 services (sleep=1min + travels with KK; needs power policy fix + Tailscale first)
+        - unattended 24/7 services (travels with KK; power policy fixed 2026-10-21 — sleep=0 — but Tailscale still pending, so reachability is LAN-hours only)
         - anything touching her Adobe/OneDrive apps without her sign-off
+      access_note: >-
+        2026-10-21 16:2x — no fleet key authenticates to kkkakk@kk-mac
+        (probed omen/dell/mn01/idc03/macbook, all denied; .80+.92 answer
+        :22). Earlier session's credential was not persisted; re-seed via
+        ssh-copy-id at install time per docs/kb/ada-nest-kk-mac-onboarding.md
+        §1. Onboarding staged in scripts/ops/kk-mac-onboard.sh pending
+        KK sign-off (card request kk-sign-off-for-kk-mac-ada-nest-install-*).
       preferred_for:
         - Ada Nest member lane (permitted by KK 2026-10-21 — resource assessment done, see ada-nest-map lesson family)
 

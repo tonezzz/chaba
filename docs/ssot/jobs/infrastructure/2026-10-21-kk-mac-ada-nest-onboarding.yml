@@ -1,0 +1,61 @@
+# SSOT Job: kk-mac Ada Nest onboarding — Tailscale, service user, ollama daemon
+# Card: kk-mac-ada-nest-onboarding (ADA-0765). KK's Mac Studio permitted for
+# Ada Nest experiments 2026-10-21; this is the member-lane bring-up trail.
+
+title: kk-mac Ada Nest member-node onboarding
+subtitle: M4 Max 36GB member device — power policy + tooling landed 15:5x; adanest user, LaunchDaemon, Tailscale staged pending KK sign-off + SSH re-seed
+icon: desktop
+
+planning:
+  goal: |
+    Turn kk-mac (KK's Mac Studio, travels with her) into an Ada Nest
+    member node: reachable away-from-home via Tailscale, survives
+    reboot/logout via boot-level services, runs ollama under a dedicated
+    'adanest' user so nothing touches KK's account.
+  scope: |
+    Done (earlier session, ~15:56): pmset sleep=0/disksleep=0/displaysleep=15,
+    Xcode CLT 16.4, Homebrew /opt/homebrew API mode, Ollama 0.40.7 cask
+    on :11434 via nohup, tmux, llama3.2:3b bench (123 tok/s eval).
+    This session: scripts/ops/kk-mac-onboard.sh (idempotent, bash-3.2-safe),
+    docs/kb/ada-nest-kk-mac-onboarding.md runbook, SSH auth gap verified
+    and documented.
+  out_of_scope: |
+    Executing on kk-mac — blocked on (a) KK sign-off request
+    kk-sign-off-for-kk-mac-ada-nest-install-ae6c5d (open) and (b) no fleet
+    key authenticates to kkkakk@kk-mac as of 16:20 (all probed keys denied;
+    earlier session's credential was not persisted). Re-seed per runbook §1.
+  success_criteria:
+    - 'ssh -J tony-dell adanest@192.168.2.92 works with fleet keys'
+    - 'ollama serves :11434 as LaunchDaemon system/ai.adanest.ollama across reboot+logout'
+    - 'tailscale status shows kk-mac; reachable off-LAN'
+    - 'KK signed off per-item (request options all-ok/partial/no)'
+
+execution:
+  blockers:
+    - id: kk-signoff
+      detail: >-
+        Card request kk-sign-off-for-kk-mac-ada-nest-install-ae6c5d open —
+        items (a) adanest user (b) Tailscale (c) boot LaunchDaemon
+        (d) sleep=0 on AC (e) ~20GB model pulls. Options: all-ok / partial /
+        no. (d) is already live from the earlier session.
+    - id: ssh-auth-gap
+      detail: >-
+        Probed 2026-10-21 ~16:20 from tony-omen (-J tony-dell), tony-dell,
+        mn01, idc03, tony-macbook — every fleet key denied (publickey).
+        Port answers on .80 (en0) and .92 (en1); the 15:5x session's auth
+        was not persisted to authorized_keys. Fix: ssh-copy-id at install
+        time with KK typing her password (runbook §1).
+  artifacts:
+    - scripts/ops/kk-mac-onboard.sh            # staged executor, runs ON kk-mac
+    - docs/kb/ada-nest-kk-mac-onboarding.md    # runbook incl. teardown
+    - dispatch-outcome-20261021-161048-kk-permitted-using-her-mac-stu.md
+  next_dispatch_hint: >-
+    When the sign-off answer lands (answers.jsonl or card request), the
+    next session should: re-seed SSH (runbook §1), scp+run the script
+    steps preflight→verify, update host-roles/mac-registry with the
+    tailnet name, close the card.
+
+verification:
+  script_syntax: 'bash -n clean; POSIX-safe for macOS bash 3.2 (no mapfile/assoc arrays)'
+  not_executed: 'No kk-mac contact possible — auth gap above; script is staged, not run'
+  ssot_updated: 'ssot.host-roles.yml kk-mac block notes the auth gap'
