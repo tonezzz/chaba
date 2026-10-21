@@ -71,8 +71,7 @@ step_power() {
 # ---------------------------------------------------------------------------
 pick_uid() {
     local u=503
-    while dscl . -read /Users 2>/dev/null | awk '{print $2}' | grep -qx "$u" \
-       || dscl . -list /Users UniqueID 2>/dev/null | awk '{print $2}' | grep -qx "$u"; do
+    while dscl . -list /Users UniqueID 2>/dev/null | awk '{print $2}' | grep -qx "$u"; do
         u=$((u+1))
     done
     echo "$u"
@@ -110,13 +109,14 @@ step_user() {
 
 # ---------------------------------------------------------------------------
 seed_keys_for() {  # $1=user $2=home
-    local user="$1" home="$2" key
-    sudo -u "$user" touch "$home/.ssh/authorized_keys"
-    sudo -u "$user" chmod 600 "$home/.ssh/authorized_keys"
+    local user="$1" home="$2" key as=""
+    [ "$user" = "$(id -un)" ] || as="sudo -u $user"
+    $as touch "$home/.ssh/authorized_keys"
+    $as chmod 600 "$home/.ssh/authorized_keys"
     while IFS= read -r key; do
         case "$key" in ''|'#'*) continue;; esac
-        if ! sudo -u "$user" grep -qF "$key" "$home/.ssh/authorized_keys"; then
-            printf '%s\n' "$key" | sudo -u "$user" tee -a "$home/.ssh/authorized_keys" >/dev/null
+        if ! $as grep -qF "$key" "$home/.ssh/authorized_keys"; then
+            printf '%s\n' "$key" | $as tee -a "$home/.ssh/authorized_keys" >/dev/null
             ok "seeded ${key##* } -> $user"
         fi
     done < "$FLEET_KEYS_FILE"
@@ -124,7 +124,7 @@ seed_keys_for() {  # $1=user $2=home
 
 step_keys() {
     say "fleet ssh keys"
-    [ -n "${FLEET_KEYS_FILE:-}" ] || die "FLEET_KEYS_FILE not set — see runbook §3 for the standard key set"
+    [ -n "${FLEET_KEYS_FILE:-}" ] || die "FLEET_KEYS_FILE not set — see runbook §1 for the standard key set"
     [ -f "$FLEET_KEYS_FILE" ]     || die "FLEET_KEYS_FILE=$FLEET_KEYS_FILE unreadable"
     id adanest >/dev/null 2>&1 || die "adanest missing — run 'user' step first"
     seed_keys_for adanest "$ADANEST_HOME"
