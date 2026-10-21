@@ -161,7 +161,9 @@ function refreshDots() {
 }
 
 function select(c) {
-  if (current === c.id) return;
+  // Always remount: re-clicking a contact stuck on its invite/denied gate
+  // must re-inject ada_webchat and create a fresh card — an early return
+  // leaves the dead card on screen while storage may already hold a key.
   harvest();
   document.querySelectorAll(".contact").forEach(b =>
     b.classList.toggle("sel", b.dataset.id === c.id));
