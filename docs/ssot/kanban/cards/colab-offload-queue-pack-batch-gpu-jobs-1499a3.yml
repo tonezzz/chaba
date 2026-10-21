@@ -1,0 +1,17 @@
+id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
+title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
+column: backlog
+updated: 2026-10-20 19:25
+priority: low
+note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
+  work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
+  not free compute.'
+ref: OPS-0759
+comms:
+- at: 2026-10-20 19:25
+  from: devin
+  text: 'Design: batch-job package format (notebook or script + Drive-mounted output + checkpoint-resume discipline)
+    + a queue the dispatch drains when a Colab session is already alive. Candidates: NCM training (anchor), mddb
+    embedding backfills, yomi yomi_daily_batch, yolo experiments (wt-yolo-idle), Thai tokenizer evals, txt2vid batch
+    renders. EXCLUDE always-on inference endpoints (omen llama/imagen2/txt2vid — need stable sockets). Phase 0 =
+    reuse for NCM Sudoku validation session; generalize only if t'

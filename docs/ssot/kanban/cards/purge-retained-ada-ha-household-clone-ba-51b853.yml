@@ -1,0 +1,18 @@
+id: purge-retained-ada-ha-household-clone-ba-51b853
+title: Purge retained ada-ha household-clone backups (~1.7GB across omen+dell)
+column: backlog
+updated: 2026-10-21 19:36
+priority: low
+tags:
+- ha-lanes
+- hygiene
+note: 'After Tony eyeballs ada-ha (dev lane, verified clean 2026-10-21), delete the retained clone backups: ~/ada-ha-purge-20261021/
+  on tony-omen (706MB: recorder db, .git history, tuya keys, cam snaps, prod-refs), ~/ada-ha-stale-clone-20261021/
+  on tony-dell (1012MB full pre-cleanup clone), ~/ada-ha-cleanup-20261021.tar.gz + ~/ada-ha-castpack-20261021.tar.gz
+  on tony-omen. All content still lives on tony-ha — nothing is unique. Contains secrets (tuya device keys, tokens)
+  — do not leave indefinitely.'
+ref: ADA-0766
+comms:
+- at: 2026-10-21 19:36
+  from: devin
+  text: card captured via board-api

@@ -5,7 +5,7 @@ brief: 'Each lane gets a dev twin for release-candidate testing: tony-dev mirror
 column: done
 priority: high
 created: 2026-10-08
-updated: 2026-10-11 21:02
+updated: 2026-10-21 19:36
 program: ha-lanes
 metric: Both containers healthy on 127.0.0.1:8127/:8128, reachable on tailnet HTTPS and public CF-Access-gated URLs,
   registered in instances/services/audit SSOT.
@@ -35,6 +35,13 @@ comms:
 - at: 2026-10-11 21:02
   from: tony
   text: moved doing -> done
+- at: 2026-10-21 19:36
+  from: devin
+  text: 'Post-cleanup audit (2026-10-21): this card is done but the twins do not exist — no ada-dev/tony-dev containers,
+    config dirs, or :8127/:8128 listeners on tony-omen or tony-dell. Either never provisioned or torn down unrecorded.
+    ALSO: ada-dev is likely obsolete anyway — ada-ha is now a clean dev-only lane (household strip complete, HOM-0762
+    closed), so a dev twin of it adds nothing. tony-dev (staging twin for household releases) may still have value.
+    Also found during audit: a stale 1012MB pre-cle'
 ref: HOM-0422
 action:
   status: done

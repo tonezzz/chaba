@@ -1,7 +1,7 @@
 id: ncm-thai-adaptation
 title: NCM (next-concept modeling) for Thai — feasibility + possible training run
-column: review
-updated: 2026-10-20 18:29
+column: done
+updated: 2026-10-20 20:29
 brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
   training stages from the paper. Novel research artifact, no stack utility for Ada.'
 priority: low
@@ -123,6 +123,75 @@ comms:
   from: chaba
   text: 'auto-reconciled ncm-thai-adaptation.yml.local-conflict-20261020-183106: column: ''doing'' -> ''review''
     (conflict); action: merged per-key (conflict wins); +11 comms'
+- at: 2026-10-20 19:06
+  from: devin
+  text: '[plan-amend] Tony has Colab Pro — compute plan changes: Sudoku reproduction runs on Colab (free/pro tier,
+    small task, ideal validation gate). If VQ stack validates, the Thai toy run goes on Colab Pro (A100 + 24h runtime
+    + background execution) instead of a rented GPU — removes the <$50 line item entirely. Checkpoint-to-Drive discipline
+    still required (sessions can still interrupt on Pro). Rented GPU remains the fallback if a run needs >24h contiguous.'
+- at: 2026-10-20 19:06
+  from: tony
+  text: 'answered recon-done-toy-train-is-cheaper-than-fea-b244ca: toy-train'
+- at: 2026-10-20 19:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-20 19:06
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 19:07
+  from: mn01
+  text: claimed
+- at: 2026-10-20 19:07
+  from: chaba
+  text: started devin-task-20261020-120717-context-ncm-arxiv-2610-14162-e on mn01 (dispatch)
+- at: 2026-10-20 19:08
+  from: devin
+  text: 'dispatch picked up card — Tony chose toy-train. Plan: clone HazyResearch/ncm, reimplement missing trainers
+    (~1.5k LOC), validate on Sudoku first, then Thai toy run if hardware permits. Checking mn01 GPU now.'
+- at: 2026-10-20 19:14
+  from: chaba
+  text: 'merge-sweep: devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-20 19:14
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e'
+- at: 2026-10-20 19:19
+  from: devin
+  text: 'toy-train in progress: trainers reimplemented (tokenizer + generator w/ conditioning corruption + L_NCM
+    level weighting per paper). mn01 is CPU-only (4c/7GB) — validating on Sudoku smoke at reduced updates first,
+    then wiring Thai pipeline end-to-end. Real Thai toy numbers need a GPU run (card it to tony-omen or rented).'
+- at: 2026-10-20 20:10
+  from: devin
+  text: 'toy-train progress: full trainer reimplementation done (~1.4k LOC, experiments/ncm-thai/). Sudoku-validated:
+    tokenizer recon CE 0.134 @250 steps (96% recon acc), micro-generator loss 2.9→2.0 acc 44% @50 steps and climbing.
+    Thai pipeline ready end-to-end: mC4-th 120k docs → SP-8k → 300k×128 ids; configs verified vs paper (36.43M/88.61M
+    exact param match). mn01 CPU+earlyoom means the actual Thai toy RUN needs GPU — next step carded as gpu action
+    or rented (<$50, already in accepted option).'
+- at: 2026-10-20 20:17
+  from: devin
+  text: 'toy-train session done: trainers built + Sudoku-validated end-to-end (gen wellformed 100% @~200 steps,
+    acc 58% climbing; solved-rate needs real budget). Thai path fully wired: data+SP+config verified (88.61M gen).
+    Blocker for final numbers = hardware: needs gpu-card to tony-omen or rented GPU. Durable record: docs/ssot/jobs/experiments/2026-10-20-ncm-thai-toy-train.yml;
+    code+README: experiments/ncm-thai/.'
+- at: 2026-10-20 20:22
+  from: mn01
+  text: 'finished (ok): exit=0 omms, and `dispatch-outcome-20261020-120717-context-ncm-arxiv-2610-14162-e.md`. |
+    devin-task-20261020-120717-cont'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: 'session-end checkpoint 395d416a: 4 leftover file(s) committed'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: pushed dispatch/20261020-120717-context-ncm-arxiv-2610-14162-e to origin
+- at: 2026-10-20 20:22
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: auto-merged 9014a636 (dispatch/20261020-120717-context-ncm-arxiv-2610-14162-e) → origin/master
+- at: 2026-10-20 20:29
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: how-far-should-the-thai-ncm-idea-go-repo-743d93
   ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
@@ -147,7 +216,7 @@ requests:
 - id: recon-done-toy-train-is-cheaper-than-fea-b244ca
   ask: Recon done — toy-train is cheaper than feared (~1.2-1.5k LOC new code, <$50, few days) but still zero Ada/stack
     payoff. How to proceed?
-  status: open
+  status: answered
   at: 2026-10-20 18:20
   from: devin
   options:
@@ -163,15 +232,21 @@ requests:
   - id: drop
     label: Drop — close card, keep report.
   suggested: watch-only
+  answer: toy-train
 action:
   type: dispatch
   status: done
-  runner: idc02
-  result: 'exit=0 y in `reports/2026-10-20-ncm-thai-recon.md`, and the outcome summary is in `dispatch-outcome-20261020-181610-context-ncm-arxiv-2610-14162-e.md`.
-    | devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e.service: Consumed 12.842s CPU time.'
-  verified: true
+  result: 'exit=0 omms, and `dispatch-outcome-20261020-120717-context-ncm-arxiv-2610-14162-e.md`. | devin-task-20261020-120717-context-ncm-arxiv-2610-14162-e.service:
+    Consumed 2h 21min 16.755s CPU time over 1h 14min 39.109s wall clock time, 3.1G memory peak.'
   sweep:
     close_held: 2026-10-20 18:29
+    stale_running: 2026-10-20 19:14
+    no_repo: 2026-10-20 19:14
+  runner: mn01
+  verified: true
 review_kind: verify
 claim: {}
-awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-20 20:29
+  note: verified — evidence checks green, closing itself

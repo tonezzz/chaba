@@ -1,27 +1,36 @@
 id: disk-auto-tony-omen-data
 title: Disk tony-omen /data fills in <7d
-brief: Disk space on tony-omen (/data) is running low — check the note for the rate
-  and top growers, then free space or close the card.
+brief: Disk space on tony-omen (/data) is running low — check the note for the rate and top growers, then free space
+  or close the card.
 column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: 'Auto-recovered 2026-10-16: tony-omen /data back in bounds (88%, slope None
-  GiB/d)'
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
-  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
-  ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-10-16'
+note: 'Auto-recovered 2026-10-16: tony-omen /data back in bounds (88%, slope None GiB/d)'
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
+  (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
+updated: 2026-10-21 07:07
 comms:
 - at: 2026-10-11 10:15
   from: devin
-  text: 'freed ~64G: mddb-backup-pull.timer was a zombie pulling from RETIRED idc01
-    — masked; stale dumps moved /data→~/mddb-backups-idc01-retired (preserved, not
-    deleted); pip+chrome caches purged. /data 87%→68%. Next lever if pressure returns:
-    /data/cache/huggingface/hub 98G (LTX-Video 27G, moshiko 15G, Thai-Legal-Gemma
-    15G, SDXL family 32G — experiment models, no service references found).'
+  text: 'freed ~64G: mddb-backup-pull.timer was a zombie pulling from RETIRED idc01 — masked; stale dumps moved
+    /data→~/mddb-backups-idc01-retired (preserved, not deleted); pip+chrome caches purged. /data 87%→68%. Next lever
+    if pressure returns: /data/cache/huggingface/hub 98G (LTX-Video 27G, moshiko 15G, Thai-Legal-Gemma 15G, SDXL
+    family 32G — experiment models, no service references found).'
 - at: 2026-10-11 11:00
   from: devin
-  text: move finished — 64G relocated to ~/mddb-backups-idc01-retired, /data now 63%
-    (110G free).
+  text: move finished — 64G relocated to ~/mddb-backups-idc01-retired, /data now 63% (110G free).
+- at: 2026-10-20 19:36
+  from: devin
+  text: '[done] 2026-10-20 capacity round: mddb-backups-idc01-retired (24 files, 68,226,879,488 B) relocated omen:/data/backups/
+    -> idc02:/home/tony/backups/. Verified by rsync dry-run zero-diff, then source removed. ~/mddb-backups-idc01-retired
+    symlink replaced with .MOVED.txt pointer. /data now 67% (100G free, was 88%). Remaining consumers: HF cache
+    105G, devin-cli backups 19G, hibernate.swap 33G.'
+- at: 2026-10-21 07:07
+  from: devin
+  text: '[done] 2026-10-21 HF-cache round 2: 8 stale July-experiment models archived omen:/data/cache/huggingface/hub
+    -> idc02:/home/tony/backups/hf-cache-archive-202610/ (LTX-Video 27G, Thai-Legal-Gemma 15G [GGUF kept in /data/gguf],
+    SDXL 13G, Juggernaut 6.4G, RealVisXL 6.2G, SDXL-Lightning+VAEs ~1G = 68G). Verified rsync zero-diff before removal.
+    Kept: moshiko 15G (voice-bench Oct-9), small models, hub/blobs shared store. /data now 44% (167G free; was 88%
+    before both rounds). Also noted: nvme0n1p5 ubun'

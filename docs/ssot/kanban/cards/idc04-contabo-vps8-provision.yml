@@ -1,0 +1,33 @@
+id: idc04-contabo-vps8-provision
+title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
+column: backlog
+updated: 2026-10-21 17:49
+priority: high
+spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
+  24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
+  Germany acceptable fallback for pure backend. Roles in order: (1) mddb-follower #2 re-seeded from idc03 leader
+  (replaces idc01 DR); (2) ada-stt migrate from idc02 (Qwen3-ASR CPU box — 8 vCPU gives RTF<1 even co-located);
+  (3) standby caddy-edge + cert-sync target for api.surf-thailand.com; (4) secrets-backup TARGETS += idc04, drop
+  idc01; (5) offload timers from saturated idc03/full idc02 (vector-reindex, doc-mirror, jev-bench); (6) runner
+  lane + lab sandbox (idc01 old lab role). Steps: provision + tailnet join as idc04 + baseline hardening (ufw deny-in
+  + tailscale0 + 80/443, linger, podman, fail2ban, BBR, 90-tuning sysctl); quadlets via stacks/; follower seed via
+  snapshot rsync not binlog; verify replication lag->0; move ada-stt unit + update TG_WHISPER_URL consumers; update
+  ssot.host-capacity (add_capacity procedure), ssot.audit.hosts, ssot.jobs host map, consumer-canary AUDIT_HOSTS,
+  health.yml mddb-follower entry. DO NOT place: mddb leader, board checkout, Ada backends (stay idc03), LAN-bound
+  services. Gate: cancel/retire idc01 decision (OPS-0520) is separate — do not depend on it.'
+note: 'Sizing rationale: VPS 8 >= idc02+idc03 combined CPU/RAM — runs DR role at ~25% utilization leaving headroom
+  for absorber+batch work, i.e. the node earns its keep instead of idling like idc01 did. Also relieves idc02 disk
+  (90% full) by moving ada-stt + timers off it. Provider shortlist research: Education posts 1705 + 1708. If idc02
+  role fully migrates later, idc02 could shrink to pure cold storage — separate card if pursued.'
+ref: OPS-0763
+comms:
+- at: 2026-10-21 08:44
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-21 17:49
+  from: devin
+  text: 'PURCHASED 2026-10-21: Tony ordered Contabo Cloud VPS 8 — fleet name = con01 (not idc04; note the naming-convention
+    break, con* = Contabo). Contabo identity/KYC verification pending via email — normal, can take hours up to ~1
+    day for a first order; may request ID docs. Provisioning triggers once login credentials + IP arrive: baseline
+    hardening, tailnet join as con01, then role stack per spec (follower #2, ada-stt migrate, standby edge, secrets
+    target, offload timers, lab). OPEN: which region was'

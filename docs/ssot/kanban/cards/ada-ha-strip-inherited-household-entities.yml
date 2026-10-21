@@ -1,0 +1,47 @@
+id: ada-ha-strip-inherited-household-entities
+title: 'ada-ha: strip remaining inherited household entities (clone cleanup pt 2)'
+column: done
+updated: 2026-10-21 19:34
+brief: 'ada-ha was cp-a cloned from tony-ha prod config. 2026-10-21 removed the Omen workspace screens (4 image
+  thumbs in templates.yaml + 4 ffmpeg cameras desktop_1/20/99 + tony_omen_desktop_1 in configuration.yaml, registry
+  orphans WS-deleted, verified clean). Still on ada-ha and equally household-only: camera.tony_dell_usb(+_2 dup),
+  camera.ip_cam_65(+_2), camera.xiaomi_c100/c201(+_2 dups), image.yolo_annotated, image.vms (both still pull via
+  127.0.0.1:8123 = tony-ha www), sensor.tony_omen_* (cpu/gpu/battery), automation.battery_reminder_tony_omen, and
+  the cloned lovelace.smart-home dashboard (now h'
+priority: medium
+tags:
+- ada-ha
+- home-assistant
+- privacy-separation
+spec: 'Decide whether ada-ha keeps ANY household cameras/images, or strip them all: (1) configuration.yaml camera:
+  ffmpeg block has 6 remaining entries all pointed at household sources; (2) templates.yaml image.yolo_annotated
+  + image.vms pull through tony-ha www on 127.0.0.1:8123 — same cross-instance leak class as the workspace thumbs
+  removed 2026-10-21; (3) sensor.tony_omen_* + automation.battery_reminder_tony_omen are Tony-hardware-specific;
+  (4) lovelace.smart-home on ada-ha is a full clone of the household dashboard — now with 3 unavailable camera cards;
+  consider deleting the dashboard entirely rather than card-surgery. Note the camera.*_2 duplicates suggest the
+  clone also created UI-side duplicates of each ffmpeg cam. Removal = same pattern as 2026-10-21: yaml strip + podman
+  restart ada-ha + WS config/entity_registry/remove for orphans. Backups at ~/.config/ada-ha/*.bak-20261021.'
+ref: HOM-0762
+comms:
+- at: 2026-10-21 08:33
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-21 08:47
+  from: devin
+  text: 'EXECUTED + verified live 2026-10-21 (expanded past card scope as leak kept surfacing). configuration.yaml:
+    removed camera: block (6 ffmpeg cams), command_line items usb_test_hub + laptop_tony_omen_battery_*, shell_command
+    cast_host_cleanup, rest resources tony-omen:8799 (tv_display) + mn01:8780 (yolo) + 100.75.102.88:8001 (omen
+    sensors), rest_commands tv_action/start_desktop_stream/switch_workspace/yolo_set_source, lovelace: desktop-caster
+    section, sensor.youtube_search_result. Files: templates.'
+- at: 2026-10-21 19:29
+  from: devin
+  text: 'Pass 2 complete — ada-ha is now dev-only. 32 entities, 0 restored, 0 camera/image/person/switch. Stripped:
+    command_line (tuya plugs, kk-macbook sensors, netscan), ffmpeg/stream/packages/customize, tuya_ir, trusted_networks
+    .67 (dead clone artifact — .67:8125 caddy is ha-guest-lan proxying to tony-ha:8123, not ada-ha), server_host
+    now loopback+tailnet only. Purged 706MB to ~/ada-ha-purge-20261021/ (recorder db 550M, .git 102M, tuya device
+    keys, www/cam+www/ha, patches, ha-live cam-monitor, 4 hous'
+- at: 2026-10-21 19:34
+  from: devin
+  text: closed by devin
+action:
+  status: done

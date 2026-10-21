@@ -1,0 +1,36 @@
+id: tenda-downstream-rogue-dhcp
+title: Rogue 192.168.1.x DHCP server behind tony-repeater is poisoning LAN leases
+column: backlog
+updated: 2026-10-21 15:53
+priority: high
+tags:
+- network
+- infra
+- rogue-dhcp
+- tony-repeater
+spec: 'A phantom DHCP server on the home LAN hands out dead 192.168.1.x leases (gw+dns 192.168.1.1 which does not
+  exist at L2). Any client that grabs its offer loses connectivity — it hit tony-macbook''s USB-ethernet (holds
+  192.168.1.106, no route to .2.x, broke Tony''s SSH attempt to KK''s Mac). tcpdump from tony-dell: OFFER arrives
+  sourced from tony-repeater''s LAN MAC 06:28:58:26:4b:2c, but with IP-src 0.0.0.0 and Server-ID 0.0.0.0, and the
+  Tenda''s own dhcpd is verified disabled (config dump 2026-10-19, leftover pool is .11.x not .1.x). Conclusion
+  (same as the 2026-10-19 investigation): the emitter is a device DOWNSTREAM of the repeater on the TV-corner segment
+  — TrueID Android box (wifi b8:59:ce:74:75:28) or the old Mountain View router if still cabled there. Reproduce:
+  `sudo nmap --script broadcast-dhcp-discover -e enp0s31f6` on tony-dell — two offers come back, the rogue one offers
+  .1.x.'
+note: 'Options: (a) STAR physically inspect the TV corner behind the Tenda — unplug whatever is cabled to its LAN
+  port besides the Samsung TV (TrueID box ethernet, old router), then re-run the discover to confirm offers stop;
+  (b) temporarily power off the Tenda itself and re-run discover — isolates repeater-vs-downstream in one step (note:
+  kills Samsung TV corner clients while off); (c) if the TrueID box is the emitter, look for a hotspot/tether mode
+  that was toggled on. Evidence captured: offer = Your'
+ref: SYS-0764
+comms:
+- at: 2026-10-21 15:14
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-21 15:53
+  from: devin
+  text: 'Router forensics (ZTE F688 authenticated admin): (1) ONT DHCP scope = ONLY 192.168.2.65-.99/24, no .1.x
+    scope configured. (2) Port binding: LAN1-4 + SSID1-8 all on one flat TR069_INTERNET bridge. (3) LAN client table:
+    tony-macbook (00:e0:4c) cabled to LAN3 carrying the rogue .1.106 lease; KKs-Mac-Studio LAN1 (.2.80); tony-dell
+    LAN2 (.2.67). (4) .1.x OFFER src MAC 06:28:58:26:4b:2c = tony-repeater wireless-side MAC — emitter is BEHIND
+    the Tenda (LAN port or -ext SSID): TrueID box / TV-corner gear'
