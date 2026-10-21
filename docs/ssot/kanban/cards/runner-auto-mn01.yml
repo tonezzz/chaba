@@ -1,5 +1,5 @@
 id: runner-auto-mn01
-title: Runner host `mn01` fails 3 dispatch bootstrap check(s)
+title: Runner host `mn01` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on mn01 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
 column: review
@@ -7,9 +7,7 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: git fetch origin failed AND 6 commits behind last-fetched ref — clone
-  can''t refresh (error: fetching ref refs/remotes/origin/master failed: incorrect
-  old value provi); ~/.local/bin/runner-agent sha 28f641cfe4ee10bf != repo adfa0c5733ddc771
+note: 'Failing: ~/.local/bin/runner-agent sha 28f641cfe4ee10bf != repo adfa0c5733ddc771
   — installed copy drifted; redeploy; ~/.local/bin/devin-dispatch sha ea6eeacada0ae660
   != repo e5b401a3f212a9ca — installed copy drifted; redeploy. Info: chaba origin
   is push-capable; no ada-voice checkout — host can''t take action.repo=ada-voice
@@ -18,9 +16,6 @@ note: 'Failing: git fetch origin failed AND 6 commits behind last-fetched ref �
   checkout — host can''t take action.repo=gods-eye-view cards; devin: /home/tony/.local/bin/devin
   (devin 3000.11.92 (7f4e64980e22)).'
 help: 'Per-check fixes:
-
-  - clone-fetch: git fetch origin fails on the host — check egress/DNS to github.com
-  from <host>.
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
   && ssh <host> chmod +x ~/.local/bin/runner-agent
