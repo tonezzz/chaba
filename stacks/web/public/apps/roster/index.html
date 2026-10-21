@@ -30,13 +30,12 @@
                  font-size: 15px; color: #fff; flex: none; }
   .contact .nm { font-weight: 600; }
   .contact .sub { font-size: 11px; color: var(--dim); }
-  .contact .dot { width: 8px; height: 8px; border-radius: 50%;
-                  flex: none; margin-left: auto;
-                  border: 1px solid var(--dim); }
-  .contact .dot.keyed { background: #57d98d; border-color: #57d98d; }
-  .contact .dot.denied { background: #e05c5c; border-color: #e05c5c; }
-  .contact .dot.offline { background: #555f70; border-color: #555f70; }
-  .contact .dot.probing { background: #d9b84a; border-color: #d9b84a; }
+  .contact .st2 { display: block; font-size: 10px; margin-top: 1px;
+                  color: var(--dim); }
+  .contact .st2.keyed { color: #57d98d; }
+  .contact .st2.denied { color: #e05c5c; }
+  .contact .st2.offline { color: #8b94a8; }
+  .contact .st2.probing { color: #d9b84a; }
   #stage-head .st { font-size: 12px; margin-left: auto; }
   .contact.soon { opacity: .45; cursor: default; }
   #rail .foot { margin-top: auto; padding: 10px 14px; font-size: 11px;
@@ -168,18 +167,22 @@ function harvest() {
 }
 setInterval(harvest, 2000);
 
-// Per-contact status dot. green=keyed+probe ready, red=key rejected,
-// grey=lane unreachable, yellow=probing, hollow=no key stored.
+// Per-contact status label under the name. Text, not a dot — the state
+// must be impossible to miss: connected / denied / offline / needs key.
 const DOT_STATE = {};
+const ST_LABEL = { keyed: "connected", denied: "key denied — re-seed",
+                   offline: "lane unreachable", probing: "checking…" };
 function refreshDots() {
   const k = keys();
   document.querySelectorAll(".contact").forEach(b => {
     const c = CONTACTS.find(x => x.id === b.dataset.id);
-    const dot = b.querySelector(".dot");
-    if (!dot || c.soon) return;
-    dot.className = "dot " + (DOT_STATE[c.id] ||
+    const el = b.querySelector(".st2");
+    if (!el || c.soon) return;
+    const state = DOT_STATE[c.id] ||
       (/^ada-[A-Za-z0-9_-]{10,}$/.test(k[c.lane]?.key || "")
-        ? "keyed" : ""));
+        ? "keyed" : "none");
+    el.className = "st2 " + (state === "none" ? "" : state);
+    el.textContent = ST_LABEL[state] || "needs key — use Seed box";
   });
 }
 
@@ -264,8 +267,8 @@ for (const c of CONTACTS) {
   b.innerHTML = `<span class="av" style="background:${c.color || "#333"}">
       ${c.name[0]}</span>
     <span><span class="nm">${c.name}</span><br>
-      <span class="sub">${c.soon || c.lane.split("/").pop()}</span></span>
-    <span class="dot"></span>`;
+      <span class="sub">${c.soon || c.lane.split("/").pop()}</span>
+      <span class="st2"></span></span>`;
   if (!c.soon) b.addEventListener("click", () => select(c));
   rail.append(b);
 }
