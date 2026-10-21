@@ -82,6 +82,7 @@ hosts:
   kk-mac:
     description: KK's Mac Studio (Mac16,9) — M4 Max 14-core (10P+4E), 36 GB unified, macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk. Registered 2026-10-21; aka "kk-imac" / former device_id kks-mac-studio.
     lan_ip: 192.168.2.80 (en0 wired, primary) / 192.168.2.90,.92 (en1 wifi — 2.4GHz-only at her spot, RSSI -68dBm, marginal)
+    tailscale_ip: 100.108.217.17 (joined tailnet 2026-10-21 as "kk-mac" — verified online via tailscale status)
     local_hostname: KKs-Mac-Studio.local
     tags:
       - macos
@@ -99,9 +100,12 @@ hosts:
       can_run:
         - macOS builds, Safari/WebKit verification
         - llama.cpp/MLX local inference (36GB unified — ~24-30B quantized class alongside KK's Adobe load)
-        - SSH batch jobs (Remote Login enabled 2026-10-21; ssh -J tony-dell kkkakk@192.168.2.80)
+        - LoRA/QLoRA fine-tuning via mlx-lm (verified 2026-10-21: 60 iters, 1093 tok/s, peak 1.48GB on 1B-4bit)
+        - image gen (SDXL-Turbo MPS ~16s/512px) + video gen (LTX-Video-2B ~11.5min/2s clip)
+        - Ollama API 0.0.0.0:11434 (LaunchDaemon net.adanest.ollama.plist, user adanest — llama3.2:3b 161 tok/s)
+        - SSH batch jobs (Remote Login enabled 2026-10-21; ssh -J tony-dell kkkakk@192.168.2.80; password auth — fleet keys not yet seeded)
       cannot_run:
-        - unattended 24/7 services (travels with KK; power policy fixed 2026-10-21 — sleep=0 — but Tailscale still pending, so reachability is LAN-hours only)
+        - unattended 24/7 services (travels with KK; sleep=0 + Tailscale done 2026-10-21, but treat as optional when asleep/offline — member device, not infra)
         - anything touching her Adobe/OneDrive apps without her sign-off
       access_note: >-
         2026-10-21 16:2x — no fleet key authenticates to kkkakk@kk-mac
