@@ -34,6 +34,10 @@
                   flex: none; margin-left: auto;
                   border: 1px solid var(--dim); }
   .contact .dot.keyed { background: #57d98d; border-color: #57d98d; }
+  .contact .dot.denied { background: #e05c5c; border-color: #e05c5c; }
+  .contact .dot.offline { background: #555f70; border-color: #555f70; }
+  .contact .dot.probing { background: #d9b84a; border-color: #d9b84a; }
+  #stage-head .st { font-size: 12px; margin-left: auto; }
   .contact.soon { opacity: .45; cursor: default; }
   #rail .foot { margin-top: auto; padding: 10px 14px; font-size: 11px;
                 color: var(--dim); border-top: 1px solid var(--rail-edge); }
@@ -69,7 +73,7 @@
   </nav>
   <div id="stage">
     <div id="stage-head"><span class="nm" id="h-name"></span>
-      <span class="ln" id="h-lane"></span></div>
+      <span class="ln" id="h-lane"></span><span class="st" id="h-status"></span></div>
     <div id="chat-wrap"></div>
   </div>
 <script>
@@ -164,16 +168,55 @@ function harvest() {
 }
 setInterval(harvest, 2000);
 
-// Per-contact key presence: filled dot = ada_roster has a usable key for
-// the lane, hollow = the card will show its invite gate on select.
+// Per-contact status dot. green=keyed+probe ready, red=key rejected,
+// grey=lane unreachable, yellow=probing, hollow=no key stored.
+const DOT_STATE = {};
 function refreshDots() {
   const k = keys();
   document.querySelectorAll(".contact").forEach(b => {
     const c = CONTACTS.find(x => x.id === b.dataset.id);
     const dot = b.querySelector(".dot");
-    if (dot) dot.classList.toggle("keyed",
-      !c.soon && /^ada-[A-Za-z0-9_-]{10,}$/.test(k[c.lane]?.key || ""));
+    if (!dot || c.soon) return;
+    dot.className = "dot " + (DOT_STATE[c.id] ||
+      (/^ada-[A-Za-z0-9_-]{10,}$/.test(k[c.lane]?.key || "")
+        ? "keyed" : ""));
   });
+}
+
+// Live ws probe — same URL the card dials. Answers the question the UI
+// can't see: is the stored key accepted by the lane right now?
+function probeLane(c, k) {
+  return new Promise(res => {
+    try {
+      const scheme = c.lane.startsWith("https:") ? "wss" : "ws";
+      const url = `${scheme}://${c.lane.replace(/^https?:\/\//, "")}/ws`
+        + `?api_key=${encodeURIComponent(k.key)}`
+        + `&channel=web&mode=text`
+        + `&device_id=${encodeURIComponent(k.device_id || "probe")}`;
+      const ws = new WebSocket(url);
+      const done = s => { try { ws.close(); } catch (_) {} res(s); };
+      const t = setTimeout(() => done("offline"), 8000);
+      ws.onmessage = m => {
+        try {
+          if (JSON.parse(m.data).type === "ready")
+            { clearTimeout(t); done("ready"); }
+        } catch (_) {}
+      };
+      ws.onclose = e => { clearTimeout(t);
+        done(e.code === 4401 || e.code === 4403 ? "denied" : "offline"); };
+      ws.onerror = () => { clearTimeout(t); done("offline"); };
+    } catch (_) { res("offline"); }
+  });
+}
+
+async function probeAll() {
+  const k = keys();
+  await Promise.all(CONTACTS.map(async c => {
+    if (c.soon || !/^ada-[A-Za-z0-9_-]{10,}$/.test(k[c.lane]?.key || ""))
+      return;
+    DOT_STATE[c.id] = "probing"; refreshDots();
+    DOT_STATE[c.id] = await probeLane(c, k[c.lane]); refreshDots();
+  }));
 }
 
 function select(c) {
@@ -202,6 +245,16 @@ function select(c) {
   cardEl.setAttribute("lane", c.lane);
   cardEl.setAttribute("member", MEMBER);
   wrap.append(cardEl);
+  const st = document.getElementById("h-status");
+  if (k) {
+    st.textContent = "probing lane…";
+    probeLane(c, k).then(s => {
+      DOT_STATE[c.id] = s === "ready" ? "keyed" : s; refreshDots();
+      st.textContent = s === "ready" ? ""
+        : s === "denied" ? "key denied by lane — re-seed this contact"
+        : "lane unreachable — tailnet up?";
+    });
+  } else st.textContent = "no key stored — use the Seed box";
 }
 
 for (const c of CONTACTS) {
@@ -218,6 +271,7 @@ for (const c of CONTACTS) {
 }
 refreshDots();
 select(CONTACTS[0]);
+probeAll();
 </script>
 </body>
 </html>
