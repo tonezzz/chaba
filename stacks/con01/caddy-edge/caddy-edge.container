@@ -4,8 +4,8 @@ Image=docker.io/library/caddy:2
 Network=host
 Volume=%h/.config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro,Z
 Volume=%h/.config/caddy/certs:/etc/caddy/certs:ro,Z
-Volume=%h/.config/containers/caddy/data:/data,Z
-Volume=%h/.config/containers/caddy/config:/config,Z
+Volume=%h/.config/containers/caddy/data:/data:Z
+Volume=%h/.config/containers/caddy/config:/config:Z
 # Edge-vouch secret for board-api writes arriving CF-Access-authed on
 # public vhosts — injected as X-Board-Edge-Key upstream header.
 # quadlet env-file: no systemd '-' ignore-missing prefix — podman

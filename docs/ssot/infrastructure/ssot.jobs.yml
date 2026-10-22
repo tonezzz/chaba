@@ -266,6 +266,27 @@ jobs:
     ~/.config/secrets/doc-archive.env (API key) + rsync ssh to tony-dell-m2m
     (con01 mesh key already on dell). Reads doc-archive API + mddb on idc03.
     Moved idc03->con01 2026-10-22 (was a hand unit on idc03 — now declared).
+- id: mddb-vector-reindex
+  name: MDDB vector reindex — daily re-embed sweep for dropped embeddings
+  host: con01
+  dispatch: systemd
+  on_calendar: '*-*-* 05:40:00'
+  persistent: true
+  timeout: 45m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mddb/vector-reindex.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023
+    MDDB_REINDEX_HEALTH_WAIT: '1200'
+    MDDB_REINDEX_TIMEOUT: '1800'
+  note: >-
+    POST-driven sweep against the idc03 leader — re-embeds docs whose stored
+    vectors were dropped (provider outage, queue overflow) so the RAM index
+    repopulates. Skips content-hash-matching docs, so a healthy daily sweep is
+    cheap. Runs from con01 to keep the driver off saturated idc03 (the embed
+    work itself is still leader-side). Replaces the oneshot that idc01 carried
+    via mddb-vector-reindex.service(.d) — lost with that host 2026-10-12;
+    declared here 2026-10-22 (OPS-0763). Same script stays wired to
+    mddb.service ExecStartPost + mddb-embed-probe on idc03.
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen
@@ -641,6 +662,17 @@ jobs:
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
+- id: log-shipper
+  name: Log shipper (local journald -> MDDB host-logs)
+  host: con01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    MDDB_OPS_URL: http://100.102.134.91:11026/v1
+  note: added 2026-10-22 with con01 onboarding (OPS-0763)
 - id: log-shipper-mha
   name: Log shipper pull — michael-ha via ha-cli
   host: tony_dell
@@ -717,6 +749,17 @@ jobs:
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
+- id: log-shipper-severe
+  name: Log shipper — severe kinds fast lane
+  host: con01
+  dispatch: systemd
+  every: 1h
+  timeout: 10m
+  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    MDDB_OPS_URL: http://100.102.134.91:11026/v1
+  note: added 2026-10-22 with con01 onboarding (OPS-0763)
 - id: log-shipper-severe-mha
   name: Log shipper severe pull — michael-ha via ha-cli
   host: tony_dell
@@ -934,7 +977,7 @@ jobs:
   note: 'OPS-0755 — born of the OPS-0731 miss (producers migrated + green while
     dashboards/card-JS still dialed tony-dell). Greps DEPLOYED artifacts — omen
     www card bundles + unit envs, caddy configs on idc02/mn01, unit envs on
-    idc01/idc03, live HA dashboards via websocket — for RETIRED_HOSTS
+    con01/idc03, live HA dashboards via websocket — for RETIRED_HOSTS
     (default tony-dell.taila0626a.ts.net). Findings post to the canary card
     via board-api; clean runs are stdout-only. ssh''s out from idc03.
     Added 2026-10-20.'

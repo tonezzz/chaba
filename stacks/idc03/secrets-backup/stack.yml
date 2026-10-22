@@ -6,25 +6,31 @@ description: >-
   recovery hosts. Timer secrets-backup.timer fires 03:00 ICT daily.
 verify: >-
   ssh idc02 "ls ~/secrets-backup/secrets-*.tar.age" &&
-  ssh idc01 "ls ~/secrets-backup/secrets-*.tar.age" &&
-  ssh tony-dell-m2m "ls ~/secrets-backup/secrets-*.tar.age"
+  ssh con01 "ls ~/secrets-backup/secrets-*.tar.age" &&
+  ssh tony-dell-m2m "ls ~/secrets-backup/secrets-*.tar.age" &&
+  ssh tony-omen "ls ~/secrets-backup/secrets-*.tar.age"
 secrets:
   - "~/.config/secrets/backup-age.key — age PRIVATE key; also placed at the
      same path on each recovery host (restore needs it there). NEVER in git."
 requires:
   - "ssh:idc02 — dedicated key ~/.ssh/id_idc02"
-  - "ssh:idc01 — dedicated key ~/.ssh/id_idc01"
+  - "ssh:con01 — fleet mesh key (added 2026-10-22)"
   - "ssh:tony-dell-m2m — dedicated key ~/.ssh/id_tony_dell"
+  - "ssh:tony-omen — fleet mesh key"
   - "tool:age — encrypts the tarball"
   - "remote-tool:idc02:age — restore needs it there"
-  - "remote-tool:idc01:age — restore needs it there"
+  - "remote-tool:con01:age — restore needs it there"
   - "remote-tool:tony-dell-m2m:age — restore needs it there"
+  - "remote-tool:tony-omen:age — restore needs it there"
 state:
   - "~/.config/secrets — source set must exist"
 ports: []  # timer-driven oneshot; binds nothing
 restore: >-
   On a recovery host: age -d -i ~/.config/secrets/backup-age.key
   ~/secrets-backup/secrets-<stamp>.tar.age | tar xz -C ~/
-related_cards: [idc01-return-role]
+related_cards: [idc01-return-role, idc04-contabo-vps8-provision]
 status: deployed
 deployed: 2026-10-06
+note: >-
+  TARGETS updated 2026-10-22 (OPS-0763): dropped retired idc01, added con01
+  (3rd provider/geo failure domain — Contabo AS51167) and tony-omen.

@@ -8,7 +8,7 @@ PUB=$(grep -oP "public key: \K.*" "$KEY")
 STAMP=$(date +%Y%m%d-%H%M)
 OUT=$(mktemp -d)/secrets-$STAMP.tar.age
 KEEP_DAYS=14
-TARGETS=(idc02 idc01 tony-dell-m2m)
+TARGETS=(idc02 con01 tony-dell-m2m tony-omen)
 
 tar czf - -C "$HOME" \
   .config/secrets \
