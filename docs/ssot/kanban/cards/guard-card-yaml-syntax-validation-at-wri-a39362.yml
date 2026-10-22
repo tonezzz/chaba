@@ -1,7 +1,7 @@
 id: guard-card-yaml-syntax-validation-at-wri-a39362
 title: 'Guard: card-YAML syntax validation at write time — render died 2.5h on 3 malformed cards'
-column: review
-updated: 2026-10-22 19:53
+column: done
+updated: 2026-10-22 20:07
 brief: '2026-10-11 ~12:45-15:10: chaba-board-render crashed every 60s on yaml.scanner errors. Three cards had YAML-invalid
   free text (ada-secret-drop unindented continuation; voice-degrade-tiers + scenario-spend-guard list items containing
   key: and >N sequences). cards.json went stale silently — board page showed 2.5h-old data while API writes kept
@@ -127,9 +127,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-194658-two-cheap-guards-both-small-1-,
     branch dispatch/20261022-194658-two-cheap-guards-both-small-1-'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
-  at: 2026-10-12 23:12
-  note: verified — exit_code=0; outcome doc dispatch-outcome-20261012-223345-two-cheap-guards-both-small-1-.md
+  at: 2026-10-22 20:07
+  note: verified — evidence checks green, closing itself

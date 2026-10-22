@@ -4,10 +4,10 @@ brief: 'Registry contract landed in chaba ssot.apps.ada-memory-banks.yml (card m
   instances_readonly {dev-instance: prod-instance} and dev-scratch carries env: staging. This is the ada-pi half
   — teach memory_banks.py to mount those banks read-only and memory_ops.py to stamp the bank''s env onto written
   docs.'
-column: review
+column: done
 priority: medium
 created: 2026-10-10
-updated: 2026-10-22 19:54
+updated: 2026-10-22 20:07
 program: ha-lanes
 metric: A backend started with ADA_INSTANCE_ID=tony-dev loads every bank whose instances_readonly maps tony-dev
   (collections resolved as the mapped prod instance, {instance}->tony) with writable=false + allowed_tools=[]; its
@@ -113,6 +113,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193424-contract-already-in-chaba-docs,
     branch dispatch/20261022-193424-contract-already-in-chaba-docs'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 ref: ADA-0344
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 20:07
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: tenda-downstream-rogue-dhcp
 title: Rogue 192.168.1.x DHCP server behind tony-repeater is poisoning LAN leases
 column: review
-updated: 2026-10-22 20:04
+updated: 2026-10-22 20:07
 priority: high
 tags:
 - network
@@ -61,6 +61,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193419-a-phantom-dhcp-server-on-the-h,
     branch dispatch/20261022-193419-a-phantom-dhcp-server-on-the-h'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: devin-task-20261022-193419-a-phantom-dhcp-server-on-the-h no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261022-193419-a-phantom-dhcp-server-on-the-h on
+    tony-omen — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -68,5 +76,8 @@ action:
   result: 'exit=0 0261022-193419-a-phantom-dhcp-server-on-the-h.service: Failed with result ''exit-code''. | devin-task-20261022-193419-a-phantom-dhcp-server-on-the-h.service:
     Consumed 1min 14.467s CPU time over 28min 22.502s wall clock time, 1.1G memory peak.'
   verified: true
+  sweep:
+    stale_running: 2026-10-22 20:07
+    session_gone: 2026-10-22 20:07
 review_kind: verify
 claim: {}

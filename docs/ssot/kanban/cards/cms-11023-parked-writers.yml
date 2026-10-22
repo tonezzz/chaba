@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: review
-updated: 2026-10-22 20:04
+updated: 2026-10-22 20:07
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -76,12 +76,18 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193424-sweep-every-unit-env-script-ar,
     branch dispatch/20261022-193424-sweep-every-unit-env-script-ar'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261022-193424-sweep-every-unit-env-script-ar on
+    tony-omen — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
   runner: tony-omen
   result: 'exit=0 is the only way stale writers fail loud instead of publishing into a dead letterbox. | devin-task-20261022-193424-sweep-every-unit-env-script-ar.service:
     Consumed 1min 46.229s CPU time over 26min 49.545s wall clock time, 916.3M memory peak.'
+  sweep:
+    session_gone: 2026-10-22 20:07
 requests:
 - id: push-ada-voice-fix-dell-checkout-has-com-ef2151
   ask: 'Push ada-voice fix? — dell checkout has commit d438a52 (ops-health-report + jev-bench + orch-bench route

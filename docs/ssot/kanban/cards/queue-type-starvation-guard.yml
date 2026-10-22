@@ -1,7 +1,7 @@
 id: queue-type-starvation-guard
 title: queue verb on non-dispatch cards starves silently — warn or auto-convert
-column: review
-updated: 2026-10-22 20:00
+column: done
+updated: 2026-10-22 20:07
 spec: 'zombie-sweep 2026-10-13 found 6 cards queued for days with zero claims: board-api /action do=queue sets status=queued
   on cards whose action.type is manual/devin/self, but kanban-dispatch only claims type=dispatch — silent forever
   starvation, no skip log line either.
@@ -60,6 +60,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-195359-zombie-sweep-2026-10-13-found-,
     branch dispatch/20261022-195359-zombie-sweep-2026-10-13-found-'
+- at: 2026-10-22 20:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -69,3 +72,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 20:07
+  note: verified — evidence checks green, closing itself
