@@ -1,7 +1,7 @@
 id: chat-local-free-lane
 title: Chat-local free lane — ollama on idc02 behind litellm, background-turn offload
-column: review
-updated: 2026-10-22 16:54
+column: done
+updated: 2026-10-22 17:03
 priority: high
 note: 'Ollama podman on idc02 (NOT idc03-prod) serving qwen2.5:7b -> litellm alias chat-local -> route background
   lanes (news-digest synthesis, wp-comment classification, situation summaries, card triage). Keep Thai output on
@@ -41,8 +41,43 @@ comms:
 - at: 2026-10-22 16:54
   from: devin
   text: moved doing -> review
+- at: 2026-10-22 17:00
+  from: devin
+  text: 'DONE + moved to review. Root cause was physics not wiring: NUM_PARALLEL=1 + unbounded ~3k-tok payloads
+    on 4 CPU = 5-7min calls vs 90-120s timeouts — 100% gemini fallback for 6d, kanban-brief starved at TimeoutStartSec.
+    Fix: ollama parallel=2 (LIVE on idc02), digest payload 8x400c + 600s timeout, llm_why 100s budget, classify
+    90s. Verified: smoke 2.1s, contended classify 82s, contended synthesis 263s. Also un-rotted the merge gate:
+    trivial_gate stub + cpt_post tri-state + pulled tony-omen ada-voi'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: devin-task-20261022-164012-chat-local-free-lane-ollama-on no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: merged bb0452dd (dispatch/20261022-164012-chat-local-free-lane-ollama-on from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261022-164012-chat-local-free-lane-ollama-on.md)
+    — auto-closed'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-164012-chat-local-free-lane-ollama-on,
+    branch dispatch/20261022-164012-chat-local-free-lane-ollama-on on tony-omen'
+- at: 2026-10-22 17:03
+  from: chaba
+  text: pushed dispatch/20261022-164012-chat-local-free-lane-ollama-on to origin
+- at: 2026-10-22 17:03
+  from: chaba
+  text: 'auto-merge not done: merge: merge: dispatch/20261022-164012-chat-local-free-lane-ollama-on - not something
+    we can merge — close will block until merged'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-22 17:01
+  verified: true
 review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 17:01
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261022-164012-chat-local-free-lane-ollama-on.md

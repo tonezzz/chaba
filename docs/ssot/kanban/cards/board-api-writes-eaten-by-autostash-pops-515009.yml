@@ -1,7 +1,7 @@
 id: board-api-writes-eaten-by-autostash-pops-515009
 title: board-api writes eaten by autostash pops on tony-dell
-column: doing
-updated: 2026-10-22 16:52
+column: done
+updated: 2026-10-22 17:01
 priority: high
 ref: KNB-0717
 comms:
@@ -53,11 +53,38 @@ comms:
 - at: 2026-10-22 16:52
   from: chaba
   text: started devin-task-20261022-165216-board-api-writes-eaten-by-auto on tony-omen (dispatch)
+- at: 2026-10-22 16:56
+  from: tony-omen
+  text: 'finished (ok): exit=0 n. Running in non-interactive mode. Use --permission-mode dangerous to auto-approve
+    all tools. | devin-task-20261'
+- at: 2026-10-22 16:56
+  from: chaba
+  text: pushed dispatch/20261022-165216-board-api-writes-eaten-by-auto to origin
+- at: 2026-10-22 16:56
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_tg_forward_provenance.py::TestPatchApplies::test_patch_applies_or_landed'
+- at: 2026-10-22 16:56
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: merged 2c6e1dba (dispatch/20261022-163912-board-api-writes-eaten-by-auto from tony-omen) ->
+    origin/master — marked verified (exit_code=0; 4 file(s) changed vs base) — auto-closed'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-163912-board-api-writes-eaten-by-auto,
+    branch dispatch/20261022-163912-board-api-writes-eaten-by-auto on tony-omen'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261022-163912-board-api-writes-eaten-by-auto.service:
-    Consumed 1min 442ms CPU time over 10min 56.240s wall clock time, 1.4G memory peak.'
+  status: done
+  result: 'exit=0 n. Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
+    | devin-task-20261022-165216-board-api-writes-eaten-by-auto.service: Consumed 47.223s CPU time over 2min 14.093s
+    wall clock time, 1G memory peak.'
   runner: tony-omen
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 17:01
+  note: verified — exit_code=0; 4 file(s) changed vs base

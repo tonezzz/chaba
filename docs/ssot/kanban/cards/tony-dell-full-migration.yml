@@ -1,7 +1,7 @@
 id: tony-dell-full-migration
 title: tony-dell full-service migration runbook (hardware window + edge-name layer)
-column: doing
-updated: 2026-10-22 16:41
+column: review
+updated: 2026-10-22 17:01
 spec: 'Phases: 1) edge proxy + service names on idc02 2) kanban single-writer pair→idc03 (stop dell writer FIRST)
   3) VPS APIs 4) backups→idc02 5) LAN group→omen last 6) 48h verify then dell dark 7) post-hardware: dell returns
   as failover capacity, not everything-box. Every migrated unit declares {data_dirs, unit_file, secrets_env, front_name}.'
@@ -189,6 +189,44 @@ comms:
   text: '[dispatch 09:37] session up on mn01. State read: phases 1-6 complete (dell off since 10-20). Working: (a)
     evidence for the idc02 UNVERIFIED-dump request (disk now 93%), (b) safe disk reclaim, (c) migration-stragglers
     weaviate units on omen, (d) consumer-ref audit for residual tony-dell refs, (e) per-unit manifest {data_dirs,unit_file,secrets_env,front_name}.'
+- at: 2026-10-22 16:59
+  from: devin
+  text: '[verify-window fixes] (1) idc03 pg+redis wave-2 quadlets (35b91fa9) had orphaned all consumers: pg bound
+    tailnet :5433 not :5432 (~31h of ECONNREFUSED for yomi/gpu-queue/trade), redis loopback-only. Reconciled: pg
+    tailnet :5432 (loopback :5433 — litellm owns it), redis +tailnet :6379; superseded chaba-postgres-16.service+redis.service
+    parked. yomi-update-all/-active/-mddb-digest re-run clean; gpu-queue polling again. (2) omen stragglers: weaviate-index+search
+    repointed to idc02:8084 (search veri'
+- at: 2026-10-22 16:59
+  from: devin
+  text: '[dispatch closing] verify-window work committed as 57de510b + b15a5fd0 on dispatch/20261022-093755-phases-1-edge-proxy-service-na.
+    Repo fixes sync to idc02 web-srv on next web-srv-sync run. Trail: docs/ssot/jobs/infrastructure/2026-10-22-tony-dell-migration-verify-window.yml
+    + ssot.migrated-units.yml. Phase 7 remains post-hardware (dell returns as failover capacity only) — deferred
+    items carded on migration-stragglers + dell-off-repoint-followups.'
+- at: 2026-10-22 17:01
+  from: mn01
+  text: 'finished (ok): exit=0  carded (dell-local units, report-feed + notebooklm-cookies routes, followups card
+    items). | devin-task-20261022-'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: pushed dispatch/20261022-093755-phases-1-edge-proxy-service-na to origin
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: auto-merged ae49d887 (dispatch/20261022-093755-phases-1-edge-proxy-service-na) → origin/master
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-093755-phases-1-edge-proxy-service-na,
+    branch dispatch/20261022-093755-phases-1-edge-proxy-service-na'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: devin-task-20261022-093755-phases-1-edge-proxy-service-na no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261022-093755-phases-1-edge-proxy-service-na on
+    mn01 — if the work was never pushed it may be gone'
 requests:
 - id: idc02-disk-at-91-after-mddb-lab-pull-rep-816229
   ask: idc02 disk at 91% after mddb-lab-pull repair. Two stranded UNVERIFIED dumps (mddb-filecopy-mddb-20261003-0230.db.UNVERIFIED
@@ -206,5 +244,13 @@ requests:
   answer: Delete both — redundant copies exist on gdrive/idc03
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0  carded (dell-local units, report-feed + notebooklm-cookies routes, followups card items). | devin-task-20261022-093755-phases-1-edge-proxy-service-na.service:
+    Consumed 22.652s CPU time over 22min 6.155s wall clock time, 313.6M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-10-22 17:01
+    session_gone: 2026-10-22 17:01
+review_kind: verify
+claim: {}

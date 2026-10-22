@@ -1,9 +1,9 @@
 id: session-mddb-recall-benchmark
 title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall quality
-column: doing
+column: done
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 16:52
+updated: 2026-10-22 17:01
 note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
   macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
   ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
@@ -114,6 +114,9 @@ comms:
 - at: 2026-10-22 16:52
   from: tony
   text: moved review -> doing
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -157,3 +160,7 @@ requests:
   answer: distill-then-rerun — enrich distiller template (Artifacts section) + re-run bench (recommended)
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 17:01
+  note: verified — evidence checks green, closing itself

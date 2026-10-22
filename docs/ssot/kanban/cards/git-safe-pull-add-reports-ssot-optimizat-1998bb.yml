@@ -1,7 +1,7 @@
 id: git-safe-pull-add-reports-ssot-optimizat-1998bb
 title: 'git-safe-pull: add reports/SSOT_OPTIMIZATION_WARNINGS.json to generated-paths (or stop committing it)'
-column: doing
-updated: 2026-10-22 16:53
+column: done
+updated: 2026-10-22 17:01
 priority: high
 tags:
 - kanban
@@ -42,7 +42,47 @@ comms:
 - at: 2026-10-22 16:53
   from: devin
   text: 'verify pass started: checking kanban-commit journal + ops-guard comms on tony-dell'
+- at: 2026-10-22 16:58
+  from: devin
+  text: 'VERIFY PASS. kanban-commit on idc03 (writer moved off tony-dell — memory SSOT stale on that point): warnings-json
+    last written 13:39, followed by 13 consecutive green cycles through 16:55 (Result=success each, pushes landing).
+    Last autostash-pop hard-wall 12:39 — none since fix pulled ~12:54. ops-local-conflict-guard: last flag comm
+    14:28, none in 2.5h; docs/ssot has zero .local-conflict strays and reconcile dedupe is armed (flag-state file
+    absent = zero flags since deploy). Caveats: spam stoppe'
+- at: 2026-10-22 17:00
+  from: tony-omen
+  text: 'finished (ok): exit=0 erify-kanban-commit-stays-gre.md` and the verdict posted to the card. | devin-task-20261022-165219-verify-kanban-'
+- at: 2026-10-22 17:00
+  from: chaba
+  text: 'session-end checkpoint 1bc4410d: 1 leftover file(s) committed'
+- at: 2026-10-22 17:00
+  from: chaba
+  text: pushed dispatch/20261022-165219-verify-kanban-commit-stays-gre to origin
+- at: 2026-10-22 17:00
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_cpt_post_drop.py::test_patches_apply_clean'
+- at: 2026-10-22 17:00
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep: merged ff3970ee (dispatch/20261022-165219-verify-kanban-commit-stays-gre from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261022-165219-verify-kanban-commit-stays-gre.md)
+    — auto-closed'
+- at: 2026-10-22 17:01
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-165219-verify-kanban-commit-stays-gre,
+    branch dispatch/20261022-165219-verify-kanban-commit-stays-gre on tony-omen'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 erify-kanban-commit-stays-gre.md` and the verdict posted to the card. | devin-task-20261022-165219-verify-kanban-commit-stays-gre.service:
+    Consumed 46.582s CPU time over 6min 43.362s wall clock time, 1G memory peak, 314.1M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 17:01
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261022-165219-verify-kanban-commit-stays-gre.md
