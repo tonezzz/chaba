@@ -336,7 +336,6 @@ function renderBoard() {
   wireBoard();
   renderNeedsYou();
   renderModal();
-  wireReq();
 }
 
 // column-head collapse — delegated once on #board so it survives poll
@@ -353,7 +352,6 @@ document.getElementById('board').addEventListener('click', (e) => {
 
 function wireBoard() {
   document.querySelectorAll('.card').forEach(r => {
-    r.onclick = () => openModal(r.dataset.id);
     r.ondragstart = e => {
       dragId = r.dataset.id;
       e.dataTransfer.setData('text/plain', dragId);
@@ -392,15 +390,10 @@ function wireBoard() {
       await load();
     };
   });
-  document.querySelectorAll('.auto-tog').forEach(t => t.onclick = () => {
-    autoOpen[t.dataset.col] = !autoOpen[t.dataset.col];
-    localStorage.setItem('b2-auto', JSON.stringify(autoOpen));
-    renderBoard();
-  });
 }
 
 // answer controls shared by the modal and the needs-tony band —
-// every element carries data-id so one binder (wireReq) works for both
+// every element carries data-id so the delegated click listener works for both
 function reqAnswerHtml(c, r) {
   const opts = r.options || [];
   if (opts.length) {
@@ -501,12 +494,7 @@ function renderNeedsYou() {
     `<span class="ml-auto text-[10px] text-amber-200/60">★ = suggested, one click</span></button>` +
     `<div id="ny-body" class="px-2.5 pb-2.5 space-y-2${nyCollapsed ? ' hidden' : ''}">` +
     items.map(nyItemHtml).join('') + '</div></div>';
-  document.getElementById('ny-toggle').onclick = () => {
-    nyCollapsed = !nyCollapsed;
-    try { localStorage.setItem('b2-ny-collapsed', nyCollapsed ? '1' : '0'); } catch (e) {}
-    document.getElementById('ny-body').classList.toggle('hidden', nyCollapsed);
-    document.getElementById('ny-caret').textContent = nyCollapsed ? '▸' : '▾';
-  };
+  // ny-toggle click handled by the delegated document listener
   el.querySelectorAll('.rq-in,.ask-in').forEach(i => {
     const k = i.dataset.id + '|' + (i.dataset.rq || 'ask');
     if (k in vals) {
@@ -534,7 +522,7 @@ function markAnswered(cid, rid, answer) {
   }
   toast('answer saved: ' + answer);
   renderBoard();
-  setTimeout(() => { delete nyFlash[key]; renderNeedsYou(); wireReq(); }, 1600);
+  setTimeout(() => { delete nyFlash[key]; renderNeedsYou(); }, 1600);
 }
 
 // cards.json regen lags a /respond write by up to a render tick — replay
@@ -561,47 +549,71 @@ function healPending() {
   }
 }
 
-// one binder for every request/ask control — band rows and the modal
-// share markup (.rq-*/.ask-* with data-id), so this binds both.
-// onclick assignment is idempotent: safe to re-run after every render.
-function wireReq() {
-  document.querySelectorAll('.rq-opt').forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    const r = await api('/respond', {id: b.dataset.id, request_id: b.dataset.rq, answer: b.dataset.val});
+// all interactive controls — one delegated listener survives poll
+// re-renders: per-element onclick handlers get orphaned when innerHTML
+// swaps between wiring and the user's click (2026-10-22: dead col-head
+// clicks, dead option buttons). Order matters: specific controls before
+// the .card catch-all.
+document.addEventListener('click', async (e) => {
+  let el = e.target.closest('.rq-opt');
+  if (el) {
+    const r = await api('/respond', {id: el.dataset.id, request_id: el.dataset.rq, answer: el.dataset.val});
     if (r && r.ok === false) { toast(r.error || 'refused'); return; }
-    markAnswered(b.dataset.id, b.dataset.rq, b.dataset.val);
-  });
-  document.querySelectorAll('.rq-btn').forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    const inp = b.parentElement.querySelector('.rq-in');
+    markAnswered(el.dataset.id, el.dataset.rq, el.dataset.val);
+    return;
+  }
+  el = e.target.closest('.rq-btn');
+  if (el) {
+    const inp = el.parentElement.querySelector('.rq-in');
     if (!inp || !inp.value.trim()) return;
-    const r = await api('/respond', {id: b.dataset.id, request_id: b.dataset.rq, answer: inp.value.trim()});
+    const r = await api('/respond', {id: el.dataset.id, request_id: el.dataset.rq, answer: inp.value.trim()});
     if (r && r.ok === false) { toast(r.error || 'refused'); return; }
-    markAnswered(b.dataset.id, b.dataset.rq, inp.value.trim());
-  });
-  document.querySelectorAll('.ask-opt').forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    const r = await api('/respond', {id: b.dataset.id, option: Number(b.dataset.opt)});
+    markAnswered(el.dataset.id, el.dataset.rq, inp.value.trim());
+    return;
+  }
+  el = e.target.closest('.ask-opt');
+  if (el) {
+    const r = await api('/respond', {id: el.dataset.id, option: Number(el.dataset.opt)});
     if (r && r.ok === false) { toast(r.error || 'refused'); return; }
-    markAnswered(b.dataset.id, 'ask', b.textContent.trim().replace(/^★ /, ''));
-  });
-  document.querySelectorAll('.ask-btn').forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    const inp = b.parentElement.querySelector('.ask-in');
+    markAnswered(el.dataset.id, 'ask', el.textContent.trim().replace(/^★ /, ''));
+    return;
+  }
+  el = e.target.closest('.ask-btn');
+  if (el) {
+    const inp = el.parentElement.querySelector('.ask-in');
     if (!inp || !inp.value.trim()) return;
-    const r = await api('/respond', {id: b.dataset.id, text: inp.value.trim()});
+    const r = await api('/respond', {id: el.dataset.id, text: inp.value.trim()});
     if (r && r.ok === false) { toast(r.error || 'refused'); return; }
-    markAnswered(b.dataset.id, 'ask', inp.value.trim());
-  });
-  document.querySelectorAll('.rq-in,.ask-in').forEach(inp => inp.onkeydown = e => {
-    if (e.key !== 'Enter') return;
-    e.stopPropagation();
-    const b = inp.parentElement.querySelector('.rq-btn,.ask-btn');
-    if (b) b.click();
-  });
-  // card-title link in a band row — open that card's modal
-  document.querySelectorAll('.ny-card').forEach(b => b.onclick = () => openModal(b.dataset.id));
-}
+    markAnswered(el.dataset.id, 'ask', inp.value.trim());
+    return;
+  }
+  el = e.target.closest('.ny-card');
+  if (el) { openModal(el.dataset.id); return; }
+  el = e.target.closest('#ny-toggle');
+  if (el) {
+    nyCollapsed = !nyCollapsed;
+    try { localStorage.setItem('b2-ny-collapsed', nyCollapsed ? '1' : '0'); } catch (err) {}
+    document.getElementById('ny-body').classList.toggle('hidden', nyCollapsed);
+    document.getElementById('ny-caret').textContent = nyCollapsed ? '▸' : '▾';
+    return;
+  }
+  el = e.target.closest('.auto-tog');
+  if (el) {
+    autoOpen[el.dataset.col] = !autoOpen[el.dataset.col];
+    localStorage.setItem('b2-auto', JSON.stringify(autoOpen));
+    renderBoard();
+    return;
+  }
+  el = e.target.closest('.card');
+  if (el && el.dataset.id) openModal(el.dataset.id);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const inp = e.target.closest && e.target.closest('.rq-in,.ask-in');
+  if (!inp) return;
+  const b = inp.parentElement.querySelector('.rq-btn,.ask-btn');
+  if (b) b.click();
+});
 
 function field(label, v) {
   if (!v) return '';
@@ -674,7 +686,6 @@ function openModal(id) {
   sel = id;
   history.replaceState(null,'','#card='+id);
   renderModal();
-  wireReq();
 }
 function closeModal() {
   sel = null;
@@ -745,7 +756,7 @@ document.getElementById('q').oninput = (e) => {
 };
 document.getElementById('ny-pill').onclick = () => {
   nyCollapsed = false;
-  renderNeedsYou(); wireReq();
+  renderNeedsYou();
   document.getElementById('needs-you').scrollIntoView({behavior:'smooth', block:'start'});
 };
 document.getElementById('modal-x').onclick = closeModal;
@@ -806,7 +817,7 @@ async function load() {
     dot.classList.remove('tick'); void dot.offsetWidth; dot.classList.add('tick');
     if (decisionsLink) {
       decisionsLink = false; nyCollapsed = false;
-      renderNeedsYou(); wireReq();
+      renderNeedsYou();
       document.getElementById('needs-you').scrollIntoView({block:'start'});
     }
   } catch (e) { document.getElementById('live-dot').className = 'w-2 h-2 rounded-full bg-red-500'; }
