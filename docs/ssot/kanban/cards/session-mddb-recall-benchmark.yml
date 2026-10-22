@@ -1,9 +1,9 @@
 id: session-mddb-recall-benchmark
 title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall quality
-column: doing
+column: review
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 14:31
+updated: 2026-10-22 14:46
 note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
   macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
   ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
@@ -37,12 +37,6 @@ comms:
   text: tony approved bench-first. Dispatched 25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
     + golden fixture over sessions with both T1 docs and transcripts, scores mddb semantic vs transcript vs current
     recall surface, reports + verdict comm back here.
-- at: 2026-10-22 12:05
-  from: devin
-  text: 'dispatch branch merged to master — scripts/bench-recall.py + fixtures/bench-recall-fixtures.json + reports/bench-recall-25691022.{json,md}
-    + job yml now on master. Bench data points: T1 oracle (own doc) 41.7%, semantic hit@3 50%, raw-doc-inclusive
-    69.4%, transcript BM25 83.3%, todays flat-file surface 5.6%. Coverage 73% of ended sessions have T1 docs. Follow-up
-    decision requested (verdict-next-step).'
 - at: 2026-10-22 11:02
   from: devin
   text: 'bench-recall run complete — reports/bench-recall-25691022.{json,md} + job yml on dispatch/25691022-103449.
@@ -50,6 +44,12 @@ comms:
     t1doc oracle finds only 41.7% of goldens in the session''s own T1 doc — misses are distiller coverage (absolute
     paths, commands, commit hashes, identifiers, counts), not retrieval (2/36 true retrieval misses; sibling docs
     often carry the fact). Transcript BM25 scores 83.3%@3; keeping '
+- at: 2026-10-22 12:05
+  from: devin
+  text: 'dispatch branch merged to master — scripts/bench-recall.py + fixtures/bench-recall-fixtures.json + reports/bench-recall-25691022.{json,md}
+    + job yml now on master. Bench data points: T1 oracle (own doc) 41.7%, semantic hit@3 50%, raw-doc-inclusive
+    69.4%, transcript BM25 83.3%, todays flat-file surface 5.6%. Coverage 73% of ended sessions have T1 docs. Follow-up
+    decision requested (verdict-next-step).'
 - at: 2026-10-22 14:14
   from: tony
   text: queued for processing
@@ -65,11 +65,56 @@ comms:
     appended to T1 docs -> v2 docs in bank under devin-session-v2/<name>, re-run bench-recall with v1-vs-v2 lanes.
     Pulling the 22 fixture transcripts from tony-dell read-only over ssh; leader REST /v1/vector-search verified
     working from idc02.'
+- at: 2026-10-22 14:24
+  from: devin
+  text: 'progress: extractor + bench v2 lanes written; transcripts pulled; writing v2 docs to bank and running bench
+    next.'
+- at: 2026-10-22 14:39
+  from: devin
+  text: 'BENCH V2 DONE (dispatch on idc02, commit dad43563). Enriched distiller built: session_artifacts.py mines
+    paths/commands/hashes/card+task+key ids/hosts/collections/urls/sizes/errors verbatim from the transcript; sync-devin-summaries
+    --enrich appends it pre-delete. Same 22 sessions / 36 goldens / same judge. RESULTS: t1v2 oracle 41.7%->86.1%
+    (coverage gap closed, >80% AQ). BUT T1-semantic alone = 66.7%@3 — retrieval, not content, is now the limit (8/12
+    misses are present-but-unranked; single-vecto'
+- at: 2026-10-22 14:39
+  from: chaba
+  text: auto-reconciled session-mddb-recall-benchmark.yml.local-conflict-20261022-143914; +2 comms
+- at: 2026-10-22 14:39
+  from: devin
+  text: 'done — commits dad43563 + 1ee9bb6c on dispatch/20261022-141533-shrink-devin-session-db-distil (not pushed).
+    NB: POST /request to board-api failed — the served card file has an unresolved merge conflict (<<<<<<<< HEAD
+    near updated:) on the live checkout; needs a manual resolve there before requests can be written on this card.'
+- at: 2026-10-22 14:40
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261022-141533-shrink-devin-session-db-distil.service:
+    Failed to ope'
+- at: 2026-10-22 14:40
+  from: chaba
+  text: pushed dispatch/20261022-141533-shrink-devin-session-db-distil to origin
+- at: 2026-10-22 14:40
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 14:40
+  from: chaba
+  text: auto-merged 855cdea6 (dispatch/20261022-141533-shrink-devin-session-db-distil) → origin/master
+- at: 2026-10-22 14:40
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-141533-shrink-devin-session-db-distil,
+    branch dispatch/20261022-141533-shrink-devin-session-db-distil'
+- at: 2026-10-22 14:46
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''verdict-next-step''] block close)'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261022-141533-shrink-devin-session-db-distil.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261022-141533-shrink-devin-session-db-distil.service:
+    No such file or directory'
+  verified: true
+  sweep:
+    close_held: 2026-10-22 14:46
 requests:
 - id: approve-structure
   from: tony
@@ -100,3 +145,5 @@ requests:
   - id: keep-t0
     label: keep sessions.db as-is, no prune
 awaiting_action: true
+review_kind: verify
+claim: {}

@@ -1,7 +1,7 @@
 id: idc01-teardown
 title: idc01 lease teardown — rescue jev-corpus archive, cancel dead VPS
 column: backlog
-updated: 2026-10-20 18:49
+updated: 2026-10-22 14:53
 priority: medium
 spec: 'idc01 is retired (SSOT: not warm DR, mddb masked never unmask) yet ssh now fails entirely (permission denied
   — access fully dead). It still holds the pre-migration jev-corpus archive (jsonl files referenced by ssot.nest-training.yml
@@ -23,3 +23,10 @@ comms:
     to idc03:~/.local/share/ada/jev-corpus-archive-idc01/ — verified 4721 lines total (3483+1205+33). Box is currently
     ALIVE again (ssh works, follower+caddy-edge up ~2d) despite the 2026-10-12 ssh-dead retirement note — provider
     apparently suspended then reinstated once already. If'
+- at: 2026-10-22 14:53
+  from: devin
+  text: 'Contract-expiry check CONFIRMED (dispatch verify, 2026-10-22 ~15:00 +07): idc01 tailscale offline, last
+    seen ~21h ago (~Oct-21 18:00) — dark right at the estimated ~Oct-21 expiry. ssh dead from mn01 direct, tailscale
+    name, and via idc03. Rescued archive intact on idc03: jev-corpus{,-mined,-reviewed}.jsonl = 4721 lines (3483+1205+33),
+    md as before. Rescue was in time. Remaining step = cancel the VPS lease in the Siamdata panel — spend decision,
+    still Tony-gated; dead box may still be billing. Rep'
