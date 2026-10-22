@@ -1,0 +1,81 @@
+title: Session→MDDB recall benchmark — is T1 distillation enough to prune sessions.db
+subtitle: 3-lane golden-QA recall test — T1 hits 50%@3 vs 80% AQ; misses are
+  distiller coverage, not retrieval
+icon: flask
+version: 1
+
+card: session-mddb-recall-benchmark
+date: 2026-10-22
+dispatch: 25691022-103449-build-and-run-the-session-mddb
+runner: tony-dell
+
+question: |
+  Card AQ: if per-session distilled docs in ada-ha-bank-devin-tony
+  (devin-session/<name>, the T1 tier) answer >=80% of teammate-style
+  recall questions, sessions.db can shrink to T0 (active sessions only)
+  with T1 warm docs + T2 cold archives.
+
+method: |
+  scripts/bench-recall.py — fixture fixtures/bench-recall-fixtures.json:
+  the 22 sessions present in BOTH ~/.local/share/devin/cli/sessions.db
+  (raw transcript via message_nodes, user+assistant text per the FTS
+  trigger rule) AND the bank (T1 doc). 3 golden Q/A per session drafted
+  by gemini-3.5-flash-lite from the raw transcript, each ground-checked
+  against the transcript -> 36 verified goldens.
+  Lanes, same questions, one fixed flash-lite judge (strict
+  answer-present rubric, temp 0, via LiteLLM gateway litellm-chaba.env):
+    mddb        semantic_search on ada-ha-bank-devin-tony status=active
+                topK=15 thr=0.45 — mirrors memory_ops.memory_search
+    mddb_all    same without the status filter (superseded devin/<hex>
+                raw-transcript docs become searchable)
+    transcript  BM25 over chunked raw transcripts of the fixture corpus
+    t1doc       oracle — judge on the session's OWN T1 doc; measures
+                distillation coverage, not retrieval
+    surface     today's recall: session-memory.md tail + compactions,
+                BM25
+  Raw: reports/bench-recall-25691022.json
+  Report: reports/bench-recall-25691022.md
+
+measured: |
+  lane                        hit@1   hit@3   p50
+  mddb (T1 recall surface)    33.3%   50.0%   0.08s
+  mddb_all (+superseded raw)  38.9%   69.4%   0.22s
+  transcript (BM25)           75.0%   83.3%   0.08s
+  t1doc (oracle ceiling)      41.7%   —       —
+  surface (current recall)     5.6%    5.6%   0.04s
+
+  coverage: 22/103 sessions.db sessions have a T1 doc (21.4%); of the
+  30 ended (hidden) sessions 22/30 = 73.3% — the distill-verify delete
+  gate would cover 73% of prunable sessions today.
+  bytes/session: T1 median 2.2KB vs transcript median 1.03MB — 462x
+  shrink (mean transcript 36MB; one outlier carries 746MB of pasted
+  dumps).
+
+misses: |
+  21/36 goldens are absent from the T1 doc entirely — distiller drops:
+    - absolute paths (worktrees, SSOT files, card files, env/token
+      paths, report output paths)
+    - commands run (chmod +x mcp-scripts/*.sh)
+    - commit hashes, branch names
+    - identifiers: collection names, counts, view names, lock paths
+    - bug root-cause specifics
+  Only 2/36 are true retrieval misses (repeat-run MCP-verification
+  sessions whose sibling docs outranked the right one). Retrieval is
+  not the bottleneck — the T1 template is.
+
+verdict: not-yet-safe-to-prune
+
+next: |
+  1. Extend the devin-session distiller (sync-devin-summaries.py chain)
+     with a verbatim Artifacts section — every path touched, commands,
+     hashes, card ids, hosts/ports, counts — then re-run this bench.
+  2. Interim: keep devin/<hex> raw-transcript docs status=active (skip
+     supersede) -> recall 69.4% with zero new pipeline; gives up part
+     of the shrink.
+  3. Independent win: swap notebooklm-recall.sh flat-tail for mddb
+     semantic_search — 5.6% -> 50%+ on these goldens.
+
+caveats: |
+  22 sessions / 36 goldens; model-generated+ground-checked pairs skew
+  toward transcript-head facts and path/command-style questions.
+  Transcript lane searched only the fixture corpus (2861 chunks).
