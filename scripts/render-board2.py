@@ -824,6 +824,12 @@ async function load() {
 }
 applyDensity();
 load(); setInterval(load, POLL);
+// background tabs throttle setInterval hard (up to ~1/hr) — re-check
+// the build version on focus so a stale page self-heals instead of
+// needing a manual refresh
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) load();
+});
 </script>
 </body>
 </html>
