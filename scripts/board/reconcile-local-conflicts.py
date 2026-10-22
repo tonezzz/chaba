@@ -47,6 +47,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -588,8 +589,23 @@ def main() -> int:
         _selftest()
         return 0
     repo = Path(args.repo).resolve()
+    if os.environ.get("RECONCILE_LOCK_HELD"):
+        # caller (git-safe-pull EXIT trap) already holds the flock —
+        # taking it on a fresh fd would self-deadlock (2026-10-22)
+        return run(repo, args.dry_run)
     with LOCK.open("w") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
+        # bounded wait — a wedged holder must not hang reconciliation
+        deadline = time.time() + 60
+        while True:
+            try:
+                fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.time() > deadline:
+                    sys.stderr.write(
+                        "reconcile: board lock held >60s — proceeding anyway\n")
+                    break
+                time.sleep(0.5)
         return run(repo, args.dry_run)
 
 

@@ -75,7 +75,9 @@ RECONCILE="$REPO/scripts/board/reconcile-local-conflicts.py"
 # is flagged in review (card kanban-local-conflict-reconciler).
 _post_pull_reconcile() {
   [ "$REPO_OK" = 1 ] && [ -f "$RECONCILE" ] || return 0
-  python3 "$RECONCILE" "$REPO" || true
+  # BOARD_LOCK_HELD tells reconcile it already runs under the parent's
+  # flock — its own LOCK_EX open would self-deadlock (2026-10-22).
+  RECONCILE_LOCK_HELD=${BOARD_LOCK_HELD:-} python3 "$RECONCILE" "$REPO" || true
 }
 trap _post_pull_reconcile EXIT
 
@@ -289,9 +291,12 @@ SAFE_PULL_LOCK_FD=""
 if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK" 2>/dev/null || SAFE_PULL_LOCK_FD=""
   if [ -n "$SAFE_PULL_LOCK_FD" ]; then
-    flock -w "${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}" "$SAFE_PULL_LOCK_FD" \
-      2>/dev/null \
-      || echo "git-safe-pull: board lock $BOARD_LOCK held >${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}s — pulling anyway" >&2
+    if flock -w "${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}" "$SAFE_PULL_LOCK_FD" \
+      2>/dev/null; then
+      BOARD_LOCK_HELD=1
+    else
+      echo "git-safe-pull: board lock $BOARD_LOCK held >${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}s — pulling anyway" >&2
+    fi
   fi
 fi
 
