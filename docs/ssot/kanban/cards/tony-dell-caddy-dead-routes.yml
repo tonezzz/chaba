@@ -1,7 +1,7 @@
 id: tony-dell-caddy-dead-routes
 title: 'tony-dell: 12 dead /srv/public/apps routes in Caddyfile'
-column: backlog
-updated: 2026-10-22 12:44
+column: done
+updated: 2026-10-22 13:23
 priority: medium
 note: 'Sweep 2026-10-22: 12 of 14 root * /srv/public/apps/* routes in /etc/caddy/Caddyfile point at missing dirs
   (system-report, gev, gev-live, yt-live, walldance-live, yolo, dance2energy, vnc, map, board, board2, sw.js — only
@@ -13,3 +13,18 @@ comms:
 - at: 2026-10-22 12:44
   from: tony
   text: card captured via board-api
+- at: 2026-10-22 13:20
+  from: devin
+  text: done-check
+- at: 2026-10-22 13:23
+  from: devin
+  text: INVALID PREMISE — closing as not-a-bug. The dead-route analysis checked HOST paths (/srv/public/apps), but
+    the web quadlet bind-mounts ~/CascadeProjects/chaba-tony-dell/stacks/web/public -> /srv/public INSIDE the container
+    — all app dirs exist there (board/board2/yolo/map/system-report/etc all present) and board cards.json is fresh
+    (synced 13:21 today). Routes are live. A brief bad reload pruned handles for ~6min — reverted (c5606eddc) +
+    reloaded, config md5-verified back to original. Lesson (sw
+- at: 2026-10-22 13:23
+  from: tony
+  text: closed by tony
+action:
+  status: done
