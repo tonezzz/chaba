@@ -90,14 +90,21 @@ PROBE = """{
 if [ -r /proc/loadavg ]; then
     awk '{print "LOAD " $1 " " $2 " " $3}' /proc/loadavg
     grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
-    df -P / | tail -1
 else
     sysctl -n vm.loadavg | awk '{print "LOAD " $2 " " $3 " " $4}'
     echo "MemTotal: $(( $(sysctl -n hw.memsize) / 1024 )) kB"
-    top -l 1 -n 0 2>/dev/null | grep PhysMem | \\
-        sed -E 's/.* ([0-9]+)[MG] unused.*/MemAvailable: \\1000000 kB/'
-    df -P / | tail -1
+    ps=$(sysctl -n vm.pagesize)
+    vm_stat | awk -v ps="$ps" '
+        /Pages free:/ {f=$3} /Pages inactive:/ {i=$3}
+        /Pages speculative:/ {s=$3}
+        END {gsub(/[^0-9]/,"",f); gsub(/[^0-9]/,"",i); gsub(/[^0-9]/,"",s);
+             printf "MemAvailable: %d kB\\n", (f+i+s)*ps/1024}'
 fi
+d=$(df -P / 2>/dev/null | tail -1)
+case "$d" in
+    /dev/*) echo "$d" ;;
+    *) df -P /data 2>/dev/null | tail -1 ;;
+esac
 uptime | sed 's/^ *//'
 } 2>/dev/null"""
 

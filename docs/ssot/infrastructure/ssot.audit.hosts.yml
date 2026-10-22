@@ -2153,6 +2153,33 @@ hosts:
       - name: chaba-audit-full.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
+  kk-mac:
+    tailscale_ip: 100.108.217.17
+    description: KK's Mac Studio (Mac16,9 M4 Max 14-core, 36 GB unified, macOS
+      15.7.3, user kkkakk) — Ada Nest member device, joined tailnet 2026-10-21
+    role: member-device
+    offline_ok: true   # member device — travels with KK, sleeps/off-net is normal
+    tags:
+      - macos
+      - apple-silicon
+      - member-device
+      - ada-nest
+    notes: "host-loads probe only — not in audit-hosts.py HOSTS (macOS, no
+      systemctl). SSH: Host kk-mac stanza on tony-dell -> kkkakk +
+      id_ed25519 (dell key seeded into authorized_keys 2026-10-22;
+      remaining fleet keys + adanest user pending KK sign-off per
+      docs/kb/ada-nest-kk-mac-onboarding.md)."
+  michael-ha:
+    tailscale_ip: 100.85.88.100
+    description: michael-ha Home Assistant OS host — ssh via `ssh michael-ha`
+      (root + ~/.ssh/michael-ha key, lands in the core-ssh addon container)
+    role: home-assistant
+    tags:
+      - haos
+      - home-assistant
+    notes: "host-loads probe only — not in audit-hosts.py HOSTS (HAOS container,
+      no systemctl). Load/mem read host-wide via /proc; disk_pct is the addon
+      container rootfs view of the host data partition, not a full-host df."
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/
