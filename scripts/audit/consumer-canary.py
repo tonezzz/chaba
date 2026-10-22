@@ -66,7 +66,7 @@ GREPS = [
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
     ("idc03:units", None,
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
-    ("idc01:units", "idc01",
+    ("con01:units", "con01",
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
     ("mn01:caddy+units", "mn01",
      "grep -nE '%s' ~/.config/caddy/Caddyfile.mn01 2>/dev/null;"
