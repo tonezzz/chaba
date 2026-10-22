@@ -758,6 +758,10 @@ def main():
     ap.add_argument("--lanes", nargs="+",
                     default=["current", "clawbot", "hermes"],
                     choices=["current", "clawbot", "hermes"])
+    ap.add_argument("--ollama-model", default=HERMES_MODEL,
+                    help="model for the local-ollama agent lane "
+                         "(default hermes3:8b; lane is renamed "
+                         "local-<model> when a different model is given)")
     ap.add_argument("--tasks", nargs="+", default=None,
                     help="task ids to run (default: all)")
     ap.add_argument("--limit", type=int, default=0)
@@ -793,8 +797,11 @@ def main():
     if "clawbot" in args.lanes:
         lanes["clawbot"] = AgentLane("clawbot", OR_BASE, orkey, OR_MODEL, 90)
     if "hermes" in args.lanes:
-        lanes["hermes"] = AgentLane("hermes", ollama + "/v1", "ollama",
-                                    HERMES_MODEL, 150)
+        lname = ("hermes" if args.ollama_model == HERMES_MODEL
+                 else "local-" + re.sub(r"[^a-z0-9]+", "-",
+                                        args.ollama_model.lower()))
+        lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
+                                 args.ollama_model, 150)
 
     out_prefix = args.out or str(
         REPO / "reports" / f"bench-edu-manage-{date.today().isoformat()}")
@@ -923,7 +930,10 @@ def write_md(path, result):
              "gateway on tony-omen is loopback:18789 — unreachable over "
              "tailnet — so the surface is emulated in-process on its "
              "declared provider.")
-    L.append("- `hermes` = identical loop on omen ollama /v1 hermes3:8b.")
+    for lk, lc in result["config"]["lanes"].items():
+        if lk.startswith("local-") or lk == "hermes":
+            L.append(f"- `{lk}` = identical loop on omen ollama /v1 "
+                     f"{lc.get('model')}.")
     L.append("- Judge = one fixed model (gemini-3.5-flash-lite) for all "
              "lanes; it is also the `current` lane's model — symmetry "
              "caveat applies to draft-quality only.")
