@@ -1019,8 +1019,18 @@ setInterval(load, POLL_MS);
     json_path.write_text(json.dumps(payload, ensure_ascii=False,
                                     default=str))  # yaml scalars -> date/datetime
 
-    out_path.write_text(page)
-    print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
+    # board2 is the default kanban view (Tony 2026-10-22): /apps/board
+    # serves a redirect stub so every origin/dashboard link lands on the
+    # living board. Classic render stays one `git revert` away.
+    stub = """<!doctype html><html><head>
+<meta http-equiv="refresh" content="0; url=/apps/board2/">
+<link rel="canonical" href="/apps/board2/"><title>Kanban</title></head>
+<body><p>Board moved to <a href="/apps/board2/">/apps/board2/</a>&hellip;</p>
+<script>location.replace("/apps/board2/" + location.search + location.hash);</script>
+</body></html>
+"""
+    out_path.write_text(stub)
+    print(f"wrote {out_path} (redirect stub -> board2) + cards.json ({len(cards)} cards, v{ver})")
     return 0
 
 

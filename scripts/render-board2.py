@@ -66,6 +66,19 @@ PAGE = r"""<!doctype html>
     .col.drop-hint { border-color:#38bdf8; background:#152238; }
     .col.drop-hint .col-head { color:#7dd3fc; }
     .col-nope { opacity:.35; }
+    /* slim scrollbars — recover horizontal room on dense boards */
+    * { scrollbar-width:thin; scrollbar-color:#33456b transparent; }
+    *::-webkit-scrollbar { width:6px; height:6px; }
+    *::-webkit-scrollbar-thumb { background:#33456b; border-radius:3px; }
+    *::-webkit-scrollbar-track { background:transparent; }
+    /* collapsed column -> slim vertical strip (title reads bottom-up) */
+    .col-head { cursor:pointer; user-select:none; }
+    .col.collapsed { flex:0 0 44px; min-width:44px; max-width:44px; }
+    .col.collapsed .col-list { display:none; }
+    .col.collapsed .col-head { writing-mode:vertical-rl; transform:rotate(180deg);
+                               flex:1; justify-content:flex-start; align-items:center;
+                               padding:10px 6px; gap:8px; }
+    .col.collapsed .col-count { margin:0; }
 
     /* ---- tight card rows; density via #board class ---- */
     .card { cursor:pointer; border:1px solid #2a3a63; border-radius:7px; background:#1b2745;
@@ -279,8 +292,9 @@ function colHtml(col) {
   }
   const hot = col.id === 'doing' && all.length > 0;
   const nVis = vis.length + autoVis.length;
-  return `<div class="col${hot ? ' doing-hot' : ''}${col.id === 'lab' ? ' col-virtual' : ''}" data-col="${col.id}">` +
-    `<div class="col-head"><span>${col.title}</span>` +
+  const cl = collapsedCols.has(col.id) ? ' collapsed' : '';
+  return `<div class="col${cl}${hot ? ' doing-hot' : ''}${col.id === 'lab' ? ' col-virtual' : ''}" data-col="${col.id}">` +
+    `<div class="col-head" title="click to ${cl ? 'expand' : 'collapse'}"><span>${col.title}</span>` +
     `<span class="col-count">${q ? nVis + '/' + all.length : all.length}</span></div>` +
     `<div class="col-list">${inner}</div></div>`;
 }
@@ -292,6 +306,13 @@ const hiddenCols = new Set(
   JSON.parse(localStorage.getItem('b2-cols') || '[]'));
 function saveCols() {
   localStorage.setItem('b2-cols', JSON.stringify([...hiddenCols]));
+}
+// collapsed -> slim vertical strip (lighter than the ▦ hide menu — the
+// column stays on board as a clickable handle)
+const collapsedCols = new Set(
+  JSON.parse(localStorage.getItem('b2-collapsed') || '[]'));
+function saveCollapsed() {
+  localStorage.setItem('b2-collapsed', JSON.stringify([...collapsedCols]));
 }
 function renderColMenu() {
   document.getElementById('colmenu').innerHTML = COLS.map(c =>
@@ -316,6 +337,14 @@ function renderBoard() {
 }
 
 function wireBoard() {
+  document.querySelectorAll('.col-head').forEach(h => {
+    h.onclick = () => {
+      const id = h.parentElement.dataset.col;
+      collapsedCols.has(id) ? collapsedCols.delete(id) : collapsedCols.add(id);
+      saveCollapsed();
+      renderBoard();
+    };
+  });
   document.querySelectorAll('.card').forEach(r => {
     r.onclick = () => openModal(r.dataset.id);
     r.ondragstart = e => {
