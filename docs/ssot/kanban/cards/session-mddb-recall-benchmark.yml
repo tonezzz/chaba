@@ -48,13 +48,26 @@ comms:
     mddb as the recall layer. Verified distillation pipeline already exists
     (ada-ha-bank-devin-tony 2552 docs); proposed T0/T1/T2 tiering with
     distill-verified delete gate + recall benchmark before any mass prune.
+- at: 2026-10-22 10:36
+  from: devin
+  text: tony approved bench-first. Dispatched
+    25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
+    + golden fixture over sessions with both T1 docs and transcripts, scores
+    mddb semantic vs transcript vs current recall surface, reports + verdict
+    comm back here.
+action:
+  type: dispatch
+  status: doing
+  repo: chaba
+  runner: tony-dell
+  task_id: 25691022-103449-build-and-run-the-session-mddb
 requests:
 - id: approve-structure
   from: tony
   ask: >-
     Approve T0/T1/T2 structure + benchmark-first approach before pruning
     visible sessions?
-  status: open
+  status: answered
   suggested: bench-first
   options:
   - id: bench-first
@@ -63,3 +76,4 @@ requests:
     label: prune old sessions now with transcript archives only
   - id: status-quo
     label: keep current structure
+  answer: bench-first — tony in chat 2026-10-22
