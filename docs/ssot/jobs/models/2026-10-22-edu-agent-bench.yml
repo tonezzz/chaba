@@ -1,0 +1,87 @@
+title: Education-manager benchmark — current pipeline vs OpenClaw-surface lanes
+subtitle: current stays; clawbot (OR-free agent loop) is a credible co-lane, hermes3:8b is not
+icon: flask
+version: 1
+
+card: edu-agent-benchmark
+date: 2026-10-22
+dispatch: 25691022-092932-build-and-run-the-education-ag
+
+question: |
+  Should an agent manage the education ledger (lesson capture -> dedupe/
+  upsert -> draft -> review scheduling -> recall) instead of today's
+  scripted pipeline? AQ from the card: clawbot or hermes must beat
+  `current` on draft-quality AND dedupe at acceptable latency/cost,
+  else current stays the education manager.
+
+lanes:
+  current: "real pipeline path: mechanical filter -> flash-lite classify
+    (production CLASSIFY_PROMPT) -> draft (DRAFT_PROMPT) -> lesson-add
+    upsert semantics incl. meta-overwrite quirk. Ops/recall = documented
+    scripted-equivalent (deterministic). Model gemini-3.5-flash-lite via
+    LiteLLM gateway /v1beta (direct free key was 429-saturated)."
+  clawbot: "OpenClaw-shaped tool-calling loop (education duties + mock
+    store CRUD) on openrouter/free — the gateway's declared primary.
+    Real gateway on tony-omen is loopback:18789 (unreachable over
+    tailnet), so the surface is emulated in-process on its provider."
+  hermes: "identical agent loop on omen ollama /v1 hermes3:8b (freshly
+    re-pulled — it had been GC'd from the roster since the T1 eval)."
+
+method: |
+  scripts/bench-edu-manage.py + fixed corpus scripts/bench-edu-corpus.json
+  (7 transcript fixtures with golden keep/drop + action labels, 3 ops,
+  3 recall) against an in-process MockStore — never prod WP. Slug =
+  md5(topic) exactly like lesson-add.py; lesson_create refuses a taken
+  slug so dedupe discipline is forced through the tool surface.
+  Judge = one fixed model (gemini-3.5-flash-lite) grading every draft on
+  5 axes — it is also `current`'s model; draft-quality caveat applies.
+  Run: single rep, 13 tasks x 3 lanes. Rescored once after adding
+  neutral_seed_topics (clawbot's convention-correct hub refresh was
+  counted as FP in the raw pass).
+
+measured: |
+  lane        F1     dedupe  sched/ops  recall  draft-Q  completed  p50    tokens-in
+  current     1.0    3/5     5/5        3/3     5.0      13/13      ~0-3s  0.9k
+  clawbot     1.0    4/5     5/5        3/3     4.72     13/13      12.5s  74k
+  hermes      0.545  2/5     3/5        1/3     3.9      12/13      19.4s  31k
+  Raw: reports/bench-edu-manage-2026-10-22.{json,md}
+
+verdict: current-stays
+aq_result: |
+  FAIL for both challengers. clawbot beats dedupe (4/5 vs 3/5 — only
+  lane that followed the ada-nest-* family naming and refreshed the
+  hub) and ties capture/ops/recall, but draft-Q 4.72 < 5.0 — no AQ
+  win — while costing ~80x prompt tokens and ~4x latency of the
+  scripted lane. hermes3:8b fails outright: missed the re-ask update
+  and the Thai transcript entirely, single-search-then-give-up on
+  ops/recall, filed ephemeral questions, and timed out on one task
+  (659s). All lanes $0; tokens shown as the cost proxy.
+
+findings:
+  - "Real pipeline weakness measured, not hypothetical: a rephrased
+    re-ask forks a second lesson (t3: 'tailscale acl basics' +
+    'Tailscale ACLs and Device Tags' — the classify step has no view of
+    the existing topic list, and slug=md5(topic) only dedupes identical
+    titles). Clawbot made the same mistake; discipline needs
+    store-awareness, not a better model."
+  - "Same blind spot for series naming: current titled the ada-nest
+    sub-topic 'Ada Nest Heartbeat Escalation Mechanism' — no family
+    prefix; clawbot's agent, given the convention in its system prompt,
+    filed ada-nest-heartbeat-escalation AND refreshed the hub."
+  - "lesson-add meta-overwrite quirk is now encoded in the harness
+    (upsert_add): every re-file resets status->open and next_review->+7d
+    unless passed — a learned lesson re-asked resurrects itself."
+  - "hermes3:8b stays the T1 tool-call slot for SIMPLE calls (per
+    2026-10-10 eval) but is unfit as the manager agent: search->give-up
+    pattern at 8B scale."
+
+followups:
+  - "cheap fix for the real pipeline: pass the existing topic list into
+    lesson-miner's CLASSIFY_PROMPT (and a family-prefix hint) so
+    classify can name re-asks onto existing topics — kills both
+    measured gaps without an agent loop."
+  - "optional: re-run clawbot lane against the real openclaw-gateway
+    once it exposes a tailnet/agent-API surface (loopback-only today)
+    to validate the in-process emulation."
+  - "KNB-0174 (per-model OR scorecard) would identify WHICH free model
+    the auto-router used on the good runs — openrouter/free rotates."
