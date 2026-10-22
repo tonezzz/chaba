@@ -196,6 +196,52 @@ check "F: sweep recovers once YAML is fixed" "[ $rc_f2 -eq 0 ]"
 check "F: fixed card pushed to origin/master" \
   "git -C '$TMP/origin.git' show master:docs/ssot/kanban/cards/bad-card.yml | grep -q 'fixed'"
 
+# --- G: board write flock (board-api-writes-eaten-by-autostash-pops) ------
+# safe-pull holds the board write flock across the pull so a board-api
+# save() can never sit uncommitted when autostash fires. The wait is
+# bounded: a wedged writer must not deadlock convergence — it logs and
+# pulls anyway.
+exec 9>"$TMP/board-api.lock"
+flock 9
+SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" SAFE_PULL_BOARD_LOCK_WAIT_S=1 \
+  bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/g.err"; rc_g=$?
+check "G: safe-pull completes despite held board lock" "[ $rc_g -eq 0 ]"
+check "G: held lock waited then bypassed with a log line" \
+  "grep -q 'pulling anyway' '$TMP/g.err'"
+flock -u 9
+# free lock -> no warning, still exits 0
+SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" \
+  bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/g2.err"; rc_g2=$?
+check "G: free board lock -> clean pull" "[ $rc_g2 -eq 0 ]"
+check "G: free lock -> no bypass warning" \
+  "! grep -q 'pulling anyway' '$TMP/g2.err'"
+
+# mutual exclusion end-to-end: a write landing while safe-pull waits on
+# the lock is committed before the pull stashes — it survives in HEAD.
+flock 9
+(
+  SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" \
+  SAFE_PULL_BOARD_LOCK_WAIT_S=10 \
+    bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/g3.err"
+  echo $? > "$TMP/g3.rc"
+) &
+GPID=$!
+sleep 1   # safe-pull is blocked on the board lock
+check "G: safe-pull still blocked while the lock is held" \
+  "[ ! -f '$TMP/g3.rc' ]"
+printf 'id: raced\ntitle: raced write\n' \
+  > "$TMP/served/docs/ssot/kanban/cards/raced.yml"
+git -C "$TMP/served" add docs/ssot/kanban/cards/raced.yml 2>/dev/null
+git -C "$TMP/served" commit -qm "board-api write raced" 2>/dev/null
+flock -u 9; exec 9>&-
+wait $GPID
+check "G: pull blocked until writer committed, then exited 0" \
+  "[ \$(cat '$TMP/g3.rc') -eq 0 ]"
+check "G: raced write survives the pull in HEAD" \
+  "git -C '$TMP/served' show HEAD:docs/ssot/kanban/cards/raced.yml | grep -q 'raced write'"
+check "G: no autostash retained for the raced write" \
+  "! git -C '$TMP/served' stash list | grep -qi autostash"
+
 echo
 echo "passed: $PASS  failed: $FAIL"
 [ $FAIL -eq 0 ]

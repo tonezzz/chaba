@@ -5,8 +5,13 @@ Binds 127.0.0.1:8787 on tony-dell; Caddy proxies /apps/board-api/* here
 (prefix stripped). Each request edits the card YAML in the *served*
 checkout (chaba-tony-dell — the web container bind-mounts that tree),
 then re-runs render-board.py (+ render-board2.py --if-changed) so both
-views' cards.json + index.html refresh immediately. Git persistence is
-handled by kanban-commit.timer.
+views' cards.json + index.html refresh immediately. Git persistence:
+every write is committed immediately under the request flock (scoped
+pathspec commit — see _commit_write; BOARD_API_COMMIT=0 disables), and
+kanban-commit.timer sweeps anything left over + pushes. An uncommitted
+card edit is autostash bait — the next pull --rebase stashes it and a
+failed pop resolves generated paths to HEAD, silently eating comms and
+column moves (board-api-writes-eaten-by-autostash-pops-515009).
 
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
@@ -314,13 +319,22 @@ def load(p: Path) -> dict:
     return d
 
 
+# Set by do_POST while holding the request flock so the immediate commit
+# in save() gets a useful message ("board-api comment <id>"); empty
+# outside requests (selftest, module importers) where it falls back to
+# the card filename.
+_pending_label = ""
+
+
 def save(p: Path, card: dict) -> None:
     """Serialize, verify the dump re-parses as a mapping, then land it
     atomically. A card body that can't round-trip is refused BEFORE the
     file is touched — refuse/rollback at write time, not a corrupted
     card that kills render-board for the next N hours
     (guard-card-yaml-syntax-validation-at-wri; 2026-10-11 incident:
-    3 malformed cards wedged the render loop 2.5h)."""
+    3 malformed cards wedged the render loop 2.5h). The write is also
+    committed to git immediately (see _commit_write) so it never sits
+    dirty for autostash to eat."""
     text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
                           width=110)
     if not isinstance(yaml.safe_load(text), dict):
@@ -330,6 +344,68 @@ def save(p: Path, card: dict) -> None:
     tmp = p.with_suffix(".yml.tmp")
     tmp.write_text(text)
     tmp.replace(p)  # atomic — a crash mid-write can't leave a torn card
+    _commit_write(p, _pending_label or f"write {p.stem}")
+
+
+def _commit_write(p: Path, label: str) -> None:
+    """Commit a card write immediately. An uncommitted card edit in the
+    served checkout is autostash bait — a pull --rebase stashes it and a
+    failed pop resolves generated paths to HEAD upstream-wins, silently
+    eating comms/column moves
+    (board-api-writes-eaten-by-autostash-pops-515009, 2026-10-15 incident:
+    comms + merge-sweep lines orphaned in stash@{0}). Runs under the
+    request flock; git-safe-pull holds the same flock across pull+pop so
+    the two never overlap. Committed writes survive every pull path —
+    worst case a rebase conflict goes upstream-wins with the local side
+    preserved as .local-conflict-* and folded back by
+    reconcile-local-conflicts.py. Best-effort: any failure (index locked
+    by kanban-commit, mid-rebase tree) leaves the file dirty for the next
+    kanban-commit sweep — same durability as before, never a write-path
+    blocker. BOARD_API_COMMIT=0 restores the sweep-only model."""
+    if os.environ.get("BOARD_API_COMMIT", "1") == "0":
+        return
+    try:
+        paths = [p]
+        seq = CARD_DIR / ".ref-seq"
+        if seq.exists():
+            paths.append(seq)  # ref allocation must persist with the card
+        rels = []
+        for q in paths:
+            try:
+                rels.append(str(q.relative_to(REPO)))
+            except ValueError:
+                continue         # selftest/tmp paths — not repo files
+        if not rels:
+            return
+        gd = subprocess.run(
+            ["git", "-C", str(REPO), "rev-parse", "--git-dir"],
+            capture_output=True, text=True, timeout=10)
+        if gd.returncode != 0:
+            return
+        gitdir = Path(gd.stdout.strip())
+        if not gitdir.is_absolute():
+            gitdir = REPO / gitdir
+        if any((gitdir / m).exists() for m in
+               ("rebase-merge", "rebase-apply",
+                "MERGE_HEAD", "CHERRY_PICK_HEAD")):
+            return               # sweep owns the tree while git settles
+        subprocess.run(["git", "-C", str(REPO), "add", "--"] + rels,
+                       capture_output=True, timeout=15)
+        # --no-verify: save() already round-trip-validates the YAML and the
+        # full SSOT/node gate is kanban-commit's job on the 15-min sweep —
+        # paying it per write would blow the client timeout. Pathspec scope
+        # keeps other staged/dirty work out of the commit.
+        r = subprocess.run(
+            ["git", "-C", str(REPO), "-c", "user.name=board-api",
+             "-c", "user.email=board-api@chaba.local",
+             "commit", "--no-verify", "-qm",
+             f"board-api {label}"[:120], "--"] + rels,
+            capture_output=True, text=True, timeout=15)
+        if r.returncode != 0 and (r.stderr or "").strip():
+            sys.stderr.write(
+                f"board-api commit skipped: {(r.stderr or '').strip()[:200]}\n")
+    except Exception as e:
+        sys.stderr.write(f"board-api commit skipped: {e}\n")
 
 
 def comms_add(card: dict, frm: str, text: str) -> None:
@@ -1235,8 +1311,12 @@ class H(BaseHTTPRequestHandler):
 
         notify_req = None
         resp_extra = {}
+        global _pending_label
         with LOCK.open("w") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
+            _pending_label = (
+                f"{path.lstrip('/')} "
+                f"{body.get('id') or body.get('card') or ''}").strip()
             try:
                 if path == "/action":
                     verb = body.get("do", "queue")
@@ -1734,6 +1814,50 @@ def _selftest() -> None:
         edge2 = {"X-Board-Edge-Key": "wrong",
                  "X-Forwarded-For": "203.0.113.5"}
         assert caller_identity(edge2, "10.0.0.9") == ""
+
+    # immediate commit (board-api-writes-eaten-by-autostash-pops-515009):
+    # a save() in a real repo lands in HEAD right away, leaving no dirty
+    # card file for autostash to eat; BOARD_API_COMMIT=0 falls back to the
+    # dirty-until-sweep model; paths outside REPO are ignored.
+    real_repo, real_cards = REPO, CARD_DIR
+    grepo = tmp / "grepo"
+    gcards = grepo / "docs/ssot/kanban/cards"
+    gcards.mkdir(parents=True)
+    subprocess.run(["git", "-C", str(grepo), "init", "-q"], check=True)
+    subprocess.run(["git", "-C", str(grepo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-q",
+                    "--allow-empty", "-m", "init"], check=True)
+    globals()["REPO"] = grepo
+    globals()["CARD_DIR"] = gcards
+    g1 = {"id": "gc1", "title": "t", "column": "backlog"}
+    save(gcards / "gc1.yml", g1)
+    log = subprocess.run(["git", "-C", str(grepo), "log", "--format=%s",
+                          "-1"], capture_output=True, text=True).stdout
+    assert "board-api write gc1" in log, log
+    assert subprocess.run(["git", "-C", str(grepo), "status",
+                           "--porcelain"], capture_output=True,
+                          text=True).stdout.strip() == ""
+    # disabled -> file stays dirty for the sweep
+    os.environ["BOARD_API_COMMIT"] = "0"
+    g1["note"] = "later"
+    save(gcards / "gc1.yml", g1)
+    dirty = subprocess.run(["git", "-C", str(grepo), "status",
+                            "--porcelain"], capture_output=True,
+                           text=True).stdout
+    assert "gc1.yml" in dirty
+    del os.environ["BOARD_API_COMMIT"]
+    # mid-rebase tree -> commit skipped, write stays dirty for the sweep
+    (grepo / ".git" / "rebase-merge").mkdir()
+    g1["note"] = "during rebase"
+    save(gcards / "gc1.yml", g1)
+    assert "gc1.yml" in subprocess.run(
+        ["git", "-C", str(grepo), "status", "--porcelain"],
+        capture_output=True, text=True).stdout
+    (grepo / ".git" / "rebase-merge").rmdir()
+    # outside-REPO paths are filtered, never raise
+    save(tmp / "outside.yml", {"id": "o", "title": "t"})
+    globals()["REPO"] = real_repo
+    globals()["CARD_DIR"] = real_cards
     print("selftest ok")
 
 

@@ -87,6 +87,17 @@ try:
 except Exception as e:  # alerting must never crash the commit loop
     print(f"kanban-commit: alert card write failed: {e}", file=sys.stderr)
 PY
+    # The alert card is a board write outside board-api — commit it now or
+    # it sits dirty as autostash bait for the next pull on this checkout
+    # (board-api-writes-eaten-by-autostash-pops-515009). Best-effort: a
+    # mid-rebase tree refuses the commit and the write waits for the sweep.
+    git add -- "docs/ssot/kanban/cards/${ALERT_CARD_ID}.yml" 2>/dev/null \
+      && git -c user.name="kanban-bot" \
+             -c user.email="kanban-bot@chaba.local" \
+             commit --no-verify -qm \
+             "board: kanban-commit alert (${1:-guard})" \
+             -- "docs/ssot/kanban/cards/${ALERT_CARD_ID}.yml" 2>/dev/null \
+      || true
 }
 
 gitdir=$(git rev-parse --git-dir)
