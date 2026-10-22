@@ -25,6 +25,7 @@ meta:
 procedures:
   # --- member / identity ---
   - {id: member-node,   where: "card member-node-kk-ha + ssot.terminology.yml#Member Node",   trigger: "adding a per-person HA node",            status: verified, last_run: 2026-10-09}
+  - {id: member-device-heavy-job, where: "lesson ada-nest-video post 1914 Test 010 + card ADA-0765", trigger: "running GPU/heavy workloads on a shared member workstation (kk-mac etc.) — idle-window + explicit-permission only, never concurrent with owner use; serialize GPU stages (flock, not SIGSTOP), unload resident LLMs before diffusion; memory ceiling is aggregate not per-model (2 kernel panics + owner Adobe hang 2026-10-22)", status: defined, last_run: 2026-10-22}
   - {id: member-user,   where: "card member-user-onboarding",                                  trigger: "adding a user to a member node (HA user + person + bank policy + Access)", status: verified, last_run: 2026-10-09}
   - {id: member-tg,     where: "card kk-ha-tg-relay + docs/kb/msg-lane-standard.md",           trigger: "wiring a TG/LINE group to an Ada instance (bot per instance)", status: verified, last_run: 2026-10-10}
   - {id: msg-lane,      where: "docs/kb/msg-lane-standard.md",                                 trigger: "any bot/messaging lane outbound or new lane (tag + push contract)", status: verified, last_run: 2026-10-10}
