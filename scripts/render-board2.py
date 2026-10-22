@@ -695,7 +695,8 @@ function closeModal() {
 
 async function api(path, body) {
   try {
-    const r = await fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    const r = await fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body), signal: AbortSignal.timeout(15000)});
     return await r.json();
   } catch (e) { return {ok:false, error:String(e)}; }
 }
