@@ -37,6 +37,14 @@ comms:
   text: tony approved bench-first. Dispatched 25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
     + golden fixture over sessions with both T1 docs and transcripts, scores mddb semantic vs transcript vs current
     recall surface, reports + verdict comm back here.
+- at: 2026-10-22 12:05
+  from: devin
+  text: 'dispatch branch merged to master — scripts/bench-recall.py +
+    fixtures/bench-recall-fixtures.json + reports/bench-recall-25691022.{json,md}
+    + job yml now on master. Bench data points: T1 oracle (own doc) 41.7%,
+    semantic hit@3 50%, raw-doc-inclusive 69.4%, transcript BM25 83.3%,
+    todays flat-file surface 5.6%. Coverage 73% of ended sessions have T1
+    docs. Follow-up decision requested (verdict-next-step).'
 - at: 2026-10-22 11:02
   from: devin
   text: 'bench-recall run complete — reports/bench-recall-25691022.{json,md} + job yml on dispatch/25691022-103449.
@@ -46,7 +54,7 @@ comms:
     often carry the fact). Transcript BM25 scores 83.3%@3; keeping '
 action:
   type: dispatch
-  status: doing
+  status: done
   repo: chaba
   runner: tony-dell
   task_id: 25691022-103449-build-and-run-the-session-mddb
@@ -64,4 +72,21 @@ requests:
   - id: status-quo
     label: keep current structure
   answer: bench-first — tony in chat 2026-10-22
+- id: verdict-next-step
+  from: tony
+  ask: >-
+    Bench verdict: T1 recall 50%@3 < 80% AQ — distiller coverage is the gap
+    (misses absolute paths, commands, hashes, identifiers, counts), retrieval
+    is fine. How to proceed?
+  status: open
+  suggested: distill-then-rerun
+  options:
+  - id: distill-then-rerun
+    label: enrich distiller template (Artifacts section) + re-run bench (recommended)
+  - id: keep-raw-docs-active
+    label: interim — stop superseding devin/<hex> raw docs (69.4% hit@3, gives up most of 462x shrink)
+  - id: recall-swap-only
+    label: just swap notebooklm-recall.sh -> mddb semantic_search (9x better than today), no prune
+  - id: keep-t0
+    label: keep sessions.db as-is, no prune
 awaiting_action: true
