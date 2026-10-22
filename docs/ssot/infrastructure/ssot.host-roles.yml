@@ -78,6 +78,14 @@ hosts:
         - long-running stateful services (laptop — sleeps/off-net is normal)
       preferred_for:
         - portable lab tasks, CPU/dev dispatch lane (planned, cap 2)
+      unstable_note: >-
+        2026-10-22 — Devin IDE being killed repeatedly (manual kills +
+        suspend-prone laptop). Do NOT park sessions you care about here:
+        interactive work that must survive goes to devin-dispatch on
+        tony-dell / tony-omen / mn01 (all enrolled, own CLI auth).
+        Dispatch caveat: default 'smart' permission mode auto-rejects
+        network/secret reads and quits — benchmarks need
+        DISPATCH_PERMISSION_MODE=dangerous.
 
   kk-mac:
     description: KK's Mac Studio (Mac16,9) — M4 Max 14-core (10P+4E), 36 GB unified, macOS 15.7.3, hostname KKs-Mac-Studio.local, user kkkakk. Registered 2026-10-21; aka "kk-imac" / former device_id kks-mac-studio.
