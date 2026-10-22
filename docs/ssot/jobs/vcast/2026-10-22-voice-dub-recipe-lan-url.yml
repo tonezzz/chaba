@@ -1,0 +1,83 @@
+title: "voice-dub-demos CMS recipe: tailnet URL for cast_to_screen (MED-0313)"
+subtitle: "Kanban card voice-dub-recipe-lan-url — recipe handed out LAN-only URLs for numbered vcast screens"
+icon: target
+
+planning:
+  goal: >-
+    Stop the voice-dub-demos CMS page from handing Ada a LAN-only media URL
+    (http://192.168.2.67/apps/yt-live/<file>.mp4) for cast_to_screen casts to
+    numbered vcast screens. The pre-check runs on the Ada backend host (idc03,
+    off-LAN) and the vcast fleet is tailnet-only — the LAN URL is refused with
+    TimeoutError even though it serves fine on-LAN.
+  scope: >-
+    MDDB CMS write only: ada-cms-pages + ada-cms-pages-mn collections on
+    mddb-cms (idc03 :11027). No repo code change, no deploy — the page is the
+    fix surface (Ada reads it via cms_read).
+  owner: devin (dispatch on tony-omen)
+  estimated_duration: 1 session
+  related_focus:
+    - label: voice-dub-recipe-lan-url
+      file: docs/ssot/kanban/cards/voice-dub-recipe-lan-url.yml
+    - label: cast-precheck-vantage
+      file: docs/ssot/kanban/cards/cast-precheck-vantage.yml
+    - label: gev-yt-local-media-failures (origin investigation)
+      file: docs/ssot/jobs/vcast/2026-10-10-gev-yt-local-media-failures.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-22T19:45:00+07:00
+  steps:
+    - id: 1
+      label: Locate the live page + replicas
+      status: completed
+      notes: >-
+        voice-dub-demos lives only in MDDB ada-cms-pages (kind=page, en only —
+        no th variant). A replica exists in ada-cms-pages-mn (mn lane; the
+        kraut-cast-dub-video-mn-lane card notes it drifts — no sync
+        automation), so both collections needed the same edit. Repo backup
+        backups/ada-memory/ada-cms-pages.json is stale (pre-Oct-8 revision);
+        live doc fetched via GET /v1/get on http://100.102.134.91:11027.
+    - id: 2
+      label: Rewrite the recipe (both collections)
+      status: completed
+      notes: >-
+        Three edits to contentMd, applied via POST /v1/add with merged meta:
+        (1) lede now says LAN URL = TV/Chromecast path only, tailnet URL =
+        numbered vcast screens / off-LAN; (2) the "Numbered vcast screens"
+        paragraph now instructs cast_to_screen with
+        url="https://tony-dell.taila0626a.ts.net/apps/yt-live/<file>.mp4" and
+        explains why the LAN IP is always refused (pre-check on idc03,
+        displays on tailnet); (3) added a "LAN URL refused on numbered
+        screens" failure-mode bullet. TV recipe (yt action=cast) keeps the LAN
+        URL — the TrueID/Chromecast box is a LAN device that cannot resolve
+        tailnet names. Verbatim-filename rule and screen-number routing note
+        preserved.
+    - id: 3
+      label: Verify live
+      status: completed
+      notes: >-
+        GET /v1/get on both collections: cast_to_screen instruction carries
+        the tailnet URL, TV path keeps the LAN URL, Updated stamp 2026-10-22,
+        meta.updated refreshed, last_verified=2026-10-22, written_by=devin
+        preserved.
+
+outcome:
+  result: >-
+    voice-dub-demos recipe now hands Ada the tailnet URL for cast_to_screen
+    and keeps the LAN URL for the TV cast. Both CMS collections (tony + mn
+    lane replicas) updated and verified live. Residual gap remains in
+    cast-precheck-vantage (ada-voice): the pre-check itself is still
+    vantage-blind — this card only fixes what the recipe hands out.
+  evidence:
+    - "GET http://100.102.134.91:11027/v1/get ada-cms-pages|voice-dub-demos|en
+      — tailnet URL in cast_to_screen paragraph (5015 chars)"
+    - "same for ada-cms-pages-mn replica"
+    - failure origin: ada-ha-tony session 6744c10aab 2026-10-09 02:24 ICT
+      (TimeoutError on http://192.168.2.67 pre-check from idc03)
+  followups:
+    - cast-precheck-vantage (ada-voice) — pre-check should be advisory or
+      display-side; with it fixed, LAN displays could take LAN URLs again,
+      but the tailnet URL stays correct for all current vcast screens
+    - ada-cms-pages-mn drift — no sync automation between the tony and mn CMS
+      replicas; this session edited both by hand (noted on
+      kraut-cast-dub-video-mn-lane)
