@@ -1,9 +1,9 @@
 id: session-mddb-recall-benchmark
 title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall quality
-column: review
+column: doing
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 14:46
+updated: 2026-10-22 16:52
 note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
   macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
   ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
@@ -104,6 +104,16 @@ comms:
 - at: 2026-10-22 14:46
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''verdict-next-step''] block close)'
+- at: 2026-10-22 16:52
+  from: tony
+  text: 'answered verdict-next-step: distill-then-rerun — enrich distiller template (Artifacts section) + re-run
+    bench (recommended)'
+- at: 2026-10-22 16:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-22 16:52
+  from: tony
+  text: moved review -> doing
 action:
   type: dispatch
   status: done
@@ -133,7 +143,7 @@ requests:
   from: tony
   ask: 'Bench verdict: T1 recall 50%@3 < 80% AQ — distiller coverage is the gap (misses absolute paths, commands,
     hashes, identifiers, counts), retrieval is fine. How to proceed?'
-  status: open
+  status: answered
   suggested: distill-then-rerun
   options:
   - id: distill-then-rerun
@@ -144,6 +154,6 @@ requests:
     label: just swap notebooklm-recall.sh -> mddb semantic_search (9x better than today), no prune
   - id: keep-t0
     label: keep sessions.db as-is, no prune
-awaiting_action: true
+  answer: distill-then-rerun — enrich distiller template (Artifacts section) + re-run bench (recommended)
 review_kind: verify
 claim: {}

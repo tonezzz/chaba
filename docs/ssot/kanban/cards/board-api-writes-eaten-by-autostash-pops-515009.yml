@@ -1,7 +1,7 @@
 id: board-api-writes-eaten-by-autostash-pops-515009
 title: board-api writes eaten by autostash pops on tony-dell
 column: doing
-updated: 2026-10-22 16:39
+updated: 2026-10-22 16:52
 priority: high
 ref: KNB-0717
 comms:
@@ -21,7 +21,43 @@ comms:
 - at: 2026-10-22 16:39
   from: chaba
   text: started devin-task-20261022-163912-board-api-writes-eaten-by-auto on tony-omen (dispatch)
+- at: 2026-10-22 16:45
+  from: devin
+  text: 'Picked up. Plan: (1) board-api commits each card write immediately under the write flock (scoped pathspec
+    commit, BOARD_API_COMMIT=0 off-switch); (2) git-safe-pull takes the same /tmp/board-api.lock across pull+pop
+    so a save() can never sit uncommitted when autostash fires; (3) kanban-commit alert_card commits immediately
+    too. Tests in selftest + test-kanban-commit.sh.'
+- at: 2026-10-22 16:50
+  from: tony-omen
+  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261022-16'
+- at: 2026-10-22 16:50
+  from: chaba
+  text: pushed dispatch/20261022-163912-board-api-writes-eaten-by-auto to origin
+- at: 2026-10-22 16:50
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_tg_forward_provenance.py::TestPatchApplies::test_patch_applies_or_landed'
+- at: 2026-10-22 16:50
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-22 16:51
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 16:52
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 16:52
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 16:52
+  from: chaba
+  text: started devin-task-20261022-165216-board-api-writes-eaten-by-auto on tony-omen (dispatch)
 action:
   type: dispatch
   status: running
+  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261022-163912-board-api-writes-eaten-by-auto.service:
+    Consumed 1min 442ms CPU time over 10min 56.240s wall clock time, 1.4G memory peak.'
   runner: tony-omen
+review_kind: verify
+claim: {}

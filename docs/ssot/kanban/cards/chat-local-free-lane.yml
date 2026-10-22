@@ -1,7 +1,7 @@
 id: chat-local-free-lane
 title: Chat-local free lane — ollama on idc02 behind litellm, background-turn offload
-column: backlog
-updated: 2026-10-15 20:03
+column: review
+updated: 2026-10-22 16:54
 priority: high
 note: 'Ollama podman on idc02 (NOT idc03-prod) serving qwen2.5:7b -> litellm alias chat-local -> route background
   lanes (news-digest synthesis, wp-comment classification, situation summaries, card triage). Keep Thai output on
@@ -19,3 +19,30 @@ comms:
     idc02+idc03 — halves embed traffic off prod), job-class alias chat-local w/ fallback [ollama-llama3.2, colab-gemma3].
     Smoke: chat-local reply OK (~10s incl cold-load, 84 tok); embed 768-dim OK. Remaining = caller adoption (news-digest
     gemini_rest, wp-comment-sync classify, '
+- at: 2026-10-22 16:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 16:39
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 16:40
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 16:40
+  from: chaba
+  text: started devin-task-20261022-164012-chat-local-free-lane-ollama-on on tony-omen (dispatch)
+- at: 2026-10-22 16:45
+  from: devin
+  text: 'verify pass found the lane live but starved: OLLAMA_NUM_PARALLEL=1 on idc02 (4cpu) + digest payloads ~3k
+    tok => 5-7min synth calls; every digest run has fallen back to gemini since merge (68 timeouts) and chaba-kanban-brief
+    unit hits TimeoutStartSec=300 when its llm_why calls queue behind the jam. fixing: parallel=2 on ollama, smaller
+    digest payload + 600s caller timeout, 100s llm budget in kanban-brief, classify timeout 60s.'
+- at: 2026-10-22 16:54
+  from: devin
+  text: moved doing -> review
+action:
+  type: dispatch
+  status: running
+  runner: tony-omen
+review_kind: verify
