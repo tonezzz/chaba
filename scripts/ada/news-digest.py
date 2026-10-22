@@ -254,12 +254,12 @@ Brief:
 {brief}"""
 
 
-def _payload(members):
+def _payload(members, text_len=1200):
     return json.dumps(
         [{"date": m.get("date", "")[:16],
           "source": m.get("meta", {}).get("source_feed") or "feed",
           "title": norm(m["title"]["rendered"])[:200],
-          "text": norm(m["content"]["rendered"])[:1200]}
+          "text": norm(m["content"]["rendered"])[:text_len]}
          for m in members], ensure_ascii=False)
 
 
@@ -283,12 +283,16 @@ def synthesize(members, key):
     when DIGEST_LLM names a LiteLLM alias, brief_th via a small gemini
     translate; DIGEST_LLM=gemini or a local-lane failure -> the legacy
     single gemini call that produces all fields at once."""
-    items = _payload(members)
     if DIGEST_LLM.lower() not in ("gemini", "google"):
+        # Bounded payload for the CPU lane: qwen2.5:7b on idc02's 4 cores
+        # evals ~20 tok/s — a 3k-token prompt + 900-token cap ran 5-7min
+        # and every call timed out (2026-10-16..22). ~8 items x 400 chars
+        # keeps the lede of each report and lands well under num_ctx=4096.
         out = litellm_chat.chat_json(
-            PROMPT_LOCAL.format(n=len(members), items=items),
-            model=DIGEST_LLM, temperature=0.2, max_tokens=900,
-            timeout=120, label="news-digest")
+            PROMPT_LOCAL.format(n=min(len(members), 8),
+                                items=_payload(members[:8], 400)),
+            model=DIGEST_LLM, temperature=0.2, max_tokens=600,
+            timeout=600, label="news-digest")
         if out:
             out["brief_th"] = _translate_th(out.get("brief") or "", key) \
                 if out.get("brief") else ""
@@ -296,7 +300,7 @@ def synthesize(members, key):
         print("  warn: chat-local synthesis unavailable — gemini fallback",
               file=sys.stderr)
     out = gemini_rest.generate_json(
-        PROMPT.format(n=len(members), items=items), MODEL, key=key)
+        PROMPT.format(n=len(members), items=_payload(members)), MODEL, key=key)
     return out or {}
 
 

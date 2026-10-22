@@ -8,6 +8,10 @@ Image=docker.io/ollama/ollama:latest
 ContainerName=ollama
 PublishPort=100.123.163.11:11434:11434
 Volume=ollama-data:/root/.ollama
+# 2 slots so short calls (intent classify, llm_why) interleave with
+# multi-minute digest syntheses instead of head-of-line blocking behind
+# them — the callers' timeouts are 30-60s, a queued call never survived.
+Environment=OLLAMA_NUM_PARALLEL=2
 
 [Service]
 Restart=on-failure

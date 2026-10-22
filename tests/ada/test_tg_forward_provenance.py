@@ -38,6 +38,7 @@ import importlib.util
 import json
 import os
 import sys
+import types
 from pathlib import Path
 from unittest import mock
 
@@ -93,6 +94,17 @@ def _load(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_STATE_FILE",
                        str(tmp_path / "state.json"))
     monkeypatch.setenv("TG_VOICE_CORPUS_DIR", str(tmp_path / "corpus"))
+    # upstream tg_relay gained a `trivial_gate` sibling import after this
+    # harness was written — stub it; the provenance paths under test
+    # never reach the gate (voice turns only).
+    gate_stub = types.ModuleType("trivial_gate")
+    gate_stub.quiet_s = lambda: 0.0
+
+    async def _no_gate(*_a, **_k):
+        return None
+
+    gate_stub.check = _no_gate
+    monkeypatch.setitem(sys.modules, "trivial_gate", gate_stub)
     spec = importlib.util.spec_from_file_location(
         "tg_relay_patched", target)
     mod = importlib.util.module_from_spec(spec)

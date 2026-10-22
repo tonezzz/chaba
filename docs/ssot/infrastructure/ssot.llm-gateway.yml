@@ -106,6 +106,14 @@ job_classes:
       scripts/ada/litellm_chat.py (mddb-gemini.env creds) — every adopter
       keeps a deterministic/gemini fallback so a dead lane never stalls a
       job.
+      Throughput reality (tuned 2026-10-22): idc02 = 4 CPU cores, qwen7b
+      evals ~20 tok/s → full-size digest payloads ran 5-7min and every
+      caller timed out. Ollama now OLLAMA_NUM_PARALLEL=2 (short calls
+      interleave instead of head-of-line blocking; ollama.container);
+      news-digest bounds its local payload to ~8 items x 400 chars +
+      max_tokens 600 + 600s timeout (measured ~4.4min contended);
+      kanban-brief caps total llm_why time at KANBAN_BRIEF_LLM_BUDGET=100s
+      so a jammed lane can't starve the 300s unit; classify timeout 90s.
   bench:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: benchmark traffic on its own virtual key — spend isolated by design. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
@@ -132,7 +140,7 @@ real_name_deployments:
 proof_lanes:
   ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
   chaba: "scripts/litellm/daily-ledger.py + gateway-bench; the whole report/extract/distill chain honors GEMINI_BASE_URL via scripts/ada/gemini_rest.py (2026-10-13, card gateway-batch-opt-in-for-report-extract-aee7d7)."
-  chat-local: "verified end-to-end 2026-10-15 (alias reply + 768d embed); adopters wired 2026-10-16: news-digest EN synthesis, wp-comment-sync intent classify, kanban-brief prose (env_file litellm-chaba.env on tony-dell, LITELLM_KEY_CHABA)."
+  chat-local: "verified end-to-end 2026-10-15 (alias reply + 768d embed); adopters wired 2026-10-16: news-digest EN synthesis, wp-comment-sync intent classify, kanban-brief prose (env_file litellm-chaba.env). PRODUCTION-VERIFIED 2026-10-22: lane was silently 100% fallback since merge (5-7min calls vs 90-120s timeouts, NUM_PARALLEL=1 head-of-line blocking) — fixed via parallel=2 + bounded payloads; LANE_OK smoke 2.1s, contended classify ~82s, contended synthesis 263s."
 
 batch_opt_in:
   how: >-

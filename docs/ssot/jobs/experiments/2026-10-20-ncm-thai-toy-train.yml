@@ -41,8 +41,8 @@ what_was_built:
       registered as pre_tokenizer name "spm" in upstream registry.
     data: thai_data.py — mC4 'th' stream -> data/thai_corpus.txt (120k docs,
       314.6M chars) -> SP ids data/thai_ids.pt (300k x 128, BOS..EOS + PAD).
-    config: configs/thai-toy.yaml — paper TinyStories column verbatim
-      (param counts verified: VQVAE 36.43M, NCP 88.61M — identical to Table 5/6).
+    config: "configs/thai-toy.yaml — paper TinyStories column verbatim
+      (param counts verified: VQVAE 36.43M, NCP 88.61M — identical to Table 5/6)."
     baseline/eval: ar_baseline.py (AR LM on same ids, RoPE+qknorm, tied head),
       eval_thai.py (held-out PPL, NCM Gen-PPL under AR ref, unigram entropy,
       s/seq vs AR NFE — paper protocol).
@@ -68,11 +68,11 @@ host_constraints:
     not runnable here beyond smoke steps.
 
 remaining_for_done_condition:
-  - "Working Thai NCM at TinyStories-equivalent scale with quality numbers vs
+  - '"Working Thai NCM at TinyStories-equivalent scale with quality numbers vs
     AR baseline" needs the GPU run: ~10k tok + ~20k gen updates @ bs 512-1024
     (<1 H100-day, $20-50 rented per recon) — or a long tony-omen GTX 1650 run.
     Everything up to `train_tokenizer --config configs/thai-toy.yaml` is ready;
-    eval + AR baseline scripts written.
-  - GPU dispatch path exists: card action.gpu.min_free_mb routes to tony-omen
+    eval + AR baseline scripts written.'
+  - "GPU dispatch path exists: card action.gpu.min_free_mb routes to tony-omen
     runner (4GB VRAM — fits micro/medium, tight for 88M; batch small + ckpt).
-    Rented GPU needs Tony's account — spend was inside the accepted option.
+    Rented GPU needs Tony's account — spend was inside the accepted option."
