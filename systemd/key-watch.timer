@@ -1,0 +1,12 @@
+[Unit]
+Description=key-watch — credential expiry/quota monitor every 6h + on boot
+
+[Timer]
+# 6h cadence + a boot catch-up; :10 off the top of the hour to dodge the
+# timer pileup other units create at :00.
+OnBootSec=5min
+OnCalendar=*-*-* 00,06,12,18:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

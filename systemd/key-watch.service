@@ -1,0 +1,15 @@
+[Unit]
+Description=key-watch — credential expiry/quota monitor (OR, Gemini ops-events, HA LLATs, CF token)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Probes run ON the host holding each secret (ssh python3 -) — values
+# never leave the host; only masked fingerprints + verdicts return.
+# Alert -> LINE via ada-line-relay :8912/send (quiet 00-07 ICT) +
+# incident card via board-api. Exit 0 on completed runs (findings travel
+# via ops-event/card/LINE — nonzero = crash, per timer-expectations).
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/key-watch.py
+TimeoutStartSec=600

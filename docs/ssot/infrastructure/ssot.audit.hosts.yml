@@ -1900,6 +1900,16 @@ hosts:
           depletion/recovery transition LINE /send to tony DM (+ kk group
           only for KK's own key); state
           ~/.local/share/ada/gemini-wallet-watch.json
+      - name: key-watch.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "6h + on-boot credential monitor (card key-watch-monitor,
+          SEC-0499): OR /auth/key per slot, HA LLAT /api/ liveness, CF
+          token verify+zones, Gemini ops-event quota scan. Alert -> LINE
+          + keywatch-* board card; ops-event doc per run. Declared
+          2026-10-22 — arm after install (unit lands with the merge)."
       - name: ops-health-report.timer
         type: timer
         scope: user
