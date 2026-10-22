@@ -1,0 +1,61 @@
+title: Session→MDDB recall bench v2 — enriched Artifacts distiller; T1+T2 hybrid recall
+subtitle: distiller coverage 42%→86%; T1-semantic alone 67% still <80% AQ;
+  T1+T2 hybrid recall 91.7% clears it
+icon: flask
+version: 1
+
+card: session-mddb-recall-benchmark
+date: 2026-10-22
+dispatch: 20261022-141533-shrink-devin-session-db-distil
+runner: idc02
+
+question: |
+  Follow-up to the 50%@3 run-1 verdict: does a verbatim Artifacts section
+  (paths/commands/hashes/ids/counts mined deterministically from the
+  transcript) close the distiller coverage gap and lift T1 recall to the
+  >=80% AQ?
+
+method: |
+  Same fixture (fixtures/bench-recall-fixtures.json — 22 sessions, 36
+  ground-checked goldens), same judge (gemini-3.5-flash-lite, strict
+  answer-present). v2 T1 doc = bank doc + session_artifacts section;
+  written to the bank as devin-session-v2/<name> (leader REST /v1/add,
+  status=active, distill_version=v2), deleted after the run. Transcripts
+  pulled read-only from tony-dell's sessions.db into
+  reports/bench-recall-corpus/transcripts.json (not committed).
+  Lanes: mddb (v1 baseline), mddb_v2, t1doc/t1v2 oracles, transcript
+  BM25, t1bm25 (keyword over v2 docs), hybrid (T1 semantic ∪ T1 keyword,
+  ≤6 judged), hybrid_t2 (T1 semantic ∪ T2 keyword, ≤6 judged).
+
+measured: |
+  lane                        hit@1   hit@3   note
+  mddb T1 v1 (baseline)       36.1%   50.0%   reproduces run 1
+  mddb T1 v2                  55.6%   66.7%   19/24 hits via v2 docs
+  t1bm25 keyword over v2      52.8%   52.8%   whole-doc too coarse
+  hybrid T1 sem ∪ T1 kw(6)    55.6%   69.4%
+  hybrid_t2 T1 sem ∪ T2 kw(6) 55.6%   91.7%   clears the 80% AQ
+  transcript BM25 (T2)        77.8%   83.3%
+  t1doc oracle (v1)           41.7%   —       distiller coverage
+  t1v2 oracle (v2)            86.1%   —       ~2.5KB added per doc
+
+misses: |
+  mddb_v2 12/36: 4 facts still absent from v2 (qualitative goldens),
+  8 present-but-unranked (single-vector doc embedding; 6/8 not even
+  top-15; subject-scoped filter doesn't fix ranking).
+  hybrid_t2 residual: awake-sheet#1, brave-squirrel#2, confusion-subway#1.
+
+verdict: |
+  Ship the v2 distiller (coverage validated). Do NOT rely on T1-semantic
+  alone for recall (66.7% < 80%). Pruning sessions.db to T0 is safe only
+  with hybrid recall: T1 semantic + session_name meta-scoped fetch
+  (86.1% when the session is known) + T2 keyword fallback (91.7%
+  combined) — i.e. T2 transcript .md archives must remain locally
+  grep-able, and mddb needs either a local BM25 layer or an FTS
+  endpoint for a single-surface T1 recall.
+
+artifacts: |
+  scripts/ada/session_artifacts.py (miner)
+  scripts/ada/sync-devin-summaries.py --enrich (production hook)
+  scripts/bench-recall.py (REST transport, v2 lanes, corpus sidecar)
+  scripts/bench/pull-session-transcripts.sh (fixture portability)
+  reports/bench-recall-v2-20261022.{md,json}
