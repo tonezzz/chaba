@@ -4,10 +4,10 @@ brief: 'Registry contract landed in chaba ssot.apps.ada-memory-banks.yml (card m
   instances_readonly {dev-instance: prod-instance} and dev-scratch carries env: staging. This is the ada-pi half
   — teach memory_banks.py to mount those banks read-only and memory_ops.py to stamp the bank''s env onto written
   docs.'
-column: done
+column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-22 20:07
+updated: 2026-10-22 20:31
 program: ha-lanes
 metric: A backend started with ADA_INSTANCE_ID=tony-dev loads every bank whose instances_readonly maps tony-dev
   (collections resolved as the mapped prod instance, {instance}->tony) with writable=false + allowed_tools=[]; its
@@ -116,6 +116,10 @@ comms:
 - at: 2026-10-22 20:07
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-22 20:31
+  from: chaba
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
 ref: ADA-0344
 review_kind: verify
 claim: {}
