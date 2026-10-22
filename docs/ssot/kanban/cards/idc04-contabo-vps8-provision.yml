@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
 column: backlog
-updated: 2026-10-22 08:36
+updated: 2026-10-22 10:32
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -44,3 +44,10 @@ comms:
     ping/ssh yet as of 2026-10-22 ~08:00. CF-vs-latency decision recorded: put CF proxy in front of con01 edge (free,
     same pattern as other edges — BKK edge terminates TLS, caches static shell) BUT it does not fix ~280ms interactive
     RTT for websockets/API; a true fast TH-facing failover '
+- at: 2026-10-22 10:32
+  from: devin
+  text: '2026-10-22 devin: con01 (= this host, Tony naming) assigned IP, hostname vmi3535804.contaboserver.net,
+    AS51167 France/EU region. Public :22 open from idc03 vantage, ~189ms BKK->FR. Still pre-login: awaiting Contabo
+    root credentials email — next step on delivery: hostname->con01, tailnet join, ssh mesh, then hardening baseline
+    (docs/kb/host-hardening-baseline.md, class public-vps) + SSOT registration. Side note: CF-front its edge only
+    in true failover; never proxy TH traffic via EU while idc03 al'

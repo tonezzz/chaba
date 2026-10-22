@@ -1,7 +1,7 @@
 id: ada-nest-trivial-gate
 title: 'Ada Nest: trivial-turn gate — local specialist answers cheap queries before a provider turn'
 column: doing
-updated: 2026-10-22 09:36
+updated: 2026-10-22 10:34
 brief: 'Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist
   that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth
   pattern.'
@@ -38,10 +38,10 @@ spec: 'Context: tg_relay.py already runs a coarse-to-fine cascade — silence de
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
-  attempts: 1
-  runner: mn01
-  result: 'start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+  status: running
+  attempts: 2
+  last_failure: 'start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+  runner: tony-omen
 ref: ADA-0751
 comms:
 - at: 2026-10-20 15:07
@@ -66,3 +66,27 @@ comms:
 - at: 2026-10-22 09:36
   from: mn01
   text: 'finished (failed): start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
+- at: 2026-10-22 10:30
+  from: devin
+  text: 'sweep 2026-10-22: first attempt failed on mn01 — stale devin-dispatch lacked ada-voice in allowed repos.
+    Redeployed runner-agent + devin-dispatch to mn01; retrying.'
+- at: 2026-10-22 10:30
+  from: tony
+  text: retry requested
+- at: 2026-10-22 10:30
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 10:30
+  from: chaba
+  text: 'idc03 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 10:30
+  from: chaba
+  text: started devin-task-20261022-103056-context-tg-relay-py-already-ru on tony-omen (dispatch)
+- at: 2026-10-22 10:34
+  from: devin
+  text: 'explored: tg_relay cascade confirmed (silence→STT→_is_trivial→Ada turn). Plan: new backend/trivial_gate.py
+    — L0 anchored rules (greeting/ack/thanks/bye/time-date/identity, hot-session suppression for answer-shaped acks)
+    + optional L1 systemone intent classifier via ADA_TRIVIAL_LLM_URL (falls back to ADA_COMMAND_LLM_URL). Modes
+    off|shadow|enforce; corpus JSONL + running deflection-rate log lines. Wire into voice+text paths; tests + ssot
+    trail.'

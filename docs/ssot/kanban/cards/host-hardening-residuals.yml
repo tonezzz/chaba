@@ -1,0 +1,19 @@
+id: host-hardening-residuals
+title: host-hardening residuals — macbook sshd/sysctl (sudo-gated) + lan-class f2b/qemu decision
+column: backlog
+updated: 2026-10-22 10:32
+brief: 'Leftovers from the 2026-10-22 fleet hardening sweep against docs/kb/host-hardening-baseline.md. (1) tony-macbook:
+  stock sshd (PasswordAuthentication defaults on) + no /etc/sysctl.d/90-tuning.conf — sudo needs a password so it
+  could not be applied remotely; Tony runs one paste-block OR grants the session sudo. (2) tony-omen + mn01: fail2ban
+  inactive and no qemu-guest-agent — decide per lan-host class policy whether they should be enabled (baseline doc
+  leaves them optional for class home-lan) or explicitly recorded as intentional exceptions in ssot.security.<host>.yml.
+  Everything else from the s'
+priority: medium
+tags:
+- security
+- hosts
+ref: SEC-0770
+comms:
+- at: 2026-10-22 10:32
+  from: tony
+  text: card captured via board-api

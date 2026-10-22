@@ -1,7 +1,7 @@
 id: dell-off-repoint-followups
 title: Dell-off repoint follow-ups (ssh MCPs, h3 publish, webcams, workflows-mcp)
 column: backlog
-updated: 2026-10-20 18:53
+updated: 2026-10-22 10:30
 ref: OPS-0748
 comms:
 - at: 2026-10-20 10:17
@@ -29,3 +29,10 @@ comms:
     dashboards repointed off dell (chaba-admin board+system-report, chaba-home gesture x2, chaba-nest board, smart-home
     cams :8448->omen go2rtc), resource versions bumped. Stale ada-ha-chaba-home snapshot deleted (dashboard no longer
     exists). consumer-canary now CLEAN with zero skips — scans ada-ha dashboards too.'
+- at: 2026-10-22 10:30
+  from: devin
+  text: 'sweep 2026-10-22: found+fixed a 4th follow-up class — probes/jobs that assumed the host they ran on. kanban-sync
+    moved to idc03 but gev-auto-health + vcast-auto-health still probed 127.0.0.1 (12 false review cards). Repointed
+    to tailnet names: gev units->idc02, cast/yt-live->omen, relay->idc03:3010, gev page/ws->dell caddy (still fronts
+    /apps). Also: build-dossier-devices tony-ha ws->wss://omen, board_notify HA url->https://omen, dropped idc01
+    from log fleet, added idc03 loopback ssh key. runboo'

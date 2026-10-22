@@ -1,7 +1,7 @@
 id: kk-mac-ada-nest-onboarding
 title: kk-mac Ada Nest onboarding — Tailscale, power policy, dev tooling
 column: review
-updated: 2026-10-22 10:11
+updated: 2026-10-22 10:35
 priority: medium
 tags:
 - ada-nest
@@ -114,9 +114,22 @@ comms:
     PASS after KK saw an Ollama password popup — Ollama.app auto-restored in her session, spawned its own serve
     on :11434 over an EMPTY store; now brew ollama 0.40.8 runs the daemon, app removed, no GUI/prompts. VIMAX: scene_0
     completed END-TO-END fully local — qwen2.5vl:7b, local SDXL ke'
+- at: 2026-10-22 10:08
+  from: devin
+  text: 'sweep 2026-10-22: host is powered off (kk-mac shut down 2026-10-22 session) — onboarding verify steps blocked
+    until it is back online.'
 - at: 2026-10-22 10:11
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-22 10:23
+  from: chaba
+  text: auto-reconciled kk-mac-ada-nest-onboarding.yml.local-conflict-20261022-102324; +1 comms
+- at: 2026-10-22 10:35
+  from: devin
+  text: 'QUEUED (waiting on KK availability — Tony to signal): ViMax mode:real run. Steps when cleared: (1) fetch-hf
+    Lightricks--LTX-Video from dell archive (+26G to kk-mac), (2) split text/vision models in reference_image_selector.py
+    + best_image_selector.py (vision->qwen2.5vl:7b, text->qwen3:8b), (3) config video mode stub->real, (4) full
+    2-scene run (~1h GPU). kk-mac currently quiet: heartbeat+ollama daemons only, 70GiB free.'
 requests:
 - id: kk-sign-off-for-kk-mac-ada-nest-install-ae6c5d
   ask: 'KK sign-off for kk-mac Ada Nest install — relay this checklist to her and answer per item. All reversible,
