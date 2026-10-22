@@ -1,7 +1,7 @@
 id: git-safe-pull-add-reports-ssot-optimizat-1998bb
 title: 'git-safe-pull: add reports/SSOT_OPTIMIZATION_WARNINGS.json to generated-paths (or stop committing it)'
 column: backlog
-updated: 2026-10-21 20:22
+updated: 2026-10-22 12:48
 priority: high
 tags:
 - kanban
@@ -18,3 +18,15 @@ comms:
 - at: 2026-10-21 20:22
   from: devin
   text: card captured via board-api
+- at: 2026-10-22 12:44
+  from: devin
+  text: 'Fix landed 2026-10-22 (exec checkout, pushed, syncs via kanban-commit): (1) generated-RE extended to reports/SSOT_OPTIMIZATION_WARNINGS.json
+    — the wedge file. (2) reconcile-local-conflicts flag_card now dedupes by normalized filename (ts suffix stripped),
+    6h window via ~/.local/share/chaba-reconcile-flags.json — permanent producer collisions flag once per 6h instead
+    of every cycle. ops-guard spam should stop after next sync+reconcile.'
+- at: 2026-10-22 12:48
+  from: devin
+  text: 'Deeper root cause found during sweep: kanban-commit.sh overrides SAFE_PULL_GENERATED_RE with a narrow kanban-only
+    regex — any non-kanban producer file on the writer (ssot.dev-system.assessment.yml, ssot.host-roles.yml) collides
+    on every autostash pop, stays UU "for manual merge", and reconcile flags the ops card each cycle. Widened the
+    override to ^docs/ssot/ + warnings json + board statics — aligned with git-safe-pull default. Pushed (92275b86d).'

@@ -1,0 +1,15 @@
+id: tony-dell-caddy-dead-routes
+title: 'tony-dell: 12 dead /srv/public/apps routes in Caddyfile'
+column: backlog
+updated: 2026-10-22 12:44
+priority: medium
+note: 'Sweep 2026-10-22: 12 of 14 root * /srv/public/apps/* routes in /etc/caddy/Caddyfile point at missing dirs
+  (system-report, gev, gev-live, yt-live, walldance-live, yolo, dance2energy, vnc, map, board, board2, sw.js — only
+  jev-bench + one other still exist). Leftover stubs from OPS-0731 migration to idc02 web origin. Harmless (404)
+  but dead config per host-hygiene declared-or-dead. Caddyfile is root-owned — needs sudo to prune the handle blocks
+  + caddy reload.'
+ref: OPS-0771
+comms:
+- at: 2026-10-22 12:44
+  from: tony
+  text: card captured via board-api

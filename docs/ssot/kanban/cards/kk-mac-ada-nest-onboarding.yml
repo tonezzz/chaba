@@ -1,7 +1,7 @@
 id: kk-mac-ada-nest-onboarding
 title: kk-mac Ada Nest onboarding — Tailscale, power policy, dev tooling
 column: review
-updated: 2026-10-22 10:35
+updated: 2026-10-22 12:43
 priority: medium
 tags:
 - ada-nest
@@ -130,6 +130,13 @@ comms:
     Lightricks--LTX-Video from dell archive (+26G to kk-mac), (2) split text/vision models in reference_image_selector.py
     + best_image_selector.py (vision->qwen2.5vl:7b, text->qwen3:8b), (3) config video mode stub->real, (4) full
     2-scene run (~1h GPU). kk-mac currently quiet: heartbeat+ollama daemons only, 70GiB free.'
+- at: 2026-10-22 12:43
+  from: devin
+  text: 'Session wrap 2026-10-22 (real-mode attempt + stop): ViMax mode:real with split models (qwen3:8b text +
+    qwen2.5vl:7b vision, selector agents patched, env-driven VIMAX_VISION_MODEL) ran deeper than ever — storyboard,
+    4 shot descriptions, multimodal reference selection PASS, shot-0 first/last keyframes done. But 2 kernel panics:
+    watchdog timeout, VM compressor at 100% with 42 swapfiles — concurrent qwen3+VLM+SDXL+LTX exceeded 36GB unified
+    memory. Second hazard: ViMax asyncio.gather spawned 3 parall'
 requests:
 - id: kk-sign-off-for-kk-mac-ada-nest-install-ae6c5d
   ask: 'KK sign-off for kk-mac Ada Nest install — relay this checklist to her and answer per item. All reversible,
