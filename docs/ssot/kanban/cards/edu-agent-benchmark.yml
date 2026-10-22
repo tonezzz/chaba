@@ -1,0 +1,39 @@
+id: edu-agent-benchmark
+title: Benchmark education-managing agents — OpenClaw vs hermes3:8b vs current pipeline
+column: backlog
+priority: low
+created: 2026-10-22
+updated: 2026-10-22
+note: "Tony wants to explore an agent for education managing (the lesson ledger:
+  capture -> dedupe/upsert -> draft -> review scheduling -> recall).
+  Benchmark three lanes on the SAME fixture corpus:\n
+  - current: today's pipeline (lesson-miner.py classify+draft on
+    gemini-3.5-flash-lite + lesson-add.py + lessons-due.py).\n
+  - clawbot: OpenClaw agent surface on its default/GhostRoute OR provider,
+    given education tools (mock lesson store CRUD + transcript corpus).\n
+  - hermes: same OpenClaw surface pointed at omen ollama /v1 hermes3:8b
+    (free-local; already adopted T1 tool-call slot, card try-hermes).\n
+  Task suite (fixed corpus, golden labels): 1) capture-judgment
+  transcript->file/skip (F1); 2) dedupe/upsert discipline create-vs-update-
+  vs-hub; 3) draft quality rubric via one fixed LLM judge for all lanes;
+  4) next_review scheduling + status-transition correctness; 5) recall
+  pointer accuracy; 6) tool-loop completion rate, p50 latency, cost/task.\n
+  Harness: scripts/bench-edu-manage.py modeled on bench-hermes.py; a LOCAL
+  mock WP-lesson store (never prod WP); reports/bench-edu-manage-<date>.
+  {json,md} + docs/ssot/jobs/models/ entry.\n
+  AQ: clawbot or hermes lane must beat current on draft-quality + dedupe at
+  acceptable latency/cost, else current stays the education manager.\n
+  Related: hermes-openclaw-slot (OPS-0400) covers provider plumbing."
+links:
+- docs/ssot/kanban/cards/try-hermes.yml
+- docs/ssot/kanban/cards/hermes-openclaw-slot.yml
+- scripts/bench-hermes.py
+- scripts/lesson-add.py
+- scripts/ada/lesson-miner.py
+- scripts/lessons-due.py
+comms:
+- at: 2026-10-22 08:55
+  from: devin
+  text: card captured in-session (Tony asked to explore an education-managing
+    agent + benchmark clawbot/hermes/current). Spec drafted from session context;
+    refine before dispatch.
