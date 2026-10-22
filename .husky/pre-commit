@@ -55,6 +55,39 @@ if [ -n "$SW_TOP" ] \
     fi
 fi
 
+# --- Checkout-role guard (card stale-non-served-clones-dell-cascadeproj) ---
+# Per-worktree marker file `<gitdir>/chaba-role` (written by
+# scripts/install-hooks.sh --role) marks non-writer checkouts. Deliberately
+# NOT `git config`: linked worktrees share the common config — on tony-dell
+# the dispatch-wt-* worktrees hang off the EXEC checkout itself, so a shared
+# config role would block commits in every dispatch session. The gitdir
+# (.git/ for a plain clone, .git/worktrees/<name>/ for a linked worktree)
+# is per-worktree by construction.
+#
+# Agents kept working/committing in the tony-dell EXEC checkout
+# (~/CascadeProjects/chaba) believing it was the repo — nothing should ever
+# be committed there: job units run from that tree and kanban-commit only
+# sweeps the served checkout. Roles that block commits: exec, readonly.
+# Any other value (served, job, branch, experiment) is informational only.
+# Absent file = legacy behavior. Pull/rebase/autostash do not run this
+# hook, so repo-sync and job autostash churn are unaffected.
+# Escape hatch for deliberate schema/hook work: CHABA_ROLE_COMMIT_OK=1.
+CHABA_ROLE_FILE="$(git rev-parse --absolute-git-dir 2>/dev/null)/chaba-role"
+CHABA_ROLE="$(cat "$CHABA_ROLE_FILE" 2>/dev/null || true)"
+case "$CHABA_ROLE" in
+    exec|readonly)
+        if [ "${CHABA_ROLE_COMMIT_OK:-0}" != "1" ]; then
+            echo "❌ BLOCKED: this checkout is marked role=$CHABA_ROLE —" >&2
+            echo "   $SW_TOP is a non-writer checkout (job units run from it;" >&2
+            echo "   commits here are never swept and get autostash-churned)." >&2
+            echo "   Work in the served checkout ($SERVED_CHECKOUT) or a" >&2
+            echo "   dispatch worktree. Deliberate commit? CHABA_ROLE_COMMIT_OK=1." >&2
+            exit 1
+        fi
+        echo "⚠️  role=$CHABA_ROLE checkout — commit allowed via CHABA_ROLE_COMMIT_OK" >&2
+        ;;
+esac
+
 # --- Fast pytest gate (card ci-test-gate) ----------------------------------
 # Staged changes under tests/ or scripts/<dir>/ run the matching
 # tests/<dir> suite, capped at ~15s. The real enforcement is close_out's
