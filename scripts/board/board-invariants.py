@@ -17,6 +17,10 @@ Catches the wound classes that keep recurring (see ssot.repeat-asks.yml):
       (the 2026-10-15 parked-doing wave: 4 of these at once)
   S2  column=doing, no action block, last comm older than DOING_STALE_D
       — a parked card squatting in the active column
+  Q1  action.status == queued but action.type != dispatch — kanban-
+      dispatch can never claim it, so the card starves silently
+      (queue-type-starvation-guard; 2026-10-13 zombie-sweep found 6
+      queued for days with zero claims). Flagged after QUEUED_STARVE_H.
 
 Read-only by design: prints findings; --alert writes one focus-inbox
 file per violation class with findings (deduped by filename, so a
@@ -40,6 +44,7 @@ INBOX = REPO / "docs/ssot/focus-inbox"
 
 DOING_STALE_D = 7
 RUNNING_STALE_H = 24
+QUEUED_STARVE_H = 24
 # Mirrors lifecycle-check.py verify_gate: only `done` (not verified),
 # only cards updated on/after the gate date, and ANY release-stage tag
 # counts as evidence — not just [verify]. Keep these in sync.
@@ -81,7 +86,7 @@ def norm_ask(s):
 
 def check_cards():
     now = dt.datetime.now()
-    finds = {k: [] for k in ("R1", "R2", "R3", "V1", "S1", "S2")}
+    finds = {k: [] for k in ("R1", "R2", "R3", "V1", "S1", "S2", "Q1")}
     for p in sorted(CARD_DIR.glob("*.yml")):
         try:
             c = yaml.safe_load(p.read_text()) or {}
@@ -132,6 +137,16 @@ def check_cards():
             if age_d > DOING_STALE_D:
                 finds["S2"].append(
                     f"{cid}: doing, no action, last comm {age_d}d ago")
+        if act.get("status") == "queued" \
+                and str(act.get("type") or "dispatch") != "dispatch":
+            upd = _ts(c.get("updated"))
+            age_h = ((now - upd).total_seconds() / 3600
+                     if upd else QUEUED_STARVE_H + 1)
+            if age_h > QUEUED_STARVE_H:
+                finds["Q1"].append(
+                    f"{cid}: queued {age_h/24:.1f}d but action.type="
+                    f"{act.get('type')!r} — kanban-dispatch claims "
+                    "type=dispatch only (starved)")
     return finds
 
 
@@ -143,6 +158,7 @@ def write_alerts(finds):
         "R1": "buttonless-requests", "R2": "bad-suggested-option",
         "R3": "dup-open-requests", "V1": "done-missing-verify-evidence",
         "S1": "stale-running-claims", "S2": "parked-doing-claims",
+        "Q1": "starved-queued-cards",
     }
     today = dt.date.today().isoformat()
     wrote = []

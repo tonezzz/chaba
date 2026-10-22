@@ -666,7 +666,14 @@ def main() -> int:
                 if blocker_id and not _blocker_released(blocker_id):
                     continue  # dependency not done yet
                 if (a.get("type") or "dispatch") != "dispatch":
-                    continue  # container/script = runner-agent territory
+                    # queue-type-starvation-guard: a queued card we can
+                    # never claim must say so in the log — the 2026-10-13
+                    # zombie-sweep found 6 of these silently starved for
+                    # days (board-invariants Q1 alerts the persistent ones)
+                    print(f"{card['id']}: skipped — action.type "
+                          f"{a.get('type')!r} is not dispatchable "
+                          "(claims are type=dispatch only)")
+                    continue
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:
                     continue  # needs capabilities this host lacks

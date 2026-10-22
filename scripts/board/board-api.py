@@ -551,6 +551,19 @@ def hide_dispatch_session(card: dict) -> None:
         pass
 
 
+def queue_starve_warn(card: dict) -> str:
+    """queue-type-starvation-guard: kanban-dispatch claims only
+    action.type == dispatch. Queueing a card typed manual/devin/self/
+    container silently starves it (2026-10-13 zombie-sweep: 6 cards
+    queued for days, zero claims). Warn the queuer — never auto-flip the
+    type, a manual card queued by hand may mean 'not for dispatch'."""
+    t = str((card.get("action") or {}).get("type") or "dispatch")
+    if t == "dispatch":
+        return ""
+    return (f"WARNING: action.type={t} — kanban-dispatch claims only "
+            "type=dispatch; this card will starve in queue")
+
+
 def do_action(card: dict, verb: str, frm: str) -> str:
     a = card.setdefault("action", {})
     card.pop("awaiting_action", None)  # any deliberate action is triage
@@ -566,6 +579,10 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
+        warn = queue_starve_warn(card)
+        if warn:
+            comms_add(card, "chaba", warn)
+            return f"queued — {warn}"
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
         a["status"] = "queued"
@@ -1037,8 +1054,12 @@ def do_create(body: dict, frm: str) -> dict:
             card["column"] = "backlog"
         comms_add(card, frm, "re-spawned from report page")
         card["updated"] = now()
+        warn = queue_starve_warn(card)
+        if warn:
+            comms_add(card, "chaba", warn)
         save(p, card)
-        return {"message": f"card {cid} re-queued",
+        return {"message": f"card {cid} re-queued"
+                + (f" ({warn})" if warn else ""),
                 "id": cid, "status": "queued"}
 
     card = {"id": cid, "title": title[:160], "column": col,
@@ -1094,6 +1115,10 @@ def do_create(body: dict, frm: str) -> dict:
     card["comms"] = [{"at": now(), "from": frm,
                       "text": str(body.get("text") or
                                    "card captured via board-api")[:500]}]
+    warn = queue_starve_warn(card)
+    if warn:
+        card["comms"].append({"at": now(), "from": "chaba",
+                              "text": warn})
     save(p, card)
     msg = f"card {cid} created in {col} as {card['ref']}"
     res = {"message": msg, "id": cid, "ref": card["ref"]}
@@ -1101,7 +1126,8 @@ def do_create(body: dict, frm: str) -> dict:
     if a.get("status"):
         res["status"] = a["status"]
         if a["status"] == "queued":
-            res["message"] = msg + " (queued)"
+            res["message"] = msg + " (queued)" \
+                + (f" {warn}" if warn else "")
     return res
 
 
