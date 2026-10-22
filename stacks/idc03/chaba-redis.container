@@ -1,0 +1,13 @@
+[Container]
+Image=docker.io/library/redis:7.4-alpine
+ContainerName=chaba-redis
+Volume=%h/.config/containers/redis/data:/data:Z
+PublishPort=127.0.0.1:6379:6379
+Exec=redis-server --maxmemory 512mb --appendonly yes
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,16 @@
+[Container]
+Image=docker.io/pgvector/pgvector:pg16
+ContainerName=chaba-postgres-16
+EnvironmentFile=%h/.config/secrets/chaba-stack.env
+Volume=%h/.config/containers/postgres/data:/var/lib/postgresql/data:Z
+PublishPort=127.0.0.1:5433:5432
+PublishPort=100.102.134.91:5433:5432
+HealthCmd=pg_isready -U chaba
+HealthInterval=30s
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

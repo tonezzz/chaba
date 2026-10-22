@@ -16,6 +16,8 @@
 # Install (macOS): deploy alongside net.adanest.heartbeat.plist.
 
 set -u
+# launchd/su contexts give a minimal PATH; set one that covers sbin + brew.
+export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
 MDDB_URL="${MDDB_URL:-http://100.102.134.91:11026/v1}"
 HOST="$(hostname -s 2>/dev/null || hostname)"
 ROLE="${NEST_ROLE:-member-device}"
@@ -54,7 +56,7 @@ EXTRA=""
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"uptime_s\":$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*sec = //;s/,.*//' | awk -v n=$(date +%s) '{print n-$1}' || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"uptime_s\":$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*{ sec = //;s/,.*//' | awk -v n=$(date +%s) '{print n-$1}' || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )
