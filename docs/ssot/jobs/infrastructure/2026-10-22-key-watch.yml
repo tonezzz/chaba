@@ -1,0 +1,57 @@
+date: 2026-10-22
+slug: key-watch
+card: key-watch-monitor
+ref: SEC-0499
+kind: monitor-build
+dispatch: devin-task-20261022-193413-sources-metadata-only-secrets- (idc02)
+
+summary: >
+  Built scripts/ops/key-watch.py — the credential expiry/quota monitor the
+  2026-10-12 OR bridge-key-at-$0 incident demanded. Per-host ssh probes
+  return masked fingerprints + verdicts only (secrets never leave their
+  host — the secrets-inventory-cms.py pattern). systemd/key-watch.timer
+  gives the 6h + on-boot cadence. Not yet installed — deployment is a
+  separate gated step (target: idc03; card said tony-dell but dell's
+  writer role moved during the migration).
+
+what_it_checks:
+  openrouter:
+    slots: [tony-dell openrouter.env, tony-omen openrouter.env, idc03 mddb-gemini.env]
+    probe: GET https://openrouter.ai/api/v1/auth/key (Bearer)
+    reads: [label, expires_at, usage, limit, limit_remaining, is_free_tier]
+    extra: cross-slot fingerprint drift warn (the ada-*.env sweep-miss class)
+  ha-llats:
+    slots: "every stored HOME_ASSISTANT_TOKEN/HASS_TOKEN/HA_LONG_LIVED_TOKEN slot from ssot.secrets.yml (omen, dell, mn01)"
+    probe: GET <instance>/api/ per slot -> 401/403 = dead
+    note: instance URLs are per-slot (tony-ha loopback on omen, tailnet FQDNs elsewhere)
+  cf-token:
+    slots: [idc01, idc02, idc03, tony-omen, tony-dell]
+    probe: >
+      /user/tokens/verify then /zones?per_page=1 — the cfat_ scoped
+      token is REJECTED by verify but holds Zone DNS r/w; two-step
+      avoids a false-dead alert (documented quirk in ssot.secrets.yml)
+  gemini:
+    primary: "MDDB ada-ha-events-{kk,tony,michael} kind=ops-event scan, 24h
+              window, type/content quota markers (quota_exhausted,
+              RESOURCE_EXHAUSTED, 1011, credits depleted)"
+    optional: "--gemini-probe adds the ~1-token generateContent probe per
+               GEMINI_API_KEY_* var in idc03:gemini-keys.env"
+
+thresholds: "expires_at <48h or usage/limit >=80% -> LINE warn (ada-line-relay :8912/send, quiet 00-07 ICT); dead/expired/limit_remaining=0 -> alert + auto-filed keywatch-* incident card via board-api; recovered sources auto-close their card. Every run emits one kind=ops-event doc (type: key_watch) into ada-ha-events-tony — same shape as host-loads._ops_event / gemini_pool."
+
+first_run_findings:   # live dry-run 2026-10-22 19:5x ICT from idc02
+  - "or-*: fleet key …5528 valid but limit_remaining=$0 on all 3 slots — depleted NOW (alert fires day one)"
+  - "ha-mdev-omen: michael-dev LLAT on tony-omen is stale (401, fp …HfN4 vs live …i2no)"
+  - "ha-michael-mn01: mn01 has no local HA — fixed slot URL to michael-ha.taila0626a.ts.net:8123"
+  - "cf-idc01: ssh unreachable from idc02 (tailscale off; works from idc03 — placement matters)"
+  - "cfat_ slots confirmed live via zones fallback (verify rejects them, as documented)"
+  - "gemini ops-scan: 0 quota markers in 24h across 3/3 collections"
+
+install: |
+  cp systemd/key-watch.{service,timer} ~/.config/systemd/user/
+  systemctl --user daemon-reload && systemctl --user enable --now key-watch.timer
+  # target host: idc03 (canonical writer host post-migration); the unit is
+  # host-agnostic (%h paths) and degrades gracefully on unreachable slots
+
+verify: "python3 scripts/ops/key-watch.py --dry-run   # probes real, writes nothing"
+tests: tests/ops/test_key_watch.py (20 tests — judge thresholds, cfat quirk, drift, no-secret-leak)
