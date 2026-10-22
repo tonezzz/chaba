@@ -289,7 +289,12 @@ _resolve_autostash_pop() {
 BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
 SAFE_PULL_LOCK_FD=""
 if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
-  exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK" 2>/dev/null || SAFE_PULL_LOCK_FD=""
+  # Brace group: a bare `exec {fd}>file 2>/dev/null` would redirect the
+  # whole script's stderr to /dev/null for the rest of the run — every
+  # diagnostic below ("pulling anyway", collision moves, resolution
+  # failures) would be invisible (caught by test-kanban-commit.sh G).
+  { exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK"; } 2>/dev/null \
+    || SAFE_PULL_LOCK_FD=""
   if [ -n "$SAFE_PULL_LOCK_FD" ]; then
     if flock -w "${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}" "$SAFE_PULL_LOCK_FD" \
       2>/dev/null; then
