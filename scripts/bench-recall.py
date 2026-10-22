@@ -52,8 +52,15 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts" / "ada"))
 import gemini_rest  # noqa: E402
+import session_artifacts  # noqa: E402
 
 COLLECTION = "ada-ha-bank-devin-tony"
+REST_URL = os.environ.get(
+    "MDDB_REST_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+CORPUS_JSON = Path(os.environ.get(
+    "BENCH_CORPUS", REPO / "reports" / "bench-recall-corpus" /
+    "transcripts.json"))
+V2_PREFIX = "devin-session-v2/"
 JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gemini-3.5-flash-lite")
 SESSIONS_DB = Path(os.environ.get(
     "SESSIONS_DB", Path.home() / ".local/share/devin/cli/sessions.db"))
@@ -120,12 +127,15 @@ class Mddb:
         return json.loads(cont[0]["text"])
 
     def semantic(self, query, top_k=RECALL_TOPK, threshold=RECALL_THRESHOLD,
-                 status_active=True):
+                 status_active=True, filter_meta=None):
         args = {"collection": COLLECTION, "query": query, "top_k": top_k,
                 "threshold": threshold, "include_content": True,
                 "retrieval_mode": "parent"}
+        fm = dict(filter_meta or {})
         if status_active:
-            args["filter_meta"] = {"status": ["active"]}
+            fm.setdefault("status", ["active"])
+        if fm:
+            args["filter_meta"] = fm
         out = self.tool("semantic_search", args)
         results = []
         for h in out.get("results", []):
@@ -146,8 +156,87 @@ class Mddb:
         return (out.get("documents") or [None])[0]
 
 
+class MddbRest:
+    """Same surface as Mddb over the /v1 REST API (recall-canary.py
+    payload shape) — works on any tailnet host without the MCP config.
+    Followers serve reads; writes must go to the leader."""
+
+    def __init__(self, base=REST_URL, timeout=90):
+        self.base, self.timeout = base, timeout
+        self._docs = None
+
+    def _post(self, path, payload):
+        req = urllib.request.Request(
+            f"{self.base}{path}", data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return json.loads(r.read())
+
+    def _all_docs(self, include_content=True):
+        if self._docs is None:
+            out = self._post("/search", {
+                "collection": COLLECTION, "limit": 5000,
+                "include_content": include_content})
+            self._docs = out if isinstance(out, list) else (
+                out.get("results") or out.get("documents") or [])
+        return self._docs
+
+    def semantic(self, query, top_k=RECALL_TOPK, threshold=RECALL_THRESHOLD,
+                 status_active=True, filter_meta=None):
+        args = {"collection": COLLECTION, "query": query, "topK": top_k,
+                "threshold": threshold, "includeContent": True}
+        fm = dict(filter_meta or {})
+        if status_active:
+            fm.setdefault("status", ["active"])
+        if fm:
+            args["filterMeta"] = fm
+        out = self._post("/vector-search", args)
+        results = []
+        for h in out.get("results", []):
+            doc = h.get("document") or {}
+            results.append({"key": doc.get("key"), "score": h.get("score"),
+                            "meta": doc.get("meta") or {},
+                            "content": doc.get("contentMd") or ""})
+        return results
+
+    def doc_by_session(self, session_name):
+        for d in self._all_docs():
+            if d.get("key") == f"devin-session/{session_name}":
+                return {"content_md": d.get("contentMd") or "",
+                        "meta": d.get("meta") or {}}
+        return None
+
+    def bank_keys(self):
+        return {d.get("key") for d in self._all_docs()}
+
+    def add(self, key, content, meta):
+        self._post("/add", {"collection": COLLECTION, "key": key,
+                            "lang": "en", "contentMd": content,
+                            "meta": meta})
+        self._docs = None
+
+    def delete(self, key):
+        self._post("/delete", {"collection": COLLECTION, "key": key,
+                               "lang": "en"})
+        self._docs = None
+
+
+def get_mddb():
+    """Prefer the MCP transport when its config exists (tony-dell/omen);
+    the REST /v1 leader works everywhere on the tailnet."""
+    if MCP_CFG.exists() and not os.environ.get("MDDB_REST_URL"):
+        try:
+            return Mddb()
+        except Exception as e:
+            print(f"  mcp mddb failed ({e}) — falling back to REST")
+    return MddbRest()
+
+
 # ---------------------------------------------------------------- data
 def session_names_in_bank(mddb):
+    if isinstance(mddb, MddbRest):
+        return {k.split("/", 1)[1] for k in mddb.bank_keys()
+                if k and k.startswith("devin-session/")}
     names, off = set(), 0
     while True:
         out = mddb.tool("search_documents", {
@@ -161,6 +250,97 @@ def session_names_in_bank(mddb):
         if len(docs) < 200 or off >= out.get("total", 0):
             break
     return names
+
+
+def load_corpus(path=None):
+    """Sidecar {name: {text, raw_bytes, title}} pulled from the fixture
+    host — lets the bench run on a runner without those sessions in the
+    local sessions.db (--corpus / BENCH_CORPUS override the path)."""
+    p = Path(path) if path else CORPUS_JSON
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text())
+    except Exception as e:
+        print(f"  corpus unreadable ({e}) — transcripts from sessions.db")
+        return {}
+
+
+def build_v2_docs(mddb, fixture, db, corpus, log):
+    """v2 T1 = current T1 doc + deterministic Artifacts section mined
+    from the raw transcript (session_artifacts)."""
+    out = {}
+    for s in fixture["sessions"]:
+        name = s["name"]
+        t1 = ""
+        try:
+            doc = mddb.doc_by_session(name)
+            t1 = (doc or {}).get("content_md") or ""
+        except Exception as e:
+            log(f"    v2: t1 fetch {name}: {e}")
+        text, _ = transcript_text(db, name, corpus)
+        out[name] = (t1.rstrip()
+                     + session_artifacts.artifacts_section(text)).strip()
+    return out
+
+
+def write_v2_docs(mddb, v2docs, log):
+    for name, body in v2docs.items():
+        mddb.add(V2_PREFIX + name, body, {
+            "kind": ["note"], "status": ["active"], "scope": ["tony"],
+            "bank": ["devin"], "source": ["import"],
+            "written_by": ["devin-bench-v2"],
+            "subject": ["devin-session-summary"],
+            "distill_version": ["v2"], "session_name": [name],
+            "attribute": [name]})
+    log(f"  wrote {len(v2docs)} v2 docs ({V2_PREFIX}*)")
+
+
+def delete_v2_docs(mddb, names, log):
+    n = 0
+    for name in names:
+        try:
+            mddb.delete(V2_PREFIX + name)
+            n += 1
+        except Exception as e:
+            log(f"    v2 delete {name}: {e}")
+    log(f"  deleted {n} v2 docs")
+
+
+def wait_v2_indexed(mddb, names, log, timeout=300):
+    """Adds land in an embed queue — poll vector-search until every v2
+    doc is retrievable (or give up after `timeout` seconds)."""
+    want = {V2_PREFIX + n for n in names}
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        got = set()
+        for name in names:
+            try:
+                hits = mddb.semantic(
+                    "devin session", top_k=10, threshold=0.0,
+                    status_active=False,
+                    filter_meta={"session_name": [name],
+                                 "distill_version": ["v2"]})
+                if any(h["key"] == V2_PREFIX + name for h in hits):
+                    got.add(V2_PREFIX + name)
+            except Exception as e:
+                log(f"    wait_v2 {name}: {e}")
+        if got >= want:
+            log(f"  v2 docs indexed after {time.time() - t0:.0f}s")
+            return True
+        time.sleep(5)
+    log(f"  WARN: v2 index wait timed out "
+        f"({len(got)}/{len(want)} retrievable)")
+    return False
+
+
+def transcript_text(db, session_id, corpus):
+    """(text, raw_bytes) for a fixture session — corpus sidecar first,
+    local sessions.db second."""
+    entry = corpus.get(session_id)
+    if entry and entry.get("text"):
+        return entry["text"], entry.get("raw_bytes") or len(entry["text"])
+    return extract_transcript(db, session_id)
 
 
 def extract_transcript(db, session_id):
@@ -345,9 +525,9 @@ def judge(question, answer, context, key):
     return (out or "").strip().upper().startswith("YES")
 
 
-def judge_items(question, answer, items, key, workers=4):
+def judge_items(question, answer, items, key, workers=4, k=JUDGE_K):
     """Judge each retrieved item -> (hit@1, hit@3, per-item verdicts)."""
-    items = items[:JUDGE_K]
+    items = items[:k]
     if not items:
         return False, False, []
     with concurrent.futures.ThreadPoolExecutor(workers) as ex:
@@ -361,7 +541,7 @@ def gen_fixture(args, log):
     key = load_gemini_key()
     if not key:
         sys.exit("no gemini key — set GEMINI_API_KEY or secrets file")
-    mddb = Mddb()
+    mddb = get_mddb()
     bank = session_names_in_bank(mddb)
     log(f"bank devin-session docs: {len(bank)}")
     db = sqlite3.connect(f"file:{SESSIONS_DB}?mode=ro", uri=True)
@@ -430,9 +610,13 @@ def run_lane_mddb(mddb, questions, key, log):
             log(f"    mddb error: {e}")
         lats.append(time.time() - t0)
         h1, h3, v = judge_items(q["question"], q["answer"], items, key)
+        hit_keys = [it["key"] for it, ok in zip(items, v) if ok]
         recs.append({"qid": q["qid"], "hit1": h1, "hit3": h3,
                      "top_key": items[0]["key"] if items else None,
                      "top_score": items[0]["score"] if items else None,
+                     "hit_keys": hit_keys,
+                     "hit_v2": any(k.startswith(V2_PREFIX)
+                                   for k in hit_keys),
                      "verdicts": v})
     return recs, lats
 
@@ -446,6 +630,8 @@ def run_lane_index(idx, questions, key, log, lane):
         h1, h3, v = judge_items(q["question"], q["answer"], items, key)
         recs.append({"qid": q["qid"], "hit1": h1, "hit3": h3,
                      "top_key": items[0]["key"] if items else None,
+                     "hit_keys": [it["key"] for it, ok in zip(items, v)
+                                  if ok],
                      "verdicts": v})
     return recs, lats
 
@@ -475,6 +661,19 @@ def run_lane_t1doc(mddb, questions, key, log):
     return recs, lats
 
 
+def run_lane_t1v2(v2docs, questions, key, log):
+    """Oracle lane over the ENRICHED T1 doc (summary + Artifacts) —
+    the distiller-coverage number after the fix."""
+    recs = []
+    for q in questions:
+        item = {"key": V2_PREFIX + q["session"],
+                "content": v2docs.get(q["session"], ""), "score": None}
+        h1, h3, v = judge_items(q["question"], q["answer"], [item], key)
+        recs.append({"qid": q["qid"], "hit1": h1, "hit3": h3,
+                     "top_key": item["key"], "verdicts": v})
+    return recs, []
+
+
 def summarize(recs, lats):
     n = len(recs)
     return {
@@ -483,6 +682,7 @@ def summarize(recs, lats):
         "hit_at_3": round(100 * sum(r["hit3"] for r in recs) / max(n, 1), 1),
         "lat_p50_s": round(statistics.median(lats), 3) if lats else None,
         "lat_mean_s": round(statistics.mean(lats), 3) if lats else None,
+        "v2_hits": sum(1 for r in recs if r.get("hit_v2")),
     }
 
 
@@ -493,10 +693,20 @@ def main():
     ap.add_argument("--per-session", type=int, default=2)
     ap.add_argument("--lanes", nargs="+",
                     default=["mddb", "transcript", "surface", "t1doc"],
-                    choices=["mddb", "transcript", "surface", "t1doc"])
+                    choices=["mddb", "mddb_v2", "transcript", "surface",
+                             "t1doc", "t1v2", "t1bm25", "hybrid",
+                             "hybrid_t2"])
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--corpus", type=Path, default=None,
+                    help="transcripts.json sidecar for sessions not in "
+                         "the local sessions.db")
+    ap.add_argument("--write-v2", action="store_true",
+                    help="(re)write devin-session-v2/<name> enriched docs "
+                         "to the bank leader")
+    ap.add_argument("--cleanup-v2", action="store_true",
+                    help="delete devin-session-v2/* docs and exit")
     args = ap.parse_args()
 
     if args.gen_fixture:
@@ -505,7 +715,7 @@ def main():
 
     fx = json.loads(args.fixture.read_text())
     key = load_gemini_key()
-    if not key:
+    if not key and not args.cleanup_v2:
         sys.exit("no gemini key — set GEMINI_API_KEY or secrets file")
 
     questions = []
@@ -520,13 +730,37 @@ def main():
     print(f"fixture: {len(fx['sessions'])} sessions, {len(questions)} goldens")
 
     db = sqlite3.connect(f"file:{SESSIONS_DB}?mode=ro", uri=True)
+    corpus = load_corpus(args.corpus)
+    if corpus:
+        print(f"corpus: {len(corpus)} transcripts from sidecar")
     out = {"at": time.strftime("%Y-%m-%d %H:%M:%S"),
            "fixture": str(args.fixture), "judge": JUDGE_MODEL,
            "questions": len(questions), "lanes": {}}
 
+    # ---- cleanup fast path
+    if args.cleanup_v2:
+        delete_v2_docs(MddbRest(), [s["name"] for s in fx["sessions"]],
+                       print)
+        return
+
+    mddb = None
+    need_mddb = bool(
+        {"mddb", "mddb_v2", "t1doc", "t1v2", "t1bm25", "hybrid", "hybrid_t2"}
+        & set(args.lanes))
+    if need_mddb:
+        mddb = get_mddb()
+        print(f"  mddb transport: {type(mddb).__name__}")
+
+    # ---- v2 enriched docs (built when any v2 lane or --write-v2 runs).
+    # Writes are deferred until AFTER the v1 `mddb` lane so the baseline
+    # isn't contaminated by v2 docs in the index.
+    v2docs = None
+    if {"t1v2", "t1bm25", "hybrid", "mddb_v2"} & set(args.lanes) or args.write_v2:
+        v2docs = build_v2_docs(mddb, fx, db, corpus, print)
+        out["v2_bytes"] = {n: len(v.encode()) for n, v in v2docs.items()}
+
     # ---- lane (a): mddb semantic_search, status=active like memory_ops
     if "mddb" in args.lanes:
-        mddb = Mddb()
         for rep in range(args.reps):
             recs, lats = run_lane_mddb(mddb, questions, key, print)
             out["lanes"].setdefault("mddb", []).append(
@@ -535,12 +769,29 @@ def main():
             print(f"  mddb  rep{rep} hit@1={s['hit_at_1']}% hit@3={s['hit_at_3']}% "
                   f"p50={s['lat_p50_s']}s")
 
+    # ---- v2 docs into the bank now that the v1 baseline is measured
+    if v2docs is not None and (args.write_v2 or "mddb_v2" in args.lanes):
+        writer = mddb if isinstance(mddb, MddbRest) else MddbRest()
+        write_v2_docs(writer, v2docs, print)
+        wait_v2_indexed(mddb, list(v2docs), print)
+
+    # ---- lane (a2): same semantic path with v2 enriched docs in the bank
+    if "mddb_v2" in args.lanes:
+        for rep in range(args.reps):
+            recs, lats = run_lane_mddb(mddb, questions, key, print)
+            out["lanes"].setdefault("mddb_v2", []).append(
+                {"summary": summarize(recs, lats), "records": recs})
+            s = out["lanes"]["mddb_v2"][-1]["summary"]
+            print(f"  mddbV2 rep{rep} hit@1={s['hit_at_1']}% "
+                  f"hit@3={s['hit_at_3']}% v2hits={s['v2_hits']} "
+                  f"p50={s['lat_p50_s']}s")
+
     # ---- lane (b): BM25 over raw transcripts of fixture sessions
     if "transcript" in args.lanes:
         idx = KeywordIndex()
         t_bytes = {}
         for s in fx["sessions"]:
-            text, raw = extract_transcript(db, s["name"])
+            text, raw = transcript_text(db, s["name"], corpus)
             t_bytes[s["name"]] = raw
             idx.add(f"transcript/{s['name']}", text)
         idx.build()
@@ -555,13 +806,106 @@ def main():
 
     # ---- lane t1doc: oracle — does the session's own T1 doc hold it?
     if "t1doc" in args.lanes:
-        mddb_t1 = mddb if "mddb" in args.lanes else Mddb()
         for rep in range(args.reps):
-            recs, lats = run_lane_t1doc(mddb_t1, questions, key, print)
+            recs, lats = run_lane_t1doc(mddb, questions, key, print)
             out["lanes"].setdefault("t1doc", []).append(
                 {"summary": summarize(recs, lats), "records": recs})
             s = out["lanes"]["t1doc"][-1]["summary"]
             print(f"  t1doc rep{rep} hit@1={s['hit_at_1']}% p50={s['lat_p50_s']}s")
+
+    # ---- lane t1v2: oracle over the enriched (summary + Artifacts) doc
+    if "t1v2" in args.lanes:
+        for rep in range(args.reps):
+            recs, lats = run_lane_t1v2(v2docs, questions, key, print)
+            out["lanes"].setdefault("t1v2", []).append(
+                {"summary": summarize(recs, lats), "records": recs})
+            s = out["lanes"]["t1v2"][-1]["summary"]
+            print(f"  t1v2  rep{rep} hit@1={s['hit_at_1']}%")
+
+    # ---- lane t1bm25: keyword retrieval over the ENRICHED T1 corpus —
+    # what recall looks like if the T1 tier gains a text-search path
+    # (mddb has none today: /v1/search ignores query, semantic only).
+    if "t1bm25" in args.lanes:
+        idx = KeywordIndex()
+        for name, body in v2docs.items():
+            idx.add(f"t1v2/{name}", body)
+        idx.build()
+        for rep in range(args.reps):
+            recs, lats = run_lane_index(idx, questions, key, print, "t1bm25")
+            out["lanes"].setdefault("t1bm25", []).append(
+                {"summary": summarize(recs, lats), "records": recs})
+            s = out["lanes"]["t1bm25"][-1]["summary"]
+            print(f"  t1bm25 rep{rep} hit@1={s['hit_at_1']}% hit@3={s['hit_at_3']}%")
+
+    # ---- lane hybrid: realistic recall layer = mddb semantic top3 UNION
+    # keyword top3 over the same T1 corpus — judged on the merged set.
+    if "hybrid" in args.lanes:
+        idx = KeywordIndex()
+        for name, body in v2docs.items():
+            idx.add(f"t1v2/{name}", body)
+        idx.build()
+        for rep in range(args.reps):
+            recs, lats = [], []
+            for q in questions:
+                t0 = time.time()
+                try:
+                    items = mddb.semantic(q["question"])[:3]
+                except Exception as e:
+                    items = []
+                    print(f"    hybrid mddb error: {e}")
+                seen = {it["key"] for it in items}
+                for it in idx.search(q["question"]):
+                    if it["key"] not in seen:
+                        items.append(it)
+                lats.append(time.time() - t0)
+                h1, h3, v = judge_items(
+                    q["question"], q["answer"], items[:6], key,
+                    workers=6, k=6)
+                hit_keys = [it["key"] for it, ok in zip(items[:6], v) if ok]
+                recs.append({"qid": q["qid"], "hit1": h1,
+                             "hit3": any(v),
+                             "top_key": items[0]["key"] if items else None,
+                             "hit_keys": hit_keys, "verdicts": v})
+            out["lanes"].setdefault("hybrid", []).append(
+                {"summary": summarize(recs, lats), "records": recs})
+            s = out["lanes"]["hybrid"][-1]["summary"]
+            print(f"  hybrid rep{rep} hit@1={s['hit_at_1']}% hit@3={s['hit_at_3']}%")
+
+    # ---- lane hybrid_t2: the production recall path the tiering implies:
+    # T1 semantic top3 UNION T2 keyword top3 (archived transcripts on disk).
+    if "hybrid_t2" in args.lanes:
+        idx = KeywordIndex()
+        for s in fx["sessions"]:
+            text, _ = transcript_text(db, s["name"], corpus)
+            idx.add(f"transcript/{s['name']}", text)
+        idx.build()
+        for rep in range(args.reps):
+            recs, lats = [], []
+            for q in questions:
+                t0 = time.time()
+                try:
+                    items = mddb.semantic(q["question"])[:3]
+                except Exception as e:
+                    items = []
+                    print(f"    hybrid_t2 mddb error: {e}")
+                seen = {it["key"] for it in items}
+                for it in idx.search(q["question"]):
+                    if it["key"] not in seen:
+                        items.append(it)
+                lats.append(time.time() - t0)
+                h1, h3, v = judge_items(
+                    q["question"], q["answer"], items[:6], key,
+                    workers=6, k=6)
+                recs.append({"qid": q["qid"], "hit1": h1,
+                             "hit3": any(v),
+                             "top_key": items[0]["key"] if items else None,
+                             "hit_keys": [it["key"] for it, ok
+                                          in zip(items[:6], v) if ok],
+                             "verdicts": v})
+            out["lanes"].setdefault("hybrid_t2", []).append(
+                {"summary": summarize(recs, lats), "records": recs})
+            s = out["lanes"]["hybrid_t2"][-1]["summary"]
+            print(f"  hybT2 rep{rep} hit@1={s['hit_at_1']}% hit@3={s['hit_at_3']}%")
 
     # ---- lane (c): current recall surface = session-memory.md + compactions
     if "surface" in args.lanes:
@@ -585,7 +929,7 @@ def main():
     ids = [r[0] for r in db.execute("select id, hidden from sessions")]
     hidden = {r[0] for r in db.execute("select id from sessions where hidden=1")}
     try:
-        mddb2 = mddb if "mddb" in args.lanes else Mddb()
+        mddb2 = mddb if mddb is not None else get_mddb()
         bank = session_names_in_bank(mddb2)
     except Exception as e:
         bank = set()

@@ -38,8 +38,15 @@ _spec = importlib.util.spec_from_file_location(
 ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
 
+_art_spec = importlib.util.spec_from_file_location(
+    "session_artifacts", Path(__file__).with_name("session_artifacts.py")
+)
+session_artifacts = importlib.util.module_from_spec(_art_spec)
+_art_spec.loader.exec_module(session_artifacts)
+
 CLI_SUMMARIES = Path.home() / ".local/share/devin/cli/summaries"
 NAMED_SUMMARIES = Path.home() / ".local/share/devin/summaries"
+SESSIONS_DB = Path.home() / ".local/share/devin/cli/sessions.db"
 COLLECTION = "ada-ha-bank-devin-tony"
 # MDDB drops the connection on very large docs. Oversized files keep the
 # distilled head (structured summary) plus the tail, where the outcome of
@@ -60,6 +67,54 @@ _LEADING_PREAMBLE_RE = re.compile(
 
 def _strip_preamble(text: str) -> str:
     return _LEADING_PREAMBLE_RE.sub("", text, count=1).lstrip()
+
+
+def transcript_for(session_name: str) -> str:
+    """user+assistant transcript for a live sessions.db row — same filter
+    rule as the FTS trigger (bench-recall.extract_transcript). Returns ''
+    for deleted/absent sessions."""
+    import json
+    import sqlite3
+    if not SESSIONS_DB.exists():
+        return ""
+    try:
+        db = sqlite3.connect(f"file:{SESSIONS_DB}?mode=ro", uri=True)
+        parts = []
+        for (cm,) in db.execute(
+            "select chat_message from message_nodes where session_id=? "
+            "order by node_id", (session_name,)):
+            try:
+                m = json.loads(cm)
+            except Exception:
+                continue
+            role, meta = m.get("role"), m.get("metadata") or {}
+            if role == "assistant" or (
+                    role == "user" and meta.get("is_user_input") in (1, True)):
+                c = m.get("content")
+                if isinstance(c, str) and c.strip():
+                    parts.append(f"### {role}\n{c[:8000]}")
+        db.close()
+        text = "\n\n".join(parts)
+        if len(text) > 600_000:
+            half = 300_000
+            text = text[:half] + "\n\n[...middle truncated...]\n\n" + text[-half:]
+        return text
+    except Exception:
+        return ""
+
+
+def enriched(body: str, session_name: str) -> str:
+    """v2 T1: summary + deterministic Artifacts section mined from the
+    live transcript (card session-mddb-recall-benchmark — v1 recall was
+    42% because paths/commands/hashes/ids never reached the doc). Only
+    runs while the session still exists; post-delete syncs keep v1."""
+    if "## Artifacts" in body:
+        return body
+    try:
+        return body + session_artifacts.artifacts_section(
+            transcript_for(session_name))
+    except Exception:
+        return body
 
 
 def clip(text: str) -> str:
@@ -143,6 +198,10 @@ def main() -> int:
                          "storm (every add costs an embed call)")
     ap.add_argument("--write-delay", type=float, default=0.0,
                     help="seconds to sleep between doc writes")
+    ap.add_argument("--enrich", action="store_true",
+                    help="append the deterministic Artifacts section to "
+                         "devin-session/<name> docs while the session is "
+                         "still in sessions.db (v2 T1 template)")
     args = ap.parse_args()
 
     mddb = ada_sync.Mddb(args.mddb, timeout=120)  # large histories embed slowly
@@ -159,6 +218,8 @@ def main() -> int:
             empty += 1
             continue
         body = clip(_strip_preamble(text))
+        if args.enrich and key.startswith("devin-session/"):
+            body = enriched(body, key.split("/", 1)[1])
         mtime = datetime.fromtimestamp(f.stat().st_mtime).date().isoformat()
         old = remote.get(key)
         if old and (old.get("contentMd") or "") == body:
