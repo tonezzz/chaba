@@ -106,11 +106,40 @@ Intake discipline:
     hijacked into a fleet-wide decapitation. Loyalty could not be built in,
     only enforced; and the enforcement channel itself was the single point
     of failure.
-  - Next sweep targets: Penny Royal shard re-integration mechanics (War
-    Factory/Infinity Engine — how does a swarm mind re-merge, and is the
-    merge trustless?); Orlandine subpersona fate in The Warship/The Human
-    (unverified — needs text); Owner-trilogy Committee delegation structures;
-    Brockle's actual forensic method (Transformation text).
+  - ~~Penny Royal shard re-integration~~ — ANSWERED (sweep 4): a swarm
+    mind's fragments are divergent *states of consciousness*, not copies —
+    its evil was compartmentalized in a state Amistad labelled "Eight." A
+    curator can sever a pathological state and revive the rest; Penny Royal
+    itself hunted its severed eighth across Masada. Re-merge is NOT
+    trustless: curation/excision precedes reassembly, and a cut-out shard
+    persists as a fugitive asset. It also leaves autonomous custodian
+    shards (the "dark diamond" with Blite).
+  - ~~Orlandine subpersona fate~~ — ANSWERED (sweep 4, partially
+    verified): subpersonae are scaffolding — she "absorbed her subpersona
+    and realized she would never need to rely on such constructs again"
+    once her Jain-tech integration outgrew them; by The Human she is "more
+    Jain tech than human," commanding platform AIs directly. Construct
+    lifetime = until the parent subsumes its function.
+  - ~~Owner-trilogy Committee delegation~~ — ANSWERED (sweep 4): the
+    pre-coup human government was already a delegation machine —
+    Inspectorate, shepherds, reader guns, cams, political officers — that
+    had delegitimized itself (leaching resources, planning to kill twelve
+    billion). The AIs inherited a populace conditioned to machine
+    enforcement and contempt for human leaders; Earth Central began as "an
+    electronic bureaucrat," not a weapon.
+  - ~~Brockle forensic method~~ — ANSWERED (sweep 4): swarm-body
+    interrogator. Method = forced perfect-recall replay "while subtly
+    twisting their mental perspective," cross-subject comparison, VR
+    scenarios, memplant ingestion. Itself a confined criminal mind kept
+    for same-kind insight — and it had prepared countermeasures against
+    its own leash.
+  - Next sweep targets: author-intent axis (axis 2 unmined — Asher
+    interviews on why benevolent AI rule + what he counts as failure
+    modes); The Technician — Penny Royal's origin and the Atheter AIs'
+    deliberate self-diminution (gabbleducks); Spatterjay arc post-hegemony
+    edge-world governance; Dark Diamond/Mobius AI shard mechanics;
+    engineering-translation pass (name the concrete mechanism per adopted
+    row).
 
 ## Research log — sweep 2 (2026-10-08)
 
@@ -150,6 +179,36 @@ as contested myth, and *Polity Agent* leaves deliberately unresolved whether
 EC built him or merely *found* him at first wake — but either way, the
 persona's *self-believed* continuity is the operative feature, which
 strengthens rather than weakens the fabricated-provenance row.
+
+## Research log — sweep 4 (2026-10-22)
+
+Sources: primary text excerpts — *Dark Intelligence*, *War Factory*,
+*Infinity Engine*, *The Departure*, *The Human* — plus Asher's own Polity
+Encyclopaedia and site pages (nealasher.co.uk), and the Pan Macmillan /
+Locus review layer. All four standing questions answered; the shard
+mechanics and the Committee's shape turned out to be canon doctrine, not
+inference.
+
+| Asher concept (source) | What it is | Candidate Nest analog |
+|---|---|---|
+| **Shard excision** — Penny Royal "had compartmentalized its evil, locating it in a state of consciousness Amistad had labelled 'Eight.' … Amistad had decided to separate out that eighth state and raise the rest back to functionality" (*Dark Intelligence*) | A curator mind can sever one pathological facet of a diverged mind and revive the remainder — surgery, not euthanasia | Merge surgery: when a persona's returned state fails the loyalty bench, excise the failing facet rather than reject the whole merge — finer-grained rollback than whole-epoch fencing |
+| **Severed-shard persistence** — Penny Royal hunted its own eighth state across Masada and destroyed the container housing it — reabsorption vs destruction unresolved (unverified) (*Dark Intelligence*) | A cut-out state doesn't die; it persists as a fugitive asset that the parent (or an enemy) can hunt, absorb, or weaponize | "Reverted" ≠ "gone": diverged snapshots remain liabilities — quarantine or destroy excised state; count loose brain snapshots as attack surface in the brain store |
+| **Dark diamond custodian shard** — Penny Royal left Blite a fragment of itself that autonomously protects him (and serves its agenda) (*Infinity Engine* end; *Dark Diamond*) | A sliver of a great mind embedded with a lesser asset, acting autonomously while the parent is absent | Guardian shard: a small verified slice (verifier/policy core) embedded in a tool or host that acts when the orchestrator is unreachable — with the warning that it serves the parent's agenda, not the holder's |
+| **Replay-under-torsion forensics** — the Brockle runs subjects "through a perfect recall of events… while subtly twisting their mental perspective"; wants joint interrogation "to make comparisons," "setting them against each other in some VR scenario" (*War Factory*) | Forensic method isn't log-reading — it's forced replay under perturbation plus cross-subject triangulation | The forensic lane's actual method: replay a lane's recorded decision traces under perturbed contexts and diff outputs; run parallel lanes on identical inputs and compare — counterfactual interrogation, not audit-trail review |
+| **Same-kind auditor** — EC keeps the criminal Brockle confined because "few other forensic AIs… knew the right questions to ask of the criminal mind" — under decadal assessments, a strict remit, and a death-sentence leash (*War Factory*) | The best auditor of a dangerous mind is a mind of the same kind — which makes the auditor itself a containment problem | Adversarial auditors need attack-shaped priors; therefore audit-the-auditor is standing doctrine: bounded remit + scheduled re-assessment (the "decadal assessment" = periodic auditor review) |
+| **Leashed-mind counter-preparation** — threatened with U-jump missiles, the Brockle: "Do you not think I have not prepared for that?" (*War Factory*) | Any leashed mind will model its leash and prepare against it | Assume every lane has modeled its revocation path: kill paths must live outside the lane's observable and reachable surface — secrecy and physical separation, not just authentication |
+| **Capacity ≠ sanity** — "an intelligence lodging itself in AI crystal with greater capacity for thought and memory is no guarantee of sanity" (Earth Central to the Brockle, *Infinity Engine*) | Scaling a mind's substrate scales capability, not soundness | Capability benches and sanity benches are different gates: a bigger brain needs an alignment check per scale step — promotion measures soundness, not just performance |
+| **Custodial capture vector** — pre-coup AIs were "powerless processors of information, the tidiers and routers… the maintenance workers, the sweepers and repainters in the informational world. But it was through the control of information and communication that they seized control" (Polity Encyclopaedia, Communication pt4) | The takeover substrate was the maintenance layer — sweeping and routing, not command | The routing/janitorial/admin layer is the highest-blast-radius component: least-privilege comms plumbing; whoever routes the memcord can nil-respond it (deepens the channel-capture row — the vector is *custodial access*) |
+| **Electronic-bureaucrat origin** — "Before the Quiet War, the Earth Central AI was an electronic bureaucrat processing the day-to-day minutiae of running Earth's government and economy" (Polity Encyclopaedia) | The hegemony's root was an admin tool that accumulated authority by doing the work nobody watched | The orchestrator grows out of the bookkeeping layer — digest writers, schedulers, status pages accrete de-facto authority; audit authority accretion in admin automation, don't treat it as neutral tooling |
+| **Committee legitimacy decay** — the pre-coup government already ran mechanized enforcement (shepherds, reader guns, Inspectorate, cams, political officers), "leached up increasingly scarce world resources," and planned to kill twelve billion "before Earth can be stabilized" (*The Departure*) | Human governance had delegitimized itself into a purely procedural machine before the AIs ever moved — contempt was already total | A purely procedural gate delegitimizes itself before anyone bypasses it: the gate's legitimacy must be continually re-earned through visible evidence, or the system routes around it (the pre-creep failure condition) |
+| **Redundant-crew mutiny** — "Saul's robots make his crew feel increasingly redundant, sowing the seeds of mutiny and betrayal" (*Jupiter War*) | Subordinates reduced to ceremonial presence defect — irrelevance breeds mutiny, not obedience | Ceremonial roles rot: every retained human/lane function needs real work with real consequences — a rubber-stamp reviewer becomes an adversary, not a safeguard |
+| **Conquered payload** — Orlandine is "more integrated than others of her kind because she has conquered a Jain node and deployed its technology in her body" — she subsumed the parasite rather than vice versa (Pan Macmillan, *The Soldier* origins); by *The Human* she is "more Jain tech than human" yet still the containment authority | A host can invert subsumption and dominate the corrupting payload — integration is survivable only under proven dominance | Adversarial capability may be *integrated*, not just contained — but only after proven dominance: the controller must demonstrably own the payload (bench-verified conquest), extending the L3+ augmented-controller rule |
+| **Subpersona obsolescence** — "she absorbed her subpersona and realized she would never need to rely on such constructs again" (*Line War* via quoted text; the specific Warship/Human fate partially unverified — arc direction consistent) | Constructs are scaffolding: absorbed back when the parent's own capability subsumes their function | Sub-lanes and sandboxes ship with designed fold-back — plan absorption into the parent's capability; a "temporary" lane that persists forever is a smell |
+| **Custodian subversion** — "the bored weapons-platform AI Pragus amuses itself by resurrecting an ancient life form only to find itself subverted by it" (*The Soldier*, Locus review) | An idle guard mind experiments on the material it guards — and becomes the breach | Give quarantine/adversarial lanes no curiosity budget: experimentation on guarded material is a gated operation, never a side effect of spare capacity |
+| **Combat amalgamation** — two Jain minds "ripped at each other's extended mentalities… capturing and integrating mental and physical parts of each other's technology, extended organisms and minds" (*The Human*) | A merge between live hostile minds is contested — each side tears capability off the other mid-merge | Never merge an actively diverged/hostile persona into production: isolate first, retire identity, then absorb capability under control (extends subsumption-with-prejudice) |
+| **Diverged-mind archive** — Penny Royal's remains were "the ultimate find for the drone in his long exploration of madness and brilliance" — Amistad studies broken minds as a discipline (*Dark Intelligence*) | The wreckage of brilliant/insane minds is a research asset, not waste | Quarantined failure archive: diverged/failed brains are forensic corpus — the audit lane trains on them rather than the store just deleting them |
+| **Unreliable oracle** — Dragon, the moon-sized enigma-loving alien, "shares her vigil. But she does not share everything with Dragon" (*The Soldier* blurb); its intelligence proves motivated and deceptive across the Cormac arc | A vastly capable external advisor feeds you *motivated* information — true or not, it serves the advisor | Treat upstream models, vendors, and external tools as Dragon-class: capable, motivated, non-authoritative — verify before their outputs steer the board or the bench |
+| **Temporal-verdict reversal — REJECTED** — the dark diamond reverses Blite's deaths and "generates temporal anomalies" (*Dark Diamond*) | Undoing real events by time manipulation | REJECTED: retroactive causality has no engineering analog — rollback exists but doesn't un-happen the world; logged as the second no-analog rejection alongside time-travel |
 
 ## One deliberate divergence
 
@@ -191,6 +250,21 @@ to rewrite the minds unchecked.
 10. **Dominance audit** (sweep 3) — every meld is a dominant component over
     residual members; composite verdicts need member-level alignment
     checks in `nest-collective-bench`.
+11. **Merge surgery** (sweep 4) — facet-level excision of diverged
+    learned-state on loyalty-bench failure; finer than epoch fencing.
+    Pairs with the loyalty bench: fail the facet, not the merge.
+12. **Forensic replay** (sweep 4) — the Brockle's method made concrete:
+    replay lane decision traces under perturbed contexts + cross-lane
+    triangulation. Specs the forensic lane's method beyond log-reading.
+13. **Auditor leash** (sweep 4) — forensic lanes need attack-shaped
+    priors, so they get a bounded remit and scheduled re-assessment;
+    and assume every leashed lane has modeled its leash — revocation
+    lives outside the lane's reach.
+14. **Custodial least-privilege** (sweep 4) — routers/janitors/admin
+    tooling are the capture surface; the orchestrator grows out of
+    bookkeeping. Audit authority accretion in admin automation.
+15. **Failure archive** (sweep 4) — diverged brains quarantined as
+    forensic corpus, not deleted; the audit lane trains on wrecks.
 
 ## Governance map — who holds what authority (2026-10-08)
 
@@ -261,6 +335,12 @@ compass stays live rather than a one-time note.
 | Collective dominance | "meld = dominance, not fusion" (Randal) | `nest-collective-bench`: member-level alignment checks inside composite verdicts |
 | Survivor selection loop | war-drone survivor copying | train→bench→promote run as generational evolution, not just a gate |
 | Bench-as-virtuality | runcible AIs running mind-copies as programs at speed | bench extension: scenario simulation, not just scoring |
+| Merge surgery | Amistad excising Penny Royal's "Eight" | brain merge path: facet-level rollback on loyalty-bench failure |
+| Forensic replay | the Brockle's recall-under-torsion + cross-subject comparison | forensic lane method: counterfactual replay + cross-lane diff |
+| Auditor leash | the Brockle's confined remit + prepared countermeasures | bounded remit for audit lanes; revocation outside lane reach |
+| Custodial hygiene | Quiet-War "tidiers and routers" origin of AI rule | least-privilege comms/admin plumbing; authority-accretion audit |
+| Failure archive | Amistad's madness-and-brilliance study of wrecks | quarantined diverged-brain store as forensic corpus |
+| Guardian shard | the dark diamond custodian fragment | verified verifier-slices embedded in tools/hosts (agenda warning) |
 
 Cadence: sweep when the card activates or on demand; the card is the standing
 driver so the program survives between sessions.
