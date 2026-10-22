@@ -3,21 +3,19 @@ title: Benchmark education-managing agents — OpenClaw vs hermes3:8b vs current
 column: done
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 11:18
-note: "Tony wants to explore an agent for education managing (the lesson ledger: capture -> dedupe/upsert\
-  \ -> draft -> review scheduling -> recall). Benchmark three lanes on the SAME fixture corpus:\n - current:\
-  \ today's pipeline (lesson-miner.py classify+draft on gemini-3.5-flash-lite + lesson-add.py + lessons-due.py).\n\
-  \ - clawbot: OpenClaw agent surface on its default/GhostRoute OR provider, given education tools (mock\
-  \ lesson store CRUD + transcript corpus).\n - hermes: same OpenClaw surface pointed at omen ollama /v1\
-  \ hermes3:8b (free-local; already adopted T1 tool-call slot, card try-hermes).\n Task suite (fixed corpus,\
-  \ golden labels): 1) capture-judgment transcript->file/skip (F1); 2) dedupe/upsert discipline create-vs-update-\
-  \ vs-hub; 3) draft quality rubric via one fixed LLM judge for all lanes; 4) next_review scheduling +\
-  \ status-transition correctness; 5) recall pointer accuracy; 6) tool-loop completion rate, p50 latency,\
-  \ cost/task.\n Harness: scripts/bench-edu-manage.py modeled on bench-hermes.py; a LOCAL mock WP-lesson\
-  \ store (never prod WP); reports/bench-edu-manage-<date>. {json,md} + docs/ssot/jobs/models/ entry.\n\
-  \ AQ: clawbot or hermes lane must beat current on draft-quality + dedupe at acceptable latency/cost,\
-  \ else current stays the education manager.\n Related: hermes-openclaw-slot (OPS-0400) covers provider\
-  \ plumbing."
+updated: 2026-10-22 17:18
+note: "Tony wants to explore an agent for education managing (the lesson ledger: capture -> dedupe/upsert -> draft\
+  \ -> review scheduling -> recall). Benchmark three lanes on the SAME fixture corpus:\n - current: today's pipeline\
+  \ (lesson-miner.py classify+draft on gemini-3.5-flash-lite + lesson-add.py + lessons-due.py).\n - clawbot: OpenClaw\
+  \ agent surface on its default/GhostRoute OR provider, given education tools (mock lesson store CRUD + transcript\
+  \ corpus).\n - hermes: same OpenClaw surface pointed at omen ollama /v1 hermes3:8b (free-local; already adopted\
+  \ T1 tool-call slot, card try-hermes).\n Task suite (fixed corpus, golden labels): 1) capture-judgment transcript->file/skip\
+  \ (F1); 2) dedupe/upsert discipline create-vs-update- vs-hub; 3) draft quality rubric via one fixed LLM judge\
+  \ for all lanes; 4) next_review scheduling + status-transition correctness; 5) recall pointer accuracy; 6) tool-loop\
+  \ completion rate, p50 latency, cost/task.\n Harness: scripts/bench-edu-manage.py modeled on bench-hermes.py;\
+  \ a LOCAL mock WP-lesson store (never prod WP); reports/bench-edu-manage-<date>. {json,md} + docs/ssot/jobs/models/\
+  \ entry.\n AQ: clawbot or hermes lane must beat current on draft-quality + dedupe at acceptable latency/cost,\
+  \ else current stays the education manager.\n Related: hermes-openclaw-slot (OPS-0400) covers provider plumbing."
 links:
 - docs/ssot/kanban/cards/try-hermes.yml
 - docs/ssot/kanban/cards/hermes-openclaw-slot.yml
@@ -38,24 +36,29 @@ comms:
     Spec drafted from session context; refine before dispatch.
 - at: 2026-10-22 09:08
   from: devin
-  text: dispatched 25691022-090753-card-edu-agent-benchmark-build on chaba — build+run bench-edu-manage
-    across current/clawbot/hermes lanes, mock WP store, flash-lite judge, reports+ssot+verdict back on
-    this card.
+  text: dispatched 25691022-090753-card-edu-agent-benchmark-build on chaba — build+run bench-edu-manage across current/clawbot/hermes
+    lanes, mock WP store, flash-lite judge, reports+ssot+verdict back on this card.
 - at: 2026-10-22 09:30
   from: devin
-  text: first dispatch died at session/set_config_option (empty model list — expired devin-cli session
-    token in ~/.local/share/devin/credentials.toml). Re-authed via manual token flow, installed standalone
-    cli 3000.11.92 at ~/.local/bin/devin, re-dispatched as 25691022-092932-build-and-run-the-education-ag.
+  text: first dispatch died at session/set_config_option (empty model list — expired devin-cli session token in
+    ~/.local/share/devin/credentials.toml). Re-authed via manual token flow, installed standalone cli 3000.11.92
+    at ~/.local/bin/devin, re-dispatched as 25691022-092932-build-and-run-the-education-ag.
 - at: 2026-10-22 11:18
   from: devin
-  text: "VERDICT (dispatch 25691022-092932): current stays the education manager — AQ not met.\n\nScorecard\
-    \ (13 tasks x 3 lanes, fixed corpus, mock WP store — never prod):\n  lane      capture-F1  dedupe\
-    \  sched/ops  recall  draft-Q  p50     tokens-in\n  current   1.0         3/5     5/5        3/3 \
-    \    5.0      ~0-3s   0.9k\n  clawbot   1.0         4/5     5/5        3/3     4.72     12.5s   74k\n\
-    \  hermes    0.545       2/5     3/5        1/3     3.9      19.4s   31k\n\nclawbot (OpenClaw-shaped\
-    \ loop on openrouter"
+  text: "VERDICT (dispatch 25691022-092932): current stays the education manager — AQ not met.\n\nScorecard (13\
+    \ tasks x 3 lanes, fixed corpus, mock WP store — never prod):\n  lane      capture-F1  dedupe  sched/ops  recall\
+    \  draft-Q  p50     tokens-in\n  current   1.0         3/5     5/5        3/3     5.0      ~0-3s   0.9k\n  clawbot\
+    \   1.0         4/5     5/5        3/3     4.72     12.5s   74k\n  hermes    0.545       2/5     3/5       \
+    \ 1/3     3.9      19.4s   31k\n\nclawbot (OpenClaw-shaped loop on openrouter"
 - at: 2026-10-22 12:06
   from: devin
   text: 'dispatch branch merged to master — scripts/bench-edu-manage.py + corpus + reports/bench-edu-manage-2026-10-22.{json,md}
-    + job yml landed. Card -> done: AQ answered (current stays). clawbot closest challenger at 4.72 draft-Q
-    vs 5.0, 14x slower, 80x tokens.'
+    + job yml landed. Card -> done: AQ answered (current stays). clawbot closest challenger at 4.72 draft-Q vs 5.0,
+    14x slower, 80x tokens.'
+- at: 2026-10-22 17:18
+  from: devin
+  text: 'Lane-lift loop (Tony''s idea, 2026-10-22): iterate the SAME agent loop across model lanes — improve the
+    local lane until it beats clawbot, port the improvement back, repeat. The fixture stays the shared ruler. Harness
+    generalized for it: bench-edu-manage.py now takes --ollama-model <m> so ANY local model runs the identical tool
+    loop (lane renamed local-<model> in reports; method notes read model from config). Committed + pushed. Experiment
+    1 in flight: gpt-oss:20b pulled on omen (13GB, ~9.3 tok/s'
