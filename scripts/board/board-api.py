@@ -808,10 +808,19 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
             r["status"] = "answered"
             r["answer"] = answer[:500]
             comms_add(card, frm, f"{verb} {rid}: {answer[:200]}")
+            # owned-prefix requests execute their decision in this same
+            # write — an answered lab-review used to sit awaiting_action
+            # until the weekly lab-review-sweep picked it up (up to 7d).
+            executed_owned = False
+            if rid.startswith("lab-review") and not r.get("executed"):
+                if _lab_decision(card, r):
+                    r["executed"] = datetime.now().date().isoformat()
+                    executed_owned = True
             # answer recorded but nothing is armed to act on it —
             # flag for triage so the decision doesn't sit silent
             a = card.get("action") or {}
-            if (card.get("column") != "done"
+            if (not executed_owned
+                    and card.get("column") != "done"
                     and a.get("status") not in ("queued", "running")):
                 card["awaiting_action"] = True
                 comms_add(card, "chaba",
@@ -819,6 +828,35 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                           "triage (queue it, or spec+arm an action)")
             return "answer saved"
     raise ValueError(f"no request {rid}")
+
+
+_LAB_SWEEP_MOD = None
+
+
+def _lab_decision(card: dict, req: dict) -> bool:
+    """Apply an answered lab-review immediately — the same
+    execute_decision() the weekly lab-review-sweep runs, imported once
+    from the sibling script so both paths share the transition table
+    (promote->backlog, retire->done, extend->review_by+14d). Any failure
+    degrades to the old behavior: answer stays, awaiting_action flags."""
+    global _LAB_SWEEP_MOD
+    if _LAB_SWEEP_MOD is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "lab_review_sweep",
+            Path(__file__).resolve().parent / "lab-review-sweep.py")
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+            _LAB_SWEEP_MOD = mod
+        except Exception:
+            _LAB_SWEEP_MOD = False
+    if not _LAB_SWEEP_MOD:
+        return False
+    try:
+        return bool(_LAB_SWEEP_MOD.execute_decision(card, req))
+    except Exception:
+        return False
 
 
 def _deliver_to_session(card: dict, record: dict) -> str:
