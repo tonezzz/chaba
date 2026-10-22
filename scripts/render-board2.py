@@ -79,6 +79,8 @@ PAGE = r"""<!doctype html>
                                flex:1; justify-content:flex-start; align-items:center;
                                padding:10px 6px; gap:8px; }
     .col.collapsed .col-count { margin:0; }
+    .col-tog { font-size:10px; color:#64748b; line-height:1; }
+    .col.collapsed .col-tog { transform:rotate(90deg); }
 
     /* ---- tight card rows; density via #board class ---- */
     .card { cursor:pointer; border:1px solid #2a3a63; border-radius:7px; background:#1b2745;
@@ -295,7 +297,8 @@ function colHtml(col) {
   const cl = collapsedCols.has(col.id) ? ' collapsed' : '';
   return `<div class="col${cl}${hot ? ' doing-hot' : ''}${col.id === 'lab' ? ' col-virtual' : ''}" data-col="${col.id}">` +
     `<div class="col-head" title="click to ${cl ? 'expand' : 'collapse'}"><span>${col.title}</span>` +
-    `<span class="col-count">${q ? nVis + '/' + all.length : all.length}</span></div>` +
+    `<span class="col-count">${q ? nVis + '/' + all.length : all.length}</span>` +
+    `<span class="col-tog">${cl ? '▸' : '▾'}</span></div>` +
     `<div class="col-list">${inner}</div></div>`;
 }
 
@@ -336,15 +339,19 @@ function renderBoard() {
   wireReq();
 }
 
+// column-head collapse — delegated once on #board so it survives poll
+// re-renders: per-element onclick can die when innerHTML swaps between
+// wiring and click (Tony 2026-10-22: clicks collapsed nothing).
+document.getElementById('board').addEventListener('click', (e) => {
+  const h = e.target.closest('.col-head');
+  if (!h) return;
+  const id = h.closest('.col').dataset.col;
+  collapsedCols.has(id) ? collapsedCols.delete(id) : collapsedCols.add(id);
+  saveCollapsed();
+  renderBoard();
+});
+
 function wireBoard() {
-  document.querySelectorAll('.col-head').forEach(h => {
-    h.onclick = () => {
-      const id = h.parentElement.dataset.col;
-      collapsedCols.has(id) ? collapsedCols.delete(id) : collapsedCols.add(id);
-      saveCollapsed();
-      renderBoard();
-    };
-  });
   document.querySelectorAll('.card').forEach(r => {
     r.onclick = () => openModal(r.dataset.id);
     r.ondragstart = e => {
