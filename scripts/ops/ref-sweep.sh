@@ -19,7 +19,7 @@ PAT="${1:?usage: ref-sweep.sh PATTERN [host...]}"
 shift || true
 HOSTS=("$@")
 if [ "${#HOSTS[@]}" -eq 0 ]; then
-    HOSTS=(tony-dell tony-omen mn01 idc02 idc03 tony-macbook)
+    HOSTS=(tony-dell tony-omen mn01 idc02 idc03 con01 tony-macbook)
 fi
 REPO="${CHABA_REPO:-$HOME/CascadeProjects/chaba}"
 

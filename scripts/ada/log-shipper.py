@@ -62,7 +62,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-DEFAULT_HOSTS = ["idc01", "idc02", "idc03", "mn01", "tony-dell",
+DEFAULT_HOSTS = ["idc01", "idc02", "idc03", "con01", "mn01", "tony-dell",
                  "tony-omen", "michael-ha"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
 # Hosts with no local runtime for the shipper — michael-ha ssh lands in

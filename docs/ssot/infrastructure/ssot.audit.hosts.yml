@@ -2153,6 +2153,66 @@ hosts:
       - name: chaba-audit-full.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
+  con01:
+    tailscale_ip: 100.72.146.39
+    description: "Public VPS — Contabo Cloud VPS 8, EU region (8 vCPU/23G/290G,
+      ~189ms BKK). Onboarded 2026-10-22 to the fleet hardening baseline
+      (docs/kb/host-hardening-baseline.md) as the DR/absorber host replacing
+      retired idc01's tier — card idc04-contabo-vps8-provision (OPS-0763).
+      Roles pending placement: mddb-follower #2, ada-stt off idc02, standby
+      caddy-edge, secrets-backup target, offload timers, runner lane."
+    role: public-vps
+    tags:
+      - public
+      - vps
+      - onboarding
+    expected_services:
+      - name: ssh.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        note: tailnet-only via ufw — public :22 closed 2026-10-22
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        note: Joined tailnet 2026-10-22 as con01/100.72.146.39 (VNC-console auth)
+      - name: ufw.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        note: deny-in + tailscale0 + 80/443 — same posture as idc02/idc03
+      - name: fail2ban.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: false
+      - name: podman-auto-update.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: enabled for tony 2026-10-22 (rootless podman 4.9.3 + subuid/gid)
+    expected_absent:
+      - name: qemu-guest-agent.service
+        note: "purged 2026-10-22 — Contabo hypervisor exposes no virtio
+          guest-agent channel; open-vm-tools installed instead (platform
+          agent, condition-gated to vmware, stays inactive if kvm-detected)"
+      - name: mddb-leader.service
+        note: "con01 is a follower/standby tier only — never a live writer"
+    known_failed:
+      - name: cloud-init.service
+        reason: "First-boot network-stage race during Contabo provisioning
+          (2026-10-21) — work completed, unit not re-run; reset-failed applied"
+        action: none
+      - name: systemd-networkd-wait-online.service
+        reason: "Boot timeout — eth0 is cloud-init/netplan managed, not
+          networkd; stock cosmetic failure, reset-failed applied"
+        action: none
+    oom_kills_tolerance: 0
   kk-mac:
     tailscale_ip: 100.108.217.17
     description: KK's Mac Studio (Mac16,9 M4 Max 14-core, 36 GB unified, macOS

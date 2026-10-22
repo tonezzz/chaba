@@ -99,7 +99,7 @@ def _expected_hosts() -> list[str]:
         spec.loader.exec_module(mod)
         return list(mod.DEFAULT_HOSTS)
     except Exception:
-        return ["idc01", "idc02", "idc03", "mn01", "tony-dell",
+        return ["idc01", "idc02", "idc03", "con01", "mn01", "tony-dell",
                 "tony-omen", "michael-ha"]
 
 

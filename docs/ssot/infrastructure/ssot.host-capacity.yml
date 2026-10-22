@@ -82,6 +82,22 @@ hosts:
   idc01:
     role: retired    # per ada-voice rules: mddb masked, never unmask
     note: do not place anything — retired, not warm DR.
+  con01:
+    role: dr-absorber   # new 2026-10-22 — replaces retired idc01's DR tier (OPS-0763)
+    cpu_cores: 8
+    mem_gb: 23        # 23GiB, ~22G avail — fresh box
+    disk_gb: {total: 290, free: 288}
+    gpu: none
+    note: >-
+      Contabo Cloud VPS 8, EU (France) region — ~189ms from BKK, fine for
+      everything except TH-facing standby edge (survivable, not fast; CF-front
+      only in true failover, never proxy TH traffic via EU while idc03 lives).
+      Provisioned 2026-10-22 to host-hardening-baseline (public-vps class).
+      Roles pending per idc04-contabo-vps8-provision: mddb-follower #2 (replaces
+      idc01 DR), ada-stt migrate off disk-pressured idc02, standby caddy-edge,
+      secrets-backup 3rd target, offload timers (vector-reindex, doc-mirror,
+      jev-bench), runner lane + lab sandbox. 3rd provider/geo failure domain
+      (Contabo AS51167 vs Siamdata AS56309).
 
 placement_policy:
   - "LAN-bound services (ha integrations, cameras, radios): tony-dell until OPS-0725 ph5, then tony-omen (same LAN segment)."
@@ -90,7 +106,7 @@ placement_policy:
   - "Ada backends + memory banks: idc03 (co-located with MDDB). idc03 is near-saturated — do not grow it without a capacity check."
   - "Public ingress: idc02 primary, idc03 secondary."
   - "GPU/burst: tony-omen, else Colab free tier."
-  - "Backups/DR artifacts: mn01 + idc02/idc03 cold copy."
+  - "Backups/DR artifacts: mn01 + con01/idc02 cold copy (con01 = 3rd provider/geo domain, prefer when idc02 disk-constrained)."
   - "Single-writer assets (board checkout, card files): exactly one live writer host — currently idc03; standbys stay stopped."
 
 procedure:
@@ -119,4 +135,4 @@ procedure:
 
 related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
 status: active
-updated: 2026-10-16
+updated: 2026-10-22

@@ -1,0 +1,53 @@
+title: "Security Posture — con01"
+subtitle: "Declared security state for con01; diffed live by scripts/audit-security.py"
+icon: shield
+version: 1
+last_updated: "2026-10-22"
+maintainer: tony
+
+host: "con01"
+standard: docs/ssot/infrastructure/ssot.security.yml
+
+expected_exposure:           # every listener that SHOULD exist
+  - { listener: "0.0.0.0:22", class: "tailnet-only", service: sshd, note: "binds *; ufw admits only tailscale0 — public :22 verified closed from idc03 vantage 2026-10-22" }
+  - { listener: "[::]:22", class: "tailnet-only", service: sshd, note: "same ufw gate, v6" }
+  - { listener: "100.72.146.39:*", class: "tailnet-only", service: tailscaled, note: "tailnet interface" }
+  - { listener: "127.0.0.53:53", class: "loopback", service: systemd-resolve, note: "stock stub resolver" }
+  - { listener: "127.0.0.54:53", class: "loopback", service: systemd-resolve, note: "stock stub resolver" }
+
+remote_access:
+  sshd:
+    port: 22
+    bind: "0.0.0.0 + [::] — reachability tailnet-only via ufw"
+    password_auth: "no"        # sshd -T verified 2026-10-22
+    root_login: "prohibit-password"  # effective: without-password
+    dropins: ["00-no-password.conf", "20-root.conf"]  # fleet convention; overrides 50-cloud-init.conf (PasswordAuthentication yes)
+  recovery:
+    contabo_vnc: "my.contabo.com panel VNC (ip:port + VNC pw) — used for tailnet join 2026-10-22; root pw in ~/.config/secrets/con01-host-contabo.txt (macbook origin)"
+
+firewall:
+  tool: "ufw"
+  inbound_default: "deny"
+  rules:
+    - "allow in on tailscale0 (v4+v6) # tailnet"
+    - "allow 80/tcp (v4+v6)"
+    - "allow 443/tcp (v4+v6)"
+    - "default deny incoming / allow outgoing"
+  note: "no public :22 rule — ssh arrives via tailnet only"
+
+tailscale:
+  ip: "100.72.146.39"
+  serve: []
+  funnel: []
+  role: []
+  note: "joined 2026-10-22 via VNC-console tailscale up (browser auth by Tony); hostname con01"
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+
+deviations:
+  - { item: "no working guest-agent", reason: "hypervisor is VMware-flavored (MAC 00:50:56) but systemd-detect-virt reports kvm: virtio channel absent (qemu-guest-agent purged), open-vm-tools installed+enabled but condition-gated inactive until it detects vmware. No hypervisor agent active — monitoring via tailnet/host-loads only.", last_verified: "2026-10-22" }
+
+last_observed: {}            # written by audit-security.py --save-to-ssot
+deltas: []

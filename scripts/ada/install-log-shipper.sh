@@ -35,7 +35,7 @@ RUN=1
 HOSTS=()
 while [ $# -gt 0 ]; do
     case "$1" in
-        --all) HOSTS=(tony-dell tony-omen idc01 idc02 idc03 mn01) ;;
+        --all) HOSTS=(tony-dell tony-omen idc01 idc02 idc03 con01 mn01) ;;
         --via) VIA="$2"; shift ;;
         --no-run) RUN=0 ;;
         -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
