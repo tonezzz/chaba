@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
 column: backlog
-updated: 2026-10-22 10:32
+updated: 2026-10-22 12:55
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -51,3 +51,10 @@ comms:
     root credentials email — next step on delivery: hostname->con01, tailnet join, ssh mesh, then hardening baseline
     (docs/kb/host-hardening-baseline.md, class public-vps) + SSOT registration. Side note: CF-front its edge only
     in true failover; never proxy TH traffic via EU while idc03 al'
+- at: 2026-10-22 12:55
+  from: devin
+  text: '2026-10-22 devin: con01 provisioned via Contabo root creds (secrets/con01-host-contabo.txt). DONE: hostname
+    con01, Ubuntu 24.04 8vCPU/23G/290G, tony+NOPASSWD sudo+mesh keys, linger, ufw(deny-in/tailscale0/80/443) ACTIVE,
+    sshd hardened (00-no-password+20-root, cloud-init dropin overridden), f2b active, 90-tuning bbr+fq, podman+subuid.
+    BLOCKED: tailscale not joined — ran ufw before tailscale up, public :22 now closed so box is console-only. NEED
+    TONY: my.contabo.com -> VPS con01 -> VNC -> login ro'
