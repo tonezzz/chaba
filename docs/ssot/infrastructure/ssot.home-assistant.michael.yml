@@ -30,19 +30,29 @@ tailscale:
 
 quarantine:
   status: ACTIVE since 2026-10-16 (Tony order — "don't touch anything in
-    Michael's house; kill the connection")
+    Michael's house; kill the connection"); extended to IPv6 2026-10-22
   mechanism: >-
     mn-ha-quarantine.service on idc03 inserts `iptables -I OUTPUT 1 -d
-    100.80.105.88 -p tcp --dport 8123 -j DROP` (position 1 — ufw
-    ufw-track-output ACCEPTs all egress before appended rules). Survives
-    reboot via systemd enable.
+    100.80.105.88 -p tcp --dport 8123 -j DROP` plus (since 2026-10-22)
+    `ip6tables -I OUTPUT 1 -d fd7a:115c:a1e0::692d:6959 -p tcp --dport 8123
+    -j DROP` (position 1 — ufw ufw-track-output ACCEPTs all egress before
+    appended rules). Survives reboot via systemd enable.
   effect: >-
-    Nothing on idc03 can reach michael-ha:8123 — ada-ai-kraut HA tools +
-    the snapshot/events collectors fail closed. Persona chat/voice and the
-    TG corpus relay keep working. michael-dev (idc03 container :8124) is OUR
-    infra — not blocked.
-  restore: "sudo systemctl stop mn-ha-quarantine (removes rule; disable to
-    make permanent). ssh michael-ha stays open — admin path."
+    Nothing on idc03 can reach michael-ha:8123 on either address family —
+    ada-ai-kraut HA tools + the snapshot/events collectors fail closed.
+    Persona chat/voice and the TG corpus relay keep working. michael-dev
+    (idc03 container :8124) is OUR infra — not blocked.
+  v6_gap: >-
+    2026-10-22 (card mn-ha-v4-8123-blocked root cause): the v4-only rule was
+    bypassed by an ada-ai-kraut.env workaround pointing HOME_ASSISTANT_URL at
+    the v6 ULA literal — added 2026-10-20 under a mistaken "tailnet ACL"
+    diagnosis, silently defeating the quarantine for ~2 days. Reverted to
+    http://michael-ha:8123 and the unit extended to v6; verified both
+    families now time out while :22/:9584 stay open. NOT a tailnet ACL
+    issue — michael-ha host iptables and the tailnet packet filter are clean
+    (proven by tailscale0 tcpdump: the :8123 SYN never leaves idc03's tun).
+  restore: "sudo systemctl stop mn-ha-quarantine (removes both rules; disable
+    to make permanent). ssh michael-ha stays open — admin path."
   note: >-
     The ONLY live HA credential is HOME_ASSISTANT_TOKEN inside
     idc03:~/.config/secrets/ada-ai-kraut.env (kraut backend) — now behind

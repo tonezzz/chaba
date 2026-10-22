@@ -1,0 +1,71 @@
+id: 2026-10-22-mn-ha-quarantine-rootcause
+title: idc03->michael-ha:8123 drop root-caused — deliberate mn-ha quarantine, not tailnet ACL; v6 bypass closed
+date: 2026-10-22
+hosts: [idc03, michael-ha]
+card: mn-ha-v4-8123-blocked
+dispatch: dispatch-wt-20261022-193416-root-cause-still-open-evidence
+
+summary: >
+  The card hypothesized a tailnet ACL scoping idc03->michael-ha ports. Root
+  cause is simpler and older: mn-ha-quarantine.service on idc03 (Tony order
+  2026-10-16 — "don't touch anything in Michael's house; kill the
+  connection") inserts `iptables -I OUTPUT 1 -d 100.80.105.88 -p tcp --dport
+  8123 -j DROP`. 8,411,457 packets / 504 MB matched at time of finding.
+  The "silent TIMEOUT" symptom was the local OUTPUT drop — packets never
+  reach tailscale0.
+
+evidence:
+  - idc03 OUTPUT chain rule: `DROP tcp --dport 8123 -d 100.80.105.88` first
+    rule, above ufw chains; mirrored in `nft list ruleset` (packets 8411457).
+  - tcpdump on idc03 tailscale0: :9584 SYN leaves the tun, :8123 SYN never
+    appears — drop is local egress, before wireguard.
+  - tcpdump on michael-ha tailscale0 (via a0d7b954_ssh, port 2222): idc03
+    :9584 handshake arrives fine; idc02/tony-dell :8123 flows pass — so the
+    destination side is clean.
+  - michael-ha host iptables: INPUT -> ts-input ACCEPTs all tailscale0
+    traffic; no 8123 rules. Not an HAOS firewall issue.
+  - idc03 tailnet PacketFilter is default-allow; michael-ha's filter is
+    unverified but moot — the SYN never leaves idc03.
+  - Reachability matrix for idc03->michael-ha:8123 — FAIL; all other tested
+    ports (22,1883,2222,4357,9584 + refused ports) reach the host. Every
+    other tailnet source (tony-dell, mn01, idc02, macbook, tony-omen) reaches
+    :8123 — only idc03 is quarantined.
+  - v6 ULA fd7a:115c:a1e0::692d:6959:8123 answered until today — bypassing
+    the v4-only rule.
+
+v6_bypass:
+  what: >-
+    2026-10-20 an earlier session added HOME_ASSISTANT_URL=
+    http://[fd7a:115c:a1e0::692d:6959]:8123 to
+    idc03:~/.config/secrets/ada-ai-kraut.env under a "tailnet ACL?"
+    diagnosis. That defeated the quarantine for ~2 days — the mn lane had
+    full HA API access (incl. writes to Michael's plugs) against the
+    2026-10-16 kill order.
+  why_it_mattered: >-
+    The quarantine exists to keep idc03 automation out of Michael's house.
+    A v4-only rule plus a v6 workaround = quarantine in name only.
+
+actions_taken:
+  - "Extended /etc/systemd/system/mn-ha-quarantine.service: second ExecStart adds `ip6tables -I OUTPUT 1 -d fd7a:115c:a1e0::692d:6959 -p tcp --dport 8123 -j DROP`; matching ExecStop removal (prefixed '-' so stop never fails). daemon-reload + rule applied live."
+  - "Reverted ada-ai-kraut.env HOME_ASSISTANT_URL to http://michael-ha:8123 with a corrected comment pointing at the quarantine doc (backup: ada-ai-kraut.env.bak-20261022)."
+  - "systemctl --user restart ada-ai-kraut.service — mn lane HA tools now fail closed, as ordered."
+  - "Updated ssot.home-assistant.michael.yml quarantine section (v6 extension + incident note)."
+
+verify:
+  - "idc03: curl http://[fd7a:115c:a1e0::692d:6959]:8123/ -> 000/timeout (was answering before)"
+  - "idc03: bash </dev/tcp/100.80.105.88/8123 -> timeout (unchanged, by design)"
+  - "idc03: bash </dev/tcp/100.80.105.88/{22,9584} -> open (admin/MCP path preserved)"
+  - "sudo iptables -L OUTPUT -n | head -3; sudo ip6tables -L OUTPUT -n | head -3 — both show the DROP rules"
+
+decision_pending:
+  request_id: mn-ha-quarantine-is-now-enforced-on-v4-v-16aa75
+  ask: >-
+    Keep quarantine enforced on v4+v6, or lift it? Lift path (if Tony says
+    lift): `ssh idc03 'sudo systemctl disable --now mn-ha-quarantine'` —
+    removes both rules; ada-ai-kraut.env already points at the canonical v4
+    URL and needs no further change. Then close this card.
+  default: keep (standing order remains in effect until Tony revokes it)
+
+reverted_bypass_refs:
+  - "ada-ai-kraut env backup on idc03: ~/.config/secrets/ada-ai-kraut.env.bak-20261022"
+  - "quarantine unit on idc03: /etc/systemd/system/mn-ha-quarantine.service (enabled)"
