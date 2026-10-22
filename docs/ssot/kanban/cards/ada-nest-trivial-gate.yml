@@ -1,7 +1,7 @@
 id: ada-nest-trivial-gate
 title: 'Ada Nest: trivial-turn gate — local specialist answers cheap queries before a provider turn'
-column: doing
-updated: 2026-10-22 10:34
+column: done
+updated: 2026-10-22 10:46
 brief: 'Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist
   that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth
   pattern.'
@@ -38,10 +38,13 @@ spec: 'Context: tg_relay.py already runs a coarse-to-fine cascade — silence de
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   attempts: 2
   last_failure: 'start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
   runner: tony-omen
+  result: 'exit=0 l at `docs/ssot/jobs/ada/2026-10-22-trivial-gate.yml`, no commit/push/deploy performed. | devin-task-20261022-103056-context-tg-relay-py-already-ru.service:
+    Consumed 1min 56.636s CPU time over 9min 39.834s wall clock time, 1.7G memory peak.'
+  verified: true
 ref: ADA-0751
 comms:
 - at: 2026-10-20 15:07
@@ -90,3 +93,40 @@ comms:
     + optional L1 systemone intent classifier via ADA_TRIVIAL_LLM_URL (falls back to ADA_COMMAND_LLM_URL). Modes
     off|shadow|enforce; corpus JSONL + running deflection-rate log lines. Wire into voice+text paths; tests + ssot
     trail.'
+- at: 2026-10-22 10:40
+  from: devin
+  text: 'done in worktree: backend/trivial_gate.py (L0 anchored rules EN+TH + optional L1 systemone intent classifier
+    via ADA_TRIVIAL_LLM_URL→ADA_COMMAND_LLM_URL) wired into tg_relay voice+text paths; hot-session suppression keeps
+    answer-acks reaching Ada; corpus JSONL + per-decision deflection-rate log. 24 new tests pass, full suite 1614
+    green, tool-lint clean. Default ADA_TRIVIAL_GATE=enforce (rules-only until an L1 URL is configured). idc02 shelf
+    lane provisioning is host-ops — noted in ssot trail.'
+- at: 2026-10-22 10:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 l at `docs/ssot/jobs/ada/2026-10-22-trivial-gate.yml`, no commit/push/deploy performed.
+    | devin-task-20261022-103'
+- at: 2026-10-22 10:43
+  from: chaba
+  text: 'session-end checkpoint ae815d40: 6 leftover file(s) committed'
+- at: 2026-10-22 10:43
+  from: chaba
+  text: pushed dispatch/20261022-103056-context-tg-relay-py-already-ru to origin
+- at: 2026-10-22 10:43
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 127.4s)
+- at: 2026-10-22 10:43
+  from: chaba
+  text: auto-merged 65a74640 (dispatch/20261022-103056-context-tg-relay-py-already-ru) → origin/main
+- at: 2026-10-22 10:43
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-103056-context-tg-relay-py-already-ru,
+    branch dispatch/20261022-103056-context-tg-relay-py-already-ru'
+- at: 2026-10-22 10:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 10:46
+  note: verified — evidence checks green, closing itself
