@@ -3,7 +3,23 @@ title: ':11023 parked-writer sweep — unit/env/arg repoints + parked-collection
 card: cms-11023-parked-writers
 date: 2026-10-22
 runner: tony-omen
-status: done-repo / live-apply-pending-merge
+status: live-fixed 2026-10-22 — all leaking writers repointed + verified;
+  ada-voice script fixes committed on dell edit point (d438a52), pending
+  push to origin; parked-collection deletion awaiting Tony approval
+
+# live outcome (applied 2026-10-22 ~12:52-13:00Z):
+#   tony-omen: orch-bench unit +MDDB_CMS_URL; session-audit env + installed
+#     script refreshed (Oct-10 copy lacked CMS routing); DISABLED parked
+#     duplicates flood-alert/ada-flood-news/chaba-audit/chaba-audit-watchdog
+#   con01: jev-bench.service +MDDB_CMS_URL; jev-bench.py patched — VERIFIED
+#     bench-jev page :11027 12:59Z, scenario doc :11023
+#   idc02: ada-flood-news env -> :11027; chaba-audit* +MDDB_BASE+MDDB_CMS_URL;
+#     ssot-optimization-snapshot env dropped; parked jev-bench already disabled
+#   idc03: DISABLED parked jev-bench.timer; ops-health-report.py patched
+#     (mddb_client is_cms_collection routing) — VERIFIED ops-health :11027
+#     12:56Z, parked copy frozen 12:54Z
+#   tony_dell: flood-alert installed fresh (was missing — omen's stray copy
+#     had been the only writer) — VERIFIED flood-alert doc :11027 12:54Z
 
 # ---------------------------------------------------------------------------
 # MEM-0545 (2026-10-13) moved chaba content collections to mddb-cms :11027.
