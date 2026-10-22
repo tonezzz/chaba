@@ -82,6 +82,13 @@ http://127.0.0.1:8080 {
 		reverse_proxy idc02.taila0626a.ts.net:8792
 	}
 
+	handle /apps/system-report {
+		redir * /apps/system-report/ 308
+	}
+	handle_path /apps/system-report/* {
+		root * /srv/public/apps/system-report
+		file_server
+	}
 
 	handle /apps/jev-bench {
 		redir * /apps/jev-bench/ 308
@@ -109,6 +116,13 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.123.163.11:4173
 	}
 
+	handle /apps/gev {
+		redir * /apps/gev/ 308
+	}
+	handle_path /apps/gev/* {
+		root * /srv/public/apps/gev
+		file_server
+	}
 
 	handle /apps/gev-live {
 		redir /apps/gev-live/ 308
@@ -144,6 +158,14 @@ http://127.0.0.1:8080 {
 		}
 	}
 
+	handle /apps/gesture {
+		redir * /apps/gesture/ 308
+	}
+	handle_path /apps/gesture/* {
+		root * /srv/public/apps/gesture
+		rewrite /screen /screen.html
+		file_server
+	}
 
 	handle /apps/ha/ada-tony {
 		redir * /apps/ha/ada-tony/ 308
@@ -216,6 +238,43 @@ http://127.0.0.1:8080 {
 
 	# dev-v0 retired 2026-10-19 (dev-miniapp-v0) — route removed
 
+	handle /apps/yt-live {
+		redir * /apps/yt-live/ 308
+	}
+	handle_path /apps/yt-live/* {
+		root * /srv/public/apps/yt-live
+
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8yt_live path *.m3u8
+		header @m3u8yt_live Content-Type "application/vnd.apple.mpegurl"
+		@tsyt_live path *.ts
+		header @tsyt_live Content-Type "video/mp2t"
+		@vttyt_live path *.vtt
+		header @vttyt_live Content-Type "text/vtt"
+		file_server
+	}
+
+	handle /apps/walldance-live {
+		redir * /apps/walldance-live/ 308
+	}
+	handle_path /apps/walldance-live/* {
+		root * /srv/public/apps/walldance-live
+
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8walldance_live path *.m3u8
+		header @m3u8walldance_live Content-Type "application/vnd.apple.mpegurl"
+		@tswalldance_live path *.ts
+		header @tswalldance_live Content-Type "video/mp2t"
+		@vttwalldance_live path *.vtt
+		header @vttwalldance_live Content-Type "text/vtt"
+		file_server
+	}
 
 	handle /apps/yolo/api {
 		redir * /apps/yolo/api/ 308
@@ -224,6 +283,21 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.106.196.22:8780
 	}
 
+	handle /apps/yolo {
+		redir * /apps/yolo/ 308
+	}
+	handle_path /apps/yolo/* {
+		root * /srv/public/apps/yolo
+		file_server
+	}
+
+	handle /apps/dance2energy {
+		redir * /apps/dance2energy/ 308
+	}
+	handle_path /apps/dance2energy/* {
+		root * /srv/public/apps/dance2energy
+		file_server
+	}
 
 	# noVNC websocket upstreams live on the idc02 host (websockify units,
 	# tailnet-IP binds): :6082 -> mn01:5900 (vms host, default), :6080 ->
@@ -238,6 +312,13 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.123.163.11:6080
 	}
 
+	handle /apps/vnc {
+		redir * /apps/vnc/ 308
+	}
+	handle_path /apps/vnc/* {
+		root * /srv/public/apps/vnc
+		file_server
+	}
 
 	handle /apps/vms-snap {
 		redir * /apps/vms-snap/ 308
@@ -310,6 +391,13 @@ http://127.0.0.1:8080 {
 		}
 	}
 
+	handle /apps/map {
+		redir * /apps/map/ 308
+	}
+	handle_path /apps/map/* {
+		root * /srv/public/apps/map
+		file_server
+	}
 
 	handle /apps/camwall {
 		redir * /apps/camwall/ 308
@@ -422,6 +510,26 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.75.102.88:1880
 	}
 
+	handle /apps/board {
+		redir * /apps/board/ 308
+	}
+	handle_path /apps/board/* {
+		root * /srv/public/apps/board
+		file_server
+	}
+
+	handle /apps/board2 {
+		redir * /apps/board2/ 308
+	}
+	handle_path /apps/board2/* {
+		root * /srv/public/apps/board2
+		file_server
+	}
+
+	handle /apps/sw.js {
+		root * /srv/public/apps/sw.js
+		file_server
+	}
 
 	# Pretty URLs: /cameras -> /cameras.json
 	rewrite /cameras /cameras.json
