@@ -124,11 +124,32 @@ class VcastScreensCard extends HTMLElement {
     pick(0, tabs.children[0]);
   }
 
+  _age(s) {
+    if (s == null) return "";
+    return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`;
+  }
+  _lifecycle(s) {
+    // derived server-side since the ux-flow rework; fall back to the
+    // connected flag on older relays
+    const lc = s.lifecycle || (s.connected ? "connected" : "stale");
+    const color = { playing: "var(--primary-color)", idle: "#4caf50",
+      connected: "#4caf50", pairing: "var(--secondary-text-color)",
+      reconnecting: "var(--warning-color,#f59e0b)",
+      stale: "var(--error-color,#f47067)" }[lc] || "var(--secondary-text-color)";
+    const age = s.age_s != null ? ` ${this._age(s.age_s)}` : "";
+    const extra = lc === "reconnecting" && s.reclaim_in_s != null
+      ? ` · frees ~${s.reclaim_in_s}s` : "";
+    const detail = lc === "playing" && s.lifecycle_detail
+      ? ` · ${s.lifecycle_detail}` : "";
+    return `<span style="color:${color};font-weight:600">${lc}${age}</span>${extra}${detail}`;
+  }
+
   _render(data) {
     const list = this._list;
     list.innerHTML = "";
     const screens = (data && data.screens) || [];
     const pending = (data && data.pending) || [];
+    const h = (data && data.health) || null;
 
     const top = document.createElement("div");
     top.style.cssText = "display:flex;align-items:center;gap:8px";
@@ -141,6 +162,22 @@ class VcastScreensCard extends HTMLElement {
     top.append(hintEl, addBtn);
     list.appendChild(top);
 
+    // fleet health line — connected/stale/pending + flap metric surfaced
+    // from the relay (vcast-auto-health counts the same events)
+    if (h) {
+      const fh = document.createElement("div");
+      fh.style.cssText = "font-size:.72rem;color:var(--secondary-text-color)";
+      fh.innerHTML =
+        `<b>${h.connected ?? 0}</b> connected · ` +
+        `<b>${h.reconnecting ?? 0}</b> reconnecting · ` +
+        `<b>${h.stale ?? 0}</b> stale · ` +
+        `<b>${h.pending ?? pending.length}</b> pairing · ` +
+        `<b>${h.released ?? 0}</b> released — ` +
+        `flaps 24h: <b>${h.flaps_24h ?? "?"}</b>` +
+        (h.last_flap ? ` · last ${this._relTime(h.last_flap)}` : "");
+      list.appendChild(fh);
+    }
+
     if (!screens.length && !pending.length) {
       const d = document.createElement("div");
       d.style.color = "var(--secondary-text-color)";
@@ -150,7 +187,10 @@ class VcastScreensCard extends HTMLElement {
     }
 
     for (const p of pending) {
-      const row = this._row(`⏳ ${p.label || "display"} — waiting to pair`, true);
+      const code = p.code ? ` · code ${p.code}` : "";
+      const exp = p.expires_in_s != null ? ` · expires ${this._age(p.expires_in_s)}` : "";
+      const row = this._row(
+        `⏳ ${p.label || "display"} — waiting to pair${code}${exp}`, true);
       const open = this._btn("Pair");
       open.title = "Open the claim page (same flow the on-screen QR starts)";
       open.onclick = () => {
@@ -160,11 +200,12 @@ class VcastScreensCard extends HTMLElement {
       const dis = this._btn("Dismiss");
       dis.title = "Drop this pending display without pairing";
       dis.onclick = async () => {
-        await this._call("/dismiss", {
+        const r = await this._call("/dismiss", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ sid: p.sid }),
         });
+        if (r.error) alert("Dismiss failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
         this._poll();
       };
       row.append(open, dis);
@@ -172,10 +213,13 @@ class VcastScreensCard extends HTMLElement {
     }
 
     for (const s of screens) {
-      const row = this._row(`Screen #${s.screen} — ${s.name}`, false);
+      // label is the primary identity; name + drift as secondary detail
+      const row = this._row(`#${s.screen} ${s.label || s.name}`, false);
+      if (s.label_dup) row.firstChild.style.color = "var(--error-color,#f47067)";
       const meta = document.createElement("span");
       meta.style.cssText = "font-size:.7rem;color:var(--secondary-text-color);white-space:nowrap";
-      meta.textContent = `${s.label || ""} ${s.connected ? "· online" : "· offline"} ${s.state !== "idle" ? "· " + s.state : ""}`;
+      const drift = s.drift ? ` (→${s.preferred_screen})` : "";
+      meta.innerHTML = `${s.name}${drift} · ${this._lifecycle(s)}`;
       row.appendChild(meta);
 
       const playBtn = this._btn("▶");
@@ -186,6 +230,8 @@ class VcastScreensCard extends HTMLElement {
           url: this._config.test_play_url || "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
         });
         playBtn.textContent = r.delivered ? "✓" : "!";
+        playBtn.title = r.delivered
+          ? "cast delivered" : "NOT delivered — no live socket on that screen";
         setTimeout(() => (playBtn.textContent = "▶"), 1500);
       };
       const navBtn = this._iconBtn("mdi:open-in-app");
@@ -205,24 +251,63 @@ class VcastScreensCard extends HTMLElement {
       const stopBtn = this._iconBtn("mdi:stop");
       stopBtn.title = "Stop casting — back to idle screen";
       stopBtn.onclick = () => this._pub(s.screen, { type: "stop" });
-      const reBtn = this._iconBtn("mdi:qrcode");
-      reBtn.title = "Re-pair — display drops its key and shows the claim QR again";
-      reBtn.onclick = () => this._pub(s.screen, { type: "unpaired" });
-      const del = this._btn("Revoke");
+      row.append(playBtn, navBtn, sndBtn, stopBtn);
+      if (s.connected) {
+        const reBtn = this._iconBtn("mdi:qrcode");
+        reBtn.title = "Re-pair — display drops its key and shows the claim QR again";
+        reBtn.onclick = () => this._pub(s.screen, { type: "unpaired" });
+        row.appendChild(reBtn);
+      } else {
+        const sw = this._btn("Sweep");
+        sw.title = "Free the name+slot now — the one-click fix for a dead-socket hold";
+        sw.onclick = async () => {
+          const r = await this._call("/sweep", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ screen: s.screen }),
+          });
+          if (r.error) alert("Sweep failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
+          this._poll();
+        };
+        row.appendChild(sw);
+      }
+      const del = this._btn("Release");
       del.style.color = "var(--error-color,#f47067)";
       del.onclick = async () => {
-        if (!confirm(`Revoke ${s.name}? The display is unpaired immediately.`)) return;
+        if (!confirm(`Release ${s.name}? The name is tombstoned (reserved 30d for reclaim).`)) return;
         const r = await this._call("/release", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ screen: s.screen }),
         });
-        if (r.error) alert("Release failed: " + r.error);
+        if (r.error) alert("Release failed: " + r.error + (r.next ? "\n→ " + r.next : ""));
+        else if (r.note) this._note(r.note);
         this._poll();
       };
-      row.append(playBtn, navBtn, sndBtn, stopBtn, reBtn, del);
+      row.appendChild(del);
       list.appendChild(row);
     }
+
+    // released tombstones — names reserved for reclaim, informational
+    for (const t of (data.released || []).slice(0, 4)) {
+      const row = this._row(
+        `🪦 ${t.name} — released · reserved until ${String(t.reclaim_until || "").slice(0, 10)}`, true);
+      list.appendChild(row);
+    }
+  }
+
+  _relTime(iso) {
+    const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+    return this._age(s) + " ago";
+  }
+  _note(text) {
+    // transient confirmation line at the top of the card — the visible
+    // result the release/reclaim flows were missing
+    const d = document.createElement("div");
+    d.style.cssText = "font-size:.75rem;color:var(--primary-color)";
+    d.textContent = text;
+    this._list.prepend(d);
+    setTimeout(() => d.remove(), 6000);
   }
 
   _renderError(e) {

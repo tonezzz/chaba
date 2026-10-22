@@ -1,0 +1,116 @@
+title: vcast UX flow — explicit lifecycle, operator view, one-click recovery
+subtitle: "Kanban card vcast-ux-flow — the 6 user-journey stages + audit timeline + recovery benchmark, implemented in the relay and both operator surfaces"
+icon: monitor-dashboard
+
+planning:
+  goal: An operator must never read journald or do registry surgery — /displays
+    derives the true lifecycle, errors say the reason AND the next action,
+    and every recovery is one click with a visible result.
+  scope: "stacks/web/input-bridge/server.mjs, stacks/web/public/apps/vcast/
+    {index,pair,displays}.html + sw.js, stacks/tony-dell/tony-ha/www/
+    vcast-screens-card.js, new vcast-ux-check.mjs, ssot.apps.vcast.yml.
+    Out of scope: deploy to idc03 (dispatch worktree; promotion needs
+    explicit approval per AGENTS.md)."
+  success_criteria:
+    - pairing shows code + expiry + who-can-approve; dead-socket holds show
+      a reclaim countdown
+    - stable label is primary identity; drift + dup labels surface; /screen
+      refuses a dup label on a live screen
+    - lifecycle derives from socket+timestamps:
+      pairing/connected/idle/playing/reconnecting(age)/stale(age)/released
+    - cast results are honest (delivered counts) + per-pane last_cast with
+      timestamps in /displays
+    - /sweep frees a dead entry, 409s a live one with a next action;
+      /release answers with the tombstone note
+    - /displays health block: connected/reconnecting/stale/pending/released
+      + last_flap + flaps_24h (same definition vcast-auto-health counts)
+    - claim/release/resurrect/register/disconnect/sweep/dismiss in a
+      persisted events timeline, surfaced in /displays
+    - recovery benchmark: disconnect->rebound measured vs the ~30min manual
+      baseline
+  resources:
+    - prior groundwork: commit 92dd8168 (grace, tombstones, forensics),
+      vcast-claim-tombstone card (resurrect chain, done)
+
+processing:
+  status: completed
+  steps:
+    - id: 1
+      label: relay — lifecycle + snapshot
+      status: completed
+      notes: "lifecycleOf() derives pairing/connected/idle/playing/
+        reconnecting(age,reclaim_in_s)/stale(age) per entry — claimed_at
+        in-flight wins over the dead-stamp path. displaysSnapshot adds
+        preferred_screen+drift+label_dup+last_cast+per-pane {type,url,at},
+        pending expires_in_s+device_id, released[] tombstones with
+        reclaim_until, health{connected,reconnecting,stale,pending,
+        released,flaps_24h,last_flap,grace_ms}, events tail (40)."
+    - id: 2
+      label: relay — recovery + errors
+      status: completed
+      notes: "POST /sweep {screen|all:true} frees dead entries (live 409s:
+        'release it instead'); /release returns tombstone_until + 'released
+        — name reserved 30d for reclaim' note and sends the display
+        unpaired{reason:released}; claim 409s carry held_by+retry_in_s+next;
+        /screen 409s a dup label on a live screen; every 404 gains a next
+        hint. lastCast entries wrapped {msg,at} (replay unwraps)."
+    - id: 3
+      label: relay — audit timeline
+      status: completed
+      notes: "logEvent() persists claim/resurrect/reclaim/register(+rebind)/
+        supersede/disconnect(code,abnormal)/sweep/release/dismiss/pending/
+        pending-expire/relabel/move/register-refused to displays-events.json
+        next to the registry (cap 400, VCAST_EVENTS override). flapStats()
+        counts abnormal closes (non-1000/1001/1005) + supersedes in 24h —
+        same definition as vcast-auto-health.py."
+    - id: 4
+      label: display — index.html
+      status: completed
+      notes: "pair view gains 'waiting to pair' title, code, approver line
+        ('anyone on the tailnet — scan or tell Ada claim display NNNN'),
+        expiry countdown from pending.ttl_ms; HUD counts disconnect age
+        (reconnecting Ns) + 'reconnected after Ns' toast; released displays
+        get the tombstone toast. sw.js bumped vcast-v13 + displays.html in
+        ASSETS."
+    - id: 5
+      label: operator — displays.html + pair.html + HA card
+      status: completed
+      notes: "new /apps/vcast/displays.html: fleet health line, pending
+        cards (code/expiry/pair/dismiss), screen cards (label-primary
+        identity, lifecycle badge+age, reconnecting reclaim countdown,
+        state_detail render proof, per-pane last_cast, ▶test/■/Sweep now/
+        Release), released tombstone rows, 20-event timeline; every action
+        toasts ok or error+next. pair.html: expiry + approver text + 409
+        next-action + link to displays view. vcast-screens-card.js: fleet
+        health line, lifecycle badges, pending code+expiry, Sweep button on
+        dead rows, Release w/ tombstone note, error alerts carry next."
+    - id: 6
+      label: checks + benchmark
+      status: completed
+      notes: "new vcast-ux-check.mjs (34 assertions covering every stage +
+        the recovery benchmark). Full suite re-run: flap 7, registry 19,
+        claim 19, handoff 6, cast 17, ux 34 — 0 failures."
+
+results:
+  outcome: implemented + verified on loopback; NOT deployed (dispatch mode)
+  checks: "vcast-ux-check 34/34, registry 19/19, claim 19/19, cast 17/17,
+    flap 7/7, handoff 6/6"
+  benchmark:
+    before: "~30min manual ops surgery (ssh + registry JSON + ada key work)
+      per the card note — and entries could resurrect after all that"
+    after: "self-heal rebind measured 350ms disconnect->registered on
+      loopback (ws reconnect is client-side backoff <=5s worst case);
+      dead-entry reclaim is one click (POST /sweep) instead of surgery"
+  files_changed:
+    - stacks/web/input-bridge/server.mjs
+    - stacks/web/input-bridge/vcast-ux-check.mjs (new)
+    - stacks/web/public/apps/vcast/index.html
+    - stacks/web/public/apps/vcast/pair.html
+    - stacks/web/public/apps/vcast/displays.html (new)
+    - stacks/web/public/apps/vcast/sw.js
+    - stacks/tony-dell/tony-ha/www/vcast-screens-card.js
+    - docs/ssot/apps/ssot.apps.vcast.yml
+  deploy_notes: "rsync stacks/web/public/apps/vcast/ to the web container
+    (instant, no restart) + restart input-bridge on idc03 for server.mjs;
+    the HA card lands with the next www sync. Promotion per AGENTS.md
+    requires explicit approval."

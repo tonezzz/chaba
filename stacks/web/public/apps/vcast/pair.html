@@ -45,7 +45,7 @@
   </div>
 
   <div class="card">
-    <div class="muted">Registered screens</div>
+    <div class="muted">Registered screens — <a href="/apps/vcast/displays.html" style="color:var(--accent)">full operator view</a></div>
     <table id="screens"><thead><tr><th>#</th><th>name</th><th>device</th><th>state</th></tr></thead><tbody></tbody></table>
   </div>
 </main>
@@ -72,9 +72,16 @@
     const el = document.getElementById("pendingInfo");
     if (!sid) { el.innerHTML = '<span class="err">missing ?sid= — rescan the QR on the display</span>'; return; }
     const { status, data } = await api(`/pair-info?sid=${encodeURIComponent(sid)}`);
-    el.innerHTML = status === 200
-      ? `<strong>${data.label || "display"}</strong> <span class="muted">waiting since ${data.since}</span>`
-      : `<span class="err">${data.error || status}</span>`;
+    if (status === 200) {
+      const exp = data.expires_in_s != null
+        ? ` · code expires in ${Math.floor(data.expires_in_s / 60)}:${String(data.expires_in_s % 60).padStart(2, "0")}` : "";
+      el.innerHTML = `<strong>${data.label || "display"}</strong> ` +
+        `<span class="muted">waiting since ${data.since}${exp}</span>` +
+        (data.code ? `<div class="muted" style="margin-top:.3rem">claim code <strong style="letter-spacing:.2em">${data.code}</strong> — anyone on the tailnet can approve (this page, or tell Ada “claim display ${data.code}”)</div>` : "");
+    } else {
+      el.innerHTML = `<span class="err">${data.error || status}</span>` +
+        (data.next ? `<div class="muted">${data.next}</div>` : "");
+    }
   }
 
   async function loadScreens() {
@@ -82,9 +89,12 @@
     const tb = document.querySelector("#screens tbody");
     tb.innerHTML = "";
     for (const s of data.screens || []) {
+      const lc = s.lifecycle || (s.connected ? "connected" : "offline");
+      const cls = lc === "stale" || lc === "reconnecting" ? "err"
+                : s.connected ? "ok" : "muted";
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>#${s.screen}</td><td>${s.name}</td><td>${s.label || ""}</td>` +
-        `<td>${s.connected ? '<span class="ok">online</span>' : '<span class="muted">offline</span>'} ${s.state || ""}</td>`;
+        `<td><span class="${cls}">${lc}</span> ${s.lifecycle_detail || s.state || ""}</td>`;
       tb.appendChild(tr);
     }
     if (!(data.screens || []).length) tb.innerHTML = '<tr><td colspan="4" class="muted">none yet</td></tr>';
@@ -123,9 +133,20 @@
       keyIn.focus();
       out.innerHTML = `<span class="err">Off-tailnet claim — paste the Ada admin key above and tap again.</span>`;
     } else if (status === 409) {
-      out.innerHTML = `<span class="err">${data.error}</span><br>the name is held by a live display — release it from the admin page first.`;
+      // relay now says WHY the name is held and what to do next —
+      // dead-socket holds suggest a retry time or a sweep
+      out.innerHTML = `<span class="err">${data.error}</span>` +
+        (data.next ? `<br><span class="muted">${data.next}</span>` :
+         `<br>the name is held — release it from <a href="/apps/vcast/displays.html">the displays page</a> first.`);
+      if (data.retry_in_s) {
+        const left = Math.ceil(data.retry_in_s);
+        setTimeout(() => {
+          out.innerHTML += `<br><span class="muted">you can retry now — or tap again.</span>`;
+        }, Math.min(left, 90) * 1000);
+      }
     } else {
-      out.innerHTML = `<span class="err">${data.error || status}</span>`;
+      out.innerHTML = `<span class="err">${data.error || status}</span>` +
+        (data.next ? `<br><span class="muted">${data.next}</span>` : "");
     }
   });
 

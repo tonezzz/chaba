@@ -156,6 +156,16 @@ function connect() {
   ws.on("error", (e) => console.error("[ws]", e.message));
 }
 
+// heartbeat like the real page (index.html sends state every 30s) — keeps
+// registry last_seen honest between casts so a frozen sim derives stale
+// instead of phantom-connected on the operator view
+setInterval(() => {
+  if (screen != null && ws && ws.readyState === 1) {
+    ws.send(JSON.stringify(
+      { type: "state", state: lastState, detail: lastDetail }));
+  }
+}, 30000);
+
 async function release() {
   if (screen == null || !ADMIN_KEY) process.exit(0);
   try {
