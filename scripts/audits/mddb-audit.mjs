@@ -10,6 +10,9 @@ import { dirname, join, basename } from "path";
 import { spawnSync } from "child_process";
 
 const MDDB_BASE = process.env.MDDB_BASE || "http://100.102.134.91:11023";
+// CMS plane (mddb-cms :11027) hosts the migrated content collections
+// (kb-*, ada-cms-*, chaba-*, infrastructure-ssot, devin-kb) since MEM-0545.
+const MDDB_CMS = process.env.MDDB_CMS_URL || "http://100.102.134.91:11027";
 const DB_PATH = process.env.MDDB_DB_PATH || "";
 const PROXY_URLS = ["http://tony-dell:11435", "http://100.68.142.13:11435"];
 const MIN_DOCUMENTS = 50;
@@ -182,28 +185,35 @@ async function checkMddbStats() {
   );
 }
 
-async function checkMddbSearch() {
-  const { body, durationMs } = await postJson(`${MDDB_BASE}/v1/search`, {
-    collection: "kb-system",
-    query: "postgres",
+async function probeSearch(base, collection, query) {
+  const { body, durationMs } = await postJson(`${base}/v1/search`, {
+    collection,
+    query,
     limit: 3,
   }).catch((e) => {
-    issue(`MDDB /v1/search unreachable: ${e.message}`);
+    issue(`MDDB /v1/search ${collection}@${base} unreachable: ${e.message}`);
     return { body: null, durationMs: 0 };
   });
   if (!body) return;
 
   if (durationMs > MAX_RESPONSE_MS) {
-    warn(`MDDB /v1/search slow: ${durationMs}ms`);
+    warn(`MDDB /v1/search ${collection}@${base} slow: ${durationMs}ms`);
   }
   if (!Array.isArray(body) || body.length === 0) {
-    issue('MDDB /v1/search returned no results for "postgres"');
+    issue(`MDDB /v1/search ${collection}@${base} returned no results for "${query}"`);
   } else {
     const keys = body.map((d) => d.key).join(", ");
     note(
-      `MDDB /v1/search OK: "postgres" returned ${body.length} result(s) (${durationMs}ms): ${keys.slice(0, 80)}`
+      `MDDB /v1/search ${collection}@${base} OK: "${query}" returned ${body.length} result(s) (${durationMs}ms): ${keys.slice(0, 80)}`
     );
   }
+}
+
+async function checkMddbSearch() {
+  // Split planes (MEM-0545): kb-system lives on mddb-cms :11027, memory banks
+  // stay on the primary :11023 — probe both so each plane's embed path is covered.
+  await probeSearch(MDDB_CMS, "kb-system", "postgres");
+  await probeSearch(MDDB_BASE, "ada-ha-bank-general", "postgres");
 }
 
 async function checkProxyHealth() {

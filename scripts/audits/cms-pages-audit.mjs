@@ -15,7 +15,10 @@
 import http from "http";
 import { URL } from "url";
 
-const MDDB_BASE = process.env.MDDB_BASE || "http://100.102.134.91:11023";
+// ada-cms-pages lives on the CMS plane (mddb-cms :11027) since the MEM-0545
+// split — MDDB_CMS_URL wins; MDDB_BASE only remains as a legacy fallback.
+const MDDB_BASE =
+  process.env.MDDB_CMS_URL || process.env.MDDB_BASE || "http://100.102.134.91:11027";
 const COLLECTION = process.env.CMS_COLLECTION || "ada-cms-pages";
 const LIMIT = 500;
 const MAX_RESPONSE_MS = 5000;

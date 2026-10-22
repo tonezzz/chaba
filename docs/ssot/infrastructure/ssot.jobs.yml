@@ -74,10 +74,9 @@ jobs:
   persistent: true
   timeout: 10m
   exec: '%h/.n/bin/node %h/CascadeProjects/chaba/scripts/ssot-optimize.mjs'
-  env:
-    MDDB_BASE: http://100.102.134.91:11023
-  note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout; MDDB_BASE points at idc03, the live
-    leader (was dell-local env)
+  note: migrated 2026-10-04; exec normalized to ~/.n/bin/node + chaba checkout. MDDB_BASE env removed
+    2026-10-22 (cms-11023-parked-writers) — no child of ssot-optimize.mjs touches MDDB; the pin was vestigial
+    and exactly the kind of stale :11023 reference the sweep exists to kill
 - id: ha-config-backup
   name: HA Config Backup
   host: tony_omen
@@ -97,9 +96,13 @@ jobs:
   exec: '%h/CascadeProjects/chaba/scripts/audits/run-and-ship.sh %h/.n/bin/node %h/CascadeProjects/chaba/scripts/audits/run.mjs'
   note: migrated tony_dell -> idc02 2026-10-04 (node via ~/.n/bin/node symlink; PATH env needed — runner spawns
     bare `node` children). run-and-ship wraps run.mjs and rsyncs report metas to the served checkout —
-    reports/* is gitignored so satellite metas never propagate via git (added 2026-10-14).
+    reports/* is gitignored so satellite metas never propagate via git (added 2026-10-14). MDDB_BASE + MDDB_CMS_URL
+    envs added 2026-10-22 (cms-11023-parked-writers) — mixed audit suite — memory-plane checks stay :11023, audits
+    that probe migrated collections (ada-cms-pages, kb-system, devin-kb) route via MDDB_CMS_URL.
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
+    MDDB_BASE: http://100.102.134.91:11023
+    MDDB_CMS_URL: http://100.102.134.91:11027
 - id: chaba-audit-full
   name: Chaba Audit Suite (monthly full)
   host: idc02
@@ -112,9 +115,12 @@ jobs:
     run 2026-10-04 (~3min) — same core failures as dell (security-audit, standardization dup cms-pages, code-quality);
     idc02-only env gaps — no host caddy/docker binaries, no devin mcp_config, http-health checks dell-localhost
     gpu-queue/playlived-dell. Findings fixed in 35c0cb1a; manual --full rerun 2026-10-13 all-pass (5 warning-severity
-    findings only).
+    findings only). MDDB_BASE + MDDB_CMS_URL envs added 2026-10-22 (cms-11023-parked-writers) — same split as
+    chaba-audit.
   env:
     PATH: '%h/.n/bin:%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin'
+    MDDB_BASE: http://100.102.134.91:11023
+    MDDB_CMS_URL: http://100.102.134.91:11027
 - id: chaba-system-report
   name: Chaba System Report
   host: idc02
@@ -233,12 +239,16 @@ jobs:
     --heavy http://100.75.102.88:8777 --sets golden,hard --limit 30 --timeout 240 --mddb http://100.102.134.91:11023/v1
     --report-cms --corpus-out %h/.local/share/ada/orch-corpus.jsonl --stats-out %h/.local/share/ada/orch-router-stats.jsonl'
   - /usr/bin/python3 scripts/nest-bench-update.py --force
+  env:
+    MDDB_CMS_URL: http://100.102.134.91:11027/v1
   note: weekly compound-AI structure comparison (student/cascade/parallel/ router/verifier on golden+tool+hard sets)
     -> bench/orch-* docs + nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local on tony-omen. Corpus
     loop feeds misses into the next run. Deployed 2026-10-06. Bounded 2026-10-13 (--limit 30) after an unbounded
     run was TERM'd at the old 90m cap — the installed unit is systemd/ada-pi-orch-bench.service, which also carries
     ExecStartPre/Post to bring open-jev + open-jev-student up and back down around the bench; the renderer cannot
     express pre/post hooks yet, so generated/tony_omen/ is a stub and the hand unit is the deployed source of truth.
+    env MDDB_CMS_URL added 2026-10-22 (cms-11023-parked-writers) — mixed producer — scenario-report docs stay on
+    :11023 via --mddb, ada-cms-pages writes route to :11027 via ada-pi mddb_client cms-plane.
 - id: jev-bench
   name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on con01, targets idc03)
   host: con01
@@ -248,11 +258,14 @@ jobs:
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/ada-voice/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1
     --report-cms
+  env:
+    MDDB_CMS_URL: http://100.102.134.91:11027/v1
   note: retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target). jev-student confirm-gate serves /v1/systemone
-    on idc03 tailnet :8778; MDDB writes go to the idc03 leader :11023 (idc02 local :11023 is a read-only follower).
-    Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by nest-overview.py
-    (chaba-nest L2). Bench script lives in the ada-voice checkout on idc02. Unit was hand-installed 2026-10-01; now
-    rendered from this manifest.
+    on idc03 tailnet :8778; scenario-report writes stay on the idc03 leader :11023 (idc02 local :11023 is a read-only
+    follower). Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by
+    nest-overview.py (chaba-nest L2). Bench script lives in the ada-voice checkout on idc02. Unit was hand-installed
+    2026-10-01; now rendered from this manifest. MDDB_CMS_URL added 2026-10-22 (cms-11023-parked-writers) — mixed
+    producer — ada-cms-pages writes route to :11027 via ada-pi mddb_client cms-plane.
 - id: doc-mirror
   name: Hourly doc-archive -> HA www mirror (runs on con01 since 2026-10-22)
   host: con01
@@ -430,6 +443,7 @@ jobs:
   exec: /usr/bin/python3 %h/.local/share/session-audit/session-audit.py
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    MDDB_CMS_URL: http://100.102.134.91:11027/v1
     AUDIT_HOSTS: idc03,idc01
   note: 'card ada-session-audit-daily. Window = transcripts newer than ~/.local/share/devin/ada-audit-marker (mtime;
     marker bumps after a clean run). Publishes ada-ha-scenario-reports/audit/session-<date> (kind session-audit),
@@ -551,11 +565,27 @@ jobs:
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-news-update.py --all
   env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    MDDB_BASE_URL: http://100.102.134.91:11027/v1
   note: migrated tony_dell -> idc02 2026-10-03 (phase-1 pilot); exits 2 on all-skipped tick — pre-existing wart,
     see mha-log-noise-style fixup. MDDB_BASE_URL pinned 2026-10-09 — the stale idc02 checkout's script still defaults
     to idc01:11023 (dead since the leader moved to idc03), which made the CMS publish step ECONNREFUSED -> exit
-    2; env wins regardless of checkout drift.
+    2; env wins regardless of checkout drift. Repointed to :11027 2026-10-22 (cms-11023-parked-writers) — pure-CMS
+    producer (ada-cms-pages + ada-cms-automation only).
+- id: flood-alert
+  name: Flood situation alert push (severity watchdog -> HA/ntfy)
+  host: tony_dell
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-alert.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11027/v1
+    BOARD_NOTIFY_CHANNEL: ha
+  note: 'card flood-situation-alert-system-9f3407. Stays on tony_dell — the HA push channel is loopback+token there.
+    Pure-CMS producer: writes ada-cms-automation/flood-alert state doc via flood-news-update machinery only;
+    MDDB_BASE_URL repointed :11023 -> :11027 2026-10-22 (cms-11023-parked-writers). Was rendered from this manifest
+    under commit 120a10896 but the jobs entry was lost; restored 2026-10-22 to match the deployed unit.'
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
   host: idc02
