@@ -345,7 +345,9 @@ jobs:
     not in options (R2), duplicate open requests (R3), done+verify: without an
     evidence-tagged comm = lifecycle bounce fuel (V1, mirrors
     lifecycle-check.py gate semantics incl. VERIFY_GATE_AFTER 2026-10-12),
-    stale running claims >24h quiet (S1), parked doing >7d (S2). --alert writes
+    stale running claims >24h quiet (S1), parked doing >7d (S2), queued >24h
+    with non-dispatch action.type = unclaimable/starved (Q1, card
+    queue-type-starvation-guard). --alert writes
     one deduped focus-inbox file per violated class (invariant-<slug>.yml); no
     auto-fixes. Added 2026-10-15.'
 - id: check-serve-config
