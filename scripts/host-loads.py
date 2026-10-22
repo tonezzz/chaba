@@ -165,7 +165,7 @@ def main() -> int:
     hosts_doc = yaml.safe_load(HOSTS_SSOT.read_text(encoding="utf-8")) or {}
     hosts = {k: (v or {}).get("tailscale_ip")
              for k, v in (hosts_doc.get("hosts") or {}).items()
-             if isinstance(v, dict)}
+             if isinstance(v, dict) and not v.get("retired")}
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
         rows = list(ex.map(lambda kv: _sample(*kv), sorted(hosts.items())))
 

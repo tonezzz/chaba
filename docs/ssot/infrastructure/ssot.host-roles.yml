@@ -103,17 +103,19 @@ hosts:
         - LoRA/QLoRA fine-tuning via mlx-lm (verified 2026-10-21: 60 iters, 1093 tok/s, peak 1.48GB on 1B-4bit)
         - image gen (SDXL-Turbo MPS ~16s/512px) + video gen (LTX-Video-2B ~11.5min/2s clip)
         - Ollama API 0.0.0.0:11434 (LaunchDaemon net.adanest.ollama.plist, user adanest — llama3.2:3b 161 tok/s)
-        - SSH batch jobs (Remote Login enabled 2026-10-21; ssh -J tony-dell kkkakk@192.168.2.80; password auth — fleet keys not yet seeded)
+        - SSH batch jobs (Remote Login enabled 2026-10-21; `ssh kk-mac` from tony-dell works — Host stanza + dell id_ed25519 seeded 2026-10-22; rest of fleet keys still pending)
       cannot_run:
         - unattended 24/7 services (travels with KK; sleep=0 + Tailscale done 2026-10-21, but treat as optional when asleep/offline — member device, not infra)
         - anything touching her Adobe/OneDrive apps without her sign-off
       access_note: >-
-        2026-10-21 16:2x — no fleet key authenticates to kkkakk@kk-mac
+        2026-10-22 — tony-dell id_ed25519 seeded into kkkakk authorized_keys +
+        Host kk-mac stanza in dell's ~/.ssh/config (done for the host-loads
+        monitor probe). 2026-10-21 16:2x — earlier: no fleet key authenticated
         (probed omen/dell/mn01/idc03/macbook, all denied; .80+.92 answer
-        :22). Earlier session's credential was not persisted; re-seed via
-        ssh-copy-id at install time per docs/kb/ada-nest-kk-mac-onboarding.md
-        §1. Onboarding staged in scripts/ops/kk-mac-onboard.sh pending
-        KK sign-off (card request kk-sign-off-for-kk-mac-ada-nest-install-*).
+        :22). Remaining fleet keys re-seed via ssh-copy-id at install time per
+        docs/kb/ada-nest-kk-mac-onboarding.md §1. Onboarding staged in
+        scripts/ops/kk-mac-onboard.sh pending KK sign-off (card request
+        kk-sign-off-for-kk-mac-ada-nest-install-*).
       preferred_for:
         - Ada Nest member lane (permitted by KK 2026-10-21 — resource assessment done, see ada-nest-map lesson family)
 

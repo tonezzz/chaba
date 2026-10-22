@@ -19,10 +19,11 @@ Done by the 15:5x session:
 
 Open:
 
-- **SSH auth**: no fleet key currently authenticates to `kkkakk@kk-mac`
-  (probed omen/dell/mn01/macbook keys 2026-10-21 ~16:20 — all denied,
-  port open on .80 en0 and .92 en1). Whatever credential the earlier
-  session used was not persisted. Re-seed at install time (§1).
+- **SSH auth**: partially restored 2026-10-22 — tony-dell `id_ed25519`
+  seeded into `kkkakk` authorized_keys + `Host kk-mac` stanza in dell's
+  `~/.ssh/config` (needed for the host-loads monitor probe; `ssh kk-mac`
+  from dell works). Remaining fleet keys still denied — re-seed the full
+  bundle at install time (§1).
 - KK sign-off request on the card covers: adanest user, Tailscale,
   boot-time ollama, sleep=0 on AC, ~20 GB of model pulls.
 - Tailscale, adanest user, ollama LaunchDaemon, model pulls — staged in
