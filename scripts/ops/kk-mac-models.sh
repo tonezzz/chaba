@@ -17,7 +17,7 @@
 #   chmod -R g+w /Users/adanest/.ollama /Users/adanest/.cache
 
 set -euo pipefail
-KK_HOST=192.168.2.92
+KK_HOST="${KK_MAC_HOST:-192.168.2.80}"
 KK_USER=kkkakk
 PWFILE=~/.config/secrets/kk-mac-password.txt
 ARC=~/model-archive
