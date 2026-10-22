@@ -1,8 +1,7 @@
 id: audit-auto-idc02
 title: 'Audit drift on `idc02`: 12 delta(s) vs expected state'
-brief: 'Daily audit-hosts diff found service/placement drift on this host. Deltas
-  become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent,
-  allowed_running, known_failed).'
+brief: 'Daily audit-hosts diff found service/placement drift on this host. Deltas become work: fix the drift, or
+  fix the SSOT declaration (expected_services, expected_absent, allowed_running, known_failed).'
 column: done
 review_kind: triage
 generated: audit-hosts
@@ -11,26 +10,26 @@ area: fleet-ops
 priority: medium
 note: '- Expected service missing: jev-retrain.timer
 
-  - Unexpected running user service: ada-stt.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: ada-stt.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: gesture-relay.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: gesture-relay.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: gpu-queue-processor.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: gpu-queue-processor.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: gpu-queue.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: gpu-queue.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: ollama.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: ollama.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: weaviate.service (declare in expected_services,
-  whitelist in allowed_running, or stop it)
+  - Unexpected running user service: weaviate.service (declare in expected_services, whitelist in allowed_running,
+  or stop it)
 
-  - Unexpected running user service: web.service (declare in expected_services, whitelist
-  in allowed_running, or stop it)
+  - Unexpected running user service: web.service (declare in expected_services, whitelist in allowed_running, or
+  stop it)
 
   - Unexpected failed user service: chaba-repo-sync.service
 
@@ -39,10 +38,9 @@ note: '- Expected service missing: jev-retrain.timer
   - Unexpected failed user service: mddb-lab.service
 
   - Unexpected failed user service: vcast-real@1.service'
-help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.idc02. A delta means
-  declared != observed: either restore the expected state, or amend the SSOT so the
-  declaration matches intent (this file IS the placement contract).'
-updated: '2026-10-22'
+help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.idc02. A delta means declared != observed: either
+  restore the expected state, or amend the SSOT so the declaration matches intent (this file IS the placement contract).'
+updated: 2026-10-22 14:54
 action:
   status: done
 claim: {}
@@ -50,3 +48,9 @@ comms:
 - at: 2026-10-13 21:34
   from: tony
   text: moved review -> done
+- at: 2026-10-22 14:54
+  from: devin
+  text: 'mddb-lab-pull.service + mddb-lab.service deltas cleared 2026-10-22: pull rewritten (latest-file-only +
+    atomic swap — whole-dir mirror was fighting gdrive-tier -> ENOSPC; in-place cp -> SIGBUS crash-loop), mddb-lab
+    restarted clean on 2026-10-22 dump. Details: reports/mddb-lab-pull-recovery-2026-10-22.md + tony-dell-full-migration
+    comm.'

@@ -1,7 +1,7 @@
 id: roster-agents-tab
 title: Agents tab on chaba-admin — unified roster chat over ada lanes
 column: done
-updated: 2026-10-22 14:46
+updated: 2026-10-22 14:52
 priority: medium
 tags:
 - chaba-admin
@@ -112,6 +112,16 @@ comms:
 - at: 2026-10-22 14:31
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-22 14:52
+  from: devin
+  text: 'VERDICT 2026-10-22 (dispatch, continuing macbook session): all still-asking-for-invite is client-side,
+    not lane-side. Verified live: all 4 lanes return {type:ready} on both the roster-probe URL and the card URL
+    (chat_id=web-tony) with the device=* roster keys; served roster page byte-identical to master; dashboard agents
+    iframe -> https://idc02.taila0626a.ts.net/apps/roster/; bootstrap URL on macbook has correct key.chaba/kaewta/kraut/dev
+    params. ROOT CAUSE (most likely): the iframe is cross-sit'
+- at: 2026-10-22 14:54
+  from: chaba
+  text: auto-reconciled roster-agents-tab.yml.local-conflict-20261022-145414; +1 comms
 requests:
 - id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
   ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt
@@ -137,6 +147,7 @@ action:
     close_held: 2026-10-22 14:16
 review_kind: verify
 claim: {}
+awaiting_action: true
 auto_close:
   by: merge-sweep
   at: 2026-10-22 14:31

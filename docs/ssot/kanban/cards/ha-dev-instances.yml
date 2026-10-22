@@ -2,10 +2,10 @@ id: ha-dev-instances
 title: Provision tony-dev :8127 + ada-dev :8128 staging twins
 brief: 'Each lane gets a dev twin for release-candidate testing: tony-dev mirrors tony-ha (household shape), ada-dev
   mirrors ada-ha (private shape).'
-column: doing
+column: done
 priority: high
 created: 2026-10-08
-updated: 2026-10-21 20:31
+updated: 2026-10-22 14:58
 program: ha-lanes
 metric: Both containers healthy on 127.0.0.1:8127/:8128, reachable on tailnet HTTPS and public CF-Access-gated URLs,
   registered in instances/services/audit SSOT.
@@ -46,6 +46,9 @@ comms:
   from: chaba
   text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
     Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-10-22 14:58
+  from: tony
+  text: closed by tony
 ref: HOM-0422
 action:
   status: done
