@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: doing
-updated: 2026-10-22 19:34
+updated: 2026-10-22 19:49
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -38,6 +38,13 @@ comms:
 - at: 2026-10-22 19:34
   from: chaba
   text: started devin-task-20261022-193424-sweep-every-unit-env-script-ar on tony-omen (dispatch)
+- at: 2026-10-22 19:49
+  from: devin
+  text: 'sweep in progress — repo side done: jobs.yml repoints (ada-flood-news->11027 pure-CMS; flood-alert restored
+    to manifest->11027; jev-bench/orch-bench/session-audit/chaba-audit* get MDDB_CMS_URL mixed routing; ssot-optimization-snapshot
+    vestigial MDDB_BASE dropped), generated/ re-rendered, stale idc02 jev-bench + dell session-audit generated orphans
+    removed, audits patched to probe :11027 for migrated colls. LIVE proof of leak 2026-10-22: :11023 ada-cms-pages/{bench-jev
+    12:00Z, ops-health 12:30Z, '
 action:
   type: dispatch
   status: running

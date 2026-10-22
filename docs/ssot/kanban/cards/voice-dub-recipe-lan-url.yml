@@ -1,7 +1,7 @@
 id: voice-dub-recipe-lan-url
 title: voice-dub-demos CMS recipe hands out LAN-only URLs for vcast casts
-column: backlog
-updated: 2026-10-22 19:34
+column: review
+updated: 2026-10-22 19:50
 priority: medium
 tags:
 - cms
@@ -11,7 +11,12 @@ tags:
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
+  runner: tony-omen
+  result: 'exit=0 emains on `cast-precheck-vantage` (ada-voice) — the pre-check itself is still vantage-blind. |
+    devin-task-20261022-194457-voice-dub-demos-cms-recipe-han.service: Consumed 45.157s CPU time over 3min 16.177s
+    wall clock time, 1.1G memory peak.'
+  verified: true
 note: 'The voice-dub-demos CMS page tells Ada to cast http://192.168.2.67/apps/yt-live/<file>.mp4 — correct for
   the TV (LAN device), wrong for numbered vcast screens when Ada or the display is off-LAN: idc03 cannot reach 192.168.2.67
   at all (TimeoutError on the URL pre-check, seen 2026-10-09 02:24 session 6744c10aab), and tailnet displays (vcast-real
@@ -31,4 +36,40 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:44
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 19:44
+  from: chaba
+  text: started devin-task-20261022-194457-voice-dub-demos-cms-recipe-han on tony-omen (dispatch)
+- at: 2026-10-22 19:45
+  from: devin
+  text: 'dispatch started: locating voice-dub-demos recipe, will switch cast_to_screen URL to tailnet host for off-LAN
+    targets'
+- at: 2026-10-22 19:48
+  from: devin
+  text: 'done: voice-dub-demos updated live in ada-cms-pages AND ada-cms-pages-mn (mddb-cms :11027). cast_to_screen
+    now hands out https://tony-dell.taila0626a.ts.net/apps/yt-live/<file>.mp4 with an explicit never-192.168.2.67
+    rule + why (pre-check on idc03, displays on tailnet); TV/Chromecast recipe keeps the LAN URL; failure-mode bullet
+    added. Verified via GET on both collections. Job record: docs/ssot/jobs/vcast/2026-10-22-voice-dub-recipe-lan-url.yml
+    on dispatch branch beab05b. Residual vantage fix re'
+- at: 2026-10-22 19:50
+  from: tony-omen
+  text: 'finished (ok): exit=0 emains on `cast-precheck-vantage` (ada-voice) — the pre-check itself is still vantage-blind.
+    | devin-task-2026102'
+- at: 2026-10-22 19:50
+  from: chaba
+  text: pushed dispatch/20261022-194457-voice-dub-demos-cms-recipe-han to origin
+- at: 2026-10-22 19:50
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 83.5s)
+- at: 2026-10-22 19:50
+  from: chaba
+  text: auto-merged e8d8e7c7 (dispatch/20261022-194457-voice-dub-demos-cms-recipe-han) → origin/master
+- at: 2026-10-22 19:50
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-194457-voice-dub-demos-cms-recipe-han,
+    branch dispatch/20261022-194457-voice-dub-demos-cms-recipe-han'
 ref: MED-0313
+review_kind: verify
+claim: {}

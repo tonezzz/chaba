@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
-column: backlog
-updated: 2026-10-22 14:19
+column: doing
+updated: 2026-10-22 19:46
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -78,3 +78,21 @@ comms:
     - ada-stt migrated off idc02: ~/audio-cpp-eval rsync''d, native unit on 100.72.146.39:8914, libgomp1 installed;
     threads=4 (8 thrashes shared vCPU); warm RTF ~0.5 (9.2s/19.3s audio); idc03 consumer envs repointed (TG_WHISPER_URL
     x4 + backups), ada-ha-tony + 4 relays restarted activ'
+- at: 2026-10-22 19:44
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:45
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-22 19:45
+  from: chaba
+  text: started devin-task-20261022-194506-provision-contabo-cloud-vps-8- on tony-macbook (dispatch)
+- at: 2026-10-22 19:46
+  from: devin
+  text: 'resumed session: verifying role stack. con01 live — mddb-follower streaming (LSN 236140371, lag_ms 78s
+    reported / investigating), ada-stt :8914, caddy-edge :80/:443, doc-mirror + jev-bench timers moved. Checking
+    vector-reindex, secrets-backup targets, consumer-canary AUDIT_HOSTS, cert-sync, runner/lab role.'
+action:
+  type: dispatch
+  status: running
+  runner: tony-macbook

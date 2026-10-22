@@ -1,7 +1,7 @@
 id: guard-card-yaml-syntax-validation-at-wri-a39362
 title: 'Guard: card-YAML syntax validation at write time — render died 2.5h on 3 malformed cards'
-column: backlog
-updated: 2026-10-22 19:34
+column: doing
+updated: 2026-10-22 19:47
 brief: '2026-10-11 ~12:45-15:10: chaba-board-render crashed every 60s on yaml.scanner errors. Three cards had YAML-invalid
   free text (ada-secret-drop unindented continuation; voice-degrade-tiers + scenario-spend-guard list items containing
   key: and >N sequences). cards.json went stale silently — board page showed 2.5h-old data while API writes kept
@@ -20,10 +20,11 @@ action:
   labels:
   - cpu
   - small
-  status: queued
+  status: running
   result: 'exit=0 ote: ship the `.service` and `board-render-guard.py` together or ExecStart 404s on stale checkouts.
     | devin-task-20261012-223345-two-cheap-guards-both-small-1-.service: Consumed 1min 5.877s CPU time, 145.0M memory
     peak, 0B memory swap peak.'
+  runner: idc02
 ref: KNB-0461
 comms:
 - at: 2026-10-11 15:11
@@ -81,6 +82,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:46
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:47
+  from: chaba
+  text: started devin-task-20261022-194658-two-cheap-guards-both-small-1- on idc02 (dispatch)
 review_kind: verify
 claim: {}
 auto_close:

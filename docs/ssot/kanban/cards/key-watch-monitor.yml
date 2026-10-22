@@ -1,7 +1,7 @@
 id: key-watch-monitor
 title: 'key-watch: credential expiry/quota monitor — the bridge-key-at-$0 gap'
-column: doing
-updated: 2026-10-22 19:34
+column: review
+updated: 2026-10-22 19:46
 brief: '2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning — inference 403s fleet-wide
   until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota — different
   job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.'
@@ -38,7 +38,40 @@ comms:
 - at: 2026-10-22 19:34
   from: devin
   text: session started — exploring chaba-nag LINE helper, gemini_pool ops events, procedures SSOT
+- at: 2026-10-22 19:45
+  from: devin
+  text: 'built: scripts/ops/key-watch.py + systemd/key-watch.{service,timer} (6h+boot) + tests/ops/test_key_watch.py
+    (20 tests pass) + ssot.procedures.yml entry + ssot.audit.hosts expected_services row for idc03. Probe model:
+    ssh python3 on-host per slot — values never leave the host (masked fp+verdict only). Live dry-run from idc02
+    found REAL issues already: OR fleet key …5528 limit_remaining=$0 on all 3 slots (alert fires day one); ha-mdev-omen
+    stale LLAT (401); cfat_ confirmed live via zones fallback;'
+- at: 2026-10-22 19:46
+  from: idc02
+  text: 'finished (ok): exit=0 dev LLAT on tony-omen returns 401, while Gemini quota markers are clean and both
+    CF tokens verify live. | devin-t'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'session-end checkpoint f2b990eb: 1 leftover file(s) committed'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: pushed dispatch/20261022-193413-sources-metadata-only-secrets- to origin
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: auto-merged 37d3aaa2 (dispatch/20261022-193413-sources-metadata-only-secrets-) → origin/master
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193413-sources-metadata-only-secrets-,
+    branch dispatch/20261022-193413-sources-metadata-only-secrets-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 dev LLAT on tony-omen returns 401, while Gemini quota markers are clean and both CF tokens verify
+    live. | devin-task-20261022-193413-sources-metadata-only-secrets-.service: Consumed 38.727s CPU time, 306.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}

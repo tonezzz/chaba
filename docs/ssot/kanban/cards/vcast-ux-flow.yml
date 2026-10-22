@@ -35,7 +35,7 @@ spec: "User journey stages to redesign, with acceptance per stage: 1. PAIRING �
 help: 'Related: vcast-bridge-registry-bugs (done — deployed 2026-10-09), vcast-claim-tombstone (queued — resurrect
   chain). Frontend surface is stacks/web/public/apps/vcast/index.html + the /displays JSON on idc03:3010. Ada''s
   realtime_provider rules apply: no phantom success claims.'
-updated: 2026-10-22 19:34
+updated: 2026-10-22 19:48
 action:
   type: dispatch
   status: running
@@ -73,4 +73,14 @@ comms:
 - at: 2026-10-22 19:34
   from: chaba
   text: started devin-task-20261022-123434-user-journey-stages-to-redesig on mn01 (dispatch)
+- at: 2026-10-22 19:37
+  from: devin
+  text: 'dispatch session started on mn01 — baseline: all 5 vcast check suites pass on current server.mjs; implementing
+    lifecycle/operator-view/recovery stages now'
+- at: 2026-10-22 19:48
+  from: devin
+  text: 'implemented all 6 stages: relay now derives lifecycle (pairing/connected/idle/playing/reconnecting(age)/stale(age))
+    + health{flaps_24h} + events timeline + per-pane last_cast; new POST /sweep; errors carry reason+next; new /apps/vcast/displays.html
+    operator view; pair.html+index.html+HA card updated. NEW vcast-ux-check.mjs 34/34 PASS, full suite 102/102.
+    Benchmark: disconnect->rebound 350ms (was ~30min manual surgery). NOT deployed — writing evidence now.'
 ref: MED-0275
