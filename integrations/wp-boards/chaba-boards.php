@@ -14,7 +14,7 @@
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.7.0
+ * Version: 0.7.1
  */
 
 if (!defined('ABSPATH')) exit;
@@ -225,8 +225,9 @@ add_action('init', function () {
         // recent recurrence (drives the admin list default sort).
         'repeat_ask' => ['topic', 'count', 'last_repeat', 'status'],
         // lesson — topic/level(intro|working|deep)/source(chat|voice|link)/
-        // learned_at/next_review(ISO dates)/status(open|learned|revise)
-        'lesson'   => ['topic', 'level', 'source', 'learned_at', 'next_review', 'status'],
+        // learned_at/next_review(ISO dates)/status(open|learned|revise)/
+        // updated(ISO date of last content write — sortable in admin list)
+        'lesson'   => ['topic', 'level', 'source', 'learned_at', 'next_review', 'status', 'updated'],
         // ops_error — lane(kk|tony|michael)/session_id/tool/
         // error_type(schema_error|runtime_error|silent_reconnect|
         // stale_result|phantom_claim|degraded_result)/raw_result(JSON
@@ -280,7 +281,7 @@ function chaba_cpt_admin_columns(string $type): array {
         'render_job' => ['result' => 'Result', 'prompt' => 'Prompt', 'status' => 'Status', 'model' => 'Model', 'size_px' => 'Size', 'secs' => 'Clip', 'duration_s' => 'Secs', 'est_cost_usd' => 'Est$', 'rating' => '★'],
         'news'       => ['source_feed' => 'Feed', 'published_at' => 'Published', 'situation' => 'Situation'],
         'repeat_ask' => ['count' => 'Asked', 'last_repeat' => 'Last repeat', 'status' => 'Status'],
-        'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status'],
+        'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status', 'updated' => 'Updated'],
         'ops_error'  => ['lane' => 'Lane', 'tool' => 'Tool', 'error_type' => 'Type', 'occurred_at' => 'At', 'status' => 'Status'],
         'score'      => ['who' => 'Who', 'delta' => 'Δ', 'kind' => 'Kind', 'topic' => 'Topic', 'at' => 'At'],
     ];
@@ -359,6 +360,30 @@ add_action('pre_get_posts', function ($q) {
     if (!$ob) {
         $q->set('meta_key', 'last_repeat');
         $q->set('orderby', 'meta_value');
+        $q->set('order', 'DESC');
+    }
+});
+
+// lesson admin list — Updated column is clickable-sortable (ISO-lexical);
+// default view puts most recently updated lessons on top.
+add_filter('manage_edit-lesson_sortable_columns', function ($cols) {
+    $cols['chaba_updated'] = 'lesson_updated';
+    return $cols;
+});
+add_action('pre_get_posts', function ($q) {
+    if (!is_admin() || !$q->is_main_query()) return;
+    if ($q->get('post_type') !== 'lesson') return;
+    $ob = $q->get('orderby');
+    if ($ob === 'lesson_updated' || !$ob) {
+        // OR meta_query keeps lessons that predate the key (no `updated`
+        // meta yet) in the list — a bare meta_key would exclude them.
+        $q->set('meta_query', [
+            'relation' => 'OR',
+            ['key' => 'updated', 'compare' => 'EXISTS'],
+            ['key' => 'updated', 'compare' => 'NOT EXISTS'],
+        ]);
+        $q->set('orderby', 'meta_value');
+        if ($ob === 'lesson_updated') return;  // honour clicked ASC/DESC
         $q->set('order', 'DESC');
     }
 });

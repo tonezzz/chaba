@@ -114,8 +114,14 @@ def main():
         },
     }
     existing = wp.api(f"/wp/v2/lesson&slug={slug}&status=private")
+    payload["meta"]["updated"] = str(date.today())
     if existing:
         pid = existing[0]["id"]
+        old_meta = existing[0].get("meta", {})
+        # preserve first-learn provenance + review state on re-file
+        for k in ("learned_at", "next_review", "status"):
+            if old_meta.get(k):
+                payload["meta"][k] = old_meta[k]
         wp.api(f"/wp/v2/lesson/{pid}", payload)
         print(f"updated {slug} (post {pid})")
     else:

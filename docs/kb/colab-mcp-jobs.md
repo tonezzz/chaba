@@ -47,3 +47,19 @@ kanban cards classified in 2x50 parallel batches (204s+296s), published as
 - Runtime type (T4 etc.) is a UI-only pick — no MCP tool for it.
 - Colab ends sessions on idle/quota — treat the runtime as ephemeral;
   anything worth keeping must land in step 4 before it dies.
+- **VRAM: prefer resident + batched over sequential offload** (verified
+  2026-10-22, LTX T4): `enable_sequential_cpu_offload()` leaves the GPU
+  idle during CPU↔GPU layer shuttles — only needed when activations OOM.
+  If the model fits (bf16 transformer ~4GB), `pipe.to('cuda')` + *batched*
+  prompt embeds (stack B prompts into one denoise pass) fills the card:
+  3 shots in 591s at 12.5/14.5GB peak vs ~233s/shot serial-offloaded.
+- **System RAM (12GB), not VRAM, is the usual kill constraint**: loading a
+  second pipeline into a live kernel while the first still holds ~9GB RAM
+  OOM-kills the kernel silently (cell just stops, GPU memory orphaned).
+  Rule: one self-contained load→render→publish cell per pipeline variant;
+  `os._exit(0)` crashes just the kernel — frees orphaned GPU mem while
+  `/tmp` weights + Drive mount (VM-level) survive.
+- Drive FUSE writes flush async — files may `cp` locally but not appear
+  to rclone for ~60s; poll before archiving.
+- `torch_dtype=` (not `dtype=`) is the diffusers kwarg; the wrong one is
+  silently ignored and loads fp32 (slow + big).
