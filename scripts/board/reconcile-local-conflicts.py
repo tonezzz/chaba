@@ -264,16 +264,58 @@ def flag_via_api(cid: str | None, text: str) -> bool:
     return False
 
 
+FLAG_STATE = Path.home() / ".local/share/chaba-reconcile-flags.json"
+FLAG_DEDUP_H = int(os.environ.get("RECONCILE_FLAG_DEDUP_H", "6"))
+
+
+def _flag_key(text: str) -> str:
+    m = re.search(r"\S+\.local-conflict-\S+", text)
+    key = m.group(0) if m else text[:80]
+    return re.sub(r"\.local-conflict-\d{6,}.*$", ".local-conflict", key)
+
+
+def _flag_recent(key: str) -> bool:
+    try:
+        last = datetime.fromisoformat(
+            json.loads(FLAG_STATE.read_text())[key])
+        return datetime.now(timezone.utc) - last < timedelta(
+            hours=FLAG_DEDUP_H)
+    except Exception:
+        return False
+
+
+def _flag_mark(key: str) -> None:
+    try:
+        FLAG_STATE.parent.mkdir(parents=True, exist_ok=True)
+        st = json.loads(FLAG_STATE.read_text()) \
+            if FLAG_STATE.exists() else {}
+        now = datetime.now(timezone.utc)
+        st[key] = now.isoformat()
+        st = {k: v for k, v in st.items()
+              if now - datetime.fromisoformat(v) < timedelta(days=7)}
+        FLAG_STATE.write_text(json.dumps(st))
+    except Exception:
+        pass
+
+
 def flag_card(card_dir: Path, cid: str | None, text: str,
               dry: bool) -> None:
     """Flag a failed reconcile: comms + column=review on the canonical
     card when it exists; otherwise upsert the ops alert card. Pattern
-    mirrors kanban-commit.sh's alert_card."""
+    mirrors kanban-commit.sh's alert_card. A recurring conflict on the
+    same file dedupes to one flag per FLAG_DEDUP_H hours — otherwise a
+    permanent producer collision spams the alert card every cycle."""
     if dry:
         print(f"  [dry] flag {cid or ALERT_CARD_ID}: {text[:120]}")
         return
+    fkey = _flag_key(text)
+    if _flag_recent(fkey):
+        print(f"  dedup: flag for {fkey} already raised "
+              f"<{FLAG_DEDUP_H}h ago — suppressed")
+        return
     if flag_via_api(cid, text) or (
             cid and flag_via_api(None, f"{cid}: {text}")):
+        _flag_mark(fkey)
         return
     if REPO.resolve() != SERVED.resolve():
         print(f"reconcile: flag for {cid or ALERT_CARD_ID} could not reach "
@@ -303,6 +345,7 @@ def flag_card(card_dir: Path, cid: str | None, text: str,
             card["column"] = "review"
         card["updated"] = now()
         dump(target, card)
+        _flag_mark(fkey)
     except Exception as e:  # flagging must never crash the reconciler
         print(f"reconcile: flag write failed for {target.name}: {e}",
               file=sys.stderr)

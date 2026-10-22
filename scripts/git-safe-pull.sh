@@ -69,7 +69,7 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
 REPO_OK=1
 
 TS="$(date '+%Y%m%d-%H%M%S')"
-GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/}"
+GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$}"
 GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
 ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
 
