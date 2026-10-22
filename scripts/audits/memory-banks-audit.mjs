@@ -22,6 +22,9 @@ const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, 
 const BANKS_SSOT = join(PROJECT_ROOT, "docs/ssot/apps/ssot.apps.ada-memory-banks.yml");
 const AUDIT_SSOT = join(PROJECT_ROOT, "docs/ssot/infrastructure/ssot.audit.yml");
 const MDDB_BASE = (process.env.MDDB_BASE || "http://100.102.134.91:11023/v1").replace(/\/$/, "");
+// CMS plane (mddb-cms :11027) — migrated content collections (devin-kb, kb-*,
+// chaba-*, ada-cms-*, infrastructure-ssot) live here since the MEM-0545 split.
+const MDDB_CMS = (process.env.MDDB_CMS_URL || "http://100.102.134.91:11027/v1").replace(/\/$/, "");
 const SUMMARIES_DIR = process.env.DEVIN_SUMMARIES_DIR || `${process.env.HOME}/.local/share/devin/cli/summaries`;
 const ADA_ENV_FILES = (process.env.ADA_ENV_FILES ||
   `${process.env.HOME}/.config/secrets/ada-pi-pwa.env`).split(":");
@@ -53,9 +56,9 @@ function thresholds() {
   }
 }
 
-function getJson(path, timeoutMs = 15000) {
+function getJson(path, timeoutMs = 15000, base = MDDB_BASE) {
   return new Promise((resolve, reject) => {
-    const u = new URL(MDDB_BASE + path);
+    const u = new URL(base + path);
     const req = http.get(
       { hostname: u.hostname, port: u.port, path: u.pathname + u.search, timeout: timeoutMs },
       (res) => {
@@ -76,9 +79,9 @@ function getJson(path, timeoutMs = 15000) {
   });
 }
 
-function postJson(path, payload, timeoutMs = 30000) {
+function postJson(path, payload, timeoutMs = 30000, base = MDDB_BASE) {
   return new Promise((resolve, reject) => {
-    const u = new URL(MDDB_BASE + path);
+    const u = new URL(base + path);
     const body = JSON.stringify(payload);
     const req = http.request(
       {
@@ -210,6 +213,20 @@ async function main() {
   if (!stats) return done(null);
   const live = new Map((stats.collections || []).map((c) => [c.name, c]));
 
+  // Union in the CMS plane's stats — declared collections that moved in the
+  // MEM-0545 split (e.g. devin-kb) must not false-flag as missing, and the
+  // per-collection reads below must hit the plane the collection lives on.
+  const collBase = new Map([...live.keys()].map((n) => [n, MDDB_BASE]));
+  const cmsStats = await getJson("/stats", 60000, MDDB_CMS).catch(() => null);
+  if (cmsStats) {
+    for (const c of cmsStats.collections || []) {
+      if (!live.has(c.name)) live.set(c.name, c);
+      collBase.set(c.name, MDDB_CMS);
+    }
+  } else {
+    note(`MDDB CMS plane /v1/stats unreachable at ${MDDB_CMS} — migrated collections unchecked`);
+  }
+
   // --- drift: missing / orphan collections ---
   const expectedNames = new Set(expected.map((e) => e.collection));
   for (const e of expected) {
@@ -239,7 +256,12 @@ async function main() {
       );
     }
 
-    const docs = await postJson("/search", { collection: e.collection, limit: 5000 }).catch(
+    const docs = await postJson(
+      "/search",
+      { collection: e.collection, limit: 5000 },
+      30000,
+      collBase.get(e.collection) || MDDB_BASE
+    ).catch(
       (err) => {
         warn(`cannot list ${e.collection}: ${err.message}`);
         return null;
@@ -298,10 +320,15 @@ async function main() {
       const newestFile = Math.max(...files);
       const devColl = expected.find((e) => e.bank === "devin" && live.has(e.collection));
       if (devColl) {
-        const docs = await postJson("/search", {
-          collection: devColl.collection,
-          limit: 5000,
-        }).catch(() => []);
+        const docs = await postJson(
+          "/search",
+          {
+            collection: devColl.collection,
+            limit: 5000,
+          },
+          30000,
+          collBase.get(devColl.collection) || MDDB_BASE
+        ).catch(() => []);
         const newestDoc = Math.max(
           0,
           ...docs.map((d) => (d.addedAt || d.updatedAt || 0) * 1000)

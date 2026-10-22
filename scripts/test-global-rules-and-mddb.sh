@@ -1,5 +1,11 @@
 #!/bin/bash
 # Test script for validating global rules effectiveness and MDDB search performance
+#
+# MDDB planes (MEM-0545, 2026-10-13): memory/ops stays on :11023, chaba content
+# collections (kb-*, chaba-*, infrastructure-ssot, ada-cms-*, devin-kb) live on
+# the CMS plane :11027. Collection-specific probes below target :11027.
+MDDB_MAIN="${MDDB_MAIN:-http://100.102.134.91:11023}"
+MDDB_CMS="${MDDB_CMS:-http://100.102.134.91:11027}"
 
 echo "=== Testing Global Rules and MDDB Search Effectiveness ==="
 echo "Test Date: $(date)"
@@ -38,9 +44,9 @@ echo ""
 
 # Test 2: MDDB Search Quality
 echo "Test 2: MDDB Search Quality (GPU memory management)"
-SEARCH_RESULT=$(curl -s -m 10 -X POST http://100.102.134.91:11023/v1/vector-search \
+SEARCH_RESULT=$(curl -s -m 10 -X POST "$MDDB_CMS/v1/vector-search" \
   -H "Content-Type: application/json" \
-  -d '{"query":"GPU memory management","limit":3,"collection":"chaba-system"}')
+  -d '{"query":"GPU memory management","limit":3,"collection":"infrastructure-ssot"}')
 TOP_SCORE=$(echo $SEARCH_RESULT | jq -r '.results[0].score')
 SCORE_FLOAT=$(echo "$TOP_SCORE" | awk '{printf "%.2f", $1}')
 SCORE_COMPARE=$(echo "$SCORE_FLOAT > 0.45" | bc -l)
@@ -98,7 +104,7 @@ echo ""
 
 # Test 7: SSOT Collection Documents
 echo "Test 7: SSOT Collection Documents"
-SSOT_DOCS=$(curl -s -m 10 http://100.102.134.91:11023/v1/vector-stats | jq '.collections["ssot-infrastructure"].total_documents // 0')
+SSOT_DOCS=$(curl -s -m 10 "$MDDB_CMS/v1/vector-stats" | jq '.collections["infrastructure-ssot"].total_documents // 0')
 if [ "$SSOT_DOCS" -ge 1 ]; then
     check_result 0 "SSOT infrastructure collection - $SSOT_DOCS documents (expected >= 1)"
 else
@@ -108,7 +114,7 @@ echo ""
 
 # Test 8: KB Collection Documents
 echo "Test 8: KB System Collection Documents"
-KB_DOCS=$(curl -s -m 10 http://100.102.134.91:11023/v1/vector-stats | jq '.collections["chaba-system"].total_documents // 0')
+KB_DOCS=$(curl -s -m 10 "$MDDB_CMS/v1/vector-stats" | jq '.collections["kb-system"].total_documents // 0')
 if [ "$KB_DOCS" -ge 25 ]; then
     check_result 0 "KB system collection - $KB_DOCS documents (>= 25)"
 else
@@ -117,10 +123,10 @@ fi
 echo ""
 
 # Test 9: Cross-Collection Search
-echo "Test 9: Cross-Collection Search (within chaba-system)"
-CROSS_RESULT=$(curl -s -m 10 -X POST http://100.102.134.91:11023/v1/vector-search \
+echo "Test 9: Cross-Collection Search (within kb-system)"
+CROSS_RESULT=$(curl -s -m 10 -X POST "$MDDB_CMS/v1/vector-search" \
   -H "Content-Type: application/json" \
-  -d '{"query":"health check configuration","limit":10,"collection":"chaba-system"}')
+  -d '{"query":"health check configuration","limit":10,"collection":"kb-system"}')
 CROSS_COUNT=$(echo $CROSS_RESULT | jq '.results | length')
 if [ "$CROSS_COUNT" -ge 1 ]; then
     check_result 0 "Cross-collection search - $CROSS_COUNT results (>= 1)"

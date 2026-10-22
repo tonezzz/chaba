@@ -13,5 +13,9 @@ WorkingDirectory=%h/CascadeProjects/ada-voice
 # real L3 endpoint exists.
 ExecStartPre=/bin/sh -c 'systemctl --user start open-jev open-jev-student; for i in $(seq 1 72); do curl -sf -m 3 http://100.75.102.88:8777/health >/dev/null && curl -sf -m 3 http://100.75.102.88:8778/health >/dev/null && exit 0; sleep 5; done; echo "open-jev endpoints did not become healthy"; exit 1'
 ExecStartPost=/bin/sh -c 'systemctl --user stop open-jev open-jev-student; exit 0'
+# Mixed producer (cms-11023-parked-writers, 2026-10-22): --mddb :11023 keeps
+# scenario-report docs on the memory plane; ada-cms-pages writes route to the
+# CMS plane via ada-pi mddb_client (collection-aware).
+Environment=MDDB_CMS_URL=http://100.102.134.91:11027/v1
 ExecStart=%h/.venvs/ada-voice-bench/bin/python tests/bench/orch-bench.py --student http://100.75.102.88:8778 --heavy http://100.75.102.88:8777 --sets golden,hard --limit 30 --timeout 240 --mddb http://100.102.134.91:11023/v1 --report-cms --corpus-out %h/.local/share/ada/orch-corpus.jsonl --stats-out %h/.local/share/ada/orch-router-stats.jsonl
 ExecStart=/usr/bin/python3 scripts/nest-bench-update.py --force
