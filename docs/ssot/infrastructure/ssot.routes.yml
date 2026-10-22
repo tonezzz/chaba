@@ -136,7 +136,7 @@ routes:
   # [tony-dell-web]. `verify` = cheap probe for health lane.
   - {id: yt-cache,         kind: static, path: /apps/yt-cache/*,       owner: chaba, custom: true, note: "local media mount /srv/media/yt-cache (not /srv/public)"}
   - {id: yt-corpus,        kind: static, path: /apps/yt-corpus/*,      owner: chaba, custom: true, note: "local media mount /srv/media/yt-corpus — gdrive corpus snapshot on idc02"}
-  - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "https://idc03.taila0626a.ts.net:10000", auth: tailnet-identity-write, owner: chaba, note: "canonical writer on idc03 — forward via tailscale serve so tailnet identity headers stay valid"}
+  - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "https://idc03.taila0626a.ts.net:10000", auth: tailnet-identity-write, owner: chaba, note: "canonical writer on idc03 — forward via tailscale serve so tailnet identity headers stay valid. 2026-10-22: CF-Access-gated public vhosts (tony-ha.surf-thailand.com) inject X-Board-Edge-Key (BOARD_EDGE_KEY env on the edge, BOARD_API_EDGE_KEY on the api) so public-edge writes verify as edge:<cf-email>; tailnet front :8088 keeps tailnet-only guard"}
   - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: /apps/system-report/api, upstream: "idc02.taila0626a.ts.net:8792", auth: tailnet-identity-write, owner: chaba}
   - {id: system-report,    kind: static, path: /apps/system-report/*,  owner: chaba, public_host: monitor.surf-thailand.com}
   # usage-feed — card wp-usage-pull-render-plesk-worker (OPS-0661):
