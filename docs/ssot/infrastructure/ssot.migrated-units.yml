@@ -1,0 +1,306 @@
+# Migrated-unit manifest — tony-dell full-service migration (OPS-0725)
+#
+# The card spec requires every migrated unit to declare four facts:
+#   {data_dirs, unit_file, secrets_env, front_name}
+# This file is that declaration. Paths are host-local (%h = service user's
+# home). `front_name` is the stable consumer-facing address — tailnet serve,
+# edge route, or direct tailnet-IP port. `null` = confirmed none / N/A.
+# `pending` = known to exist but not yet captured — fill on next touch.
+#
+# Dell powered off 2026-10-20 for multi-day SSD+RAM work (phase 6 verify
+# window). Dell returns as failover capacity only (phase 7) — do NOT move
+# units back wholesale.
+#
+# Sources: docs/kb/host-migration-tony-dell.md + card comms; fields verified
+# against live units 2026-10-22.
+
+hosts:
+
+  idc03:   # backend hub — writers, data constellation, MDDB leader
+    tailnet_ip: "100.102.134.91"
+    units:
+      chaba-board-api:
+        data_dirs: ["%h/CascadeProjects/chaba-tony-dell"]   # served checkout = writer root
+        unit_file: "%h/.config/systemd/user/chaba-board-api.service"
+        secrets_env: "%h/.config/secrets/board-api.env"
+        front_name: "https://idc03.taila0626a.ts.net:10000 + edge route /apps/board-api"
+        note: "Tier-0. Standby: stopped copy + git mirror on idc02."
+      chaba-served-checkout:
+        data_dirs: ["%h/CascadeProjects/chaba-tony-dell"]
+        unit_file: null                                    # a checkout, not a unit
+        secrets_env: "gh deploy key via ssh alias gh-chaba"
+        front_name: null
+        note: "kanban-commit pushes to origin from here; ~25 exec units read it."
+      writer-family:
+        units: ["kanban-commit", "kanban-dispatch", "kanban-sync", "merge-sweep",
+                "review-digest", "chaba-board-render", "chaba-report-watch",
+                "chaba-starboard-tracker", "chaba-lab-sweep", "qc-scoreboard",
+                "chaba-kanban-brief", "chaba-nag", "focus-dispatcher-overnight",
+                "chaba-cms-regen", "chaba-cached-videos", "chaba-tony-ideas",
+                "daily-brief"]
+        data_dirs: ["%h/CascadeProjects/chaba-tony-dell/docs/ssot"]
+        unit_file: "%h/.config/systemd/user/<name>.{service,timer}"
+        secrets_env: "per-unit; chaba-kanban-brief uses %h/.config/secrets/litellm-chaba.env"
+        front_name: null
+        note: "Moved wholesale 2026-10-16 — single-writer flock must flip together."
+      chaba-postgres:                                        # quadlet (replaced chaba-postgres-16.service)
+        data_dirs: ["%h/.config/containers/postgres/data"]
+        unit_file: "%h/.config/containers/systemd/chaba-postgres.container"
+        secrets_env: "%h/.config/secrets/chaba-stack.env"
+        front_name: "100.102.134.91:5432 (tailnet); 127.0.0.1:5433 loopback (litellm owns :5432)"
+        note: "2026-10-22: wave-2 quadlet had bound tailnet :5433 — reconciled to :5432; old chaba-postgres-16.service parked."
+      chaba-redis:                                           # quadlet (replaced redis.service)
+        data_dirs: ["%h/.config/containers/redis/data"]
+        unit_file: "%h/.config/containers/systemd/chaba-redis.container"
+        secrets_env: null
+        front_name: "100.102.134.91:6379 + 127.0.0.1:6379"
+        note: "2026-10-22: quadlet only bound loopback — added tailnet publish; old redis.service parked."
+      yomi-api:
+        data_dirs: ["%h/.local/share/yomi", "%h/.yomi"]
+        unit_file: "%h/.config/systemd/user/yomi-api.service (+ yomi-update-all/-active/-mddb-digest timers)"
+        secrets_env: "%h/.config/yomi/yomi-api.env, %h/.config/yomi/yomi-update-all.env"
+        front_name: "idc03 tailnet-serve :3000 → edge /api/yomi/*"
+        note: "postgre host-alias → 100.102.134.91:5432."
+      trade-api:
+        data_dirs: ["%h/CascadeProjects/trade"]
+        unit_file: "%h/.config/systemd/user/trade-api.service"
+        secrets_env: "%h/CascadeProjects/trade/.env"
+        front_name: "idc03 tailnet-serve :9002 → edge /apps/trade/api/* + /api/ws/*"
+      mha-state-push:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/mha-state-push.service"
+        secrets_env: "%h/.venvs/mha-push env (tokens copied 2026-10-17)"
+        front_name: null
+        note: "Pushes 60 entities to michael-ha."
+      input-bridge:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/input-bridge.service"
+        secrets_env: "%h/.config/secrets/input-bridge.env"
+        front_name: "100.102.134.91:3010 → edge /api/input-bridge/*"
+      michael-dev:                                           # moved earlier (2026-10-09)
+        data_dirs: ["%h/.config/home-assistant-michael-dev"]
+        unit_file: "%h/.config/systemd/user/michael-dev.service"
+        secrets_env: "%h/.config/secrets/ha-michael-dev.env"
+        front_name: "https://idc03.taila0626a.ts.net:8124 + https://michael-dev.surf-thailand.com"
+      mddb:                                                  # pre-existing leader, unchanged by migration
+        data_dirs: ["%h/.config/containers/mddb/data"]
+        unit_file: "%h/.config/systemd/user/mddb.service"
+        secrets_env: pending
+        front_name: "100.102.134.91:11023 (HTTP) + :9000 (MCP)"
+
+  idc02:   # edge + cold storage
+    tailnet_ip: "100.123.163.11"
+    units:
+      caddy-edge:
+        data_dirs: ["%h/.config/caddy"]
+        unit_file: "%h/.config/systemd/user/caddy-edge.service"
+        secrets_env: "%h/.config/secrets/caddy-edge.env"
+        front_name: "https://idc02.taila0626a.ts.net:443 (tailnet serve → :8088) + surf-thailand /apps handles"
+        note: "podman --network=host; apply config via systemctl --user restart (admin API unreachable)."
+      web:                                                   # /apps origin
+        data_dirs: ["%h/web-srv"]
+        unit_file: "%h/.config/systemd/user/web.service"
+        secrets_env: null
+        front_name: "127.0.0.1:8099 upstream of caddy-edge (all /apps/* + /api/* routes)"
+      web-srv-sync:
+        data_dirs: ["%h/web-srv"]
+        unit_file: "%h/.config/systemd/user/web-srv-sync.service"
+        secrets_env: null
+        front_name: null
+        note: "rsyncs public/+docs/ from idc03 checkout; two dell legs have '|| true' while dell is dark."
+      weaviate:
+        data_dirs: ["container volume (podman)", "%h/.local/share/weaviate (verify)"]
+        unit_file: "%h/.config/systemd/user/weaviate.service"
+        secrets_env: "inline env in unit (no secrets file)"
+        front_name: "100.123.163.11:8084 → edge /api/weaviate/*"
+      gpu-queue + gpu-queue-processor:
+        data_dirs: []                                        # stateless; jobs live in idc03 pg
+        unit_file: "%h/.config/systemd/user/gpu-queue{,-processor}.service"
+        secrets_env: "inline DATABASE_URL → postgre on idc03"
+        front_name: "100.123.163.11:3001 → edge /api/gpu-queue/*"
+      gev-constellation:
+        units: ["gev-gemini", "gods-eye-view-api", "gesture-relay"]
+        data_dirs: ["%h/gods-eye-view"]
+        unit_file: "%h/.config/systemd/user/{gev-gemini,gods-eye-view-api,gesture-relay}.service"
+        secrets_env: "podman secret gemini-api-key"
+        front_name: "ws :8789, cmd :8790 (netns sidecar), api 100.123.163.11:4173, relay :8794 → edge /apps/gev/*"
+      helm:
+        data_dirs: []
+        unit_file: "%h/.config/containers/systemd/helm.container"
+        secrets_env: null
+        front_name: "100.123.163.11:3003 → edge /apps/helm"
+      bserver:
+        data_dirs: ["static via chaba checkout mount"]
+        unit_file: "%h/.config/containers/systemd/bserver.container"
+        secrets_env: null
+        front_name: "100.123.163.11:8092/:8443 → CMS /, /new, /decisions, /infrastructure"
+      websockify-macbook:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/websockify-macbook.service"
+        secrets_env: null
+        front_name: "100.123.163.11:6080"
+      websockify-vms-mn01:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/websockify-vms-mn01.service"
+        secrets_env: null
+        front_name: "100.123.163.11:6082"
+      notebooklm-rest + notebooklm-mcp:
+        data_dirs: ["%h/.local/share/notebooklm"]
+        unit_file: "%h/.config/containers/systemd/notebooklm-{rest,mcp}.container"
+        secrets_env: "%h/.config/secrets/notebooklm-rest-api.env"
+        front_name: "100.123.163.11:3011 + 127.0.0.1:3011"
+      secrets-console:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/secrets-console.service"
+        secrets_env: "%h/.config/secrets/secrets-console.env"
+        front_name: "https://idc02.taila0626a.ts.net:8005"
+      status-data-api:
+        data_dirs: ["%h/tony-dell/status-data-api/repo (ro mount)"]
+        unit_file: "%h/.config/systemd/user/status-data-api.service"
+        secrets_env: "inline FRIGATE_URL/SENSOR_READER_URL → omen"
+        front_name: "127.0.0.1:8000 → edge /api/* catch-all"
+      chaba-report-api:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/chaba-report-api.service"
+        secrets_env: "%h/.config/secrets/report-api.env"
+        front_name: "127.0.0.1:8792 + tailnet :8792 → edge /apps/system-report/api/*"
+      chaba-monitoring-dashboard:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/chaba-monitoring-dashboard.service"
+        secrets_env: "MON_HOST env"
+        front_name: "loopback :3002 + tailnet shadow :3002"
+      mcp-link-monitor:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/mcp-link-monitor.service"
+        secrets_env: null
+        front_name: null
+      mddb-chain:
+        units: ["mddb (follower)", "mddb-lab", "mddb-ops", "mddb-watchdog",
+                "mddb-lab-pull (timer)", "mddb-gdrive-tier (timer)"]
+        data_dirs: ["%h/.local/share/mddb-backups", "%h/.local/share/mddb-lab", "%h/.local/share/mddb-ops"]
+        unit_file: "%h/.config/systemd/user/mddb*.service|timer"
+        secrets_env: "rclone.conf for gdrive tier"
+        front_name: "mddb-lab :11024, mddb-ops :11025 (tailnet)"
+        note: "lab-pull pulls ONLY latest dump from idc03 (fixed 2026-10-22 — whole-dir mirror fought gdrive-tier retention)."
+      yt-cache:
+        data_dirs: ["%h/web-srv/yt-cache"]
+        unit_file: null                                      # snapshot landed in web-srv mount
+        secrets_env: null
+        front_name: "edge /apps/yt-cache"
+
+  tony-omen:   # LAN cohort (moved last — most user-facing)
+    tailnet_ip: "100.75.102.88"
+    units:
+      tony-ha:
+        data_dirs: ["%h/.config/home-assistant"]
+        unit_file: "%h/.config/systemd/user/tony-ha.service (podman, hostnet)"
+        secrets_env: "%h/.config/secrets/home-assistant-token.env (consumers)"
+        front_name: "https://tony-omen.taila0626a.ts.net:8123 + LAN http://192.168.2.67:8123 + public https://tony-ha.surf-thailand.com"
+        note: "USB webcams not yet moved — /dev/video0/1 AddDevice lines pending."
+      ada-ha:
+        data_dirs: ["%h/.config/ada-ha"]
+        unit_file: "%h/.config/systemd/user/ada-ha.service"
+        secrets_env: "%h/.config/secrets/ada-ha-token.env"
+        front_name: "https://tony-omen.taila0626a.ts.net:8125"
+      node-red:
+        data_dirs: ["%h/.local/share/nodered", "%h/var/chaba/health (ro mount)"]
+        unit_file: "%h/.config/systemd/user/node-red.service"
+        secrets_env: "%h/.config/secrets/nodered-ha.env (HASS_TOKEN)"
+        front_name: ":1880 → edge /apps/node-red/*"
+        note: "2026-10-22: live flows repointed off dell (HA states→omen :8123, board-api→idc03:10000, board2 probe→idc02 edge)."
+      go2rtc:
+        data_dirs: ["%h/.config/go2rtc"]
+        unit_file: "%h/.config/systemd/user/go2rtc.service"
+        secrets_env: null
+        front_name: ":1984 (host), cams → edge + LAN"
+      camera-panel:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/camera-panel.service"
+        secrets_env: null
+        front_name: ":8091 (dell's :8090 was taken by cast-shots)"
+      yt-live-api + raceman media:
+        data_dirs: ["%h/.cache/yt-live-media", "%h/GoogleDrive/chaba-media-corpus/yt-live-media"]
+        unit_file: "%h/.config/systemd/user/{yt-live-api,raceman-web}.service"
+        secrets_env: pending
+        front_name: "api :8791; media via raceman nginx :8083/apps/yt-live"
+      ha-live:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/ha-live.service"
+        secrets_env: "%h/.config/secrets/home-assistant-token.env"
+        front_name: "https://tony-omen.taila0626a.ts.net:8444"
+      google-home-mcp:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/google-home-mcp.service"
+        secrets_env: pending
+        front_name: "100.75.102.88:8004"
+      gemini-ollama-proxy:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/gemini-ollama-proxy.service"
+        secrets_env: "podman secret gemini-api-key"
+        front_name: ":11435"
+      nest-mgr / plug-watch / ha-stall-watchdog:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/<name>.service"
+        secrets_env: pending
+        front_name: null
+      chaba-guest + chaba-guest-lan:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/chaba-guest{,-lan}.service"
+        secrets_env: "%h/.config/secrets/chaba-guest.env"
+        front_name: ":8014; LAN guest on 192.168.2.67:8126"
+      ha-guest-lan:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/ha-guest-lan.service"
+        secrets_env: null
+        front_name: "192.168.2.67:8125"
+      guest-lan-ip:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/guest-lan-ip.service"
+        secrets_env: null
+        front_name: "carries 192.168.2.67/24 on wlo1 (ex-dell LAN IP, handed off 2026-10-20)"
+      playlived + playlive-chrome / yolo-detect / michael-ha-mcp-tunnel:
+        data_dirs: ["%h/.local/playlive"]
+        unit_file: "%h/.config/systemd/user/<name>.service"
+        secrets_env: pending
+        front_name: "yolo :8780; mha tunnel 0.0.0.0:19584"
+      weaviate-search:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/weaviate-search.service"
+        secrets_env: "inline env"
+        front_name: ":3002"
+        note: "2026-10-22: WEAVIATE_URL repointed tony-dell:8084 → idc02:8084."
+      weaviate-index:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/weaviate-index.{service,timer} (daily 02:00)"
+        secrets_env: "inline env"
+        front_name: null
+        note: "Same repoint as weaviate-search."
+      weaviate-embed-proxy:
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/weaviate-embed-proxy.{socket,service}"
+        secrets_env: null
+        front_name: "localhost:5000 → mn01:5000 (weaviate-embedding.service on mn01)"
+      job-timers:
+        units: ["wp-cam-snapshot", "update-cam-frame", "xiaomi-token-refresh",
+                "ha-config-backup", "+ 11 job timers (flood/market/CMS/session/dispatch/prune) moved at power-off"]
+        data_dirs: []
+        unit_file: "%h/.config/systemd/user/<name>.timer"
+        secrets_env: pending
+        front_name: null
+
+  parked-on-omen-2026-10-22:
+    # Dead-dell units stopped+disabled+renamed *.parked (recoverable when/if needed)
+    mddb-tunnel:   "omen:9001 → dell:9000; no live consumer — mddb reachable directly at idc03:9000"
+    chaba-watch:   "rsync mirror of dell ~/.local/share/chaba → ~/chaba-watch; source dark, mirror kept read-only"
+    clip-sync-dell: "dell→omen clipboard sync; dell off — restart-looped, parked"
+  kept-dell-scoped:
+    ssh-canary:    "omen user timer probes dell SSH every minute — kept as the dell-returns early warning"
+    secrets-collect: "weekly Sun 04:00; collects omen+dell secrets — dell leg will fail while dark (expected)"
+
+  dell-dark:
+    # Units that live ONLY on tony-dell — unreachable while powered off.
+    # Phase-7 decision items (dell returns as failover capacity, not everything-box).
+    ha-auth-watch:     "polls tony-ha(omen)+michael-ha — repoint or retire at phase 7"
+    network-scan-tony: "LAN scan + push — move to omen or retire at phase 7"
+    desktop-seat:      "gvfs/pipewire/keyring/xfce-seat/barrier-client etc — die with the box by design"
+    guest-wifi-adapter: "Ralink MT7601U USB — physical, dies with the box unless adapter moves to omen"

@@ -1,6 +1,6 @@
 // TradeCanvas Enhanced UI Application
-const API_BASE_URL = "http://tony-dell:8080/api";
-const WS_BASE_URL = "ws://tony-dell:8080/api/ws";
+const API_BASE_URL = "/apps/trade/api";
+const WS_BASE_URL = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/apps/trade/api/ws";
 
 class TradeCanvasApp {
   constructor() {
