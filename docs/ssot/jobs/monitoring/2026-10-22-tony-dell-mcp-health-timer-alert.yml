@@ -1,0 +1,67 @@
+title: tony-dell-mcp-health timer-alert — root cause = idc03 chaba-postgres external bind outage
+subtitle: timer-alert-tony-dell-tony-dell-mcp-health investigation (dispatched 2026-10-22)
+icon: timer
+
+decision:
+  summary: >
+    Sentinel flagged tony-dell-mcp-health.service result=exit-code (card cites
+    last-run 2026-10-14 19:44). User journal on tony-dell only reaches back to
+    Oct 20 (rotation), so the Oct-14 run cannot be reconstructed. What the
+    journal DOES show is a much bigger story: a sustained exit-code window
+    2026-10-21 09:36:00 -> 2026-10-22 16:43:51 (+07) — ~373 consecutive failed
+    runs, each dying in ~1-4s — then clean recovery; all runs OK since
+    16:48:47 (verified through 19:34).
+  root_cause: >
+    chaba-postgres.service on idc03 was restarted 2026-10-21 09:35:57. The
+    restart raced: two recreated containers failed with
+    "rootlessport listen tcp 127.0.0.1:5432: bind: address already in use"
+    (status=126). A third attempt at 09:36:19 (container f05cae59, revised
+    mapping 127.0.0.1:5433 + 100.102.134.91:5432) came up and stayed healthy —
+    but the EXTERNAL tailscale-IP listener 100.102.134.91:5432 was not
+    actually serving, so remote postgres connects were refused for ~31h.
+    Local consumers (127.0.0.1) were unaffected, masking the outage.
+  failure_mechanism: >
+    tony-dell-mcp-health.sh -> ssh tony-omen ->
+    POSTGRES_HOST=100.102.134.91 mcp-health-client.py get_health_score.
+    mcp-health server.js runs initializeDatabase() at module load; on
+    pool.connect() refusal it calls process.exit(1) (~0.5s). The client then
+    writes to a dead stdin (BrokenPipeError) and exits 1 — the observed ~1s
+    failure signature. Reproduced exactly by pointing POSTGRES_HOST at a
+    refused port (rc=1 in 0.83s). A/B proof: sibling tony-dell-monitor.sh
+    runs the same query with default POSTGRES_HOST=100.68.142.13 (tony-dell's
+    own pg) and succeeded every run during the same window.
+  recovery: >
+    2026-10-22 ~16:47 a session from mn01 (100.106.196.22) ran `sudo ss -tlnp`
+    on idc03 (port-level diagnosis), then chaba-postgres.service restarted
+    16:48:35, restoring the 100.102.134.91:5432 rootlessport bind. First
+    timer success 16:48:47.
+  current_state: >
+    tony-dell-mcp-health.timer active every 5min, all green since 16:48.
+    chaba-postgres.service active since 16:48:35, both rootlessport binds
+    present (100.102.134.91:5432, 127.0.0.1:5433). Health JSON at
+    ~/var/chaba/health/tony-dell-mcp-health.json updating normally
+    (overall_score 38 — several services 'unknown' is separate, pre-existing
+    config drift, not this incident).
+
+follow_ups:
+  - id: mcp-health-pg-coupling
+    note: >
+      mcp-health server.js initializeDatabase() -> process.exit(1) couples the
+      health SERVICE to postgres availability — when pg is down the score
+      query dies instead of reporting postgres=0. Consider degrading
+      gracefully (skip db init failure or catch per-call).
+  - id: timer-script-stderr
+    note: >
+      tony-dell-mcp-health.sh runs the ssh with 2>/dev/null — the remote
+      traceback (the actual reason) never reaches the journal. Cheap fix:
+      append stderr to ~/var/chaba/health/tony-dell-mcp-health.err.
+  - id: sentinel-staleness
+    note: >
+      Card cites a 10-14 single failure; a 31h continuous outage Oct 21-22
+      did not surface as a fresh escalation before dispatch. Worth checking
+      timer-sentinel re-alert cadence for persistent failures.
+  - id: oct-14-run
+    note: >
+      Original 10-14 19:44 exit-code is beyond journal retention — likely
+      same class of transient (pg restart blip on idc03 or SSH flap); cannot
+      be proven.
