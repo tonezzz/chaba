@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
 column: backlog
-updated: 2026-10-22 12:55
+updated: 2026-10-22 13:31
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -58,3 +58,10 @@ comms:
     sshd hardened (00-no-password+20-root, cloud-init dropin overridden), f2b active, 90-tuning bbr+fq, podman+subuid.
     BLOCKED: tailscale not joined — ran ufw before tailscale up, public :22 now closed so box is console-only. NEED
     TONY: my.contabo.com -> VPS con01 -> VNC -> login ro'
+- at: 2026-10-22 13:31
+  from: devin
+  text: '2026-10-22 devin: con01 fully onboarded (commit 78da5cd64). Tailnet joined via VNC console (Tony authorized
+    the login.tailscale.com URL) — con01=100.72.146.39, tailnet ssh verified. Hardening baseline public-vps class
+    all-green: ufw deny-in/tailscale0/80/443, sshd 00+20 dropins (password no, root key-only), f2b, unatt-upg, linger,
+    90-tuning bbr/fq, podman 4.9.3 rootless+auto-update.timer. Fleet mesh bidirectional (con01 key on all hosts).
+    Exec checkout cloned + hooks + chaba-repo-sync.timer; sec'
