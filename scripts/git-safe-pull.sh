@@ -33,6 +33,17 @@
 #      the preserved side usually holds a board write that raced the
 #      pull. Merge failures keep the file and flag the card in review.
 #
+# Board write flock: before any worktree mutation the script takes the
+# same flock board-api.py holds across save()->commit
+# (SAFE_PULL_BOARD_LOCK, default /tmp/board-api.lock). board-api now
+# commits each write immediately under that lock, so the two can never
+# overlap — a card write can no longer sit uncommitted in the tree when
+# autostash fires, which is how comms/column moves were eaten by failed
+# stash pops (card board-api-writes-eaten-by-autostash-pops-515009).
+# Wait is bounded (SAFE_PULL_BOARD_LOCK_WAIT_S, default 60s): a wedged
+# writer must not deadlock pull convergence — on timeout it pulls
+# anyway and logs. Hosts without board-api just create+hold the file.
+#
 # Usage:  git-safe-pull.sh [repo-dir]
 # Env:    SAFE_PULL_UPSTREAM          upstream ref (default: @{upstream}
 #                                     or origin/master)
@@ -43,6 +54,11 @@
 #         SAFE_PULL_STASH_ARCHIVE     patch archive dir for dropped
 #                                     stashes (default:
 #                                     ~/.local/share/chaba-stash-archive)
+#         SAFE_PULL_BOARD_LOCK        board write flock to hold across
+#                                     the pull (default
+#                                     /tmp/board-api.lock; empty disables)
+#         SAFE_PULL_BOARD_LOCK_WAIT_S max seconds to wait for the board
+#                                     lock before pulling anyway (60)
 # Exit:   0 = HEAD now contains upstream (or pull not needed);
 #         1 = needs manual resolution; 2 = not a repo.
 set -uo pipefail
@@ -258,6 +274,26 @@ _resolve_autostash_pop() {
   fi
   return 0
 }
+
+# Hold the board write flock for the whole worktree-mutating phase —
+# untracked-collision resolution, pull --rebase --autostash, pop
+# resolution, column guard, and the exit-trap reconcile. board-api.py
+# holds the same flock across save()->commit, so a card write can never
+# be mid-flight (uncommitted) while autostash snapshots the tree — the
+# window that ate board writes (card
+# board-api-writes-eaten-by-autostash-pops-515009). The fd stays open
+# until exit, which also covers the EXIT-trap reconcile. Bounded wait:
+# a wedged board-api must not deadlock convergence — log and proceed.
+BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
+SAFE_PULL_LOCK_FD=""
+if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
+  exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK" 2>/dev/null || SAFE_PULL_LOCK_FD=""
+  if [ -n "$SAFE_PULL_LOCK_FD" ]; then
+    flock -w "${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}" "$SAFE_PULL_LOCK_FD" \
+      2>/dev/null \
+      || echo "git-safe-pull: board lock $BOARD_LOCK held >${SAFE_PULL_BOARD_LOCK_WAIT_S:-60}s — pulling anyway" >&2
+  fi
+fi
 
 _resolve_untracked_collisions
 
