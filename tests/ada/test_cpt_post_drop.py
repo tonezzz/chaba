@@ -31,6 +31,8 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
+from tests.ada._drops import check_patch, drop_guard_ok
+
 REPO = Path(__file__).resolve().parents[2]
 DROP = REPO / "integrations" / "ada-voice"
 TOOL = DROP / "backend" / "tools.d" / "cpt_post.py"
@@ -265,17 +267,21 @@ def test_manifest_and_declare_names_match(monkeypatch):
 @pytest.mark.skipif(not (ADA_PI / ".git").exists(),
                     reason="no ada-voice checkout reachable")
 def test_patches_apply_clean(tmp_path):
+    """Base-commit guard: every patch must apply OR already be merged
+    upstream; divergence only fails when nothing in the drop landed
+    (pending drop on a rotted base — tests/ada/_drops.py)."""
     dst = tmp_path / "ada-voice"
-    subprocess.run(["git", "clone", "-q", str(ADA_PI), str(dst)],
+    subprocess.run(["git", "clone", "-q", "--depth", "1",
+                    ADA_PI.as_uri(), str(dst)],
                    check=True, timeout=120)
-    for rel in PATCHES:
-        proc = subprocess.run(
-            ["git", "apply", "--check", str(DROP / rel)],
-            cwd=dst, capture_output=True, text=True)
-        assert proc.returncode == 0, f"{rel}: {proc.stderr[-500:]}"
-    # the new tool file itself must land + compile cleanly too
+    states = {rel: check_patch(DROP / rel, dst) for rel in PATCHES}
+    assert drop_guard_ok(states.values()), (
+        f"drop rotted on its base — re-dispatch: {states}")
+    # the new tool file itself must compile — merged upstream = already
+    # in the clone; still pending = copy the staged file in.
     tgt = dst / "backend" / "tools.d" / "cpt_post.py"
-    subprocess.run(["cp", str(TOOL), str(tgt)], check=True)
+    if not tgt.exists():
+        subprocess.run(["cp", str(TOOL), str(tgt)], check=True)
     proc = subprocess.run(
         [sys.executable, "-m", "py_compile", str(tgt)],
         capture_output=True, text=True)

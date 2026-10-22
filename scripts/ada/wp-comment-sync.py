@@ -188,7 +188,7 @@ def classify_situation_intent(text):
         out = _litellm_chat().chat(
             CLASSIFY_PROMPT.format(text=text),
             model=os.environ.get("WCS_CLASSIFY_MODEL", "chat-local"),
-            temperature=0, max_tokens=8, timeout=30,
+            temperature=0, max_tokens=8, timeout=90,
             label="wp-comment-classify")
     except Exception as e:
         print(f"  classify failed: {e}", file=sys.stderr)

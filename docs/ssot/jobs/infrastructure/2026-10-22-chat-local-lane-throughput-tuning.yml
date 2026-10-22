@@ -1,0 +1,73 @@
+title: chat-local lane throughput tuning — CPU-lane timeouts fixed end-to-end
+subtitle: OLLAMA_NUM_PARALLEL=2 + bounded caller payloads; the lane was silently 100% fallback for 6 days
+icon: gauge
+date: 2026-10-22
+card: chat-local-free-lane
+status: done
+project: chaba
+program: chaba-ci
+
+summary:
+  - |
+    Production verification of the chat-local free lane (ollama qwen2.5:7b
+    on idc02 behind LiteLLM) found it had never served a real call since
+    the adoption merge on 2026-10-16 — every wp-news-digest run fell back
+    to gemini (68 logged timeouts), wp-comment-sync classify timed out,
+    and chaba-kanban-brief.service was being killed at
+    TimeoutStartSec=300 on roughly half its runs (kanban-act +
+    nest-overview, the 2nd/3rd ExecStarts, starved with it).
+
+    Root cause — physics, not wiring:
+    - idc02 has 4 CPU cores. qwen2.5:7b evals ~20 tok/s; the digest
+      payload was ~3k tokens prompt + max_tokens 900 → 5-7min per
+      synthesis vs the caller's 90-120s timeout.
+    - OLLAMA_NUM_PARALLEL=1: every request queued head-of-line behind a
+      running synthesis — a 30s classify or llm_why call could wait
+      5+ minutes and always timed out.
+    - Ollama keeps working a request after the client disconnects, so
+      each timed-out call still burned ~6min of CPU — the jam persisted
+      ~10min past every hourly digest run, which is exactly when the
+      :30 kanban-brief unit ran into it.
+
+fixes:
+  - "stacks/idc02/ollama/ollama.container: Environment=OLLAMA_NUM_PARALLEL=2
+    (deployed + restarted 2026-10-22 ~16:55; verified in server config log)."
+  - "scripts/ada/news-digest.py: local-lane payload bounded to 8 items x
+    400-char text (was unlimited x 1200), max_tokens 900->600, caller
+    timeout 120->600s. Gemini fallback path keeps the full payload."
+  - "scripts/ada/kanban-brief.py: llm_why now takes a monotonic deadline —
+    per-render LLM budget KANBAN_BRIEF_LLM_BUDGET=100s so a jammed lane
+    degrades to deterministic lines instead of starving the 300s unit."
+  - "scripts/ada/wp-comment-sync.py: classify timeout 30->90s (measured
+    ~82s worst-case contended)."
+
+measured (2026-10-22, through the gateway, CHABA key):
+  - "chat-local LANE_OK smoke, idle: 2.1s"
+  - "classify-size call contended with a synthesis: 81.6s (was: always timeout)"
+  - "new-shape synthesis (8x400c prompt, 600 max_tokens) contended: 263.4s"
+
+notes:
+  - Thai output still on gemini (brief_th via gateway `summary` class) —
+    unchanged per the card.
+  - Digest synthesis remains the lane's long pole (~4min/call); at ~3-6
+    clusters/hour it stays well inside the hourly budget.
+  - Fallbacks [ollama-llama3.2, colab-gemma3] only fire on upstream
+    failure, never on slow-queue — caller timeouts are the real gate.
+  - "Watch: if qwen7b still can't keep up, next lever is a 3B model for
+    the bulk synthesis or moving the lane to a GPU host — card scope kept
+    it on idc02."
+
+verification:
+  - "idc02 journal: OLLAMA_NUM_PARALLEL:2 in server config after restart."
+  - "ollama GIN log on idc02 shows real call durations (grep 'api/chat')."
+  - "wp-news-digest journal: absence of 'chat-local synthesis unavailable'
+    on the next hourly runs = lane serving; presence = still falling back."
+
+files:
+  - stacks/idc02/ollama/ollama.container
+  - scripts/ada/news-digest.py
+  - scripts/ada/kanban-brief.py
+  - scripts/ada/wp-comment-sync.py
+  - docs/ssot/infrastructure/ssot.llm-gateway.yml
+  - tests/ada/test_tg_forward_provenance.py  # trivial_gate sibling-import stub
+  - tests/ada/test_cpt_post_drop.py          # tri-state migration (drop already merged)

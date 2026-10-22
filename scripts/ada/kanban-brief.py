@@ -50,6 +50,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -204,11 +205,14 @@ def _first_line(note: str) -> str:
 
 # ---------- optional prose layer ----------
 
-def llm_why(card: dict) -> str:
+def llm_why(card: dict, deadline: float | None = None) -> str:
     """One-sentence 'why now' from a micro model; None on any failure —
-    the deterministic line is always the fallback."""
+    the deterministic line is always the fallback. `deadline` (monotonic)
+    caps total LLM time per render: when chat-local is queue-jammed each
+    call burns its full 30s timeout and 12 do-first cards starved the
+    unit past TimeoutStartSec=300 (2026-10-22)."""
     url = os.environ.get("KANBAN_BRIEF_LLM_URL", "").rstrip("/")
-    if not url:
+    if not url or (deadline is not None and time.monotonic() > deadline):
         return None
     model = os.environ.get("KANBAN_BRIEF_LLM_MODEL", "gemma3:4b")
     prompt = (
@@ -252,11 +256,14 @@ def render(scored: list[dict], now: datetime, lang: str) -> str:
         "schedule": "ไว้ในแผน" if th else "Schedule (important, not urgent)",
         "park": "ที่จอด" if th else "Parked",
     }
+    llm_deadline = time.monotonic() + float(
+        os.environ.get("KANBAN_BRIEF_LLM_BUDGET", "100"))
     for quad in ("do-first", "delegate", "schedule"):
         items = quads[quad]
         lines += [f"### {heads[quad]} ({len(items)})", ""]
         for s in items[:12]:
-            why = llm_why(s) if quad == "do-first" and lang == "en" else None
+            why = llm_why(s, llm_deadline) \
+                if quad == "do-first" and lang == "en" else None
             flags = ", ".join(s["urgent"] + s["important"])
             lines.append(
                 f"- **{s['id']}** [{s['column']}/{s['priority']}"
