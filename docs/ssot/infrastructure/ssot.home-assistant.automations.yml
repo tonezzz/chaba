@@ -153,11 +153,15 @@ automations:
     alias: "Reboot esp32test when offline"
     group: managed
     location: /config/packages/system-managed.yaml
+    status: disabled-2026-10-22
     purpose: "esp32test offline 5min -> power-cycle switch.usb_test_hub;
       edge-triggered (no hammering)"
     last_triggered: "2026-09-13"
-    note: "esp32test currently down at Michael's (bad merged flash 2026-09-24);
-      edge trigger means one hub cycle per off-transition — safe"
+    note: "DISABLED with switch.usb_test_hub 2026-10-22 (HOM-0003): no PPPS
+      hub attached on any host and esp32test down at Michael's since
+      2026-09-24 — the 30s uhubctl probe was pure log spam. Commented out
+      in both files; see jobs/home-assistant/2026-10-22-tony-ha-usb-probe-loop.yml
+      for the re-enable path"
   - id: tuya_entry_reload_watchdog
     group: managed
     purpose: "hourly reload via packages/system-managed.yaml — Tuya MQ push dead; bounds staleness <=1h. edeb520"
