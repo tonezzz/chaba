@@ -1,7 +1,7 @@
 id: roster-agents-tab
 title: Agents tab on chaba-admin — unified roster chat over ada lanes
-column: review
-updated: 2026-10-22 14:16
+column: done
+updated: 2026-10-22 14:31
 priority: medium
 tags:
 - chaba-admin
@@ -103,11 +103,20 @@ comms:
 - at: 2026-10-22 14:16
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''open-chaba-admin-agents-and-se''] block close)'
+- at: 2026-10-22 14:26
+  from: tony
+  text: 'answered open-chaba-admin-agents-and-seed-the-lan-1ec7b1: all four connect'
+- at: 2026-10-22 14:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-22 14:31
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
   ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt
     into the browser (hash params land in localStorage, never hit the wire). All four contacts connect?
-  status: open
+  status: answered
   at: 2026-10-20 18:32
   from: devin
   options:
@@ -115,6 +124,7 @@ requests:
   - snag — see comms
   suggested: all four connect
   escalated_at: 2026-10-22 10:11
+  answer: all four connect
 action:
   type: dispatch
   status: done
@@ -127,3 +137,8 @@ action:
     close_held: 2026-10-22 14:16
 review_kind: verify
 claim: {}
+awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 14:31
+  note: verified — evidence checks green, closing itself
