@@ -779,6 +779,11 @@ async function load() {
     const prevCols = {};
     if (DATA) for (const pc of DATA.cards) prevCols[pc.id] = pc.column || 'backlog';
     const j = await r.json();
+    if (DATA && DATA.page_version && j.page_version &&
+        j.page_version !== DATA.page_version) {
+      // page build changed upstream — reload once to pick up new code
+      location.reload(); return;
+    }
     for (const k in movedIn) delete movedIn[k];
     if (Object.keys(prevCols).length) for (const c of j.cards || []) {
       const nc = c.column || 'backlog';

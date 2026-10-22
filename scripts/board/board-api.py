@@ -1151,6 +1151,32 @@ def do_pipeline(card: dict, body: dict, frm: str) -> str:
     return "pipeline updated"
 
 
+_render_flag = threading.Event()
+_render_worker_started = False
+
+
+def render_async() -> None:
+    """Respond first, render after — a burst of writes coalesces into the
+    fewest renders that still cover every change (KNB-0769: the sync
+    render blocked every write response ~10s). The board's poll/replay
+    layer already tolerates cards.json regen lag."""
+    global _render_worker_started
+    if not _render_worker_started:
+        threading.Thread(target=_render_loop, daemon=True).start()
+        _render_worker_started = True
+    _render_flag.set()
+
+
+def _render_loop() -> None:
+    while True:
+        _render_flag.wait()
+        _render_flag.clear()
+        try:
+            render()
+        except Exception as e:
+            sys.stderr.write(f"board-api async render failed: {e}\n")
+
+
 def render() -> None:
     # own lock, not the card lock — renders may serialize among themselves
     # without blocking card mutations
@@ -1301,9 +1327,9 @@ class H(BaseHTTPRequestHandler):
                 queue_request_notify(*notify_req)
             except Exception as e:
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
-        render()
         self._send(200, {"ok": True, "message": msg, "via": ident,
                          **resp_extra})
+        render_async()
 
 
 def _selftest() -> None:
