@@ -46,26 +46,26 @@
     <h1>Home Assistant Live (Gemini Live bridge)</h1>
     <p>You are viewing the legacy Funnel landing page at <code>https://tony-omen.taila0626a.ts.net:8444</code>. Port 8444 is now the <code>ha-live</code> Gemini Live bridge for Home Assistant. This page is no longer mirrored at the Funnel root.</p>
 
-    <h2>Three ways to reach this system</h2>
+    <h2>Ways to reach this system</h2>
     <ul class="url-list">
       <li>
-        <strong>Home LAN — <code>http://tony-dell.local:8080</code></strong>
-        Use this when your device is on the home WiFi (192.168.1.0/24). It resolves through mDNS/Bonjour and stays on the local network, so it is the fastest option at home.
-      </li>
-      <li>
-        <strong>Tailscale tailnet — <code>http://tony-dell:8080</code></strong>
-        Use this when you are away from home and connected to the <code>tonezzzz@</code> tailnet through the Tailscale client. It creates an encrypted, private mesh path to this machine.
+        <strong>Tailnet apps edge — <code>https://idc02.taila0626a.ts.net/apps</code></strong>
+        The /apps front door now lives on idc02 (tony-dell powered off 2026-10-20 for hardware work — the old <code>tony-dell.local:8080</code> / <code>tony-dell:8080</code> LAN and tailnet entries are gone).
       </li>
       <li>
         <strong>Tailnet (Home Assistant Live) — <code>https://tony-omen.taila0626a.ts.net:8444</code></strong>
         Tailnet-only (tailscale serve on tony-omen — the public Funnel route was retired; needs a Tailscale client now).
       </li>
+      <li>
+        <strong>Home LAN HA — <code>http://192.168.2.67:8123</code></strong>
+        tony-ha runs on tony-omen now; 192.168.2.67 (dell's old LAN IP) is carried on omen's WiFi interface.
+      </li>
     </ul>
 
     <h2>What to use when</h2>
     <ul>
-      <li>At home: prefer <code>http://tony-dell.local:8080</code> for speed and no internet dependency.</li>
-      <li>On a trusted remote device with Tailscale: use <code>http://tony-dell:8080</code> for a private, encrypted connection.</li>
+      <li>At home on WiFi: <code>http://192.168.2.67:8123</code> for Home Assistant.</li>
+      <li>On a trusted remote device with Tailscale: <code>https://idc02.taila0626a.ts.net/apps</code> for the apps edge.</li>
       <li>From any tailnet device: use <code>https://tony-omen.taila0626a.ts.net:8444</code> (Home Assistant Live bridge).</li>
     </ul>
 

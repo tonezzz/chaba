@@ -3,8 +3,10 @@ Image=docker.io/pgvector/pgvector:pg16
 ContainerName=chaba-postgres-16
 EnvironmentFile=%h/.config/secrets/chaba-stack.env
 Volume=%h/.config/containers/postgres/data:/var/lib/postgresql/data:Z
+# loopback stays on 5433 (litellm owns 127.0.0.1:5432);
+# tailnet is the canonical consumer port — yomi/gpu-queue/trade expect :5432
 PublishPort=127.0.0.1:5433:5432
-PublishPort=100.102.134.91:5433:5432
+PublishPort=100.102.134.91:5432:5432
 HealthCmd=pg_isready -U chaba
 HealthInterval=30s
 

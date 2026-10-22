@@ -1,0 +1,80 @@
+date: 2026-10-22
+slug: tony-dell-migration-verify-window
+card: tony-dell-full-migration
+ref: OPS-0725
+kind: migration-ops
+dispatch: devin-task-20261022-093755-phases-1-edge-proxy-service-na (mn01)
+
+summary: >
+  Phase-6 verify-window pass over the migrated fleet. Found+fixed a ~31h
+  production outage (pg rebound to :5433 by the wave-2 quadlet while all
+  consumers expected :5432), repointed the last functional tony-dell URLs in
+  consumer artifacts, fixed the omen weaviate pair, and landed the per-unit
+  manifest the card spec required.
+
+findings:
+
+  pg-port-orphan:
+    what: >
+      stacks/idc03/chaba-postgres.container (quadlet, deployed 2026-10-21
+      09:36, committed 35b91fa9) published 100.102.134.91:5433 instead of
+      :5432. The quadlet's --replace took over the container from
+      chaba-postgres-16.service, so from that moment every consumer on
+      postgre:5432 / 100.102.134.91:5432 got ECONNREFUSED: yomi-update-all,
+      yomi-update-active, yomi-mddb-digest (idc03), gpu-queue-processor
+      (idc02 — 648 refused connects before fix). Verified-broken window
+      ~31h.
+    root_cause: >
+      Loopback :5432 on idc03 belongs to litellm's postgres — author likely
+      moved BOTH binds to :5433 to avoid the collision, but tailnet :5432
+      was free and is the canonical consumer port.
+    fix: >
+      Quadlet now publishes 127.0.0.1:5433 + 100.102.134.91:5432. Superseded
+      units parked (chaba-postgres-16.service.parked, redis.service.parked).
+      Same-commit redis quadlet gained the missing tailnet :6379 publish
+      (old redis.service had been serving it as a shadow duplicate).
+    lesson: >
+      On service replace, the port map IS the API contract — a bind move is
+      a breaking change. Quadlets must be diffed against the unit they
+      replace, not just "does the container come up healthy".
+
+  omen-stragglers:
+    fixed: >
+      weaviate-index + weaviate-search WEAVIATE_URL tony-dell:8084 →
+      100.123.163.11:8084; search verified with a real query (mn01 embed
+      proxy + idc02 weaviate both live). Dead-dell units parked:
+      mddb-tunnel (no :9001 consumers), chaba-watch (rsync source dark),
+      clip-sync-dell (restart-looping).
+    stale-claims: >
+      migration-stragglers card said "mn01 offline 6d" and
+      "mcp-health-snapshot failed" — mn01 is up and the snapshot ran clean.
+      Verify before carding.
+    kept: >
+      ssh-canary stays armed on dell — it is the early-warning when the box
+      returns. secrets-collect will fail its dell leg Sundays while dark
+      (expected).
+
+  consumer-refs:
+    fixed-in-repo (57de510b): >
+      tradecanvas-ui/app.js API+WS base (http://tony-dell:8080/api →
+      /apps/trade/api relative), ha/tony-ha Local link (→ 192.168.2.67:8123),
+      ha/index label, apps/index headless-primary + hostLabel, lab/index
+      5 toolbelt links, ai-hub sidepanel Caddy preset, tailscale-funnel
+      reachability page, node-red flows (repo + live on omen: HA states →
+      omen https :8123, board-api → idc03:10000, board2 probe → idc02 edge).
+    still-dead:
+      - "/data/report.json — report-feed JSON producer died with dell web; needs re-homing"
+      - "/apps/notebooklm-cookies — cookie-bridge route never existed on idc02 edge; needs route+service or preset removal"
+
+  manifest:
+    what: docs/ssot/infrastructure/ssot.migrated-units.yml
+    why: >
+      Card spec: "every migrated unit declares {data_dirs, unit_file,
+      secrets_env, front_name}". First pass covers all units named in the
+      runbook; `pending` markers left where a secrets path wasn't verified.
+
+open-for-phase-7 (dell returns as failover capacity):
+  - dell-local units ha-auth-watch + network-scan-tony (can't touch a dark host)
+  - secrets-collect dell leg
+  - tony-ha USB webcams (/dev/video0/1 mounts pending physical move)
+  - guest WiFi adapter (Ralink MT7601U) physically pinned to dell
