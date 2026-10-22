@@ -1,0 +1,41 @@
+id: webchat-history-endpoint
+title: Per-chat_id history endpoint + card backfill for web channels
+column: backlog
+updated: 2026-10-22 14:03
+tags:
+- ada
+- webchat
+- roster
+spec: 'Tony 2026-10-22 (roster working): keep chat history across reconnects/devices, server-side.
+
+
+  WHY: roster web turns already journal as channel=web + session-end MDDB summary, but the card has nothing to backfill
+  from — every mount starts blank. /api/chat/transcript only exposes live sessions + last-session tail, not per-chat
+  history.
+
+
+  DESIGN (agreed): thread key = chat_id (web-<member>), surface-agnostic. Any UI connecting with chat_id=web-tony
+  on a lane shares one thread (roster, member webchat, future surfaces). Different member = different thread; voice/LINE/TG
+  stay under their own channels.
+
+
+  WORK:
+
+  1. pwa_server.py: rolling per-chat_id text log for web-channel sessions (JSONL on disk or reuse journal store;
+  cap ~500 turns/chat, survive restarts).
+
+  2. New endpoint GET /api/chat/history?chat_id=<id>&max_turns=N — api_key auth, returns ordered turns {role,text,ts}.
+
+  3. ada-webchat-card.js: on connect (after ready), GET history via lane base, backfill bubbles before live frames.
+  WebSockets need no CORS but this fetch is cross-origin from the roster page — confirm CORS headers or proxy it
+  over the ws itself (a history_request frame may be cleaner).
+
+  4. Roster needs no change once card backfills.
+
+
+  DONE-WHEN: reload roster -> prior turns visible per contact; same thread visible from a second webui on same chat_id.'
+ref: ADA-0774
+comms:
+- at: 2026-10-22 14:03
+  from: tony
+  text: card captured via board-api

@@ -1,7 +1,7 @@
 id: roster-agents-tab
 title: Agents tab on chaba-admin — unified roster chat over ada lanes
-column: review
-updated: 2026-10-22 10:11
+column: doing
+updated: 2026-10-22 14:08
 priority: medium
 tags:
 - chaba-admin
@@ -66,6 +66,22 @@ comms:
 - at: 2026-10-22 10:11
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-22 14:03
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 14:03
+  from: idc02
+  text: claimed
+- at: 2026-10-22 14:04
+  from: chaba
+  text: started devin-task-20261022-140402-tony-2026-10-20-wanted-a-singl on idc02 (dispatch)
+- at: 2026-10-22 14:08
+  from: devin
+  text: 'REVERIFY 2026-10-22 (dispatch): all surfaces green — roster page live on idc02 tailnet origin + :8099,
+    byte-identical to master; ada-webchat-card.js 200 on idc03 mount; all 4 lane ws mounts alive + enforcing auth
+    (403 on bad key: ada-tony/ada-kk/ada-dev/ada-michael); live chaba-admin on tony-ha :8123 HAS the agents view
+    after board, iframe -> https://idc02.taila0626a.ts.net/apps/roster/. URL FIX: verify at https://tony-ha.surf-thailand.com/chaba-admin/agents
+    — the note said ada-ha.surf-thailand.'
 requests:
 - id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
   ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt
@@ -78,3 +94,7 @@ requests:
   - snag — see comms
   suggested: all four connect
   escalated_at: 2026-10-22 10:11
+action:
+  type: dispatch
+  status: running
+  runner: idc02
