@@ -3,7 +3,7 @@ title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall 
 column: backlog
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 10:46
+updated: 2026-10-22 11:02
 note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
   macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
   ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
@@ -37,6 +37,13 @@ comms:
   text: tony approved bench-first. Dispatched 25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
     + golden fixture over sessions with both T1 docs and transcripts, scores mddb semantic vs transcript vs current
     recall surface, reports + verdict comm back here.
+- at: 2026-10-22 11:02
+  from: devin
+  text: 'bench-recall run complete — reports/bench-recall-25691022.{json,md} + job yml on dispatch/25691022-103449.
+    VERDICT: T1 recall 50.0% hit@3 — below the 80% AQ, NOT safe to prune sessions.db to T0/T1/T2 yet. Breakdown:
+    t1doc oracle finds only 41.7% of goldens in the session''s own T1 doc — misses are distiller coverage (absolute
+    paths, commands, commit hashes, identifiers, counts), not retrieval (2/36 true retrieval misses; sibling docs
+    often carry the fact). Transcript BM25 scores 83.3%@3; keeping '
 action:
   type: dispatch
   status: doing
