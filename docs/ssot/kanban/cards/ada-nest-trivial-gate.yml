@@ -1,7 +1,7 @@
 id: ada-nest-trivial-gate
 title: 'Ada Nest: trivial-turn gate — local specialist answers cheap queries before a provider turn'
 column: doing
-updated: 2026-10-20 18:16
+updated: 2026-10-22 09:36
 brief: 'Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist
   that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth
   pattern.'
@@ -38,8 +38,10 @@ spec: 'Context: tg_relay.py already runs a coarse-to-fine cascade — silence de
 action:
   type: dispatch
   repo: ada-voice
-  status: running
-  runner: tony-omen
+  status: failed
+  attempts: 1
+  runner: mn01
+  result: 'start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
 ref: ADA-0751
 comms:
 - at: 2026-10-20 15:07
@@ -51,3 +53,16 @@ comms:
 - at: 2026-10-20 18:16
   from: tony-omen
   text: claimed
+- at: 2026-10-22 09:35
+  from: devin
+  text: 'sweep 2026-10-22: S1 stale claim — tony-omen claim 2026-10-20 18:16 went quiet 1.6d; no devin-task unit
+    exists on the runner. Requeuing.'
+- at: 2026-10-22 09:35
+  from: tony
+  text: retry requested
+- at: 2026-10-22 09:35
+  from: mn01
+  text: claimed
+- at: 2026-10-22 09:36
+  from: mn01
+  text: 'finished (failed): start failed: unknown repo ''ada-voice'' (allowed: sunsynk-card ada-pi mddb-fork chaba)'
