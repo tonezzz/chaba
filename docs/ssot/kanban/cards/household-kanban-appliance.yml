@@ -1,0 +1,15 @@
+id: household-kanban-appliance
+title: Household kanban — standalone podman appliance vs second lane on chaba stack
+column: backlog
+updated: 2026-10-22 13:50
+priority: medium
+note: 'Tony: "kanban in podman, would it simplify? I will need to provide household kanban anyway." Analysis 2026-10-22:
+  podman does NOT simplify the chaba board (complexity is the git single-writer fleet, not serving). For household
+  use a slim appliance is the right shape: statics + slim api + file-backed cards, no git fleet. Alternative: a
+  second lane on the existing board-api (shared infra, no isolation). Depends on whether household cards must stay
+  separate from chaba flow.'
+ref: KNB-0773
+comms:
+- at: 2026-10-22 13:50
+  from: tony
+  text: card captured via board-api
