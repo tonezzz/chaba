@@ -1,7 +1,7 @@
 id: tony-dell-full-migration
 title: tony-dell full-service migration runbook (hardware window + edge-name layer)
-column: review
-updated: 2026-10-22 17:16
+column: done
+updated: 2026-10-22 19:21
 spec: 'Phases: 1) edge proxy + service names on idc02 2) kanban single-writer pair→idc03 (stop dell writer FIRST)
   3) VPS APIs 4) backups→idc02 5) LAN group→omen last 6) 48h verify then dell dark 7) post-hardware: dell returns
   as failover capacity, not everything-box. Every migrated unit declares {data_dirs, unit_file, secrets_env, front_name}.'
@@ -227,6 +227,15 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261022-093755-phases-1-edge-proxy-service-na on
     mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-22 17:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-22 19:21
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-22 19:22
+  from: chaba
+  text: auto-reconciled tony-dell-full-migration.yml.local-conflict-20261022-172455; +1 comms
 requests:
 - id: idc02-disk-at-91-after-mddb-lab-pull-rep-816229
   ask: idc02 disk at 91% after mddb-lab-pull repair. Two stranded UNVERIFIED dumps (mddb-filecopy-mddb-20261003-0230.db.UNVERIFIED
@@ -254,4 +263,8 @@ action:
     session_gone: 2026-10-22 17:01
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 19:21
+  note: verified — evidence checks green, closing itself
 awaiting_action: true

@@ -10,7 +10,7 @@ lab:
   review_by: '2026-10-18'
 note: 'Experiment dir: experiments/meshtastic-th-collector. Retire = collector becomes a cron''d map publisher;
   promote = dedicated always-on node card.'
-updated: 2026-10-22 10:11
+updated: 2026-10-22 19:31
 ref: OPS-0011
 comms:
 - at: 2026-10-11 08:35
@@ -22,10 +22,16 @@ comms:
 - at: 2026-10-22 10:11
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-22 19:31
+  from: tony
+  text: 'answered lab-review: extend — extend 2w — set a new lab.review_by (+14d)'
+- at: 2026-10-22 19:31
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: lab-review
   ask: Lab review_by 2026-10-18 has passed with no outcome — promote, retire, or extend?
-  status: open
+  status: answered
   options:
   - id: promote
     label: promote → backlog — it earned a real card
@@ -34,3 +40,5 @@ requests:
   - id: extend
     label: extend 2w — set a new lab.review_by (+14d)
   escalated_at: 2026-10-22 10:11
+  answer: extend — extend 2w — set a new lab.review_by (+14d)
+awaiting_action: true

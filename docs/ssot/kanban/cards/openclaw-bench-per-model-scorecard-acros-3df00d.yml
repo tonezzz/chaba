@@ -8,7 +8,7 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
 column: backlog
-updated: 2026-10-07 23:10
+updated: 2026-10-22 19:34
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
 comms:
@@ -32,9 +32,16 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0174'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
-  status: idle
+  status: queued
   repo: chaba
 spec: 'Per-model scorecard across the ghostroute OR free-model rotation: fixed prompt suite through the gateway
   API, measure latency + tool-call correctness per model; jev-bench shape. Post the scorecard to card comms and

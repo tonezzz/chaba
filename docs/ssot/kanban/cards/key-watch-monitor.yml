@@ -1,7 +1,7 @@
 id: key-watch-monitor
 title: 'key-watch: credential expiry/quota monitor — the bridge-key-at-$0 gap'
-column: backlog
-updated: 2026-10-12 22:30
+column: doing
+updated: 2026-10-22 19:34
 brief: '2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning — inference 403s fleet-wide
   until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota — different
   job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.'
@@ -22,3 +22,23 @@ comms:
 - at: 2026-10-12 22:30
   from: devin
   text: No key-watch timer exists on tony-dell — monitor not built yet.
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193413-sources-metadata-only-secrets- on idc02 (dispatch)
+- at: 2026-10-22 19:34
+  from: devin
+  text: session started — exploring chaba-nag LINE helper, gemini_pool ops events, procedures SSOT
+action:
+  type: dispatch
+  status: running
+  runner: idc02

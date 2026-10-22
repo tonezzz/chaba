@@ -1,7 +1,7 @@
 id: queue-type-starvation-guard
 title: queue verb on non-dispatch cards starves silently — warn or auto-convert
 column: backlog
-updated: 2026-10-13 19:38
+updated: 2026-10-22 19:34
 spec: 'zombie-sweep 2026-10-13 found 6 cards queued for days with zero claims: board-api /action do=queue sets status=queued
   on cards whose action.type is manual/devin/self, but kanban-dispatch only claims type=dispatch — silent forever
   starvation, no skip log line either.
@@ -16,3 +16,13 @@ comms:
 - at: 2026-10-13 19:38
   from: devin
   text: card captured via board-api
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+action:
+  type: dispatch
+  status: queued

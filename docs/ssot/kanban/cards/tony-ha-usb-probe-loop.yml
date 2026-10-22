@@ -1,6 +1,6 @@
 id: tony-ha-usb-probe-loop
 title: tony-ha "No compatible devices at 2-1" USB probe loop — 9.3k severe/day
-column: backlog
+column: doing
 priority: medium
 program: chaba-ci
 area: ops
@@ -8,7 +8,8 @@ note: logs-auto-tony-dell-severe-spike diag — tony-ha repeats No compatible de
   probing a path with nothing attached.
 action:
   type: dispatch
-  status: todo
+  status: running
+  runner: tony-omen
 spec: "Find the integration owning the 2-1 USB probe on tony-ha\n  (journalctl -u ha / HA logs for the exact source\
   \ — likely a serial/zigbee/\n  zwave dongle config pointing at a stale /dev path). Either re-point it to\n  the\
   \ real device path or disable the integration entry. Done-when the log\n  line stops recurring.\n"
@@ -22,6 +23,22 @@ comms:
 - at: 2026-10-12 22:30
   from: devin
   text: 119 No-compatible-devices in last 1h (~2.8k/day, down from claimed 9.3k/day) — reduced not resolved.
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193427-find-the-integration-owning-th on tony-omen (dispatch)
+- at: 2026-10-22 19:34
+  from: devin
+  text: Session started on tony-omen — investigating ha journal for 2-1 USB probe source
 claim: {}
 ref: HOM-0003
-updated: 2026-10-12 22:30
+updated: 2026-10-22 19:34

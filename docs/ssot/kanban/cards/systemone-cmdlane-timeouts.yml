@@ -1,7 +1,7 @@
 id: systemone-cmdlane-timeouts
 title: voice.command_lane systemone calls timing out (~30s, every 30-90s)
 column: backlog
-updated: 2026-10-13 21:40
+updated: 2026-10-22 19:34
 spec: 'ada-ha-tony journal 2026-10-13 evening: voice.command_lane systemone call failed: timed out, repeatedly ~every
   30-90s through 21:19-21:22 (before the fleet restart). bankq :8791 and jev :8778 both return 200 now — intermittent
   load/latency not outage. Investigate: what queues onto command_lane, whether timeouts pile up retries (retry-storm
@@ -11,3 +11,13 @@ comms:
 - at: 2026-10-13 21:40
   from: tony
   text: card captured via board-api
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+action:
+  type: dispatch
+  status: queued

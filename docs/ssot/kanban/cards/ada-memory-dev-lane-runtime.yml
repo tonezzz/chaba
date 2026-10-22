@@ -4,10 +4,10 @@ brief: 'Registry contract landed in chaba ssot.apps.ada-memory-banks.yml (card m
   instances_readonly {dev-instance: prod-instance} and dev-scratch carries env: staging. This is the ada-pi half
   — teach memory_banks.py to mount those banks read-only and memory_ops.py to stamp the bank''s env onto written
   docs.'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-10 11:22
+updated: 2026-10-22 19:34
 program: ha-lanes
 metric: A backend started with ADA_INSTANCE_ID=tony-dev loads every bank whose instances_readonly maps tony-dev
   (collections resolved as the mapped prod instance, {instance}->tony) with writable=false + allowed_tools=[]; its
@@ -48,6 +48,8 @@ autonomy: t2
 action:
   type: dispatch
   repo: ada-voice
+  status: running
+  runner: tony-macbook
 comms:
 - at: 2026-10-10 10:45
   from: devin
@@ -64,4 +66,21 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: ADA-0344'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193424-contract-already-in-chaba-docs on tony-macbook (dispatch)
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 ref: ADA-0344

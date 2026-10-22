@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-tony-dell-mcp-health
 title: Timer tony-dell-mcp-health on tony-dell failing
-column: backlog
-updated: 2026-10-20 16:00
+column: doing
+updated: 2026-10-22 19:34
 priority: high
 tags:
 - timer-alert
@@ -57,11 +57,27 @@ comms:
 - at: 2026-10-20 16:00
   from: devin
   text: 'sweep 2026-10-20: unit enabled on dell, svc inactive — likely stale; will auto-close on green.'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193420-timer-tony-dell-mcp-health-on- on idc02 (dispatch)
+- at: 2026-10-22 19:34
+  from: devin
+  text: Investigating tony-dell-mcp-health.service exit-code failure from 10-14 19:44 — pulling journal on tony-dell.
 action:
   type: dispatch
-  status: idle
-  runner: idc02
+  status: running
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
+  runner: idc02
 review_kind: verify

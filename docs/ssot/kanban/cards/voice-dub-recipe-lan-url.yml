@@ -1,7 +1,7 @@
 id: voice-dub-recipe-lan-url
 title: voice-dub-demos CMS recipe hands out LAN-only URLs for vcast casts
 column: backlog
-updated: 2026-10-10 08:14
+updated: 2026-10-22 19:34
 priority: medium
 tags:
 - cms
@@ -11,6 +11,7 @@ tags:
 action:
   type: dispatch
   repo: chaba
+  status: queued
 note: 'The voice-dub-demos CMS page tells Ada to cast http://192.168.2.67/apps/yt-live/<file>.mp4 — correct for
   the TV (LAN device), wrong for numbered vcast screens when Ada or the display is off-LAN: idc03 cannot reach 192.168.2.67
   at all (TimeoutError on the URL pre-check, seen 2026-10-09 02:24 session 6744c10aab), and tailnet displays (vcast-real
@@ -23,4 +24,11 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: MED-0313'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 ref: MED-0313

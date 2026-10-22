@@ -4,7 +4,7 @@ brief: Assess and redesign the VCast user/operator flow end-to-end per Chaba sta
   Today's flow hides connection state, lets stale entries masquerade as screens, burns names on release, and leaves
   operators doing manual registry surgery. The UI should show real lifecycle state, stable display identity, and
   one-click recovery.
-column: backlog
+column: doing
 priority: medium
 program: vcast
 area: ux
@@ -35,12 +35,13 @@ spec: "User journey stages to redesign, with acceptance per stage: 1. PAIRING �
 help: 'Related: vcast-bridge-registry-bugs (done — deployed 2026-10-09), vcast-claim-tombstone (queued — resurrect
   chain). Frontend surface is stacks/web/public/apps/vcast/index.html + the /displays JSON on idc03:3010. Ada''s
   realtime_provider rules apply: no phantom success claims.'
-updated: 2026-10-09 18:05
+updated: 2026-10-22 19:34
 action:
   type: dispatch
-  status: backlog
+  status: running
   button: ▶ Assess + redesign vcast UX flow
   repo: chaba
+  runner: mn01
 comms:
 - at: 2026-10-09 18:05
   from: devin
@@ -59,4 +60,17 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: MED-0275'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: mn01
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-123434-user-journey-stages-to-redesig on mn01 (dispatch)
 ref: MED-0275

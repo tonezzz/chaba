@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
-column: backlog
-updated: 2026-10-13 19:52
+column: doing
+updated: 2026-10-22 19:34
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -25,3 +25,20 @@ comms:
 - at: 2026-10-13 19:52
   from: devin
   text: card captured via board-api
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: tony-omen
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193424-sweep-every-unit-env-script-ar on tony-omen (dispatch)
+action:
+  type: dispatch
+  status: running
+  runner: tony-omen
