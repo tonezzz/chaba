@@ -6,6 +6,11 @@ Volume=%h/.config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro,Z
 Volume=%h/.config/caddy/certs:/etc/caddy/certs:ro,Z
 Volume=%h/.config/containers/caddy/data:/data,Z
 Volume=%h/.config/containers/caddy/config:/config,Z
+# Edge-vouch secret for board-api writes arriving CF-Access-authed on
+# public vhosts — injected as X-Board-Edge-Key upstream header.
+# quadlet env-file: no systemd '-' ignore-missing prefix — podman
+# --env-file treats it as a literal path and the unit fails to start.
+EnvironmentFile=%h/.config/secrets/caddy-edge.env
 
 [Service]
 Restart=always

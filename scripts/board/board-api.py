@@ -94,6 +94,7 @@ Smoke test: python3 scripts/board/board-api.py --selftest
 import base64
 import fcntl
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -146,6 +147,7 @@ TRUSTED_NETS = LOOPBACK_NETS + [
 ALLOWED_LOGINS = {x.strip() for x in
                   os.environ.get("BOARD_API_ALLOWED_LOGINS", "").split(",")
                   if x.strip()}
+EDGE_KEY = os.environ.get("BOARD_API_EDGE_KEY", "")
 
 
 def _in_nets(ip_s: str, nets: list) -> bool:
@@ -157,14 +159,28 @@ def _in_nets(ip_s: str, nets: list) -> bool:
 
 
 def caller_identity(headers, peer_ip: str) -> str:
-    """Verified writer identity: the tailnet login, 'local' for a direct
-    loopback caller, or '' when the request may not write.
+    """Verified writer identity: the tailnet login, 'edge:<cf-email>' for
+    the public caddy-edge, 'local' for a direct loopback caller, or ''
+    when the request may not write.
 
     tailscale serve injects Tailscale-User-Login on tailnet-authed
     requests; Caddy appends the real client IP to X-Forwarded-For at
     every hop, so a forged login header from LAN still leaves a LAN
     address in the chain -> denied. Local automation posts straight to
-    127.0.0.1:8787 (loopback peer, no XFF) and is trusted."""
+    127.0.0.1:8787 (loopback peer, no XFF) and is trusted.
+
+    Edge lane (card board-api-auth / public-vhost writes): the CF-Access-
+    gated edge injects X-Board-Edge-Key on proxied requests — anything
+    that reached that vhost already passed Cloudflare Access, and the
+    Cf-Access-Authenticated-User-Email header gives per-user attribution.
+    The key is compared constant-time and must come from the edge's env,
+    never from client JS."""
+    if EDGE_KEY and hmac.compare_digest(
+            (headers.get("X-Board-Edge-Key") or "").encode(),
+            EDGE_KEY.encode()):
+        email = (headers.get("Cf-Access-Authenticated-User-Email")
+                 or "").strip()
+        return "edge:" + (email or "cf")
     login = (headers.get("Tailscale-User-Login") or "").strip()
     xff = [h.strip() for h in
            (headers.get("X-Forwarded-For") or "").split(",") if h.strip()]

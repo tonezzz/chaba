@@ -5,6 +5,9 @@ Description=Kanban board write API (card actions/respond/comment -> YAML + rende
 # already puts us in the transaction; we start in parallel with it.
 
 [Service]
+# Optional edge-key env — lets the CF-Access-gated public edge vouch
+# writes via X-Board-Edge-Key (secrets convention: ~/.config/secrets/).
+EnvironmentFile=-%h/.config/secrets/board-api.env
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-api.py
 Restart=on-failure
 RestartSec=10
