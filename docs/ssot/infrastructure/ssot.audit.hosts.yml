@@ -2196,6 +2196,15 @@ hosts:
         expected_state: active
         critical: false
         note: enabled for tony 2026-10-22 (rootless podman 4.9.3 + subuid/gid)
+      - name: mddb-follower.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: "Read-only follower of idc03 leader (quadlet
+          stacks/con01/mddb-follower, 100.72.146.39:11123/:11124,
+          localhost/mddb:2.15.4-lsn) — warm-DR promote target replacing
+          retired idc01 (OPS-0763)"
     expected_absent:
       - name: qemu-guest-agent.service
         note: "purged 2026-10-22 — Contabo hypervisor exposes no virtio

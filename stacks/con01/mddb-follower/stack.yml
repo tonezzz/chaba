@@ -1,0 +1,31 @@
+id: mddb-follower
+host: con01
+description: >-
+  mddb read-only follower #2 on con01 (tailnet :11123/:11124) — the
+  designated promote target if idc03 dies. Replaces retired idc01's
+  warm-DR tier (idc04-contabo-vps8-provision / OPS-0763). 3rd provider/geo
+  failure domain: Contabo EU vs Siamdata BKK.
+verify: >-
+  curl -sf http://100.72.146.39:11123/v1/health | grep -q '"status":"healthy"'
+  && curl -sf http://100.72.146.39:11123/v1/replication/status | grep -q '"role": *"follower"'
+secrets:
+  - "~/.config/containers/systemd/mddb-follower.container — carries
+     MDDB_REPLICATION_SECRET inline (version it, never print it)"
+requires:
+  - "tool:podman — quadlet runtime"
+  - "tcp:100.102.134.91:11024 — idc03 replication gRPC"
+  - "image:localhost/mddb:2.15.4-lsn — transferred podman-save from idc02 (no registry)"
+state:
+  - "~/.config/containers/mddb-follower/data — DB lives here"
+  - "~/.config/containers/mddb-follower/vaults — blob vaults"
+ports:
+  - "100.72.146.39:11123 — HTTP API"
+  - "100.72.146.39:11124 — replication gRPC"
+restore: >-
+  Fresh seed: stop, wipe data/, start — the follower pulls a full snapshot
+  (~4min for 6.6GB; EU latency may stretch first sync). Promote: set
+  MDDB_REPLICATION_ROLE=leader + remove LEADER_ADDR/SECRET envs, then
+  repoint consumers.
+related_cards: [idc04-contabo-vps8-provision]
+status: deployed
+deployed: 2026-10-22

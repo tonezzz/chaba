@@ -147,7 +147,7 @@ tony-dell:
         # EMBED_QUEUE_CRIT_DEPTH=3000. See docs/ssot/jobs/infrastructure/
         # 2026-10-06-mddb-embed-queue-recovery.yml
       - mddb-vector-reindex.service  # idc03, oneshot — re-embed sweep after drops/outage
-    status: replication leader on idc03 (followers on idc02 + idc01 since 2026-10-05/06; tony-dell follower stopped, kept as seeded standby)
+    status: replication leader on idc03 (followers on idc02 + con01 since 2026-10-22; idc01 retired, tony-dell follower stopped, kept as seeded standby)
     replication:
       role: leader
       node_id: idc03
@@ -174,15 +174,22 @@ tony-dell:
           follower — no Caddy route to repoint (/api/mddb entry is for the
           decommissioned Aug service). Dell unit stopped; quadlet + data kept
           as standby.
+        follower_con01:
+          host: con01
+          node_id: con01
+          host_port: 100.72.146.39:11123
+          service: mddb-follower.service (quadlet stacks/con01/mddb-follower/)
+          image: localhost/mddb:2.15.4-lsn (podman-save transferred from idc02
+            2026-10-22 — no registry)
+          status: deployed 2026-10-22 — warm-DR replica; promote-first
+            path if the leader dies (replaces retired idc01 tier;
+            3rd provider/geo failure domain — Contabo EU vs Siamdata BKK)
         follower_idc01:
           host: idc01
           node_id: idc01
           host_port: 100.74.146.0:11123
-          service: mddb-follower.service (separate quadlet — the old leader
-            mddb.service is masked with data retired to
-            data.leader-retired-20261006)
-          status: running since 2026-10-06 — warm-DR replica; promote-first
-            path if the leader dies
+          status: RETIRED 2026-10-21 — Siamdata lease lapsed, host offline;
+            role replaced by follower_con01 (OPS-0763)
         standby_follower:
           host: tony-dell
           node_id: tony-dell

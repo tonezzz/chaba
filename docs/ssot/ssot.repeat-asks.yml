@@ -106,3 +106,15 @@ topics:
       inventory, M7 watcher coverage, M8 config audit)."
     history:
       - {at: "2026-10-15", ask: "I thought it's always 5, but it's for selection?", cards: []}
+  - id: storage-transport-choice
+    topic: "Are we using the most efficient storage transport — gdrive policy, rclone vs REST"
+    count: 1
+    status: answered-2026-10-22
+    notes: "Tony flagged 'asking again' re gdrive/rclone. Answer: rclone IS the
+      efficient transport for the fleet's workloads (large packed archives,
+      daily cadence) — it is a Drive REST v3 client with chunked resumable
+      uploads + custom GCP client_id (not shared-quota). REST direct only
+      wins for metadata-heavy queries and changes.watch push channels.
+      Filed as Education lesson-48e4a2fba780 (post 1954)."
+    history:
+      - {at: "2026-10-22", ask: "rclone vs rest api — are we using the most efficient methods?", cards: []}

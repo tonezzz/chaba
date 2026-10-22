@@ -169,33 +169,36 @@ services:
       - home
       - mobile
     note: "MDDB leader runs as a podman quadlet (mddb.service, user unit) on idc03.
-      idc01 runs mddb-follower.service (read-only follower :11123) — its old
-      mddb.service leader unit is masked; never unmask it."
+      con01 runs mddb-follower.service (read-only follower :11123) — the
+      warm-DR promote target since 2026-10-22. Retired idc01's masked
+      old-leader unit must never be unmasked (host offline anyway)."
     recovery_actions:
       - "Check service: ssh idc03 systemctl --user status mddb.service"
       - "Restart: ssh idc03 systemctl --user restart mddb.service"
       - "Check logs: ssh idc03 journalctl --user -u mddb.service --since '-1h'"
       - "Quadlet file: ~/.config/containers/systemd/mddb.container on idc03"
     host: idc03
-  - id: mddb-follower-idc01
-    name: MDDB Follower (idc01 warm-DR)
+  - id: mddb-follower-con01
+    name: MDDB Follower (con01 warm-DR)
     type: http
-    url: http://idc01:11123/health
+    url: http://con01:11123/v1/health
     expected_status: 200
-    timeout: 5
+    timeout: 10
     category: datastore
     profiles:
       - home
       - mobile
-    note: "Read-only replication follower on idc01 (mddb-follower.service,
-      100.74.146.0:11123 http / :11124 gRPC, leader idc03:11024) — the warm-DR
-      replica; promote-first path if idc03 dies."
+    note: "Read-only replication follower on con01 (mddb-follower.service,
+      100.72.146.39:11123 http / :11124 gRPC, leader idc03:11024) — the warm-DR
+      replica; promote-first path if idc03 dies. Replaces the retired idc01
+      follower 2026-10-22 (OPS-0763); initial sync flag healthy:false while
+      current_lsn catches up — check /v1/replication/status."
     recovery_actions:
-      - "Check service: ssh idc01 systemctl --user status mddb-follower.service"
-      - "Check lag: curl -s http://idc01:11123/v1/replication/status"
-      - "Restart: ssh idc01 systemctl --user restart mddb-follower.service"
-      - "Logs: ssh idc01 journalctl --user -u mddb-follower.service --since '-1h'"
-    host: idc01
+      - "Check service: ssh con01 systemctl --user status mddb-follower.service"
+      - "Check lag: curl -s http://con01:11123/v1/replication/status"
+      - "Restart: ssh con01 systemctl --user restart mddb-follower.service"
+      - "Logs: ssh con01 journalctl --user -u mddb-follower.service --since '-1h'"
+    host: con01
   - id: gemini-ollama-proxy
     name: Gemini-Ollama Embedding Proxy
     type: systemd
