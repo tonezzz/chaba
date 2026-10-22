@@ -1,0 +1,34 @@
+id: caddy-edge
+host: con01
+description: >-
+  Standby public edge on con01 — serves api.surf-thailand.com :443 with the
+  cert pair pushed weekly by idc03's cert-sync.timer (con01 can't self-issue:
+  the name resolves elsewhere). Upstreams are LOCAL loopback ports
+  (8001/8002/8911/8912/8003) — dormant 502s until the warm stack
+  (ada-pi-pwa, ada backends, tg/line relays) is promoted in a failover.
+  Replaces retired idc01's standby-edge tier. Caddyfile is live-only at
+  ~/.config/caddy/Caddyfile (carries the public-IP bind — not committed,
+  same as idc02/idc03 edges).
+verify: >-
+  curl -sk --resolve api.surf-thailand.com:443:<con01-public-ip>
+  https://api.surf-thailand.com/install -o /dev/null -w '%{http_code}'
+  — 200 install / 502 backends until warm stack lands; cert chain valid.
+secrets:
+  - "~/.config/caddy/certs/api.{crt,key} — LE pair pushed by idc03 cert-sync"
+requires:
+  - "image:docker.io/library/caddy:2"
+  - "ufw 80/443 — already open (baseline)"
+  - "idc03 cert-sync.timer — weekly Sun 04:30 push"
+state:
+  - "~/.config/caddy/Caddyfile — standby site block (local upstreams)"
+  - "~/.config/containers/caddy/{data,config} — ACME state (unused for synced name)"
+ports:
+  - "<public-ip>:443 — standby api.surf-thailand.com"
+  - "<public-ip>:80 — ACME/redirect lane"
+restore: >-
+  Failover: promote local backends (mddb-follower -> leader, warm units ->
+  active), repoint CF A-record to con01 public IP, edge already serves the
+  synced cert. Normal state: zero traffic — DNS never points at con01.
+related_cards: [idc04-contabo-vps8-provision]
+status: deployed
+deployed: 2026-10-22

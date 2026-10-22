@@ -2196,6 +2196,15 @@ hosts:
         expected_state: active
         critical: false
         note: enabled for tony 2026-10-22 (rootless podman 4.9.3 + subuid/gid)
+      - name: caddy-edge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Standby public edge (quadlet stacks/con01/caddy-edge) — serves
+          api.surf-thailand.com :443 with cert pushed by idc03 cert-sync
+          (retargeted 2026-10-22); local-upstream 502s are normal until the
+          warm stack is promoted. Needs ip_unprivileged_port_start=80."
       - name: mddb-follower.service
         type: service
         scope: user

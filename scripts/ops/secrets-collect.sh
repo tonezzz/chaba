@@ -2,7 +2,7 @@
 # secrets-collect — pull EVERY host's credential-shaped state into one
 # age-encrypted bundle per host, stored on tony-omen and mirrored to
 # tony-dell. Complements idc03's secrets-backup.sh (which only covers
-# idc03 and already pushes to idc01/idc02/tony-dell-m2m).
+# idc03 and already pushes to con01/idc02/tony-dell-m2m).
 #
 # Restore: age -d -i backup-age.key <file> | tar xz -C ~/
 # Key lives at ~/.config/secrets/backup-age.key (same key idc03 uses —
@@ -18,7 +18,7 @@ STAMP="$(date +%Y%m%d-%H%M)"
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=10"
 
 # Hosts to sweep. tony-omen handled locally (no self-ssh needed).
-HOSTS=(idc03 idc02 idc01 tony-dell mn01 tony-omen)
+HOSTS=(idc03 idc02 con01 tony-dell mn01 tony-omen)
 
 # Credential-shaped paths, relative to $HOME — same set as idc03's script.
 PATHS=(.config/secrets .ssh .config/rclone .config/camwall.env
