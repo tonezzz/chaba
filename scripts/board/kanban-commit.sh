@@ -27,7 +27,12 @@
 # otherwise.
 set -uo pipefail
 REPO="${KANBAN_REPO:-$HOME/CascadeProjects/chaba-tony-dell}"
-GENERATED_RE='^(docs/ssot/kanban/|docs/ssot/focus-inbox/|stacks/web/public/apps/board/)'
+# Kept in sync with git-safe-pull.sh's default GENERATED_RE plus the
+# board statics path: the writer checkout also has non-kanban producers
+# (dev-system assess, host-roles writers) whose files collide on every
+# autostash pop — a narrow kanban-only regex left those "for manual
+# merge" and wedged the tree + spammed the ops-guard card each cycle.
+GENERATED_RE='^(docs/ssot/|reports/SSOT_OPTIMIZATION_WARNINGS\.json$|stacks/web/public/apps/board/)'
 PUSH_RETRIES="${KANBAN_PUSH_RETRIES:-3}"
 SAFE_PULL="$(cd "$(dirname "$0")" && pwd)/../git-safe-pull.sh"
 cd "$REPO" || exit 1
