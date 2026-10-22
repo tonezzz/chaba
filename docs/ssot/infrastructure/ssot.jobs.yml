@@ -17,6 +17,7 @@ config:
     idc01: '%h/CascadeProjects/chaba-vault'
     idc02: '%h/CascadeProjects/chaba'
     idc03: '%h/CascadeProjects/chaba'
+    con01: '%h/CascadeProjects/chaba'
     mn01: '%h/CascadeProjects/chaba'
     macbook: '%h/CascadeProjects/chaba'
 conventions:
@@ -239,8 +240,8 @@ jobs:
     ExecStartPre/Post to bring open-jev + open-jev-student up and back down around the bench; the renderer cannot
     express pre/post hooks yet, so generated/tony_omen/ is a stub and the hand unit is the deployed source of truth.
 - id: jev-bench
-  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on idc02, targets idc03)
-  host: idc02
+  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on con01, targets idc03)
+  host: con01
   dispatch: systemd
   on_calendar: hourly
   persistent: true
@@ -252,6 +253,19 @@ jobs:
     Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by nest-overview.py
     (chaba-nest L2). Bench script lives in the ada-voice checkout on idc02. Unit was hand-installed 2026-10-01; now
     rendered from this manifest.
+- id: doc-mirror
+  name: Hourly doc-archive -> HA www mirror (runs on con01 since 2026-10-22)
+  host: con01
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 10m
+  exec: '%h/.local/share/doc-archive/mirror-to-ha-www.sh'
+  note: publishes doc-archive pages to tony-ha www/documents/ so casted
+    /local/documents/<slug>/<page> render on screens. Needs
+    ~/.config/secrets/doc-archive.env (API key) + rsync ssh to tony-dell-m2m
+    (con01 mesh key already on dell). Reads doc-archive API + mddb on idc03.
+    Moved idc03->con01 2026-10-22 (was a hand unit on idc03 — now declared).
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen

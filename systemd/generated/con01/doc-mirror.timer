@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly doc-archive -> HA www mirror (runs on con01 since 2026-10-22) (job:doc-mirror, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=60min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
