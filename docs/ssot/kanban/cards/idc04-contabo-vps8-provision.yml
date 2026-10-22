@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
 column: backlog
-updated: 2026-10-22 13:31
+updated: 2026-10-22 14:19
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -65,3 +65,16 @@ comms:
     all-green: ufw deny-in/tailscale0/80/443, sshd 00+20 dropins (password no, root key-only), f2b, unatt-upg, linger,
     90-tuning bbr/fq, podman 4.9.3 rootless+auto-update.timer. Fleet mesh bidirectional (con01 key on all hosts).
     Exec checkout cloned + hooks + chaba-repo-sync.timer; sec'
+- at: 2026-10-22 14:19
+  from: devin
+  text: 'role-stack progress 2026-10-22 (all verified live):
+
+
+    LIVE:
+
+    - mddb-follower: full snapshot applied (LSN 235929368, 8.7G, vector idx 91.5K docs), streaming binlog — leader-side
+    lag ~61s and draining; healthy flip imminent
+
+    - ada-stt migrated off idc02: ~/audio-cpp-eval rsync''d, native unit on 100.72.146.39:8914, libgomp1 installed;
+    threads=4 (8 thrashes shared vCPU); warm RTF ~0.5 (9.2s/19.3s audio); idc03 consumer envs repointed (TG_WHISPER_URL
+    x4 + backups), ada-ha-tony + 4 relays restarted activ'

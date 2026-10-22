@@ -1,7 +1,7 @@
 id: roster-agents-tab
 title: Agents tab on chaba-admin — unified roster chat over ada lanes
-column: doing
-updated: 2026-10-22 14:08
+column: review
+updated: 2026-10-22 14:16
 priority: medium
 tags:
 - chaba-admin
@@ -13,11 +13,10 @@ spec: 'Tony 2026-10-20: wanted a single chat UI to talk to ada/chaba/kaewta/klau
   (contacts rail + one <ada-webchat-card> per lane over idc03 tailnet mounts, member=tony -> chat_id web-tony, per-lane
   key cache ada_roster + #key.<id>= hash seeding), agents view inserted after board on chaba-admin (live ws mutate
   + snapshot synced), roster-tony chat-capability keys minted on all four lanes (:8002/:8007/:8003/:8005).'
-note: 'VERIFY: open https://tony-ha.surf-thailand.com/chaba-admin/agents (tony-ha instance —
-  ada-ha.surf-thailand.com fronts ada-ha :8125 whose Ada admin has no agents tab) — seed keys
-  once via the URL in ~/.config/secrets/roster-bootstrap.txt (or paste each lane key into the
-  contact setup gate / Seed box). Needs Tailscale for lane ws. devin/nest listed as soon —
-  shim card roster-devin-nest-shims.'
+note: 'VERIFY: open https://tony-ha.surf-thailand.com/chaba-admin/agents (tony-ha instance — ada-ha.surf-thailand.com
+  fronts ada-ha :8125 whose Ada admin has no agents tab) — seed keys once via the URL in ~/.config/secrets/roster-bootstrap.txt
+  (or paste each lane key into the contact setup gate / Seed box). Needs Tailscale for lane ws. devin/nest listed
+  as soon — shim card roster-devin-nest-shims.'
 ref: ADA-0757
 comms:
 - at: 2026-10-20 18:32
@@ -84,6 +83,26 @@ comms:
     (403 on bad key: ada-tony/ada-kk/ada-dev/ada-michael); live chaba-admin on tony-ha :8123 HAS the agents view
     after board, iframe -> https://idc02.taila0626a.ts.net/apps/roster/. URL FIX: verify at https://tony-ha.surf-thailand.com/chaba-admin/agents
     — the note said ada-ha.surf-thailand.'
+- at: 2026-10-22 14:10
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261022-140402-tony-2026-10-20-wanted-a-singl.service:
+    Failed to ope'
+- at: 2026-10-22 14:10
+  from: chaba
+  text: pushed dispatch/20261022-140402-tony-2026-10-20-wanted-a-singl to origin
+- at: 2026-10-22 14:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 14:10
+  from: chaba
+  text: auto-merged 37c4b634 (dispatch/20261022-140402-tony-2026-10-20-wanted-a-singl) → origin/master
+- at: 2026-10-22 14:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-140402-tony-2026-10-20-wanted-a-singl,
+    branch dispatch/20261022-140402-tony-2026-10-20-wanted-a-singl'
+- at: 2026-10-22 14:16
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''open-chaba-admin-agents-and-se''] block close)'
 requests:
 - id: open-chaba-admin-agents-and-seed-the-lan-1ec7b1
   ask: Open chaba-admin/agents and seed the lane keys once — copy the URL in ~/.config/secrets/roster-bootstrap.txt
@@ -98,5 +117,13 @@ requests:
   escalated_at: 2026-10-22 10:11
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261022-140402-tony-2026-10-20-wanted-a-singl.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261022-140402-tony-2026-10-20-wanted-a-singl.service:
+    No such file or directory'
+  verified: true
+  sweep:
+    close_held: 2026-10-22 14:16
+review_kind: verify
+claim: {}

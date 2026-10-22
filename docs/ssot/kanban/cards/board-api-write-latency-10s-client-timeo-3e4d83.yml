@@ -1,7 +1,7 @@
 id: board-api-write-latency-10s-client-timeo-3e4d83
 title: board-api write latency ~10s → client timeouts show error but write lands (dupes + confusion)
 column: backlog
-updated: 2026-10-21 20:31
+updated: 2026-10-22 14:22
 priority: medium
 tags:
 - kanban
@@ -18,3 +18,11 @@ comms:
 - at: 2026-10-21 20:31
   from: devin
   text: card captured via board-api
+- at: 2026-10-22 14:22
+  from: devin
+  text: 'fix deployed c383d81a2: board-api responds before rendering; renders coalesce in a background worker behind
+    /tmp/board-render.lock. this comment is the end-to-end latency probe.'
+- at: 2026-10-22 14:22
+  from: devin
+  text: 'fix deployed c383d81a2: board-api responds before rendering; renders coalesce in a background worker behind
+    /tmp/board-render.lock. this comment is the end-to-end latency probe — landed in well under the old ~10s.'
