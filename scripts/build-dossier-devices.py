@@ -36,9 +36,10 @@ SSOT_PATH = REPO_ROOT / "data" / "ssot" / "infrastructure" / "ssot.ha-devices.ym
 
 INSTANCES = {
     "tony-ha": {
-        # tony-ha lives on tony-omen since ph5 — ws via tailnet name so
-        # the scan job works wherever it runs (was 127.0.0.1, dell-local).
-        "ha_url": "ws://tony-omen.taila0626a.ts.net:8123/api/websocket",
+        # tony-ha lives on tony-omen since ph5 — tailscale serve fronts it
+        # HTTPS-only on the tailnet IP, so ws must be wss (was 127.0.0.1,
+        # dell-local).
+        "ha_url": "wss://tony-omen.taila0626a.ts.net:8123/api/websocket",
         "token_file": Path.home() / ".config" / "secrets" / "home-assistant-token.env",
         "token_kind": "env",
     },
