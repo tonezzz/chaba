@@ -57,7 +57,9 @@
     #pairQr img { display: block; width: min(56vw, 320px); height: auto; image-rendering: pixelated; }
     #pairCode { font-size: clamp(2.6rem, 10vw, 6rem); font-weight: 800; letter-spacing: 0.18em;
       background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #pairTitle { font-size: 1.5rem; font-weight: 700; }
     #pairHint { color: var(--muted); font-size: 1rem; max-width: 30rem; }
+    #pairTtl { color: var(--muted); font-size: 0.85rem; }
     /* corner plate — always on: context QR (controller for what's on this
        screen) + big screen id + the persistent 4-digit take-control code */
     #corner { position: fixed; left: .7rem; bottom: 4rem; z-index: 22;
@@ -135,9 +137,11 @@
   </div>
 
   <div id="pair">
+    <div id="pairTitle">waiting to pair</div>
     <div id="pairQr"></div>
     <div id="pairCode"></div>
     <div id="pairHint">Unpaired display — scan with the admin phone to add it as a cast target.</div>
+    <div id="pairTtl"></div>
   </div>
 
   <div id="veil">
@@ -199,6 +203,9 @@
 
     let ws = null, wsRetry = 0;
     let screenNum = null, audioOK = false;
+    // disconnect age — the HUD counts up while the ws is down so a frozen
+    // display reads "reconnecting 42s", not a bare spinner
+    let downAt = 0, reconTicker = null;
 
     // -- panes: each sub-screen owns video/img/frame; pane 0 wraps the
     //    legacy markup so single-pane behaves exactly as before -----------
@@ -397,6 +404,7 @@
     function showOnly(el) {
       // fullscreen overlays only (idle/pair/boot) — panes keep their own
       // children; hiding the stage blanks content panes
+      if (el !== pair) { clearInterval(pairTimer); pairTimer = null; }
       teardown();
       for (const s of [idle, pair, boot]) s.style.display = "none";
       stage.style.display = el ? "none" : "grid";
@@ -445,7 +453,18 @@
         sendState(preBgState, preBgDetail);
       }
     }
-    function showPair(sid, code) {
+    // Pairing window countdown — the relay expires pending rows after
+    // VCAST_PENDING_TTL_MS (default 5min) and this page re-registers on
+    // the next state tick anyway, so the countdown is informational.
+    let pairExpiry = 0, pairTimer = null;
+    function tickPairTtl() {
+      const left = Math.max(0, Math.ceil((pairExpiry - Date.now()) / 1000));
+      const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
+      document.getElementById("pairTtl").textContent =
+        left > 0 ? `code expires in ${mm}:${ss} — a fresh one appears automatically`
+                 : "pairing window expired — refreshing…";
+    }
+    function showPair(sid, code, ttlMs) {
       teardown();
       showOnly(pair);
       const el = document.getElementById("pairQr");
@@ -460,9 +479,13 @@
       // scanning (relay resolves code -> sid inside /claim)
       document.getElementById("pairCode").textContent = code || "";
       document.getElementById("pairHint").textContent = code
-        ? `Tell Ada: "claim display ${code}" — or scan the QR with the admin phone.`
+        ? `Tell Ada: "claim display ${code}" — or scan the QR. Anyone on the tailnet can approve.`
         : "Unpaired display — scan with the admin phone to add it as a cast target.";
-      setHud("unpaired — awaiting claim", true);
+      pairExpiry = Date.now() + (ttlMs || 300000);
+      clearInterval(pairTimer);
+      tickPairTtl();
+      pairTimer = setInterval(tickPairTtl, 1000);
+      setHud("waiting to pair", true);
       sendState("unpaired", sid + (code ? ` code=${code}` : ""));
     }
     // YouTube/Vimeo page URLs can't be a <video> source and their watch pages
@@ -1023,6 +1046,11 @@
       ws = new WebSocket(WS_URL);
       ws.onopen = () => {
         wsRetry = 0;
+        clearInterval(reconTicker); reconTicker = null;
+        if (downAt) {
+          showToast(`reconnected after ${Math.round((Date.now() - downAt) / 1000)}s`);
+          downAt = 0;
+        }
         setHud("connected", true);
         if (manualRoom) {
           ws.send(JSON.stringify({ type: "join", room: manualRoom }));
@@ -1040,7 +1068,13 @@
           `reason="${e.reason || ""}" clean=${e.wasClean} ` +
           `screen=${screenNum} state=${lastState}`);
         ws = null;
+        downAt = downAt || Date.now();
         setHud("reconnecting", false);
+        clearInterval(reconTicker);
+        reconTicker = setInterval(() => {
+          if (downAt)
+            setHud(`reconnecting ${Math.round((Date.now() - downAt) / 1000)}s`, false);
+        }, 1000);
         setTimeout(connect, Math.min(5000, 500 * ++wsRetry));
       };
       ws.onerror = () => {};
@@ -1080,7 +1114,7 @@
           setBg(msg.on !== false && msg.mode !== "off");
           break;
         case "pending":
-          showPair(msg.sid, msg.code);
+          showPair(msg.sid, msg.code, msg.ttl_ms);
           break;
         case "dismissed":
           teardown();
@@ -1097,6 +1131,8 @@
         case "unpaired":
           localStorage.removeItem(KEY_STORE);
           screenNum = null;
+          if (msg.reason === "released")
+            showToast("released by operator — name reserved 30d for reclaim", 5000);
           ws.send(JSON.stringify(registerMsg()));
           break;
         case "layout": setLayout(msg.panes ?? msg.layout, msg.mode); showToast(`${panes.length} panes${msg.mode === "pip" ? " · pip" : ""}`); break;

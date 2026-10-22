@@ -27,6 +27,13 @@ const TOMBSTONE_TTL_MS = parseInt(process.env.VCAST_TOMBSTONE_TTL_MS
 // sweep cadence — tests shrink this alongside GRACE_MS
 const SWEEP_MS = parseInt(process.env.VCAST_SWEEP_MS
   || String(PING_INTERVAL_MS), 10);
+// App-level silence: displays heartbeat a state report every 30s, so a
+// live socket with no report past this is treated stale — a frozen
+// display (iOS suspend, dead headless chromium) still answers protocol
+// pings while its app is gone; last_seen is the only honest clock.
+// (2026-10-22 live example: screens 2/4 read connected:true with a
+// 6-day-old last_seen.)
+const STALE_SEEN_MS = parseInt(process.env.VCAST_STALE_SEEN_MS || "120000", 10);
 const ADA_AUTH_URL = (process.env.ADA_AUTH_URL || "").replace(/\/+$/, "");
 const ADA_ADMIN_KEY = process.env.ADA_ADMIN_KEY || "";
 const REGISTRY_FILE =
@@ -45,6 +52,55 @@ const registry = { screens: {}, tombstones: {}, codes: {} };
 const live = new Map(); // screen number -> ws
 const pending = new Map(); // sid -> {ws, label, ts, code}
 const sockets = new Set(); // every ws the server accepted (for ping sweeps)
+
+// Audit timeline — claim/release/resurrect/register/disconnect/sweep
+// events, persisted next to the registry so a restart doesn't lose the
+// forensic trail (the 2026-10-09 flap post-mortem had only journald).
+// Surfaced in /displays (recent tail) so the operator view can render
+// it, and counted for the 24h flap metric.
+const EVENTS_FILE =
+  process.env.VCAST_EVENTS ||
+  path.join(path.dirname(REGISTRY_FILE), "displays-events.json");
+const EVENTS_CAP = 400;
+const events = []; // {at, kind, ...}
+function loadEvents() {
+  try {
+    const data = JSON.parse(fs.readFileSync(EVENTS_FILE, "utf8"));
+    if (Array.isArray(data)) events.push(...data.slice(-EVENTS_CAP));
+  } catch (e) { /* fresh log */ }
+}
+function saveEvents() {
+  try {
+    fs.mkdirSync(path.dirname(EVENTS_FILE), { recursive: true });
+    fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
+  } catch (e) {
+    console.error("[input-bridge] events save failed:", e.message);
+  }
+}
+function logEvent(kind, detail = {}) {
+  events.push({ at: new Date().toISOString(), kind, ...detail });
+  if (events.length > EVENTS_CAP)
+    events.splice(0, events.length - EVENTS_CAP);
+  saveEvents();
+}
+loadEvents();
+
+// Flap = an abnormal display disconnect (close code other than the benign
+// client-lifecycle ones) or a supersede (re-register over a live socket).
+// Same definition vcast-auto-health.py applies to journald — keep in sync.
+const BENIGN_CLOSE_CODES = new Set([1000, 1001, 1005]);
+function flapStats() {
+  const dayAgo = Date.now() - 24 * 3600e3;
+  let flaps_24h = 0, last_flap = null;
+  for (const e of events) {
+    if (e.kind !== "supersede" &&
+        !(e.kind === "disconnect" && e.abnormal)) continue;
+    if (Date.parse(e.at) < dayAgo) continue;
+    flaps_24h++;
+    if (!last_flap || e.at > last_flap) last_flap = e.at;
+  }
+  return { flaps_24h, last_flap };
+}
 
 // Spoken claim codes: a pending display shows a 4-digit code under its QR
 // so a bystander can tell Ada "claim code 4821" instead of scanning —
@@ -168,9 +224,70 @@ function pendingCleanup() {
   const now = Date.now();
   for (const [sid, p] of pending) {
     if (now - p.ts > PENDING_TTL_MS || !p.ws || p.ws.readyState !== 1) {
+      logEvent("pending-expire", { sid, label: p.label || null });
       pending.delete(sid);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Lifecycle — the operator-facing truth per screen (vcast-ux-flow). One
+// derived state, never "registered-but-dead": pairing (pending row or a
+// claim awaiting its register), connected (live socket, no state report
+// yet), idle, playing (any content state), reconnecting (socket dead but
+// inside the rebind grace — the name is still held), stale (dead past
+// grace, awaiting the sweep), released (tombstoned name).
+// ---------------------------------------------------------------------------
+function lifecycleOf(num, s) {
+  const now = Date.now();
+  if (slotLive(num)) {
+    // socket open but app silent — the zombie case: reads "stale", not
+    // "connected", because registry presence (or even a live socket)
+    // isn't proof the display works
+    const seen = Date.parse(s.last_seen || 0);
+    if (seen && now - seen > STALE_SEEN_MS) {
+      return { state: "stale", age_s: Math.round((now - seen) / 1000),
+               silent_socket: true };
+    }
+    const st = s.state || "";
+    if (!st) return { state: "connected" };
+    if (st === "idle") return { state: "idle" };
+    return { state: "playing", detail: st };
+  }
+  // claim in flight — /claim minted the key, register hasn't landed.
+  // Checked before the dead-stamp path: /claim re-proofs disconnected_at
+  // to restart the rebind window, so an in-flight claim would otherwise
+  // read "reconnecting" when it's really "pairing".
+  if (s.claimed_at) {
+    return { state: "pairing",
+             age_s: Math.round((now - Date.parse(s.claimed_at)) / 1000) };
+  }
+  const dead = deadStamp(s);
+  const age_s = dead ? Math.round((now - dead) / 1000) : null;
+  if (dead && now - dead < GRACE_MS) {
+    return { state: "reconnecting", age_s,
+             reclaim_in_s: Math.ceil((GRACE_MS - (now - dead)) / 1000) };
+  }
+  // past grace (or no stamp — treated stale) — the sweep is owed
+  return { state: "stale", age_s };
+}
+
+function lastCastFor(num) {
+  // per-pane view of what the display would replay on reconnect — the
+  // honest "what should be on this screen" answer
+  const out = [];
+  for (const [k, v] of lastCast) {
+    if (!k.startsWith(`vcast-${num}|`)) continue;
+    const m = v.msg || v;              // tolerate pre-wrap entries
+    out.push({
+      pane: k.slice(`vcast-${num}|`.length) || "0",
+      type: m.type || "?",
+      url: m.url ? String(m.url).slice(0, 160) : null,
+      at: v.at ? new Date(v.at).toISOString() : null,
+      panes: m.panes ?? m.layout ?? null,
+    });
+  }
+  return out;
 }
 
 // A name is held while a live display owns it or a rival /claim already
@@ -366,31 +483,79 @@ function readBody(req, limit = 65536) {
 
 function displaysSnapshot() {
   pendingCleanup();
+  const now = Date.now();
+  const labelUse = {};
+  for (const s of Object.values(registry.screens)) {
+    const l = s.label || s.name;
+    labelUse[l] = (labelUse[l] || 0) + 1;
+  }
   const screens = Object.entries(registry.screens).map(([n, s]) => {
-    const ws = live.get(parseInt(n, 10));
+    const num = parseInt(n, 10);
+    const ws = live.get(num);
+    const lc = lifecycleOf(num, s);
+    const wanted = parseInt(
+      (String(s.name).match(/^screen-(\d+)$/) || [])[1] || "0", 10);
     return {
-      screen: parseInt(n, 10),
+      screen: num,
       name: s.name,
       label: s.label || s.name,
+      // identity: screen-N names pin slot N — flag drift so the UI can
+      // show preferred vs assigned instead of a bare number
+      preferred_screen: wanted || null,
+      drift: !!(wanted && wanted !== num),
+      label_dup: labelUse[s.label || s.name] > 1,
       assigned_at: s.assigned_at,
       connected: !!(ws && ws.readyState === 1),
+      lifecycle: lc.state,
+      lifecycle_detail: lc.detail || null,
+      silent_socket: lc.silent_socket || undefined,
+      age_s: lc.age_s ?? null,
+      reclaim_in_s: lc.reclaim_in_s ?? null,
       disconnected_at: s.disconnected_at || null,
       last_seen: s.last_seen || null,
       state: s.state || "idle",
       state_detail: s.state_detail || null,
       panes: s.panes || 1,
       code: s.code || null,
+      last_cast: lastCastFor(num),
     };
   });
   screens.sort((a, b) => a.screen - b.screen);
+  const health = {
+    connected: 0, reconnecting: 0, stale: 0,
+    pending: pending.size, released: 0,
+    grace_ms: GRACE_MS,
+    ...flapStats(),
+  };
+  for (const s of screens) {
+    if (s.lifecycle === "idle" || s.lifecycle === "playing" ||
+        s.lifecycle === "connected") health.connected++;
+    else if (s.lifecycle === "reconnecting") health.reconnecting++;
+    else if (s.lifecycle === "stale") health.stale++;
+  }
+  const released = Object.entries(registry.tombstones)
+    .map(([name, at]) => ({
+      name, at,
+      reclaim_until: new Date(Date.parse(at) + TOMBSTONE_TTL_MS)
+        .toISOString(),
+      age_s: Math.round((now - Date.parse(at)) / 1000),
+    }))
+    .sort((a, b) => b.at.localeCompare(a.at));
+  health.released = released.length;
   return {
     screens,
     pending: [...pending.entries()].map(([sid, p]) => ({
       sid,
       label: p.label || null,
       code: p.code || null,
+      device_id: p.device_id ? String(p.device_id).slice(0, 8) : null,
       since: new Date(p.ts).toISOString(),
+      expires_in_s: Math.max(0,
+        Math.ceil((PENDING_TTL_MS - (now - p.ts)) / 1000)),
     })),
+    released,
+    health,
+    events: events.slice(-40).reverse(),
   };
 }
 
@@ -408,6 +573,8 @@ const server = http.createServer(async (req, res) => {
       screens: Object.keys(registry.screens).length,
       tombstones: Object.keys(registry.tombstones).length,
       ada_auth: !!ADA_AUTH_URL,
+      events: events.length,
+      ...flapStats(),
     });
   }
 
@@ -545,12 +712,17 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && url.pathname === "/pair-info") {
     const sid = url.searchParams.get("sid") || "";
     const p = pending.get(sid);
-    if (!p) return json(res, 404, { error: "unknown or expired sid" });
+    if (!p) return json(res, 404, {
+      error: "unknown or expired sid",
+      next: "the pairing window lapsed — the display re-shows a fresh QR within seconds; rescan it",
+    });
     return json(res, 200, {
       sid,
       label: p.label || null,
       code: p.code || null,
       since: new Date(p.ts).toISOString(),
+      expires_in_s: Math.max(0,
+        Math.ceil((PENDING_TTL_MS - (Date.now() - p.ts)) / 1000)),
     });
   }
 
@@ -774,8 +946,25 @@ const server = http.createServer(async (req, res) => {
       // its key). Explicit-name claims conflict; number-derived claims
       // take the next free slot.
       if (nameHeld(name)) {
+        const held = Object.entries(registry.screens)
+          .find(([, s]) => s.name === name);
+        const heldNum = held ? parseInt(held[0], 10) : 0;
+        const live_held = heldNum ? slotLive(heldNum) : false;
+        const dead = held ? deadStamp(held[1]) : 0;
+        const retryIn = dead
+          ? Math.max(0, Math.ceil((GRACE_MS - (Date.now() - dead)) / 1000))
+          : 0;
         if (explicitName) {
-          return json(res, 409, { error: `name ${name} is in use`, name });
+          // reason AND next action — the operator should never have to
+          // read journald to learn why a claim refused
+          return json(res, 409, {
+            error: `name ${name} is in use`, name,
+            held_by: live_held ? "live socket" : "claim in flight",
+            retry_in_s: live_held ? null : retryIn || null,
+            next: live_held
+              ? `release the live display first (POST /release {screen:${heldNum}}) or pick another name`
+              : `name held by a dead socket — retry in ~${retryIn}s or POST /sweep {screen:${heldNum}}`,
+          });
         }
         const used = usedSlots();
         let n = 1;
@@ -785,14 +974,20 @@ const server = http.createServer(async (req, res) => {
       }
 
       let created = await adaCreateScreenKey(admin_key, name);
+      let resurrected = false;
       if (created.conflict && /^screen-\d+$/.test(name)) {
         // released/stale screen-N names keep their ada key — resurrect
         // once via the invite chain. Non-screen names are member keys:
         // they keep tombstone semantics and stay a hard 409.
         created = await adaResurrectScreenKey(admin_key, name);
+        resurrected = true;
       }
       if (created.conflict) {
-        return json(res, 409, { error: `name ${name} already issued`, name });
+        return json(res, 409, {
+          error: `name ${name} already issued`, name,
+          held_by: "ada key",
+          next: "non-screen names keep tombstone semantics — pick another name or manage the key in ada",
+        });
       }
       if (created.error) return json(res, 502, { error: created.error });
 
@@ -819,8 +1014,14 @@ const server = http.createServer(async (req, res) => {
       registry.screens[screen].claimed_at = new Date().toISOString();
       // a successful (re-)mint lifts the tombstone — /release only bars
       // the name until someone deliberately claims it again
+      const reclaimed = !!registry.tombstones[name];
       delete registry.tombstones[name];
       saveRegistry();
+      logEvent("claim", {
+        name, screen, sid,
+        resurrected: resurrected || undefined,
+        reclaimed: reclaimed || undefined,
+      });
 
       const p = pending.get(sid);
       if (p && p.ws && p.ws.readyState === 1) {
@@ -834,7 +1035,7 @@ const server = http.createServer(async (req, res) => {
         );
       }
       pending.delete(sid);
-      return json(res, 200, { ok: true, screen, name });
+      return json(res, 200, { ok: true, screen, name, resurrected });
     // ada hops abort on timeout — a throw must answer, not hang
     }).catch((e) => json(res, 502, { error: `claim failed: ${e.message}` }));
   }
@@ -860,7 +1061,10 @@ const server = http.createServer(async (req, res) => {
     const key = n != null ? String(n) : null;
     let name = body.name ? String(body.name) : null;
     if (!name && key && registry.screens[key]) name = registry.screens[key].name;
-    if (!name) return json(res, 404, { error: "unknown screen" });
+    if (!name) return json(res, 404, {
+      error: "unknown screen",
+      next: "the screen may already be released or swept — check GET /displays for the live registry",
+    });
 
     const revoked = await adaRevokeKey(admin_key, name);
     // Tombstone the released name: the detached socket's late state writes
@@ -868,13 +1072,17 @@ const server = http.createServer(async (req, res) => {
     // or failed) let a zombie re-register and RE-CREATE the entry — the
     // 2026-10-09 resurrection. The tombstone blocks registerDisplay until
     // a fresh /claim re-mints the name.
-    registry.tombstones[name] = new Date().toISOString();
+    const tombstonedAt = new Date().toISOString();
+    registry.tombstones[name] = tombstonedAt;
+    let releasedScreen = null;
     const entry = Object.entries(registry.screens).find(([, s]) => s.name === name);
     if (entry) {
       const num = parseInt(entry[0], 10);
+      releasedScreen = num;
       const ws = live.get(num);
       if (ws) {
-        if (ws.readyState === 1) ws.send(JSON.stringify({ type: "unpaired" }));
+        if (ws.readyState === 1)
+          ws.send(JSON.stringify({ type: "unpaired", reason: "released" }));
         // detach now — the stale socket's later close would otherwise
         // evict a re-registered display from live[]
         ws.screen = null;
@@ -890,7 +1098,71 @@ const server = http.createServer(async (req, res) => {
       delete registry.screens[entry[0]];
     }
     saveRegistry();
-    return json(res, 200, { ok: true, name, revoked });
+    const tombstone_until =
+      new Date(Date.parse(tombstonedAt) + TOMBSTONE_TTL_MS).toISOString();
+    logEvent("release", { name, screen: releasedScreen, revoked });
+    return json(res, 200, {
+      ok: true, name, screen: releasedScreen, revoked, tombstone_until,
+      note: `released — name reserved ${Math.round(TOMBSTONE_TTL_MS / 86400e3)}d for reclaim (claim a display as ${name} to reuse it)`,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/sweep") {
+    // Force-free a dead/stale registry entry NOW — the one-click fix for
+    // "name held by a dead socket". Equivalent to waiting out the rebind
+    // grace, but the operator shouldn't have to. Live screens refuse:
+    // sweeping a connected display would orphan it mid-cast — release
+    // is the honest op for that.
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    if (!body.admin_key && !tailnetClient(req)) {
+      return json(res, 403, { error: "admin key required off-tailnet" });
+    }
+    const admin_key = body.admin_key || ADA_ADMIN_KEY;
+    if (!admin_key) return json(res, 403, { error: "no admin key configured" });
+    const adminName = await adaKeyName(admin_key).catch(() => null);
+    if (!adminName) return json(res, 403, { error: "admin key not accepted" });
+
+    const targets = [];
+    if (body.all === true || body.stale === true) {
+      for (const [n, s] of Object.entries(registry.screens)) {
+        const num = parseInt(n, 10);
+        if (!slotLive(num)) targets.push([num, s]);
+      }
+    } else {
+      const num = parseInt(body.screen, 10);
+      const s = registry.screens[num];
+      if (!Number.isInteger(num) || !s) {
+        return json(res, 404, {
+          error: "unknown screen",
+          next: "nothing to sweep — the entry is already gone (check GET /displays)",
+        });
+      }
+      if (slotLive(num)) {
+        return json(res, 409, {
+          error: `screen ${num} is connected — sweeping a live display would orphan it`,
+          held_by: "live socket",
+          next: `release it instead (POST /release {screen:${num}}) — release tombstones the name; sweep only frees dead entries`,
+        });
+      }
+      targets.push([num, s]);
+    }
+    const freed = [];
+    for (const [num, s] of targets) {
+      const ws = live.get(num);
+      if (ws) { ws.screen = null; live.delete(num); leaveRoom(ws); }
+      for (const k of [...lastCast.keys()])
+        if (k.startsWith(`vcast-${num}|`)) lastCast.delete(k);
+      delete registry.screens[num];
+      freed.push({ screen: num, name: s.name });
+      logEvent("sweep", { screen: num, name: s.name, reason: "operator" });
+    }
+    if (freed.length) saveRegistry();
+    return json(res, 200, { ok: true, freed });
   }
 
   if (req.method === "POST" && url.pathname === "/dismiss") {
@@ -905,8 +1177,12 @@ const server = http.createServer(async (req, res) => {
       return json(res, 403, { error: "admin key required off-tailnet" });
     }
     const p = pending.get(body.sid);
-    if (!p) return json(res, 404, { error: "unknown or expired sid" });
+    if (!p) return json(res, 404, {
+      error: "unknown or expired sid",
+      next: "the pairing window already lapsed — nothing to dismiss",
+    });
     pending.delete(body.sid);
+    logEvent("dismiss", { sid: body.sid, label: p.label || null });
     if (p.ws && p.ws.readyState === 1) {
       p.ws.pendingSid = null;
       p.ws.send(JSON.stringify({ type: "dismissed" }));
@@ -934,17 +1210,45 @@ const server = http.createServer(async (req, res) => {
     const n = parseInt(body.screen, 10);
     const entry = registry.screens[n];
     if (!Number.isInteger(n) || !entry)
-      return json(res, 404, { error: "unknown screen" });
+      return json(res, 404, {
+        error: "unknown screen",
+        next: "the screen may be released or swept — check GET /displays",
+      });
     if (body.label != null) {
-      entry.label = String(body.label).slice(0, 80);
+      const label = String(body.label).slice(0, 80);
+      // two live screens must never wear the same label — the operator
+      // can't tell them apart (the 2026-10-08 four-entries-one-display)
+      const clash = Object.entries(registry.screens).find(([k, s]) =>
+        parseInt(k, 10) !== n && (s.label || s.name) === label &&
+        slotLive(parseInt(k, 10)));
+      if (clash) {
+        return json(res, 409, {
+          error: `label "${label}" is already on live screen ${clash[0]}`,
+          next: `retitle or release screen ${clash[0]} first — duplicate labels defeat the identity rule`,
+        });
+      }
+      entry.label = label;
+      logEvent("relabel", { screen: n, name: entry.name, label });
     }
     let final = n;
     const to = parseInt(body.move_to, 10);
     if (to > 0 && to !== n) {
       if (slotLive(to))
-        return json(res, 409, { error: `screen ${to} is in use by a live display` });
-      if (registry.screens[to] && !reclaimable(to))
-        return json(res, 409, { error: `screen ${to} is still in its rebind grace` });
+        return json(res, 409, {
+          error: `screen ${to} is in use by a live display`,
+          held_by: "live socket",
+          next: `release screen ${to} first, or move to a different slot`,
+        });
+      if (registry.screens[to] && !reclaimable(to)) {
+        const dead = deadStamp(registry.screens[to]);
+        const retryIn = dead ? Math.max(0, Math.ceil(
+          (GRACE_MS - (Date.now() - dead)) / 1000)) : 0;
+        return json(res, 409, {
+          error: `screen ${to} is still in its rebind grace`,
+          held_by: "dead socket", retry_in_s: retryIn || null,
+          next: `retry in ~${retryIn}s or POST /sweep {screen:${to}} to free it now`,
+        });
+      }
       if (registry.screens[to]) {
         // dead past grace — same evict rule /claim uses
         const deadWs = live.get(to);
@@ -954,6 +1258,7 @@ const server = http.createServer(async (req, res) => {
       registry.screens[to] = entry;
       delete registry.screens[n];
       final = to;
+      logEvent("move", { name: entry.name, from: n, to });
       const ws = live.get(n);
       if (ws) {
         live.delete(n);
@@ -1087,7 +1392,9 @@ function broadcastTo(room, data) {
         for (const k of [...lastCast.keys()])
           if (k.startsWith(room + "|")) lastCast.delete(k);
       }
-      lastCast.set(`${room}|${pane}`, obj);
+      // wrapped {msg, at} — the displays view shows "cast X to pane P
+      // at T" per screen, and the operator can see a stale replay set
+      lastCast.set(`${room}|${pane}`, { msg: obj, at: Date.now() });
     }
   } catch (e) { /* ignore */ }
   const clients = rooms.get(room);
@@ -1139,6 +1446,8 @@ async function registerDisplay(ws, msg) {
       const sid = `p${Math.random().toString(36).slice(2, 10)}`;
       ws.pendingSid = sid;
       pending.set(sid, { ws, label, ts: Date.now(), code: mintClaimCode() });
+      logEvent("pending", { sid, label: label || null,
+                            reason: apiKey ? "key rejected" : "no key" });
     }
     const p = pending.get(ws.pendingSid);
     p.ws = ws;
@@ -1151,6 +1460,7 @@ async function registerDisplay(ws, msg) {
         type: "pending",
         sid: ws.pendingSid,
         code: p.code,
+        ttl_ms: PENDING_TTL_MS,
         reason: apiKey ? "key rejected" : "no key",
       })
     );
@@ -1163,10 +1473,15 @@ async function registerDisplay(ws, msg) {
   // /claim lifts the tombstone.
   if (registry.tombstones[name]) {
     console.log(`[vcast] register refused: ${name} is released (tombstoned)`);
-    ws.send(JSON.stringify({ type: "unpaired" }));
+    logEvent("register-refused", { name, reason: "tombstoned" });
+    ws.send(JSON.stringify({ type: "unpaired", reason: "released" }));
     return;
   }
 
+  // before allocScreen: was this name already bound? (rebind vs fresh)
+  const prevEntry = Object.entries(registry.screens)
+    .find(([, s]) => s.name === name);
+  const wasRebind = !!prevEntry;
   let screen = allocScreen(name);
   // a display may ask for a specific slot (want_screen/screen) — honor it
   // when free instead of settling for the name-default pin
@@ -1199,10 +1514,16 @@ async function registerDisplay(ws, msg) {
   if (prev && prev !== ws) {
     // flap telemetry — counted by vcast-auto-health as the 24h flap metric
     console.log(`[vcast] screen ${screen} (${name}) superseded by new socket`);
+    logEvent("supersede", { screen, name, remote: prev.remote || null });
     prev.screen = null;
     leaveRoom(prev);
     try { prev.terminate(); } catch (e) {}
   }
+  logEvent("register", {
+    screen, name, label: entry.label || null,
+    rebind: wasRebind || undefined,
+    remote: ws.remote || null,
+  });
   ws.screen = screen;
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
@@ -1215,11 +1536,14 @@ async function registerDisplay(ws, msg) {
   const replay = [...lastCast.entries()]
     .filter(([k]) => k.startsWith(prefix))
     // layout messages carry no pane — send them first so content lands
-    // in the right sub-screens
+    // in the right sub-screens (entries are {msg, at} wraps)
     .sort(([, a], [, b]) =>
-      (a.type === "layout" ? 0 : 1) - (b.type === "layout" ? 0 : 1));
-  for (const [, msg] of replay)
-    setTimeout(() => { try { ws.send(JSON.stringify(msg)); } catch (e) {} }, 400);
+      ((a.msg || a).type === "layout" ? 0 : 1) -
+      ((b.msg || b).type === "layout" ? 0 : 1));
+  for (const [, v] of replay)
+    setTimeout(() => {
+      try { ws.send(JSON.stringify(v.msg || v)); } catch (e) {}
+    }, 400);
 }
 
 const wss = new WebSocketServer({ noServer: true });
@@ -1298,6 +1622,17 @@ wss.on("connection", (ws, req) => {
     console.log(`[vcast] ws closed code=${code} ` +
       `reason="${String(reason || "")}" screen=${ws.screen ?? "-"} ` +
       `remote=${ws.remote} alive=${ageS}s`);
+    if (ws.screen != null) {
+      const ent = registry.screens[ws.screen];
+      logEvent("disconnect", {
+        screen: ws.screen,
+        name: ent ? ent.name : null,
+        code,
+        abnormal: !BENIGN_CLOSE_CODES.has(code) || undefined,
+        alive_s: ageS >= 0 ? ageS : undefined,
+        remote: ws.remote || null,
+      });
+    }
     releaseScreenByWs(ws);
     leaveRoom(ws);
     if (ws.pendingSid) pending.delete(ws.pendingSid);
@@ -1352,6 +1687,8 @@ setInterval(() => {
     if (!reclaimable(parseInt(n, 10))) continue;
     console.log(`[vcast] freeing dead screen ${n} ` +
       `(${s.name || s.label}) — rebind grace expired`);
+    logEvent("sweep", { screen: parseInt(n, 10), name: s.name || null,
+                        reason: "grace-expired" });
     delete registry.screens[n];
     changed = true;
   }

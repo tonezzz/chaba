@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#020617">
+  <title>vcast — displays</title>
+  <style>
+    :root { --bg: #020617; --panel: #0f172a; --text: #f8fafc; --muted: #94a3b8;
+            --accent: #22d3ee; --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+           font-family: system-ui, -apple-system, sans-serif; padding: 1.25rem; }
+    main { max-width: 62rem; margin: 0 auto; }
+    h1 { font-size: 1.3rem; margin: 0 0 .4rem; }
+    h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .08em;
+         color: var(--muted); margin: 1.2rem 0 .5rem; }
+    #fleet { font-size: .9rem; color: var(--muted); margin-bottom: .25rem; }
+    #fleet b { color: var(--text); }
+    #fleet .flap { color: var(--warn); }
+    .card { background: var(--panel); border: 1px solid #1e293b; border-radius: 10px;
+            padding: .8rem 1rem; margin-bottom: .6rem; }
+    .row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .grow { flex: 1; min-width: 10rem; }
+    .num { font-size: 1.4rem; font-weight: 800; min-width: 2.6rem; }
+    .label { font-weight: 700; }
+    .sub { color: var(--muted); font-size: .78rem; }
+    .mono { font-family: ui-monospace, monospace; }
+    .badge { font-size: .72rem; font-weight: 700; padding: .15rem .55rem;
+             border-radius: 999px; white-space: nowrap; }
+    .b-idle, .b-connected { background: #14532d; color: #bbf7d0; }
+    .b-playing { background: #164e63; color: #a5f3fc; }
+    .b-pairing { background: #334155; color: #cbd5e1; }
+    .b-reconnecting { background: #78350f; color: #fde68a; }
+    .b-stale { background: #7f1d1d; color: #fecaca; }
+    .b-released { background: #3f3f46; color: #d4d4d8; }
+    .dup { color: var(--err); font-weight: 700; }
+    .cast { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+    .cast b { color: var(--text); font-weight: 600; }
+    button { font: inherit; font-size: .78rem; font-weight: 700; padding: .3rem .8rem;
+             border-radius: 7px; border: 1px solid #334155; background: #1e293b;
+             color: var(--text); cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    button.warn { border-color: #78350f; color: #fde68a; }
+    button.danger { border-color: #7f1d1d; color: #fecaca; }
+    button:disabled { opacity: .45; cursor: default; }
+    .code { font-size: 1.6rem; font-weight: 800; letter-spacing: .2em; color: var(--accent); }
+    #events { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+    #events .k { color: var(--text); font-weight: 600; }
+    #events .t { color: var(--accent); }
+    .toast { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+             background: rgba(15,23,42,.95); border: 1px solid #334155; border-radius: 8px;
+             padding: .5rem 1rem; font-size: .85rem; max-width: 92vw; z-index: 40;
+             display: none; white-space: pre-wrap; }
+    .empty { color: var(--muted); font-size: .85rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>vcast displays</h1>
+  <div id="fleet">loading…</div>
+
+  <h2>pending — waiting to pair</h2>
+  <div id="pending"><div class="empty">none</div></div>
+
+  <h2>screens</h2>
+  <div id="screens"><div class="empty">loading…</div></div>
+
+  <h2>released — names reserved for reclaim</h2>
+  <div id="released"><div class="empty">none</div></div>
+
+  <h2>timeline</h2>
+  <div class="card"><div id="events"><div class="empty">no events yet</div></div></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+  const API = location.origin + "/api/input-bridge";
+  const $ = (id) => document.getElementById(id);
+
+  function showToast(text, ms = 4500) {
+    const t = $("toast");
+    t.textContent = text;
+    t.style.display = "block";
+    clearTimeout(t._t);
+    t._t = setTimeout(() => (t.style.display = "none"), ms);
+  }
+
+  async function api(path, opts) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const r = await fetch(API + path, { ...opts, signal: ctrl.signal });
+      const data = await r.json().catch(() => ({}));
+      return { status: r.status, data };
+    } catch (e) {
+      return { status: 0, data: { error: "relay unreachable — check tailnet, then retry" } };
+    } finally { clearTimeout(t); }
+  }
+  const post = (path, body) => api(path, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+
+  // every result is surfaced — the Ada rule: never claim done unless the
+  // call returned ok. Errors show the reason AND the relay's next hint.
+  async function act(path, body, verb) {
+    const { status, data } = await post(path, body);
+    if (status === 200 && data.ok) {
+      showToast(`${verb}: ok` + (data.note ? " — " + data.note : ""));
+    } else {
+      showToast(`${verb} failed: ${data.error || status}` +
+                (data.next ? "\n→ " + data.next : ""), 7000);
+    }
+    refresh();
+  }
+
+  const ago = (iso) => {
+    if (!iso) return "?";
+    const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  };
+  const age = (s) => s == null ? "" :
+    s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`;
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"]/g,
+      c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  function lifecycleBadge(s) {
+    const lc = s.lifecycle || (s.connected ? "connected" : "stale");
+    switch (lc) {
+      case "playing":
+        return `<span class="badge b-playing">playing · ${esc(s.lifecycle_detail || s.state)}</span>`;
+      case "idle":
+        return `<span class="badge b-idle">idle</span>`;
+      case "connected":
+        return `<span class="badge b-connected">connected</span>`;
+      case "pairing":
+        return `<span class="badge b-pairing">pairing ${age(s.age_s)}</span>`;
+      case "reconnecting":
+        return `<span class="badge b-reconnecting">reconnecting ${age(s.age_s)}</span>`;
+      case "stale":
+        return `<span class="badge b-stale">stale ${age(s.age_s)}${s.silent_socket ? " · socket open, app silent" : ""}</span>`;
+      default:
+        return `<span class="badge b-pairing">${esc(lc)}</span>`;
+    }
+  }
+
+  function castLine(s) {
+    const casts = s.last_cast || [];
+    if (!casts.length) return "";
+    const parts = casts.map(c =>
+      `p${c.pane}:${esc(c.type)}${c.url ? " " + esc(c.url.slice(0, 60)) : ""}` +
+      (c.at ? ` <span class="sub">(${ago(c.at)})</span>` : ""));
+    return `<div class="cast">last cast — ${parts.join(" · ")}</div>`;
+  }
+
+  function pendingCard(p) {
+    const d = document.createElement("div");
+    d.className = "card row";
+    d.innerHTML =
+      `<span class="badge b-pairing">pairing</span>` +
+      `<div class="grow"><span class="label">${esc(p.label || "display")}</span>` +
+      `<div class="sub">waiting ${ago(p.since)} · expires in ${age(p.expires_in_s)} · ` +
+      `anyone on the tailnet can approve (scan QR on screen or say “claim display ${esc(p.code || "")}”)</div></div>` +
+      `<span class="code">${esc(p.code || "····")}</span>`;
+    const pair = document.createElement("button");
+    pair.textContent = "Pair";
+    pair.onclick = () => window.open(
+      `${location.origin}/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
+    const dis = document.createElement("button");
+    dis.className = "warn";
+    dis.textContent = "Dismiss";
+    dis.onclick = () => act("/dismiss", { sid: p.sid }, "dismiss");
+    d.append(pair, dis);
+    return d;
+  }
+
+  function screenCard(s) {
+    const d = document.createElement("div");
+    d.className = "card";
+    const row = document.createElement("div");
+    row.className = "row";
+    // identity: stable label is the primary name; assigned number stays
+    // visible but secondary; preferred-vs-assigned shows only on drift
+    const ident = `<span class="label">${esc(s.label || s.name)}</span>` +
+      (s.label_dup ? ` <span class="dup">dup label!</span>` : "") +
+      `<div class="sub mono">${esc(s.name)}` +
+      (s.drift ? ` · preferred #${s.preferred_screen} → assigned #${s.screen}`
+               : "") +
+      (s.code ? ` · code ${esc(s.code)}` : "") + `</div>`;
+    row.innerHTML =
+      `<span class="num">#${s.screen}</span><div class="grow">${ident}</div>` +
+      lifecycleBadge(s);
+    d.appendChild(row);
+
+    const meta = document.createElement("div");
+    meta.className = "sub";
+    const bits = [];
+    if (s.lifecycle === "reconnecting")
+      bits.push(`name held by dead socket — reclaimable in ~${s.reclaim_in_s ?? "?"}s`);
+    if (s.lifecycle === "stale" && s.silent_socket)
+      bits.push(`socket open but no reports in ${age(s.age_s)} — display likely frozen; release + sweep or reload the page on the device`);
+    else if (s.lifecycle === "stale")
+      bits.push(`dead past rebind grace — sweep frees the slot`);
+    if (s.last_seen) bits.push(`last seen ${ago(s.last_seen)}`);
+    if (s.state_detail) bits.push(`report: ${esc(s.state_detail)}`);
+    meta.textContent = bits.join(" · ");
+    if (bits.length) d.appendChild(meta);
+    d.insertAdjacentHTML("beforeend", castLine(s));
+
+    const btns = document.createElement("div");
+    btns.className = "row";
+    btns.style.marginTop = ".5rem";
+    const test = document.createElement("button");
+    test.textContent = "▶ test";
+    test.title = "Cast the test HLS stream — the button reports delivered count";
+    test.onclick = async () => {
+      const { data } = await post("/pub", { screen: s.screen,
+        msg: { type: "play", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" } });
+      showToast(data.delivered
+        ? `cast delivered to screen ${s.screen} (delivered=${data.delivered})`
+        : `cast NOT delivered — no live socket on screen ${s.screen}`);
+      refresh();
+    };
+    const stop = document.createElement("button");
+    stop.textContent = "■";
+    stop.title = "Stop casting — display goes idle";
+    stop.onclick = async () => {
+      const { data } = await post("/pub", { screen: s.screen, msg: { type: "stop" } });
+      showToast(data.delivered ? "stop delivered" : "stop NOT delivered — screen offline");
+      refresh();
+    };
+    btns.append(test, stop);
+    if (s.connected) {
+      const rel = document.createElement("button");
+      rel.className = "danger";
+      rel.textContent = "Release";
+      rel.title = "Revoke the ada key + tombstone the name (reserved 30d for reclaim)";
+      rel.onclick = () => {
+        if (!confirm(`Release ${s.name}? The display is unpaired and the name tombstoned.`)) return;
+        act("/release", { screen: s.screen }, "release");
+      };
+      btns.appendChild(rel);
+    } else {
+      const sweep = document.createElement("button");
+      sweep.className = "warn";
+      sweep.textContent = "Sweep now";
+      sweep.title = "Free the name+slot immediately (skips the rebind grace)";
+      sweep.onclick = () => act("/sweep", { screen: s.screen }, "sweep");
+      const rel = document.createElement("button");
+      rel.className = "danger";
+      rel.textContent = "Release";
+      rel.title = "Tombstone the name so a zombie key can't resurrect it";
+      rel.onclick = () => {
+        if (!confirm(`Release ${s.name}? The name is tombstoned.`)) return;
+        act("/release", { screen: s.screen }, "release");
+      };
+      btns.append(sweep, rel);
+    }
+    d.appendChild(btns);
+    return d;
+  }
+
+  function render(data) {
+    const h = data.health || {};
+    $("fleet").innerHTML =
+      `<b>${h.connected ?? 0}</b> connected · ` +
+      `<b>${h.reconnecting ?? 0}</b> reconnecting · ` +
+      `<b>${h.stale ?? 0}</b> stale · ` +
+      `<b>${h.pending ?? (data.pending || []).length}</b> pairing · ` +
+      `<b>${h.released ?? 0}</b> released` +
+      ` <span class="flap">— flaps 24h: <b>${h.flaps_24h ?? "?"}</b>` +
+      (h.last_flap ? ` · last ${ago(h.last_flap)}` : "") + `</span>`;
+
+    const pend = $("pending");
+    pend.innerHTML = "";
+    const pending = data.pending || [];
+    if (!pending.length) pend.innerHTML = '<div class="empty">none</div>';
+    pending.forEach(p => pend.appendChild(pendingCard(p)));
+
+    const scr = $("screens");
+    scr.innerHTML = "";
+    const screens = data.screens || [];
+    if (!screens.length) scr.innerHTML =
+      '<div class="empty">no screens — open /apps/vcast/ on a device to add one</div>';
+    screens.forEach(s => scr.appendChild(screenCard(s)));
+
+    const rel = $("released");
+    rel.innerHTML = "";
+    const released = data.released || [];
+    if (!released.length) rel.innerHTML = '<div class="empty">none</div>';
+    for (const t of released) {
+      const d = document.createElement("div");
+      d.className = "card row";
+      d.innerHTML =
+        `<span class="badge b-released">released</span>` +
+        `<div class="grow"><span class="label mono">${esc(t.name)}</span>` +
+        `<div class="sub">released ${ago(t.at)} · name reserved until ` +
+        `${new Date(t.reclaim_until).toLocaleDateString()} — reclaim by pairing a display as ${esc(t.name)}</div></div>`;
+      rel.appendChild(d);
+    }
+
+    const ev = $("events");
+    const events = data.events || [];
+    if (!events.length) { ev.innerHTML = '<div class="empty">no events yet</div>'; return; }
+    ev.innerHTML = events.slice(0, 20).map(e => {
+      const detail = Object.entries(e)
+        .filter(([k]) => !["at", "kind"].includes(k) && e[k] != null)
+        .map(([k, v]) => `${k}=${esc(v)}`).join(" ");
+      return `<div><span class="t">${ago(e.at)}</span> ` +
+        `<span class="k">${esc(e.kind)}</span> ${detail}</div>`;
+    }).join("");
+  }
+
+  async function refresh() {
+    const { status, data } = await api("/displays");
+    if (status !== 200) {
+      $("fleet").textContent = "relay unreachable — " + (data.error || status);
+      return;
+    }
+    render(data);
+  }
+  refresh();
+  setInterval(refresh, 4000);
+</script>
+</body>
+</html>
