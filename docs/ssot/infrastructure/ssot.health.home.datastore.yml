@@ -199,6 +199,27 @@ services:
       - "Restart: ssh con01 systemctl --user restart mddb-follower.service"
       - "Logs: ssh con01 journalctl --user -u mddb-follower.service --since '-1h'"
     host: con01
+  - id: ada-stt-con01
+    name: Ada STT (audio.cpp Qwen3-ASR, con01)
+    type: http
+    url: http://con01:8914/health
+    expected_status: 200
+    timeout: 10
+    category: datastore
+    profiles:
+      - home
+      - mobile
+    note: "Native service (ada-stt.service, ~/audio-cpp-eval) bound tailnet
+      100.72.146.39:8914 — migrated off idc02 2026-10-22 (OPS-0763). Warm
+      RTF ~0.5 on threads=4 (8 thrashes shared vCPU). Voice consumers point
+      TG_WHISPER_URL/LINE_WHISPER_URL here; idc03 ~/audio-cpp is the
+      loaded-host fallback. Transcribe probe: POST /v1/audio/transcriptions."
+    recovery_actions:
+      - "Check service: ssh con01 systemctl --user status ada-stt.service"
+      - "Restart: ssh con01 systemctl --user restart ada-stt.service"
+      - "Logs: ssh con01 journalctl --user -u ada-stt.service --since '-1h'"
+      - "Rollback: re-enable ada-stt on idc02 + revert TG_WHISPER_URL envs"
+    host: con01
   - id: gemini-ollama-proxy
     name: Gemini-Ollama Embedding Proxy
     type: systemd

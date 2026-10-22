@@ -2159,8 +2159,9 @@ hosts:
       ~189ms BKK). Onboarded 2026-10-22 to the fleet hardening baseline
       (docs/kb/host-hardening-baseline.md) as the DR/absorber host replacing
       retired idc01's tier — card idc04-contabo-vps8-provision (OPS-0763).
-      Roles pending placement: mddb-follower #2, ada-stt off idc02, standby
-      caddy-edge, secrets-backup target, offload timers, runner lane."
+      Roles live: mddb-follower #2 (snapshot+replicating), standby caddy-edge,
+      ada-stt migrated off idc02 (native service, not container),
+      secrets-backup target. Pending: offload timers, runner lane."
     role: public-vps
     tags:
       - public
@@ -2196,6 +2197,14 @@ hosts:
         expected_state: active
         critical: false
         note: enabled for tony 2026-10-22 (rootless podman 4.9.3 + subuid/gid)
+      - name: ada-stt.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: "audio.cpp Qwen3-ASR-0.6B CPU on :8914 (native, ~/audio-cpp-eval —
+          migrated from idc02 2026-10-22; threads=4 — 8 thrashes shared vCPU.
+          Needs libgomp1. Consumers: TG_WHISPER_URL in idc03 relay/ada envs."
       - name: caddy-edge.service
         type: service
         scope: user
