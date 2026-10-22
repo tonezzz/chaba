@@ -3,40 +3,25 @@ title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall 
 column: backlog
 priority: low
 created: 2026-10-22
-updated: 2026-10-22
-note: "Tony's proposal: keep devin sessions.db minimal, rely on MDDB for
-  cross-team recall (devin/ada/chaba). Motivation: macbook sessions.db was
-  4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB
-  each cause 'updating session forever' replay stalls.
-  CURRENT STATE (verified 2026-10-22): sessions DO get distilled already —
-  mddb ada-ha-bank-devin-tony has 2552 docs keyed devin-session/<name>
-  (source: import), ada-ha-bank-devin-handoff 557 docs. session-end hook
-  writes NotebookLM + ~/.local/share/devin/notebook-summaries/session-memory.md
-  (rolling 50KB). notebooklm-recall.sh SessionStart hook injects last ~8KB.
-  Full transcripts archived to ~/.local/share/devin/summaries/*.md before
-  delete.
-  PROPOSED STRUCTURE (3 tiers):
-  T0 live: sessions.db holds only active/recent sessions (<=7d or last N),
-  full transcript for UI replay.
-  T1 warm: mddb ada-ha-bank-devin-tony per-session distilled doc (outcome,
-  decisions, files touched, card IDs, error root-causes, pointers). Meta
-  indexed: session_name, project, date, cards, hosts.
-  T2 cold: raw transcript .md on disk (+ GDrive) — recoverable by key, not
-  indexed in hot path.
-  Write path: extend session-end/archive hook to verify the T1 doc exists and
-  is non-trivial BEFORE `devin rm` — deletion gated on distill verification.
-  Recall path: swap notebooklm-recall.sh flat-file tail for mddb
-  semantic_search scoped to project+cards (or run both, compare).
-  BENCHMARK (bench-recall.py):
-  Fixture: ~30 archived sessions with both T1 doc + full transcript; ~30-50
-  golden questions answerable from them (outcome of X, root cause of Y,
-  which card did Z update, where is runbook for W).
-  Lanes: (a) mddb semantic_search T1 docs only; (b) grep/RAG over archived
-  transcripts; (c) optional: reopen live session. Score hit@1/hit@3,
-  faithfulness via one fixed LLM judge, p50 latency, bytes/session stored.
-  AQ: T1 recall >=80% of goldens -> safe to prune to T0+T1+T2. Misses tell
-  the distiller what fields it must capture.
-  Cheap run: flash-lite judge, 30-50 questions, one pass."
+updated: 2026-10-22 10:46
+note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
+  macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
+  ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
+  — mddb ada-ha-bank-devin-tony has 2552 docs keyed devin-session/<name> (source: import), ada-ha-bank-devin-handoff
+  557 docs. session-end hook writes NotebookLM + ~/.local/share/devin/notebook-summaries/session-memory.md (rolling
+  50KB). notebooklm-recall.sh SessionStart hook injects last ~8KB. Full transcripts archived to ~/.local/share/devin/summaries/*.md
+  before delete. PROPOSED STRUCTURE (3 tiers): T0 live: sessions.db holds only active/recent sessions (<=7d or last
+  N), full transcript for UI replay. T1 warm: mddb ada-ha-bank-devin-tony per-session distilled doc (outcome, decisions,
+  files touched, card IDs, error root-causes, pointers). Meta indexed: session_name, project, date, cards, hosts.
+  T2 cold: raw transcript .md on disk (+ GDrive) — recoverable by key, not indexed in hot path. Write path: extend
+  session-end/archive hook to verify the T1 doc exists and is non-trivial BEFORE `devin rm` — deletion gated on
+  distill verification. Recall path: swap notebooklm-recall.sh flat-file tail for mddb semantic_search scoped to
+  project+cards (or run both, compare). BENCHMARK (bench-recall.py): Fixture: ~30 archived sessions with both T1
+  doc + full transcript; ~30-50 golden questions answerable from them (outcome of X, root cause of Y, which card
+  did Z update, where is runbook for W). Lanes: (a) mddb semantic_search T1 docs only; (b) grep/RAG over archived
+  transcripts; (c) optional: reopen live session. Score hit@1/hit@3, faithfulness via one fixed LLM judge, p50 latency,
+  bytes/session stored. AQ: T1 recall >=80% of goldens -> safe to prune to T0+T1+T2. Misses tell the distiller what
+  fields it must capture. Cheap run: flash-lite judge, 30-50 questions, one pass.'
 links:
 - docs/ssot/kanban/cards/edu-agent-benchmark.yml
 - scripts/bench-hermes.py
@@ -44,17 +29,14 @@ links:
 comms:
 - at: 2026-10-22 10:05
   from: devin
-  text: carded in-session. Tony asked whether session DB can go minimal with
-    mddb as the recall layer. Verified distillation pipeline already exists
-    (ada-ha-bank-devin-tony 2552 docs); proposed T0/T1/T2 tiering with
-    distill-verified delete gate + recall benchmark before any mass prune.
+  text: carded in-session. Tony asked whether session DB can go minimal with mddb as the recall layer. Verified
+    distillation pipeline already exists (ada-ha-bank-devin-tony 2552 docs); proposed T0/T1/T2 tiering with distill-verified
+    delete gate + recall benchmark before any mass prune.
 - at: 2026-10-22 10:36
   from: devin
-  text: tony approved bench-first. Dispatched
-    25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
-    + golden fixture over sessions with both T1 docs and transcripts, scores
-    mddb semantic vs transcript vs current recall surface, reports + verdict
-    comm back here.
+  text: tony approved bench-first. Dispatched 25691022-103449-build-and-run-the-session-mddb — builds scripts/bench-recall.py
+    + golden fixture over sessions with both T1 docs and transcripts, scores mddb semantic vs transcript vs current
+    recall surface, reports + verdict comm back here.
 action:
   type: dispatch
   status: doing
@@ -64,9 +46,7 @@ action:
 requests:
 - id: approve-structure
   from: tony
-  ask: >-
-    Approve T0/T1/T2 structure + benchmark-first approach before pruning
-    visible sessions?
+  ask: Approve T0/T1/T2 structure + benchmark-first approach before pruning visible sessions?
   status: answered
   suggested: bench-first
   options:
@@ -77,3 +57,4 @@ requests:
   - id: status-quo
     label: keep current structure
   answer: bench-first — tony in chat 2026-10-22
+awaiting_action: true
