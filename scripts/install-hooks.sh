@@ -10,13 +10,30 @@
 # Also sets the "always-rebase-with-autostash" defaults so a manual
 # `git pull` in that checkout behaves like the unattended path.
 #
+# Also stamps a per-checkout role marker (--role): writes `<gitdir>/chaba-role`
+# which the pre-commit checkout-role guard reads. The marker lives in the
+# per-worktree gitdir on purpose — `git config` is SHARED across linked
+# worktrees (a role on the exec checkout would leak into every dispatch
+# worktree hanging off it and block their commits). exec/readonly checkouts
+# BLOCK commits (job units run from them; nothing should be committed
+# there), other values are informational for check-single-writer.sh.
+# Absent marker = legacy warn-only. Roles: served exec readonly job
+# branch experiment.
+#
 # Usage:
 #   install-hooks.sh [repo-path ...]   apply to each checkout (default: cwd)
 #   install-hooks.sh --all             apply to every ~/CascadeProjects/chaba*
 #                                       checkout
+#   install-hooks.sh --role exec ~/CascadeProjects/chaba
+#                                      also stamp the role on the targets
 set -uo pipefail
 
+role=""
 targets=()
+if [ "${1:-}" = "--role" ]; then
+    role="${2:?--role needs a value (served|exec|readonly|job|branch|experiment)}"
+    shift 2
+fi
 if [ "${1:-}" = "--all" ]; then
     for d in "$HOME"/CascadeProjects/chaba*; do
         if [ -d "$d/.git" ] || [ -f "$d/.git" ]; then targets+=("$d"); fi
@@ -47,6 +64,11 @@ for repo in "${targets[@]}"; do
     git -C "$repo" config core.hooksPath "$hooks_path"
     git -C "$repo" config pull.rebase true
     git -C "$repo" config rebase.autoStash true
-    echo "install-hooks: $top -> core.hooksPath=$hooks_path, pull.rebase=true, rebase.autoStash=true"
+    role_msg=""
+    if [ -n "$role" ]; then
+        echo "$role" > "$(git -C "$repo" rev-parse --absolute-git-dir)/chaba-role"
+        role_msg=", chaba-role=$role"
+    fi
+    echo "install-hooks: $top -> core.hooksPath=$hooks_path, pull.rebase=true, rebase.autoStash=true$role_msg"
 done
 exit $rc

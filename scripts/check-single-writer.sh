@@ -43,6 +43,7 @@ for d in $CHECKOUTS; do
     behind="${counts%%[[:space:]]*}"; ahead="${counts##*[[:space:]]}"
     inbox_dirty="$(git -C "$d" status --porcelain -- docs/ssot/focus-inbox/ 2>/dev/null | wc -l)"
     hooks="$(git -C "$d" config core.hooksPath 2>/dev/null || echo '-')"
+    role="$(cat "$(git -C "$d" rev-parse --absolute-git-dir 2>/dev/null)/chaba-role" 2>/dev/null || echo '-')"
     tag=""; [ "$top_real" = "$SERVED_REAL" ] && tag=" [served]"
 
     msgs=()
@@ -52,12 +53,17 @@ for d in $CHECKOUTS; do
     { [ "$branch" = "master" ] && [ "${ahead:-0}" -gt "$N" ]; } \
         && msgs+=("$ahead unpushed commits on master")
     [ "$hooks" = "-" ] && msgs+=("no core.hooksPath (run scripts/install-hooks.sh)")
+    # Master-tracking non-served checkouts with no role are the agent trap —
+    # they look canonical. Worktrees/detached checkouts stay unremarked.
+    [ "$branch" = "master" ] && [ "$top_real" != "$SERVED_REAL" ] \
+        && [ "$role" = "-" ] \
+        && msgs+=("no chaba.role set (run scripts/install-hooks.sh --role exec|job)")
 
     if [ ${#msgs[@]} -gt 0 ]; then
         warn=1
-        echo "WARN $top_real ($branch)$tag: ${msgs[*]}"
+        echo "WARN $top_real ($branch)$tag role=$role: ${msgs[*]}"
     elif [ $QUIET -eq 0 ]; then
-        echo "ok   $top_real ($branch)$tag ahead=$ahead behind=$behind inbox_dirty=$inbox_dirty hooks=$hooks"
+        echo "ok   $top_real ($branch)$tag role=$role ahead=$ahead behind=$behind inbox_dirty=$inbox_dirty hooks=$hooks"
     fi
 done
 [ $STRICT -eq 1 ] && exit $warn

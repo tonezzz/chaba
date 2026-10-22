@@ -1,0 +1,104 @@
+# SSOT Job Lifecycle: stale non-served chaba clones — audit + role guard
+# Card: stale-non-served-clones-dell-cascadeproj-efbd23 (BEN-0703).
+# Dispatched 2026-10-22 on mn01; verified live on tony-dell.
+
+title: dell non-served chaba clones — named staleness already fixed; landed per-checkout role guard + census
+subtitle: The 219-behind exec checkout was OPS-0479's fix; the durable gap was no way to tell checkouts apart
+icon: git-branch
+
+verified_state_2026_10_22:
+  exec_checkout_healthy: |
+    ~/CascadeProjects/chaba on tony-dell was 20 commits behind with HEAD
+    2026-10-22 19:42 — inter-tick drift, not the card's 219. The
+    219-behind observation was from 2026-10-15, BEFORE the OPS-0479 fix
+    (2026-10-16) installed chaba-repo-sync.timer on dell at kanban-commit
+    cadence. Verified live: timer active, ~15min ticks (tony-dell-cadence
+    drop-in), last runs exit 0, kanban-commit ExecStartPost hook fires.
+    The card's headline problem is already fixed; it was re-queued on a
+    stale premise.
+  checkout_topology: |
+    tony-dell runs TWO independent clones, each with linked worktrees:
+      - Clone A ~/CascadeProjects/chaba (EXEC, role=exec): master, the
+        ssot.jobs.yml `repo: tony_dell` tree — AND the parent of the
+        dispatch-wt-* worktrees dell sessions run in.
+      - Clone B ~/CascadeProjects/chaba-tony-dell (SERVED, role=served):
+        master, board-api/kanban-commit writer. Worktrees:
+        chaba-h3-tony-dell (branch chaba.h3, role=branch — live work,
+        ahead 2093), chaba-kanban-sync (detached job worktree, role=job),
+        chaba-tony-dell-experiment (detached, role=experiment),
+        plus chaba-tony-dell-worktrees/{iphone-dev,master,nest-lane,tony-ha}
+        and merge-sweep /tmp worktrees.
+    Same shape on other hosts: mn01's ~/CascadeProjects/chaba is its exec
+    checkout (marked role=exec) and parents its dispatch worktrees.
+  remaining_stale_clones: |
+    Two genuinely stale non-served chaba trees remain on dell (both
+    worktrees of the served clone — `git worktree remove` is the clean
+    reaper, NOT rm -rf):
+      - chaba-kanban-sync (209M): detached HEAD 2026-10-16, ~24 dirty
+        files incl. kanban card edits. Its unit kanban-sync.service is
+        .parked — dead work + a host-hygiene violation in one.
+      - chaba-tony-dell-experiment (53M): detached HEAD 2026-09-11,
+        staged AA files (tony_dell_phase1.py, a jobs doc). Six weeks
+        cold; content may be the only copy of that experiment.
+    Deletion is Tony's call (destructive gate) — board request raised
+    with recommendation: archive diffs to a patch bundle, `git worktree
+    remove --force` both, delete the .parked unit.
+
+fix_landed:
+  role_markers: |
+    New per-checkout marker `<gitdir>/chaba-role`
+    (served|exec|readonly|job|branch|experiment), written by
+    `scripts/install-hooks.sh --role <role>` and surfaced by
+    `scripts/check-single-writer.sh` (also flags role-less master
+    checkouts — the agent trap shape).
+  why_not_git_config: |
+    First attempt used `git config chaba.role` — WRONG: linked worktrees
+    share the common config. On dell the dispatch-wt-* worktrees hang off
+    the exec checkout, so a shared exec role would have blocked commits
+    in every dell dispatch session. Caught live when four "different"
+    checkouts all read back the last-stamped value. The gitdir file is
+    per-worktree by construction (.git/ for clones,
+    .git/worktrees/<name>/ for linked worktrees) — no worktreeConfig
+    extension needed.
+  precommit_guard: |
+    .husky/pre-commit gained a checkout-role block: role=exec|readonly
+    BLOCKS `git commit` with a teaching message pointing at the served
+    checkout / dispatch worktrees (escape: CHABA_ROLE_COMMIT_OK=1).
+    Jobs never commit and pull/rebase/autostash never run pre-commit,
+    so repo-sync and job autostash churn are unaffected. Other roles and
+    absent marker = legacy warn-only behavior.
+  host_state: |
+    Role markers stamped on dell (chaba=exec, chaba-tony-dell=served,
+    h3=branch, kanban-sync=job, experiment=experiment) and on mn01's
+    exec checkout. Inert until the merged hook reaches each checkout on
+    its next pull; then commits in exec checkouts hard-block.
+
+incident_found_while_verifying:
+  mn01_sync_timeout: |
+    mn01's chaba-repo-sync.service timed out (5min) on the 12:00 UTC tick
+    — transient: the 11:00 and 13:00 ticks finished in ~12s and a manual
+    fetch is healthy. Checkout converged to 0-behind on the next run.
+    Hourly cadence here (no 15min drop-in — that's dell-only).
+    Also surfaced: 14 uncommitted focus-inbox files in mn01's exec
+    checkout — exactly the single-writer stall the checker warns about.
+
+evidence:
+  - "dell chaba: 20 behind origin/master, HEAD 2026-10-22 19:42; chaba-repo-sync.timer NEXT 5min after each run, exit 0"
+  - "dell clone B worktree list: h3/kanban-sync/experiment all gitdir: chaba-tony-dell/.git/worktrees/* — shared config confirmed by colliding role writes"
+  - "role guard tested: marker=exec -> commit exit 1 with teaching block; CHABA_ROLE_COMMIT_OK=1 -> warns and passes; absent -> legacy"
+  - "mn01 exec checkout: role=exec stamped; check-single-writer reports role + 24-behind pre-sync + 14 focus-inbox files"
+
+followups:
+  - >-
+    Tony decision pending (board request): reap chaba-kanban-sync +
+    chaba-tony-dell-experiment on dell (patch-bundle first, worktree
+    remove, delete kanban-sync.service.parked).
+  - >-
+    Other hosts' exec checkouts (idc02, idc03, con01, tony_omen,
+    macbook) still need role stamps — run install-hooks.sh --role exec
+    per host on next touch; check-single-writer will flag role-less
+    master checkouts until then.
+  - >-
+    14 uncommitted focus-inbox files in mn01's exec checkout are
+    unswept by design (single-writer) — decide: sweep them into the
+    served checkout or drop.
