@@ -1,0 +1,83 @@
+title: tony-ha "No compatible devices at 2-1" / uhubctl probe loop — disabled
+subtitle: command_line switch usb_test_hub polled ssh->sudo uhubctl -l 2-1
+  every 30s; the PPPS hub is not attached to any host and esp32test is dead
+  at Michael's since 2026-09-24
+icon: 🔌
+id: 2026-10-22-tony-ha-usb-probe-loop
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-10-22"
+card: tony-ha-usb-probe-loop
+ref: HOM-0003
+
+investigation:
+  method: |
+    journalctl --user -u tony-ha on tony-omen: the recurring line is not a
+    serial/zigbee/zwave /dev-path failure (card's guess) — it is the 30s
+    command_state poll of command_line switch "USB Test Hub"
+    (unique_id: usb_test_hub) in configuration.yaml, which ssh's
+    tony@127.0.0.1 'sudo /usr/sbin/uhubctl -l 2-1'.
+    Error text changed with the ph5 move: on tony-dell uhubctl ran and
+    answered "No compatible devices at 2-1" (card title); on tony-omen the
+    binary is absent so the same probe logs
+    "sudo: '/usr/sbin/uhubctl': command not found" (plus the ssh
+    known-hosts line) every 30s.
+  findings:
+    - id: no-hub-anywhere
+      detail: >
+        /sys/bus/usb/devices on tony-omen has no 2-1 (only 1-x and the
+        bus-2 root hub). uhubctl exists at /usr/sbin/uhubctl on tony-dell
+        but reports "No compatible devices detected!" — no per-port-power
+        hub is attached there either. Confirms the earlier ada-ha job
+        (2026-10-12-ada-ha-loopback-ssh-probe): nothing at location 2-1.
+    - id: esp32test-dead
+      detail: >
+        The switch exists only to power-cycle esp32test
+        (automation.reboot_esp32test_when_offline in
+        packages/system-managed.yaml). binary_sensor.esp32_test_node_status
+        has been off since 2026-10-20 02:34 and SSOT already notes the
+        board is down at Michael's with a bad merged flash since
+        2026-09-24 — re-pointing the probe cannot fix hardware that is not
+        plugged in.
+    - id: sole-consumer
+      detail: >
+        reboot_esp32test_when_offline is the only reference to
+        switch.usb_test_hub (config grep + entity registry) — disabling
+        both together is safe; no dashboard/script references exist.
+
+changes:
+  - file: /home/tony/.config/home-assistant/configuration.yaml (tony-omen, live)
+    detail: >
+      USB Test Hub command_line switch commented out with a dated note
+      (kept for re-enable when esp32test returns + a PPPS hub is attached).
+  - file: /home/tony/.config/home-assistant/packages/system-managed.yaml (tony-omen, live)
+    detail: >
+      reboot_esp32test_when_offline automation commented out — its only
+      action targets the disabled switch.
+  - registry: entity_registry
+    detail: >
+      Orphaned registry entries for switch.usb_test_hub and
+      automation.reboot_esp32test_when_offline removed via websocket
+      config/entity_registry/remove (both had gone 'unavailable').
+  - note: >
+      Left uncommitted — ha-config-backup.timer (nightly 03:30) snapshot-
+      commits the HA config repo.
+
+verification:
+  - >
+    POST /api/services/command_line/reload + automation/reload -> both
+    entities report 'unavailable' (platform unloaded), then registry
+    entries removed.
+  - >
+    journalctl --user -u tony-ha --since -90s -> 0 uhubctl / ssh
+    known-hosts lines (was 2 lines every 30s). Log line stopped — card
+    done-when met.
+
+notes:
+  - >
+    Re-enable path: flash esp32test, attach a uhubctl-compatible hub to the
+    host tony-ha runs on, verify `uhubctl -l <loc>` finds it, then
+    uncomment both blocks and reload command_line + automation. If the
+    hub lands on a different host than tony-ha, point the ssh target at
+    that host instead of 127.0.0.1.
