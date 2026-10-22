@@ -3,7 +3,7 @@ title: Shrink Devin session DB — distill sessions into MDDB, benchmark recall 
 column: doing
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 14:19
+updated: 2026-10-22 14:31
 note: 'Tony''s proposal: keep devin sessions.db minimal, rely on MDDB for cross-team recall (devin/ada/chaba). Motivation:
   macbook sessions.db was 4.13GiB->1.39GiB after hidden-session prune; visible sessions up to ~160MB each cause
   ''updating session forever'' replay stalls. CURRENT STATE (verified 2026-10-22): sessions DO get distilled already
@@ -99,3 +99,4 @@ requests:
     label: just swap notebooklm-recall.sh -> mddb semantic_search (9x better than today), no prune
   - id: keep-t0
     label: keep sessions.db as-is, no prune
+awaiting_action: true
