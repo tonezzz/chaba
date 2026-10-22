@@ -1,0 +1,42 @@
+title: safe-pull stderr swallow — bare exec 2>/dev/null silenced all diagnostics
+job: safe-pull-stderr-swallow
+date: 2026-10-22
+runner: idc02 (dispatch worktree, repo=chaba)
+card: docs/ssot/kanban/cards/guard-card-yaml-syntax-validation-at-wri-a39362.yml
+summary: >-
+  Re-dispatch of the card-YAML-guards card found all three guards already
+  merged and working; the one failing test in test-kanban-commit.sh (G:
+  "held lock waited then bypassed with a log line") exposed a real bug in
+  scripts/git-safe-pull.sh introduced with the board write flock
+  (962ef144, card board-api-writes-eaten-by-autostash-pops-515009).
+
+bug:
+  where: scripts/git-safe-pull.sh board-lock open (~line 292)
+  what: >-
+    `exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK" 2>/dev/null` is a bare exec —
+    its `2>/dev/null` permanently redirects the SCRIPT's stderr, not just
+    the open attempt. Every diagnostic after that line was invisible:
+    "board lock held >Ns — pulling anyway", untracked-collision move
+    notices, "needs manual resolution", reconcile output. The lock itself
+    still worked (fd stayed open, flock -w waited) — only the logging
+    died, exactly the silent-failure class the parent card guards against.
+  fix: >-
+    Wrap the exec in a brace group so the stderr suppression scopes to
+    the open attempt only:
+    `{ exec {SAFE_PULL_LOCK_FD}>"$BOARD_LOCK"; } 2>/dev/null || SAFE_PULL_LOCK_FD=""`.
+    Open failure is still caught by the || fallback; the fd stays open
+    for the script lifetime as before.
+
+verified:
+  - bash tests/test-kanban-commit.sh — 36/36 (was 35/36, G log-line check now passes)
+  - python3 scripts/board/board-api.py --selftest — ok
+  - python3 scripts/board/board-render-guard.py --selftest — ok
+  - ssot-validate-all.mjs exits rc=1 on a deliberately malformed card
+
+card_guards_status: >-
+  All three guards from the card spec confirmed landed and functional in
+  this checkout: board-api save() round-trip refusal covering every
+  mutating endpoint; kanban-commit staged-YAML refusal + pre-commit and
+  ssot.yml CI syntax gates; board-render-guard ExecStart filing
+  ops-board-render-fail after two consecutive render failures with
+  auto-close on recovery.
