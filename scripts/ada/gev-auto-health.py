@@ -9,26 +9,28 @@ voice view. Mirrors cms-auto-health.py / logs-kanban.py's lifecycle:
   check recovers -> column=done, note records the recovery time
   open >= 12h    -> priority bumped to high
 
-Checks (all probe from tony-dell, where kanban-sync.timer runs):
-  page        GET http://127.0.0.1/apps/gev/ via Caddy (:80) must be 200
-  ws          ws handshake ws://127.0.0.1/apps/gev-live/ws?remote=1 must
+Checks (targets are tailnet names — the sync job migrated to idc03 in
+OPS-0725; page/ws front on dell's caddy, bridge + api units on idc02):
+  page        GET http://tony-dell/apps/gev/ via Caddy (:80) must be 200
+  ws          ws handshake ws://tony-dell/apps/gev-live/ws?remote=1 must
               return 101 with a valid Sec-WebSocket-Accept. remote=1 is
               deliberate: bridge.py registers it as a passive remote and
               never opens a Gemini Live session, so the probe is free.
-  api         GET http://127.0.0.1:4173/<bogus> — gods-eye-view-api has no
+  api         GET http://idc02:4173/<bogus> — gods-eye-view-api has no
               health endpoint and its real routes proxy slow external
               calls; unknown paths 404 fast, so ANY HTTP response < 500
               proves the node server is alive and answering.
-  bridge      systemctl --user is-active gev-gemini (quadlet, :8789 ws)
-  api-service systemctl --user is-active gods-eye-view-api (:4173)
+  bridge      ssh idc02 systemctl --user is-active gev-gemini (:8789 ws)
+  api-service ssh idc02 systemctl --user is-active gods-eye-view-api
 
 is-active alone is not enough — 2026-10-05 the bridge process sat in D
 state for minutes with the unit "active" and nothing bound to 8789. The
 ws/api probes catch that; the unit checks give the actionable pointer.
 
-Runs anywhere on tony-dell with cards-dir access; writes into a chaba
-checkout. Committing is the caller's job — runs inside kanban-sync.sh
-whose `git add cards/` block commits and pushes whatever this writes.
+Runs inside the kanban-sync tick (currently on idc03); writes into a
+chaba checkout. Committing is the caller's job — runs inside
+kanban-sync.sh whose `git add cards/` block commits and pushes whatever
+this writes.
 """
 
 from __future__ import annotations
@@ -53,11 +55,19 @@ REPO = Path(os.environ.get(
     str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
 
-PAGE_URL = os.environ.get("GEV_PAGE_URL", "http://127.0.0.1/apps/gev/")
-WS_URL = os.environ.get("GEV_WS_URL",
-                        "ws://127.0.0.1/apps/gev-live/ws?remote=1")
-API_URL = os.environ.get("GEV_API_URL",
-                         "http://127.0.0.1:4173/__gev_health_probe__")
+# Service homes since the dell-off migration (OPS-0725): the /apps static
+# page + gev-live ws proxy are still fronted by dell's caddy (its upstream
+# already points at idc02:8789), while gev-gemini + gods-eye-view-api run
+# on idc02 — so probes must use tailnet names, not loopback.
+PAGE_URL = os.environ.get(
+    "GEV_PAGE_URL", "http://tony-dell.taila0626a.ts.net/apps/gev/")
+WS_URL = os.environ.get(
+    "GEV_WS_URL",
+    "ws://tony-dell.taila0626a.ts.net/apps/gev-live/ws?remote=1")
+API_URL = os.environ.get(
+    "GEV_API_URL",
+    "http://idc02.taila0626a.ts.net:4173/__gev_health_probe__")
+UNITS_HOST = os.environ.get("GEV_UNITS_HOST", "idc02")
 
 TIMEOUT_S = 10
 # a card open this long gets priority bumped to high — same escalation
@@ -127,14 +137,15 @@ def probe_ws(ws_url: str) -> tuple[bool, str]:
 def probe_unit(unit: str) -> tuple[bool, str]:
     try:
         p = subprocess.run(
-            ["systemctl", "--user", "is-active", unit],
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+             UNITS_HOST, f"systemctl --user is-active {unit}"],
             capture_output=True, text=True, timeout=TIMEOUT_S)
     except Exception as e:
-        return False, f"systemctl --user is-active {unit} failed: {e}"
+        return False, f"ssh {UNITS_HOST} is-active {unit} failed: {e}"
     state = p.stdout.strip() or p.stderr.strip() or f"rc={p.returncode}"
     if p.returncode == 0 and state == "active":
         return True, "active"
-    return False, f"systemctl --user is-active {unit} -> {state}"
+    return False, f"{UNITS_HOST}: systemctl --user is-active {unit} -> {state}"
 
 
 def checks() -> list[dict]:
@@ -149,51 +160,51 @@ def checks() -> list[dict]:
                      "re-stage per AGENTS.md 'GEV Gemini Live voice "
                      "deployment'. Check: podman ps | grep web; "
                      "curl -s -o /dev/null -w '%{http_code}' "
-                     "http://127.0.0.1/apps/gev/"),
+                     "http://tony-dell.taila0626a.ts.net/apps/gev/"),
         },
         {
             "slug": "ws",
             "title": "GEV ws /apps/gev-live/ws upgrade fails",
             "probe": lambda: probe_ws(WS_URL),
-            "help": ("Caddy proxies /apps/gev-live/ws -> 127.0.0.1:8789 "
-                     "(gev-gemini bridge). Page ok + ws fail usually means "
-                     "the bridge is down or stuck (unit can read 'active' "
-                     "while the process hangs — check the port): "
-                     "systemctl --user status gev-gemini; "
-                     "ss -tln | grep 8789; "
-                     "systemctl --user restart gev-gemini"),
+            "help": ("Dell Caddy proxies /apps/gev-live/ws -> "
+                     "idc02:8789 (gev-gemini bridge). Page ok + ws fail "
+                     "usually means the bridge is down or stuck (unit can "
+                     "read 'active' while the process hangs — check the "
+                     "port): ssh idc02 systemctl --user status "
+                     "gev-gemini; ssh idc02 ss -tln | grep 8789; "
+                     "ssh idc02 systemctl --user restart gev-gemini"),
         },
         {
             "slug": "api",
             "title": "GEV api 127.0.0.1:4173 not answering",
             "probe": lambda: probe_http(API_URL, expect_200=False),
             "help": ("gods-eye-view-api (/home/tony/gods-eye-view/server.mjs) "
-                     "listens on 4173; Caddy routes /apps/gev/api/* to it. "
-                     "The probe GETs a bogus path — 404 counts as alive. "
-                     "systemctl --user status gods-eye-view-api; "
-                     "restart: systemctl --user restart gods-eye-view-api"),
+                     "listens on idc02:4173; Caddy routes /apps/gev/api/* to "
+                     "it. The probe GETs a bogus path — 404 counts as alive. "
+                     "ssh idc02 systemctl --user status gods-eye-view-api; "
+                     "restart: ssh idc02 systemctl --user restart "
+                     "gods-eye-view-api"),
         },
         {
             "slug": "bridge",
             "title": "gev-gemini service not active",
             "probe": lambda: probe_unit("gev-gemini"),
             "help": ("Quadlet ~/.config/containers/systemd/gev-gemini."
-                     "container runs the Gemini Live bridge (image "
+                     "container on idc02 runs the Gemini Live bridge (image "
                      "localhost/gev-gemini, Network=host, :8789 ws + :8790 "
-                     "cmd). Fix: systemctl --user start gev-gemini. If the "
-                     "image is stale: podman build -t localhost/gev-gemini:"
-                     "latest ~/CascadeProjects/chaba-tony-dell/stacks/"
-                     "tony-dell/gev-gemini && systemctl --user restart "
-                     "gev-gemini"),
+                     "cmd). Fix: ssh idc02 systemctl --user start "
+                     "gev-gemini. If the image is stale, rebuild on idc02 "
+                     "and restart the unit."),
         },
         {
             "slug": "api-service",
             "title": "gods-eye-view-api service not active",
             "probe": lambda: probe_unit("gods-eye-view-api"),
             "help": ("User unit ~/.config/systemd/user/gods-eye-view-api."
-                     "service runs server.mjs on 4173. Fix: systemctl "
-                     "--user enable --now gods-eye-view-api; logs: "
-                     "journalctl --user -u gods-eye-view-api -n 50"),
+                     "service on idc02 runs server.mjs on 4173. Fix: ssh "
+                     "idc02 systemctl --user enable --now "
+                     "gods-eye-view-api; logs: ssh idc02 journalctl "
+                     "--user -u gods-eye-view-api -n 50"),
         },
     ]
 

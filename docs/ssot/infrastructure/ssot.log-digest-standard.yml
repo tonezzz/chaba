@@ -23,7 +23,9 @@ overview:
 
 bars:
   fleet:
-    hosts: [idc01, idc02, idc03, mn01, tony-dell, tony-omen, michael-ha]
+    hosts: [idc02, idc03, mn01, tony-dell, tony-omen, michael-ha]
+      # idc01 retired (dell-off migration) — dropped 2026-10-22 so the
+      # unreachable-host card stops re-firing on a host that is gone.
       # every host runs a local log-shipper.timer (--self) posting a
       # ship/<host> state doc each run — even when nothing ships. A host
       # absent from host-logs-state is a gap, not a quiet host.

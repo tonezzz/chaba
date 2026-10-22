@@ -2,9 +2,9 @@
 """vcast-auto-health — vcast/input-bridge lane probes -> kanban cards.
 
 Probes the vcast stack (input-bridge relay on idc03, cast services on
-tony-dell) and writes/updates `vcast-auto-*` kanban cards so a dead lane
-becomes tracked work instead of a silently broken screen. Mirrors
-gev-auto-health.py's lifecycle:
+tony-omen since the dell-off migration) and writes/updates
+`vcast-auto-*` kanban cards so a dead lane becomes tracked work instead
+of a silently broken screen. Mirrors gev-auto-health.py's lifecycle:
 
   check fails    -> column=review, note = probe result (updates = incident log)
   check recovers -> column=done, note records the recovery time
@@ -34,12 +34,13 @@ calling this file the whole time and every tick logged "failed"):
                binding
   audit-cast   systemctl --user show audit-cast.service -p Result ->
                success (timer-triggered oneshot; inactive is normal)
-  cast-browser-proxy  GET 127.0.0.1:8799/<bogus> -> any HTTP < 500
-  yt-live-api  GET 127.0.0.1:8791/status -> 200
+  cast-browser-proxy  GET tony-omen:8799/<bogus> -> any HTTP < 500
+  yt-live-api  GET tony-omen:8791/status -> 200
 
-Runs on tony-dell inside the kanban-sync tick; writes into a chaba
-checkout. Committing is the caller's job — kanban-sync.sh's `git add
-cards/` block commits and pushes whatever this writes.
+Runs inside the kanban-sync tick (currently on idc03 — probe targets use
+tailnet names so the checks stay true wherever the job lands); writes
+into a chaba checkout. Committing is the caller's job — kanban-sync.sh's
+`git add cards/` block commits and pushes whatever this writes.
 """
 
 from __future__ import annotations
@@ -62,8 +63,16 @@ REPO = Path(os.environ.get(
     str(Path(__file__).resolve().parents[2])))
 CARDS = REPO / "docs" / "ssot" / "kanban" / "cards"
 
-EDGE = os.environ.get("VCAST_EDGE", "http://127.0.0.1/api/input-bridge")
+# The relay lives on idc03:3010 (0.0.0.0 bind) — probe it directly by
+# tailnet name so the check works no matter which host runs the sync.
+EDGE = os.environ.get(
+    "VCAST_EDGE", "http://idc03.taila0626a.ts.net:3010")
 RELAY_HOST = os.environ.get("VCAST_RELAY_HOST", "idc03")
+# cast-browser (:8799) and yt-live-api (:8791) moved to tony-omen in the
+# dell-off migration; audit-cast still lives on tony-dell.
+CAST_HOST = os.environ.get(
+    "VCAST_CAST_HOST", "tony-omen.taila0626a.ts.net")
+AUDIT_HOST = os.environ.get("VCAST_AUDIT_HOST", "tony-dell")
 FLAP_WINDOW = os.environ.get("VCAST_FLAP_WINDOW", "24 hours ago")
 LEASE_STALE_S = 6 * 3600
 TIMEOUT_S = 15
@@ -237,15 +246,16 @@ def probe_lease() -> tuple[bool, str]:
 def probe_audit_cast() -> tuple[bool, str]:
     try:
         p = subprocess.run(
-            ["systemctl", "--user", "show", "audit-cast.service",
-             "-p", "Result", "--value"],
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+             AUDIT_HOST, "systemctl --user show audit-cast.service "
+             "-p Result --value"],
             capture_output=True, text=True, timeout=TIMEOUT_S)
     except Exception as e:
-        return False, f"systemctl show audit-cast failed: {e}"
+        return False, f"ssh {AUDIT_HOST} show audit-cast failed: {e}"
     result = (p.stdout or "").strip()
     if p.returncode == 0 and result == "success":
         return True, "last run Result=success"
-    return False, f"audit-cast.service Result={result or p.stderr.strip()}"
+    return False, f"{AUDIT_HOST}: audit-cast.service Result={result or p.stderr.strip()}"
 
 
 def checks() -> list[dict]:
@@ -321,19 +331,21 @@ def checks() -> list[dict]:
             "slug": "cast-browser-proxy",
             "title": "cast-browser-proxy :8799 not answering",
             "probe": lambda: probe_http(
-                "http://127.0.0.1:8799/__vcast_health_probe__",
+                f"http://{CAST_HOST}:8799/__vcast_health_probe__",
                 expect_200=False),
-            "help": ("cast-browser-proxy.service proxies :8799 -> "
-                     "tony-omen cast-browser. Any HTTP <500 is alive. "
-                     "Check: systemctl --user status cast-browser-proxy"),
+            "help": ("cast-browser.service listens on tony-omen:8799 "
+                     "(the dell cast-browser-proxy shim is retired). Any "
+                     "HTTP <500 is alive. Check: ssh tony-omen systemctl "
+                     "--user status cast-browser"),
         },
         {
             "slug": "yt-live-api",
             "title": "yt-live-api :8791/status not 200",
             "probe": lambda: probe_http(
-                "http://127.0.0.1:8791/status", expect_200=True),
-            "help": ("yt-live REST shim for voice/agent casting. Check: "
-                     "systemctl --user status yt-live-api; logs: "
+                f"http://{CAST_HOST}:8791/status", expect_200=True),
+            "help": ("yt-live REST shim for voice/agent casting, on "
+                     "tony-omen:8791. Check: ssh tony-omen systemctl "
+                     "--user status yt-live-api; logs: ssh tony-omen "
                      "journalctl --user -u yt-live-api -n 50"),
         },
     ]
