@@ -1697,6 +1697,17 @@ def _selftest() -> None:
     bad = {"Tailscale-User-Login": "x@y",
            "X-Forwarded-For": "not-an-ip"}
     assert caller_identity(bad, "127.0.0.1") == ""
+    # public-edge lane: valid edge key verifies with cf-email attribution,
+    # wrong/missing key falls through to the normal gates and denies
+    ek = os.environ.get("BOARD_API_EDGE_KEY")
+    if ek:
+        edge = {"X-Board-Edge-Key": ek,
+                "Cf-Access-Authenticated-User-Email": "t@e.com",
+                "X-Forwarded-For": "203.0.113.5"}
+        assert caller_identity(edge, "10.0.0.9") == "edge:t@e.com"
+        edge2 = {"X-Board-Edge-Key": "wrong",
+                 "X-Forwarded-For": "203.0.113.5"}
+        assert caller_identity(edge2, "10.0.0.9") == ""
     print("selftest ok")
 
 
