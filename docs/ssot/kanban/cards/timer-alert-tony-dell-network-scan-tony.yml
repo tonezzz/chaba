@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
-column: review
-updated: 2026-10-20 16:00
+column: done
+updated: 2026-10-22 10:08
 priority: high
 tags:
 - timer-alert
@@ -51,6 +51,14 @@ comms:
   from: devin
   text: 'sweep 2026-10-20: unit enabled on dell, svc activating — target network question is in OPS-0749; alert
     may be stale if it recovered.'
+- at: 2026-10-22 10:08
+  from: devin
+  text: '[verify] sweep 2026-10-22: root-caused — build-dossier-devices waited on ws://127.0.0.1:8123 but tony-ha
+    moved to omen (ph5); needed wss://tony-omen.taila0626a.ts.net:8123 (tailscale serve is TLS-only). Fixed + pushed
+    (d2639fc60); manual rerun Result=success, Dossier dashboard pushed.'
+- at: 2026-10-22 10:08
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done

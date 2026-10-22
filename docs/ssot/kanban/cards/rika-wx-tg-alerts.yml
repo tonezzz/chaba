@@ -1,7 +1,7 @@
 id: rika-wx-tg-alerts
 title: RK600 weather alerts to Telegram (wind>15kt / rain)
-column: review
-updated: 2026-10-20 15:31
+column: done
+updated: 2026-10-22 10:07
 tags:
 - rika
 - rk600
@@ -21,6 +21,7 @@ spec: "Goal: push a Telegram alert when the RK600 at Michael site reports wind >
   \ in ~/.local/state/rika-wx-alert/state; log to alert.log."
 action:
   type: manual
+  status: done
 note: Alert via mn-ha TG bot when wind >15kt or rain starts at Michael site.
 ref: OPS-0747
 comms:
@@ -51,6 +52,13 @@ comms:
   text: 'Companion piece landed (a96fd83, all lanes): weather_station tool — Michael can ASK for a report in the
     group and Kraut replies with live RK600 readings (wind kt+dir, temp, humidity, rain). Stale data narrates its
     age honestly. Verified live on idc03: 0.0kt SE, 26.2C, 88.6% RH, 24s old.'
+- at: 2026-10-22 10:07
+  from: devin
+  text: '[verify] sweep 2026-10-22: rika-wx-alert.service on idc03 Result=success every ~60s (journal confirms clean
+    runs 09:57-09:59). RK600 alert lane live.'
+- at: 2026-10-22 10:07
+  from: tony
+  text: closed by tony
 requests:
 - id: who-receives-the-wind-rain-telegram-aler-066b20
   ask: Who receives the wind/rain Telegram alerts?
@@ -67,4 +75,3 @@ requests:
   suggested: both
   answer: mn-ha group chat (-5426710106) — tony+michael+kraut all present
 review_kind: verify
-awaiting_action: true
