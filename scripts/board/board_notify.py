@@ -26,8 +26,9 @@ CLI:  python3 board_notify.py [--channel ha|yomi|ntfy|file|off] TITLE [BODY]
 Env:
   BOARD_NOTIFY_CHANNEL   ha (default) | yomi | ntfy | file | off;
                          comma list ('ha,yomi') fans out to each
-  HA_NOTIFY_URL          default http://tony-omen.taila0626a.ts.net:8123
-                         (tony-ha lives on omen since ph5)
+  HA_NOTIFY_URL          default https://tony-omen.taila0626a.ts.net:8123
+                         (tony-ha lives on omen since ph5; tailscale serve
+                         is TLS-only — plain http gets a 400)
   HA_NOTIFY_SERVICE      default notify/mobile_app_tony_ip
   HA_TOKEN_FILE          default ~/.config/secrets/home-assistant-token.env
                          (HA_LONG_LIVED_TOKEN or HASS_TOKEN)
@@ -84,7 +85,7 @@ def _ha_send(title: str, body: str, url: str) -> bool:
         return False
     base = os.environ.get(
         "HA_NOTIFY_URL",
-        "http://tony-omen.taila0626a.ts.net:8123").rstrip("/")
+        "https://tony-omen.taila0626a.ts.net:8123").rstrip("/")
     svc = os.environ.get("HA_NOTIFY_SERVICE", "notify/mobile_app_tony_ip")
     return _post(f"{base}/api/services/{svc}", {
         "title": title,
