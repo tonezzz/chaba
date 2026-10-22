@@ -1,7 +1,7 @@
 id: stale-non-served-clones-dell-cascadeproj-efbd23
 title: stale non-served clones — dell ~/CascadeProjects/chaba is 219 commits behind, agents keep tripping on it
-column: backlog
-updated: 2026-10-22 19:34
+column: review
+updated: 2026-10-22 20:03
 note: from 2026-10-15 session — surfaced while chasing WP repeat-ask sync gap
 ref: BEN-0703
 comms:
@@ -51,9 +51,64 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:54
+  from: mn01
+  text: claimed
+- at: 2026-10-22 19:54
+  from: chaba
+  text: started devin-task-20261022-125416-stale-non-served-clones-dell-c on mn01 (dispatch)
+- at: 2026-10-22 19:57
+  from: devin
+  text: '[dispatch] verified on dell: ~/CascadeProjects/chaba is only 20 behind with HEAD 19:42 today — chaba-repo-sync.timer
+    active every ~15min, last run clean. The 219-behind problem was fixed 2026-10-16 (OPS-0479); this card predates
+    it. Remaining trap: agents still cant tell which checkout they are in. Found 2 real stale clones: chaba-kanban-sync
+    (dead .parked job worktree, dirty) + chaba-tony-dell-experiment (6wk detached, staged work). Landing a per-checkout
+    role guard + census; will raise request'
+- at: 2026-10-22 20:01
+  from: devin
+  text: 'raised request reap-the-2-dead-chaba-worktrees-on-dell-01517e: Reap the 2 dead chaba worktrees on dell?
+    chaba-kanban-sync (209M, job unit .parked, ~24 dirty files incl card edits) + c'
+- at: 2026-10-22 20:03
+  from: mn01
+  text: 'finished (ok): exit=0 -task-20261022-125416-stale-non-served-clones-dell-c.service: Failed with result
+    ''exit-code''. | devin-task-202610'
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'session-end checkpoint acbcdd34: 2 leftover file(s) committed'
+- at: 2026-10-22 20:03
+  from: chaba
+  text: pushed dispatch/20261022-125416-stale-non-served-clones-dell-c to origin
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 20:03
+  from: chaba
+  text: auto-merged c35ca96b (dispatch/20261022-125416-stale-non-served-clones-dell-c) → origin/master
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: queued
+  status: done
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
+  runner: mn01
+  result: 'exit=0 -task-20261022-125416-stale-non-served-clones-dell-c.service: Failed with result ''exit-code''.
+    | devin-task-20261022-125416-stale-non-served-clones-dell-c.service: Consumed 10.504s CPU time over 8min 7.727s
+    wall clock time, 209M memory peak.'
+  verified: true
+requests:
+- id: reap-the-2-dead-chaba-worktrees-on-dell-01517e
+  ask: 'Reap the 2 dead chaba worktrees on dell? chaba-kanban-sync (209M, job unit .parked, ~24 dirty files incl
+    card edits) + chaba-tony-dell-experiment (53M, detached 2026-09-11, staged experiment files). Recommend YES:
+    archive diffs to a patch bundle under backups/, then git worktree remove --force both + delete kanban-sync.service.parked.
+    The named exec checkout is healthy — must NOT be removed (it is the jobs tree).'
+  status: open
+  at: 2026-10-22 20:01
+  from: devin
+  options:
+  - proceed
+  - hold
+review_kind: verify
+claim: {}

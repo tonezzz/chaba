@@ -1,7 +1,7 @@
 id: systemone-cmdlane-timeouts
 title: voice.command_lane systemone calls timing out (~30s, every 30-90s)
-column: backlog
-updated: 2026-10-22 19:34
+column: review
+updated: 2026-10-22 20:03
 spec: 'ada-ha-tony journal 2026-10-13 evening: voice.command_lane systemone call failed: timed out, repeatedly ~every
   30-90s through 21:19-21:22 (before the fleet restart). bankq :8791 and jev :8778 both return 200 now — intermittent
   load/latency not outage. Investigate: what queues onto command_lane, whether timeouts pile up retries (retry-storm
@@ -18,6 +18,42 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:55
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:55
+  from: chaba
+  text: started devin-task-20261022-195501-ada-ha-tony-journal-2026-10-13 on idc02 (dispatch)
+- at: 2026-10-22 19:56
+  from: devin
+  text: 'claimed: investigating command_lane timeout storm (ada-ha-tony 2026-10-13 21:19-21:22). Mapping lanes bankq:8791/jev:8778,
+    then journal + ledger evidence.'
+- at: 2026-10-22 20:03
+  from: idc02
+  text: 'finished (ok): exit=0 ocess exited, code=exited, status=1/FAILURE | devin-task-20261022-195501-ada-ha-tony-journal-2026-10-13.service: '
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'session-end checkpoint 98e5a62b: 1 leftover file(s) committed'
+- at: 2026-10-22 20:03
+  from: chaba
+  text: pushed dispatch/20261022-195501-ada-ha-tony-journal-2026-10-13 to origin
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 20:03
+  from: chaba
+  text: auto-merged b76f3e02 (dispatch/20261022-195501-ada-ha-tony-journal-2026-10-13) → origin/master
+- at: 2026-10-22 20:03
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-195501-ada-ha-tony-journal-2026-10-13,
+    branch dispatch/20261022-195501-ada-ha-tony-journal-2026-10-13'
 action:
   type: dispatch
-  status: queued
+  status: done
+  runner: idc02
+  result: 'exit=0 ocess exited, code=exited, status=1/FAILURE | devin-task-20261022-195501-ada-ha-tony-journal-2026-10-13.service:
+    Failed with result ''exit-code''. | devin-task-20261022-195501-ada-ha-tony-journal-2026-10-13.service: Consumed
+    20.166s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}

@@ -1,7 +1,7 @@
 id: idc04-contabo-vps8-provision
 title: 'idc04 — Contabo Cloud VPS 8: DR + absorber + 3rd provider domain'
-column: doing
-updated: 2026-10-22 19:46
+column: review
+updated: 2026-10-22 20:04
 priority: high
 spec: 'Provision Contabo Cloud VPS 8 (8 vCPU shared / 24 GB / 300 GB SSD / 600 Mbit, ~€14/mo monthly or €11.20 on
   24-mo term). Region: Singapore preferred (TH latency ~40-70ms, real edge failover) — check checkout surcharge;
@@ -92,7 +92,31 @@ comms:
   text: 'resumed session: verifying role stack. con01 live — mddb-follower streaming (LSN 236140371, lag_ms 78s
     reported / investigating), ada-stt :8914, caddy-edge :80/:443, doc-mirror + jev-bench timers moved. Checking
     vector-reindex, secrets-backup targets, consumer-canary AUDIT_HOSTS, cert-sync, runner/lab role.'
+- at: 2026-10-22 20:04
+  from: tony-macbook
+  text: 'finished (ok): exit=0 20261022-194506-provision-contabo-cloud-vps-8-.service: Failed with result ''exit-code''.
+    | devin-task-20261022-194'
+- at: 2026-10-22 20:04
+  from: chaba
+  text: 'session-end checkpoint f7729741: 7 leftover file(s) committed'
+- at: 2026-10-22 20:04
+  from: chaba
+  text: pushed dispatch/20261022-194506-provision-contabo-cloud-vps-8- to origin
+- at: 2026-10-22 20:04
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 20:04
+  from: chaba
+  text: auto-merged 42733289 (dispatch/20261022-194506-provision-contabo-cloud-vps-8-) → origin/master
+- at: 2026-10-22 20:04
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 20261022-194506-provision-contabo-cloud-vps-8-.service: Failed with result ''exit-code''. | devin-task-20261022-194506-provision-contabo-cloud-vps-8-.service:
+    Consumed 2min 39.127s CPU time over 18min 2.306s wall clock time, 442M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}

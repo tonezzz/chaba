@@ -4,10 +4,10 @@ brief: 'Registry contract landed in chaba ssot.apps.ada-memory-banks.yml (card m
   instances_readonly {dev-instance: prod-instance} and dev-scratch carries env: staging. This is the ada-pi half
   — teach memory_banks.py to mount those banks read-only and memory_ops.py to stamp the bank''s env onto written
   docs.'
-column: doing
+column: review
 priority: medium
 created: 2026-10-10
-updated: 2026-10-22 19:37
+updated: 2026-10-22 19:54
 program: ha-lanes
 metric: A backend started with ADA_INSTANCE_ID=tony-dev loads every bank whose instances_readonly maps tony-dev
   (collections resolved as the mapped prod instance, {instance}->tony) with writable=false + allowed_tools=[]; its
@@ -48,8 +48,11 @@ autonomy: t2
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 intentionally not done — the card requires explicit approval. | devin-task-20261022-193424-contract-already-in-chaba-docs.service:
+    Consumed 9min 37.131s CPU time over 19min 26.100s wall clock time, 1.6G memory peak, 146.6M memory swap peak.'
+  verified: true
 comms:
 - at: 2026-10-10 10:45
   from: devin
@@ -87,4 +90,29 @@ comms:
   from: devin
   text: 'start: runtime mount merged earlier (b453314); adding MemoryBank readonly/env/read_as fields, env doc meta,
     read-only-mounted refusal naming dev-scratch, edge-case tests'
+- at: 2026-10-22 19:53
+  from: devin
+  text: 'done: MemoryBank +readonly/env/read_as, memory_meta stamps env, refusal names dev-scratch; 1621 tests pass
+    + tool-lint clean. Deploy (render --host idc03 + restarts) NOT done — needs approval.'
+- at: 2026-10-22 19:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 intentionally not done — the card requires explicit approval. | devin-task-20261022-193424-contract-already-in-ch'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'session-end checkpoint b1573d84: 6 leftover file(s) committed'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: pushed dispatch/20261022-193424-contract-already-in-chaba-docs to origin
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: auto-merged c679ff45 (dispatch/20261022-193424-contract-already-in-chaba-docs) → origin/main
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193424-contract-already-in-chaba-docs,
+    branch dispatch/20261022-193424-contract-already-in-chaba-docs'
 ref: ADA-0344
+review_kind: verify
+claim: {}

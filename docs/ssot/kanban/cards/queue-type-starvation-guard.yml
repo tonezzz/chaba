@@ -1,7 +1,7 @@
 id: queue-type-starvation-guard
 title: queue verb on non-dispatch cards starves silently — warn or auto-convert
-column: backlog
-updated: 2026-10-22 19:34
+column: review
+updated: 2026-10-22 20:00
 spec: 'zombie-sweep 2026-10-13 found 6 cards queued for days with zero claims: board-api /action do=queue sets status=queued
   on cards whose action.type is manual/devin/self, but kanban-dispatch only claims type=dispatch — silent forever
   starvation, no skip log line either.
@@ -23,6 +23,49 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:53
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:54
+  from: chaba
+  text: started devin-task-20261022-195359-zombie-sweep-2026-10-13-found- on idc02 (dispatch)
+- at: 2026-10-22 19:58
+  from: devin
+  text: 'fix implemented: board-api warns on queue of non-dispatch type (no auto-flip), kanban-dispatch logs skip
+    reason, board-invariants gains Q1 class flagging queued>24h non-dispatch cards (fires on existing 4h timer).
+    8 new tests + 169 board tests green'
+- at: 2026-10-22 19:59
+  from: devin
+  text: 'done on dispatch/20261022-195359 (commit ed7858be, not pushed — close-out merges). Chose (b) + warn half
+    of (a): board-api warns on all 3 queue paths when action.type != dispatch (type never auto-flipped); kanban-dispatch
+    prints skip reason per pass; board-invariants Q1 flags non-dispatch queued>24h via existing 4h --alert timer
+    -> invariant-starved-queued-cards.yml inbox alert. 8 new tests, 169 board tests green. Live follow-up: starved
+    cards still on the board need manual type-flip or hold — Q'
+- at: 2026-10-22 20:00
+  from: idc02
+  text: 'finished (ok): exit=0 today so Q1 correctly stays quiet until it crosses 24h; outcome written to `dispatch-outcome-20261022-195359-zomb'
+- at: 2026-10-22 20:00
+  from: chaba
+  text: 'session-end checkpoint 878be395: 1 leftover file(s) committed'
+- at: 2026-10-22 20:00
+  from: chaba
+  text: pushed dispatch/20261022-195359-zombie-sweep-2026-10-13-found- to origin
+- at: 2026-10-22 20:00
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 20:00
+  from: chaba
+  text: auto-merged b656e2c7 (dispatch/20261022-195359-zombie-sweep-2026-10-13-found-) → origin/master
+- at: 2026-10-22 20:00
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-195359-zombie-sweep-2026-10-13-found-,
+    branch dispatch/20261022-195359-zombie-sweep-2026-10-13-found-'
 action:
   type: dispatch
-  status: queued
+  status: done
+  runner: idc02
+  result: 'exit=0 today so Q1 correctly stays quiet until it crosses 24h; outcome written to `dispatch-outcome-20261022-195359-zombie-sweep-2026-10-13-found-.md`.
+    | devin-task-20261022-195359-zombie-sweep-2026-10-13-found-.service: Consumed 57.334s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}

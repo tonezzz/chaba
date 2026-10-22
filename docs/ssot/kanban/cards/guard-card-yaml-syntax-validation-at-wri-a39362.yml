@@ -1,7 +1,7 @@
 id: guard-card-yaml-syntax-validation-at-wri-a39362
 title: 'Guard: card-YAML syntax validation at write time — render died 2.5h on 3 malformed cards'
-column: doing
-updated: 2026-10-22 19:47
+column: review
+updated: 2026-10-22 19:53
 brief: '2026-10-11 ~12:45-15:10: chaba-board-render crashed every 60s on yaml.scanner errors. Three cards had YAML-invalid
   free text (ada-secret-drop unindented continuation; voice-degrade-tiers + scenario-spend-guard list items containing
   key: and >N sequences). cards.json went stale silently — board page showed 2.5h-old data while API writes kept
@@ -20,11 +20,15 @@ action:
   labels:
   - cpu
   - small
-  status: running
-  result: 'exit=0 ote: ship the `.service` and `board-render-guard.py` together or ExecStart 404s on stale checkouts.
-    | devin-task-20261012-223345-two-cheap-guards-both-small-1-.service: Consumed 1min 5.877s CPU time, 145.0M memory
-    peak, 0B memory swap peak.'
+  status: done
+  result: 'exit=0 me file written, board comment posted — the card''s work is complete and can close once the merge
+    lands. | devin-task-20261022-194658-two-cheap-guards-both-small-1-.service: Consumed 27.236s CPU time, 223.1M
+    memory peak, 0B memory swap peak.'
   runner: idc02
+  sweep:
+    stale_running: 2026-10-22 19:52
+    session_gone: 2026-10-22 19:52
+  verified: true
 ref: KNB-0461
 comms:
 - at: 2026-10-11 15:11
@@ -88,6 +92,41 @@ comms:
 - at: 2026-10-22 19:47
   from: chaba
   text: started devin-task-20261022-194658-two-cheap-guards-both-small-1- on idc02 (dispatch)
+- at: 2026-10-22 19:52
+  from: chaba
+  text: 'merge-sweep: devin-task-20261012-223345-two-cheap-guards-both-small-1- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-22 19:52
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261012-223345-two-cheap-guards-both-small-1- on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-22 19:52
+  from: devin
+  text: 're-dispatch verified: all 3 guards already merged+working (board-api save() round-trip refusal on all mutating
+    endpoints; kanban-commit staged-YAML refusal + pre-commit/ssot.yml CI gates; board-render-guard files ops-board-render-fail
+    after 2 consecutive render failures, auto-closes on recovery). Found+fixed adjacent silent-failure bug: git-safe-pull
+    bare exec 2>/dev/null permanently swallowed all stderr diagnostics incl pulling-anyway — brace-grouped, test-kanban-commit.sh
+    now 36/36 (was 35/36)'
+- at: 2026-10-22 19:53
+  from: idc02
+  text: 'finished (ok): exit=0 me file written, board comment posted — the card''s work is complete and can close
+    once the merge lands. | devin-t'
+- at: 2026-10-22 19:53
+  from: chaba
+  text: 'session-end checkpoint 8687b018: 1 leftover file(s) committed'
+- at: 2026-10-22 19:53
+  from: chaba
+  text: pushed dispatch/20261022-194658-two-cheap-guards-both-small-1- to origin
+- at: 2026-10-22 19:53
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:53
+  from: chaba
+  text: auto-merged 8f4d530e (dispatch/20261022-194658-two-cheap-guards-both-small-1-) → origin/master
+- at: 2026-10-22 19:53
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-194658-two-cheap-guards-both-small-1-,
+    branch dispatch/20261022-194658-two-cheap-guards-both-small-1-'
 review_kind: verify
 claim: {}
 auto_close:

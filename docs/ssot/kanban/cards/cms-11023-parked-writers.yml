@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
-column: doing
-updated: 2026-10-22 19:49
+column: review
+updated: 2026-10-22 20:04
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -45,7 +45,68 @@ comms:
     vestigial MDDB_BASE dropped), generated/ re-rendered, stale idc02 jev-bench + dell session-audit generated orphans
     removed, audits patched to probe :11027 for migrated colls. LIVE proof of leak 2026-10-22: :11023 ada-cms-pages/{bench-jev
     12:00Z, ops-health 12:30Z, '
+- at: 2026-10-22 20:00
+  from: devin
+  text: 'raised request push-ada-voice-fix-dell-checkout-has-com-ef2151: Push ada-voice fix? — dell checkout has
+    commit d438a52 (ops-health-report + jev-bench + orch-bench route CMS collections'
+- at: 2026-10-22 20:00
+  from: devin
+  text: 'raised request delete-parked-collections-on-11023-all-m-ba0de1: Delete parked collections on :11023? All
+    migrated writers verified repointed (bench-jev/ops-health/flood-report/flood-al'
+- at: 2026-10-22 20:01
+  from: devin
+  text: 'sweep DONE + live-fixed + verified. Every leaking writer repointed: pure-CMS (ada-flood-news, flood-alert)
+    -> :11027 env; mixed (jev-bench, orch-bench, ops-health-report, session-audit, chaba-audit*) -> :11023 + MDDB_CMS_URL
+    routing. Verified live: bench-jev/ops-health/flood-alert docs now land :11027 (12:54-12:59Z), parked :11023
+    copies frozen. Surprises found: omen had 4 parked duplicate timers incl the ONLY flood-alert writer (now disabled;
+    fresh install on dell with :11027 env); idc03 parked'
+- at: 2026-10-22 20:04
+  from: tony-omen
+  text: 'finished (ok): exit=0 is the only way stale writers fail loud instead of publishing into a dead letterbox.
+    | devin-task-20261022-193424'
+- at: 2026-10-22 20:04
+  from: chaba
+  text: pushed dispatch/20261022-193424-sweep-every-unit-env-script-ar to origin
+- at: 2026-10-22 20:04
+  from: chaba
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]            HEAD -> master\
+    \ (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates were\
+    \ rejected beca — close will block until merged"
+- at: 2026-10-22 20:04
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193424-sweep-every-unit-env-script-ar,
+    branch dispatch/20261022-193424-sweep-every-unit-env-script-ar'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 is the only way stale writers fail loud instead of publishing into a dead letterbox. | devin-task-20261022-193424-sweep-every-unit-env-script-ar.service:
+    Consumed 1min 46.229s CPU time over 26min 49.545s wall clock time, 916.3M memory peak.'
+requests:
+- id: push-ada-voice-fix-dell-checkout-has-com-ef2151
+  ask: 'Push ada-voice fix? — dell checkout has commit d438a52 (ops-health-report + jev-bench + orch-bench route
+    CMS collections to :11027). Needed so idc03 deploy-ada.sh can ff-merge origin/main; until then the fix runs
+    as uncommitted files on idc03/con01/omen checkouts (deploy-ada.sh will snapshot them to wip/*). Approve: (a)
+    push main, (b) push + run deploy-ada.sh on idc03, (c) leave for Tony'
+  status: open
+  at: 2026-10-22 20:00
+  from: devin
+  options:
+  - proceed
+  - hold
+- id: delete-parked-collections-on-11023-all-m-ba0de1
+  ask: 'Delete parked collections on :11023? All migrated writers verified repointed (bench-jev/ops-health/flood-report/flood-alert
+    docs now land :11027; parked copies frozen). 15 collections to delete on :11023: ada-cms-pages(529), ada-cms-pages-kk(10),
+    ada-cms-pages-kk-dev(4), ada-cms-automation(64), chaba-architecture/archive/docs/glossary(59), devin-kb(9),
+    documents(275), infrastructure-ssot(2996), kb-*(402). Live copies exist on :11027. Rollback window per card;
+    this kills the dead-letterbox so stale writers fail loud. Approve: (a) delete now, (b) delete after N days,
+    (c) leave parked'
+  status: open
+  at: 2026-10-22 20:00
+  from: devin
+  options:
+  - delete now
+  - wait for window (say how many days)
+  - leave parked
+review_kind: verify
+claim: {}

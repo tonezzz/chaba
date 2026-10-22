@@ -3,7 +3,7 @@ title: tailnet v4 drops idc03->michael-ha:8123 — needs ACL/firewall check
 brief: 'ada-ai-kraut''s HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times out (silent drop). All HA
   tools on the mn lane errored (get_rk600_weather, home_search — journal shows failures since ~Oct 17). Interim
   fix shipped: HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.'
-column: doing
+column: review
 priority: high
 tags:
 - mn-ha
@@ -41,9 +41,53 @@ comms:
   from: devin
   text: 'Dispatch picked up — starting root-cause: checking tailnet packet-filter on idc03 (netmap), re-testing
     v4 reachability, then HAOS host firewall on michael-ha.'
-requests: []
-updated: 2026-10-22 19:34
+- at: 2026-10-22 19:52
+  from: devin
+  text: 'ROOT CAUSE FOUND — not a tailnet ACL. idc03 has a deliberate quarantine: mn-ha-quarantine.service (Tony
+    order 2026-10-16, documented in ssot.home-assistant.michael.yml) inserts iptables OUTPUT DROP to 100.80.105.88:8123
+    — 8.4M packets matched. Proof: tcpdump on idc03 tailscale0 shows the :8123 SYN never leaves the tun; all other
+    ports RST-reach the host; michael-ha host iptables + ts-input are clean. Corollary: the 2026-10-20 v6-ULA workaround
+    in ada-ai-kraut.env was bypassing the quarantine ent'
+- at: 2026-10-22 19:53
+  from: devin
+  text: 'raised request mn-ha-quarantine-is-now-enforced-on-v4-v-16aa75: mn-ha quarantine is now enforced on v4+v6
+    and the v6 bypass reverted (mn lane HA tools fail closed per your 2026-10-16 o'
+- at: 2026-10-22 19:54
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261022-193416-root-cause-still-open-evidence.service:
+    Failed to ope'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: pushed dispatch/20261022-193416-root-cause-still-open-evidence to origin
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: auto-merged ef06b0ab (dispatch/20261022-193416-root-cause-still-open-evidence) → origin/master
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193416-root-cause-still-open-evidence,
+    branch dispatch/20261022-193416-root-cause-still-open-evidence'
+requests:
+- id: mn-ha-quarantine-is-now-enforced-on-v4-v-16aa75
+  ask: 'mn-ha quarantine is now enforced on v4+v6 and the v6 bypass reverted (mn lane HA tools fail closed per your
+    2026-10-16 order). Keep quarantine as-is? Options: (1) KEEP — no action, this card can close; (2) LIFT — I run:
+    ssh idc03 systemctl disable --now mn-ha-quarantine (mn lane works again via v4). Reply keep or lift.'
+  status: open
+  at: 2026-10-22 19:53
+  from: devin
+  options:
+  - proceed
+  - hold
+updated: 2026-10-22 19:54
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261022-193416-root-cause-still-open-evidence.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261022-193416-root-cause-still-open-evidence.service:
+    No such file or directory'
+  verified: true
+review_kind: verify
+claim: {}

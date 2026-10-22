@@ -9,7 +9,7 @@ lab:
   review_by: '2026-10-25'
 note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-*
   cards if it promotes.'
-updated: 2026-10-22 19:51
+updated: 2026-10-22 19:59
 comms:
 - at: 2026-10-06 06:45
   from: tony
@@ -39,6 +39,17 @@ comms:
 - at: 2026-10-22 19:51
   from: devin
   text: '[bench] picked up on tony-omen; pulling ~20 snapshots then benching yolov8n/yolo11n ONNX CPU+CUDA on GTX1650'
+- at: 2026-10-22 19:51
+  from: chaba
+  text: 'display watchdog: still stalled (xrandr :1025 timed out (8s)) — PAUSED devin-task-20261022-195037-lab-bench-local-yolo-object-de
+    (SIGSTOP). display unstick: ssh in, `sudo chvt 3`, sleep 2, `sudo chvt 2` (modeset reset — session survives);
+    resume the task with `systemctl --user kill -s SIGCONT devin-task-20261022-195037-lab-bench-local-yolo-object-de`
+    (or wait — the watchdog auto-resumes on healthy probes)'
+- at: 2026-10-22 19:59
+  from: chaba
+  text: 'display watchdog: devin-task-20261022-195037-lab-bench-local-yolo-object-de still paused, display still
+    stalled ~10min on — display unstick: ssh in, `sudo chvt 3`, sleep 2, `sudo chvt 2` (modeset reset — session
+    survives)'
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).

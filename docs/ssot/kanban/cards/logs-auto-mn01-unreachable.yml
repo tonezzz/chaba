@@ -10,7 +10,7 @@ priority: medium
 note: 'Auto-recovered 2026-10-20: `mn01-unreachable` condition cleared — shipper healthy again.'
 help: 'Likely a tailscale ssh auth check on the tony-omen -> host hop: run a manual ssh and open the login.tailscale.com
   link it prints, or install a local log-shipper timer on mn01.'
-updated: 2026-10-21 09:02
+updated: 2026-10-22 19:58
 comms:
 - at: 2026-10-15 15:04
   from: devin
@@ -106,6 +106,13 @@ comms:
 - at: 2026-10-21 09:02
   from: chaba
   text: 'rika-hmi-watch: auto-remediated HMI: app restarted. Check cloud dataTime goes fresh within ~5 min.'
+- at: 2026-10-22 19:58
+  from: chaba
+  text: 'rika-hmi-watch: RK600 HMI (192.168.31.148) back on the LAN. Watchdog will verify route + :8899 and remediate
+    if needed.'
+- at: 2026-10-22 19:58
+  from: chaba
+  text: 'rika-hmi-watch: auto-remediated HMI: route re-added. Check cloud dataTime goes fresh within ~5 min.'
 requests:
 - id: mn01-is-powered-off-net-down-tailscale-o-9760d4
   ask: mn01 is powered off/net-down (tailscale offline 1d). How should it be treated?

@@ -7,8 +7,8 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   points (gemini-2.5-flash-lite, gemini-2.5-flash) so free-vs-paid quality is compared directly. RISK: OR key is
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
-column: doing
-updated: 2026-10-22 19:49
+column: review
+updated: 2026-10-22 20:05
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
 comms:
@@ -51,12 +51,38 @@ comms:
     :free shelf — flagged already). Live :free = 18. Bench = jev-bench/bench-hermes shape vs OR /chat/completions
     (gateway is loopback-only; same emulation as edu-agent-bench): native+prompted toolcalls, routing, reasoning,
     strict-json. 29 calls/model x ~20 rows + 2 paid refs.'
+- at: 2026-10-22 20:05
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261022-194701-per-model-scorecard-across-the.service:
+    Failed to ope'
+- at: 2026-10-22 20:05
+  from: chaba
+  text: 'session-end checkpoint 0143d1c6: 1 leftover file(s) committed'
+- at: 2026-10-22 20:05
+  from: chaba
+  text: pushed dispatch/20261022-194701-per-model-scorecard-across-the to origin
+- at: 2026-10-22 20:05
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 20:05
+  from: chaba
+  text: auto-merged f4ea96f7 (dispatch/20261022-194701-per-model-scorecard-across-the) → origin/master
+- at: 2026-10-22 20:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-194701-per-model-scorecard-across-the,
+    branch dispatch/20261022-194701-per-model-scorecard-across-the'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261022-194701-per-model-scorecard-across-the.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261022-194701-per-model-scorecard-across-the.service:
+    No such file or directory'
+  verified: true
 spec: 'Per-model scorecard across the ghostroute OR free-model rotation: fixed prompt suite through the gateway
   API, measure latency + tool-call correctness per model; jev-bench shape. Post the scorecard to card comms and
   flag models that should drop out of rotation.'
 ref: KNB-0174
+review_kind: verify
+claim: {}

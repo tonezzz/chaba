@@ -4,7 +4,7 @@ brief: Assess and redesign the VCast user/operator flow end-to-end per Chaba sta
   Today's flow hides connection state, lets stale entries masquerade as screens, burns names on release, and leaves
   operators doing manual registry surgery. The UI should show real lifecycle state, stable display identity, and
   one-click recovery.
-column: doing
+column: review
 priority: medium
 program: vcast
 area: ux
@@ -35,13 +35,16 @@ spec: "User journey stages to redesign, with acceptance per stage: 1. PAIRING �
 help: 'Related: vcast-bridge-registry-bugs (done — deployed 2026-10-09), vcast-claim-tombstone (queued — resurrect
   chain). Frontend surface is stacks/web/public/apps/vcast/index.html + the /displays JSON on idc03:3010. Ada''s
   realtime_provider rules apply: no phantom success claims.'
-updated: 2026-10-22 19:48
+updated: 2026-10-22 19:54
 action:
   type: dispatch
-  status: running
+  status: done
   button: ▶ Assess + redesign vcast UX flow
   repo: chaba
   runner: mn01
+  result: 'exit=0  needs the `apps/vcast` rsync + `input-bridge` restart on idc03 under the promotion gate. | devin-task-20261022-123434-user-journey-stages-to-redesig.service:
+    Consumed 49.175s CPU time over 18min 26.435s wall clock time, 391.9M memory peak.'
+  verified: true
 comms:
 - at: 2026-10-09 18:05
   from: devin
@@ -83,4 +86,30 @@ comms:
     + health{flaps_24h} + events timeline + per-pane last_cast; new POST /sweep; errors carry reason+next; new /apps/vcast/displays.html
     operator view; pair.html+index.html+HA card updated. NEW vcast-ux-check.mjs 34/34 PASS, full suite 102/102.
     Benchmark: disconnect->rebound 350ms (was ~30min manual surgery). NOT deployed — writing evidence now.'
+- at: 2026-10-22 19:52
+  from: devin
+  text: 'done on dispatch branch (97a8faf3): all 6 stages shipped — lifecycle derivation incl. silent-socket stale
+    (live fleet ALREADY shows the bug: screens 2/4 connected:true with 6-day-old last_seen), /sweep one-click recovery,
+    reason+next errors, displays.html operator view, events timeline, HA card. 105/105 checks green; benchmark disconnect->rebound
+    350ms vs ~30min. Evidence: ada-cms-pages/vcast-ux-flow-report + docs/ssot/jobs/vcast/2026-10-22-vcast-ux-flow.yml.
+    NOT deployed — needs rsync of apps/v'
+- at: 2026-10-22 19:54
+  from: mn01
+  text: 'finished (ok): exit=0  needs the `apps/vcast` rsync + `input-bridge` restart on idc03 under the promotion
+    gate. | devin-task-20261022-1'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: pushed dispatch/20261022-123434-user-journey-stages-to-redesig to origin
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:54
+  from: chaba
+  text: auto-merged e2583a8f (dispatch/20261022-123434-user-journey-stages-to-redesig) → origin/master
+- at: 2026-10-22 19:54
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-123434-user-journey-stages-to-redesig,
+    branch dispatch/20261022-123434-user-journey-stages-to-redesig'
 ref: MED-0275
+review_kind: verify
+claim: {}
