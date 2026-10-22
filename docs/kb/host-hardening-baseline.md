@@ -80,6 +80,10 @@ everything" — a blind `ufw deny-in` breaks the house.
 
 ## Audit procedure
 
+0. **Sequencing on fresh hosts (learned 2026-10-22 con01):** join tailscale and
+   confirm tailnet ssh **before** `ufw enable` — enabling ufw first locks you
+   out when public `:22` was your only path in. Recovery then needs provider
+   VNC/console to run `tailscale up` by hand.
 1. Read-only checks (A + class section) per host — script the verify column,
    don't eyeball.
 2. Apply class-A fixes freely (dropins, linger, sysctl, fail2ban install) —
