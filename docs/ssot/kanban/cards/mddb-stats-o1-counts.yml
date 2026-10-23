@@ -1,7 +1,7 @@
 id: mddb-stats-o1-counts
 title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
 column: doing
-updated: 2026-10-23 09:27
+updated: 2026-10-23 09:28
 priority: medium
 tags:
 - mddb
@@ -78,13 +78,19 @@ comms:
 - at: 2026-10-23 09:27
   from: devin
   text: retry requested
+- at: 2026-10-23 09:28
+  from: chaba
+  text: dispatch parked after 2 attempts (policy retries_per_card=2) — re-queue to retry
+- at: 2026-10-23 09:28
+  from: devin
+  text: retry requested
 action:
   type: dispatch
   status: queued
   repo: mddb-fork
-  attempts: 2
+  attempts: 3
   sweep:
     failed_noted: 2026-10-23 08:54
-  host: tony-dell
+  host: idc02
   last_failure: 'start failed: unknown repo ''mddb-fork'' (allowed: ada-voice sunsynk-card ada-pi gods-eye-view
     mddb-fork chaba)'
