@@ -1,0 +1,51 @@
+# edu-agent-bench — run the education-manager agent lane on a Colab GPU.
+# Rationale: gpt-oss:20b swept capture/ops/recall on the 13-task fixture
+# but p50 78s on omen (4GB GPU, RAM offload ~9 tok/s). On a T4 the MXFP4
+# model sits fully in VRAM (~40-80 tok/s) — this pack answers whether
+# the local lane's gap is latency or capability. (OPS-0776 turn-3 prep.)
+#
+# Local lane ONLY: no OR key, no judge (--no-judge). Filings keep full
+# HTML in the result JSON — draft-Q is re-judgeable offline on a fleet
+# host exactly like the turn-2 run.
+#
+# To probe another local model, change MODEL below and re-run — a fresh
+# VM reruns the whole pack (ollama pull is ephemeral either way).
+name: edu-agent-bench
+needs:
+  gpu_gb: 14        # gpt-oss:20b MXFP4 ~13GB resident
+  disk_gb: 22       # model pull + repo staging + report
+  egress_only_ok: true
+timeout_s: 5400     # pull (~15min) + 13 tasks x ~5 llm calls, T4-bound
+artifacts:
+  - packs/edu-agent-bench/out/bench-edu-manage-*.json
+  - packs/edu-agent-bench/out/bench-edu-manage-*.md
+
+# CPU-bound: install ollama + stage the bench repo subset + pull model.
+# PACK_DIR is not injected into prep env — Drive path is absolute.
+prep: |
+  set -e
+  PACK=/content/drive/MyDrive/ada-nest/packs/edu-agent-bench
+  curl -fsSL https://ollama.com/install.sh | sh > "$PACK/ollama-install.log" 2>&1 || {
+    echo "ollama install.sh failed — see log"; exit 1; }
+  mkdir -p /tmp/chaba/scripts/ada
+  cp "$PACK/inputs/chaba/scripts/"*.py "$PACK/inputs/chaba/scripts/"*.json /tmp/chaba/scripts/
+  cp "$PACK/inputs/chaba/scripts/ada/"*.py /tmp/chaba/scripts/ada/
+  nohup ollama serve > "$PACK/ollama-serve.log" 2>&1 &
+  for i in $(seq 1 60); do curl -sf http://localhost:11434/api/tags >/dev/null 2>&1 && break; sleep 2; done
+  ollama pull gpt-oss:20b
+
+run: |
+  import os, subprocess, time
+  out = f'{PACK_DIR}/out'
+  os.makedirs(out, exist_ok=True)
+  env = dict(os.environ, OLLAMA_URL='http://localhost:11434')
+  prefix = f"{out}/bench-edu-manage-{time.strftime('%Y-%m-%d')}"
+  cmd = ['python3', '/tmp/chaba/scripts/bench-edu-manage.py',
+         '--lanes', 'hermes', '--ollama-model', 'gpt-oss:20b',
+         '--ollama-timeout', '300', '--no-judge', '--out', prefix]
+  print('bench:', ' '.join(cmd), flush=True)
+  t0 = time.time()
+  r = subprocess.run(cmd, cwd='/tmp/chaba', env=env)
+  print(f'bench rc={r.returncode} in {time.time()-t0:.0f}s', flush=True)
+  if r.returncode != 0:
+    raise RuntimeError(f'bench rc={r.returncode}')
