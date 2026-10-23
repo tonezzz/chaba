@@ -1,7 +1,7 @@
 id: text-lane-provider-routing
 title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
-column: review
-updated: 2026-10-23 08:47
+column: done
+updated: 2026-10-23 08:54
 priority: medium
 spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
   use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
@@ -73,6 +73,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-083121-channel-telegram-line-already-,
     branch dispatch/20261023-083121-channel-telegram-line-already-'
+- at: 2026-10-23 08:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -84,3 +87,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 08:54
+  note: verified — evidence checks green, closing itself
