@@ -129,17 +129,22 @@ async function load() {
   }
 }
 
-// Refresh button -> POST api/refresh starts the full L1->L3 chain
-// (per-host audits, fleet rollup, this report). Poll /status until done.
-async function refresh() {
+// Refresh button -> POST api/refresh starts the report graph walk
+// (dirty nodes only). Deep rescan sends force:true — every runnable
+// node re-runs, including the L1 audit-hosts/* host scans (slow).
+// Poll /status until done.
+async function refresh(force) {
   const btn = document.getElementById("refresh");
+  const deep = document.getElementById("deep");
   const status = document.getElementById("refresh-status");
   btn.disabled = true;
+  if (deep) deep.disabled = true;
   try {
     const r = await fetch("api/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ node: "system-report", depth: "subtree" }),
+      body: JSON.stringify({ node: "system-report", depth: "subtree",
+                             ...(force ? { force: true } : {}) }),
     });
     if (r.status === 403) { status.textContent = "refresh needs a tailnet login"; return; }
     if (r.status !== 202 && r.status !== 409) {
@@ -147,8 +152,10 @@ async function refresh() {
       status.textContent = `refresh failed: ${b.error || "HTTP " + r.status}`;
       return;
     }
-    status.textContent = r.status === 409 ? "already running…" : "generating (~5–10 min)…";
-    const deadline = Date.now() + 16 * 60 * 1000;
+    status.textContent = r.status === 409 ? "already running…"
+      : force ? "deep rescan — host audits + reports (~10–20 min)…"
+              : "generating (~5–10 min)…";
+    const deadline = Date.now() + (force ? 30 : 16) * 60 * 1000;
     while (Date.now() < deadline) {
       await new Promise((res) => setTimeout(res, 10000));
       try {
@@ -167,10 +174,12 @@ async function refresh() {
     status.textContent = `refresh failed: ${e.message}`;
   } finally {
     btn.disabled = false;
+    if (deep) deep.disabled = false;
   }
 }
 
-document.getElementById("refresh").addEventListener("click", refresh);
+document.getElementById("refresh").addEventListener("click", () => refresh(false));
+document.getElementById("deep").addEventListener("click", () => refresh(true));
 document.getElementById("filter").addEventListener("input", (e) => {
   state.textFilter = e.target.value.trim();
   renderNodes();

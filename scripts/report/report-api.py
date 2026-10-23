@@ -104,12 +104,14 @@ def _run_node(nid: str) -> dict:
                 "stderr_tail": (proc.stderr or "")[-400:]}
 
 
-def _walk(root: str, depth: str, by: str) -> dict:
+def _walk(root: str, depth: str, by: str, force: bool = False) -> dict:
     """Dirty-driven walk: mark the requested node pending, then run
     leaves whose inputs are clean; parents go dirty as children land
     fresher than their inputs_at, and run once all inputs are fresh.
-    Failure isolation: an un-runnable/failed child doesn't block the
-    parent — it renders last-known-good with a delta."""
+    force=True ignores the dirty gate — every runnable node in the
+    target subtree re-runs (a real system-wide rescan: L1 host audits
+    included). Failure isolation: an un-runnable/failed child doesn't
+    block the parent — it renders last-known-good with a delta."""
     reg = reportlib.load_registry()
     nodes = {n["id"]: n for n in reg.get("nodes") or []}
     if root not in nodes:
@@ -122,7 +124,8 @@ def _walk(root: str, depth: str, by: str) -> dict:
                        if a in nodes})
 
     reportlib.pending_add(target[root]["meta"], by=by,
-                          reason="user-refresh", depth=depth)
+                          reason="user-refresh" + ("+force" if force else ""),
+                          depth=depth)
     if depth == "full":  # sideways: linked reports get their own mark
         for nid in _ancestors(nodes, root):
             reportlib.pending_add(nodes[nid]["meta"], by=by,
@@ -139,7 +142,7 @@ def _walk(root: str, depth: str, by: str) -> dict:
             if nid in ran:
                 continue
             dirty, why = reportlib.node_dirty(node, reg)
-            if not dirty:
+            if not dirty and not force:
                 continue
             # Blocking children: dirty AND runnable AND not yet tried.
             # A failed or non-runnable child can't block — parents render
@@ -147,7 +150,7 @@ def _walk(root: str, depth: str, by: str) -> dict:
             blocking = [
                 c for c in node.get("children") or [] if c in target
                 and c not in attempted
-                and reportlib.node_dirty(target[c], reg)[0]
+                and (reportlib.node_dirty(target[c], reg)[0] or force)
                 and reportlib.generator_argv(target[c].get("generator"))]
             if blocking:
                 continue
@@ -164,8 +167,9 @@ def _walk(root: str, depth: str, by: str) -> dict:
     if root not in ran and reportlib.generator_argv(
             target[root].get("generator")):
         ran[root] = _run_node(root)
-    result = {"root": root, "depth": depth, "passes": passes, "ran": ran}
-    _emit_event(root, depth, ran, by)
+    result = {"root": root, "depth": depth, "force": force,
+              "passes": passes, "ran": ran}
+    _emit_event(root, depth + ("+force" if force else ""), ran, by)
     return result
 
 
@@ -263,6 +267,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"error": "bad json"})
                 return
         node, depth = body.get("node"), body.get("depth", "subtree")
+        force = bool(body.get("force"))
         if node:
             # Graph refresh: mark pending, walk dirty inputs leaves-first,
             # re-render ancestors as their inputs land (design:
@@ -277,10 +282,11 @@ class Handler(BaseHTTPRequestHandler):
             def _go():
                 with _GRAPH_LOCK:
                     _GRAPH_LAST.clear()
-                    _GRAPH_LAST.update({"state": "running", "root": node})
+                    _GRAPH_LAST.update({"state": "running", "root": node,
+                                        "depth": depth, "force": force})
                     try:
                         _GRAPH_LAST.update(
-                            _walk(node, depth, by=who))
+                            _walk(node, depth, by=who, force=force))
                         _GRAPH_LAST["state"] = "done"
                     except Exception as exc:
                         _GRAPH_LAST.update({"state": "error",
