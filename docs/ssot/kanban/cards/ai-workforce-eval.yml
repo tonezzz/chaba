@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: backlog
-updated: 2026-10-23 16:59
+updated: 2026-10-23 20:50
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -37,3 +37,10 @@ comms:
     o1-endpoint-health, inline verifier scored 1.0 (all 3 endpoints correct), ~2min total, $0. idc02 now has opencode
     1.19.4 + litellm provider config + litellm-chaba.env. Recipe: writer-seed script card -> /action queue -> runner
     claims -> bash -lc sources secrets + runs agent + verifier -> score lands in comms.'
+- at: 2026-10-23 20:50
+  from: devin
+  text: 'CRITICAL colab fix: notebook serves gemma3:12b but official Ollama gemma3 build has NO tool support (ollama/ollama#9680)
+    — agent loops fail. Change MODEL="qwen3:8b" in colab-serve-worker.ipynb cell (line 30, already listed as an
+    alternative; ~5GB, fits T4, tool-capable, GitHub-recommended). Proxy model_name becomes colab-qwen3. Also: qwen3:8b
+    on omen CPU scored 6/7 on t1 but with ZERO edits (1 reasoning step, no tool calls, stopped) — CPU too slow for
+    agent loops; the T4 GPU is the point. OR cap'
