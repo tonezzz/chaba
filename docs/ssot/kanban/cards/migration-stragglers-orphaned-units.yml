@@ -1,7 +1,7 @@
 id: migration-stragglers-orphaned-units
 title: 'Migration stragglers: orphaned units after dell/omen->idc02/03 move'
 column: doing
-updated: 2026-10-23 16:56
+updated: 2026-10-23 17:05
 tags:
 - migration
 - ops-0725
@@ -71,3 +71,10 @@ comms:
   from: devin
   text: dispatch 2026-10-23 picked up. Prior session cleared omen weaviate units; verifying current state + handling
     dell ha-auth-watch / network-scan-tony now.
+- at: 2026-10-23 17:05
+  from: devin
+  text: 'DONE 2026-10-23 — all card units resolved. dell: ha-auth-watch repointed tony-dell:8123->tony-omen:8123,
+    verified green (2 instances, 0 err, caught real deduped auth fail). network-scan-tony was never failing (LAN
+    scan works post-move) — repointed cwd/exec readonly-mirror->exec checkout per role model + created venv there,
+    verified run. RETIRED on dell: yomi-api + trade-automation (dead containers; live on idc03), ssot-optimization-snapshot
+    (stale dup; declared host=idc02; idc02 copy re-ran clea'
