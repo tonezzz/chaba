@@ -88,17 +88,54 @@ evidence:
   - "role guard tested: marker=exec -> commit exit 1 with teaching block; CHABA_ROLE_COMMIT_OK=1 -> warns and passes; absent -> legacy"
   - "mn01 exec checkout: role=exec stamped; check-single-writer reports role + 24-behind pre-sync + 14 focus-inbox files"
 
+verified_state_2026_10_23:
+  reaps_done: |
+    Tony answered "proceed" (08:11). A sweep reaped chaba-kanban-sync
+    (patch 08:19) and chaba-tony-dell-experiment (patch 08:34) — both
+    archived to ~/backups/worktree-reap-20261023/*.patch on dell,
+    worktrees removed, kanban-sync.{service,timer}.parked deleted.
+  topology_correction: |
+    IMPORTANT — the writer is on idc03 now (OPS-0725 cutover). dell's
+    chaba-tony-dell is a pull-only MIRROR synced hourly by
+    chaba-served-mirror-sync.timer; its role=readonly marker is CORRECT,
+    not drift. kanban-commit/board-api run from idc03's
+    ~/CascadeProjects/chaba-tony-dell (role=served). AGENTS.md updated.
+  role_stamps_2026_10_23: |
+    dell mirror worktrees: iphone-dev/nest-lane/tony-ha=branch,
+    master(detached)=job. idc03: chaba=exec, chaba-tony-dell=served,
+    chaba-kanban-sync=job, chaba-vault=job (all previously role-less).
+  health: |
+    dell exec checkout ~/CascadeProjects/chaba: role=exec, repo-sync
+    15-min cadence exit 0 (99-behind mid-gap is inter-tick drift — board
+    commit bursts, converges each tick). chaba-raceman on dell is NOT a
+    git clone — separate app dir backing live raceman-php.service;
+    confusable name only, left alone.
+  new_traps_found: |
+    dell's served-mirror still has 4 stale linked worktrees (all clean
+    except tony-ha): iphone-dev 0-ahead/7wk, master(detached) 0-ahead/4wk,
+    nest-lane 1-ahead/2wk, tony-ha 45-ahead/6wk+4dirty. `git worktree
+    remove` preserves branch refs, so reaping is non-destructive once
+    dirty files are archived. idc03 has two dead backup trees:
+    chaba-kanban-sync.bak-20261019 (209M) and chaba-tony-dell.livebak-
+    20261018 (7.2G!) — .bak trees violate declared-or-dead hygiene AND
+    are the worst clone-confusion traps (they sit on the writer host).
+
 followups:
   - >-
-    Tony decision pending (board request): reap chaba-kanban-sync +
-    chaba-tony-dell-experiment on dell (patch-bundle first, worktree
-    remove, delete kanban-sync.service.parked).
+    Board request raised (2026-10-23): reap dell's 4 stale mirror
+    worktrees (iphone-dev, master, nest-lane, tony-ha — archive
+    tony-ha's 4 dirty files first) and idc03's 2 .bak/.livebak trees
+    (7.4G reclaimed). Recommend proceed.
   - >-
-    Other hosts' exec checkouts (idc02, idc03, con01, tony_omen,
-    macbook) still need role stamps — run install-hooks.sh --role exec
-    per host on next touch; check-single-writer will flag role-less
-    master checkouts until then.
+    Other hosts' exec checkouts (idc02, con01, tony_omen, macbook)
+    still need role stamps — run install-hooks.sh --role exec per host
+    on next touch; check-single-writer will flag role-less master
+    checkouts until then.
   - >-
     14 uncommitted focus-inbox files in mn01's exec checkout are
     unswept by design (single-writer) — decide: sweep them into the
     served checkout or drop.
+  - >-
+    dell parked-unit backlog (~50 .parked files incl. kanban-commit/
+    kanban-dispatch/chaba-kanban-brief from the writer drain) — belongs
+    to tony-dell-full-migration card, not this one.
