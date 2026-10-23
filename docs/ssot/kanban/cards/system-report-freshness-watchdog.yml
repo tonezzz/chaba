@@ -1,6 +1,6 @@
 id: system-report-freshness-watchdog
 title: System-report freshness watchdog — alert when generated_at goes stale
-column: doing
+column: review
 updated: 2026-10-23 14:24
 spec: 'The Oct 19 freeze proved the monitor politely displays a corpse: whole chain down = page shows 3-day-old
   data with zero alerting. Add an independent watchdog (NOT part of the report pipeline it watches): timer on a
@@ -22,3 +22,7 @@ comms:
     Independent of the pipeline: reads generated_at off idc02 over ssh, files deduped board-api /inbox when >26h
     old or idc02 unreachable (12h re-alert window). Verified live: healthy run rc=0 at 14:2x. Watch for first real
     firing — inbox entry should land in focus + next daily brief.'
+- at: 2026-10-23 14:24
+  from: tony
+  text: moved doing -> review
+review_kind: verify
