@@ -1,0 +1,21 @@
+id: mddb-idc03-followers-lag-status-audit
+title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
+column: backlog
+updated: 2026-10-23 18:29
+priority: high
+tags:
+- mddb
+- idc03
+- replication
+- health
+spec: 'Read-only investigation: verify why both idc02 and con01 follower /v1/replication/status endpoints report
+  healthy=false while HTTP health remains 200, and why their self-reported replication_lag_ms (idc02 ~10.3M ms;
+  con01 ~34.3M ms) differs sharply from idc03 leader''s lag_ms (~0.64M and ~6.16M ms). Capture repeated current_lsn/confirmed_lsn/last_seen_at
+  samples over >=5 minutes, inspect follower logs and watchdog/timer status, determine whether apply is advancing
+  or stalled and whether lag metrics use different clocks/units. Do not restart/promote/upgrade either follower
+  or leader without explicit approval. Update SSOT/card with evidence and safe next action.'
+ref: MEM-0799
+comms:
+- at: 2026-10-23 18:29
+  from: devin
+  text: card captured via board-api
