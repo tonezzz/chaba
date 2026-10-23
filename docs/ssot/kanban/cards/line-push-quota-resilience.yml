@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
 column: done
-updated: 2026-10-23 11:32
+updated: 2026-10-23 11:33
 priority: high
 tags:
 - line
@@ -166,6 +166,12 @@ comms:
   from: tony
   text: 'answered line-oa-spend-gate-bot-339sbrov-is-on-th-6cd7cf: stay free — demote nag/watch/digest senders to
     class=bulk via LINE_BULK_LANES on idc03 (option a)'
+- at: 2026-10-23 11:33
+  from: devin
+  text: 'Tony decision: stay free (option a). Implemented: LINE_BULK_LANES=kk,kk-dev,chaba,tony,ada added to line-bot.env
+    on idc03 (bak-20261023 kept), ada-line-relay restarted. All lanes now class=bulk — proactive sends coalesce
+    <=5 msgs/push on a 300s window or ride free replyTokens. Current quota state: 300/300 used, resets Nov 1; 86
+    msgs parked across 4 targets draining free via replyTokens.'
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
