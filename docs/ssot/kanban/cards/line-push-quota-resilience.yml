@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
 column: backlog
-updated: 2026-10-15 11:00
+updated: 2026-10-23 08:26
 priority: high
 tags:
 - line
@@ -83,6 +83,9 @@ comms:
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: executed ''stay free — parked queue covers it'' -> put on hold'
+- at: 2026-10-23 08:26
+  from: devin
+  text: queued for processing
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
@@ -108,4 +111,5 @@ requests:
   answer: keep open — push/reply accounting tail remains ★
   executed: 2026-10-15 hold
 action:
-  status: idle
+  status: queued
+  type: dispatch
