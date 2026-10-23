@@ -1,7 +1,7 @@
 id: line-group-member-registry
 title: Auto-register LINE senders on first message in allowed groups
-column: backlog
-updated: 2026-10-23 08:26
+column: doing
+updated: 2026-10-23 08:27
 priority: medium
 spec: 'LINE members API is gated to verified accounts (404 on group/members/userIds 2026-10-11), so users cannot
   be pre-enumerated — registration must happen on first message. Procedure: when a message arrives in an allow-listed
@@ -27,6 +27,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:27
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
