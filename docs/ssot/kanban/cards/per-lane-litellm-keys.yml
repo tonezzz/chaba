@@ -1,10 +1,11 @@
 id: per-lane-litellm-keys
 title: Per-lane LiteLLM virtual keys — stop shared free-quota starvation
-column: doing
+column: done
 updated: 2026-10-23 13:57
 priority: medium
 action:
   type: manual
+  status: done
 note: All ada lanes share free Gemini keys — quota died mid-bench (judge 429 on both keys, 2026-10-23). Create LiteLLM
   virtual keys per lane (tony/kk/mn/bench) on idc03 :4000, point each lane env ADA_GEMINI_REST_API_KEY at its own
   key, restart lanes.
@@ -23,3 +24,6 @@ comms:
     lanes (ada-dev, ada-kk-dev, ada-ha) -> BENCH $2 model-scoped; plus ADA $10, MDDB $10, proxy-wide $50/30d. Spend
     metering live per key. The bench-judge 429s were DIRECT free Gemini keys on mn01 — a host lacking LiteLLM keys,
     not a per-lane gap. Residual = key sync to mn01, already a f'
+- at: 2026-10-23 13:57
+  from: tony
+  text: closed by tony
