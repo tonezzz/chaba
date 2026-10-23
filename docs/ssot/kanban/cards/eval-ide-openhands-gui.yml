@@ -1,0 +1,23 @@
+id: eval-ide-openhands-gui
+title: 'eval: launch OpenHands web GUI on the LiteLLM free lane'
+column: backlog
+updated: 2026-10-23 17:09
+brief: OpenHands GUI = watch-an-agent-work web surface, closest analog to Devin web sessions. CLI already installed
+  via uv.
+priority: medium
+program: chaba-ci
+tags:
+- eval
+- free-lane
+- ide
+spec: '~30min. Launch openhands GUI (uv tool run openhands or docker variant). Configure LLM_MODEL=litellm_proxy/bench
+  + LLM_BASE_URL=http://100.102.134.91:4000/v1 + key from ~/.config/secrets/litellm-chaba.env (bench alias REQUIRED
+  — disables Gemini context caching that 429s on free tier). Test: o1 endpoint-health chore in the GUI. Accept when:
+  agent loop completes in GUI.'
+note: flash-lite drove 3/4 ops chores at 1.0 but fails sustained code — a ≥20B brain (gpt-oss:20b) is the unlock
+  for code tasks. Part of OPS-0792.
+ref: OPS-0797
+comms:
+- at: 2026-10-23 17:09
+  from: devin
+  text: card captured via board-api
