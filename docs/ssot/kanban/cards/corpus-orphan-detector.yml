@@ -3,7 +3,7 @@ title: Corpus orphan detector — scripts/docs with no references surface in sta
 column: review
 priority: medium
 created: '2026-10-11'
-updated: 2026-10-23 08:48
+updated: 2026-10-23 08:54
 review_kind: triage
 domain: chaba-ci
 spec: "ssot.artifact-lifecycle.yml declares an Orphans detector that does not\nexist yet. Build it as a section\
@@ -48,6 +48,11 @@ comms:
 - at: 2026-10-23 08:48
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-23 08:54
+  from: chaba
+  text: 'merge-sweep: merged b7ed18ca (dispatch/20261023-082657-ssot-artifact-lifecycle-yml-de from tony-omen) ->
+    origin/master — marked verified (exit_code=0; 3 file(s) changed vs base) — held in review (review_kind=triage
+    — human-gated)'
 verify: standard-drift page shows an Orphans section; a known-dead script (e.g. one never referenced) appears; count
   only shrinks over time.
 requests: []
@@ -63,5 +68,5 @@ action:
   repo: chaba
   result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261023-082657-ssot-artifact-lifecycle-yml-de.service:
     Consumed 2min 32.340s CPU time over 19min 27.488s wall clock time, 1G memory peak.'
-  verified: false
+  verified: true
 claim: {}
