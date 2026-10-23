@@ -23,7 +23,11 @@ prep: |
       && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
     mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
   fi
-  python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  if ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    echo "weights present — snapshot_download skipped"
+  else
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  fi
 run: |
   import os, torch, time, datetime, gc
   for _v in ('model', 'pipe'):

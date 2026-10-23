@@ -31,7 +31,18 @@ prep: |
       mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
     fi
   fi
-  python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  # validate only what the pipeline reads — the 48-file snapshot list
+  # includes variant files the slim cache never held (167s/it crawl
+  # 2026-10-23); from_pretrained needs transformer/vae/scheduler only
+  if ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    echo "weights present — snapshot_download skipped"
+  else
+    if ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    echo "weights present — snapshot_download skipped"
+  else
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  fi
+  fi
 run: |
   import os, time, datetime, gc, subprocess
   import torch

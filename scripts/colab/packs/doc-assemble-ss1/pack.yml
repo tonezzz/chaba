@@ -1,0 +1,91 @@
+# doc-assemble-ss1 — rough cut for the solar-system doc pilot (OPS-0793).
+# CPU ffmpeg pack, fleet-runnable. Documentary mux style: all 18 shots
+# concat'd at their native 3.04s, the 18 VO clips joined into ONE
+# continuous narration track (300ms gaps) laid over — narration flows
+# across cuts, as it should. VO tail overrun extends the last frame
+# (tpad); VO underrun leaves natural tail. v1: no music bed, no subs.
+# DEPLOY NOTE: hold off Drive until doc-vo-ss1 + doc-render-ss1 done —
+# packs have no dependency ordering.
+name: doc-assemble-ss1
+needs:
+  gpu_gb: 0
+  disk_gb: 5
+venv: true
+timeout_s: 1200
+fetch:
+  - doc-pilot/vo/
+  - doc-pilot/shots/
+artifacts:
+  - packs/doc-assemble-ss1/final/ss1-roughcut.mp4
+  - packs/doc-assemble-ss1/assemble-report.md
+publish:
+  final: doc-pilot/final
+prep: |
+  command -v ffmpeg >/dev/null || (apt-get update -qq && apt-get install -y -qq ffmpeg)
+  pip install -q soundfile numpy
+run: |
+  import os, subprocess, json
+  import numpy as np
+  import soundfile as sf
+  VO_DIRS = [f'{NEST_ROOT}/doc-pilot/vo', f'{NEST_ROOT}/packs/doc-vo-ss1/out']
+  SH_DIRS = [f'{NEST_ROOT}/doc-pilot/shots', f'{NEST_ROOT}/packs/doc-render-ss1/shots']
+  OUT = f'{PACK_DIR}/final'; os.makedirs(OUT, exist_ok=True)
+  TMP = f'{PACK_DIR}/tmp'; os.makedirs(TMP, exist_ok=True)
+
+  def find(dirs, pat):
+      for d in dirs:
+          p = f'{d}/{pat}'
+          if os.path.exists(p):
+              return p
+      return None
+
+  rep = ['# doc-assemble-ss1 report', '',
+         '| shot | video | vo_s |', '|---|---|---|']
+  vlist, wavs, missing = [], [], []
+  for n in range(1, 19):
+      v = find(SH_DIRS, f'ss1-shot{n:02d}.mp4')
+      a = find(VO_DIRS, f'ss1-vo-{n:02d}.wav')
+      if not (v and a):
+          missing.append(n); rep.append(f'| {n} | {bool(v)} | - |')
+          continue
+      w, sr = sf.read(a)
+      vlist.append(v); wavs.append(w.astype('float32'))
+      rep.append(f'| {n} | {v.split("/")[-1]} | {len(w)/sr:.2f} |')
+  if missing:
+      rep.append(f'\nMISSING inputs for shots: {missing} — refusing to cut')
+      open(f'{PACK_DIR}/assemble-report.md', 'w').write('\n'.join(rep) + '\n')
+      raise SystemExit(f'missing inputs {missing}')
+
+  # 1) video concat (re-encode for uniform params)
+  lst = f'{TMP}/concat.txt'
+  open(lst, 'w').write(''.join(f"file '{v}'\n" for v in vlist))
+  vcat = f'{TMP}/vcat.mp4'
+  subprocess.run(['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', lst,
+                  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '24', vcat],
+                 check=True, capture_output=True)
+  dur_v = float(subprocess.run(
+      ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+       '-of', 'csv=p=0', vcat], capture_output=True, text=True).stdout.strip())
+
+  # 2) narration track: beats joined with 300ms gaps
+  gap = np.zeros(int(24000 * 0.3), dtype='float32')
+  parts = []
+  for w in wavs:
+      parts += [w, gap]
+  vo = np.concatenate(parts[:-1])
+  vo_path = f'{TMP}/vo.wav'; sf.write(vo_path, vo, 24000)
+  dur_a = len(vo) / 24000
+
+  # 3) mux — pad video tail w/ frozen frame if VO is longer
+  final = f'{OUT}/ss1-roughcut.mp4'
+  pad = max(0.0, dur_a - dur_v + 0.5)
+  vf = f'tpad=stop_mode=clone:stop={pad:.2f}' if pad > 0.05 else 'null'
+  subprocess.run(['ffmpeg', '-y', '-i', vcat, '-i', vo_path,
+                  '-vf', vf, '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                  '-c:a', 'aac', '-b:a', '160k', '-shortest', final],
+                 check=True, capture_output=True)
+  rep += ['', f'video {dur_v:.1f}s + vo {dur_a:.1f}s (tailpad {pad:.2f}s) '
+              f'-> ss1-roughcut.mp4 '
+              f'({os.path.getsize(final)/1e6:.1f}MB)']
+  open(f'{PACK_DIR}/assemble-report.md', 'w').write('\n'.join(rep) + '\n')
+  print('doc-assemble-ss1 complete', flush=True)
