@@ -1,0 +1,18 @@
+id: line-lane-lock-retire
+title: Retire LINE_LANE_LOCK once chat_send targeting is verified
+column: backlog
+updated: 2026-10-23 13:41
+priority: low
+action:
+  type: manual
+note: 'LINE_LANE_LOCK=kk,kk-dev,chaba rewrites chat_send targets to the lane group instead of 403 on bad targets
+  — a stopgap until targeting stabilises. Gate: verify lane-targeting correctness first (LINE_LANE_ALLOW allowlist
+  + last-room fallback), then remove lock entries. Risk: silent misdelivery if removed early.'
+ref: OPS-0781
+comms:
+- at: 2026-10-23 13:41
+  from: tony
+  text: carded by devin 2026-10-23 — gated on targeting verification
+- at: 2026-10-23 13:41
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
