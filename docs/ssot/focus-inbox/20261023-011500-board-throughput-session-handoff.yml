@@ -45,7 +45,27 @@ focus:
       should be retired per declared-or-dead rule.
   branch: master
   priority: medium
-  status: draft
+  status: done
+  resolution: |
+    Consumed 2026-10-23 (macbook session). Outcomes:
+    - 3 review cards verified: all dispatches landed; still held by open
+      requests (Tony decisions): reap chaba-tony-dell-experiment, keep/lift
+      mn-ha quarantine, push+deploy ada-voice / delete :11023 parked colls.
+    - lab-yolo: dispatch was SIGSTOP zombie 12h (omen :1025 display stalled,
+      chvt unstick did NOT heal it — display needs real attention). Killed,
+      retried; re-claimed on omen — may re-pause while display is stalled.
+    - idc04: verified done, no extra spend (VPS purchase was Tony-approved).
+    - "LINE-registry" dispatch was actually mn-ha-michael-onboard — verified
+      done (uid:michael in TELEGRAM_USER_CALLERS on idc03); its branch's
+      lesson.meta commit confirmed merged.
+    - chaba-kanban-sync worktree reaped on dell (patch archive
+      ~/backups/worktree-reap-20261023/, 209M freed, .parked units removed).
+      Dell chaba-tony-dell stamped role=readonly (stale non-writer — live
+      board-api/checkout are on IDC03 now; AGENTS.md write-path note stale).
+    - cms-11023 chaba branch merged to master; ada-voice d438a52 pushed.
+    - Queued 12 curated cards with repo pins (7 ada-voice, 1 mddb-fork,
+      1 idc02-pinned, 3 chaba). 4 early claims ran with wrong repo — killed
+      + retried, re-claimed with pins.
   tags: [handoff, kanban, board]
   missing_info:
     - "Whether tony wants the remaining ~58 spec cards queued in bulk or
@@ -57,15 +77,15 @@ focus:
       board-api do not conflict with other sessions.
   subtasks:
     - label: Read + resolve 3 review cards (stale-clones, mn-ha-v4, cms-11023)
-      status: not_started
+      status: done
     - label: Verify lab-yolo-ha-detect dispatch outcome when it finishes on omen
-      status: not_started
+      status: done
     - label: Check overnight idc04-contabo + LINE-registry dispatch outcomes (not this session's queue — verify intent + spend)
-      status: not_started
+      status: done
     - label: Retire chaba-kanban-sync detached-HEAD vestige on tony-dell
-      status: not_started
+      status: done
     - label: Queue next batch of spec'd backlog cards (curate, ~10 at a time)
-      status: not_started
+      status: done
 
 ownership:
   owner: tony
