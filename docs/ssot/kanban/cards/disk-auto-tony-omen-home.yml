@@ -92,6 +92,13 @@ comms:
     Thermal snapshot: CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz graphics/405MHz
     memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite 61C/sensor2 79C. Package throttle counters show
     brief historical throttling (817ms total/4 days; no co'
+- at: 2026-10-23 19:53
+  from: devin
+  text: 'Omen partition inventory saved to GDrive: gdrive:backups/tony-omen/partition-snapshots/omen-nvme0n1-inventory_20261023-194854.txt;
+    remote readback SHA-256 matches local (eb187d92db4447f67bf6aafc418f4bd2fcc97b730c5201c3c194bc79cfb26bcf). This
+    is a text inventory, not a restorable GPT backup: unprivileged SSH cannot read /dev/nvme0n1 (`sfdisk: Permission
+    denied`). GDrive standard applied: local-staged file -> direct rclone copyto -> remote SHA readback; no FUSE
+    write. CPU service currently caps 2.'
 requests:
 - id: omen-disk-plan
   from: devin
@@ -110,3 +117,4 @@ action:
   type: dispatch
 ref: OPS-0405
 claim: {}
+awaiting_action: true
