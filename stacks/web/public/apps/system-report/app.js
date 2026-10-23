@@ -1,14 +1,101 @@
+const state = { doc: null, statusFilter: null, textFilter: "", sortKey: "status", sortAsc: true };
+const STATUS_RANK = { error: 0, missing: 1, unreachable: 2, stale: 3, delta: 4, warn: 5, untracked: 6, remote: 7, ok: 8, planned: 9 };
+
+function esc(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function ageMs(iso) {
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : Date.now() - t;
+}
+function fmtAge(iso) {
+  const ms = ageMs(iso);
+  if (ms === null) return "—";
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h${m % 60 ? `${m % 60}m` : ""}`;
+  return `${Math.floor(h / 24)}d${h % 24 ? `${h % 24}h` : ""}`;
+}
+function ageCls(iso) {
+  const ms = ageMs(iso);
+  if (ms === null) return "";
+  if (ms > 48 * 3600e3) return "old";
+  if (ms > 24 * 3600e3) return "mid";
+  return "";
+}
+function pill(status) {
+  const s = String(status || "?");
+  const cls = STATUS_RANK[s] !== undefined ? s : "planned";
+  return `<span class="pill ${cls}">${esc(s)}</span>`;
+}
+
+function renderSummary() {
+  const el = document.getElementById("summary");
+  const counts = state.doc?.status_counts || {};
+  const order = ["error", "missing", "unreachable", "stale", "delta", "warn", "untracked", "remote", "ok", "planned"];
+  const keys = order.concat(Object.keys(counts).filter((x) => !order.includes(x)));
+  let html = `<div class="card${state.statusFilter === null ? " active" : ""}" data-s="">
+      <div class="value">${state.doc?.node_count ?? "–"}</div><div class="label">all</div></div>`;
+  for (const k of keys) {
+    if (!(k in counts)) continue;
+    const cls = k === "ok" ? "ok" : (["error", "missing", "unreachable"].includes(k) ? "fail" : "warn");
+    html += `<div class="card${state.statusFilter === k ? " active" : ""}" data-s="${k}">
+      <div class="value ${cls}">${counts[k]}</div><div class="label">${k}</div></div>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll(".card").forEach((c) =>
+    c.addEventListener("click", () => {
+      const s = c.dataset.s || null;
+      state.statusFilter = state.statusFilter === s ? null : s;
+      renderSummary(); renderNodes();
+    }));
+}
+
+function renderNodes() {
+  const tb = document.getElementById("nodes");
+  let nodes = (state.doc?.nodes || []).slice();
+  const q = state.textFilter.toLowerCase();
+  if (state.statusFilter) nodes = nodes.filter((n) => n.status === state.statusFilter);
+  if (q) nodes = nodes.filter((n) =>
+    [n.id, n.status, n.layer, n.summary, n.purpose].join(" ").toLowerCase().includes(q));
+  const k = state.sortKey, dir = state.sortAsc ? 1 : -1;
+  nodes.sort((a, b) => {
+    if (k === "status") return dir * ((STATUS_RANK[a.status] ?? 50) - (STATUS_RANK[b.status] ?? 50));
+    if (k === "age" || k === "last_run")
+      return dir * ((Date.parse(a.last_run) || 0) - (Date.parse(b.last_run) || 0));
+    return dir * String(a[k] ?? "").localeCompare(String(b[k] ?? ""));
+  });
+  tb.innerHTML = nodes.map((n) => `
+    <tr>
+      <td>${pill(n.status)}</td>
+      <td class="node-id" title="${esc(n.purpose || "")}">${esc(n.id)}</td>
+      <td class="muted">${esc(n.layer || "")}</td>
+      <td class="muted">${esc((n.last_run || "").replace("T", " ").slice(0, 16))}</td>
+      <td class="age ${ageCls(n.last_run)}">${fmtAge(n.last_run)}</td>
+      <td class="summary">${esc(n.summary || "")}</td>
+    </tr>`).join("");
+  document.getElementById("shown-hint").textContent =
+    `${nodes.length} of ${state.doc?.nodes?.length || 0} nodes` +
+    (state.statusFilter ? ` — filtered: ${state.statusFilter}` : "") +
+    (state.textFilter ? ` — matching "${state.textFilter}"` : "");
+}
+
+function renderFreshness() {
+  const el = document.getElementById("freshness");
+  const g = state.doc?.generated_at;
+  if (!g) { el.textContent = "data age unknown"; el.className = "warn"; return; }
+  el.textContent = `generated ${fmtAge(g)} ago`;
+  el.id = "freshness";
+  el.className = ageCls(g) || "ok";
+}
+
 async function load() {
   const meta = document.getElementById("meta");
-  const summary = document.getElementById("summary");
-  const report = document.getElementById("report");
-  summary.innerHTML = "";
-
   try {
     const yml = await fetch("data/system-report.yml", { cache: "no-store" });
     if (yml.ok) {
-      const doc = jsyaml.load(await yml.text());
-      meta.textContent = `Generated: ${doc.generated_at || "unknown"} — ${doc.node_count} nodes`;
+      state.doc = jsyaml.load(await yml.text());
+      meta.textContent = `Registry: ${state.doc.registry || "ssot.reports.yml"} — generated ${state.doc.generated_at || "unknown"}`;
       try {
         const p = await fetch("api/pending", { cache: "no-store" });
         const pb = await p.json();
@@ -16,13 +103,9 @@ async function load() {
         if (names.length)
           meta.textContent += ` — ⟳ ${names.length} update${names.length > 1 ? "s" : ""} pending (${names.join(", ")})`;
       } catch (e) { /* pending view is optional */ }
-      const counts = doc.status_counts || {};
-      const order = ["error", "missing", "stale", "delta", "warn", "ok"];
-      for (const k of order.concat(Object.keys(counts).filter((x) => !order.includes(x)))) {
-        if (!(k in counts)) continue;
-        const cls = k === "ok" ? "ok" : (k === "error" || k === "missing" ? "fail" : "warn");
-        summary.innerHTML += `<div class="card"><div class="value ${cls}">${counts[k]}</div><div class="label">${k}</div></div>`;
-      }
+      renderFreshness(); renderSummary(); renderNodes();
+    } else {
+      meta.textContent = `summary unavailable: HTTP ${yml.status}`;
     }
   } catch (e) {
     meta.textContent = `summary unavailable: ${e.message}`;
@@ -32,17 +115,22 @@ async function load() {
     const r = await fetch("data/SYSTEM-REPORT.md", { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const md = await r.text();
-    report.innerHTML = typeof marked !== "undefined"
+    document.getElementById("report").innerHTML = typeof marked !== "undefined"
       ? marked.parse(md)
       : `<pre>${md.replace(/</g, "&lt;")}</pre>`;
+    // linkify the report's status cells for scannability
+    document.querySelectorAll("#report td").forEach((td) => {
+      const t = td.textContent.trim().toLowerCase();
+      if (STATUS_RANK[t] !== undefined) td.innerHTML = pill(t);
+    });
   } catch (e) {
-    report.innerHTML = `<p class="err-text">Failed to load report: ${e.message}. Generated daily by chaba-system-report.timer (~06:45).</p>`;
+    document.getElementById("report").innerHTML =
+      `<p class="err-text">Failed to load report: ${e.message}. Generated daily by chaba-system-report.timer (~06:45).</p>`;
   }
 }
 
-// Refresh button -> POST api/refresh starts the full L1->L3 chain on
-// tony-dell (per-host audits, fleet rollup, this report — so the top
-// level refreshes every linked layer). Poll /status until the run ends.
+// Refresh button -> POST api/refresh starts the full L1->L3 chain
+// (per-host audits, fleet rollup, this report). Poll /status until done.
 async function refresh() {
   const btn = document.getElementById("refresh");
   const status = document.getElementById("refresh-status");
@@ -53,10 +141,7 @@ async function refresh() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ node: "system-report", depth: "subtree" }),
     });
-    if (r.status === 403) {
-      status.textContent = "refresh needs a tailnet login";
-      return;
-    }
+    if (r.status === 403) { status.textContent = "refresh needs a tailnet login"; return; }
     if (r.status !== 202 && r.status !== 409) {
       const b = await r.json().catch(() => ({}));
       status.textContent = `refresh failed: ${b.error || "HTTP " + r.status}`;
@@ -86,4 +171,17 @@ async function refresh() {
 }
 
 document.getElementById("refresh").addEventListener("click", refresh);
+document.getElementById("filter").addEventListener("input", (e) => {
+  state.textFilter = e.target.value.trim();
+  renderNodes();
+});
+document.querySelectorAll("table.nodes th").forEach((th) =>
+  th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    if (state.sortKey === k) state.sortAsc = !state.sortAsc;
+    else { state.sortKey = k; state.sortAsc = true; }
+    renderNodes();
+  }));
+
 load();
+setInterval(load, 60000); // monitor page — self-refresh the data every minute
