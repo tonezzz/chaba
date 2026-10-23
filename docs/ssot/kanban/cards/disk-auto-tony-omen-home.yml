@@ -9,7 +9,7 @@ priority: high
 note: 'Auto-recovered 2026-10-23: tony-omen /home back in bounds (72%, slope 9.51 GiB/d)'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 20:04
+updated: 2026-10-23 20:06
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -111,6 +111,12 @@ comms:
     (SHA-256 verified). Prepared a repo-managed 2.00GHz unit + SSOT/runbook edits in branch dispatch/20261023-omen-cpu-cap-2ghz;
     `systemd-analyze verify` and YAML parse checks pass. Not committed or installed yet. Full ssot-validate-all
     is blocked by unrelated pre-existing YAML syntax error in jobs/kanban/2026-10-23-card-union-merge-dri'
+- at: 2026-10-23 20:06
+  from: devin
+  text: For the requested 2.00GHz cap, the proposed repo unit is staged on Omen at /tmp/cpufreq-limit.service.pending-2ghz
+    (SHA-256 840a38f3ad634a3af77a3db885a9a564a986194995d2ec4c64f2c4b77e25ec29). It caps frequency only and leaves
+    the current balanced/powersave governor under power-profiles-daemon. No root install/restart has run; live cap
+    is still 2.20GHz.
 requests:
 - id: omen-disk-plan
   from: devin
