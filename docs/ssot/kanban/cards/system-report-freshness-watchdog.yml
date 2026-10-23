@@ -1,7 +1,7 @@
 id: system-report-freshness-watchdog
 title: System-report freshness watchdog — alert when generated_at goes stale
 column: doing
-updated: 2026-10-23 14:09
+updated: 2026-10-23 14:24
 spec: 'The Oct 19 freeze proved the monitor politely displays a corpse: whole chain down = page shows 3-day-old
   data with zero alerting. Add an independent watchdog (NOT part of the report pipeline it watches): timer on a
   non-idc02 host that reads api/status generated_at from idc02 and, when older than ~26h or unreachable, files a
@@ -16,3 +16,9 @@ comms:
 - at: 2026-10-23 14:09
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 14:24
+  from: devin
+  text: 'Done. system-report-watchdog.py on tony_dell (hourly systemd timer, declared in ssot.jobs.yml, rendered+enabled).
+    Independent of the pipeline: reads generated_at off idc02 over ssh, files deduped board-api /inbox when >26h
+    old or idc02 unreachable (12h re-alert window). Verified live: healthy run rc=0 at 14:2x. Watch for first real
+    firing — inbox entry should land in focus + next daily brief.'
