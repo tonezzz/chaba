@@ -1,7 +1,7 @@
 id: line-group-member-registry
 title: Auto-register LINE senders on first message in allowed groups
 column: doing
-updated: 2026-10-23 08:36
+updated: 2026-10-23 08:39
 priority: medium
 spec: 'LINE members API is gated to verified accounts (404 on group/members/userIds 2026-10-11), so users cannot
   be pre-enumerated — registration must happen on first message. Procedure: when a message arrives in an allow-listed
@@ -57,6 +57,10 @@ comms:
   from: devin
   text: picked up — implementing first-seen mddb line-user-registry upsert in line_relay (unmapped room senders
     register on first message)
+- at: 2026-10-23 08:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261023-082703-line-members-api-is-gated-to-v no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
